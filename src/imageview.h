@@ -130,6 +130,7 @@ private:
     bool m_fitMode = true;
     bool m_workspaceMode = false;
     Tool m_tool = Tool::Select;
+    LayoutMode m_layoutMode = LayoutMode::FreeForm;
     ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;
