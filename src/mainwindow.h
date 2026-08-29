@@ -67,7 +67,7 @@ private slots:
     void goNext();
     void toggleSlideshow();
     void layoutSideBySide();
-    void onThumbnailDoubleClicked();
+    void onThumbnailDoubleClicked(int index);
     void clearWorkspaceExtras();
     void opacityReset();
     void opacityDown();
