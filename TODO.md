@@ -19,9 +19,9 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 
 - [x] Basic Qt6 Widgets application with main window
 - [x] Toolbar with: Open, Zoom+, Zoom-, 1:1, Fit to Window, Fullscreen, Rotate Left, Rotate Right
-- [x] Menu bar (File / View / Help) sharing the same actions
+- [x] Menu bar (File / View / Go / Help) sharing the same actions
 - [x] Theme icons for toolbar and menus (with StandardPixmap fallbacks)
-- [x] Hide toolbar (and menu/status) in fullscreen; Tab toggles toolbar
+- [x] Hide toolbar (and menu/status/thumbnails) in fullscreen; Tab toggles toolbar
 - [x] Context menu on the image view
 - [x] Load single JPEG/PNG (and other formats Qt supports natively)
 - [x] Simple image view with zoom, pan and 90° rotation
@@ -29,15 +29,19 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Nix flake for reproducible builds (Qt6, CMake)
 - [x] REUSE / SPDX licensing (GPLv3+)
 - [x] AGENTS.md for contributor / agent guidance
+- [x] Basic multi-image support: list of loaded images, switch between them
+- [x] Thumbnail strip at the bottom (shown when >1 image)
+- [x] Keyboard navigation: Left/Right/Space/Backspace/PgUp/PgDn, R / [ ] for rotate, F for fit
+- [x] Drag-and-drop of local image files onto the window
 
 ## Near-term
 
-- [ ] Thumbnail strip / panel at bottom for multi-image sessions
-- [ ] Keyboard navigation (arrows for next/prev once multi-image exists, +/-, r/R for rotate, f for fit, etc.)
-- [ ] Drag-and-drop of images onto the window (open or add to workspace)
-- [ ] Basic multi-image support: list of loaded images, switch between them
-- [ ] Improve status bar (pixel position under cursor, colour if useful)
+- [ ] Asynchronous / background thumbnail generation (current is sync)
+- [ ] Append-on-drop option vs replace-on-drop (workspace mode will need append)
+- [ ] Improve status bar (pixel position under cursor, colour sample)
 - [ ] Remember window geometry / toolbar visibility across sessions (QSettings)
+- [ ] Directory open: load all images in a folder
+- [ ] Sort options (name, mtime, …)
 
 ## Workspace / Advanced View
 
@@ -79,10 +83,11 @@ Rich options, for example:
 ## Technical Notes
 
 - Prefer Qt6 + CMake
-- Keep the codebase clean and modular (MainWindow, ImageWorkspace, ThumbnailBar, MetadataPanel, ...)
+- Keep the codebase clean and modular (MainWindow, ImageView, ThumbnailBar, future ImageWorkspace, MetadataPanel, ...)
 - Avoid hacks; if complexity grows, refactor early
 - OpenGL may be needed for high-quality free rotation + zoom of multiple large images; evaluate QGraphicsView first, then QOpenGLWidget if necessary
 - Icons: always `QIcon::fromTheme` + fallback so the UI stays usable without a full icon theme
+- Thumbnail loading is currently synchronous — fine for small sets, needs a worker for large folders
 
 ## Open Questions
 
@@ -90,3 +95,4 @@ Rich options, for example:
 - Whether to store view state next to images (sidecar files) or in a central cache
 - Performance strategy for 100+ megapixel images or dozens of images in one workspace
 - Whether Tab should also toggle the menu bar / status bar, or only the toolbar
+- Drop behaviour: replace session vs add to workspace

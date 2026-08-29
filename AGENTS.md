@@ -52,13 +52,16 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 
 ## UI expectations (current)
 
-- Classic menu bar (File / View / Help).
-- Toolbar with Open, Zoom ±, 1:1, Fit, Rotate L/R, Fullscreen.
-- Theme icons (document-open, zoom-*, object-rotate-*, view-fullscreen).
-- Fullscreen (F11) hides toolbar, menu bar and status bar; Tab toggles
-  the toolbar while in (or out of) fullscreen.
+- Classic menu bar (File / View / Go / Help).
+- Toolbar with Open, Previous/Next, Zoom ±, 1:1, Fit, Rotate L/R, Fullscreen.
+- Theme icons (document-open, go-previous/next, zoom-*, object-rotate-*, view-fullscreen).
+- Fullscreen (F11) hides toolbar, menu bar, status bar and thumbnail bar; Tab toggles
+  the toolbar while in (or out of) fullscreen. Ctrl+M toggles thumbnails.
 - Context menu on the image view exposing the same core actions.
-- Status bar shows filename, dimensions, zoom %, rotation.
+- Status bar shows [index/total], filename, dimensions, zoom %, rotation.
+- Thumbnail bar at the bottom when more than one image is loaded.
+- Drag-and-drop of local image files replaces the current session.
+- Keyboard: Left/Right/Space/Backspace/PgUp/PgDn navigate; R / [ ] rotate; F fit.
 
 ## What not to do
 
