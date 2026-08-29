@@ -6,7 +6,8 @@
 #include <QFileInfo>
 #include <QImageReader>
 #include <QListWidgetItem>
-#include <QScrollBar>
+#include <QMetaObject>
+#include <QThreadPool>
 
 ThumbnailBar::ThumbnailBar(QWidget *parent)
     : QListWidget(parent)
@@ -26,6 +27,8 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setSelectionMode(QAbstractItemView::SingleSelection);
     setFocusPolicy(Qt::NoFocus);
 
+    qRegisterMetaType<QImage>("QImage");
+
     setMaximumHeight(kBarHeight);
     setMinimumHeight(kBarHeight);
 
@@ -33,14 +36,42 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     connect(this, &QListWidget::currentRowChanged, this, &ThumbnailBar::onCurrentRowChanged);
 }
 
+ThumbnailBar::~ThumbnailBar()
+{
+    cancelPendingLoads();
+}
+
 QSize ThumbnailBar::sizeHint() const
 {
     return QSize(400, kBarHeight);
 }
 
+void ThumbnailBar::cancelPendingLoads()
+{
+    // Bump generation so in-flight jobs become no-ops when they finish
+    m_generation.fetch_add(1);
+}
+
+QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize)
+{
+    QImageReader reader(path);
+    reader.setAutoTransform(true);
+
+    QSize size = reader.size();
+    if (size.isValid()) {
+        size.scale(maxSize, maxSize, Qt::KeepAspectRatio);
+        reader.setScaledSize(size);
+    }
+
+    return reader.read();
+}
+
 void ThumbnailBar::setFiles(const QStringList &files)
 {
+    cancelPendingLoads();
     clear();
+
+    const quint64 gen = m_generation.load();
 
     for (const QString &path : files) {
         auto *item = new QListWidgetItem(this);
@@ -48,13 +79,25 @@ void ThumbnailBar::setFiles(const QStringList &files)
         item->setToolTip(path);
         item->setData(Qt::UserRole, path);
         item->setSizeHint(QSize(kThumbSize + 12, kThumbSize + 24));
-        // Placeholder icon; real thumbnail loaded lazily below
         item->setIcon(QIcon::fromTheme(QStringLiteral("image-x-generic")));
     }
 
-    // Load thumbnails (prototype: synchronous; OK for modest lists)
-    for (int i = 0; i < count(); ++i) {
-        loadThumbnail(i);
+    // Schedule thumbnail decoding on the global thread pool
+    for (int i = 0; i < files.size(); ++i) {
+        const QString path = files.at(i);
+        QThreadPool::globalInstance()->start([this, i, path, gen]() {
+            if (gen != m_generation.load()) {
+                return; // superseded
+            }
+            const QImage image = makeThumbnail(path, kThumbSize);
+            if (image.isNull() || gen != m_generation.load()) {
+                return;
+            }
+            // Deliver result on the GUI thread
+            QMetaObject::invokeMethod(this, "setThumbnailIcon", Qt::QueuedConnection,
+                                      Q_ARG(int, i),
+                                      Q_ARG(QImage, image));
+        });
     }
 
     if (count() > 0) {
@@ -62,33 +105,22 @@ void ThumbnailBar::setFiles(const QStringList &files)
     }
 }
 
-void ThumbnailBar::loadThumbnail(int row)
+void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
 {
     QListWidgetItem *item = this->item(row);
-    if (!item) {
+    if (!item || image.isNull()) {
         return;
     }
-
-    const QString path = item->data(Qt::UserRole).toString();
-    QImageReader reader(path);
-    reader.setAutoTransform(true);
-
-    QSize size = reader.size();
-    if (size.isValid()) {
-        size.scale(kThumbSize, kThumbSize, Qt::KeepAspectRatio);
-        reader.setScaledSize(size);
-    }
-
-    const QImage image = reader.read();
-    if (!image.isNull()) {
-        item->setIcon(QIcon(QPixmap::fromImage(image)));
-    }
+    item->setIcon(QIcon(QPixmap::fromImage(image)));
 }
 
 void ThumbnailBar::setCurrentIndex(int index)
 {
     if (index >= 0 && index < count()) {
+        // Block signals so programmatic selection does not re-emit indexActivated
+        const bool blocked = blockSignals(true);
         setCurrentRow(index);
+        blockSignals(blocked);
         scrollToItem(item(index), QAbstractItemView::EnsureVisible);
     }
 }

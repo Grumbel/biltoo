@@ -6,6 +6,7 @@
 
 #include <QListWidget>
 #include <QStringList>
+#include <atomic>
 
 class ThumbnailBar : public QListWidget
 {
@@ -13,6 +14,7 @@ class ThumbnailBar : public QListWidget
 
 public:
     explicit ThumbnailBar(QWidget *parent = nullptr);
+    ~ThumbnailBar() override;
 
     void setFiles(const QStringList &files);
     void setCurrentIndex(int index);
@@ -27,12 +29,17 @@ protected:
 private slots:
     void onItemActivated(QListWidgetItem *item);
     void onCurrentRowChanged(int row);
+    void setThumbnailIcon(int row, const QImage &image);
 
 private:
-    void loadThumbnail(int row);
+    void cancelPendingLoads();
+    static QImage makeThumbnail(const QString &path, int maxSize);
 
     static constexpr int kThumbSize = 96;
     static constexpr int kBarHeight = 112;
+
+    // Generation counter so stale async results are ignored after setFiles()
+    std::atomic<quint64> m_generation{0};
 };
 
 #endif // THUMBNAILBAR_H
