@@ -426,7 +426,6 @@ void MainWindow::createToolBar()
     m_toolBar->setFloatable(false);
     m_toolBar->setIconSize(QSize(24, 24));
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    m_toolBar->setDocumentMode(true);
 
     // Left: file and navigation
     m_toolBar->addAction(m_openAct);
