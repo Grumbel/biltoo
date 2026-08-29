@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Rounded app background -->
+  <rect x="8" y="8" width="112" height="112" rx="24" ry="24" fill="#2b2b2b"/>
+  <!-- Image frame -->
+  <rect x="24" y="28" width="80" height="64" rx="6" ry="6" fill="#3d3d3d" stroke="#6a9fdb" stroke-width="3"/>
+  <!-- Stylised landscape -->
+  <path d="M28 84 L52 52 L68 68 L84 44 L104 84 Z" fill="#5a8f5a"/>
+  <circle cx="88" cy="42" r="8" fill="#e8c547"/>
+  <!-- Magnifier hint (viewer) -->
+  <circle cx="96" cy="92" r="14" fill="none" stroke="#6a9fdb" stroke-width="4"/>
+  <line x1="106" y1="102" x2="116" y2="112" stroke="#6a9fdb" stroke-width="4" stroke-linecap="round"/>
+</svg>

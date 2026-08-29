@@ -22,6 +22,7 @@ add_executable(qimgview
   src/imageitem.h
   src/thumbnailbar.cpp
   src/thumbnailbar.h
+  src/icons.qrc
 )
 
 target_link_libraries(qimgview PRIVATE
@@ -30,4 +31,10 @@ target_link_libraries(qimgview PRIVATE
   Qt6::Widgets
 )
 
-install(TARGETS qimgview DESTINATION bin)
+include(GNUInstallDirs)
+
+install(TARGETS qimgview DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES data/qimgview.desktop
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+install(FILES data/icons/hicolor/scalable/apps/qimgview.svg
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)

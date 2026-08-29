@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=QImgView
+GenericName=Image Viewer
+Comment=Classic image viewer with a workspace for comparing images
+Exec=qimgview %F
+Icon=qimgview
+Terminal=false
+Categories=Graphics;Viewer;2DGraphics;RasterGraphics;
+MimeType=image/jpeg;image/png;image/gif;image/bmp;image/webp;image/tiff;image/svg+xml;image/x-xpixmap;
+Keywords=picture;photo;jpeg;png;
+StartupNotify=true

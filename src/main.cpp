@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
+#include <QIcon>
 
 int main(int argc, char *argv[])
 {
@@ -15,6 +16,13 @@ int main(int argc, char *argv[])
     QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
     QApplication::setOrganizationName(QStringLiteral("QImgView"));
     QApplication::setOrganizationDomain(QStringLiteral("qimgview.local"));
+
+    // Prefer the installed theme icon; fall back to the embedded SVG.
+    QIcon appIcon = QIcon::fromTheme(QStringLiteral("qimgview"));
+    if (appIcon.isNull()) {
+        appIcon = QIcon(QStringLiteral(":/icons/qimgview.svg"));
+    }
+    QApplication::setWindowIcon(appIcon);
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
