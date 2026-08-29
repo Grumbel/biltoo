@@ -15,54 +15,58 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - Optional side panel for Exif / metadata display.
 - No image editing in the first versions (pixel changes). We may later persist per-image rotate/zoom settings.
 
-## Prototype Goals (v0.1)
+## Done (v0.1 → workspace foundation)
 
-- [x] Basic Qt6 Widgets application with main window
-- [x] Toolbar, menu bar, theme icons, context menu, fullscreen chrome
-- [x] Multi-image list with thumbnail strip (async load)
-- [x] Keyboard navigation and slideshow (F5)
-- [x] Drag-and-drop (replace; Shift+drop appends)
-- [x] Add Images… (append to session)
-- [x] Directory open + recursive (`-r`)
-- [x] Sort by name or modification time (View menu + `--sort`)
-- [x] Status bar: index, file, zoom, rotation, mouse RGB
-- [x] QSettings for geometry, toolbar, sort mode, slideshow interval
-- [x] CLI: `--fullscreen`, `--start-at`, `--recursive`, `--sort`, `--slideshow`,
-      `--interval`, `--thumbnails`, `--no-thumbnails`
-- [x] Slideshow pauses on manual navigation / thumbnail click
-- [x] Nix flake, REUSE/SPDX, AGENTS.md
+- [x] Classic Qt6 app: menus, toolbar, theme icons, context menu, fullscreen chrome
+- [x] Multi-image session, async thumbnails, slideshow, sort, append, rich CLI
+- [x] Status bar with mouse pixel / RGB
+- [x] QSettings, directory open, recursive
+- [x] **Workspace foundation**: ImageItem + multi-item ImageView
+  - [x] loadImage() replaces workspace; addImage() places additional items
+  - [x] Select / drag to move items; wheel zooms item under cursor
+  - [x] Zoom / rotate actions apply to the selection (or sole item)
+  - [x] Side-by-side layout action (Ctrl+Y)
+  - [x] Ctrl+drop adds images to the workspace for comparison
+  - [x] Delete/Backspace removes selected items from the workspace
+  - [x] Alt+drag or middle-button pans the view
 
-## Near-term
+## Near-term workspace
+
+- [ ] Continuous free rotation (drag handle or modifier+drag), not only 90°
+- [ ] Opacity / blend for overlap comparison
+- [ ] Snap / align helpers
+- [ ] Z-order (raise / lower)
+- [ ] Double-click thumbnail to add that image onto the workspace
+- [ ] "Clear workspace extras" while keeping the primary session image
+
+## Near-term app
 
 - [ ] Preferences dialog (slideshow interval, default sort, …)
 - [ ] Natural/locale-aware filename sort
-- [ ] Session list export / open recent
+- [ ] Optional Exif side panel
 
-## Workspace / Advanced View
+## Later
 
-- [ ] Treat the central area as a free workspace (multiple independent items)
-- [ ] Drop images onto the workspace to place them side-by-side or overlapping
-- [ ] Free continuous rotation (not only 90°)
-- [ ] Possibly OpenGL acceleration for smooth transforms of large images
+- [ ] OpenGL path for large images / many items
+- [ ] ImageMagick / libvips for broader formats
+- [ ] Per-image view state persistence
 
-## Metadata & Extras
+## Drop / interaction summary
 
-- [ ] Optional side panel showing Exif / IPTC / XMP
-- [ ] Remember per-image view settings (zoom, rotation, position)
-
-## Image Format Support
-
-- Prototype: Qt QImageReader
-- Later: ImageMagick / Magick++ or libvips for broader formats and large images
-
-## Technical Notes
-
-- Thumbnails load on QThreadPool with a generation counter for cancellation
-- Shift+drop appends; plain drop replaces
-- Manual prev/next/thumbnail selection stops an active slideshow
+| Gesture | Effect |
+|---------|--------|
+| Drop | Replace session |
+| Shift+Drop | Append to session |
+| Ctrl+Drop | Add onto workspace (comparison) |
+| Click item | Select |
+| Drag item | Move |
+| Wheel | Zoom item under cursor |
+| Alt+LMB / Middle | Pan view |
+| Delete | Remove selected from workspace |
+| Ctrl+Y | Side-by-side layout |
 
 ## Open Questions
 
-- Exact interaction model for multi-image workspace
-- Sidecar vs central cache for per-image view state
-- Performance strategy for very large images / many items in one workspace
+- How session (thumbnail strip) and workspace multi-item mode best stay in sync
+- Whether free rotation should be per-item only or also view-level
+- Performance strategy for very large images / many concurrent items

@@ -65,6 +65,7 @@ private slots:
     void goPrevious();
     void goNext();
     void toggleSlideshow();
+    void layoutSideBySide();
     void onSlideshowTick();
     void sortByName();
     void sortByMTime();
@@ -119,6 +120,7 @@ private:
     QAction *m_previousAct = nullptr;
     QAction *m_nextAct = nullptr;
     QAction *m_slideshowAct = nullptr;
+    QAction *m_layoutSideBySideAct = nullptr;
     QAction *m_sortNameAct = nullptr;
     QAction *m_sortMTimeAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;

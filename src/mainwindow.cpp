@@ -192,6 +192,11 @@ void MainWindow::createActions()
     m_slideshowAct->setStatusTip(tr("Start or stop the slideshow (F5)"));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
+    m_layoutSideBySideAct = new QAction(tr("Layout Side b&y Side"), this);
+    m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
+    m_layoutSideBySideAct->setStatusTip(tr("Arrange workspace images in a horizontal row"));
+    connect(m_layoutSideBySideAct, &QAction::triggered, this, &MainWindow::layoutSideBySide);
+
     m_sortNameAct = new QAction(tr("Sort by &Name"), this);
     m_sortNameAct->setCheckable(true);
     m_sortNameAct->setChecked(true);
@@ -248,6 +253,8 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_sortNameAct);
     m_viewMenu->addAction(m_sortMTimeAct);
     m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_layoutSideBySideAct);
+    m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_toggleThumbnailBarAct);
@@ -277,6 +284,8 @@ void MainWindow::createMenus()
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_rotateLeftAct);
     m_contextMenu->addAction(m_rotateRightAct);
+    m_contextMenu->addSeparator();
+    m_contextMenu->addAction(m_layoutSideBySideAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_fullscreenAct);
     m_contextMenu->addAction(m_toggleToolBarAct);
@@ -667,6 +676,11 @@ void MainWindow::toggleSlideshow()
     }
 }
 
+void MainWindow::layoutSideBySide()
+{
+    m_imageView->layoutSideBySide();
+}
+
 void MainWindow::onSlideshowTick()
 {
     m_slideshowAdvancing = true;
@@ -846,7 +860,15 @@ void MainWindow::dropEvent(QDropEvent *event)
     if (paths.isEmpty()) {
         return;
     }
-    // Shift+drop appends; plain drop replaces the session
+    // Ctrl+drop: add images onto the workspace for comparison (no session change)
+    if (event->modifiers() & Qt::ControlModifier) {
+        for (const QString &path : paths) {
+            m_imageView->addImage(path);
+        }
+        event->acceptProposedAction();
+        return;
+    }
+    // Shift+drop appends to the session; plain drop replaces the session
     if (event->modifiers() & Qt::ShiftModifier) {
         appendFiles(paths);
     } else {
