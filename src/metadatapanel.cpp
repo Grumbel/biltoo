@@ -8,6 +8,7 @@
 #include <QHeaderView>
 #include <QImageReader>
 #include <QLabel>
+#include <QLocale>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
@@ -71,7 +72,7 @@ void MetadataPanel::setImagePath(const QString &path)
     addRow(tr("Size"),
            tr("%1 bytes").arg(info.size()));
     addRow(tr("Modified"),
-           info.lastModified().toString(Qt::DefaultLocaleShortDate));
+           QLocale().toString(info.lastModified(), QLocale::ShortFormat));
 
     QImageReader reader(path);
     reader.setAutoTransform(true);
