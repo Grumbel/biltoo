@@ -24,6 +24,7 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QSettings>
+#include <QSizePolicy>
 #include <QSet>
 #include <QStatusBar>
 #include <QStyle>
@@ -63,6 +64,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setWindowTitle(tr("QImgView"));
+    setWindowIcon(QApplication::windowIcon());
     resize(1024, 768);
     setAcceptDrops(true);
 
@@ -194,17 +196,20 @@ void MainWindow::createActions()
 
     m_layoutSideBySideAct = new QAction(tr("Layout Side b&y Side"), this);
     m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
+    m_layoutSideBySideAct->setIcon(themeIcon(QStringLiteral("view-grid"), QStyle::SP_FileDialogListView));
     m_layoutSideBySideAct->setStatusTip(tr("Arrange workspace images in a horizontal row"));
     connect(m_layoutSideBySideAct, &QAction::triggered, this, &MainWindow::layoutSideBySide);
 
     m_sortNameAct = new QAction(tr("Sort by &Name"), this);
     m_sortNameAct->setCheckable(true);
     m_sortNameAct->setChecked(true);
+    m_sortNameAct->setIcon(themeIcon(QStringLiteral("view-sort-ascending"), QStyle::SP_ArrowDown));
     m_sortNameAct->setStatusTip(tr("Sort images by file name"));
     connect(m_sortNameAct, &QAction::triggered, this, &MainWindow::sortByName);
 
     m_sortMTimeAct = new QAction(tr("Sort by &Date"), this);
     m_sortMTimeAct->setCheckable(true);
+    m_sortMTimeAct->setIcon(themeIcon(QStringLiteral("view-calendar"), QStyle::SP_FileDialogDetailedView));
     m_sortMTimeAct->setStatusTip(tr("Sort images by modification time"));
     connect(m_sortMTimeAct, &QAction::triggered, this, &MainWindow::sortByMTime);
 
@@ -217,6 +222,7 @@ void MainWindow::createActions()
     m_toggleToolBarAct->setShortcut(Qt::Key_Tab);
     m_toggleToolBarAct->setCheckable(true);
     m_toggleToolBarAct->setChecked(true);
+    m_toggleToolBarAct->setIcon(themeIcon(QStringLiteral("configure-toolbars"), QStyle::SP_ToolBarHorizontalExtensionButton));
     m_toggleToolBarAct->setStatusTip(tr("Show or hide the toolbar (Tab)"));
     connect(m_toggleToolBarAct, &QAction::triggered, this, &MainWindow::toggleToolBar);
 
@@ -224,10 +230,12 @@ void MainWindow::createActions()
     m_toggleThumbnailBarAct->setShortcut(Qt::CTRL | Qt::Key_M);
     m_toggleThumbnailBarAct->setCheckable(true);
     m_toggleThumbnailBarAct->setChecked(false);
+    m_toggleThumbnailBarAct->setIcon(themeIcon(QStringLiteral("view-list-icons"), QStyle::SP_FileDialogListView));
     m_toggleThumbnailBarAct->setStatusTip(tr("Show or hide the thumbnail bar"));
     connect(m_toggleThumbnailBarAct, &QAction::triggered, this, &MainWindow::toggleThumbnailBar);
 
     m_aboutAct = new QAction(tr("&About QImgView"), this);
+    m_aboutAct->setIcon(themeIcon(QStringLiteral("help-about"), QStyle::SP_MessageBoxInformation));
     m_aboutAct->setStatusTip(tr("About this application"));
     connect(m_aboutAct, &QAction::triggered, this, &MainWindow::about);
 }
@@ -300,13 +308,18 @@ void MainWindow::createToolBar()
     m_toolBar->setIconSize(QSize(24, 24));
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
+    // Left: file
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_addAct);
     m_toolBar->addSeparator();
+
+    // Middle-left: navigation + slideshow
     m_toolBar->addAction(m_previousAct);
     m_toolBar->addAction(m_nextAct);
     m_toolBar->addAction(m_slideshowAct);
     m_toolBar->addSeparator();
+
+    // Middle: zoom + rotate
     m_toolBar->addAction(m_zoomInAct);
     m_toolBar->addAction(m_zoomOutAct);
     m_toolBar->addAction(m_zoom1to1Act);
@@ -315,6 +328,13 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_rotateLeftAct);
     m_toolBar->addAction(m_rotateRightAct);
     m_toolBar->addSeparator();
+    m_toolBar->addAction(m_layoutSideBySideAct);
+
+    // Expanding spacer pushes fullscreen to the far right
+    auto *spacer = new QWidget(m_toolBar);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_toolBar->addWidget(spacer);
+
     m_toolBar->addAction(m_fullscreenAct);
 }
 

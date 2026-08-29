@@ -35,6 +35,15 @@ cmake --build .
 ./qimgview
 ```
 
+## Desktop integration
+
+The package installs:
+
+- `share/applications/qimgview.desktop`
+- `share/icons/hicolor/scalable/apps/qimgview.svg`
+
+The same SVG is embedded as a fallback window icon when the theme icon is not available.
+
 ## License
 
 GPL-3.0-or-later. See [LICENSE](LICENSE) and the SPDX headers in source files.
