@@ -9,8 +9,9 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QScrollBar>
-#include <QtMath>
 #include <QFileInfo>
+#include <QtMath>
+#include <cmath>
 
 ImageView::ImageView(QWidget *parent)
     : QGraphicsView(parent)
@@ -25,6 +26,7 @@ ImageView::ImageView(QWidget *parent)
     setBackgroundBrush(QBrush(QColor(40, 40, 40)));
     setFrameShape(QFrame::NoFrame);
     setFocusPolicy(Qt::StrongFocus);
+    setMouseTracking(true);
 }
 
 ImageView::~ImageView() = default;
@@ -43,17 +45,20 @@ bool ImageView::loadImage(const QString &path)
     m_pixmapItem = m_scene->addPixmap(QPixmap::fromImage(image));
     m_pixmapItem->setTransformationMode(Qt::SmoothTransformation);
 
+    m_sourceImage = image;
     m_imageSize = image.size();
     m_currentPath = path;
     m_scale = 1.0;
     m_rotation = 0.0;
     m_fitMode = true;
+    m_mouseInfo = {};
 
     m_scene->setSceneRect(m_pixmapItem->boundingRect());
     applyTransform();
     zoomFit();
 
     emit statusChanged();
+    emit mouseInfoChanged(m_mouseInfo);
     return true;
 }
 
@@ -91,9 +96,8 @@ void ImageView::zoomFit()
     }
     m_fitMode = true;
     fitInView(m_pixmapItem, Qt::KeepAspectRatio);
-    // Derive current scale from the transform for status display
     const QTransform t = transform();
-    m_scale = t.m11(); // approximate; rotation complicates exact scale
+    m_scale = std::hypot(t.m11(), t.m12()); // approximate uniform scale
     emit statusChanged();
 }
 
@@ -144,7 +148,6 @@ void ImageView::applyTransform()
     }
 
     QTransform t;
-    // Rotate around the center of the pixmap
     const QRectF br = m_pixmapItem->boundingRect();
     t.translate(br.center().x(), br.center().y());
     t.rotate(m_rotation);
@@ -152,7 +155,6 @@ void ImageView::applyTransform()
     t.translate(-br.center().x(), -br.center().y());
 
     m_pixmapItem->setTransform(t);
-    // Update scene rect so scrolling works with rotated content
     m_scene->setSceneRect(m_pixmapItem->sceneBoundingRect());
 }
 
@@ -160,6 +162,38 @@ void ImageView::updateFitIfNeeded()
 {
     if (m_fitMode && m_pixmapItem) {
         fitInView(m_pixmapItem, Qt::KeepAspectRatio);
+    }
+}
+
+void ImageView::updateMouseInfo(const QPoint &viewPos)
+{
+    ImageMouseInfo info;
+    if (!m_pixmapItem || m_sourceImage.isNull()) {
+        if (m_mouseInfo.valid) {
+            m_mouseInfo = info;
+            emit mouseInfoChanged(m_mouseInfo);
+        }
+        return;
+    }
+
+    // Map view position → scene → item local coordinates
+    const QPointF scenePos = mapToScene(viewPos);
+    const QPointF itemPos = m_pixmapItem->mapFromScene(scenePos);
+    const QRectF br = m_pixmapItem->boundingRect();
+
+    if (br.contains(itemPos)) {
+        const int x = qBound(0, static_cast<int>(itemPos.x()), m_imageSize.width() - 1);
+        const int y = qBound(0, static_cast<int>(itemPos.y()), m_imageSize.height() - 1);
+        info.valid = true;
+        info.imagePos = QPoint(x, y);
+        info.pixelColor = m_sourceImage.pixelColor(x, y);
+    }
+
+    if (info.valid != m_mouseInfo.valid
+        || info.imagePos != m_mouseInfo.imagePos
+        || info.pixelColor != m_mouseInfo.pixelColor) {
+        m_mouseInfo = info;
+        emit mouseInfoChanged(m_mouseInfo);
     }
 }
 
@@ -193,6 +227,8 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
+    updateMouseInfo(event->pos());
+
     if (m_panning) {
         const QPoint delta = event->pos() - m_lastMousePos;
         m_lastMousePos = event->pos();
@@ -213,4 +249,13 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         return;
     }
     QGraphicsView::mouseReleaseEvent(event);
+}
+
+void ImageView::leaveEvent(QEvent *event)
+{
+    if (m_mouseInfo.valid) {
+        m_mouseInfo = {};
+        emit mouseInfoChanged(m_mouseInfo);
+    }
+    QGraphicsView::leaveEvent(event);
 }
