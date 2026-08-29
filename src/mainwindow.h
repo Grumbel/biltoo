@@ -13,6 +13,7 @@
 class ThumbnailBar;
 class QToolBar;
 class QAction;
+class QActionGroup;
 class QLabel;
 class QMenu;
 class QTimer;
@@ -22,11 +23,24 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    enum class SortMode {
+        Name,
+        MTime
+    };
+
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
 
+    /** Replace the current session with the expanded paths. */
     void loadFiles(const QStringList &paths, int startAt = 0);
+
+    /** Append expanded paths to the current session (deduplicated). */
+    void appendFiles(const QStringList &paths);
+
     void setRecursive(bool recursive) { m_recursive = recursive; }
+    void setSortMode(SortMode mode);
+    void setThumbnailsForced(bool show) { m_forceThumbnails = show; m_forceNoThumbnails = !show; }
+    void setNoThumbnailsForced(bool hide) { m_forceNoThumbnails = hide; if (hide) m_forceThumbnails = false; }
     void setSlideshowIntervalMs(int ms);
     void startSlideshow();
     void stopSlideshow();
@@ -39,6 +53,7 @@ protected:
 
 private slots:
     void openFiles();
+    void addFiles();
     void openDirectory();
     void zoomIn();
     void zoomOut();
@@ -51,6 +66,8 @@ private slots:
     void goNext();
     void toggleSlideshow();
     void onSlideshowTick();
+    void sortByName();
+    void sortByMTime();
     void toggleToolBar();
     void toggleThumbnailBar();
     void about();
@@ -67,6 +84,8 @@ private:
     void updateFullscreenUi();
     void setCurrentIndex(int index);
     void updateNavigationActions();
+    void applyThumbnailVisibility();
+    void sortFileList();
     void readSettings();
     void writeSettings();
     QStringList expandPaths(const QStringList &paths) const;
@@ -87,6 +106,7 @@ private:
     QMenu *m_contextMenu = nullptr;
 
     QAction *m_openAct = nullptr;
+    QAction *m_addAct = nullptr;
     QAction *m_openDirAct = nullptr;
     QAction *m_quitAct = nullptr;
     QAction *m_zoomInAct = nullptr;
@@ -99,14 +119,21 @@ private:
     QAction *m_previousAct = nullptr;
     QAction *m_nextAct = nullptr;
     QAction *m_slideshowAct = nullptr;
+    QAction *m_sortNameAct = nullptr;
+    QAction *m_sortMTimeAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
     QAction *m_aboutAct = nullptr;
+    QActionGroup *m_sortGroup = nullptr;
 
     QStringList m_files;
     int m_currentIndex = -1;
     bool m_recursive = false;
+    SortMode m_sortMode = SortMode::Name;
     int m_slideshowIntervalMs = 3000;
+    bool m_forceThumbnails = false;
+    bool m_forceNoThumbnails = false;
+    bool m_slideshowAdvancing = false; // true while timer-driven next runs
 
     bool m_toolBarVisibleBeforeFullscreen = true;
     bool m_thumbnailBarVisibleBeforeFullscreen = true;

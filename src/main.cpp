@@ -47,6 +47,12 @@ int main(int argc, char *argv[])
         QStringLiteral("Recurse into subdirectories when a directory is given"));
     parser.addOption(recursiveOption);
 
+    QCommandLineOption sortOption(
+        QStringList() << QStringLiteral("sort"),
+        QStringLiteral("Sort images by name or mtime (default: name)"),
+        QStringLiteral("name|mtime"));
+    parser.addOption(sortOption);
+
     QCommandLineOption slideshowOption(
         QStringList() << QStringLiteral("slideshow"),
         QStringLiteral("Start a slideshow after loading images"));
@@ -57,6 +63,16 @@ int main(int argc, char *argv[])
         QStringLiteral("Slideshow interval in milliseconds (default: 3000)"),
         QStringLiteral("ms"));
     parser.addOption(intervalOption);
+
+    QCommandLineOption thumbnailsOption(
+        QStringList() << QStringLiteral("thumbnails"),
+        QStringLiteral("Force show the thumbnail bar"));
+    parser.addOption(thumbnailsOption);
+
+    QCommandLineOption noThumbnailsOption(
+        QStringList() << QStringLiteral("no-thumbnails"),
+        QStringLiteral("Force hide the thumbnail bar"));
+    parser.addOption(noThumbnailsOption);
 
     parser.process(app);
 
@@ -74,12 +90,28 @@ int main(int argc, char *argv[])
     MainWindow window;
     window.setRecursive(parser.isSet(recursiveOption));
 
+    if (parser.isSet(sortOption)) {
+        const QString sort = parser.value(sortOption).toLower();
+        if (sort == QLatin1String("mtime") || sort == QLatin1String("date")
+            || sort == QLatin1String("time")) {
+            window.setSortMode(MainWindow::SortMode::MTime);
+        } else {
+            window.setSortMode(MainWindow::SortMode::Name);
+        }
+    }
+
     if (parser.isSet(intervalOption)) {
         bool ok = false;
         const int ms = parser.value(intervalOption).toInt(&ok);
         if (ok && ms > 0) {
             window.setSlideshowIntervalMs(ms);
         }
+    }
+
+    if (parser.isSet(noThumbnailsOption)) {
+        window.setNoThumbnailsForced(true);
+    } else if (parser.isSet(thumbnailsOption)) {
+        window.setThumbnailsForced(true);
     }
 
     if (parser.isSet(fullscreenOption)) {

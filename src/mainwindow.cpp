@@ -6,6 +6,7 @@
 #include "thumbnailbar.h"
 
 #include <QAction>
+#include <QActionGroup>
 #include <QApplication>
 #include <QCloseEvent>
 #include <QDir>
@@ -23,6 +24,7 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QSettings>
+#include <QSet>
 #include <QStatusBar>
 #include <QStyle>
 #include <QTimer>
@@ -30,6 +32,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <algorithm>
 
 namespace {
 
@@ -106,8 +109,14 @@ void MainWindow::createActions()
     m_openAct = new QAction(tr("&Open..."), this);
     m_openAct->setShortcut(QKeySequence::Open);
     m_openAct->setIcon(themeIcon(QStringLiteral("document-open"), QStyle::SP_DialogOpenButton));
-    m_openAct->setStatusTip(tr("Open image files"));
+    m_openAct->setStatusTip(tr("Open image files (replace session)"));
     connect(m_openAct, &QAction::triggered, this, &MainWindow::openFiles);
+
+    m_addAct = new QAction(tr("&Add Images..."), this);
+    m_addAct->setShortcut(Qt::CTRL | Qt::Key_A);
+    m_addAct->setIcon(themeIcon(QStringLiteral("list-add"), QStyle::SP_FileDialogNewFolder));
+    m_addAct->setStatusTip(tr("Add image files to the current session"));
+    connect(m_addAct, &QAction::triggered, this, &MainWindow::addFiles);
 
     m_openDirAct = new QAction(tr("Open &Directory..."), this);
     m_openDirAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_O);
@@ -183,6 +192,22 @@ void MainWindow::createActions()
     m_slideshowAct->setStatusTip(tr("Start or stop the slideshow (F5)"));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
+    m_sortNameAct = new QAction(tr("Sort by &Name"), this);
+    m_sortNameAct->setCheckable(true);
+    m_sortNameAct->setChecked(true);
+    m_sortNameAct->setStatusTip(tr("Sort images by file name"));
+    connect(m_sortNameAct, &QAction::triggered, this, &MainWindow::sortByName);
+
+    m_sortMTimeAct = new QAction(tr("Sort by &Date"), this);
+    m_sortMTimeAct->setCheckable(true);
+    m_sortMTimeAct->setStatusTip(tr("Sort images by modification time"));
+    connect(m_sortMTimeAct, &QAction::triggered, this, &MainWindow::sortByMTime);
+
+    m_sortGroup = new QActionGroup(this);
+    m_sortGroup->addAction(m_sortNameAct);
+    m_sortGroup->addAction(m_sortMTimeAct);
+    m_sortGroup->setExclusive(true);
+
     m_toggleToolBarAct = new QAction(tr("Show &Toolbar"), this);
     m_toggleToolBarAct->setShortcut(Qt::Key_Tab);
     m_toggleToolBarAct->setCheckable(true);
@@ -206,6 +231,7 @@ void MainWindow::createMenus()
 {
     m_fileMenu = menuBar()->addMenu(tr("&File"));
     m_fileMenu->addAction(m_openAct);
+    m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
@@ -218,6 +244,9 @@ void MainWindow::createMenus()
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_rotateLeftAct);
     m_viewMenu->addAction(m_rotateRightAct);
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_sortNameAct);
+    m_viewMenu->addAction(m_sortMTimeAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_toggleToolBarAct);
@@ -234,6 +263,7 @@ void MainWindow::createMenus()
 
     m_contextMenu = new QMenu(this);
     m_contextMenu->addAction(m_openAct);
+    m_contextMenu->addAction(m_addAct);
     m_contextMenu->addAction(m_openDirAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_previousAct);
@@ -262,6 +292,7 @@ void MainWindow::createToolBar()
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
     m_toolBar->addAction(m_openAct);
+    m_toolBar->addAction(m_addAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_previousAct);
     m_toolBar->addAction(m_nextAct);
@@ -309,38 +340,156 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
                     images.append(full);
                 }
             }
-            images.sort(Qt::CaseInsensitive);
         } else if (info.isFile()) {
-            // Accept files even without a known suffix; QImageReader will reject bad ones
             images.append(path);
         }
     }
     return images;
 }
 
+void MainWindow::sortFileList()
+{
+    if (m_files.size() <= 1) {
+        return;
+    }
+
+    if (m_sortMode == SortMode::MTime) {
+        std::stable_sort(m_files.begin(), m_files.end(), [](const QString &a, const QString &b) {
+            const QFileInfo fa(a), fb(b);
+            if (fa.lastModified() != fb.lastModified()) {
+                return fa.lastModified() < fb.lastModified();
+            }
+            return QString::compare(a, b, Qt::CaseInsensitive) < 0;
+        });
+    } else {
+        std::stable_sort(m_files.begin(), m_files.end(), [](const QString &a, const QString &b) {
+            return QString::compare(QFileInfo(a).fileName(), QFileInfo(b).fileName(),
+                                    Qt::CaseInsensitive) < 0;
+        });
+    }
+}
+
+void MainWindow::setSortMode(SortMode mode)
+{
+    m_sortMode = mode;
+    if (mode == SortMode::Name) {
+        m_sortNameAct->setChecked(true);
+    } else {
+        m_sortMTimeAct->setChecked(true);
+    }
+
+    if (m_files.isEmpty()) {
+        return;
+    }
+
+    const QString current = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
+                                ? m_files.at(m_currentIndex)
+                                : QString();
+    sortFileList();
+    m_thumbnailBar->setFiles(m_files);
+
+    int newIndex = 0;
+    if (!current.isEmpty()) {
+        newIndex = m_files.indexOf(current);
+        if (newIndex < 0) {
+            newIndex = 0;
+        }
+    }
+    m_currentIndex = -1; // force reload
+    setCurrentIndex(newIndex);
+    applyThumbnailVisibility();
+}
+
+void MainWindow::sortByName()
+{
+    setSortMode(SortMode::Name);
+}
+
+void MainWindow::sortByMTime()
+{
+    setSortMode(SortMode::MTime);
+}
+
+void MainWindow::applyThumbnailVisibility()
+{
+    bool show = m_files.size() > 1;
+    if (m_forceNoThumbnails) {
+        show = false;
+    } else if (m_forceThumbnails) {
+        show = !m_files.isEmpty();
+    }
+    m_thumbnailBar->setVisible(show && !isFullScreen());
+    m_toggleThumbnailBarAct->setChecked(show);
+    if (!isFullScreen()) {
+        m_thumbnailBarVisibleBeforeFullscreen = show;
+    }
+}
+
 void MainWindow::loadFiles(const QStringList &paths, int startAt)
 {
     stopSlideshow();
 
-    const QStringList images = expandPaths(paths);
+    QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
         return;
     }
 
     m_files = images;
+    sortFileList();
     m_currentIndex = -1;
 
     m_thumbnailBar->setFiles(m_files);
-    const bool showThumbs = m_files.size() > 1;
-    m_thumbnailBar->setVisible(showThumbs);
-    m_toggleThumbnailBarAct->setChecked(showThumbs);
-    m_thumbnailBarVisibleBeforeFullscreen = showThumbs;
+    applyThumbnailVisibility();
 
     int idx = startAt;
     if (idx < 0 || idx >= m_files.size()) {
         idx = 0;
     }
     setCurrentIndex(idx);
+    updateNavigationActions();
+}
+
+void MainWindow::appendFiles(const QStringList &paths)
+{
+    QStringList images = expandPaths(paths);
+    if (images.isEmpty()) {
+        return;
+    }
+
+    const QString current = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
+                                ? m_files.at(m_currentIndex)
+                                : QString();
+
+    // Deduplicate while preserving order of existing entries
+    QSet<QString> seen(m_files.begin(), m_files.end());
+    int added = 0;
+    for (const QString &path : images) {
+        if (!seen.contains(path)) {
+            m_files.append(path);
+            seen.insert(path);
+            ++added;
+        }
+    }
+    if (added == 0) {
+        return;
+    }
+
+    sortFileList();
+    m_thumbnailBar->setFiles(m_files);
+    applyThumbnailVisibility();
+
+    int newIndex = 0;
+    if (!current.isEmpty()) {
+        newIndex = m_files.indexOf(current);
+        if (newIndex < 0) {
+            newIndex = 0;
+        }
+    } else {
+        // Jump to the first newly added image after sort
+        newIndex = 0;
+    }
+    m_currentIndex = -1;
+    setCurrentIndex(newIndex);
     updateNavigationActions();
 }
 
@@ -373,6 +522,10 @@ void MainWindow::updateNavigationActions()
 
 void MainWindow::onThumbnailActivated(int index)
 {
+    // User interaction: pause slideshow
+    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
+        stopSlideshow();
+    }
     setCurrentIndex(index);
 }
 
@@ -385,6 +538,18 @@ void MainWindow::openFiles()
         tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.tif *.tiff);;All Files (*)"));
     if (!files.isEmpty()) {
         loadFiles(files);
+    }
+}
+
+void MainWindow::addFiles()
+{
+    const QStringList files = QFileDialog::getOpenFileNames(
+        this,
+        tr("Add Images"),
+        QString(),
+        tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.tif *.tiff);;All Files (*)"));
+    if (!files.isEmpty()) {
+        appendFiles(files);
     }
 }
 
@@ -440,6 +605,9 @@ void MainWindow::goPrevious()
     if (m_files.size() <= 1) {
         return;
     }
+    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
+        stopSlideshow();
+    }
     int idx = m_currentIndex - 1;
     if (idx < 0) {
         idx = m_files.size() - 1;
@@ -451,6 +619,9 @@ void MainWindow::goNext()
 {
     if (m_files.size() <= 1) {
         return;
+    }
+    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
+        stopSlideshow();
     }
     int idx = m_currentIndex + 1;
     if (idx >= m_files.size()) {
@@ -498,7 +669,9 @@ void MainWindow::toggleSlideshow()
 
 void MainWindow::onSlideshowTick()
 {
+    m_slideshowAdvancing = true;
     goNext();
+    m_slideshowAdvancing = false;
 }
 
 void MainWindow::toggleToolBar()
@@ -514,6 +687,8 @@ void MainWindow::toggleThumbnailBar()
 {
     const bool visible = m_toggleThumbnailBarAct->isChecked();
     m_thumbnailBar->setVisible(visible);
+    m_forceNoThumbnails = !visible;
+    m_forceThumbnails = visible;
     if (!isFullScreen()) {
         m_thumbnailBarVisibleBeforeFullscreen = visible;
     }
@@ -610,6 +785,18 @@ void MainWindow::readSettings()
         settings.value(QStringLiteral("toolBarVisible"), true).toBool();
     m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
     m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
+
+    const QString sort = settings.value(QStringLiteral("sortMode"), QStringLiteral("name")).toString();
+    if (sort == QLatin1String("mtime")) {
+        m_sortMode = SortMode::MTime;
+        m_sortMTimeAct->setChecked(true);
+    } else {
+        m_sortMode = SortMode::Name;
+        m_sortNameAct->setChecked(true);
+    }
+
+    m_slideshowIntervalMs =
+        settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
 }
 
 void MainWindow::writeSettings()
@@ -620,6 +807,10 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("toolBarVisible"),
                       isFullScreen() ? m_toolBarVisibleBeforeFullscreen
                                      : m_toolBar->isVisible());
+    settings.setValue(QStringLiteral("sortMode"),
+                      m_sortMode == SortMode::MTime ? QStringLiteral("mtime")
+                                                    : QStringLiteral("name"));
+    settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -652,8 +843,14 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 void MainWindow::dropEvent(QDropEvent *event)
 {
     const QStringList paths = extractLocalImagePaths(event->mimeData());
-    if (!paths.isEmpty()) {
-        loadFiles(paths);
-        event->acceptProposedAction();
+    if (paths.isEmpty()) {
+        return;
     }
+    // Shift+drop appends; plain drop replaces the session
+    if (event->modifiers() & Qt::ShiftModifier) {
+        appendFiles(paths);
+    } else {
+        loadFiles(paths);
+    }
+    event->acceptProposedAction();
 }
