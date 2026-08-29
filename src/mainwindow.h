@@ -4,17 +4,17 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "imageview.h"
+
 #include <QMainWindow>
 #include <QEvent>
 #include <QStringList>
 
-class ImageView;
 class ThumbnailBar;
 class QToolBar;
 class QAction;
 class QLabel;
 class QMenu;
-class QSplitter;
 
 class MainWindow : public QMainWindow
 {
@@ -24,15 +24,17 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
 
-    void loadFiles(const QStringList &files);
+    void loadFiles(const QStringList &paths, int startAt = 0);
 
 protected:
+    void closeEvent(QCloseEvent *event) override;
     void changeEvent(QEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
 
 private slots:
     void openFiles();
+    void openDirectory();
     void zoomIn();
     void zoomOut();
     void zoomReset();
@@ -46,6 +48,7 @@ private slots:
     void toggleThumbnailBar();
     void about();
     void updateStatus();
+    void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
     void onThumbnailActivated(int index);
 
@@ -57,12 +60,17 @@ private:
     void updateFullscreenUi();
     void setCurrentIndex(int index);
     void updateNavigationActions();
+    void readSettings();
+    void writeSettings();
+    QStringList expandPaths(const QStringList &paths) const;
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
+    static bool isImageFile(const QString &path);
 
     ImageView *m_imageView = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
     QToolBar *m_toolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
+    QLabel *m_mouseLabel = nullptr;
 
     QMenu *m_fileMenu = nullptr;
     QMenu *m_viewMenu = nullptr;
@@ -71,6 +79,7 @@ private:
     QMenu *m_contextMenu = nullptr;
 
     QAction *m_openAct = nullptr;
+    QAction *m_openDirAct = nullptr;
     QAction *m_quitAct = nullptr;
     QAction *m_zoomInAct = nullptr;
     QAction *m_zoomOutAct = nullptr;

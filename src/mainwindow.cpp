@@ -7,6 +7,8 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QCloseEvent>
+#include <QDir>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QEvent>
@@ -19,6 +21,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QSettings>
 #include <QStatusBar>
 #include <QStyle>
 #include <QToolBar>
@@ -37,16 +40,16 @@ QIcon themeIcon(const QString &name, QStyle::StandardPixmap fallback)
     return icon;
 }
 
-bool isLikelyImagePath(const QString &path)
+const QStringList &imageSuffixes()
 {
     static const QStringList suffixes = {
         QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"),
         QStringLiteral("bmp"), QStringLiteral("gif"), QStringLiteral("webp"),
         QStringLiteral("tif"), QStringLiteral("tiff"), QStringLiteral("svg"),
         QStringLiteral("xpm"), QStringLiteral("pbm"), QStringLiteral("pgm"),
-        QStringLiteral("ppm")
+        QStringLiteral("ppm"), QStringLiteral("ico"), QStringLiteral("xbm")
     };
-    return suffixes.contains(QFileInfo(path).suffix().toLower());
+    return suffixes;
 }
 
 } // namespace
@@ -67,6 +70,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_imageView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_imageView, &QWidget::customContextMenuRequested,
             this, &MainWindow::showContextMenu);
+    connect(m_imageView, &ImageView::mouseInfoChanged,
+            this, &MainWindow::onMouseInfoChanged);
 
     m_thumbnailBar = new ThumbnailBar(central);
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
@@ -85,6 +90,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_thumbnailBar->setVisible(false);
     updateNavigationActions();
+    readSettings();
 }
 
 MainWindow::~MainWindow() = default;
@@ -96,6 +102,12 @@ void MainWindow::createActions()
     m_openAct->setIcon(themeIcon(QStringLiteral("document-open"), QStyle::SP_DialogOpenButton));
     m_openAct->setStatusTip(tr("Open image files"));
     connect(m_openAct, &QAction::triggered, this, &MainWindow::openFiles);
+
+    m_openDirAct = new QAction(tr("Open &Directory..."), this);
+    m_openDirAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_O);
+    m_openDirAct->setIcon(themeIcon(QStringLiteral("folder-open"), QStyle::SP_DirOpenIcon));
+    m_openDirAct->setStatusTip(tr("Open all images in a directory"));
+    connect(m_openDirAct, &QAction::triggered, this, &MainWindow::openDirectory);
 
     m_quitAct = new QAction(tr("&Quit"), this);
     m_quitAct->setShortcut(QKeySequence::Quit);
@@ -181,6 +193,7 @@ void MainWindow::createMenus()
 {
     m_fileMenu = menuBar()->addMenu(tr("&File"));
     m_fileMenu->addAction(m_openAct);
+    m_fileMenu->addAction(m_openDirAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 
@@ -206,6 +219,7 @@ void MainWindow::createMenus()
 
     m_contextMenu = new QMenu(this);
     m_contextMenu->addAction(m_openAct);
+    m_contextMenu->addAction(m_openDirAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_previousAct);
     m_contextMenu->addAction(m_nextAct);
@@ -250,18 +264,42 @@ void MainWindow::createToolBar()
 void MainWindow::createStatusBar()
 {
     m_statusLabel = new QLabel(tr("Ready"));
+    m_mouseLabel = new QLabel;
+    m_mouseLabel->setMinimumWidth(180);
     statusBar()->addWidget(m_statusLabel, 1);
+    statusBar()->addPermanentWidget(m_mouseLabel);
 }
 
-void MainWindow::loadFiles(const QStringList &files)
+bool MainWindow::isImageFile(const QString &path)
+{
+    return imageSuffixes().contains(QFileInfo(path).suffix().toLower());
+}
+
+QStringList MainWindow::expandPaths(const QStringList &paths) const
 {
     QStringList images;
-    for (const QString &f : files) {
-        if (isLikelyImagePath(f) || QFileInfo(f).exists()) {
-            images.append(f);
+    for (const QString &path : paths) {
+        const QFileInfo info(path);
+        if (info.isDir()) {
+            QDir dir(path);
+            const QStringList entries = dir.entryList(QDir::Files | QDir::Readable, QDir::Name);
+            for (const QString &name : entries) {
+                const QString full = dir.filePath(name);
+                if (isImageFile(full)) {
+                    images.append(full);
+                }
+            }
+        } else if (info.isFile()) {
+            // Accept files even without a known suffix; QImageReader will reject bad ones
+            images.append(path);
         }
     }
+    return images;
+}
 
+void MainWindow::loadFiles(const QStringList &paths, int startAt)
+{
+    const QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
         return;
     }
@@ -275,7 +313,11 @@ void MainWindow::loadFiles(const QStringList &files)
     m_toggleThumbnailBarAct->setChecked(showThumbs);
     m_thumbnailBarVisibleBeforeFullscreen = showThumbs;
 
-    setCurrentIndex(0);
+    int idx = startAt;
+    if (idx < 0 || idx >= m_files.size()) {
+        idx = 0;
+    }
+    setCurrentIndex(idx);
     updateNavigationActions();
 }
 
@@ -316,6 +358,14 @@ void MainWindow::openFiles()
         tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.tif *.tiff);;All Files (*)"));
     if (!files.isEmpty()) {
         loadFiles(files);
+    }
+}
+
+void MainWindow::openDirectory()
+{
+    const QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"));
+    if (!dir.isEmpty()) {
+        loadFiles({dir});
     }
 }
 
@@ -423,6 +473,22 @@ void MainWindow::updateStatus()
     m_statusLabel->setText(text);
 }
 
+void MainWindow::onMouseInfoChanged(const ImageMouseInfo &info)
+{
+    if (!info.valid) {
+        m_mouseLabel->clear();
+        return;
+    }
+    const QColor &c = info.pixelColor;
+    m_mouseLabel->setText(
+        tr("(%1, %2)  RGB %3 %4 %5")
+            .arg(info.imagePos.x())
+            .arg(info.imagePos.y())
+            .arg(c.red())
+            .arg(c.green())
+            .arg(c.blue()));
+}
+
 void MainWindow::showContextMenu(const QPoint &pos)
 {
     m_contextMenu->popup(m_imageView->mapToGlobal(pos));
@@ -460,6 +526,39 @@ void MainWindow::updateFullscreenUi()
     }
 }
 
+void MainWindow::readSettings()
+{
+    QSettings settings;
+    const QByteArray geometry = settings.value(QStringLiteral("geometry")).toByteArray();
+    if (!geometry.isEmpty()) {
+        restoreGeometry(geometry);
+    }
+    const QByteArray state = settings.value(QStringLiteral("windowState")).toByteArray();
+    if (!state.isEmpty()) {
+        restoreState(state);
+    }
+    m_toolBarVisibleBeforeFullscreen =
+        settings.value(QStringLiteral("toolBarVisible"), true).toBool();
+    m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
+    m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
+}
+
+void MainWindow::writeSettings()
+{
+    QSettings settings;
+    settings.setValue(QStringLiteral("geometry"), saveGeometry());
+    settings.setValue(QStringLiteral("windowState"), saveState());
+    settings.setValue(QStringLiteral("toolBarVisible"),
+                      isFullScreen() ? m_toolBarVisibleBeforeFullscreen
+                                     : m_toolBar->isVisible());
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    writeSettings();
+    QMainWindow::closeEvent(event);
+}
+
 QStringList MainWindow::extractLocalImagePaths(const QMimeData *mime) const
 {
     QStringList result;
@@ -468,10 +567,7 @@ QStringList MainWindow::extractLocalImagePaths(const QMimeData *mime) const
     }
     for (const QUrl &url : mime->urls()) {
         if (url.isLocalFile()) {
-            const QString path = url.toLocalFile();
-            if (isLikelyImagePath(path) || QFileInfo(path).isFile()) {
-                result.append(path);
-            }
+            result.append(url.toLocalFile());
         }
     }
     return result;
@@ -488,7 +584,6 @@ void MainWindow::dropEvent(QDropEvent *event)
 {
     const QStringList paths = extractLocalImagePaths(event->mimeData());
     if (!paths.isEmpty()) {
-        // Drop replaces the current set (workspace multi-item comes later)
         loadFiles(paths);
         event->acceptProposedAction();
     }
