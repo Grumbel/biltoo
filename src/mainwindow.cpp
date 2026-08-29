@@ -29,7 +29,6 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
-#include <QMimeData>
 #include <QSettings>
 #include <QShortcut>
 #include <QUndoStack>

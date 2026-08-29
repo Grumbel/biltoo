@@ -9,6 +9,7 @@
 #include <QMainWindow>
 #include <QEvent>
 #include <QStringList>
+#include <QMimeData>
 
 class ThumbnailBar;
 class MetadataPanel;
