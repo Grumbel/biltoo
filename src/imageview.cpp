@@ -24,6 +24,7 @@ ImageView::ImageView(QWidget *parent)
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setBackgroundBrush(QBrush(QColor(40, 40, 40)));
     setFrameShape(QFrame::NoFrame);
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 ImageView::~ImageView() = default;
