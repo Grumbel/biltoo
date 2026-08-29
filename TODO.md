@@ -25,7 +25,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Context menu on the image view
 - [x] Load single JPEG/PNG (and other formats Qt supports natively)
 - [x] Simple image view with zoom, pan and 90° rotation
-- [x] Command-line: accept one or more image files (+ `--fullscreen`, `--fit`)
+- [x] Command-line: accept one or more image files (+ `--fullscreen`, `--fit`, `--start-at`)
 - [x] Nix flake for reproducible builds (Qt6, CMake)
 - [x] REUSE / SPDX licensing (GPLv3+)
 - [x] AGENTS.md for contributor / agent guidance
@@ -33,15 +33,18 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Thumbnail strip at the bottom (shown when >1 image)
 - [x] Keyboard navigation: Left/Right/Space/Backspace/PgUp/PgDn, R / [ ] for rotate, F for fit
 - [x] Drag-and-drop of local image files onto the window
+- [x] Directory open (menu + CLI): load all images in a folder, sorted by name
+- [x] Status bar mouse info: image coordinates and RGB under cursor
+- [x] QSettings: remember window geometry and toolbar visibility
 
 ## Near-term
 
 - [ ] Asynchronous / background thumbnail generation (current is sync)
 - [ ] Append-on-drop option vs replace-on-drop (workspace mode will need append)
-- [ ] Improve status bar (pixel position under cursor, colour sample)
-- [ ] Remember window geometry / toolbar visibility across sessions (QSettings)
-- [ ] Directory open: load all images in a folder
-- [ ] Sort options (name, mtime, …)
+- [ ] `--no-thumbnails` / `--thumbnails` CLI flags
+- [ ] Sort options (name, mtime, natural, …)
+- [ ] Recursive directory load (`--recursive`)
+- [ ] Slideshow mode
 
 ## Workspace / Advanced View
 
@@ -57,7 +60,6 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 
 - [ ] Optional side panel showing Exif / IPTC / XMP (use libexiv2 or Qt's limited support)
 - [ ] Remember per-image view settings (zoom, rotation, position) in a session or on disk
-- [ ] Slideshow mode
 - [ ] Fullscreen with optional always-hidden chrome (already partially done)
 
 ## Image Format Support
@@ -68,17 +70,15 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 
 ## Command-line Interface
 
-Rich options, for example:
-
-- `qimgview [options] [file ...]`
+- `qimgview [options] [file|dir ...]`
 - `--fullscreen` / `-f` (done)
-- `--fit` / `--zoom=1.0` / `--rotate=90`
+- `--fit` (done, default behaviour)
+- `--start-at=N` (done, 1-based)
 - `--thumbnails` / `--no-thumbnails`
 - `--exif` / `--side-panel`
-- `--recursive` or directory support
+- `--recursive`
 - `--sort=name|mtime|...`
-- `--start-at=N`
-- Helpful `--help` and man page later
+- Helpful man page later
 
 ## Technical Notes
 
@@ -88,6 +88,7 @@ Rich options, for example:
 - OpenGL may be needed for high-quality free rotation + zoom of multiple large images; evaluate QGraphicsView first, then QOpenGLWidget if necessary
 - Icons: always `QIcon::fromTheme` + fallback so the UI stays usable without a full icon theme
 - Thumbnail loading is currently synchronous — fine for small sets, needs a worker for large folders
+- Mouse colour sampling keeps a full QImage in memory; for very large images this may need a different strategy
 
 ## Open Questions
 

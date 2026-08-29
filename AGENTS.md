@@ -62,6 +62,9 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 - Thumbnail bar at the bottom when more than one image is loaded.
 - Drag-and-drop of local image files replaces the current session.
 - Keyboard: Left/Right/Space/Backspace/PgUp/PgDn navigate; R / [ ] rotate; F fit.
+- Open Directory (Ctrl+Shift+O) and CLI directories expand to images sorted by name.
+- Status bar shows image coordinates and RGB under the cursor.
+- Window geometry and toolbar visibility are restored via QSettings.
 
 ## What not to do
 
