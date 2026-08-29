@@ -18,6 +18,8 @@ add_executable(qimgview
   src/mainwindow.h
   src/imageview.cpp
   src/imageview.h
+  src/thumbnailbar.cpp
+  src/thumbnailbar.h
 )
 
 target_link_libraries(qimgview PRIVATE
