@@ -18,86 +18,51 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 ## Prototype Goals (v0.1)
 
 - [x] Basic Qt6 Widgets application with main window
-- [x] Toolbar with: Open, Zoom+, Zoom-, 1:1, Fit to Window, Fullscreen, Rotate Left, Rotate Right
-- [x] Menu bar (File / View / Go / Help) sharing the same actions
-- [x] Theme icons for toolbar and menus (with StandardPixmap fallbacks)
-- [x] Hide toolbar (and menu/status/thumbnails) in fullscreen; Tab toggles toolbar
-- [x] Context menu on the image view
-- [x] Load single JPEG/PNG (and other formats Qt supports natively)
-- [x] Simple image view with zoom, pan and 90° rotation
-- [x] Command-line: files/dirs, `--fullscreen`, `--fit`, `--start-at`, `--recursive`, `--slideshow`, `--interval`
-- [x] Nix flake for reproducible builds (Qt6, CMake)
-- [x] REUSE / SPDX licensing (GPLv3+)
-- [x] AGENTS.md for contributor / agent guidance
-- [x] Basic multi-image support: list of loaded images, switch between them
-- [x] Thumbnail strip at the bottom (shown when >1 image)
-- [x] Asynchronous thumbnail generation (QThreadPool + generation counter)
-- [x] Keyboard navigation: Left/Right/Space/Backspace/PgUp/PgDn, R / [ ] for rotate, F for fit, F5 slideshow
-- [x] Drag-and-drop of local image files onto the window
-- [x] Directory open (menu + CLI): load all images in a folder, sorted by name
-- [x] Recursive directory load (`--recursive` / `-r`)
-- [x] Status bar mouse info: image coordinates and RGB under cursor
-- [x] QSettings: remember window geometry and toolbar visibility
-- [x] Slideshow mode (F5 / toolbar / Go menu, configurable interval)
+- [x] Toolbar, menu bar, theme icons, context menu, fullscreen chrome
+- [x] Multi-image list with thumbnail strip (async load)
+- [x] Keyboard navigation and slideshow (F5)
+- [x] Drag-and-drop (replace; Shift+drop appends)
+- [x] Add Images… (append to session)
+- [x] Directory open + recursive (`-r`)
+- [x] Sort by name or modification time (View menu + `--sort`)
+- [x] Status bar: index, file, zoom, rotation, mouse RGB
+- [x] QSettings for geometry, toolbar, sort mode, slideshow interval
+- [x] CLI: `--fullscreen`, `--start-at`, `--recursive`, `--sort`, `--slideshow`,
+      `--interval`, `--thumbnails`, `--no-thumbnails`
+- [x] Slideshow pauses on manual navigation / thumbnail click
+- [x] Nix flake, REUSE/SPDX, AGENTS.md
 
 ## Near-term
 
-- [ ] Append-on-drop option vs replace-on-drop (workspace mode will need append)
-- [ ] `--no-thumbnails` / `--thumbnails` CLI flags
-- [ ] Sort options (name, mtime, natural, …)
-- [ ] Configurable slideshow interval from the UI (preferences dialog)
-- [ ] Pause slideshow on user interaction (optional)
+- [ ] Preferences dialog (slideshow interval, default sort, …)
+- [ ] Natural/locale-aware filename sort
+- [ ] Session list export / open recent
 
 ## Workspace / Advanced View
 
-- [ ] Treat the central area as a free workspace (QGraphicsView or custom OpenGL scene)
-- [ ] Multiple images can be placed, moved, scaled and rotated independently
-- [ ] Side-by-side comparison layouts
-- [ ] Overlap / transparency for comparison
-- [ ] Snap-to-grid or alignment helpers (optional)
+- [ ] Treat the central area as a free workspace (multiple independent items)
+- [ ] Drop images onto the workspace to place them side-by-side or overlapping
 - [ ] Free continuous rotation (not only 90°)
 - [ ] Possibly OpenGL acceleration for smooth transforms of large images
 
 ## Metadata & Extras
 
-- [ ] Optional side panel showing Exif / IPTC / XMP (use libexiv2 or Qt's limited support)
-- [ ] Remember per-image view settings (zoom, rotation, position) in a session or on disk
-- [ ] Fullscreen with optional always-hidden chrome (already partially done)
+- [ ] Optional side panel showing Exif / IPTC / XMP
+- [ ] Remember per-image view settings (zoom, rotation, position)
 
 ## Image Format Support
 
-- Prototype: rely on Qt's QImageReader (JPEG, PNG, BMP, GIF, WebP if available, etc.)
-- Later: ImageMagick / Magick++ for broader format support and high-quality resampling
-- Consider libvips or similar for performance with very large images
-
-## Command-line Interface
-
-- `qimgview [options] [file|dir ...]`
-- `--fullscreen` / `-f` (done)
-- `--fit` (done)
-- `--start-at=N` (done, 1-based)
-- `--recursive` / `-r` (done)
-- `--slideshow` (done)
-- `--interval=ms` (done, default 3000)
-- `--thumbnails` / `--no-thumbnails`
-- `--exif` / `--side-panel`
-- `--sort=name|mtime|...`
-- Helpful man page later
+- Prototype: Qt QImageReader
+- Later: ImageMagick / Magick++ or libvips for broader formats and large images
 
 ## Technical Notes
 
-- Prefer Qt6 + CMake
-- Keep the codebase clean and modular (MainWindow, ImageView, ThumbnailBar, future ImageWorkspace, MetadataPanel, ...)
-- Avoid hacks; if complexity grows, refactor early
-- OpenGL may be needed for high-quality free rotation + zoom of multiple large images; evaluate QGraphicsView first, then QOpenGLWidget if necessary
-- Icons: always `QIcon::fromTheme` + fallback so the UI stays usable without a full icon theme
-- Thumbnails load on QThreadPool; a generation counter discards stale results after setFiles()
-- Mouse colour sampling keeps a full QImage in memory; for very large images this may need a different strategy
+- Thumbnails load on QThreadPool with a generation counter for cancellation
+- Shift+drop appends; plain drop replaces
+- Manual prev/next/thumbnail selection stops an active slideshow
 
 ## Open Questions
 
-- Exact interaction model for multi-image workspace (select, bring-to-front, group, etc.)
-- Whether to store view state next to images (sidecar files) or in a central cache
-- Performance strategy for 100+ megapixel images or dozens of images in one workspace
-- Whether Tab should also toggle the menu bar / status bar, or only the toolbar
-- Drop behaviour: replace session vs add to workspace
+- Exact interaction model for multi-image workspace
+- Sidecar vs central cache for per-image view state
+- Performance strategy for very large images / many items in one workspace

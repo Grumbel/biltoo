@@ -67,7 +67,11 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 - Status bar shows image coordinates and RGB under the cursor.
 - Window geometry and toolbar visibility are restored via QSettings.
 - Slideshow (F5): advances automatically; `--slideshow` and `--interval=ms` on the CLI.
+  Manual navigation or thumbnail click pauses the slideshow.
 - Thumbnails are decoded asynchronously on the global QThreadPool.
+- Sort by name or mtime (View menu; `--sort=name|mtime`).
+- Open replaces the session; Add Images… / Shift+drop appends (deduplicated).
+- `--thumbnails` / `--no-thumbnails` force thumbnail bar visibility.
 
 ## What not to do
 
