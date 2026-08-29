@@ -448,6 +448,8 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_toggleToolBarAct);
     m_contextMenu->addAction(m_toggleThumbnailBarAct);
     m_contextMenu->addAction(m_toggleMetadataAct);
+    m_contextMenu->addSeparator();
+    m_contextMenu->addAction(m_preferencesAct);
 }
 
 void MainWindow::createToolBar()
