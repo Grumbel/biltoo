@@ -72,10 +72,11 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 - Sort by name or mtime (View menu; `--sort=name|mtime`).
 - Open replaces the session; Add Images… / Shift+drop appends (deduplicated).
 - `--thumbnails` / `--no-thumbnails` force thumbnail bar visibility.
-- Workspace: multiple ImageItems can coexist. Ctrl+drop adds comparison
-  images; click to select, drag to move, wheel to zoom under cursor.
-  Ctrl+Y arranges items side by side. Delete removes selected workspace
-  items (session list unchanged). Alt+drag or middle-button pans the view.
+- Workspace: multiple ImageItems can coexist. Ctrl+drop or double-click a
+  thumbnail adds comparison images; click to select, drag to move, wheel to
+  zoom under cursor. Shift+drag free-rotates. Ctrl+Y side-by-side layout.
+  Raise/Lower, opacity, Clear Extras in the View menu. Delete removes
+  selected workspace items (session unchanged). Alt+drag or middle-button pans.
 
 ## What not to do
 

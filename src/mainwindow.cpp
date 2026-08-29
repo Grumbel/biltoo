@@ -83,6 +83,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailBar = new ThumbnailBar(central);
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
+    connect(m_thumbnailBar, &ThumbnailBar::indexDoubleClicked,
+            this, &MainWindow::onThumbnailDoubleClicked);
 
     layout->addWidget(m_imageView, 1);
     layout->addWidget(m_thumbnailBar, 0);
@@ -200,6 +202,38 @@ void MainWindow::createActions()
     m_layoutSideBySideAct->setStatusTip(tr("Arrange workspace images in a horizontal row"));
     connect(m_layoutSideBySideAct, &QAction::triggered, this, &MainWindow::layoutSideBySide);
 
+    m_raiseAct = new QAction(tr("&Raise"), this);
+    m_raiseAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Up);
+    m_raiseAct->setIcon(themeIcon(QStringLiteral("go-up"), QStyle::SP_ArrowUp));
+    m_raiseAct->setStatusTip(tr("Raise selected workspace image"));
+    connect(m_raiseAct, &QAction::triggered, this, &MainWindow::raiseSelected);
+
+    m_lowerAct = new QAction(tr("&Lower"), this);
+    m_lowerAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Down);
+    m_lowerAct->setIcon(themeIcon(QStringLiteral("go-down"), QStyle::SP_ArrowDown));
+    m_lowerAct->setStatusTip(tr("Lower selected workspace image"));
+    connect(m_lowerAct, &QAction::triggered, this, &MainWindow::lowerSelected);
+
+    m_opacityUpAct = new QAction(tr("Opacity &Up"), this);
+    m_opacityUpAct->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Equal));
+    m_opacityUpAct->setStatusTip(tr("Increase opacity of the selected image"));
+    connect(m_opacityUpAct, &QAction::triggered, this, &MainWindow::opacityUp);
+
+    m_opacityDownAct = new QAction(tr("Opacity &Down"), this);
+    m_opacityDownAct->setShortcut(Qt::CTRL | Qt::Key_Minus);
+    m_opacityDownAct->setStatusTip(tr("Decrease opacity of the selected image"));
+    connect(m_opacityDownAct, &QAction::triggered, this, &MainWindow::opacityDown);
+
+    m_opacityResetAct = new QAction(tr("Opacity &Reset"), this);
+    m_opacityResetAct->setStatusTip(tr("Reset opacity of the selected image to 100%"));
+    connect(m_opacityResetAct, &QAction::triggered, this, &MainWindow::opacityReset);
+
+    m_clearExtrasAct = new QAction(tr("Clear Workspace &Extras"), this);
+    m_clearExtrasAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_W);
+    m_clearExtrasAct->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
+    m_clearExtrasAct->setStatusTip(tr("Remove comparison images; keep the primary image"));
+    connect(m_clearExtrasAct, &QAction::triggered, this, &MainWindow::clearWorkspaceExtras);
+
     m_sortNameAct = new QAction(tr("Sort by &Name"), this);
     m_sortNameAct->setCheckable(true);
     m_sortNameAct->setChecked(true);
@@ -262,6 +296,14 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_sortMTimeAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_layoutSideBySideAct);
+    m_viewMenu->addAction(m_raiseAct);
+    m_viewMenu->addAction(m_lowerAct);
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_opacityUpAct);
+    m_viewMenu->addAction(m_opacityDownAct);
+    m_viewMenu->addAction(m_opacityResetAct);
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_clearExtrasAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_toggleToolBarAct);
@@ -294,6 +336,9 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_rotateRightAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_layoutSideBySideAct);
+    m_contextMenu->addAction(m_raiseAct);
+    m_contextMenu->addAction(m_lowerAct);
+    m_contextMenu->addAction(m_clearExtrasAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_fullscreenAct);
     m_contextMenu->addAction(m_toggleToolBarAct);
@@ -699,6 +744,44 @@ void MainWindow::toggleSlideshow()
 void MainWindow::layoutSideBySide()
 {
     m_imageView->layoutSideBySide();
+}
+
+void MainWindow::raiseSelected()
+{
+    m_imageView->raiseSelected();
+}
+
+void MainWindow::lowerSelected()
+{
+    m_imageView->lowerSelected();
+}
+
+void MainWindow::opacityUp()
+{
+    m_imageView->opacityUp();
+}
+
+void MainWindow::opacityDown()
+{
+    m_imageView->opacityDown();
+}
+
+void MainWindow::opacityReset()
+{
+    m_imageView->opacityReset();
+}
+
+void MainWindow::clearWorkspaceExtras()
+{
+    m_imageView->clearExtras();
+}
+
+void MainWindow::onThumbnailDoubleClicked(int index)
+{
+    if (index < 0 || index >= m_files.size()) {
+        return;
+    }
+    m_imageView->addImage(m_files.at(index));
 }
 
 void MainWindow::onSlideshowTick()

@@ -34,6 +34,11 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
 
     connect(this, &QListWidget::itemActivated, this, &ThumbnailBar::onItemActivated);
     connect(this, &QListWidget::currentRowChanged, this, &ThumbnailBar::onCurrentRowChanged);
+    connect(this, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *item) {
+        if (item) {
+            emit indexDoubleClicked(row(item));
+        }
+    });
 }
 
 ThumbnailBar::~ThumbnailBar()

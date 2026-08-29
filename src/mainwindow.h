@@ -66,6 +66,13 @@ private slots:
     void goNext();
     void toggleSlideshow();
     void layoutSideBySide();
+    void onThumbnailDoubleClicked();
+    void clearWorkspaceExtras();
+    void opacityReset();
+    void opacityDown();
+    void opacityUp();
+    void lowerSelected();
+    void raiseSelected();
     void onSlideshowTick();
     void sortByName();
     void sortByMTime();
@@ -121,6 +128,12 @@ private:
     QAction *m_nextAct = nullptr;
     QAction *m_slideshowAct = nullptr;
     QAction *m_layoutSideBySideAct = nullptr;
+    QAction *m_clearExtrasAct = nullptr;
+    QAction *m_opacityResetAct = nullptr;
+    QAction *m_opacityDownAct = nullptr;
+    QAction *m_opacityUpAct = nullptr;
+    QAction *m_lowerAct = nullptr;
+    QAction *m_raiseAct = nullptr;
     QAction *m_sortNameAct = nullptr;
     QAction *m_sortMTimeAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;

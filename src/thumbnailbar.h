@@ -22,6 +22,7 @@ public:
 
 signals:
     void indexActivated(int index);
+    void indexDoubleClicked(int index);
 
 protected:
     QSize sizeHint() const override;
