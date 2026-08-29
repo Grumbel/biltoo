@@ -44,6 +44,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 | Drop (classic mode) | Replace session |
 | Shift+Drop (classic) | Append to session |
 | Drop (workspace mode) | Add images onto the workspace |
+| Ctrl/Shift+click thumbnail | Add that image to the workspace |
 | Click item | Select |
 | Drag item | Move |
 | Shift+Drag on item | Free rotate |
@@ -56,5 +57,6 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 | Ctrl+= / Ctrl+- | Opacity up / down |
 | Esc | Exit fullscreen |
 | Ctrl+T | Toggle toolbar |
+| View → Show Scrollbars | Toggle scrollbars |
 | F11 | Toggle fullscreen |
 | Ctrl+E | Toggle metadata panel |

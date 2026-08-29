@@ -35,6 +35,8 @@ public:
     bool loadImage(const QString &path);
     bool addImage(const QString &path);
     void clearWorkspace();
+    void setWorkspaceMode(bool on);
+    bool workspaceMode() const { return m_workspaceMode; }
     /** Remove all items except the primary (first) session image, if any. */
     void clearExtras();
 

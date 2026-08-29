@@ -15,7 +15,8 @@ ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *pa
 {
     setPixmap(QPixmap::fromImage(image));
     setTransformationMode(Qt::SmoothTransformation);
-    setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsGeometryChanges);
+    // Classic viewer by default: not selectable/movable until workspace mode
+    setFlags(ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
     setOffset(-image.width() / 2.0, -image.height() / 2.0); // origin at centre
     applyLocalTransform();
@@ -53,6 +54,17 @@ void ImageItem::setItemOpacity(qreal opacity)
 {
     m_opacity = qBound(0.05, opacity, 1.0);
     setOpacity(m_opacity);
+}
+
+void ImageItem::setInteractive(bool on)
+{
+    m_interactive = on;
+    if (on) {
+        setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsGeometryChanges);
+    } else {
+        setSelected(false);
+        setFlags(ItemSendsGeometryChanges);
+    }
 }
 
 void ImageItem::applyLocalTransform()

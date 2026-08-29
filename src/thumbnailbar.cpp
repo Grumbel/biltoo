@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QImageReader>
 #include <QListWidgetItem>
+#include <QMouseEvent>
 #include <QMetaObject>
 #include <QThreadPool>
 
@@ -34,11 +35,6 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
 
     connect(this, &QListWidget::itemActivated, this, &ThumbnailBar::onItemActivated);
     connect(this, &QListWidget::currentRowChanged, this, &ThumbnailBar::onCurrentRowChanged);
-    connect(this, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *item) {
-        if (item) {
-            emit indexDoubleClicked(row(item));
-        }
-    });
 }
 
 ThumbnailBar::~ThumbnailBar()
@@ -147,4 +143,18 @@ void ThumbnailBar::onCurrentRowChanged(int row)
     if (row >= 0) {
         emit indexActivated(row);
     }
+}
+
+void ThumbnailBar::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton
+        && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
+        QListWidgetItem *hit = itemAt(event->pos());
+        if (hit) {
+            emit indexAddToWorkspace(row(hit));
+            event->accept();
+            return; // do not change the current image selection
+        }
+    }
+    QListWidget::mousePressEvent(event);
 }

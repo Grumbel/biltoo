@@ -35,6 +35,9 @@ public:
     void zoomBy(qreal factor);
     void rotateBy(qreal degrees);
 
+    /** When false, the item cannot be selected or dragged (classic viewer). */
+    void setInteractive(bool on);
+
     /** Map a scene position to integer pixel coordinates, or (-1,-1) if outside. */
     QPoint pixelAtScenePos(const QPointF &scenePos) const;
     QColor colorAtPixel(const QPoint &pixel) const;
@@ -52,6 +55,7 @@ private:
     qreal m_scale = 1.0;
     qreal m_rotation = 0.0;
     qreal m_opacity = 1.0;
+    bool m_interactive = false;
 };
 
 #endif // IMAGEITEM_H

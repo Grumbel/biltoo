@@ -40,6 +40,7 @@ ImageItem *ImageView::loadItem(const QString &path)
         return nullptr;
     }
     auto *item = new ImageItem(path, image);
+    item->setInteractive(m_workspaceMode);
     m_scene->addItem(item);
     m_items.append(item);
     return item;
@@ -67,10 +68,24 @@ void ImageView::clearExtras()
         delete item;
     }
     m_scene->clearSelection();
-    keep->setSelected(true);
+    if (m_workspaceMode) {
+        keep->setSelected(true);
+    }
     m_fitMode = true;
     fitItem(keep);
     emit statusChanged();
+}
+
+void ImageView::setWorkspaceMode(bool on)
+{
+    m_workspaceMode = on;
+    for (ImageItem *item : m_items) {
+        item->setInteractive(on);
+    }
+    if (!on) {
+        m_scene->clearSelection();
+        clearExtras();
+    }
 }
 
 bool ImageView::loadImage(const QString &path)
@@ -80,7 +95,9 @@ bool ImageView::loadImage(const QString &path)
     if (!item) {
         return false;
     }
-    item->setSelected(true);
+    if (m_workspaceMode) {
+        item->setSelected(true);
+    }
     m_fitMode = true;
     fitItem(item);
     emit statusChanged();
@@ -89,6 +106,10 @@ bool ImageView::loadImage(const QString &path)
 
 bool ImageView::addImage(const QString &path)
 {
+    if (!m_workspaceMode) {
+        return false;
+    }
+
     ImageItem *item = loadItem(path);
     if (!item) {
         return false;
@@ -102,7 +123,6 @@ bool ImageView::addImage(const QString &path)
         item->setPos(dx, dy);
     }
 
-    // Select the new item
     m_scene->clearSelection();
     item->setSelected(true);
     m_fitMode = false;
@@ -437,6 +457,16 @@ qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
+    // Classic viewer: left-drag pans; no item selection/move
+    if (!m_workspaceMode && event->button() == Qt::LeftButton
+        && !(event->modifiers() & Qt::ShiftModifier)) {
+        m_panning = true;
+        m_lastMousePos = event->pos();
+        setCursor(Qt::ClosedHandCursor);
+        event->accept();
+        return;
+    }
+
     if (event->button() == Qt::MiddleButton
         || (event->button() == Qt::LeftButton && event->modifiers() & Qt::AltModifier)) {
         m_panning = true;

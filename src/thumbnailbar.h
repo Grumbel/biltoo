@@ -22,10 +22,12 @@ public:
 
 signals:
     void indexActivated(int index);
-    void indexDoubleClicked(int index);
+    /** Ctrl/Shift+click: request adding this image to the workspace. */
+    void indexAddToWorkspace(int index);
 
 protected:
     QSize sizeHint() const override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private slots:
     void onItemActivated(QListWidgetItem *item);

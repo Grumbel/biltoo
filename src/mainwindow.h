@@ -83,12 +83,14 @@ private slots:
     void about();
     void showPreferences();
     void toggleMetadataPanel();
+    void toggleScrollBars();
     void toggleWorkspaceMode();
     void updateWorkspaceActionVisibility();
     void updateStatus();
     void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
     void onThumbnailActivated(int index);
+    void onThumbnailAddToWorkspace(int index);
 
 private:
     void createActions();
@@ -148,6 +150,7 @@ private:
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
     QAction *m_toggleMetadataAct = nullptr;
+    QAction *m_toggleScrollBarsAct = nullptr;
     QAction *m_preferencesAct = nullptr;
     QAction *m_aboutAct = nullptr;
     QActionGroup *m_sortGroup = nullptr;

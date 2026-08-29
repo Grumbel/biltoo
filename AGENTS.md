@@ -72,10 +72,10 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 - Open replaces the session; Add Images… / Shift+drop appends (deduplicated).
 - `--thumbnails` / `--no-thumbnails` force thumbnail bar visibility.
 - Workspace mode is optional and off by default (View → Workspace Mode).
-  When enabled, drop images onto the view to add them for comparison;
-  workspace-only actions (layout, raise/lower, opacity, clear extras) appear.
-  When disabled, drop replaces/appends the session as a classic viewer.
-  Shift+drag free-rotates the selected item; Alt+drag or middle-button pans.
+  Classic mode: left-drag pans, images are not selectable/movable.
+  Workspace mode: drop or Ctrl/Shift+click a thumbnail adds comparison images;
+  items are selectable/movable; layout/raise/opacity actions appear.
+  Scrollbars are hidden by default (View → Show Scrollbars).
 
 ## What not to do
 

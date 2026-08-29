@@ -80,6 +80,8 @@ MainWindow::MainWindow(QWidget *parent)
     layout->setSpacing(0);
 
     m_imageView = new ImageView(central);
+    m_imageView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_imageView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_imageView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_imageView, &QWidget::customContextMenuRequested,
             this, &MainWindow::showContextMenu);
@@ -89,6 +91,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailBar = new ThumbnailBar(central);
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
+    connect(m_thumbnailBar, &ThumbnailBar::indexAddToWorkspace,
+            this, &MainWindow::onThumbnailAddToWorkspace);
 
     layout->addWidget(m_imageView, 1);
     layout->addWidget(m_thumbnailBar, 0);
@@ -223,7 +227,7 @@ void MainWindow::createActions()
     m_workspaceModeAct->setChecked(false);
     m_workspaceModeAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_DesktopIcon));
     m_workspaceModeAct->setStatusTip(
-        tr("Allow multiple images on the view for comparison (drag images onto the view to add them)"));
+        tr("Compare multiple images on the view. Add via drop or Ctrl/Shift+click a thumbnail."));
     connect(m_workspaceModeAct, &QAction::triggered, this, &MainWindow::toggleWorkspaceMode);
 
     m_layoutSideBySideAct = new QAction(tr("Layout Side b&y Side"), this);
@@ -306,6 +310,12 @@ void MainWindow::createActions()
     m_toggleMetadataAct->setIcon(themeIcon(QStringLiteral("dialog-information"), QStyle::SP_FileDialogInfoView));
     m_toggleMetadataAct->setStatusTip(tr("Show or hide the metadata side panel"));
     connect(m_toggleMetadataAct, &QAction::triggered, this, &MainWindow::toggleMetadataPanel);
+
+    m_toggleScrollBarsAct = new QAction(tr("Show &Scrollbars"), this);
+    m_toggleScrollBarsAct->setCheckable(true);
+    m_toggleScrollBarsAct->setChecked(false);
+    m_toggleScrollBarsAct->setStatusTip(tr("Show or hide scrollbars on the image view"));
+    connect(m_toggleScrollBarsAct, &QAction::triggered, this, &MainWindow::toggleScrollBars);
     connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
         m_toggleMetadataAct->setChecked(visible);
     });
@@ -360,6 +370,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_toggleThumbnailBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
+    m_viewMenu->addAction(m_toggleScrollBarsAct);
 
     m_goMenu = menuBar()->addMenu(tr("&Go"));
     m_goMenu->addAction(m_previousAct);
@@ -672,6 +683,21 @@ void MainWindow::onThumbnailActivated(int index)
     setCurrentIndex(index);
 }
 
+void MainWindow::onThumbnailAddToWorkspace(int index)
+{
+    if (!m_workspaceMode) {
+        // Enable workspace mode automatically when the user explicitly adds
+        m_workspaceMode = true;
+        m_workspaceModeAct->setChecked(true);
+        m_imageView->setWorkspaceMode(true);
+        updateWorkspaceActionVisibility();
+    }
+    if (index < 0 || index >= m_files.size()) {
+        return;
+    }
+    m_imageView->addImage(m_files.at(index));
+}
+
 void MainWindow::openFiles()
 {
     const QStringList files = QFileDialog::getOpenFileNames(
@@ -848,10 +874,7 @@ void MainWindow::clearWorkspaceExtras()
 void MainWindow::toggleWorkspaceMode()
 {
     m_workspaceMode = m_workspaceModeAct->isChecked();
-    if (!m_workspaceMode) {
-        // Leave comparison mode: keep only the primary image
-        m_imageView->clearExtras();
-    }
+    m_imageView->setWorkspaceMode(m_workspaceMode);
     updateWorkspaceActionVisibility();
 }
 
@@ -902,6 +925,14 @@ void MainWindow::toggleThumbnailBar()
 void MainWindow::toggleMetadataPanel()
 {
     m_metadataDock->setVisible(m_toggleMetadataAct->isChecked());
+}
+
+void MainWindow::toggleScrollBars()
+{
+    const bool show = m_toggleScrollBarsAct->isChecked();
+    const auto policy = show ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff;
+    m_imageView->setHorizontalScrollBarPolicy(policy);
+    m_imageView->setVerticalScrollBarPolicy(policy);
 }
 
 void MainWindow::about()
@@ -1027,6 +1058,16 @@ void MainWindow::readSettings()
     if (m_workspaceModeAct) {
         m_workspaceModeAct->setChecked(m_workspaceMode);
     }
+    if (m_imageView) {
+        m_imageView->setWorkspaceMode(m_workspaceMode);
+    }
+    updateWorkspaceActionVisibility();
+
+    const bool showBars = settings.value(QStringLiteral("scrollBarsVisible"), false).toBool();
+    if (m_toggleScrollBarsAct) {
+        m_toggleScrollBarsAct->setChecked(showBars);
+        toggleScrollBars();
+    }
 }
 
 void MainWindow::writeSettings()
@@ -1042,6 +1083,8 @@ void MainWindow::writeSettings()
                                                     : QStringLiteral("name"));
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
     settings.setValue(QStringLiteral("workspaceMode"), m_workspaceMode);
+    settings.setValue(QStringLiteral("scrollBarsVisible"),
+                      m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
