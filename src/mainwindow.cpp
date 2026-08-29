@@ -9,6 +9,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QDir>
+#include <QDirIterator>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QEvent>
@@ -24,6 +25,7 @@
 #include <QSettings>
 #include <QStatusBar>
 #include <QStyle>
+#include <QTimer>
 #include <QToolBar>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -87,6 +89,10 @@ MainWindow::MainWindow(QWidget *parent)
     createStatusBar();
 
     connect(m_imageView, &ImageView::statusChanged, this, &MainWindow::updateStatus);
+
+    m_slideshowTimer = new QTimer(this);
+    m_slideshowTimer->setTimerType(Qt::PreciseTimer);
+    connect(m_slideshowTimer, &QTimer::timeout, this, &MainWindow::onSlideshowTick);
 
     m_thumbnailBar->setVisible(false);
     updateNavigationActions();
@@ -170,6 +176,13 @@ void MainWindow::createActions()
     m_nextAct->setStatusTip(tr("Show next image"));
     connect(m_nextAct, &QAction::triggered, this, &MainWindow::goNext);
 
+    m_slideshowAct = new QAction(tr("Play &Slideshow"), this);
+    m_slideshowAct->setShortcut(Qt::Key_F5);
+    m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
+    m_slideshowAct->setCheckable(true);
+    m_slideshowAct->setStatusTip(tr("Start or stop the slideshow (F5)"));
+    connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
+
     m_toggleToolBarAct = new QAction(tr("Show &Toolbar"), this);
     m_toggleToolBarAct->setShortcut(Qt::Key_Tab);
     m_toggleToolBarAct->setCheckable(true);
@@ -213,6 +226,8 @@ void MainWindow::createMenus()
     m_goMenu = menuBar()->addMenu(tr("&Go"));
     m_goMenu->addAction(m_previousAct);
     m_goMenu->addAction(m_nextAct);
+    m_goMenu->addSeparator();
+    m_goMenu->addAction(m_slideshowAct);
 
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
     m_helpMenu->addAction(m_aboutAct);
@@ -223,6 +238,7 @@ void MainWindow::createMenus()
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_previousAct);
     m_contextMenu->addAction(m_nextAct);
+    m_contextMenu->addAction(m_slideshowAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_zoomInAct);
     m_contextMenu->addAction(m_zoomOutAct);
@@ -249,6 +265,7 @@ void MainWindow::createToolBar()
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_previousAct);
     m_toolBar->addAction(m_nextAct);
+    m_toolBar->addAction(m_slideshowAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_zoomInAct);
     m_toolBar->addAction(m_zoomOutAct);
@@ -281,14 +298,18 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
     for (const QString &path : paths) {
         const QFileInfo info(path);
         if (info.isDir()) {
-            QDir dir(path);
-            const QStringList entries = dir.entryList(QDir::Files | QDir::Readable, QDir::Name);
-            for (const QString &name : entries) {
-                const QString full = dir.filePath(name);
+            QDir::Filters filters = QDir::Files | QDir::Readable | QDir::NoDotAndDotDot;
+            QDirIterator::IteratorFlags flags = m_recursive
+                ? QDirIterator::Subdirectories
+                : QDirIterator::NoIteratorFlags;
+            QDirIterator it(path, filters, flags);
+            while (it.hasNext()) {
+                const QString full = it.next();
                 if (isImageFile(full)) {
                     images.append(full);
                 }
             }
+            images.sort(Qt::CaseInsensitive);
         } else if (info.isFile()) {
             // Accept files even without a known suffix; QImageReader will reject bad ones
             images.append(path);
@@ -299,6 +320,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
 
 void MainWindow::loadFiles(const QStringList &paths, int startAt)
 {
+    stopSlideshow();
+
     const QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
         return;
@@ -342,6 +365,10 @@ void MainWindow::updateNavigationActions()
     const bool hasMany = m_files.size() > 1;
     m_previousAct->setEnabled(hasMany);
     m_nextAct->setEnabled(hasMany);
+    m_slideshowAct->setEnabled(hasMany);
+    if (!hasMany) {
+        stopSlideshow();
+    }
 }
 
 void MainWindow::onThumbnailActivated(int index)
@@ -430,6 +457,48 @@ void MainWindow::goNext()
         idx = 0;
     }
     setCurrentIndex(idx);
+}
+
+void MainWindow::setSlideshowIntervalMs(int ms)
+{
+    m_slideshowIntervalMs = qMax(500, ms);
+    if (m_slideshowTimer->isActive()) {
+        m_slideshowTimer->setInterval(m_slideshowIntervalMs);
+    }
+}
+
+void MainWindow::startSlideshow()
+{
+    if (m_files.size() <= 1) {
+        m_slideshowAct->setChecked(false);
+        return;
+    }
+    m_slideshowTimer->start(m_slideshowIntervalMs);
+    m_slideshowAct->setChecked(true);
+    m_slideshowAct->setText(tr("Stop &Slideshow"));
+    m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-stop"), QStyle::SP_MediaStop));
+}
+
+void MainWindow::stopSlideshow()
+{
+    m_slideshowTimer->stop();
+    m_slideshowAct->setChecked(false);
+    m_slideshowAct->setText(tr("Play &Slideshow"));
+    m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
+}
+
+void MainWindow::toggleSlideshow()
+{
+    if (m_slideshowTimer->isActive()) {
+        stopSlideshow();
+    } else {
+        startSlideshow();
+    }
+}
+
+void MainWindow::onSlideshowTick()
+{
+    goNext();
 }
 
 void MainWindow::toggleToolBar()

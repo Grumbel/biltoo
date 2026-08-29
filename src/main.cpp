@@ -42,6 +42,22 @@ int main(int argc, char *argv[])
         QStringLiteral("N"));
     parser.addOption(startAtOption);
 
+    QCommandLineOption recursiveOption(
+        QStringList() << QStringLiteral("r") << QStringLiteral("recursive"),
+        QStringLiteral("Recurse into subdirectories when a directory is given"));
+    parser.addOption(recursiveOption);
+
+    QCommandLineOption slideshowOption(
+        QStringList() << QStringLiteral("slideshow"),
+        QStringLiteral("Start a slideshow after loading images"));
+    parser.addOption(slideshowOption);
+
+    QCommandLineOption intervalOption(
+        QStringList() << QStringLiteral("interval"),
+        QStringLiteral("Slideshow interval in milliseconds (default: 3000)"),
+        QStringLiteral("ms"));
+    parser.addOption(intervalOption);
+
     parser.process(app);
 
     const QStringList files = parser.positionalArguments();
@@ -51,11 +67,21 @@ int main(int argc, char *argv[])
         bool ok = false;
         const int n = parser.value(startAtOption).toInt(&ok);
         if (ok && n >= 1) {
-            startAt = n - 1; // convert to 0-based
+            startAt = n - 1;
         }
     }
 
     MainWindow window;
+    window.setRecursive(parser.isSet(recursiveOption));
+
+    if (parser.isSet(intervalOption)) {
+        bool ok = false;
+        const int ms = parser.value(intervalOption).toInt(&ok);
+        if (ok && ms > 0) {
+            window.setSlideshowIntervalMs(ms);
+        }
+    }
+
     if (parser.isSet(fullscreenOption)) {
         window.showFullScreen();
     } else {
@@ -64,6 +90,9 @@ int main(int argc, char *argv[])
 
     if (!files.isEmpty()) {
         window.loadFiles(files, startAt);
+        if (parser.isSet(slideshowOption)) {
+            window.startSlideshow();
+        }
     }
 
     return app.exec();

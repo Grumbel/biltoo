@@ -15,6 +15,7 @@ class QToolBar;
 class QAction;
 class QLabel;
 class QMenu;
+class QTimer;
 
 class MainWindow : public QMainWindow
 {
@@ -25,6 +26,10 @@ public:
     ~MainWindow() override;
 
     void loadFiles(const QStringList &paths, int startAt = 0);
+    void setRecursive(bool recursive) { m_recursive = recursive; }
+    void setSlideshowIntervalMs(int ms);
+    void startSlideshow();
+    void stopSlideshow();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -44,6 +49,8 @@ private slots:
     void rotateRight();
     void goPrevious();
     void goNext();
+    void toggleSlideshow();
+    void onSlideshowTick();
     void toggleToolBar();
     void toggleThumbnailBar();
     void about();
@@ -71,6 +78,7 @@ private:
     QToolBar *m_toolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
     QLabel *m_mouseLabel = nullptr;
+    QTimer *m_slideshowTimer = nullptr;
 
     QMenu *m_fileMenu = nullptr;
     QMenu *m_viewMenu = nullptr;
@@ -90,12 +98,15 @@ private:
     QAction *m_rotateRightAct = nullptr;
     QAction *m_previousAct = nullptr;
     QAction *m_nextAct = nullptr;
+    QAction *m_slideshowAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
     QAction *m_aboutAct = nullptr;
 
     QStringList m_files;
     int m_currentIndex = -1;
+    bool m_recursive = false;
+    int m_slideshowIntervalMs = 3000;
 
     bool m_toolBarVisibleBeforeFullscreen = true;
     bool m_thumbnailBarVisibleBeforeFullscreen = true;
