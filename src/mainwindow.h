@@ -80,6 +80,7 @@ private slots:
     void toggleToolBar();
     void toggleThumbnailBar();
     void about();
+    void showPreferences();
     void updateStatus();
     void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
@@ -139,6 +140,7 @@ private:
     QAction *m_sortMTimeAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
+    QAction *m_preferencesAct = nullptr;
     QAction *m_aboutAct = nullptr;
     QActionGroup *m_sortGroup = nullptr;
 

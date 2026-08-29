@@ -21,11 +21,11 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 
 - [x] Esc exits fullscreen; toolbar toggle is Ctrl+T (not Tab)
 - [x] Natural/locale-aware filename sort (QCollator numeric mode)
+- [x] Preferences dialog (slideshow interval, default sort)
 
 ## Near-term
 
 - [ ] Snap / align helpers
-- [ ] Preferences dialog (slideshow interval, default sort, …)
 - [ ] Optional Exif side panel
 - [ ] Rotation angle readout while Shift-dragging (status already updates)
 

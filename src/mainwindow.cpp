@@ -4,6 +4,7 @@
 #include "mainwindow.h"
 #include "imageview.h"
 #include "thumbnailbar.h"
+#include "preferencesdialog.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -281,6 +282,12 @@ void MainWindow::createActions()
     m_toggleThumbnailBarAct->setStatusTip(tr("Show or hide the thumbnail bar"));
     connect(m_toggleThumbnailBarAct, &QAction::triggered, this, &MainWindow::toggleThumbnailBar);
 
+    m_preferencesAct = new QAction(tr("&Preferences..."), this);
+    m_preferencesAct->setShortcut(QKeySequence::Preferences);
+    m_preferencesAct->setIcon(themeIcon(QStringLiteral("preferences-system"), QStyle::SP_FileDialogInfoView));
+    m_preferencesAct->setStatusTip(tr("Application preferences"));
+    connect(m_preferencesAct, &QAction::triggered, this, &MainWindow::showPreferences);
+
     m_aboutAct = new QAction(tr("&About QImgView"), this);
     m_aboutAct->setIcon(themeIcon(QStringLiteral("help-about"), QStyle::SP_MessageBoxInformation));
     m_aboutAct->setStatusTip(tr("About this application"));
@@ -293,6 +300,8 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_openAct);
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
+    m_fileMenu->addSeparator();
+    m_fileMenu->addAction(m_preferencesAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 
@@ -838,6 +847,19 @@ void MainWindow::about()
            "<p>Copyright © 2026 Ingo Ruhnke &lt;grumbel@gmail.com&gt;</p>"
            "<p>License: GPL-3.0-or-later</p>")
             .arg(QApplication::applicationVersion()));
+}
+
+void MainWindow::showPreferences()
+{
+    PreferencesDialog dlg(this);
+    dlg.setSlideshowIntervalMs(m_slideshowIntervalMs);
+    dlg.setSortModeIndex(m_sortMode == SortMode::MTime ? 1 : 0);
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+    setSlideshowIntervalMs(dlg.slideshowIntervalMs());
+    setSortMode(dlg.sortModeIndex() == 1 ? SortMode::MTime : SortMode::Name);
+    writeSettings();
 }
 
 void MainWindow::updateStatus()
