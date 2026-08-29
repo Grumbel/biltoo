@@ -407,18 +407,15 @@ void MainWindow::createToolBar()
     m_toolBar->setIconSize(QSize(24, 24));
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
-    // Left: file
+    // Left: file and navigation
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_addAct);
     m_toolBar->addSeparator();
-
-    // Middle-left: navigation + slideshow
     m_toolBar->addAction(m_previousAct);
     m_toolBar->addAction(m_nextAct);
-    m_toolBar->addAction(m_slideshowAct);
     m_toolBar->addSeparator();
 
-    // Middle: zoom + rotate
+    // Left-middle: zoom and rotate
     m_toolBar->addAction(m_zoomInAct);
     m_toolBar->addAction(m_zoomOutAct);
     m_toolBar->addAction(m_zoom1to1Act);
@@ -429,11 +426,21 @@ void MainWindow::createToolBar()
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_layoutSideBySideAct);
 
-    // Expanding spacer pushes fullscreen to the far right
-    auto *spacer = new QWidget(m_toolBar);
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    m_toolBar->addWidget(spacer);
+    // Expanding spacer — centres the slideshow control
+    auto *spacerLeft = new QWidget(m_toolBar);
+    spacerLeft->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_toolBar->addWidget(spacerLeft);
 
+    // Centre: slideshow
+    m_toolBar->addAction(m_slideshowAct);
+
+    auto *spacerRight = new QWidget(m_toolBar);
+    spacerRight->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_toolBar->addWidget(spacerRight);
+
+    // Right: workspace mode, metadata, fullscreen
+    m_toolBar->addAction(m_workspaceModeAct);
+    m_toolBar->addAction(m_toggleMetadataAct);
     m_toolBar->addAction(m_fullscreenAct);
 }
 
