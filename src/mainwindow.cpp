@@ -1109,12 +1109,14 @@ void MainWindow::showPreferences()
 {
     PreferencesDialog dlg(this);
     dlg.setSlideshowIntervalMs(m_slideshowIntervalMs);
-    dlg.setSortModeIndex(m_sortMode == SortMode::MTime ? 1 : 0);
+    dlg.setSortModeIndex(m_sortMode == SortMode::Name ? 0 : 1);
+    dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
     if (dlg.exec() != QDialog::Accepted) {
         return;
     }
     setSlideshowIntervalMs(dlg.slideshowIntervalMs());
     setSortMode(dlg.sortModeIndex() == 1 ? SortMode::MTime : SortMode::Name);
+    m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     writeSettings();
 }
 
@@ -1216,7 +1218,18 @@ void MainWindow::readSettings()
     m_slideshowIntervalMs =
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
 
-    m_workspaceMode = settings.value(QStringLiteral("workspaceMode"), false).toBool();
+    // Workspace mode is off by default. Only enable at startup when the user
+    // opted in via Preferences ("Start in workspace mode").
+    m_startInWorkspaceMode =
+        settings.value(QStringLiteral("startInWorkspaceMode"), false).toBool();
+    // Migrate legacy key if present and new key never set
+    if (!settings.contains(QStringLiteral("startInWorkspaceMode"))
+        && settings.contains(QStringLiteral("workspaceMode"))) {
+        // Do not migrate "true" from a previous session toggle — always prefer off
+        settings.remove(QStringLiteral("workspaceMode"));
+        m_startInWorkspaceMode = false;
+    }
+    m_workspaceMode = m_startInWorkspaceMode;
     if (m_workspaceModeAct) {
         m_workspaceModeAct->setChecked(m_workspaceMode);
     }
@@ -1244,7 +1257,9 @@ void MainWindow::writeSettings()
                       m_sortMode == SortMode::MTime ? QStringLiteral("mtime")
                                                     : QStringLiteral("name"));
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
-    settings.setValue(QStringLiteral("workspaceMode"), m_workspaceMode);
+    // Persist startup preference only — not the live session toggle
+    settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);
+    settings.remove(QStringLiteral("workspaceMode"));
     settings.setValue(QStringLiteral("scrollBarsVisible"),
                       m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
 }

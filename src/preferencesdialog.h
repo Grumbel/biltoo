@@ -8,6 +8,7 @@
 
 class QSpinBox;
 class QComboBox;
+class QCheckBox;
 
 class PreferencesDialog : public QDialog
 {
@@ -23,9 +24,13 @@ public:
     int sortModeIndex() const;
     void setSortModeIndex(int index);
 
+    bool startInWorkspaceMode() const;
+    void setStartInWorkspaceMode(bool on);
+
 private:
     QSpinBox *m_intervalSpin = nullptr;
     QComboBox *m_sortCombo = nullptr;
+    QCheckBox *m_workspaceCheck = nullptr;
 };
 
 #endif // PREFERENCESDIALOG_H

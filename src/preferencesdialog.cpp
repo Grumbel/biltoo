@@ -3,6 +3,7 @@
 
 #include "preferencesdialog.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -19,7 +20,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     setMinimumWidth(360);
 
     auto *intro = new QLabel(
-        tr("Adjust default behaviour for slideshows and image ordering."), this);
+        tr("Adjust default behaviour for slideshows, sorting and the workspace."), this);
     intro->setWordWrap(true);
 
     m_intervalSpin = new QSpinBox(this);
@@ -39,6 +40,14 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
         tr("Name (natural) sorts img2 before img10. "
            "Modification time orders files by when they were last changed."));
 
+    m_workspaceCheck = new QCheckBox(tr("Start in workspace mode"), this);
+    m_workspaceCheck->setToolTip(
+        tr("When enabled, QImgView starts with the multi-image workspace active"));
+    m_workspaceCheck->setWhatsThis(
+        tr("Workspace mode is off by default. Turn this on only if you usually "
+           "compare several images at once. You can still toggle workspace mode "
+           "from the toolbar or View menu during a session."));
+
     auto *form = new QFormLayout;
     form->setContentsMargins(0, 0, 0, 0);
     form->setHorizontalSpacing(12);
@@ -46,6 +55,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     form->addRow(tr("Slideshow interval:"), m_intervalSpin);
     form->addRow(tr("Sort images by:"), m_sortCombo);
+    form->addRow(QString(), m_workspaceCheck);
 
     // GNOME 2 HIG: Cancel on the left, OK (affirmative) on the right
     auto *cancelBtn = new QPushButton(tr("_Cancel"), this);
@@ -93,4 +103,14 @@ void PreferencesDialog::setSortModeIndex(int index)
     if (i >= 0) {
         m_sortCombo->setCurrentIndex(i);
     }
+}
+
+bool PreferencesDialog::startInWorkspaceMode() const
+{
+    return m_workspaceCheck->isChecked();
+}
+
+void PreferencesDialog::setStartInWorkspaceMode(bool on)
+{
+    m_workspaceCheck->setChecked(on);
 }
