@@ -7,16 +7,23 @@
 #include <QGraphicsView>
 #include <QPoint>
 #include <QString>
+#include <QStringList>
 
-class QGraphicsPixmapItem;
+class ImageItem;
 class QGraphicsScene;
 
 struct ImageMouseInfo {
     bool valid = false;
-    QPoint imagePos;   // pixel coordinates in the original image
+    QPoint imagePos;
     QColor pixelColor;
+    QString path;
 };
 
+/**
+ * Workspace view: one or more ImageItems on a QGraphicsScene.
+ * loadImage() replaces the workspace with a single image.
+ * addImage() places an additional image for comparison.
+ */
 class ImageView : public QGraphicsView
 {
     Q_OBJECT
@@ -26,6 +33,9 @@ public:
     ~ImageView() override;
 
     bool loadImage(const QString &path);
+    bool addImage(const QString &path);
+    void clearWorkspace();
+
     void zoomIn();
     void zoomOut();
     void zoomReset();
@@ -33,10 +43,15 @@ public:
     void rotateLeft();
     void rotateRight();
 
+    /** Arrange all items in a simple horizontal row. */
+    void layoutSideBySide();
+
     QString statusText() const;
     ImageMouseInfo mouseInfo() const { return m_mouseInfo; }
-    QString currentPath() const { return m_currentPath; }
-    QSize imageSize() const { return m_imageSize; }
+    QString currentPath() const;
+    QSize imageSize() const;
+    int itemCount() const;
+    QStringList itemPaths() const;
 
 signals:
     void statusChanged();
@@ -49,25 +64,24 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    void applyTransform();
-    void updateFitIfNeeded();
+    ImageItem *loadItem(const QString &path);
+    ImageItem *primaryItem() const;
+    ImageItem *targetItem() const; // selection, or sole item, or item under mouse
     void updateMouseInfo(const QPoint &viewPos);
+    void fitItem(ImageItem *item);
+    void ensureVisibleItem(ImageItem *item);
 
     QGraphicsScene *m_scene = nullptr;
-    QGraphicsPixmapItem *m_pixmapItem = nullptr;
-    QImage m_sourceImage; // kept for pixel colour sampling
+    QList<ImageItem *> m_items;
 
-    qreal m_scale = 1.0;
-    qreal m_rotation = 0.0; // degrees
-    bool m_fitMode = false;
-    QString m_currentPath;
-    QSize m_imageSize;
+    bool m_fitMode = true;
+    ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;
     bool m_panning = false;
-    ImageMouseInfo m_mouseInfo;
 };
 
 #endif // IMAGEVIEW_H

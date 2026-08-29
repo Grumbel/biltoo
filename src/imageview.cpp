@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "imageitem.h"
 
-#include <QGraphicsPixmapItem>
-#include <QGraphicsScene>
-#include <QImageReader>
-#include <QMouseEvent>
-#include <QWheelEvent>
-#include <QScrollBar>
 #include <QFileInfo>
+#include <QImageReader>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QScrollBar>
+#include <QWheelEvent>
 #include <QtMath>
 #include <cmath>
 
@@ -31,167 +31,299 @@ ImageView::ImageView(QWidget *parent)
 
 ImageView::~ImageView() = default;
 
-bool ImageView::loadImage(const QString &path)
+ImageItem *ImageView::loadItem(const QString &path)
 {
     QImageReader reader(path);
-    reader.setAutoTransform(true); // honour Exif orientation
-
+    reader.setAutoTransform(true);
     const QImage image = reader.read();
     if (image.isNull()) {
+        return nullptr;
+    }
+    auto *item = new ImageItem(path, image);
+    m_scene->addItem(item);
+    m_items.append(item);
+    return item;
+}
+
+void ImageView::clearWorkspace()
+{
+    m_scene->clear();
+    m_items.clear();
+    m_mouseInfo = {};
+    emit mouseInfoChanged(m_mouseInfo);
+}
+
+bool ImageView::loadImage(const QString &path)
+{
+    clearWorkspace();
+    ImageItem *item = loadItem(path);
+    if (!item) {
+        return false;
+    }
+    item->setSelected(true);
+    m_fitMode = true;
+    fitItem(item);
+    emit statusChanged();
+    return true;
+}
+
+bool ImageView::addImage(const QString &path)
+{
+    ImageItem *item = loadItem(path);
+    if (!item) {
         return false;
     }
 
-    m_scene->clear();
-    m_pixmapItem = m_scene->addPixmap(QPixmap::fromImage(image));
-    m_pixmapItem->setTransformationMode(Qt::SmoothTransformation);
+    // Offset newly added items so they do not fully cover existing ones
+    const int n = m_items.size();
+    if (n > 1) {
+        const qreal dx = 40.0 * (n - 1);
+        const qreal dy = 30.0 * (n - 1);
+        item->setPos(dx, dy);
+    }
 
-    m_sourceImage = image;
-    m_imageSize = image.size();
-    m_currentPath = path;
-    m_scale = 1.0;
-    m_rotation = 0.0;
-    m_fitMode = true;
-    m_mouseInfo = {};
-
-    m_scene->setSceneRect(m_pixmapItem->boundingRect());
-    applyTransform();
-    zoomFit();
-
+    // Select the new item
+    m_scene->clearSelection();
+    item->setSelected(true);
+    m_fitMode = false;
+    ensureVisibleItem(item);
     emit statusChanged();
-    emit mouseInfoChanged(m_mouseInfo);
     return true;
+}
+
+ImageItem *ImageView::primaryItem() const
+{
+    if (m_items.isEmpty()) {
+        return nullptr;
+    }
+    return m_items.first();
+}
+
+ImageItem *ImageView::targetItem() const
+{
+    const QList<QGraphicsItem *> selected = m_scene->selectedItems();
+    for (QGraphicsItem *gi : selected) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            return item;
+        }
+    }
+    if (m_items.size() == 1) {
+        return m_items.first();
+    }
+    return nullptr;
 }
 
 void ImageView::zoomIn()
 {
-    m_fitMode = false;
-    m_scale *= 1.25;
-    applyTransform();
-    emit statusChanged();
+    if (ImageItem *item = targetItem()) {
+        m_fitMode = false;
+        item->zoomBy(1.25);
+        emit statusChanged();
+    }
 }
 
 void ImageView::zoomOut()
 {
-    m_fitMode = false;
-    m_scale /= 1.25;
-    if (m_scale < 0.01) {
-        m_scale = 0.01;
+    if (ImageItem *item = targetItem()) {
+        m_fitMode = false;
+        item->zoomBy(1.0 / 1.25);
+        emit statusChanged();
     }
-    applyTransform();
-    emit statusChanged();
 }
 
 void ImageView::zoomReset()
 {
-    m_fitMode = false;
-    m_scale = 1.0;
-    applyTransform();
-    emit statusChanged();
+    if (ImageItem *item = targetItem()) {
+        m_fitMode = false;
+        item->setItemScale(1.0);
+        emit statusChanged();
+    }
 }
 
 void ImageView::zoomFit()
 {
-    if (!m_pixmapItem) {
-        return;
+    if (ImageItem *item = targetItem()) {
+        m_fitMode = true;
+        fitItem(item);
+        emit statusChanged();
+    } else if (m_items.size() > 1) {
+        // Fit the whole scene
+        m_fitMode = true;
+        fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatio);
+        emit statusChanged();
     }
-    m_fitMode = true;
-    fitInView(m_pixmapItem, Qt::KeepAspectRatio);
-    const QTransform t = transform();
-    m_scale = std::hypot(t.m11(), t.m12()); // approximate uniform scale
-    emit statusChanged();
 }
 
 void ImageView::rotateLeft()
 {
-    m_rotation -= 90.0;
-    if (m_rotation <= -360.0) {
-        m_rotation += 360.0;
+    if (ImageItem *item = targetItem()) {
+        item->rotateBy(-90.0);
+        if (m_fitMode) {
+            fitItem(item);
+        }
+        emit statusChanged();
     }
-    applyTransform();
-    if (m_fitMode) {
-        zoomFit();
-    }
-    emit statusChanged();
 }
 
 void ImageView::rotateRight()
 {
-    m_rotation += 90.0;
-    if (m_rotation >= 360.0) {
-        m_rotation -= 360.0;
+    if (ImageItem *item = targetItem()) {
+        item->rotateBy(90.0);
+        if (m_fitMode) {
+            fitItem(item);
+        }
+        emit statusChanged();
     }
-    applyTransform();
-    if (m_fitMode) {
-        zoomFit();
+}
+
+void ImageView::layoutSideBySide()
+{
+    if (m_items.size() < 2) {
+        return;
     }
+
+    qreal x = 0.0;
+    const qreal gap = 24.0;
+    qreal maxH = 0.0;
+
+    for (ImageItem *item : m_items) {
+        // Reset rotation for a clean comparison layout; keep scale
+        item->setItemRotation(0.0);
+        const QRectF br = item->sceneBoundingRect();
+        maxH = qMax(maxH, br.height());
+    }
+
+    for (ImageItem *item : m_items) {
+        const QRectF br = item->boundingRect();
+        // Position so the top edges align; origin is centre
+        const qreal w = br.width() * item->itemScale();
+        const qreal h = br.height() * item->itemScale();
+        item->setPos(x + w / 2.0, h / 2.0);
+        x += w + gap;
+    }
+
+    m_scene->setSceneRect(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32));
+    fitInView(m_scene->sceneRect(), Qt::KeepAspectRatio);
+    m_fitMode = true;
     emit statusChanged();
+}
+
+void ImageView::fitItem(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    fitInView(item, Qt::KeepAspectRatio);
+    // Derive approximate scale from the view transform for status display
+    const QTransform t = transform();
+    const qreal viewScale = std::hypot(t.m11(), t.m12());
+    // Item keeps its own scale at 1 when we use view-level fit for a single item;
+    // for multi-item we prefer item-level scale. Reset item scale and use view fit
+    // only when a single item is present.
+    if (m_items.size() == 1) {
+        item->setItemScale(1.0);
+        item->setItemRotation(item->itemRotation());
+        fitInView(item, Qt::KeepAspectRatio);
+        Q_UNUSED(viewScale);
+    }
+}
+
+void ImageView::ensureVisibleItem(ImageItem *item)
+{
+    if (item) {
+        ensureVisible(item, 32, 32);
+    }
+}
+
+QString ImageView::currentPath() const
+{
+    if (ImageItem *item = targetItem()) {
+        return item->path();
+    }
+    if (ImageItem *item = primaryItem()) {
+        return item->path();
+    }
+    return {};
+}
+
+QSize ImageView::imageSize() const
+{
+    if (ImageItem *item = targetItem()) {
+        return item->imageSize();
+    }
+    if (ImageItem *item = primaryItem()) {
+        return item->imageSize();
+    }
+    return {};
+}
+
+int ImageView::itemCount() const
+{
+    return m_items.size();
+}
+
+QStringList ImageView::itemPaths() const
+{
+    QStringList paths;
+    for (ImageItem *item : m_items) {
+        paths.append(item->path());
+    }
+    return paths;
 }
 
 QString ImageView::statusText() const
 {
-    if (m_currentPath.isEmpty()) {
+    ImageItem *item = targetItem();
+    if (!item) {
+        item = primaryItem();
+    }
+    if (!item) {
         return tr("Ready");
     }
-    const QString name = QFileInfo(m_currentPath).fileName();
-    return tr("%1  |  %2×%3  |  Zoom: %4%  |  Rotation: %5°")
-        .arg(name)
-        .arg(m_imageSize.width())
-        .arg(m_imageSize.height())
-        .arg(qRound(m_scale * 100))
-        .arg(qRound(m_rotation));
-}
 
-void ImageView::applyTransform()
-{
-    if (!m_pixmapItem) {
-        return;
+    const QString name = QFileInfo(item->path()).fileName();
+    QString text = tr("%1  |  %2×%3  |  Zoom: %4%  |  Rotation: %5°")
+                       .arg(name)
+                       .arg(item->imageSize().width())
+                       .arg(item->imageSize().height())
+                       .arg(qRound(item->itemScale() * 100))
+                       .arg(qRound(item->itemRotation()));
+
+    if (m_items.size() > 1) {
+        text = tr("Workspace: %1 images  |  %2").arg(m_items.size()).arg(text);
     }
-
-    QTransform t;
-    const QRectF br = m_pixmapItem->boundingRect();
-    t.translate(br.center().x(), br.center().y());
-    t.rotate(m_rotation);
-    t.scale(m_scale, m_scale);
-    t.translate(-br.center().x(), -br.center().y());
-
-    m_pixmapItem->setTransform(t);
-    m_scene->setSceneRect(m_pixmapItem->sceneBoundingRect());
-}
-
-void ImageView::updateFitIfNeeded()
-{
-    if (m_fitMode && m_pixmapItem) {
-        fitInView(m_pixmapItem, Qt::KeepAspectRatio);
-    }
+    return text;
 }
 
 void ImageView::updateMouseInfo(const QPoint &viewPos)
 {
     ImageMouseInfo info;
-    if (!m_pixmapItem || m_sourceImage.isNull()) {
-        if (m_mouseInfo.valid) {
-            m_mouseInfo = info;
-            emit mouseInfoChanged(m_mouseInfo);
+    const QPointF scenePos = mapToScene(viewPos);
+
+    // Prefer the topmost item under the cursor
+    ImageItem *hit = nullptr;
+    const QList<QGraphicsItem *> hits = m_scene->items(scenePos);
+    for (QGraphicsItem *gi : hits) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            hit = item;
+            break;
         }
-        return;
     }
 
-    // Map view position → scene → item local coordinates
-    const QPointF scenePos = mapToScene(viewPos);
-    const QPointF itemPos = m_pixmapItem->mapFromScene(scenePos);
-    const QRectF br = m_pixmapItem->boundingRect();
-
-    if (br.contains(itemPos)) {
-        const int x = qBound(0, static_cast<int>(itemPos.x()), m_imageSize.width() - 1);
-        const int y = qBound(0, static_cast<int>(itemPos.y()), m_imageSize.height() - 1);
-        info.valid = true;
-        info.imagePos = QPoint(x, y);
-        info.pixelColor = m_sourceImage.pixelColor(x, y);
+    if (hit) {
+        const QPoint pixel = hit->pixelAtScenePos(scenePos);
+        if (pixel.x() >= 0) {
+            info.valid = true;
+            info.imagePos = pixel;
+            info.pixelColor = hit->colorAtPixel(pixel);
+            info.path = hit->path();
+        }
     }
 
     if (info.valid != m_mouseInfo.valid
         || info.imagePos != m_mouseInfo.imagePos
-        || info.pixelColor != m_mouseInfo.pixelColor) {
+        || info.pixelColor != m_mouseInfo.pixelColor
+        || info.path != m_mouseInfo.path) {
         m_mouseInfo = info;
         emit mouseInfoChanged(m_mouseInfo);
     }
@@ -199,29 +331,59 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 void ImageView::wheelEvent(QWheelEvent *event)
 {
-    if (event->angleDelta().y() > 0) {
-        zoomIn();
-    } else {
-        zoomOut();
+    // Zoom the item under the mouse, or the selection
+    ImageItem *item = nullptr;
+    const QPointF scenePos = mapToScene(event->position().toPoint());
+    const QList<QGraphicsItem *> hits = m_scene->items(scenePos);
+    for (QGraphicsItem *gi : hits) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            item = ii;
+            break;
+        }
     }
+    if (!item) {
+        item = targetItem();
+    }
+    if (!item) {
+        return;
+    }
+
+    m_fitMode = false;
+    if (event->angleDelta().y() > 0) {
+        item->zoomBy(1.25);
+    } else {
+        item->zoomBy(1.0 / 1.25);
+    }
+    emit statusChanged();
     event->accept();
 }
 
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
-    updateFitIfNeeded();
+    if (m_fitMode && m_items.size() == 1) {
+        fitItem(m_items.first());
+    }
 }
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
+    if (event->button() == Qt::MiddleButton
+        || (event->button() == Qt::LeftButton && event->modifiers() & Qt::AltModifier)) {
         m_panning = true;
         m_lastMousePos = event->pos();
         setCursor(Qt::ClosedHandCursor);
         event->accept();
         return;
     }
+
+    // Left click: let QGraphicsView handle selection / ItemIsMovable drag
+    if (event->button() == Qt::LeftButton) {
+        QGraphicsView::mousePressEvent(event);
+        emit statusChanged();
+        return;
+    }
+
     QGraphicsView::mousePressEvent(event);
 }
 
@@ -237,12 +399,14 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+
     QGraphicsView::mouseMoveEvent(event);
 }
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton && m_panning) {
+    if (m_panning
+        && (event->button() == Qt::MiddleButton || event->button() == Qt::LeftButton)) {
         m_panning = false;
         setCursor(Qt::ArrowCursor);
         event->accept();
@@ -258,4 +422,27 @@ void ImageView::leaveEvent(QEvent *event)
         emit mouseInfoChanged(m_mouseInfo);
     }
     QGraphicsView::leaveEvent(event);
+}
+
+void ImageView::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        // Remove selected items from the workspace (session list is unchanged)
+        const QList<QGraphicsItem *> selected = m_scene->selectedItems();
+        bool removed = false;
+        for (QGraphicsItem *gi : selected) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                m_items.removeOne(item);
+                m_scene->removeItem(item);
+                delete item;
+                removed = true;
+            }
+        }
+        if (removed) {
+            emit statusChanged();
+            event->accept();
+            return;
+        }
+    }
+    QGraphicsView::keyPressEvent(event);
 }
