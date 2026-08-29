@@ -125,6 +125,7 @@ private:
     QTimer *m_slideshowTimer = nullptr;
 
     QMenu *m_fileMenu = nullptr;
+    QMenu *m_editMenu = nullptr;
     QMenu *m_viewMenu = nullptr;
     QMenu *m_goMenu = nullptr;
     QMenu *m_helpMenu = nullptr;

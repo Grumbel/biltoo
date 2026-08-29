@@ -411,6 +411,10 @@ void MainWindow::createMenus()
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 
+    m_editMenu = menuBar()->addMenu(tr("&Edit"));
+    m_editMenu->addAction(m_undoAct);
+    m_editMenu->addAction(m_redoAct);
+
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     m_viewMenu->addAction(m_zoomInAct);
     m_viewMenu->addAction(m_zoomOutAct);
@@ -424,8 +428,6 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_sortMTimeAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_workspaceModeAct);
-    m_viewMenu->addAction(m_undoAct);
-    m_viewMenu->addAction(m_redoAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_selectToolAct);
     m_viewMenu->addAction(m_panToolAct);
@@ -1033,16 +1035,22 @@ void MainWindow::updateWorkspaceActionVisibility()
                          m_layoutVerticalAct, m_layoutGridAct, m_layoutStackAct,
                          m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
-                         m_clearExtrasAct, m_selectToolAct, m_panToolAct,
-                         m_undoAct, m_redoAct}) {
+                         m_clearExtrasAct, m_selectToolAct, m_panToolAct}) {
         if (act) {
             act->setVisible(on);
             act->setEnabled(on);
         }
     }
+    // Undo/Redo stay in Edit menu always; enabled by the undo stack itself.
+    // Still show them on the workspace tool strip only in workspace mode.
+    if (m_undoAct) {
+        m_undoAct->setVisible(true);
+        m_redoAct->setVisible(true);
+    }
     if (m_workspaceToolBar) {
         m_workspaceToolBar->setVisible(on && !isFullScreen());
     }
+    updateNavigationActions();
 }
 
 void MainWindow::onSlideshowTick()
@@ -1100,7 +1108,7 @@ void MainWindow::about()
            "<b>Ctrl+T</b> toolbar, <b>F5</b> slideshow.</p>"));
     // GNOME 2 HIG: single affirmative Close on the right is fine for about boxes
     box.setStandardButtons(QMessageBox::Close);
-    box.button(QMessageBox::Close)->setText(tr("_Close"));
+    box.button(QMessageBox::Close)->setText(tr("&Close"));
     box.setDefaultButton(QMessageBox::Close);
     box.exec();
 }

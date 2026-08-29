@@ -58,11 +58,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     form->addRow(QString(), m_workspaceCheck);
 
     // GNOME 2 HIG: Cancel on the left, OK (affirmative) on the right
-    auto *cancelBtn = new QPushButton(tr("_Cancel"), this);
+    auto *cancelBtn = new QPushButton(tr("&Cancel"), this);
     cancelBtn->setAutoDefault(false);
     connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
 
-    auto *okBtn = new QPushButton(tr("_OK"), this);
+    auto *okBtn = new QPushButton(tr("&OK"), this);
     okBtn->setDefault(true);
     connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
 
