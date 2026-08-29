@@ -6,5 +6,34 @@
   -->
   <qresource prefix="/icons">
     <file alias="qimgview.svg">../data/icons/hicolor/scalable/apps/qimgview.svg</file>
+    <file alias="actions/dialog-information.svg">../data/icons/actions/dialog-information.svg</file>
+    <file alias="actions/document-open.svg">../data/icons/actions/document-open.svg</file>
+    <file alias="actions/edit-clear.svg">../data/icons/actions/edit-clear.svg</file>
+    <file alias="actions/edit-redo.svg">../data/icons/actions/edit-redo.svg</file>
+    <file alias="actions/edit-select.svg">../data/icons/actions/edit-select.svg</file>
+    <file alias="actions/edit-undo.svg">../data/icons/actions/edit-undo.svg</file>
+    <file alias="actions/folder-open.svg">../data/icons/actions/folder-open.svg</file>
+    <file alias="actions/go-down.svg">../data/icons/actions/go-down.svg</file>
+    <file alias="actions/go-next.svg">../data/icons/actions/go-next.svg</file>
+    <file alias="actions/go-previous.svg">../data/icons/actions/go-previous.svg</file>
+    <file alias="actions/go-up.svg">../data/icons/actions/go-up.svg</file>
+    <file alias="actions/list-add.svg">../data/icons/actions/list-add.svg</file>
+    <file alias="actions/media-playback-start.svg">../data/icons/actions/media-playback-start.svg</file>
+    <file alias="actions/media-playback-stop.svg">../data/icons/actions/media-playback-stop.svg</file>
+    <file alias="actions/object-rotate-left.svg">../data/icons/actions/object-rotate-left.svg</file>
+    <file alias="actions/object-rotate-right.svg">../data/icons/actions/object-rotate-right.svg</file>
+    <file alias="actions/preferences-system.svg">../data/icons/actions/preferences-system.svg</file>
+    <file alias="actions/transform-move.svg">../data/icons/actions/transform-move.svg</file>
+    <file alias="actions/view-fullscreen.svg">../data/icons/actions/view-fullscreen.svg</file>
+    <file alias="actions/view-grid.svg">../data/icons/actions/view-grid.svg</file>
+    <file alias="actions/view-list-icons.svg">../data/icons/actions/view-list-icons.svg</file>
+    <file alias="actions/view-paged.svg">../data/icons/actions/view-paged.svg</file>
+    <file alias="actions/view-split-left-right.svg">../data/icons/actions/view-split-left-right.svg</file>
+    <file alias="actions/view-split-top-bottom.svg">../data/icons/actions/view-split-top-bottom.svg</file>
+    <file alias="actions/view-stack.svg">../data/icons/actions/view-stack.svg</file>
+    <file alias="actions/zoom-fit-best.svg">../data/icons/actions/zoom-fit-best.svg</file>
+    <file alias="actions/zoom-in.svg">../data/icons/actions/zoom-in.svg</file>
+    <file alias="actions/zoom-original.svg">../data/icons/actions/zoom-original.svg</file>
+    <file alias="actions/zoom-out.svg">../data/icons/actions/zoom-out.svg</file>
   </qresource>
 </RCC>

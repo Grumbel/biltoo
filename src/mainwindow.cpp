@@ -20,6 +20,7 @@
 #include <QDropEvent>
 #include <QEvent>
 #include <QFileDialog>
+#include <QFile>
 #include <QFileInfo>
 #include <QIcon>
 #include <QKeyEvent>
@@ -48,10 +49,18 @@ namespace {
 QIcon themeIcon(const QString &name, QStyle::StandardPixmap fallback)
 {
     QIcon icon = QIcon::fromTheme(name);
-    if (icon.isNull()) {
-        icon = QApplication::style()->standardIcon(fallback);
+    if (!icon.isNull()) {
+        return icon;
     }
-    return icon;
+    // Bundled custom SVG when the icon theme has no match
+    const QString resource = QStringLiteral(":/icons/actions/%1.svg").arg(name);
+    if (QFile::exists(resource)) {
+        icon = QIcon(resource);
+        if (!icon.isNull()) {
+            return icon;
+        }
+    }
+    return QApplication::style()->standardIcon(fallback);
 }
 
 const QStringList &imageSuffixes()
@@ -292,7 +301,7 @@ void MainWindow::createActions()
 
     m_layoutStackAct = new QAction(tr("Layout Stac&k"), this);
     m_layoutStackAct->setCheckable(true);
-    m_layoutStackAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_TitleBarNormalButton));
+    m_layoutStackAct->setIcon(themeIcon(QStringLiteral("view-stack"), QStyle::SP_TitleBarNormalButton));
     m_layoutStackAct->setStatusTip(tr("Stack images on top of each other for opacity comparison"));
     connect(m_layoutStackAct, &QAction::triggered, this, &MainWindow::setLayoutStack);
 
