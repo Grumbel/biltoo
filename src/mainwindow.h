@@ -155,6 +155,7 @@ private:
     QStringList m_files;
     int m_currentIndex = -1;
     bool m_recursive = false;
+    bool m_workspaceMode = false;
     SortMode m_sortMode = SortMode::Name;
     int m_slideshowIntervalMs = 3000;
     bool m_forceThumbnails = false;
