@@ -9,10 +9,12 @@
 #include <QStringList>
 
 class ImageView;
+class ThumbnailBar;
 class QToolBar;
 class QAction;
 class QLabel;
 class QMenu;
+class QSplitter;
 
 class MainWindow : public QMainWindow
 {
@@ -26,6 +28,8 @@ public:
 
 protected:
     void changeEvent(QEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 
 private slots:
     void openFiles();
@@ -36,10 +40,14 @@ private slots:
     void toggleFullscreen();
     void rotateLeft();
     void rotateRight();
+    void goPrevious();
+    void goNext();
     void toggleToolBar();
+    void toggleThumbnailBar();
     void about();
     void updateStatus();
     void showContextMenu(const QPoint &pos);
+    void onThumbnailActivated(int index);
 
 private:
     void createActions();
@@ -47,13 +55,18 @@ private:
     void createToolBar();
     void createStatusBar();
     void updateFullscreenUi();
+    void setCurrentIndex(int index);
+    void updateNavigationActions();
+    QStringList extractLocalImagePaths(const QMimeData *mime) const;
 
     ImageView *m_imageView = nullptr;
+    ThumbnailBar *m_thumbnailBar = nullptr;
     QToolBar *m_toolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
 
     QMenu *m_fileMenu = nullptr;
     QMenu *m_viewMenu = nullptr;
+    QMenu *m_goMenu = nullptr;
     QMenu *m_helpMenu = nullptr;
     QMenu *m_contextMenu = nullptr;
 
@@ -66,10 +79,17 @@ private:
     QAction *m_fullscreenAct = nullptr;
     QAction *m_rotateLeftAct = nullptr;
     QAction *m_rotateRightAct = nullptr;
+    QAction *m_previousAct = nullptr;
+    QAction *m_nextAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;
+    QAction *m_toggleThumbnailBarAct = nullptr;
     QAction *m_aboutAct = nullptr;
 
+    QStringList m_files;
+    int m_currentIndex = -1;
+
     bool m_toolBarVisibleBeforeFullscreen = true;
+    bool m_thumbnailBarVisibleBeforeFullscreen = true;
 };
 
 #endif // MAINWINDOW_H
