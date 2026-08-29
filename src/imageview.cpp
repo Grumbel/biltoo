@@ -23,10 +23,12 @@ ImageView::ImageView(QWidget *parent)
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
-    setBackgroundBrush(QBrush(QColor(40, 40, 40)));
+    setBackgroundBrush(QBrush(QColor(36, 36, 36)));
     setFrameShape(QFrame::NoFrame);
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
+    setAlignment(Qt::AlignCenter);
+    setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
 }
 
 ImageView::~ImageView() = default;

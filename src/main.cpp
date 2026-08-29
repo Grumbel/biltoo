@@ -4,6 +4,7 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QGuiApplication>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QIcon>
@@ -16,6 +17,7 @@ int main(int argc, char *argv[])
     QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
     QApplication::setOrganizationName(QStringLiteral("QImgView"));
     QApplication::setOrganizationDomain(QStringLiteral("qimgview.local"));
+    QGuiApplication::setDesktopFileName(QStringLiteral("qimgview"));
 
     // Prefer the installed theme icon; fall back to the embedded SVG.
     QIcon appIcon = QIcon::fromTheme(QStringLiteral("qimgview"));

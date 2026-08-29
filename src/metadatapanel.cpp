@@ -31,11 +31,13 @@ MetadataPanel::MetadataPanel(QWidget *parent)
     m_tree->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
 
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(4, 4, 4, 4);
+    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setSpacing(6);
     layout->addWidget(m_header);
     layout->addWidget(m_tree, 1);
 
-    setMinimumWidth(220);
+    setMinimumWidth(240);
+    setWhatsThis(tr("Shows file information and metadata reported by the image plugin."));
 }
 
 void MetadataPanel::clear()

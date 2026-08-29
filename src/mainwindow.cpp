@@ -7,6 +7,7 @@
 #include "preferencesdialog.h"
 #include "metadatapanel.h"
 
+#include <QAbstractButton>
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
@@ -110,6 +111,13 @@ MainWindow::MainWindow(QWidget *parent)
     createMenus();
     createToolBar();
     createStatusBar();
+
+    // Use status tips as hover tooltips on the toolbar and menus
+    for (QAction *act : findChildren<QAction *>()) {
+        if (act->toolTip().isEmpty() && !act->statusTip().isEmpty()) {
+            act->setToolTip(act->statusTip());
+        }
+    }
 
     // Application-wide shortcuts so they work while the image view has focus
     auto *escShortcut = new QShortcut(Qt::Key_Escape, this);
@@ -415,8 +423,10 @@ void MainWindow::createToolBar()
     m_toolBar = addToolBar(tr("Main"));
     m_toolBar->setObjectName(QStringLiteral("MainToolBar"));
     m_toolBar->setMovable(false);
+    m_toolBar->setFloatable(false);
     m_toolBar->setIconSize(QSize(24, 24));
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    m_toolBar->setDocumentMode(true);
 
     // Left: file and navigation
     m_toolBar->addAction(m_openAct);
@@ -458,8 +468,12 @@ void MainWindow::createToolBar()
 void MainWindow::createStatusBar()
 {
     m_statusLabel = new QLabel(tr("Ready"));
+    m_statusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     m_mouseLabel = new QLabel;
-    m_mouseLabel->setMinimumWidth(180);
+    m_mouseLabel->setMinimumWidth(200);
+    m_mouseLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_mouseLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    statusBar()->setSizeGripEnabled(true);
     statusBar()->addWidget(m_statusLabel, 1);
     statusBar()->addPermanentWidget(m_mouseLabel);
 }
@@ -937,13 +951,22 @@ void MainWindow::toggleScrollBars()
 
 void MainWindow::about()
 {
-    QMessageBox::about(this, tr("About QImgView"),
-        tr("<h3>QImgView %1</h3>"
-           "<p>A classic Qt image viewer that treats the image area "
-           "as a workspace.</p>"
-           "<p>Copyright © 2026 Ingo Ruhnke &lt;grumbel@gmail.com&gt;</p>"
-           "<p>License: GPL-3.0-or-later</p>")
-            .arg(QApplication::applicationVersion()));
+    QMessageBox box(this);
+    box.setWindowTitle(tr("About QImgView"));
+    box.setIconPixmap(QApplication::windowIcon().pixmap(64, 64));
+    box.setText(tr("<h3>QImgView %1</h3>").arg(QApplication::applicationVersion()));
+    box.setInformativeText(
+        tr("<p>A classic image viewer with an optional workspace for "
+           "comparing images side by side.</p>"
+           "<p>Copyright © 2026 Ingo Ruhnke &lt;grumbel@gmail.com&gt;<br/>"
+           "License: <b>GPL-3.0-or-later</b></p>"
+           "<p>Shortcuts: <b>F11</b> fullscreen, <b>Esc</b> leave fullscreen, "
+           "<b>Ctrl+T</b> toolbar, <b>F5</b> slideshow.</p>"));
+    // GNOME 2 HIG: single affirmative Close on the right is fine for about boxes
+    box.setStandardButtons(QMessageBox::Close);
+    box.button(QMessageBox::Close)->setText(tr("_Close"));
+    box.setDefaultButton(QMessageBox::Close);
+    box.exec();
 }
 
 void MainWindow::showPreferences()
