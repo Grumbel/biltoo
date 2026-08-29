@@ -427,15 +427,12 @@ void MainWindow::createToolBar()
     m_toolBar->setIconSize(QSize(24, 24));
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
-    // Left: file and navigation
+    // Left: file
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_addAct);
     m_toolBar->addSeparator();
-    m_toolBar->addAction(m_previousAct);
-    m_toolBar->addAction(m_nextAct);
-    m_toolBar->addSeparator();
 
-    // Left-middle: zoom and rotate
+    // Left: zoom and rotate
     m_toolBar->addAction(m_zoomInAct);
     m_toolBar->addAction(m_zoomOutAct);
     m_toolBar->addAction(m_zoom1to1Act);
@@ -446,13 +443,15 @@ void MainWindow::createToolBar()
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_layoutSideBySideAct);
 
-    // Expanding spacer — centres the slideshow control
+    // Expanding spacer — centres prev / play / next
     auto *spacerLeft = new QWidget(m_toolBar);
     spacerLeft->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     m_toolBar->addWidget(spacerLeft);
 
-    // Centre: slideshow
+    // Centre: previous, slideshow, next
+    m_toolBar->addAction(m_previousAct);
     m_toolBar->addAction(m_slideshowAct);
+    m_toolBar->addAction(m_nextAct);
 
     auto *spacerRight = new QWidget(m_toolBar);
     spacerRight->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
