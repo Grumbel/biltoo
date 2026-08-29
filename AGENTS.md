@@ -63,8 +63,11 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 - Drag-and-drop of local image files replaces the current session.
 - Keyboard: Left/Right/Space/Backspace/PgUp/PgDn navigate; R / [ ] rotate; F fit.
 - Open Directory (Ctrl+Shift+O) and CLI directories expand to images sorted by name.
+- `--recursive` / `-r` walks subdirectories when expanding directory arguments.
 - Status bar shows image coordinates and RGB under the cursor.
 - Window geometry and toolbar visibility are restored via QSettings.
+- Slideshow (F5): advances automatically; `--slideshow` and `--interval=ms` on the CLI.
+- Thumbnails are decoded asynchronously on the global QThreadPool.
 
 ## What not to do
 
