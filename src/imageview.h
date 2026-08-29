@@ -89,6 +89,7 @@ private:
     QList<ImageItem *> m_items;
 
     bool m_fitMode = true;
+    bool m_workspaceMode = false;
     ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;
