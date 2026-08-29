@@ -17,22 +17,27 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 
 ## Prototype Goals (v0.1)
 
-- [ ] Basic Qt6 Widgets application with main window
-- [ ] Toolbar with: Open, Zoom+, Zoom-, 1:1, Fit to Window, Fullscreen, Rotate Left, Rotate Right
-- [ ] Load single JPEG/PNG (and other formats Qt supports natively)
-- [ ] Simple image view with zoom and 90° rotation
-- [ ] Command-line: accept one or more image files
-- [ ] Nix flake for reproducible builds (Qt6, CMake)
-- [ ] REUSE / SPDX licensing (GPLv3+)
+- [x] Basic Qt6 Widgets application with main window
+- [x] Toolbar with: Open, Zoom+, Zoom-, 1:1, Fit to Window, Fullscreen, Rotate Left, Rotate Right
+- [x] Menu bar (File / View / Help) sharing the same actions
+- [x] Theme icons for toolbar and menus (with StandardPixmap fallbacks)
+- [x] Hide toolbar (and menu/status) in fullscreen; Tab toggles toolbar
+- [x] Context menu on the image view
+- [x] Load single JPEG/PNG (and other formats Qt supports natively)
+- [x] Simple image view with zoom, pan and 90° rotation
+- [x] Command-line: accept one or more image files (+ `--fullscreen`, `--fit`)
+- [x] Nix flake for reproducible builds (Qt6, CMake)
+- [x] REUSE / SPDX licensing (GPLv3+)
+- [x] AGENTS.md for contributor / agent guidance
 
 ## Near-term
 
 - [ ] Thumbnail strip / panel at bottom for multi-image sessions
-- [ ] Keyboard navigation (arrows, +/-, r/R for rotate, f for fit, etc.)
-- [ ] Mouse wheel zoom, drag to pan
-- [ ] Status bar showing filename, zoom level, dimensions, position
-- [ ] Drag-and-drop of images onto the window
+- [ ] Keyboard navigation (arrows for next/prev once multi-image exists, +/-, r/R for rotate, f for fit, etc.)
+- [ ] Drag-and-drop of images onto the window (open or add to workspace)
 - [ ] Basic multi-image support: list of loaded images, switch between them
+- [ ] Improve status bar (pixel position under cursor, colour if useful)
+- [ ] Remember window geometry / toolbar visibility across sessions (QSettings)
 
 ## Workspace / Advanced View
 
@@ -49,7 +54,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [ ] Optional side panel showing Exif / IPTC / XMP (use libexiv2 or Qt's limited support)
 - [ ] Remember per-image view settings (zoom, rotation, position) in a session or on disk
 - [ ] Slideshow mode
-- [ ] Fullscreen with hidden UI
+- [ ] Fullscreen with optional always-hidden chrome (already partially done)
 
 ## Image Format Support
 
@@ -62,7 +67,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 Rich options, for example:
 
 - `qimgview [options] [file ...]`
-- `--fullscreen` / `-f`
+- `--fullscreen` / `-f` (done)
 - `--fit` / `--zoom=1.0` / `--rotate=90`
 - `--thumbnails` / `--no-thumbnails`
 - `--exif` / `--side-panel`
@@ -77,9 +82,11 @@ Rich options, for example:
 - Keep the codebase clean and modular (MainWindow, ImageWorkspace, ThumbnailBar, MetadataPanel, ...)
 - Avoid hacks; if complexity grows, refactor early
 - OpenGL may be needed for high-quality free rotation + zoom of multiple large images; evaluate QGraphicsView first, then QOpenGLWidget if necessary
+- Icons: always `QIcon::fromTheme` + fallback so the UI stays usable without a full icon theme
 
 ## Open Questions
 
 - Exact interaction model for multi-image workspace (select, bring-to-front, group, etc.)
 - Whether to store view state next to images (sidecar files) or in a central cache
 - Performance strategy for 100+ megapixel images or dozens of images in one workspace
+- Whether Tab should also toggle the menu bar / status bar, or only the toolbar
