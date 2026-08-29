@@ -9,6 +9,7 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QCollator>
 #include <QDir>
 #include <QDirIterator>
 #include <QDragEnterEvent>
@@ -17,6 +18,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QIcon>
+#include <QKeyEvent>
 #include <QKeySequence>
 #include <QLabel>
 #include <QMenu>
@@ -24,6 +26,7 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QSettings>
+#include <QShortcut>
 #include <QSizePolicy>
 #include <QSet>
 #include <QStatusBar>
@@ -94,6 +97,15 @@ MainWindow::MainWindow(QWidget *parent)
     createMenus();
     createToolBar();
     createStatusBar();
+
+    // Application-wide shortcuts so they work while the image view has focus
+    auto *escShortcut = new QShortcut(Qt::Key_Escape, this);
+    escShortcut->setContext(Qt::ApplicationShortcut);
+    connect(escShortcut, &QShortcut::activated, this, [this]() {
+        if (isFullScreen()) {
+            showNormal();
+        }
+    });
 
     connect(m_imageView, &ImageView::statusChanged, this, &MainWindow::updateStatus);
 
@@ -253,11 +265,12 @@ void MainWindow::createActions()
     m_sortGroup->setExclusive(true);
 
     m_toggleToolBarAct = new QAction(tr("Show &Toolbar"), this);
-    m_toggleToolBarAct->setShortcut(Qt::Key_Tab);
+    m_toggleToolBarAct->setShortcut(Qt::CTRL | Qt::Key_T);
+    m_toggleToolBarAct->setShortcutContext(Qt::ApplicationShortcut);
     m_toggleToolBarAct->setCheckable(true);
     m_toggleToolBarAct->setChecked(true);
     m_toggleToolBarAct->setIcon(themeIcon(QStringLiteral("configure-toolbars"), QStyle::SP_ToolBarHorizontalExtensionButton));
-    m_toggleToolBarAct->setStatusTip(tr("Show or hide the toolbar (Tab)"));
+    m_toggleToolBarAct->setStatusTip(tr("Show or hide the toolbar (Ctrl+T)"));
     connect(m_toggleToolBarAct, &QAction::triggered, this, &MainWindow::toggleToolBar);
 
     m_toggleThumbnailBarAct = new QAction(tr("Show Thum&bnails"), this);
@@ -436,10 +449,15 @@ void MainWindow::sortFileList()
             return QString::compare(a, b, Qt::CaseInsensitive) < 0;
         });
     } else {
-        std::stable_sort(m_files.begin(), m_files.end(), [](const QString &a, const QString &b) {
-            return QString::compare(QFileInfo(a).fileName(), QFileInfo(b).fileName(),
-                                    Qt::CaseInsensitive) < 0;
-        });
+        // Natural (numeric-aware) case-insensitive sort by file name
+        QCollator collator;
+        collator.setNumericMode(true);
+        collator.setCaseSensitivity(Qt::CaseInsensitive);
+        std::stable_sort(m_files.begin(), m_files.end(),
+                         [&collator](const QString &a, const QString &b) {
+                             return collator.compare(QFileInfo(a).fileName(),
+                                                     QFileInfo(b).fileName()) < 0;
+                         });
     }
 }
 
@@ -928,6 +946,18 @@ void MainWindow::writeSettings()
                       m_sortMode == SortMode::MTime ? QStringLiteral("mtime")
                                                     : QStringLiteral("name"));
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Escape) {
+        if (isFullScreen()) {
+            showNormal();
+            event->accept();
+            return;
+        }
+    }
+    QMainWindow::keyPressEvent(event);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
