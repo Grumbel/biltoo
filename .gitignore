@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+# SPDX-License-Identifier: CC0-1.0
+
+/build/
+/result
+/result-*
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+.qt/
+*.user
+*.autosave
+.DS_Store
+*~
