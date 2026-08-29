@@ -50,7 +50,27 @@ void ImageView::clearWorkspace()
     m_scene->clear();
     m_items.clear();
     m_mouseInfo = {};
+    m_rotateItem = nullptr;
+    m_rotating = false;
     emit mouseInfoChanged(m_mouseInfo);
+}
+
+void ImageView::clearExtras()
+{
+    if (m_items.size() <= 1) {
+        return;
+    }
+    ImageItem *keep = m_items.first();
+    for (int i = m_items.size() - 1; i >= 1; --i) {
+        ImageItem *item = m_items.takeAt(i);
+        m_scene->removeItem(item);
+        delete item;
+    }
+    m_scene->clearSelection();
+    keep->setSelected(true);
+    m_fitMode = true;
+    fitItem(keep);
+    emit statusChanged();
 }
 
 bool ImageView::loadImage(const QString &path)
@@ -176,6 +196,46 @@ void ImageView::rotateRight()
     }
 }
 
+void ImageView::raiseSelected()
+{
+    if (ImageItem *item = targetItem()) {
+        item->setZValue(item->zValue() + 1.0);
+        emit statusChanged();
+    }
+}
+
+void ImageView::lowerSelected()
+{
+    if (ImageItem *item = targetItem()) {
+        item->setZValue(item->zValue() - 1.0);
+        emit statusChanged();
+    }
+}
+
+void ImageView::opacityUp()
+{
+    if (ImageItem *item = targetItem()) {
+        item->setItemOpacity(item->itemOpacity() + 0.1);
+        emit statusChanged();
+    }
+}
+
+void ImageView::opacityDown()
+{
+    if (ImageItem *item = targetItem()) {
+        item->setItemOpacity(item->itemOpacity() - 0.1);
+        emit statusChanged();
+    }
+}
+
+void ImageView::opacityReset()
+{
+    if (ImageItem *item = targetItem()) {
+        item->setItemOpacity(1.0);
+        emit statusChanged();
+    }
+}
+
 void ImageView::layoutSideBySide()
 {
     if (m_items.size() < 2) {
@@ -288,6 +348,9 @@ QString ImageView::statusText() const
                        .arg(item->imageSize().height())
                        .arg(qRound(item->itemScale() * 100))
                        .arg(qRound(item->itemRotation()));
+    if (item->itemOpacity() < 0.999) {
+        text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
+    }
 
     if (m_items.size() > 1) {
         text = tr("Workspace: %1 images  |  %2").arg(m_items.size()).arg(text);
@@ -366,6 +429,12 @@ void ImageView::resizeEvent(QResizeEvent *event)
     }
 }
 
+qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
+{
+    const QPointF c = item->scenePos();
+    return qRadiansToDegrees(std::atan2(scenePos.y() - c.y(), scenePos.x() - c.x()));
+}
+
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MiddleButton
@@ -375,6 +444,32 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         setCursor(Qt::ClosedHandCursor);
         event->accept();
         return;
+    }
+
+    // Shift + left button: free continuous rotation of the item under the cursor
+    if (event->button() == Qt::LeftButton && (event->modifiers() & Qt::ShiftModifier)) {
+        ImageItem *hit = nullptr;
+        const QPointF scenePos = mapToScene(event->pos());
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                hit = ii;
+                break;
+            }
+        }
+        if (!hit) {
+            hit = targetItem();
+        }
+        if (hit) {
+            m_rotating = true;
+            m_rotateItem = hit;
+            m_rotateStartAngle = angleAt(scenePos, hit);
+            m_rotateItemStart = hit->itemRotation();
+            m_scene->clearSelection();
+            hit->setSelected(true);
+            setCursor(Qt::CrossCursor);
+            event->accept();
+            return;
+        }
     }
 
     // Left click: let QGraphicsView handle selection / ItemIsMovable drag
@@ -391,6 +486,17 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
     updateMouseInfo(event->pos());
 
+    if (m_rotating && m_rotateItem) {
+        const QPointF scenePos = mapToScene(event->pos());
+        const qreal angle = angleAt(scenePos, m_rotateItem);
+        const qreal delta = angle - m_rotateStartAngle;
+        m_rotateItem->setItemRotation(m_rotateItemStart + delta);
+        m_fitMode = false;
+        emit statusChanged();
+        event->accept();
+        return;
+    }
+
     if (m_panning) {
         const QPoint delta = event->pos() - m_lastMousePos;
         m_lastMousePos = event->pos();
@@ -405,6 +511,13 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_rotating && event->button() == Qt::LeftButton) {
+        m_rotating = false;
+        m_rotateItem = nullptr;
+        setCursor(Qt::ArrowCursor);
+        event->accept();
+        return;
+    }
     if (m_panning
         && (event->button() == Qt::MiddleButton || event->button() == Qt::LeftButton)) {
         m_panning = false;

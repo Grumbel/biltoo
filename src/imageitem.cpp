@@ -49,6 +49,12 @@ void ImageItem::rotateBy(qreal degrees)
     setItemRotation(m_rotation + degrees);
 }
 
+void ImageItem::setItemOpacity(qreal opacity)
+{
+    m_opacity = qBound(0.05, opacity, 1.0);
+    setOpacity(m_opacity);
+}
+
 void ImageItem::applyLocalTransform()
 {
     QTransform t;

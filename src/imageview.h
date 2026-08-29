@@ -35,6 +35,8 @@ public:
     bool loadImage(const QString &path);
     bool addImage(const QString &path);
     void clearWorkspace();
+    /** Remove all items except the primary (first) session image, if any. */
+    void clearExtras();
 
     void zoomIn();
     void zoomOut();
@@ -42,6 +44,12 @@ public:
     void zoomFit();
     void rotateLeft();
     void rotateRight();
+
+    void raiseSelected();
+    void lowerSelected();
+    void opacityUp();
+    void opacityDown();
+    void opacityReset();
 
     /** Arrange all items in a simple horizontal row. */
     void layoutSideBySide();
@@ -69,10 +77,11 @@ protected:
 private:
     ImageItem *loadItem(const QString &path);
     ImageItem *primaryItem() const;
-    ImageItem *targetItem() const; // selection, or sole item, or item under mouse
+    ImageItem *targetItem() const;
     void updateMouseInfo(const QPoint &viewPos);
     void fitItem(ImageItem *item);
     void ensureVisibleItem(ImageItem *item);
+    qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
 
     QGraphicsScene *m_scene = nullptr;
     QList<ImageItem *> m_items;
@@ -82,6 +91,12 @@ private:
 
     QPoint m_lastMousePos;
     bool m_panning = false;
+
+    // Free rotation: Shift + left drag around item centre
+    bool m_rotating = false;
+    ImageItem *m_rotateItem = nullptr;
+    qreal m_rotateStartAngle = 0.0;
+    qreal m_rotateItemStart = 0.0;
 };
 
 #endif // IMAGEVIEW_H

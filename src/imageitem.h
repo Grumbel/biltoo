@@ -27,9 +27,11 @@ public:
 
     qreal itemScale() const { return m_scale; }
     qreal itemRotation() const { return m_rotation; }
+    qreal itemOpacity() const { return m_opacity; }
 
     void setItemScale(qreal scale);
     void setItemRotation(qreal degrees);
+    void setItemOpacity(qreal opacity);
     void zoomBy(qreal factor);
     void rotateBy(qreal degrees);
 
@@ -49,6 +51,7 @@ private:
     QImage m_source;
     qreal m_scale = 1.0;
     qreal m_rotation = 0.0;
+    qreal m_opacity = 1.0;
 };
 
 #endif // IMAGEITEM_H
