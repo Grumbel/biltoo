@@ -248,7 +248,7 @@ void MainWindow::createActions()
 
     m_panToolAct = new QAction(tr("&Pan"), this);
     m_panToolAct->setCheckable(true);
-    m_panToolAct->setIcon(themeIcon(QStringLiteral("transform-move"), QStyle::SP_ArrowAll));
+    m_panToolAct->setIcon(themeIcon(QStringLiteral("transform-move"), QStyle::SP_ArrowRight));
     m_panToolAct->setStatusTip(tr("Pan the workspace view"));
     connect(m_panToolAct, &QAction::triggered, this, &MainWindow::setPanTool);
 
