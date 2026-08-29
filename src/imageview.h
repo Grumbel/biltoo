@@ -11,6 +11,7 @@
 
 class ImageItem;
 class QGraphicsScene;
+class QUndoStack;
 
 struct ImageMouseInfo {
     bool valid = false;
@@ -19,16 +20,31 @@ struct ImageMouseInfo {
     QString path;
 };
 
+struct WorkspaceItemState {
+    QString path;
+    QPointF pos;
+    qreal scale = 1.0;
+    qreal rotation = 0.0;
+    qreal opacity = 1.0;
+    qreal z = 0.0;
+};
+
 /**
- * Workspace view: one or more ImageItems on a QGraphicsScene.
- * loadImage() replaces the workspace with a single image.
- * addImage() places an additional image for comparison.
+ * Image view with an optional multi-item workspace.
+ * In classic mode the current image is shown centred and non-interactive.
+ * Workspace state is snapshotted when the mode is turned off and restored
+ * when it is turned back on.
  */
 class ImageView : public QGraphicsView
 {
     Q_OBJECT
 
 public:
+    enum class Tool {
+        Select,
+        Pan
+    };
+
     explicit ImageView(QWidget *parent = nullptr);
     ~ImageView() override;
 
@@ -37,8 +53,12 @@ public:
     void clearWorkspace();
     void setWorkspaceMode(bool on);
     bool workspaceMode() const { return m_workspaceMode; }
-    /** Remove all items except the primary (first) session image, if any. */
     void clearExtras();
+
+    void setTool(Tool tool);
+    Tool tool() const { return m_tool; }
+
+    QUndoStack *undoStack() const { return m_undoStack; }
 
     void zoomIn();
     void zoomOut();
@@ -53,8 +73,10 @@ public:
     void opacityDown();
     void opacityReset();
 
-    /** Arrange all items in a simple horizontal row. */
     void layoutSideBySide();
+
+    WorkspaceItemState captureState(const ImageItem *item) const;
+    void applyState(ImageItem *item, const WorkspaceItemState &state);
 
     QString statusText() const;
     ImageMouseInfo mouseInfo() const { return m_mouseInfo; }
@@ -66,6 +88,7 @@ public:
 signals:
     void statusChanged();
     void mouseInfoChanged(const ImageMouseInfo &info);
+    void toolChanged(ImageView::Tool tool);
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
@@ -84,22 +107,31 @@ private:
     void fitItem(ImageItem *item);
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
+    void snapshotWorkspace();
+    void restoreWorkspace();
 
     QGraphicsScene *m_scene = nullptr;
     QList<ImageItem *> m_items;
+    QList<WorkspaceItemState> m_savedWorkspace;
+    QString m_classicPath;
+
+    QUndoStack *m_undoStack = nullptr;
 
     bool m_fitMode = true;
     bool m_workspaceMode = false;
+    Tool m_tool = Tool::Select;
     ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;
     bool m_panning = false;
 
-    // Free rotation: Shift + left drag around item centre
     bool m_rotating = false;
     ImageItem *m_rotateItem = nullptr;
     qreal m_rotateStartAngle = 0.0;
     qreal m_rotateItemStart = 0.0;
+
+    ImageItem *m_dragItem = nullptr;
+    WorkspaceItemState m_dragStartState;
 };
 
 #endif // IMAGEVIEW_H

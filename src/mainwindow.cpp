@@ -31,6 +31,7 @@
 #include <QMimeData>
 #include <QSettings>
 #include <QShortcut>
+#include <QUndoStack>
 #include <QSizePolicy>
 #include <QSet>
 #include <QStatusBar>
@@ -238,6 +239,31 @@ void MainWindow::createActions()
         tr("Compare multiple images on the view. Add via drop or Ctrl/Shift+click a thumbnail."));
     connect(m_workspaceModeAct, &QAction::triggered, this, &MainWindow::toggleWorkspaceMode);
 
+    m_selectToolAct = new QAction(tr("&Select"), this);
+    m_selectToolAct->setCheckable(true);
+    m_selectToolAct->setChecked(true);
+    m_selectToolAct->setIcon(themeIcon(QStringLiteral("edit-select"), QStyle::SP_FileDialogContentsView));
+    m_selectToolAct->setStatusTip(tr("Select and move images on the workspace"));
+    connect(m_selectToolAct, &QAction::triggered, this, &MainWindow::setSelectTool);
+
+    m_panToolAct = new QAction(tr("&Pan"), this);
+    m_panToolAct->setCheckable(true);
+    m_panToolAct->setIcon(themeIcon(QStringLiteral("transform-move"), QStyle::SP_ArrowAll));
+    m_panToolAct->setStatusTip(tr("Pan the workspace view"));
+    connect(m_panToolAct, &QAction::triggered, this, &MainWindow::setPanTool);
+
+    auto *toolGroup = new QActionGroup(this);
+    toolGroup->addAction(m_selectToolAct);
+    toolGroup->addAction(m_panToolAct);
+    toolGroup->setExclusive(true);
+
+    m_undoAct = m_imageView->undoStack()->createUndoAction(this, tr("&Undo"));
+    m_undoAct->setShortcuts(QKeySequence::Undo);
+    m_undoAct->setIcon(themeIcon(QStringLiteral("edit-undo"), QStyle::SP_ArrowBack));
+    m_redoAct = m_imageView->undoStack()->createRedoAction(this, tr("&Redo"));
+    m_redoAct->setShortcuts(QKeySequence::Redo);
+    m_redoAct->setIcon(themeIcon(QStringLiteral("edit-redo"), QStyle::SP_ArrowForward));
+
     m_layoutSideBySideAct = new QAction(tr("Layout Side b&y Side"), this);
     m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
     m_layoutSideBySideAct->setIcon(themeIcon(QStringLiteral("view-grid"), QStyle::SP_FileDialogListView));
@@ -364,6 +390,12 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_sortMTimeAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_workspaceModeAct);
+    m_viewMenu->addAction(m_undoAct);
+    m_viewMenu->addAction(m_redoAct);
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_selectToolAct);
+    m_viewMenu->addAction(m_panToolAct);
+    m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_layoutSideBySideAct);
     m_viewMenu->addAction(m_raiseAct);
     m_viewMenu->addAction(m_lowerAct);
@@ -442,6 +474,8 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_rotateRightAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_layoutSideBySideAct);
+    m_toolBar->addAction(m_raiseAct);
+    m_toolBar->addAction(m_lowerAct);
 
     // Expanding spacer — centres prev / play / next
     auto *spacerLeft = new QWidget(m_toolBar);
@@ -461,6 +495,22 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_workspaceModeAct);
     m_toolBar->addAction(m_toggleMetadataAct);
     m_toolBar->addAction(m_fullscreenAct);
+
+    // Left vertical toolbar for workspace tools (hidden until workspace mode)
+    m_workspaceToolBar = new QToolBar(tr("Workspace Tools"), this);
+    m_workspaceToolBar->setObjectName(QStringLiteral("WorkspaceToolBar"));
+    m_workspaceToolBar->setMovable(false);
+    m_workspaceToolBar->setFloatable(false);
+    m_workspaceToolBar->setIconSize(QSize(24, 24));
+    m_workspaceToolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    m_workspaceToolBar->setOrientation(Qt::Vertical);
+    addToolBar(Qt::LeftToolBarArea, m_workspaceToolBar);
+    m_workspaceToolBar->addAction(m_selectToolAct);
+    m_workspaceToolBar->addAction(m_panToolAct);
+    m_workspaceToolBar->addSeparator();
+    m_workspaceToolBar->addAction(m_undoAct);
+    m_workspaceToolBar->addAction(m_redoAct);
+    m_workspaceToolBar->hide();
 }
 
 void MainWindow::createStatusBar()
@@ -887,7 +937,25 @@ void MainWindow::toggleWorkspaceMode()
 {
     m_workspaceMode = m_workspaceModeAct->isChecked();
     m_imageView->setWorkspaceMode(m_workspaceMode);
+    if (!m_workspaceMode) {
+        // Ensure classic view shows the current session image, centred
+        if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+            m_imageView->loadImage(m_files.at(m_currentIndex));
+        }
+    }
     updateWorkspaceActionVisibility();
+}
+
+void MainWindow::setSelectTool()
+{
+    m_imageView->setTool(ImageView::Tool::Select);
+    m_selectToolAct->setChecked(true);
+}
+
+void MainWindow::setPanTool()
+{
+    m_imageView->setTool(ImageView::Tool::Pan);
+    m_panToolAct->setChecked(true);
 }
 
 void MainWindow::updateWorkspaceActionVisibility()
@@ -895,15 +963,15 @@ void MainWindow::updateWorkspaceActionVisibility()
     const bool on = m_workspaceMode;
     for (QAction *act : {m_layoutSideBySideAct, m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
-                         m_clearExtrasAct}) {
+                         m_clearExtrasAct, m_selectToolAct, m_panToolAct,
+                         m_undoAct, m_redoAct}) {
         if (act) {
             act->setVisible(on);
             act->setEnabled(on);
         }
     }
-    // Toolbar shows layout only in workspace mode
-    if (m_toolBar && m_layoutSideBySideAct) {
-        // setVisible on the action hides it from the toolbar too
+    if (m_workspaceToolBar) {
+        m_workspaceToolBar->setVisible(on && !isFullScreen());
     }
 }
 
@@ -1030,6 +1098,9 @@ void MainWindow::updateFullscreenUi()
         m_toolBarVisibleBeforeFullscreen = m_toolBar->isVisible();
         m_thumbnailBarVisibleBeforeFullscreen = m_thumbnailBar->isVisible();
         m_toolBar->setVisible(false);
+        if (m_workspaceToolBar) {
+            m_workspaceToolBar->setVisible(false);
+        }
         m_thumbnailBar->setVisible(false);
         m_metadataDock->setVisible(false);
         m_toggleToolBarAct->setChecked(false);

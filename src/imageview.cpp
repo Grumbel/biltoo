@@ -4,6 +4,9 @@
 #include "imageview.h"
 #include "imageitem.h"
 
+#include <QUndoCommand>
+#include <QUndoStack>
+
 #include <QFileInfo>
 #include <QImageReader>
 #include <QKeyEvent>
@@ -18,6 +21,7 @@ ImageView::ImageView(QWidget *parent)
 {
     m_scene = new QGraphicsScene(this);
     setScene(m_scene);
+    m_undoStack = new QUndoStack(this);
 
     setRenderHint(QPainter::SmoothPixmapTransform, true);
     setDragMode(QGraphicsView::NoDrag);
@@ -48,6 +52,55 @@ ImageItem *ImageView::loadItem(const QString &path)
     return item;
 }
 
+WorkspaceItemState ImageView::captureState(const ImageItem *item) const
+{
+    WorkspaceItemState s;
+    s.path = item->path();
+    s.pos = item->pos();
+    s.scale = item->itemScale();
+    s.rotation = item->itemRotation();
+    s.opacity = item->itemOpacity();
+    s.z = item->zValue();
+    return s;
+}
+
+void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
+{
+    item->setPos(state.pos);
+    item->setItemScale(state.scale);
+    item->setItemRotation(state.rotation);
+    item->setItemOpacity(state.opacity);
+    item->setZValue(state.z);
+}
+
+void ImageView::snapshotWorkspace()
+{
+    m_savedWorkspace.clear();
+    for (ImageItem *item : m_items) {
+        m_savedWorkspace.append(captureState(item));
+    }
+}
+
+void ImageView::restoreWorkspace()
+{
+    clearWorkspace();
+    for (const WorkspaceItemState &state : m_savedWorkspace) {
+        ImageItem *item = loadItem(state.path);
+        if (!item) {
+            continue;
+        }
+        applyState(item, state);
+        item->setInteractive(true);
+    }
+    if (!m_items.isEmpty()) {
+        m_scene->clearSelection();
+        m_items.last()->setSelected(true);
+        m_fitMode = false;
+        ensureVisibleItem(m_items.last());
+    }
+    emit statusChanged();
+}
+
 void ImageView::clearWorkspace()
 {
     m_scene->clear();
@@ -55,6 +108,7 @@ void ImageView::clearWorkspace()
     m_mouseInfo = {};
     m_rotateItem = nullptr;
     m_rotating = false;
+    m_dragItem = nullptr;
     emit mouseInfoChanged(m_mouseInfo);
 }
 
@@ -75,32 +129,105 @@ void ImageView::clearExtras()
     }
     m_fitMode = true;
     fitItem(keep);
+    m_undoStack->clear();
     emit statusChanged();
 }
 
 void ImageView::setWorkspaceMode(bool on)
 {
-    m_workspaceMode = on;
-    for (ImageItem *item : m_items) {
-        item->setInteractive(on);
+    if (on == m_workspaceMode) {
+        return;
     }
+
     if (!on) {
+        // Leaving workspace: remember the canvas, then go classic
+        snapshotWorkspace();
+        m_workspaceMode = false;
+        m_undoStack->clear();
         m_scene->clearSelection();
-        clearExtras();
+        // Classic view of the last session path (caller may also loadImage)
+        const QString path = !m_classicPath.isEmpty()
+                                 ? m_classicPath
+                                 : (m_items.isEmpty() ? QString() : m_items.first()->path());
+        clearWorkspace();
+        if (!path.isEmpty()) {
+            ImageItem *item = loadItem(path);
+            if (item) {
+                item->setInteractive(false);
+                m_fitMode = true;
+                fitItem(item);
+            }
+        }
+        emit statusChanged();
+        return;
     }
+
+    // Entering workspace
+    m_workspaceMode = true;
+    if (!m_savedWorkspace.isEmpty()) {
+        restoreWorkspace();
+    } else {
+        // Seed with the current classic image if any
+        for (ImageItem *item : m_items) {
+            item->setInteractive(true);
+        }
+        if (!m_items.isEmpty()) {
+            m_scene->clearSelection();
+            m_items.first()->setSelected(true);
+        }
+    }
+    emit statusChanged();
+}
+
+void ImageView::setTool(Tool tool)
+{
+    if (m_tool == tool) {
+        return;
+    }
+    m_tool = tool;
+    if (m_tool == Tool::Pan) {
+        setCursor(Qt::OpenHandCursor);
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
+    emit toolChanged(m_tool);
 }
 
 bool ImageView::loadImage(const QString &path)
 {
+    m_classicPath = path;
+
+    if (m_workspaceMode) {
+        // Session navigation while in workspace does not destroy the canvas;
+        // only ensure the path is available as classic fallback.
+        // Still show the navigated image if the workspace is empty.
+        if (m_items.isEmpty()) {
+            ImageItem *item = loadItem(path);
+            if (!item) {
+                return false;
+            }
+            item->setInteractive(true);
+            item->setSelected(true);
+            m_fitMode = true;
+            fitItem(item);
+            emit statusChanged();
+        } else {
+            emit statusChanged();
+        }
+        return true;
+    }
+
+    // Classic mode: single centred non-interactive image
     clearWorkspace();
     ImageItem *item = loadItem(path);
     if (!item) {
         return false;
     }
-    if (m_workspaceMode) {
-        item->setSelected(true);
-    }
+    item->setInteractive(false);
     m_fitMode = true;
+    fitItem(item);
+    // Reset view transform so the image is truly centred
+    resetTransform();
     fitItem(item);
     emit statusChanged();
     return true;
@@ -117,7 +244,6 @@ bool ImageView::addImage(const QString &path)
         return false;
     }
 
-    // Offset newly added items so they do not fully cover existing ones
     const int n = m_items.size();
     if (n > 1) {
         const qreal dx = 40.0 * (n - 1);
@@ -129,6 +255,7 @@ bool ImageView::addImage(const QString &path)
     item->setSelected(true);
     m_fitMode = false;
     ensureVisibleItem(item);
+    m_undoStack->clear(); // structural change; simplify history
     emit statusChanged();
     return true;
 }
@@ -459,9 +586,21 @@ qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
-    // Classic viewer: left-drag pans; no item selection/move
-    if (!m_workspaceMode && event->button() == Qt::LeftButton
-        && !(event->modifiers() & Qt::ShiftModifier)) {
+    // Classic viewer, or Pan tool: left-drag pans
+    if (event->button() == Qt::LeftButton) {
+        const bool wantPan = !m_workspaceMode
+                             || m_tool == Tool::Pan
+                             || (event->modifiers() & Qt::AltModifier);
+        if (wantPan && !(m_workspaceMode && (event->modifiers() & Qt::ShiftModifier))) {
+            m_panning = true;
+            m_lastMousePos = event->pos();
+            setCursor(Qt::ClosedHandCursor);
+            event->accept();
+            return;
+        }
+    }
+
+    if (event->button() == Qt::MiddleButton) {
         m_panning = true;
         m_lastMousePos = event->pos();
         setCursor(Qt::ClosedHandCursor);
@@ -469,17 +608,9 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    if (event->button() == Qt::MiddleButton
-        || (event->button() == Qt::LeftButton && event->modifiers() & Qt::AltModifier)) {
-        m_panning = true;
-        m_lastMousePos = event->pos();
-        setCursor(Qt::ClosedHandCursor);
-        event->accept();
-        return;
-    }
-
-    // Shift + left button: free continuous rotation of the item under the cursor
-    if (event->button() == Qt::LeftButton && (event->modifiers() & Qt::ShiftModifier)) {
+    // Workspace only: Shift + left button free-rotates
+    if (m_workspaceMode && event->button() == Qt::LeftButton
+        && (event->modifiers() & Qt::ShiftModifier)) {
         ImageItem *hit = nullptr;
         const QPointF scenePos = mapToScene(event->pos());
         for (QGraphicsItem *gi : m_scene->items(scenePos)) {
@@ -496,6 +627,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             m_rotateItem = hit;
             m_rotateStartAngle = angleAt(scenePos, hit);
             m_rotateItemStart = hit->itemRotation();
+            m_dragStartState = captureState(hit);
             m_scene->clearSelection();
             hit->setSelected(true);
             setCursor(Qt::CrossCursor);
@@ -504,9 +636,14 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    // Left click: let QGraphicsView handle selection / ItemIsMovable drag
-    if (event->button() == Qt::LeftButton) {
+    // Workspace Select tool: let QGraphicsView handle selection / move
+    if (m_workspaceMode && event->button() == Qt::LeftButton) {
         QGraphicsView::mousePressEvent(event);
+        // Capture drag start for undo when an item is selected under the cursor
+        if (ImageItem *hit = targetItem()) {
+            m_dragItem = hit;
+            m_dragStartState = captureState(hit);
+        }
         emit statusChanged();
         return;
     }
@@ -544,18 +681,71 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
     if (m_rotating && event->button() == Qt::LeftButton) {
+        if (m_rotateItem) {
+            const WorkspaceItemState after = captureState(m_rotateItem);
+            if (after.rotation != m_dragStartState.rotation
+                || after.pos != m_dragStartState.pos) {
+                // Lightweight: clear is avoided; push a simple undo via reset path
+                // Store as single-step by re-applying start on undo through stack of states
+                class TransformCommand : public QUndoCommand {
+                public:
+                    TransformCommand(ImageView *view, ImageItem *item,
+                                     const WorkspaceItemState &before,
+                                     const WorkspaceItemState &after)
+                        : m_view(view), m_item(item), m_before(before), m_after(after)
+                    {
+                        setText(QObject::tr("Transform"));
+                    }
+                    void undo() override { if (m_item) m_view->applyState(m_item, m_before); }
+                    void redo() override { if (m_item) m_view->applyState(m_item, m_after); }
+                private:
+                    ImageView *m_view;
+                    ImageItem *m_item;
+                    WorkspaceItemState m_before, m_after;
+                };
+                m_undoStack->push(new TransformCommand(this, m_rotateItem,
+                                                       m_dragStartState, after));
+            }
+        }
         m_rotating = false;
         m_rotateItem = nullptr;
-        setCursor(Qt::ArrowCursor);
+        setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
         event->accept();
         return;
     }
     if (m_panning
         && (event->button() == Qt::MiddleButton || event->button() == Qt::LeftButton)) {
         m_panning = false;
-        setCursor(Qt::ArrowCursor);
+        setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
         event->accept();
         return;
+    }
+    if (m_dragItem && event->button() == Qt::LeftButton) {
+        const WorkspaceItemState after = captureState(m_dragItem);
+        if (after.pos != m_dragStartState.pos
+            || after.scale != m_dragStartState.scale
+            || after.rotation != m_dragStartState.rotation) {
+            class TransformCommand : public QUndoCommand {
+            public:
+                TransformCommand(ImageView *view, ImageItem *item,
+                                 const WorkspaceItemState &before,
+                                 const WorkspaceItemState &after)
+                    : m_view(view), m_item(item), m_before(before), m_after(after)
+                {
+                    setText(QObject::tr("Move"));
+                }
+                void undo() override { if (m_item) m_view->applyState(m_item, m_before); }
+                void redo() override { if (m_item) m_view->applyState(m_item, m_after); }
+            private:
+                ImageView *m_view;
+                ImageItem *m_item;
+                WorkspaceItemState m_before, m_after;
+            };
+            m_undoStack->push(new TransformCommand(this, m_dragItem,
+                                                   m_dragStartState, after));
+            emit statusChanged();
+        }
+        m_dragItem = nullptr;
     }
     QGraphicsView::mouseReleaseEvent(event);
 }

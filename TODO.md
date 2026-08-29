@@ -24,6 +24,8 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Preferences dialog (slideshow interval, default sort)
 - [x] Metadata side panel (Qt text keys + file info; Ctrl+E)
 - [x] Workspace mode optional (off by default); DnD adds when enabled
+- [x] Workspace canvas persists while mode is off; classic view centres session image
+- [x] Undo/redo for workspace transforms; left Select/Pan tool strip
 
 ## Near-term
 

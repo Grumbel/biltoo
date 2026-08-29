@@ -85,6 +85,8 @@ private slots:
     void toggleMetadataPanel();
     void toggleScrollBars();
     void toggleWorkspaceMode();
+    void setSelectTool();
+    void setPanTool();
     void updateWorkspaceActionVisibility();
     void updateStatus();
     void onMouseInfoChanged(const ImageMouseInfo &info);
@@ -113,6 +115,7 @@ private:
     MetadataPanel *m_metadataPanel = nullptr;
     QDockWidget *m_metadataDock = nullptr;
     QToolBar *m_toolBar = nullptr;
+    QToolBar *m_workspaceToolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
     QLabel *m_mouseLabel = nullptr;
     QTimer *m_slideshowTimer = nullptr;
@@ -138,6 +141,10 @@ private:
     QAction *m_nextAct = nullptr;
     QAction *m_slideshowAct = nullptr;
     QAction *m_workspaceModeAct = nullptr;
+    QAction *m_selectToolAct = nullptr;
+    QAction *m_panToolAct = nullptr;
+    QAction *m_undoAct = nullptr;
+    QAction *m_redoAct = nullptr;
     QAction *m_layoutSideBySideAct = nullptr;
     QAction *m_clearExtrasAct = nullptr;
     QAction *m_opacityResetAct = nullptr;
