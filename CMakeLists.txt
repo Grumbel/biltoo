@@ -18,6 +18,8 @@ add_executable(qimgview
   src/mainwindow.h
   src/imageview.cpp
   src/imageview.h
+  src/imageitem.cpp
+  src/imageitem.h
   src/thumbnailbar.cpp
   src/thumbnailbar.h
 )
