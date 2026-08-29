@@ -69,7 +69,6 @@ private slots:
     void goNext();
     void toggleSlideshow();
     void layoutSideBySide();
-    void onThumbnailDoubleClicked(int index);
     void clearWorkspaceExtras();
     void opacityReset();
     void opacityDown();
@@ -84,6 +83,8 @@ private slots:
     void about();
     void showPreferences();
     void toggleMetadataPanel();
+    void toggleWorkspaceMode();
+    void updateWorkspaceActionVisibility();
     void updateStatus();
     void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
@@ -134,6 +135,7 @@ private:
     QAction *m_previousAct = nullptr;
     QAction *m_nextAct = nullptr;
     QAction *m_slideshowAct = nullptr;
+    QAction *m_workspaceModeAct = nullptr;
     QAction *m_layoutSideBySideAct = nullptr;
     QAction *m_clearExtrasAct = nullptr;
     QAction *m_opacityResetAct = nullptr;

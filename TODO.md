@@ -23,6 +23,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Natural/locale-aware filename sort (QCollator numeric mode)
 - [x] Preferences dialog (slideshow interval, default sort)
 - [x] Metadata side panel (Qt text keys + file info; Ctrl+E)
+- [x] Workspace mode optional (off by default); DnD adds when enabled
 
 ## Near-term
 
@@ -40,10 +41,9 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 
 | Gesture | Effect |
 |---------|--------|
-| Drop | Replace session |
-| Shift+Drop | Append to session |
-| Ctrl+Drop | Add onto workspace |
-| Double-click thumbnail | Add that image onto workspace |
+| Drop (classic mode) | Replace session |
+| Shift+Drop (classic) | Append to session |
+| Drop (workspace mode) | Add images onto the workspace |
 | Click item | Select |
 | Drag item | Move |
 | Shift+Drag on item | Free rotate |

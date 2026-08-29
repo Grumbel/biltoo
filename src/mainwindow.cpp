@@ -89,8 +89,6 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailBar = new ThumbnailBar(central);
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
-    connect(m_thumbnailBar, &ThumbnailBar::indexDoubleClicked,
-            this, &MainWindow::onThumbnailDoubleClicked);
 
     layout->addWidget(m_imageView, 1);
     layout->addWidget(m_thumbnailBar, 0);
@@ -127,6 +125,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailBar->setVisible(false);
     updateNavigationActions();
     readSettings();
+    updateWorkspaceActionVisibility();
 }
 
 MainWindow::~MainWindow() = default;
@@ -218,6 +217,14 @@ void MainWindow::createActions()
     m_slideshowAct->setCheckable(true);
     m_slideshowAct->setStatusTip(tr("Start or stop the slideshow (F5)"));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
+
+    m_workspaceModeAct = new QAction(tr("&Workspace Mode"), this);
+    m_workspaceModeAct->setCheckable(true);
+    m_workspaceModeAct->setChecked(false);
+    m_workspaceModeAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_DesktopIcon));
+    m_workspaceModeAct->setStatusTip(
+        tr("Allow multiple images on the view for comparison (drag images onto the view to add them)"));
+    connect(m_workspaceModeAct, &QAction::triggered, this, &MainWindow::toggleWorkspaceMode);
 
     m_layoutSideBySideAct = new QAction(tr("Layout Side b&y Side"), this);
     m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
@@ -338,6 +345,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_sortNameAct);
     m_viewMenu->addAction(m_sortMTimeAct);
     m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_workspaceModeAct);
     m_viewMenu->addAction(m_layoutSideBySideAct);
     m_viewMenu->addAction(m_raiseAct);
     m_viewMenu->addAction(m_lowerAct);
@@ -379,6 +387,7 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_rotateLeftAct);
     m_contextMenu->addAction(m_rotateRightAct);
     m_contextMenu->addSeparator();
+    m_contextMenu->addAction(m_workspaceModeAct);
     m_contextMenu->addAction(m_layoutSideBySideAct);
     m_contextMenu->addAction(m_raiseAct);
     m_contextMenu->addAction(m_lowerAct);
@@ -829,12 +838,31 @@ void MainWindow::clearWorkspaceExtras()
     m_imageView->clearExtras();
 }
 
-void MainWindow::onThumbnailDoubleClicked(int index)
+void MainWindow::toggleWorkspaceMode()
 {
-    if (index < 0 || index >= m_files.size()) {
-        return;
+    m_workspaceMode = m_workspaceModeAct->isChecked();
+    if (!m_workspaceMode) {
+        // Leave comparison mode: keep only the primary image
+        m_imageView->clearExtras();
     }
-    m_imageView->addImage(m_files.at(index));
+    updateWorkspaceActionVisibility();
+}
+
+void MainWindow::updateWorkspaceActionVisibility()
+{
+    const bool on = m_workspaceMode;
+    for (QAction *act : {m_layoutSideBySideAct, m_raiseAct, m_lowerAct,
+                         m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
+                         m_clearExtrasAct}) {
+        if (act) {
+            act->setVisible(on);
+            act->setEnabled(on);
+        }
+    }
+    // Toolbar shows layout only in workspace mode
+    if (m_toolBar && m_layoutSideBySideAct) {
+        // setVisible on the action hides it from the toolbar too
+    }
 }
 
 void MainWindow::onSlideshowTick()
@@ -987,6 +1015,11 @@ void MainWindow::readSettings()
 
     m_slideshowIntervalMs =
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
+
+    m_workspaceMode = settings.value(QStringLiteral("workspaceMode"), false).toBool();
+    if (m_workspaceModeAct) {
+        m_workspaceModeAct->setChecked(m_workspaceMode);
+    }
 }
 
 void MainWindow::writeSettings()
@@ -1001,6 +1034,7 @@ void MainWindow::writeSettings()
                       m_sortMode == SortMode::MTime ? QStringLiteral("mtime")
                                                     : QStringLiteral("name"));
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
+    settings.setValue(QStringLiteral("workspaceMode"), m_workspaceMode);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -1048,15 +1082,25 @@ void MainWindow::dropEvent(QDropEvent *event)
     if (paths.isEmpty()) {
         return;
     }
-    // Ctrl+drop: add images onto the workspace for comparison (no session change)
-    if (event->modifiers() & Qt::ControlModifier) {
+
+    // Workspace mode: drop adds images onto the view for comparison
+    if (m_workspaceMode) {
         for (const QString &path : paths) {
-            m_imageView->addImage(path);
+            // Expand directories to individual files when dropped
+            const QStringList expanded = expandPaths({path});
+            if (expanded.isEmpty()) {
+                m_imageView->addImage(path);
+            } else {
+                for (const QString &img : expanded) {
+                    m_imageView->addImage(img);
+                }
+            }
         }
         event->acceptProposedAction();
         return;
     }
-    // Shift+drop appends to the session; plain drop replaces the session
+
+    // Classic mode: Shift+drop appends to the session; plain drop replaces
     if (event->modifiers() & Qt::ShiftModifier) {
         appendFiles(paths);
     } else {
