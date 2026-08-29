@@ -5,6 +5,7 @@
 #include "imageview.h"
 #include "thumbnailbar.h"
 #include "preferencesdialog.h"
+#include "metadatapanel.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -12,6 +13,7 @@
 #include <QCloseEvent>
 #include <QCollator>
 #include <QDir>
+#include <QDockWidget>
 #include <QDirIterator>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -93,6 +95,14 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addWidget(m_imageView, 1);
     layout->addWidget(m_thumbnailBar, 0);
     setCentralWidget(central);
+
+    m_metadataPanel = new MetadataPanel(this);
+    m_metadataDock = new QDockWidget(tr("Metadata"), this);
+    m_metadataDock->setObjectName(QStringLiteral("MetadataDock"));
+    m_metadataDock->setWidget(m_metadataPanel);
+    m_metadataDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, m_metadataDock);
+    m_metadataDock->hide();
 
     createActions();
     createMenus();
@@ -282,6 +292,17 @@ void MainWindow::createActions()
     m_toggleThumbnailBarAct->setStatusTip(tr("Show or hide the thumbnail bar"));
     connect(m_toggleThumbnailBarAct, &QAction::triggered, this, &MainWindow::toggleThumbnailBar);
 
+    m_toggleMetadataAct = new QAction(tr("Show &Metadata"), this);
+    m_toggleMetadataAct->setShortcut(Qt::CTRL | Qt::Key_E);
+    m_toggleMetadataAct->setCheckable(true);
+    m_toggleMetadataAct->setChecked(false);
+    m_toggleMetadataAct->setIcon(themeIcon(QStringLiteral("dialog-information"), QStyle::SP_FileDialogInfoView));
+    m_toggleMetadataAct->setStatusTip(tr("Show or hide the metadata side panel"));
+    connect(m_toggleMetadataAct, &QAction::triggered, this, &MainWindow::toggleMetadataPanel);
+    connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        m_toggleMetadataAct->setChecked(visible);
+    });
+
     m_preferencesAct = new QAction(tr("&Preferences..."), this);
     m_preferencesAct->setShortcut(QKeySequence::Preferences);
     m_preferencesAct->setIcon(themeIcon(QStringLiteral("preferences-system"), QStyle::SP_FileDialogInfoView));
@@ -330,6 +351,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_toggleThumbnailBarAct);
+    m_viewMenu->addAction(m_toggleMetadataAct);
 
     m_goMenu = menuBar()->addMenu(tr("&Go"));
     m_goMenu->addAction(m_previousAct);
@@ -365,6 +387,7 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_fullscreenAct);
     m_contextMenu->addAction(m_toggleToolBarAct);
     m_contextMenu->addAction(m_toggleThumbnailBarAct);
+    m_contextMenu->addAction(m_toggleMetadataAct);
 }
 
 void MainWindow::createToolBar()
@@ -606,6 +629,9 @@ void MainWindow::setCurrentIndex(int index)
     m_currentIndex = index;
     m_imageView->loadImage(m_files.at(m_currentIndex));
     m_thumbnailBar->setCurrentIndex(m_currentIndex);
+    if (m_metadataPanel) {
+        m_metadataPanel->setImagePath(m_files.at(m_currentIndex));
+    }
     updateStatus();
     updateNavigationActions();
 }
@@ -838,6 +864,11 @@ void MainWindow::toggleThumbnailBar()
     }
 }
 
+void MainWindow::toggleMetadataPanel()
+{
+    m_metadataDock->setVisible(m_toggleMetadataAct->isChecked());
+}
+
 void MainWindow::about()
 {
     QMessageBox::about(this, tr("About QImgView"),
@@ -913,8 +944,10 @@ void MainWindow::updateFullscreenUi()
         m_thumbnailBarVisibleBeforeFullscreen = m_thumbnailBar->isVisible();
         m_toolBar->setVisible(false);
         m_thumbnailBar->setVisible(false);
+        m_metadataDock->setVisible(false);
         m_toggleToolBarAct->setChecked(false);
         m_toggleThumbnailBarAct->setChecked(false);
+        m_toggleMetadataAct->setChecked(false);
         menuBar()->setVisible(false);
         statusBar()->setVisible(false);
     } else {

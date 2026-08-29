@@ -11,6 +11,8 @@
 #include <QStringList>
 
 class ThumbnailBar;
+class MetadataPanel;
+class QDockWidget;
 class QToolBar;
 class QAction;
 class QActionGroup;
@@ -81,6 +83,7 @@ private slots:
     void toggleThumbnailBar();
     void about();
     void showPreferences();
+    void toggleMetadataPanel();
     void updateStatus();
     void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
@@ -104,6 +107,8 @@ private:
 
     ImageView *m_imageView = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
+    MetadataPanel *m_metadataPanel = nullptr;
+    QDockWidget *m_metadataDock = nullptr;
     QToolBar *m_toolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
     QLabel *m_mouseLabel = nullptr;
@@ -140,6 +145,7 @@ private:
     QAction *m_sortMTimeAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
+    QAction *m_toggleMetadataAct = nullptr;
     QAction *m_preferencesAct = nullptr;
     QAction *m_aboutAct = nullptr;
     QActionGroup *m_sortGroup = nullptr;

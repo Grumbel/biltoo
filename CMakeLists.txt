@@ -24,6 +24,8 @@ add_executable(qimgview
   src/thumbnailbar.h
   src/preferencesdialog.cpp
   src/preferencesdialog.h
+  src/metadatapanel.cpp
+  src/metadatapanel.h
   src/icons.qrc
 )
 
