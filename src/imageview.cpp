@@ -253,10 +253,14 @@ bool ImageView::addImage(const QString &path)
 
     m_scene->clearSelection();
     item->setSelected(true);
-    m_fitMode = false;
-    ensureVisibleItem(item);
-    m_undoStack->clear(); // structural change; simplify history
-    emit statusChanged();
+    m_undoStack->clear();
+    if (m_layoutMode != LayoutMode::FreeForm) {
+        applyLayout();
+    } else {
+        m_fitMode = false;
+        ensureVisibleItem(item);
+        emit statusChanged();
+    }
     return true;
 }
 
@@ -385,30 +389,76 @@ void ImageView::opacityReset()
     }
 }
 
-void ImageView::layoutSideBySide()
+void ImageView::setLayoutMode(LayoutMode mode)
 {
-    if (m_items.size() < 2) {
+    m_layoutMode = mode;
+    if (mode != LayoutMode::FreeForm) {
+        applyLayout();
+    } else {
+        emit statusChanged();
+    }
+}
+
+void ImageView::applyLayout()
+{
+    if (m_items.isEmpty() || m_layoutMode == LayoutMode::FreeForm) {
         return;
     }
 
-    qreal x = 0.0;
     const qreal gap = 24.0;
-    qreal maxH = 0.0;
 
-    for (ImageItem *item : m_items) {
-        // Reset rotation for a clean comparison layout; keep scale
-        item->setItemRotation(0.0);
-        const QRectF br = item->sceneBoundingRect();
-        maxH = qMax(maxH, br.height());
+    // Normalise rotation for packaged layouts so edges align
+    if (m_layoutMode != LayoutMode::Stack) {
+        for (ImageItem *item : m_items) {
+            item->setItemRotation(0.0);
+        }
     }
 
-    for (ImageItem *item : m_items) {
-        const QRectF br = item->boundingRect();
-        // Position so the top edges align; origin is centre
-        const qreal w = br.width() * item->itemScale();
-        const qreal h = br.height() * item->itemScale();
-        item->setPos(x + w / 2.0, h / 2.0);
-        x += w + gap;
+    if (m_layoutMode == LayoutMode::SideBySide) {
+        qreal x = 0.0;
+        for (ImageItem *item : m_items) {
+            const QRectF br = item->boundingRect();
+            const qreal w = br.width() * item->itemScale();
+            const qreal h = br.height() * item->itemScale();
+            item->setPos(x + w / 2.0, h / 2.0);
+            x += w + gap;
+        }
+    } else if (m_layoutMode == LayoutMode::Vertical) {
+        qreal y = 0.0;
+        for (ImageItem *item : m_items) {
+            const QRectF br = item->boundingRect();
+            const qreal w = br.width() * item->itemScale();
+            const qreal h = br.height() * item->itemScale();
+            item->setPos(w / 2.0, y + h / 2.0);
+            y += h + gap;
+        }
+    } else if (m_layoutMode == LayoutMode::Grid) {
+        const int n = m_items.size();
+        const int cols = qMax(1, int(std::ceil(std::sqrt(double(n)))));
+        qreal colWidth = 0.0;
+        qreal rowHeight = 0.0;
+        // First pass: max cell size
+        for (ImageItem *item : m_items) {
+            const QRectF br = item->boundingRect();
+            colWidth = qMax(colWidth, br.width() * item->itemScale());
+            rowHeight = qMax(rowHeight, br.height() * item->itemScale());
+        }
+        colWidth += gap;
+        rowHeight += gap;
+        for (int i = 0; i < n; ++i) {
+            ImageItem *item = m_items.at(i);
+            const int col = i % cols;
+            const int row = i / cols;
+            const QRectF br = item->boundingRect();
+            const qreal w = br.width() * item->itemScale();
+            const qreal h = br.height() * item->itemScale();
+            item->setPos(col * colWidth + w / 2.0, row * rowHeight + h / 2.0);
+        }
+    } else if (m_layoutMode == LayoutMode::Stack) {
+        // Overlap at the same centre for A/B comparison with opacity
+        for (ImageItem *item : m_items) {
+            item->setPos(0.0, 0.0);
+        }
     }
 
     m_scene->setSceneRect(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32));

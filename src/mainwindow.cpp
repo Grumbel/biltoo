@@ -264,11 +264,45 @@ void MainWindow::createActions()
     m_redoAct->setShortcuts(QKeySequence::Redo);
     m_redoAct->setIcon(themeIcon(QStringLiteral("edit-redo"), QStyle::SP_ArrowForward));
 
+    m_layoutFreeFormAct = new QAction(tr("&Free Form Layout"), this);
+    m_layoutFreeFormAct->setCheckable(true);
+    m_layoutFreeFormAct->setChecked(true);
+    m_layoutFreeFormAct->setIcon(themeIcon(QStringLiteral("transform-move"), QStyle::SP_FileDialogDetailedView));
+    m_layoutFreeFormAct->setStatusTip(tr("Place and move images freely on the workspace"));
+    connect(m_layoutFreeFormAct, &QAction::triggered, this, &MainWindow::setLayoutFreeForm);
+
     m_layoutSideBySideAct = new QAction(tr("Layout Side b&y Side"), this);
+    m_layoutSideBySideAct->setCheckable(true);
     m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
-    m_layoutSideBySideAct->setIcon(themeIcon(QStringLiteral("view-grid"), QStyle::SP_FileDialogListView));
+    m_layoutSideBySideAct->setIcon(themeIcon(QStringLiteral("view-split-left-right"), QStyle::SP_ArrowRight));
     m_layoutSideBySideAct->setStatusTip(tr("Arrange workspace images in a horizontal row"));
-    connect(m_layoutSideBySideAct, &QAction::triggered, this, &MainWindow::layoutSideBySide);
+    connect(m_layoutSideBySideAct, &QAction::triggered, this, &MainWindow::setLayoutSideBySide);
+
+    m_layoutVerticalAct = new QAction(tr("Layout &Vertical"), this);
+    m_layoutVerticalAct->setCheckable(true);
+    m_layoutVerticalAct->setIcon(themeIcon(QStringLiteral("view-split-top-bottom"), QStyle::SP_ArrowDown));
+    m_layoutVerticalAct->setStatusTip(tr("Arrange workspace images in a vertical column"));
+    connect(m_layoutVerticalAct, &QAction::triggered, this, &MainWindow::setLayoutVertical);
+
+    m_layoutGridAct = new QAction(tr("Layout &Grid"), this);
+    m_layoutGridAct->setCheckable(true);
+    m_layoutGridAct->setIcon(themeIcon(QStringLiteral("view-grid"), QStyle::SP_FileDialogListView));
+    m_layoutGridAct->setStatusTip(tr("Arrange workspace images in a grid"));
+    connect(m_layoutGridAct, &QAction::triggered, this, &MainWindow::setLayoutGrid);
+
+    m_layoutStackAct = new QAction(tr("Layout Stac&k"), this);
+    m_layoutStackAct->setCheckable(true);
+    m_layoutStackAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_TitleBarNormalButton));
+    m_layoutStackAct->setStatusTip(tr("Stack images on top of each other for opacity comparison"));
+    connect(m_layoutStackAct, &QAction::triggered, this, &MainWindow::setLayoutStack);
+
+    auto *layoutGroup = new QActionGroup(this);
+    layoutGroup->addAction(m_layoutFreeFormAct);
+    layoutGroup->addAction(m_layoutSideBySideAct);
+    layoutGroup->addAction(m_layoutVerticalAct);
+    layoutGroup->addAction(m_layoutGridAct);
+    layoutGroup->addAction(m_layoutStackAct);
+    layoutGroup->setExclusive(true);
 
     m_raiseAct = new QAction(tr("&Raise"), this);
     m_raiseAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Up);
@@ -396,7 +430,11 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_selectToolAct);
     m_viewMenu->addAction(m_panToolAct);
     m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_layoutFreeFormAct);
     m_viewMenu->addAction(m_layoutSideBySideAct);
+    m_viewMenu->addAction(m_layoutVerticalAct);
+    m_viewMenu->addAction(m_layoutGridAct);
+    m_viewMenu->addAction(m_layoutStackAct);
     m_viewMenu->addAction(m_raiseAct);
     m_viewMenu->addAction(m_lowerAct);
     m_viewMenu->addSeparator();
@@ -439,7 +477,11 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_rotateRightAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_workspaceModeAct);
+    m_contextMenu->addAction(m_layoutFreeFormAct);
     m_contextMenu->addAction(m_layoutSideBySideAct);
+    m_contextMenu->addAction(m_layoutVerticalAct);
+    m_contextMenu->addAction(m_layoutGridAct);
+    m_contextMenu->addAction(m_layoutStackAct);
     m_contextMenu->addAction(m_raiseAct);
     m_contextMenu->addAction(m_lowerAct);
     m_contextMenu->addAction(m_clearExtrasAct);
@@ -475,7 +517,11 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_rotateLeftAct);
     m_toolBar->addAction(m_rotateRightAct);
     m_toolBar->addSeparator();
+    m_toolBar->addAction(m_layoutFreeFormAct);
     m_toolBar->addAction(m_layoutSideBySideAct);
+    m_toolBar->addAction(m_layoutVerticalAct);
+    m_toolBar->addAction(m_layoutGridAct);
+    m_toolBar->addAction(m_layoutStackAct);
     m_toolBar->addAction(m_raiseAct);
     m_toolBar->addAction(m_lowerAct);
 
@@ -900,9 +946,29 @@ void MainWindow::toggleSlideshow()
     }
 }
 
-void MainWindow::layoutSideBySide()
+void MainWindow::setLayoutFreeForm()
 {
-    m_imageView->layoutSideBySide();
+    m_imageView->setLayoutMode(ImageView::LayoutMode::FreeForm);
+}
+
+void MainWindow::setLayoutSideBySide()
+{
+    m_imageView->setLayoutMode(ImageView::LayoutMode::SideBySide);
+}
+
+void MainWindow::setLayoutVertical()
+{
+    m_imageView->setLayoutMode(ImageView::LayoutMode::Vertical);
+}
+
+void MainWindow::setLayoutGrid()
+{
+    m_imageView->setLayoutMode(ImageView::LayoutMode::Grid);
+}
+
+void MainWindow::setLayoutStack()
+{
+    m_imageView->setLayoutMode(ImageView::LayoutMode::Stack);
 }
 
 void MainWindow::raiseSelected()
@@ -963,7 +1029,9 @@ void MainWindow::setPanTool()
 void MainWindow::updateWorkspaceActionVisibility()
 {
     const bool on = m_workspaceMode;
-    for (QAction *act : {m_layoutSideBySideAct, m_raiseAct, m_lowerAct,
+    for (QAction *act : {m_layoutFreeFormAct, m_layoutSideBySideAct,
+                         m_layoutVerticalAct, m_layoutGridAct, m_layoutStackAct,
+                         m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
                          m_clearExtrasAct, m_selectToolAct, m_panToolAct,
                          m_undoAct, m_redoAct}) {

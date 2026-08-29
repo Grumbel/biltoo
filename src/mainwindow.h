@@ -68,7 +68,11 @@ private slots:
     void goPrevious();
     void goNext();
     void toggleSlideshow();
-    void layoutSideBySide();
+    void setLayoutFreeForm();
+    void setLayoutSideBySide();
+    void setLayoutVertical();
+    void setLayoutGrid();
+    void setLayoutStack();
     void clearWorkspaceExtras();
     void opacityReset();
     void opacityDown();
@@ -145,7 +149,11 @@ private:
     QAction *m_panToolAct = nullptr;
     QAction *m_undoAct = nullptr;
     QAction *m_redoAct = nullptr;
+    QAction *m_layoutFreeFormAct = nullptr;
     QAction *m_layoutSideBySideAct = nullptr;
+    QAction *m_layoutVerticalAct = nullptr;
+    QAction *m_layoutGridAct = nullptr;
+    QAction *m_layoutStackAct = nullptr;
     QAction *m_clearExtrasAct = nullptr;
     QAction *m_opacityResetAct = nullptr;
     QAction *m_opacityDownAct = nullptr;

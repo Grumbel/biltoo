@@ -73,7 +73,17 @@ public:
     void opacityDown();
     void opacityReset();
 
-    void layoutSideBySide();
+    enum class LayoutMode {
+        FreeForm,
+        SideBySide,
+        Vertical,
+        Grid,
+        Stack
+    };
+
+    void setLayoutMode(LayoutMode mode);
+    LayoutMode layoutMode() const { return m_layoutMode; }
+    void applyLayout();
 
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
