@@ -30,6 +30,10 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Per-image position/scale/rotation remembered while deselected
 - [x] On-canvas scale (corner) and rotate handles on selected items
 - [x] Draggable splitter between image view and thumbnail bar (resizable thumbs)
+- [x] Drop appends to session + workspace in workspace mode
+- [x] Slideshow auto-fullscreen preference; slideshow disabled in workspace mode
+- [x] Thumbnail bar position: bottom or left (View menu)
+- [x] Metadata dock close button stays in sync with toolbar/menu toggle
 
 ## Near-term
 
@@ -37,12 +41,28 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [ ] Richer Exif via libexiv2 (current panel uses Qt plugin text keys)
 - [ ] Rotation angle readout while Shift-dragging (status already updates)
 - [ ] Raise / lower and opacity controls directly on the selection chrome
+- [ ] Broader image formats — phased approach (see below)
+- [ ] File dialog / DnD filters derived from `QImageReader::supportedImageFormats()`
+- [ ] Optional thumbnail bar on the right (mirror of left) if requested
+
+## Broader image formats (research notes)
+
+Prefer staying on the `QImageReader` path where possible.
+
+1. **qtimageformats** (first): WebP, TIFF, TGA, ICNS, JP2, … via official Qt plugins; Nix/CMake dep only.
+2. **KImageFormats** (runtime): AVIF, HEIF, JXL, OpenEXR, PSD, QOI, camera RAW (LibRaw), …
+3. **libvips** fallback: when Qt cannot decode; low memory for large images; optional Magick loaders.
+4. **OpenImageIO**: only if EXR/VFX becomes a first-class goal (heavier deps).
+5. Avoid FreeImage (maintenance); avoid ImageMagick as the primary loader.
 
 ## Later
 
 - [ ] OpenGL path for large images / many items
-- [ ] ImageMagick / libvips for broader formats
 - [ ] Persist workspace item state across sessions
+- [ ] Per-image view state persistence in classic mode
+- [ ] Thumbnail bar top position
+- [ ] Animated GIF / multi-page TIFF frame navigation
+- [ ] Colour-managed display (ICC / OCIO) if format backends expose profiles
 
 ## Interaction summary
 
@@ -67,6 +87,8 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 | Ctrl+= / Ctrl+- | Opacity up / down |
 | Esc | Exit fullscreen |
 | Ctrl+T | Toggle toolbar |
+| View → Thumbnails on Bottom/Left | Thumbnail bar placement |
 | View → Show Scrollbars | Toggle scrollbars |
 | F11 | Toggle fullscreen |
 | Ctrl+E | Toggle metadata panel |
+| F5 | Slideshow (classic mode only; optional fullscreen) |
