@@ -656,3 +656,167 @@ No new defect beyond existing fullscreen hit testing already improved in earlier
 ## Sign-off (deep pass 3)
 
 Lifetime/UAF and undo safety reviewed. Highest new issues: **H8** dangling `m_handleDragItem`, **H9** undo after `restoreWorkspace`/`clearWorkspace` without stack clear, **M20** Ctrl+− double binding. No product code modified.
+
+---
+
+## Deep pass 4 (continuation)
+
+**Focus:** project infrastructure, HIG menu completeness, i18n, install/AppStream, tests, icons, error UX, Escape handling.
+
+| Step | Activity | Status |
+|------|----------|--------|
+| G1 | CMake install + desktop/icon | [x] |
+| G2 | AppStream / metainfo | [x] |
+| G3 | Automated tests | [x] |
+| G4 | i18n / translators | [x] |
+| G5 | Menu bar HIG (File…Help) | [x] |
+| G6 | Icons (theme + embedded + hicolor) | [x] |
+| G7 | User-visible errors (failed open/decode) | [x] |
+| G8 | Escape dual handlers | [x] |
+| G9 | Opacity clamp / chrome solid | [x] |
+| G10 | Settings persistence on close | [x] |
+
+---
+
+### G1 — Install layout
+
+CMake installs:
+
+- binary → `bin`
+- `qimgview.desktop` → `applications`
+- scalable app SVG → `icons/hicolor/scalable/apps`
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L25 | Low | **No fixed-size PNG/hicolor icons** (16/32/48) — fine on many desktops with SVG support; some older panels prefer PNG. |
+| L26 | Low | Action SVGs live in qrc only — not installed to hicolor; theme fallbacks used when theme has standard names — OK. |
+
+---
+
+### G2 — AppStream
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M23 | Medium | **No AppStream metainfo (`.metainfo.xml` / `.appdata.xml`).** GNOME Software / Flathub / `appstreamcli` validation cannot describe the app; packaging for app stores needs this. |
+
+---
+
+### G3 — Tests
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M24 | Medium | **No unit/integration tests** in CMake or tree (no gtest/QtTest targets). Regressions in pack math, path dedup, load generation, raise/lower overlap rely entirely on manual runs. `nix flake check` only builds. |
+
+---
+
+### G4 — i18n
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L8 restated | Low | UI strings use `tr()` widely; **CLI help is `QStringLiteral` only**. |
+| M25 | Medium | **No `QTranslator` / `.ts` / `.qm` pipeline** in CMake — the app is not localization-ready beyond English source strings. No lupdate target. |
+
+---
+
+### G5 — GNOME 2 HIG menus
+
+Present: File, Edit (incl. Preferences), View, Go, Help (About only).
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L27 | Low | Help has **About only** — no “Keyboard Shortcuts” dialog (common HIG pattern; About lists a few). |
+| L28 | Low | Preferences under **Edit** is acceptable (GNOME-style); some apps use Edit or separate — OK. |
+| L29 | Low | Context menu is long (file, nav, zoom, rotate, workspace) — still usable; not mode-filtered (disabled actions remain visible). **HIG:** hide or disable with explanation; disable is used via global action state — OK if enablement is correct. |
+
+---
+
+### G6 — Icons
+
+- Rich set of action SVGs in `data/icons/actions` + qrc.
+- `themeIcon()` with style pixmap fallbacks.
+- App icon theme name `qimgview` + embedded SVG.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L30 | Low | Flip actions may lack dedicated flip icons (rotate icons used elsewhere) — cosmetic. |
+
+---
+
+### G7 — Error UX
+
+Failed decode sets `m_lastLoadError` and status/HUD filename path — **no modal error** for unreadable file on open.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M26 | Medium | **Silent failure** when a path cannot be decoded (especially multi-file open where some fail) — user may not notice missing images. HIG prefers status + optional dialog for explicit Open. |
+
+---
+
+### G8 — Escape handling
+
+- `QShortcut(Escape, ApplicationShortcut)`: leave fullscreen, else return to gallery if active.
+- `MainWindow::keyPressEvent` also handles Escape for fullscreen.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L31 | Low | **Dual Escape paths** — redundant but consistent; ensure return-to-gallery does not fight dialog Escape (dialog should consume key first). |
+
+---
+
+### G9 — Opacity
+
+`setItemOpacity` clamps to **[0.05, 1.0]**; item `QGraphicsItem::opacity` forced to 1 so chrome stays solid. Sound design.
+
+No defect.
+
+---
+
+### G10 — Settings on close
+
+`closeEvent` → `writeSettings()` — good. Preferences OK also writes. Crash mid-session can lose last settings — normal.
+
+---
+
+### G11 — Coverage map (what the audit has touched)
+
+| Area | Passes |
+|------|--------|
+| Domain / docs drift | P1, H1, M14 |
+| Load races / generation | D1, H3a–d |
+| Orientation lifetime | D2, H6, M18 |
+| Chrome dual path / UAF | H2, H8, F1 |
+| Undo safety | H9 |
+| HUD pulse | H7 |
+| Gallery zoom / enter | M4, M15 |
+| Slideshow / modes | M7, H1 |
+| Paths / MIME | M17, L6 |
+| Thumbs | E4, M19 |
+| Shortcuts | M20, D10 |
+| Packaging / i18n / tests | G1–G4, M23–M25 |
+| HIG menus / errors | G5, G7 |
+
+**Not exhaustively line-covered:** every branch of `gallerylayout.cpp` pack algorithms (math correctness under extreme aspect ratios), every VIPS band edge case, GIO error strings on all platforms, live focus traversal with screen readers.
+
+---
+
+## Master priority list (all audit passes)
+
+| Priority | ID | Summary |
+|----------|-----|---------|
+| 1 | H7 | HUD identity pulse on every status update |
+| 2 | H8/H9 | Dangling handle pointer; undo after item destroy |
+| 3 | H6 | Image-mode rotation wiped on navigate |
+| 4 | H3a | LoadAdd cancels LoadReplace via shared gen |
+| 5 | H2 | Dual chrome input ownership |
+| 6 | M20 | Ctrl+− zoom vs opacity |
+| 7 | M7a | Slideshow continues in Gallery |
+| 8 | M4 | Gallery zoom policy |
+| 9 | M17/M18 | Canonical paths; VIPS autorot |
+| 10 | M23–M26 | AppStream, tests, i18n, open errors |
+| 11 | Docs | DOMAIN/TODO sync |
+
+---
+
+## Sign-off (deep pass 4)
+
+Infrastructure and HIG surface reviewed. No product code modified. Audit document is the accumulated record (`AUDIT.md`). Further passes would need **runtime** testing (ASan for H8/H9, manual Gallery zoom, screen reader) rather than more static reading of the same tree.
