@@ -192,8 +192,10 @@ void ImageView::paintEvent(QPaintEvent *event)
     //   bottom    — filename (+ technical detail when the HUD is pinned)
     if (m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
         || !m_galleryHoverPath.isEmpty()) {
+        // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
-        f.setPointSizeF(qMax(10.0, f.pointSizeF()));
+        const int pt = qBound(8, m_hudFontPointSize, 48);
+        f.setPointSize(pt);
         QFont boldF = f;
         boldF.setBold(true);
         const QFontMetrics fm(f);
