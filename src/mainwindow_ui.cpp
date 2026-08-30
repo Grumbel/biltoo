@@ -538,6 +538,9 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_layoutMasonryAct);
 
     m_toolBar->addAction(m_layoutMasonryRowsAct);
+    // Workspace mode sits with the gallery layout group (mode switchers together).
+    m_toolBar->addSeparator();
+    m_toolBar->addAction(m_workspaceModeAct);
 
     // Masonry column/row count — shown while a masonry layout is active
     auto *masonryCountHost = new QWidget(m_toolBar);
@@ -567,9 +570,6 @@ void MainWindow::createToolBar()
                 }
             });
 
-    m_toolBar->addAction(m_raiseAct);
-    m_toolBar->addAction(m_lowerAct);
-
     // Expanding spacer — centres prev / play / next
     auto *spacerLeft = new QWidget(m_toolBar);
     spacerLeft->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -591,7 +591,6 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoomFitAct);
     m_toolBar->addAction(m_zoomFillAct);
     m_toolBar->addSeparator();
-    m_toolBar->addAction(m_workspaceModeAct);
     m_toolBar->addAction(m_toggleThumbnailBarAct);
     m_toolBar->addAction(m_toggleMetadataAct);
     m_toolBar->addAction(m_fullscreenAct);
@@ -607,6 +606,9 @@ void MainWindow::createToolBar()
     addToolBar(Qt::LeftToolBarArea, m_workspaceToolBar);
     m_workspaceToolBar->addAction(m_selectToolAct);
     m_workspaceToolBar->addAction(m_panToolAct);
+    m_workspaceToolBar->addSeparator();
+    m_workspaceToolBar->addAction(m_raiseAct);
+    m_workspaceToolBar->addAction(m_lowerAct);
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_undoAct);
     m_workspaceToolBar->addAction(m_redoAct);
