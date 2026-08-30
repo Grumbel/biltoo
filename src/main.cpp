@@ -17,7 +17,10 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("qimgview"));
     QApplication::setApplicationDisplayName(QStringLiteral("QImgView"));
-    QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+#ifndef QIMGVIEW_VERSION
+#  define QIMGVIEW_VERSION "0.0.0"
+#endif
+    QApplication::setApplicationVersion(QStringLiteral(QIMGVIEW_VERSION));
     QApplication::setOrganizationName(QStringLiteral("QImgView"));
     QApplication::setOrganizationDomain(QStringLiteral("qimgview.local"));
     QGuiApplication::setDesktopFileName(QStringLiteral("qimgview"));

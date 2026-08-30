@@ -7,11 +7,12 @@
 , vips
 , exiv2
 , glib
+, version ? "0.1.0-dev"
 }:
 
 stdenv.mkDerivation rec {
   pname = "qimgview";
-  version = "0.1.0";
+  inherit version;
 
   src = ./.;
 
@@ -29,9 +30,13 @@ stdenv.mkDerivation rec {
     glib
   ];
 
+  cmakeFlags = [
+    "-DPROJECT_VERSION_FULL=${version}"
+  ];
+
   meta = with lib; {
     description = "Classic Qt image viewer with workspace semantics";
-    homepage = "https://github.com/grumbel/qimgview"; # placeholder
+    homepage = "https://github.com/grumbel/qimgview";
     license = licenses.gpl3Plus;
     maintainers = [ ];
     platforms = platforms.linux;

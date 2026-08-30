@@ -9,9 +9,20 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+
+      versionBase = nixpkgs.lib.strings.removeSuffix "\n" (builtins.readFile ./VERSION);
+      gitRev = "${self.shortRev or self.dirtyShortRev or "dirty"}";
+      isDev = nixpkgs.lib.strings.hasInfix "-dev" versionBase;
+      version =
+        if isDev then
+          "${versionBase}.${toString (self.revCount or 0)}+g${gitRev}"
+        else
+          versionBase;
     in
     {
-      packages.${system}.default = pkgs.qt6Packages.callPackage ./default.nix { };
+      packages.${system}.default = pkgs.qt6Packages.callPackage ./default.nix {
+        inherit version;
+      };
 
       apps.${system}.default = {
         type = "app";
@@ -24,7 +35,6 @@
           cmake
           gdb
           qt6.qttools
-          # qtcreator  # optional, large
         ];
       };
     };
