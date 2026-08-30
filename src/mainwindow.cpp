@@ -1751,6 +1751,25 @@ void MainWindow::showPreferences()
     writeSettings();
 }
 
+void MainWindow::selectAllThumbnails()
+{
+    if (!m_thumbnailBar || m_files.isEmpty()) {
+        return;
+    }
+    if (!m_workspaceMode) {
+        m_workspaceMode = true;
+        if (m_workspaceModeAct) {
+            m_workspaceModeAct->setChecked(true);
+        }
+        if (m_imageView) {
+            m_imageView->setWorkspaceMode(true);
+        }
+        m_thumbnailBar->setWorkspaceMode(true);
+        updateWorkspaceActionVisibility();
+    }
+    m_thumbnailBar->selectAllThumbs();
+}
+
 void MainWindow::flashNavHud(const QString &action)
 {
     if (!m_imageView || m_workspaceMode) {

@@ -176,7 +176,14 @@ void ImageItem::updateDisplayedPixmap()
         setPixmap(QPixmap::fromImage(m_source));
         return;
     }
-    setPixmap(QPixmap::fromImage(m_source.mirrored(m_hFlip, m_vFlip)));
+    Qt::Orientations axes;
+    if (m_hFlip) {
+        axes |= Qt::Horizontal;
+    }
+    if (m_vFlip) {
+        axes |= Qt::Vertical;
+    }
+    setPixmap(QPixmap::fromImage(m_source.flipped(axes)));
 }
 
 QPoint ImageItem::pixelAtScenePos(const QPointF &scenePos) const
