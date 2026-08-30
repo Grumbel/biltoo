@@ -754,8 +754,27 @@ void MainWindow::appendFiles(const QStringList &paths)
         return;
     }
 
+    // Paths currently on the workspace (selection must be restored after setFiles)
+    const QStringList workspacePaths = m_workspaceMode ? m_imageView->itemPaths() : QStringList();
+
     sortFileList();
     m_thumbnailBar->setFiles(m_files);
+    if (m_workspaceMode) {
+        // setFiles rebuilds items; re-apply multi-select mode and canvas selection
+        m_thumbnailBar->setWorkspaceMode(true);
+        syncThumbnailWorkspaceSelection();
+        // If the canvas was empty, selection may still be empty — restore paths we had
+        if (m_thumbnailBar->selectedIndices().isEmpty() && !workspacePaths.isEmpty()) {
+            QList<int> indices;
+            for (const QString &path : workspacePaths) {
+                const int idx = m_files.indexOf(path);
+                if (idx >= 0) {
+                    indices.append(idx);
+                }
+            }
+            m_thumbnailBar->setSelectedIndices(indices);
+        }
+    }
     applyThumbnailVisibility();
 
     int newIndex = 0;
@@ -768,9 +787,19 @@ void MainWindow::appendFiles(const QStringList &paths)
         // Jump to the first newly added image after sort
         newIndex = 0;
     }
-    m_currentIndex = -1;
-    setCurrentIndex(newIndex);
-    updateNavigationActions();
+
+    if (m_workspaceMode) {
+        m_currentIndex = newIndex;
+        if (m_metadataPanel && newIndex >= 0 && newIndex < m_files.size()) {
+            m_metadataPanel->setImagePath(m_files.at(newIndex));
+        }
+        updateStatus();
+        updateNavigationActions();
+    } else {
+        m_currentIndex = -1;
+        setCurrentIndex(newIndex);
+        updateNavigationActions();
+    }
 }
 
 void MainWindow::setCurrentIndex(int index)
@@ -1433,25 +1462,28 @@ void MainWindow::dropEvent(QDropEvent *event)
         return;
     }
 
-    // Workspace mode: drop adds images onto the view for comparison
+    // Workspace mode: append to the session (thumbnail bar) and show on canvas
     if (m_workspaceMode) {
-        for (const QString &path : paths) {
-            // Expand directories to individual files when dropped
-            const QStringList expanded = expandPaths({path});
-            if (expanded.isEmpty()) {
-                m_imageView->addImage(path);
-            } else {
-                for (const QString &img : expanded) {
-                    m_imageView->addImage(img);
-                }
-            }
+        const QStringList expanded = expandPaths(paths);
+        if (expanded.isEmpty()) {
+            return;
+        }
+        appendFiles(expanded);
+        for (const QString &img : expanded) {
+            m_imageView->addImage(img);
+        }
+        syncThumbnailWorkspaceSelection();
+        // Ensure the bar is visible once the session has multiple images
+        if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+            m_toggleThumbnailBarAct->setChecked(true);
+            m_thumbnailBar->setVisible(true);
         }
         event->acceptProposedAction();
         return;
     }
 
-    // Classic mode: Shift+drop appends to the session; plain drop replaces
-    if (event->modifiers() & Qt::ShiftModifier) {
+    // Classic mode: Shift or Ctrl+drop appends to the session; plain drop replaces
+    if (event->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) {
         appendFiles(paths);
     } else {
         loadFiles(paths);
