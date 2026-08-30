@@ -59,7 +59,9 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 - Context menu on the image view exposing the same core actions.
 - Status bar shows [index/total], filename, dimensions, zoom %, rotation.
 - Thumbnail bar at the bottom when more than one image is loaded.
-- Drag-and-drop of local image files replaces the current session.
+- Drag-and-drop of local image files: plain drop replaces the session in classic
+  mode; Shift/Ctrl+drop appends. In workspace mode drop appends to the session
+  (thumbnail bar) and places the images on the canvas.
 - Keyboard: Left/Right/Space/Backspace/PgUp/PgDn navigate; R / [ ] rotate; F fit.
 - Open Directory (Ctrl+Shift+O) and CLI directories expand to images sorted by name.
 - `--recursive` / `-r` walks subdirectories when expanding directory arguments.
@@ -69,7 +71,7 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
   Manual navigation or thumbnail click pauses the slideshow.
 - Thumbnails are decoded asynchronously on the global QThreadPool.
 - Sort by name or mtime (View menu; `--sort=name|mtime`).
-- Open replaces the session; Add Images… / Shift+drop appends (deduplicated).
+- Open replaces the session; Add Images… / Shift or Ctrl+drop appends (deduplicated).
 - `--thumbnails` / `--no-thumbnails` force thumbnail bar visibility.
 - Workspace mode is optional and off by default (View → Workspace Mode).
   Classic mode: left-drag pans, single centred non-interactive image.
