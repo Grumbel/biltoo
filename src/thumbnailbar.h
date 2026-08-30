@@ -5,6 +5,8 @@
 #define THUMBNAILBAR_H
 
 #include <QListWidget>
+#include <QMimeData>
+#include <QPoint>
 #include <QStringList>
 #include <atomic>
 
@@ -74,9 +76,14 @@ protected:
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    QStringList mimeTypes() const override;
+    QMimeData *mimeData(const QList<QListWidgetItem *> items) const;
+    Qt::DropActions supportedDragActions() const;
 
 private slots:
     void onItemActivated(QListWidgetItem *item);
@@ -89,6 +96,7 @@ private:
     void applyOrientation();
     void scheduleThumbnailLoads();
     void requestRemoveSelection();
+    void startFileDrag(const QList<QListWidgetItem *> &items);
     static QImage makeThumbnail(const QString &path, int maxSize);
 
     // Generation counter so stale async results are ignored after setFiles()
@@ -98,6 +106,12 @@ private:
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;
     QStringList m_files;
+
+    /** Pending press used to distinguish click (toggle/navigate) from file drag. */
+    QPoint m_pressPos;
+    QListWidgetItem *m_pressItem = nullptr;
+    bool m_pressActive = false;
+    bool m_dragStarted = false;
 };
 
 #endif // THUMBNAILBAR_H

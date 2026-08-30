@@ -5,7 +5,9 @@
 #include "imageloader.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QContextMenuEvent>
+#include <QDrag>
 #include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
@@ -13,10 +15,12 @@
 #include <QKeySequence>
 #include <QListWidgetItem>
 #include <QMenu>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QMetaObject>
 #include <QResizeEvent>
 #include <QThreadPool>
+#include <QUrl>
 #include <algorithm>
 
 namespace {
@@ -38,6 +42,10 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setWordWrap(false);
     setTextElideMode(Qt::ElideMiddle);
     setContextMenuPolicy(Qt::DefaultContextMenu);
+    // Outbound file drags into other apps; drops are handled by MainWindow
+    setDragEnabled(true);
+    setDragDropMode(QAbstractItemView::DragOnly);
+    setDefaultDropAction(Qt::CopyAction);
     // Drop style-provided item margins that inflate the caption band
     setStyleSheet(QStringLiteral(
         "QListWidget::item { padding: 0px; margin: 0px; border: none; }"));
@@ -388,28 +396,74 @@ void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
     event->accept();
 }
 
+QStringList ThumbnailBar::mimeTypes() const
+{
+    return {QStringLiteral("text/uri-list")};
+}
+
+QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
+{
+    auto *data = new QMimeData;
+    QList<QUrl> urls;
+    urls.reserve(items.size());
+    for (QListWidgetItem *it : items) {
+        if (!it) {
+            continue;
+        }
+        const QString path = it->data(Qt::UserRole).toString();
+        if (!path.isEmpty()) {
+            urls.append(QUrl::fromLocalFile(path));
+        }
+    }
+    data->setUrls(urls);
+    return data;
+}
+
+Qt::DropActions ThumbnailBar::supportedDragActions() const
+{
+    return Qt::CopyAction | Qt::LinkAction;
+}
+
+void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
+{
+    if (items.isEmpty()) {
+        return;
+    }
+    QMimeData *data = mimeData(items);
+    if (!data || data->urls().isEmpty()) {
+        delete data;
+        return;
+    }
+
+    auto *drag = new QDrag(this);
+    drag->setMimeData(data);
+
+    // Prefer the first item's icon as the drag pixmap
+    if (QListWidgetItem *first = items.first()) {
+        const QIcon icon = first->icon();
+        if (!icon.isNull()) {
+            const QPixmap pix = icon.pixmap(iconSize());
+            if (!pix.isNull()) {
+                drag->setPixmap(pix);
+                drag->setHotSpot(QPoint(pix.width() / 2, pix.height() / 2));
+            }
+        }
+    }
+
+    drag->exec(supportedDragActions(), Qt::CopyAction);
+}
+
 void ThumbnailBar::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton) {
+        m_pressActive = false;
         QListWidget::mousePressEvent(event);
         return;
     }
 
-    if (m_workspaceMode) {
-        // Plain click toggles workspace membership for that thumbnail
-        QListWidgetItem *hit = itemAt(event->pos());
-        if (hit) {
-            hit->setSelected(!hit->isSelected());
-            emit workspaceSelectionChanged();
-            event->accept();
-            return;
-        }
-        event->accept();
-        return;
-    }
-
     // Classic mode: Ctrl/Shift+click adds to workspace without changing current
-    if (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier)) {
+    if (!m_workspaceMode
+        && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
         QListWidgetItem *hit = itemAt(event->pos());
         if (hit) {
             emit indexAddToWorkspace(row(hit));
@@ -417,5 +471,70 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
             return;
         }
     }
-    QListWidget::mousePressEvent(event);
+
+    // Record press so a short click can toggle/navigate and a drag can export files
+    m_pressPos = event->pos();
+    m_pressItem = itemAt(event->pos());
+    m_pressActive = (m_pressItem != nullptr);
+    m_dragStarted = false;
+
+    if (!m_workspaceMode && m_pressItem) {
+        // Keep selection/current in sync for single-selection navigation
+        QListWidget::mousePressEvent(event);
+        return;
+    }
+
+    event->accept();
+}
+
+void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_pressActive && !m_dragStarted && (event->buttons() & Qt::LeftButton)
+        && m_pressItem) {
+        const int dist = (event->pos() - m_pressPos).manhattanLength();
+        if (dist >= QApplication::startDragDistance()) {
+            m_dragStarted = true;
+
+            QList<QListWidgetItem *> items;
+            if (m_workspaceMode) {
+                // Drag all selected; if press item is outside selection, drag that one
+                items = selectedItems();
+                if (!m_pressItem->isSelected()) {
+                    items = {m_pressItem};
+                }
+            } else {
+                items = {m_pressItem};
+            }
+            if (items.isEmpty()) {
+                items = {m_pressItem};
+            }
+
+            startFileDrag(items);
+            m_pressActive = false;
+            m_pressItem = nullptr;
+            event->accept();
+            return;
+        }
+    }
+    QListWidget::mouseMoveEvent(event);
+}
+
+void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && m_pressActive && !m_dragStarted) {
+        if (m_workspaceMode && m_pressItem) {
+            // Click (no drag): toggle workspace membership
+            m_pressItem->setSelected(!m_pressItem->isSelected());
+            emit workspaceSelectionChanged();
+            m_pressActive = false;
+            m_pressItem = nullptr;
+            event->accept();
+            return;
+        }
+        // Image mode: current/selection already applied on press
+    }
+    m_pressActive = false;
+    m_pressItem = nullptr;
+    m_dragStarted = false;
+    QListWidget::mouseReleaseEvent(event);
 }
