@@ -416,6 +416,30 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     Q_UNUSED(rect);
 }
 
+
+void ImageView::updateGalleryHoverAt(const QPoint &viewPos)
+{
+    if (!isGalleryMode() || !m_scene) {
+        if (!m_galleryHoverPath.isEmpty()) {
+            m_galleryHoverPath.clear();
+            viewport()->update();
+        }
+        return;
+    }
+    QString path;
+    const QPointF scenePos = mapToScene(viewPos);
+    for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            path = ii->path();
+            break;
+        }
+    }
+    if (path != m_galleryHoverPath) {
+        m_galleryHoverPath = path;
+        viewport()->update();
+    }
+}
+
 void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 {
@@ -812,24 +836,8 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         updateHoverEdge(event->pos());
     }
 
-    // Gallery: HUD shows the filename of the tile under the cursor.
-    if (isGalleryMode()) {
-        QString path;
-        const QPointF scenePos = mapToScene(event->pos());
-        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                path = ii->path();
-                break;
-            }
-        }
-        if (path != m_galleryHoverPath) {
-            m_galleryHoverPath = path;
-            viewport()->update();
-        }
-    } else if (!m_galleryHoverPath.isEmpty()) {
-        m_galleryHoverPath.clear();
-        viewport()->update();
-    }
+    m_lastHoverViewPos = event->pos();
+    updateGalleryHoverAt(m_lastHoverViewPos);
 
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).

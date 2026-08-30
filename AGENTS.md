@@ -156,16 +156,19 @@ as **hard constraints**, not style preferences:
    (same space as edge affordances and the HUD). Do **not** draw handles from
    `ImageItem::paint` under the item transform, and do **not** rely on
    `drawForeground` with a scene transform for final size.
-2. **Logical centres** live in item local space (`handleCenter`); map to the
+2. **Viewport update mode must stay `FullViewportUpdate`** while overlays are
+   painted in `paintEvent`. `SmartViewportUpdate` scrolls/blits pixels and
+   smears HUD/chrome across the image (seen on Vertical gallery scroll).
+3. **Logical centres** live in item local space (`handleCenter`); map to the
    viewport with `mapToScene` + `QGraphicsView::mapFromScene` before drawing.
-3. **On-screen sizes** (`kHandleScreenPx`, edge thickness, chrome buttons) are
+4. **On-screen sizes** (`kHandleScreenPx`, edge thickness, chrome buttons) are
    constants in *viewport pixels*. Never multiply them by item scale or view
    scale when stroking. Inverse scale (`/ screenScale()`) is only for placing
    centres *in local space* (e.g. rotate offset, button stack).
-4. **Hit-testing** compares **view-pixel** distances to those centres
+5. **Hit-testing** compares **view-pixel** distances to those centres
    (`handleDistanceScreenPx` / edge segment projection), not local radii alone.
    The view owns press/hover so rotated/covered chrome stays reachable.
-5. If handles look tiny or huge after a change, the mapping or paint space is
+6. If handles look tiny or huge after a change, the mapping or paint space is
    wrong — fix the math; do not paper over with ad-hoc scale factors.
 
 **UI:** Gallery layouts sit with Workspace Mode on the main toolbar; Raise/Lower

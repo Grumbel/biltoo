@@ -312,6 +312,7 @@ private:
     int edgeZoneHeight() const;
     void updateHoverEdge(const QPoint &viewPos);
     void drawEdgeAffordances(QPainter &painter);
+    void updateGalleryHoverAt(const QPoint &viewPos);
     static QSizeF nativeSize(const ImageItem *item);
     void zoomViewBy(qreal factor);
 
@@ -336,6 +337,8 @@ private:
     bool m_galleryReturnAvailable = false;
     /** Gallery: path under cursor for HUD filename (empty when none). */
     QString m_galleryHoverPath;
+    /** Last mouse position in viewport coords (gallery hover + scroll). */
+    QPoint m_lastHoverViewPos;
     bool m_imageModeLeftDragPan = true;
     QColor m_bgColor{42, 42, 42};
     QColor m_bgColorAlt{48, 48, 48};

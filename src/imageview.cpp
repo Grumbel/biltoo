@@ -75,7 +75,23 @@ ImageView::ImageView(QWidget *parent)
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     setAlignment(Qt::AlignCenter);
-    setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
+    // Full updates: HUD, edge affordances and workspace chrome are painted in
+    // paintEvent on top of the scene. SmartViewportUpdate scrolls/blits the
+    // viewport and leaves overlay trails (e.g. Vertical gallery scroll).
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+
+    // Scrolling moves tiles under a stationary cursor — refresh gallery HUD path.
+    auto refreshHover = [this]() {
+        if (isGalleryMode() && !m_lastHoverViewPos.isNull()) {
+            updateGalleryHoverAt(m_lastHoverViewPos);
+        }
+    };
+    connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [refreshHover](int) {
+        refreshHover();
+    });
+    connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [refreshHover](int) {
+        refreshHover();
+    });
 }
 
 ImageView::~ImageView() = default;
