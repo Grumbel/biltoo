@@ -34,6 +34,12 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [ ] Workspace item misalignment after mode switches: re-check after long sessions
 - [ ] Undo stack coverage for gallery open/return (currently workspace-oriented)
 
+### Preferences / desktop integration
+
+- [x] Default application tab: checkbox reflects current default; toggle applies immediately; mark-all / remove-all buttons
+- [x] Preferences dialog button order: GNOME 2 HIG (Cancel left, OK right); document in AGENTS.md
+- [x] Add `nix flake check` phase
+
 ### Later
 
 - [ ] OpenGL path for large images / many items
