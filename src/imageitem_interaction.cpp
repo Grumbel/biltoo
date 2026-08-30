@@ -189,6 +189,8 @@ void ImageItem::setOpacityFromSliderPos(const QPointF &itemPos)
     if (track.width() <= 0) {
         return;
     }
+    // Project onto the local track axis (works when the item is rotated: mouse
+    // coordinates are already in item space).
     const qreal tval = qBound(0.0, (itemPos.x() - track.left()) / track.width(), 1.0);
     setItemOpacity(0.05 + tval * 0.95);
 }
@@ -216,8 +218,20 @@ bool ImageItem::isUprightChromeHandle(Handle h) const
 
 qreal ImageItem::handleDistanceScreenPx(Handle h, const QPointF &itemPos) const
 {
-    const QPointF d = itemPos - handleCenter(h);
-    return QLineF(QPointF(0, 0), d).length() * screenScale();
+    // Measure in view pixels after the full item transform so hit targets stay
+    // accurate when the image is rotated (local isotropic scaling alone is not
+    // enough once the view mapping is involved).
+    const QPointF handleScene = mapToScene(handleCenter(h));
+    const QPointF posScene = mapToScene(itemPos);
+    if (scene()) {
+        const QList<QGraphicsView *> views = scene()->views();
+        if (!views.isEmpty() && views.first()) {
+            const QPoint a = views.first()->mapFromScene(handleScene);
+            const QPoint b = views.first()->mapFromScene(posScene);
+            return QLineF(QPointF(a), QPointF(b)).length();
+        }
+    }
+    return QLineF(handleScene, posScene).length();
 }
 
 QPointF ImageItem::handleCenter(Handle h) const
@@ -280,8 +294,25 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     // distances so rotation/scale of the item does not shrink the hit target.
     {
         const QRectF slider = opacitySliderRect();
-        const qreal pad = 6.0 / screenScale();
-        if (slider.adjusted(-pad, -pad, pad, pad).contains(itemPos)) {
+        // Expand in local units, then also accept near misses along the track
+        // (important when the image is rotated and the cursor sits just off the bar).
+        const qreal pad = 10.0 / screenScale();
+        const QRectF hit = slider.adjusted(-pad, -pad, pad, pad);
+        if (hit.contains(itemPos)) {
+            return Handle::OpacitySlider;
+        }
+        // Distance to the track centre-line in screen pixels
+        const QPointF a = slider.center() - QPointF(slider.width() / 2.0, 0);
+        const QPointF b = slider.center() + QPointF(slider.width() / 2.0, 0);
+        const QPointF ab = b - a;
+        const qreal ab2 = QPointF::dotProduct(ab, ab);
+        qreal t = 0.0;
+        if (ab2 > 1e-6) {
+            t = qBound(0.0, QPointF::dotProduct(itemPos - a, ab) / ab2, 1.0);
+        }
+        const QPointF closest = a + ab * t;
+        const QPointF d = itemPos - closest;
+        if (QLineF(QPointF(0, 0), d).length() * screenScale() <= kChromeHitScreenPx) {
             return Handle::OpacitySlider;
         }
     }
@@ -632,22 +663,32 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
             setCursor(Qt::CrossCursor);
             break;
         case Handle::ScaleTopLeft:
-        case Handle::ScaleBottomRight:
-            setCursor(Qt::SizeFDiagCursor);
+        case Handle::ScaleBottomRight: {
+            // Diagonal cursors are axis-aligned on screen; swap when the item
+            // is closer to 90° so the cursor matches the visual corner.
+            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
+            const bool swap = (a > 45.0 && a < 135.0);
+            setCursor(swap ? Qt::SizeBDiagCursor : Qt::SizeFDiagCursor);
             break;
+        }
         case Handle::ScaleTopRight:
-        case Handle::ScaleBottomLeft:
-            setCursor(Qt::SizeBDiagCursor);
+        case Handle::ScaleBottomLeft: {
+            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
+            const bool swap = (a > 45.0 && a < 135.0);
+            setCursor(swap ? Qt::SizeFDiagCursor : Qt::SizeBDiagCursor);
             break;
+        }
         case Handle::FlipH:
         case Handle::FlipV:
         case Handle::Raise:
         case Handle::Lower:
             setCursor(Qt::PointingHandCursor);
             break;
-        case Handle::OpacitySlider:
-            setCursor(Qt::SizeHorCursor);
+        case Handle::OpacitySlider: {
+            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
+            setCursor((a > 45.0 && a < 135.0) ? Qt::SizeVerCursor : Qt::SizeHorCursor);
             break;
+        }
         default:
             unsetCursor();
             break;

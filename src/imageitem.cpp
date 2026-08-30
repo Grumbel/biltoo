@@ -78,22 +78,10 @@ void ImageItem::setStackZ(qreal z)
 
 void ImageItem::refreshStackingOrder()
 {
-    if (!m_interactive || !isSelected() || !scene()) {
-        setZValue(m_stackZ);
-        return;
-    }
-    qreal maxZ = m_stackZ;
-    for (QGraphicsItem *gi : scene()->items()) {
-        if (gi == this) {
-            continue;
-        }
-        if (auto *other = qgraphicsitem_cast<ImageItem *>(gi)) {
-            maxZ = qMax(maxZ, other->stackZ());
-        } else {
-            maxZ = qMax(maxZ, gi->zValue());
-        }
-    }
-    setZValue(maxZ + 1.0);
+    // Stacking order is only m_stackZ (Raise/Lower). Selecting an item must not
+    // temporarily bring the whole pixmap above others — only the chrome is drawn
+    // on that item; covering images keep their true stack position.
+    setZValue(m_stackZ);
 }
 
 void ImageItem::setItemHFlip(bool on)
