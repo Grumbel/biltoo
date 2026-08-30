@@ -639,6 +639,8 @@ void MainWindow::createToolBar()
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_rotateLeftAct);
     m_toolBar->addAction(m_rotateRightAct);
+    m_toolBar->addAction(m_flipHAct);
+    m_toolBar->addAction(m_flipVAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_layoutFreeFormAct);
     m_toolBar->addAction(m_layoutSideBySideAct);

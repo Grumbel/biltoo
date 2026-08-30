@@ -30,6 +30,8 @@ public:
         RotateTop,
         RotateRight,
         RotateLeft,
+        FlipH,
+        FlipV,
         Raise,
         Lower,
         OpacitySlider

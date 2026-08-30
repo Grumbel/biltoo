@@ -198,7 +198,7 @@ QPainterPath ImageItem::shape() const
             path.addEllipse(c, r, r);
         }
         const qreal cr = chromeButtonSize() * 0.6;
-        for (Handle h : {Handle::Raise, Handle::Lower}) {
+        for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
             const QPointF c = handleCenter(h);
             path.addEllipse(c, cr, cr);
         }
@@ -247,7 +247,9 @@ void ImageItem::updateHandleLayout()
 
 bool ImageItem::isChromeHandle(Handle h) const
 {
-    return h == Handle::Raise || h == Handle::Lower || h == Handle::OpacitySlider;
+    return h == Handle::FlipH || h == Handle::FlipV
+        || h == Handle::Raise || h == Handle::Lower
+        || h == Handle::OpacitySlider;
 }
 
 qreal ImageItem::chromeButtonSize() const
@@ -264,9 +266,11 @@ QRectF ImageItem::opacitySliderRect() const
     const qreal gapSlider = kSliderGapPx / ss;
     const qreal w = kSliderWidthPx / ss;
     const qreal h = kSliderHeightPx / ss;
-    // Raise + Lower occupy left of the chrome row; slider to their right
-    const qreal rowLeft = r.center().x() - (btn + gapBtn + btn + gapSlider + w) / 2.0;
-    const qreal sliderLeft = rowLeft + btn + gapBtn + btn + gapSlider;
+    // FlipH/V + Raise/Lower, then opacity slider
+    constexpr int kChromeBtns = 4;
+    const qreal rowW = kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider + w;
+    const qreal rowLeft = r.center().x() - rowW / 2.0;
+    const qreal sliderLeft = rowLeft + kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider;
     const qreal y = r.bottom() + kChromeOffsetPx / ss + (btn - h) / 2.0;
     return QRectF(sliderLeft, y, w, h);
 }
@@ -291,10 +295,14 @@ QPointF ImageItem::handleCenter(Handle h) const
     const qreal gapBtn = kChromeBtnGapPx / ss;
     const qreal gapSlider = kSliderGapPx / ss;
     const qreal sliderW = kSliderWidthPx / ss;
-    const qreal rowW = btn + gapBtn + btn + gapSlider + sliderW;
+    constexpr int kChromeBtns = 4;
+    const qreal rowW = kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider + sliderW;
     const qreal rowLeft = r.center().x() - rowW / 2.0;
     const qreal chromeY = r.bottom() + kChromeOffsetPx / ss + btn / 2.0;
     const qreal cx = r.center().x();
+    auto chromeBtnCenter = [&](int index) {
+        return QPointF(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
+    };
     switch (h) {
     case Handle::ScaleTopLeft:
         return r.topLeft();
@@ -310,10 +318,14 @@ QPointF ImageItem::handleCenter(Handle h) const
         return QPointF(r.right() + rotOff, r.center().y());
     case Handle::RotateLeft:
         return QPointF(r.left() - rotOff, r.center().y());
+    case Handle::FlipH:
+        return chromeBtnCenter(0);
+    case Handle::FlipV:
+        return chromeBtnCenter(1);
     case Handle::Raise:
-        return QPointF(rowLeft + btn / 2.0, chromeY);
+        return chromeBtnCenter(2);
     case Handle::Lower:
-        return QPointF(rowLeft + btn + gapBtn + btn / 2.0, chromeY);
+        return chromeBtnCenter(3);
     case Handle::OpacitySlider:
         return opacitySliderRect().center();
     default:
@@ -338,7 +350,7 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     // Raise / lower use larger chrome radius
     const qreal chromeR = chromeButtonSize() * 0.65;
     const qreal chromeR2 = chromeR * chromeR;
-    for (Handle h : {Handle::Raise, Handle::Lower}) {
+    for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
         const QPointF d = itemPos - handleCenter(h);
         if (QPointF::dotProduct(d, d) <= chromeR2) {
             return h;
@@ -377,6 +389,12 @@ void ImageItem::notifyViewStatus()
 void ImageItem::activateChromeHandle(Handle h)
 {
     switch (h) {
+    case Handle::FlipH:
+        toggleHFlip();
+        break;
+    case Handle::FlipV:
+        toggleVFlip();
+        break;
     case Handle::Raise:
         setZValue(zValue() + 1.0);
         break;
@@ -492,6 +510,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->drawText(QRectF(-16, -16, 32, 32), Qt::AlignCenter, glyph);
         painter->restore();
     };
+    drawChromeBtn(Handle::FlipH, QStringLiteral("↔"));
+    drawChromeBtn(Handle::FlipV, QStringLiteral("↕"));
     drawChromeBtn(Handle::Raise, QStringLiteral("↑"));
     drawChromeBtn(Handle::Lower, QStringLiteral("↓"));
 
@@ -529,7 +549,8 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
     if (m_interactive && event->button() == Qt::LeftButton) {
         const Handle h = handleAt(event->pos());
         if (h != Handle::None) {
-            if (h == Handle::Raise || h == Handle::Lower) {
+            if (h == Handle::FlipH || h == Handle::FlipV
+                || h == Handle::Raise || h == Handle::Lower) {
                 activateChromeHandle(h);
                 event->accept();
                 return;
@@ -613,6 +634,8 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
         case Handle::ScaleBottomLeft:
             setCursor(Qt::SizeBDiagCursor);
             break;
+        case Handle::FlipH:
+        case Handle::FlipV:
         case Handle::Raise:
         case Handle::Lower:
             setCursor(Qt::PointingHandCursor);
