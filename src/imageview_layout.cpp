@@ -113,9 +113,16 @@ void ImageView::restoreWorkspace()
 
 void ImageView::clearWorkspace()
 {
+    // AUDIT H8/H9: drop live pointers and undo commands that reference items
+    // about to be destroyed.
+    m_handleDragItem = nullptr;
     m_rotateItem = nullptr;
     m_rotating = false;
     m_dragItem = nullptr;
+    m_gallerySelectionAnchor = nullptr;
+    if (m_undoStack) {
+        m_undoStack->clear();
+    }
     m_items.clear();
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
@@ -246,6 +253,12 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
             if (item == m_rotateItem) {
                 m_rotateItem = nullptr;
                 m_rotating = false;
+            }
+            if (item == m_handleDragItem) {
+                m_handleDragItem = nullptr;
+            }
+            if (item == m_gallerySelectionAnchor) {
+                m_gallerySelectionAnchor = nullptr;
             }
             rememberItemState(item);
             m_scene->removeItem(item);

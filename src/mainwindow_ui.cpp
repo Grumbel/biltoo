@@ -260,13 +260,14 @@ void MainWindow::createActions()
     connect(m_lowerAct, &QAction::triggered, this, &MainWindow::lowerSelected);
 
     m_opacityUpAct = new QAction(tr("Opacity &Up"), this);
-    m_opacityUpAct->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Equal));
-    m_opacityUpAct->setStatusTip(tr("Increase opacity of the selected image"));
+    // Ctrl+Shift+= / Ctrl+Shift+- — avoid clashing with Zoom In/Out (Ctrl++/Ctrl+-)
+    m_opacityUpAct->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Equal));
+    m_opacityUpAct->setStatusTip(tr("Increase opacity of the selected image (Ctrl+Shift+=)"));
     connect(m_opacityUpAct, &QAction::triggered, this, &MainWindow::opacityUp);
 
     m_opacityDownAct = new QAction(tr("Opacity &Down"), this);
-    m_opacityDownAct->setShortcut(Qt::CTRL | Qt::Key_Minus);
-    m_opacityDownAct->setStatusTip(tr("Decrease opacity of the selected image"));
+    m_opacityDownAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Minus);
+    m_opacityDownAct->setStatusTip(tr("Decrease opacity of the selected image (Ctrl+Shift+-)"));
     connect(m_opacityDownAct, &QAction::triggered, this, &MainWindow::opacityDown);
 
     m_opacityResetAct = new QAction(tr("Opacity &Reset"), this);

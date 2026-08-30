@@ -368,6 +368,7 @@ void MainWindow::toggleWorkspaceMode()
 {
     const bool on = m_workspaceModeAct->isChecked();
     if (on) {
+        stopSlideshow();
         m_galleryReturnActive = false;
         if (m_backToGalleryAct) {
             m_backToGalleryAct->setEnabled(false);
@@ -629,7 +630,7 @@ void MainWindow::updateWindowTitle()
 void MainWindow::updateStatus()
 {
     updateNavigationActions();
-    // Session index on ImageView so status bar and on-image HUD share [n/N].
+    // Session index on ImageView so status bar and on-image HUD share n/N.
     if (m_imageView) {
         // Silent while the slideshow timer advances; user Next/Prev still pulse.
         m_imageView->setSessionPosition(m_currentIndex, m_files.size(),

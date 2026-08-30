@@ -117,7 +117,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     if (role == LoadAdd || role == LoadRestore) {
         m_pendingWorkspacePaths.insert(path);
     }
-    const quint64 gen = ++m_loadGeneration;
+    // AUDIT H3a: only LoadReplace advances the generation token so workspace
+    // adds cannot cancel an in-flight Image-mode navigation decode.
+    const quint64 gen = (role == LoadReplace) ? ++m_loadGeneration : m_loadGeneration;
     QThreadPool::globalInstance()->start([this, path, role, gen]() {
         const QImage image = ImageLoader::load(path);
         QMetaObject::invokeMethod(this, "onImageLoaded", Qt::QueuedConnection,
@@ -163,11 +165,21 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 return;
             }
             // Never inherit Gallery/Workspace placement or scale.
+            // DOMAIN: user rotation/flips persist across navigation (AUDIT H6).
             item->setInteractive(false);
             item->setScaleHandlesEnabled(false);
             item->setItemScale(1.0);
-            item->setItemRotation(0.0);
             item->setPos(0, 0);
+            {
+                const auto it = m_itemStates.constFind(path);
+                if (it != m_itemStates.cend()) {
+                    item->setItemRotation(it->rotation);
+                    item->setItemHFlip(it->hFlip);
+                    item->setItemVFlip(it->vFlip);
+                } else {
+                    item->setItemRotation(0.0);
+                }
+            }
             prepareImageModeCanvas();
             fitItem(item, currentFitAspectMode());
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
@@ -256,6 +268,16 @@ void ImageView::clearExtras()
     ImageItem *keep = m_items.first();
     for (int i = m_items.size() - 1; i >= 1; --i) {
         ImageItem *item = m_items.takeAt(i);
+        if (item == m_handleDragItem) {
+            m_handleDragItem = nullptr;
+        }
+        if (item == m_dragItem) {
+            m_dragItem = nullptr;
+        }
+        if (item == m_rotateItem) {
+            m_rotateItem = nullptr;
+            m_rotating = false;
+        }
         rememberItemState(item);
         m_scene->removeItem(item);
         delete item;
@@ -494,6 +516,7 @@ void ImageView::flipHorizontal()
 {
     if (ImageItem *item = targetItem()) {
         item->toggleHFlip();
+        rememberItemState(item);
         if (m_fitMode) {
             fitItem(item, currentFitAspectMode());
         }
@@ -505,6 +528,7 @@ void ImageView::flipVertical()
 {
     if (ImageItem *item = targetItem()) {
         item->toggleVFlip();
+        rememberItemState(item);
         if (m_fitMode) {
             fitItem(item, currentFitAspectMode());
         }
@@ -522,15 +546,16 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
     const bool changed = (m_sessionIndex != index || m_sessionTotal != total);
     m_sessionIndex = index;
     m_sessionTotal = total;
-    // Optional identity pulse: filename + index without pinned HUD (H).
-    // Slideshow auto-advance passes pulseIdentity=false so the overlay stays quiet.
-    if (pulseIdentity && (changed || total > 0)) {
+    // Pulse only when the session cursor actually moves (user Next/Prev, etc.).
+    // Do not pulse on every statusChanged while total > 0 (AUDIT H7).
+    // Slideshow auto-advance passes pulseIdentity=false.
+    if (pulseIdentity && changed) {
         m_hudIdentityPulse = true;
         if (m_hudFlashTimer) {
             m_hudFlashTimer->start(1000);
         }
     }
-    if (changed || pulseIdentity || m_hudVisible) {
+    if (changed || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse) {
         viewport()->update();
     }
 }
@@ -591,6 +616,7 @@ void ImageView::rotateLeft()
         const qreal r = item->itemRotation();
         const qreal next = std::ceil(r / 90.0 - 1e-6) * 90.0 - 90.0;
         item->setItemRotation(next);
+        rememberItemState(item);
         if (m_fitMode) {
             fitItem(item, currentFitAspectMode());
         }
@@ -605,6 +631,7 @@ void ImageView::rotateRight()
         const qreal r = item->itemRotation();
         const qreal next = std::floor(r / 90.0 + 1e-6) * 90.0 + 90.0;
         item->setItemRotation(next);
+        rememberItemState(item);
         if (m_fitMode) {
             fitItem(item, currentFitAspectMode());
         }
@@ -803,6 +830,7 @@ void ImageView::resetItemRotation()
     }
     for (ImageItem *item : targets) {
         item->setItemRotation(0.0);
+        rememberItemState(item);
     }
     if (!targets.isEmpty()) {
         emit statusChanged();

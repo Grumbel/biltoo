@@ -91,7 +91,7 @@ Image is not a multi-object canvas.
 | Fit / Fill / 1:1 / Zoom ± | Change how the **view** frames the image | Image (primary); view pan/zoom may exist elsewhere |
 | Pan view | Move the view, not object local position | Image; Workspace pan tool; Gallery with explicit pan |
 | Previous / Next / First / Last | Change current index; show that path in Image | Image, session size > 1 |
-| Slideshow start/stop | Timed Next | Image only |
+| Slideshow start/stop | Timed Next (from Gallery, enters Image first) | Image or Gallery start; not Workspace |
 | Fullscreen | Chrome on/off | Always |
 
 ### Object transforms

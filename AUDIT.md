@@ -935,3 +935,21 @@ Implementation:
 ## Sign-off (deep pass 5)
 
 Gallery pack and workspace identity reviewed. Master priority list unchanged. Static audit of tip `03926e4` lineage considered **complete** for non-runtime analysis.
+
+
+---
+
+## Implementation log (2026-08-30)
+
+| ID | Status | Notes |
+|----|--------|--------|
+| H7 | Fixed | `setSessionPosition` pulses only when `changed && pulseIdentity` |
+| H8 | Fixed | `m_handleDragItem` / anchors nulled in clearWorkspace, setWorkspacePaths, Delete, clearExtras |
+| H9 | Fixed | `clearWorkspace` clears `m_undoStack` before destroying items |
+| H6 | Fixed | LoadReplace reapplies rotation/flips from `m_itemStates`; rotate/flip remember state |
+| H3a | Fixed | Only `LoadReplace` increments `m_loadGeneration` |
+| M20 | Fixed | Opacity uses Ctrl+Shift+± |
+| M7a | Fixed | `stopSlideshow` on Gallery enter and Workspace enter |
+| H2 | Open | Dual chrome path — deferred |
+| M4 | Open | Gallery zoom policy — deferred |
+| M17/M18 | Open | Canonical paths / VIPS autorot — deferred |

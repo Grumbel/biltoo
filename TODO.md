@@ -26,6 +26,15 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] Workspace Duplicate (Ctrl+D); reset scale/rotation; device-space chrome
 - [x] HUD identity pulse (filename / [i/n]); fit preserves rotation
 
+## Audit fixes implemented (2026-08-30)
+
+- [x] H7 HUD identity pulse only on session index change
+- [x] H8/H9 clear handle/drag pointers + undo stack when destroying items
+- [x] H6 persist Image-mode rotation/flip across navigation (`m_itemStates`)
+- [x] H3a LoadAdd does not advance load generation (won’t cancel LoadReplace)
+- [x] M20 Opacity Ctrl+Shift+± (no clash with Zoom Ctrl+±)
+- [x] M7a Stop slideshow when entering Gallery or Workspace
+
 ## Open
 
 ### Reported bugs (2026-08-30)
@@ -97,7 +106,7 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 | Delete (Workspace) | Remove from canvas (state kept) |
 | View → Gallery layouts | Enter Gallery with packing |
 | View → Workspace Mode | Free-form canvas |
-| Space | Slideshow start/stop (Image only) |
+| Space | Slideshow start/stop (Image; from Gallery enters Image) |
 | F / F11 | Fullscreen |
 | H | HUD overlay (pin) |
 | Ctrl+E | Metadata panel |

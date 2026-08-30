@@ -21,6 +21,8 @@ void MainWindow::populateGalleryCanvas()
 
 void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
 {
+    // AUDIT M7a: slideshow ticks only make sense in Image mode.
+    stopSlideshow();
     // DOMAIN: Mode := Gallery; pack all session paths with layout.
     m_galleryReturnActive = false;
     if (m_backToGalleryAct) {

@@ -1155,6 +1155,19 @@ void ImageView::keyPressEvent(QKeyEvent *event)
         bool removed = false;
         for (QGraphicsItem *gi : selected) {
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (item == m_handleDragItem) {
+                    m_handleDragItem = nullptr;
+                }
+                if (item == m_dragItem) {
+                    m_dragItem = nullptr;
+                }
+                if (item == m_rotateItem) {
+                    m_rotateItem = nullptr;
+                    m_rotating = false;
+                }
+                if (item == m_gallerySelectionAnchor) {
+                    m_gallerySelectionAnchor = nullptr;
+                }
                 rememberItemState(item);
                 m_items.removeOne(item);
                 m_scene->removeItem(item);
