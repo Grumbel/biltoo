@@ -136,6 +136,34 @@ invariant 6).
   branches.
 - Action enablement should follow DOMAIN operation tables, not one-off checks.
 
+### Workspace transform chrome (scale-invariant handles) — **fragile, re-read**
+
+Handles **must stay a constant size on screen** under any combination of:
+
+- view zoom (`QGraphicsView::transform`)
+- item scale / rotation / anisotropic stretch
+- HiDPI device pixel ratio
+
+This has regressed more than once. When touching chrome code, treat the following
+as **hard constraints**, not style preferences:
+
+1. **Draw chrome in viewport device pixels**, not scene/item local units.
+   Current path: `ImageView::paintEvent` → `ImageItem::paintInteractionChrome`
+   (same space as edge affordances and the HUD). Do **not** draw handles from
+   `ImageItem::paint` under the item transform, and do **not** rely on
+   `drawForeground` with a scene transform for final size.
+2. **Logical centres** live in item local space (`handleCenter`); map to the
+   viewport with `mapToScene` + `QGraphicsView::mapFromScene` before drawing.
+3. **On-screen sizes** (`kHandleScreenPx`, edge thickness, chrome buttons) are
+   constants in *viewport pixels*. Never multiply them by item scale or view
+   scale when stroking. Inverse scale (`/ screenScale()`) is only for placing
+   centres *in local space* (e.g. rotate offset, button stack).
+4. **Hit-testing** compares **view-pixel** distances to those centres
+   (`handleDistanceScreenPx` / edge segment projection), not local radii alone.
+   The view owns press/hover so rotated/covered chrome stays reachable.
+5. If handles look tiny or huge after a change, the mapping or paint space is
+   wrong — fix the math; do not paper over with ad-hoc scale factors.
+
 **UI:** Gallery layouts sit with Workspace Mode on the main toolbar; Raise/Lower
 and Select/Pan live on the vertical workspace tool strip.
 
