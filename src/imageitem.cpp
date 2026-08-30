@@ -341,9 +341,8 @@ qreal ImageItem::chromeButtonSize() const
 
 QPointF ImageItem::toItemFromUpright(const QPointF &uprightLocal) const
 {
-    // Upright frame = item local with rotation removed. After the item's
-    // rotation is applied by the view, these points sit under the
-    // axis-aligned bounds with upright glyphs.
+    // Kept for call sites that still convert; chrome is now item-local so this
+    // is identity when used from chrome helpers.
     if (qFuzzyIsNull(m_rotation)) {
         return uprightLocal;
     }
@@ -364,6 +363,12 @@ QPointF ImageItem::toUprightFromItem(const QPointF &itemLocal) const
 
 QRectF ImageItem::opacitySliderRectUpright() const
 {
+    // Item-local track under the pixmap (rotates with the image).
+    return opacitySliderRect();
+}
+
+QRectF ImageItem::opacitySliderRect() const
+{
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal ss = screenScale();
     const qreal btn = kChromeBtnScreenPx / ss;
@@ -379,28 +384,13 @@ QRectF ImageItem::opacitySliderRectUpright() const
     return QRectF(sliderLeft, y, w, h);
 }
 
-QRectF ImageItem::opacitySliderRect() const
-{
-    const QRectF upright = opacitySliderRectUpright();
-    if (qFuzzyIsNull(m_rotation)) {
-        return upright;
-    }
-    QPolygonF mapped;
-    mapped << toItemFromUpright(upright.topLeft())
-           << toItemFromUpright(upright.topRight())
-           << toItemFromUpright(upright.bottomRight())
-           << toItemFromUpright(upright.bottomLeft());
-    return mapped.boundingRect();
-}
-
 void ImageItem::setOpacityFromSliderPos(const QPointF &itemPos)
 {
-    const QRectF track = opacitySliderRectUpright();
+    const QRectF track = opacitySliderRect();
     if (track.width() <= 0) {
         return;
     }
-    const QPointF upright = toUprightFromItem(itemPos);
-    const qreal t = qBound(0.0, (upright.x() - track.left()) / track.width(), 1.0);
+    const qreal t = qBound(0.0, (itemPos.x() - track.left()) / track.width(), 1.0);
     setItemOpacity(0.05 + t * 0.95);
 }
 
@@ -416,11 +406,11 @@ QPointF ImageItem::handleCenter(Handle h) const
     constexpr int kChromeBtns = 4;
     const qreal rowW = kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider + sliderW;
     const qreal rowLeft = r.center().x() - rowW / 2.0;
+    // Chrome sits in item-local space under the pixmap so it rotates with the image.
     const qreal chromeY = r.bottom() + kChromeOffsetPx / ss + btn / 2.0;
     const qreal cx = r.center().x();
     auto chromeBtnCenter = [&](int index) {
-        const QPointF upright(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
-        return toItemFromUpright(upright);
+        return QPointF(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
     };
     switch (h) {
     case Handle::ScaleTopLeft:
@@ -458,12 +448,12 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         return Handle::None;
     }
 
-    // Opacity slider: test in upright frame so rotation does not skew the hit box
+    // Opacity slider (item-local, rotates with the image)
     {
-        const QRectF slider = opacitySliderRectUpright().adjusted(
+        const QRectF slider = opacitySliderRect().adjusted(
             -4.0 / screenScale(), -6.0 / screenScale(),
             4.0 / screenScale(), 6.0 / screenScale());
-        if (slider.contains(toUprightFromItem(itemPos))) {
+        if (slider.contains(itemPos)) {
             return Handle::OpacitySlider;
         }
     }
@@ -614,11 +604,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setPen(pen);
     }
 
-    // Chrome row: flip / raise / lower / opacity — upright under the AABB
-    painter->save();
-    if (!qFuzzyIsNull(m_rotation)) {
-        painter->rotate(-m_rotation);
-    }
+    // Chrome row: flip / raise / lower / opacity — item-local under the pixmap
+    // so the controls rotate with the image (same frame as scale/rotate handles).
     {
         const QRectF r = QGraphicsPixmapItem::boundingRect();
         const qreal ss = screenScale();
@@ -632,11 +619,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         const qreal chromeY = r.bottom() + kChromeOffsetPx / ss + btn / 2.0;
         const qreal btnR = btn / 2.0;
 
-        auto uprightBtnCenter = [&](int index) {
+        auto localBtnCenter = [&](int index) {
             return QPointF(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
         };
         auto drawChromeBtn = [&](Handle h, int index, const QString &glyph) {
-            const QPointF c = uprightBtnCenter(index);
+            const QPointF c = localBtnCenter(index);
             const bool hovered = (m_hoverHandle == h);
             const bool active = (m_activeHandle == h);
             const qreal rad = btnR * (hovered || active ? 1.12 : 1.0);
@@ -664,7 +651,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         drawChromeBtn(Handle::Raise, 2, QStringLiteral("↑"));
         drawChromeBtn(Handle::Lower, 3, QStringLiteral("↓"));
 
-        const QRectF track = opacitySliderRectUpright();
+        const QRectF track = opacitySliderRect();
         const qreal tval = qBound(0.0, (m_opacity - 0.05) / 0.95, 1.0);
         const bool hot = (m_hoverHandle == Handle::OpacitySlider
                           || m_activeHandle == Handle::OpacitySlider);
@@ -686,7 +673,6 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setPen(QPen(QColor(30, 30, 30), 0));
         painter->drawEllipse(thumb, 7.0 / ss, 7.0 / ss);
     }
-    painter->restore();
 
     painter->restore();
 }
