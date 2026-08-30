@@ -34,7 +34,7 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] Grid / Grid-Crop column count control (like masonry spin)
 - [x] Keyboard focus / arrow-key navigation between gallery tiles (spatial)
 - [x] Remember last Gallery layout across sessions (QSettings `lastGalleryLayout`)
-- [ ] Interaction summary / shortcuts still list a few pre-Gallery names (keep in sync)
+- [x] Interaction summary / shortcuts synced with current modes and keys
 - [x] Rename ThumbnailBar “workspace mode” → multi-select (`setMultiSelectEnabled`)
 
 ### Stability / polish
@@ -65,22 +65,26 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 | Shift/Ctrl+Drop (Image mode) | Append to session |
 | Drop (Workspace) | Append session + canvas |
 | Drop (Gallery) | Append session + relayout |
-| Click gallery tile | Open Image mode for that file |
+| Click gallery tile / Enter | Open Image mode for that file |
+| Gallery arrows (spatial) / Home / End | Move session cursor among tiles |
 | **Up** / Esc (from Image after gallery open) | Return to Gallery |
-| Click left/right edge (Image) | Previous / next |
+| Click left/right edge; ←/→ (Image) | Previous / next |
 | Double-click (Image) | Toggle fullscreen |
 | Click item (Workspace) | Select (handles) |
 | Drag item (Workspace only) | Move |
-| Drag handles (Workspace only) | Scale / rotate |
+| Drag handles (Workspace only) | Scale / rotate / opacity / chrome |
+| Ctrl+D (Workspace) | Duplicate selection |
 | Wheel | Zoom view (mode-dependent) |
 | Alt+LMB / Middle | Pan |
 | Delete (Workspace) | Remove from canvas (state kept) |
 | View → Gallery layouts | Enter Gallery with packing |
 | View → Workspace Mode | Free-form canvas |
-| F5 | Slideshow (Image only) |
-| F11 | Fullscreen |
+| Space | Slideshow start/stop (Image only) |
+| F / F11 | Fullscreen |
+| H | HUD overlay (pin) |
 | Ctrl+E | Metadata panel |
 | Ctrl+T | Toolbar |
+| Ctrl+0 / Fit actions | Zoom 1:1 / fit / fill |
 
 ## Broader image formats
 

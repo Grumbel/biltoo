@@ -385,11 +385,6 @@ void ImageView::setViewMode(ViewMode mode)
     emit statusChanged();
 }
 
-void ImageView::setWorkspaceMode(bool on)
-{
-    setViewMode(on ? ViewMode::Workspace : ViewMode::Image);
-}
-
 void ImageView::enterGallery(LayoutMode packagedLayout)
 {
     if (packagedLayout == LayoutMode::FreeForm) {

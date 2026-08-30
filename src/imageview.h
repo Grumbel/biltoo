@@ -79,9 +79,7 @@ public:
     bool isWorkspaceMode() const { return m_viewMode == ViewMode::Workspace; }
     bool isMultiItemMode() const { return m_viewMode != ViewMode::Image; }
 
-    /** @deprecated Prefer setViewMode(Workspace|Image). */
-    void setWorkspaceMode(bool on);
-    /** True only in free-form Workspace (not Gallery). */
+    /** @deprecated Alias for isWorkspaceMode(). */
     bool workspaceMode() const { return isWorkspaceMode(); }
 
     void clearExtras();
