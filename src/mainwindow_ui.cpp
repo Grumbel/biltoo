@@ -60,8 +60,9 @@ void MainWindow::createActions()
     connect(m_zoomFillAct, &QAction::triggered, this, &MainWindow::zoomFill);
 
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
-    m_fullscreenAct->setShortcuts({Qt::Key_F, Qt::Key_F11});
-    m_fullscreenAct->setShortcutContext(Qt::ApplicationShortcut);
+    // Keyboard F/F11 are QShortcut ApplicationShortcuts in MainWindow so leave
+    // fullscreen cannot get stuck when the checkable action and window state
+    // briefly disagree. Menu/toolbar still use this action.
     m_fullscreenAct->setIcon(themeIcon(QStringLiteral("view-fullscreen"), QStyle::SP_TitleBarMaxButton));
     m_fullscreenAct->setCheckable(true);
     m_fullscreenAct->setStatusTip(tr("Toggle fullscreen mode (F or F11)"));
@@ -128,6 +129,7 @@ void MainWindow::createActions()
 
     m_slideshowAct = new QAction(tr("Play &Slideshow"), this);
     m_slideshowAct->setShortcut(Qt::Key_Space);
+    m_slideshowAct->setShortcutContext(Qt::ApplicationShortcut);
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     m_slideshowAct->setCheckable(true);
     m_slideshowAct->setStatusTip(

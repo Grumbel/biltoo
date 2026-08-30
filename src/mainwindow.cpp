@@ -102,6 +102,21 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
+    // Dedicated F/F11 shortcuts (ApplicationShortcut) so leave-fullscreen is
+    // reliable even when the checkable action and window state briefly disagree.
+    // The action keeps the same keys for menus/tooltips; Qt de-duplicates.
+    for (const int key : {static_cast<int>(Qt::Key_F), static_cast<int>(Qt::Key_F11)}) {
+        auto *sc = new QShortcut(QKeySequence(key), this);
+        sc->setContext(Qt::ApplicationShortcut);
+        connect(sc, &QShortcut::activated, this, [this]() {
+            if (isFullScreen()) {
+                showNormal();
+            } else {
+                showFullScreen();
+            }
+        });
+    }
+
     connect(m_imageView, &ImageView::statusChanged, this, &MainWindow::updateStatus);
 
     m_slideshowTimer = new QTimer(this);
@@ -237,6 +252,8 @@ void MainWindow::zoomFill()
 
 void MainWindow::toggleFullscreen()
 {
+    // Always drive from the real window state so leave-fullscreen cannot stick
+    // when a checkable action's checked flag desyncs from the WM.
     if (isFullScreen()) {
         showNormal();
     } else {
@@ -1002,7 +1019,36 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         return;
     }
 
-    // Image mode: Shift or Ctrl+drop appends; plain drop replaces
+    // Gallery mode: always append and relayout. Ignore drops that only re-state
+    // paths already in the session (e.g. drag from the thumbnail bar) so tiles
+    // are not duplicated.
+    if (isGalleryMode()) {
+        const QStringList expanded = expandPaths(paths);
+        if (expanded.isEmpty()) {
+            return;
+        }
+        QStringList novel;
+        for (const QString &p : expanded) {
+            if (!m_files.contains(p)) {
+                novel.append(p);
+            }
+        }
+        if (novel.isEmpty()) {
+            return;
+        }
+        appendFiles(novel);
+        // appendFiles updates the session list; rebuild the packed canvas.
+        const ImageView::LayoutMode layout = m_imageView
+            ? m_imageView->layoutMode()
+            : ImageView::LayoutMode::Masonry;
+        populateGalleryCanvas();
+        if (m_imageView) {
+            m_imageView->enterGallery(layout);
+        }
+        return;
+    }
+
+    // Image mode: plain drop replaces the session; Shift/Ctrl appends.
     if (modifiers & (Qt::ShiftModifier | Qt::ControlModifier)) {
         appendFiles(paths);
     } else {
