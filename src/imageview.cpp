@@ -132,10 +132,14 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             return;
         }
         if (isImageMode()) {
-            clearWorkspace();
             m_lastLoadError.clear();
+            // Suppress paints between removing the old item and fitting the new one
+            // so we never present a native-scale (or empty) intermediate frame.
+            setUpdatesEnabled(false);
+            clearWorkspace();
             ImageItem *item = createItemFromImage(path, image);
             if (!item) {
+                setUpdatesEnabled(true);
                 m_lastLoadError = path;
                 emit statusChanged();
                 return;
@@ -149,6 +153,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             prepareImageModeCanvas();
             fitItem(item, currentFitAspectMode());
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+            setUpdatesEnabled(true);
+            viewport()->update();
             emit statusChanged();
             return;
         }
@@ -325,10 +331,9 @@ bool ImageView::loadImage(const QString &path)
         return true;
     }
 
-    // Classic mode: decode off the GUI thread. Keep the previous image until
-    // the new one is ready so rapid navigation does not flash an empty view.
-    // Clear residual view pan/zoom from Workspace/Gallery immediately.
-    prepareImageModeCanvas();
+    // Classic mode: decode off the GUI thread. Keep the previous image and its
+    // fit transform until the new decode arrives — resetting the transform here
+    // would show the old pixmap at 1:1 for a frame (glitchy rapid navigation).
     scheduleImageLoad(path, LoadReplace);
     emit statusChanged();
     return true;
