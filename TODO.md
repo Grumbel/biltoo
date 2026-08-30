@@ -29,6 +29,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Workspace thumbnail bar: click toggles image on/off the canvas
 - [x] Per-image position/scale/rotation remembered while deselected
 - [x] On-canvas scale (corner) and rotate handles on selected items
+- [x] Draggable splitter between image view and thumbnail bar (resizable thumbs)
 
 ## Near-term
 
