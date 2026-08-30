@@ -20,10 +20,24 @@ public:
     void setCurrentIndex(int index);
     int currentIndex() const;
 
+    /**
+     * When true, plain click toggles multi-selection of thumbnails (workspace
+     * membership). When false, classic single-selection navigates the session.
+     */
+    void setWorkspaceMode(bool on);
+    bool workspaceMode() const { return m_workspaceMode; }
+
+    /** Selected row indices (sorted ascending). */
+    QList<int> selectedIndices() const;
+    /** Programmatically set which rows are selected without emitting signals. */
+    void setSelectedIndices(const QList<int> &indices);
+
 signals:
     void indexActivated(int index);
-    /** Ctrl/Shift+click: request adding this image to the workspace. */
+    /** Ctrl/Shift+click in classic mode: request adding this image to the workspace. */
     void indexAddToWorkspace(int index);
+    /** Emitted after a toggle (or bulk change) of workspace membership selection. */
+    void workspaceSelectionChanged();
 
 protected:
     QSize sizeHint() const override;
@@ -43,6 +57,7 @@ private:
 
     // Generation counter so stale async results are ignored after setFiles()
     std::atomic<quint64> m_generation{0};
+    bool m_workspaceMode = false;
 };
 
 #endif // THUMBNAILBAR_H

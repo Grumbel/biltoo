@@ -9,6 +9,7 @@
 #include <QMouseEvent>
 #include <QMetaObject>
 #include <QThreadPool>
+#include <algorithm>
 
 ThumbnailBar::ThumbnailBar(QWidget *parent)
     : QListWidget(parent)
@@ -101,7 +102,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
         });
     }
 
-    if (count() > 0) {
+    if (count() > 0 && !m_workspaceMode) {
         setCurrentRow(0);
     }
 }
@@ -131,8 +132,53 @@ int ThumbnailBar::currentIndex() const
     return currentRow();
 }
 
+void ThumbnailBar::setWorkspaceMode(bool on)
+{
+    if (m_workspaceMode == on) {
+        return;
+    }
+    m_workspaceMode = on;
+
+    const bool blocked = blockSignals(true);
+    if (on) {
+        setSelectionMode(QAbstractItemView::MultiSelection);
+        clearSelection();
+    } else {
+        setSelectionMode(QAbstractItemView::SingleSelection);
+        clearSelection();
+    }
+    blockSignals(blocked);
+}
+
+QList<int> ThumbnailBar::selectedIndices() const
+{
+    QList<int> rows;
+    const QList<QListWidgetItem *> items = selectedItems();
+    rows.reserve(items.size());
+    for (QListWidgetItem *it : items) {
+        rows.append(row(it));
+    }
+    std::sort(rows.begin(), rows.end());
+    return rows;
+}
+
+void ThumbnailBar::setSelectedIndices(const QList<int> &indices)
+{
+    const bool blocked = blockSignals(true);
+    clearSelection();
+    for (int idx : indices) {
+        if (idx >= 0 && idx < count()) {
+            item(idx)->setSelected(true);
+        }
+    }
+    blockSignals(blocked);
+}
+
 void ThumbnailBar::onItemActivated(QListWidgetItem *item)
 {
+    if (m_workspaceMode) {
+        return;
+    }
     if (item) {
         emit indexActivated(row(item));
     }
@@ -140,6 +186,9 @@ void ThumbnailBar::onItemActivated(QListWidgetItem *item)
 
 void ThumbnailBar::onCurrentRowChanged(int row)
 {
+    if (m_workspaceMode) {
+        return;
+    }
     if (row >= 0) {
         emit indexActivated(row);
     }
@@ -147,13 +196,31 @@ void ThumbnailBar::onCurrentRowChanged(int row)
 
 void ThumbnailBar::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton
-        && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
+    if (event->button() != Qt::LeftButton) {
+        QListWidget::mousePressEvent(event);
+        return;
+    }
+
+    if (m_workspaceMode) {
+        // Plain click toggles workspace membership for that thumbnail
+        QListWidgetItem *hit = itemAt(event->pos());
+        if (hit) {
+            hit->setSelected(!hit->isSelected());
+            emit workspaceSelectionChanged();
+            event->accept();
+            return;
+        }
+        event->accept();
+        return;
+    }
+
+    // Classic mode: Ctrl/Shift+click adds to workspace without changing current
+    if (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier)) {
         QListWidgetItem *hit = itemAt(event->pos());
         if (hit) {
             emit indexAddToWorkspace(row(hit));
             event->accept();
-            return; // do not change the current image selection
+            return;
         }
     }
     QListWidget::mousePressEvent(event);
