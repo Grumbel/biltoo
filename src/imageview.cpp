@@ -1112,6 +1112,50 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         return;
     }
 
+    // Workspace: the second click of a double-click is delivered as
+    // MouseButtonDblClick only — there is no second mousePressEvent.
+    // Transform chrome sits outside ImageItem::shape(), so the base
+    // QGraphicsView path sees empty space and clears selection. Treat a
+    // double-click on chrome like a press; swallow empty double-clicks so
+    // rapid clicks do not deselect.
+    if (isWorkspaceMode() && event->button() == Qt::LeftButton
+        && m_tool == Tool::Select && m_scene) {
+        const QPointF scenePos = mapToScene(event->pos());
+        QList<ImageItem *> candidates;
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (ii->isInteractive()) {
+                    candidates.append(ii);
+                }
+            }
+        }
+        std::sort(candidates.begin(), candidates.end(),
+                  [](ImageItem *a, ImageItem *b) {
+                      return a->stackZ() > b->stackZ();
+                  });
+        for (ImageItem *item : candidates) {
+            if (item->beginHandleInteraction(scenePos, event->modifiers())) {
+                m_handleDragItem = item;
+                m_dragItem = item;
+                m_dragStartState = captureState(item);
+                event->accept();
+                return;
+            }
+        }
+        // Body of an interactive item: keep selection, do not propagate.
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (ii->isInteractive()) {
+                    event->accept();
+                    return;
+                }
+            }
+        }
+        // Empty space: swallow — single click on empty still clears via press.
+        event->accept();
+        return;
+    }
+
     QGraphicsView::mouseDoubleClickEvent(event);
 }
 

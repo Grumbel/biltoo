@@ -49,15 +49,15 @@ constexpr qreal kRotateOffsetPx = 36.0;      // rotate handle distance from edge
 constexpr qreal kChromeBtnScreenPx = 34.0;   // diameter in viewport px
 constexpr qreal kChromeHitScreenPx = 28.0;   // hit radius in viewport px
 // Outside offset from the visual right edge to the button column centre.
-constexpr qreal kChromeOutsidePx = 14.0;
-constexpr qreal kChromeBtnGapPx = 12.0;      // gap between stacked chrome buttons
-constexpr qreal kChromeClearPx = 10.0;       // min air between stack and rotate knob
+constexpr qreal kChromeOutsidePx = 18.0;     // a little more air from the frame
+constexpr qreal kChromeBtnGapPx = 16.0;      // gap between stacked chrome buttons
+constexpr qreal kChromeClearPx = 14.0;       // min air between stack and rotate knob
 constexpr qreal kSliderWidthPx = 100.0;
 constexpr qreal kSliderHeightPx = 10.0;
 // Outside offset from the visual bottom edge to the opacity track centre-line.
-constexpr qreal kSliderOutsidePx = 16.0;
+constexpr qreal kSliderOutsidePx = 18.0;
 // Min air between opacity track left end and bottom scale/rotate clearance.
-constexpr qreal kSliderClearPx = 12.0;
+constexpr qreal kSliderClearPx = 16.0;
 // Skip detailed chrome only when the frame is truly a few pixels across.
 constexpr qreal kMinFrameDiagPx = 16.0;
 
