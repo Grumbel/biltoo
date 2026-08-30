@@ -57,11 +57,11 @@ Use these names consistently in code comments, menus, and docs:
 | Term | Meaning |
 |------|---------|
 | **Image mode** (also “classic mode”) | Single-image viewing. One centred image; edge click / Go menu navigates the session; slideshow; no multi-item free placement. |
-| **Workspace mode** | Multi-image canvas. Thumbnail bar toggles which session images are on the canvas; each item remembers position/scale/rotation while off-canvas. |
-| **Free-form layout** | Workspace placement where the user moves/scales/rotates items freely. Scale and rotate handles are enabled. View zoom (wheel / toolbar) pans and scales the *view*. |
-| **Packaged layouts** | Workspace auto-arrangements: Side-by-Side, Vertical, Grid, Stack, Masonry. Items are placed by the layout; view transform stays identity; view zoom is disabled so packing stays consistent. |
+| **Workspace mode** | Free-form multi-image canvas only. Thumbnail bar toggles membership; items remember position/scale/rotation off-canvas. Scale/rotate handles, opacity, z-order. View zoom pans/scales the *view*. |
+| **Gallery layouts** | Packaged arrangements: Side-by-Side, Vertical, Grid, Stack, Masonry. Items are not freely moved; view transform stays identity. Double-click opens **Image mode**; **Back to Gallery** returns to the same layout. |
+| **Free-form layout** | The only layout used by Workspace mode (user placement). |
 
-**Planned rework (not implemented yet):** split automatic layouts into a **Gallery view** (masonry/grid/etc.; click an image to open Image mode, navigate back to the gallery) and keep **Workspace** as free-form only. “Gallery” is preferred over Group/Set/Collection/List for the browse-many UX. Until that lands, packaged layouts remain options under Workspace mode.
+**Gallery ↔ Image:** choosing a gallery layout enters multi-image mode with that packing. Double-click opens Image mode for that file; View → Back to Gallery restores the layout (selects all session thumbs on the canvas). Workspace Mode toggle forces free-form.
 
 ## UI expectations (current)
 
