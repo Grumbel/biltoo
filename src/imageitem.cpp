@@ -19,8 +19,12 @@
 namespace {
 constexpr qreal kHandleScreenPx = 9.0;
 constexpr qreal kRotateOffsetPx = 28.0;
-constexpr qreal kChromeOffsetPx = 26.0; // below content, screen pixels
-constexpr qreal kChromeSpacingPx = 22.0;
+constexpr qreal kChromeBtnScreenPx = 20.0;   // raise / lower button diameter
+constexpr qreal kChromeOffsetPx = 36.0;      // gap from image bottom to chrome row
+constexpr qreal kChromeBtnGapPx = 8.0;       // gap between raise and lower
+constexpr qreal kSliderWidthPx = 120.0;
+constexpr qreal kSliderHeightPx = 14.0;
+constexpr qreal kSliderGapPx = 12.0;         // gap from lower button to slider
 } // namespace
 
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
@@ -135,7 +139,7 @@ QRectF ImageItem::boundingRect() const
     if (isSelected() && m_interactive) {
         const qreal ss = screenScale();
         const qreal topPad = handleHitRadius() + kRotateOffsetPx / ss + 4.0;
-        const qreal bottomPad = handleHitRadius() + kChromeOffsetPx / ss + 4.0;
+        const qreal bottomPad = chromeButtonSize() + kChromeOffsetPx / ss + 8.0;
         const qreal sidePad = handleHitRadius() + 4.0;
         r.adjust(-sidePad, -topPad, sidePad, bottomPad);
     }
@@ -149,8 +153,7 @@ QPainterPath ImageItem::shape() const
     path.addRect(QGraphicsPixmapItem::boundingRect());
     if (isSelected() && m_interactive) {
         const qreal r = handleHitRadius();
-        QList<Handle> handles = {Handle::Rotate, Handle::Raise, Handle::Lower,
-                                  Handle::OpacityDown, Handle::OpacityUp};
+        QList<Handle> handles = {Handle::Rotate, Handle::Raise, Handle::Lower};
         if (m_scaleHandlesEnabled) {
             handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
                                     Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
@@ -160,8 +163,16 @@ QPainterPath ImageItem::shape() const
             const QPointF c = handleCenter(h);
             path.addEllipse(c, r, r);
         }
-        const QRectF cr = QGraphicsPixmapItem::boundingRect();
-        path.moveTo(cr.center().x(), cr.top());
+        // Larger chrome buttons
+        const qreal cr = chromeButtonSize() * 0.65;
+        for (Handle h : {Handle::Raise, Handle::Lower}) {
+            path.addEllipse(handleCenter(h), cr, cr);
+        }
+        path.addRect(opacitySliderRect().adjusted(
+            -4.0 / screenScale(), -6.0 / screenScale(),
+            4.0 / screenScale(), 6.0 / screenScale()));
+        const QRectF content = QGraphicsPixmapItem::boundingRect();
+        path.moveTo(content.center().x(), content.top());
         path.lineTo(handleCenter(Handle::Rotate));
     }
     return path;
@@ -200,8 +211,39 @@ void ImageItem::updateHandleLayout()
 
 bool ImageItem::isChromeHandle(Handle h) const
 {
-    return h == Handle::Raise || h == Handle::Lower
-           || h == Handle::OpacityDown || h == Handle::OpacityUp;
+    return h == Handle::Raise || h == Handle::Lower || h == Handle::OpacitySlider;
+}
+
+qreal ImageItem::chromeButtonSize() const
+{
+    return kChromeBtnScreenPx / screenScale();
+}
+
+QRectF ImageItem::opacitySliderRect() const
+{
+    const QRectF r = QGraphicsPixmapItem::boundingRect();
+    const qreal ss = screenScale();
+    const qreal btn = kChromeBtnScreenPx / ss;
+    const qreal gapBtn = kChromeBtnGapPx / ss;
+    const qreal gapSlider = kSliderGapPx / ss;
+    const qreal w = kSliderWidthPx / ss;
+    const qreal h = kSliderHeightPx / ss;
+    // Raise + Lower occupy left of the chrome row; slider to their right
+    const qreal rowLeft = r.center().x() - (btn + gapBtn + btn + gapSlider + w) / 2.0;
+    const qreal sliderLeft = rowLeft + btn + gapBtn + btn + gapSlider;
+    const qreal y = r.bottom() + kChromeOffsetPx / ss + (btn - h) / 2.0;
+    return QRectF(sliderLeft, y, w, h);
+}
+
+void ImageItem::setOpacityFromSliderPos(const QPointF &itemPos)
+{
+    const QRectF track = opacitySliderRect();
+    if (track.width() <= 0) {
+        return;
+    }
+    const qreal t = qBound(0.0, (itemPos.x() - track.left()) / track.width(), 1.0);
+    // Map 0..1 → opacity 0.05..1.0
+    setItemOpacity(0.05 + t * 0.95);
 }
 
 QPointF ImageItem::handleCenter(Handle h) const
@@ -209,8 +251,13 @@ QPointF ImageItem::handleCenter(Handle h) const
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal ss = screenScale();
     const qreal rotOff = kRotateOffsetPx / ss;
-    const qreal chromeY = r.bottom() + kChromeOffsetPx / ss;
-    const qreal spacing = kChromeSpacingPx / ss;
+    const qreal btn = kChromeBtnScreenPx / ss;
+    const qreal gapBtn = kChromeBtnGapPx / ss;
+    const qreal gapSlider = kSliderGapPx / ss;
+    const qreal sliderW = kSliderWidthPx / ss;
+    const qreal rowW = btn + gapBtn + btn + gapSlider + sliderW;
+    const qreal rowLeft = r.center().x() - rowW / 2.0;
+    const qreal chromeY = r.bottom() + kChromeOffsetPx / ss + btn / 2.0;
     const qreal cx = r.center().x();
     switch (h) {
     case Handle::ScaleTopLeft:
@@ -224,13 +271,11 @@ QPointF ImageItem::handleCenter(Handle h) const
     case Handle::Rotate:
         return QPointF(cx, r.top() - rotOff);
     case Handle::Raise:
-        return QPointF(cx - 1.5 * spacing, chromeY);
+        return QPointF(rowLeft + btn / 2.0, chromeY);
     case Handle::Lower:
-        return QPointF(cx - 0.5 * spacing, chromeY);
-    case Handle::OpacityDown:
-        return QPointF(cx + 0.5 * spacing, chromeY);
-    case Handle::OpacityUp:
-        return QPointF(cx + 1.5 * spacing, chromeY);
+        return QPointF(rowLeft + btn + gapBtn + btn / 2.0, chromeY);
+    case Handle::OpacitySlider:
+        return opacitySliderRect().center();
     default:
         return QPointF();
     }
@@ -241,18 +286,35 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     if (!isSelected() || !m_interactive) {
         return Handle::None;
     }
+
+    // Opacity slider: rectangular hit target
+    const QRectF slider = opacitySliderRect().adjusted(
+        -4.0 / screenScale(), -6.0 / screenScale(),
+        4.0 / screenScale(), 6.0 / screenScale());
+    if (slider.contains(itemPos)) {
+        return Handle::OpacitySlider;
+    }
+
+    // Raise / lower use larger chrome radius
+    const qreal chromeR = chromeButtonSize() * 0.65;
+    const qreal chromeR2 = chromeR * chromeR;
+    for (Handle h : {Handle::Raise, Handle::Lower}) {
+        const QPointF d = itemPos - handleCenter(h);
+        if (QPointF::dotProduct(d, d) <= chromeR2) {
+            return h;
+        }
+    }
+
     const qreal r = handleHitRadius();
     const qreal r2 = r * r;
-    QList<Handle> handles = {Handle::Rotate, Handle::Raise, Handle::Lower,
-                              Handle::OpacityDown, Handle::OpacityUp};
+    QList<Handle> handles = {Handle::Rotate};
     if (m_scaleHandlesEnabled) {
         handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
                                 Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
                   + handles;
     }
     for (Handle h : handles) {
-        const QPointF c = handleCenter(h);
-        const QPointF d = itemPos - c;
+        const QPointF d = itemPos - handleCenter(h);
         if (QPointF::dotProduct(d, d) <= r2) {
             return h;
         }
@@ -278,12 +340,6 @@ void ImageItem::activateChromeHandle(Handle h)
         break;
     case Handle::Lower:
         setZValue(zValue() - 1.0);
-        break;
-    case Handle::OpacityUp:
-        setItemOpacity(m_opacity + 0.1);
-        break;
-    case Handle::OpacityDown:
-        setItemOpacity(m_opacity - 0.1);
         break;
     default:
         break;
@@ -341,30 +397,45 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     painter->setBrush(QColor(255, 200, 40));
     painter->drawEllipse(rot, hs / 2, hs / 2);
 
-    // Chrome buttons under the image: raise, lower, opacity − / +
-    auto drawChrome = [&](Handle h, const QString &glyph, const QColor &fill) {
+    // Chrome row: large raise/lower + opacity slider
+    const qreal btnR = chromeButtonSize() / 2.0;
+    auto drawChromeBtn = [&](Handle h, const QString &glyph) {
         const QPointF c = handleCenter(h);
-        painter->setBrush(fill);
+        painter->setBrush(QColor(50, 50, 50, 230));
         painter->setPen(pen);
-        painter->drawEllipse(c, hs / 2 + 1, hs / 2 + 1);
+        painter->drawEllipse(c, btnR, btnR);
         painter->setPen(QPen(Qt::white));
-        // Counter-scale text so glyph size stays readable on screen
         painter->save();
         painter->translate(c);
         const qreal ss = screenScale();
         painter->scale(1.0 / ss, 1.0 / ss);
         QFont f = painter->font();
         f.setBold(true);
-        f.setPixelSize(11);
+        f.setPixelSize(14);
         painter->setFont(f);
-        const QRectF tr(-12, -12, 24, 24);
-        painter->drawText(tr, Qt::AlignCenter, glyph);
+        painter->drawText(QRectF(-14, -14, 28, 28), Qt::AlignCenter, glyph);
         painter->restore();
     };
-    drawChrome(Handle::Raise, QStringLiteral("↑"), QColor(60, 60, 60, 220));
-    drawChrome(Handle::Lower, QStringLiteral("↓"), QColor(60, 60, 60, 220));
-    drawChrome(Handle::OpacityDown, QStringLiteral("−"), QColor(80, 50, 120, 220));
-    drawChrome(Handle::OpacityUp, QStringLiteral("+"), QColor(80, 50, 120, 220));
+    drawChromeBtn(Handle::Raise, QStringLiteral("↑"));
+    drawChromeBtn(Handle::Lower, QStringLiteral("↓"));
+
+    // Opacity slider track + fill + thumb
+    {
+        const QRectF track = opacitySliderRect();
+        const qreal ss = screenScale();
+        const qreal t = qBound(0.0, (m_opacity - 0.05) / 0.95, 1.0);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(40, 40, 40, 200));
+        painter->drawRoundedRect(track, 3.0 / ss, 3.0 / ss);
+        QRectF filled = track;
+        filled.setWidth(track.width() * t);
+        painter->setBrush(QColor(140, 100, 200, 230));
+        painter->drawRoundedRect(filled, 3.0 / ss, 3.0 / ss);
+        const QPointF thumb(track.left() + track.width() * t, track.center().y());
+        painter->setBrush(QColor(230, 230, 230));
+        painter->setPen(QPen(QColor(30, 30, 30), 0));
+        painter->drawEllipse(thumb, 7.0 / ss, 7.0 / ss);
+    }
 
     painter->restore();
 }
@@ -374,7 +445,7 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
     if (m_interactive && event->button() == Qt::LeftButton) {
         const Handle h = handleAt(event->pos());
         if (h != Handle::None) {
-            if (isChromeHandle(h)) {
+            if (h == Handle::Raise || h == Handle::Lower) {
                 activateChromeHandle(h);
                 event->accept();
                 return;
@@ -384,6 +455,10 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
             m_pressScale = m_scale;
             m_pressRotation = m_rotation;
             m_pressItemPos = event->pos();
+            if (h == Handle::OpacitySlider) {
+                setOpacityFromSliderPos(event->pos());
+                notifyViewStatus();
+            }
             event->accept();
             return;
         }
@@ -394,7 +469,9 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     if (m_activeHandle != Handle::None) {
-        if (m_activeHandle == Handle::Rotate) {
+        if (m_activeHandle == Handle::OpacitySlider) {
+            setOpacityFromSliderPos(event->pos());
+        } else if (m_activeHandle == Handle::Rotate) {
             const QPointF centre = scenePos(); // item origin is image centre
             const QPointF v0 = m_pressScenePos - centre;
             const QPointF v1 = event->scenePos() - centre;
@@ -446,9 +523,10 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
             break;
         case Handle::Raise:
         case Handle::Lower:
-        case Handle::OpacityDown:
-        case Handle::OpacityUp:
             setCursor(Qt::PointingHandCursor);
+            break;
+        case Handle::OpacitySlider:
+            setCursor(Qt::SizeHorCursor);
             break;
         default:
             unsetCursor();

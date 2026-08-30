@@ -30,8 +30,7 @@ public:
         Rotate,
         Raise,
         Lower,
-        OpacityDown,
-        OpacityUp
+        OpacitySlider
     };
 
     explicit ImageItem(const QString &path, const QImage &image,
@@ -95,6 +94,9 @@ private:
     qreal screenScale() const;
     bool isChromeHandle(Handle h) const;
     void activateChromeHandle(Handle h);
+    QRectF opacitySliderRect() const;
+    qreal chromeButtonSize() const;
+    void setOpacityFromSliderPos(const QPointF &itemPos);
 
     QString m_path;
     QImage m_source;
