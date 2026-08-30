@@ -305,6 +305,33 @@ void ImageView::updateWorkspaceSceneRect()
     m_scene->setSceneRect(bounds);
 }
 
+void ImageView::reorderItemsByPaths(const QStringList &paths)
+{
+    if (m_items.isEmpty() || paths.isEmpty()) {
+        return;
+    }
+    QList<ImageItem *> ordered;
+    ordered.reserve(m_items.size());
+    QSet<ImageItem *> seen;
+    for (const QString &path : paths) {
+        if (ImageItem *item = findItemByPath(path)) {
+            ordered.append(item);
+            seen.insert(item);
+        }
+    }
+    for (ImageItem *item : m_items) {
+        if (!seen.contains(item)) {
+            ordered.append(item);
+        }
+    }
+    if (ordered != m_items) {
+        m_items = ordered;
+        for (int i = 0; i < m_items.size(); ++i) {
+            m_items.at(i)->setStackZ(i);
+        }
+    }
+}
+
 void ImageView::setWorkspacePaths(const QStringList &paths)
 {
     if (isImageMode()) {
@@ -319,12 +346,17 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
         }
     }
 
+    m_pathOrder = paths;
+
     for (const QString &path : paths) {
         if (findItemByPath(path)) {
             continue;
         }
         scheduleImageLoad(path, LoadAdd);
     }
+
+    // Keep canvas order aligned with session/sort order (not async load order).
+    reorderItemsByPaths(m_pathOrder);
 
     if (m_scene->selectedItems().isEmpty() && !m_items.isEmpty()) {
         m_items.last()->setSelected(true);
@@ -752,6 +784,10 @@ void ImageView::applyLayout()
     // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
     if (!isGalleryMode() || m_items.isEmpty() || m_layoutMode == LayoutMode::FreeForm) {
         return;
+    }
+
+    if (!m_pathOrder.isEmpty()) {
+        reorderItemsByPaths(m_pathOrder);
     }
 
     m_applyingLayout = true;

@@ -109,6 +109,8 @@ public:
      * scene after their state is saved.
      */
     void setWorkspacePaths(const QStringList &paths);
+    /** Reorder canvas items to match @p paths (session / sort order). */
+    void reorderItemsByPaths(const QStringList &paths);
     /** Remove one image from the workspace, remembering its transform. */
     void removeWorkspacePath(const QString &path);
 
@@ -350,6 +352,8 @@ private:
     bool m_hasFreeFormViewTransform = false;
     QList<WorkspaceItemState> m_savedWorkspace;
     QString m_classicPath;
+    /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */
+    QStringList m_pathOrder;
 
     QUndoStack *m_undoStack = nullptr;
 

@@ -274,6 +274,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     }
 
     if (m_layoutMode != LayoutMode::FreeForm) {
+        if (!m_pathOrder.isEmpty()) {
+            reorderItemsByPaths(m_pathOrder);
+        }
         applyLayout();
     } else {
         updateWorkspaceSceneRect();

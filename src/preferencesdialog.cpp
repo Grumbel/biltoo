@@ -60,6 +60,10 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_sortCombo = new QComboBox(this);
     m_sortCombo->addItem(tr("Name (natural)"), 0);
     m_sortCombo->addItem(tr("Modification time"), 1);
+    m_sortCombo->addItem(tr("File size"), 2);
+    m_sortCombo->addItem(tr("Width (pixels)"), 3);
+    m_sortCombo->addItem(tr("Height (pixels)"), 4);
+    m_sortCombo->addItem(tr("Image size (pixels)"), 5);
     m_sortCombo->setToolTip(tr("Default order when loading a set of images"));
     m_sortCombo->setWhatsThis(
         tr("Name (natural) sorts img2 before img10. "

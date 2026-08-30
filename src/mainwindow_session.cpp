@@ -67,34 +67,97 @@ void MainWindow::sortFileList()
         return;
     }
 
-    if (m_sortMode == SortMode::MTime) {
-        std::stable_sort(m_files.begin(), m_files.end(), [](const QString &a, const QString &b) {
+    auto nameLess = [](const QString &a, const QString &b) {
+        QCollator collator;
+        collator.setNumericMode(true);
+        collator.setCaseSensitivity(Qt::CaseInsensitive);
+        return collator.compare(QFileInfo(a).fileName(), QFileInfo(b).fileName()) < 0;
+    };
+
+    auto imageSize = [](const QString &path) {
+        QImageReader reader(path);
+        return reader.size(); // may be invalid if unknown
+    };
+
+    switch (m_sortMode) {
+    case SortMode::MTime:
+        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
             const QFileInfo fa(a), fb(b);
             if (fa.lastModified() != fb.lastModified()) {
                 return fa.lastModified() < fb.lastModified();
             }
-            return QString::compare(a, b, Qt::CaseInsensitive) < 0;
+            return nameLess(a, b);
         });
-    } else {
-        // Natural (numeric-aware) case-insensitive sort by file name
-        QCollator collator;
-        collator.setNumericMode(true);
-        collator.setCaseSensitivity(Qt::CaseInsensitive);
-        std::stable_sort(m_files.begin(), m_files.end(),
-                         [&collator](const QString &a, const QString &b) {
-                             return collator.compare(QFileInfo(a).fileName(),
-                                                     QFileInfo(b).fileName()) < 0;
-                         });
+        break;
+    case SortMode::FileSize:
+        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
+            const qint64 sa = QFileInfo(a).size();
+            const qint64 sb = QFileInfo(b).size();
+            if (sa != sb) {
+                return sa < sb;
+            }
+            return nameLess(a, b);
+        });
+        break;
+    case SortMode::Width:
+        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
+            const int wa = imageSize(a).width();
+            const int wb = imageSize(b).width();
+            if (wa != wb) {
+                return wa < wb;
+            }
+            return nameLess(a, b);
+        });
+        break;
+    case SortMode::Height:
+        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
+            const int ha = imageSize(a).height();
+            const int hb = imageSize(b).height();
+            if (ha != hb) {
+                return ha < hb;
+            }
+            return nameLess(a, b);
+        });
+        break;
+    case SortMode::PixelCount:
+        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
+            const QSize sa = imageSize(a);
+            const QSize sb = imageSize(b);
+            const qint64 pa = qint64(sa.width()) * sa.height();
+            const qint64 pb = qint64(sb.width()) * sb.height();
+            if (pa != pb) {
+                return pa < pb;
+            }
+            return nameLess(a, b);
+        });
+        break;
+    case SortMode::Name:
+    default:
+        std::stable_sort(m_files.begin(), m_files.end(), nameLess);
+        break;
     }
 }
 
 void MainWindow::setSortMode(SortMode mode)
 {
     m_sortMode = mode;
-    if (mode == SortMode::Name) {
-        m_sortNameAct->setChecked(true);
-    } else {
-        m_sortMTimeAct->setChecked(true);
+    if (m_sortNameAct) {
+        m_sortNameAct->setChecked(mode == SortMode::Name);
+    }
+    if (m_sortMTimeAct) {
+        m_sortMTimeAct->setChecked(mode == SortMode::MTime);
+    }
+    if (m_sortFileSizeAct) {
+        m_sortFileSizeAct->setChecked(mode == SortMode::FileSize);
+    }
+    if (m_sortWidthAct) {
+        m_sortWidthAct->setChecked(mode == SortMode::Width);
+    }
+    if (m_sortHeightAct) {
+        m_sortHeightAct->setChecked(mode == SortMode::Height);
+    }
+    if (m_sortPixelCountAct) {
+        m_sortPixelCountAct->setChecked(mode == SortMode::PixelCount);
     }
 
     if (m_files.isEmpty()) {
@@ -107,7 +170,6 @@ void MainWindow::setSortMode(SortMode mode)
     sortFileList();
     m_thumbnailBar->setFiles(m_files);
     if (isWorkspaceMode()) {
-        // setFiles rebuilds the list; restore multi-select and canvas selection
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
     }
@@ -119,8 +181,26 @@ void MainWindow::setSortMode(SortMode mode)
             newIndex = 0;
         }
     }
-    m_currentIndex = -1; // force reload
+    m_currentIndex = -1; // force reload of Image mode cursor
     setCurrentIndex(newIndex);
+
+    // Gallery pack follows session order — refresh canvas so tiles match sort.
+    if (isGalleryMode()) {
+        const ImageView::LayoutMode layout = m_imageView
+            ? m_imageView->layoutMode()
+            : ImageView::LayoutMode::Masonry;
+        populateGalleryCanvas();
+        if (m_imageView) {
+            m_imageView->enterGallery(layout);
+            if (!current.isEmpty()) {
+                m_imageView->focusSessionPath(current);
+            }
+        }
+    } else if (isWorkspaceMode() && m_imageView) {
+        // Keep canvas membership; only path order for any future gallery use.
+        m_imageView->reorderItemsByPaths(m_files);
+    }
+
     applyThumbnailVisibility();
 }
 
@@ -132,6 +212,26 @@ void MainWindow::sortByName()
 void MainWindow::sortByMTime()
 {
     setSortMode(SortMode::MTime);
+}
+
+void MainWindow::sortByFileSize()
+{
+    setSortMode(SortMode::FileSize);
+}
+
+void MainWindow::sortByWidth()
+{
+    setSortMode(SortMode::Width);
+}
+
+void MainWindow::sortByHeight()
+{
+    setSortMode(SortMode::Height);
+}
+
+void MainWindow::sortByPixelCount()
+{
+    setSortMode(SortMode::PixelCount);
 }
 
 void MainWindow::applyThumbnailVisibility()

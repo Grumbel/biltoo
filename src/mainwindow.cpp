@@ -618,7 +618,7 @@ void MainWindow::showPreferences()
     PreferencesDialog dlg(this);
     dlg.setSlideshowIntervalMs(m_slideshowIntervalMs);
     dlg.setSlideshowFullscreen(m_slideshowFullscreen);
-    dlg.setSortModeIndex(m_sortMode == SortMode::Name ? 0 : 1);
+    dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
     dlg.setImageModeLeftDragPan(m_imageView->imageModeLeftDragPan());
     dlg.setBackgroundColor(m_imageView->backgroundColor());
@@ -634,7 +634,14 @@ void MainWindow::showPreferences()
     }
     setSlideshowIntervalMs(dlg.slideshowIntervalMs());
     m_slideshowFullscreen = dlg.slideshowFullscreen();
-    setSortMode(dlg.sortModeIndex() == 1 ? SortMode::MTime : SortMode::Name);
+    {
+        const int si = dlg.sortModeIndex();
+        SortMode mode = SortMode::Name;
+        if (si >= 0 && si <= 5) {
+            mode = static_cast<SortMode>(si);
+        }
+        setSortMode(mode);
+    }
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     m_imageView->setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
     m_imageView->setBackgroundColor(dlg.backgroundColor());
@@ -856,11 +863,18 @@ void MainWindow::readSettings()
     const QString sort = settings.value(QStringLiteral("sortMode"), QStringLiteral("name")).toString();
     if (sort == QLatin1String("mtime")) {
         m_sortMode = SortMode::MTime;
-        m_sortMTimeAct->setChecked(true);
+    } else if (sort == QLatin1String("filesize")) {
+        m_sortMode = SortMode::FileSize;
+    } else if (sort == QLatin1String("width")) {
+        m_sortMode = SortMode::Width;
+    } else if (sort == QLatin1String("height")) {
+        m_sortMode = SortMode::Height;
+    } else if (sort == QLatin1String("pixels")) {
+        m_sortMode = SortMode::PixelCount;
     } else {
         m_sortMode = SortMode::Name;
-        m_sortNameAct->setChecked(true);
     }
+    setSortMode(m_sortMode); // checks the matching action (may re-sort empty list)
 
     m_slideshowIntervalMs =
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
@@ -1018,9 +1032,17 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("toolBarVisible"),
                       isFullScreen() ? m_toolBarVisibleBeforeFullscreen
                                      : m_toolBar->isVisible());
-    settings.setValue(QStringLiteral("sortMode"),
-                      m_sortMode == SortMode::MTime ? QStringLiteral("mtime")
-                                                    : QStringLiteral("name"));
+    QString sortKey = QStringLiteral("name");
+    switch (m_sortMode) {
+    case SortMode::MTime: sortKey = QStringLiteral("mtime"); break;
+    case SortMode::FileSize: sortKey = QStringLiteral("filesize"); break;
+    case SortMode::Width: sortKey = QStringLiteral("width"); break;
+    case SortMode::Height: sortKey = QStringLiteral("height"); break;
+    case SortMode::PixelCount: sortKey = QStringLiteral("pixels"); break;
+    case SortMode::Name:
+    default: sortKey = QStringLiteral("name"); break;
+    }
+    settings.setValue(QStringLiteral("sortMode"), sortKey);
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     if (m_imageView) {

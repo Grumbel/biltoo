@@ -30,8 +30,12 @@ class MainWindow : public QMainWindow
 
 public:
     enum class SortMode {
-        Name,
-        MTime
+        Name = 0,
+        MTime = 1,
+        FileSize = 2,
+        Width = 3,
+        Height = 4,
+        PixelCount = 5
     };
 
     explicit MainWindow(QWidget *parent = nullptr);
@@ -108,6 +112,10 @@ private slots:
     void onSlideshowTick();
     void sortByName();
     void sortByMTime();
+    void sortByFileSize();
+    void sortByWidth();
+    void sortByHeight();
+    void sortByPixelCount();
     void toggleToolBar();
     void toggleThumbnailBar();
     void about();
@@ -254,6 +262,10 @@ private:
     QAction *m_raiseAct = nullptr;
     QAction *m_sortNameAct = nullptr;
     QAction *m_sortMTimeAct = nullptr;
+    QAction *m_sortFileSizeAct = nullptr;
+    QAction *m_sortWidthAct = nullptr;
+    QAction *m_sortHeightAct = nullptr;
+    QAction *m_sortPixelCountAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
     QAction *m_thumbnailsBottomAct = nullptr;

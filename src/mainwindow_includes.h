@@ -31,6 +31,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QImageReader>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QIcon>

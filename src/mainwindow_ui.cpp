@@ -326,9 +326,37 @@ void MainWindow::createActions()
     m_sortMTimeAct->setStatusTip(tr("Sort images by modification time"));
     connect(m_sortMTimeAct, &QAction::triggered, this, &MainWindow::sortByMTime);
 
+    m_sortFileSizeAct = new QAction(tr("Sort by &File Size"), this);
+    m_sortFileSizeAct->setCheckable(true);
+    m_sortFileSizeAct->setIcon(themeIcon(QStringLiteral("document-properties"), QStyle::SP_FileDialogInfoView));
+    m_sortFileSizeAct->setStatusTip(tr("Sort images by file size on disk"));
+    connect(m_sortFileSizeAct, &QAction::triggered, this, &MainWindow::sortByFileSize);
+
+    m_sortWidthAct = new QAction(tr("Sort by &Width"), this);
+    m_sortWidthAct->setCheckable(true);
+    m_sortWidthAct->setIcon(themeIcon(QStringLiteral("zoom-fit-width"), QStyle::SP_ArrowRight));
+    m_sortWidthAct->setStatusTip(tr("Sort images by pixel width"));
+    connect(m_sortWidthAct, &QAction::triggered, this, &MainWindow::sortByWidth);
+
+    m_sortHeightAct = new QAction(tr("Sort by &Height"), this);
+    m_sortHeightAct->setCheckable(true);
+    m_sortHeightAct->setIcon(themeIcon(QStringLiteral("zoom-fit-height"), QStyle::SP_ArrowDown));
+    m_sortHeightAct->setStatusTip(tr("Sort images by pixel height"));
+    connect(m_sortHeightAct, &QAction::triggered, this, &MainWindow::sortByHeight);
+
+    m_sortPixelCountAct = new QAction(tr("Sort by Image &Size"), this);
+    m_sortPixelCountAct->setCheckable(true);
+    m_sortPixelCountAct->setIcon(themeIcon(QStringLiteral("image-x-generic"), QStyle::SP_FileIcon));
+    m_sortPixelCountAct->setStatusTip(tr("Sort images by pixel count (width × height)"));
+    connect(m_sortPixelCountAct, &QAction::triggered, this, &MainWindow::sortByPixelCount);
+
     m_sortGroup = new QActionGroup(this);
     m_sortGroup->addAction(m_sortNameAct);
     m_sortGroup->addAction(m_sortMTimeAct);
+    m_sortGroup->addAction(m_sortFileSizeAct);
+    m_sortGroup->addAction(m_sortWidthAct);
+    m_sortGroup->addAction(m_sortHeightAct);
+    m_sortGroup->addAction(m_sortPixelCountAct);
     m_sortGroup->setExclusive(true);
 
     m_toggleToolBarAct = new QAction(tr("Show &Toolbar"), this);
@@ -474,6 +502,10 @@ void MainWindow::createMenus()
     auto *sortMenu = m_viewMenu->addMenu(tr("&Sort"));
     sortMenu->addAction(m_sortNameAct);
     sortMenu->addAction(m_sortMTimeAct);
+    sortMenu->addAction(m_sortFileSizeAct);
+    sortMenu->addAction(m_sortWidthAct);
+    sortMenu->addAction(m_sortHeightAct);
+    sortMenu->addAction(m_sortPixelCountAct);
 
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_backToGalleryAct);
@@ -537,6 +569,22 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_backToGalleryAct);
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_addAct);
+    {
+        auto *sortBtn = new QToolButton(m_toolBar);
+        sortBtn->setObjectName(QStringLiteral("SortToolButton"));
+        sortBtn->setIcon(themeIcon(QStringLiteral("view-sort-ascending"), QStyle::SP_ArrowDown));
+        sortBtn->setToolTip(tr("Sort session"));
+        sortBtn->setPopupMode(QToolButton::InstantPopup);
+        auto *sortPopup = new QMenu(sortBtn);
+        sortPopup->addAction(m_sortNameAct);
+        sortPopup->addAction(m_sortMTimeAct);
+        sortPopup->addAction(m_sortFileSizeAct);
+        sortPopup->addAction(m_sortWidthAct);
+        sortPopup->addAction(m_sortHeightAct);
+        sortPopup->addAction(m_sortPixelCountAct);
+        sortBtn->setMenu(sortPopup);
+        m_toolBar->addWidget(sortBtn);
+    }
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_undoAct);
     m_toolBar->addAction(m_redoAct);
