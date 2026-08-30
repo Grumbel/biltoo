@@ -353,9 +353,6 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
     const QRect vr = viewport()->rect();
     const int zone = edgeZoneWidth();
     const int cy = vr.center().y();
-    const int cx = (m_hoverEdge == EdgeZone::Previous)
-                       ? zone / 2
-                       : vr.width() - zone / 2;
 
     painter.setRenderHint(QPainter::Antialiasing, true);
 
@@ -373,8 +370,12 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
         painter.fillRect(QRect(vr.width() - zone, 0, zone, vr.height()), grad);
     }
 
-    // Circular button with chevron
+    // Circular button with chevron — sit near the window edge
     const int r = 22;
+    constexpr int kEdgeMargin = 10; // gap from window edge to button rim
+    const int cx = (m_hoverEdge == EdgeZone::Previous)
+                       ? (kEdgeMargin + r)
+                       : (vr.width() - kEdgeMargin - r);
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(0, 0, 0, 140));
     painter.drawEllipse(QPoint(cx, cy), r, r);
