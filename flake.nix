@@ -39,6 +39,11 @@
         program = "${qimgview}/bin/qimgview";
       };
 
+      # `nix flake check` builds the package (and thus compiles sources).
+      checks.${system} = {
+        qimgview = qimgview;
+      };
+
       # Local cmake builds default to Debug. nix build still uses RelWithDebInfo
       # with separateDebugInfo (see default.nix).
       devShells.${system}.default = pkgs.mkShell {
