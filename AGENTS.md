@@ -61,7 +61,7 @@ Use these names consistently in code comments, menus, and docs:
 | **Free-form layout** | Workspace placement where the user moves/scales/rotates items freely. Scale and rotate handles are enabled. View zoom (wheel / toolbar) pans and scales the *view*. |
 | **Packaged layouts** | Workspace auto-arrangements: Side-by-Side, Vertical, Grid, Stack, Masonry. Items are placed by the layout; view transform stays identity; view zoom is disabled so packing stays consistent. |
 
-**Planned rework (not implemented yet):** split automatic layouts into a **Group View** (gallery: masonry/grid/etc., click through to a single-image view and back) and keep **Workspace** as free-form only. Until that lands, packaged layouts remain options under Workspace mode.
+**Planned rework (not implemented yet):** split automatic layouts into a **Gallery view** (masonry/grid/etc.; click an image to open Image mode, navigate back to the gallery) and keep **Workspace** as free-form only. “Gallery” is preferred over Group/Set/Collection/List for the browse-many UX. Until that lands, packaged layouts remain options under Workspace mode.
 
 ## UI expectations (current)
 
@@ -94,7 +94,8 @@ Use these names consistently in code comments, menus, and docs:
   In workspace mode the thumbnail bar toggles membership: click selects or
   deselects an image on the canvas; each image remembers position, scale and
   rotation while off-canvas. Selected items show scale and rotate handles
-  (free-form) and flip / raise / lower / opacity chrome (item-local, rotates
+  (free-form) and flip / raise / lower chrome on the right interior of the
+  image plus an opacity track along the bottom interior (item-local, rotates
   with the image). Scrollbars are hidden by default (View → Show Scrollbars).
   Preferences: General tab (slideshow / session / view) and Default application tab.
 
