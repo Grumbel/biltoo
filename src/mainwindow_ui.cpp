@@ -596,6 +596,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoomFillAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_workspaceModeAct);
+    m_toolBar->addAction(m_toggleThumbnailBarAct);
     m_toolBar->addAction(m_toggleMetadataAct);
     m_toolBar->addAction(m_fullscreenAct);
 
