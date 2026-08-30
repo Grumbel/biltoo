@@ -664,6 +664,10 @@ void MainWindow::updateFullscreenUi()
         m_toggleMetadataAct->setChecked(false);
         menuBar()->setVisible(false);
         statusBar()->setVisible(false);
+        // Ensure arrow keys reach ImageView (navigation), not a hidden chrome widget.
+        if (m_imageView) {
+            m_imageView->setFocus(Qt::OtherFocusReason);
+        }
     } else {
         m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
         m_thumbnailBar->setVisible(m_thumbnailBarVisibleBeforeFullscreen);

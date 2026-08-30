@@ -613,7 +613,31 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
 
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
-    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+    // Image mode: Left/Right (and friends) navigate the session. QGraphicsView
+    // would otherwise scroll the viewport when the image is zoomed or the view
+    // has focus (typical in fullscreen), swallowing the QAction shortcuts.
+    if (isImageMode()
+        && !(event->modifiers()
+             & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
+        switch (event->key()) {
+        case Qt::Key_Left:
+        case Qt::Key_PageUp:
+        case Qt::Key_Backspace:
+            emit navigatePreviousRequested();
+            event->accept();
+            return;
+        case Qt::Key_Right:
+        case Qt::Key_PageDown:
+            emit navigateNextRequested();
+            event->accept();
+            return;
+        default:
+            break;
+        }
+    }
+
+    if (event->key() == Qt::Key_Delete
+        || (event->key() == Qt::Key_Backspace && isWorkspaceMode())) {
         // Remove selected items from the workspace (session list is unchanged);
         // remember transform so re-selecting the thumbnail restores position.
         const QList<QGraphicsItem *> selected = m_scene->selectedItems();
