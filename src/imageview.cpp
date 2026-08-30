@@ -17,6 +17,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QScrollBar>
+#include <QTimer>
 #include <QSet>
 #include <QThreadPool>
 #include <QVector>
@@ -39,9 +40,18 @@ ImageView::ImageView(QWidget *parent)
     qRegisterMetaType<quint64>("quint64");
 
     connect(this, &ImageView::statusChanged, this, [this]() {
-        if (m_hudVisible) {
+        if (m_hudVisible || m_hudFlashVisible) {
             viewport()->update();
         }
+    });
+
+    m_hudFlashTimer = new QTimer(this);
+    m_hudFlashTimer->setSingleShot(true);
+    connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
+        m_hudFlashVisible = false;
+        m_hudAction.clear();
+        m_hudDetail.clear();
+        viewport()->update();
     });
 
     setRenderHint(QPainter::SmoothPixmapTransform, true);
@@ -591,26 +601,67 @@ void ImageView::paintEvent(QPaintEvent *event)
     if (m_hoverEdge != EdgeZone::None && !m_workspaceMode && m_imageModeNavEnabled) {
         drawEdgeAffordances(painter);
     }
-    if (m_hudVisible) {
-        const QString text = statusText();
-        if (!text.isEmpty()) {
-            QFont f = font();
-            f.setPointSizeF(qMax(9.0, f.pointSizeF()));
-            painter.setFont(f);
-            const QFontMetrics fm(f);
-            const int margin = 10;
-            const int pad = 8;
-            const int maxW = qMax(40, viewport()->width() - 2 * margin);
-            const QString elided = fm.elidedText(text, Qt::ElideMiddle, maxW - 2 * pad);
-            const int textW = fm.horizontalAdvance(elided);
-            const int textH = fm.height();
+    if (m_hudVisible || m_hudFlashVisible) {
+        QFont f = font();
+        f.setPointSizeF(qMax(10.0, f.pointSizeF()));
+        painter.setFont(f);
+        const QFontMetrics fm(f);
+        const int margin = 10;
+        const int pad = 8;
+        const int maxW = qMax(40, viewport()->width() - 2 * margin);
+
+        QStringList lines;
+        if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
+            QString actionLine = m_hudAction;
+            if (!m_hudDetail.isEmpty()) {
+                actionLine += QLatin1Char(' ') + m_hudDetail;
+            }
+            lines << actionLine;
+        }
+        if (m_hudVisible) {
+            lines << statusText();
+        } else if (m_hudFlashVisible && m_hudDetail.isEmpty()) {
+            // Flash without pin: still show filename under the action
+            ImageItem *item = targetItem();
+            if (!item) {
+                item = primaryItem();
+            }
+            if (item) {
+                lines << QFileInfo(item->path()).fileName();
+            }
+        }
+
+        if (!lines.isEmpty()) {
+            int textW = 0;
+            int textH = 0;
+            QStringList elidedLines;
+            for (const QString &line : lines) {
+                const QString el = fm.elidedText(line, Qt::ElideMiddle, maxW - 2 * pad);
+                elidedLines << el;
+                textW = qMax(textW, fm.horizontalAdvance(el));
+                textH += fm.height();
+            }
+            if (elidedLines.size() > 1) {
+                textH += 2 * (elidedLines.size() - 1); // line gap
+            }
             const QRect bg(margin, margin, textW + 2 * pad, textH + 2 * pad);
             painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(0, 0, 0, 160));
+            painter.setBrush(QColor(0, 0, 0, 170));
             painter.drawRoundedRect(bg, 6, 6);
             painter.setPen(QColor(240, 240, 240));
-            painter.drawText(bg.adjusted(pad, pad, -pad, -pad),
-                             Qt::AlignLeft | Qt::AlignVCenter, elided);
+            int y = bg.top() + pad;
+            for (int i = 0; i < elidedLines.size(); ++i) {
+                if (i == 0 && m_hudFlashVisible && !m_hudAction.isEmpty()) {
+                    QFont bold = f;
+                    bold.setBold(true);
+                    painter.setFont(bold);
+                } else {
+                    painter.setFont(f);
+                }
+                painter.drawText(QRect(bg.left() + pad, y, textW, fm.height()),
+                                 Qt::AlignLeft | Qt::AlignVCenter, elidedLines.at(i));
+                y += fm.height() + 2;
+            }
         }
     }
 }
@@ -761,7 +812,7 @@ qreal ImageView::viewScale() const
 void ImageView::refreshStatus()
 {
     emit statusChanged();
-    if (m_hudVisible) {
+    if (m_hudVisible || m_hudFlashVisible) {
         viewport()->update();
     }
 }
@@ -891,6 +942,17 @@ void ImageView::setHudVisible(bool on)
         return;
     }
     m_hudVisible = on;
+    viewport()->update();
+}
+
+void ImageView::flashHud(const QString &action, const QString &detail)
+{
+    m_hudAction = action;
+    m_hudDetail = detail;
+    m_hudFlashVisible = true;
+    if (m_hudFlashTimer) {
+        m_hudFlashTimer->start(1800);
+    }
     viewport()->update();
 }
 

@@ -7,6 +7,7 @@
 #include <QGraphicsView>
 #include <atomic>
 #include <QHash>
+class QTimer;
 #include <QImage>
 #include <QSet>
 #include <QPoint>
@@ -116,9 +117,15 @@ public:
     void setImageModeLeftDragPan(bool on);
     bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
 
-    /** On-image HUD overlay (filename, zoom, …). */
+    /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
     bool hudVisible() const { return m_hudVisible; }
+
+    /**
+     * Brief VCR-style HUD message (action + optional detail).
+     * Visible for ~1.8s; always shown even when the HUD is not pinned.
+     */
+    void flashHud(const QString &action, const QString &detail = QString());
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -244,6 +251,10 @@ private:
     bool m_imageModeNavEnabled = false;
     bool m_imageModeLeftDragPan = true;
     bool m_hudVisible = false;
+    bool m_hudFlashVisible = false;
+    QString m_hudAction;
+    QString m_hudDetail;
+    QTimer *m_hudFlashTimer = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;

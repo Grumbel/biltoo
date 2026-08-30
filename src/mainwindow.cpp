@@ -300,11 +300,11 @@ void MainWindow::createActions()
     connect(m_lastAct, &QAction::triggered, this, &MainWindow::goLast);
 
     m_slideshowAct = new QAction(tr("Play &Slideshow"), this);
-    m_slideshowAct->setShortcuts({Qt::Key_F5, Qt::Key_Space});
+    m_slideshowAct->setShortcut(Qt::Key_Space);
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     m_slideshowAct->setCheckable(true);
     m_slideshowAct->setStatusTip(
-        tr("Start or stop the slideshow (F5 or Space). Unavailable in workspace mode."));
+        tr("Start or stop the slideshow (Space). Unavailable in workspace mode."));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
     m_workspaceModeAct = new QAction(tr("&Workspace Mode"), this);
@@ -1236,6 +1236,7 @@ void MainWindow::goPrevious()
         idx = m_files.size() - 1;
     }
     setCurrentIndex(idx);
+    flashNavHud(tr("←  Previous"));
 }
 
 void MainWindow::goNext()
@@ -1251,6 +1252,7 @@ void MainWindow::goNext()
         idx = 0;
     }
     setCurrentIndex(idx);
+    flashNavHud(tr("→  Next"));
 }
 
 void MainWindow::goFirst()
@@ -1262,6 +1264,7 @@ void MainWindow::goFirst()
         stopSlideshow();
     }
     setCurrentIndex(0);
+    flashNavHud(tr("⇤  First"));
 }
 
 void MainWindow::goLast()
@@ -1273,6 +1276,7 @@ void MainWindow::goLast()
         stopSlideshow();
     }
     setCurrentIndex(m_files.size() - 1);
+    flashNavHud(tr("⇥  Last"));
 }
 
 void MainWindow::setSlideshowIntervalMs(int ms)
@@ -1326,6 +1330,16 @@ void MainWindow::startSlideshow()
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-stop"), QStyle::SP_MediaStop));
     qApp->installEventFilter(this);
     armSlideshowCursorHide();
+    {
+        QString detail;
+        if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+            detail = QFileInfo(m_files.at(m_currentIndex)).fileName();
+            if (m_files.size() > 1) {
+                detail += tr("  (%1/%2)").arg(m_currentIndex + 1).arg(m_files.size());
+            }
+        }
+        m_imageView->flashHud(tr("▶  Slideshow"), detail);
+    }
 }
 
 void MainWindow::stopSlideshow()
@@ -1339,6 +1353,13 @@ void MainWindow::stopSlideshow()
     m_slideshowAct->setChecked(false);
     m_slideshowAct->setText(tr("Play &Slideshow"));
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
+    {
+        QString detail;
+        if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+            detail = QFileInfo(m_files.at(m_currentIndex)).fileName();
+        }
+        m_imageView->flashHud(tr("■  Stop"), detail);
+    }
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
@@ -1607,7 +1628,7 @@ void MainWindow::about()
            "<p>Copyright © 2026 Ingo Ruhnke &lt;grumbel@gmail.com&gt;<br/>"
            "License: <b>GPL-3.0-or-later</b></p>"
            "<p>Shortcuts: <b>F11</b> fullscreen, <b>Esc</b> leave fullscreen, "
-           "<b>Ctrl+T</b> toolbar, <b>F5</b> slideshow.</p>"));
+           "<b>Ctrl+T</b> toolbar, <b>Space</b> slideshow.</p>"));
     // GNOME 2 HIG: single affirmative Close on the right is fine for about boxes
     box.setStandardButtons(QMessageBox::Close);
     box.button(QMessageBox::Close)->setText(tr("&Close"));
@@ -1634,6 +1655,21 @@ void MainWindow::showPreferences()
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     m_imageView->setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
     writeSettings();
+}
+
+void MainWindow::flashNavHud(const QString &action)
+{
+    if (!m_imageView || m_workspaceMode) {
+        return;
+    }
+    QString detail;
+    if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+        detail = QFileInfo(m_files.at(m_currentIndex)).fileName();
+        if (m_files.size() > 1) {
+            detail += tr("  (%1/%2)").arg(m_currentIndex + 1).arg(m_files.size());
+        }
+    }
+    m_imageView->flashHud(action, detail);
 }
 
 void MainWindow::updateWindowTitle()
