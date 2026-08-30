@@ -109,6 +109,12 @@ private slots:
                         const QPointF &scenePos);
     void toggleScrollBars();
     void toggleWorkspaceMode();
+    /** DOMAIN: enter Workspace (snapshot-aware via ImageView::setViewMode). */
+    void enterWorkspaceMode();
+    /** DOMAIN: enter Gallery with layout L and populate from session. */
+    void enterGalleryMode(ImageView::LayoutMode layout);
+    /** DOMAIN: show path in Image mode (session current = path). */
+    void showPathInImageMode(const QString &path);
     bool isWorkspaceMode() const;
     bool isGalleryMode() const;
     bool isImageMode() const;

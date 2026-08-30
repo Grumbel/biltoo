@@ -19,127 +19,94 @@ void MainWindow::populateGalleryCanvas()
     applyWorkspaceSelectionFromThumbnails();
 }
 
-void MainWindow::setLayoutSideBySide()
+void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
 {
+    // DOMAIN: Mode := Gallery; pack all session paths with layout.
     m_galleryReturnActive = false;
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    // Gallery is independent of Workspace Mode
-    m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(false);
-    m_imageView->enterGallery(ImageView::LayoutMode::SideBySide);
+    if (m_workspaceModeAct) {
+        m_workspaceModeAct->setChecked(false);
+    }
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setWorkspaceMode(false);
+    }
+    m_galleryReturnLayout = layout;
+    m_imageView->enterGallery(layout);
     populateGalleryCanvas();
-    // Re-apply after items are on the canvas
-    m_imageView->enterGallery(ImageView::LayoutMode::SideBySide);
-    m_galleryReturnLayout = ImageView::LayoutMode::SideBySide;
-    if (m_layoutSideBySideAct) {
-        m_layoutSideBySideAct->setChecked(true);
+    // Re-apply after items are on the canvas so packing sees final geometry.
+    m_imageView->enterGallery(layout);
+
+    for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
+                         m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct}) {
+        if (act) {
+            act->setChecked(false);
+        }
+    }
+    QAction *check = nullptr;
+    switch (layout) {
+    case ImageView::LayoutMode::SideBySide:
+        check = m_layoutSideBySideAct;
+        break;
+    case ImageView::LayoutMode::Vertical:
+        check = m_layoutVerticalAct;
+        break;
+    case ImageView::LayoutMode::Grid:
+        check = m_layoutGridAct;
+        break;
+    case ImageView::LayoutMode::GridCrop:
+        check = m_layoutGridCropAct;
+        break;
+    case ImageView::LayoutMode::Masonry:
+        check = m_layoutMasonryAct;
+        break;
+    case ImageView::LayoutMode::MasonryRows:
+        check = m_layoutMasonryRowsAct;
+        break;
+    default:
+        break;
+    }
+    if (check) {
+        check->setChecked(true);
     }
     updateMasonryCountControl();
     updateWorkspaceActionVisibility();
+}
+
+void MainWindow::setLayoutSideBySide()
+{
+    enterGalleryMode(ImageView::LayoutMode::SideBySide);
 }
 
 void MainWindow::setLayoutVertical()
 {
-    m_galleryReturnActive = false;
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setEnabled(false);
-    }
-    // Gallery is independent of Workspace Mode
-    m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(false);
-    m_imageView->enterGallery(ImageView::LayoutMode::Vertical);
-    populateGalleryCanvas();
-    // Re-apply after items are on the canvas
-    m_imageView->enterGallery(ImageView::LayoutMode::Vertical);
-    m_galleryReturnLayout = ImageView::LayoutMode::Vertical;
-    if (m_layoutVerticalAct) {
-        m_layoutVerticalAct->setChecked(true);
-    }
-    updateMasonryCountControl();
-    updateWorkspaceActionVisibility();
+    enterGalleryMode(ImageView::LayoutMode::Vertical);
 }
 
 void MainWindow::setLayoutGrid()
 {
-    m_galleryReturnActive = false;
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setEnabled(false);
-    }
-    m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(false);
-    m_imageView->enterGallery(ImageView::LayoutMode::Grid);
-    populateGalleryCanvas();
-    m_imageView->enterGallery(ImageView::LayoutMode::Grid);
-    m_galleryReturnLayout = ImageView::LayoutMode::Grid;
-    if (m_layoutGridAct) {
-        m_layoutGridAct->setChecked(true);
-    }
-    updateMasonryCountControl();
-    updateWorkspaceActionVisibility();
+    enterGalleryMode(ImageView::LayoutMode::Grid);
 }
 
 void MainWindow::setLayoutGridCrop()
 {
-    m_galleryReturnActive = false;
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setEnabled(false);
-    }
-    m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(false);
-    m_imageView->enterGallery(ImageView::LayoutMode::GridCrop);
-    populateGalleryCanvas();
-    m_imageView->enterGallery(ImageView::LayoutMode::GridCrop);
-    m_galleryReturnLayout = ImageView::LayoutMode::GridCrop;
-    if (m_layoutGridCropAct) {
-        m_layoutGridCropAct->setChecked(true);
-    }
-    updateMasonryCountControl();
-    updateWorkspaceActionVisibility();
+    enterGalleryMode(ImageView::LayoutMode::GridCrop);
 }
-
 
 void MainWindow::setLayoutMasonry()
 {
-    m_galleryReturnActive = false;
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setEnabled(false);
-    }
-    m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(false);
-    m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
-    populateGalleryCanvas();
-    m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
-    m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
-    if (m_layoutMasonryAct) {
-        m_layoutMasonryAct->setChecked(true);
-    }
-    updateMasonryCountControl();
-    updateWorkspaceActionVisibility();
+    enterGalleryMode(ImageView::LayoutMode::Masonry);
 }
 
 void MainWindow::setLayoutMasonryRows()
 {
-    m_galleryReturnActive = false;
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setEnabled(false);
-    }
-    m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(false);
-    m_imageView->enterGallery(ImageView::LayoutMode::MasonryRows);
-    populateGalleryCanvas();
-    m_imageView->enterGallery(ImageView::LayoutMode::MasonryRows);
-    m_galleryReturnLayout = ImageView::LayoutMode::MasonryRows;
-    if (m_layoutMasonryRowsAct) {
-        m_layoutMasonryRowsAct->setChecked(true);
-    }
-    updateMasonryCountControl();
-    updateWorkspaceActionVisibility();
+    enterGalleryMode(ImageView::LayoutMode::MasonryRows);
 }
 
-void MainWindow::openGalleryItemInImageMode(const QString &path)
+void MainWindow::showPathInImageMode(const QString &path)
 {
+    // DOMAIN: enter Image on path; session current := path.
     if (path.isEmpty() || m_files.isEmpty()) {
         return;
     }
@@ -152,12 +119,21 @@ void MainWindow::openGalleryItemInImageMode(const QString &path)
         m_galleryReturnActive = true;
         m_imageView->snapshotGalleryViewport();
     }
-    m_workspaceModeAct->setChecked(false);
+    if (m_workspaceModeAct) {
+        m_workspaceModeAct->setChecked(false);
+    }
     m_imageView->setViewMode(ImageView::ViewMode::Image);
-    m_thumbnailBar->setWorkspaceMode(false);
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setWorkspaceMode(false);
+    }
     setCurrentIndex(idx);
     updateUpToGalleryAction();
     updateWorkspaceActionVisibility();
+}
+
+void MainWindow::openGalleryItemInImageMode(const QString &path)
+{
+    showPathInImageMode(path);
 }
 
 void MainWindow::returnToGallery()
@@ -166,131 +142,27 @@ void MainWindow::returnToGallery()
         return;
     }
     m_galleryReturnActive = false;
-    m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(false);
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
                                   ? m_files.at(m_currentIndex)
                                   : QString();
-    m_imageView->enterGallery(m_galleryReturnLayout);
-    populateGalleryCanvas();
-    m_imageView->enterGallery(m_galleryReturnLayout);
-    m_imageView->restoreGalleryViewport(focusPath);
-    switch (m_galleryReturnLayout) {
-    case ImageView::LayoutMode::SideBySide:
-        if (m_layoutSideBySideAct) m_layoutSideBySideAct->setChecked(true);
-        break;
-    case ImageView::LayoutMode::Vertical:
-        if (m_layoutVerticalAct) m_layoutVerticalAct->setChecked(true);
-        break;
-    case ImageView::LayoutMode::Grid:
-        if (m_layoutGridAct) m_layoutGridAct->setChecked(true);
-        break;
-    case ImageView::LayoutMode::GridCrop:
-        if (m_layoutGridCropAct) m_layoutGridCropAct->setChecked(true);
-        break;
-    case ImageView::LayoutMode::Masonry:
-        if (m_layoutMasonryAct) m_layoutMasonryAct->setChecked(true);
-        break;
-    case ImageView::LayoutMode::MasonryRows:
-        if (m_layoutMasonryRowsAct) m_layoutMasonryRowsAct->setChecked(true);
-        break;
-    default:
-        if (m_layoutMasonryAct) m_layoutMasonryAct->setChecked(true);
-        break;
-    }
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setEnabled(false);
-    }
-    updateMasonryCountControl();
-    updateWorkspaceActionVisibility();
-}
-
-void MainWindow::updateMasonryCountControl()
-{
-    if (!m_imageView || !m_masonryCountAction) {
-        return;
-    }
-    const auto mode = m_imageView->layoutMode();
-    const bool columns = m_imageView->isGalleryMode()
-                         && mode == ImageView::LayoutMode::Masonry;
-    const bool rows = m_imageView->isGalleryMode()
-                      && mode == ImageView::LayoutMode::MasonryRows;
-    const bool show = columns || rows;
-    m_masonryCountAction->setVisible(show);
-    if (!show || !m_masonryCountSpin) {
-        return;
-    }
-    if (m_masonryCountLabel) {
-        m_masonryCountLabel->setText(rows ? tr("Rows:") : tr("Columns:"));
-    }
-    const QSignalBlocker blocker(m_masonryCountSpin);
-    m_masonryCountSpin->setValue(rows ? m_imageView->masonryRows()
-                                      : m_imageView->masonryColumns());
-}
-
-void MainWindow::updateScrollBarPolicyForMode()
-{
-    if (!m_imageView) {
-        return;
-    }
-    Qt::ScrollBarPolicy h = Qt::ScrollBarAlwaysOff;
-    Qt::ScrollBarPolicy v = Qt::ScrollBarAlwaysOff;
-    if (m_imageView->isGalleryMode()) {
-        // AlwaysOn keeps the viewport size stable so gallery packing does not
-        // oscillate when AsNeeded scrollbars appear/disappear.
-        h = Qt::ScrollBarAlwaysOn;
-        v = Qt::ScrollBarAlwaysOn;
-    } else if (m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked()) {
-        h = Qt::ScrollBarAsNeeded;
-        v = Qt::ScrollBarAsNeeded;
-    }
-    if (m_imageView->horizontalScrollBarPolicy() != h) {
-        m_imageView->setHorizontalScrollBarPolicy(h);
-    }
-    if (m_imageView->verticalScrollBarPolicy() != v) {
-        m_imageView->setVerticalScrollBarPolicy(v);
+    enterGalleryMode(m_galleryReturnLayout);
+    if (!focusPath.isEmpty()) {
+        m_imageView->restoreGalleryViewport(focusPath);
+        m_imageView->focusSessionPath(focusPath);
     }
 }
 
-void MainWindow::updateThumbnailBarForMode()
+void MainWindow::enterWorkspaceMode()
 {
-    if (!m_thumbnailBar) {
+    // DOMAIN: Mode := Workspace; restore free objects if snapshotted.
+    if (isWorkspaceMode()) {
         return;
     }
-    const bool gallery = m_imageView && m_imageView->isGalleryMode();
-    if (gallery) {
-        if (!m_thumbsHiddenForGallery) {
-            m_thumbsVisibleBeforeGallery = m_thumbnailBar->isVisible();
-            m_thumbsHiddenForGallery = true;
-        }
-        if (m_thumbnailBar->isVisible()) {
-            m_thumbnailBar->setVisible(false);
-        }
-        if (m_toggleThumbnailBarAct) {
-            m_toggleThumbnailBarAct->setChecked(false);
-        }
-        return;
+    if (m_workspaceModeAct) {
+        m_workspaceModeAct->setChecked(true);
     }
-
-    if (m_thumbsHiddenForGallery) {
-        m_thumbsHiddenForGallery = false;
-        if (m_thumbsVisibleBeforeGallery) {
-            m_thumbnailBar->setVisible(true);
-            if (m_toggleThumbnailBarAct) {
-                m_toggleThumbnailBarAct->setChecked(true);
-            }
-        }
-    }
-}
-
-void MainWindow::updateUpToGalleryAction()
-{
-    if (!m_backToGalleryAct) {
-        return;
-    }
-    // Always shown; only enabled when Image mode was entered from Gallery.
-    m_backToGalleryAct->setVisible(true);
-    m_backToGalleryAct->setEnabled(m_galleryReturnActive);
+    // Reuse toggle path so toolbar / selection seeding stays consistent.
+    toggleWorkspaceMode();
 }
 
 void MainWindow::updateWorkspaceActionVisibility()

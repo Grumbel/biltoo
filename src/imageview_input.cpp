@@ -33,6 +33,7 @@
 #include <QtMath>
 #include <cmath>
 #include <algorithm>
+#include <cmath>
 
 int ImageView::edgeZoneWidth() const
 {
@@ -811,67 +812,99 @@ void ImageView::keyPressEvent(QKeyEvent *event)
         }
     }
 
-    // Gallery: arrow keys move among packed tiles (session order); Enter opens.
+    // Gallery: arrow keys move among tiles by scene position; Enter opens.
     if (isGalleryMode()
         && !(event->modifiers()
              & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
         && !m_items.isEmpty()) {
-        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-            // targetItem() is null in Gallery by policy — use selection / first
-            ImageItem *item = nullptr;
+        auto selectedGalleryItem = [this]() -> ImageItem * {
             for (QGraphicsItem *gi : m_scene->selectedItems()) {
                 if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    item = ii;
-                    break;
+                    return ii;
                 }
             }
-            if (!item) {
-                item = m_items.first();
+            return m_items.isEmpty() ? nullptr : m_items.first();
+        };
+
+        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+            if (ImageItem *item = selectedGalleryItem()) {
+                emit galleryItemOpenRequested(item->path());
+                event->accept();
+                return;
             }
-            emit galleryItemOpenRequested(item->path());
-            event->accept();
-            return;
         }
-        int delta = 0;
-        switch (event->key()) {
-        case Qt::Key_Left:
-        case Qt::Key_Up:
-            delta = -1;
-            break;
-        case Qt::Key_Right:
-        case Qt::Key_Down:
-            delta = 1;
-            break;
-        case Qt::Key_Home:
-            delta = 0;
-            break;
-        case Qt::Key_End:
-            delta = 0;
-            break;
-        default:
-            break;
-        }
-        if (event->key() == Qt::Key_Home || event->key() == Qt::Key_End
-            || delta != 0) {
-            int idx = 0;
-            for (int i = 0; i < m_items.size(); ++i) {
-                if (m_items.at(i)->isSelected()) {
-                    idx = i;
-                    break;
-                }
-            }
-            if (event->key() == Qt::Key_Home) {
-                idx = 0;
-            } else if (event->key() == Qt::Key_End) {
-                idx = m_items.size() - 1;
-            } else {
-                idx = (idx + delta + m_items.size()) % m_items.size();
-            }
-            ImageItem *item = m_items.at(idx);
+
+        if (event->key() == Qt::Key_Home || event->key() == Qt::Key_End) {
+            ImageItem *item = (event->key() == Qt::Key_Home)
+                                  ? m_items.first()
+                                  : m_items.last();
             focusSessionPath(item->path());
             emit galleryItemFocused(item->path());
             event->accept();
             return;
+        }
+
+        // Spatial neighbour: prefer candidates in the arrow direction, score by
+        // primary-axis distance with a cross-axis penalty (grid-friendly).
+        const int key = event->key();
+        if (key == Qt::Key_Left || key == Qt::Key_Right
+            || key == Qt::Key_Up || key == Qt::Key_Down) {
+            ImageItem *from = selectedGalleryItem();
+            if (!from) {
+                from = m_items.first();
+            }
+            const QPointF origin = from->sceneBoundingRect().center();
+            ImageItem *best = nullptr;
+            qreal bestScore = 1e300;
+            constexpr qreal kEps = 1.0;
+            constexpr qreal kCrossWeight = 2.5;
+            for (ImageItem *cand : m_items) {
+                if (cand == from) {
+                    continue;
+                }
+                const QPointF d = cand->sceneBoundingRect().center() - origin;
+                qreal primary = 0;
+                qreal cross = 0;
+                bool inDir = false;
+                switch (key) {
+                case Qt::Key_Left:
+                    inDir = d.x() < -kEps;
+                    primary = -d.x();
+                    cross = qAbs(d.y());
+                    break;
+                case Qt::Key_Right:
+                    inDir = d.x() > kEps;
+                    primary = d.x();
+                    cross = qAbs(d.y());
+                    break;
+                case Qt::Key_Up:
+                    inDir = d.y() < -kEps;
+                    primary = -d.y();
+                    cross = qAbs(d.x());
+                    break;
+                case Qt::Key_Down:
+                    inDir = d.y() > kEps;
+                    primary = d.y();
+                    cross = qAbs(d.x());
+                    break;
+                default:
+                    break;
+                }
+                if (!inDir) {
+                    continue;
+                }
+                const qreal score = primary + kCrossWeight * cross;
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = cand;
+                }
+            }
+            if (best) {
+                focusSessionPath(best->path());
+                emit galleryItemFocused(best->path());
+                event->accept();
+                return;
+            }
         }
     }
 

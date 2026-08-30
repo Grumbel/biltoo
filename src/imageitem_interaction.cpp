@@ -901,6 +901,8 @@ void ImageItem::endHandleInteraction()
 
 void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+    // Fallback only: ImageView resolves chrome hits first (device-space). This
+    // path runs when the scene delivers the event to the item body/handle.
     if (m_interactive && event->button() == Qt::LeftButton
         && beginHandleInteraction(event->scenePos(), event->modifiers())) {
         event->accept();
