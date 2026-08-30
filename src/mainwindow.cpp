@@ -574,6 +574,9 @@ void MainWindow::showPreferences()
     dlg.setBackgroundPatternIndex(
         m_imageView->backgroundPattern() == ImageView::BackgroundPattern::Checkerboard ? 1 : 0);
     dlg.setCheckerboardWorkspaceOnly(m_imageView->checkerboardWorkspaceOnly());
+    dlg.setHudFontPointSize(m_imageView->hudFontPointSize());
+    dlg.setHudTextColor(m_imageView->hudTextColor());
+    dlg.setHudPanelColor(m_imageView->hudPanelColor());
     if (dlg.exec() != QDialog::Accepted) {
         return;
     }
@@ -588,6 +591,9 @@ void MainWindow::showPreferences()
         dlg.backgroundPatternIndex() == 1 ? ImageView::BackgroundPattern::Checkerboard
                                           : ImageView::BackgroundPattern::Solid);
     m_imageView->setCheckerboardWorkspaceOnly(dlg.checkerboardWorkspaceOnly());
+    m_imageView->setHudFontPointSize(dlg.hudFontPointSize());
+    m_imageView->setHudTextColor(dlg.hudTextColor());
+    m_imageView->setHudPanelColor(dlg.hudPanelColor());
     writeSettings();
 }
 
@@ -849,10 +855,24 @@ void MainWindow::readSettings()
             if (tc.isValid()) {
                 m_imageView->setHudTextColor(tc);
             }
-            const QColor pc(settings.value(QStringLiteral("hudPanelColor"),
-                                           QStringLiteral("#000000a0")).toString());
-            if (pc.isValid()) {
+            // HexArgb is #AARRGGBB (Qt). Legacy #RRGGBBAA with alpha trailing is
+            // rejected by the length-8 parser as fully transparent — migrate.
+            const QString pcStr = settings.value(QStringLiteral("hudPanelColor"),
+                                                 QStringLiteral("#a0000000")).toString();
+            QColor pc(pcStr);
+            if (!pc.isValid() || pc.alpha() == 0) {
+                // Recover common mis-saved form #000000XX (RRGGBB + alpha byte)
+                if (pcStr.size() == 9 && pcStr.startsWith(QLatin1Char('#'))) {
+                    const QString rgb = pcStr.mid(1, 6);
+                    const QString aa = pcStr.mid(7, 2);
+                    pc = QColor(QStringLiteral("#") + aa + rgb);
+                }
+            }
+            if (pc.isValid() && pc.alpha() > 0) {
                 m_imageView->setHudPanelColor(pc);
+            } else if (pc.isValid() && pc.alpha() == 0) {
+                // Never leave a fully transparent panel as the loaded preference.
+                m_imageView->setHudPanelColor(QColor(0, 0, 0, 160));
             }
         }
         const QColor bg = QColor(settings.value(QStringLiteral("backgroundColor"),

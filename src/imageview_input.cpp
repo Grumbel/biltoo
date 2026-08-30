@@ -287,9 +287,13 @@ void ImageView::paintEvent(QPaintEvent *event)
             y = qBound(margin, y, viewH - margin - bgH);
             const QRect bg(x, y, bgW, bgH);
             painter.setPen(Qt::NoPen);
-            painter.setBrush(m_hudPanelColor);
+            QColor panel = m_hudPanelColor;
+            if (!panel.isValid() || panel.alpha() == 0) {
+                panel = QColor(0, 0, 0, 160);
+            }
+            painter.setBrush(panel);
             painter.drawRoundedRect(bg, 6, 6);
-            painter.setPen(m_hudTextColor);
+            painter.setPen(m_hudTextColor.isValid() ? m_hudTextColor : QColor(240, 240, 240));
             int ty = bg.top() + pad;
             const int textAreaW = bg.width() - 2 * pad;
             for (const HudLine &hl : drawn) {

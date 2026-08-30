@@ -492,11 +492,25 @@ void PreferencesDialog::updateColorButton(QPushButton *button, const QColor &col
     if (!button) {
         return;
     }
-    button->setText(color.name(QColor::HexRgb));
+    // Show alpha when present (HUD panel); opaque colours stay #RRGGBB.
+    const QString label = (color.alpha() < 255)
+                              ? color.name(QColor::HexArgb)
+                              : color.name(QColor::HexRgb);
+    button->setText(label);
+    // Stylesheet cannot express alpha reliably; composite over dark grey.
+    QColor solid = color;
+    if (color.alpha() < 255) {
+        const QColor base(60, 60, 60);
+        const qreal a = color.alphaF();
+        solid.setRgbF(color.redF() * a + base.redF() * (1.0 - a),
+                      color.greenF() * a + base.greenF() * (1.0 - a),
+                      color.blueF() * a + base.blueF() * (1.0 - a));
+        solid.setAlpha(255);
+    }
     button->setStyleSheet(
         QStringLiteral("QPushButton { background-color: %1; color: %2; }")
-            .arg(color.name(QColor::HexRgb),
-                 color.lightness() < 128 ? QStringLiteral("#ffffff")
+            .arg(solid.name(QColor::HexRgb),
+                 solid.lightness() < 128 ? QStringLiteral("#ffffff")
                                          : QStringLiteral("#000000")));
 }
 
