@@ -526,3 +526,133 @@ No packaging blocker found in static read; install path of `qimgview.desktop` an
 ## Sign-off (deep pass 2)
 
 Additional static pass complete. Highest new defect: **H7 identity pulse condition** making the HUD appear continuously during normal interaction despite H-off and slideshow-quiet work. No product code modified.
+
+---
+
+## Deep pass 3 (continuation)
+
+**Focus:** lifetime/UAF, undo safety, shortcut collisions, Delete semantics, edge zones, CLI.
+
+| Step | Activity | Status |
+|------|----------|--------|
+| F1 | `clearWorkspace` / item delete vs live pointers | [x] |
+| F2 | `QUndoStack` vs deleted `ImageItem*` in commands | [x] |
+| F3 | Zoom Out vs Opacity Down shortcuts | [x] |
+| F4 | Delete/Backspace workspace vs session | [x] |
+| F5 | Edge zone geometry | [x] |
+| F6 | CLI options completeness | [x] |
+| F7 | `setWorkspacePaths` partial cleanup | [x] |
+
+---
+
+### F1 / F7 — Dangling interaction pointers
+
+`clearWorkspace()` nulls `m_rotateItem`, `m_dragItem`, clears `m_items`, then `m_scene->clear()` (deletes items). It does **not** null:
+
+- `m_handleDragItem`
+- `m_gallerySelectionAnchor` (usually non-Gallery when clearing, still stale)
+
+`setWorkspacePaths` when removing items nulls `m_dragItem` / `m_rotateItem` if matched, but **not** `m_handleDragItem`.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| **H8** | **High** | **Use-after-free risk:** delete the item under active handle drag (mode switch, thumb sync removing path, clear workspace) while `m_handleDragItem` still non-null → next move/release touches freed memory. |
+| H8b | Medium | `m_gallerySelectionAnchor` can point at destroyed items if canvas rebuilt without clearing anchor (Gallery leave clears it; other rebuild paths may not). |
+
+---
+
+### F2 — Undo commands hold raw `ImageItem*`
+
+`TransformCommand` captures `ImageItem *` for undo/redo.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| **H9** | **High** | **`restoreWorkspace()` → `clearWorkspace()` does not `m_undoStack->clear()`.** Prior transform commands still reference deleted items. User Undo after workspace restore → crash or corruption. |
+| H9b | Medium | `prepareImageModeCanvas` / `prepareGalleryCanvas` / `clearExtras` do clear the stack — inconsistent policy. Any new clear path that forgets clear inherits H9. |
+| H9c | Low | Commands are not listed in a custom text beyond default; acceptable. |
+
+---
+
+### F3 — Shortcut collision
+
+| Action | Shortcut |
+|--------|----------|
+| Zoom Out | `QKeySequence::ZoomOut` → typically **Ctrl+−** |
+| Opacity Down | **Ctrl+Key_Minus** (explicit) |
+
+Both become `ApplicationShortcut` via `bindViewerShortcuts()`.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| **M20** | Medium | **Ctrl+− bound to two actions.** Qt may run both or an arbitrary one; Workspace opacity and view zoom fight. Zoom In (`Ctrl++`) vs Opacity Up (`Ctrl+=`) related ambiguity on some layouts. |
+
+---
+
+### F4 — Delete key semantics
+
+- Workspace: Delete/Backspace removes **canvas** items, session list unchanged, state remembered — matches DOMAIN “remove from canvas”.
+- Not undoable via QUndoStack (only remember/re-add via thumb).
+- Gallery/Image: Delete does not remove from session in this handler (falls through) — session remove is thumb/context elsewhere.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L23 | Low | No confirmation on canvas Delete; acceptable if documented. |
+| M21 | Medium | Users may expect Delete in Image mode to remove file from session — it does not (HIG expectation gap). |
+
+---
+
+### F5 — Edge zones
+
+- Left/right strips for prev/next; top for Gallery return when available.
+- Priority: top checked before left/right in `edgeZoneAt` — good.
+- Corners: top wins over left/right — OK.
+- Widths are fixed viewport pixels — scale-invariant; OK.
+
+No new defect beyond existing fullscreen hit testing already improved in earlier bundles.
+
+---
+
+### F6 — CLI
+
+- fullscreen, fit (declared), start-at, recursive, sort, slideshow, interval, thumbnails toggles — present in `main.cpp`.
+- `fitOption` registered; confirm it is applied on load (spot-check: may be no-op if default is already fit).
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L24 | Low | Verify `--fit` is not a dead option (default fit mode already true). |
+
+---
+
+### F7 — Memory / ownership summary
+
+| Pattern | Assessment |
+|---------|------------|
+| Scene owns items; explicit delete after removeItem | Consistent when both happen |
+| `m_items` cleared before `scene->clear()` | Avoids double-free of list pointers |
+| Thread pool loads use QueuedConnection to view | View must outlive jobs; generation helps replace |
+| No cancel of QThreadPool on destroy | Destroy ImageView while jobs pending → **invokeMethod on destroyed QObject** (Qt drops if object gone? Queued to deleted object is safe if object destroyed — events discarded). Relatively OK |
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M22 | Medium | Destroying window mid-decode: completions no-ops if generation/object gone; pending paths not a leak of ImageItem (not created). Acceptable. |
+
+---
+
+## Revised top priorities (passes 1–3)
+
+1. **H7** — Identity pulse only on index change  
+2. **H8 / H9** — Null all live item pointers on delete; always clear undo when items destroyed  
+3. **H6** — Persist Image-mode orientation  
+4. **H3a** — Split load generation by role  
+5. **H2** — Single chrome owner  
+6. **M20** — Disambiguate Ctrl+− zoom vs opacity  
+7. **M7a** — Stop slideshow leaving Image  
+8. **M4** — Gallery zoom policy  
+9. **M17 / M18** — Paths / VIPS orient  
+10. Docs  
+
+---
+
+## Sign-off (deep pass 3)
+
+Lifetime/UAF and undo safety reviewed. Highest new issues: **H8** dangling `m_handleDragItem`, **H9** undo after `restoreWorkspace`/`clearWorkspace` without stack clear, **M20** Ctrl+− double binding. No product code modified.
