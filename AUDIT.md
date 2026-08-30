@@ -365,3 +365,164 @@ Preferences dialog: standard `QDialog` + buttons; ApplicationShortcuts may still
 ## Sign-off (deep pass)
 
 Static deep pass complete for load pipeline, orientation lifetime, gallery zoom, slideshow/mode, metadata, chrome dual path, gallery enter. Still no runtime execution in this environment. No product code modified in this amendment.
+
+---
+
+## Deep pass 2 (continuation)
+
+**Focus:** status/HUD pulse coupling, path identity, loader EXIF (Qt vs VIPS), thumbnails, fullscreen chrome, defaults/MIME, packaging.
+
+| Step | Activity | Status |
+|------|----------|--------|
+| E1 | `statusChanged` → `updateStatus` → `setSessionPosition` pulse | [x] |
+| E2 | Session path string identity (canonical paths) | [x] |
+| E3 | Qt `AutoTransform` vs VIPS orientation | [x] |
+| E4 | ThumbnailBar selection/drag/remove | [x] |
+| E5 | Fullscreen UI chrome restore | [x] |
+| E6 | Default-apps / desktop MIME alignment | [x] |
+| E7 | CMake / Nix packaging notes | [x] |
+| E8 | Status bar comment debt / colour readout | [x] |
+
+---
+
+### E1 — Identity pulse fires on almost every status update (**severe UX**)
+
+Call chain:
+
+```text
+ImageView::statusChanged
+  → MainWindow::updateStatus
+    → setSessionPosition(index, total, !m_slideshowAdvancing)
+```
+
+`setSessionPosition` pulse condition:
+
+```text
+if (pulseIdentity && (changed || total > 0)) {
+    m_hudIdentityPulse = true;
+    m_hudFlashTimer->start(1000);
+}
+```
+
+When a session exists (`total > 0`), **`changed` is irrelevant** — any `updateStatus` with `pulseIdentity == true` restarts the identity HUD for 1s.
+
+`statusChanged` is emitted from zoom, layout, handle end, mode changes, loads, etc.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| **H7** | **High** | **Pinned-off HUD still pops filename/index on zoom, pan end, workspace edits, etc.** Contradicts “only user nav or H”. Slideshow quiet path only suppresses when `m_slideshowAdvancing`; normal interaction does not. Root bug is `(changed \|\| total > 0)` — should pulse only when `changed` (and pulseIdentity), or call sites should pass `pulseIdentity=false` except navigation. |
+| H7b | Medium | Restarting the timer on every status event **extends** the overlay while the user works — sticky HUD without H. |
+| L18 | Low | Comment in `updateStatus` still says share `[n/N]`; badge format is already `n/N`. |
+
+---
+
+### E2 — Path identity
+
+- Session membership uses raw `QString` from dialogs/CLI/`QUrl::toLocalFile()`.
+- Dedup is `QSet<QString>` / `m_files.contains(p)` — **no `QFileInfo::canonicalFilePath()`**.
+- Same inode via `./a.jpg` and `/abs/a.jpg`, or symlink vs target, can appear **twice**.
+- Gallery “novel only” drop uses the same string equality.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M17 | Medium | **Non-canonical paths** → duplicate session entries, duplicate thumbs, confusing Next/Prev. |
+| M17b | Low | `findItemByPath` string match — workspace may hold one spelling while session holds another. |
+
+---
+
+### E3 — Orientation: Qt vs VIPS
+
+- Qt path: `QImageReader::setAutoTransform(true)` — applies EXIF orientation on load. **Good.**
+- VIPS fallback path: colourspace/cast/bandjoin — **no `vips_autorot` (or equivalent) observed** in `imageloader.cpp`.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M18 | Medium | Images that **fail Qt and succeed VIPS** may display with **wrong camera orientation** relative to Qt-loaded files. Inconsistent thumb vs full if one path uses Qt scaled and full uses VIPS (thumbs use same loader order — both try Qt first). |
+
+Combined with **H6** (user rotation wiped on navigate): camera orientation is applied at load; user rotation is not persisted — two different orientation layers, only one sticky per decode.
+
+---
+
+### E4 — ThumbnailBar
+
+| Topic | Assessment |
+|-------|------------|
+| Layout math | Documented cell size / label band — careful |
+| Async thumbs | Generation cancel on `setFiles` — good pattern |
+| Multi-select | Shift range, Ctrl toggle — aligned with Gallery classic select spirit |
+| Drag | Image mode file drag; Workspace Alt+drag for files — easy to miss (discoverability) |
+| Press item lifetime | Guards `row(m_pressItem) < 0` after model rebuild — good |
+| Labels | Optional hide — OK |
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M19 | Medium | Workspace thumb drag **without Alt** does not drag files and does not rubber-band (event accepted, no-op) — **dead gesture**. |
+| L19 | Low | Thumb context menu / Delete vs session remove — confirm undo story (session remove not on QUndoStack). |
+
+---
+
+### E5 — Fullscreen UI
+
+- `updateFullscreenUi` hides menu/toolbars/status; restores from “before fullscreen” flags.
+- Slideshow may force fullscreen; leaving FS stops slideshow.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L20 | Low | Nested toolbars (workspace bar) visibility coupled to mode and FS — generally handled via `updateWorkspaceActionVisibility`. |
+| M6 residual | Medium | ApplicationShortcuts remain the right fix for FS; dialog focus still worth manual test. |
+
+---
+
+### E6 — MIME / defaults
+
+- `DefaultApps::supportedMimeTypes()` and `qimgview.desktop` kept in sync by comment discipline.
+- `ImageLoader::imageSuffixes()` is **strictly wider** (psd, exr, fits, …).
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L6 restated | Low | Open-with registration does not cover all loadable suffixes — expected unless desktop MIME expanded. |
+| L21 | Low | GIO default-app changes need a session/running app refresh story — tree refresh on dialog open only. |
+
+---
+
+### E7 — Packaging
+
+| Topic | Notes |
+|-------|--------|
+| CMake | Optional VIPS/GIO/Exiv2; defines `QIMGVIEW_HAVE_*` |
+| Nix | RelWithDebInfo + `separateDebugInfo` — good for field debug |
+| Version | `VERSION` + flake dirty/rev composition |
+| Desktop | `StartupWMClass` / icon name should match binary — verify against installed name `qimgview` |
+
+No packaging blocker found in static read; install path of `qimgview.desktop` and icon sizes not fully traced file-by-file in this pass.
+
+---
+
+### E8 — Status bar colour readout
+
+- Mouse RGB + swatch on `mouseInfoChanged` — solid.
+- No alpha in readout for images with alpha (shows RGB only) — minor.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L22 | Low | Alpha channel not shown in status colour line. |
+
+---
+
+## Revised top priorities (all passes)
+
+1. **H7** — Pulse only on real session index change (or explicit nav), not on every `statusChanged`.  
+2. **H6** — Persist Image-mode user rotation/flip across loads.  
+3. **H3a** — Split load generation by role.  
+4. **H2** — Single chrome interaction owner.  
+5. **M7a** — Stop slideshow when leaving Image mode.  
+6. **M4** — Unified Gallery zoom policy.  
+7. **M17** — Canonicalize session paths.  
+8. **M18** — VIPS autorot (or document Qt-only orientation).  
+9. Docs H1/M14.  
+
+---
+
+## Sign-off (deep pass 2)
+
+Additional static pass complete. Highest new defect: **H7 identity pulse condition** making the HUD appear continuously during normal interaction despite H-off and slideshow-quiet work. No product code modified.
