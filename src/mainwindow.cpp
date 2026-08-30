@@ -114,16 +114,29 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() = default;
 
+bool MainWindow::isWorkspaceMode() const
+{
+    return m_imageView && m_imageView->isWorkspaceMode();
+}
+
+bool MainWindow::isGalleryMode() const
+{
+    return m_imageView && m_imageView->isGalleryMode();
+}
+
+bool MainWindow::isImageMode() const
+{
+    return m_imageView && m_imageView->isImageMode();
+}
+
 void MainWindow::onThumbnailAddToWorkspace(int index)
 {
-    if (!m_workspaceMode) {
-        // Enable workspace mode automatically when the user explicitly adds
-        m_workspaceMode = true;
+    if (!isWorkspaceMode()) {
+        // Enter Workspace when the user explicitly adds from the strip
         m_workspaceModeAct->setChecked(true);
-        m_imageView->setWorkspaceMode(true);
+        m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         m_thumbnailBar->setWorkspaceMode(true);
         updateWorkspaceActionVisibility();
-        // Seed selection with the image being added
         if (index >= 0 && index < m_files.size()) {
             m_thumbnailBar->setSelectedIndices({index});
         }
@@ -137,7 +150,7 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
 
 void MainWindow::onThumbnailWorkspaceSelectionChanged()
 {
-    if (!m_workspaceMode) {
+    if (!isWorkspaceMode()) {
         return;
     }
     applyWorkspaceSelectionFromThumbnails();
@@ -145,7 +158,7 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
 
 void MainWindow::onWorkspacePathsChanged()
 {
-    if (!m_workspaceMode) {
+    if (!isWorkspaceMode()) {
         return;
     }
     syncThumbnailWorkspaceSelection();
@@ -177,7 +190,7 @@ void MainWindow::applyWorkspaceSelectionFromThumbnails()
 
 void MainWindow::syncThumbnailWorkspaceSelection()
 {
-    if (!m_workspaceMode) {
+    if (!isWorkspaceMode()) {
         return;
     }
     QList<int> indices;
@@ -260,12 +273,11 @@ void MainWindow::toggleThumbnailLabels()
 
 void MainWindow::ensureMultiImageMode()
 {
-    if (m_workspaceMode) {
+    if (isWorkspaceMode()) {
         return;
     }
-    m_workspaceMode = true;
     m_workspaceModeAct->setChecked(true);
-    m_imageView->setWorkspaceMode(true);
+    m_imageView->setViewMode(ImageView::ViewMode::Workspace);
     m_thumbnailBar->setWorkspaceMode(true);
     if (m_imageView->itemCount() == 0
         && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
@@ -327,7 +339,6 @@ void MainWindow::toggleWorkspaceMode()
         if (m_backToGalleryAct) {
             m_backToGalleryAct->setEnabled(false);
         }
-        m_workspaceMode = true;
         m_thumbnailBar->setWorkspaceMode(true);
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         if (m_imageView->itemCount() == 0
@@ -348,7 +359,6 @@ void MainWindow::toggleWorkspaceMode()
             }
         }
     } else {
-        m_workspaceMode = false;
         m_thumbnailBar->setWorkspaceMode(false);
         m_imageView->setViewMode(ImageView::ViewMode::Image);
         if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
@@ -553,13 +563,12 @@ void MainWindow::selectAllThumbnails()
     if (!m_thumbnailBar || m_files.isEmpty()) {
         return;
     }
-    if (!m_workspaceMode) {
-        m_workspaceMode = true;
+    if (!isWorkspaceMode()) {
         if (m_workspaceModeAct) {
             m_workspaceModeAct->setChecked(true);
         }
         if (m_imageView) {
-            m_imageView->setWorkspaceMode(true);
+            m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         }
         m_thumbnailBar->setWorkspaceMode(true);
         updateWorkspaceActionVisibility();
@@ -674,7 +683,7 @@ void MainWindow::updateFullscreenUi()
         if (m_toggleMetadataAct) {
             m_toggleMetadataAct->setChecked(m_metadataVisibleBeforeFullscreen);
         }
-        if (m_workspaceMode && m_workspaceToolBar) {
+        if (isWorkspaceMode() && m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(true);
         }
         menuBar()->setVisible(true);
@@ -734,15 +743,16 @@ void MainWindow::readSettings()
         settings.remove(QStringLiteral("workspaceMode"));
         m_startInWorkspaceMode = false;
     }
-    m_workspaceMode = m_startInWorkspaceMode;
     if (m_workspaceModeAct) {
-        m_workspaceModeAct->setChecked(m_workspaceMode);
+        m_workspaceModeAct->setChecked(m_startInWorkspaceMode);
     }
     if (m_imageView) {
-        m_imageView->setWorkspaceMode(m_workspaceMode);
+        m_imageView->setViewMode(m_startInWorkspaceMode
+                                     ? ImageView::ViewMode::Workspace
+                                     : ImageView::ViewMode::Image);
     }
     if (m_thumbnailBar) {
-        m_thumbnailBar->setWorkspaceMode(m_workspaceMode);
+        m_thumbnailBar->setWorkspaceMode(m_startInWorkspaceMode);
         const int thumbSize = settings.value(QStringLiteral("thumbnailSize"),
                                              ThumbnailBar::kDefaultThumbSize).toInt();
         m_thumbnailBar->setThumbSize(thumbSize);
@@ -934,7 +944,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     }
 
     // Workspace mode: append to the session (thumbnail bar) and show on canvas
-    if (m_workspaceMode) {
+    if (isWorkspaceMode()) {
         const QStringList expanded = expandPaths(paths);
         if (expanded.isEmpty()) {
             return;

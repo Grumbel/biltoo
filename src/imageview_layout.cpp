@@ -501,14 +501,21 @@ ImageItem *ImageView::primaryItem() const
 
 ImageItem *ImageView::targetItem() const
 {
+    // DOMAIN.md transform targets:
+    //   Gallery → none
+    //   Image → primary (sole) canvas object
+    //   Workspace → selection; if empty and exactly one object, that object
+    if (isGalleryMode()) {
+        return nullptr;
+    }
     const QList<QGraphicsItem *> selected = m_scene->selectedItems();
     for (QGraphicsItem *gi : selected) {
         if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
             return item;
         }
     }
-    if (m_items.size() == 1) {
-        return m_items.first();
+    if (isImageMode() || m_items.size() == 1) {
+        return m_items.isEmpty() ? nullptr : m_items.first();
     }
     return nullptr;
 }

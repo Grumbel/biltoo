@@ -90,7 +90,7 @@ void MainWindow::setSortMode(SortMode mode)
                                 : QString();
     sortFileList();
     m_thumbnailBar->setFiles(m_files);
-    if (m_workspaceMode) {
+    if (isWorkspaceMode()) {
         // setFiles rebuilds the list; restore multi-select and canvas selection
         m_thumbnailBar->setWorkspaceMode(true);
         syncThumbnailWorkspaceSelection();
@@ -184,11 +184,11 @@ void MainWindow::appendFiles(const QStringList &paths)
     }
 
     // Paths currently on the workspace (selection must be restored after setFiles)
-    const QStringList workspacePaths = m_workspaceMode ? m_imageView->itemPaths() : QStringList();
+    const QStringList workspacePaths = isWorkspaceMode() ? m_imageView->itemPaths() : QStringList();
 
     sortFileList();
     m_thumbnailBar->setFiles(m_files);
-    if (m_workspaceMode) {
+    if (isWorkspaceMode()) {
         // setFiles rebuilds items; re-apply multi-select mode and canvas selection
         m_thumbnailBar->setWorkspaceMode(true);
         syncThumbnailWorkspaceSelection();
@@ -218,7 +218,7 @@ void MainWindow::appendFiles(const QStringList &paths)
         newIndex = 0;
     }
 
-    if (m_workspaceMode) {
+    if (isWorkspaceMode()) {
         m_currentIndex = newIndex;
         if (m_metadataPanel && newIndex >= 0 && newIndex < m_files.size()) {
             m_metadataPanel->setImagePath(m_files.at(newIndex));
@@ -276,13 +276,13 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         }
         const QString path = m_files.at(idx);
         m_files.removeAt(idx);
-        if (m_workspaceMode && m_imageView) {
+        if (isWorkspaceMode() && m_imageView) {
             m_imageView->removeWorkspacePath(path);
         }
     }
 
     m_thumbnailBar->setFiles(m_files);
-    if (m_workspaceMode) {
+    if (isWorkspaceMode()) {
         m_thumbnailBar->setWorkspaceMode(true);
         syncThumbnailWorkspaceSelection();
     }
@@ -309,7 +309,7 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         newIndex = qBound(0, sorted.first(), m_files.size() - 1);
     }
 
-    if (m_workspaceMode) {
+    if (isWorkspaceMode()) {
         m_currentIndex = newIndex;
         if (m_metadataPanel) {
             m_metadataPanel->setImagePath(m_files.at(newIndex));
@@ -358,7 +358,7 @@ void MainWindow::updateNavigationActions()
     // Zoom always useful when something is shown (or for empty view reset)
     for (QAction *act : {m_zoomInAct, m_zoomOutAct, m_zoom1to1Act, m_zoomFitAct, m_zoomFillAct}) {
         if (act) {
-            act->setEnabled(hasItem || (!m_workspaceMode && hasFiles));
+            act->setEnabled(hasItem || (!isWorkspaceMode() && hasFiles));
         }
     }
 
@@ -504,7 +504,7 @@ void MainWindow::armSlideshowCursorHide()
 
 void MainWindow::startSlideshow()
 {
-    if (m_files.size() <= 1 || m_workspaceMode) {
+    if (m_files.size() <= 1 || isWorkspaceMode()) {
         m_slideshowAct->setChecked(false);
         return;
     }

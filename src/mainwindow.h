@@ -108,6 +108,9 @@ private slots:
                         const QPointF &scenePos);
     void toggleScrollBars();
     void toggleWorkspaceMode();
+    bool isWorkspaceMode() const;
+    bool isGalleryMode() const;
+    bool isImageMode() const;
     void setSelectTool();
     void setPanTool();
     void updateWorkspaceActionVisibility();
@@ -244,7 +247,6 @@ private:
     QStringList m_files;
     int m_currentIndex = -1;
     bool m_recursive = false;
-    bool m_workspaceMode = false;
     ThumbnailEdge m_thumbnailEdge = ThumbnailEdge::Bottom;
     bool m_startInWorkspaceMode = false; // preference / startup default
     bool m_slideshowFullscreen = true;   // enter fullscreen when starting slideshow

@@ -26,7 +26,6 @@ void MainWindow::setLayoutSideBySide()
         m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
-    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::SideBySide);
@@ -48,7 +47,6 @@ void MainWindow::setLayoutVertical()
         m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
-    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::Vertical);
@@ -69,7 +67,6 @@ void MainWindow::setLayoutGrid()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::Grid);
@@ -89,7 +86,6 @@ void MainWindow::setLayoutGridCrop()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::GridCrop);
@@ -110,7 +106,6 @@ void MainWindow::setLayoutMasonry()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
@@ -130,7 +125,6 @@ void MainWindow::setLayoutMasonryRows()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::MasonryRows);
@@ -158,7 +152,6 @@ void MainWindow::openGalleryItemInImageMode(const QString &path)
         m_galleryReturnActive = true;
         m_imageView->snapshotGalleryViewport();
     }
-    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
     m_imageView->setViewMode(ImageView::ViewMode::Image);
     m_thumbnailBar->setWorkspaceMode(false);
@@ -173,7 +166,6 @@ void MainWindow::returnToGallery()
         return;
     }
     m_galleryReturnActive = false;
-    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(false);
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
