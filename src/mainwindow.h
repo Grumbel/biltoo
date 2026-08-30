@@ -183,6 +183,7 @@ private:
     bool m_recursive = false;
     bool m_workspaceMode = false;
     bool m_startInWorkspaceMode = false; // preference / startup default
+    bool m_slideshowFullscreen = true;   // enter fullscreen when starting slideshow
     SortMode m_sortMode = SortMode::Name;
     int m_slideshowIntervalMs = 3000;
     bool m_forceThumbnails = false;

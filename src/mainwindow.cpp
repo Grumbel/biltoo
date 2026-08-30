@@ -244,7 +244,8 @@ void MainWindow::createActions()
     m_slideshowAct->setShortcut(Qt::Key_F5);
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     m_slideshowAct->setCheckable(true);
-    m_slideshowAct->setStatusTip(tr("Start or stop the slideshow (F5)"));
+    m_slideshowAct->setStatusTip(
+        tr("Start or stop the slideshow (F5). Unavailable in workspace mode."));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
     m_workspaceModeAct = new QAction(tr("&Workspace Mode"), this);
@@ -824,10 +825,11 @@ void MainWindow::setCurrentIndex(int index)
 void MainWindow::updateNavigationActions()
 {
     const bool hasMany = m_files.size() > 1;
-    m_previousAct->setEnabled(hasMany);
-    m_nextAct->setEnabled(hasMany);
-    m_slideshowAct->setEnabled(hasMany);
-    if (!hasMany) {
+    // Session navigation is classic-mode oriented; disable in workspace mode
+    m_previousAct->setEnabled(hasMany && !m_workspaceMode);
+    m_nextAct->setEnabled(hasMany && !m_workspaceMode);
+    m_slideshowAct->setEnabled(hasMany && !m_workspaceMode);
+    if (!hasMany || m_workspaceMode) {
         stopSlideshow();
     }
 }
@@ -1028,9 +1030,12 @@ void MainWindow::setSlideshowIntervalMs(int ms)
 
 void MainWindow::startSlideshow()
 {
-    if (m_files.size() <= 1) {
+    if (m_files.size() <= 1 || m_workspaceMode) {
         m_slideshowAct->setChecked(false);
         return;
+    }
+    if (m_slideshowFullscreen && !isFullScreen()) {
+        showFullScreen();
     }
     m_slideshowTimer->start(m_slideshowIntervalMs);
     m_slideshowAct->setChecked(true);
@@ -1238,12 +1243,14 @@ void MainWindow::showPreferences()
 {
     PreferencesDialog dlg(this);
     dlg.setSlideshowIntervalMs(m_slideshowIntervalMs);
+    dlg.setSlideshowFullscreen(m_slideshowFullscreen);
     dlg.setSortModeIndex(m_sortMode == SortMode::Name ? 0 : 1);
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
     if (dlg.exec() != QDialog::Accepted) {
         return;
     }
     setSlideshowIntervalMs(dlg.slideshowIntervalMs());
+    m_slideshowFullscreen = dlg.slideshowFullscreen();
     setSortMode(dlg.sortModeIndex() == 1 ? SortMode::MTime : SortMode::Name);
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     writeSettings();
@@ -1346,6 +1353,8 @@ void MainWindow::readSettings()
 
     m_slideshowIntervalMs =
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
+    m_slideshowFullscreen =
+        settings.value(QStringLiteral("slideshowFullscreen"), true).toBool();
 
     // Workspace mode is off by default. Only enable at startup when the user
     // opted in via Preferences ("Start in workspace mode").
@@ -1403,6 +1412,7 @@ void MainWindow::writeSettings()
                       m_sortMode == SortMode::MTime ? QStringLiteral("mtime")
                                                     : QStringLiteral("name"));
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
+    settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     // Persist startup preference only — not the live session toggle
     settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);
     settings.remove(QStringLiteral("workspaceMode"));
