@@ -61,6 +61,7 @@ void MainWindow::createActions()
 
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
     m_fullscreenAct->setShortcuts({Qt::Key_F, Qt::Key_F11});
+    m_fullscreenAct->setShortcutContext(Qt::ApplicationShortcut);
     m_fullscreenAct->setIcon(themeIcon(QStringLiteral("view-fullscreen"), QStyle::SP_TitleBarMaxButton));
     m_fullscreenAct->setCheckable(true);
     m_fullscreenAct->setStatusTip(tr("Toggle fullscreen mode (F or F11)"));
