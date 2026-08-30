@@ -21,8 +21,7 @@ enum class Mode {
     Grid,
     GridCrop,
     Masonry,
-    MasonryRows,
-    Stack
+    MasonryRows
 };
 
 struct Params {

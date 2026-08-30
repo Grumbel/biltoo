@@ -72,6 +72,7 @@ public:
     void setViewMode(ViewMode mode);
     /** Reset view/scene so Image mode is not affected by prior canvas state. */
     void prepareImageModeCanvas();
+    void prepareGalleryCanvas();
     ViewMode viewMode() const { return m_viewMode; }
     bool isImageMode() const { return m_viewMode == ViewMode::Image; }
     bool isGalleryMode() const { return m_viewMode == ViewMode::Gallery; }
@@ -164,7 +165,6 @@ public:
         Grid,
         /** Square cells; image scaled to cover and centre-cropped (like thumb crop). */
         GridCrop,
-        Stack,
         /** Column masonry: N columns spanning the view width; variable row heights. */
         Masonry,
         /** Row masonry: N rows spanning the view height; variable column widths. */

@@ -41,10 +41,11 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     const qreal availH = params.availH;
     const int n = items.size();
 
+    // Gallery tiles are a clean overview: full opacity, upright, no residual
+    // Workspace opacity/rotation bleeding through between layout switches.
     for (ImageItem *item : items) {
-        if (params.mode != Mode::Stack) {
-            item->setItemRotation(0.0);
-        }
+        item->setItemRotation(0.0);
+        item->setItemOpacity(1.0);
         if (params.mode != Mode::GridCrop) {
             item->setGalleryCellSize({});
         }
@@ -149,15 +150,6 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             const qreal cy = margin + best * (rowH + gap) + rowH / 2.0;
             item->setPos(cx, cy);
             rowWidths[best] += w + gap;
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::Stack) {
-        for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
-            const qreal scale = qMin(availW / qMax(1.0, ns.width()),
-                                    availH / qMax(1.0, ns.height()));
-            item->setItemScale(scale);
-            item->setPos(margin + availW / 2.0, margin + availH / 2.0);
             finish(item, afterEach);
         }
     }

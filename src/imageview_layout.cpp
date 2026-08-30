@@ -281,6 +281,26 @@ void ImageView::prepareImageModeCanvas()
     m_fillMode = false;
 }
 
+void ImageView::prepareGalleryCanvas()
+{
+    // Drop Image-mode fit transforms and prior layout scene rects so the previous
+    // frame does not linger under the new packing (visible "ghost" between switches).
+    m_undoStack->clear();
+    m_scene->clearSelection();
+    resetTransform();
+    if (horizontalScrollBar()) {
+        horizontalScrollBar()->setValue(0);
+    }
+    if (verticalScrollBar()) {
+        verticalScrollBar()->setValue(0);
+    }
+    m_scene->setSceneRect(QRectF());
+    m_fitMode = true;
+    m_fillMode = false;
+    // Force a blank pass before items are re-packed.
+    viewport()->update();
+}
+
 void ImageView::setViewMode(ViewMode mode)
 {
 
@@ -331,13 +351,15 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     // Gallery
+    prepareGalleryCanvas();
     m_viewMode = ViewMode::Gallery;
     if (m_layoutMode == LayoutMode::FreeForm) {
         m_layoutMode = LayoutMode::Masonry;
     }
-    viewport()->update();
     for (ImageItem *item : m_items) {
         applyItemModeFlags(item);
+        item->setItemOpacity(1.0);
+        item->setItemRotation(0.0);
     }
     if (!m_items.isEmpty()) {
         applyLayout();
@@ -359,10 +381,16 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
         snapshotFreeFormStates();
         snapshotWorkspace();
     }
+    // Clear residual Image/Workspace view state before packing so the old
+    // composition is not left painted behind the new layout.
+    prepareGalleryCanvas();
     m_viewMode = ViewMode::Gallery;
     m_layoutMode = packagedLayout;
     for (ImageItem *item : m_items) {
         applyItemModeFlags(item);
+        // Pack also resets these; do it here so a delayed layout still looks clean.
+        item->setItemOpacity(1.0);
+        item->setItemRotation(0.0);
     }
     applyLayout();
     emit statusChanged();
@@ -634,9 +662,6 @@ void ImageView::applyLayout()
         break;
     case LayoutMode::MasonryRows:
         params.mode = GalleryLayout::Mode::MasonryRows;
-        break;
-    case LayoutMode::Stack:
-        params.mode = GalleryLayout::Mode::Stack;
         break;
     default:
         params.mode = GalleryLayout::Mode::Masonry;
