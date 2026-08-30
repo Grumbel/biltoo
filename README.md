@@ -9,6 +9,8 @@ A classic Qt image viewer with three presentation modes on one canvas:
 Behavioural model (modes, operations, invariants): [DOMAIN.md](DOMAIN.md).
 Agent / contributor notes: [AGENTS.md](AGENTS.md).
 
+![QImgView main window](screenshot.png)
+
 ## Project home
 
 - GitHub: <https://github.com/Grumbel/qimgview>
