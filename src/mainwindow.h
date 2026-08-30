@@ -14,6 +14,7 @@
 class ThumbnailBar;
 class MetadataPanel;
 class QDockWidget;
+class QSplitter;
 class QToolBar;
 class QAction;
 class QActionGroup;
@@ -121,6 +122,7 @@ private:
 
     ImageView *m_imageView = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
+    QSplitter *m_centralSplitter = nullptr;
     MetadataPanel *m_metadataPanel = nullptr;
     QDockWidget *m_metadataDock = nullptr;
     QToolBar *m_toolBar = nullptr;

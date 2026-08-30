@@ -39,6 +39,7 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QUrl>
+#include <QSplitter>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <algorithm>
@@ -84,12 +85,12 @@ MainWindow::MainWindow(QWidget *parent)
     resize(1024, 768);
     setAcceptDrops(true);
 
-    auto *central = new QWidget(this);
-    auto *layout = new QVBoxLayout(central);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
+    m_centralSplitter = new QSplitter(Qt::Vertical, this);
+    m_centralSplitter->setObjectName(QStringLiteral("CentralSplitter"));
+    m_centralSplitter->setChildrenCollapsible(false);
+    m_centralSplitter->setHandleWidth(6);
 
-    m_imageView = new ImageView(central);
+    m_imageView = new ImageView(m_centralSplitter);
     m_imageView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_imageView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_imageView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -98,7 +99,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::mouseInfoChanged,
             this, &MainWindow::onMouseInfoChanged);
 
-    m_thumbnailBar = new ThumbnailBar(central);
+    m_thumbnailBar = new ThumbnailBar(m_centralSplitter);
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
     connect(m_thumbnailBar, &ThumbnailBar::indexAddToWorkspace,
@@ -108,9 +109,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::workspacePathsChanged,
             this, &MainWindow::onWorkspacePathsChanged);
 
-    layout->addWidget(m_imageView, 1);
-    layout->addWidget(m_thumbnailBar, 0);
-    setCentralWidget(central);
+    m_centralSplitter->addWidget(m_imageView);
+    m_centralSplitter->addWidget(m_thumbnailBar);
+    m_centralSplitter->setStretchFactor(0, 1);
+    m_centralSplitter->setStretchFactor(1, 0);
+    m_imageView->setMinimumHeight(120);
+    setCentralWidget(m_centralSplitter);
 
     m_metadataPanel = new MetadataPanel(this);
     m_metadataDock = new QDockWidget(tr("Metadata"), this);
@@ -1334,6 +1338,20 @@ void MainWindow::readSettings()
     }
     if (m_thumbnailBar) {
         m_thumbnailBar->setWorkspaceMode(m_workspaceMode);
+        const int thumbSize = settings.value(QStringLiteral("thumbnailSize"),
+                                             ThumbnailBar::kDefaultThumbSize).toInt();
+        m_thumbnailBar->setThumbSize(thumbSize);
+    }
+    if (m_centralSplitter) {
+        const QByteArray splitterState =
+            settings.value(QStringLiteral("centralSplitter")).toByteArray();
+        if (!splitterState.isEmpty()) {
+            m_centralSplitter->restoreState(splitterState);
+        } else if (m_thumbnailBar) {
+            // Default: image takes remaining space; thumb bar at preferred height
+            const int barH = ThumbnailBar::heightForThumbSize(m_thumbnailBar->thumbSize());
+            m_centralSplitter->setSizes({qMax(200, height() - barH - 80), barH});
+        }
     }
     updateWorkspaceActionVisibility();
 
@@ -1361,6 +1379,12 @@ void MainWindow::writeSettings()
     settings.remove(QStringLiteral("workspaceMode"));
     settings.setValue(QStringLiteral("scrollBarsVisible"),
                       m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
+    if (m_thumbnailBar) {
+        settings.setValue(QStringLiteral("thumbnailSize"), m_thumbnailBar->thumbSize());
+    }
+    if (m_centralSplitter) {
+        settings.setValue(QStringLiteral("centralSplitter"), m_centralSplitter->saveState());
+    }
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
