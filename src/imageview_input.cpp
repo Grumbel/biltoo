@@ -539,29 +539,8 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 return;
             }
         }
-        // Near-miss on selected chrome: keep selection. Falling through to
-        // QGraphicsView would clear selection when the click sits just outside
-        // the handle disc (common with rotation).
-        for (ImageItem *item : candidates) {
-            if (!item->isSelected() || !item->isInteractive()) {
-                continue;
-            }
-            // Expanded probe: any handle within 2.5× nominal screen size
-            const QPointF local = item->mapFromScene(scenePos);
-            // Temporarily rely on handleAt; if None, check distance to centres.
-            if (item->handleAt(local) != ImageItem::Handle::None) {
-                event->accept();
-                return;
-            }
-            const QRectF br = item->boundingRect();
-            // Map a small view-space pad into a scene test via item shape margin
-            if (item->contains(local) || br.adjusted(-40, -40, 40, 40).contains(local)) {
-                // Click on/near selected item body or chrome margin: do not
-                // let the default path deselect when the intent was chrome.
-                // Still allow the item handlers / move path below.
-                break;
-            }
-        }
+        // Empty-space clicks still fall through (clear selection). Clicks on a
+        // selected item body use the default move/select path below.
     }
 
     // Image mode: left/right edge clicks navigate the session
@@ -673,6 +652,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     if (m_handleDragItem && m_handleDragItem->hasActiveHandle()) {
         m_handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
                                                     event->modifiers());
+        viewport()->update(); // live chrome while scaling/rotating
         event->accept();
         return;
     }
@@ -742,12 +722,47 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                 break;
             }
         }
+        bool hoverChanged = false;
         for (ImageItem *item : candidates) {
-            item->setHoverHandle(item == hoverOwner ? hoverH : ImageItem::Handle::None);
+            const ImageItem::Handle next =
+                (item == hoverOwner) ? hoverH : ImageItem::Handle::None;
+            if (item->hoverHandle() != next) {
+                hoverChanged = true;
+            }
+            item->setHoverHandle(next);
         }
-        if (hoverOwner) {
-            // Keep chrome responsive without relying on QGraphicsItem hover delivery.
+        if (hoverChanged) {
+            // Chrome lives in drawForeground — always refresh when highlight moves.
             viewport()->update();
+        }
+        // Cursor for chrome even when QGraphicsItem hover is not delivered
+        // (handle outside shape / under another pixmap).
+        if (hoverOwner && hoverH != ImageItem::Handle::None) {
+            using H = ImageItem::Handle;
+            switch (hoverH) {
+            case H::RotateTop: case H::RotateRight:
+            case H::RotateBottom: case H::RotateLeft:
+                viewport()->setCursor(Qt::CrossCursor);
+                break;
+            case H::ScaleTopLeft: case H::ScaleBottomRight:
+            case H::ScaleTopRight: case H::ScaleBottomLeft:
+                viewport()->setCursor(Qt::SizeFDiagCursor);
+                break;
+            case H::ScaleTop: case H::ScaleBottom:
+                viewport()->setCursor(Qt::SizeVerCursor);
+                break;
+            case H::ScaleLeft: case H::ScaleRight:
+                viewport()->setCursor(Qt::SizeHorCursor);
+                break;
+            case H::OpacitySlider:
+                viewport()->setCursor(Qt::SizeHorCursor);
+                break;
+            default:
+                viewport()->setCursor(Qt::PointingHandCursor);
+                break;
+            }
+        } else if (!m_panning && !m_handleDragItem) {
+            viewport()->unsetCursor();
         }
     }
 

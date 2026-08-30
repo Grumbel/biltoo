@@ -42,10 +42,10 @@ QString tooltipForHandle(ImageItem::Handle h)
 } // namespace
 
 namespace {
-constexpr qreal kHandleScreenPx = 18.0;
-constexpr qreal kRotateOffsetPx = 40.0;
+constexpr qreal kHandleScreenPx = 22.0;
+constexpr qreal kRotateOffsetPx = 44.0;
 constexpr qreal kChromeBtnScreenPx = 28.0;   // flip / raise / lower diameter (screen px)
-constexpr qreal kChromeHitScreenPx = 22.0;   // hit radius in screen px (generous)
+constexpr qreal kChromeHitScreenPx = 24.0;   // hit radius in screen px (generous)
 constexpr qreal kChromeInsetPx = 12.0;       // inset from pixmap edge into the image
 constexpr qreal kChromeBtnGapPx = 8.0;       // gap between stacked chrome buttons
 constexpr qreal kSliderWidthPx = 100.0;
@@ -533,21 +533,59 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
 
     best = Handle::None;
     bestDist = kHandleScreenPx * 1.75;
-    QList<Handle> handles = {
+    // Corners and rotate handles: disc around centre.
+    QList<Handle> pointHandles = {
         Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
     };
     if (m_scaleHandlesEnabled) {
-        handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                                Handle::ScaleBottomLeft, Handle::ScaleBottomRight,
-                                Handle::ScaleTop, Handle::ScaleRight,
-                                Handle::ScaleBottom, Handle::ScaleLeft}
-                  + handles;
+        pointHandles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
+                                     Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
+                       + pointHandles;
     }
-    for (Handle h : handles) {
+    for (Handle h : pointHandles) {
         const qreal d = handleDistanceScreenPx(h, itemPos);
         if (d <= bestDist) {
             bestDist = d;
             best = h;
+        }
+    }
+
+    // Edge stretch: distance to the edge segment in view space (matches the
+    // thick bar drawn along the edge), not only the midpoint disc.
+    if (m_scaleHandlesEnabled) {
+        const QRectF r = QGraphicsPixmapItem::boundingRect();
+        struct EdgeSeg {
+            Handle h;
+            QPointF aLocal;
+            QPointF bLocal;
+        };
+        const qreal half = (kHandleScreenPx * 2.4) / screenScale() * 0.5;
+        const EdgeSeg edges[] = {
+            {Handle::ScaleTop,    QPointF(r.center().x() - half, r.top()),
+                                  QPointF(r.center().x() + half, r.top())},
+            {Handle::ScaleBottom, QPointF(r.center().x() - half, r.bottom()),
+                                  QPointF(r.center().x() + half, r.bottom())},
+            {Handle::ScaleLeft,   QPointF(r.left(), r.center().y() - half),
+                                  QPointF(r.left(), r.center().y() + half)},
+            {Handle::ScaleRight,  QPointF(r.right(), r.center().y() - half),
+                                  QPointF(r.right(), r.center().y() + half)},
+        };
+        const QPointF p = localToViewPx(itemPos);
+        const qreal edgeHit = kHandleScreenPx * 0.85; // half thickness + pad
+        for (const EdgeSeg &ed : edges) {
+            const QPointF a = localToViewPx(ed.aLocal);
+            const QPointF b = localToViewPx(ed.bLocal);
+            const QPointF ab = b - a;
+            const qreal ab2 = QPointF::dotProduct(ab, ab);
+            qreal t = 0.0;
+            if (ab2 > 1e-6) {
+                t = qBound(0.0, QPointF::dotProduct(p - a, ab) / ab2, 1.0);
+            }
+            const qreal d = QLineF(p, a + ab * t).length();
+            if (d <= edgeHit && d <= bestDist) {
+                bestDist = d;
+                best = ed.h;
+            }
         }
     }
     return best;
@@ -666,7 +704,8 @@ void ImageItem::setHoverHandle(Handle h)
         return;
     }
     m_hoverHandle = h;
-    update();
+    // Chrome is painted by ImageView::drawForeground; the view refreshes the
+    // viewport. Avoid item-only update which would miss external handle pads.
 }
 
 void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRect) const
