@@ -75,6 +75,7 @@ private slots:
     void setLayoutVertical();
     void setLayoutGrid();
     void setLayoutStack();
+    void setLayoutMasonry();
     void clearWorkspaceExtras();
     void opacityReset();
     void opacityDown();
@@ -162,6 +163,7 @@ private:
     QAction *m_layoutVerticalAct = nullptr;
     QAction *m_layoutGridAct = nullptr;
     QAction *m_layoutStackAct = nullptr;
+    QAction *m_layoutMasonryAct = nullptr;
     QAction *m_clearExtrasAct = nullptr;
     QAction *m_opacityResetAct = nullptr;
     QAction *m_opacityDownAct = nullptr;

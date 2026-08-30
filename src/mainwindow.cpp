@@ -322,11 +322,19 @@ void MainWindow::createActions()
     m_layoutStackAct->setStatusTip(tr("Stack images on top of each other for opacity comparison"));
     connect(m_layoutStackAct, &QAction::triggered, this, &MainWindow::setLayoutStack);
 
+    m_layoutMasonryAct = new QAction(tr("Layout &Masonry"), this);
+    m_layoutMasonryAct->setCheckable(true);
+    m_layoutMasonryAct->setIcon(themeIcon(QStringLiteral("view-full-screen"), QStyle::SP_FileDialogListView));
+    m_layoutMasonryAct->setStatusTip(
+        tr("Pack images into columns of equal width (Pinterest-style masonry)"));
+    connect(m_layoutMasonryAct, &QAction::triggered, this, &MainWindow::setLayoutMasonry);
+
     auto *layoutGroup = new QActionGroup(this);
     layoutGroup->addAction(m_layoutFreeFormAct);
     layoutGroup->addAction(m_layoutSideBySideAct);
     layoutGroup->addAction(m_layoutVerticalAct);
     layoutGroup->addAction(m_layoutGridAct);
+    layoutGroup->addAction(m_layoutMasonryAct);
     layoutGroup->addAction(m_layoutStackAct);
     layoutGroup->setExclusive(true);
 
@@ -485,6 +493,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_layoutSideBySideAct);
     m_viewMenu->addAction(m_layoutVerticalAct);
     m_viewMenu->addAction(m_layoutGridAct);
+    m_viewMenu->addAction(m_layoutMasonryAct);
     m_viewMenu->addAction(m_layoutStackAct);
     m_viewMenu->addAction(m_raiseAct);
     m_viewMenu->addAction(m_lowerAct);
@@ -534,6 +543,7 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_layoutSideBySideAct);
     m_contextMenu->addAction(m_layoutVerticalAct);
     m_contextMenu->addAction(m_layoutGridAct);
+    m_contextMenu->addAction(m_layoutMasonryAct);
     m_contextMenu->addAction(m_layoutStackAct);
     m_contextMenu->addAction(m_raiseAct);
     m_contextMenu->addAction(m_lowerAct);
@@ -574,6 +584,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_layoutSideBySideAct);
     m_toolBar->addAction(m_layoutVerticalAct);
     m_toolBar->addAction(m_layoutGridAct);
+    m_toolBar->addAction(m_layoutMasonryAct);
     m_toolBar->addAction(m_layoutStackAct);
     m_toolBar->addAction(m_raiseAct);
     m_toolBar->addAction(m_lowerAct);
@@ -1121,6 +1132,11 @@ void MainWindow::setLayoutStack()
     m_imageView->setLayoutMode(ImageView::LayoutMode::Stack);
 }
 
+void MainWindow::setLayoutMasonry()
+{
+    m_imageView->setLayoutMode(ImageView::LayoutMode::Masonry);
+}
+
 void MainWindow::raiseSelected()
 {
     m_imageView->raiseSelected();
@@ -1194,7 +1210,8 @@ void MainWindow::updateWorkspaceActionVisibility()
 {
     const bool on = m_workspaceMode;
     for (QAction *act : {m_layoutFreeFormAct, m_layoutSideBySideAct,
-                         m_layoutVerticalAct, m_layoutGridAct, m_layoutStackAct,
+                         m_layoutVerticalAct, m_layoutGridAct, m_layoutMasonryAct,
+                         m_layoutStackAct,
                          m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
                          m_clearExtrasAct, m_selectToolAct, m_panToolAct}) {

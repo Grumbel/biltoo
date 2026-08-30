@@ -15,6 +15,7 @@
 #include <QPaintEvent>
 #include <QScrollBar>
 #include <QSet>
+#include <QVector>
 #include <QWheelEvent>
 #include <QtMath>
 #include <cmath>
@@ -607,14 +608,53 @@ void ImageView::opacityReset()
     }
 }
 
+QSizeF ImageView::nativeSize(const ImageItem *item)
+{
+    if (!item) {
+        return {};
+    }
+    return QSizeF(item->pixmap().size());
+}
+
+void ImageView::snapshotFreeFormStates()
+{
+    m_freeFormStates.clear();
+    for (ImageItem *item : m_items) {
+        m_freeFormStates.insert(item->path(), captureState(item));
+    }
+}
+
+void ImageView::restoreFreeFormStates()
+{
+    for (ImageItem *item : m_items) {
+        const auto it = m_freeFormStates.constFind(item->path());
+        if (it != m_freeFormStates.constEnd()) {
+            applyState(item, *it);
+            m_itemStates.insert(item->path(), *it);
+        }
+    }
+}
+
 void ImageView::setLayoutMode(LayoutMode mode)
 {
-    m_layoutMode = mode;
-    if (mode != LayoutMode::FreeForm) {
-        applyLayout();
-    } else {
-        emit statusChanged();
+    if (m_layoutMode == LayoutMode::FreeForm && mode != LayoutMode::FreeForm) {
+        // Leaving free-form: remember positions for when the user returns
+        snapshotFreeFormStates();
     }
+
+    m_layoutMode = mode;
+
+    if (mode == LayoutMode::FreeForm) {
+        restoreFreeFormStates();
+        if (!m_items.isEmpty()) {
+            m_scene->setSceneRect(m_scene->itemsBoundingRect().adjusted(-64, -64, 64, 64));
+        }
+        m_fitMode = false;
+        emit statusChanged();
+        return;
+    }
+
+    applyLayout();
 }
 
 void ImageView::applyLayout()
@@ -623,9 +663,17 @@ void ImageView::applyLayout()
         return;
     }
 
-    const qreal gap = 24.0;
+    // Packaged layouts use view pixels as scene units so images scale to the window
+    resetTransform();
+    centerOn(0, 0);
 
-    // Normalise rotation for packaged layouts so edges align
+    const qreal margin = 16.0;
+    const qreal gap = 12.0;
+    const qreal availW = qMax(32.0, static_cast<qreal>(viewport()->width()) - 2.0 * margin);
+    const qreal availH = qMax(32.0, static_cast<qreal>(viewport()->height()) - 2.0 * margin);
+    const int n = m_items.size();
+
+    // Zero rotation so edges align (stack keeps rotation for A/B compare)
     if (m_layoutMode != LayoutMode::Stack) {
         for (ImageItem *item : m_items) {
             item->setItemRotation(0.0);
@@ -633,54 +681,88 @@ void ImageView::applyLayout()
     }
 
     if (m_layoutMode == LayoutMode::SideBySide) {
-        qreal x = 0.0;
+        const qreal cellW = (availW - gap * qMax(0, n - 1)) / qMax(1, n);
+        qreal x = margin;
         for (ImageItem *item : m_items) {
-            const QRectF br = item->boundingRect();
-            const qreal w = br.width() * item->itemScale();
-            const qreal h = br.height() * item->itemScale();
-            item->setPos(x + w / 2.0, h / 2.0);
-            x += w + gap;
+            const QSizeF ns = nativeSize(item);
+            const qreal scale = qMin(cellW / qMax(1.0, ns.width()),
+                                    availH / qMax(1.0, ns.height()));
+            item->setItemScale(scale);
+            item->setPos(x + cellW / 2.0, margin + availH / 2.0);
+            x += cellW + gap;
+            m_itemStates.insert(item->path(), captureState(item));
         }
     } else if (m_layoutMode == LayoutMode::Vertical) {
-        qreal y = 0.0;
+        const qreal cellH = (availH - gap * qMax(0, n - 1)) / qMax(1, n);
+        qreal y = margin;
         for (ImageItem *item : m_items) {
-            const QRectF br = item->boundingRect();
-            const qreal w = br.width() * item->itemScale();
-            const qreal h = br.height() * item->itemScale();
-            item->setPos(w / 2.0, y + h / 2.0);
-            y += h + gap;
+            const QSizeF ns = nativeSize(item);
+            const qreal scale = qMin(availW / qMax(1.0, ns.width()),
+                                    cellH / qMax(1.0, ns.height()));
+            item->setItemScale(scale);
+            item->setPos(margin + availW / 2.0, y + cellH / 2.0);
+            y += cellH + gap;
+            m_itemStates.insert(item->path(), captureState(item));
         }
     } else if (m_layoutMode == LayoutMode::Grid) {
-        const int n = m_items.size();
-        const int cols = qMax(1, int(std::ceil(std::sqrt(double(n)))));
-        qreal colWidth = 0.0;
-        qreal rowHeight = 0.0;
-        // First pass: max cell size
-        for (ImageItem *item : m_items) {
-            const QRectF br = item->boundingRect();
-            colWidth = qMax(colWidth, br.width() * item->itemScale());
-            rowHeight = qMax(rowHeight, br.height() * item->itemScale());
-        }
-        colWidth += gap;
-        rowHeight += gap;
+        const int cols = qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
+        const int rows = qMax(1, static_cast<int>(std::ceil(double(n) / double(cols))));
+        const qreal cellW = (availW - gap * qMax(0, cols - 1)) / cols;
+        const qreal cellH = (availH - gap * qMax(0, rows - 1)) / rows;
         for (int i = 0; i < n; ++i) {
             ImageItem *item = m_items.at(i);
             const int col = i % cols;
             const int row = i / cols;
-            const QRectF br = item->boundingRect();
-            const qreal w = br.width() * item->itemScale();
-            const qreal h = br.height() * item->itemScale();
-            item->setPos(col * colWidth + w / 2.0, row * rowHeight + h / 2.0);
+            const QSizeF ns = nativeSize(item);
+            const qreal scale = qMin(cellW / qMax(1.0, ns.width()),
+                                    cellH / qMax(1.0, ns.height()));
+            item->setItemScale(scale);
+            const qreal cx = margin + col * (cellW + gap) + cellW / 2.0;
+            const qreal cy = margin + row * (cellH + gap) + cellH / 2.0;
+            item->setPos(cx, cy);
+            m_itemStates.insert(item->path(), captureState(item));
+        }
+    } else if (m_layoutMode == LayoutMode::Masonry) {
+        // Column packing: fixed column width, place each image in the shortest column
+        constexpr qreal kTargetColW = 220.0;
+        int cols = qMax(1, static_cast<int>(std::floor(availW / kTargetColW)));
+        cols = qBound(1, cols, n);
+        const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
+        QVector<qreal> colHeights(cols, 0.0);
+
+        for (ImageItem *item : m_items) {
+            const QSizeF ns = nativeSize(item);
+            const qreal scale = colW / qMax(1.0, ns.width());
+            item->setItemScale(scale);
+            const qreal h = ns.height() * scale;
+
+            int best = 0;
+            for (int c = 1; c < cols; ++c) {
+                if (colHeights.at(c) < colHeights.at(best)) {
+                    best = c;
+                }
+            }
+
+            const qreal cx = margin + best * (colW + gap) + colW / 2.0;
+            const qreal cy = margin + colHeights.at(best) + h / 2.0;
+            item->setPos(cx, cy);
+            colHeights[best] += h + gap;
+            m_itemStates.insert(item->path(), captureState(item));
         }
     } else if (m_layoutMode == LayoutMode::Stack) {
-        // Overlap at the same centre for A/B comparison with opacity
+        // Scale each to fit the view; overlap at centre for A/B comparison
         for (ImageItem *item : m_items) {
-            item->setPos(0.0, 0.0);
+            const QSizeF ns = nativeSize(item);
+            const qreal scale = qMin(availW / qMax(1.0, ns.width()),
+                                    availH / qMax(1.0, ns.height()));
+            item->setItemScale(scale);
+            item->setPos(margin + availW / 2.0, margin + availH / 2.0);
+            m_itemStates.insert(item->path(), captureState(item));
         }
     }
 
-    m_scene->setSceneRect(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32));
-    fitInView(m_scene->sceneRect(), Qt::KeepAspectRatio);
+    const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-margin, -margin, margin, margin);
+    m_scene->setSceneRect(bounds);
     m_fitMode = true;
     emit statusChanged();
 }
@@ -841,6 +923,10 @@ void ImageView::wheelEvent(QWheelEvent *event)
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
+    if (m_workspaceMode && m_layoutMode != LayoutMode::FreeForm && !m_items.isEmpty()) {
+        applyLayout();
+        return;
+    }
     if (m_fitMode && m_items.size() == 1) {
         fitItem(m_items.first());
     }

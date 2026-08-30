@@ -109,7 +109,9 @@ public:
         SideBySide,
         Vertical,
         Grid,
-        Stack
+        Stack,
+        /** Column packing (Pinterest-style): fixed column width, variable height. */
+        Masonry
     };
 
     void setLayoutMode(LayoutMode mode);
@@ -161,16 +163,21 @@ private:
     void rememberItemState(ImageItem *item);
     void snapshotWorkspace();
     void restoreWorkspace();
+    void snapshotFreeFormStates();
+    void restoreFreeFormStates();
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
     int edgeZoneWidth() const;
     void updateHoverEdge(const QPoint &viewPos);
     void drawEdgeAffordances(QPainter &painter);
+    static QSizeF nativeSize(const ImageItem *item);
 
     QGraphicsScene *m_scene = nullptr;
     QList<ImageItem *> m_items;
     /** Persistent per-path transforms while workspace mode is active. */
     QHash<QString, WorkspaceItemState> m_itemStates;
+    /** Free-form positions restored when leaving a packaged layout. */
+    QHash<QString, WorkspaceItemState> m_freeFormStates;
     QList<WorkspaceItemState> m_savedWorkspace;
     QString m_classicPath;
 
