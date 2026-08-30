@@ -11,7 +11,7 @@ A classic Qt image viewer with **Gallery** layouts for browsing a session and an
 
 - Fast single-image browsing with zoom, pan, rotate, and flip
 - Thumbnail bar for the current session; open files or directories from the UI or the command line
-- **Gallery**: packaged layouts (horizontal/vertical strip, grid, grid-crop, masonry, stack); click an image to view it full size, **Up** to return
+- **Gallery**: packaged layouts (horizontal/vertical strip, grid, grid-crop, masonry); click an image to view it full size, **Up** to return
 - **Workspace mode**: free-form canvas — move, scale, rotate, opacity, and stacking order
 - Slideshow with optional fullscreen
 - Metadata panel (file info; optional Exif/IPTC/XMP when built with libexiv2)

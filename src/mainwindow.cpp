@@ -332,7 +332,7 @@ void MainWindow::toggleWorkspaceMode()
         // Uncheck gallery layout actions
         for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
                              m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
-                         m_layoutStackAct}) {
+                         }) {
             if (act) {
                 act->setChecked(false);
             }

@@ -103,27 +103,6 @@ void MainWindow::setLayoutGridCrop()
     updateWorkspaceActionVisibility();
 }
 
-void MainWindow::setLayoutStack()
-{
-    m_galleryReturnActive = false;
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setEnabled(false);
-    }
-    // Gallery is independent of Workspace Mode
-    m_workspaceMode = false;
-    m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(false);
-    m_imageView->enterGallery(ImageView::LayoutMode::Stack);
-    populateGalleryCanvas();
-    // Re-apply after items are on the canvas
-    m_imageView->enterGallery(ImageView::LayoutMode::Stack);
-    m_galleryReturnLayout = ImageView::LayoutMode::Stack;
-    if (m_layoutStackAct) {
-        m_layoutStackAct->setChecked(true);
-    }
-    updateMasonryCountControl();
-    updateWorkspaceActionVisibility();
-}
 
 void MainWindow::setLayoutMasonry()
 {
@@ -216,9 +195,6 @@ void MainWindow::returnToGallery()
         break;
     case ImageView::LayoutMode::GridCrop:
         if (m_layoutGridCropAct) m_layoutGridCropAct->setChecked(true);
-        break;
-    case ImageView::LayoutMode::Stack:
-        if (m_layoutStackAct) m_layoutStackAct->setChecked(true);
         break;
     case ImageView::LayoutMode::Masonry:
         if (m_layoutMasonryAct) m_layoutMasonryAct->setChecked(true);
@@ -335,8 +311,7 @@ void MainWindow::updateWorkspaceActionVisibility()
     //  loadFiles never refreshed visibility.)
     const bool canGallery = !m_files.isEmpty();
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
-                         m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
-                         m_layoutStackAct}) {
+                         m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(canGallery);

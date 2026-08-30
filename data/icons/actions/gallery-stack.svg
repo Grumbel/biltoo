@@ -1,9 +1,0 @@
-<!--
-SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
-SPDX-License-Identifier: GPL-3.0-or-later
--->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-  <rect x="5" y="3" width="13" height="13" rx="1.5" fill="#ed333b" opacity="0.85"/>
-  <rect x="3.5" y="5.5" width="13" height="13" rx="1.5" fill="#f66151"/>
-  <rect x="7" y="7.5" width="13" height="13" rx="1.5" fill="#f66151" stroke="#a51d2d" stroke-width="0.8"/>
-</svg>

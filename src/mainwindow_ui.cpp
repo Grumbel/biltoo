@@ -208,11 +208,6 @@ void MainWindow::createActions()
         tr("Gallery: square grid, images centre-cropped to fill each cell"));
     connect(m_layoutGridCropAct, &QAction::triggered, this, &MainWindow::setLayoutGridCrop);
 
-    m_layoutStackAct = new QAction(tr("Layout Stac&k"), this);
-    m_layoutStackAct->setCheckable(true);
-    m_layoutStackAct->setIcon(resourceIcon(QStringLiteral("gallery-stack")));
-    m_layoutStackAct->setStatusTip(tr("Stack images on top of each other for opacity comparison"));
-    connect(m_layoutStackAct, &QAction::triggered, this, &MainWindow::setLayoutStack);
 
     m_layoutMasonryAct = new QAction(tr("Layout &Masonry"), this);
     m_layoutMasonryAct->setCheckable(true);
@@ -243,7 +238,6 @@ void MainWindow::createActions()
     layoutGroup->addAction(m_layoutGridCropAct);
     layoutGroup->addAction(m_layoutMasonryAct);
     layoutGroup->addAction(m_layoutMasonryRowsAct);
-    layoutGroup->addAction(m_layoutStackAct);
     layoutGroup->setExclusive(true);
     // No default checked gallery layout until the user chooses one.
     for (QAction *act : layoutGroup->actions()) {
@@ -448,7 +442,6 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutGridCropAct);
     galleryMenu->addAction(m_layoutMasonryAct);
     galleryMenu->addAction(m_layoutMasonryRowsAct);
-    galleryMenu->addAction(m_layoutStackAct);
 
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_workspaceModeAct);
@@ -505,7 +498,6 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_layoutGridCropAct);
     m_contextMenu->addAction(m_layoutMasonryAct);
     m_contextMenu->addAction(m_layoutMasonryRowsAct);
-    m_contextMenu->addAction(m_layoutStackAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_workspaceModeAct);
     m_contextMenu->addAction(m_raiseAct);
@@ -579,7 +571,6 @@ void MainWindow::createToolBar()
                 }
             });
 
-    m_toolBar->addAction(m_layoutStackAct);
     m_toolBar->addAction(m_raiseAct);
     m_toolBar->addAction(m_lowerAct);
 

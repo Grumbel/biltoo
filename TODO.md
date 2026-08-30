@@ -11,12 +11,13 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 ## Done (recent)
 
 - [x] Gallery as its own ViewMode (not a Workspace layout)
-- [x] Packaged layouts: Horizontal, Vertical, Grid, Grid Crop, Masonry, Masonry Rows, Stack
+- [x] Packaged layouts: Horizontal, Vertical, Grid, Grid Crop, Masonry, Masonry Rows
 - [x] Gallery → Image on item open; **Up** returns with scroll/selection restore
 - [x] No move/handles outside Workspace; checkerboard optional via Preferences
 - [x] Configurable background colour / pattern
 - [x] VERSION file + Nix/CMake version wiring; separateDebugInfo
 - [x] Code layout: MainWindow / ImageView / ImageItem split TUs; GalleryLayout; icons helpers
+- [x] Clear residual view between Gallery layout switches; remove superfluous Stack layout
 
 ## Open
 

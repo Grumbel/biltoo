@@ -41,6 +41,5 @@
     <file alias="actions/gallery-grid-crop.svg">../data/icons/actions/gallery-grid-crop.svg</file>
     <file alias="actions/gallery-masonry.svg">../data/icons/actions/gallery-masonry.svg</file>
     <file alias="actions/gallery-masonry-rows.svg">../data/icons/actions/gallery-masonry-rows.svg</file>
-    <file alias="actions/gallery-stack.svg">../data/icons/actions/gallery-stack.svg</file>
   </qresource>
 </RCC>
