@@ -321,6 +321,8 @@ private:
     void rememberItemState(ImageItem *item);
     /** Detach from view state, remove from scene, delete. Safe against drag/handle ptrs. */
     void destroyCanvasItem(ImageItem *item);
+    /** Expand sceneRect around free-form items so pan/scrollbars have range. */
+    void updateWorkspaceSceneRect();
     void snapshotWorkspace();
     void restoreWorkspace();
     void snapshotFreeFormStates();

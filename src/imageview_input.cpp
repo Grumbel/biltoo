@@ -834,6 +834,11 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     if (m_panning) {
         const QPoint delta = event->pos() - m_lastMousePos;
         m_lastMousePos = event->pos();
+        // Grow the free-form sceneRect with the view so middle-drag is never
+        // clamped against a stale zero-range scrollbar.
+        if (isWorkspaceMode()) {
+            updateWorkspaceSceneRect();
+        }
         horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
         verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
         event->accept();
@@ -952,6 +957,9 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         }
         m_handleDragItem = nullptr;
         m_dragItem = nullptr;
+        if (isWorkspaceMode()) {
+            updateWorkspaceSceneRect();
+        }
         event->accept();
         return;
     }
@@ -1023,6 +1031,9 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
             emit statusChanged();
         }
         m_dragItem = nullptr;
+        if (isWorkspaceMode()) {
+            updateWorkspaceSceneRect();
+        }
     }
 
     QGraphicsView::mouseReleaseEvent(event);

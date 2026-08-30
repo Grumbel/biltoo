@@ -271,6 +271,37 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     if (m_undoStack) {
         m_undoStack->clear();
     }
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+}
+
+void ImageView::updateWorkspaceSceneRect()
+{
+    if (!m_scene || !isWorkspaceMode()) {
+        return;
+    }
+    QRectF bounds = m_scene->itemsBoundingRect();
+    // Viewport in scene coordinates — ensure room to pan around content.
+    const QRectF viewScene = mapToScene(viewport()->rect()).boundingRect();
+    const qreal mx = qMax(96.0, viewScene.width() * 0.35);
+    const qreal my = qMax(96.0, viewScene.height() * 0.35);
+    if (!bounds.isValid() || bounds.isEmpty()) {
+        bounds = viewScene.adjusted(-mx, -my, mx, my);
+    } else {
+        bounds.adjust(-mx, -my, mx, my);
+        // Keep a viewport-sized halo so middle-drag can always move a little.
+        bounds = bounds.united(viewScene.adjusted(-mx, -my, mx, my));
+    }
+    // Avoid feedback loops from tiny float noise.
+    const QRectF cur = m_scene->sceneRect();
+    if (qAbs(cur.left() - bounds.left()) < 1.0
+        && qAbs(cur.top() - bounds.top()) < 1.0
+        && qAbs(cur.width() - bounds.width()) < 1.0
+        && qAbs(cur.height() - bounds.height()) < 1.0) {
+        return;
+    }
+    m_scene->setSceneRect(bounds);
 }
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
@@ -403,6 +434,7 @@ void ImageView::setViewMode(ViewMode mode)
                 m_items.first()->setSelected(true);
             }
         }
+        updateWorkspaceSceneRect();
         emit statusChanged();
         return;
     }
@@ -553,6 +585,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos)
             m_scene->clearSelection();
         }
         existing->setSelected(true);
+        updateWorkspaceSceneRect();
         ensureVisibleItem(existing);
         emit statusChanged();
         return true;

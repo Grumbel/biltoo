@@ -275,6 +275,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
 
     if (m_layoutMode != LayoutMode::FreeForm) {
         applyLayout();
+    } else {
+        updateWorkspaceSceneRect();
     }
     emit statusChanged();
     emit workspacePathsChanged();
