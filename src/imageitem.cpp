@@ -17,6 +17,26 @@
 #include <QtMath>
 
 namespace {
+QString tooltipForHandle(ImageItem::Handle h)
+{
+    switch (h) {
+    case ImageItem::Handle::FlipH:
+        return QObject::tr("Flip horizontal");
+    case ImageItem::Handle::FlipV:
+        return QObject::tr("Flip vertical");
+    case ImageItem::Handle::Raise:
+        return QObject::tr("Raise (bring forward)");
+    case ImageItem::Handle::Lower:
+        return QObject::tr("Lower (send backward)");
+    case ImageItem::Handle::OpacitySlider:
+        return QObject::tr("Opacity");
+    default:
+        return QString();
+    }
+}
+} // namespace
+
+namespace {
 constexpr qreal kHandleScreenPx = 13.0;
 constexpr qreal kRotateOffsetPx = 32.0;
 constexpr qreal kChromeBtnScreenPx = 28.0;   // raise / lower button diameter
@@ -689,6 +709,7 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
         const Handle h = handleAt(event->pos());
         if (h != m_hoverHandle) {
             m_hoverHandle = h;
+            setToolTip(tooltipForHandle(h));
             update();
         }
         switch (h) {
@@ -728,6 +749,7 @@ void ImageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
     if (m_hoverHandle != Handle::None) {
         m_hoverHandle = Handle::None;
+        setToolTip(QString());
         update();
     }
     unsetCursor();
