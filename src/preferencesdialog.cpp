@@ -16,6 +16,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QTabWidget>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
@@ -112,14 +113,26 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     auto *viewGroup = new QGroupBox(tr("View"), this);
     viewGroup->setLayout(viewForm);
 
-    // --- Default application (GIO) ---
-    auto *defaultsGroup = new QGroupBox(tr("Default application"), this);
-    auto *defaultsLayout = new QVBoxLayout(defaultsGroup);
+    // --- General tab (slideshow / session / view) ---
+    auto *generalPage = new QWidget(this);
+    auto *generalLayout = new QVBoxLayout(generalPage);
+    generalLayout->setContentsMargins(8, 8, 8, 8);
+    generalLayout->setSpacing(12);
+    generalLayout->addWidget(slideshowGroup);
+    generalLayout->addWidget(sessionGroup);
+    generalLayout->addWidget(viewGroup);
+    generalLayout->addStretch(1);
 
-    m_mimeStatusLabel = new QLabel(this);
+    // --- Default application tab (GIO) ---
+    auto *defaultsPage = new QWidget(this);
+    auto *defaultsLayout = new QVBoxLayout(defaultsPage);
+    defaultsLayout->setContentsMargins(8, 8, 8, 8);
+    defaultsLayout->setSpacing(8);
+
+    m_mimeStatusLabel = new QLabel(defaultsPage);
     m_mimeStatusLabel->setWordWrap(true);
 
-    m_mimeTree = new QTreeWidget(this);
+    m_mimeTree = new QTreeWidget(defaultsPage);
     m_mimeTree->setColumnCount(3);
     m_mimeTree->setHeaderLabels({tr("Type"), tr("MIME"), tr("Current default")});
     m_mimeTree->setRootIsDecorated(false);
@@ -130,8 +143,8 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_mimeTree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
     auto *btnRow = new QHBoxLayout;
-    m_setCheckedBtn = new QPushButton(tr("Set as default for &checked"), this);
-    m_setAllBtn = new QPushButton(tr("Set as default for &all listed"), this);
+    m_setCheckedBtn = new QPushButton(tr("Set as default for &checked"), defaultsPage);
+    m_setAllBtn = new QPushButton(tr("Set as default for &all listed"), defaultsPage);
     btnRow->addWidget(m_setCheckedBtn);
     btnRow->addWidget(m_setAllBtn);
     btnRow->addStretch(1);
@@ -143,6 +156,10 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     connect(m_setCheckedBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetDefaultForChecked);
     connect(m_setAllBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetDefaultForAll);
     refreshDefaultAppsList();
+
+    auto *tabs = new QTabWidget(this);
+    tabs->addTab(generalPage, tr("&General"));
+    tabs->addTab(defaultsPage, tr("&Default application"));
 
     // GNOME 2 HIG: Cancel left, OK right via QDialogButtonBox::GtkLayout-like order
     auto *buttons = new QDialogButtonBox(
@@ -156,14 +173,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(12, 12, 12, 12);
     layout->setSpacing(12);
-    layout->addWidget(slideshowGroup);
-    layout->addWidget(sessionGroup);
-    layout->addWidget(viewGroup);
-    layout->addWidget(defaultsGroup, 1);
+    layout->addWidget(tabs, 1);
     layout->addWidget(buttons);
 
     setMinimumWidth(520);
-    resize(560, 640);
+    resize(560, 520);
 }
 
 void PreferencesDialog::refreshDefaultAppsList()
