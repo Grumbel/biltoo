@@ -164,6 +164,24 @@ void ImageView::paintEvent(QPaintEvent *event)
 {
     QGraphicsView::paintEvent(event);
     QPainter painter(viewport());
+    // Workspace chrome in *viewport* device pixels (not scene drawForeground).
+    // Painting here keeps handles a constant on-screen size under any view or
+    // item scale — the same coordinate space as edge affordances and the HUD.
+    if (isWorkspaceMode() && m_scene) {
+        QList<ImageItem *> selected;
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (ii->isInteractive()) {
+                    selected.append(ii);
+                }
+            }
+        }
+        std::sort(selected.begin(), selected.end(),
+                  [](ImageItem *a, ImageItem *b) { return a->stackZ() < b->stackZ(); });
+        for (ImageItem *item : selected) {
+            item->paintInteractionChrome(&painter);
+        }
+    }
     if (m_hoverEdge != EdgeZone::None && isImageMode()
         && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
@@ -392,24 +410,10 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
+    // Chrome is painted in paintEvent (viewport device space) so handle size
+    // stays scale-invariant. Keep this override empty.
+    Q_UNUSED(painter);
     Q_UNUSED(rect);
-    if (!isWorkspaceMode() || !m_scene) {
-        return;
-    }
-    // Paint chrome above every image so handles never sit under a higher stackZ item.
-    QList<ImageItem *> selected;
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            if (ii->isInteractive()) {
-                selected.append(ii);
-            }
-        }
-    }
-    std::sort(selected.begin(), selected.end(),
-              [](ImageItem *a, ImageItem *b) { return a->stackZ() < b->stackZ(); });
-    for (ImageItem *item : selected) {
-        item->paintInteractionChrome(painter);
-    }
 }
 
 void ImageView::updateMouseInfo(const QPoint &viewPos)
@@ -449,8 +453,21 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 void ImageView::wheelEvent(QWheelEvent *event)
 {
-    // Gallery: scroll the view (do not zoom — packing owns item scale).
+    // Gallery: Ctrl+wheel (or Meta) zooms the view about the cursor — packing
+    // still owns item scale; default view transform on enter is 1:1. Plain
+    // wheel scrolls the packed scene when it overflows; Shift prefers horizontal.
     if (isGalleryMode()) {
+        const bool wantZoom = event->modifiers()
+                              & (Qt::ControlModifier | Qt::MetaModifier);
+        if (wantZoom) {
+            const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
+            m_fitMode = false;
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+            scale(factor, factor);
+            emit statusChanged();
+            event->accept();
+            return;
+        }
         QScrollBar *hBar = horizontalScrollBar();
         QScrollBar *vBar = verticalScrollBar();
         const bool canH = hBar && hBar->maximum() > hBar->minimum();
@@ -495,9 +512,14 @@ void ImageView::wheelEvent(QWheelEvent *event)
             moved = true;
         }
         if (!moved) {
-            // Layout still settling or no overflow: use QAbstractScrollArea
-            // (QGraphicsView does not scroll on wheel by default).
-            QAbstractScrollArea::wheelEvent(event);
+            // No overflow (common for Side-by-Side / Vertical fit): zoom the
+            // view so Horz/Vert can still inspect pixels. Default enter is 1:1.
+            const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
+            m_fitMode = false;
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+            scale(factor, factor);
+            emit statusChanged();
+            event->accept();
             return;
         }
         event->accept();
@@ -797,7 +819,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             item->setHoverHandle(next);
         }
         if (hoverChanged) {
-            // Chrome lives in drawForeground — always refresh when highlight moves.
+            // Chrome is painted in paintEvent — refresh viewport when highlight moves.
             viewport()->update();
         }
         // Cursor for chrome even when QGraphicsItem hover is not delivered

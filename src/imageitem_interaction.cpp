@@ -683,8 +683,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         return;
     }
 
-    // Selection transform chrome is painted by ImageView::drawForeground so
-    // handles sit above every image regardless of stackZ.
+    // Selection transform chrome is painted by ImageView::paintEvent (viewport
+    // device space) so handles sit above every image and stay scale-invariant.
     Q_UNUSED(r);
 }
 
@@ -714,9 +714,8 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     // transform. Only the logical handle centres are mapped through the item
     // transform — so scaleX/scaleY never stretch the controls.
     //
-    // Prefer the attached view's map so this works both from ImageItem::paint
-    // (painter already has item transform) and from ImageView::drawForeground
-    // (painter has only the view transform).
+    // Prefer the attached view's map so centres land in viewport pixels when
+    // called from ImageView::paintEvent (painter has identity / viewport space).
     QGraphicsView *view = nullptr;
     if (scene()) {
         const QList<QGraphicsView *> views = scene()->views();
