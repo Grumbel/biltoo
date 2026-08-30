@@ -229,13 +229,10 @@ void PreferencesDialog::onSetDefaultForChecked()
     if (!errors.isEmpty()) {
         QMessageBox::warning(
             this, tr("Default application"),
-            tr("Updated %1 of %2 types.
-
-%3")
+            tr("Updated %1 of %2 types.\n\n%3")
                 .arg(ok)
                 .arg(types.size())
-                .arg(errors.join(QLatin1Char('
-'))));
+                .arg(errors.join(QLatin1Char('\n'))));
     } else {
         QMessageBox::information(
             this, tr("Default application"),
