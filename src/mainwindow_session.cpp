@@ -1,56 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "mainwindow.h"
-#include "icons.h"
-#include "imageview.h"
-#include "imageloader.h"
-#include "thumbnailbar.h"
-#include "preferencesdialog.h"
-#include "metadatapanel.h"
-
-#include <QAbstractButton>
-#include <QAction>
-#include <QActionGroup>
-#include <QApplication>
-#include <QCloseEvent>
-#include <QColor>
-#include <QCollator>
-#include <QDir>
-#include <QDockWidget>
-#include <QDirIterator>
-#include <QDragEnterEvent>
-#include <QMimeData>
-#include <QDropEvent>
-#include <QEvent>
-#include <QFileDialog>
-#include <QFile>
-#include <QFileInfo>
-#include <QIcon>
-#include <QKeyEvent>
-#include <QKeySequence>
-#include <QLabel>
-#include <QMenu>
-#include <QMenuBar>
-#include <QMessageBox>
-#include <QSettings>
-#include <QSpinBox>
-#include <QStatusBar>
-#include <QShortcut>
-#include <QSignalBlocker>
-#include <QStyle>
-#include <QTimer>
-#include <QToolBar>
-#include <QToolButton>
-#include <QHBoxLayout>
-#include <QCursor>
-#include <QWindow>
-#include <QScreen>
-#include <QGuiApplication>
-#include <QSplitter>
-#include <QVBoxLayout>
-#include <QWidget>
-#include <algorithm>
+#include "mainwindow_includes.h"
 
 namespace {
 

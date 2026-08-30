@@ -33,6 +33,7 @@ add_executable(qimgview
   src/mainwindow_gallery.cpp
   src/mainwindow_session.cpp
   src/mainwindow.h
+  src/mainwindow_includes.h
   src/icons.cpp
   src/icons.h
   src/gallerylayout.cpp
