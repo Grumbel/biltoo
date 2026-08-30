@@ -537,6 +537,9 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     }
     if (layoutSwitch) {
         // Soft reset: keep items and selection paths; only clear view zoom.
+        // Drop scroll snapshot — user asked for a new layout, not return-from-Image.
+        m_haveGalleryScroll = false;
+        m_pendingGalleryRestore = false;
         resetTransform();
         m_fitMode = true;
         m_fillMode = false;
@@ -597,8 +600,11 @@ void ImageView::restoreGalleryViewport(const QString &focusPath)
         m_galleryFocusPath = focusPath;
     }
     m_pendingGalleryRestore = true;
-    // Try immediately if items already present (async loads will retry via applyLayout).
-    applyPendingGalleryRestore();
+    // Try immediately if already in Gallery with items; otherwise applyLayout
+    // will re-apply after each pack while pending stays true.
+    if (isGalleryMode()) {
+        applyPendingGalleryRestore();
+    }
 }
 
 void ImageView::applyPendingGalleryRestore()
@@ -606,34 +612,39 @@ void ImageView::applyPendingGalleryRestore()
     if (!m_pendingGalleryRestore || !isGalleryMode()) {
         return;
     }
-    ImageItem *focus = nullptr;
-    if (!m_galleryFocusPath.isEmpty()) {
-        focus = findItemByPath(m_galleryFocusPath);
-    }
-    if (focus) {
-        m_scene->clearSelection();
-        focus->setSelected(true);
-        // Scroll first to snapshot, then ensureVisible so the item is in view.
-        if (m_haveGalleryScroll) {
-            if (horizontalScrollBar()) {
-                horizontalScrollBar()->setValue(m_galleryScrollH);
-            }
-            if (verticalScrollBar()) {
-                verticalScrollBar()->setValue(m_galleryScrollV);
-            }
-        }
-        ensureVisible(focus, 48, 48);
-        m_pendingGalleryRestore = false;
-        return;
-    }
-    // Items still loading: restore scroll alone so the view is not jumped to origin.
-    if (m_haveGalleryScroll && !m_items.isEmpty()) {
+
+    // Prefer exact scrollbar snapshot from leaving Gallery (do not centerOn origin).
+    if (m_haveGalleryScroll) {
         if (horizontalScrollBar()) {
             horizontalScrollBar()->setValue(m_galleryScrollH);
         }
         if (verticalScrollBar()) {
             verticalScrollBar()->setValue(m_galleryScrollV);
         }
+    }
+
+    ImageItem *focus = nullptr;
+    if (!m_galleryFocusPath.isEmpty()) {
+        focus = findItemByPath(m_galleryFocusPath);
+    }
+    if (focus) {
+        focus->setSelected(true);
+        // Only nudge into view if the snapshot left the focus tile off-screen
+        // (e.g. window resized while in Image mode).
+        const QRectF viewScene = mapToScene(viewport()->rect()).boundingRect();
+        if (!viewScene.intersects(focus->sceneBoundingRect())) {
+            ensureVisible(focus, 48, 48);
+        }
+        if (m_galleryHoverPath != focus->path()) {
+            m_galleryHoverPath = focus->path();
+            viewport()->update();
+        }
+    }
+
+    // Keep pending until async LoadAdd finishes so later applyLayout packs
+    // do not leave the view at centerOn(0,0).
+    if (m_pendingWorkspacePaths.isEmpty()) {
+        m_pendingGalleryRestore = false;
     }
 }
 
@@ -850,7 +861,9 @@ void ImageView::applyLayout()
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     resetTransform();
-    centerOn(0, 0);
+    if (!m_pendingGalleryRestore) {
+        centerOn(0, 0);
+    }
 
     const qreal margin = 16.0;
     const qreal gap = 12.0;
@@ -903,6 +916,7 @@ void ImageView::applyLayout()
     // Keep the guard until after statusChanged so slots cannot re-enter layout.
     emit statusChanged();
     m_applyingLayout = false;
+    // Re-apply scroll after centerOn(0,0) above when returning from Image.
     applyPendingGalleryRestore();
 }
 

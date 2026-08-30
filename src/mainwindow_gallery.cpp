@@ -155,10 +155,14 @@ void MainWindow::returnToGallery()
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
                                   ? m_files.at(m_currentIndex)
                                   : QString();
-    enterGalleryMode(m_galleryReturnLayout);
-    if (!focusPath.isEmpty()) {
+    // Arm restore before re-enter so applyLayout re-applies the snapshot after
+    // packing (and after each async LoadAdd) instead of leaving centerOn(0,0).
+    if (m_imageView) {
         m_imageView->restoreGalleryViewport(focusPath);
-        m_imageView->focusSessionPath(focusPath);
+    }
+    enterGalleryMode(m_galleryReturnLayout);
+    if (m_imageView) {
+        m_imageView->applyPendingGalleryRestore();
     }
 }
 
