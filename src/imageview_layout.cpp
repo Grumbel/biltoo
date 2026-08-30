@@ -239,38 +239,54 @@ QPointF ImageView::findEmptyPlacement(const QSizeF &itemSize) const
     return viewRect.center();
 }
 
+void ImageView::destroyCanvasItem(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    // AUDIT H8/H9: clear every view-owned pointer before delete so paint /
+    // input cannot touch a dangling ImageItem (BSP crashes in scene paint).
+    if (item == m_dragItem) {
+        m_dragItem = nullptr;
+    }
+    if (item == m_rotateItem) {
+        m_rotateItem = nullptr;
+        m_rotating = false;
+    }
+    if (item == m_handleDragItem) {
+        m_handleDragItem = nullptr;
+    }
+    if (item == m_gallerySelectionAnchor) {
+        m_gallerySelectionAnchor = nullptr;
+    }
+    rememberItemState(item);
+    item->setSelected(false);
+    m_items.removeOne(item);
+    if (item->scene()) {
+        item->scene()->removeItem(item);
+    }
+    delete item;
+    // TransformCommand stores raw ImageItem*; drop undo history that would
+    // redo/undo against a deleted object.
+    if (m_undoStack) {
+        m_undoStack->clear();
+    }
+}
+
 void ImageView::setWorkspacePaths(const QStringList &paths)
 {
     if (isImageMode()) {
         return;
     }
 
-    // Remember state of items that will be removed
     QSet<QString> wanted(paths.begin(), paths.end());
     for (int i = m_items.size() - 1; i >= 0; --i) {
         ImageItem *item = m_items.at(i);
         if (!wanted.contains(item->path())) {
-            if (item == m_dragItem) {
-                m_dragItem = nullptr;
-            }
-            if (item == m_rotateItem) {
-                m_rotateItem = nullptr;
-                m_rotating = false;
-            }
-            if (item == m_handleDragItem) {
-                m_handleDragItem = nullptr;
-            }
-            if (item == m_gallerySelectionAnchor) {
-                m_gallerySelectionAnchor = nullptr;
-            }
-            rememberItemState(item);
-            m_scene->removeItem(item);
-            m_items.removeAt(i);
-            delete item;
+            destroyCanvasItem(item);
         }
     }
 
-    // Load missing paths off the GUI thread
     for (const QString &path : paths) {
         if (findItemByPath(path)) {
             continue;
@@ -278,7 +294,6 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
         scheduleImageLoad(path, LoadAdd);
     }
 
-    // Select something if nothing selected
     if (m_scene->selectedItems().isEmpty() && !m_items.isEmpty()) {
         m_items.last()->setSelected(true);
     }
@@ -294,11 +309,9 @@ void ImageView::removeWorkspacePath(const QString &path)
     if (!item) {
         return;
     }
-    rememberItemState(item);
     m_pendingWorkspacePaths.remove(path);
-    m_items.removeOne(item);
-    m_scene->removeItem(item);
-    delete item;
+    m_pendingScenePos.remove(path);
+    destroyCanvasItem(item);
     emit statusChanged();
     emit workspacePathsChanged();
 }

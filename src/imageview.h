@@ -319,6 +319,8 @@ private:
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void rememberItemState(ImageItem *item);
+    /** Detach from view state, remove from scene, delete. Safe against drag/handle ptrs. */
+    void destroyCanvasItem(ImageItem *item);
     void snapshotWorkspace();
     void restoreWorkspace();
     void snapshotFreeFormStates();

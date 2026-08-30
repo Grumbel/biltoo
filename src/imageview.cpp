@@ -287,20 +287,7 @@ void ImageView::clearExtras()
     }
     ImageItem *keep = m_items.first();
     for (int i = m_items.size() - 1; i >= 1; --i) {
-        ImageItem *item = m_items.takeAt(i);
-        if (item == m_handleDragItem) {
-            m_handleDragItem = nullptr;
-        }
-        if (item == m_dragItem) {
-            m_dragItem = nullptr;
-        }
-        if (item == m_rotateItem) {
-            m_rotateItem = nullptr;
-            m_rotating = false;
-        }
-        rememberItemState(item);
-        m_scene->removeItem(item);
-        delete item;
+        destroyCanvasItem(m_items.at(i));
     }
     m_scene->clearSelection();
     if (isMultiItemMode()) {

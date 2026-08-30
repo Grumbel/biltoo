@@ -171,7 +171,9 @@ void ImageView::paintEvent(QPaintEvent *event)
         QList<ImageItem *> selected;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive()) {
+                // Only paint chrome for items we still own (guards against a
+                // stale selection entry after destroyCanvasItem).
+                if (ii->isInteractive() && m_items.contains(ii)) {
                     selected.append(ii);
                 }
             }
@@ -1150,29 +1152,15 @@ void ImageView::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_Delete
         || (event->key() == Qt::Key_Backspace && isWorkspaceMode())) {
         // Remove selected items from the workspace (session list is unchanged);
-        // remember transform so re-selecting the thumbnail restores position.
+        // remember transform so re-adding restores position.
         const QList<QGraphicsItem *> selected = m_scene->selectedItems();
         bool removed = false;
         for (QGraphicsItem *gi : selected) {
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (item == m_handleDragItem) {
-                    m_handleDragItem = nullptr;
+                if (m_items.contains(item)) {
+                    destroyCanvasItem(item);
+                    removed = true;
                 }
-                if (item == m_dragItem) {
-                    m_dragItem = nullptr;
-                }
-                if (item == m_rotateItem) {
-                    m_rotateItem = nullptr;
-                    m_rotating = false;
-                }
-                if (item == m_gallerySelectionAnchor) {
-                    m_gallerySelectionAnchor = nullptr;
-                }
-                rememberItemState(item);
-                m_items.removeOne(item);
-                m_scene->removeItem(item);
-                delete item;
-                removed = true;
             }
         }
         if (removed) {
