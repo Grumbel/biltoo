@@ -485,21 +485,10 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 void ImageView::wheelEvent(QWheelEvent *event)
 {
-    // Gallery: Ctrl+wheel (or Meta) zooms the view about the cursor — packing
-    // still owns item scale; default view transform on enter is 1:1. Plain
-    // wheel scrolls the packed scene when it overflows; Shift prefers horizontal.
+    // Gallery: wheel only scrolls the packed scene. Zoom belongs to Image mode
+    // (and Workspace). Never scale the view from the wheel here — that felt
+    // random when overflow was small or Ctrl was held accidentally.
     if (isGalleryMode()) {
-        const bool wantZoom = event->modifiers()
-                              & (Qt::ControlModifier | Qt::MetaModifier);
-        if (wantZoom) {
-            const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
-            m_fitMode = false;
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-            scale(factor, factor);
-            emit statusChanged();
-            event->accept();
-            return;
-        }
         QScrollBar *hBar = horizontalScrollBar();
         QScrollBar *vBar = verticalScrollBar();
         const bool canH = hBar && hBar->maximum() > hBar->minimum();
@@ -524,9 +513,7 @@ void ImageView::wheelEvent(QWheelEvent *event)
             }
         }
 
-        // Horizontal strip layouts: vertical wheel should pan sideways (same as
-        // Masonry Rows). Do not rely on !canV — a few pixels of vertical range
-        // from scene margins would otherwise swallow the wheel as a no-op zoom.
+        // Horizontal strip layouts: vertical wheel pans sideways.
         const bool preferHorizontalScroll =
             m_layoutMode == LayoutMode::SideBySide
             || m_layoutMode == LayoutMode::MasonryRows;
@@ -535,7 +522,6 @@ void ImageView::wheelEvent(QWheelEvent *event)
             dx = dy;
             dy = 0;
         } else if (dx == 0 && dy != 0 && !canV && canH) {
-            // Other layouts: map to the only scrollable axis when needed.
             dx = dy;
             dy = 0;
         } else if (dy == 0 && dx != 0 && !canH && canV) {
@@ -543,26 +529,13 @@ void ImageView::wheelEvent(QWheelEvent *event)
             dx = 0;
         }
 
-        bool moved = false;
         if (canH && dx != 0) {
             hBar->setValue(hBar->value() - dx);
-            moved = true;
         }
         if (canV && dy != 0) {
             vBar->setValue(vBar->value() - dy);
-            moved = true;
         }
-        if (!moved) {
-            // No overflow (common for Side-by-Side / Vertical fit): zoom the
-            // view so Horz/Vert can still inspect pixels. Default enter is 1:1.
-            const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
-            m_fitMode = false;
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-            scale(factor, factor);
-            emit statusChanged();
-            event->accept();
-            return;
-        }
+        // Accept even at scroll ends so the event does not fall through to zoom.
         event->accept();
         return;
     }
