@@ -10,7 +10,7 @@
 , version ? "0.1.0-dev"
 }:
 
-stdenv.mkDerivation rec {
+stdenv.mkDerivation (finalAttrs: {
   pname = "qimgview";
   inherit version;
 
@@ -30,8 +30,13 @@ stdenv.mkDerivation rec {
     glib
   ];
 
+  # Keep symbols, strip into a separate "debug" output for gdb/coredumpctl.
+  # Build with optimisations still on (not a full -O0 Debug build).
+  cmakeBuildType = "RelWithDebInfo";
+  separateDebugInfo = true;
+
   cmakeFlags = [
-    "-DPROJECT_VERSION_FULL=${version}"
+    "-DPROJECT_VERSION_FULL=${finalAttrs.version}"
   ];
 
   meta = with lib; {
@@ -42,4 +47,4 @@ stdenv.mkDerivation rec {
     platforms = platforms.linux;
     mainProgram = "qimgview";
   };
-}
+})

@@ -17,6 +17,9 @@ See [TODO.md](TODO.md) for the roadmap and open questions.
   - `nix develop` – development shell
   - `nix build` / `nix run` – package and run
 - Manual: standard out-of-source CMake against Qt6 Widgets.
+- Debug info: `nix build` uses **RelWithDebInfo** and `separateDebugInfo`
+  (symbols via `nix build .#debug`). Dev shell sets `CMAKE_BUILD_TYPE=Debug`
+  for local cmake builds.
 
 Version is the top-level plain-text `VERSION` file only (e.g. `0.1.0-dev` in
 git). Development builds append `.{revCount}+g{shortRev}` via the flake and
