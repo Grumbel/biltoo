@@ -140,6 +140,8 @@ public:
      * Pass total <= 1 or index < 0 to hide the prefix.
      */
     void setSessionPosition(int index, int total);
+    /** Select canvas item for @p path; ensure visible in Gallery. */
+    void focusSessionPath(const QString &path);
     int sessionIndex() const { return m_sessionIndex; }
     int sessionTotal() const { return m_sessionTotal; }
 
@@ -280,8 +282,6 @@ private:
     void applyItemModeFlags(ImageItem *item);
     void scheduleImageLoad(const QString &path, LoadRole role);
     ImageItem *findItemByPath(const QString &path) const;
-    /** Select canvas item for @p path; ensure visible in Gallery. */
-    void focusSessionPath(const QString &path);
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
     void updateMouseInfo(const QPoint &viewPos);

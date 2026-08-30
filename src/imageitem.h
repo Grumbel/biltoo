@@ -80,6 +80,7 @@ public:
 
     /** When false, the item cannot be selected or dragged (classic viewer). */
     void setInteractive(bool on);
+    bool isInteractive() const { return m_interactive; }
 
     /**
      * Gallery (packaged) layout: selectable but not movable; no on-canvas chrome.
