@@ -32,6 +32,23 @@ public:
     /** Programmatically set which rows are selected without emitting signals. */
     void setSelectedIndices(const QList<int> &indices);
 
+    /**
+     * Pixel size of the square thumbnail icon. Also adjusts preferred height
+     * (icon + label). When raised above the last decode size, thumbnails are
+     * reloaded asynchronously at the new resolution.
+     */
+    void setThumbSize(int pixels);
+    int thumbSize() const { return m_thumbSize; }
+
+    /** Preferred bar height for a given thumb icon size (icon + label + padding). */
+    static int heightForThumbSize(int thumbSize);
+    /** Thumb icon size that fits in a bar of the given height. */
+    static int thumbSizeForHeight(int height);
+
+    static constexpr int kDefaultThumbSize = 96;
+    static constexpr int kMinThumbSize = 48;
+    static constexpr int kMaxThumbSize = 256;
+
 signals:
     void indexActivated(int index);
     /** Ctrl/Shift+click in classic mode: request adding this image to the workspace. */
@@ -41,7 +58,9 @@ signals:
 
 protected:
     QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
     void mousePressEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void onItemActivated(QListWidgetItem *item);
@@ -50,14 +69,16 @@ private slots:
 
 private:
     void cancelPendingLoads();
+    void applyThumbMetrics();
+    void scheduleThumbnailLoads();
     static QImage makeThumbnail(const QString &path, int maxSize);
-
-    static constexpr int kThumbSize = 96;
-    static constexpr int kBarHeight = 112;
 
     // Generation counter so stale async results are ignored after setFiles()
     std::atomic<quint64> m_generation{0};
     bool m_workspaceMode = false;
+    int m_thumbSize = kDefaultThumbSize;
+    int m_decodedSize = 0;
+    QStringList m_files;
 };
 
 #endif // THUMBNAILBAR_H
