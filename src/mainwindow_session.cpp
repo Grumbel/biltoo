@@ -535,16 +535,24 @@ void MainWindow::startSlideshow()
 
 void MainWindow::stopSlideshow()
 {
-    m_slideshowTimer->stop();
+    // Only announce when a running slideshow is actually stopped. Silent no-ops
+    // (mode switches, navigation while idle) must not flash "Stop" on the HUD.
+    const bool wasRunning = m_slideshowTimer && m_slideshowTimer->isActive();
+
+    if (m_slideshowTimer) {
+        m_slideshowTimer->stop();
+    }
     if (m_cursorHideTimer) {
         m_cursorHideTimer->stop();
     }
     showSlideshowCursor();
     qApp->removeEventFilter(this);
-    m_slideshowAct->setChecked(false);
-    m_slideshowAct->setText(tr("Play &Slideshow"));
-    m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
-    {
+    if (m_slideshowAct) {
+        m_slideshowAct->setChecked(false);
+        m_slideshowAct->setText(tr("Play &Slideshow"));
+        m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
+    }
+    if (wasRunning && m_imageView) {
         QString detail;
         if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
             detail = QFileInfo(m_files.at(m_currentIndex)).fileName();
