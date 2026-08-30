@@ -963,3 +963,7 @@ Gallery pack and workspace identity reviewed. Master priority list unchanged. St
 | M19 | Fixed | Thumbnail bar always starts file-drag after drag distance |
 | L27 | Fixed | Help → Keyboard Shortcuts (F1) |
 | M24 | Partial | CMake ctest smoke: qimgview --help |
+
+| M25 | Scaffolded | QTranslator load paths; CLI translate("main"); translations/README |
+| L22 | Fixed | Colour readout shows alpha when < 255 |
+| L24 | Noted | --fit remains documented default (no-op intentionally) |

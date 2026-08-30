@@ -9,6 +9,9 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QIcon>
+#include <QLibraryInfo>
+#include <QLocale>
+#include <QTranslator>
 
 int main(int argc, char *argv[])
 {
@@ -32,62 +35,88 @@ int main(int argc, char *argv[])
     }
     QApplication::setWindowIcon(appIcon);
 
+    // AUDIT M25: install UI + Qt base translators when .qm files are present.
+    QTranslator qtTranslator;
+    if (qtTranslator.load(QLocale(), QStringLiteral("qtbase"), QStringLiteral("_"),
+                          QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
+        app.installTranslator(&qtTranslator);
+    }
+    QTranslator appTranslator;
+    const QStringList appTrPaths = {
+        QStringLiteral(":/i18n"),
+        QCoreApplication::applicationDirPath() + QStringLiteral("/translations"),
+        QStringLiteral("%1/qimgview/translations")
+            .arg(QLibraryInfo::path(QLibraryInfo::PrefixPath) + QStringLiteral("/share")),
+    };
+    for (const QString &dir : appTrPaths) {
+        if (appTranslator.load(QLocale(), QStringLiteral("qimgview"), QStringLiteral("_"), dir)) {
+            app.installTranslator(&appTranslator);
+            break;
+        }
+    }
+
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        QStringLiteral("Classic Qt image viewer with workspace semantics"));
+        QCoreApplication::translate("main",
+            "Classic Qt image viewer with workspace semantics"));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addPositionalArgument(
         QStringLiteral("files"),
-        QStringLiteral("Image files or directories to open"),
+        QCoreApplication::translate("main", "Image files or directories to open"),
         QStringLiteral("[file|dir...]"));
 
     QCommandLineOption fullscreenOption(
         QStringList() << QStringLiteral("f") << QStringLiteral("fullscreen"),
-        QStringLiteral("Start in fullscreen mode"));
+        QCoreApplication::translate("main", "Start in fullscreen mode"));
     parser.addOption(fullscreenOption);
 
+    // Documented flag; fit-on-load is already the default Image-mode behaviour.
     QCommandLineOption fitOption(
         QStringList() << QStringLiteral("fit"),
-        QStringLiteral("Fit image to window on load (default behaviour)"));
+        QCoreApplication::translate("main",
+            "Fit image to window on load (default behaviour)"));
     parser.addOption(fitOption);
 
     QCommandLineOption startAtOption(
         QStringList() << QStringLiteral("start-at"),
-        QStringLiteral("Start at the N-th image (1-based)"),
+        QCoreApplication::translate("main", "Start at the N-th image (1-based)"),
         QStringLiteral("N"));
     parser.addOption(startAtOption);
 
     QCommandLineOption recursiveOption(
         QStringList() << QStringLiteral("r") << QStringLiteral("recursive"),
-        QStringLiteral("Recurse into subdirectories when a directory is given"));
+        QCoreApplication::translate("main",
+            "Recurse into subdirectories when a directory is given"));
     parser.addOption(recursiveOption);
 
     QCommandLineOption sortOption(
         QStringList() << QStringLiteral("sort"),
-        QStringLiteral("Sort images by name or mtime (default: name)"),
+        QCoreApplication::translate("main",
+            "Sort images by name or mtime (default: name)"),
         QStringLiteral("name|mtime"));
     parser.addOption(sortOption);
 
     QCommandLineOption slideshowOption(
         QStringList() << QStringLiteral("slideshow"),
-        QStringLiteral("Start a slideshow after loading images"));
+        QCoreApplication::translate("main", "Start a slideshow after loading images"));
     parser.addOption(slideshowOption);
 
     QCommandLineOption intervalOption(
         QStringList() << QStringLiteral("interval"),
-        QStringLiteral("Slideshow interval in milliseconds (default: 3000)"),
+        QCoreApplication::translate("main",
+            "Slideshow interval in milliseconds (default: 3000)"),
         QStringLiteral("ms"));
     parser.addOption(intervalOption);
 
     QCommandLineOption thumbnailsOption(
         QStringList() << QStringLiteral("thumbnails"),
-        QStringLiteral("Force show the thumbnail bar"));
+        QCoreApplication::translate("main", "Force show the thumbnail bar"));
     parser.addOption(thumbnailsOption);
 
     QCommandLineOption noThumbnailsOption(
         QStringList() << QStringLiteral("no-thumbnails"),
-        QStringLiteral("Force hide the thumbnail bar"));
+        QCoreApplication::translate("main", "Force hide the thumbnail bar"));
     parser.addOption(noThumbnailsOption);
 
     parser.process(app);

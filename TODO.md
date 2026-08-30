@@ -45,8 +45,13 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] M19 Thumbnail file-drag in Workspace (no Alt required)
 - [x] L27 Help → Keyboard Shortcuts (F1)
 - [x] M24 CMake smoke test (`qimgview --help`)
+- [x] M25 i18n scaffolding (translator load + CLI tr + translations/README)
+- [x] L22 Status colour shows alpha when present
 
 ## Open
+- Full `.ts` locale packs (community)
+- Deeper automated GUI tests
+
 
 ### Reported bugs (2026-08-30)
 

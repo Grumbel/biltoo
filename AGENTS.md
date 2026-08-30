@@ -134,8 +134,8 @@ invariant 6).
   `QAction` with a key sequence must be registered on the main window via
   `bindViewerShortcuts()` (`addAction` + `Qt::ApplicationShortcut`). Do not
   rely on menu-only WindowShortcut for viewer keys (H, Space, Ctrl+F, …).
-- Dual handle paths (item events + view-driven chrome hits) must stay consistent
-  with device-space chrome painting.
+- Transform chrome input is **owned by ImageView only** (viewport hits +
+  paintEvent). ImageItem must not begin handle drags or set chrome cursors.
 - Session ↔ canvas sync differs by mode; prefer named helpers over ad-hoc
   branches.
 - Action enablement should follow DOMAIN operation tables, not one-off checks.

@@ -109,6 +109,12 @@ install(FILES data/qimgview.metainfo.xml
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/metainfo)
 install(FILES data/icons/hicolor/scalable/apps/qimgview.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
+# Optional shipped .qm files (none required to build)
+file(GLOB QIMGVIEW_QM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/translations/*.qm")
+if(QIMGVIEW_QM_FILES)
+  install(FILES ${QIMGVIEW_QM_FILES}
+          DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/qimgview/translations)
+endif()
 
 message(STATUS "QImgView version: ${PROJECT_VERSION_FULL} (CMake PROJECT_VERSION=${PROJECT_VERSION})")
 

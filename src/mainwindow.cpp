@@ -690,23 +690,36 @@ void MainWindow::onMouseInfoChanged(const ImageMouseInfo &info)
         return;
     }
     const QColor &c = info.pixelColor;
-    m_mouseLabel->setText(
-        tr("(%1, %2)  RGB %3 %4 %5")
-            .arg(info.imagePos.x())
-            .arg(info.imagePos.y())
-            .arg(c.red())
-            .arg(c.green())
-            .arg(c.blue()));
-    if (m_colorSwatch) {
-        m_colorSwatch->setStyleSheet(
-            QStringLiteral("QLabel { border: 1px solid #888; background-color: %1; }")
-                .arg(c.name()));
-        m_colorSwatch->setToolTip(
-            tr("RGB %1 %2 %3 (%4)")
+    if (c.alpha() < 255) {
+        m_mouseLabel->setText(
+            tr("(%1, %2)  RGBA %3 %4 %5 %6")
+                .arg(info.imagePos.x())
+                .arg(info.imagePos.y())
                 .arg(c.red())
                 .arg(c.green())
                 .arg(c.blue())
-                .arg(c.name()));
+                .arg(c.alpha()));
+    } else {
+        m_mouseLabel->setText(
+            tr("(%1, %2)  RGB %3 %4 %5")
+                .arg(info.imagePos.x())
+                .arg(info.imagePos.y())
+                .arg(c.red())
+                .arg(c.green())
+                .arg(c.blue()));
+    }
+    if (m_colorSwatch) {
+        m_colorSwatch->setStyleSheet(
+            QStringLiteral("QLabel { border: 1px solid #888; background-color: %1; }")
+                .arg(c.name(QColor::HexArgb)));
+        m_colorSwatch->setToolTip(
+            c.alpha() < 255
+                ? tr("RGBA %1 %2 %3 %4 (%5)")
+                      .arg(c.red()).arg(c.green()).arg(c.blue()).arg(c.alpha())
+                      .arg(c.name(QColor::HexArgb))
+                : tr("RGB %1 %2 %3 (%4)")
+                      .arg(c.red()).arg(c.green()).arg(c.blue())
+                      .arg(c.name()));
     }
 }
 
