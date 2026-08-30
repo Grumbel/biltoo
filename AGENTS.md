@@ -4,10 +4,10 @@ Guidance for humans and automated agents working on this codebase.
 
 ## Project intent
 
-QImgView is a classic Qt (C++) image viewer. The central idea is that the
-image area behaves as a **workspace**: users can open one or many images,
-drop additional images onto the view, and freely scale / rotate / arrange
-them for comparison. It is *not* an image editor.
+QImgView is a classic Qt (C++) image viewer with three presentation modes
+(Image, Gallery, Workspace) on one canvas. Users browse a session, overview it
+in packed layouts, or arrange several images freely for comparison. It is
+*not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
 
@@ -59,18 +59,76 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
   that stack cleanly on the previous tip and use `HEAD` as the ref.
   Bundle numbers never repeat.
 
-## UI modes (terminology)
+## Domain model
 
-Use these names consistently in code comments, menus, and docs:
+Canonical, implementation-independent description of modes and operations:
+**[DOMAIN.md](DOMAIN.md)**. Read that before changing mode transitions, transform
+targets, or session ↔ canvas sync. If code and DOMAIN.md disagree, fix the code
+(or update DOMAIN.md only after explicit discussion).
 
-| Term | Meaning |
-|------|---------|
-| **Image mode** | Single-image viewing (`ImageView::ViewMode::Image`). Edge nav, slideshow, no multi-item placement. |
-| **Gallery mode** | Session overview (`ViewMode::Gallery`) with packaged layouts only. **Not** Workspace: no move, no handles, no opacity/z tools. Click → Image mode; **Up** / Esc return. |
-| **Workspace mode** | Free-form canvas only (`ViewMode::Workspace`). **Only** place for move, scale/rotate handles, opacity, raise/lower, Select/Pan. |
-| **Separation** | `ViewMode` is authoritative. Gallery never enables `ItemIsMovable` / interactive chrome. Packaged `applyLayout` runs only in Gallery. MainWindow `m_workspaceMode` tracks Workspace Mode only (not Gallery). |
+## Architecture & modes
 
-**UI:** View → **Gallery** (layouts) is separate from View → **Workspace Mode**. Toolbar shows gallery layout icons independently of the workspace tool strip (left, free-form only).
+### Layers
+
+| Layer | Owns | Role |
+|-------|------|------|
+| **MainWindow** | Session (`m_files`, current index), actions, slideshow, thumbnails, metadata, gallery-return memory | Application shell |
+| **ImageView** | Scene, canvas items, view transform, `ViewMode`, layouts, load pipeline, HUD, undo | Presentation |
+| **ImageItem** | Pixmap, path, scale/rotation/flips, opacity, z, chrome geometry | One canvas object |
+| **GalleryLayout** | Packing algorithms | Pure layout |
+| **ImageLoader** | Async decode | Worker |
+
+### Mode source of truth
+
+- **`ImageView::ViewMode`** is the only mode flag that matters.
+- Shell code must query `imageView->isImageMode()` / `isGalleryMode()` /
+  `isWorkspaceMode()` (or `viewMode()`). Do **not** reintroduce a parallel
+  `MainWindow::m_workspaceMode` boolean.
+- ThumbnailBar’s own “workspace mode” means **multi-select for session paths on
+  the canvas**, not a fourth app mode; keep that name local to the strip.
+
+### Mode table (short)
+
+| Mode | Canvas | Transforms | Session nav / slideshow |
+|------|--------|------------|-------------------------|
+| **Image** | ≤1 object, path = current | Rotate/flip/reset; **view** zooms | Yes |
+| **Gallery** | One object per session path, packed | None (open → Image) | No |
+| **Workspace** | Free objects, subset of session | Move/scale/rotate/opacity/z | No |
+
+### Ownership contracts
+
+| Mode | Object scale | Object rotation | View matrix |
+|------|-------------|----------------|-------------|
+| Image | Typically 1; view fits/zooms | Object keeps user orientation | Fit / zoom / pan |
+| Gallery | Set by layout | Neutral for packing | Scroll |
+| Workspace | Object (possibly anisotropic) | Object | Scene pan/zoom |
+
+`fitItem` must **not** clear rotation when re-fitting after rotate (DOMAIN
+invariant 6).
+
+### Transform targets
+
+- **Image:** primary (sole) canvas item.
+- **Workspace:** selection; if none and exactly one item, that item.
+- **Gallery:** no transform targets.
+
+### Mode transitions
+
+- Gallery layout actions → Gallery; remember layout for **Up**.
+- Open gallery cell → Image + gallery-return snapshot.
+- **Up** / return → Gallery only (never Workspace).
+- Workspace Mode action → Workspace (snapshot on leave, restore on enter).
+
+### Sharp edges (do not paper over)
+
+- Dual handle paths (item events + view-driven chrome hits) must stay consistent
+  with device-space chrome painting.
+- Session ↔ canvas sync differs by mode; prefer named helpers over ad-hoc
+  branches.
+- Action enablement should follow DOMAIN operation tables, not one-off checks.
+
+**UI:** Gallery layouts sit with Workspace Mode on the main toolbar; Raise/Lower
+and Select/Pan live on the vertical workspace tool strip.
 
 ## UI expectations (current)
 
