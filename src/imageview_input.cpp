@@ -524,9 +524,18 @@ void ImageView::wheelEvent(QWheelEvent *event)
             }
         }
 
-        // Most mice only report a vertical wheel. If the gallery only scrolls on
-        // the other axis (e.g. Horizontal strip), map the delta to that axis.
-        if (dx == 0 && dy != 0 && !canV && canH) {
+        // Horizontal strip layouts: vertical wheel should pan sideways (same as
+        // Masonry Rows). Do not rely on !canV — a few pixels of vertical range
+        // from scene margins would otherwise swallow the wheel as a no-op zoom.
+        const bool preferHorizontalScroll =
+            m_layoutMode == LayoutMode::SideBySide
+            || m_layoutMode == LayoutMode::MasonryRows;
+
+        if (preferHorizontalScroll && dx == 0 && dy != 0) {
+            dx = dy;
+            dy = 0;
+        } else if (dx == 0 && dy != 0 && !canV && canH) {
+            // Other layouts: map to the only scrollable axis when needed.
             dx = dy;
             dy = 0;
         } else if (dy == 0 && dx != 0 && !canH && canV) {
