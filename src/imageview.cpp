@@ -11,6 +11,8 @@
 #include <QImageReader>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QScrollBar>
 #include <QSet>
 #include <QWheelEvent>
@@ -295,6 +297,113 @@ void ImageView::setTool(Tool tool)
         setCursor(Qt::ArrowCursor);
     }
     emit toolChanged(m_tool);
+}
+
+void ImageView::setImageModeNavigationEnabled(bool on)
+{
+    if (m_imageModeNavEnabled == on) {
+        return;
+    }
+    m_imageModeNavEnabled = on;
+    if (!on) {
+        m_hoverEdge = EdgeZone::None;
+    }
+    viewport()->update();
+}
+
+int ImageView::edgeZoneWidth() const
+{
+    return qMax(48, static_cast<int>(width() * 0.12));
+}
+
+ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
+{
+    if (m_workspaceMode || !m_imageModeNavEnabled) {
+        return EdgeZone::None;
+    }
+    const int zone = edgeZoneWidth();
+    if (viewPos.x() < zone) {
+        return EdgeZone::Previous;
+    }
+    if (viewPos.x() > width() - zone) {
+        return EdgeZone::Next;
+    }
+    return EdgeZone::None;
+}
+
+void ImageView::updateHoverEdge(const QPoint &viewPos)
+{
+    const EdgeZone zone = edgeZoneAt(viewPos);
+    if (zone == m_hoverEdge) {
+        return;
+    }
+    m_hoverEdge = zone;
+    if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next) {
+        setCursor(Qt::PointingHandCursor);
+    } else if (!m_panning && !m_rotating) {
+        setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+    }
+    viewport()->update();
+}
+
+void ImageView::drawEdgeAffordances(QPainter &painter)
+{
+    if (m_hoverEdge == EdgeZone::None || m_workspaceMode || !m_imageModeNavEnabled) {
+        return;
+    }
+
+    const QRect vr = viewport()->rect();
+    const int zone = edgeZoneWidth();
+    const int cy = vr.center().y();
+    const int cx = (m_hoverEdge == EdgeZone::Previous)
+                       ? zone / 2
+                       : vr.width() - zone / 2;
+
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Soft hit-zone wash
+    QLinearGradient grad;
+    if (m_hoverEdge == EdgeZone::Previous) {
+        grad = QLinearGradient(0, 0, zone, 0);
+        grad.setColorAt(0.0, QColor(0, 0, 0, 90));
+        grad.setColorAt(1.0, QColor(0, 0, 0, 0));
+        painter.fillRect(QRect(0, 0, zone, vr.height()), grad);
+    } else {
+        grad = QLinearGradient(vr.width() - zone, 0, vr.width(), 0);
+        grad.setColorAt(0.0, QColor(0, 0, 0, 0));
+        grad.setColorAt(1.0, QColor(0, 0, 0, 90));
+        painter.fillRect(QRect(vr.width() - zone, 0, zone, vr.height()), grad);
+    }
+
+    // Circular button with chevron
+    const int r = 22;
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, 140));
+    painter.drawEllipse(QPoint(cx, cy), r, r);
+    painter.setBrush(QColor(255, 255, 255, 230));
+    painter.drawEllipse(QPoint(cx, cy), r - 3, r - 3);
+
+    QPainterPath chevron;
+    if (m_hoverEdge == EdgeZone::Previous) {
+        chevron.moveTo(cx + 5, cy - 10);
+        chevron.lineTo(cx - 6, cy);
+        chevron.lineTo(cx + 5, cy + 10);
+    } else {
+        chevron.moveTo(cx - 5, cy - 10);
+        chevron.lineTo(cx + 6, cy);
+        chevron.lineTo(cx - 5, cy + 10);
+    }
+    QPen pen(QColor(40, 40, 40), 3.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.strokePath(chevron, pen);
+}
+
+void ImageView::paintEvent(QPaintEvent *event)
+{
+    QGraphicsView::paintEvent(event);
+    if (m_hoverEdge != EdgeZone::None && !m_workspaceMode && m_imageModeNavEnabled) {
+        QPainter painter(viewport());
+        drawEdgeAffordances(painter);
+    }
 }
 
 bool ImageView::loadImage(const QString &path)
@@ -746,7 +855,23 @@ qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
-    // Classic viewer, or Pan tool: left-drag pans
+    // Image mode: left/right edge clicks navigate the session
+    if (!m_workspaceMode && event->button() == Qt::LeftButton
+        && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
+        const EdgeZone zone = edgeZoneAt(event->pos());
+        if (zone == EdgeZone::Previous) {
+            emit navigatePreviousRequested();
+            event->accept();
+            return;
+        }
+        if (zone == EdgeZone::Next) {
+            emit navigateNextRequested();
+            event->accept();
+            return;
+        }
+    }
+
+    // Image mode, or Pan tool: left-drag pans
     if (event->button() == Qt::LeftButton) {
         const bool wantPan = !m_workspaceMode
                              || m_tool == Tool::Pan
@@ -835,7 +960,24 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         return;
     }
 
+    if (!m_workspaceMode) {
+        updateHoverEdge(event->pos());
+    }
+
     QGraphicsView::mouseMoveEvent(event);
+}
+
+void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (!m_workspaceMode && event->button() == Qt::LeftButton) {
+        // Ignore double-clicks that land on the nav edge zones
+        if (edgeZoneAt(event->pos()) == EdgeZone::None) {
+            emit fullscreenToggleRequested();
+            event->accept();
+            return;
+        }
+    }
+    QGraphicsView::mouseDoubleClickEvent(event);
 }
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
@@ -915,6 +1057,10 @@ void ImageView::leaveEvent(QEvent *event)
     if (m_mouseInfo.valid) {
         m_mouseInfo = {};
         emit mouseInfoChanged(m_mouseInfo);
+    }
+    if (m_hoverEdge != EdgeZone::None) {
+        m_hoverEdge = EdgeZone::None;
+        viewport()->update();
     }
     QGraphicsView::leaveEvent(event);
 }

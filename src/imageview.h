@@ -32,13 +32,15 @@ struct WorkspaceItemState {
 
 /**
  * Image view with an optional multi-item workspace.
- * In classic mode the current image is shown centred and non-interactive.
+ *
+ * Image mode (workspace off): single centred non-interactive image. Left/right
+ * edge clicks navigate the session; hover shows arrow affordances; double-click
+ * toggles fullscreen.
+ *
+ * Workspace mode: setWorkspacePaths() controls which images are shown. Each
+ * path keeps position, scale, rotation, opacity and z-order while not shown.
  * Workspace state is snapshotted when the mode is turned off and restored
  * when it is turned back on.
- *
- * In workspace mode, setWorkspacePaths() controls which images are shown.
- * Each path keeps its position, scale, rotation, opacity and z-order even
- * while it is not currently selected (not shown on the canvas).
  */
 class ImageView : public QGraphicsView
 {
@@ -50,6 +52,13 @@ public:
         Pan
     };
 
+    /** Hover / hit zone on the left or right edge in Image mode. */
+    enum class EdgeZone {
+        None,
+        Previous,
+        Next
+    };
+
     explicit ImageView(QWidget *parent = nullptr);
     ~ImageView() override;
 
@@ -59,6 +68,13 @@ public:
     void setWorkspaceMode(bool on);
     bool workspaceMode() const { return m_workspaceMode; }
     void clearExtras();
+
+    /**
+     * Enable left/right edge navigation affordances in Image mode.
+     * Typically true when the session has more than one image.
+     */
+    void setImageModeNavigationEnabled(bool on);
+    bool imageModeNavigationEnabled() const { return m_imageModeNavEnabled; }
 
     /**
      * Show exactly the given paths on the workspace. Images already present
@@ -116,13 +132,20 @@ signals:
     void toolChanged(ImageView::Tool tool);
     /** Emitted when items are removed from the workspace (e.g. Delete key). */
     void workspacePathsChanged();
+    /** Image mode: user activated previous / next via edge click. */
+    void navigatePreviousRequested();
+    void navigateNextRequested();
+    /** Image mode: double-click requests fullscreen toggle. */
+    void fullscreenToggleRequested();
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -139,6 +162,10 @@ private:
     void snapshotWorkspace();
     void restoreWorkspace();
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
+    EdgeZone edgeZoneAt(const QPoint &viewPos) const;
+    int edgeZoneWidth() const;
+    void updateHoverEdge(const QPoint &viewPos);
+    void drawEdgeAffordances(QPainter &painter);
 
     QGraphicsScene *m_scene = nullptr;
     QList<ImageItem *> m_items;
@@ -151,6 +178,8 @@ private:
 
     bool m_fitMode = true;
     bool m_workspaceMode = false;
+    bool m_imageModeNavEnabled = false;
+    EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;
     ImageMouseInfo m_mouseInfo;
