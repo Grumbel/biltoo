@@ -168,6 +168,13 @@ QImage loadWithVips(const QString &path, int maxEdge)
         }
     }
 
+    // AUDIT M18: match Qt QImageReader::setAutoTransform — honour EXIF orientation.
+    VipsImage *rotated = nullptr;
+    if (vips_autorot(in, &rotated, nullptr) == 0 && rotated) {
+        g_object_unref(in);
+        in = rotated;
+    }
+
     QImage result = vipsToQImage(in);
     g_object_unref(in);
     return result;

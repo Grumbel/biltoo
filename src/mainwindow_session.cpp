@@ -23,6 +23,16 @@ bool MainWindow::isImageFile(const QString &path)
 
 QStringList MainWindow::expandPaths(const QStringList &paths) const
 {
+    // AUDIT M17: canonical paths so relative/absolute/symlink spellings dedup.
+    auto canonicalImage = [](const QString &path) -> QString {
+        const QFileInfo info(path);
+        if (!info.exists() || !info.isFile()) {
+            return {};
+        }
+        const QString resolved = info.canonicalFilePath();
+        return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
+    };
+
     QStringList images;
     for (const QString &path : paths) {
         const QFileInfo info(path);
@@ -35,11 +45,17 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             while (it.hasNext()) {
                 const QString full = it.next();
                 if (isImageFile(full)) {
-                    images.append(full);
+                    const QString c = canonicalImage(full);
+                    if (!c.isEmpty()) {
+                        images.append(c);
+                    }
                 }
             }
         } else if (info.isFile() && isImageFile(path)) {
-            images.append(path);
+            const QString c = canonicalImage(path);
+            if (!c.isEmpty()) {
+                images.append(c);
+            }
         }
     }
     return images;

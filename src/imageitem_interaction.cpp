@@ -997,108 +997,26 @@ void ImageItem::endHandleInteraction()
 
 void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    // Fallback only: ImageView resolves chrome hits first (device-space). This
-    // path runs when the scene delivers the event to the item body/handle.
-    if (m_interactive && event->button() == Qt::LeftButton
-        && beginHandleInteraction(event->scenePos(), event->modifiers())) {
-        event->accept();
-        return;
-    }
+    // AUDIT H2: transform chrome is owned exclusively by ImageView (viewport
+    // hit-testing + paintEvent). Item only handles body selection / move.
     QGraphicsPixmapItem::mousePressEvent(event);
 }
 
 void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    if (m_activeHandle != Handle::None) {
-        updateHandleInteraction(event->scenePos(), event->modifiers());
-        event->accept();
-        return;
-    }
     QGraphicsPixmapItem::mouseMoveEvent(event);
 }
 
 void ImageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    if (m_activeHandle != Handle::None && event->button() == Qt::LeftButton) {
-        endHandleInteraction();
-        event->accept();
-        return;
-    }
     QGraphicsPixmapItem::mouseReleaseEvent(event);
 }
 
 void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
-    if (!m_interactive && (flags() & ItemIsSelectable)) {
-        if (!m_galleryHovered) {
-            m_galleryHovered = true;
-            update();
-        }
-        setCursor(Qt::PointingHandCursor);
-        QGraphicsPixmapItem::hoverMoveEvent(event);
-        return;
-    }
-
-    if (m_interactive && isSelected()) {
-        const Handle h = handleAt(event->pos());
-        if (h != m_hoverHandle) {
-            m_hoverHandle = h;
-            setToolTip(tooltipForHandle(h));
-            update();
-        }
-        switch (h) {
-        case Handle::RotateTop:
-        case Handle::RotateRight:
-        case Handle::RotateBottom:
-        case Handle::RotateLeft:
-            setCursor(Qt::CrossCursor);
-            break;
-        case Handle::ScaleTopLeft:
-        case Handle::ScaleBottomRight: {
-            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
-            const bool swap = (a > 45.0 && a < 135.0);
-            setCursor(swap ? Qt::SizeBDiagCursor : Qt::SizeFDiagCursor);
-            break;
-        }
-        case Handle::ScaleTopRight:
-        case Handle::ScaleBottomLeft: {
-            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
-            const bool swap = (a > 45.0 && a < 135.0);
-            setCursor(swap ? Qt::SizeFDiagCursor : Qt::SizeBDiagCursor);
-            break;
-        }
-        case Handle::ScaleTop:
-        case Handle::ScaleBottom: {
-            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
-            setCursor((a > 45.0 && a < 135.0) ? Qt::SizeHorCursor : Qt::SizeVerCursor);
-            break;
-        }
-        case Handle::ScaleLeft:
-        case Handle::ScaleRight: {
-            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
-            setCursor((a > 45.0 && a < 135.0) ? Qt::SizeVerCursor : Qt::SizeHorCursor);
-            break;
-        }
-        case Handle::FlipH:
-        case Handle::FlipV:
-        case Handle::Raise:
-        case Handle::Lower:
-        case Handle::ResetScale:
-        case Handle::ResetRotation:
-            setCursor(Qt::PointingHandCursor);
-            break;
-        case Handle::OpacitySlider: {
-            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
-            setCursor((a > 45.0 && a < 135.0) ? Qt::SizeVerCursor : Qt::SizeHorCursor);
-            break;
-        }
-        default:
-            unsetCursor();
-            break;
-        }
-    } else {
-        unsetCursor();
-    }
+    // Gallery / Workspace hover chrome and cursors are driven by ImageView.
+    // Keep a neutral item cursor so it does not fight the viewport cursor.
+    unsetCursor();
     QGraphicsPixmapItem::hoverMoveEvent(event);
 }
 
@@ -1106,12 +1024,10 @@ void ImageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
     if (m_galleryHovered) {
         m_galleryHovered = false;
-        update();
     }
     if (m_hoverHandle != Handle::None) {
         m_hoverHandle = Handle::None;
         setToolTip(QString());
-        update();
     }
     unsetCursor();
     QGraphicsPixmapItem::hoverLeaveEvent(event);

@@ -407,13 +407,9 @@ void ImageView::refreshStatus()
 
 void ImageView::zoomViewBy(qreal factor)
 {
-    // Packaged layouts place items in viewport-pixel scene units and keep the
-    // view transform identity. Scaling the view breaks that invariant until the
-    // next resize reapplies the layout — skip view zoom there.
-    if (isGalleryMode()) {
-        return;
-    }
-
+    // Gallery: view zoom is allowed for inspection (matches wheel zoom). Pack /
+    // resize still resets the view transform so tiles stay layout-correct
+    // (AUDIT M4 — one policy: zoom works until next pack).
     m_fitMode = false;
     m_fillMode = false;
     // Keep the viewport centre stable when zooming via toolbar/shortcuts

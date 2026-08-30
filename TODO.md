@@ -34,6 +34,11 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] H3a LoadAdd does not advance load generation (won’t cancel LoadReplace)
 - [x] M20 Opacity Ctrl+Shift+± (no clash with Zoom Ctrl+±)
 - [x] M7a Stop slideshow when entering Gallery or Workspace
+- [x] H2 Chrome input owned only by ImageView
+- [x] M15 Single enterGallery after populate
+- [x] M4 Gallery toolbar zoom matches wheel (until pack)
+- [x] M17 Canonical session paths
+- [x] M18 VIPS EXIF autorot
 
 ## Open
 

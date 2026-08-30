@@ -950,6 +950,8 @@ Gallery pack and workspace identity reviewed. Master priority list unchanged. St
 | H3a | Fixed | Only `LoadReplace` increments `m_loadGeneration` |
 | M20 | Fixed | Opacity uses Ctrl+Shift+± |
 | M7a | Fixed | `stopSlideshow` on Gallery enter and Workspace enter |
-| H2 | Open | Dual chrome path — deferred |
-| M4 | Open | Gallery zoom policy — deferred |
-| M17/M18 | Open | Canonical paths / VIPS autorot — deferred |
+| H2 | Fixed | Item mouse/hover no longer drives handles; ImageView owns chrome |
+| M4 | Fixed | zoomViewBy works in Gallery (pack still resets view on relayout) |
+| M15 | Fixed | enterGalleryMode: populate then single enterGallery |
+| M17 | Fixed | expandPaths uses canonicalFilePath for session membership |
+| M18 | Fixed | VIPS load applies vips_autorot (EXIF orientation) |

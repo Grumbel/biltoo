@@ -35,9 +35,8 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
         m_thumbnailBar->setMultiSelectEnabled(false);
     }
     m_galleryReturnLayout = layout;
-    m_imageView->enterGallery(layout);
+    // AUDIT M15: one enterGallery after the canvas is populated (not before+after).
     populateGalleryCanvas();
-    // Re-apply after items are on the canvas so packing sees final geometry.
     m_imageView->enterGallery(layout);
 
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
