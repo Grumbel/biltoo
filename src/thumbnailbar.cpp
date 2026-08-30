@@ -5,6 +5,7 @@
 #include "imageloader.h"
 
 #include <QFileInfo>
+#include <QFont>
 #include <QListWidgetItem>
 #include <QMouseEvent>
 #include <QMetaObject>
@@ -13,8 +14,10 @@
 #include <algorithm>
 
 namespace {
-constexpr int kLabelPad = 28; // text + margins around the icon
-constexpr int kGridPadX = 12;
+// Space under/beside the icon for a single-line caption (font + small gap).
+// Kept tight so the strip is mostly image, not text.
+constexpr int kLabelPad = 16;
+constexpr int kGridPadX = 8;
 } // namespace
 
 ThumbnailBar::ThumbnailBar(QWidget *parent)
@@ -27,6 +30,17 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setUniformItemSizes(true);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setFocusPolicy(Qt::NoFocus);
+    setWordWrap(false);
+    setTextElideMode(Qt::ElideMiddle);
+
+    // Compact caption under the icon
+    QFont captionFont = font();
+    if (captionFont.pointSizeF() > 0) {
+        captionFont.setPointSizeF(qMax(8.0, captionFont.pointSizeF() - 1.5));
+    } else if (captionFont.pixelSize() > 0) {
+        captionFont.setPixelSize(qMax(10, captionFont.pixelSize() - 2));
+    }
+    setFont(captionFont);
 
     qRegisterMetaType<QImage>("QImage");
 
@@ -101,7 +115,7 @@ void ThumbnailBar::applyThumbMetrics()
         setMaximumHeight(QWIDGETSIZE_MAX);
     }
 
-    const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad - 4);
+    const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad);
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
             it->setSizeHint(hint);
@@ -196,7 +210,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
     clear();
     m_files = files;
 
-    const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad - 4);
+    const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad);
     for (const QString &path : files) {
         auto *item = new QListWidgetItem(this);
         item->setText(QFileInfo(path).fileName());
