@@ -74,7 +74,36 @@ void ImageItem::rotateBy(qreal degrees)
 void ImageItem::setItemOpacity(qreal opacity)
 {
     m_opacity = qBound(0.05, opacity, 1.0);
-    setOpacity(m_opacity);
+    // Keep QGraphicsItem opacity at 1 so handles/chrome stay solid; the
+    // pixmap is drawn with m_opacity in paint().
+    setOpacity(1.0);
+    update();
+}
+
+void ImageItem::setStackZ(qreal z)
+{
+    m_stackZ = z;
+    refreshStackingOrder();
+}
+
+void ImageItem::refreshStackingOrder()
+{
+    if (!m_interactive || !isSelected() || !scene()) {
+        setZValue(m_stackZ);
+        return;
+    }
+    qreal maxZ = m_stackZ;
+    for (QGraphicsItem *gi : scene()->items()) {
+        if (gi == this) {
+            continue;
+        }
+        if (auto *other = qgraphicsitem_cast<ImageItem *>(gi)) {
+            maxZ = qMax(maxZ, other->stackZ());
+        } else {
+            maxZ = qMax(maxZ, gi->zValue());
+        }
+    }
+    setZValue(maxZ + 1.0);
 }
 
 void ImageItem::setItemHFlip(bool on)
@@ -414,10 +443,10 @@ void ImageItem::activateChromeHandle(Handle h)
         toggleVFlip();
         break;
     case Handle::Raise:
-        setZValue(zValue() + 1.0);
+        setStackZ(m_stackZ + 1.0);
         break;
     case Handle::Lower:
-        setZValue(zValue() - 1.0);
+        setStackZ(m_stackZ - 1.0);
         break;
     default:
         break;
@@ -429,6 +458,7 @@ QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if (change == ItemSelectedHasChanged) {
         prepareGeometryChange();
+        refreshStackingOrder();
     }
     return QGraphicsPixmapItem::itemChange(change, value);
 }
@@ -436,13 +466,22 @@ QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
 void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                       QWidget *widget)
 {
-    QGraphicsPixmapItem::paint(painter, option, widget);
+    // Pixmap at item opacity; handles always fully opaque
+    {
+        QStyleOptionGraphicsItem opt = *option;
+        opt.state &= ~QStyle::State_Selected;
+        painter->save();
+        painter->setOpacity(m_opacity);
+        QGraphicsPixmapItem::paint(painter, &opt, widget);
+        painter->restore();
+    }
 
     if (!(option->state & QStyle::State_Selected) || !m_interactive) {
         return;
     }
 
     painter->save();
+    painter->setOpacity(1.0);
 
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     QPen pen(QColor(0, 160, 255), 0); // cosmetic width via setCosmetic
@@ -603,7 +642,14 @@ void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
             const qreal a0 = qAtan2(v0.y(), v0.x());
             const qreal a1 = qAtan2(v1.y(), v1.x());
             const qreal deltaDeg = qRadiansToDegrees(a1 - a0);
-            setItemRotation(m_pressRotation + deltaDeg);
+            qreal angle = m_pressRotation + deltaDeg;
+            // Shift → 45° snap, Ctrl → 90° snap (common CAD / design convention)
+            if (event->modifiers() & Qt::ControlModifier) {
+                angle = qRound(angle / 90.0) * 90.0;
+            } else if (event->modifiers() & Qt::ShiftModifier) {
+                angle = qRound(angle / 45.0) * 45.0;
+            }
+            setItemRotation(angle);
         } else {
             // Uniform scale from item centre based on distance ratio
             const QPointF centre = scenePos();

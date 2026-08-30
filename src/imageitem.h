@@ -47,6 +47,9 @@ public:
     qreal itemScale() const { return m_scale; }
     qreal itemRotation() const { return m_rotation; }
     qreal itemOpacity() const { return m_opacity; }
+    /** Persistent stacking order (selection may temporarily raise the item). */
+    qreal stackZ() const { return m_stackZ; }
+    void setStackZ(qreal z);
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }
 
@@ -96,6 +99,7 @@ protected:
 private:
     void applyLocalTransform();
     void updateDisplayedPixmap();
+    void refreshStackingOrder();
     void notifyViewStatus();
     QRectF contentRect() const;
     QPointF handleCenter(Handle h) const;
@@ -114,6 +118,7 @@ private:
     qreal m_scale = 1.0;
     qreal m_rotation = 0.0;
     qreal m_opacity = 1.0;
+    qreal m_stackZ = 0.0;
     bool m_hFlip = false;
     bool m_vFlip = false;
     bool m_interactive = false;

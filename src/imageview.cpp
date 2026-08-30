@@ -184,7 +184,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             item->setItemScale(1.0);
             item->setItemRotation(0.0);
             item->setItemOpacity(1.0);
-            item->setZValue(m_items.size() - 1);
+            item->setStackZ(m_items.size() - 1);
         } else {
             const auto it = m_itemStates.constFind(path);
             if (it != m_itemStates.constEnd()) {
@@ -214,7 +214,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.scale = item->itemScale();
     s.rotation = item->itemRotation();
     s.opacity = item->itemOpacity();
-    s.z = item->zValue();
+    s.z = item->stackZ();
     s.hFlip = item->itemHFlip();
     s.vFlip = item->itemVFlip();
     return s;
@@ -226,7 +226,7 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
     item->setItemScale(state.scale);
     item->setItemRotation(state.rotation);
     item->setItemOpacity(state.opacity);
-    item->setZValue(state.z);
+    item->setStackZ(state.z);
     item->setItemHFlip(state.hFlip);
     item->setItemVFlip(state.vFlip);
 }
@@ -987,7 +987,7 @@ void ImageView::rotateRight()
 void ImageView::raiseSelected()
 {
     if (ImageItem *item = targetItem()) {
-        item->setZValue(item->zValue() + 1.0);
+        item->setStackZ(item->stackZ() + 1.0);
         emit statusChanged();
     }
 }
@@ -995,7 +995,7 @@ void ImageView::raiseSelected()
 void ImageView::lowerSelected()
 {
     if (ImageItem *item = targetItem()) {
-        item->setZValue(item->zValue() - 1.0);
+        item->setStackZ(item->stackZ() - 1.0);
         emit statusChanged();
     }
 }
@@ -1482,7 +1482,17 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         const QPointF scenePos = mapToScene(event->pos());
         const qreal angle = angleAt(scenePos, m_rotateItem);
         const qreal delta = angle - m_rotateStartAngle;
-        m_rotateItem->setItemRotation(m_rotateItemStart + delta);
+        qreal rot = m_rotateItemStart + delta;
+        if (event->modifiers() & Qt::ControlModifier) {
+            rot = qRound(rot / 90.0) * 90.0;
+        } else if (event->modifiers() & Qt::ShiftModifier) {
+            // Shift is held to start free-rotate; add Ctrl for 90°, alone keep smooth
+            // unless also... User asked Ctrl/Shift snap. Shift starts rotate so
+            // during shift-drag, snap to 45 when Shift still held without wanting smooth.
+            // Use Ctrl=90 always; for shift-drag path Shift is always down — snap 45.
+            rot = qRound(rot / 45.0) * 45.0;
+        }
+        m_rotateItem->setItemRotation(rot);
         m_fitMode = false;
         emit statusChanged();
         event->accept();
