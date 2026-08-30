@@ -378,11 +378,12 @@ void MainWindow::createActions()
     m_layoutFreeFormAct->setStatusTip(tr("Place and move images freely on the workspace"));
     connect(m_layoutFreeFormAct, &QAction::triggered, this, &MainWindow::setLayoutFreeForm);
 
-    m_layoutSideBySideAct = new QAction(tr("Layout Side b&y Side"), this);
+    m_layoutSideBySideAct = new QAction(tr("Layout &Horizontal"), this);
     m_layoutSideBySideAct->setCheckable(true);
     m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
     m_layoutSideBySideAct->setIcon(resourceIcon(QStringLiteral("gallery-side-by-side")));
-    m_layoutSideBySideAct->setStatusTip(tr("Gallery: arrange images in a horizontal row"));
+    m_layoutSideBySideAct->setStatusTip(
+        tr("Gallery: horizontal strip (fit height, scroll sideways)"));
     connect(m_layoutSideBySideAct, &QAction::triggered, this, &MainWindow::setLayoutSideBySide);
 
     m_layoutVerticalAct = new QAction(tr("Layout &Vertical"), this);
@@ -417,11 +418,11 @@ void MainWindow::createActions()
         tr("Gallery: pack into N rows that fill the window height"));
     connect(m_layoutMasonryRowsAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryRows);
 
-    m_backToGalleryAct = new QAction(tr("&Back"), this);
-    m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-previous"), QStyle::SP_ArrowBack));
-    m_backToGalleryAct->setStatusTip(tr("Back to gallery"));
-    m_backToGalleryAct->setToolTip(tr("Back to gallery"));
-    m_backToGalleryAct->setVisible(false);
+    m_backToGalleryAct = new QAction(tr("&Up"), this);
+    m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-up"), QStyle::SP_ArrowUp));
+    m_backToGalleryAct->setStatusTip(tr("Up to gallery"));
+    m_backToGalleryAct->setToolTip(tr("Up to gallery"));
+    m_backToGalleryAct->setEnabled(false);
     connect(m_backToGalleryAct, &QAction::triggered, this, &MainWindow::returnToGallery);
 
     // Gallery layouts only (Workspace Mode is separate; Free Form is not a layout).
@@ -716,7 +717,7 @@ void MainWindow::createToolBar()
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
     // Left: file + undo/redo
-    // Back first (browser / file-manager style) when returning from Image mode
+    // Up to gallery (enabled only after opening an image from Gallery)
     m_toolBar->addAction(m_backToGalleryAct);
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_addAct);
@@ -1577,7 +1578,7 @@ void MainWindow::setLayoutSideBySide()
 {
     m_galleryReturnActive = false;
     if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(false);
+        m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
     m_workspaceMode = true; // multi-item session UI (thumbs)
@@ -1599,7 +1600,7 @@ void MainWindow::setLayoutVertical()
 {
     m_galleryReturnActive = false;
     if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(false);
+        m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
     m_workspaceMode = true; // multi-item session UI (thumbs)
@@ -1621,7 +1622,7 @@ void MainWindow::setLayoutGrid()
 {
     m_galleryReturnActive = false;
     if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(false);
+        m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
     m_workspaceMode = true; // multi-item session UI (thumbs)
@@ -1643,7 +1644,7 @@ void MainWindow::setLayoutStack()
 {
     m_galleryReturnActive = false;
     if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(false);
+        m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
     m_workspaceMode = true; // multi-item session UI (thumbs)
@@ -1665,7 +1666,7 @@ void MainWindow::setLayoutMasonry()
 {
     m_galleryReturnActive = false;
     if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(false);
+        m_backToGalleryAct->setEnabled(false);
     }
     m_workspaceMode = true;
     m_workspaceModeAct->setChecked(false);
@@ -1685,7 +1686,7 @@ void MainWindow::setLayoutMasonryRows()
 {
     m_galleryReturnActive = false;
     if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(false);
+        m_backToGalleryAct->setEnabled(false);
     }
     m_workspaceMode = true;
     m_workspaceModeAct->setChecked(false);
@@ -1719,9 +1720,7 @@ void MainWindow::openGalleryItemInImageMode(const QString &path)
     m_imageView->setViewMode(ImageView::ViewMode::Image);
     m_thumbnailBar->setWorkspaceMode(false);
     setCurrentIndex(idx);
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(m_galleryReturnActive);
-    }
+    updateUpToGalleryAction();
     updateWorkspaceActionVisibility();
 }
 
@@ -1730,6 +1729,7 @@ void MainWindow::returnToGallery()
     if (!m_galleryReturnActive) {
         return;
     }
+    m_galleryReturnActive = false;
     m_workspaceMode = true;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
@@ -1760,7 +1760,7 @@ void MainWindow::returnToGallery()
         break;
     }
     if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(false);
+        m_backToGalleryAct->setEnabled(false);
     }
     updateMasonryCountControl();
     updateWorkspaceActionVisibility();
@@ -1825,7 +1825,7 @@ void MainWindow::toggleWorkspaceMode()
     if (on) {
         m_galleryReturnActive = false;
         if (m_backToGalleryAct) {
-            m_backToGalleryAct->setVisible(false);
+            m_backToGalleryAct->setEnabled(false);
         }
         m_workspaceMode = true;
         m_thumbnailBar->setWorkspaceMode(true);
@@ -1927,8 +1927,19 @@ void MainWindow::updateThumbnailBarForMode()
     }
 }
 
+void MainWindow::updateUpToGalleryAction()
+{
+    if (!m_backToGalleryAct) {
+        return;
+    }
+    // Always shown; only enabled when Image mode was entered from Gallery.
+    m_backToGalleryAct->setVisible(true);
+    m_backToGalleryAct->setEnabled(m_galleryReturnActive);
+}
+
 void MainWindow::updateWorkspaceActionVisibility()
 {
+    updateUpToGalleryAction();
     const bool gallery = m_imageView && m_imageView->isGalleryMode();
     const bool workspace = m_imageView && m_imageView->isWorkspaceMode();
     // Gallery layout actions: always visible; enabled once a session exists.
@@ -1962,9 +1973,6 @@ void MainWindow::updateWorkspaceActionVisibility()
     }
     if (m_workspaceToolBar) {
         m_workspaceToolBar->setVisible(workspace && !isFullScreen());
-    }
-    if (m_backToGalleryAct && !m_galleryReturnActive) {
-        m_backToGalleryAct->setVisible(false);
     }
     updateThumbnailBarForMode();
     updateScrollBarPolicyForMode();

@@ -159,8 +159,8 @@ public:
      */
     enum class LayoutMode {
         FreeForm,
-        SideBySide,
-        Vertical,
+        SideBySide, // horizontal strip (UI: "Horizontal")
+        Vertical,   // vertical strip
         Grid,
         Stack,
         /** Column masonry: N columns spanning the view width; variable row heights. */

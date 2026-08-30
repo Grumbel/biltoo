@@ -1250,27 +1250,30 @@ void ImageView::applyLayout()
     }
 
     if (m_layoutMode == LayoutMode::SideBySide) {
-        const qreal cellW = (availW - gap * qMax(0, n - 1)) / qMax(1, n);
+        // Horizontal strip: each image fits the viewport height; scroll for overflow.
+        // Do not shrink to fit all images in one view (use Fit to Window for that).
         qreal x = margin;
         for (ImageItem *item : m_items) {
             const QSizeF ns = nativeSize(item);
-            const qreal scale = qMin(cellW / qMax(1.0, ns.width()),
-                                    availH / qMax(1.0, ns.height()));
+            const qreal scale = availH / qMax(1.0, ns.height());
             item->setItemScale(scale);
-            item->setPos(x + cellW / 2.0, margin + availH / 2.0);
-            x += cellW + gap;
+            const qreal w = ns.width() * scale;
+            const qreal h = ns.height() * scale;
+            item->setPos(x + w / 2.0, margin + h / 2.0);
+            x += w + gap;
             m_itemStates.insert(item->path(), captureState(item));
         }
     } else if (m_layoutMode == LayoutMode::Vertical) {
-        const qreal cellH = (availH - gap * qMax(0, n - 1)) / qMax(1, n);
+        // Vertical strip: each image fits the viewport width; scroll for overflow.
         qreal y = margin;
         for (ImageItem *item : m_items) {
             const QSizeF ns = nativeSize(item);
-            const qreal scale = qMin(availW / qMax(1.0, ns.width()),
-                                    cellH / qMax(1.0, ns.height()));
+            const qreal scale = availW / qMax(1.0, ns.width());
             item->setItemScale(scale);
-            item->setPos(margin + availW / 2.0, y + cellH / 2.0);
-            y += cellH + gap;
+            const qreal w = ns.width() * scale;
+            const qreal h = ns.height() * scale;
+            item->setPos(margin + w / 2.0, y + h / 2.0);
+            y += h + gap;
             m_itemStates.insert(item->path(), captureState(item));
         }
     } else if (m_layoutMode == LayoutMode::Grid) {

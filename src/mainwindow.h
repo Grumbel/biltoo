@@ -109,6 +109,7 @@ private slots:
     void setSelectTool();
     void setPanTool();
     void updateWorkspaceActionVisibility();
+    void updateUpToGalleryAction();
     void updateThumbnailBarForMode();
     void updateScrollBarPolicyForMode();
     void updateMasonryCountControl();
