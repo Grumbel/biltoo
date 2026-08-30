@@ -557,21 +557,6 @@ void MainWindow::selectAllThumbnails()
     m_thumbnailBar->selectAllThumbs();
 }
 
-void MainWindow::flashNavHud(const QString &action)
-{
-    if (!m_imageView || m_workspaceMode) {
-        return;
-    }
-    QString detail;
-    if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-        detail = QFileInfo(m_files.at(m_currentIndex)).fileName();
-        if (m_files.size() > 1) {
-            detail += tr("  (%1/%2)").arg(m_currentIndex + 1).arg(m_files.size());
-        }
-    }
-    m_imageView->flashHud(action, detail);
-}
-
 void MainWindow::updateWindowTitle()
 {
     if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {

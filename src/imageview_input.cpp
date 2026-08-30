@@ -128,7 +128,11 @@ void ImageView::paintEvent(QPaintEvent *event)
     if (m_hoverEdge != EdgeZone::None && isImageMode() && m_imageModeNavEnabled) {
         drawEdgeAffordances(painter);
     }
-    if (m_hudVisible || m_hudFlashVisible) {
+    // HUD layout:
+    //   top-left  — transient actions (slideshow, fit, …), never Next/Prev
+    //   top-right — session index [i/n]
+    //   bottom    — filename (+ technical detail when the HUD is pinned)
+    if (m_hudVisible || m_hudFlashVisible || m_sessionTotal > 0) {
         QFont f = font();
         f.setPointSizeF(qMax(10.0, f.pointSizeF()));
         QFont boldF = f;
@@ -138,17 +142,18 @@ void ImageView::paintEvent(QPaintEvent *event)
         const int margin = 10;
         const int pad = 8;
         const int lineGap = 2;
-        // Background must stay inside the viewport; text area is inset by pad.
-        const int maxBgW = qMax(40, viewport()->width() - 2 * margin);
-        const int maxTextW = qMax(20, maxBgW - 2 * pad);
+        const int viewW = viewport()->width();
+        const int viewH = viewport()->height();
 
-        auto wrapLine = [&](const QString &text, const QFontMetrics &metrics) {
+        auto wrapLine = [&](const QString &text, const QFontMetrics &metrics, int maxTextW) {
             QStringList out;
+            if (text.isEmpty()) {
+                return out;
+            }
             if (metrics.horizontalAdvance(text) <= maxTextW) {
                 out << text;
                 return out;
             }
-            // Prefer splitting status segments on " | " so long HUDs wrap cleanly.
             const QString sep = QStringLiteral(" | ");
             const QStringList parts = text.split(sep, Qt::KeepEmptyParts);
             if (parts.size() <= 1) {
@@ -182,65 +187,86 @@ void ImageView::paintEvent(QPaintEvent *event)
             QString text;
             bool bold = false;
         };
-        QList<HudLine> hudLines;
+
+        auto drawPanel = [&](const QList<HudLine> &lines, int anchorX, int anchorY,
+                             bool fromRight, bool fromBottom) {
+            if (lines.isEmpty()) {
+                return;
+            }
+            const int maxBgW = qMax(40, viewW - 2 * margin);
+            const int maxTextW = qMax(20, maxBgW - 2 * pad);
+            QList<HudLine> drawn;
+            int textW = 0;
+            int textH = 0;
+            for (const HudLine &hl : lines) {
+                const QFontMetrics &m = hl.bold ? fmBold : fm;
+                for (const QString &w : wrapLine(hl.text, m, maxTextW)) {
+                    drawn.append({w, hl.bold});
+                    textW = qMax(textW, m.boundingRect(w).width());
+                    textH += m.height();
+                }
+            }
+            if (drawn.isEmpty()) {
+                return;
+            }
+            if (drawn.size() > 1) {
+                textH += lineGap * (drawn.size() - 1);
+            }
+            textW = qMin(textW, maxTextW);
+            const int bgW = qMin(maxBgW, textW + 2 * pad);
+            const int bgH = textH + 2 * pad;
+            int x = fromRight ? (viewW - margin - bgW) : anchorX;
+            int y = fromBottom ? (viewH - margin - bgH) : anchorY;
+            // Keep fully on-screen
+            x = qBound(margin, x, viewW - margin - bgW);
+            y = qBound(margin, y, viewH - margin - bgH);
+            const QRect bg(x, y, bgW, bgH);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(QColor(0, 0, 0, 170));
+            painter.drawRoundedRect(bg, 6, 6);
+            painter.setPen(QColor(240, 240, 240));
+            int ty = bg.top() + pad;
+            const int textAreaW = bg.width() - 2 * pad;
+            for (const HudLine &hl : drawn) {
+                const QFont &lf = hl.bold ? boldF : f;
+                const QFontMetrics &m = hl.bold ? fmBold : fm;
+                painter.setFont(lf);
+                painter.drawText(QRect(bg.left() + pad, ty, textAreaW, m.height()),
+                                 Qt::AlignLeft | Qt::AlignVCenter, hl.text);
+                ty += m.height() + lineGap;
+            }
+        };
+
+        // Top-left: transient actions only (slideshow start/stop, …)
         if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
             QString actionLine = m_hudAction;
             if (!m_hudDetail.isEmpty()) {
                 actionLine += QLatin1Char(' ') + m_hudDetail;
             }
-            for (const QString &w : wrapLine(actionLine, fmBold)) {
-                hudLines.append({w, true});
-            }
-        }
-        if (m_hudVisible) {
-            for (const QString &w : wrapLine(statusText(), fm)) {
-                hudLines.append({w, false});
-            }
-        } else if (m_hudFlashVisible && m_hudDetail.isEmpty()) {
-            ImageItem *item = targetItem();
-            if (!item) {
-                item = primaryItem();
-            }
-            if (item) {
-                for (const QString &w : wrapLine(QFileInfo(item->path()).fileName(), fm)) {
-                    hudLines.append({w, false});
-                }
-            }
+            drawPanel({{actionLine, true}}, margin, margin, false, false);
         }
 
-        if (!hudLines.isEmpty()) {
-            int textW = 0;
-            int textH = 0;
-            for (const HudLine &hl : hudLines) {
-                const QFontMetrics &m = hl.bold ? fmBold : fm;
-                // boundingRect is more reliable than horizontalAdvance for bold glyphs.
-                textW = qMax(textW, m.boundingRect(hl.text).width());
-                textH += m.height();
+        // Top-right: session index
+        const QString badge = sessionBadgeText();
+        if (!badge.isEmpty()) {
+            drawPanel({{badge, false}}, 0, margin, true, false);
+        }
+
+        // Bottom: filename when HUD pinned (or while a non-nav flash is up with no action detail)
+        if (m_hudVisible) {
+            QList<HudLine> bottom;
+            const QString name = hudFileName();
+            if (!name.isEmpty()) {
+                bottom.append({name, true});
             }
-            if (hudLines.size() > 1) {
-                textH += lineGap * (hudLines.size() - 1);
+            const QString tech = statusText();
+            if (!tech.isEmpty() && tech != name) {
+                bottom.append({tech, false});
             }
-            textW = qMin(textW, maxTextW);
-            const int bgW = qMin(maxBgW, textW + 2 * pad);
-            const QRect bg(margin, margin, bgW, textH + 2 * pad);
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(0, 0, 0, 170));
-            painter.drawRoundedRect(bg, 6, 6);
-            painter.setPen(QColor(240, 240, 240));
-            int y = bg.top() + pad;
-            const int textAreaW = bg.width() - 2 * pad;
-            for (const HudLine &hl : hudLines) {
-                const QFont &lf = hl.bold ? boldF : f;
-                const QFontMetrics &m = hl.bold ? fmBold : fm;
-                painter.setFont(lf);
-                painter.drawText(QRect(bg.left() + pad, y, textAreaW, m.height()),
-                                 Qt::AlignLeft | Qt::AlignVCenter, hl.text);
-                y += m.height() + lineGap;
-            }
+            drawPanel(bottom, margin, 0, false, true);
         }
     }
 }
-
 
 void ImageView::dragEnterEvent(QDragEnterEvent *event)
 {

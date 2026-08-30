@@ -427,7 +427,6 @@ void MainWindow::goPrevious()
         idx = m_files.size() - 1;
     }
     setCurrentIndex(idx);
-    flashNavHud(tr("←  Previous"));
 }
 
 void MainWindow::goNext()
@@ -443,7 +442,6 @@ void MainWindow::goNext()
         idx = 0;
     }
     setCurrentIndex(idx);
-    flashNavHud(tr("→  Next"));
 }
 
 void MainWindow::goFirst()
@@ -455,7 +453,6 @@ void MainWindow::goFirst()
         stopSlideshow();
     }
     setCurrentIndex(0);
-    flashNavHud(tr("⇤  First"));
 }
 
 void MainWindow::goLast()
@@ -467,7 +464,6 @@ void MainWindow::goLast()
         stopSlideshow();
     }
     setCurrentIndex(m_files.size() - 1);
-    flashNavHud(tr("⇥  Last"));
 }
 
 void MainWindow::setSlideshowIntervalMs(int ms)
@@ -522,14 +518,8 @@ void MainWindow::startSlideshow()
     qApp->installEventFilter(this);
     armSlideshowCursorHide();
     {
-        QString detail;
-        if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-            detail = QFileInfo(m_files.at(m_currentIndex)).fileName();
-            if (m_files.size() > 1) {
-                detail += tr("  (%1/%2)").arg(m_currentIndex + 1).arg(m_files.size());
-            }
-        }
-        m_imageView->flashHud(tr("▶  Slideshow"), detail);
+        // Index lives top-right; filename bottom when HUD is pinned — action only here.
+        m_imageView->flashHud(tr("▶  Slideshow"));
     }
 }
 
@@ -553,11 +543,7 @@ void MainWindow::stopSlideshow()
         m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     }
     if (wasRunning && m_imageView) {
-        QString detail;
-        if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-            detail = QFileInfo(m_files.at(m_currentIndex)).fileName();
-        }
-        m_imageView->flashHud(tr("■  Stop"), detail);
+        m_imageView->flashHud(tr("■  Slideshow stopped"));
     }
 }
 

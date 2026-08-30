@@ -119,7 +119,6 @@ private slots:
     void updateStatus();
     void updateWindowTitle();
     void selectAllThumbnails();
-    void flashNavHud(const QString &action);
     void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
     void onThumbnailActivated(int index);

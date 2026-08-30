@@ -148,8 +148,8 @@ public:
     bool hudVisible() const { return m_hudVisible; }
 
     /**
-     * Brief VCR-style HUD message (action + optional detail).
-     * Visible for ~1.8s; always shown even when the HUD is not pinned.
+     * Brief top-left HUD action (slideshow, fit mode, …).
+     * Visible for ~1.8s; never used for Next/Prev (session badge covers that).
      */
     void flashHud(const QString &action, const QString &detail = QString());
 
@@ -212,6 +212,10 @@ public:
     void applyState(ImageItem *item, const WorkspaceItemState &state);
 
     QString statusText() const;
+    /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */
+    QString sessionBadgeText() const;
+    /** Basename of the current/target image for the bottom HUD. */
+    QString hudFileName() const;
     ImageMouseInfo mouseInfo() const { return m_mouseInfo; }
     QString currentPath() const;
     QSize imageSize() const;

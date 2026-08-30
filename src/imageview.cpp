@@ -669,36 +669,63 @@ QStringList ImageView::itemPaths() const
     return paths;
 }
 
+QString ImageView::sessionBadgeText() const
+{
+    if (m_sessionTotal > 0 && m_sessionIndex >= 0 && m_sessionIndex < m_sessionTotal) {
+        return tr("[%1/%2]").arg(m_sessionIndex + 1).arg(m_sessionTotal);
+    }
+    return {};
+}
+
+QString ImageView::hudFileName() const
+{
+    if (!m_lastLoadError.isEmpty()) {
+        return QFileInfo(m_lastLoadError).fileName();
+    }
+    ImageItem *item = targetItem();
+    if (!item) {
+        item = primaryItem();
+    }
+    if (item) {
+        return QFileInfo(item->path()).fileName();
+    }
+    if (!m_classicPath.isEmpty()) {
+        return QFileInfo(m_classicPath).fileName();
+    }
+    return {};
+}
+
 QString ImageView::statusText() const
 {
+    // Technical status only (no index badge, no bare filename — those live in
+    // dedicated HUD corners). Used as secondary bottom line when the HUD is pinned.
     ImageItem *item = targetItem();
     if (!item) {
         item = primaryItem();
     }
 
-    QString prefix;
-    if (m_sessionTotal > 1 && m_sessionIndex >= 0 && m_sessionIndex < m_sessionTotal) {
-        prefix = tr("[%1/%2]  ").arg(m_sessionIndex + 1).arg(m_sessionTotal);
-    }
-
     if (!item) {
         if (!m_lastLoadError.isEmpty()) {
-            return prefix + tr("Failed to load: %1").arg(QFileInfo(m_lastLoadError).fileName());
+            return tr("Failed to load");
         }
         if (!m_classicPath.isEmpty() && isImageMode()) {
-            return prefix + tr("Loading %1…").arg(QFileInfo(m_classicPath).fileName());
+            return tr("Loading…");
         }
-        return prefix.isEmpty() ? tr("Ready") : prefix.trimmed();
+        if (isGalleryMode()) {
+            return tr("Gallery — no images");
+        }
+        if (isWorkspaceMode()) {
+            return tr("Workspace — drop images or use Open");
+        }
+        return tr("Ready");
     }
 
-    const QString name = QFileInfo(item->path()).fileName();
     if (isMultiItemMode()) {
         const QString modeLabel = isGalleryMode() ? tr("Gallery") : tr("Workspace");
-        QString text = tr("%1: %2 images  |  View zoom: %3%  |  %4  |  %5×%6")
+        QString text = tr("%1: %2 images  |  View zoom: %3%  |  %4×%5")
                            .arg(modeLabel)
                            .arg(m_items.size())
                            .arg(qRound(viewScale() * 100))
-                           .arg(name)
                            .arg(item->imageSize().width())
                            .arg(item->imageSize().height());
         if (item->isSelected()) {
@@ -716,12 +743,11 @@ QString ImageView::statusText() const
         if (item->itemOpacity() < 0.999) {
             text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
         }
-        return prefix + text;
+        return text;
     }
 
-    // Image mode: zoom is view-level; item scale stays at 1 unless rotated etc.
-    QString text = tr("%1  |  %2×%3  |  Zoom: %4%  |  Rotation: %5°")
-                       .arg(name)
+    // Image mode: zoom is view-level
+    QString text = tr("%1×%2  |  Zoom: %3%  |  Rotation: %4°")
                        .arg(item->imageSize().width())
                        .arg(item->imageSize().height())
                        .arg(qRound(viewScale() * 100))
@@ -739,7 +765,7 @@ QString ImageView::statusText() const
     if (item->itemOpacity() < 0.999) {
         text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
     }
-    return prefix + text;
+    return text;
 }
 
 qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
