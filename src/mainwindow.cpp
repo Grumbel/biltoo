@@ -176,7 +176,7 @@ MainWindow::MainWindow(QWidget *parent)
             showNormal();
             return;
         }
-        if (m_galleryReturnActive && !m_workspaceMode) {
+        if (m_galleryReturnActive && m_imageView && m_imageView->isImageMode()) {
             returnToGallery();
         }
     });
@@ -1155,19 +1155,21 @@ void MainWindow::updateNavigationActions()
     const bool hasItem = m_imageView && m_imageView->itemCount() > 0;
 
     // Session navigation is Image-mode oriented; disable in workspace mode
-    m_previousAct->setEnabled(hasMany && !m_workspaceMode);
-    m_nextAct->setEnabled(hasMany && !m_workspaceMode);
+    // Prev/Next/slideshow are Image mode only (not Gallery, not Workspace).
+    const bool imageNav = hasMany && m_imageView && m_imageView->isImageMode();
+    m_previousAct->setEnabled(imageNav);
+    m_nextAct->setEnabled(imageNav);
     if (m_firstAct) {
-        m_firstAct->setEnabled(hasMany && !m_workspaceMode);
+        m_firstAct->setEnabled(imageNav);
     }
     if (m_lastAct) {
-        m_lastAct->setEnabled(hasMany && !m_workspaceMode);
+        m_lastAct->setEnabled(imageNav);
     }
-    m_slideshowAct->setEnabled(hasMany && !m_workspaceMode);
+    m_slideshowAct->setEnabled(imageNav);
     if (m_imageView) {
-        m_imageView->setImageModeNavigationEnabled(hasMany && !m_workspaceMode);
+        m_imageView->setImageModeNavigationEnabled(imageNav);
     }
-    if (!hasMany || m_workspaceMode) {
+    if (!imageNav) {
         stopSlideshow();
     }
 
@@ -1592,9 +1594,9 @@ void MainWindow::setLayoutSideBySide()
         m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
-    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::SideBySide);
     populateGalleryCanvas();
     // Re-apply after items are on the canvas
@@ -1614,9 +1616,9 @@ void MainWindow::setLayoutVertical()
         m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
-    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::Vertical);
     populateGalleryCanvas();
     // Re-apply after items are on the canvas
@@ -1635,9 +1637,9 @@ void MainWindow::setLayoutGrid()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    m_workspaceMode = true;
+    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::Grid);
     populateGalleryCanvas();
     m_imageView->enterGallery(ImageView::LayoutMode::Grid);
@@ -1655,9 +1657,9 @@ void MainWindow::setLayoutGridCrop()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    m_workspaceMode = true;
+    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::GridCrop);
     populateGalleryCanvas();
     m_imageView->enterGallery(ImageView::LayoutMode::GridCrop);
@@ -1676,9 +1678,9 @@ void MainWindow::setLayoutStack()
         m_backToGalleryAct->setEnabled(false);
     }
     // Gallery is independent of Workspace Mode
-    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::Stack);
     populateGalleryCanvas();
     // Re-apply after items are on the canvas
@@ -1697,9 +1699,9 @@ void MainWindow::setLayoutMasonry()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    m_workspaceMode = true;
+    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
     populateGalleryCanvas();
     m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
@@ -1717,9 +1719,9 @@ void MainWindow::setLayoutMasonryRows()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    m_workspaceMode = true;
+    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(false);
     m_imageView->enterGallery(ImageView::LayoutMode::MasonryRows);
     populateGalleryCanvas();
     m_imageView->enterGallery(ImageView::LayoutMode::MasonryRows);
@@ -1760,9 +1762,9 @@ void MainWindow::returnToGallery()
         return;
     }
     m_galleryReturnActive = false;
-    m_workspaceMode = true;
+    m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(false);
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
                                   ? m_files.at(m_currentIndex)
                                   : QString();
@@ -2506,7 +2508,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
-        if (m_galleryReturnActive && !m_workspaceMode) {
+        if (m_galleryReturnActive && m_imageView && m_imageView->isImageMode()) {
             returnToGallery();
             event->accept();
             return;

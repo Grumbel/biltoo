@@ -95,6 +95,10 @@ void ImageView::applyItemModeFlags(ImageItem *item)
     if (!item) {
         return;
     }
+    // Strict separation:
+    //   Workspace → movable + handles
+    //   Gallery   → selectable only (open on click), no chrome
+    //   Image     → static, no selection chrome
     if (isWorkspaceMode()) {
         item->setInteractive(true);
         item->setScaleHandlesEnabled(true);
@@ -102,6 +106,7 @@ void ImageView::applyItemModeFlags(ImageItem *item)
         item->setGallerySelectable(true);
         item->setScaleHandlesEnabled(false);
     } else {
+        item->setGalleryCellSize({});
         item->setInteractive(false);
         item->setScaleHandlesEnabled(false);
     }
@@ -1155,6 +1160,9 @@ void ImageView::rotateRight()
 
 void ImageView::raiseSelected()
 {
+    if (!isWorkspaceMode()) {
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         item->setStackZ(item->stackZ() + 1.0);
         emit statusChanged();
@@ -1163,6 +1171,9 @@ void ImageView::raiseSelected()
 
 void ImageView::lowerSelected()
 {
+    if (!isWorkspaceMode()) {
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         item->setStackZ(item->stackZ() - 1.0);
         emit statusChanged();
@@ -1171,6 +1182,9 @@ void ImageView::lowerSelected()
 
 void ImageView::opacityUp()
 {
+    if (!isWorkspaceMode()) {
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         item->setItemOpacity(item->itemOpacity() + 0.1);
         emit statusChanged();
@@ -1179,6 +1193,9 @@ void ImageView::opacityUp()
 
 void ImageView::opacityDown()
 {
+    if (!isWorkspaceMode()) {
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         item->setItemOpacity(item->itemOpacity() - 0.1);
         emit statusChanged();
@@ -1187,6 +1204,9 @@ void ImageView::opacityDown()
 
 void ImageView::opacityReset()
 {
+    if (!isWorkspaceMode()) {
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         item->setItemOpacity(1.0);
         emit statusChanged();
@@ -1227,19 +1247,18 @@ void ImageView::restoreFreeFormStates()
 
 void ImageView::setLayoutMode(LayoutMode mode)
 {
-    if (m_layoutMode == LayoutMode::FreeForm && mode != LayoutMode::FreeForm) {
-        // Leaving free-form: remember positions and view pan/zoom
-        snapshotFreeFormStates();
-    }
-
-    m_layoutMode = mode;
-
-    // Interaction is driven by ViewMode, not LayoutMode alone.
-    for (ImageItem *item : m_items) {
-        applyItemModeFlags(item);
-    }
-
+    // Packaged layouts belong only to Gallery; FreeForm only to Workspace.
     if (mode == LayoutMode::FreeForm) {
+        if (!isWorkspaceMode()) {
+            return;
+        }
+        if (m_layoutMode != LayoutMode::FreeForm) {
+            // Should not happen in Workspace (always FreeForm).
+        }
+        m_layoutMode = LayoutMode::FreeForm;
+        for (ImageItem *item : m_items) {
+            applyItemModeFlags(item);
+        }
         restoreFreeFormStates();
         if (!m_items.isEmpty()) {
             m_scene->setSceneRect(m_scene->itemsBoundingRect().adjusted(-64, -64, 64, 64));
@@ -1249,6 +1268,20 @@ void ImageView::setLayoutMode(LayoutMode mode)
         return;
     }
 
+    // Packaged layout → Gallery only (enterGallery if needed).
+    if (!isGalleryMode()) {
+        enterGallery(mode);
+        return;
+    }
+
+    if (m_layoutMode == LayoutMode::FreeForm && mode != LayoutMode::FreeForm) {
+        snapshotFreeFormStates();
+    }
+
+    m_layoutMode = mode;
+    for (ImageItem *item : m_items) {
+        applyItemModeFlags(item);
+    }
     applyLayout();
 }
 
@@ -1290,7 +1323,8 @@ void ImageView::applyLayout()
     if (m_applyingLayout) {
         return;
     }
-    if (m_items.isEmpty() || m_layoutMode == LayoutMode::FreeForm) {
+    // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
+    if (!isGalleryMode() || m_items.isEmpty() || m_layoutMode == LayoutMode::FreeForm) {
         return;
     }
 

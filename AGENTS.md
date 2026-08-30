@@ -65,8 +65,9 @@ Use these names consistently in code comments, menus, and docs:
 | Term | Meaning |
 |------|---------|
 | **Image mode** | Single-image viewing (`ImageView::ViewMode::Image`). Edge nav, slideshow, no multi-item placement. |
-| **Gallery mode** | Session overview (`ViewMode::Gallery`) with packaged layouts (Masonry, Grid, …). Not part of Workspace. No move/scale handles. Click → Image mode; Up to Gallery / Esc return. |
-| **Workspace mode** | Free-form canvas only (`ViewMode::Workspace`). Handles, opacity, z-order, Select/Pan tools. |
+| **Gallery mode** | Session overview (`ViewMode::Gallery`) with packaged layouts only. **Not** Workspace: no move, no handles, no opacity/z tools. Click → Image mode; **Up** / Esc return. |
+| **Workspace mode** | Free-form canvas only (`ViewMode::Workspace`). **Only** place for move, scale/rotate handles, opacity, raise/lower, Select/Pan. |
+| **Separation** | `ViewMode` is authoritative. Gallery never enables `ItemIsMovable` / interactive chrome. Packaged `applyLayout` runs only in Gallery. MainWindow `m_workspaceMode` tracks Workspace Mode only (not Gallery). |
 
 **UI:** View → **Gallery** (layouts) is separate from View → **Workspace Mode**. Toolbar shows gallery layout icons independently of the workspace tool strip (left, free-form only).
 
