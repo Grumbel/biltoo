@@ -179,9 +179,14 @@ int setDefaultForTypes(const QStringList &mimeTypes, QStringList *errors)
 bool clearDefaultForType(const QString &mimeType, QString *errorMessage)
 {
 #ifdef QIMGVIEW_HAVE_GIO
-    // Reset removes user overrides for this MIME type so the system default
-    // (or next recommended handler) takes over. There is no GIO API to
-    // "unset only this app" while leaving other user choices intact.
+    // Only reset when QImgView is the current default. Resetting while another
+    // app is default would wipe that user choice with no benefit to us.
+    // g_app_info_reset_type_associations removes all user overrides for the type;
+    // GIO has no API to demote a single app while keeping other overrides.
+    if (!statusForType(mimeType).isUs) {
+        Q_UNUSED(errorMessage);
+        return true;
+    }
     g_app_info_reset_type_associations(mimeType.toUtf8().constData());
     Q_UNUSED(errorMessage);
     return true;

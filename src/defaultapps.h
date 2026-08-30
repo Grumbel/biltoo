@@ -44,8 +44,9 @@ bool setDefaultForType(const QString &mimeType, QString *errorMessage = nullptr)
 int setDefaultForTypes(const QStringList &mimeTypes, QStringList *errors = nullptr);
 
 /**
- * Clear user default association for @p mimeType (GIO reset_type_associations).
- * After this, the system default (or next recommended app) applies.
+ * Clear user default association for @p mimeType when QImgView is the default
+ * (GIO reset_type_associations). No-op if another app is already default.
+ * After a clear, the system default (or next recommended app) applies.
  * Returns true on success; @p errorMessage receives a translated reason on failure.
  */
 bool clearDefaultForType(const QString &mimeType, QString *errorMessage = nullptr);

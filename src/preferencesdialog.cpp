@@ -318,7 +318,9 @@ void PreferencesDialog::onRemoveAllAsDefault()
 {
     QStringList types;
     for (int i = 0; i < m_mimeTree->topLevelItemCount(); ++i) {
-        if (QTreeWidgetItem *item = m_mimeTree->topLevelItem(i)) {
+        QTreeWidgetItem *item = m_mimeTree->topLevelItem(i);
+        // Checked rows are those where QImgView is currently the default.
+        if (item && item->checkState(0) == Qt::Checked) {
             types.append(item->data(0, Qt::UserRole).toString());
         }
     }
