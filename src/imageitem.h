@@ -98,7 +98,6 @@ private:
     qreal m_opacity = 1.0;
     bool m_interactive = false;
     bool m_scaleHandlesEnabled = true;
-    bool m_scaleHandlesEnabled = true;
 
     Handle m_activeHandle = Handle::None;
     QPointF m_pressScenePos;
