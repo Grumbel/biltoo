@@ -725,7 +725,42 @@ void MainWindow::onMouseInfoChanged(const ImageMouseInfo &info)
 
 void MainWindow::showContextMenu(const QPoint &pos)
 {
-    m_contextMenu->popup(m_imageView->mapToGlobal(pos));
+    // Mode-filtered context menu (AUDIT L29 polish).
+    QMenu menu(this);
+    menu.addAction(m_openAct);
+    menu.addAction(m_addAct);
+    menu.addSeparator();
+    if (isImageMode()) {
+        menu.addAction(m_previousAct);
+        menu.addAction(m_nextAct);
+        menu.addSeparator();
+    }
+    menu.addAction(m_zoomFitAct);
+    menu.addAction(m_zoom1to1Act);
+    if (!isGalleryMode()) {
+        menu.addSeparator();
+        menu.addAction(m_rotateLeftAct);
+        menu.addAction(m_rotateRightAct);
+        menu.addAction(m_flipHAct);
+        menu.addAction(m_flipVAct);
+        if (isWorkspaceMode()) {
+            menu.addAction(m_resetScaleAct);
+            menu.addAction(m_resetRotationAct);
+        }
+    }
+    menu.addSeparator();
+    if (m_backToGalleryAct && m_backToGalleryAct->isEnabled()) {
+        menu.addAction(m_backToGalleryAct);
+    }
+    menu.addAction(m_workspaceModeAct);
+    if (isWorkspaceMode()) {
+        menu.addAction(m_raiseAct);
+        menu.addAction(m_lowerAct);
+    }
+    menu.addSeparator();
+    menu.addAction(m_fullscreenAct);
+    menu.addAction(m_preferencesAct);
+    menu.exec(m_imageView->mapToGlobal(pos));
 }
 
 void MainWindow::changeEvent(QEvent *event)

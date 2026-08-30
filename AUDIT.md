@@ -967,3 +967,6 @@ Gallery pack and workspace identity reviewed. Master priority list unchanged. St
 | M25 | Scaffolded | QTranslator load paths; CLI translate("main"); translations/README |
 | L22 | Fixed | Colour readout shows alpha when < 255 |
 | L24 | Noted | --fit remains documented default (no-op intentionally) |
+
+| L29 | Fixed | Context menu filtered by Image/Gallery/Workspace mode |
+| — | Polish | Slideshow status tip explains why disabled |

@@ -496,32 +496,8 @@ void MainWindow::createMenus()
     m_helpMenu->addSeparator();
     m_helpMenu->addAction(m_aboutAct);
 
-    // Context menu: keep short and contextual. Gallery layouts, chrome toggles,
-    // and full Go/Zoom lists stay in the menubar / toolbar.
-    m_contextMenu = new QMenu(this);
-    m_contextMenu->addAction(m_openAct);
-    m_contextMenu->addAction(m_addAct);
-    m_contextMenu->addSeparator();
-    m_contextMenu->addAction(m_previousAct);
-    m_contextMenu->addAction(m_nextAct);
-    m_contextMenu->addSeparator();
-    m_contextMenu->addAction(m_zoomFitAct);
-    m_contextMenu->addAction(m_zoom1to1Act);
-    m_contextMenu->addSeparator();
-    m_contextMenu->addAction(m_rotateLeftAct);
-    m_contextMenu->addAction(m_rotateRightAct);
-    m_contextMenu->addAction(m_flipHAct);
-    m_contextMenu->addAction(m_flipVAct);
-    m_contextMenu->addAction(m_resetScaleAct);
-    m_contextMenu->addAction(m_resetRotationAct);
-    m_contextMenu->addSeparator();
-    m_contextMenu->addAction(m_backToGalleryAct);
-    m_contextMenu->addAction(m_workspaceModeAct);
-    m_contextMenu->addAction(m_raiseAct);
-    m_contextMenu->addAction(m_lowerAct);
-    m_contextMenu->addSeparator();
-    m_contextMenu->addAction(m_fullscreenAct);
-    m_contextMenu->addAction(m_preferencesAct);
+    // Context menu is built per-mode in showContextMenu() so Gallery does not
+    // list Workspace-only tools and Image keeps prev/next.
 }
 
 void MainWindow::createToolBar()

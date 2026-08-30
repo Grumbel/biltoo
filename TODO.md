@@ -48,6 +48,9 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] M25 i18n scaffolding (translator load + CLI tr + translations/README)
 - [x] L22 Status colour shows alpha when present
 
+- [x] L29 Mode-filtered view context menu
+- [x] Slideshow disabled status tip explains reason
+
 ## Open
 - Full `.ts` locale packs (community)
 - Deeper automated GUI tests

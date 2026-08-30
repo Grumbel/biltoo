@@ -378,6 +378,15 @@ void MainWindow::updateNavigationActions()
         m_lastAct->setEnabled(imageNav);
     }
     m_slideshowAct->setEnabled(canSlideshow);
+    if (m_slideshowAct) {
+        if (canSlideshow) {
+            m_slideshowAct->setStatusTip(tr("Start or stop the slideshow (Space)"));
+        } else if (m_imageView && m_imageView->isWorkspaceMode()) {
+            m_slideshowAct->setStatusTip(tr("Slideshow is not available in Workspace mode"));
+        } else {
+            m_slideshowAct->setStatusTip(tr("Open more than one image to use the slideshow"));
+        }
+    }
     if (m_imageView) {
         m_imageView->setImageModeNavigationEnabled(imageNav);
     }
