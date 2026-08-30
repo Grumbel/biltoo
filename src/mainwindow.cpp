@@ -68,6 +68,16 @@ QIcon themeIcon(const QString &name, QStyle::StandardPixmap fallback)
     return QApplication::style()->standardIcon(fallback);
 }
 
+/** Bundled action icon (always from resources; used for coloured gallery glyphs). */
+QIcon resourceIcon(const QString &name)
+{
+    const QString resource = QStringLiteral(":/icons/actions/%1.svg").arg(name);
+    if (QFile::exists(resource)) {
+        return QIcon(resource);
+    }
+    return QIcon();
+}
+
 QString imageFileDialogFilter()
 {
     QStringList patterns;
@@ -371,38 +381,38 @@ void MainWindow::createActions()
     m_layoutSideBySideAct = new QAction(tr("Layout Side b&y Side"), this);
     m_layoutSideBySideAct->setCheckable(true);
     m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
-    m_layoutSideBySideAct->setIcon(themeIcon(QStringLiteral("view-split-left-right"), QStyle::SP_ArrowRight));
+    m_layoutSideBySideAct->setIcon(resourceIcon(QStringLiteral("gallery-side-by-side")));
     m_layoutSideBySideAct->setStatusTip(tr("Gallery: arrange images in a horizontal row"));
     connect(m_layoutSideBySideAct, &QAction::triggered, this, &MainWindow::setLayoutSideBySide);
 
     m_layoutVerticalAct = new QAction(tr("Layout &Vertical"), this);
     m_layoutVerticalAct->setCheckable(true);
-    m_layoutVerticalAct->setIcon(themeIcon(QStringLiteral("view-split-top-bottom"), QStyle::SP_ArrowDown));
+    m_layoutVerticalAct->setIcon(resourceIcon(QStringLiteral("gallery-vertical")));
     m_layoutVerticalAct->setStatusTip(tr("Gallery: arrange images in a vertical column"));
     connect(m_layoutVerticalAct, &QAction::triggered, this, &MainWindow::setLayoutVertical);
 
     m_layoutGridAct = new QAction(tr("Layout &Grid"), this);
     m_layoutGridAct->setCheckable(true);
-    m_layoutGridAct->setIcon(themeIcon(QStringLiteral("view-grid"), QStyle::SP_FileDialogListView));
+    m_layoutGridAct->setIcon(resourceIcon(QStringLiteral("gallery-grid")));
     m_layoutGridAct->setStatusTip(tr("Gallery: arrange images in a grid"));
     connect(m_layoutGridAct, &QAction::triggered, this, &MainWindow::setLayoutGrid);
 
     m_layoutStackAct = new QAction(tr("Layout Stac&k"), this);
     m_layoutStackAct->setCheckable(true);
-    m_layoutStackAct->setIcon(themeIcon(QStringLiteral("view-stack"), QStyle::SP_TitleBarNormalButton));
+    m_layoutStackAct->setIcon(resourceIcon(QStringLiteral("gallery-stack")));
     m_layoutStackAct->setStatusTip(tr("Stack images on top of each other for opacity comparison"));
     connect(m_layoutStackAct, &QAction::triggered, this, &MainWindow::setLayoutStack);
 
     m_layoutMasonryAct = new QAction(tr("Layout &Masonry"), this);
     m_layoutMasonryAct->setCheckable(true);
-    m_layoutMasonryAct->setIcon(themeIcon(QStringLiteral("view-full-screen"), QStyle::SP_FileDialogListView));
+    m_layoutMasonryAct->setIcon(resourceIcon(QStringLiteral("gallery-masonry")));
     m_layoutMasonryAct->setStatusTip(
         tr("Gallery: pack into N columns that fill the window width"));
     connect(m_layoutMasonryAct, &QAction::triggered, this, &MainWindow::setLayoutMasonry);
 
     m_layoutMasonryRowsAct = new QAction(tr("Layout Masonry &Rows"), this);
     m_layoutMasonryRowsAct->setCheckable(true);
-    m_layoutMasonryRowsAct->setIcon(themeIcon(QStringLiteral("view-list-details"), QStyle::SP_FileDialogDetailedView));
+    m_layoutMasonryRowsAct->setIcon(resourceIcon(QStringLiteral("gallery-masonry-rows")));
     m_layoutMasonryRowsAct->setStatusTip(
         tr("Gallery: pack into N rows that fill the window height"));
     connect(m_layoutMasonryRowsAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryRows);
