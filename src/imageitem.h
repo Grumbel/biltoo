@@ -137,10 +137,15 @@ private:
     qreal handleHitRadius() const;
     qreal handleDrawSize() const;
     /**
-     * Screen pixels per item-local unit (item scale × view scale).
-     * Used so chrome stays roughly constant on screen.
+     * Max singular value of (view × item) linear transform: screen px per local unit
+     * along the most stretched axis. Used for drawing chrome at ~constant screen size.
      */
     qreal screenScale() const;
+    /**
+     * Min singular value of (view × item): local radius that still covers a given
+     * screen-pixel hit target under rotation / anisotropic scale.
+     */
+    qreal deviceScaleMin() const;
     bool isChromeHandle(Handle h) const;
     bool isRotateHandle(Handle h) const;
     void drawCornerBracket(QPainter *painter, Handle h, qreal arm, bool hot) const;
@@ -151,7 +156,10 @@ private:
     qreal chromeButtonSize() const;
     /** Distance in screen pixels from itemPos to handle centre. */
     qreal handleDistanceScreenPx(Handle h, const QPointF &itemPos) const;
-    void setOpacityFromSliderPos(const QPointF &itemPos);
+    void setOpacityFromSliderPos(const QPointF &scenePos);
+    /** View-pixel position of an item-local point (first attached view). */
+    QPointF localToViewPx(const QPointF &local) const;
+    QPointF sceneToViewPx(const QPointF &scene) const;
     QList<Handle> activeHandles() const;
 
     QString m_path;

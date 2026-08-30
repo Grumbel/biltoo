@@ -62,11 +62,13 @@ QRectF ImageItem::boundingRect() const
     // Flip / raise / lower / opacity sit inside the pixmap and need no extra pad.
     QRectF r = QGraphicsPixmapItem::boundingRect();
     if (isSelected() && m_interactive) {
-        const qreal ss = screenScale();
-        const qreal rotPad = handleHitRadius() + kRotateOffsetPx / ss + 4.0;
-        const qreal sidePad = qMax(handleHitRadius() + 4.0, rotPad);
-        // Symmetric pad so all four rotate handles stay inside the item bounds.
-        r.adjust(-sidePad, -rotPad, sidePad, rotPad);
+        // Pads must cover screen-pixel handle targets after rotation; use min
+        // device scale so the local AABB still contains the hit discs.
+        const qreal sMin = deviceScaleMin();
+        const qreal hitLocal = (kHandleScreenPx * 1.35) / sMin;
+        const qreal rotLocal = kRotateOffsetPx / sMin;
+        const qreal pad = hitLocal + rotLocal + 4.0 / sMin;
+        r.adjust(-pad, -pad, pad, pad);
     }
     return r;
 }
@@ -85,7 +87,10 @@ QPainterPath ImageItem::shape() const
     }
     path.addRect(QGraphicsPixmapItem::boundingRect());
     if (isSelected() && m_interactive) {
-        const qreal r = handleHitRadius() * 1.25;
+        // Local radii from min device scale so a screen-pixel disc around each
+        // handle stays inside shape() after rotation / anisotropic scale.
+        const qreal sMin = deviceScaleMin();
+        const qreal r = (kHandleScreenPx * 1.5) / sMin;
         QList<Handle> handles = {
             Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
         };
@@ -100,13 +105,12 @@ QPainterPath ImageItem::shape() const
             const QPointF c = handleCenter(h);
             path.addEllipse(c, r, r);
         }
-        // Chrome hit disks sized from screen-pixel policy
-        const qreal cr = kChromeHitScreenPx / screenScale();
+        const qreal cr = (kChromeHitScreenPx * 1.25) / sMin;
         for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
             const QPointF c = handleCenter(h);
             path.addEllipse(c, cr, cr);
         }
-        const qreal pad = 6.0 / screenScale();
+        const qreal pad = 10.0 / sMin;
         path.addRect(opacitySliderRect().adjusted(-pad, -pad, pad, pad));
         const QRectF content = QGraphicsPixmapItem::boundingRect();
         path.moveTo(content.center().x(), content.top());
@@ -121,18 +125,66 @@ QPainterPath ImageItem::shape() const
     return path;
 }
 
-qreal ImageItem::screenScale() const
+QPointF ImageItem::sceneToViewPx(const QPointF &scenePt) const
 {
-    // Item local scale × view transform scale → pixels per local unit
-    qreal s = qMax(0.01, qMax(qAbs(m_scaleX), qAbs(m_scaleY)));
     if (scene()) {
         const QList<QGraphicsView *> views = scene()->views();
         if (!views.isEmpty() && views.first()) {
-            const QTransform t = views.first()->transform();
-            s *= std::hypot(t.m11(), t.m12());
+            return QPointF(views.first()->mapFromScene(scenePt));
         }
     }
-    return qMax(s, 0.01);
+    return scenePt;
+}
+
+QPointF ImageItem::localToViewPx(const QPointF &local) const
+{
+    return sceneToViewPx(mapToScene(local));
+}
+
+static void singularValues2x2(qreal a, qreal b, qreal c, qreal d, qreal *sMax, qreal *sMin)
+{
+    // Singular values of [[a,b],[c,d]] = sqrt(eigenvalues of M^T M).
+    const qreal e11 = a * a + c * c;
+    const qreal e22 = b * b + d * d;
+    const qreal e12 = a * b + c * d;
+    const qreal tr = e11 + e22;
+    const qreal disc = qMax(0.0, (e11 - e22) * (e11 - e22) + 4.0 * e12 * e12);
+    const qreal root = qSqrt(disc);
+    const qreal ev1 = qMax(0.0, 0.5 * (tr + root));
+    const qreal ev2 = qMax(0.0, 0.5 * (tr - root));
+    *sMax = qMax(qSqrt(ev1), qSqrt(ev2));
+    *sMin = qMax(1e-6, qMin(qSqrt(ev1), qSqrt(ev2)));
+}
+
+qreal ImageItem::screenScale() const
+{
+    // Max stretch of local→view (draw chrome ~constant on screen).
+    QTransform t = transform();
+    if (scene()) {
+        const QList<QGraphicsView *> views = scene()->views();
+        if (!views.isEmpty() && views.first()) {
+            t = views.first()->transform() * t;
+        }
+    }
+    qreal sMax = 1.0, sMin = 1.0;
+    singularValues2x2(t.m11(), t.m12(), t.m21(), t.m22(), &sMax, &sMin);
+    return qMax(0.01, sMax);
+}
+
+qreal ImageItem::deviceScaleMin() const
+{
+    // Min stretch of local→view: local radius covering a screen-pixel disc
+    // under rotation / anisotropic scale (critical for shape() and delivery).
+    QTransform t = transform();
+    if (scene()) {
+        const QList<QGraphicsView *> views = scene()->views();
+        if (!views.isEmpty() && views.first()) {
+            t = views.first()->transform() * t;
+        }
+    }
+    qreal sMax = 1.0, sMin = 1.0;
+    singularValues2x2(t.m11(), t.m12(), t.m21(), t.m22(), &sMax, &sMin);
+    return sMin;
 }
 
 qreal ImageItem::handleDrawSize() const
@@ -275,12 +327,10 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     }
 
     if (isEdgeScaleHandle(m_activeHandle)) {
-        // Work in item-local space for axis-aligned stretch.
+        // mapFromScene undoes rotation+scale, so local X/Y are the image axes
+        // even when the frame is rotated on screen — stretch those axes only.
         const QPointF local = mapFromScene(scenePos);
         const QPointF pressLocal = m_pressItemPos;
-        const QRectF r = QGraphicsPixmapItem::boundingRect();
-        const qreal halfW = qMax(1.0, r.width() / 2.0);
-        const qreal halfH = qMax(1.0, r.height() / 2.0);
 
         qreal sx = m_pressScaleX;
         qreal sy = m_pressScaleY;
@@ -292,7 +342,6 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
                     sx = m_pressScaleX * (x1 / x0);
                 }
             } else {
-                // Distance from fixed opposite edge in local X.
                 const qreal ax = m_pressAnchorLocal.x();
                 const qreal x0 = qAbs(pressLocal.x() - ax);
                 const qreal x1 = qAbs(local.x() - ax);
@@ -321,8 +370,6 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const QPointF now = mapToScene(m_pressAnchorLocal);
             setPos(pos() + (m_pressAnchorScene - now));
         }
-        Q_UNUSED(halfW);
-        Q_UNUSED(halfH);
     }
 }
 
@@ -346,15 +393,23 @@ QRectF ImageItem::opacitySliderRect() const
     return QRectF(x, y, w, h);
 }
 
-void ImageItem::setOpacityFromSliderPos(const QPointF &itemPos)
+void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
 {
     const QRectF track = opacitySliderRect();
     if (track.width() <= 0) {
         return;
     }
-    // Project onto the local track axis (works when the item is rotated: mouse
-    // coordinates are already in item space).
-    const qreal tval = qBound(0.0, (itemPos.x() - track.left()) / track.width(), 1.0);
+    // Project the pointer onto the track in view space so a rotated slider still
+    // responds along its visible axis (not raw local X).
+    const QPointF a = localToViewPx(QPointF(track.left(), track.center().y()));
+    const QPointF b = localToViewPx(QPointF(track.right(), track.center().y()));
+    const QPointF p = sceneToViewPx(scenePos);
+    const QPointF ab = b - a;
+    const qreal ab2 = QPointF::dotProduct(ab, ab);
+    qreal tval = 0.0;
+    if (ab2 > 1e-6) {
+        tval = qBound(0.0, QPointF::dotProduct(p - a, ab) / ab2, 1.0);
+    }
     setItemOpacity(0.05 + tval * 0.95);
 }
 
@@ -383,20 +438,7 @@ bool ImageItem::isUprightChromeHandle(Handle h) const
 
 qreal ImageItem::handleDistanceScreenPx(Handle h, const QPointF &itemPos) const
 {
-    // Measure in view pixels after the full item transform so hit targets stay
-    // accurate when the image is rotated (local isotropic scaling alone is not
-    // enough once the view mapping is involved).
-    const QPointF handleScene = mapToScene(handleCenter(h));
-    const QPointF posScene = mapToScene(itemPos);
-    if (scene()) {
-        const QList<QGraphicsView *> views = scene()->views();
-        if (!views.isEmpty() && views.first()) {
-            const QPoint a = views.first()->mapFromScene(handleScene);
-            const QPoint b = views.first()->mapFromScene(posScene);
-            return QLineF(QPointF(a), QPointF(b)).length();
-        }
-    }
-    return QLineF(handleScene, posScene).length();
+    return QLineF(localToViewPx(handleCenter(h)), localToViewPx(itemPos)).length();
 }
 
 QPointF ImageItem::handleCenter(Handle h) const
@@ -463,29 +505,19 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         return Handle::None;
     }
 
-    // Prefer chrome and opacity (drawn on top of the image) using screen-pixel
-    // distances so rotation/scale of the item does not shrink the hit target.
+    // Prefer chrome and opacity using view-pixel distances (rotation-safe).
     {
         const QRectF slider = opacitySliderRect();
-        // Expand in local units, then also accept near misses along the track
-        // (important when the image is rotated and the cursor sits just off the bar).
-        const qreal pad = 10.0 / screenScale();
-        const QRectF hit = slider.adjusted(-pad, -pad, pad, pad);
-        if (hit.contains(itemPos)) {
-            return Handle::OpacitySlider;
-        }
-        // Distance to the track centre-line in screen pixels
-        const QPointF a = slider.center() - QPointF(slider.width() / 2.0, 0);
-        const QPointF b = slider.center() + QPointF(slider.width() / 2.0, 0);
+        const QPointF a = localToViewPx(QPointF(slider.left(), slider.center().y()));
+        const QPointF b = localToViewPx(QPointF(slider.right(), slider.center().y()));
+        const QPointF p = localToViewPx(itemPos);
         const QPointF ab = b - a;
         const qreal ab2 = QPointF::dotProduct(ab, ab);
-        qreal t = 0.0;
+        qreal tt = 0.0;
         if (ab2 > 1e-6) {
-            t = qBound(0.0, QPointF::dotProduct(itemPos - a, ab) / ab2, 1.0);
+            tt = qBound(0.0, QPointF::dotProduct(p - a, ab) / ab2, 1.0);
         }
-        const QPointF closest = a + ab * t;
-        const QPointF d = itemPos - closest;
-        if (QLineF(QPointF(0, 0), d).length() * screenScale() <= kChromeHitScreenPx) {
+        if (QLineF(p, a + ab * tt).length() <= kChromeHitScreenPx) {
             return Handle::OpacitySlider;
         }
     }
@@ -775,7 +807,7 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
             m_pressAnchorLocal = scaleAnchorLocal(h);
             m_pressAnchorScene = mapToScene(m_pressAnchorLocal);
             if (h == Handle::OpacitySlider) {
-                setOpacityFromSliderPos(event->pos());
+                setOpacityFromSliderPos(event->scenePos());
                 notifyViewStatus();
             }
             event->accept();
@@ -789,7 +821,7 @@ void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     if (m_activeHandle != Handle::None) {
         if (m_activeHandle == Handle::OpacitySlider) {
-            setOpacityFromSliderPos(event->pos());
+            setOpacityFromSliderPos(event->scenePos());
         } else if (isRotateHandle(m_activeHandle)) {
             const QPointF centre = scenePos(); // item origin is image centre
             const QPointF v0 = m_pressScenePos - centre;
