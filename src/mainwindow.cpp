@@ -1494,6 +1494,7 @@ void MainWindow::showPreferences()
     PreferencesDialog dlg(this);
     dlg.setSlideshowIntervalMs(m_slideshowIntervalMs);
     dlg.setSlideshowFullscreen(m_slideshowFullscreen);
+    dlg.setMasonryColumnWidth(m_imageView->masonryColumnWidth());
     dlg.setSortModeIndex(m_sortMode == SortMode::Name ? 0 : 1);
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
     if (dlg.exec() != QDialog::Accepted) {
@@ -1501,6 +1502,7 @@ void MainWindow::showPreferences()
     }
     setSlideshowIntervalMs(dlg.slideshowIntervalMs());
     m_slideshowFullscreen = dlg.slideshowFullscreen();
+    m_imageView->setMasonryColumnWidth(dlg.masonryColumnWidth());
     setSortMode(dlg.sortModeIndex() == 1 ? SortMode::MTime : SortMode::Name);
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     writeSettings();
@@ -1614,6 +1616,10 @@ void MainWindow::readSettings()
 
     m_slideshowIntervalMs =
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
+    const int masonryW = settings.value(QStringLiteral("masonryColumnWidth"), 240).toInt();
+    if (m_imageView) {
+        m_imageView->setMasonryColumnWidth(masonryW);
+    }
     m_slideshowFullscreen =
         settings.value(QStringLiteral("slideshowFullscreen"), true).toBool();
 
@@ -1681,6 +1687,10 @@ void MainWindow::writeSettings()
                                                     : QStringLiteral("name"));
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
+    if (m_imageView) {
+        settings.setValue(QStringLiteral("masonryColumnWidth"),
+                          m_imageView->masonryColumnWidth());
+    }
     // Persist startup preference only — not the live session toggle
     settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);
     settings.remove(QStringLiteral("workspaceMode"));

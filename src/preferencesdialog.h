@@ -30,11 +30,15 @@ public:
     bool slideshowFullscreen() const;
     void setSlideshowFullscreen(bool on);
 
+    int masonryColumnWidth() const;
+    void setMasonryColumnWidth(int pixels);
+
 private:
     QSpinBox *m_intervalSpin = nullptr;
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
+    QSpinBox *m_masonryWidthSpin = nullptr;
 };
 
 #endif // PREFERENCESDIALOG_H

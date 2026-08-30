@@ -65,6 +65,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     form->addRow(QString(), m_slideshowFullscreenCheck);
     form->addRow(tr("Sort images by:"), m_sortCombo);
     form->addRow(QString(), m_workspaceCheck);
+    form->addRow(tr("Masonry column width:"), m_masonryWidthSpin);
 
     // GNOME 2 HIG: Cancel on the left, OK (affirmative) on the right
     auto *cancelBtn = new QPushButton(tr("&Cancel"), this);
@@ -132,4 +133,16 @@ bool PreferencesDialog::slideshowFullscreen() const
 void PreferencesDialog::setSlideshowFullscreen(bool on)
 {
     m_slideshowFullscreenCheck->setChecked(on);
+}
+
+
+int PreferencesDialog::masonryColumnWidth() const
+{
+    return m_masonryWidthSpin->value();
+}
+
+void PreferencesDialog::setMasonryColumnWidth(int pixels)
+{
+    m_masonryWidthSpin->setValue(qBound(m_masonryWidthSpin->minimum(), pixels,
+                                       m_masonryWidthSpin->maximum()));
 }

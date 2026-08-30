@@ -5,7 +5,10 @@
 #define IMAGEVIEW_H
 
 #include <QGraphicsView>
+#include <atomic>
 #include <QHash>
+#include <QImage>
+#include <QSet>
 #include <QPoint>
 #include <QString>
 #include <QStringList>
@@ -123,6 +126,10 @@ public:
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout();
 
+    /** Fixed column width in pixels for Masonry (images scale to this width). */
+    void setMasonryColumnWidth(int pixels);
+    int masonryColumnWidth() const { return m_masonryColumnWidth; }
+
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
 
@@ -145,6 +152,11 @@ signals:
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
 
+public slots:
+    /** Deliver a finished background decode (generation must still match). */
+    void onImageLoaded(const QString &path, const QImage &image, quint64 generation,
+                       int role);
+
 protected:
     void wheelEvent(QWheelEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
@@ -157,7 +169,14 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    ImageItem *loadItem(const QString &path);
+    enum LoadRole {
+        LoadReplace = 0,
+        LoadAdd = 1,
+        LoadRestore = 2
+    };
+
+    ImageItem *createItemFromImage(const QString &path, const QImage &image);
+    void scheduleImageLoad(const QString &path, LoadRole role);
     ImageItem *findItemByPath(const QString &path) const;
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
@@ -198,6 +217,9 @@ private:
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;
+    int m_masonryColumnWidth = 240;
+    std::atomic<quint64> m_loadGeneration{0};
+    QSet<QString> m_pendingWorkspacePaths;
     ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;

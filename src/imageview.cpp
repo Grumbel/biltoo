@@ -10,14 +10,17 @@
 
 #include <QFileInfo>
 #include <QKeyEvent>
+#include <QMetaObject>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
 #include <QScrollBar>
 #include <QSet>
+#include <QThreadPool>
 #include <QVector>
 #include <QWheelEvent>
 #include <QtMath>
+#include <atomic>
 #include <cmath>
 
 ImageView::ImageView(QWidget *parent)
@@ -26,6 +29,8 @@ ImageView::ImageView(QWidget *parent)
     m_scene = new QGraphicsScene(this);
     setScene(m_scene);
     m_undoStack = new QUndoStack(this);
+    qRegisterMetaType<QImage>("QImage");
+    qRegisterMetaType<quint64>("quint64");
 
     setRenderHint(QPainter::SmoothPixmapTransform, true);
     setDragMode(QGraphicsView::NoDrag);
@@ -41,9 +46,8 @@ ImageView::ImageView(QWidget *parent)
 
 ImageView::~ImageView() = default;
 
-ImageItem *ImageView::loadItem(const QString &path)
+ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image)
 {
-    const QImage image = ImageLoader::load(path);
     if (image.isNull()) {
         return nullptr;
     }
@@ -52,6 +56,115 @@ ImageItem *ImageView::loadItem(const QString &path)
     m_scene->addItem(item);
     m_items.append(item);
     return item;
+}
+
+void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    if (role == LoadAdd || role == LoadRestore) {
+        m_pendingWorkspacePaths.insert(path);
+    }
+    const quint64 gen = ++m_loadGeneration;
+    QThreadPool::globalInstance()->start([this, path, role, gen]() {
+        const QImage image = ImageLoader::load(path);
+        QMetaObject::invokeMethod(this, "onImageLoaded", Qt::QueuedConnection,
+                                  Q_ARG(QString, path),
+                                  Q_ARG(QImage, image),
+                                  Q_ARG(quint64, gen),
+                                  Q_ARG(int, static_cast<int>(role)));
+    });
+}
+
+void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
+                              int role)
+{
+    Q_UNUSED(generation);
+    // Replace loads only care about the latest classic path
+    if (role == LoadReplace) {
+        if (path != m_classicPath || m_workspaceMode) {
+            // Stale image-mode navigation or switched to workspace
+            if (!(m_workspaceMode && m_items.isEmpty() && path == m_classicPath)) {
+                if (path != m_classicPath) {
+                    return;
+                }
+            }
+        }
+        if (image.isNull()) {
+            emit statusChanged();
+            return;
+        }
+        if (!m_workspaceMode) {
+            clearWorkspace();
+            ImageItem *item = createItemFromImage(path, image);
+            if (!item) {
+                return;
+            }
+            item->setInteractive(false);
+            m_fitMode = true;
+            resetTransform();
+            fitItem(item);
+            emit statusChanged();
+            return;
+        }
+        // Workspace with empty canvas: seed with navigated image
+        if (m_items.isEmpty()) {
+            ImageItem *item = createItemFromImage(path, image);
+            if (item) {
+                item->setInteractive(true);
+                item->setSelected(true);
+                m_fitMode = true;
+                fitItem(item);
+                emit statusChanged();
+            }
+        }
+        return;
+    }
+
+    // Workspace add / restore
+    if (!m_pendingWorkspacePaths.contains(path)) {
+        return;
+    }
+    m_pendingWorkspacePaths.remove(path);
+    if (image.isNull() || findItemByPath(path)) {
+        return;
+    }
+
+    ImageItem *item = createItemFromImage(path, image);
+    if (!item) {
+        return;
+    }
+    item->setInteractive(true);
+
+    if (role == LoadRestore) {
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.constEnd()) {
+            applyState(item, *it);
+        } else {
+            // fall back to saved workspace list
+            for (const WorkspaceItemState &s : m_savedWorkspace) {
+                if (s.path == path) {
+                    applyState(item, s);
+                    break;
+                }
+            }
+        }
+    } else {
+        // LoadAdd: restore remembered state or default placement
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.constEnd()) {
+            applyState(item, *it);
+        } else {
+            applyState(item, defaultStateForPath(path, m_items.size() - 1));
+        }
+    }
+
+    if (m_layoutMode != LayoutMode::FreeForm) {
+        applyLayout();
+    }
+    emit statusChanged();
+    emit workspacePathsChanged();
 }
 
 WorkspaceItemState ImageView::captureState(const ImageItem *item) const
@@ -96,21 +209,12 @@ void ImageView::snapshotWorkspace()
 void ImageView::restoreWorkspace()
 {
     clearWorkspace();
+    m_pendingWorkspacePaths.clear();
     for (const WorkspaceItemState &state : m_savedWorkspace) {
-        ImageItem *item = loadItem(state.path);
-        if (!item) {
-            continue;
-        }
-        applyState(item, state);
-        item->setInteractive(true);
         m_itemStates.insert(state.path, state);
+        scheduleImageLoad(state.path, LoadRestore);
     }
-    if (!m_items.isEmpty()) {
-        m_scene->clearSelection();
-        m_items.last()->setSelected(true);
-        m_fitMode = false;
-        ensureVisibleItem(m_items.last());
-    }
+    m_fitMode = false;
     emit statusChanged();
 }
 
@@ -165,41 +269,23 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
         }
     }
 
-    // Add missing paths
-    int ordinal = m_items.size();
-    bool added = false;
+    // Load missing paths off the GUI thread
     for (const QString &path : paths) {
         if (findItemByPath(path)) {
             continue;
         }
-        ImageItem *item = loadItem(path);
-        if (!item) {
-            continue;
-        }
-        WorkspaceItemState state = m_itemStates.value(path);
-        if (state.path.isEmpty()) {
-            state = defaultStateForPath(path, ordinal);
-        }
-        applyState(item, state);
-        item->setInteractive(true);
-        ++ordinal;
-        added = true;
+        scheduleImageLoad(path, LoadAdd);
     }
 
-    if (added && m_layoutMode != LayoutMode::FreeForm) {
-        applyLayout();
-    } else if (added && !m_items.isEmpty()) {
-        m_fitMode = false;
-        ensureVisibleItem(m_items.last());
-    }
-
-    // Select the most recently added / last path if nothing selected
+    // Select something if nothing selected
     if (m_scene->selectedItems().isEmpty() && !m_items.isEmpty()) {
         m_items.last()->setSelected(true);
     }
 
     emit statusChanged();
+    emit workspacePathsChanged();
 }
+
 
 void ImageView::removeWorkspacePath(const QString &path)
 {
@@ -208,6 +294,7 @@ void ImageView::removeWorkspacePath(const QString &path)
         return;
     }
     rememberItemState(item);
+    m_pendingWorkspacePaths.remove(path);
     m_items.removeOne(item);
     m_scene->removeItem(item);
     delete item;
@@ -255,13 +342,9 @@ void ImageView::setWorkspaceMode(bool on)
                                  ? m_classicPath
                                  : (m_items.isEmpty() ? QString() : m_items.first()->path());
         clearWorkspace();
+        m_pendingWorkspacePaths.clear();
         if (!path.isEmpty()) {
-            ImageItem *item = loadItem(path);
-            if (item) {
-                item->setInteractive(false);
-                m_fitMode = true;
-                fitItem(item);
-            }
+            scheduleImageLoad(path, LoadReplace);
         }
         emit statusChanged();
         return;
@@ -415,33 +498,16 @@ bool ImageView::loadImage(const QString &path)
         // only ensure the path is available as classic fallback.
         // Still show the navigated image if the workspace is empty.
         if (m_items.isEmpty()) {
-            ImageItem *item = loadItem(path);
-            if (!item) {
-                return false;
-            }
-            item->setInteractive(true);
-            item->setSelected(true);
-            m_fitMode = true;
-            fitItem(item);
-            emit statusChanged();
-        } else {
-            emit statusChanged();
+            scheduleImageLoad(path, LoadReplace);
         }
+        emit statusChanged();
         return true;
     }
 
-    // Classic mode: single centred non-interactive image
+    // Classic mode: decode off the GUI thread, then centre when ready
     clearWorkspace();
-    ImageItem *item = loadItem(path);
-    if (!item) {
-        return false;
-    }
-    item->setInteractive(false);
-    m_fitMode = true;
-    fitItem(item);
-    // Reset view transform so the image is truly centred
-    resetTransform();
-    fitItem(item);
+    m_pendingWorkspacePaths.clear();
+    scheduleImageLoad(path, LoadReplace);
     emit statusChanged();
     return true;
 }
@@ -460,26 +526,8 @@ bool ImageView::addImage(const QString &path)
         return true;
     }
 
-    ImageItem *item = loadItem(path);
-    if (!item) {
-        return false;
-    }
-
-    WorkspaceItemState state = m_itemStates.value(path);
-    if (state.path.isEmpty()) {
-        state = defaultStateForPath(path, m_items.size() - 1);
-    }
-    applyState(item, state);
-
-    m_scene->clearSelection();
-    item->setSelected(true);
-    if (m_layoutMode != LayoutMode::FreeForm) {
-        applyLayout();
-    } else {
-        m_fitMode = false;
-        ensureVisibleItem(item);
-        emit statusChanged();
-    }
+    scheduleImageLoad(path, LoadAdd);
+    emit statusChanged();
     return true;
 }
 
@@ -694,8 +742,21 @@ void ImageView::setLayoutMode(LayoutMode mode)
     applyLayout();
 }
 
+void ImageView::setMasonryColumnWidth(int pixels)
+{
+    const int clamped = qBound(80, pixels, 800);
+    if (clamped == m_masonryColumnWidth) {
+        return;
+    }
+    m_masonryColumnWidth = clamped;
+    if (m_layoutMode == LayoutMode::Masonry) {
+        applyLayout();
+    }
+}
+
 void ImageView::applyLayout()
 {
+
     if (m_items.isEmpty() || m_layoutMode == LayoutMode::FreeForm) {
         return;
     }
@@ -760,12 +821,15 @@ void ImageView::applyLayout()
             m_itemStates.insert(item->path(), captureState(item));
         }
     } else if (m_layoutMode == LayoutMode::Masonry) {
-        // Column packing: fixed column width, place each image in the shortest column
-        constexpr qreal kTargetColW = 220.0;
-        int cols = qMax(1, static_cast<int>(std::floor(availW / kTargetColW)));
-        cols = qBound(1, cols, n);
-        const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
+        // Fixed column width (configurable); as many columns as fit; scroll for overflow
+        const qreal colW = static_cast<qreal>(qMax(40, m_masonryColumnWidth));
+        int cols = qMax(1, static_cast<int>(std::floor((availW + gap) / (colW + gap))));
+        cols = qMin(cols, n);
         QVector<qreal> colHeights(cols, 0.0);
+
+        // Enable scrolling so tall columns remain reachable
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
         for (ImageItem *item : m_items) {
             const QSizeF ns = nativeSize(item);
