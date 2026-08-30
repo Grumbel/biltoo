@@ -4,9 +4,15 @@
 #include "thumbnailbar.h"
 #include "imageloader.h"
 
+#include <QAction>
+#include <QContextMenuEvent>
 #include <QFileInfo>
 #include <QFont>
+#include <QFontMetrics>
+#include <QKeyEvent>
+#include <QKeySequence>
 #include <QListWidgetItem>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QMetaObject>
 #include <QResizeEvent>
@@ -14,10 +20,9 @@
 #include <algorithm>
 
 namespace {
-// Space under/beside the icon for a single-line caption (font + small gap).
-// Kept tight so the strip is mostly image, not text.
-constexpr int kLabelPad = 16;
-constexpr int kGridPadX = 8;
+// Caption band under the icon: font height + minimal gap (no extra style padding).
+constexpr int kLabelGap = 2;
+constexpr int kGridPadX = 4;
 } // namespace
 
 ThumbnailBar::ThumbnailBar(QWidget *parent)
@@ -26,19 +31,23 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setViewMode(QListWidget::IconMode);
     setResizeMode(QListWidget::Adjust);
     setMovement(QListWidget::Static);
-    setSpacing(4);
+    setSpacing(2);
     setUniformItemSizes(true);
     setSelectionMode(QAbstractItemView::SingleSelection);
-    setFocusPolicy(Qt::NoFocus);
+    setFocusPolicy(Qt::ClickFocus);
     setWordWrap(false);
     setTextElideMode(Qt::ElideMiddle);
+    setContextMenuPolicy(Qt::DefaultContextMenu);
+    // Drop style-provided item margins that inflate the caption band
+    setStyleSheet(QStringLiteral(
+        "QListWidget::item { padding: 0px; margin: 0px; border: none; }"));
 
     // Compact caption under the icon
     QFont captionFont = font();
     if (captionFont.pointSizeF() > 0) {
-        captionFont.setPointSizeF(qMax(8.0, captionFont.pointSizeF() - 1.5));
+        captionFont.setPointSizeF(qMax(7.0, captionFont.pointSizeF() - 2.0));
     } else if (captionFont.pixelSize() > 0) {
-        captionFont.setPixelSize(qMax(10, captionFont.pixelSize() - 2));
+        captionFont.setPixelSize(qMax(9, captionFont.pixelSize() - 3));
     }
     setFont(captionFont);
 
@@ -58,12 +67,13 @@ ThumbnailBar::~ThumbnailBar()
 
 int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
-    return thumbSize + kLabelPad;
+    // Approximate single-line caption height when no widget font is available
+    return thumbSize + 12 + kLabelGap;
 }
 
 int ThumbnailBar::thumbSizeForExtent(int extent)
 {
-    const int size = extent - kLabelPad;
+    const int size = extent - (12 + kLabelGap);
     return qBound(kMinThumbSize, size, kMaxThumbSize);
 }
 
@@ -97,11 +107,14 @@ void ThumbnailBar::setBarOrientation(Qt::Orientation orientation)
 void ThumbnailBar::applyThumbMetrics()
 {
     setIconSize(QSize(m_thumbSize, m_thumbSize));
-    setGridSize(QSize(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad));
 
-    const int extent = extentForThumbSize(m_thumbSize);
-    const int minExtent = extentForThumbSize(kMinThumbSize);
-    const int maxExtent = extentForThumbSize(kMaxThumbSize);
+    const int labelH = QFontMetrics(font()).height() + kLabelGap;
+    const int cellW = m_thumbSize + kGridPadX;
+    const int cellH = m_thumbSize + labelH;
+    setGridSize(QSize(cellW, cellH));
+
+    const int minExtent = kMinThumbSize + labelH;
+    const int maxExtent = kMaxThumbSize + labelH;
 
     if (m_orientation == Qt::Horizontal) {
         setMinimumHeight(minExtent);
@@ -115,7 +128,7 @@ void ThumbnailBar::applyThumbMetrics()
         setMaximumHeight(QWIDGETSIZE_MAX);
     }
 
-    const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad);
+    const QSize hint(cellW, cellH);
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
             it->setSizeHint(hint);
@@ -125,7 +138,8 @@ void ThumbnailBar::applyThumbMetrics()
 
 QSize ThumbnailBar::sizeHint() const
 {
-    const int extent = extentForThumbSize(m_thumbSize);
+    const int labelH = QFontMetrics(font()).height() + kLabelGap;
+    const int extent = m_thumbSize + labelH;
     if (m_orientation == Qt::Horizontal) {
         return QSize(400, extent);
     }
@@ -134,7 +148,8 @@ QSize ThumbnailBar::sizeHint() const
 
 QSize ThumbnailBar::minimumSizeHint() const
 {
-    const int extent = extentForThumbSize(kMinThumbSize);
+    const int labelH = QFontMetrics(font()).height() + kLabelGap;
+    const int extent = kMinThumbSize + labelH;
     if (m_orientation == Qt::Horizontal) {
         return QSize(200, extent);
     }
@@ -210,7 +225,8 @@ void ThumbnailBar::setFiles(const QStringList &files)
     clear();
     m_files = files;
 
-    const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad);
+    const int labelH = QFontMetrics(font()).height() + kLabelGap;
+    const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + labelH);
     for (const QString &path : files) {
         auto *item = new QListWidgetItem(this);
         item->setText(QFileInfo(path).fileName());
@@ -316,6 +332,60 @@ void ThumbnailBar::onCurrentRowChanged(int row)
     if (row >= 0) {
         emit indexActivated(row);
     }
+}
+
+void ThumbnailBar::requestRemoveSelection()
+{
+    QList<int> indices = selectedIndices();
+    if (indices.isEmpty()) {
+        const int row = currentRow();
+        if (row >= 0) {
+            indices.append(row);
+        }
+    }
+    if (!indices.isEmpty()) {
+        emit removeIndicesRequested(indices);
+    }
+}
+
+void ThumbnailBar::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        requestRemoveSelection();
+        event->accept();
+        return;
+    }
+    QListWidget::keyPressEvent(event);
+}
+
+void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
+{
+    QListWidgetItem *hit = itemAt(event->pos());
+    if (hit) {
+        if (m_workspaceMode) {
+            // Ensure the item under the cursor is part of the selection
+            if (!hit->isSelected()) {
+                hit->setSelected(true);
+            }
+        } else {
+            setCurrentItem(hit);
+        }
+    }
+
+    QList<int> indices = selectedIndices();
+    if (indices.isEmpty() && hit) {
+        indices.append(row(hit));
+    }
+
+    QMenu menu(this);
+    QAction *removeAct = menu.addAction(tr("Remove from Session"));
+    removeAct->setShortcut(QKeySequence::Delete);
+    removeAct->setEnabled(!indices.isEmpty());
+    QAction *chosen = menu.exec(event->globalPos());
+    if (chosen == removeAct && !indices.isEmpty()) {
+        emit removeIndicesRequested(indices);
+    }
+    event->accept();
 }
 
 void ThumbnailBar::mousePressEvent(QMouseEvent *event)

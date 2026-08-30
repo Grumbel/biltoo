@@ -102,6 +102,7 @@ private slots:
     void onThumbnailAddToWorkspace(int index);
     void onThumbnailWorkspaceSelectionChanged();
     void onWorkspacePathsChanged();
+    void removeSessionIndices(const QList<int> &indices);
 
 private:
     void createActions();

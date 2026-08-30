@@ -67,11 +67,15 @@ signals:
     void indexAddToWorkspace(int index);
     /** Emitted after a toggle (or bulk change) of workspace membership selection. */
     void workspaceSelectionChanged();
+    /** Request removing these session indices (Delete key or context menu). */
+    void removeIndicesRequested(const QList<int> &indices);
 
 protected:
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
     void mousePressEvent(QMouseEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private slots:
@@ -84,6 +88,7 @@ private:
     void applyThumbMetrics();
     void applyOrientation();
     void scheduleThumbnailLoads();
+    void requestRemoveSelection();
     static QImage makeThumbnail(const QString &path, int maxSize);
 
     // Generation counter so stale async results are ignored after setFiles()

@@ -111,6 +111,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onThumbnailAddToWorkspace);
     connect(m_thumbnailBar, &ThumbnailBar::workspaceSelectionChanged,
             this, &MainWindow::onThumbnailWorkspaceSelectionChanged);
+    connect(m_thumbnailBar, &ThumbnailBar::removeIndicesRequested,
+            this, &MainWindow::removeSessionIndices);
     connect(m_imageView, &ImageView::workspacePathsChanged,
             this, &MainWindow::onWorkspacePathsChanged);
 
@@ -874,6 +876,76 @@ void MainWindow::setCurrentIndex(int index)
     }
     updateStatus();
     updateNavigationActions();
+}
+
+void MainWindow::removeSessionIndices(const QList<int> &indices)
+{
+    if (indices.isEmpty() || m_files.isEmpty()) {
+        return;
+    }
+
+    stopSlideshow();
+
+    QList<int> sorted = indices;
+    std::sort(sorted.begin(), sorted.end());
+    sorted.erase(std::unique(sorted.begin(), sorted.end()), sorted.end());
+
+    const QString currentPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
+                                    ? m_files.at(m_currentIndex)
+                                    : QString();
+
+    // Remove highest indices first so remaining indices stay valid
+    for (int i = sorted.size() - 1; i >= 0; --i) {
+        const int idx = sorted.at(i);
+        if (idx < 0 || idx >= m_files.size()) {
+            continue;
+        }
+        const QString path = m_files.at(idx);
+        m_files.removeAt(idx);
+        if (m_workspaceMode && m_imageView) {
+            m_imageView->removeWorkspacePath(path);
+        }
+    }
+
+    m_thumbnailBar->setFiles(m_files);
+    if (m_workspaceMode) {
+        m_thumbnailBar->setWorkspaceMode(true);
+        syncThumbnailWorkspaceSelection();
+    }
+    applyThumbnailVisibility();
+
+    if (m_files.isEmpty()) {
+        m_currentIndex = -1;
+        m_imageView->clearWorkspace();
+        if (m_metadataPanel) {
+            m_metadataPanel->clear();
+        }
+        updateStatus();
+        updateNavigationActions();
+        return;
+    }
+
+    int newIndex = 0;
+    if (!currentPath.isEmpty()) {
+        newIndex = m_files.indexOf(currentPath);
+    }
+    if (newIndex < 0) {
+        // Prefer the nearest index after the first removed slot
+        newIndex = qBound(0, sorted.first(), m_files.size() - 1);
+    }
+
+    if (m_workspaceMode) {
+        m_currentIndex = newIndex;
+        if (m_metadataPanel) {
+            m_metadataPanel->setImagePath(m_files.at(newIndex));
+        }
+        m_thumbnailBar->setCurrentIndex(newIndex);
+        updateStatus();
+        updateNavigationActions();
+    } else {
+        m_currentIndex = -1;
+        setCurrentIndex(newIndex);
+    }
 }
 
 void MainWindow::updateNavigationActions()
