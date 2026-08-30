@@ -142,6 +142,11 @@ invariant 6).
 
 ### Workspace transform chrome (scale-invariant handles) — **fragile, re-read**
 
+Normative behaviour, coordinate spaces, near-zero scale, and drag semantics:
+**[HANDLES.md](HANDLES.md)**. Read that before changing placement, paint, or
+scale-drag math.
+
+
 Handles **must stay a constant size on screen** under any combination of:
 
 - view zoom (`QGraphicsView::transform`)
