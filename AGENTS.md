@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 # Agent notes for QImgView
 
 Guidance for humans and automated agents working on this codebase.
@@ -26,11 +23,14 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 ## Coding conventions
 
 - C++17, Qt6, CMake.
-- Every source file carries SPDX headers:
+- Source and build files carry SPDX headers:
   ```
   // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
   // SPDX-License-Identifier: GPL-3.0-or-later
   ```
+  Documentation (`README.md`, `AGENTS.md`, `TODO.md`, `REUSE.md`, …) does **not**
+  use in-file SPDX headers; licensing is described in [REUSE.md](REUSE.md) and
+  covered by [`.reuse/dep5`](.reuse/dep5).
 - Prefer clear, modular classes (MainWindow, ImageView / future workspace,
   ThumbnailBar, MetadataPanel, …). Refactor early when complexity grows.
 - No silent feature removal. Discuss before dropping behaviour.
