@@ -449,6 +449,8 @@ void ImageView::setViewMode(ViewMode mode)
         m_galleryHoverPath.clear();
         m_gallerySelectionAnchor = nullptr;
         setDragMode(QGraphicsView::NoDrag);
+        // Stop deferred packs immediately — a pending 0ms debounce after
+        // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
         if (m_layoutDebounceTimer) {
             m_layoutDebounceTimer->stop();
         }

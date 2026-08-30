@@ -129,6 +129,7 @@ void MainWindow::showPathInImageMode(const QString &path)
     if (m_workspaceModeAct) {
         m_workspaceModeAct->setChecked(false);
     }
+    // Single Image-mode decode: setCurrentIndex → loadImage after the canvas is empty.
     m_imageView->setViewMode(ImageView::ViewMode::Image);
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
