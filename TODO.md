@@ -34,6 +34,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Slideshow auto-fullscreen preference; slideshow disabled in workspace mode
 - [x] Thumbnail bar position: bottom or left (View menu)
 - [x] Metadata dock close button stays in sync with toolbar/menu toggle
+- [x] Image mode: left/right edge click = prev/next; hover arrows; double-click fullscreen
 
 ## Near-term
 
@@ -68,12 +69,14 @@ Prefer staying on the `QImageReader` path where possible.
 
 | Gesture | Effect |
 |---------|--------|
-| Drop (classic mode) | Replace session |
-| Shift/Ctrl+Drop (classic) | Append to session (thumbnail bar) |
-| Drop (workspace mode) | Append to session and show on workspace |
-| Click thumbnail (workspace) | Toggle image on/off the workspace (state kept) |
-| Ctrl/Shift+click thumbnail (classic) | Enable workspace mode and add image |
-| Click item | Select (shows scale/rotate handles) |
+| Drop (Image mode) | Replace session |
+| Shift/Ctrl+Drop (Image mode) | Append to session (thumbnail bar) |
+| Drop (Workspace mode) | Append to session and show on workspace |
+| Click thumbnail (Workspace) | Toggle image on/off the workspace (state kept) |
+| Ctrl/Shift+click thumbnail (Image mode) | Enable workspace mode and add image |
+| Click left/right edge (Image mode) | Previous / next image (hover shows arrows) |
+| Double-click image (Image mode) | Toggle fullscreen |
+| Click item (Workspace) | Select (shows scale/rotate handles) |
 | Drag item | Move |
 | Drag corner handle | Uniform scale about centre |
 | Drag rotate handle | Free rotate about centre |
