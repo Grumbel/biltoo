@@ -1,32 +1,46 @@
-# SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 # QImgView
 
-A classic Qt image viewer that treats the image area as a workspace.
+A classic Qt image viewer with an optional multi-image **workspace** for side-by-side comparison.
 
-## Features (planned / in progress)
+## Features
 
-- Toolbar inspired by Ristretto (Open, Zoom ±, 1:1, Fit, Fullscreen, Rotate L/R)
-- Single image or groups of images (command line or drag-and-drop)
-- Thumbnail panel when multiple images are loaded
-- Free rotation and continuous zoom
-- Optional Exif side panel
-- Rich command-line interface
+- Fast single-image browsing with zoom, pan, rotate, and flip
+- Thumbnail bar for the current session; open files or directories from the UI or the command line
+- **Workspace mode**: place several images on a canvas, scale and rotate them freely, adjust opacity and stacking order
+- Automatic layouts in workspace mode (side-by-side, grid, masonry, …)
+- Slideshow with optional fullscreen
+- Metadata panel (file info; optional Exif/IPTC/XMP when built with libexiv2)
+- Theme icons, fullscreen, and preferences for sort order, slideshow, and default applications
 
-See [TODO.md](TODO.md) for the full roadmap.
+## Usage
+
+```bash
+qimgview [options] [files-or-directories…]
+```
+
+Useful options:
+
+| Option | Description |
+|--------|-------------|
+| `-r`, `--recursive` | Expand directories recursively |
+| `--sort=name\|mtime` | Sort order for loaded files |
+| `--slideshow` | Start the slideshow |
+| `--interval=ms` | Slideshow interval in milliseconds |
+| `--thumbnails` / `--no-thumbnails` | Force thumbnail bar on or off |
+
+Drag and drop image files onto the window. In normal mode a plain drop replaces the session; Shift or Ctrl+drop appends. In workspace mode, drops add images to the session and the canvas.
 
 ## Building
 
-This project uses a Nix flake for a reproducible environment.
+**Nix** (recommended):
 
 ```bash
-nix develop          # enter development shell
-nix build            # build the package
-nix run              # build and run
+nix develop    # development shell
+nix build      # package
+nix run        # build and run
 ```
 
-Manual build (with Qt6 and CMake available):
+**Manual** (Qt6 Widgets, CMake; optional libvips, libexiv2, GLib GIO):
 
 ```bash
 mkdir build && cd build
@@ -42,9 +56,6 @@ The package installs:
 - `share/applications/qimgview.desktop`
 - `share/icons/hicolor/scalable/apps/qimgview.svg`
 
-The same SVG is embedded as a fallback window icon when the theme icon is not available.
-
 ## License
 
-GPL-3.0-or-later. See [LICENSE](LICENSE) and the SPDX headers in source files.
-This project follows the [REUSE specification](https://reuse.software/).
+GPL-3.0-or-later. See [LICENSE](LICENSE) and [REUSE.md](REUSE.md).
