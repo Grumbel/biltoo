@@ -40,12 +40,12 @@ QString tooltipForHandle(ImageItem::Handle h)
 namespace {
 constexpr qreal kHandleScreenPx = 13.0;
 constexpr qreal kRotateOffsetPx = 32.0;
-constexpr qreal kChromeBtnScreenPx = 28.0;   // raise / lower button diameter
-constexpr qreal kChromeOffsetPx = 36.0;      // gap from image bottom to chrome row
-constexpr qreal kChromeBtnGapPx = 10.0;      // gap between raise and lower
-constexpr qreal kSliderWidthPx = 120.0;
-constexpr qreal kSliderHeightPx = 14.0;
-constexpr qreal kSliderGapPx = 12.0;         // gap from lower button to slider
+constexpr qreal kChromeBtnScreenPx = 26.0;   // flip / raise / lower diameter (screen px)
+constexpr qreal kChromeInsetPx = 10.0;       // inset from pixmap edge into the image
+constexpr qreal kChromeBtnGapPx = 8.0;       // gap between stacked chrome buttons
+constexpr qreal kSliderWidthPx = 100.0;
+constexpr qreal kSliderHeightPx = 12.0;
+constexpr qreal kSliderBottomInsetPx = 10.0; // opacity track above bottom edge
 } // namespace
 
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
@@ -241,21 +241,14 @@ QRectF ImageItem::contentRect() const
 
 QRectF ImageItem::boundingRect() const
 {
-    // Expand for handles when selected so they are not clipped
+    // Expand for external handles (scale/rotate) when selected so they are not clipped.
+    // Flip / raise / lower / opacity sit inside the pixmap and need no extra pad.
     QRectF r = QGraphicsPixmapItem::boundingRect();
     if (isSelected() && m_interactive) {
         const qreal ss = screenScale();
         const qreal rotPad = handleHitRadius() + kRotateOffsetPx / ss + 4.0;
-        const qreal chromePad = chromeButtonSize() + kChromeOffsetPx / ss + 8.0;
         const qreal sidePad = qMax(handleHitRadius() + 4.0, rotPad);
-        r.adjust(-sidePad, -rotPad, sidePad, chromePad);
-        // Upright chrome can sit outside the simple bottom pad when rotated
-        r = r.united(opacitySliderRect().adjusted(-chromePad, -chromePad, chromePad, chromePad));
-        for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
-            const QPointF c = handleCenter(h);
-            const qreal rad = chromeButtonSize();
-            r = r.united(QRectF(c.x() - rad, c.y() - rad, rad * 2, rad * 2));
-        }
+        r.adjust(-sidePad, -rotPad, sidePad, sidePad);
     }
     return r;
 }
@@ -369,19 +362,17 @@ QRectF ImageItem::opacitySliderRectUpright() const
 
 QRectF ImageItem::opacitySliderRect() const
 {
+    // Horizontal track along the bottom interior of the pixmap (rotates with image).
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal ss = screenScale();
-    const qreal btn = kChromeBtnScreenPx / ss;
-    const qreal gapBtn = kChromeBtnGapPx / ss;
-    const qreal gapSlider = kSliderGapPx / ss;
-    const qreal w = kSliderWidthPx / ss;
+    const qreal inset = kChromeInsetPx / ss;
     const qreal h = kSliderHeightPx / ss;
-    constexpr int kChromeBtns = 4;
-    const qreal rowW = kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider + w;
-    const qreal rowLeft = r.center().x() - rowW / 2.0;
-    const qreal sliderLeft = rowLeft + kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider;
-    const qreal y = r.bottom() + kChromeOffsetPx / ss + (btn - h) / 2.0;
-    return QRectF(sliderLeft, y, w, h);
+    const qreal maxW = kSliderWidthPx / ss;
+    const qreal avail = qMax(0.0, r.width() - 2.0 * inset);
+    const qreal w = qMin(maxW, avail);
+    const qreal x = r.left() + inset + (avail - w) / 2.0;
+    const qreal y = r.bottom() - inset - h;
+    return QRectF(x, y, w, h);
 }
 
 void ImageItem::setOpacityFromSliderPos(const QPointF &itemPos)
@@ -400,18 +391,19 @@ QPointF ImageItem::handleCenter(Handle h) const
     const qreal ss = screenScale();
     const qreal rotOff = kRotateOffsetPx / ss;
     const qreal btn = kChromeBtnScreenPx / ss;
-    const qreal gapBtn = kChromeBtnGapPx / ss;
-    const qreal gapSlider = kSliderGapPx / ss;
-    const qreal sliderW = kSliderWidthPx / ss;
-    constexpr int kChromeBtns = 4;
-    const qreal rowW = kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider + sliderW;
-    const qreal rowLeft = r.center().x() - rowW / 2.0;
-    // Chrome sits in item-local space under the pixmap so it rotates with the image.
-    const qreal chromeY = r.bottom() + kChromeOffsetPx / ss + btn / 2.0;
+    const qreal gap = kChromeBtnGapPx / ss;
+    const qreal inset = kChromeInsetPx / ss;
     const qreal cx = r.center().x();
+
+    // Vertical stack on the right interior of the image: FlipH, FlipV, Raise, Lower.
+    // Stays on the pixmap so it rotates with the content and does not collide with
+    // external rotate handles (which sit outside the edges).
+    const qreal stackX = r.right() - inset - btn / 2.0;
+    const qreal stackTop = r.center().y() - (2.0 * btn + 1.5 * gap);
     auto chromeBtnCenter = [&](int index) {
-        return QPointF(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
+        return QPointF(stackX, stackTop + index * (btn + gap) + btn / 2.0);
     };
+
     switch (h) {
     case Handle::ScaleTopLeft:
         return r.topLeft();
@@ -604,26 +596,15 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setPen(pen);
     }
 
-    // Chrome row: flip / raise / lower / opacity — item-local under the pixmap
-    // so the controls rotate with the image (same frame as scale/rotate handles).
+    // Chrome on the image: vertical stack on the right interior (FlipH/V, Raise,
+    // Lower) and opacity track along the bottom interior — all item-local so
+    // they rotate with the pixmap.
     {
-        const QRectF r = QGraphicsPixmapItem::boundingRect();
         const qreal ss = screenScale();
-        const qreal btn = kChromeBtnScreenPx / ss;
-        const qreal gapBtn = kChromeBtnGapPx / ss;
-        const qreal gapSlider = kSliderGapPx / ss;
-        const qreal sliderW = kSliderWidthPx / ss;
-        constexpr int kChromeBtns = 4;
-        const qreal rowW = kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider + sliderW;
-        const qreal rowLeft = r.center().x() - rowW / 2.0;
-        const qreal chromeY = r.bottom() + kChromeOffsetPx / ss + btn / 2.0;
-        const qreal btnR = btn / 2.0;
+        const qreal btnR = (kChromeBtnScreenPx / ss) / 2.0;
 
-        auto localBtnCenter = [&](int index) {
-            return QPointF(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
-        };
-        auto drawChromeBtn = [&](Handle h, int index, const QString &glyph) {
-            const QPointF c = localBtnCenter(index);
+        auto drawChromeBtn = [&](Handle h, const QString &glyph) {
+            const QPointF c = handleCenter(h);
             const bool hovered = (m_hoverHandle == h);
             const bool active = (m_activeHandle == h);
             const qreal rad = btnR * (hovered || active ? 1.12 : 1.0);
@@ -646,10 +627,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->drawText(QRectF(-16, -16, 32, 32), Qt::AlignCenter, glyph);
             painter->restore();
         };
-        drawChromeBtn(Handle::FlipH, 0, QStringLiteral("↔"));
-        drawChromeBtn(Handle::FlipV, 1, QStringLiteral("↕"));
-        drawChromeBtn(Handle::Raise, 2, QStringLiteral("↑"));
-        drawChromeBtn(Handle::Lower, 3, QStringLiteral("↓"));
+        drawChromeBtn(Handle::FlipH, QStringLiteral("↔"));
+        drawChromeBtn(Handle::FlipV, QStringLiteral("↕"));
+        drawChromeBtn(Handle::Raise, QStringLiteral("↑"));
+        drawChromeBtn(Handle::Lower, QStringLiteral("↓"));
 
         const QRectF track = opacitySliderRect();
         const qreal tval = qBound(0.0, (m_opacity - 0.05) / 0.95, 1.0);
@@ -671,7 +652,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         const QPointF thumb(track.left() + track.width() * tval, track.center().y());
         painter->setBrush(QColor(230, 230, 230));
         painter->setPen(QPen(QColor(30, 30, 30), 0));
-        painter->drawEllipse(thumb, 7.0 / ss, 7.0 / ss);
+        painter->drawEllipse(thumb, 6.0 / ss, 6.0 / ss);
     }
 
     painter->restore();
