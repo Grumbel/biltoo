@@ -155,14 +155,23 @@ void MainWindow::returnToGallery()
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
                                   ? m_files.at(m_currentIndex)
                                   : QString();
-    // Arm restore before re-enter so applyLayout re-applies the snapshot after
-    // packing (and after each async LoadAdd) instead of leaving centerOn(0,0).
+    // Arm restore before re-enter so every applyLayout re-centres on the
+    // snapshotted scene point while session images load back onto the canvas.
     if (m_imageView) {
         m_imageView->restoreGalleryViewport(focusPath);
     }
     enterGalleryMode(m_galleryReturnLayout);
     if (m_imageView) {
         m_imageView->applyPendingGalleryRestore();
+        // Thumb bar hide + scrollbar AlwaysOn resize after mode switch; pack
+        // again on the settled viewport, then re-apply the scene centre.
+        QTimer::singleShot(0, this, [this, focusPath]() {
+            if (!m_imageView || !m_imageView->isGalleryMode()) {
+                return;
+            }
+            m_imageView->restoreGalleryViewport(focusPath);
+            m_imageView->applyPendingGalleryRestore();
+        });
     }
 }
 

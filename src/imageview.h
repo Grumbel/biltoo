@@ -423,6 +423,9 @@ private:
     int m_galleryScrollH = 0;
     int m_galleryScrollV = 0;
     bool m_haveGalleryScroll = false;
+    /** Scene-space viewport centre when leaving Gallery (stable across bar policy). */
+    QPointF m_galleryViewCenter;
+    bool m_haveGalleryViewCenter = false;
     QString m_galleryFocusPath;
     bool m_pendingGalleryRestore = false;
 };

@@ -539,6 +539,7 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
         // Soft reset: keep items and selection paths; only clear view zoom.
         // Drop scroll snapshot — user asked for a new layout, not return-from-Image.
         m_haveGalleryScroll = false;
+        m_haveGalleryViewCenter = false;
         m_pendingGalleryRestore = false;
         resetTransform();
         m_fitMode = true;
@@ -581,6 +582,10 @@ void ImageView::snapshotGalleryViewport()
     if (!isGalleryMode()) {
         return;
     }
+    // Scene centre is robust across ScrollBar AlwaysOn/Off and pack rebuilds;
+    // raw scrollbar values are not (policy change zeroes the range).
+    m_galleryViewCenter = mapToScene(viewport()->rect().center());
+    m_haveGalleryViewCenter = true;
     if (horizontalScrollBar()) {
         m_galleryScrollH = horizontalScrollBar()->value();
     }
@@ -588,7 +593,6 @@ void ImageView::snapshotGalleryViewport()
         m_galleryScrollV = verticalScrollBar()->value();
     }
     m_haveGalleryScroll = true;
-    // Prefer current selection as focus for return highlight
     if (ImageItem *sel = targetItem()) {
         m_galleryFocusPath = sel->path();
     }
@@ -613,8 +617,10 @@ void ImageView::applyPendingGalleryRestore()
         return;
     }
 
-    // Prefer exact scrollbar snapshot from leaving Gallery (do not centerOn origin).
-    if (m_haveGalleryScroll) {
+    // Prefer scene-centre restore (survives scrollbar policy / range rebuild).
+    if (m_haveGalleryViewCenter) {
+        centerOn(m_galleryViewCenter);
+    } else if (m_haveGalleryScroll) {
         if (horizontalScrollBar()) {
             horizontalScrollBar()->setValue(m_galleryScrollH);
         }
@@ -629,8 +635,6 @@ void ImageView::applyPendingGalleryRestore()
     }
     if (focus) {
         focus->setSelected(true);
-        // Only nudge into view if the snapshot left the focus tile off-screen
-        // (e.g. window resized while in Image mode).
         const QRectF viewScene = mapToScene(viewport()->rect()).boundingRect();
         if (!viewScene.intersects(focus->sceneBoundingRect())) {
             ensureVisible(focus, 48, 48);
@@ -641,9 +645,9 @@ void ImageView::applyPendingGalleryRestore()
         }
     }
 
-    // Keep pending until async LoadAdd finishes so later applyLayout packs
-    // do not leave the view at centerOn(0,0).
-    if (m_pendingWorkspacePaths.isEmpty()) {
+    // Stay pending while loads complete — each applyLayout would otherwise
+    // centerOn(0,0) and wipe the restored position.
+    if (m_pendingWorkspacePaths.isEmpty() && !m_items.isEmpty()) {
         m_pendingGalleryRestore = false;
     }
 }
