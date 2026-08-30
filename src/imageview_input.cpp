@@ -318,25 +318,61 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
         return;
     }
 
-    // Checkerboard in scene coordinates so it pans/zooms with the view
-    constexpr int kCell = 16;
+    // Checkerboard in scene coordinates so it pans with the view. Cell size is
+    // LOD-snapped so on-screen square size stays in a comfortable range: when
+    // a 16-scene-unit cell would shrink below ~16 device px, double the scene
+    // cell (and again) until squares are large enough — never draw a dense
+    // field of sub-pixel checkers.
+    const qreal viewScale = qMax(1e-6, transform().m11());
+    constexpr qreal kBaseCell = 16.0;
+    constexpr qreal kMinScreenPx = 16.0;
+    qreal cell = kBaseCell;
+    while (cell * viewScale < kMinScreenPx && cell < 4096.0) {
+        cell *= 2.0;
+    }
+
     const QColor a = m_bgColor;
     const QColor b = m_bgColorAlt.isValid() ? m_bgColorAlt : m_bgColor.lighter(120);
 
-    const int x0 = static_cast<int>(std::floor(rect.left() / kCell)) * kCell;
-    const int y0 = static_cast<int>(std::floor(rect.top() / kCell)) * kCell;
-    const int x1 = static_cast<int>(std::ceil(rect.right() / kCell)) * kCell;
-    const int y1 = static_cast<int>(std::ceil(rect.bottom() / kCell)) * kCell;
+    const qreal x0 = std::floor(rect.left() / cell) * cell;
+    const qreal y0 = std::floor(rect.top() / cell) * cell;
+    const qreal x1 = std::ceil(rect.right() / cell) * cell;
+    const qreal y1 = std::ceil(rect.bottom() / cell) * cell;
 
-    for (int y = y0; y < y1; y += kCell) {
-        for (int x = x0; x < x1; x += kCell) {
-            const bool dark = ((x / kCell) + (y / kCell)) & 1;
-            painter->fillRect(QRect(x, y, kCell, kCell), dark ? a : b);
+    for (qreal y = y0; y < y1; y += cell) {
+        for (qreal x = x0; x < x1; x += cell) {
+            const int ix = static_cast<int>(std::floor(x / cell));
+            const int iy = static_cast<int>(std::floor(y / cell));
+            const bool dark = ((ix + iy) & 1) != 0;
+            painter->fillRect(QRectF(x, y, cell, cell), dark ? a : b);
         }
     }
 }
 
+void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
+{
+    Q_UNUSED(rect);
+    if (!isWorkspaceMode() || !m_scene) {
+        return;
+    }
+    // Paint chrome above every image so handles never sit under a higher stackZ item.
+    QList<ImageItem *> selected;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (ii->isInteractive()) {
+                selected.append(ii);
+            }
+        }
+    }
+    std::sort(selected.begin(), selected.end(),
+              [](ImageItem *a, ImageItem *b) { return a->stackZ() < b->stackZ(); });
+    for (ImageItem *item : selected) {
+        item->paintInteractionChrome(painter);
+    }
+}
+
 void ImageView::updateMouseInfo(const QPoint &viewPos)
+
 {
     ImageMouseInfo info;
     const QPointF scenePos = mapToScene(viewPos);
@@ -503,6 +539,29 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 return;
             }
         }
+        // Near-miss on selected chrome: keep selection. Falling through to
+        // QGraphicsView would clear selection when the click sits just outside
+        // the handle disc (common with rotation).
+        for (ImageItem *item : candidates) {
+            if (!item->isSelected() || !item->isInteractive()) {
+                continue;
+            }
+            // Expanded probe: any handle within 2.5× nominal screen size
+            const QPointF local = item->mapFromScene(scenePos);
+            // Temporarily rely on handleAt; if None, check distance to centres.
+            if (item->handleAt(local) != ImageItem::Handle::None) {
+                event->accept();
+                return;
+            }
+            const QRectF br = item->boundingRect();
+            // Map a small view-space pad into a scene test via item shape margin
+            if (item->contains(local) || br.adjusted(-40, -40, 40, 40).contains(local)) {
+                // Click on/near selected item body or chrome margin: do not
+                // let the default path deselect when the intent was chrome.
+                // Still allow the item handlers / move path below.
+                break;
+            }
+        }
     }
 
     // Image mode: left/right edge clicks navigate the session
@@ -657,6 +716,39 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
     if (isImageMode()) {
         updateHoverEdge(event->pos());
+    }
+
+    // Workspace: drive handle hover from the view so highlight matches the
+    // view-owned hit path (rotated / covered items included).
+    if (isWorkspaceMode() && m_tool == Tool::Select && !m_handleDragItem && !m_panning) {
+        const QPointF scenePos = mapToScene(event->pos());
+        ImageItem *hoverOwner = nullptr;
+        ImageItem::Handle hoverH = ImageItem::Handle::None;
+        QList<ImageItem *> candidates;
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (ii->isInteractive()) {
+                    candidates.append(ii);
+                }
+            }
+        }
+        std::sort(candidates.begin(), candidates.end(),
+                  [](ImageItem *a, ImageItem *b) { return a->stackZ() > b->stackZ(); });
+        for (ImageItem *item : candidates) {
+            const ImageItem::Handle h = item->handleAt(item->mapFromScene(scenePos));
+            if (h != ImageItem::Handle::None) {
+                hoverOwner = item;
+                hoverH = h;
+                break;
+            }
+        }
+        for (ImageItem *item : candidates) {
+            item->setHoverHandle(item == hoverOwner ? hoverH : ImageItem::Handle::None);
+        }
+        if (hoverOwner) {
+            // Keep chrome responsive without relying on QGraphicsItem hover delivery.
+            viewport()->update();
+        }
     }
 
     QGraphicsView::mouseMoveEvent(event);
