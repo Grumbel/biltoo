@@ -97,7 +97,10 @@ public:
 signals:
     void indexActivated(int index);
     void indexAddToWorkspace(int index);
+    /** Multi-select changed (selection only — does not drive canvas membership). */
     void workspaceSelectionChanged();
+    /** Double-click: toggle this session index on/off the Workspace canvas. */
+    void canvasMembershipToggled(int index);
     void removeIndicesRequested(const QList<int> &indices);
 
 protected:
@@ -106,6 +109,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
@@ -147,6 +151,7 @@ private:
     QListWidgetItem *m_pressItem = nullptr;
     bool m_pressActive = false;
     bool m_dragStarted = false;
+    Qt::KeyboardModifiers m_pressModifiers;
 };
 
 #endif // THUMBNAILBAR_H

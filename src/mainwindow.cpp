@@ -56,6 +56,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onThumbnailAddToWorkspace);
     connect(m_thumbnailBar, &ThumbnailBar::workspaceSelectionChanged,
             this, &MainWindow::onThumbnailWorkspaceSelectionChanged);
+    connect(m_thumbnailBar, &ThumbnailBar::canvasMembershipToggled,
+            this, &MainWindow::onThumbnailCanvasMembershipToggled);
     connect(m_thumbnailBar, &ThumbnailBar::removeIndicesRequested,
             this, &MainWindow::removeSessionIndices);
     connect(m_imageView, &ImageView::workspacePathsChanged,
@@ -176,31 +178,11 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
 
 void MainWindow::onThumbnailWorkspaceSelectionChanged()
 {
+    // Selection is independent of canvas membership. Only keep session
+    // index / metadata aligned with the last selected thumbnail.
     if (!isWorkspaceMode()) {
         return;
     }
-    syncCanvasFromThumbnailSelection();
-}
-
-void MainWindow::onWorkspacePathsChanged()
-{
-    if (!isWorkspaceMode()) {
-        return;
-    }
-    syncThumbnailWorkspaceSelection();
-}
-
-void MainWindow::syncCanvasFromThumbnailSelection()
-{
-    QStringList paths;
-    for (int idx : m_thumbnailBar->selectedIndices()) {
-        if (idx >= 0 && idx < m_files.size()) {
-            paths.append(m_files.at(idx));
-        }
-    }
-    m_imageView->setWorkspacePaths(paths);
-
-    // Keep session index / metadata in sync with last selected thumbnail
     const QList<int> sel = m_thumbnailBar->selectedIndices();
     if (!sel.isEmpty()) {
         const int idx = sel.last();
@@ -214,19 +196,53 @@ void MainWindow::syncCanvasFromThumbnailSelection()
     updateStatus();
 }
 
-void MainWindow::syncThumbnailWorkspaceSelection()
+void MainWindow::onThumbnailCanvasMembershipToggled(int index)
 {
+    if (index < 0 || index >= m_files.size() || !m_imageView) {
+        return;
+    }
+    if (!isWorkspaceMode()) {
+        m_workspaceModeAct->setChecked(true);
+        m_imageView->setViewMode(ImageView::ViewMode::Workspace);
+        m_thumbnailBar->setMultiSelectEnabled(true);
+        updateWorkspaceActionVisibility();
+    }
+    const QString path = m_files.at(index);
+    if (m_imageView->itemPaths().contains(path)) {
+        m_imageView->removeWorkspacePath(path);
+    } else {
+        m_imageView->addImage(path);
+    }
+    updateStatus();
+}
+
+void MainWindow::onWorkspacePathsChanged()
+{
+    // Canvas membership no longer mirrors thumbnail selection.
     if (!isWorkspaceMode()) {
         return;
     }
-    QList<int> indices;
-    for (const QString &path : m_imageView->itemPaths()) {
-        const int idx = m_files.indexOf(path);
-        if (idx >= 0) {
-            indices.append(idx);
+    updateStatus();
+}
+
+void MainWindow::syncCanvasFromThumbnailSelection()
+{
+    // Kept for callers that still expect a bulk "selection → canvas" path
+    // (e.g. future context-menu actions). Not used for ordinary clicks.
+    QStringList paths;
+    for (int idx : m_thumbnailBar->selectedIndices()) {
+        if (idx >= 0 && idx < m_files.size()) {
+            paths.append(m_files.at(idx));
         }
     }
-    m_thumbnailBar->setSelectedIndices(indices);
+    m_imageView->setWorkspacePaths(paths);
+    updateStatus();
+}
+
+void MainWindow::syncThumbnailWorkspaceSelection()
+{
+    // Selection is no longer forced to match canvas membership (double-click
+    // and drag-and-drop own membership; strip selection is independent).
 }
 
 void MainWindow::zoomIn()
@@ -1124,29 +1140,37 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         return;
     }
 
-    // Workspace mode: append to the session (thumbnail bar) and show on canvas
+    // Workspace mode: append novel paths to the session; place or move on canvas
+    // at the drop point (drag from the thumbnail bar lands where expected).
     if (isWorkspaceMode()) {
         const QStringList expanded = expandPaths(paths);
         if (expanded.isEmpty()) {
             return;
         }
-        appendFiles(expanded);
+        QStringList novel;
+        for (const QString &p : expanded) {
+            if (!m_files.contains(p)) {
+                novel.append(p);
+            }
+        }
+        if (!novel.isEmpty()) {
+            appendFiles(novel);
+        }
         int i = 0;
         for (const QString &img : expanded) {
             if (!scenePos.isNull()) {
-                // Cascade slightly so multi-file drops stay visible
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
-                m_imageView->addImageAt(img, pos);
+                m_imageView->placeOrMoveImageAt(img, pos);
             } else {
-                m_imageView->addImage(img); // empty-space placement
+                m_imageView->addImage(img);
             }
             ++i;
         }
-        syncThumbnailWorkspaceSelection();
         if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
             m_toggleThumbnailBarAct->setChecked(true);
             m_thumbnailBar->setVisible(true);
         }
+        updateStatus();
         return;
     }
 

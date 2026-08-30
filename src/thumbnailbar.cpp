@@ -806,6 +806,7 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
     m_pressItem = hit;
     m_pressActive = true;
     m_dragStarted = false;
+    m_pressModifiers = event->modifiers();
 
     // Image mode: Ctrl/Shift+click adds that file onto the workspace
     if (!m_multiSelect) {
@@ -819,41 +820,9 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    // Workspace mode: no rubber-band. Selection drives which images are on the canvas.
-    //  - Click: toggle that thumbnail
-    //  - Ctrl+click: toggle without moving the range anchor
-    //  - Shift+click: select inclusive range from anchor
-    if (!hit) {
-        event->accept();
-        return;
-    }
-
-    const int r = row(hit);
-    const bool ctrl = event->modifiers() & Qt::ControlModifier;
-    const bool shift = event->modifiers() & Qt::ShiftModifier;
-
-    if (shift && m_selectionAnchor >= 0 && m_selectionAnchor < count()) {
-        const int lo = qMin(m_selectionAnchor, r);
-        const int hi = qMax(m_selectionAnchor, r);
-        if (!ctrl) {
-            for (int i = 0; i < count(); ++i) {
-                if (QListWidgetItem *it = item(i)) {
-                    it->setSelected(i >= lo && i <= hi);
-                }
-            }
-        } else {
-            for (int i = lo; i <= hi; ++i) {
-                if (QListWidgetItem *it = item(i)) {
-                    it->setSelected(true);
-                }
-            }
-        }
-    } else {
-        hit->setSelected(!hit->isSelected());
-        m_selectionAnchor = r;
-    }
-
-    emit workspaceSelectionChanged();
+    // Workspace mode: selection is normal multi-select (applied on release if
+    // the gesture is not a drag). Canvas membership is double-click / drop.
+    // Do not change selection on press — that fought drag-and-drop.
     event->accept();
 }
 
@@ -898,10 +867,79 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 
 void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_multiSelect && event->button() == Qt::LeftButton
+        && m_pressActive && !m_dragStarted) {
+        // Normal multi-select (selection only — not canvas membership).
+        QListWidgetItem *hit = m_pressItem;
+        if (hit && row(hit) >= 0) {
+            const int r = row(hit);
+            const bool ctrl = m_pressModifiers & Qt::ControlModifier;
+            const bool shift = m_pressModifiers & Qt::ShiftModifier;
+
+            if (shift && m_selectionAnchor >= 0 && m_selectionAnchor < count()) {
+                const int lo = qMin(m_selectionAnchor, r);
+                const int hi = qMax(m_selectionAnchor, r);
+                if (!ctrl) {
+                    for (int i = 0; i < count(); ++i) {
+                        if (QListWidgetItem *it = item(i)) {
+                            it->setSelected(i >= lo && i <= hi);
+                        }
+                    }
+                } else {
+                    for (int i = lo; i <= hi; ++i) {
+                        if (QListWidgetItem *it = item(i)) {
+                            it->setSelected(true);
+                        }
+                    }
+                }
+            } else if (ctrl) {
+                hit->setSelected(!hit->isSelected());
+                m_selectionAnchor = r;
+            } else {
+                // Exclusive select
+                for (int i = 0; i < count(); ++i) {
+                    if (QListWidgetItem *it = item(i)) {
+                        it->setSelected(it == hit);
+                    }
+                }
+                m_selectionAnchor = r;
+            }
+            emit workspaceSelectionChanged();
+        } else if (!hit) {
+            // Empty space: clear selection
+            clearSelection();
+            m_selectionAnchor = -1;
+            emit workspaceSelectionChanged();
+        }
+    }
+
     clearPressState();
     if (!m_multiSelect) {
         QListWidget::mouseReleaseEvent(event);
     } else {
         event->accept();
     }
+}
+
+void ThumbnailBar::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (event->button() != Qt::LeftButton) {
+        QListWidget::mouseDoubleClickEvent(event);
+        return;
+    }
+    QListWidgetItem *hit = itemAt(event->pos());
+    if (!hit) {
+        event->accept();
+        return;
+    }
+    const int r = row(hit);
+    if (m_multiSelect) {
+        // Toggle canvas membership for this session image.
+        emit canvasMembershipToggled(r);
+        event->accept();
+        return;
+    }
+    // Image mode: activate (navigate) — same as single click path.
+    emit indexActivated(r);
+    event->accept();
 }

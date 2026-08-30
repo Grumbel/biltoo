@@ -529,6 +529,24 @@ bool ImageView::addImageAt(const QString &path, const QPointF &scenePos)
     return addImage(path);
 }
 
+bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos)
+{
+    if (path.isEmpty() || isImageMode()) {
+        return false;
+    }
+    if (ImageItem *existing = findItemByPath(path)) {
+        existing->setPos(scenePos);
+        if (m_scene) {
+            m_scene->clearSelection();
+        }
+        existing->setSelected(true);
+        ensureVisibleItem(existing);
+        emit statusChanged();
+        return true;
+    }
+    return addImageAt(path, scenePos);
+}
+
 
 ImageItem *ImageView::primaryItem() const
 {

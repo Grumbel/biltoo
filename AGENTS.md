@@ -211,9 +211,10 @@ and Select/Pan live on the vertical workspace tool strip.
   Image mode: left-drag pans, single centred non-interactive image.
   Workspace canvas is snapshotted when disabling the mode and restored when
   enabling again. Select/Pan tools on a left toolbar; Undo/Redo for moves.
-  In workspace mode the thumbnail bar toggles membership: click selects or
-  deselects an image on the canvas; each image remembers position, scale and
-  rotation while off-canvas. Selected items show scale and rotate handles
+  In workspace mode the thumbnail bar uses normal multi-select (click / Ctrl /
+  Shift). Double-click toggles canvas membership; drag onto the canvas adds or
+  moves at the drop point. Each image remembers position, scale and rotation
+  while off-canvas. Selected items show scale and rotate handles
   (free-form): scale at corners, rotate on all four sides; flip / raise /
   lower on the right interior; opacity along the bottom interior. Raise/Lower
   arrows stay screen-upright when the image is rotated. Hit-testing uses

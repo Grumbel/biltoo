@@ -118,7 +118,9 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 |---------|--------|
 | Drop (Image mode) | Replace session |
 | Shift/Ctrl+Drop (Image mode) | Append to session |
-| Drop (Workspace) | Append session + canvas |
+| Drop (Workspace) | Append session + place/move on canvas at drop point |
+| Double-click thumbnail (Workspace) | Toggle that image on/off the canvas |
+| Click thumbnail (Workspace) | Multi-select only (not membership) |
 | Drop (Gallery) | Append session + relayout |
 | Click gallery tile | Select (Ctrl toggle, Shift range, rubber-band) |
 | Double-click gallery tile / Enter | Open Image mode for that file |

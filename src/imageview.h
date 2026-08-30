@@ -70,6 +70,11 @@ public:
     bool addImage(const QString &path);
     /** Add image and place its centre at scenePos once loaded. */
     bool addImageAt(const QString &path, const QPointF &scenePos);
+    /**
+     * Workspace: if @p path is already on the canvas, move it to @p scenePos;
+     * otherwise load and place it there. Returns true if handled.
+     */
+    bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos);
     void clearWorkspace();
 
     void setViewMode(ViewMode mode);
