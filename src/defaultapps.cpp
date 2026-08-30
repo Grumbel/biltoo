@@ -1,15 +1,17 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "defaultapps.h"
-
-#include <QCoreApplication>
-#include <QHash>
-
+// GIO before Qt: GLib structs use a field named "signals", which collides
+// with Qt's signals macro if Qt headers are included first.
 #ifdef QIMGVIEW_HAVE_GIO
 #  include <gio/gio.h>
 #  include <gio/gdesktopappinfo.h>
 #endif
+
+#include "defaultapps.h"
+
+#include <QCoreApplication>
+#include <QHash>
 
 namespace DefaultApps {
 
