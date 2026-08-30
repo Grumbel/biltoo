@@ -287,6 +287,18 @@ void MainWindow::createActions()
     m_nextAct->setStatusTip(tr("Show next image"));
     connect(m_nextAct, &QAction::triggered, this, &MainWindow::goNext);
 
+    m_firstAct = new QAction(tr("&First Image"), this);
+    m_firstAct->setShortcut(Qt::Key_Home);
+    m_firstAct->setIcon(themeIcon(QStringLiteral("go-first"), QStyle::SP_MediaSkipBackward));
+    m_firstAct->setStatusTip(tr("Show the first image in the session"));
+    connect(m_firstAct, &QAction::triggered, this, &MainWindow::goFirst);
+
+    m_lastAct = new QAction(tr("&Last Image"), this);
+    m_lastAct->setShortcut(Qt::Key_End);
+    m_lastAct->setIcon(themeIcon(QStringLiteral("go-last"), QStyle::SP_MediaSkipForward));
+    m_lastAct->setStatusTip(tr("Show the last image in the session"));
+    connect(m_lastAct, &QAction::triggered, this, &MainWindow::goLast);
+
     m_slideshowAct = new QAction(tr("Play &Slideshow"), this);
     m_slideshowAct->setShortcuts({Qt::Key_F5, Qt::Key_Space});
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
@@ -503,13 +515,13 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
     m_fileMenu->addSeparator();
-    m_fileMenu->addAction(m_preferencesAct);
-    m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 
     m_editMenu = menuBar()->addMenu(tr("&Edit"));
     m_editMenu->addAction(m_undoAct);
     m_editMenu->addAction(m_redoAct);
+    m_editMenu->addSeparator();
+    m_editMenu->addAction(m_preferencesAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     m_viewMenu->addAction(m_zoomInAct);
@@ -558,8 +570,10 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleScrollBarsAct);
 
     m_goMenu = menuBar()->addMenu(tr("&Go"));
+    m_goMenu->addAction(m_firstAct);
     m_goMenu->addAction(m_previousAct);
     m_goMenu->addAction(m_nextAct);
+    m_goMenu->addAction(m_lastAct);
     m_goMenu->addSeparator();
     m_goMenu->addAction(m_slideshowAct);
 
@@ -573,6 +587,8 @@ void MainWindow::createMenus()
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_previousAct);
     m_contextMenu->addAction(m_nextAct);
+    m_contextMenu->addAction(m_firstAct);
+    m_contextMenu->addAction(m_lastAct);
     m_contextMenu->addAction(m_slideshowAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_zoomInAct);
@@ -923,6 +939,7 @@ void MainWindow::setCurrentIndex(int index)
     if (m_metadataPanel) {
         m_metadataPanel->setImagePath(m_files.at(m_currentIndex));
     }
+    updateWindowTitle();
     updateStatus();
     updateNavigationActions();
 }
@@ -969,6 +986,7 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         if (m_metadataPanel) {
             m_metadataPanel->clear();
         }
+        updateWindowTitle();
         updateStatus();
         updateNavigationActions();
         return;
@@ -1003,6 +1021,12 @@ void MainWindow::updateNavigationActions()
     // Session navigation is Image-mode oriented; disable in workspace mode
     m_previousAct->setEnabled(hasMany && !m_workspaceMode);
     m_nextAct->setEnabled(hasMany && !m_workspaceMode);
+    if (m_firstAct) {
+        m_firstAct->setEnabled(hasMany && !m_workspaceMode);
+    }
+    if (m_lastAct) {
+        m_lastAct->setEnabled(hasMany && !m_workspaceMode);
+    }
     m_slideshowAct->setEnabled(hasMany && !m_workspaceMode);
     if (m_imageView) {
         m_imageView->setImageModeNavigationEnabled(hasMany && !m_workspaceMode);
@@ -1225,6 +1249,28 @@ void MainWindow::goNext()
         idx = 0;
     }
     setCurrentIndex(idx);
+}
+
+void MainWindow::goFirst()
+{
+    if (m_files.isEmpty()) {
+        return;
+    }
+    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
+        stopSlideshow();
+    }
+    setCurrentIndex(0);
+}
+
+void MainWindow::goLast()
+{
+    if (m_files.isEmpty()) {
+        return;
+    }
+    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
+        stopSlideshow();
+    }
+    setCurrentIndex(m_files.size() - 1);
 }
 
 void MainWindow::setSlideshowIntervalMs(int ms)
@@ -1586,6 +1632,17 @@ void MainWindow::showPreferences()
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     m_imageView->setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
     writeSettings();
+}
+
+void MainWindow::updateWindowTitle()
+{
+    if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+        const QString name = QFileInfo(m_files.at(m_currentIndex)).fileName();
+        // GNOME-style: document name first, then app
+        setWindowTitle(tr("%1 — QImgView").arg(name));
+    } else {
+        setWindowTitle(tr("QImgView"));
+    }
 }
 
 void MainWindow::updateStatus()

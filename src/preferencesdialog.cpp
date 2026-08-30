@@ -5,10 +5,12 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
 
@@ -17,21 +19,37 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 {
     setWindowTitle(tr("Preferences"));
     setModal(true);
-    setMinimumWidth(360);
+    setMinimumWidth(400);
 
-    auto *intro = new QLabel(
-        tr("Adjust default behaviour for slideshows, sorting and the workspace."), this);
-    intro->setWordWrap(true);
-
-    m_intervalSpin = new QSpinBox(this);
-    m_intervalSpin->setRange(500, 60000);
-    m_intervalSpin->setSingleStep(500);
-    m_intervalSpin->setSuffix(tr(" ms"));
+    // --- Slideshow ---
+    m_intervalSpin = new QDoubleSpinBox(this);
+    m_intervalSpin->setRange(0.5, 60.0);
+    m_intervalSpin->setSingleStep(0.5);
+    m_intervalSpin->setDecimals(1);
+    m_intervalSpin->setSuffix(tr(" s"));
     m_intervalSpin->setToolTip(tr("Time between slides when the slideshow is running"));
     m_intervalSpin->setWhatsThis(
-        tr("How long each image is shown during a slideshow. "
-           "Values are in milliseconds (1000 ms = 1 second)."));
+        tr("How long each image is shown during a slideshow, in seconds."));
 
+    m_slideshowFullscreenCheck = new QCheckBox(tr("Start slideshow in fullscreen"), this);
+    m_slideshowFullscreenCheck->setToolTip(
+        tr("Enter fullscreen automatically when starting a slideshow"));
+    m_slideshowFullscreenCheck->setWhatsThis(
+        tr("When enabled, Play Slideshow switches to fullscreen for an uncluttered "
+           "presentation. Leaving the slideshow does not exit fullscreen; use F11 "
+           "or Esc for that."));
+
+    auto *slideshowForm = new QFormLayout;
+    slideshowForm->setContentsMargins(0, 0, 0, 0);
+    slideshowForm->setHorizontalSpacing(12);
+    slideshowForm->setVerticalSpacing(8);
+    slideshowForm->addRow(tr("Interval:"), m_intervalSpin);
+    slideshowForm->addRow(QString(), m_slideshowFullscreenCheck);
+
+    auto *slideshowGroup = new QGroupBox(tr("Slideshow"), this);
+    slideshowGroup->setLayout(slideshowForm);
+
+    // --- Session ---
     m_sortCombo = new QComboBox(this);
     m_sortCombo->addItem(tr("Name (natural)"), 0);
     m_sortCombo->addItem(tr("Modification time"), 1);
@@ -48,33 +66,28 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
            "compare several images at once. You can still toggle workspace mode "
            "from the toolbar or View menu during a session."));
 
-    m_slideshowFullscreenCheck = new QCheckBox(tr("Start slideshow in fullscreen"), this);
-    m_slideshowFullscreenCheck->setToolTip(
-        tr("Enter fullscreen automatically when starting a slideshow"));
-    m_slideshowFullscreenCheck->setWhatsThis(
-        tr("When enabled, Play Slideshow switches to fullscreen for an uncluttered "
-           "presentation. Leaving the slideshow does not exit fullscreen; use F11 "
-           "or Esc for that."));
+    auto *sessionForm = new QFormLayout;
+    sessionForm->setContentsMargins(0, 0, 0, 0);
+    sessionForm->setHorizontalSpacing(12);
+    sessionForm->setVerticalSpacing(8);
+    sessionForm->addRow(tr("Sort images by:"), m_sortCombo);
+    sessionForm->addRow(QString(), m_workspaceCheck);
 
+    auto *sessionGroup = new QGroupBox(tr("Session"), this);
+    sessionGroup->setLayout(sessionForm);
+
+    // --- Workspace / Image mode ---
     m_masonryWidthSpin = new QSpinBox(this);
     m_masonryWidthSpin->setRange(80, 800);
     m_masonryWidthSpin->setSingleStep(10);
     m_masonryWidthSpin->setSuffix(tr(" px"));
     m_masonryWidthSpin->setValue(240);
     m_masonryWidthSpin->setToolTip(tr(
+        "Width of each column in Masonry layout. Images scale to this width."));
+    m_masonryWidthSpin->setWhatsThis(tr(
         "Width of each column in Masonry layout. Images scale to this width; "
-        "extra columns appear when the window is wider, and the view scrolls "
-        "when content is taller than the window."));
+        "extra columns appear when the window is wider."));
 
-    auto *form = new QFormLayout;
-    form->setContentsMargins(0, 0, 0, 0);
-    form->setHorizontalSpacing(12);
-    form->setVerticalSpacing(8);
-    form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
-    form->addRow(tr("Slideshow interval:"), m_intervalSpin);
-    form->addRow(QString(), m_slideshowFullscreenCheck);
-    form->addRow(tr("Sort images by:"), m_sortCombo);
-    form->addRow(QString(), m_workspaceCheck);
     m_imageModePanCheck = new QCheckBox(tr("Left-drag pans in image mode"), this);
     m_imageModePanCheck->setToolTip(
         tr("When enabled, dragging with the left mouse button pans the image"));
@@ -83,42 +96,44 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
            "left-drag for other gestures; pan with Alt+left-drag or the middle "
            "mouse button instead."));
 
-    form->addRow(tr("Masonry column width:"), m_masonryWidthSpin);
-    form->addRow(QString(), m_imageModePanCheck);
+    auto *viewForm = new QFormLayout;
+    viewForm->setContentsMargins(0, 0, 0, 0);
+    viewForm->setHorizontalSpacing(12);
+    viewForm->setVerticalSpacing(8);
+    viewForm->addRow(tr("Masonry column width:"), m_masonryWidthSpin);
+    viewForm->addRow(QString(), m_imageModePanCheck);
 
-    // GNOME 2 HIG: Cancel on the left, OK (affirmative) on the right
-    auto *cancelBtn = new QPushButton(tr("&Cancel"), this);
-    cancelBtn->setAutoDefault(false);
-    connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
+    auto *viewGroup = new QGroupBox(tr("View"), this);
+    viewGroup->setLayout(viewForm);
 
-    auto *okBtn = new QPushButton(tr("&OK"), this);
-    okBtn->setDefault(true);
-    connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
-
-    auto *buttonRow = new QHBoxLayout;
-    buttonRow->setContentsMargins(0, 0, 0, 0);
-    buttonRow->setSpacing(8);
-    buttonRow->addStretch(1);
-    buttonRow->addWidget(cancelBtn);
-    buttonRow->addWidget(okBtn);
+    // GNOME 2 HIG: Cancel left, OK right via QDialogButtonBox::GtkLayout-like order
+    auto *buttons = new QDialogButtonBox(
+        QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("&OK"));
+    buttons->button(QDialogButtonBox::Cancel)->setText(tr("&Cancel"));
+    buttons->button(QDialogButtonBox::Ok)->setDefault(true);
+    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(12, 12, 12, 12);
     layout->setSpacing(12);
-    layout->addWidget(intro);
-    layout->addLayout(form);
+    layout->addWidget(slideshowGroup);
+    layout->addWidget(sessionGroup);
+    layout->addWidget(viewGroup);
     layout->addStretch(1);
-    layout->addLayout(buttonRow);
+    layout->addWidget(buttons);
 }
 
 int PreferencesDialog::slideshowIntervalMs() const
 {
-    return m_intervalSpin->value();
+    return qRound(m_intervalSpin->value() * 1000.0);
 }
 
 void PreferencesDialog::setSlideshowIntervalMs(int ms)
 {
-    m_intervalSpin->setValue(qBound(m_intervalSpin->minimum(), ms, m_intervalSpin->maximum()));
+    const double seconds = qBound(0.5, ms / 1000.0, 60.0);
+    m_intervalSpin->setValue(seconds);
 }
 
 int PreferencesDialog::sortModeIndex() const
@@ -153,7 +168,6 @@ void PreferencesDialog::setSlideshowFullscreen(bool on)
 {
     m_slideshowFullscreenCheck->setChecked(on);
 }
-
 
 int PreferencesDialog::masonryColumnWidth() const
 {

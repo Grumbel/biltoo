@@ -76,6 +76,8 @@ private slots:
     void toggleThumbnailLabels();
     void goPrevious();
     void goNext();
+    void goFirst();
+    void goLast();
     void toggleSlideshow();
     void setLayoutFreeForm();
     void setLayoutSideBySide();
@@ -104,6 +106,7 @@ private slots:
     void setPanTool();
     void updateWorkspaceActionVisibility();
     void updateStatus();
+    void updateWindowTitle();
     void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
     void onThumbnailActivated(int index);
@@ -175,6 +178,8 @@ private:
     QAction *m_hideThumbLabelsAct = nullptr;
     QAction *m_previousAct = nullptr;
     QAction *m_nextAct = nullptr;
+    QAction *m_firstAct = nullptr;
+    QAction *m_lastAct = nullptr;
     QAction *m_slideshowAct = nullptr;
     QAction *m_workspaceModeAct = nullptr;
     QAction *m_selectToolAct = nullptr;

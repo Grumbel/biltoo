@@ -88,6 +88,54 @@ Priority roughly: bugs first, then small polish, then larger features.
 
 - [x] **Larger handles in general**
 
+
+## GUI / HIG review (GNOME 2 + common desktop conventions)
+
+Review date: 2026-08-30. Aim: classic single-document image viewer feel.
+
+### Applied (this pass)
+
+- [x] Preferences under **Edit** (GNOME 2), not File
+- [x] Add Images shortcut **Ctrl+Shift+A** (Ctrl+A reserved for Select All by convention)
+- [x] Preferences grouped with **QGroupBox** (Slideshow / Session / View)
+- [x] Slideshow interval shown in **seconds** (stored as ms)
+- [x] Preferences buttons via **QDialogButtonBox** (OK default, Cancel)
+- [x] Window title **filename — QImgView** when a file is open
+- [x] **Home / End** → first / last image (Go menu + context menu)
+
+### Still open — structural / larger effort
+
+- [ ] **View menu information architecture** — *Medium.*
+  The View menu mixes zoom, transform, sort, workspace mode, tools, layouts,
+  chrome toggles. Split into View (zoom/chrome), Image (rotate/flip), and
+  Workspace (layouts/tools) menus, or use clear submenus. Keep accelerators unique.
+
+- [ ] **Keyboard map document** — *Small docs.*
+  Publish a short reference (Help → Keyboard Shortcuts or README section):
+  navigation, zoom, workspace, slideshow. Resolve any remaining conflicts
+  (e.g. H alone = HUD vs other apps using H for hide).
+
+- [ ] **Select All / session multi-select in Image mode** — *Medium.*
+  Ctrl+A is free again; could select all thumbnails or mark session range.
+  Only useful once multi-select session operations exist beyond workspace.
+
+- [ ] **Toolbar customisation / density** — *Later.*
+  GNOME 2 allowed hideable toolbars (we have Ctrl+T). Optional icon+text style
+  preference is low priority while icons + tooltips remain clear.
+
+- [ ] **Accessible names for edge affordances** — *Small.*
+  Left/right nav zones are mouse-only; ensure screen-reader / keyboard path
+  stays first-class via Go menu (already present).
+
+- [ ] **Consistent disabled feedback** — *Small.*
+  Audit every action’s enabled state in workspace vs image mode so menus do
+  not offer no-ops (slideshow already disabled in workspace).
+
+- [ ] **Error dialogs for failed loads** — *Medium.*
+  Silent skip on bad files is fine for bulk open; a single-file failure should
+  surface a non-modal status or light dialog (HIG: inform, do not block loops).
+
+
 ## Broader image formats (research notes)
 
 Prefer staying on the `QImageReader` path where possible; libvips is the fallback.

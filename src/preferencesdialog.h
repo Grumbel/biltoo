@@ -6,6 +6,7 @@
 
 #include <QDialog>
 
+class QDoubleSpinBox;
 class QSpinBox;
 class QComboBox;
 class QCheckBox;
@@ -37,7 +38,7 @@ public:
     void setImageModeLeftDragPan(bool on);
 
 private:
-    QSpinBox *m_intervalSpin = nullptr;
+    QDoubleSpinBox *m_intervalSpin = nullptr;
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
