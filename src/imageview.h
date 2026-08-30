@@ -151,6 +151,12 @@ public:
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
     bool hudVisible() const { return m_hudVisible; }
+    void setHudFontPointSize(int pt);
+    int hudFontPointSize() const { return m_hudFontPointSize; }
+    void setHudTextColor(const QColor &color);
+    QColor hudTextColor() const { return m_hudTextColor; }
+    void setHudPanelColor(const QColor &color);
+    QColor hudPanelColor() const { return m_hudPanelColor; }
 
     /**
      * Brief top-left HUD action (slideshow, fit mode, …).
@@ -345,6 +351,9 @@ private:
     BackgroundPattern m_bgPattern = BackgroundPattern::Checkerboard;
     bool m_bgCheckerWorkspaceOnly = true;
     bool m_hudVisible = false;
+    int m_hudFontPointSize = 11;
+    QColor m_hudTextColor{255, 255, 255};
+    QColor m_hudPanelColor{0, 0, 0, 160};
     int m_sessionIndex = -1;
     int m_sessionTotal = 0;
     QString m_lastLoadError;

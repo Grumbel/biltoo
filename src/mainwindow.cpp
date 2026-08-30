@@ -841,6 +841,20 @@ void MainWindow::readSettings()
         if (m_toggleHudAct) {
             m_toggleHudAct->setChecked(hud);
         }
+        m_imageView->setHudFontPointSize(
+            settings.value(QStringLiteral("hudFontPointSize"), 11).toInt());
+        {
+            const QColor tc(settings.value(QStringLiteral("hudTextColor"),
+                                           QStringLiteral("#ffffff")).toString());
+            if (tc.isValid()) {
+                m_imageView->setHudTextColor(tc);
+            }
+            const QColor pc(settings.value(QStringLiteral("hudPanelColor"),
+                                           QStringLiteral("#000000a0")).toString());
+            if (pc.isValid()) {
+                m_imageView->setHudPanelColor(pc);
+            }
+        }
         const QColor bg = QColor(settings.value(QStringLiteral("backgroundColor"),
                                                 QStringLiteral("#2a2a2a")).toString());
         if (bg.isValid()) {
@@ -934,6 +948,9 @@ void MainWindow::writeSettings()
         settings.setValue(QStringLiteral("imageModeLeftDragPan"),
                           m_imageView->imageModeLeftDragPan());
         settings.setValue(QStringLiteral("hudVisible"), m_imageView->hudVisible());
+        settings.setValue(QStringLiteral("hudFontPointSize"), m_imageView->hudFontPointSize());
+        settings.setValue(QStringLiteral("hudTextColor"), m_imageView->hudTextColor().name(QColor::HexArgb));
+        settings.setValue(QStringLiteral("hudPanelColor"), m_imageView->hudPanelColor().name(QColor::HexArgb));
     }
     if (m_thumbnailBar) {
         settings.setValue(QStringLiteral("thumbnailLabelsVisible"),

@@ -8,6 +8,7 @@
 #include <QDialog>
 
 class QDoubleSpinBox;
+class QSpinBox;
 class QComboBox;
 class QCheckBox;
 class QTreeWidget;
@@ -51,6 +52,15 @@ public:
     bool checkerboardWorkspaceOnly() const;
     void setCheckerboardWorkspaceOnly(bool on);
 
+    int hudFontPointSize() const;
+    void setHudFontPointSize(int pt);
+
+    QColor hudTextColor() const;
+    void setHudTextColor(const QColor &color);
+
+    QColor hudPanelColor() const;
+    void setHudPanelColor(const QColor &color);
+
 private:
     void refreshDefaultAppsList();
     void onMimeItemChanged(QTreeWidgetItem *item, int column);
@@ -59,6 +69,8 @@ private:
     void updateColorButton(QPushButton *button, const QColor &color);
     void chooseBackgroundColor();
     void chooseBackgroundColorAlt();
+    void chooseHudTextColor();
+    void chooseHudPanelColor();
     void updateBackgroundControlsEnabled();
 
     bool m_mimeTreeUpdating = false;
@@ -75,6 +87,12 @@ private:
     QCheckBox *m_bgCheckerWorkspaceOnlyCheck = nullptr;
     QColor m_bgColor{42, 42, 42};
     QColor m_bgColorAlt{48, 48, 48};
+
+    QSpinBox *m_hudFontSpin = nullptr;
+    QPushButton *m_hudTextColorBtn = nullptr;
+    QPushButton *m_hudPanelColorBtn = nullptr;
+    QColor m_hudTextColor{255, 255, 255};
+    QColor m_hudPanelColor{0, 0, 0, 160};
 
     QTreeWidget *m_mimeTree = nullptr;
     QLabel *m_mimeStatusLabel = nullptr;

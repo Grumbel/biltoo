@@ -541,6 +541,34 @@ void ImageView::setHudVisible(bool on)
     viewport()->update();
 }
 
+void ImageView::setHudFontPointSize(int pt)
+{
+    pt = qBound(8, pt, 48);
+    if (m_hudFontPointSize == pt) {
+        return;
+    }
+    m_hudFontPointSize = pt;
+    viewport()->update();
+}
+
+void ImageView::setHudTextColor(const QColor &color)
+{
+    if (!color.isValid() || color == m_hudTextColor) {
+        return;
+    }
+    m_hudTextColor = color;
+    viewport()->update();
+}
+
+void ImageView::setHudPanelColor(const QColor &color)
+{
+    if (!color.isValid() || color == m_hudPanelColor) {
+        return;
+    }
+    m_hudPanelColor = color;
+    viewport()->update();
+}
+
 void ImageView::flashHud(const QString &action, const QString &detail)
 {
     m_hudAction = action;

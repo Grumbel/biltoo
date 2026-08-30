@@ -8,6 +8,7 @@
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -138,7 +139,41 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     auto *viewGroup = new QGroupBox(tr("View"), this);
     viewGroup->setLayout(viewForm);
 
-    // --- General tab (slideshow / session / view) ---
+    // --- HUD overlay appearance ---
+    m_hudFontSpin = new QSpinBox(this);
+    m_hudFontSpin->setRange(8, 48);
+    m_hudFontSpin->setValue(11);
+    m_hudFontSpin->setSuffix(tr(" pt"));
+    m_hudFontSpin->setToolTip(tr("Point size of the on-image HUD text"));
+
+    m_hudTextColorBtn = new QPushButton(this);
+    m_hudTextColorBtn->setMinimumWidth(80);
+    m_hudTextColorBtn->setToolTip(tr("HUD text colour"));
+    connect(m_hudTextColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudTextColor);
+
+    m_hudPanelColorBtn = new QPushButton(this);
+    m_hudPanelColorBtn->setMinimumWidth(80);
+    m_hudPanelColorBtn->setToolTip(tr("HUD panel background colour (supports alpha)"));
+    connect(m_hudPanelColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudPanelColor);
+
+    updateColorButton(m_hudTextColorBtn, m_hudTextColor);
+    updateColorButton(m_hudPanelColorBtn, m_hudPanelColor);
+
+    auto *hudForm = new QFormLayout;
+    hudForm->setContentsMargins(0, 0, 0, 0);
+    hudForm->setHorizontalSpacing(12);
+    hudForm->setVerticalSpacing(8);
+    hudForm->addRow(tr("Font size:"), m_hudFontSpin);
+    hudForm->addRow(tr("Text colour:"), m_hudTextColorBtn);
+    hudForm->addRow(tr("Panel colour:"), m_hudPanelColorBtn);
+
+    auto *hudGroup = new QGroupBox(tr("HUD overlay"), this);
+    hudGroup->setLayout(hudForm);
+    hudGroup->setWhatsThis(
+        tr("Appearance of the on-image status overlay (filename, index, flash messages). "
+           "Toggle the overlay with H."));
+
+    // --- General tab (slideshow / session / view / HUD) ---
     auto *generalPage = new QWidget(this);
     auto *generalLayout = new QVBoxLayout(generalPage);
     generalLayout->setContentsMargins(8, 8, 8, 8);
@@ -146,6 +181,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     generalLayout->addWidget(slideshowGroup);
     generalLayout->addWidget(sessionGroup);
     generalLayout->addWidget(viewGroup);
+    generalLayout->addWidget(hudGroup);
     generalLayout->addStretch(1);
 
     // --- Default application tab (GIO) ---
@@ -462,6 +498,63 @@ void PreferencesDialog::updateColorButton(QPushButton *button, const QColor &col
             .arg(color.name(QColor::HexRgb),
                  color.lightness() < 128 ? QStringLiteral("#ffffff")
                                          : QStringLiteral("#000000")));
+}
+
+int PreferencesDialog::hudFontPointSize() const
+{
+    return m_hudFontSpin ? m_hudFontSpin->value() : 11;
+}
+
+void PreferencesDialog::setHudFontPointSize(int pt)
+{
+    if (m_hudFontSpin) {
+        m_hudFontSpin->setValue(qBound(8, pt, 48));
+    }
+}
+
+QColor PreferencesDialog::hudTextColor() const
+{
+    return m_hudTextColor;
+}
+
+void PreferencesDialog::setHudTextColor(const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    m_hudTextColor = color;
+    updateColorButton(m_hudTextColorBtn, m_hudTextColor);
+}
+
+QColor PreferencesDialog::hudPanelColor() const
+{
+    return m_hudPanelColor;
+}
+
+void PreferencesDialog::setHudPanelColor(const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    m_hudPanelColor = color;
+    updateColorButton(m_hudPanelColorBtn, m_hudPanelColor);
+}
+
+void PreferencesDialog::chooseHudTextColor()
+{
+    const QColor c = QColorDialog::getColor(m_hudTextColor, this, tr("HUD text colour"));
+    if (c.isValid()) {
+        setHudTextColor(c);
+    }
+}
+
+void PreferencesDialog::chooseHudPanelColor()
+{
+    const QColor c = QColorDialog::getColor(m_hudPanelColor, this, tr("HUD panel colour"),
+                                            QColorDialog::ShowAlphaChannel);
+    if (c.isValid()) {
+        setHudPanelColor(c);
+    }
 }
 
 void PreferencesDialog::chooseBackgroundColor()

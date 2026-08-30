@@ -155,7 +155,11 @@ as **hard constraints**, not style preferences:
    Current path: `ImageView::paintEvent` → `ImageItem::paintInteractionChrome`
    (same space as edge affordances and the HUD). Do **not** draw handles from
    `ImageItem::paint` under the item transform, and do **not** rely on
-   `drawForeground` with a scene transform for final size.
+   `drawForeground` with a scene transform for final size. Prefer
+   `view->mapFromScene(item->mapToScene(local))` for centres; derive arm
+   directions from local axes mapped the same way so brackets **rotate with
+   the image**. Do not call `setWorldTransform(identity)` in ways that break
+   HiDPI painter state — map explicitly and draw in viewport logical pixels.
 2. **Viewport update mode must stay `FullViewportUpdate`** while overlays are
    painted in `paintEvent`. `SmartViewportUpdate` scrolls/blits pixels and
    smears HUD/chrome across the image (seen on Vertical gallery scroll).
