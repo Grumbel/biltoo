@@ -831,6 +831,13 @@ void ImageView::refreshStatus()
 
 void ImageView::zoomViewBy(qreal factor)
 {
+    // Packaged layouts place items in viewport-pixel scene units and keep the
+    // view transform identity. Scaling the view breaks that invariant until the
+    // next resize reapplies the layout — skip view zoom there.
+    if (m_workspaceMode && m_layoutMode != LayoutMode::FreeForm) {
+        return;
+    }
+
     m_fitMode = false;
     m_fillMode = false;
     // Keep the viewport centre stable when zooming via toolbar/shortcuts
@@ -848,7 +855,7 @@ void ImageView::zoomViewBy(qreal factor)
 
 void ImageView::zoomIn()
 {
-    // View-level zoom in both modes (items keep their own scale/rotation)
+    // View-level zoom in Image mode and free-form Workspace
     zoomViewBy(1.25);
 }
 
@@ -1376,9 +1383,15 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 void ImageView::wheelEvent(QWheelEvent *event)
 {
+    // Packaged workspace layouts own placement; do not scale the view.
+    if (m_workspaceMode && m_layoutMode != LayoutMode::FreeForm) {
+        event->ignore();
+        return;
+    }
+
     const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
 
-    // Both modes: zoom the view about the cursor
+    // Image mode and free-form Workspace: zoom the view about the cursor
     m_fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
