@@ -683,23 +683,76 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    // Workspace Select tool: let QGraphicsView handle selection / move
-    if (isMultiItemMode() && event->button() == Qt::LeftButton) {
-        if (isGalleryLayout()
-            && !(event->modifiers()
-                 & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
-            m_galleryClickCandidate = false;
-            m_galleryPressItem = nullptr;
-            const QPointF scenePos = mapToScene(event->pos());
-            for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-                if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    m_galleryPressItem = item;
-                    m_galleryPressPos = event->pos();
-                    m_galleryClickCandidate = true;
-                    break;
-                }
+    // Gallery: classic multi-select (click / Ctrl / Shift); open is double-click.
+    if (isGalleryMode() && event->button() == Qt::LeftButton
+        && !(event->modifiers() & Qt::AltModifier)) {
+        const QPointF scenePos = mapToScene(event->pos());
+        ImageItem *hit = nullptr;
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                hit = ii;
+                break;
             }
         }
+        const bool ctrl = event->modifiers() & Qt::ControlModifier;
+        const bool shift = event->modifiers() & Qt::ShiftModifier;
+
+        if (hit && shift && m_gallerySelectionAnchor) {
+            // Session-order range from anchor to hit (inclusive).
+            int i0 = m_items.indexOf(m_gallerySelectionAnchor);
+            int i1 = m_items.indexOf(hit);
+            if (i0 < 0) {
+                i0 = i1;
+            }
+            if (i1 < 0) {
+                i1 = i0;
+            }
+            if (i0 > i1) {
+                std::swap(i0, i1);
+            }
+            m_scene->clearSelection();
+            for (int i = i0; i <= i1 && i < m_items.size(); ++i) {
+                m_items.at(i)->setSelected(true);
+            }
+            emit galleryItemFocused(hit->path());
+            event->accept();
+            emit statusChanged();
+            return;
+        }
+
+        if (hit && ctrl) {
+            hit->setSelected(!hit->isSelected());
+            if (hit->isSelected()) {
+                m_gallerySelectionAnchor = hit;
+            }
+            emit galleryItemFocused(hit->path());
+            event->accept();
+            emit statusChanged();
+            return;
+        }
+
+        if (hit) {
+            m_scene->clearSelection();
+            hit->setSelected(true);
+            m_gallerySelectionAnchor = hit;
+            emit galleryItemFocused(hit->path());
+            event->accept();
+            emit statusChanged();
+            return;
+        }
+
+        // Empty space: clear selection (keep Ctrl-additive empty no-ops).
+        if (!ctrl) {
+            m_scene->clearSelection();
+            emit statusChanged();
+        }
+        // Allow rubber-band start via base class when drag mode is RubberBandDrag.
+        QGraphicsView::mousePressEvent(event);
+        return;
+    }
+
+    // Workspace Select tool: let QGraphicsView handle selection / move
+    if (isWorkspaceMode() && event->button() == Qt::LeftButton) {
         QGraphicsView::mousePressEvent(event);
         // Capture drag start for undo when an item is selected under the cursor
         if (ImageItem *hit = targetItem()) {
@@ -753,13 +806,6 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
         event->accept();
         return;
-    }
-
-    if (m_galleryClickCandidate
-        && (event->pos() - m_galleryPressPos).manhattanLength()
-               >= QApplication::startDragDistance()) {
-        m_galleryClickCandidate = false;
-        m_galleryPressItem = nullptr;
     }
 
     if (isImageMode()) {
@@ -962,21 +1008,6 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         }
         m_dragItem = nullptr;
     }
-
-    // Gallery: click (press+release without drag) opens Image mode for that item.
-    if (m_galleryClickCandidate && event->button() == Qt::LeftButton
-        && isGalleryLayout() && m_galleryPressItem) {
-        const QString path = m_galleryPressItem->path();
-        m_galleryClickCandidate = false;
-        m_galleryPressItem = nullptr;
-        if (!path.isEmpty()) {
-            emit galleryItemOpenRequested(path);
-            event->accept();
-            return;
-        }
-    }
-    m_galleryClickCandidate = false;
-    m_galleryPressItem = nullptr;
 
     QGraphicsView::mouseReleaseEvent(event);
 }

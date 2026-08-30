@@ -334,6 +334,8 @@ void ImageView::setViewMode(ViewMode mode)
     const ViewMode previous = m_viewMode;
     if (previous == ViewMode::Gallery) {
         m_galleryHoverPath.clear();
+        m_gallerySelectionAnchor = nullptr;
+        setDragMode(QGraphicsView::NoDrag);
     }
 
     if (previous == ViewMode::Workspace && mode != ViewMode::Workspace) {
@@ -407,6 +409,8 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     prepareGalleryCanvas();
     m_viewMode = ViewMode::Gallery;
     m_layoutMode = packagedLayout;
+    m_gallerySelectionAnchor = nullptr;
+    setDragMode(QGraphicsView::RubberBandDrag);
     for (ImageItem *item : m_items) {
         applyItemModeFlags(item);
         // Pack also resets these; do it here so a delayed layout still looks clean.

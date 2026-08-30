@@ -913,7 +913,23 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         return;
     }
 
-    // Gallery uses single-click-to-open (see mouseReleaseEvent).
+    // Gallery: double-click opens the tile in Image mode (classic file view).
+    if (isGalleryMode() && event->button() == Qt::LeftButton) {
+        const QPointF scenePos = mapToScene(event->pos());
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                const QString path = item->path();
+                if (!path.isEmpty()) {
+                    emit galleryItemOpenRequested(path);
+                }
+                event->accept();
+                return;
+            }
+        }
+        event->accept();
+        return;
+    }
+
     QGraphicsView::mouseDoubleClickEvent(event);
 }
 

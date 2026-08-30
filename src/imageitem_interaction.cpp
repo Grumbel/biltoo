@@ -663,21 +663,19 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
     const QRectF r = cropped ? crop : QGraphicsPixmapItem::boundingRect();
 
-    // Gallery: soft hover / selection frame, never transform chrome.
+    // Gallery: selection frame only (classic multi-select). Hover is for HUD
+    // filename, not a full-tile wash — near-fullscreen packs stay usable.
     if (!m_interactive) {
         const bool selected = option->state & QStyle::State_Selected;
-        if (m_galleryHovered || selected) {
+        if (selected) {
             painter->save();
             painter->setOpacity(1.0);
-            QPen pen(selected ? QColor(0, 180, 255) : QColor(220, 220, 220, 180), 0);
+            QPen pen(QColor(0, 180, 255), 0);
             pen.setCosmetic(true);
-            pen.setWidthF(selected ? 2.5 : 1.5);
+            pen.setWidthF(2.5);
             painter->setPen(pen);
             painter->setBrush(Qt::NoBrush);
             painter->drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5));
-            if (m_galleryHovered && !selected) {
-                painter->fillRect(r, QColor(255, 255, 255, 28));
-            }
             painter->restore();
         }
         return;

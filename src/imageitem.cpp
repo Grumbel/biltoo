@@ -143,7 +143,7 @@ void ImageItem::setInteractive(bool on)
 
 void ImageItem::setGallerySelectable(bool on)
 {
-    // Selectable for hit-testing / open-on-click; not movable; no transform chrome.
+    // Selectable for classic multi-select; open on double-click; no transform chrome.
     m_interactive = false;
     m_scaleHandlesEnabled = false;
     m_galleryHovered = false;

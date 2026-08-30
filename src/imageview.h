@@ -376,9 +376,8 @@ private:
     WorkspaceItemState m_dragStartState;
 
     /** Gallery click-to-open: press on an item, release without dragging. */
-    ImageItem *m_galleryPressItem = nullptr;
-    QPoint m_galleryPressPos;
-    bool m_galleryClickCandidate = false;
+    /** Anchor for Shift+click range selection in Gallery (session order). */
+    ImageItem *m_gallerySelectionAnchor = nullptr;
     bool m_applyingLayout = false;
     QTimer *m_layoutDebounceTimer = nullptr;
     int m_galleryScrollH = 0;
