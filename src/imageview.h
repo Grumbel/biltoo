@@ -80,6 +80,8 @@ public:
     void clearWorkspace();
 
     void setViewMode(ViewMode mode);
+    /** Reset view/scene so Image mode is not affected by prior canvas state. */
+    void prepareImageModeCanvas();
     ViewMode viewMode() const { return m_viewMode; }
     bool isImageMode() const { return m_viewMode == ViewMode::Image; }
     bool isGalleryMode() const { return m_viewMode == ViewMode::Gallery; }

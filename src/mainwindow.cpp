@@ -372,19 +372,19 @@ void MainWindow::createActions()
     m_layoutSideBySideAct->setCheckable(true);
     m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
     m_layoutSideBySideAct->setIcon(themeIcon(QStringLiteral("view-split-left-right"), QStyle::SP_ArrowRight));
-    m_layoutSideBySideAct->setStatusTip(tr("Arrange workspace images in a horizontal row"));
+    m_layoutSideBySideAct->setStatusTip(tr("Gallery: arrange images in a horizontal row"));
     connect(m_layoutSideBySideAct, &QAction::triggered, this, &MainWindow::setLayoutSideBySide);
 
     m_layoutVerticalAct = new QAction(tr("Layout &Vertical"), this);
     m_layoutVerticalAct->setCheckable(true);
     m_layoutVerticalAct->setIcon(themeIcon(QStringLiteral("view-split-top-bottom"), QStyle::SP_ArrowDown));
-    m_layoutVerticalAct->setStatusTip(tr("Arrange workspace images in a vertical column"));
+    m_layoutVerticalAct->setStatusTip(tr("Gallery: arrange images in a vertical column"));
     connect(m_layoutVerticalAct, &QAction::triggered, this, &MainWindow::setLayoutVertical);
 
     m_layoutGridAct = new QAction(tr("Layout &Grid"), this);
     m_layoutGridAct->setCheckable(true);
     m_layoutGridAct->setIcon(themeIcon(QStringLiteral("view-grid"), QStyle::SP_FileDialogListView));
-    m_layoutGridAct->setStatusTip(tr("Arrange workspace images in a grid"));
+    m_layoutGridAct->setStatusTip(tr("Gallery: arrange images in a grid"));
     connect(m_layoutGridAct, &QAction::triggered, this, &MainWindow::setLayoutGrid);
 
     m_layoutStackAct = new QAction(tr("Layout Stac&k"), this);
@@ -407,14 +407,18 @@ void MainWindow::createActions()
     m_backToGalleryAct->setVisible(false);
     connect(m_backToGalleryAct, &QAction::triggered, this, &MainWindow::returnToGallery);
 
+    // Gallery layouts only (Workspace Mode is separate; Free Form is not a layout).
     auto *layoutGroup = new QActionGroup(this);
-    layoutGroup->addAction(m_layoutFreeFormAct);
     layoutGroup->addAction(m_layoutSideBySideAct);
     layoutGroup->addAction(m_layoutVerticalAct);
     layoutGroup->addAction(m_layoutGridAct);
     layoutGroup->addAction(m_layoutMasonryAct);
     layoutGroup->addAction(m_layoutStackAct);
     layoutGroup->setExclusive(true);
+    // No default checked gallery layout until the user chooses one.
+    for (QAction *act : layoutGroup->actions()) {
+        act->setChecked(false);
+    }
 
     m_raiseAct = new QAction(tr("&Raise"), this);
     m_raiseAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Up);
@@ -941,6 +945,7 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     }
     setCurrentIndex(idx);
     updateNavigationActions();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::appendFiles(const QStringList &paths)
@@ -990,6 +995,7 @@ void MainWindow::appendFiles(const QStringList &paths)
         }
     }
     applyThumbnailVisibility();
+    updateWorkspaceActionVisibility();
 
     int newIndex = 0;
     if (!current.isEmpty()) {
@@ -1863,19 +1869,20 @@ void MainWindow::updateWorkspaceActionVisibility()
 {
     const bool gallery = m_imageView && m_imageView->isGalleryMode();
     const bool workspace = m_imageView && m_imageView->isWorkspaceMode();
-    const bool multi = gallery || workspace || m_workspaceMode;
-    // Gallery layout actions stay available whenever we have a session
+    // Gallery layout actions: always visible; enabled once a session exists.
+    // (Previously they stayed hidden until Workspace Mode was toggled because
+    //  loadFiles never refreshed visibility.)
     const bool canGallery = !m_files.isEmpty();
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
                          m_layoutGridAct, m_layoutMasonryAct, m_layoutStackAct}) {
         if (act) {
-            act->setVisible(canGallery);
+            act->setVisible(true);
             act->setEnabled(canGallery);
         }
     }
     if (m_layoutFreeFormAct) {
-        // Free-form is Workspace Mode — keep action but off the main toolbar
         m_layoutFreeFormAct->setVisible(false);
+        m_layoutFreeFormAct->setEnabled(false);
     }
     // Free-form Workspace tools only (never in Gallery)
     for (QAction *act : {m_raiseAct, m_lowerAct,

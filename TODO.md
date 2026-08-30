@@ -58,8 +58,10 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
       menu, toolbar icons, no free-form handles outside Workspace
 - [x] Gallery polish: flat background (no checkerboard), hover highlight, wheel scroll,
       hide thumbnail bar, Back leftmost, no transform handles
-- [ ] Gallery: drop Free Form layout action entirely; stop overloading m_workspaceMode
-      for Gallery multi-session UI
+- [x] Gallery toolbar layouts always visible (enabled when session non-empty);
+      loadFiles refreshes visibility; Free Form removed from exclusive layout group
+- [x] Image mode resets scene/view/item transform after Gallery/Workspace
+- [ ] Stop overloading m_workspaceMode for Gallery multi-session UI; drop Free Form action
 
 ### UX backlog (evaluated)
 

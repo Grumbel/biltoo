@@ -140,16 +140,15 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 emit statusChanged();
                 return;
             }
+            // Never inherit Gallery/Workspace placement or scale.
             item->setInteractive(false);
-            m_fitMode = true;
-            resetTransform();
-            if (horizontalScrollBar()) {
-                horizontalScrollBar()->setValue(0);
-            }
-            if (verticalScrollBar()) {
-                verticalScrollBar()->setValue(0);
-            }
+            item->setScaleHandlesEnabled(false);
+            item->setItemScale(1.0);
+            item->setItemRotation(0.0);
+            item->setPos(0, 0);
+            prepareImageModeCanvas();
             fitItem(item, currentFitAspectMode());
+            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
             emit statusChanged();
             return;
         }
@@ -457,8 +456,26 @@ void ImageView::clearExtras()
     emit workspacePathsChanged();
 }
 
+void ImageView::prepareImageModeCanvas()
+{
+    m_undoStack->clear();
+    m_scene->clearSelection();
+    resetTransform();
+    if (horizontalScrollBar()) {
+        horizontalScrollBar()->setValue(0);
+    }
+    if (verticalScrollBar()) {
+        verticalScrollBar()->setValue(0);
+    }
+    // Drop large Gallery/Workspace scene rects so fitInView centres cleanly.
+    m_scene->setSceneRect(QRectF());
+    m_fitMode = true;
+    m_fillMode = false;
+}
+
 void ImageView::setViewMode(ViewMode mode)
 {
+
     if (mode == m_viewMode) {
         return;
     }
@@ -473,15 +490,7 @@ void ImageView::setViewMode(ViewMode mode)
         m_viewMode = ViewMode::Image;
         m_layoutMode = LayoutMode::FreeForm;
         viewport()->update();
-        m_undoStack->clear();
-        m_scene->clearSelection();
-        resetTransform();
-        if (horizontalScrollBar()) {
-            horizontalScrollBar()->setValue(0);
-        }
-        if (verticalScrollBar()) {
-            verticalScrollBar()->setValue(0);
-        }
+        prepareImageModeCanvas();
         const QString path = !m_classicPath.isEmpty()
                                  ? m_classicPath
                                  : (m_items.isEmpty() ? QString() : m_items.first()->path());
@@ -813,6 +822,8 @@ bool ImageView::loadImage(const QString &path)
 
     // Classic mode: decode off the GUI thread. Keep the previous image until
     // the new one is ready so rapid navigation does not flash an empty view.
+    // Clear residual view pan/zoom from Workspace/Gallery immediately.
+    prepareImageModeCanvas();
     scheduleImageLoad(path, LoadReplace);
     emit statusChanged();
     return true;
@@ -1146,16 +1157,17 @@ void ImageView::setLayoutMode(LayoutMode mode)
 
     m_layoutMode = mode;
 
-    // Free-form: movable + chrome. Packaged (Gallery): selectable only.
-    const bool freeForm = (mode == LayoutMode::FreeForm);
+    // Interaction is driven by ViewMode, not LayoutMode alone.
     for (ImageItem *item : m_items) {
-        if (isImageMode()) {
-            item->setInteractive(false);
-        } else if (isWorkspaceMode() || freeForm) {
+        if (isWorkspaceMode() && mode == LayoutMode::FreeForm) {
             item->setInteractive(true);
             item->setScaleHandlesEnabled(true);
-        } else {
+        } else if (isGalleryMode() || mode != LayoutMode::FreeForm) {
             item->setGallerySelectable(true);
+            item->setScaleHandlesEnabled(false);
+        } else {
+            item->setInteractive(false);
+            item->setScaleHandlesEnabled(false);
         }
     }
 
@@ -1306,11 +1318,18 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     if (!item) {
         return;
     }
-    fitInView(item, mode);
-    if (m_items.size() == 1) {
+    if (isImageMode() || m_items.size() == 1) {
+        // Identity placement: view does the fit, not residual canvas state.
         item->setItemScale(1.0);
+        if (isImageMode()) {
+            item->setItemRotation(0.0);
+            item->setPos(0, 0);
+        }
+        resetTransform();
         fitInView(item, mode);
+        return;
     }
+    fitInView(item, mode);
 }
 
 Qt::AspectRatioMode ImageView::currentFitAspectMode() const
