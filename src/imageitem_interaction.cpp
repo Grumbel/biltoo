@@ -43,14 +43,14 @@ QString tooltipForHandle(ImageItem::Handle h)
 } // namespace
 
 namespace {
-constexpr qreal kHandleScreenPx = 28.0;      // scale/rotate markers in *viewport* px
-constexpr qreal kRotateOffsetPx = 48.0;      // rotate handle distance from edge (viewport px)
-constexpr qreal kChromeBtnScreenPx = 30.0;   // flip / raise / lower diameter (viewport px)
-constexpr qreal kChromeHitScreenPx = 28.0;   // hit radius in viewport px
-constexpr qreal kChromeInsetPx = 12.0;       // inset from pixmap edge into the image
-constexpr qreal kChromeBtnGapPx = 8.0;       // gap between stacked chrome buttons
-constexpr qreal kSliderWidthPx = 100.0;
-constexpr qreal kSliderHeightPx = 12.0;
+constexpr qreal kHandleScreenPx = 21.0;      // scale/rotate markers in *viewport* px
+constexpr qreal kRotateOffsetPx = 36.0;      // rotate handle distance from edge (viewport px)
+constexpr qreal kChromeBtnScreenPx = 22.0;   // flip / raise / lower diameter (viewport px)
+constexpr qreal kChromeHitScreenPx = 21.0;   // hit radius in viewport px
+constexpr qreal kChromeInsetPx = 10.0;       // inset from pixmap edge into the image
+constexpr qreal kChromeBtnGapPx = 6.0;       // gap between stacked chrome buttons
+constexpr qreal kSliderWidthPx = 90.0;
+constexpr qreal kSliderHeightPx = 9.0;
 constexpr qreal kSliderBottomInsetPx = 10.0; // opacity track above bottom edge
 } // namespace
 
@@ -372,14 +372,19 @@ QRectF ImageItem::opacitySliderRect() const
 {
     // Horizontal track along the bottom interior of the pixmap (rotates with image).
     const QRectF r = QGraphicsPixmapItem::boundingRect();
-    const qreal ss = screenScale();
-    const qreal inset = kChromeInsetPx / ss;
-    const qreal h = kSliderHeightPx / ss;
-    const qreal maxW = kSliderWidthPx / ss;
-    const qreal avail = qMax(0.0, r.width() - 2.0 * inset);
+    auto axis = [this](const QPointF &localAxis) -> qreal {
+        return qMax(1e-6, QLineF(localToViewPx(QPointF(0, 0)), localToViewPx(localAxis)).length());
+    };
+    const qreal sx = axis(QPointF(1, 0));
+    const qreal sy = axis(QPointF(0, 1));
+    const qreal insetX = kChromeInsetPx / sx;
+    const qreal insetY = kChromeInsetPx / sy;
+    const qreal h = kSliderHeightPx / sy;
+    const qreal maxW = kSliderWidthPx / sx;
+    const qreal avail = qMax(0.0, r.width() - 2.0 * insetX);
     const qreal w = qMin(maxW, avail);
-    const qreal x = r.left() + inset + (avail - w) / 2.0;
-    const qreal y = r.bottom() - inset - h;
+    const qreal x = r.left() + insetX + (avail - w) / 2.0;
+    const qreal y = r.bottom() - insetY - h;
     return QRectF(x, y, w, h);
 }
 
@@ -435,18 +440,31 @@ qreal ImageItem::handleDistanceScreenPx(Handle h, const QPointF &itemPos) const
 QPointF ImageItem::handleCenter(Handle h) const
 {
     const QRectF r = QGraphicsPixmapItem::boundingRect();
-    const qreal ss = screenScale();
-    const qreal rotOff = kRotateOffsetPx / ss;
-    const qreal btn = kChromeBtnScreenPx / ss;
-    const qreal gap = kChromeBtnGapPx / ss;
-    const qreal inset = kChromeInsetPx / ss;
     const qreal cx = r.center().x();
     const qreal cy = r.center().y();
 
-    // Vertical stack on the right interior: FlipH/V, Raise/Lower, ResetScale/Rot.
-    const qreal stackX = r.right() - inset - btn / 2.0;
+    // Screen pixels per local unit along each axis (handles anisotropic scale + view zoom).
+    auto axisScreenPerLocal = [this](const QPointF &localAxis) -> qreal {
+        const QPointF o = localToViewPx(QPointF(0, 0));
+        const QPointF p = localToViewPx(localAxis);
+        const qreal len = QLineF(o, p).length();
+        return qMax(1e-6, len);
+    };
+    const qreal sx = axisScreenPerLocal(QPointF(1, 0));
+    const qreal sy = axisScreenPerLocal(QPointF(0, 1));
+
+    // Convert a desired *viewport-pixel* offset into local units along X or Y.
+    const qreal rotOffX = kRotateOffsetPx / sx;
+    const qreal rotOffY = kRotateOffsetPx / sy;
+    const qreal btn = kChromeBtnScreenPx / sy;   // stack runs along local Y
+    const qreal gap = kChromeBtnGapPx / sy;
+    const qreal insetX = kChromeInsetPx / sx;
+
+    // Outside the right edge, centered vertically — avoids overlapping corner grips.
+    const qreal stackX = r.right() + insetX + (kChromeBtnScreenPx / sx) / 2.0;
     const int nChrome = 6;
-    const qreal stackTop = cy - ((nChrome * btn + (nChrome - 1) * gap) / 2.0);
+    const qreal stackH = nChrome * btn + (nChrome - 1) * gap;
+    const qreal stackTop = cy - stackH / 2.0;
     auto chromeBtnCenter = [&](int index) {
         return QPointF(stackX, stackTop + index * (btn + gap) + btn / 2.0);
     };
@@ -469,13 +487,13 @@ QPointF ImageItem::handleCenter(Handle h) const
     case Handle::ScaleLeft:
         return QPointF(r.left(), cy);
     case Handle::RotateTop:
-        return QPointF(cx, r.top() - rotOff);
+        return QPointF(cx, r.top() - rotOffY);
     case Handle::RotateRight:
-        return QPointF(r.right() + rotOff, cy);
+        return QPointF(r.right() + rotOffX, cy);
     case Handle::RotateBottom:
-        return QPointF(cx, r.bottom() + rotOff);
+        return QPointF(cx, r.bottom() + rotOffY);
     case Handle::RotateLeft:
-        return QPointF(r.left() - rotOff, cy);
+        return QPointF(r.left() - rotOffX, cy);
     case Handle::FlipH:
         return chromeBtnCenter(0);
     case Handle::FlipV:
@@ -720,8 +738,6 @@ void ImageItem::setHoverHandle(Handle h)
 void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRect) const
 {
     // HARD RULE (AGENTS.md): draw only in viewport logical pixels.
-    // Caller is ImageView::paintEvent with QPainter(viewport()) — do not reset
-    // world transform in a way that fights HiDPI; map centres via the view.
     QGraphicsView *view = nullptr;
     if (scene()) {
         const QList<QGraphicsView *> views = scene()->views();
@@ -736,153 +752,168 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     auto toView = [this, view](const QPointF &local) -> QPointF {
         return QPointF(view->mapFromScene(mapToScene(local)));
     };
-    // Unit direction of a local-space vector, in viewport pixels (rotates/scales
-    // with the item so brackets and edge bars follow the frame).
-    auto dirView = [this, view](const QPointF &localDelta) -> QPointF {
-        const QPointF a = QPointF(view->mapFromScene(mapToScene(QPointF(0, 0))));
-        const QPointF b = QPointF(view->mapFromScene(mapToScene(localDelta)));
-        QPointF d = b - a;
-        const qreal len = qHypot(d.x(), d.y());
+
+    // Four corners of the content frame in viewport pixels.
+    const QPointF tl = toView(localRect.topLeft());
+    const QPointF tr = toView(localRect.topRight());
+    const QPointF br = toView(localRect.bottomRight());
+    const QPointF bl = toView(localRect.bottomLeft());
+    const QPointF centerV = toView(localRect.center());
+
+    auto norm = [](QPointF v) -> QPointF {
+        const qreal len = qHypot(v.x(), v.y());
         if (len > 1e-6) {
-            d /= len;
-        } else {
-            d = QPointF(1, 0);
+            return v / len;
         }
-        return d;
+        return QPointF(1, 0);
     };
+    // Unit edge directions (view space) and outward normals (away from centre).
+    const QPointF dirTop = norm(tr - tl);
+    const QPointF dirRight = norm(br - tr);
+    const QPointF dirBottom = norm(bl - br);
+    const QPointF dirLeft = norm(tl - bl);
+    auto outward = [&](const QPointF &mid, const QPointF &along) -> QPointF {
+        QPointF n(-along.y(), along.x());
+        if (QPointF::dotProduct(n, mid - centerV) < 0) {
+            n = -n;
+        }
+        return n;
+    };
+    const QPointF midTop = (tl + tr) * 0.5;
+    const QPointF midRight = (tr + br) * 0.5;
+    const QPointF midBottom = (br + bl) * 0.5;
+    const QPointF midLeft = (bl + tl) * 0.5;
+    const QPointF outTop = outward(midTop, dirTop);
+    const QPointF outRight = outward(midRight, dirRight);
+    const QPointF outBottom = outward(midBottom, dirBottom);
+    const QPointF outLeft = outward(midLeft, dirLeft);
 
     painter->save();
     painter->setOpacity(1.0);
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    // Fixed on-screen sizes — never multiply by item or view scale.
     const qreal hs = kHandleScreenPx;
 
+    // Selection frame
     QPen framePen(QColor(0, 160, 255), 0);
     framePen.setCosmetic(true);
-    framePen.setWidthF(2.0);
+    framePen.setWidthF(1.5);
     painter->setPen(framePen);
     painter->setBrush(Qt::NoBrush);
-    {
-        const QPolygonF poly({
-            toView(localRect.topLeft()),
-            toView(localRect.topRight()),
-            toView(localRect.bottomRight()),
-            toView(localRect.bottomLeft()),
-        });
-        painter->drawPolygon(poly);
-    }
+    painter->drawPolygon(QPolygonF({tl, tr, br, bl}));
 
-    // Rotate stems
-    painter->drawLine(toView(QPointF(localRect.center().x(), localRect.top())),
-                      toView(handleCenter(Handle::RotateTop)));
-    painter->drawLine(toView(QPointF(localRect.right(), localRect.center().y())),
-                      toView(handleCenter(Handle::RotateRight)));
-    painter->drawLine(toView(QPointF(localRect.center().x(), localRect.bottom())),
-                      toView(handleCenter(Handle::RotateBottom)));
-    painter->drawLine(toView(QPointF(localRect.left(), localRect.center().y())),
-                      toView(handleCenter(Handle::RotateLeft)));
+    // Rotate stems + knobs (centres from handleCenter so hit-test matches paint)
+    auto drawRotate = [&](Handle h, const QPointF &edgeMid) {
+        const QPointF c = toView(handleCenter(h));
+        const bool hot = (m_hoverHandle == h || m_activeHandle == h);
+        QPen stem(QColor(0, 160, 255), 0);
+        stem.setCosmetic(true);
+        stem.setWidthF(1.25);
+        painter->setPen(stem);
+        painter->drawLine(edgeMid, c);
+        const qreal rad = hs * (hot ? 0.42 : 0.36);
+        painter->setBrush(hot ? QColor(255, 230, 80) : QColor(255, 200, 40));
+        QPen hp(hot ? QColor(255, 255, 255) : QColor(40, 40, 40), 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(hot ? 1.75 : 1.25);
+        painter->setPen(hp);
+        painter->drawEllipse(c, rad, rad);
+    };
+    drawRotate(Handle::RotateTop, midTop);
+    drawRotate(Handle::RotateRight, midRight);
+    drawRotate(Handle::RotateBottom, midBottom);
+    drawRotate(Handle::RotateLeft, midLeft);
 
     if (m_scaleHandlesEnabled) {
-        // Corner L-brackets: arms along the *image* edges (rotate with frame).
+        // Corner L-brackets: arms along the two adjacent edges in *view* space.
         struct Corner {
             Handle h;
-            QPointF alongA; // local direction of first arm
+            QPointF corner;
+            QPointF alongA;
             QPointF alongB;
         };
         const Corner corners[] = {
-            {Handle::ScaleTopLeft, QPointF(1, 0), QPointF(0, 1)},
-            {Handle::ScaleTopRight, QPointF(-1, 0), QPointF(0, 1)},
-            {Handle::ScaleBottomLeft, QPointF(1, 0), QPointF(0, -1)},
-            {Handle::ScaleBottomRight, QPointF(-1, 0), QPointF(0, -1)},
+            {Handle::ScaleTopLeft, tl, dirTop, -dirLeft},
+            {Handle::ScaleTopRight, tr, -dirTop, dirRight},
+            {Handle::ScaleBottomRight, br, dirBottom, -dirRight},
+            {Handle::ScaleBottomLeft, bl, -dirBottom, dirLeft},
         };
         for (const Corner &co : corners) {
             const bool hot = (m_hoverHandle == co.h || m_activeHandle == co.h);
-            const QPointF c = toView(handleCenter(co.h));
-            const QPointF d1 = dirView(co.alongA);
-            const QPointF d2 = dirView(co.alongB);
-            const qreal arm = hs * (hot ? 1.7 : 1.45);
+            const QPointF c = co.corner;
+            const QPointF d1 = norm(co.alongA);
+            const QPointF d2 = norm(co.alongB);
+            const qreal arm = hs * (hot ? 1.25 : 1.05);
             QPen hp(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
             hp.setCosmetic(true);
-            hp.setWidthF(hot ? 3.0 : 2.5);
+            hp.setWidthF(hot ? 2.25 : 1.75);
             hp.setCapStyle(Qt::SquareCap);
             painter->setPen(hp);
             painter->drawLine(c, c + d1 * arm);
             painter->drawLine(c, c + d2 * arm);
-            // Solid grip square, oriented with the frame.
-            const qreal half = hs * (hot ? 0.38 : 0.32);
-            const QPointF px = dirView(QPointF(1, 0));
-            const QPointF py = dirView(QPointF(0, 1));
+            const qreal half = hs * (hot ? 0.28 : 0.24);
+            // Grip square aligned to local axes mapped into view.
+            const QPointF lx = norm(toView(QPointF(1, 0)) - toView(QPointF(0, 0)));
+            const QPointF ly = norm(toView(QPointF(0, 1)) - toView(QPointF(0, 0)));
             QPolygonF sq;
-            sq << c + (-px - py) * half << c + (px - py) * half
-               << c + (px + py) * half << c + (-px + py) * half;
+            sq << c + (-lx - ly) * half << c + (lx - ly) * half
+               << c + (lx + ly) * half << c + (-lx + ly) * half;
             painter->setBrush(hot ? QColor(255, 255, 255) : QColor(0, 160, 255, 230));
             painter->drawPolygon(sq);
             painter->setBrush(Qt::NoBrush);
         }
 
-        // Edge stretch bars along the image edge (rotate with frame).
-        struct Edge {
+        // Edge stretch bars along each edge, mid-edge, constant view size.
+        struct EdgeBar {
             Handle h;
-            QPointF localAlong;
+            QPointF mid;
+            QPointF along;
         };
-        const Edge edges[] = {
-            {Handle::ScaleTop, QPointF(1, 0)},
-            {Handle::ScaleBottom, QPointF(1, 0)},
-            {Handle::ScaleLeft, QPointF(0, 1)},
-            {Handle::ScaleRight, QPointF(0, 1)},
+        const EdgeBar edges[] = {
+            {Handle::ScaleTop, midTop, dirTop},
+            {Handle::ScaleRight, midRight, dirRight},
+            {Handle::ScaleBottom, midBottom, dirBottom},
+            {Handle::ScaleLeft, midLeft, dirLeft},
         };
-        for (const Edge &ed : edges) {
+        for (const EdgeBar &ed : edges) {
             const bool hot = (m_hoverHandle == ed.h || m_activeHandle == ed.h);
-            const QPointF c = toView(handleCenter(ed.h));
-            const QPointF along = dirView(ed.localAlong);
+            const QPointF along = norm(ed.along);
             const QPointF perp(-along.y(), along.x());
-            const qreal len = hs * (hot ? 3.0 : 2.6);
-            const qreal thick = hs * (hot ? 0.75 : 0.60);
+            const qreal len = hs * (hot ? 2.2 : 1.9);
+            const qreal thick = hs * (hot ? 0.42 : 0.34);
             QPen hp(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
             hp.setCosmetic(true);
-            hp.setWidthF(hot ? 2.0 : 1.5);
+            hp.setWidthF(hot ? 1.5 : 1.15);
             painter->setPen(hp);
             painter->setBrush(hot ? QColor(80, 200, 255) : QColor(0, 160, 255, 230));
             QPolygonF bar;
-            bar << c + along * (len / 2) + perp * (thick / 2)
-                << c - along * (len / 2) + perp * (thick / 2)
-                << c - along * (len / 2) - perp * (thick / 2)
-                << c + along * (len / 2) - perp * (thick / 2);
+            bar << ed.mid + along * (len / 2) + perp * (thick / 2)
+                << ed.mid - along * (len / 2) + perp * (thick / 2)
+                << ed.mid - along * (len / 2) - perp * (thick / 2)
+                << ed.mid + along * (len / 2) - perp * (thick / 2);
             painter->drawPolygon(bar);
+            painter->setBrush(Qt::NoBrush);
         }
     }
 
-    for (Handle h : {Handle::RotateTop, Handle::RotateRight,
-                     Handle::RotateBottom, Handle::RotateLeft}) {
-        const QPointF c = toView(handleCenter(h));
-        const bool hot = (m_hoverHandle == h || m_activeHandle == h);
-        const qreal s = hs * (hot ? 1.2 : 1.0);
-        painter->setBrush(hot ? QColor(255, 230, 80) : QColor(255, 200, 40));
-        QPen hp(hot ? QColor(255, 255, 255) : QColor(40, 40, 40), 0);
-        hp.setCosmetic(true);
-        hp.setWidthF(hot ? 2.0 : 1.5);
-        painter->setPen(hp);
-        painter->drawEllipse(c, s / 2.0, s / 2.0);
-    }
-
+    // Chrome buttons (outside right edge; centres from handleCenter).
     {
         const qreal btnR = kChromeBtnScreenPx / 2.0;
         auto drawBtn = [&](Handle h, const QString &glyph) {
             const QPointF c = toView(handleCenter(h));
             const bool hovered = (m_hoverHandle == h);
             const bool active = (m_activeHandle == h);
-            const qreal rad = btnR * (hovered || active ? 1.12 : 1.0);
+            const qreal rad = btnR * (hovered || active ? 1.08 : 1.0);
             QColor fill = hovered || active ? QColor(0, 140, 255, 240) : QColor(50, 50, 50, 230);
             QPen border(hovered || active ? QColor(255, 255, 255) : QColor(0, 160, 255));
-            border.setWidthF(hovered || active ? 2.0 : 1.0);
+            border.setWidthF(hovered || active ? 1.75 : 1.0);
             border.setCosmetic(true);
             painter->setPen(border);
             painter->setBrush(fill);
             painter->drawEllipse(c, rad, rad);
             painter->setPen(QColor(240, 240, 240));
             QFont f = painter->font();
-            f.setPointSizeF(qMax(8.0, rad * 0.65));
+            f.setPointSizeF(qMax(7.0, rad * 0.55));
             f.setBold(true);
             painter->setFont(f);
             painter->drawText(QRectF(c.x() - rad, c.y() - rad, rad * 2, rad * 2),
@@ -896,6 +927,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         drawBtn(Handle::ResetRotation, QStringLiteral("0°"));
     }
 
+    // Opacity slider along the bottom edge of the frame (view-space).
     {
         const QRectF track = opacitySliderRect();
         const QPointF a = toView(QPointF(track.left(), track.center().y()));
@@ -910,7 +942,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         const qreal tval = (m_opacity - 0.05) / 0.95;
         QPen trackPen(hot ? QColor(200, 180, 255) : QColor(120, 100, 160), 0);
         trackPen.setCosmetic(true);
-        trackPen.setWidthF(1.5);
+        trackPen.setWidthF(1.15);
         painter->setPen(trackPen);
         painter->setBrush(QColor(40, 40, 40, hot ? 230 : 200));
         QPolygonF trackPoly;
@@ -925,7 +957,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         painter->drawPolygon(filled);
         painter->setBrush(QColor(230, 230, 230));
         painter->setPen(QPen(QColor(30, 30, 30), 0));
-        painter->drawEllipse(mid, 7.0, 7.0);
+        painter->drawEllipse(mid, 5.5, 5.5);
     }
 
     painter->restore();
