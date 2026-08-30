@@ -31,9 +31,21 @@ ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *pa
     applyLocalTransform();
 }
 
+qreal ImageItem::itemScale() const
+{
+    // Geometric mean keeps a single % meaningful when axes differ slightly.
+    return qSqrt(qMax(0.01, m_scaleX) * qMax(0.01, m_scaleY));
+}
+
 void ImageItem::setItemScale(qreal scale)
 {
-    m_scale = qMax(0.01, scale);
+    setItemScale(scale, scale);
+}
+
+void ImageItem::setItemScale(qreal scaleX, qreal scaleY)
+{
+    m_scaleX = qMax(0.01, scaleX);
+    m_scaleY = qMax(0.01, scaleY);
     applyLocalTransform();
     prepareGeometryChange();
 }
@@ -53,7 +65,7 @@ void ImageItem::setItemRotation(qreal degrees)
 
 void ImageItem::zoomBy(qreal factor)
 {
-    setItemScale(m_scale * factor);
+    setItemScale(m_scaleX * factor, m_scaleY * factor);
 }
 
 void ImageItem::rotateBy(qreal degrees)
@@ -168,7 +180,7 @@ QRectF ImageItem::galleryClipLocal() const
         || m_galleryCellSize.height() <= 0) {
         return {};
     }
-    const qreal s = qMax(0.001, m_scale);
+    const qreal s = qMax(0.001, qMax(m_scaleX, m_scaleY));
     const qreal lw = m_galleryCellSize.width() / s;
     const qreal lh = m_galleryCellSize.height() / s;
     const QRectF br = QGraphicsPixmapItem::boundingRect();
@@ -193,7 +205,7 @@ void ImageItem::applyLocalTransform()
     // stay on the geometric top/left/right of the item frame.
     QTransform t;
     t.rotate(m_rotation);
-    t.scale(m_scale, m_scale);
+    t.scale(m_scaleX, m_scaleY);
     setTransform(t);
 }
 

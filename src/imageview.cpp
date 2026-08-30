@@ -697,9 +697,16 @@ QString ImageView::statusText() const
                            .arg(item->imageSize().width())
                            .arg(item->imageSize().height());
         if (item->isSelected()) {
-            text += tr("  |  Item: %1%  |  Rot: %2°")
-                        .arg(qRound(item->itemScale() * 100))
-                        .arg(qRound(item->itemRotation()));
+            if (qAbs(item->itemScaleX() - item->itemScaleY()) < 0.005) {
+                text += tr("  |  Item: %1%  |  Rot: %2°")
+                            .arg(qRound(item->itemScaleX() * 100))
+                            .arg(qRound(item->itemRotation()));
+            } else {
+                text += tr("  |  Item: %1%×%2%  |  Rot: %3°")
+                            .arg(qRound(item->itemScaleX() * 100))
+                            .arg(qRound(item->itemScaleY() * 100))
+                            .arg(qRound(item->itemRotation()));
+            }
         }
         if (item->itemOpacity() < 0.999) {
             text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));

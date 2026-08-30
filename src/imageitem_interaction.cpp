@@ -91,7 +91,9 @@ QPainterPath ImageItem::shape() const
         };
         if (m_scaleHandlesEnabled) {
             handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                                    Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
+                                    Handle::ScaleBottomLeft, Handle::ScaleBottomRight,
+                                    Handle::ScaleTop, Handle::ScaleRight,
+                                    Handle::ScaleBottom, Handle::ScaleLeft}
                       + handles;
         }
         for (Handle h : handles) {
@@ -122,7 +124,7 @@ QPainterPath ImageItem::shape() const
 qreal ImageItem::screenScale() const
 {
     // Item local scale × view transform scale → pixels per local unit
-    qreal s = qMax(m_scale, 0.01);
+    qreal s = qMax(0.01, qMax(qAbs(m_scaleX), qAbs(m_scaleY)));
     if (scene()) {
         const QList<QGraphicsView *> views = scene()->views();
         if (!views.isEmpty() && views.first()) {
@@ -163,6 +165,167 @@ bool ImageItem::isRotateHandle(Handle h) const
         || h == Handle::RotateBottom || h == Handle::RotateLeft;
 }
 
+bool ImageItem::isCornerScaleHandle(Handle h) const
+{
+    return h == Handle::ScaleTopLeft || h == Handle::ScaleTopRight
+        || h == Handle::ScaleBottomLeft || h == Handle::ScaleBottomRight;
+}
+
+bool ImageItem::isEdgeScaleHandle(Handle h) const
+{
+    return h == Handle::ScaleTop || h == Handle::ScaleRight
+        || h == Handle::ScaleBottom || h == Handle::ScaleLeft;
+}
+
+bool ImageItem::isScaleHandle(Handle h) const
+{
+    return isCornerScaleHandle(h) || isEdgeScaleHandle(h);
+}
+
+QPointF ImageItem::scaleAnchorLocal(Handle h) const
+{
+    // Opposite corner/edge — kept fixed when not scaling from the centre.
+    const QRectF r = QGraphicsPixmapItem::boundingRect();
+    switch (h) {
+    case Handle::ScaleTopLeft:
+        return r.bottomRight();
+    case Handle::ScaleTopRight:
+        return r.bottomLeft();
+    case Handle::ScaleBottomLeft:
+        return r.topRight();
+    case Handle::ScaleBottomRight:
+        return r.topLeft();
+    case Handle::ScaleTop:
+        return QPointF(r.center().x(), r.bottom());
+    case Handle::ScaleBottom:
+        return QPointF(r.center().x(), r.top());
+    case Handle::ScaleLeft:
+        return QPointF(r.right(), r.center().y());
+    case Handle::ScaleRight:
+        return QPointF(r.left(), r.center().y());
+    default:
+        return r.center();
+    }
+}
+
+void ImageItem::drawCornerBracket(QPainter *painter, Handle h, qreal arm, bool hot) const
+{
+    const QPointF c = handleCenter(h);
+    // Arm directions: outward along the box edges from the corner.
+    qreal dx = 0, dy = 0;
+    switch (h) {
+    case Handle::ScaleTopLeft:
+        dx = 1; dy = 1; break;
+    case Handle::ScaleTopRight:
+        dx = -1; dy = 1; break;
+    case Handle::ScaleBottomLeft:
+        dx = 1; dy = -1; break;
+    case Handle::ScaleBottomRight:
+        dx = -1; dy = -1; break;
+    default:
+        return;
+    }
+    QPen pen(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
+    pen.setCosmetic(true);
+    pen.setWidthF(hot ? 2.5 : 2.0);
+    pen.setCapStyle(Qt::SquareCap);
+    pen.setJoinStyle(Qt::MiterJoin);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    // L-shape: from along one edge to corner to the other edge (|_ style).
+    const QPointF a(c.x() + dx * arm, c.y());
+    const QPointF b = c;
+    const QPointF d(c.x(), c.y() + dy * arm);
+    painter->drawLine(a, b);
+    painter->drawLine(b, d);
+}
+
+void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods)
+{
+    // Ctrl or Shift → scale from the opposite corner/edge (drawing-program style).
+    // Default → uniform/anisotropic scale about the item centre.
+    const bool fromCenter = !(mods & (Qt::ControlModifier | Qt::ShiftModifier));
+    const QPointF centre = scenePos; // unused name clash — use item centre
+    Q_UNUSED(centre);
+    const QPointF itemCentre = this->scenePos();
+
+    if (isCornerScaleHandle(m_activeHandle)) {
+        if (fromCenter) {
+            const qreal d0 = QLineF(itemCentre, m_pressScenePos).length();
+            const qreal d1 = QLineF(itemCentre, scenePos).length();
+            if (d0 > 1.0) {
+                const qreal f = d1 / d0;
+                setItemScale(m_pressScaleX * f, m_pressScaleY * f);
+            }
+        } else {
+            // Keep opposite corner fixed in scene; scale so the dragged corner
+            // tracks the pointer along the ray from the anchor.
+            const QPointF anchor = m_pressAnchorScene;
+            const qreal d0 = QLineF(anchor, m_pressScenePos).length();
+            const qreal d1 = QLineF(anchor, scenePos).length();
+            if (d0 > 1.0) {
+                const qreal f = d1 / d0;
+                setItemScale(m_pressScaleX * f, m_pressScaleY * f);
+                // Reposition so the anchor local point stays at anchor scene.
+                const QPointF now = mapToScene(m_pressAnchorLocal);
+                setPos(pos() + (anchor - now));
+            }
+        }
+        return;
+    }
+
+    if (isEdgeScaleHandle(m_activeHandle)) {
+        // Work in item-local space for axis-aligned stretch.
+        const QPointF local = mapFromScene(scenePos);
+        const QPointF pressLocal = m_pressItemPos;
+        const QRectF r = QGraphicsPixmapItem::boundingRect();
+        const qreal halfW = qMax(1.0, r.width() / 2.0);
+        const qreal halfH = qMax(1.0, r.height() / 2.0);
+
+        qreal sx = m_pressScaleX;
+        qreal sy = m_pressScaleY;
+        if (m_activeHandle == Handle::ScaleLeft || m_activeHandle == Handle::ScaleRight) {
+            if (fromCenter) {
+                const qreal x0 = qAbs(pressLocal.x());
+                const qreal x1 = qAbs(local.x());
+                if (x0 > 1.0) {
+                    sx = m_pressScaleX * (x1 / x0);
+                }
+            } else {
+                // Distance from fixed opposite edge in local X.
+                const qreal ax = m_pressAnchorLocal.x();
+                const qreal x0 = qAbs(pressLocal.x() - ax);
+                const qreal x1 = qAbs(local.x() - ax);
+                if (x0 > 1.0) {
+                    sx = m_pressScaleX * (x1 / x0);
+                }
+            }
+        } else {
+            if (fromCenter) {
+                const qreal y0 = qAbs(pressLocal.y());
+                const qreal y1 = qAbs(local.y());
+                if (y0 > 1.0) {
+                    sy = m_pressScaleY * (y1 / y0);
+                }
+            } else {
+                const qreal ay = m_pressAnchorLocal.y();
+                const qreal y0 = qAbs(pressLocal.y() - ay);
+                const qreal y1 = qAbs(local.y() - ay);
+                if (y0 > 1.0) {
+                    sy = m_pressScaleY * (y1 / y0);
+                }
+            }
+        }
+        setItemScale(sx, sy);
+        if (!fromCenter) {
+            const QPointF now = mapToScene(m_pressAnchorLocal);
+            setPos(pos() + (m_pressAnchorScene - now));
+        }
+        Q_UNUSED(halfW);
+        Q_UNUSED(halfH);
+    }
+}
+
 qreal ImageItem::chromeButtonSize() const
 {
     return kChromeBtnScreenPx / screenScale();
@@ -200,7 +363,9 @@ QList<ImageItem::Handle> ImageItem::activeHandles() const
     QList<Handle> handles;
     if (m_scaleHandlesEnabled) {
         handles << Handle::ScaleTopLeft << Handle::ScaleTopRight
-                << Handle::ScaleBottomLeft << Handle::ScaleBottomRight;
+                << Handle::ScaleBottomLeft << Handle::ScaleBottomRight
+                << Handle::ScaleTop << Handle::ScaleRight
+                << Handle::ScaleBottom << Handle::ScaleLeft;
     }
     handles << Handle::RotateTop << Handle::RotateRight
             << Handle::RotateBottom << Handle::RotateLeft
@@ -261,6 +426,14 @@ QPointF ImageItem::handleCenter(Handle h) const
         return r.bottomLeft();
     case Handle::ScaleBottomRight:
         return r.bottomRight();
+    case Handle::ScaleTop:
+        return QPointF(cx, r.top());
+    case Handle::ScaleRight:
+        return QPointF(r.right(), cy);
+    case Handle::ScaleBottom:
+        return QPointF(cx, r.bottom());
+    case Handle::ScaleLeft:
+        return QPointF(r.left(), cy);
     case Handle::RotateTop:
         return QPointF(cx, r.top() - rotOff);
     case Handle::RotateRight:
@@ -337,7 +510,9 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     };
     if (m_scaleHandlesEnabled) {
         handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                                Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
+                                Handle::ScaleBottomLeft, Handle::ScaleBottomRight,
+                                Handle::ScaleTop, Handle::ScaleRight,
+                                Handle::ScaleBottom, Handle::ScaleLeft}
                   + handles;
     }
     for (Handle h : handles) {
@@ -348,6 +523,11 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         }
     }
     return best;
+}
+
+bool ImageItem::hasHandleAt(const QPointF &itemPos) const
+{
+    return handleAt(itemPos) != Handle::None;
 }
 
 void ImageItem::notifyViewStatus()
@@ -459,22 +639,34 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     pen.setWidthF(1.0);
     painter->setPen(pen);
 
-    // Scale handles (squares) — only in free-form layouts
+    // Scale handles — only in free-form layouts: corner L-brackets and edge bars.
     if (m_scaleHandlesEnabled) {
         for (Handle h : {Handle::ScaleTopLeft, Handle::ScaleTopRight,
                          Handle::ScaleBottomLeft, Handle::ScaleBottomRight}) {
+            const bool hot = (m_hoverHandle == h || m_activeHandle == h);
+            const qreal arm = hs * (hot ? 1.6 : 1.35);
+            drawCornerBracket(painter, h, arm, hot);
+        }
+        // Edge stretch bars (mid-side, short segment along the edge)
+        for (Handle h : {Handle::ScaleTop, Handle::ScaleRight,
+                         Handle::ScaleBottom, Handle::ScaleLeft}) {
             const QPointF c = handleCenter(h);
             const bool hot = (m_hoverHandle == h || m_activeHandle == h);
-            const qreal s = hs * (hot ? 1.25 : 1.0);
-            painter->setBrush(hot ? QColor(80, 200, 255) : QColor(0, 160, 255));
+            const qreal len = hs * (hot ? 2.4 : 2.0);
+            const qreal thick = hs * (hot ? 0.45 : 0.35);
             QPen hp = pen;
-            if (hot) {
-                hp.setColor(Qt::white);
-                hp.setWidthF(2.0);
-                hp.setCosmetic(true);
-            }
+            hp.setColor(hot ? QColor(255, 255, 255) : QColor(0, 160, 255));
+            hp.setWidthF(hot ? 2.0 : 1.5);
+            hp.setCosmetic(true);
             painter->setPen(hp);
-            painter->drawRect(QRectF(c.x() - s / 2, c.y() - s / 2, s, s));
+            painter->setBrush(hot ? QColor(80, 200, 255) : QColor(0, 160, 255, 220));
+            QRectF bar;
+            if (h == Handle::ScaleTop || h == Handle::ScaleBottom) {
+                bar = QRectF(c.x() - len / 2, c.y() - thick / 2, len, thick);
+            } else {
+                bar = QRectF(c.x() - thick / 2, c.y() - len / 2, thick, len);
+            }
+            painter->drawRoundedRect(bar, thick * 0.3, thick * 0.3);
             painter->setPen(pen);
         }
     }
@@ -576,9 +768,12 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
             }
             m_activeHandle = h;
             m_pressScenePos = event->scenePos();
-            m_pressScale = m_scale;
+            m_pressScaleX = m_scaleX;
+            m_pressScaleY = m_scaleY;
             m_pressRotation = m_rotation;
             m_pressItemPos = event->pos();
+            m_pressAnchorLocal = scaleAnchorLocal(h);
+            m_pressAnchorScene = mapToScene(m_pressAnchorLocal);
             if (h == Handle::OpacitySlider) {
                 setOpacityFromSliderPos(event->pos());
                 notifyViewStatus();
@@ -610,14 +805,8 @@ void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
                 angle = qRound(angle / 45.0) * 45.0;
             }
             setItemRotation(angle);
-        } else {
-            // Uniform scale from item centre based on distance ratio
-            const QPointF centre = scenePos();
-            const qreal d0 = QLineF(centre, m_pressScenePos).length();
-            const qreal d1 = QLineF(centre, event->scenePos()).length();
-            if (d0 > 1.0) {
-                setItemScale(m_pressScale * (d1 / d0));
-            }
+        } else if (isScaleHandle(m_activeHandle)) {
+            applyScaleHandleDrag(event->scenePos(), event->modifiers());
         }
         notifyViewStatus();
         event->accept();
@@ -664,8 +853,6 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
             break;
         case Handle::ScaleTopLeft:
         case Handle::ScaleBottomRight: {
-            // Diagonal cursors are axis-aligned on screen; swap when the item
-            // is closer to 90° so the cursor matches the visual corner.
             const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
             const bool swap = (a > 45.0 && a < 135.0);
             setCursor(swap ? Qt::SizeBDiagCursor : Qt::SizeFDiagCursor);
@@ -676,6 +863,18 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
             const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
             const bool swap = (a > 45.0 && a < 135.0);
             setCursor(swap ? Qt::SizeFDiagCursor : Qt::SizeBDiagCursor);
+            break;
+        }
+        case Handle::ScaleTop:
+        case Handle::ScaleBottom: {
+            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
+            setCursor((a > 45.0 && a < 135.0) ? Qt::SizeHorCursor : Qt::SizeVerCursor);
+            break;
+        }
+        case Handle::ScaleLeft:
+        case Handle::ScaleRight: {
+            const qreal a = std::fmod(std::fabs(m_rotation), 180.0);
+            setCursor((a > 45.0 && a < 135.0) ? Qt::SizeVerCursor : Qt::SizeHorCursor);
             break;
         }
         case Handle::FlipH:

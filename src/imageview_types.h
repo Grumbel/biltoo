@@ -21,7 +21,8 @@ struct ImageMouseInfo {
 struct WorkspaceItemState {
     QString path;
     QPointF pos;
-    qreal scale = 1.0;
+    qreal scale = 1.0;   // scaleX
+    qreal scaleY = 1.0;
     qreal rotation = 0.0;
     qreal opacity = 1.0;
     qreal z = 0.0;

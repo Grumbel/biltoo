@@ -417,7 +417,8 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    // Workspace only: Shift + left button free-rotates
+    // Workspace only: Shift + left button free-rotates (unless the press is on
+    // a selected item's scale/chrome handle — those use Shift for opposite-edge scale).
     if (isWorkspaceMode() && event->button() == Qt::LeftButton
         && (event->modifiers() & Qt::ShiftModifier)) {
         ImageItem *hit = nullptr;
@@ -431,7 +432,9 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         if (!hit) {
             hit = targetItem();
         }
-        if (hit) {
+        if (hit && hit->isSelected() && hit->hasHandleAt(hit->mapFromScene(scenePos))) {
+            // Fall through to QGraphicsView → ImageItem handle interaction.
+        } else if (hit) {
             m_rotating = true;
             m_rotateItem = hit;
             m_rotateStartAngle = angleAt(scenePos, hit);
@@ -569,6 +572,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         const WorkspaceItemState after = captureState(m_dragItem);
         if (after.pos != m_dragStartState.pos
             || after.scale != m_dragStartState.scale
+            || after.scaleY != m_dragStartState.scaleY
             || after.rotation != m_dragStartState.rotation) {
             class TransformCommand : public QUndoCommand {
             public:

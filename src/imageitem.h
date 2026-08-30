@@ -27,6 +27,11 @@ public:
         ScaleTopRight,
         ScaleBottomLeft,
         ScaleBottomRight,
+        /** Edge stretch (non-uniform): change only one axis. */
+        ScaleTop,
+        ScaleRight,
+        ScaleBottom,
+        ScaleLeft,
         RotateTop,
         RotateRight,
         RotateBottom,
@@ -45,7 +50,10 @@ public:
     QSize imageSize() const { return m_source.size(); }
     const QImage &sourceImage() const { return m_source; }
 
-    qreal itemScale() const { return m_scale; }
+    /** Uniform scale factor (geometric mean of X/Y); prefer itemScaleX/Y when anisotropic. */
+    qreal itemScale() const;
+    qreal itemScaleX() const { return m_scaleX; }
+    qreal itemScaleY() const { return m_scaleY; }
     qreal itemRotation() const { return m_rotation; }
     qreal itemOpacity() const { return m_opacity; }
     /** Persistent stacking order (selection may temporarily raise the item). */
@@ -54,7 +62,9 @@ public:
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }
 
+    /** Set both axes to the same factor (gallery layouts, zoom-by). */
     void setItemScale(qreal scale);
+    void setItemScale(qreal scaleX, qreal scaleY);
     void setItemRotation(qreal degrees);
     void setItemOpacity(qreal opacity);
     void setItemHFlip(bool on);
@@ -97,6 +107,9 @@ public:
     /** Call after view zoom so handle hit areas/bounds stay correct. */
     void updateHandleLayout();
 
+    /** True when a scale/rotate/chrome handle is under item-local @p itemPos. */
+    bool hasHandleAt(const QPointF &itemPos) const;
+
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
@@ -130,6 +143,7 @@ private:
     qreal screenScale() const;
     bool isChromeHandle(Handle h) const;
     bool isRotateHandle(Handle h) const;
+    void drawCornerBracket(QPainter *painter, Handle h, qreal arm, bool hot) const;
     /** Raise/Lower keep screen-upright glyphs (counter-rotated when painting). */
     bool isUprightChromeHandle(Handle h) const;
     void activateChromeHandle(Handle h);
@@ -142,7 +156,8 @@ private:
 
     QString m_path;
     QImage m_source;
-    qreal m_scale = 1.0;
+    qreal m_scaleX = 1.0;
+    qreal m_scaleY = 1.0;
     qreal m_rotation = 0.0;
     qreal m_opacity = 1.0;
     qreal m_stackZ = 0.0;
@@ -158,9 +173,19 @@ private:
     /** Gallery: item under the mouse (no transform chrome). */
     bool m_galleryHovered = false;
     QPointF m_pressScenePos;
-    qreal m_pressScale = 1.0;
+    qreal m_pressScaleX = 1.0;
+    qreal m_pressScaleY = 1.0;
     qreal m_pressRotation = 0.0;
     QPointF m_pressItemPos;
+    /** Scene position of the fixed anchor (opposite corner/edge) at press. */
+    QPointF m_pressAnchorScene;
+    /** Local-space anchor point kept fixed when not scaling from centre. */
+    QPointF m_pressAnchorLocal;
+    bool isScaleHandle(Handle h) const;
+    bool isCornerScaleHandle(Handle h) const;
+    bool isEdgeScaleHandle(Handle h) const;
+    QPointF scaleAnchorLocal(Handle h) const;
+    void applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods);
 };
 
 #endif // IMAGEITEM_H

@@ -60,7 +60,8 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     WorkspaceItemState s;
     s.path = item->path();
     s.pos = item->pos();
-    s.scale = item->itemScale();
+    s.scale = item->itemScaleX();
+    s.scaleY = item->itemScaleY();
     s.rotation = item->itemRotation();
     s.opacity = item->itemOpacity();
     s.z = item->stackZ();
@@ -72,7 +73,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
 void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
 {
     item->setPos(state.pos);
-    item->setItemScale(state.scale);
+    item->setItemScale(state.scale, state.scaleY > 0.0 ? state.scaleY : state.scale);
     item->setItemRotation(state.rotation);
     item->setItemOpacity(state.opacity);
     item->setStackZ(state.z);
@@ -140,6 +141,7 @@ WorkspaceItemState ImageView::defaultStateForPath(const QString &path, int ordin
     s.path = path;
     s.pos = QPointF(40.0 * ordinal, 30.0 * ordinal);
     s.scale = 1.0;
+    s.scaleY = 1.0;
     s.rotation = 0.0;
     s.opacity = 1.0;
     s.z = ordinal;
