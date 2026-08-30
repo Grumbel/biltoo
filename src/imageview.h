@@ -70,6 +70,8 @@ public:
 
     bool loadImage(const QString &path);
     bool addImage(const QString &path);
+    /** Add image and place its centre at scenePos once loaded. */
+    bool addImageAt(const QString &path, const QPointF &scenePos);
     void clearWorkspace();
     void setWorkspaceMode(bool on);
     bool workspaceMode() const { return m_workspaceMode; }
@@ -167,7 +169,8 @@ signals:
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
     /** File URLs dropped onto the view (same semantics as MainWindow). */
-    void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers);
+    void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
+                      const QPointF &scenePos);
 
 public slots:
     /** Deliver a finished background decode (generation must still match). */
@@ -212,6 +215,8 @@ private:
     void snapshotFreeFormStates();
     void restoreFreeFormStates();
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
+    /** Centre position that does not overlap existing items (viewport-aware). */
+    QPointF findEmptyPlacement(const QSizeF &itemSize) const;
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
     int edgeZoneWidth() const;
     void updateHoverEdge(const QPoint &viewPos);
@@ -245,6 +250,8 @@ private:
     int m_masonryColumnWidth = 240;
     std::atomic<quint64> m_loadGeneration{0};
     QSet<QString> m_pendingWorkspacePaths;
+    /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */
+    QHash<QString, QPointF> m_pendingScenePos;
     ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;

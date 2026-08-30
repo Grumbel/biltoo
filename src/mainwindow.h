@@ -96,7 +96,8 @@ private slots:
     void toggleThumbnailBar();
     void about();
     void showPreferences();
-    void onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers);
+    void onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
+                        const QPointF &scenePos);
     void toggleScrollBars();
     void toggleWorkspaceMode();
     void setSelectTool();
@@ -131,7 +132,8 @@ private:
     void armSlideshowCursorHide();
     QStringList expandPaths(const QStringList &paths) const;
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
-    void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers);
+    void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
+                           const QPointF &scenePos = QPointF());
     static bool isImageFile(const QString &path);
 
     ImageView *m_imageView = nullptr;

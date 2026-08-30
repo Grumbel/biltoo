@@ -1877,7 +1877,8 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
     }
 }
 
-void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers)
+void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
+                                   const QPointF &scenePos)
 {
     // Build a transient mime payload so extractLocalImagePaths stays the single filter
     QMimeData mime;
@@ -1894,8 +1895,16 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             return;
         }
         appendFiles(expanded);
+        int i = 0;
         for (const QString &img : expanded) {
-            m_imageView->addImage(img);
+            if (!scenePos.isNull()) {
+                // Cascade slightly so multi-file drops stay visible
+                const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
+                m_imageView->addImageAt(img, pos);
+            } else {
+                m_imageView->addImage(img); // empty-space placement
+            }
+            ++i;
         }
         syncThumbnailWorkspaceSelection();
         if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
@@ -1913,9 +1922,10 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     }
 }
 
-void MainWindow::onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers)
+void MainWindow::onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
+                                const QPointF &scenePos)
 {
-    handleDroppedUrls(urls, modifiers);
+    handleDroppedUrls(urls, modifiers, scenePos);
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
@@ -1923,6 +1933,7 @@ void MainWindow::dropEvent(QDropEvent *event)
     if (!event->mimeData() || !event->mimeData()->hasUrls()) {
         return;
     }
-    handleDroppedUrls(event->mimeData()->urls(), event->modifiers());
+    // Window-level drop has no reliable scene position — empty-space placement
+    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), QPointF());
     event->acceptProposedAction();
 }

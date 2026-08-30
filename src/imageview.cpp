@@ -165,12 +165,25 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             }
         }
     } else {
-        // LoadAdd: restore remembered state or default placement
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.constEnd()) {
-            applyState(item, *it);
+        // LoadAdd: drop position, remembered state, or empty-space placement
+        if (m_pendingScenePos.contains(path)) {
+            const QPointF pos = m_pendingScenePos.take(path);
+            item->setPos(pos);
+            item->setItemScale(1.0);
+            item->setItemRotation(0.0);
+            item->setItemOpacity(1.0);
+            item->setZValue(m_items.size() - 1);
         } else {
-            applyState(item, defaultStateForPath(path, m_items.size() - 1));
+            const auto it = m_itemStates.constFind(path);
+            if (it != m_itemStates.constEnd()) {
+                applyState(item, *it);
+            } else {
+                WorkspaceItemState s = defaultStateForPath(path, m_items.size() - 1);
+                // Prefer non-overlapping placement using the decoded size
+                const QSizeF sz(image.width(), image.height());
+                s.pos = findEmptyPlacement(sz);
+                applyState(item, s);
+            }
         }
     }
 
@@ -240,6 +253,7 @@ void ImageView::clearWorkspace()
 {
     m_scene->clear();
     m_items.clear();
+    m_pendingScenePos.clear();
     m_mouseInfo = {};
     m_rotateItem = nullptr;
     m_rotating = false;
@@ -267,6 +281,66 @@ WorkspaceItemState ImageView::defaultStateForPath(const QString &path, int ordin
     s.opacity = 1.0;
     s.z = ordinal;
     return s;
+}
+
+QPointF ImageView::findEmptyPlacement(const QSizeF &itemSize) const
+{
+    const QRectF viewRect = mapToScene(viewport()->rect()).boundingRect();
+    QSizeF size = itemSize;
+    if (size.width() < 1.0 || size.height() < 1.0) {
+        size = QSizeF(200.0, 200.0);
+    }
+
+    // Cap the collision footprint so huge images still leave room nearby
+    const qreal maxEdge = qMax(120.0, qMin(viewRect.width(), viewRect.height()) * 0.45);
+    const qreal longest = qMax(size.width(), size.height());
+    if (longest > maxEdge) {
+        const qreal f = maxEdge / longest;
+        size = QSizeF(size.width() * f, size.height() * f);
+    }
+
+    const qreal gap = 32.0;
+    auto overlaps = [&](const QPointF &centre) {
+        const QRectF proposed(centre.x() - size.width() / 2.0 - gap,
+                              centre.y() - size.height() / 2.0 - gap,
+                              size.width() + 2.0 * gap,
+                              size.height() + 2.0 * gap);
+        for (ImageItem *item : m_items) {
+            if (item->sceneBoundingRect().intersects(proposed)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    QPointF candidate = viewRect.center();
+    if (m_items.isEmpty() || !overlaps(candidate)) {
+        return candidate;
+    }
+
+    // Spiral search around the viewport centre
+    const qreal stepX = size.width() + gap;
+    const qreal stepY = size.height() + gap;
+    for (int ring = 1; ring <= 48; ++ring) {
+        for (int dx = -ring; dx <= ring; ++dx) {
+            for (int dy = -ring; dy <= ring; ++dy) {
+                if (qMax(qAbs(dx), qAbs(dy)) != ring) {
+                    continue;
+                }
+                candidate = viewRect.center() + QPointF(dx * stepX, dy * stepY);
+                if (!overlaps(candidate)) {
+                    return candidate;
+                }
+            }
+        }
+    }
+
+    // Last resort: to the right of everything currently on the canvas
+    const QRectF bounds = m_scene->itemsBoundingRect();
+    if (bounds.isValid()) {
+        return QPointF(bounds.right() + gap + size.width() / 2.0, bounds.center().y());
+    }
+    return viewRect.center();
 }
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
@@ -564,7 +638,8 @@ void ImageView::dropEvent(QDropEvent *event)
         event->ignore();
         return;
     }
-    emit filesDropped(event->mimeData()->urls(), event->modifiers());
+    const QPointF scenePos = mapToScene(event->position().toPoint());
+    emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos);
     event->acceptProposedAction();
 }
 
@@ -642,6 +717,16 @@ bool ImageView::addImage(const QString &path)
     emit statusChanged();
     return true;
 }
+
+bool ImageView::addImageAt(const QString &path, const QPointF &scenePos)
+{
+    if (path.isEmpty()) {
+        return false;
+    }
+    m_pendingScenePos.insert(path, scenePos);
+    return addImage(path);
+}
+
 
 ImageItem *ImageView::primaryItem() const
 {
