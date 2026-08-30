@@ -202,8 +202,14 @@ void ImageView::paintEvent(QPaintEvent *event)
                 const QFontMetrics &m = hl.bold ? fmBold : fm;
                 for (const QString &w : wrapLine(hl.text, m, maxTextW)) {
                     drawn.append({w, hl.bold});
-                    textW = qMax(textW, m.boundingRect(w).width());
-                    textH += m.height();
+                    // boundingRect undercounts some fonts; size with the same
+                    // flags used for drawing and add a small safety margin.
+                    const QRect br = m.boundingRect(QRect(0, 0, maxTextW, 1000),
+                                                    Qt::AlignLeft | Qt::AlignVCenter
+                                                        | Qt::TextSingleLine,
+                                                    w);
+                    textW = qMax(textW, br.width() + 2);
+                    textH += qMax(m.height(), br.height());
                 }
             }
             if (drawn.isEmpty()) {
@@ -246,22 +252,25 @@ void ImageView::paintEvent(QPaintEvent *event)
             drawPanel({{actionLine, true}}, margin, margin, false, false);
         }
 
-        // Top-right: session index
+        // Top-right: session index (pinned HUD, flash, or identity pulse after nav)
         const QString badge = sessionBadgeText();
-        if (!badge.isEmpty()) {
+        if (!badge.isEmpty()
+            && (m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse)) {
             drawPanel({{badge, false}}, 0, margin, true, false);
         }
 
-        // Bottom: filename when HUD pinned (or while a non-nav flash is up with no action detail)
-        if (m_hudVisible) {
+        // Bottom: filename — pinned, or briefly after navigation / action flash
+        if (m_hudVisible || m_hudIdentityPulse || m_hudFlashVisible) {
             QList<HudLine> bottom;
             const QString name = hudFileName();
             if (!name.isEmpty()) {
                 bottom.append({name, true});
             }
-            const QString tech = statusText();
-            if (!tech.isEmpty() && tech != name) {
-                bottom.append({tech, false});
+            if (m_hudVisible) {
+                const QString tech = statusText();
+                if (!tech.isEmpty() && tech != name) {
+                    bottom.append({tech, false});
+                }
             }
             drawPanel(bottom, margin, 0, false, true);
         }

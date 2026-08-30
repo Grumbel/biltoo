@@ -518,8 +518,9 @@ void MainWindow::startSlideshow()
     qApp->installEventFilter(this);
     armSlideshowCursorHide();
     {
-        // Index lives top-right; filename bottom when HUD is pinned — action only here.
-        m_imageView->flashHud(tr("▶  Slideshow"));
+        const double sec = m_slideshowIntervalMs / 1000.0;
+        m_imageView->flashHud(tr("▶  Slideshow"),
+                              tr("%1 s").arg(sec, 0, 'f', sec >= 10.0 ? 0 : 1));
     }
 }
 
