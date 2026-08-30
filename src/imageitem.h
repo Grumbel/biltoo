@@ -140,7 +140,7 @@ private:
     bool m_hFlip = false;
     bool m_vFlip = false;
     bool m_interactive = false;
-    bool m_scaleHandlesEnabled = true;
+    bool m_scaleHandlesEnabled = false;
 
     Handle m_activeHandle = Handle::None;
     Handle m_hoverHandle = Handle::None;

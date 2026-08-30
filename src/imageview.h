@@ -247,6 +247,8 @@ private:
     };
 
     ImageItem *createItemFromImage(const QString &path, const QImage &image);
+    /** Interactive / gallery / static flags for the current ViewMode. */
+    void applyItemModeFlags(ImageItem *item);
     void scheduleImageLoad(const QString &path, LoadRole role);
     ImageItem *findItemByPath(const QString &path) const;
     ImageItem *primaryItem() const;

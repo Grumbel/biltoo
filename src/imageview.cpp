@@ -84,6 +84,17 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         return nullptr;
     }
     auto *item = new ImageItem(path, image);
+    applyItemModeFlags(item);
+    m_scene->addItem(item);
+    m_items.append(item);
+    return item;
+}
+
+void ImageView::applyItemModeFlags(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
     if (isWorkspaceMode()) {
         item->setInteractive(true);
         item->setScaleHandlesEnabled(true);
@@ -94,9 +105,6 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         item->setInteractive(false);
         item->setScaleHandlesEnabled(false);
     }
-    m_scene->addItem(item);
-    m_items.append(item);
-    return item;
 }
 
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
@@ -164,7 +172,6 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (m_items.isEmpty()) {
             ImageItem *item = createItemFromImage(path, image);
             if (item) {
-                item->setInteractive(true);
                 item->setSelected(true);
                 m_fitMode = true;
                 fitItem(item, currentFitAspectMode());
@@ -187,7 +194,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     if (!item) {
         return;
     }
-    item->setInteractive(true);
+    // Flags already match ViewMode via createItemFromImage / applyItemModeFlags.
+    // Do not force interactive — that flashes handles in Gallery.
 
     if (role == LoadRestore) {
         const auto it = m_itemStates.constFind(path);
@@ -519,8 +527,7 @@ void ImageView::setViewMode(ViewMode mode)
             restoreWorkspace();
         } else {
             for (ImageItem *item : m_items) {
-                item->setInteractive(true);
-                item->setScaleHandlesEnabled(true);
+                applyItemModeFlags(item);
             }
             if (!m_items.isEmpty()) {
                 m_scene->clearSelection();
@@ -538,8 +545,7 @@ void ImageView::setViewMode(ViewMode mode)
     }
     viewport()->update();
     for (ImageItem *item : m_items) {
-        item->setGallerySelectable(true);
-        item->setScaleHandlesEnabled(false);
+        applyItemModeFlags(item);
     }
     if (!m_items.isEmpty()) {
         applyLayout();
@@ -564,8 +570,7 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     m_viewMode = ViewMode::Gallery;
     m_layoutMode = packagedLayout;
     for (ImageItem *item : m_items) {
-        item->setGallerySelectable(true);
-        item->setScaleHandlesEnabled(false);
+        applyItemModeFlags(item);
     }
     applyLayout();
     emit statusChanged();
@@ -1167,16 +1172,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
 
     // Interaction is driven by ViewMode, not LayoutMode alone.
     for (ImageItem *item : m_items) {
-        if (isWorkspaceMode() && mode == LayoutMode::FreeForm) {
-            item->setInteractive(true);
-            item->setScaleHandlesEnabled(true);
-        } else if (isGalleryMode() || mode != LayoutMode::FreeForm) {
-            item->setGallerySelectable(true);
-            item->setScaleHandlesEnabled(false);
-        } else {
-            item->setInteractive(false);
-            item->setScaleHandlesEnabled(false);
-        }
+        applyItemModeFlags(item);
     }
 
     if (mode == LayoutMode::FreeForm) {
