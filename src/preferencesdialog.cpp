@@ -7,7 +7,6 @@
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
-#include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -169,38 +168,50 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_mimeTree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
     auto *btnRow = new QHBoxLayout;
-    m_setCheckedBtn = new QPushButton(tr("Set as default for &checked"), defaultsPage);
-    m_setAllBtn = new QPushButton(tr("Set as default for &all listed"), defaultsPage);
-    btnRow->addWidget(m_setCheckedBtn);
+    m_setAllBtn = new QPushButton(tr("&Set all as default"), defaultsPage);
+    m_removeAllBtn = new QPushButton(tr("&Remove all as default"), defaultsPage);
+    m_setAllBtn->setToolTip(tr("Make QImgView the default handler for every listed type"));
+    m_removeAllBtn->setToolTip(
+        tr("Clear QImgView as the default for every listed type (system default is restored)"));
     btnRow->addWidget(m_setAllBtn);
+    btnRow->addWidget(m_removeAllBtn);
     btnRow->addStretch(1);
 
     defaultsLayout->addWidget(m_mimeStatusLabel);
     defaultsLayout->addWidget(m_mimeTree, 1);
     defaultsLayout->addLayout(btnRow);
 
-    connect(m_setCheckedBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetDefaultForChecked);
-    connect(m_setAllBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetDefaultForAll);
+    connect(m_mimeTree, &QTreeWidget::itemChanged, this, &PreferencesDialog::onMimeItemChanged);
+    connect(m_setAllBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetAllAsDefault);
+    connect(m_removeAllBtn, &QPushButton::clicked, this, &PreferencesDialog::onRemoveAllAsDefault);
     refreshDefaultAppsList();
 
     auto *tabs = new QTabWidget(this);
     tabs->addTab(generalPage, tr("&General"));
     tabs->addTab(defaultsPage, tr("&Default application"));
 
-    // GNOME 2 HIG: Cancel left, OK right via QDialogButtonBox::GtkLayout-like order
-    auto *buttons = new QDialogButtonBox(
-        QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    buttons->button(QDialogButtonBox::Ok)->setText(tr("&OK"));
-    buttons->button(QDialogButtonBox::Cancel)->setText(tr("&Cancel"));
-    buttons->button(QDialogButtonBox::Ok)->setDefault(true);
-    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    // GNOME 2 HIG dialog buttons: Cancel on the left, affirmative (OK) on the
+    // right. QDialogButtonBox follows the style hint, which is often Win/KDE
+    // order under Fusion; build the row explicitly so order is stable.
+    auto *cancelBtn = new QPushButton(tr("&Cancel"), this);
+    auto *okBtn = new QPushButton(tr("&OK"), this);
+    okBtn->setDefault(true);
+    okBtn->setAutoDefault(true);
+    connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
+    connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
+
+    auto *buttonRow = new QHBoxLayout;
+    buttonRow->setContentsMargins(0, 0, 0, 0);
+    buttonRow->setSpacing(8);
+    buttonRow->addWidget(cancelBtn);
+    buttonRow->addStretch(1);
+    buttonRow->addWidget(okBtn);
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(12, 12, 12, 12);
     layout->setSpacing(12);
     layout->addWidget(tabs, 1);
-    layout->addWidget(buttons);
+    layout->addLayout(buttonRow);
 
     setMinimumWidth(520);
     resize(560, 520);
@@ -208,6 +219,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 
 void PreferencesDialog::refreshDefaultAppsList()
 {
+    m_mimeTreeUpdating = true;
     m_mimeTree->clear();
 
     if (!DefaultApps::isAvailable()) {
@@ -216,17 +228,19 @@ void PreferencesDialog::refreshDefaultAppsList()
                "enabled in this build. QImgView still appears under “Open with” "
                "when its desktop file is installed."));
         m_mimeTree->setEnabled(false);
-        m_setCheckedBtn->setEnabled(false);
         m_setAllBtn->setEnabled(false);
+        m_removeAllBtn->setEnabled(false);
+        m_mimeTreeUpdating = false;
         return;
     }
 
     m_mimeStatusLabel->setText(
-        tr("Choose image types for which QImgView should be the system default. "
+        tr("Checked types are handled by QImgView as the system default. "
+           "Toggle a checkbox to set or clear the association immediately. "
            "Uses the FreeDesktop GIO API (qimgview.desktop must be installed)."));
     m_mimeTree->setEnabled(true);
-    m_setCheckedBtn->setEnabled(true);
     m_setAllBtn->setEnabled(true);
+    m_removeAllBtn->setEnabled(true);
 
     for (const DefaultApps::MimeStatus &s : DefaultApps::statusForSupportedTypes()) {
         auto *item = new QTreeWidgetItem(m_mimeTree);
@@ -239,7 +253,8 @@ void PreferencesDialog::refreshDefaultAppsList()
                                      : s.currentAppName));
         item->setToolTip(2, s.currentAppId.isEmpty() ? s.currentAppName : s.currentAppId);
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        item->setCheckState(0, s.isUs ? Qt::Unchecked : Qt::Checked);
+        // Checked means QImgView is currently the default.
+        item->setCheckState(0, s.isUs ? Qt::Checked : Qt::Unchecked);
         item->setData(0, Qt::UserRole, s.mimeType);
         if (s.isUs) {
             QFont f = item->font(2);
@@ -247,20 +262,43 @@ void PreferencesDialog::refreshDefaultAppsList()
             item->setFont(2, f);
         }
     }
+    m_mimeTreeUpdating = false;
 }
 
-void PreferencesDialog::onSetDefaultForChecked()
+void PreferencesDialog::onMimeItemChanged(QTreeWidgetItem *item, int column)
+{
+    if (m_mimeTreeUpdating || !item || column != 0) {
+        return;
+    }
+    const QString mime = item->data(0, Qt::UserRole).toString();
+    if (mime.isEmpty()) {
+        return;
+    }
+
+    QString error;
+    bool ok = false;
+    if (item->checkState(0) == Qt::Checked) {
+        ok = DefaultApps::setDefaultForType(mime, &error);
+    } else {
+        ok = DefaultApps::clearDefaultForType(mime, &error);
+    }
+
+    if (!ok) {
+        QMessageBox::warning(this, tr("Default application"), error);
+    }
+    // Always refresh so the "Current default" column and checkbox match reality.
+    refreshDefaultAppsList();
+}
+
+void PreferencesDialog::onSetAllAsDefault()
 {
     QStringList types;
     for (int i = 0; i < m_mimeTree->topLevelItemCount(); ++i) {
-        QTreeWidgetItem *item = m_mimeTree->topLevelItem(i);
-        if (item && item->checkState(0) == Qt::Checked) {
+        if (QTreeWidgetItem *item = m_mimeTree->topLevelItem(i)) {
             types.append(item->data(0, Qt::UserRole).toString());
         }
     }
     if (types.isEmpty()) {
-        QMessageBox::information(this, tr("Default application"),
-                                 tr("Check one or more types first."));
         return;
     }
     QStringList errors;
@@ -273,21 +311,31 @@ void PreferencesDialog::onSetDefaultForChecked()
                 .arg(ok)
                 .arg(types.size())
                 .arg(errors.join(QLatin1Char('\n'))));
-    } else {
-        QMessageBox::information(
-            this, tr("Default application"),
-            tr("QImgView is now the default for %n type(s).", nullptr, ok));
     }
 }
 
-void PreferencesDialog::onSetDefaultForAll()
+void PreferencesDialog::onRemoveAllAsDefault()
 {
+    QStringList types;
     for (int i = 0; i < m_mimeTree->topLevelItemCount(); ++i) {
         if (QTreeWidgetItem *item = m_mimeTree->topLevelItem(i)) {
-            item->setCheckState(0, Qt::Checked);
+            types.append(item->data(0, Qt::UserRole).toString());
         }
     }
-    onSetDefaultForChecked();
+    if (types.isEmpty()) {
+        return;
+    }
+    QStringList errors;
+    const int ok = DefaultApps::clearDefaultForTypes(types, &errors);
+    refreshDefaultAppsList();
+    if (!errors.isEmpty()) {
+        QMessageBox::warning(
+            this, tr("Default application"),
+            tr("Cleared %1 of %2 types.\n\n%3")
+                .arg(ok)
+                .arg(types.size())
+                .arg(errors.join(QLatin1Char('\n'))));
+    }
 }
 
 int PreferencesDialog::slideshowIntervalMs() const

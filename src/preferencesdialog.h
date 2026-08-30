@@ -11,6 +11,7 @@ class QDoubleSpinBox;
 class QComboBox;
 class QCheckBox;
 class QTreeWidget;
+class QTreeWidgetItem;
 class QLabel;
 class QPushButton;
 
@@ -51,14 +52,16 @@ public:
     void setCheckerboardWorkspaceOnly(bool on);
 
 private:
-    void setupDefaultAppsGroup();
     void refreshDefaultAppsList();
-    void onSetDefaultForChecked();
-    void onSetDefaultForAll();
+    void onMimeItemChanged(QTreeWidgetItem *item, int column);
+    void onSetAllAsDefault();
+    void onRemoveAllAsDefault();
     void updateColorButton(QPushButton *button, const QColor &color);
     void chooseBackgroundColor();
     void chooseBackgroundColorAlt();
     void updateBackgroundControlsEnabled();
+
+    bool m_mimeTreeUpdating = false;
 
     QDoubleSpinBox *m_intervalSpin = nullptr;
     QComboBox *m_sortCombo = nullptr;
@@ -75,8 +78,8 @@ private:
 
     QTreeWidget *m_mimeTree = nullptr;
     QLabel *m_mimeStatusLabel = nullptr;
-    QPushButton *m_setCheckedBtn = nullptr;
     QPushButton *m_setAllBtn = nullptr;
+    QPushButton *m_removeAllBtn = nullptr;
 };
 
 #endif // PREFERENCESDIALOG_H
