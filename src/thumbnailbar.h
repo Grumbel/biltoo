@@ -61,8 +61,12 @@ public:
     int currentIndex() const;
 
     /** Multi-select session paths for Workspace canvas membership (not app ViewMode). */
-    void setWorkspaceMode(bool on);
-    bool workspaceMode() const { return m_workspaceMode; }
+    void setMultiSelectEnabled(bool on);
+    bool multiSelectEnabled() const { return m_multiSelect; }
+    /** @deprecated Use setMultiSelectEnabled. */
+    void setWorkspaceMode(bool on) { setMultiSelectEnabled(on); }
+    /** @deprecated Use multiSelectEnabled. */
+    bool workspaceMode() const { return multiSelectEnabled(); }
 
     QList<int> selectedIndices() const;
     void setSelectedIndices(const QList<int> &indices);
@@ -129,7 +133,7 @@ private:
     static QImage makeThumbnail(const QString &path, int maxSize);
 
     std::atomic<quint64> m_generation{0};
-    bool m_workspaceMode = false;
+    bool m_multiSelect = false;
     int m_selectionAnchor = -1;
     bool m_centeringGuard = false;
     bool m_labelsVisible = true;

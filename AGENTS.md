@@ -125,6 +125,7 @@ invariant 6).
 - `ImageView::focusSessionPath`, `targetItem`, `duplicateSelected`
 - `ImageItem::isInteractive()` (workspace chrome eligibility)
 - Do **not** reintroduce `MainWindow::m_workspaceMode`
+- ThumbnailBar: `setMultiSelectEnabled` (not app mode); avoid new `setWorkspaceMode` call sites
 
 ### Sharp edges (do not paper over)
 

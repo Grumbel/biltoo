@@ -219,9 +219,11 @@ Named transitions (prefer these over ad-hoc mode toggles):
 
 ## Thumbnail strip vs mode
 
-`ThumbnailBar::setWorkspaceMode(true)` means **multi-select of session paths for
-canvas membership**, not a fourth app mode. App mode remains solely
-`ImageView::ViewMode`.
+`ThumbnailBar::setMultiSelectEnabled(true)` means **multi-select of session paths
+for canvas membership**, not a fourth app mode. (Deprecated alias:
+`setWorkspaceMode`.) App mode remains solely `ImageView::ViewMode`.
+`MainWindow::syncCanvasFromThumbnailSelection` applies that selection to the
+canvas (Workspace paths or Gallery seed).
 
 ## Chrome / handles (Workspace)
 

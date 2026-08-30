@@ -92,7 +92,7 @@ void MainWindow::setSortMode(SortMode mode)
     m_thumbnailBar->setFiles(m_files);
     if (isWorkspaceMode()) {
         // setFiles rebuilds the list; restore multi-select and canvas selection
-        m_thumbnailBar->setWorkspaceMode(true);
+        m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
     }
 
@@ -190,7 +190,7 @@ void MainWindow::appendFiles(const QStringList &paths)
     m_thumbnailBar->setFiles(m_files);
     if (isWorkspaceMode()) {
         // setFiles rebuilds items; re-apply multi-select mode and canvas selection
-        m_thumbnailBar->setWorkspaceMode(true);
+        m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
         // If the canvas was empty, selection may still be empty — restore paths we had
         if (m_thumbnailBar->selectedIndices().isEmpty() && !workspacePaths.isEmpty()) {
@@ -296,7 +296,7 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
 
     m_thumbnailBar->setFiles(m_files);
     if (isWorkspaceMode()) {
-        m_thumbnailBar->setWorkspaceMode(true);
+        m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
     }
     applyThumbnailVisibility();

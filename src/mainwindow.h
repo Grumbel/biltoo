@@ -155,7 +155,8 @@ private:
     void readSettings();
     void writeSettings();
     void syncThumbnailWorkspaceSelection();
-    void applyWorkspaceSelectionFromThumbnails();
+    /** Push thumbnail multi-select onto the canvas (Workspace membership / Gallery seed). */
+    void syncCanvasFromThumbnailSelection();
     void showSlideshowCursor();
     void hideSlideshowCursor();
     void armSlideshowCursorHide();

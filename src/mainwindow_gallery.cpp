@@ -16,7 +16,7 @@ void MainWindow::populateGalleryCanvas()
         return;
     }
     m_thumbnailBar->selectAllThumbs();
-    applyWorkspaceSelectionFromThumbnails();
+    syncCanvasFromThumbnailSelection();
 }
 
 void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
@@ -30,7 +30,7 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
         m_workspaceModeAct->setChecked(false);
     }
     if (m_thumbnailBar) {
-        m_thumbnailBar->setWorkspaceMode(false);
+        m_thumbnailBar->setMultiSelectEnabled(false);
     }
     m_galleryReturnLayout = layout;
     m_imageView->enterGallery(layout);
@@ -124,7 +124,7 @@ void MainWindow::showPathInImageMode(const QString &path)
     }
     m_imageView->setViewMode(ImageView::ViewMode::Image);
     if (m_thumbnailBar) {
-        m_thumbnailBar->setWorkspaceMode(false);
+        m_thumbnailBar->setMultiSelectEnabled(false);
     }
     setCurrentIndex(idx);
     updateUpToGalleryAction();

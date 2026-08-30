@@ -35,7 +35,7 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] Keyboard focus / arrow-key navigation between gallery tiles (spatial)
 - [x] Remember last Gallery layout across sessions (QSettings `lastGalleryLayout`)
 - [ ] Interaction summary / shortcuts still list a few pre-Gallery names (keep in sync)
-- [ ] Rename ThumbnailBar “workspace mode” → multi-select (API alias)
+- [x] Rename ThumbnailBar “workspace mode” → multi-select (`setMultiSelectEnabled`)
 
 ### Stability / polish
 

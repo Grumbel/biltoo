@@ -142,7 +142,7 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
         // Enter Workspace when the user explicitly adds from the strip
         m_workspaceModeAct->setChecked(true);
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
-        m_thumbnailBar->setWorkspaceMode(true);
+        m_thumbnailBar->setMultiSelectEnabled(true);
         updateWorkspaceActionVisibility();
         if (index >= 0 && index < m_files.size()) {
             m_thumbnailBar->setSelectedIndices({index});
@@ -160,7 +160,7 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
     if (!isWorkspaceMode()) {
         return;
     }
-    applyWorkspaceSelectionFromThumbnails();
+    syncCanvasFromThumbnailSelection();
 }
 
 void MainWindow::onWorkspacePathsChanged()
@@ -171,7 +171,7 @@ void MainWindow::onWorkspacePathsChanged()
     syncThumbnailWorkspaceSelection();
 }
 
-void MainWindow::applyWorkspaceSelectionFromThumbnails()
+void MainWindow::syncCanvasFromThumbnailSelection()
 {
     QStringList paths;
     for (int idx : m_thumbnailBar->selectedIndices()) {
@@ -285,7 +285,7 @@ void MainWindow::ensureMultiImageMode()
     }
     m_workspaceModeAct->setChecked(true);
     m_imageView->setViewMode(ImageView::ViewMode::Workspace);
-    m_thumbnailBar->setWorkspaceMode(true);
+    m_thumbnailBar->setMultiSelectEnabled(true);
     if (m_imageView->itemCount() == 0
         && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
         m_imageView->addImage(m_files.at(m_currentIndex));
@@ -351,7 +351,7 @@ void MainWindow::toggleWorkspaceMode()
         if (m_backToGalleryAct) {
             m_backToGalleryAct->setEnabled(false);
         }
-        m_thumbnailBar->setWorkspaceMode(true);
+        m_thumbnailBar->setMultiSelectEnabled(true);
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         if (m_imageView->itemCount() == 0
             && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
@@ -371,7 +371,7 @@ void MainWindow::toggleWorkspaceMode()
             }
         }
     } else {
-        m_thumbnailBar->setWorkspaceMode(false);
+        m_thumbnailBar->setMultiSelectEnabled(false);
         m_imageView->setViewMode(ImageView::ViewMode::Image);
         if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
             m_imageView->loadImage(m_files.at(m_currentIndex));
@@ -582,7 +582,7 @@ void MainWindow::selectAllThumbnails()
         if (m_imageView) {
             m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         }
-        m_thumbnailBar->setWorkspaceMode(true);
+        m_thumbnailBar->setMultiSelectEnabled(true);
         updateWorkspaceActionVisibility();
     }
     m_thumbnailBar->selectAllThumbs();
@@ -771,7 +771,7 @@ void MainWindow::readSettings()
                                      : ImageView::ViewMode::Image);
     }
     if (m_thumbnailBar) {
-        m_thumbnailBar->setWorkspaceMode(m_startInWorkspaceMode);
+        m_thumbnailBar->setMultiSelectEnabled(m_startInWorkspaceMode);
         const int thumbSize = settings.value(QStringLiteral("thumbnailSize"),
                                              ThumbnailBar::kDefaultThumbSize).toInt();
         m_thumbnailBar->setThumbSize(thumbSize);
