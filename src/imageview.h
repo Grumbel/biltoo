@@ -172,6 +172,7 @@ public:
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout();
+    void applyPendingGalleryRestore();
     /** Coalesce resize-driven gallery relayouts. */
     void scheduleApplyLayout();
 
@@ -180,6 +181,14 @@ public:
 
     /** Enter Gallery mode and apply the given packaged layout (not FreeForm). */
     void enterGallery(LayoutMode packagedLayout);
+
+    /** Remember gallery scroll position (call before leaving Gallery for Image). */
+    void snapshotGalleryViewport();
+    /**
+     * After gallery items are laid out, select @p focusPath (if present) and
+     * restore the last snapshot scroll, then ensure the focused item is visible.
+     */
+    void restoreGalleryViewport(const QString &focusPath = QString());
 
     /** Number of columns for LayoutMode::Masonry (images scale to fit column width). */
     void setMasonryColumns(int columns);
@@ -326,6 +335,11 @@ private:
     bool m_galleryClickCandidate = false;
     bool m_applyingLayout = false;
     QTimer *m_layoutDebounceTimer = nullptr;
+    int m_galleryScrollH = 0;
+    int m_galleryScrollV = 0;
+    bool m_haveGalleryScroll = false;
+    QString m_galleryFocusPath;
+    bool m_pendingGalleryRestore = false;
 };
 
 #endif // IMAGEVIEW_H

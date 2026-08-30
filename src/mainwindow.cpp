@@ -1714,6 +1714,7 @@ void MainWindow::openGalleryItemInImageMode(const QString &path)
     if (m_imageView && m_imageView->isGalleryLayout()) {
         m_galleryReturnLayout = m_imageView->layoutMode();
         m_galleryReturnActive = true;
+        m_imageView->snapshotGalleryViewport();
     }
     m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
@@ -1733,9 +1734,13 @@ void MainWindow::returnToGallery()
     m_workspaceMode = true;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
+    const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
+                                  ? m_files.at(m_currentIndex)
+                                  : QString();
     m_imageView->enterGallery(m_galleryReturnLayout);
     populateGalleryCanvas();
     m_imageView->enterGallery(m_galleryReturnLayout);
+    m_imageView->restoreGalleryViewport(focusPath);
     switch (m_galleryReturnLayout) {
     case ImageView::LayoutMode::SideBySide:
         if (m_layoutSideBySideAct) m_layoutSideBySideAct->setChecked(true);

@@ -576,6 +576,70 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     emit statusChanged();
 }
 
+void ImageView::snapshotGalleryViewport()
+{
+    if (!isGalleryMode()) {
+        return;
+    }
+    if (horizontalScrollBar()) {
+        m_galleryScrollH = horizontalScrollBar()->value();
+    }
+    if (verticalScrollBar()) {
+        m_galleryScrollV = verticalScrollBar()->value();
+    }
+    m_haveGalleryScroll = true;
+    // Prefer current selection as focus for return highlight
+    if (ImageItem *sel = targetItem()) {
+        m_galleryFocusPath = sel->path();
+    }
+}
+
+void ImageView::restoreGalleryViewport(const QString &focusPath)
+{
+    if (!focusPath.isEmpty()) {
+        m_galleryFocusPath = focusPath;
+    }
+    m_pendingGalleryRestore = true;
+    // Try immediately if items already present (async loads will retry via applyLayout).
+    applyPendingGalleryRestore();
+}
+
+void ImageView::applyPendingGalleryRestore()
+{
+    if (!m_pendingGalleryRestore || !isGalleryMode()) {
+        return;
+    }
+    ImageItem *focus = nullptr;
+    if (!m_galleryFocusPath.isEmpty()) {
+        focus = findItemByPath(m_galleryFocusPath);
+    }
+    if (focus) {
+        m_scene->clearSelection();
+        focus->setSelected(true);
+        // Scroll first to snapshot, then ensureVisible so the item is in view.
+        if (m_haveGalleryScroll) {
+            if (horizontalScrollBar()) {
+                horizontalScrollBar()->setValue(m_galleryScrollH);
+            }
+            if (verticalScrollBar()) {
+                verticalScrollBar()->setValue(m_galleryScrollV);
+            }
+        }
+        ensureVisible(focus, 48, 48);
+        m_pendingGalleryRestore = false;
+        return;
+    }
+    // Items still loading: restore scroll alone so the view is not jumped to origin.
+    if (m_haveGalleryScroll && !m_items.isEmpty()) {
+        if (horizontalScrollBar()) {
+            horizontalScrollBar()->setValue(m_galleryScrollH);
+        }
+        if (verticalScrollBar()) {
+            verticalScrollBar()->setValue(m_galleryScrollV);
+        }
+    }
+}
+
 void ImageView::setTool(Tool tool)
 {
     if (m_tool == tool) {
@@ -1366,6 +1430,7 @@ void ImageView::applyLayout()
     // Keep the guard until after statusChanged so slots cannot re-enter layout.
     emit statusChanged();
     m_applyingLayout = false;
+    applyPendingGalleryRestore();
 }
 
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
