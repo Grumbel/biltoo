@@ -38,6 +38,8 @@ add_executable(qimgview
   src/gallerylayout.cpp
   src/gallerylayout.h
   src/imageview.cpp
+  src/imageview_layout.cpp
+  src/imageview_input.cpp
   src/imageview.h
   src/imageitem.cpp
   src/imageitem.h
