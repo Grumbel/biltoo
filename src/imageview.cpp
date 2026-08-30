@@ -12,6 +12,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QScrollBar>
+#include <QSet>
 #include <QWheelEvent>
 #include <QtMath>
 #include <cmath>
@@ -73,11 +74,21 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
     item->setZValue(state.z);
 }
 
+void ImageView::rememberItemState(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    m_itemStates.insert(item->path(), captureState(item));
+}
+
 void ImageView::snapshotWorkspace()
 {
     m_savedWorkspace.clear();
     for (ImageItem *item : m_items) {
-        m_savedWorkspace.append(captureState(item));
+        const WorkspaceItemState s = captureState(item);
+        m_savedWorkspace.append(s);
+        m_itemStates.insert(s.path, s);
     }
 }
 
@@ -91,6 +102,7 @@ void ImageView::restoreWorkspace()
         }
         applyState(item, state);
         item->setInteractive(true);
+        m_itemStates.insert(state.path, state);
     }
     if (!m_items.isEmpty()) {
         m_scene->clearSelection();
@@ -112,6 +124,96 @@ void ImageView::clearWorkspace()
     emit mouseInfoChanged(m_mouseInfo);
 }
 
+ImageItem *ImageView::findItemByPath(const QString &path) const
+{
+    for (ImageItem *item : m_items) {
+        if (item->path() == path) {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
+WorkspaceItemState ImageView::defaultStateForPath(const QString &path, int ordinal) const
+{
+    WorkspaceItemState s;
+    s.path = path;
+    s.pos = QPointF(40.0 * ordinal, 30.0 * ordinal);
+    s.scale = 1.0;
+    s.rotation = 0.0;
+    s.opacity = 1.0;
+    s.z = ordinal;
+    return s;
+}
+
+void ImageView::setWorkspacePaths(const QStringList &paths)
+{
+    if (!m_workspaceMode) {
+        return;
+    }
+
+    // Remember state of items that will be removed
+    QSet<QString> wanted(paths.begin(), paths.end());
+    for (int i = m_items.size() - 1; i >= 0; --i) {
+        ImageItem *item = m_items.at(i);
+        if (!wanted.contains(item->path())) {
+            rememberItemState(item);
+            m_scene->removeItem(item);
+            m_items.removeAt(i);
+            delete item;
+        }
+    }
+
+    // Add missing paths
+    int ordinal = m_items.size();
+    bool added = false;
+    for (const QString &path : paths) {
+        if (findItemByPath(path)) {
+            continue;
+        }
+        ImageItem *item = loadItem(path);
+        if (!item) {
+            continue;
+        }
+        WorkspaceItemState state = m_itemStates.value(path);
+        if (state.path.isEmpty()) {
+            state = defaultStateForPath(path, ordinal);
+        }
+        applyState(item, state);
+        item->setInteractive(true);
+        ++ordinal;
+        added = true;
+    }
+
+    if (added && m_layoutMode != LayoutMode::FreeForm) {
+        applyLayout();
+    } else if (added && !m_items.isEmpty()) {
+        m_fitMode = false;
+        ensureVisibleItem(m_items.last());
+    }
+
+    // Select the most recently added / last path if nothing selected
+    if (m_scene->selectedItems().isEmpty() && !m_items.isEmpty()) {
+        m_items.last()->setSelected(true);
+    }
+
+    emit statusChanged();
+}
+
+void ImageView::removeWorkspacePath(const QString &path)
+{
+    ImageItem *item = findItemByPath(path);
+    if (!item) {
+        return;
+    }
+    rememberItemState(item);
+    m_items.removeOne(item);
+    m_scene->removeItem(item);
+    delete item;
+    emit statusChanged();
+    emit workspacePathsChanged();
+}
+
 void ImageView::clearExtras()
 {
     if (m_items.size() <= 1) {
@@ -120,6 +222,7 @@ void ImageView::clearExtras()
     ImageItem *keep = m_items.first();
     for (int i = m_items.size() - 1; i >= 1; --i) {
         ImageItem *item = m_items.takeAt(i);
+        rememberItemState(item);
         m_scene->removeItem(item);
         delete item;
     }
@@ -131,6 +234,7 @@ void ImageView::clearExtras()
     fitItem(keep);
     m_undoStack->clear();
     emit statusChanged();
+    emit workspacePathsChanged();
 }
 
 void ImageView::setWorkspaceMode(bool on)
@@ -239,21 +343,27 @@ bool ImageView::addImage(const QString &path)
         return false;
     }
 
+    if (ImageItem *existing = findItemByPath(path)) {
+        m_scene->clearSelection();
+        existing->setSelected(true);
+        ensureVisibleItem(existing);
+        emit statusChanged();
+        return true;
+    }
+
     ImageItem *item = loadItem(path);
     if (!item) {
         return false;
     }
 
-    const int n = m_items.size();
-    if (n > 1) {
-        const qreal dx = 40.0 * (n - 1);
-        const qreal dy = 30.0 * (n - 1);
-        item->setPos(dx, dy);
+    WorkspaceItemState state = m_itemStates.value(path);
+    if (state.path.isEmpty()) {
+        state = defaultStateForPath(path, m_items.size() - 1);
     }
+    applyState(item, state);
 
     m_scene->clearSelection();
     item->setSelected(true);
-    m_undoStack->clear();
     if (m_layoutMode != LayoutMode::FreeForm) {
         applyLayout();
     } else {
@@ -812,11 +922,13 @@ void ImageView::leaveEvent(QEvent *event)
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
-        // Remove selected items from the workspace (session list is unchanged)
+        // Remove selected items from the workspace (session list is unchanged);
+        // remember transform so re-selecting the thumbnail restores position.
         const QList<QGraphicsItem *> selected = m_scene->selectedItems();
         bool removed = false;
         for (QGraphicsItem *gi : selected) {
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                rememberItemState(item);
                 m_items.removeOne(item);
                 m_scene->removeItem(item);
                 delete item;
@@ -825,6 +937,7 @@ void ImageView::keyPressEvent(QKeyEvent *event)
         }
         if (removed) {
             emit statusChanged();
+            emit workspacePathsChanged();
             event->accept();
             return;
         }

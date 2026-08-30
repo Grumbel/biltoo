@@ -5,6 +5,7 @@
 #define IMAGEVIEW_H
 
 #include <QGraphicsView>
+#include <QHash>
 #include <QPoint>
 #include <QString>
 #include <QStringList>
@@ -34,6 +35,10 @@ struct WorkspaceItemState {
  * In classic mode the current image is shown centred and non-interactive.
  * Workspace state is snapshotted when the mode is turned off and restored
  * when it is turned back on.
+ *
+ * In workspace mode, setWorkspacePaths() controls which images are shown.
+ * Each path keeps its position, scale, rotation, opacity and z-order even
+ * while it is not currently selected (not shown on the canvas).
  */
 class ImageView : public QGraphicsView
 {
@@ -54,6 +59,16 @@ public:
     void setWorkspaceMode(bool on);
     bool workspaceMode() const { return m_workspaceMode; }
     void clearExtras();
+
+    /**
+     * Show exactly the given paths on the workspace. Images already present
+     * keep their live transform; newly added ones restore saved state or get
+     * a default placement. Images no longer listed are removed from the
+     * scene after their state is saved.
+     */
+    void setWorkspacePaths(const QStringList &paths);
+    /** Remove one image from the workspace, remembering its transform. */
+    void removeWorkspacePath(const QString &path);
 
     void setTool(Tool tool);
     Tool tool() const { return m_tool; }
@@ -99,6 +114,8 @@ signals:
     void statusChanged();
     void mouseInfoChanged(const ImageMouseInfo &info);
     void toolChanged(ImageView::Tool tool);
+    /** Emitted when items are removed from the workspace (e.g. Delete key). */
+    void workspacePathsChanged();
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
@@ -111,17 +128,22 @@ protected:
 
 private:
     ImageItem *loadItem(const QString &path);
+    ImageItem *findItemByPath(const QString &path) const;
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
     void updateMouseInfo(const QPoint &viewPos);
     void fitItem(ImageItem *item);
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
+    void rememberItemState(ImageItem *item);
     void snapshotWorkspace();
     void restoreWorkspace();
+    WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
 
     QGraphicsScene *m_scene = nullptr;
     QList<ImageItem *> m_items;
+    /** Persistent per-path transforms while workspace mode is active. */
+    QHash<QString, WorkspaceItemState> m_itemStates;
     QList<WorkspaceItemState> m_savedWorkspace;
     QString m_classicPath;
 
