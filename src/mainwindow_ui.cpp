@@ -250,13 +250,13 @@ void MainWindow::createActions()
     m_raiseAct = new QAction(tr("&Raise"), this);
     m_raiseAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Up);
     m_raiseAct->setIcon(themeIcon(QStringLiteral("go-up"), QStyle::SP_ArrowUp));
-    m_raiseAct->setStatusTip(tr("Raise selected workspace image"));
+    m_raiseAct->setStatusTip(tr("Raise above the next overlapping image"));
     connect(m_raiseAct, &QAction::triggered, this, &MainWindow::raiseSelected);
 
     m_lowerAct = new QAction(tr("&Lower"), this);
     m_lowerAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Down);
     m_lowerAct->setIcon(themeIcon(QStringLiteral("go-down"), QStyle::SP_ArrowDown));
-    m_lowerAct->setStatusTip(tr("Lower selected workspace image"));
+    m_lowerAct->setStatusTip(tr("Lower below the next overlapping image"));
     connect(m_lowerAct, &QAction::triggered, this, &MainWindow::lowerSelected);
 
     m_opacityUpAct = new QAction(tr("Opacity &Up"), this);

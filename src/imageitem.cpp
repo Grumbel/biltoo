@@ -88,6 +88,11 @@ void ImageItem::setStackZ(qreal z)
     refreshStackingOrder();
 }
 
+QRectF ImageItem::contentSceneRect() const
+{
+    return mapToScene(QGraphicsPixmapItem::boundingRect()).boundingRect();
+}
+
 void ImageItem::refreshStackingOrder()
 {
     // Stacking order is only m_stackZ (Raise/Lower). Selecting an item must not

@@ -169,6 +169,9 @@ public:
 
     void raiseSelected();
     void lowerSelected();
+    /** Raise/lower by scene overlap (not abstract z step). */
+    void raiseItem(ImageItem *item);
+    void lowerItem(ImageItem *item);
     void opacityUp();
     void opacityDown();
     void opacityReset();

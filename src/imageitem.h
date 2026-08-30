@@ -62,6 +62,8 @@ public:
     qreal itemOpacity() const { return m_opacity; }
     /** Persistent stacking order (selection may temporarily raise the item). */
     qreal stackZ() const { return m_stackZ; }
+    /** Scene AABB of the pixmap only (no chrome pad). */
+    QRectF contentSceneRect() const;
     void setStackZ(qreal z);
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }

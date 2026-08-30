@@ -31,6 +31,7 @@
 #include <QtMath>
 #include <atomic>
 #include <cmath>
+#include <algorithm>
 
 ImageView::ImageView(QWidget *parent)
     : QGraphicsView(parent)
@@ -609,14 +610,92 @@ void ImageView::rotateRight()
     }
 }
 
+namespace {
+
+bool contentOverlaps(const ImageItem *a, const ImageItem *b)
+{
+    if (!a || !b || a == b) {
+        return false;
+    }
+    return a->contentSceneRect().intersects(b->contentSceneRect());
+}
+
+} // namespace
+
+void ImageView::raiseItem(ImageItem *item)
+{
+    if (!item || !isWorkspaceMode() || m_items.size() < 2) {
+        return;
+    }
+    // Among overlapping images currently above this one, take the lowest
+    // (the first cover) and place just above it.
+    ImageItem *cover = nullptr;
+    for (ImageItem *other : m_items) {
+        if (!contentOverlaps(item, other)) {
+            continue;
+        }
+        if (other->stackZ() <= item->stackZ()) {
+            continue;
+        }
+        if (!cover || other->stackZ() < cover->stackZ()) {
+            cover = other;
+        }
+    }
+    if (!cover) {
+        return; // already on top of every overlapping neighbour
+    }
+    item->setStackZ(cover->stackZ() + 1.0);
+    emit statusChanged();
+}
+
+void ImageView::lowerItem(ImageItem *item)
+{
+    if (!item || !isWorkspaceMode() || m_items.size() < 2) {
+        return;
+    }
+    // Among overlapping images currently below this one, take the highest
+    // (the first substrate) and place just under it.
+    ImageItem *under = nullptr;
+    for (ImageItem *other : m_items) {
+        if (!contentOverlaps(item, other)) {
+            continue;
+        }
+        if (other->stackZ() >= item->stackZ()) {
+            continue;
+        }
+        if (!under || other->stackZ() > under->stackZ()) {
+            under = other;
+        }
+    }
+    if (!under) {
+        return; // already under every overlapping neighbour
+    }
+    item->setStackZ(under->stackZ() - 1.0);
+    emit statusChanged();
+}
+
 void ImageView::raiseSelected()
 {
     if (!isWorkspaceMode()) {
         return;
     }
-    if (ImageItem *item = targetItem()) {
-        item->setStackZ(item->stackZ() + 1.0);
-        emit statusChanged();
+    // Raise each selection from top-most down so mutual overlaps stay stable.
+    QList<ImageItem *> sel;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            sel.append(ii);
+        }
+    }
+    if (sel.isEmpty()) {
+        if (ImageItem *item = targetItem()) {
+            raiseItem(item);
+        }
+        return;
+    }
+    std::sort(sel.begin(), sel.end(),
+              [](ImageItem *a, ImageItem *b) { return a->stackZ() > b->stackZ(); });
+    for (ImageItem *item : sel) {
+        raiseItem(item);
     }
 }
 
@@ -625,9 +704,22 @@ void ImageView::lowerSelected()
     if (!isWorkspaceMode()) {
         return;
     }
-    if (ImageItem *item = targetItem()) {
-        item->setStackZ(item->stackZ() - 1.0);
-        emit statusChanged();
+    QList<ImageItem *> sel;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            sel.append(ii);
+        }
+    }
+    if (sel.isEmpty()) {
+        if (ImageItem *item = targetItem()) {
+            lowerItem(item);
+        }
+        return;
+    }
+    std::sort(sel.begin(), sel.end(),
+              [](ImageItem *a, ImageItem *b) { return a->stackZ() < b->stackZ(); });
+    for (ImageItem *item : sel) {
+        lowerItem(item);
     }
 }
 

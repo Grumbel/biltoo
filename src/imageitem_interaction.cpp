@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "imageview.h"
 
 #include <QCursor>
 #include <QGraphicsScene>
@@ -616,11 +617,21 @@ void ImageItem::activateChromeHandle(Handle h)
         toggleVFlip();
         break;
     case Handle::Raise:
-        setStackZ(m_stackZ + 1.0);
+    case Handle::Lower: {
+        if (scene()) {
+            for (QGraphicsView *v : scene()->views()) {
+                if (auto *iv = qobject_cast<ImageView *>(v)) {
+                    if (h == Handle::Raise) {
+                        iv->raiseItem(this);
+                    } else {
+                        iv->lowerItem(this);
+                    }
+                    break;
+                }
+            }
+        }
         break;
-    case Handle::Lower:
-        setStackZ(m_stackZ - 1.0);
-        break;
+    }
     case Handle::ResetScale:
         setItemScale(1.0, 1.0);
         break;
