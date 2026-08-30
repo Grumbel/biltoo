@@ -47,6 +47,10 @@ public:
     /** Append expanded paths to the current session (deduplicated). */
     void appendFiles(const QStringList &paths);
 
+    /** SessionRemoveCommand redo/undo (must be public — called from QUndoCommand). */
+    void applySessionRemoveIndices(const QList<int> &indices);
+    void restoreSessionEntries(const QList<QPair<int, QString>> &entries);
+
     /** Clear session, canvas, and thumbnails (File → New). */
     void newSession();
 
@@ -156,10 +160,6 @@ private slots:
     void onWorkspacePathsChanged();
     void removeSessionIndices(const QList<int> &indices);
     void removeSessionPaths(const QStringList &paths);
-    /** Used by SessionRemoveCommand (redo). */
-    void applySessionRemoveIndices(const QList<int> &indices);
-    /** Used by SessionRemoveCommand (undo). */
-    void restoreSessionEntries(const QList<QPair<int, QString>> &entries);
 
 private:
     void createActions();
