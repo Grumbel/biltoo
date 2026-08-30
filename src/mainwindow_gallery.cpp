@@ -15,6 +15,7 @@ void MainWindow::populateGalleryCanvas()
     // Gallery shows the whole session. Do not drive that through thumbnail
     // multi-select — selectAllThumbs() left the strip in MultiSelection with
     // every item highlighted, which survived into Image mode.
+    // Caller must already be in Gallery (setWorkspacePaths is a no-op in Image).
     if (!m_imageView || m_files.isEmpty()) {
         return;
     }
@@ -38,9 +39,11 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
         m_thumbnailBar->selectNoneThumbs();
     }
     m_galleryReturnLayout = layout;
-    // AUDIT M15: one enterGallery after the canvas is populated (not before+after).
-    populateGalleryCanvas();
+    // setWorkspacePaths refuses Image mode. Enter Gallery first so the session
+    // paths are actually scheduled; otherwise the first open after startup only
+    // shows the single Image-mode item until Gallery is chosen again.
     m_imageView->enterGallery(layout);
+    populateGalleryCanvas();
 
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
                          m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct}) {
