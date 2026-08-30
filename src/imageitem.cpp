@@ -77,6 +77,36 @@ void ImageItem::setItemOpacity(qreal opacity)
     setOpacity(m_opacity);
 }
 
+void ImageItem::setItemHFlip(bool on)
+{
+    if (m_hFlip == on) {
+        return;
+    }
+    m_hFlip = on;
+    applyLocalTransform();
+    prepareGeometryChange();
+}
+
+void ImageItem::setItemVFlip(bool on)
+{
+    if (m_vFlip == on) {
+        return;
+    }
+    m_vFlip = on;
+    applyLocalTransform();
+    prepareGeometryChange();
+}
+
+void ImageItem::toggleHFlip()
+{
+    setItemHFlip(!m_hFlip);
+}
+
+void ImageItem::toggleVFlip()
+{
+    setItemVFlip(!m_vFlip);
+}
+
 void ImageItem::setInteractive(bool on)
 {
     m_interactive = on;
@@ -103,7 +133,9 @@ void ImageItem::applyLocalTransform()
 {
     QTransform t;
     t.rotate(m_rotation);
-    t.scale(m_scale, m_scale);
+    const qreal sx = m_hFlip ? -m_scale : m_scale;
+    const qreal sy = m_vFlip ? -m_scale : m_scale;
+    t.scale(sx, sy);
     setTransform(t);
 }
 
@@ -138,10 +170,10 @@ QRectF ImageItem::boundingRect() const
     QRectF r = QGraphicsPixmapItem::boundingRect();
     if (isSelected() && m_interactive) {
         const qreal ss = screenScale();
-        const qreal topPad = handleHitRadius() + kRotateOffsetPx / ss + 4.0;
+        const qreal rotPad = handleHitRadius() + kRotateOffsetPx / ss + 4.0;
         const qreal bottomPad = chromeButtonSize() + kChromeOffsetPx / ss + 8.0;
-        const qreal sidePad = handleHitRadius() + 4.0;
-        r.adjust(-sidePad, -topPad, sidePad, bottomPad);
+        const qreal sidePad = qMax(handleHitRadius() + 4.0, rotPad);
+        r.adjust(-sidePad, -rotPad, sidePad, bottomPad);
     }
     return r;
 }
@@ -153,7 +185,9 @@ QPainterPath ImageItem::shape() const
     path.addRect(QGraphicsPixmapItem::boundingRect());
     if (isSelected() && m_interactive) {
         const qreal r = handleHitRadius();
-        QList<Handle> handles = {Handle::Rotate, Handle::Raise, Handle::Lower};
+        QList<Handle> handles = {
+            Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
+        };
         if (m_scaleHandlesEnabled) {
             handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
                                     Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
@@ -163,17 +197,21 @@ QPainterPath ImageItem::shape() const
             const QPointF c = handleCenter(h);
             path.addEllipse(c, r, r);
         }
-        // Larger chrome buttons
-        const qreal cr = chromeButtonSize() * 0.65;
+        const qreal cr = chromeButtonSize() * 0.6;
         for (Handle h : {Handle::Raise, Handle::Lower}) {
-            path.addEllipse(handleCenter(h), cr, cr);
+            const QPointF c = handleCenter(h);
+            path.addEllipse(c, cr, cr);
         }
-        path.addRect(opacitySliderRect().adjusted(
-            -4.0 / screenScale(), -6.0 / screenScale(),
-            4.0 / screenScale(), 6.0 / screenScale()));
+        path.addRect(opacitySliderRect());
         const QRectF content = QGraphicsPixmapItem::boundingRect();
         path.moveTo(content.center().x(), content.top());
-        path.lineTo(handleCenter(Handle::Rotate));
+        path.lineTo(handleCenter(Handle::RotateTop));
+        path.moveTo(content.right(), content.center().y());
+        path.lineTo(handleCenter(Handle::RotateRight));
+        path.moveTo(content.center().x(), content.bottom());
+        path.lineTo(handleCenter(Handle::RotateBottom));
+        path.moveTo(content.left(), content.center().y());
+        path.lineTo(handleCenter(Handle::RotateLeft));
     }
     return path;
 }
@@ -268,8 +306,14 @@ QPointF ImageItem::handleCenter(Handle h) const
         return r.bottomLeft();
     case Handle::ScaleBottomRight:
         return r.bottomRight();
-    case Handle::Rotate:
+    case Handle::RotateTop:
         return QPointF(cx, r.top() - rotOff);
+    case Handle::RotateRight:
+        return QPointF(r.right() + rotOff, r.center().y());
+    case Handle::RotateBottom:
+        return QPointF(cx, r.bottom() + rotOff);
+    case Handle::RotateLeft:
+        return QPointF(r.left() - rotOff, r.center().y());
     case Handle::Raise:
         return QPointF(rowLeft + btn / 2.0, chromeY);
     case Handle::Lower:
@@ -307,7 +351,9 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
 
     const qreal r = handleHitRadius();
     const qreal r2 = r * r;
-    QList<Handle> handles = {Handle::Rotate};
+    QList<Handle> handles = {
+        Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
+    };
     if (m_scaleHandlesEnabled) {
         handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
                                 Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
@@ -374,10 +420,15 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5));
 
-    // Line to rotate handle
-    const QPointF rot = handleCenter(Handle::Rotate);
+    // Lines to rotate handles
     const QPointF topMid(r.center().x(), r.top());
-    painter->drawLine(topMid, rot);
+    const QPointF rightMid(r.right(), r.center().y());
+    const QPointF bottomMid(r.center().x(), r.bottom());
+    const QPointF leftMid(r.left(), r.center().y());
+    painter->drawLine(topMid, handleCenter(Handle::RotateTop));
+    painter->drawLine(rightMid, handleCenter(Handle::RotateRight));
+    painter->drawLine(bottomMid, handleCenter(Handle::RotateBottom));
+    painter->drawLine(leftMid, handleCenter(Handle::RotateLeft));
 
     const qreal hs = handleDrawSize();
     pen.setWidthF(1.0);
@@ -393,9 +444,13 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
     }
 
-    // Rotate handle (circle)
+    // Rotate handles (circles) on all four sides
     painter->setBrush(QColor(255, 200, 40));
-    painter->drawEllipse(rot, hs / 2, hs / 2);
+    for (Handle h : {Handle::RotateTop, Handle::RotateRight,
+                     Handle::RotateBottom, Handle::RotateLeft}) {
+        const QPointF c = handleCenter(h);
+        painter->drawEllipse(c, hs / 2, hs / 2);
+    }
 
     // Chrome row: large raise/lower + opacity slider
     const qreal btnR = chromeButtonSize() / 2.0;
@@ -471,7 +526,10 @@ void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if (m_activeHandle != Handle::None) {
         if (m_activeHandle == Handle::OpacitySlider) {
             setOpacityFromSliderPos(event->pos());
-        } else if (m_activeHandle == Handle::Rotate) {
+        } else if (m_activeHandle == Handle::RotateTop
+                   || m_activeHandle == Handle::RotateRight
+                   || m_activeHandle == Handle::RotateBottom
+                   || m_activeHandle == Handle::RotateLeft) {
             const QPointF centre = scenePos(); // item origin is image centre
             const QPointF v0 = m_pressScenePos - centre;
             const QPointF v1 = event->scenePos() - centre;
@@ -510,7 +568,10 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
     if (m_interactive && isSelected()) {
         const Handle h = handleAt(event->pos());
         switch (h) {
-        case Handle::Rotate:
+        case Handle::RotateTop:
+        case Handle::RotateRight:
+        case Handle::RotateBottom:
+        case Handle::RotateLeft:
             setCursor(Qt::CrossCursor);
             break;
         case Handle::ScaleTopLeft:

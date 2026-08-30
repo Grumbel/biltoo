@@ -50,9 +50,19 @@ void ThumbnailDelegate::setThumbSize(int pixels)
     m_thumbSize = pixels;
 }
 
-int ThumbnailDelegate::labelBandHeight(const QFont &font)
+int ThumbnailDelegate::labelBandHeightForFont(const QFont &font)
 {
     return QFontMetrics(font).height() + kLabelGap;
+}
+
+int ThumbnailDelegate::labelBandHeight(const QFont &font) const
+{
+    return m_labelsVisible ? labelBandHeightForFont(font) : 0;
+}
+
+void ThumbnailDelegate::setLabelsVisible(bool on)
+{
+    m_labelsVisible = on;
 }
 
 QSize ThumbnailDelegate::cellSize(const QFont &font) const
@@ -101,7 +111,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     }
 
     const QString text = index.data(Qt::DisplayRole).toString();
-    if (!text.isEmpty() && labelBand > 0 && cell.height() > iconSide) {
+    if (m_labelsVisible && !text.isEmpty() && labelBand > 0 && cell.height() > iconSide) {
         const QRect textRect(cell.left() + kCellPadX,
                              iconY + iconSide + kLabelGap,
                              qMax(1, cell.width() - 2 * kCellPadX),
@@ -166,19 +176,22 @@ ThumbnailBar::~ThumbnailBar()
 
 int ThumbnailBar::labelBandHeight() const
 {
-    return ThumbnailDelegate::labelBandHeight(font());
+    if (!m_labelsVisible) {
+        return 0;
+    }
+    return ThumbnailDelegate::labelBandHeightForFont(font());
 }
 
 int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
     // Approximate for callers without a live widget (default app font).
     // Horizontal-bar height ≈ thumb + label; used as a generic default.
-    return thumbSize + ThumbnailDelegate::labelBandHeight(QApplication::font());
+    return thumbSize + ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
 }
 
 int ThumbnailBar::thumbSizeForExtent(int extent)
 {
-    const int label = ThumbnailDelegate::labelBandHeight(QApplication::font());
+    const int label = ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
     return qBound(kMinThumbSize, extent - label, kMaxThumbSize);
 }
 
@@ -287,6 +300,19 @@ void ThumbnailBar::setThumbSize(int pixels)
     }
 }
 
+void ThumbnailBar::setLabelsVisible(bool on)
+{
+    if (m_labelsVisible == on) {
+        return;
+    }
+    m_labelsVisible = on;
+    if (m_delegate) {
+        m_delegate->setLabelsVisible(on);
+    }
+    applyThumbMetrics();
+    updateGeometry();
+}
+
 void ThumbnailBar::cancelPendingLoads()
 {
     ++m_generation;
@@ -314,7 +340,22 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
 
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize)
 {
-    return ImageLoader::loadThumbnail(path, maxSize);
+    QImage image = ImageLoader::loadThumbnail(path, maxSize);
+    if (image.isNull()) {
+        return image;
+    }
+    // Center-crop to square so the cell is filled edge-to-edge
+    const int side = qMin(image.width(), image.height());
+    if (side <= 0) {
+        return image;
+    }
+    const int x = (image.width() - side) / 2;
+    const int y = (image.height() - side) / 2;
+    image = image.copy(x, y, side, side);
+    if (image.width() != maxSize || image.height() != maxSize) {
+        image = image.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    }
+    return image;
 }
 
 void ThumbnailBar::scheduleThumbnailLoads()

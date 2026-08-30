@@ -227,6 +227,12 @@ void MainWindow::createActions()
     m_zoomFitAct->setStatusTip(tr("Fit image to the window"));
     connect(m_zoomFitAct, &QAction::triggered, this, &MainWindow::zoomFit);
 
+    m_zoomFillAct = new QAction(tr("Zoom to F&ill"), this);
+    m_zoomFillAct->setShortcut(Qt::CTRL | Qt::Key_F);
+    m_zoomFillAct->setIcon(themeIcon(QStringLiteral("zoom-fit-best"), QStyle::SP_TitleBarMaxButton));
+    m_zoomFillAct->setStatusTip(tr("Fill the window (may crop the image)"));
+    connect(m_zoomFillAct, &QAction::triggered, this, &MainWindow::zoomFill);
+
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
     m_fullscreenAct->setShortcut(Qt::Key_F11);
     m_fullscreenAct->setIcon(themeIcon(QStringLiteral("view-fullscreen"), QStyle::SP_TitleBarMaxButton));
@@ -245,6 +251,29 @@ void MainWindow::createActions()
     m_rotateRightAct->setIcon(themeIcon(QStringLiteral("object-rotate-right"), QStyle::SP_ArrowForward));
     m_rotateRightAct->setStatusTip(tr("Rotate 90° clockwise"));
     connect(m_rotateRightAct, &QAction::triggered, this, &MainWindow::rotateRight);
+
+    m_flipHAct = new QAction(tr("Flip &Horizontal"), this);
+    m_flipHAct->setShortcut(Qt::CTRL | Qt::Key_H);
+    m_flipHAct->setIcon(themeIcon(QStringLiteral("object-flip-horizontal"), QStyle::SP_BrowserReload));
+    m_flipHAct->setStatusTip(tr("Flip image horizontally"));
+    connect(m_flipHAct, &QAction::triggered, this, &MainWindow::flipHorizontal);
+
+    m_flipVAct = new QAction(tr("Flip &Vertical"), this);
+    m_flipVAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_H);
+    m_flipVAct->setIcon(themeIcon(QStringLiteral("object-flip-vertical"), QStyle::SP_BrowserReload));
+    m_flipVAct->setStatusTip(tr("Flip image vertically"));
+    connect(m_flipVAct, &QAction::triggered, this, &MainWindow::flipVertical);
+
+    m_toggleHudAct = new QAction(tr("Show &HUD Overlay"), this);
+    m_toggleHudAct->setShortcut(Qt::Key_H);
+    m_toggleHudAct->setCheckable(true);
+    m_toggleHudAct->setStatusTip(tr("Show an on-image overlay with filename, zoom and size"));
+    connect(m_toggleHudAct, &QAction::triggered, this, &MainWindow::toggleHud);
+
+    m_hideThumbLabelsAct = new QAction(tr("Hide Thumbnail &Filenames"), this);
+    m_hideThumbLabelsAct->setCheckable(true);
+    m_hideThumbLabelsAct->setStatusTip(tr("Hide filenames under thumbnails"));
+    connect(m_hideThumbLabelsAct, &QAction::triggered, this, &MainWindow::toggleThumbnailLabels);
 
     m_previousAct = new QAction(tr("&Previous Image"), this);
     m_previousAct->setShortcuts({Qt::Key_Left, Qt::Key_Backspace, Qt::Key_PageUp});
@@ -487,9 +516,15 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_zoomOutAct);
     m_viewMenu->addAction(m_zoom1to1Act);
     m_viewMenu->addAction(m_zoomFitAct);
+    m_viewMenu->addAction(m_zoomFillAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_rotateLeftAct);
     m_viewMenu->addAction(m_rotateRightAct);
+    m_viewMenu->addAction(m_flipHAct);
+    m_viewMenu->addAction(m_flipVAct);
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_toggleHudAct);
+    m_viewMenu->addAction(m_hideThumbLabelsAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_sortNameAct);
     m_viewMenu->addAction(m_sortMTimeAct);
@@ -544,9 +579,12 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_zoomOutAct);
     m_contextMenu->addAction(m_zoom1to1Act);
     m_contextMenu->addAction(m_zoomFitAct);
+    m_contextMenu->addAction(m_zoomFillAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_rotateLeftAct);
     m_contextMenu->addAction(m_rotateRightAct);
+    m_contextMenu->addAction(m_flipHAct);
+    m_contextMenu->addAction(m_flipVAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_workspaceModeAct);
     m_contextMenu->addAction(m_layoutFreeFormAct);
@@ -586,6 +624,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoomOutAct);
     m_toolBar->addAction(m_zoom1to1Act);
     m_toolBar->addAction(m_zoomFitAct);
+    m_toolBar->addAction(m_zoomFillAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_rotateLeftAct);
     m_toolBar->addAction(m_rotateRightAct);
@@ -1103,6 +1142,11 @@ void MainWindow::zoomFit()
     m_imageView->zoomFit();
 }
 
+void MainWindow::zoomFill()
+{
+    m_imageView->zoomFill();
+}
+
 void MainWindow::toggleFullscreen()
 {
     if (isFullScreen()) {
@@ -1120,6 +1164,30 @@ void MainWindow::rotateLeft()
 void MainWindow::rotateRight()
 {
     m_imageView->rotateRight();
+}
+
+void MainWindow::flipHorizontal()
+{
+    m_imageView->flipHorizontal();
+}
+
+void MainWindow::flipVertical()
+{
+    m_imageView->flipVertical();
+}
+
+void MainWindow::toggleHud()
+{
+    const bool on = m_toggleHudAct->isChecked();
+    m_imageView->setHudVisible(on);
+}
+
+void MainWindow::toggleThumbnailLabels()
+{
+    if (!m_thumbnailBar) {
+        return;
+    }
+    m_thumbnailBar->setLabelsVisible(!m_hideThumbLabelsAct->isChecked());
 }
 
 void MainWindow::goPrevious()
@@ -1500,6 +1568,7 @@ void MainWindow::showPreferences()
     dlg.setMasonryColumnWidth(m_imageView->masonryColumnWidth());
     dlg.setSortModeIndex(m_sortMode == SortMode::Name ? 0 : 1);
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
+    dlg.setImageModeLeftDragPan(m_imageView->imageModeLeftDragPan());
     if (dlg.exec() != QDialog::Accepted) {
         return;
     }
@@ -1508,6 +1577,7 @@ void MainWindow::showPreferences()
     m_imageView->setMasonryColumnWidth(dlg.masonryColumnWidth());
     setSortMode(dlg.sortModeIndex() == 1 ? SortMode::MTime : SortMode::Name);
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
+    m_imageView->setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
     writeSettings();
 }
 
@@ -1675,6 +1745,25 @@ void MainWindow::readSettings()
         m_toggleScrollBarsAct->setChecked(showBars);
         toggleScrollBars();
     }
+
+    if (m_imageView) {
+        const bool leftPan =
+            settings.value(QStringLiteral("imageModeLeftDragPan"), true).toBool();
+        m_imageView->setImageModeLeftDragPan(leftPan);
+        const bool hud = settings.value(QStringLiteral("hudVisible"), false).toBool();
+        m_imageView->setHudVisible(hud);
+        if (m_toggleHudAct) {
+            m_toggleHudAct->setChecked(hud);
+        }
+    }
+    if (m_thumbnailBar) {
+        const bool labels =
+            settings.value(QStringLiteral("thumbnailLabelsVisible"), true).toBool();
+        m_thumbnailBar->setLabelsVisible(labels);
+        if (m_hideThumbLabelsAct) {
+            m_hideThumbLabelsAct->setChecked(!labels);
+        }
+    }
 }
 
 void MainWindow::writeSettings()
@@ -1709,7 +1798,17 @@ void MainWindow::writeSettings()
     if (m_centralSplitter) {
         settings.setValue(QStringLiteral("centralSplitter"), m_centralSplitter->saveState());
     }
+    if (m_imageView) {
+        settings.setValue(QStringLiteral("imageModeLeftDragPan"),
+                          m_imageView->imageModeLeftDragPan());
+        settings.setValue(QStringLiteral("hudVisible"), m_imageView->hudVisible());
+    }
+    if (m_thumbnailBar) {
+        settings.setValue(QStringLiteral("thumbnailLabelsVisible"),
+                          m_thumbnailBar->labelsVisible());
+    }
 }
+
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {

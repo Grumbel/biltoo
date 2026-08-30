@@ -9,6 +9,8 @@
 #include <QUndoStack>
 
 #include <QFileInfo>
+#include <QFont>
+#include <QFontMetrics>
 #include <QKeyEvent>
 #include <QMetaObject>
 #include <QMouseEvent>
@@ -35,6 +37,12 @@ ImageView::ImageView(QWidget *parent)
     m_undoStack = new QUndoStack(this);
     qRegisterMetaType<QImage>("QImage");
     qRegisterMetaType<quint64>("quint64");
+
+    connect(this, &ImageView::statusChanged, this, [this]() {
+        if (m_hudVisible) {
+            viewport()->update();
+        }
+    });
 
     setRenderHint(QPainter::SmoothPixmapTransform, true);
     setAcceptDrops(true);
@@ -110,7 +118,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             item->setInteractive(false);
             m_fitMode = true;
             resetTransform();
-            fitItem(item);
+            fitItem(item, currentFitAspectMode());
             emit statusChanged();
             return;
         }
@@ -121,7 +129,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 item->setInteractive(true);
                 item->setSelected(true);
                 m_fitMode = true;
-                fitItem(item);
+                fitItem(item, currentFitAspectMode());
                 emit statusChanged();
             }
         }
@@ -182,6 +190,8 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.rotation = item->itemRotation();
     s.opacity = item->itemOpacity();
     s.z = item->zValue();
+    s.hFlip = item->itemHFlip();
+    s.vFlip = item->itemVFlip();
     return s;
 }
 
@@ -192,6 +202,8 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
     item->setItemRotation(state.rotation);
     item->setItemOpacity(state.opacity);
     item->setZValue(state.z);
+    item->setItemHFlip(state.hFlip);
+    item->setItemVFlip(state.vFlip);
 }
 
 void ImageView::rememberItemState(ImageItem *item)
@@ -325,7 +337,7 @@ void ImageView::clearExtras()
         keep->setSelected(true);
     }
     m_fitMode = true;
-    fitItem(keep);
+    fitItem(keep, currentFitAspectMode());
     m_undoStack->clear();
     emit statusChanged();
     emit workspacePathsChanged();
@@ -499,9 +511,31 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
 void ImageView::paintEvent(QPaintEvent *event)
 {
     QGraphicsView::paintEvent(event);
+    QPainter painter(viewport());
     if (m_hoverEdge != EdgeZone::None && !m_workspaceMode && m_imageModeNavEnabled) {
-        QPainter painter(viewport());
         drawEdgeAffordances(painter);
+    }
+    if (m_hudVisible) {
+        const QString text = statusText();
+        if (!text.isEmpty()) {
+            QFont f = font();
+            f.setPointSizeF(qMax(9.0, f.pointSizeF()));
+            painter.setFont(f);
+            const QFontMetrics fm(f);
+            const int margin = 10;
+            const int pad = 8;
+            const int maxW = qMax(40, viewport()->width() - 2 * margin);
+            const QString elided = fm.elidedText(text, Qt::ElideMiddle, maxW - 2 * pad);
+            const int textW = fm.horizontalAdvance(elided);
+            const int textH = fm.height();
+            const QRect bg(margin, margin, textW + 2 * pad, textH + 2 * pad);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(QColor(0, 0, 0, 160));
+            painter.drawRoundedRect(bg, 6, 6);
+            painter.setPen(QColor(240, 240, 240));
+            painter.drawText(bg.adjusted(pad, pad, -pad, -pad),
+                             Qt::AlignLeft | Qt::AlignVCenter, elided);
+        }
     }
 }
 
@@ -640,11 +674,15 @@ qreal ImageView::viewScale() const
 void ImageView::refreshStatus()
 {
     emit statusChanged();
+    if (m_hudVisible) {
+        viewport()->update();
+    }
 }
 
 void ImageView::zoomViewBy(qreal factor)
 {
     m_fitMode = false;
+    m_fillMode = false;
     // Keep the viewport centre stable when zooming via toolbar/shortcuts
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(factor, factor);
@@ -672,6 +710,7 @@ void ImageView::zoomOut()
 void ImageView::zoomReset()
 {
     m_fitMode = false;
+    m_fillMode = false;
     if (m_workspaceMode) {
         resetTransform();
         emit statusChanged();
@@ -689,6 +728,7 @@ void ImageView::zoomReset()
 void ImageView::zoomFit()
 {
     m_fitMode = true;
+    m_fillMode = false;
     if (m_workspaceMode) {
         if (m_layoutMode != LayoutMode::FreeForm && !m_items.isEmpty()) {
             applyLayout();
@@ -700,9 +740,8 @@ void ImageView::zoomFit()
         return;
     }
     if (ImageItem *item = targetItem()) {
-        // Keep item scale at 1; fit via the view transform
         item->setItemScale(1.0);
-        fitItem(item);
+        fitItem(item, Qt::KeepAspectRatio);
         emit statusChanged();
     } else if (m_items.size() > 1) {
         fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatio);
@@ -710,12 +749,70 @@ void ImageView::zoomFit()
     }
 }
 
+void ImageView::zoomFill()
+{
+    m_fitMode = true;
+    m_fillMode = true;
+    if (m_workspaceMode) {
+        if (!m_items.isEmpty()) {
+            fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
+                      Qt::KeepAspectRatioByExpanding);
+            emit statusChanged();
+        }
+        return;
+    }
+    if (ImageItem *item = targetItem()) {
+        item->setItemScale(1.0);
+        fitItem(item, Qt::KeepAspectRatioByExpanding);
+        emit statusChanged();
+    } else if (m_items.size() > 1) {
+        fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatioByExpanding);
+        emit statusChanged();
+    }
+}
+
+void ImageView::flipHorizontal()
+{
+    if (ImageItem *item = targetItem()) {
+        item->toggleHFlip();
+        if (m_fitMode) {
+            fitItem(item, currentFitAspectMode());
+        }
+        emit statusChanged();
+    }
+}
+
+void ImageView::flipVertical()
+{
+    if (ImageItem *item = targetItem()) {
+        item->toggleVFlip();
+        if (m_fitMode) {
+            fitItem(item, currentFitAspectMode());
+        }
+        emit statusChanged();
+    }
+}
+
+void ImageView::setImageModeLeftDragPan(bool on)
+{
+    m_imageModeLeftDragPan = on;
+}
+
+void ImageView::setHudVisible(bool on)
+{
+    if (m_hudVisible == on) {
+        return;
+    }
+    m_hudVisible = on;
+    viewport()->update();
+}
+
 void ImageView::rotateLeft()
 {
     if (ImageItem *item = targetItem()) {
         item->rotateBy(-90.0);
         if (m_fitMode) {
-            fitItem(item);
+            fitItem(item, currentFitAspectMode());
         }
         emit statusChanged();
     }
@@ -726,7 +823,7 @@ void ImageView::rotateRight()
     if (ImageItem *item = targetItem()) {
         item->rotateBy(90.0);
         if (m_fitMode) {
-            fitItem(item);
+            fitItem(item, currentFitAspectMode());
         }
         emit statusChanged();
     }
@@ -958,24 +1055,21 @@ void ImageView::applyLayout()
     emit statusChanged();
 }
 
-void ImageView::fitItem(ImageItem *item)
+void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
 {
     if (!item) {
         return;
     }
-    fitInView(item, Qt::KeepAspectRatio);
-    // Derive approximate scale from the view transform for status display
-    const QTransform t = transform();
-    const qreal viewScale = std::hypot(t.m11(), t.m12());
-    // Item keeps its own scale at 1 when we use view-level fit for a single item;
-    // for multi-item we prefer item-level scale. Reset item scale and use view fit
-    // only when a single item is present.
+    fitInView(item, mode);
     if (m_items.size() == 1) {
         item->setItemScale(1.0);
-        item->setItemRotation(item->itemRotation());
-        fitInView(item, Qt::KeepAspectRatio);
-        Q_UNUSED(viewScale);
+        fitInView(item, mode);
     }
+}
+
+Qt::AspectRatioMode ImageView::currentFitAspectMode() const
+{
+    return m_fillMode ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio;
 }
 
 void ImageView::ensureVisibleItem(ImageItem *item)
@@ -1057,6 +1151,16 @@ QString ImageView::statusText() const
                        .arg(item->imageSize().height())
                        .arg(qRound(viewScale() * 100))
                        .arg(qRound(item->itemRotation()));
+    if (item->itemHFlip() || item->itemVFlip()) {
+        QStringList flips;
+        if (item->itemHFlip()) {
+            flips << tr("H");
+        }
+        if (item->itemVFlip()) {
+            flips << tr("V");
+        }
+        text += tr("  |  Flip: %1").arg(flips.join(QLatin1Char('+')));
+    }
     if (item->itemOpacity() < 0.999) {
         text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
     }
@@ -1122,7 +1226,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
         return;
     }
     if (m_fitMode && m_items.size() == 1) {
-        fitItem(m_items.first());
+        fitItem(m_items.first(), currentFitAspectMode());
     }
 }
 
@@ -1150,10 +1254,10 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    // Image mode, or Pan tool: left-drag pans
+    // Image mode (when preferred), or Pan tool / Alt: left-drag pans
     if (event->button() == Qt::LeftButton) {
-        const bool wantPan = !m_workspaceMode
-                             || m_tool == Tool::Pan
+        const bool wantPan = (!m_workspaceMode && m_imageModeLeftDragPan)
+                             || (m_workspaceMode && m_tool == Tool::Pan)
                              || (event->modifiers() & Qt::AltModifier);
         if (wantPan && !(m_workspaceMode && (event->modifiers() & Qt::ShiftModifier))) {
             m_panning = true;

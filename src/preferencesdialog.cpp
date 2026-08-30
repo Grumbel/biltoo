@@ -75,7 +75,16 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     form->addRow(QString(), m_slideshowFullscreenCheck);
     form->addRow(tr("Sort images by:"), m_sortCombo);
     form->addRow(QString(), m_workspaceCheck);
+    m_imageModePanCheck = new QCheckBox(tr("Left-drag pans in image mode"), this);
+    m_imageModePanCheck->setToolTip(
+        tr("When enabled, dragging with the left mouse button pans the image"));
+    m_imageModePanCheck->setWhatsThis(
+        tr("In image mode, left-drag pans by default. Turn this off to reserve "
+           "left-drag for other gestures; pan with Alt+left-drag or the middle "
+           "mouse button instead."));
+
     form->addRow(tr("Masonry column width:"), m_masonryWidthSpin);
+    form->addRow(QString(), m_imageModePanCheck);
 
     // GNOME 2 HIG: Cancel on the left, OK (affirmative) on the right
     auto *cancelBtn = new QPushButton(tr("&Cancel"), this);
@@ -155,4 +164,14 @@ void PreferencesDialog::setMasonryColumnWidth(int pixels)
 {
     m_masonryWidthSpin->setValue(qBound(m_masonryWidthSpin->minimum(), pixels,
                                        m_masonryWidthSpin->maximum()));
+}
+
+bool PreferencesDialog::imageModeLeftDragPan() const
+{
+    return m_imageModePanCheck->isChecked();
+}
+
+void PreferencesDialog::setImageModeLeftDragPan(bool on)
+{
+    m_imageModePanCheck->setChecked(on);
 }

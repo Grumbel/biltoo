@@ -10,7 +10,7 @@
 
 /**
  * A single image on the workspace. Owns its pixmap, source pixels (for colour
- * sampling), and local scale/rotation applied around the item centre.
+ * sampling), and local scale/rotation/flip applied around the item centre.
  *
  * When selected and interactive, draws scale/rotate handles and chrome buttons
  * for raise, lower and opacity, and supports direct manipulation with the mouse.
@@ -27,7 +27,10 @@ public:
         ScaleTopRight,
         ScaleBottomLeft,
         ScaleBottomRight,
-        Rotate,
+        RotateTop,
+        RotateRight,
+        RotateBottom,
+        RotateLeft,
         Raise,
         Lower,
         OpacitySlider
@@ -43,10 +46,16 @@ public:
     qreal itemScale() const { return m_scale; }
     qreal itemRotation() const { return m_rotation; }
     qreal itemOpacity() const { return m_opacity; }
+    bool itemHFlip() const { return m_hFlip; }
+    bool itemVFlip() const { return m_vFlip; }
 
     void setItemScale(qreal scale);
     void setItemRotation(qreal degrees);
     void setItemOpacity(qreal opacity);
+    void setItemHFlip(bool on);
+    void setItemVFlip(bool on);
+    void toggleHFlip();
+    void toggleVFlip();
     void zoomBy(qreal factor);
     void rotateBy(qreal degrees);
 
@@ -86,13 +95,12 @@ private:
     void applyLocalTransform();
     void notifyViewStatus();
     QRectF contentRect() const;
-    /** Handle centres in item coordinates (pre-transform / local). */
     QPointF handleCenter(Handle h) const;
     qreal handleHitRadius() const;
     qreal handleDrawSize() const;
-    /** Combined item×view scale so handles stay constant on screen. */
     qreal screenScale() const;
     bool isChromeHandle(Handle h) const;
+    bool isRotateHandle(Handle h) const;
     void activateChromeHandle(Handle h);
     QRectF opacitySliderRect() const;
     qreal chromeButtonSize() const;
@@ -103,6 +111,8 @@ private:
     qreal m_scale = 1.0;
     qreal m_rotation = 0.0;
     qreal m_opacity = 1.0;
+    bool m_hFlip = false;
+    bool m_vFlip = false;
     bool m_interactive = false;
     bool m_scaleHandlesEnabled = true;
 

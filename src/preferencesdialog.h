@@ -33,12 +33,16 @@ public:
     int masonryColumnWidth() const;
     void setMasonryColumnWidth(int pixels);
 
+    bool imageModeLeftDragPan() const;
+    void setImageModeLeftDragPan(bool on);
+
 private:
     QSpinBox *m_intervalSpin = nullptr;
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
     QSpinBox *m_masonryWidthSpin = nullptr;
+    QCheckBox *m_imageModePanCheck = nullptr;
 };
 
 #endif // PREFERENCESDIALOG_H

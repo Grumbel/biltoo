@@ -28,6 +28,9 @@ public:
     void setThumbSize(int pixels);
     int thumbSize() const { return m_thumbSize; }
 
+    void setLabelsVisible(bool on);
+    bool labelsVisible() const { return m_labelsVisible; }
+
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
                const QModelIndex &index) const override;
     QSize sizeHint(const QStyleOptionViewItem &option,
@@ -36,11 +39,13 @@ public:
     /** Cell size for the current thumb size and font. */
     QSize cellSize(const QFont &font) const;
 
-    /** Caption band under the icon: font height + kLabelGap. */
-    static int labelBandHeight(const QFont &font);
+    /** Caption band under the icon (0 when labels hidden). */
+    int labelBandHeight(const QFont &font) const;
+    static int labelBandHeightForFont(const QFont &font);
 
 private:
     int m_thumbSize = 96;
+    bool m_labelsVisible = true;
 };
 
 class ThumbnailBar : public QListWidget
@@ -63,6 +68,9 @@ public:
 
     void setThumbSize(int pixels);
     int thumbSize() const { return m_thumbSize; }
+
+    void setLabelsVisible(bool on);
+    bool labelsVisible() const { return m_labelsVisible; }
 
     void setBarOrientation(Qt::Orientation orientation);
     Qt::Orientation barOrientation() const { return m_orientation; }
@@ -117,6 +125,7 @@ private:
 
     std::atomic<quint64> m_generation{0};
     bool m_workspaceMode = false;
+    bool m_labelsVisible = true;
     int m_thumbSize = kDefaultThumbSize;
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;

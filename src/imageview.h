@@ -32,6 +32,8 @@ struct WorkspaceItemState {
     qreal rotation = 0.0;
     qreal opacity = 1.0;
     qreal z = 0.0;
+    bool hFlip = false;
+    bool vFlip = false;
 };
 
 /**
@@ -99,10 +101,22 @@ public:
     void zoomOut();
     void zoomReset();
     void zoomFit();
+    /** Cover the viewport (may crop); uses KeepAspectRatioByExpanding. */
+    void zoomFill();
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
     void rotateLeft();
     void rotateRight();
+    void flipHorizontal();
+    void flipVertical();
+
+    /** When true (default), left-drag pans in Image mode. */
+    void setImageModeLeftDragPan(bool on);
+    bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
+
+    /** On-image HUD overlay (filename, zoom, …). */
+    void setHudVisible(bool on);
+    bool hudVisible() const { return m_hudVisible; }
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -188,7 +202,8 @@ private:
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
     void updateMouseInfo(const QPoint &viewPos);
-    void fitItem(ImageItem *item);
+    void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
+    Qt::AspectRatioMode currentFitAspectMode() const;
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void rememberItemState(ImageItem *item);
@@ -219,8 +234,11 @@ private:
     QUndoStack *m_undoStack = nullptr;
 
     bool m_fitMode = true;
+    bool m_fillMode = false;
     bool m_workspaceMode = false;
     bool m_imageModeNavEnabled = false;
+    bool m_imageModeLeftDragPan = true;
+    bool m_hudVisible = false;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;
