@@ -29,6 +29,9 @@ find_package(PkgConfig)
 add_executable(qimgview
   src/main.cpp
   src/mainwindow.cpp
+  src/mainwindow_ui.cpp
+  src/mainwindow_gallery.cpp
+  src/mainwindow_session.cpp
   src/mainwindow.h
   src/icons.cpp
   src/icons.h
