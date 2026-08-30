@@ -542,6 +542,40 @@ void MainWindow::toggleScrollBars()
     m_imageView->setVerticalScrollBarPolicy(policy);
 }
 
+void MainWindow::showKeyboardShortcuts()
+{
+    QMessageBox box(this);
+    box.setWindowTitle(tr("Keyboard Shortcuts"));
+    box.setTextFormat(Qt::RichText);
+    box.setText(tr(
+        "<h3>Keyboard shortcuts</h3>"
+        "<p><b>Navigation</b><br/>"
+        "←/→ or edge click — previous / next<br/>"
+        "Home / End — first / last<br/>"
+        "Space — start/stop slideshow<br/>"
+        "Esc — leave fullscreen (or return to Gallery)</p>"
+        "<p><b>View</b><br/>"
+        "F / F11 — fullscreen<br/>"
+        "H — toggle HUD<br/>"
+        "Ctrl+0 — zoom 1:1 · Ctrl++ / Ctrl+- — zoom<br/>"
+        "Ctrl+F — fill · Fit action — fit to window<br/>"
+        "Ctrl+T — toolbar · Ctrl+E — metadata</p>"
+        "<p><b>Image</b><br/>"
+        "R / ] / Ctrl+R — rotate right · [ / Ctrl+L — rotate left<br/>"
+        "Ctrl+H / Ctrl+Shift+H — flip horizontal / vertical</p>"
+        "<p><b>Workspace</b><br/>"
+        "Ctrl+D — duplicate · Delete — remove from canvas<br/>"
+        "Ctrl+Shift+↑/↓ — raise / lower<br/>"
+        "Ctrl+Shift+=/− — opacity up / down</p>"
+        "<p><b>Gallery</b><br/>"
+        "Click — select · Ctrl/Shift — multi-select · Double-click / Enter — open<br/>"
+        "Arrow keys — spatial focus among tiles</p>"));
+    box.setStandardButtons(QMessageBox::Close);
+    box.button(QMessageBox::Close)->setText(tr("&Close"));
+    box.setDefaultButton(QMessageBox::Close);
+    box.exec();
+}
+
 void MainWindow::about()
 {
     QMessageBox box(this);

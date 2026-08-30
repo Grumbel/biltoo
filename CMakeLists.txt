@@ -111,3 +111,10 @@ install(FILES data/icons/hicolor/scalable/apps/qimgview.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
 
 message(STATUS "QImgView version: ${PROJECT_VERSION_FULL} (CMake PROJECT_VERSION=${PROJECT_VERSION})")
+
+# AUDIT M24: minimal smoke test (CLI help) when the binary is built
+enable_testing()
+add_test(NAME qimgview-help
+  COMMAND $<TARGET_FILE:qimgview> --help)
+set_tests_properties(qimgview-help PROPERTIES
+  PASS_REGULAR_EXPRESSION "Usage:|Options:|qimgview")

@@ -390,6 +390,11 @@ void MainWindow::createActions()
     m_preferencesAct->setStatusTip(tr("Application preferences"));
     connect(m_preferencesAct, &QAction::triggered, this, &MainWindow::showPreferences);
 
+    m_keyboardShortcutsAct = new QAction(tr("&Keyboard Shortcuts…"), this);
+    m_keyboardShortcutsAct->setShortcut(Qt::Key_F1);
+    m_keyboardShortcutsAct->setStatusTip(tr("List of keyboard shortcuts"));
+    connect(m_keyboardShortcutsAct, &QAction::triggered, this, &MainWindow::showKeyboardShortcuts);
+
     m_aboutAct = new QAction(tr("&About QImgView"), this);
     m_aboutAct->setIcon(themeIcon(QStringLiteral("help-about"), QStyle::SP_MessageBoxInformation));
     m_aboutAct->setStatusTip(tr("About this application"));
@@ -487,6 +492,8 @@ void MainWindow::createMenus()
     m_goMenu->addAction(m_slideshowAct);
 
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
+    m_helpMenu->addAction(m_keyboardShortcutsAct);
+    m_helpMenu->addSeparator();
     m_helpMenu->addAction(m_aboutAct);
 
     // Context menu: keep short and contextual. Gallery layouts, chrome toggles,

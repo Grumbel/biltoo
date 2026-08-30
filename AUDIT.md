@@ -959,3 +959,7 @@ Gallery pack and workspace identity reviewed. Master priority list unchanged. St
 | M26 | Fixed | statusBar message on empty open/add and failed decode |
 | M27 | Fixed | LoadRestore uses pending state queue — duplicate paths restore |
 | M23 | Fixed | data/qimgview.metainfo.xml + CMake install to metainfo |
+
+| M19 | Fixed | Thumbnail bar always starts file-drag after drag distance |
+| L27 | Fixed | Help → Keyboard Shortcuts (F1) |
+| M24 | Partial | CMake ctest smoke: qimgview --help |

@@ -42,6 +42,9 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] M26 Load/open error feedback on status bar
 - [x] M27 Workspace duplicate path restore queue
 - [x] M23 AppStream metainfo
+- [x] M19 Thumbnail file-drag in Workspace (no Alt required)
+- [x] L27 Help → Keyboard Shortcuts (F1)
+- [x] M24 CMake smoke test (`qimgview --help`)
 
 ## Open
 

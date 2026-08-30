@@ -869,29 +869,22 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
         && m_pressItem) {
         const int dist = (event->pos() - m_pressPos).manhattanLength();
         if (dist >= QApplication::startDragDistance()) {
-            // Image mode: drag files out. Workspace: only with Alt (no rubber-band).
-            const bool fileDrag = !m_multiSelect
-                || (event->modifiers() & Qt::AltModifier);
-            if (fileDrag) {
-                m_dragStarted = true;
-                QList<QListWidgetItem *> items;
-                if (m_multiSelect) {
-                    items = selectedItems();
-                    if (!m_pressItem->isSelected()) {
-                        items = {m_pressItem};
-                    }
-                } else {
+            // AUDIT M19: drag selected thumbs as files in every mode (no dead gesture).
+            m_dragStarted = true;
+            QList<QListWidgetItem *> items;
+            if (m_multiSelect) {
+                items = selectedItems();
+                if (!m_pressItem->isSelected()) {
                     items = {m_pressItem};
                 }
-                if (items.isEmpty()) {
-                    items = {m_pressItem};
-                }
-                startFileDrag(items);
-                clearPressState();
-                event->accept();
-                return;
+            } else {
+                items = {m_pressItem};
             }
-            // Workspace without Alt: ignore drag distance (no rubber-band)
+            if (items.isEmpty()) {
+                items = {m_pressItem};
+            }
+            startFileDrag(items);
+            clearPressState();
             event->accept();
             return;
         }
