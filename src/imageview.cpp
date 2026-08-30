@@ -59,6 +59,7 @@ ImageView::ImageView(QWidget *parent)
     });
     connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
         m_hudFlashVisible = false;
+        m_hudIdentityPulse = false;
         m_hudAction.clear();
         m_hudDetail.clear();
         viewport()->update();
@@ -489,12 +490,16 @@ void ImageView::setImageModeLeftDragPan(bool on)
 
 void ImageView::setSessionPosition(int index, int total)
 {
-    if (m_sessionIndex == index && m_sessionTotal == total) {
-        return;
-    }
+    const bool changed = (m_sessionIndex != index || m_sessionTotal != total);
     m_sessionIndex = index;
     m_sessionTotal = total;
-    if (m_hudVisible || m_hudFlashVisible) {
+    // Always pulse identity HUD on navigation so filename / [i/n] appear without
+    // requiring the pinned (H) HUD.
+    if (changed || total > 0) {
+        m_hudIdentityPulse = true;
+        if (m_hudFlashTimer) {
+            m_hudFlashTimer->start(1000);
+        }
         viewport()->update();
     }
 }
@@ -513,8 +518,9 @@ void ImageView::flashHud(const QString &action, const QString &detail)
     m_hudAction = action;
     m_hudDetail = detail;
     m_hudFlashVisible = true;
+    m_hudIdentityPulse = true;
     if (m_hudFlashTimer) {
-        m_hudFlashTimer->start(1800);
+        m_hudFlashTimer->start(1000);
     }
     viewport()->update();
 }

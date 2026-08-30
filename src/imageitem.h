@@ -114,6 +114,16 @@ public:
     /** True when a scale/rotate/chrome handle is under item-local @p itemPos. */
     bool hasHandleAt(const QPointF &itemPos) const;
 
+    /**
+     * View-driven handle interaction (bypasses QGraphicsItem shape delivery).
+     * Used so rotated / anisotropically scaled chrome stays hittable even when
+     * shape() alone would miss the device-space controls.
+     */
+    bool beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    void updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    void endHandleInteraction();
+    bool hasActiveHandle() const { return m_activeHandle != Handle::None; }
+
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 

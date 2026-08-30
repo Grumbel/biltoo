@@ -480,48 +480,31 @@ void MainWindow::createMenus()
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
     m_helpMenu->addAction(m_aboutAct);
 
+    // Context menu: keep short and contextual. Gallery layouts, chrome toggles,
+    // and full Go/Zoom lists stay in the menubar / toolbar.
     m_contextMenu = new QMenu(this);
     m_contextMenu->addAction(m_openAct);
     m_contextMenu->addAction(m_addAct);
-    m_contextMenu->addAction(m_openDirAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_previousAct);
     m_contextMenu->addAction(m_nextAct);
-    m_contextMenu->addAction(m_firstAct);
-    m_contextMenu->addAction(m_lastAct);
-    m_contextMenu->addAction(m_slideshowAct);
     m_contextMenu->addSeparator();
-    m_contextMenu->addAction(m_zoomInAct);
-    m_contextMenu->addAction(m_zoomOutAct);
-    m_contextMenu->addAction(m_zoom1to1Act);
     m_contextMenu->addAction(m_zoomFitAct);
-    m_contextMenu->addAction(m_zoomFillAct);
+    m_contextMenu->addAction(m_zoom1to1Act);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_rotateLeftAct);
     m_contextMenu->addAction(m_rotateRightAct);
-    m_contextMenu->addAction(m_resetRotationAct);
-    m_contextMenu->addAction(m_resetScaleAct);
     m_contextMenu->addAction(m_flipHAct);
     m_contextMenu->addAction(m_flipVAct);
+    m_contextMenu->addAction(m_resetScaleAct);
+    m_contextMenu->addAction(m_resetRotationAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_backToGalleryAct);
-    m_contextMenu->addAction(m_layoutSideBySideAct);
-    m_contextMenu->addAction(m_layoutVerticalAct);
-    m_contextMenu->addAction(m_layoutGridAct);
-    m_contextMenu->addAction(m_layoutGridCropAct);
-    m_contextMenu->addAction(m_layoutMasonryAct);
-    m_contextMenu->addAction(m_layoutMasonryRowsAct);
-    m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_workspaceModeAct);
     m_contextMenu->addAction(m_raiseAct);
     m_contextMenu->addAction(m_lowerAct);
-    m_contextMenu->addAction(m_clearExtrasAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_fullscreenAct);
-    m_contextMenu->addAction(m_toggleToolBarAct);
-    m_contextMenu->addAction(m_toggleThumbnailBarAct);
-    m_contextMenu->addAction(m_toggleMetadataAct);
-    m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_preferencesAct);
 }
 

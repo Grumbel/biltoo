@@ -350,6 +350,7 @@ private:
     qreal m_rotateStartAngle = 0.0;
     qreal m_rotateItemStart = 0.0;
 
+    ImageItem *m_handleDragItem = nullptr;
     ImageItem *m_dragItem = nullptr;
     WorkspaceItemState m_dragStartState;
 

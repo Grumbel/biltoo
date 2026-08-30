@@ -835,33 +835,76 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     painter->restore();
 }
 
+
+bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods)
+{
+    Q_UNUSED(mods);
+    if (!m_interactive || !isSelected()) {
+        return false;
+    }
+    const Handle h = handleAt(mapFromScene(scenePos));
+    if (h == Handle::None) {
+        return false;
+    }
+    if (h == Handle::FlipH || h == Handle::FlipV
+        || h == Handle::Raise || h == Handle::Lower
+        || h == Handle::ResetScale || h == Handle::ResetRotation) {
+        activateChromeHandle(h);
+        return true;
+    }
+    m_activeHandle = h;
+    m_pressScenePos = scenePos;
+    m_pressScaleX = m_scaleX;
+    m_pressScaleY = m_scaleY;
+    m_pressRotation = m_rotation;
+    m_pressItemPos = mapFromScene(scenePos);
+    m_pressAnchorLocal = scaleAnchorLocal(h);
+    m_pressAnchorScene = mapToScene(m_pressAnchorLocal);
+    if (h == Handle::OpacitySlider) {
+        setOpacityFromSliderPos(scenePos);
+        notifyViewStatus();
+    }
+    return true;
+}
+
+void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods)
+{
+    if (m_activeHandle == Handle::None) {
+        return;
+    }
+    if (m_activeHandle == Handle::OpacitySlider) {
+        setOpacityFromSliderPos(scenePos);
+    } else if (isRotateHandle(m_activeHandle)) {
+        const QPointF itemCentre = this->scenePos();
+        const QPointF v0 = m_pressScenePos - itemCentre;
+        const QPointF v1 = scenePos - itemCentre;
+        const qreal a0 = qAtan2(v0.y(), v0.x());
+        const qreal a1 = qAtan2(v1.y(), v1.x());
+        const qreal deltaDeg = qRadiansToDegrees(a1 - a0);
+        qreal angle = m_pressRotation + deltaDeg;
+        if (mods & Qt::ControlModifier) {
+            angle = qRound(angle / 90.0) * 90.0;
+        } else if (mods & Qt::ShiftModifier) {
+            angle = qRound(angle / 45.0) * 45.0;
+        }
+        setItemRotation(angle);
+    } else if (isScaleHandle(m_activeHandle)) {
+        applyScaleHandleDrag(scenePos, mods);
+    }
+    notifyViewStatus();
+}
+
+void ImageItem::endHandleInteraction()
+{
+    m_activeHandle = Handle::None;
+}
+
 void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    if (m_interactive && event->button() == Qt::LeftButton) {
-        const Handle h = handleAt(event->pos());
-        if (h != Handle::None) {
-            if (h == Handle::FlipH || h == Handle::FlipV
-                || h == Handle::Raise || h == Handle::Lower
-                || h == Handle::ResetScale || h == Handle::ResetRotation) {
-                activateChromeHandle(h);
-                event->accept();
-                return;
-            }
-            m_activeHandle = h;
-            m_pressScenePos = event->scenePos();
-            m_pressScaleX = m_scaleX;
-            m_pressScaleY = m_scaleY;
-            m_pressRotation = m_rotation;
-            m_pressItemPos = event->pos();
-            m_pressAnchorLocal = scaleAnchorLocal(h);
-            m_pressAnchorScene = mapToScene(m_pressAnchorLocal);
-            if (h == Handle::OpacitySlider) {
-                setOpacityFromSliderPos(event->scenePos());
-                notifyViewStatus();
-            }
-            event->accept();
-            return;
-        }
+    if (m_interactive && event->button() == Qt::LeftButton
+        && beginHandleInteraction(event->scenePos(), event->modifiers())) {
+        event->accept();
+        return;
     }
     QGraphicsPixmapItem::mousePressEvent(event);
 }
@@ -869,27 +912,7 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     if (m_activeHandle != Handle::None) {
-        if (m_activeHandle == Handle::OpacitySlider) {
-            setOpacityFromSliderPos(event->scenePos());
-        } else if (isRotateHandle(m_activeHandle)) {
-            const QPointF centre = scenePos(); // item origin is image centre
-            const QPointF v0 = m_pressScenePos - centre;
-            const QPointF v1 = event->scenePos() - centre;
-            const qreal a0 = qAtan2(v0.y(), v0.x());
-            const qreal a1 = qAtan2(v1.y(), v1.x());
-            const qreal deltaDeg = qRadiansToDegrees(a1 - a0);
-            qreal angle = m_pressRotation + deltaDeg;
-            // Shift → 45° snap, Ctrl → 90° snap (common CAD / design convention)
-            if (event->modifiers() & Qt::ControlModifier) {
-                angle = qRound(angle / 90.0) * 90.0;
-            } else if (event->modifiers() & Qt::ShiftModifier) {
-                angle = qRound(angle / 45.0) * 45.0;
-            }
-            setItemRotation(angle);
-        } else if (isScaleHandle(m_activeHandle)) {
-            applyScaleHandleDrag(event->scenePos(), event->modifiers());
-        }
-        notifyViewStatus();
+        updateHandleInteraction(event->scenePos(), event->modifiers());
         event->accept();
         return;
     }
@@ -899,7 +922,7 @@ void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 void ImageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     if (m_activeHandle != Handle::None && event->button() == Qt::LeftButton) {
-        m_activeHandle = Handle::None;
+        endHandleInteraction();
         event->accept();
         return;
     }

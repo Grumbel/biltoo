@@ -132,7 +132,7 @@ void ImageView::paintEvent(QPaintEvent *event)
     //   top-left  — transient actions (slideshow, fit, …), never Next/Prev
     //   top-right — session index [i/n]
     //   bottom    — filename (+ technical detail when the HUD is pinned)
-    if (m_hudVisible || m_hudFlashVisible || m_sessionTotal > 0) {
+    if (m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse) {
         QFont f = font();
         f.setPointSizeF(qMax(10.0, f.pointSizeF()));
         QFont boldF = f;
@@ -459,6 +459,50 @@ void ImageView::resizeEvent(QResizeEvent *event)
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
+    // Workspace: handle chrome on the selected item first (view-space hit test).
+    // Device-space chrome can sit outside shape() after rotation / anisotropic
+    // scale; QGraphicsScene would miss those clicks without this path.
+    if (isWorkspaceMode() && event->button() == Qt::LeftButton
+        && m_tool == Tool::Select) {
+        const QPointF scenePos = mapToScene(event->pos());
+        QList<ImageItem *> candidates;
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (ii->isInteractive()) {
+                    candidates.append(ii);
+                }
+            }
+        }
+        // Also consider the topmost interactive item under the cursor (for
+        // clicking a handle after selecting via the body).
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (ii->isInteractive() && !candidates.contains(ii)) {
+                    candidates.append(ii);
+                }
+                break; // topmost under cursor only as extra candidate
+            }
+        }
+        // Highest stackZ first
+        std::sort(candidates.begin(), candidates.end(),
+                  [](ImageItem *a, ImageItem *b) {
+                      return a->stackZ() > b->stackZ();
+                  });
+        for (ImageItem *item : candidates) {
+            // Ensure selection so chrome is active
+            if (!item->isSelected()) {
+                continue; // only selected items show chrome
+            }
+            if (item->beginHandleInteraction(scenePos, event->modifiers())) {
+                m_handleDragItem = item;
+                m_dragItem = item;
+                m_dragStartState = captureState(item);
+                event->accept();
+                return;
+            }
+        }
+    }
+
     // Image mode: left/right edge clicks navigate the session
     if (isImageMode() && event->button() == Qt::LeftButton
         && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
@@ -565,6 +609,13 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
     updateMouseInfo(event->pos());
 
+    if (m_handleDragItem && m_handleDragItem->hasActiveHandle()) {
+        m_handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
+                                                    event->modifiers());
+        event->accept();
+        return;
+    }
+
     if (m_rotating && m_rotateItem) {
         const QPointF scenePos = mapToScene(event->pos());
         const qreal angle = angleAt(scenePos, m_rotateItem);
@@ -611,6 +662,42 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_handleDragItem && event->button() == Qt::LeftButton) {
+        m_handleDragItem->endHandleInteraction();
+        const WorkspaceItemState after = captureState(m_handleDragItem);
+        if (after.pos != m_dragStartState.pos
+            || after.scale != m_dragStartState.scale
+            || after.scaleY != m_dragStartState.scaleY
+            || after.rotation != m_dragStartState.rotation
+            || after.opacity != m_dragStartState.opacity) {
+            class TransformCommand : public QUndoCommand {
+            public:
+                TransformCommand(ImageView *view, ImageItem *item,
+                                 const WorkspaceItemState &before,
+                                 const WorkspaceItemState &after)
+                    : m_view(view), m_item(item), m_before(before), m_after(after)
+                {
+                    setText(QObject::tr("Transform"));
+                }
+                void undo() override { if (m_item) m_view->applyState(m_item, m_before); }
+                void redo() override { if (m_item) m_view->applyState(m_item, m_after); }
+            private:
+                ImageView *m_view;
+                ImageItem *m_item;
+                WorkspaceItemState m_before, m_after;
+            };
+            if (m_undoStack) {
+                m_undoStack->push(new TransformCommand(this, m_handleDragItem,
+                                                       m_dragStartState, after));
+            }
+            emit statusChanged();
+        }
+        m_handleDragItem = nullptr;
+        m_dragItem = nullptr;
+        event->accept();
+        return;
+    }
+
     if (m_rotating && event->button() == Qt::LeftButton) {
         if (m_rotateItem) {
             const WorkspaceItemState after = captureState(m_rotateItem);
