@@ -62,47 +62,31 @@ Priority roughly: bugs first, then small polish, then larger features.
 
 - [x] **Drag&drop on image area (not only thumb bar)** — ImageView accepts drops and emits `filesDropped`; MainWindow shares handler with window drops.
 
-- [ ] **Slideshow: Space starts; leaving fullscreen stops** — *Small, clear.*
-  Space currently unused or conflicting; bind to toggle slideshow in Image mode.
-  On fullscreen exit (Esc/F11), stop slideshow timer if running.
+- [x] **Slideshow: Space starts; leaving fullscreen stops** — Space toggles; leaving fullscreen stops.
 
 - [x] **Scrolling workspace misaligns Image mode** — reset transform and scrollbars when leaving workspace and when loading Image-mode files.
 
-- [ ] **Zoom icons to the right of the toolbar (with separator)** — *Polish, easy.*
-  Mirror fullscreen placement: spacer, then zoom group on the right.
+- [x] **Zoom icons to the right of the toolbar (with separator)**
 
-- [ ] **Undo/redo on main toolbar (not only left strip)** — *Polish, easy.*
-  Add actions next to other edit tools; keep shortcuts; left strip can stay tools-only.
+- [x] **Undo/redo on main toolbar (not only left strip)**
 
-- [ ] **Colour swatch in status bar** — *Polish, easy.*
-  Beside RGB/hex text, paint a small QLabel/QWidget filled with sampled colour.
+- [x] **Colour swatch in status bar**
 
-- [ ] **Zoom to fill** (cover window, crop edges) — *Small feature.*
-  Companion to Fit (contain). `Qt::KeepAspectRatioByExpanding` style scale + centre.
+- [x] **Zoom to fill** (cover window, crop edges)
 
-- [ ] **Image mode pan: all directions vs locked centre** — *Medium.*
-  Today scroll/pan can move vertically more than horizontally (scene rect / fit).
-  Pref: “Allow pan” vs “Keep centred”; when pan allowed, free 2D pan when zoomed in.
+- [x] **Image mode pan preference** — left-drag pan toggle in Preferences.
 
-- [ ] **HUD overlay (1980s VCR-style)** — *Medium feature.*
-  Top-left symbol + action + filename + index (e.g. ▶ Slideshow, → Next, filename 3/12).
-  Auto-show on nav/slideshow start/stop; fade after ~1–2s.
-  Toolbar toggle: pin HUD (disable autohide). Useful in slideshow and normal view.
+- [x] **HUD overlay** — View → Show HUD Overlay / H (VCR auto-fade still open).
 
-- [ ] **Thumb “crop to square” mode** — *Medium.*
-  Decode/paint thumbs as centre-cropped squares for even spacing; toggle in View or prefs.
+- [x] **Thumb “crop to square” mode**
 
-- [ ] **Hide thumbnail filenames** — *Easy once metrics settled.*
-  Preference (and maybe View menu); cell height shrinks to icon-only when hidden.
+- [x] **Hide thumbnail filenames**
 
-- [ ] **HFlip / VFlip next to rotate** — *Medium.*
-  Toolbar + workspace item transform (mirror about centre); include in undo; chrome optional.
+- [x] **HFlip / VFlip**
 
-- [ ] **Rotate handles on left and right as well** — *Small.*
-  Extra rotate grips at mid-left/mid-right (same drag behaviour as top rotate).
+- [x] **Rotate handles on all four sides**
 
-- [ ] **Larger handles in general** — *Small.*
-  Bump kHandleScreenPx (and chrome already larger); keep screen-constant sizing.
+- [x] **Larger handles in general**
 
 ## Broader image formats (research notes)
 

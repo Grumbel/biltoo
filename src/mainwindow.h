@@ -143,6 +143,7 @@ private:
     QToolBar *m_workspaceToolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
     QLabel *m_mouseLabel = nullptr;
+    QLabel *m_colorSwatch = nullptr;
     QTimer *m_slideshowTimer = nullptr;
     QTimer *m_cursorHideTimer = nullptr;
     bool m_slideshowCursorHidden = false;

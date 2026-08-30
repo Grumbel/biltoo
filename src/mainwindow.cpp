@@ -282,17 +282,17 @@ void MainWindow::createActions()
     connect(m_previousAct, &QAction::triggered, this, &MainWindow::goPrevious);
 
     m_nextAct = new QAction(tr("&Next Image"), this);
-    m_nextAct->setShortcuts({Qt::Key_Right, Qt::Key_Space, Qt::Key_PageDown});
+    m_nextAct->setShortcuts({Qt::Key_Right, Qt::Key_PageDown});
     m_nextAct->setIcon(themeIcon(QStringLiteral("go-next"), QStyle::SP_ArrowForward));
     m_nextAct->setStatusTip(tr("Show next image"));
     connect(m_nextAct, &QAction::triggered, this, &MainWindow::goNext);
 
     m_slideshowAct = new QAction(tr("Play &Slideshow"), this);
-    m_slideshowAct->setShortcut(Qt::Key_F5);
+    m_slideshowAct->setShortcuts({Qt::Key_F5, Qt::Key_Space});
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     m_slideshowAct->setCheckable(true);
     m_slideshowAct->setStatusTip(
-        tr("Start or stop the slideshow (F5). Unavailable in workspace mode."));
+        tr("Start or stop the slideshow (F5 or Space). Unavailable in workspace mode."));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
     m_workspaceModeAct = new QAction(tr("&Workspace Mode"), this);
@@ -614,17 +614,12 @@ void MainWindow::createToolBar()
     m_toolBar->setIconSize(QSize(24, 24));
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
-    // Left: file
+    // Left: file + undo/redo
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_addAct);
     m_toolBar->addSeparator();
-
-    // Left: zoom and rotate
-    m_toolBar->addAction(m_zoomInAct);
-    m_toolBar->addAction(m_zoomOutAct);
-    m_toolBar->addAction(m_zoom1to1Act);
-    m_toolBar->addAction(m_zoomFitAct);
-    m_toolBar->addAction(m_zoomFillAct);
+    m_toolBar->addAction(m_undoAct);
+    m_toolBar->addAction(m_redoAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_rotateLeftAct);
     m_toolBar->addAction(m_rotateRightAct);
@@ -652,7 +647,13 @@ void MainWindow::createToolBar()
     spacerRight->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     m_toolBar->addWidget(spacerRight);
 
-    // Right: workspace mode, metadata, fullscreen
+    // Right: zoom group, workspace mode, metadata, fullscreen
+    m_toolBar->addAction(m_zoomInAct);
+    m_toolBar->addAction(m_zoomOutAct);
+    m_toolBar->addAction(m_zoom1to1Act);
+    m_toolBar->addAction(m_zoomFitAct);
+    m_toolBar->addAction(m_zoomFillAct);
+    m_toolBar->addSeparator();
     m_toolBar->addAction(m_workspaceModeAct);
     m_toolBar->addAction(m_toggleMetadataAct);
     m_toolBar->addAction(m_fullscreenAct);
@@ -678,12 +679,18 @@ void MainWindow::createStatusBar()
 {
     m_statusLabel = new QLabel(tr("Ready"));
     m_statusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_colorSwatch = new QLabel;
+    m_colorSwatch->setFixedSize(16, 16);
+    m_colorSwatch->setToolTip(tr("Colour under the cursor"));
+    m_colorSwatch->setStyleSheet(QStringLiteral(
+        "QLabel { border: 1px solid #888; background: transparent; }"));
     m_mouseLabel = new QLabel;
     m_mouseLabel->setMinimumWidth(200);
     m_mouseLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_mouseLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     statusBar()->setSizeGripEnabled(true);
     statusBar()->addWidget(m_statusLabel, 1);
+    statusBar()->addPermanentWidget(m_colorSwatch);
     statusBar()->addPermanentWidget(m_mouseLabel);
 }
 
@@ -1597,6 +1604,11 @@ void MainWindow::onMouseInfoChanged(const ImageMouseInfo &info)
 {
     if (!info.valid) {
         m_mouseLabel->clear();
+        if (m_colorSwatch) {
+            m_colorSwatch->setStyleSheet(QStringLiteral(
+                "QLabel { border: 1px solid #888; background: transparent; }"));
+            m_colorSwatch->setToolTip(tr("Colour under the cursor"));
+        }
         return;
     }
     const QColor &c = info.pixelColor;
@@ -1607,6 +1619,17 @@ void MainWindow::onMouseInfoChanged(const ImageMouseInfo &info)
             .arg(c.red())
             .arg(c.green())
             .arg(c.blue()));
+    if (m_colorSwatch) {
+        m_colorSwatch->setStyleSheet(
+            QStringLiteral("QLabel { border: 1px solid #888; background-color: %1; }")
+                .arg(c.name()));
+        m_colorSwatch->setToolTip(
+            tr("RGB %1 %2 %3 (%4)")
+                .arg(c.red())
+                .arg(c.green())
+                .arg(c.blue())
+                .arg(c.name()));
+    }
 }
 
 void MainWindow::showContextMenu(const QPoint &pos)
@@ -1626,6 +1649,11 @@ void MainWindow::updateFullscreenUi()
 {
     const bool fs = isFullScreen();
     m_fullscreenAct->setChecked(fs);
+
+    // Leaving fullscreen stops an active slideshow (Space/F5 start; Esc stops)
+    if (!fs && m_slideshowTimer && m_slideshowTimer->isActive()) {
+        stopSlideshow();
+    }
 
     if (fs) {
         m_toolBarVisibleBeforeFullscreen = m_toolBar->isVisible();
