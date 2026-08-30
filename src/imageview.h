@@ -4,39 +4,23 @@
 #ifndef IMAGEVIEW_H
 #define IMAGEVIEW_H
 
+#include "imageview_types.h"
+
 #include <QColor>
 #include <QGraphicsView>
-#include <atomic>
 #include <QHash>
-class QTimer;
 #include <QImage>
 #include <QSet>
-#include <QPoint>
 #include <QString>
 #include <QStringList>
 #include <QUrl>
 
+#include <atomic>
+
 class ImageItem;
 class QGraphicsScene;
+class QTimer;
 class QUndoStack;
-
-struct ImageMouseInfo {
-    bool valid = false;
-    QPoint imagePos;
-    QColor pixelColor;
-    QString path;
-};
-
-struct WorkspaceItemState {
-    QString path;
-    QPointF pos;
-    qreal scale = 1.0;
-    qreal rotation = 0.0;
-    qreal opacity = 1.0;
-    qreal z = 0.0;
-    bool hFlip = false;
-    bool vFlip = false;
-};
 
 /**
  * Central image area with three presentation modes:

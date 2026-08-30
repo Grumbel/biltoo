@@ -196,6 +196,31 @@ void ImageItem::setGallerySelectable(bool on)
     update();
 }
 
+void ImageItem::setGalleryCellSize(const QSizeF &sceneSize)
+{
+    if (m_galleryCellSize == sceneSize) {
+        return;
+    }
+    prepareGeometryChange();
+    m_galleryCellSize = sceneSize;
+    update();
+}
+
+QRectF ImageItem::galleryClipLocal() const
+{
+    if (m_galleryCellSize.isEmpty() || m_galleryCellSize.width() <= 0
+        || m_galleryCellSize.height() <= 0) {
+        return {};
+    }
+    const qreal s = qMax(0.001, m_scale);
+    const qreal lw = m_galleryCellSize.width() / s;
+    const qreal lh = m_galleryCellSize.height() / s;
+    const QRectF br = QGraphicsPixmapItem::boundingRect();
+    return QRectF(br.center().x() - lw / 2.0,
+                  br.center().y() - lh / 2.0,
+                  lw, lh);
+}
+
 void ImageItem::setScaleHandlesEnabled(bool on)
 {
     if (m_scaleHandlesEnabled == on) {

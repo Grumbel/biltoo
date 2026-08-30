@@ -1,0 +1,32 @@
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#ifndef IMAGEVIEW_TYPES_H
+#define IMAGEVIEW_TYPES_H
+
+#include <QColor>
+#include <QPoint>
+#include <QPointF>
+#include <QString>
+
+/** Pixel under the cursor for the status / colour readout. */
+struct ImageMouseInfo {
+    bool valid = false;
+    QPoint imagePos;
+    QColor pixelColor;
+    QString path;
+};
+
+/** Persisted free-form / workspace placement for one path. */
+struct WorkspaceItemState {
+    QString path;
+    QPointF pos;
+    qreal scale = 1.0;
+    qreal rotation = 0.0;
+    qreal opacity = 1.0;
+    qreal z = 0.0;
+    bool hFlip = false;
+    bool vFlip = false;
+};
+
+#endif // IMAGEVIEW_TYPES_H
