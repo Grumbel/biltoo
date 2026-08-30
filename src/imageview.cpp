@@ -666,10 +666,10 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
         return;
     }
     if (isImageMode() || m_items.size() == 1) {
-        // Identity placement: view does the fit, not residual canvas state.
+        // View does zoom/pan fit; keep item rotation (toolbar rotate) and only
+        // normalize scale/position so residual workspace state does not stick.
         item->setItemScale(1.0);
         if (isImageMode()) {
-            item->setItemRotation(0.0);
             item->setPos(0, 0);
         }
         resetTransform();
