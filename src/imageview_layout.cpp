@@ -135,6 +135,22 @@ ImageItem *ImageView::findItemByPath(const QString &path) const
     return nullptr;
 }
 
+void ImageView::focusSessionPath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    ImageItem *item = findItemByPath(path);
+    if (!item) {
+        return;
+    }
+    m_scene->clearSelection();
+    item->setSelected(true);
+    if (isGalleryMode()) {
+        ensureVisible(item, 48, 48);
+    }
+}
+
 WorkspaceItemState ImageView::defaultStateForPath(const QString &path, int ordinal) const
 {
     WorkspaceItemState s;

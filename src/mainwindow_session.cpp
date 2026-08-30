@@ -238,14 +238,27 @@ void MainWindow::setCurrentIndex(int index)
         return;
     }
     if (index == m_currentIndex) {
+        // Still refresh Image canvas if empty (e.g. after mode switch)
+        if (isImageMode() && m_imageView && m_imageView->itemCount() == 0) {
+            m_imageView->loadImage(m_files.at(m_currentIndex));
+        }
         return;
     }
 
     m_currentIndex = index;
-    m_imageView->loadImage(m_files.at(m_currentIndex));
+    const QString path = m_files.at(m_currentIndex);
+
+    // DOMAIN: only Image mode replaces the single-image canvas.
+    // Gallery/Workspace keep multi-object canvas; update session cursor only.
+    if (isImageMode()) {
+        m_imageView->loadImage(path);
+    } else if (m_imageView) {
+        m_imageView->focusSessionPath(path);
+    }
+
     m_thumbnailBar->setCurrentIndex(m_currentIndex);
     if (m_metadataPanel) {
-        m_metadataPanel->setImagePath(m_files.at(m_currentIndex));
+        m_metadataPanel->setImagePath(path);
     }
     updateWindowTitle();
     updateStatus();

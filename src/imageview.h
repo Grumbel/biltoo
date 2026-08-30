@@ -242,6 +242,8 @@ signals:
      * Path is the image file path.
      */
     void galleryItemOpenRequested(const QString &path);
+    /** Gallery keyboard focus moved to this path (session cursor). */
+    void galleryItemFocused(const QString &path);
     /** File URLs dropped onto the view (same semantics as MainWindow). */
     void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                       const QPointF &scenePos);
@@ -278,6 +280,8 @@ private:
     void applyItemModeFlags(ImageItem *item);
     void scheduleImageLoad(const QString &path, LoadRole role);
     ImageItem *findItemByPath(const QString &path) const;
+    /** Select canvas item for @p path; ensure visible in Gallery. */
+    void focusSessionPath(const QString &path);
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
     void updateMouseInfo(const QPoint &viewPos);

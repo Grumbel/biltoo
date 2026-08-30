@@ -53,6 +53,7 @@ diverge from it.
 - User may change layout; the same set of paths is re-packed.
 - User may activate one object → leave Gallery, enter **Image** on that path,
   remembering enough to **return** (layout, scroll, which cell was current).
+- Arrow keys move the session cursor among tiles (session order); Enter opens.
 - User may not scale/rotate/opacity/stack objects as in Workspace.
 - Linear viewer navigation (slideshow, prev/next) is not the primary job here.
 

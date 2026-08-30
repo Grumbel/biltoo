@@ -36,6 +36,13 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::toggleFullscreen);
     connect(m_imageView, &ImageView::galleryItemOpenRequested,
             this, &MainWindow::openGalleryItemInImageMode);
+    connect(m_imageView, &ImageView::galleryItemFocused,
+            this, [this](const QString &path) {
+                const int idx = m_files.indexOf(path);
+                if (idx >= 0) {
+                    setCurrentIndex(idx);
+                }
+            });
     connect(m_imageView, &ImageView::filesDropped,
             this, &MainWindow::onFilesDropped);
 
@@ -741,6 +748,13 @@ void MainWindow::readSettings()
     // opted in via Preferences ("Start in workspace mode").
     m_startInWorkspaceMode =
         settings.value(QStringLiteral("startInWorkspaceMode"), false).toBool();
+    {
+        const int layoutInt = settings.value(QStringLiteral("lastGalleryLayout"), -1).toInt();
+        if (layoutInt >= int(ImageView::LayoutMode::SideBySide)
+            && layoutInt <= int(ImageView::LayoutMode::MasonryRows)) {
+            m_galleryReturnLayout = static_cast<ImageView::LayoutMode>(layoutInt);
+        }
+    }
     // Migrate legacy key if present and new key never set
     if (!settings.contains(QStringLiteral("startInWorkspaceMode"))
         && settings.contains(QStringLiteral("workspaceMode"))) {
@@ -864,6 +878,13 @@ void MainWindow::writeSettings()
     }
     // Persist startup preference only — not the live session toggle
     settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);
+    if (m_imageView && m_imageView->isGalleryMode()) {
+        settings.setValue(QStringLiteral("lastGalleryLayout"),
+                          static_cast<int>(m_imageView->layoutMode()));
+    } else if (m_galleryReturnActive) {
+        settings.setValue(QStringLiteral("lastGalleryLayout"),
+                          static_cast<int>(m_galleryReturnLayout));
+    }
     settings.remove(QStringLiteral("workspaceMode"));
     settings.setValue(QStringLiteral("scrollBarsVisible"),
                       m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());

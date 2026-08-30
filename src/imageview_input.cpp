@@ -811,6 +811,70 @@ void ImageView::keyPressEvent(QKeyEvent *event)
         }
     }
 
+    // Gallery: arrow keys move among packed tiles (session order); Enter opens.
+    if (isGalleryMode()
+        && !(event->modifiers()
+             & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+        && !m_items.isEmpty()) {
+        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+            // targetItem() is null in Gallery by policy — use selection / first
+            ImageItem *item = nullptr;
+            for (QGraphicsItem *gi : m_scene->selectedItems()) {
+                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    item = ii;
+                    break;
+                }
+            }
+            if (!item) {
+                item = m_items.first();
+            }
+            emit galleryItemOpenRequested(item->path());
+            event->accept();
+            return;
+        }
+        int delta = 0;
+        switch (event->key()) {
+        case Qt::Key_Left:
+        case Qt::Key_Up:
+            delta = -1;
+            break;
+        case Qt::Key_Right:
+        case Qt::Key_Down:
+            delta = 1;
+            break;
+        case Qt::Key_Home:
+            delta = 0;
+            break;
+        case Qt::Key_End:
+            delta = 0;
+            break;
+        default:
+            break;
+        }
+        if (event->key() == Qt::Key_Home || event->key() == Qt::Key_End
+            || delta != 0) {
+            int idx = 0;
+            for (int i = 0; i < m_items.size(); ++i) {
+                if (m_items.at(i)->isSelected()) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (event->key() == Qt::Key_Home) {
+                idx = 0;
+            } else if (event->key() == Qt::Key_End) {
+                idx = m_items.size() - 1;
+            } else {
+                idx = (idx + delta + m_items.size()) % m_items.size();
+            }
+            ImageItem *item = m_items.at(idx);
+            focusSessionPath(item->path());
+            emit galleryItemFocused(item->path());
+            event->accept();
+            return;
+        }
+    }
+
     if (event->key() == Qt::Key_Delete
         || (event->key() == Qt::Key_Backspace && isWorkspaceMode())) {
         // Remove selected items from the workspace (session list is unchanged);
