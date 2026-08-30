@@ -48,6 +48,14 @@ ImageView::ImageView(QWidget *parent)
 
     m_hudFlashTimer = new QTimer(this);
     m_hudFlashTimer->setSingleShot(true);
+    m_layoutDebounceTimer = new QTimer(this);
+    m_layoutDebounceTimer->setSingleShot(true);
+    m_layoutDebounceTimer->setInterval(0);
+    connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (isGalleryMode() && !m_items.isEmpty()) {
+            applyLayout();
+        }
+    });
     connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
         m_hudFlashVisible = false;
         m_hudAction.clear();
@@ -1196,6 +1204,15 @@ void ImageView::setMasonryColumnWidth(int pixels)
     }
 }
 
+void ImageView::scheduleApplyLayout()
+{
+    if (!m_layoutDebounceTimer) {
+        applyLayout();
+        return;
+    }
+    m_layoutDebounceTimer->start();
+}
+
 void ImageView::applyLayout()
 {
     if (m_applyingLayout) {
@@ -1305,12 +1322,15 @@ void ImageView::applyLayout()
     }
 
     const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-margin, -margin, margin, margin);
-    // Do not change scrollbar policy here: setHorizontalScrollBarPolicy can
-    // resize the viewport and re-enter applyLayout via resizeEvent (stack overflow).
-    m_scene->setSceneRect(bounds);
+    // Never call setHorizontalScrollBarPolicy here — it resizes the viewport and
+    // re-enters via resizeEvent (stack overflow). Policy is owned by MainWindow.
+    if (m_scene->sceneRect() != bounds) {
+        m_scene->setSceneRect(bounds);
+    }
     m_fitMode = true;
-    m_applyingLayout = false;
+    // Keep the guard until after statusChanged so slots cannot re-enter layout.
     emit statusChanged();
+    m_applyingLayout = false;
 }
 
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
@@ -1509,13 +1529,12 @@ void ImageView::wheelEvent(QWheelEvent *event)
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
-    // Avoid re-entry while applyLayout is adjusting the scene (scrollbar layout
-    // can shrink the viewport and fire another resize).
     if (m_applyingLayout) {
         return;
     }
     if (isGalleryMode() && !m_items.isEmpty()) {
-        applyLayout();
+        // Defer so scrollbar/geometry changes from setSceneRect settle first.
+        scheduleApplyLayout();
         return;
     }
     if (m_fitMode && m_items.size() == 1) {

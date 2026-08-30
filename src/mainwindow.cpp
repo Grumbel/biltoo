@@ -1823,15 +1823,23 @@ void MainWindow::updateScrollBarPolicyForMode()
     if (!m_imageView) {
         return;
     }
+    Qt::ScrollBarPolicy h = Qt::ScrollBarAlwaysOff;
+    Qt::ScrollBarPolicy v = Qt::ScrollBarAlwaysOff;
     if (m_imageView->isGalleryMode()) {
-        m_imageView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-        m_imageView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-        return;
+        // AlwaysOn keeps the viewport size stable so gallery packing does not
+        // oscillate when AsNeeded scrollbars appear/disappear.
+        h = Qt::ScrollBarAlwaysOn;
+        v = Qt::ScrollBarAlwaysOn;
+    } else if (m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked()) {
+        h = Qt::ScrollBarAsNeeded;
+        v = Qt::ScrollBarAsNeeded;
     }
-    const bool show = m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked();
-    const auto policy = show ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff;
-    m_imageView->setHorizontalScrollBarPolicy(policy);
-    m_imageView->setVerticalScrollBarPolicy(policy);
+    if (m_imageView->horizontalScrollBarPolicy() != h) {
+        m_imageView->setHorizontalScrollBarPolicy(h);
+    }
+    if (m_imageView->verticalScrollBarPolicy() != v) {
+        m_imageView->setVerticalScrollBarPolicy(v);
+    }
 }
 
 void MainWindow::updateThumbnailBarForMode()

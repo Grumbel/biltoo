@@ -170,6 +170,8 @@ public:
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout();
+    /** Coalesce resize-driven gallery relayouts. */
+    void scheduleApplyLayout();
 
     /** Gallery mode with a packaged layout. */
     bool isGalleryLayout() const { return isGalleryMode(); }
@@ -314,6 +316,7 @@ private:
     QPoint m_galleryPressPos;
     bool m_galleryClickCandidate = false;
     bool m_applyingLayout = false;
+    QTimer *m_layoutDebounceTimer = nullptr;
 };
 
 #endif // IMAGEVIEW_H
