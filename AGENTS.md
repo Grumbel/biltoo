@@ -50,6 +50,19 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
   that stack cleanly on the previous tip and use `HEAD` as the ref.
   Bundle numbers never repeat.
 
+## UI modes (terminology)
+
+Use these names consistently in code comments, menus, and docs:
+
+| Term | Meaning |
+|------|---------|
+| **Image mode** (also “classic mode”) | Single-image viewing. One centred image; edge click / Go menu navigates the session; slideshow; no multi-item free placement. |
+| **Workspace mode** | Multi-image canvas. Thumbnail bar toggles which session images are on the canvas; each item remembers position/scale/rotation while off-canvas. |
+| **Free-form layout** | Workspace placement where the user moves/scales/rotates items freely. Scale and rotate handles are enabled. View zoom (wheel / toolbar) pans and scales the *view*. |
+| **Packaged layouts** | Workspace auto-arrangements: Side-by-Side, Vertical, Grid, Stack, Masonry. Items are placed by the layout; view transform stays identity; view zoom is disabled so packing stays consistent. |
+
+**Planned rework (not implemented yet):** split automatic layouts into a **Group View** (gallery: masonry/grid/etc., click through to a single-image view and back) and keep **Workspace** as free-form only. Until that lands, packaged layouts remain options under Workspace mode.
+
 ## UI expectations (current)
 
 - Classic menu bar (File / View / Go / Help).
@@ -75,13 +88,15 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
 - Open replaces the session; Add Images… / Shift or Ctrl+drop appends (deduplicated).
 - `--thumbnails` / `--no-thumbnails` force thumbnail bar visibility.
 - Workspace mode is optional and off by default (View → Workspace Mode).
-  Classic mode: left-drag pans, single centred non-interactive image.
+  Image mode: left-drag pans, single centred non-interactive image.
   Workspace canvas is snapshotted when disabling the mode and restored when
   enabling again. Select/Pan tools on a left toolbar; Undo/Redo for moves.
   In workspace mode the thumbnail bar toggles membership: click selects or
   deselects an image on the canvas; each image remembers position, scale and
-  rotation while off-canvas. Selected items show scale and rotate handles.
-  Scrollbars are hidden by default (View → Show Scrollbars).
+  rotation while off-canvas. Selected items show scale and rotate handles
+  (free-form) and flip / raise / lower / opacity chrome (item-local, rotates
+  with the image). Scrollbars are hidden by default (View → Show Scrollbars).
+  Preferences: General tab (slideshow / session / view) and Default application tab.
 
 ## What not to do
 
