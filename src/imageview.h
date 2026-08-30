@@ -9,6 +9,7 @@
 #include <QColor>
 #include <QGraphicsView>
 #include <QHash>
+#include <QList>
 #include <QImage>
 #include <QSet>
 #include <QString>
@@ -237,6 +238,8 @@ public:
     QString statusText() const;
     /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */
     QString sessionBadgeText() const;
+    /** Path of the last failed Image-mode decode (empty if none). */
+    QString lastLoadError() const { return m_lastLoadError; }
     /** Basename of the current/target image for the bottom HUD. */
     QString hudFileName() const;
     ImageMouseInfo mouseInfo() const { return m_mouseInfo; }
@@ -376,6 +379,8 @@ private:
     int m_masonryRows = 3;
     std::atomic<quint64> m_loadGeneration{0};
     QSet<QString> m_pendingWorkspacePaths;
+    /** Queue of workspace restores still waiting for decode (supports same path twice). */
+    QList<WorkspaceItemState> m_pendingRestoreStates;
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */
     QHash<QString, QPointF> m_pendingScenePos;
     ImageMouseInfo m_mouseInfo;

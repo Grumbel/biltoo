@@ -955,3 +955,7 @@ Gallery pack and workspace identity reviewed. Master priority list unchanged. St
 | M15 | Fixed | enterGalleryMode: populate then single enterGallery |
 | M17 | Fixed | expandPaths uses canonicalFilePath for session membership |
 | M18 | Fixed | VIPS load applies vips_autorot (EXIF orientation) |
+
+| M26 | Fixed | statusBar message on empty open/add and failed decode |
+| M27 | Fixed | LoadRestore uses pending state queue — duplicate paths restore |
+| M23 | Fixed | data/qimgview.metainfo.xml + CMake install to metainfo |

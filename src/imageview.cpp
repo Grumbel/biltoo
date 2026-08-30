@@ -114,9 +114,10 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     if (path.isEmpty()) {
         return;
     }
-    if (role == LoadAdd || role == LoadRestore) {
+    if (role == LoadAdd) {
         m_pendingWorkspacePaths.insert(path);
     }
+    // LoadRestore pending is owned by m_pendingRestoreStates (AUDIT M27).
     // AUDIT H3a: only LoadReplace advances the generation token so workspace
     // adds cannot cancel an in-flight Image-mode navigation decode.
     const quint64 gen = (role == LoadReplace) ? ++m_loadGeneration : m_loadGeneration;
@@ -202,6 +203,36 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     }
 
     // Workspace add / restore
+    if (role == LoadRestore) {
+        // AUDIT M27: claim one pending restore state for this path (duplicates OK).
+        int claim = -1;
+        for (int i = 0; i < m_pendingRestoreStates.size(); ++i) {
+            if (m_pendingRestoreStates.at(i).path == path) {
+                claim = i;
+                break;
+            }
+        }
+        if (claim < 0) {
+            return;
+        }
+        const WorkspaceItemState state = m_pendingRestoreStates.takeAt(claim);
+        if (image.isNull()) {
+            return;
+        }
+        ImageItem *item = createItemFromImage(path, image);
+        if (!item) {
+            return;
+        }
+        applyState(item, state);
+        if (m_layoutMode != LayoutMode::FreeForm) {
+            applyLayout();
+        }
+        emit statusChanged();
+        emit workspacePathsChanged();
+        return;
+    }
+
+    // LoadAdd: one canvas object per path from session/thumb sync
     if (!m_pendingWorkspacePaths.contains(path)) {
         return;
     }
@@ -217,39 +248,24 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     // Flags already match ViewMode via createItemFromImage / applyItemModeFlags.
     // Do not force interactive — that flashes handles in Gallery.
 
-    if (role == LoadRestore) {
+    // Drop position, remembered state, or empty-space placement
+    if (m_pendingScenePos.contains(path)) {
+        const QPointF pos = m_pendingScenePos.take(path);
+        item->setPos(pos);
+        item->setItemScale(1.0);
+        item->setItemRotation(0.0);
+        item->setItemOpacity(1.0);
+        item->setStackZ(m_items.size() - 1);
+    } else {
         const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.constEnd()) {
+        if (it != m_itemStates.cend()) {
             applyState(item, *it);
         } else {
-            // fall back to saved workspace list
-            for (const WorkspaceItemState &s : m_savedWorkspace) {
-                if (s.path == path) {
-                    applyState(item, s);
-                    break;
-                }
-            }
-        }
-    } else {
-        // LoadAdd: drop position, remembered state, or empty-space placement
-        if (m_pendingScenePos.contains(path)) {
-            const QPointF pos = m_pendingScenePos.take(path);
-            item->setPos(pos);
-            item->setItemScale(1.0);
-            item->setItemRotation(0.0);
-            item->setItemOpacity(1.0);
-            item->setStackZ(m_items.size() - 1);
-        } else {
-            const auto it = m_itemStates.constFind(path);
-            if (it != m_itemStates.constEnd()) {
-                applyState(item, *it);
-            } else {
-                WorkspaceItemState s = defaultStateForPath(path, m_items.size() - 1);
-                // Prefer non-overlapping placement using the decoded size
-                const QSizeF sz(image.width(), image.height());
-                s.pos = findEmptyPlacement(sz);
-                applyState(item, s);
-            }
+            WorkspaceItemState s = defaultStateForPath(path, m_items.size() - 1);
+            // Prefer non-overlapping placement using the decoded size
+            const QSizeF sz(image.width(), image.height());
+            s.pos = findEmptyPlacement(sz);
+            applyState(item, s);
         }
     }
 
@@ -985,7 +1001,7 @@ QString ImageView::statusText() const
 
     if (!item) {
         if (!m_lastLoadError.isEmpty()) {
-            return tr("Failed to load");
+            return tr("Failed to load “%1”").arg(QFileInfo(m_lastLoadError).fileName());
         }
         if (!m_classicPath.isEmpty() && isImageMode()) {
             return tr("Loading…");

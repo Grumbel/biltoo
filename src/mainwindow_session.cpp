@@ -155,6 +155,10 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
 
     QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
+        // AUDIT M26: explicit feedback when Open finds nothing usable
+        if (statusBar()) {
+            statusBar()->showMessage(tr("No readable images found."), 5000);
+        }
         return;
     }
 
@@ -178,6 +182,9 @@ void MainWindow::appendFiles(const QStringList &paths)
 {
     QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("No readable images to add."), 5000);
+        }
         return;
     }
 

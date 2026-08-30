@@ -105,6 +105,8 @@ include(GNUInstallDirs)
 install(TARGETS qimgview DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES data/qimgview.desktop
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+install(FILES data/qimgview.metainfo.xml
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/metainfo)
 install(FILES data/icons/hicolor/scalable/apps/qimgview.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
 

@@ -103,6 +103,8 @@ void ImageView::restoreWorkspace()
 {
     clearWorkspace();
     m_pendingWorkspacePaths.clear();
+    // AUDIT M27: queue every saved state (including duplicate paths) then load.
+    m_pendingRestoreStates = m_savedWorkspace;
     for (const WorkspaceItemState &state : m_savedWorkspace) {
         m_itemStates.insert(state.path, state);
         scheduleImageLoad(state.path, LoadRestore);
@@ -126,6 +128,7 @@ void ImageView::clearWorkspace()
     m_items.clear();
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
+    m_pendingRestoreStates.clear();
     // clear() deletes all QGraphicsItems owned by the scene
     m_scene->clear();
     m_mouseInfo = {};

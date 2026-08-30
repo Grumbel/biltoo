@@ -39,6 +39,9 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] M4 Gallery toolbar zoom matches wheel (until pack)
 - [x] M17 Canonical session paths
 - [x] M18 VIPS EXIF autorot
+- [x] M26 Load/open error feedback on status bar
+- [x] M27 Workspace duplicate path restore queue
+- [x] M23 AppStream metainfo
 
 ## Open
 

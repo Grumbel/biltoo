@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<component type="desktop-application">
+  <id>qimgview.desktop</id>
+  <name>QImgView</name>
+  <summary>Classic image viewer with a workspace for comparing images</summary>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer_name>Ingo Ruhnke</developer_name>
+  <description>
+    <p>
+      QImgView is a Qt image viewer with three modes: a classic single-image
+      view, a gallery of packaged layouts, and a free-form workspace for
+      comparing and transforming multiple images.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/Grumbel/qimgview</url>
+  <launchable type="desktop-id">qimgview.desktop</launchable>
+  <provides>
+    <binary>qimgview</binary>
+  </provides>
+  <categories>
+    <category>Graphics</category>
+    <category>Viewer</category>
+  </categories>
+  <content_rating type="oars-1.1" />
+</component>

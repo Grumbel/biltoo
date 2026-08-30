@@ -635,6 +635,11 @@ void MainWindow::updateStatus()
         // Silent while the slideshow timer advances; user Next/Prev still pulse.
         m_imageView->setSessionPosition(m_currentIndex, m_files.size(),
                                         !m_slideshowAdvancing);
+        const QString err = m_imageView->lastLoadError();
+        if (!err.isEmpty() && statusBar()) {
+            statusBar()->showMessage(
+                tr("Could not load “%1”").arg(QFileInfo(err).fileName()), 5000);
+        }
     }
     m_statusLabel->setText(m_imageView->statusText());
 }
