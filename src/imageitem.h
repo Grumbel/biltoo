@@ -29,6 +29,7 @@ public:
         ScaleBottomRight,
         RotateTop,
         RotateRight,
+        RotateBottom,
         RotateLeft,
         FlipH,
         FlipV,
@@ -108,19 +109,27 @@ private:
     void refreshStackingOrder();
     void notifyViewStatus();
     QRectF contentRect() const;
+    /** Item-local centre of a handle (pre-transform local coordinates). */
     QPointF handleCenter(Handle h) const;
+    /** Hit radius in item-local units for scale/rotate handles. */
     qreal handleHitRadius() const;
     qreal handleDrawSize() const;
+    /**
+     * Screen pixels per item-local unit (item scale × view scale).
+     * Used so chrome stays roughly constant on screen.
+     */
     qreal screenScale() const;
     bool isChromeHandle(Handle h) const;
     bool isRotateHandle(Handle h) const;
+    /** Raise/Lower keep screen-upright glyphs (counter-rotated when painting). */
+    bool isUprightChromeHandle(Handle h) const;
     void activateChromeHandle(Handle h);
     QRectF opacitySliderRect() const;
-    QRectF opacitySliderRectUpright() const;
-    QPointF toItemFromUpright(const QPointF &uprightLocal) const;
-    QPointF toUprightFromItem(const QPointF &itemLocal) const;
     qreal chromeButtonSize() const;
+    /** Distance in screen pixels from itemPos to handle centre. */
+    qreal handleDistanceScreenPx(Handle h, const QPointF &itemPos) const;
     void setOpacityFromSliderPos(const QPointF &itemPos);
+    QList<Handle> activeHandles() const;
 
     QString m_path;
     QImage m_source;

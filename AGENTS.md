@@ -98,9 +98,11 @@ Use these names consistently in code comments, menus, and docs:
   In workspace mode the thumbnail bar toggles membership: click selects or
   deselects an image on the canvas; each image remembers position, scale and
   rotation while off-canvas. Selected items show scale and rotate handles
-  (free-form) and flip / raise / lower chrome on the right interior of the
-  image plus an opacity track along the bottom interior (item-local, rotates
-  with the image). Scrollbars are hidden by default (View → Show Scrollbars).
+  (free-form): scale at corners, rotate on all four sides; flip / raise /
+  lower on the right interior; opacity along the bottom interior. Raise/Lower
+  arrows stay screen-upright when the image is rotated. Hit-testing uses
+  screen-pixel radii so chrome stays clickable under rotation/zoom.
+  Scrollbars are hidden by default (View → Show Scrollbars).
   Preferences: General tab (slideshow / session / view) and Default application tab.
 
 ## What not to do

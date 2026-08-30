@@ -40,8 +40,9 @@ QString tooltipForHandle(ImageItem::Handle h)
 namespace {
 constexpr qreal kHandleScreenPx = 13.0;
 constexpr qreal kRotateOffsetPx = 32.0;
-constexpr qreal kChromeBtnScreenPx = 26.0;   // flip / raise / lower diameter (screen px)
-constexpr qreal kChromeInsetPx = 10.0;       // inset from pixmap edge into the image
+constexpr qreal kChromeBtnScreenPx = 28.0;   // flip / raise / lower diameter (screen px)
+constexpr qreal kChromeHitScreenPx = 18.0;   // hit radius in screen px (generous)
+constexpr qreal kChromeInsetPx = 12.0;       // inset from pixmap edge into the image
 constexpr qreal kChromeBtnGapPx = 8.0;       // gap between stacked chrome buttons
 constexpr qreal kSliderWidthPx = 100.0;
 constexpr qreal kSliderHeightPx = 12.0;
@@ -263,20 +264,22 @@ QRectF ImageItem::boundingRect() const
         const qreal ss = screenScale();
         const qreal rotPad = handleHitRadius() + kRotateOffsetPx / ss + 4.0;
         const qreal sidePad = qMax(handleHitRadius() + 4.0, rotPad);
-        r.adjust(-sidePad, -rotPad, sidePad, sidePad);
+        // Symmetric pad so all four rotate handles stay inside the item bounds.
+        r.adjust(-sidePad, -rotPad, sidePad, rotPad);
     }
     return r;
 }
 
 QPainterPath ImageItem::shape() const
 {
-    // Hit-test the content plus handles when selected
+    // Hit-test the content plus handles when selected. Radii are in item-local
+    // units; use generous chrome ellipses so rotated items still receive events.
     QPainterPath path;
     path.addRect(QGraphicsPixmapItem::boundingRect());
     if (isSelected() && m_interactive) {
-        const qreal r = handleHitRadius();
+        const qreal r = handleHitRadius() * 1.25;
         QList<Handle> handles = {
-            Handle::RotateTop, Handle::RotateRight, Handle::RotateLeft
+            Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
         };
         if (m_scaleHandlesEnabled) {
             handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
@@ -287,17 +290,21 @@ QPainterPath ImageItem::shape() const
             const QPointF c = handleCenter(h);
             path.addEllipse(c, r, r);
         }
-        const qreal cr = chromeButtonSize() * 0.6;
+        // Chrome hit disks sized from screen-pixel policy
+        const qreal cr = kChromeHitScreenPx / screenScale();
         for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
             const QPointF c = handleCenter(h);
             path.addEllipse(c, cr, cr);
         }
-        path.addRect(opacitySliderRect());
+        const qreal pad = 6.0 / screenScale();
+        path.addRect(opacitySliderRect().adjusted(-pad, -pad, pad, pad));
         const QRectF content = QGraphicsPixmapItem::boundingRect();
         path.moveTo(content.center().x(), content.top());
         path.lineTo(handleCenter(Handle::RotateTop));
         path.moveTo(content.right(), content.center().y());
         path.lineTo(handleCenter(Handle::RotateRight));
+        path.moveTo(content.center().x(), content.bottom());
+        path.lineTo(handleCenter(Handle::RotateBottom));
         path.moveTo(content.left(), content.center().y());
         path.lineTo(handleCenter(Handle::RotateLeft));
     }
@@ -342,37 +349,15 @@ bool ImageItem::isChromeHandle(Handle h) const
         || h == Handle::OpacitySlider;
 }
 
+bool ImageItem::isRotateHandle(Handle h) const
+{
+    return h == Handle::RotateTop || h == Handle::RotateRight
+        || h == Handle::RotateBottom || h == Handle::RotateLeft;
+}
+
 qreal ImageItem::chromeButtonSize() const
 {
     return kChromeBtnScreenPx / screenScale();
-}
-
-QPointF ImageItem::toItemFromUpright(const QPointF &uprightLocal) const
-{
-    // Kept for call sites that still convert; chrome is now item-local so this
-    // is identity when used from chrome helpers.
-    if (qFuzzyIsNull(m_rotation)) {
-        return uprightLocal;
-    }
-    QTransform inv;
-    inv.rotate(-m_rotation);
-    return inv.map(uprightLocal);
-}
-
-QPointF ImageItem::toUprightFromItem(const QPointF &itemLocal) const
-{
-    if (qFuzzyIsNull(m_rotation)) {
-        return itemLocal;
-    }
-    QTransform rot;
-    rot.rotate(m_rotation);
-    return rot.map(itemLocal);
-}
-
-QRectF ImageItem::opacitySliderRectUpright() const
-{
-    // Item-local track under the pixmap (rotates with the image).
-    return opacitySliderRect();
 }
 
 QRectF ImageItem::opacitySliderRect() const
@@ -396,8 +381,35 @@ void ImageItem::setOpacityFromSliderPos(const QPointF &itemPos)
     if (track.width() <= 0) {
         return;
     }
-    const qreal t = qBound(0.0, (itemPos.x() - track.left()) / track.width(), 1.0);
-    setItemOpacity(0.05 + t * 0.95);
+    const qreal tval = qBound(0.0, (itemPos.x() - track.left()) / track.width(), 1.0);
+    setItemOpacity(0.05 + tval * 0.95);
+}
+
+QList<ImageItem::Handle> ImageItem::activeHandles() const
+{
+    QList<Handle> handles;
+    if (m_scaleHandlesEnabled) {
+        handles << Handle::ScaleTopLeft << Handle::ScaleTopRight
+                << Handle::ScaleBottomLeft << Handle::ScaleBottomRight;
+    }
+    handles << Handle::RotateTop << Handle::RotateRight
+            << Handle::RotateBottom << Handle::RotateLeft
+            << Handle::FlipH << Handle::FlipV
+            << Handle::Raise << Handle::Lower
+            << Handle::OpacitySlider;
+    return handles;
+}
+
+bool ImageItem::isUprightChromeHandle(Handle h) const
+{
+    // Raise/Lower glyphs stay screen-upright so "up" always means raise.
+    return h == Handle::Raise || h == Handle::Lower;
+}
+
+qreal ImageItem::handleDistanceScreenPx(Handle h, const QPointF &itemPos) const
+{
+    const QPointF d = itemPos - handleCenter(h);
+    return QLineF(QPointF(0, 0), d).length() * screenScale();
 }
 
 QPointF ImageItem::handleCenter(Handle h) const
@@ -409,12 +421,11 @@ QPointF ImageItem::handleCenter(Handle h) const
     const qreal gap = kChromeBtnGapPx / ss;
     const qreal inset = kChromeInsetPx / ss;
     const qreal cx = r.center().x();
+    const qreal cy = r.center().y();
 
-    // Vertical stack on the right interior of the image: FlipH, FlipV, Raise, Lower.
-    // Stays on the pixmap so it rotates with the content and does not collide with
-    // external rotate handles (which sit outside the edges).
+    // Vertical stack on the right interior: FlipH, FlipV, Raise, Lower.
     const qreal stackX = r.right() - inset - btn / 2.0;
-    const qreal stackTop = r.center().y() - (2.0 * btn + 1.5 * gap);
+    const qreal stackTop = cy - (2.0 * btn + 1.5 * gap);
     auto chromeBtnCenter = [&](int index) {
         return QPointF(stackX, stackTop + index * (btn + gap) + btn / 2.0);
     };
@@ -431,9 +442,11 @@ QPointF ImageItem::handleCenter(Handle h) const
     case Handle::RotateTop:
         return QPointF(cx, r.top() - rotOff);
     case Handle::RotateRight:
-        return QPointF(r.right() + rotOff, r.center().y());
+        return QPointF(r.right() + rotOff, cy);
+    case Handle::RotateBottom:
+        return QPointF(cx, r.bottom() + rotOff);
     case Handle::RotateLeft:
-        return QPointF(r.left() - rotOff, r.center().y());
+        return QPointF(r.left() - rotOff, cy);
     case Handle::FlipH:
         return chromeBtnCenter(0);
     case Handle::FlipV:
@@ -455,30 +468,33 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         return Handle::None;
     }
 
-    // Opacity slider (item-local, rotates with the image)
+    // Prefer chrome and opacity (drawn on top of the image) using screen-pixel
+    // distances so rotation/scale of the item does not shrink the hit target.
     {
-        const QRectF slider = opacitySliderRect().adjusted(
-            -4.0 / screenScale(), -6.0 / screenScale(),
-            4.0 / screenScale(), 6.0 / screenScale());
-        if (slider.contains(itemPos)) {
+        const QRectF slider = opacitySliderRect();
+        const qreal pad = 6.0 / screenScale();
+        if (slider.adjusted(-pad, -pad, pad, pad).contains(itemPos)) {
             return Handle::OpacitySlider;
         }
     }
 
-    // Raise / lower use larger chrome radius
-    const qreal chromeR = chromeButtonSize() * 0.65;
-    const qreal chromeR2 = chromeR * chromeR;
+    Handle best = Handle::None;
+    qreal bestDist = kChromeHitScreenPx;
     for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
-        const QPointF d = itemPos - handleCenter(h);
-        if (QPointF::dotProduct(d, d) <= chromeR2) {
-            return h;
+        const qreal d = handleDistanceScreenPx(h, itemPos);
+        if (d <= bestDist) {
+            bestDist = d;
+            best = h;
         }
     }
+    if (best != Handle::None) {
+        return best;
+    }
 
-    const qreal r = handleHitRadius();
-    const qreal r2 = r * r;
+    best = Handle::None;
+    bestDist = kHandleScreenPx * 1.35;
     QList<Handle> handles = {
-        Handle::RotateTop, Handle::RotateRight, Handle::RotateLeft
+        Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
     };
     if (m_scaleHandlesEnabled) {
         handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
@@ -486,12 +502,13 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
                   + handles;
     }
     for (Handle h : handles) {
-        const QPointF d = itemPos - handleCenter(h);
-        if (QPointF::dotProduct(d, d) <= r2) {
-            return h;
+        const qreal d = handleDistanceScreenPx(h, itemPos);
+        if (d <= bestDist) {
+            bestDist = d;
+            best = h;
         }
     }
-    return Handle::None;
+    return best;
 }
 
 void ImageItem::notifyViewStatus()
@@ -562,12 +579,14 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5));
 
-    // Lines to rotate handles
+    // Lines to rotate handles (all four sides)
     const QPointF topMid(r.center().x(), r.top());
     const QPointF rightMid(r.right(), r.center().y());
+    const QPointF bottomMid(r.center().x(), r.bottom());
     const QPointF leftMid(r.left(), r.center().y());
     painter->drawLine(topMid, handleCenter(Handle::RotateTop));
     painter->drawLine(rightMid, handleCenter(Handle::RotateRight));
+    painter->drawLine(bottomMid, handleCenter(Handle::RotateBottom));
     painter->drawLine(leftMid, handleCenter(Handle::RotateLeft));
 
     const qreal hs = handleDrawSize();
@@ -594,8 +613,9 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
     }
 
-    // Rotate handles (circles) on top / left / right
-    for (Handle h : {Handle::RotateTop, Handle::RotateRight, Handle::RotateLeft}) {
+    // Rotate handles (circles) on all four sides
+    for (Handle h : {Handle::RotateTop, Handle::RotateRight,
+                     Handle::RotateBottom, Handle::RotateLeft}) {
         const QPointF c = handleCenter(h);
         const bool hot = (m_hoverHandle == h || m_activeHandle == h);
         const qreal s = hs * (hot ? 1.25 : 1.0);
@@ -628,12 +648,16 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             border.setColor(hovered || active ? QColor(255, 255, 255) : QColor(0, 160, 255));
             border.setWidthF(hovered || active ? 2.0 : 1.0);
             border.setCosmetic(true);
-            painter->setBrush(fill);
-            painter->setPen(border);
-            painter->drawEllipse(c, rad, rad);
-            painter->setPen(QPen(Qt::white));
             painter->save();
             painter->translate(c);
+            // Raise/Lower: counter-rotate so arrows stay screen-upright.
+            if (isUprightChromeHandle(h) && !qFuzzyIsNull(m_rotation)) {
+                painter->rotate(-m_rotation);
+            }
+            painter->setBrush(fill);
+            painter->setPen(border);
+            painter->drawEllipse(QPointF(0, 0), rad, rad);
+            painter->setPen(QPen(Qt::white));
             painter->scale(1.0 / ss, 1.0 / ss);
             QFont f = painter->font();
             f.setBold(true);
@@ -705,9 +729,7 @@ void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if (m_activeHandle != Handle::None) {
         if (m_activeHandle == Handle::OpacitySlider) {
             setOpacityFromSliderPos(event->pos());
-        } else if (m_activeHandle == Handle::RotateTop
-                   || m_activeHandle == Handle::RotateRight
-                   || m_activeHandle == Handle::RotateLeft) {
+        } else if (isRotateHandle(m_activeHandle)) {
             const QPointF centre = scenePos(); // item origin is image centre
             const QPointF v0 = m_pressScenePos - centre;
             const QPointF v1 = event->scenePos() - centre;
@@ -760,6 +782,7 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
         switch (h) {
         case Handle::RotateTop:
         case Handle::RotateRight:
+        case Handle::RotateBottom:
         case Handle::RotateLeft:
             setCursor(Qt::CrossCursor);
             break;
