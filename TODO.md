@@ -58,21 +58,15 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 
 Priority roughly: bugs first, then small polish, then larger features.
 
-- [ ] **Preferences dialog crashes** — *Bug, high priority.*
-  Likely null widget or spin range after recent prefs fields (masonry width).
-  Reproduce open Preferences → OK/Cancel; fix before stacking more options.
+- [x] **Preferences dialog crashes** — was null `m_masonryWidthSpin` (used in form without construction).
 
-- [ ] **Drag&drop on image area (not only thumb bar)** — *Bug / gap, high.*
-  MainWindow accepts drops; ImageView may eat events or lack acceptDrops.
-  Wire drop on the view the same as the window (replace / append / workspace).
+- [x] **Drag&drop on image area (not only thumb bar)** — ImageView accepts drops and emits `filesDropped`; MainWindow shares handler with window drops.
 
 - [ ] **Slideshow: Space starts; leaving fullscreen stops** — *Small, clear.*
   Space currently unused or conflicting; bind to toggle slideshow in Image mode.
   On fullscreen exit (Esc/F11), stop slideshow timer if running.
 
-- [ ] **Scrolling workspace misaligns Image mode** — *Bug, medium.*
-  View transform/scrollbars from workspace leak into Image mode after toggle.
-  On leaving workspace / loading classic image: resetTransform + fit, clear scroll.
+- [x] **Scrolling workspace misaligns Image mode** — reset transform and scrollbars when leaving workspace and when loading Image-mode files.
 
 - [ ] **Zoom icons to the right of the toolbar (with separator)** — *Polish, easy.*
   Mirror fullscreen placement: spacer, then zoom group on the right.

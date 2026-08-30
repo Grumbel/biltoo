@@ -18,6 +18,10 @@
 #include <QSet>
 #include <QThreadPool>
 #include <QVector>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QMimeData>
 #include <QWheelEvent>
 #include <QtMath>
 #include <atomic>
@@ -33,6 +37,7 @@ ImageView::ImageView(QWidget *parent)
     qRegisterMetaType<quint64>("quint64");
 
     setRenderHint(QPainter::SmoothPixmapTransform, true);
+    setAcceptDrops(true);
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
@@ -339,6 +344,14 @@ void ImageView::setWorkspaceMode(bool on)
         viewport()->update();
         m_undoStack->clear();
         m_scene->clearSelection();
+        // Drop workspace pan/zoom so Image mode starts centred again
+        resetTransform();
+        if (horizontalScrollBar()) {
+            horizontalScrollBar()->setValue(0);
+        }
+        if (verticalScrollBar()) {
+            verticalScrollBar()->setValue(0);
+        }
         // Classic view of the last session path (caller may also loadImage)
         const QString path = !m_classicPath.isEmpty()
                                  ? m_classicPath
@@ -492,6 +505,35 @@ void ImageView::paintEvent(QPaintEvent *event)
     }
 }
 
+
+void ImageView::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData() && event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void ImageView::dragMoveEvent(QDragMoveEvent *event)
+{
+    if (event->mimeData() && event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void ImageView::dropEvent(QDropEvent *event)
+{
+    if (!event->mimeData() || !event->mimeData()->hasUrls()) {
+        event->ignore();
+        return;
+    }
+    emit filesDropped(event->mimeData()->urls(), event->modifiers());
+    event->acceptProposedAction();
+}
+
 void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 {
     if (!m_workspaceMode) {
@@ -536,6 +578,13 @@ bool ImageView::loadImage(const QString &path)
     // Classic mode: decode off the GUI thread, then centre when ready
     clearWorkspace();
     m_pendingWorkspacePaths.clear();
+    resetTransform();
+    if (horizontalScrollBar()) {
+        horizontalScrollBar()->setValue(0);
+    }
+    if (verticalScrollBar()) {
+        verticalScrollBar()->setValue(0);
+    }
     scheduleImageLoad(path, LoadReplace);
     emit statusChanged();
     return true;

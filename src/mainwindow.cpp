@@ -18,6 +18,7 @@
 #include <QDockWidget>
 #include <QDirIterator>
 #include <QDragEnterEvent>
+#include <QMimeData>
 #include <QDropEvent>
 #include <QEvent>
 #include <QFileDialog>
@@ -103,6 +104,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::goNext);
     connect(m_imageView, &ImageView::fullscreenToggleRequested,
             this, &MainWindow::toggleFullscreen);
+    connect(m_imageView, &ImageView::filesDropped,
+            this, &MainWindow::onFilesDropped);
 
     m_thumbnailBar = new ThumbnailBar(m_centralSplitter);
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
@@ -1747,9 +1750,12 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
     }
 }
 
-void MainWindow::dropEvent(QDropEvent *event)
+void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers)
 {
-    const QStringList paths = extractLocalImagePaths(event->mimeData());
+    // Build a transient mime payload so extractLocalImagePaths stays the single filter
+    QMimeData mime;
+    mime.setUrls(urls);
+    const QStringList paths = extractLocalImagePaths(&mime);
     if (paths.isEmpty()) {
         return;
     }
@@ -1765,20 +1771,31 @@ void MainWindow::dropEvent(QDropEvent *event)
             m_imageView->addImage(img);
         }
         syncThumbnailWorkspaceSelection();
-        // Ensure the bar is visible once the session has multiple images
         if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
             m_toggleThumbnailBarAct->setChecked(true);
             m_thumbnailBar->setVisible(true);
         }
-        event->acceptProposedAction();
         return;
     }
 
-    // Classic mode: Shift or Ctrl+drop appends to the session; plain drop replaces
-    if (event->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) {
+    // Image mode: Shift or Ctrl+drop appends; plain drop replaces
+    if (modifiers & (Qt::ShiftModifier | Qt::ControlModifier)) {
         appendFiles(paths);
     } else {
         loadFiles(paths);
     }
+}
+
+void MainWindow::onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers)
+{
+    handleDroppedUrls(urls, modifiers);
+}
+
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    if (!event->mimeData() || !event->mimeData()->hasUrls()) {
+        return;
+    }
+    handleDroppedUrls(event->mimeData()->urls(), event->modifiers());
     event->acceptProposedAction();
 }

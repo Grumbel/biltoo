@@ -12,6 +12,7 @@
 #include <QPoint>
 #include <QString>
 #include <QStringList>
+#include <QUrl>
 
 class ImageItem;
 class QGraphicsScene;
@@ -151,6 +152,8 @@ signals:
     void navigateNextRequested();
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
+    /** File URLs dropped onto the view (same semantics as MainWindow). */
+    void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers);
 
 public slots:
     /** Deliver a finished background decode (generation must still match). */
@@ -168,6 +171,9 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 
 private:
     enum LoadRole {

@@ -56,6 +56,16 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
            "presentation. Leaving the slideshow does not exit fullscreen; use F11 "
            "or Esc for that."));
 
+    m_masonryWidthSpin = new QSpinBox(this);
+    m_masonryWidthSpin->setRange(80, 800);
+    m_masonryWidthSpin->setSingleStep(10);
+    m_masonryWidthSpin->setSuffix(tr(" px"));
+    m_masonryWidthSpin->setValue(240);
+    m_masonryWidthSpin->setToolTip(tr(
+        "Width of each column in Masonry layout. Images scale to this width; "
+        "extra columns appear when the window is wider, and the view scrolls "
+        "when content is taller than the window."));
+
     auto *form = new QFormLayout;
     form->setContentsMargins(0, 0, 0, 0);
     form->setHorizontalSpacing(12);
