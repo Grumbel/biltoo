@@ -54,6 +54,62 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [ ] Optional thumbnail bar on the right (mirror of left) if requested
 - [ ] Masonry taller than viewport: use View → Show Scrollbars, or pan (middle / Alt)
 
+### UX backlog (evaluated)
+
+Priority roughly: bugs first, then small polish, then larger features.
+
+- [ ] **Preferences dialog crashes** — *Bug, high priority.*
+  Likely null widget or spin range after recent prefs fields (masonry width).
+  Reproduce open Preferences → OK/Cancel; fix before stacking more options.
+
+- [ ] **Drag&drop on image area (not only thumb bar)** — *Bug / gap, high.*
+  MainWindow accepts drops; ImageView may eat events or lack acceptDrops.
+  Wire drop on the view the same as the window (replace / append / workspace).
+
+- [ ] **Slideshow: Space starts; leaving fullscreen stops** — *Small, clear.*
+  Space currently unused or conflicting; bind to toggle slideshow in Image mode.
+  On fullscreen exit (Esc/F11), stop slideshow timer if running.
+
+- [ ] **Scrolling workspace misaligns Image mode** — *Bug, medium.*
+  View transform/scrollbars from workspace leak into Image mode after toggle.
+  On leaving workspace / loading classic image: resetTransform + fit, clear scroll.
+
+- [ ] **Zoom icons to the right of the toolbar (with separator)** — *Polish, easy.*
+  Mirror fullscreen placement: spacer, then zoom group on the right.
+
+- [ ] **Undo/redo on main toolbar (not only left strip)** — *Polish, easy.*
+  Add actions next to other edit tools; keep shortcuts; left strip can stay tools-only.
+
+- [ ] **Colour swatch in status bar** — *Polish, easy.*
+  Beside RGB/hex text, paint a small QLabel/QWidget filled with sampled colour.
+
+- [ ] **Zoom to fill** (cover window, crop edges) — *Small feature.*
+  Companion to Fit (contain). `Qt::KeepAspectRatioByExpanding` style scale + centre.
+
+- [ ] **Image mode pan: all directions vs locked centre** — *Medium.*
+  Today scroll/pan can move vertically more than horizontally (scene rect / fit).
+  Pref: “Allow pan” vs “Keep centred”; when pan allowed, free 2D pan when zoomed in.
+
+- [ ] **HUD overlay (1980s VCR-style)** — *Medium feature.*
+  Top-left symbol + action + filename + index (e.g. ▶ Slideshow, → Next, filename 3/12).
+  Auto-show on nav/slideshow start/stop; fade after ~1–2s.
+  Toolbar toggle: pin HUD (disable autohide). Useful in slideshow and normal view.
+
+- [ ] **Thumb “crop to square” mode** — *Medium.*
+  Decode/paint thumbs as centre-cropped squares for even spacing; toggle in View or prefs.
+
+- [ ] **Hide thumbnail filenames** — *Easy once metrics settled.*
+  Preference (and maybe View menu); cell height shrinks to icon-only when hidden.
+
+- [ ] **HFlip / VFlip next to rotate** — *Medium.*
+  Toolbar + workspace item transform (mirror about centre); include in undo; chrome optional.
+
+- [ ] **Rotate handles on left and right as well** — *Small.*
+  Extra rotate grips at mid-left/mid-right (same drag behaviour as top rotate).
+
+- [ ] **Larger handles in general** — *Small.*
+  Bump kHandleScreenPx (and chrome already larger); keep screen-constant sizing.
+
 ## Broader image formats (research notes)
 
 Prefer staying on the `QImageReader` path where possible; libvips is the fallback.
