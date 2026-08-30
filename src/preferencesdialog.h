@@ -27,10 +27,14 @@ public:
     bool startInWorkspaceMode() const;
     void setStartInWorkspaceMode(bool on);
 
+    bool slideshowFullscreen() const;
+    void setSlideshowFullscreen(bool on);
+
 private:
     QSpinBox *m_intervalSpin = nullptr;
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
+    QCheckBox *m_slideshowFullscreenCheck = nullptr;
 };
 
 #endif // PREFERENCESDIALOG_H

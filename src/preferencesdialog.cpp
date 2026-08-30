@@ -48,12 +48,21 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
            "compare several images at once. You can still toggle workspace mode "
            "from the toolbar or View menu during a session."));
 
+    m_slideshowFullscreenCheck = new QCheckBox(tr("Start slideshow in fullscreen"), this);
+    m_slideshowFullscreenCheck->setToolTip(
+        tr("Enter fullscreen automatically when starting a slideshow"));
+    m_slideshowFullscreenCheck->setWhatsThis(
+        tr("When enabled, Play Slideshow switches to fullscreen for an uncluttered "
+           "presentation. Leaving the slideshow does not exit fullscreen; use F11 "
+           "or Esc for that."));
+
     auto *form = new QFormLayout;
     form->setContentsMargins(0, 0, 0, 0);
     form->setHorizontalSpacing(12);
     form->setVerticalSpacing(8);
     form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     form->addRow(tr("Slideshow interval:"), m_intervalSpin);
+    form->addRow(QString(), m_slideshowFullscreenCheck);
     form->addRow(tr("Sort images by:"), m_sortCombo);
     form->addRow(QString(), m_workspaceCheck);
 
@@ -113,4 +122,14 @@ bool PreferencesDialog::startInWorkspaceMode() const
 void PreferencesDialog::setStartInWorkspaceMode(bool on)
 {
     m_workspaceCheck->setChecked(on);
+}
+
+bool PreferencesDialog::slideshowFullscreen() const
+{
+    return m_slideshowFullscreenCheck->isChecked();
+}
+
+void PreferencesDialog::setSlideshowFullscreen(bool on)
+{
+    m_slideshowFullscreenCheck->setChecked(on);
 }
