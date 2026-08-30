@@ -164,6 +164,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(escShortcut, &QShortcut::activated, this, [this]() {
         if (isFullScreen()) {
             showNormal();
+            return;
+        }
+        if (m_galleryReturnActive && !m_workspaceMode) {
+            returnToGallery();
         }
     });
 
@@ -1538,9 +1542,19 @@ void MainWindow::setLayoutFreeForm()
     updateWorkspaceActionVisibility();
 }
 
+void MainWindow::populateGalleryCanvas()
+{
+    if (!m_thumbnailBar || m_files.isEmpty()) {
+        return;
+    }
+    m_thumbnailBar->selectAllThumbs();
+    applyWorkspaceSelectionFromThumbnails();
+}
+
 void MainWindow::setLayoutSideBySide()
 {
     ensureMultiImageMode();
+    populateGalleryCanvas();
     m_imageView->setLayoutMode(ImageView::LayoutMode::SideBySide);
     m_galleryReturnLayout = ImageView::LayoutMode::SideBySide;
     updateMasonryWidthControl();
@@ -1550,6 +1564,7 @@ void MainWindow::setLayoutSideBySide()
 void MainWindow::setLayoutVertical()
 {
     ensureMultiImageMode();
+    populateGalleryCanvas();
     m_imageView->setLayoutMode(ImageView::LayoutMode::Vertical);
     m_galleryReturnLayout = ImageView::LayoutMode::Vertical;
     updateMasonryWidthControl();
@@ -1559,6 +1574,7 @@ void MainWindow::setLayoutVertical()
 void MainWindow::setLayoutGrid()
 {
     ensureMultiImageMode();
+    populateGalleryCanvas();
     m_imageView->setLayoutMode(ImageView::LayoutMode::Grid);
     m_galleryReturnLayout = ImageView::LayoutMode::Grid;
     updateMasonryWidthControl();
@@ -1568,6 +1584,7 @@ void MainWindow::setLayoutGrid()
 void MainWindow::setLayoutStack()
 {
     ensureMultiImageMode();
+    populateGalleryCanvas();
     m_imageView->setLayoutMode(ImageView::LayoutMode::Stack);
     m_galleryReturnLayout = ImageView::LayoutMode::Stack;
     updateMasonryWidthControl();
@@ -1577,6 +1594,7 @@ void MainWindow::setLayoutStack()
 void MainWindow::setLayoutMasonry()
 {
     ensureMultiImageMode();
+    populateGalleryCanvas();
     m_imageView->setLayoutMode(ImageView::LayoutMode::Masonry);
     m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
     updateMasonryWidthControl();
@@ -1613,11 +1631,7 @@ void MainWindow::returnToGallery()
         return;
     }
     ensureMultiImageMode();
-    // Show all session images on the gallery canvas
-    if (m_thumbnailBar) {
-        m_thumbnailBar->selectAllThumbs();
-        applyWorkspaceSelectionFromThumbnails();
-    }
+    populateGalleryCanvas();
     m_imageView->setLayoutMode(m_galleryReturnLayout);
     switch (m_galleryReturnLayout) {
     case ImageView::LayoutMode::SideBySide:
@@ -2257,6 +2271,11 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_Escape) {
         if (isFullScreen()) {
             showNormal();
+            event->accept();
+            return;
+        }
+        if (m_galleryReturnActive && !m_workspaceMode) {
+            returnToGallery();
             event->accept();
             return;
         }

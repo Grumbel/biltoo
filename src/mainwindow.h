@@ -110,6 +110,8 @@ private slots:
     void updateWorkspaceActionVisibility();
     void updateMasonryWidthControl();
     void ensureMultiImageMode();
+    /** Put every session image on the multi-image canvas (gallery). */
+    void populateGalleryCanvas();
     void updateStatus();
     void updateWindowTitle();
     void selectAllThumbnails();

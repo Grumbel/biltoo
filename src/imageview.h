@@ -182,8 +182,8 @@ signals:
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
     /**
-     * Gallery layout: user activated an item (double-click) to open it in
-     * Image mode. Path is the image file path.
+     * Gallery layout: user clicked an item to open it in Image mode.
+     * Path is the image file path.
      */
     void galleryItemOpenRequested(const QString &path);
     /** File URLs dropped onto the view (same semantics as MainWindow). */
@@ -287,6 +287,11 @@ private:
 
     ImageItem *m_dragItem = nullptr;
     WorkspaceItemState m_dragStartState;
+
+    /** Gallery click-to-open: press on an item, release without dragging. */
+    ImageItem *m_galleryPressItem = nullptr;
+    QPoint m_galleryPressPos;
+    bool m_galleryClickCandidate = false;
 };
 
 #endif // IMAGEVIEW_H

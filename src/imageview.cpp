@@ -8,6 +8,7 @@
 #include <QUndoCommand>
 #include <QUndoStack>
 
+#include <QApplication>
 #include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
@@ -1505,6 +1506,21 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
     // Workspace Select tool: let QGraphicsView handle selection / move
     if (m_workspaceMode && event->button() == Qt::LeftButton) {
+        if (isGalleryLayout()
+            && !(event->modifiers()
+                 & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
+            m_galleryClickCandidate = false;
+            m_galleryPressItem = nullptr;
+            const QPointF scenePos = mapToScene(event->pos());
+            for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+                if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    m_galleryPressItem = item;
+                    m_galleryPressPos = event->pos();
+                    m_galleryClickCandidate = true;
+                    break;
+                }
+            }
+        }
         QGraphicsView::mousePressEvent(event);
         // Capture drag start for undo when an item is selected under the cursor
         if (ImageItem *hit = targetItem()) {
@@ -1552,6 +1568,13 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         return;
     }
 
+    if (m_galleryClickCandidate
+        && (event->pos() - m_galleryPressPos).manhattanLength()
+               >= QApplication::startDragDistance()) {
+        m_galleryClickCandidate = false;
+        m_galleryPressItem = nullptr;
+    }
+
     if (!m_workspaceMode) {
         updateHoverEdge(event->pos());
     }
@@ -1581,18 +1604,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         return;
     }
 
-    // Gallery (packaged layout): double-click opens the image in Image mode.
-    if (isGalleryLayout() && event->button() == Qt::LeftButton) {
-        const QPointF scenePos = mapToScene(event->pos());
-        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                emit galleryItemOpenRequested(item->path());
-                event->accept();
-                return;
-            }
-        }
-    }
-
+    // Gallery uses single-click-to-open (see mouseReleaseEvent).
     QGraphicsView::mouseDoubleClickEvent(event);
 }
 
@@ -1665,6 +1677,22 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         }
         m_dragItem = nullptr;
     }
+
+    // Gallery: click (press+release without drag) opens Image mode for that item.
+    if (m_galleryClickCandidate && event->button() == Qt::LeftButton
+        && isGalleryLayout() && m_galleryPressItem) {
+        const QString path = m_galleryPressItem->path();
+        m_galleryClickCandidate = false;
+        m_galleryPressItem = nullptr;
+        if (!path.isEmpty()) {
+            emit galleryItemOpenRequested(path);
+            event->accept();
+            return;
+        }
+    }
+    m_galleryClickCandidate = false;
+    m_galleryPressItem = nullptr;
+
     QGraphicsView::mouseReleaseEvent(event);
 }
 

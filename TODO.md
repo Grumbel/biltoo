@@ -51,10 +51,9 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Optional thumbnail bar on the right (and top)
 - [ ] Masonry taller than viewport: use View → Show Scrollbars, or pan (middle / Alt)
 - [x] Masonry column width on toolbar when Masonry is active (not Preferences)
-- [x] Gallery layouts vs free-form Workspace (first slice): packaged layouts non-movable,
-      double-click → Image mode, Back to Gallery, Workspace Mode forces Free Form
-- [ ] Gallery: single-click open; put full session on canvas when entering a gallery
-      layout; Esc = Back to Gallery when return is active
+- [x] Gallery layouts vs free-form Workspace: packaged layouts non-movable,
+      click → Image mode, Back to Gallery / Esc, Workspace Mode forces Free Form,
+      entering a gallery layout places the full session on the canvas
 
 ### UX backlog (evaluated)
 
