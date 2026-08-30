@@ -12,8 +12,10 @@
  * A single image on the workspace. Owns its pixmap, source pixels (for colour
  * sampling), and local scale/rotation/flip applied around the item centre.
  *
- * When selected and interactive, draws scale/rotate handles and chrome buttons
- * for raise, lower and opacity, and supports direct manipulation with the mouse.
+ * Geometry (pixmap + item transform) is independent of interaction chrome.
+ * Scale/rotation/flip live in QGraphicsItem::transform; chrome is painted in
+ * device/viewport pixels so anisotropic scale never stretches the controls.
+ * Hit-testing compares view-pixel distances to the same logical handle centres.
  */
 class ImageItem : public QGraphicsPixmapItem
 {
@@ -40,6 +42,8 @@ public:
         FlipV,
         Raise,
         Lower,
+        ResetScale,
+        ResetRotation,
         OpacitySlider
     };
 
@@ -148,7 +152,10 @@ private:
     qreal deviceScaleMin() const;
     bool isChromeHandle(Handle h) const;
     bool isRotateHandle(Handle h) const;
-    void drawCornerBracket(QPainter *painter, Handle h, qreal arm, bool hot) const;
+    void drawCornerBracket(QPainter *painter, const QPointF &deviceCentre,
+                           qreal dx, qreal dy, qreal armPx, bool hot) const;
+    /** Paint selection chrome in device pixels (identity world transform). */
+    void paintInteractionChrome(QPainter *painter, const QRectF &localRect) const;
     /** Raise/Lower keep screen-upright glyphs (counter-rotated when painting). */
     bool isUprightChromeHandle(Handle h) const;
     void activateChromeHandle(Handle h);

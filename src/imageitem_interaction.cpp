@@ -29,6 +29,10 @@ QString tooltipForHandle(ImageItem::Handle h)
         return QObject::tr("Raise (bring forward)");
     case ImageItem::Handle::Lower:
         return QObject::tr("Lower (send backward)");
+    case ImageItem::Handle::ResetScale:
+        return QObject::tr("Reset scale to 100%");
+    case ImageItem::Handle::ResetRotation:
+        return QObject::tr("Reset rotation to 0°");
     case ImageItem::Handle::OpacitySlider:
         return QObject::tr("Opacity");
     default:
@@ -106,7 +110,8 @@ QPainterPath ImageItem::shape() const
             path.addEllipse(c, r, r);
         }
         const qreal cr = (kChromeHitScreenPx * 1.25) / sMin;
-        for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
+        for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower,
+                          Handle::ResetScale, Handle::ResetRotation}) {
             const QPointF c = handleCenter(h);
             path.addEllipse(c, cr, cr);
         }
@@ -208,6 +213,7 @@ bool ImageItem::isChromeHandle(Handle h) const
 {
     return h == Handle::FlipH || h == Handle::FlipV
         || h == Handle::Raise || h == Handle::Lower
+        || h == Handle::ResetScale || h == Handle::ResetRotation
         || h == Handle::OpacitySlider;
 }
 
@@ -260,23 +266,10 @@ QPointF ImageItem::scaleAnchorLocal(Handle h) const
     }
 }
 
-void ImageItem::drawCornerBracket(QPainter *painter, Handle h, qreal arm, bool hot) const
+void ImageItem::drawCornerBracket(QPainter *painter, const QPointF &c,
+                                   qreal dx, qreal dy, qreal armPx, bool hot) const
 {
-    const QPointF c = handleCenter(h);
-    // Arm directions: outward along the box edges from the corner.
-    qreal dx = 0, dy = 0;
-    switch (h) {
-    case Handle::ScaleTopLeft:
-        dx = 1; dy = 1; break;
-    case Handle::ScaleTopRight:
-        dx = -1; dy = 1; break;
-    case Handle::ScaleBottomLeft:
-        dx = 1; dy = -1; break;
-    case Handle::ScaleBottomRight:
-        dx = -1; dy = -1; break;
-    default:
-        return;
-    }
+    // @p dx/@p dy are unit directions in *device* space along the visual edges.
     QPen pen(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
     pen.setCosmetic(true);
     pen.setWidthF(hot ? 2.5 : 2.0);
@@ -284,12 +277,8 @@ void ImageItem::drawCornerBracket(QPainter *painter, Handle h, qreal arm, bool h
     pen.setJoinStyle(Qt::MiterJoin);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
-    // L-shape: from along one edge to corner to the other edge (|_ style).
-    const QPointF a(c.x() + dx * arm, c.y());
-    const QPointF b = c;
-    const QPointF d(c.x(), c.y() + dy * arm);
-    painter->drawLine(a, b);
-    painter->drawLine(b, d);
+    painter->drawLine(c + QPointF(dx * armPx, dy * 0.0), c);
+    painter->drawLine(c, c + QPointF(dx * 0.0, dy * armPx));
 }
 
 void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods)
@@ -426,6 +415,7 @@ QList<ImageItem::Handle> ImageItem::activeHandles() const
             << Handle::RotateBottom << Handle::RotateLeft
             << Handle::FlipH << Handle::FlipV
             << Handle::Raise << Handle::Lower
+            << Handle::ResetScale << Handle::ResetRotation
             << Handle::OpacitySlider;
     return handles;
 }
@@ -452,9 +442,10 @@ QPointF ImageItem::handleCenter(Handle h) const
     const qreal cx = r.center().x();
     const qreal cy = r.center().y();
 
-    // Vertical stack on the right interior: FlipH, FlipV, Raise, Lower.
+    // Vertical stack on the right interior: FlipH/V, Raise/Lower, ResetScale/Rot.
     const qreal stackX = r.right() - inset - btn / 2.0;
-    const qreal stackTop = cy - (2.0 * btn + 1.5 * gap);
+    const int nChrome = 6;
+    const qreal stackTop = cy - ((nChrome * btn + (nChrome - 1) * gap) / 2.0);
     auto chromeBtnCenter = [&](int index) {
         return QPointF(stackX, stackTop + index * (btn + gap) + btn / 2.0);
     };
@@ -492,6 +483,10 @@ QPointF ImageItem::handleCenter(Handle h) const
         return chromeBtnCenter(2);
     case Handle::Lower:
         return chromeBtnCenter(3);
+    case Handle::ResetScale:
+        return chromeBtnCenter(4);
+    case Handle::ResetRotation:
+        return chromeBtnCenter(5);
     case Handle::OpacitySlider:
         return opacitySliderRect().center();
     default:
@@ -524,7 +519,8 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
 
     Handle best = Handle::None;
     qreal bestDist = kChromeHitScreenPx;
-    for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
+    for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower,
+                      Handle::ResetScale, Handle::ResetRotation}) {
         const qreal d = handleDistanceScreenPx(h, itemPos);
         if (d <= bestDist) {
             bestDist = d;
@@ -587,6 +583,12 @@ void ImageItem::activateChromeHandle(Handle h)
     case Handle::Lower:
         setStackZ(m_stackZ - 1.0);
         break;
+    case Handle::ResetScale:
+        setItemScale(1.0, 1.0);
+        break;
+    case Handle::ResetRotation:
+        setItemRotation(0.0);
+        break;
     default:
         break;
     }
@@ -647,66 +649,115 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         return;
     }
 
-    painter->save();
-    painter->setOpacity(1.0);
+    paintInteractionChrome(painter, r);
+}
 
-    QPen pen(QColor(0, 160, 255), 0); // cosmetic width via setCosmetic
+void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRect) const
+{
+    // Chrome is drawn in *device* (viewport) pixels with an identity world
+    // transform. Only the logical handle centres are mapped through the item
+    // transform — so scaleX/scaleY never stretch the controls.
+    const QTransform itemToDevice = painter->worldTransform();
+    auto toDev = [&](const QPointF &local) {
+        return itemToDevice.map(local);
+    };
+    auto mapDir = [&](const QPointF &localDelta) {
+        const QPointF a = itemToDevice.map(QPointF(0, 0));
+        const QPointF b = itemToDevice.map(localDelta);
+        QPointF d = b - a;
+        const qreal len = qHypot(d.x(), d.y());
+        if (len > 1e-6) {
+            d /= len;
+        }
+        return d;
+    };
+
+    painter->save();
+    painter->setWorldTransform(QTransform());
+    painter->setOpacity(1.0);
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    QPen pen(QColor(0, 160, 255), 0);
     pen.setCosmetic(true);
     pen.setWidthF(1.5);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
-    painter->drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5));
 
-    // Lines to rotate handles (all four sides)
-    const QPointF topMid(r.center().x(), r.top());
-    const QPointF rightMid(r.right(), r.center().y());
-    const QPointF bottomMid(r.center().x(), r.bottom());
-    const QPointF leftMid(r.left(), r.center().y());
-    painter->drawLine(topMid, handleCenter(Handle::RotateTop));
-    painter->drawLine(rightMid, handleCenter(Handle::RotateRight));
-    painter->drawLine(bottomMid, handleCenter(Handle::RotateBottom));
-    painter->drawLine(leftMid, handleCenter(Handle::RotateLeft));
+    {
+        const QPolygonF poly({
+            toDev(localRect.topLeft()),
+            toDev(localRect.topRight()),
+            toDev(localRect.bottomRight()),
+            toDev(localRect.bottomLeft()),
+        });
+        painter->drawPolygon(poly);
+    }
 
-    const qreal hs = handleDrawSize();
-    pen.setWidthF(1.0);
-    painter->setPen(pen);
+    painter->drawLine(toDev(QPointF(localRect.center().x(), localRect.top())),
+                      toDev(handleCenter(Handle::RotateTop)));
+    painter->drawLine(toDev(QPointF(localRect.right(), localRect.center().y())),
+                      toDev(handleCenter(Handle::RotateRight)));
+    painter->drawLine(toDev(QPointF(localRect.center().x(), localRect.bottom())),
+                      toDev(handleCenter(Handle::RotateBottom)));
+    painter->drawLine(toDev(QPointF(localRect.left(), localRect.center().y())),
+                      toDev(handleCenter(Handle::RotateLeft)));
 
-    // Scale handles — only in free-form layouts: corner L-brackets and edge bars.
+    const qreal hs = kHandleScreenPx;
+
     if (m_scaleHandlesEnabled) {
-        for (Handle h : {Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                         Handle::ScaleBottomLeft, Handle::ScaleBottomRight}) {
-            const bool hot = (m_hoverHandle == h || m_activeHandle == h);
+        struct Corner { Handle h; QPointF localA; QPointF localB; };
+        const Corner corners[] = {
+            {Handle::ScaleTopLeft, QPointF(1, 0), QPointF(0, 1)},
+            {Handle::ScaleTopRight, QPointF(-1, 0), QPointF(0, 1)},
+            {Handle::ScaleBottomLeft, QPointF(1, 0), QPointF(0, -1)},
+            {Handle::ScaleBottomRight, QPointF(-1, 0), QPointF(0, -1)},
+        };
+        for (const Corner &co : corners) {
+            const bool hot = (m_hoverHandle == co.h || m_activeHandle == co.h);
+            const QPointF c = toDev(handleCenter(co.h));
+            const QPointF d1 = mapDir(co.localA);
+            const QPointF d2 = mapDir(co.localB);
             const qreal arm = hs * (hot ? 1.6 : 1.35);
-            drawCornerBracket(painter, h, arm, hot);
+            QPen hp(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
+            hp.setCosmetic(true);
+            hp.setWidthF(hot ? 2.5 : 2.0);
+            hp.setCapStyle(Qt::SquareCap);
+            painter->setPen(hp);
+            painter->drawLine(c, c + d1 * arm);
+            painter->drawLine(c, c + d2 * arm);
         }
-        // Edge stretch bars (mid-side, short segment along the edge)
-        for (Handle h : {Handle::ScaleTop, Handle::ScaleRight,
-                         Handle::ScaleBottom, Handle::ScaleLeft}) {
-            const QPointF c = handleCenter(h);
-            const bool hot = (m_hoverHandle == h || m_activeHandle == h);
+
+        struct Edge { Handle h; QPointF localAlong; };
+        const Edge edges[] = {
+            {Handle::ScaleTop, QPointF(1, 0)},
+            {Handle::ScaleBottom, QPointF(1, 0)},
+            {Handle::ScaleLeft, QPointF(0, 1)},
+            {Handle::ScaleRight, QPointF(0, 1)},
+        };
+        for (const Edge &ed : edges) {
+            const bool hot = (m_hoverHandle == ed.h || m_activeHandle == ed.h);
+            const QPointF c = toDev(handleCenter(ed.h));
+            const QPointF along = mapDir(ed.localAlong);
+            const QPointF perp(-along.y(), along.x());
             const qreal len = hs * (hot ? 2.4 : 2.0);
             const qreal thick = hs * (hot ? 0.45 : 0.35);
-            QPen hp = pen;
-            hp.setColor(hot ? QColor(255, 255, 255) : QColor(0, 160, 255));
-            hp.setWidthF(hot ? 2.0 : 1.5);
+            QPen hp(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
             hp.setCosmetic(true);
+            hp.setWidthF(hot ? 2.0 : 1.5);
             painter->setPen(hp);
             painter->setBrush(hot ? QColor(80, 200, 255) : QColor(0, 160, 255, 220));
-            QRectF bar;
-            if (h == Handle::ScaleTop || h == Handle::ScaleBottom) {
-                bar = QRectF(c.x() - len / 2, c.y() - thick / 2, len, thick);
-            } else {
-                bar = QRectF(c.x() - thick / 2, c.y() - len / 2, thick, len);
-            }
-            painter->drawRoundedRect(bar, thick * 0.3, thick * 0.3);
-            painter->setPen(pen);
+            QPolygonF bar;
+            bar << c + along * (len / 2) + perp * (thick / 2)
+                << c - along * (len / 2) + perp * (thick / 2)
+                << c - along * (len / 2) - perp * (thick / 2)
+                << c + along * (len / 2) - perp * (thick / 2);
+            painter->drawPolygon(bar);
         }
     }
 
-    // Rotate handles (circles) on all four sides
     for (Handle h : {Handle::RotateTop, Handle::RotateRight,
                      Handle::RotateBottom, Handle::RotateLeft}) {
-        const QPointF c = handleCenter(h);
+        const QPointF c = toDev(handleCenter(h));
         const bool hot = (m_hoverHandle == h || m_activeHandle == h);
         const qreal s = hs * (hot ? 1.25 : 1.0);
         painter->setBrush(hot ? QColor(255, 230, 80) : QColor(255, 200, 40));
@@ -714,22 +765,15 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         if (hot) {
             hp.setColor(Qt::white);
             hp.setWidthF(2.0);
-            hp.setCosmetic(true);
         }
         painter->setPen(hp);
-        painter->drawEllipse(c, s / 2, s / 2);
-        painter->setPen(pen);
+        painter->drawEllipse(c, s / 2.0, s / 2.0);
     }
 
-    // Chrome on the image: vertical stack on the right interior (FlipH/V, Raise,
-    // Lower) and opacity track along the bottom interior — all item-local so
-    // they rotate with the pixmap.
     {
-        const qreal ss = screenScale();
-        const qreal btnR = (kChromeBtnScreenPx / ss) / 2.0;
-
-        auto drawChromeBtn = [&](Handle h, const QString &glyph) {
-            const QPointF c = handleCenter(h);
+        const qreal btnR = kChromeBtnScreenPx / 2.0;
+        auto drawBtn = [&](Handle h, const QString &glyph) {
+            const QPointF c = toDev(handleCenter(h));
             const bool hovered = (m_hoverHandle == h);
             const bool active = (m_activeHandle == h);
             const qreal rad = btnR * (hovered || active ? 1.12 : 1.0);
@@ -737,51 +781,55 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             QPen border = pen;
             border.setColor(hovered || active ? QColor(255, 255, 255) : QColor(0, 160, 255));
             border.setWidthF(hovered || active ? 2.0 : 1.0);
-            border.setCosmetic(true);
-            painter->save();
-            painter->translate(c);
-            // Raise/Lower: counter-rotate so arrows stay screen-upright.
-            if (isUprightChromeHandle(h) && !qFuzzyIsNull(m_rotation)) {
-                painter->rotate(-m_rotation);
-            }
-            painter->setBrush(fill);
             painter->setPen(border);
-            painter->drawEllipse(QPointF(0, 0), rad, rad);
-            painter->setPen(QPen(Qt::white));
-            painter->scale(1.0 / ss, 1.0 / ss);
+            painter->setBrush(fill);
+            painter->drawEllipse(c, rad, rad);
+            painter->setPen(QColor(240, 240, 240));
             QFont f = painter->font();
+            f.setPointSizeF(qMax(7.0, rad * 0.7));
             f.setBold(true);
-            f.setPixelSize(hovered || active ? 18 : 16);
             painter->setFont(f);
-            painter->drawText(QRectF(-16, -16, 32, 32), Qt::AlignCenter, glyph);
-            painter->restore();
+            painter->drawText(QRectF(c.x() - rad, c.y() - rad, rad * 2, rad * 2),
+                              Qt::AlignCenter, glyph);
         };
-        drawChromeBtn(Handle::FlipH, QStringLiteral("↔"));
-        drawChromeBtn(Handle::FlipV, QStringLiteral("↕"));
-        drawChromeBtn(Handle::Raise, QStringLiteral("↑"));
-        drawChromeBtn(Handle::Lower, QStringLiteral("↓"));
+        drawBtn(Handle::FlipH, QStringLiteral("↔"));
+        drawBtn(Handle::FlipV, QStringLiteral("↕"));
+        drawBtn(Handle::Raise, QStringLiteral("↑"));
+        drawBtn(Handle::Lower, QStringLiteral("↓"));
+        drawBtn(Handle::ResetScale, QStringLiteral("1:1"));
+        drawBtn(Handle::ResetRotation, QStringLiteral("0°"));
+    }
 
+    {
         const QRectF track = opacitySliderRect();
-        const qreal tval = qBound(0.0, (m_opacity - 0.05) / 0.95, 1.0);
+        const QPointF a = toDev(QPointF(track.left(), track.center().y()));
+        const QPointF b = toDev(QPointF(track.right(), track.center().y()));
+        const QPointF ab = b - a;
+        const qreal abLen = qHypot(ab.x(), ab.y());
+        const QPointF along = abLen > 1e-6 ? ab / abLen : QPointF(1, 0);
+        const QPointF perp(-along.y(), along.x());
+        const qreal thick = kSliderHeightPx;
         const bool hot = (m_hoverHandle == Handle::OpacitySlider
                           || m_activeHandle == Handle::OpacitySlider);
-        QPen trackPen = Qt::NoPen;
-        if (hot) {
-            trackPen = QPen(QColor(255, 255, 255), 0);
-            trackPen.setCosmetic(true);
-            trackPen.setWidthF(1.5);
-        }
+        const qreal tval = (m_opacity - 0.05) / 0.95;
+        QPen trackPen(hot ? QColor(200, 180, 255) : QColor(120, 100, 160), 0);
+        trackPen.setCosmetic(true);
+        trackPen.setWidthF(1.5);
         painter->setPen(trackPen);
         painter->setBrush(QColor(40, 40, 40, hot ? 230 : 200));
-        painter->drawRoundedRect(track, 3.0 / ss, 3.0 / ss);
-        QRectF filled = track;
-        filled.setWidth(track.width() * tval);
+        QPolygonF trackPoly;
+        trackPoly << a + perp * (thick / 2) << b + perp * (thick / 2)
+                  << b - perp * (thick / 2) << a - perp * (thick / 2);
+        painter->drawPolygon(trackPoly);
+        const QPointF mid = a + ab * qBound(0.0, tval, 1.0);
         painter->setBrush(QColor(140, 100, 200, 230));
-        painter->drawRoundedRect(filled, 3.0 / ss, 3.0 / ss);
-        const QPointF thumb(track.left() + track.width() * tval, track.center().y());
+        QPolygonF filled;
+        filled << a + perp * (thick / 2) << mid + perp * (thick / 2)
+               << mid - perp * (thick / 2) << a - perp * (thick / 2);
+        painter->drawPolygon(filled);
         painter->setBrush(QColor(230, 230, 230));
         painter->setPen(QPen(QColor(30, 30, 30), 0));
-        painter->drawEllipse(thumb, 6.0 / ss, 6.0 / ss);
+        painter->drawEllipse(mid, 6.0, 6.0);
     }
 
     painter->restore();
@@ -793,7 +841,8 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
         const Handle h = handleAt(event->pos());
         if (h != Handle::None) {
             if (h == Handle::FlipH || h == Handle::FlipV
-                || h == Handle::Raise || h == Handle::Lower) {
+                || h == Handle::Raise || h == Handle::Lower
+                || h == Handle::ResetScale || h == Handle::ResetRotation) {
                 activateChromeHandle(h);
                 event->accept();
                 return;
@@ -913,6 +962,8 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
         case Handle::FlipV:
         case Handle::Raise:
         case Handle::Lower:
+        case Handle::ResetScale:
+        case Handle::ResetRotation:
             setCursor(Qt::PointingHandCursor);
             break;
         case Handle::OpacitySlider: {

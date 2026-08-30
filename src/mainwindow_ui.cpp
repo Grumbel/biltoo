@@ -270,6 +270,14 @@ void MainWindow::createActions()
     m_opacityResetAct->setStatusTip(tr("Reset opacity of the selected image to 100%"));
     connect(m_opacityResetAct, &QAction::triggered, this, &MainWindow::opacityReset);
 
+    m_resetScaleAct = new QAction(tr("Reset Item &Scale"), this);
+    m_resetScaleAct->setStatusTip(tr("Reset scale of the selected image(s) to 100%"));
+    connect(m_resetScaleAct, &QAction::triggered, this, &MainWindow::resetItemScale);
+
+    m_resetRotationAct = new QAction(tr("Reset Item &Rotation"), this);
+    m_resetRotationAct->setStatusTip(tr("Reset rotation of the selected image(s) to 0°"));
+    connect(m_resetRotationAct, &QAction::triggered, this, &MainWindow::resetItemRotation);
+
     m_clearExtrasAct = new QAction(tr("Clear Workspace &Extras"), this);
     m_clearExtrasAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_W);
     m_clearExtrasAct->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
@@ -455,6 +463,8 @@ void MainWindow::createMenus()
     workspaceMenu->addAction(m_opacityUpAct);
     workspaceMenu->addAction(m_opacityDownAct);
     workspaceMenu->addAction(m_opacityResetAct);
+    workspaceMenu->addAction(m_resetScaleAct);
+    workspaceMenu->addAction(m_resetRotationAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_clearExtrasAct);
 
@@ -488,6 +498,8 @@ void MainWindow::createMenus()
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_rotateLeftAct);
     m_contextMenu->addAction(m_rotateRightAct);
+    m_contextMenu->addAction(m_resetRotationAct);
+    m_contextMenu->addAction(m_resetScaleAct);
     m_contextMenu->addAction(m_flipHAct);
     m_contextMenu->addAction(m_flipVAct);
     m_contextMenu->addSeparator();

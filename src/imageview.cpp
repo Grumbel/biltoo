@@ -602,6 +602,58 @@ void ImageView::opacityReset()
     }
 }
 
+void ImageView::resetItemScale()
+{
+    QList<ImageItem *> targets;
+    if (isWorkspaceMode()) {
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                targets.append(item);
+            }
+        }
+    }
+    if (targets.isEmpty()) {
+        if (ImageItem *item = targetItem()) {
+            targets.append(item);
+        } else if (ImageItem *item = primaryItem()) {
+            targets.append(item);
+        }
+    }
+    for (ImageItem *item : targets) {
+        item->setItemScale(1.0, 1.0);
+    }
+    if (!targets.isEmpty()) {
+        emit statusChanged();
+        viewport()->update();
+    }
+}
+
+void ImageView::resetItemRotation()
+{
+    QList<ImageItem *> targets;
+    if (isWorkspaceMode()) {
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                targets.append(item);
+            }
+        }
+    }
+    if (targets.isEmpty()) {
+        if (ImageItem *item = targetItem()) {
+            targets.append(item);
+        } else if (ImageItem *item = primaryItem()) {
+            targets.append(item);
+        }
+    }
+    for (ImageItem *item : targets) {
+        item->setItemRotation(0.0);
+    }
+    if (!targets.isEmpty()) {
+        emit statusChanged();
+        viewport()->update();
+    }
+}
+
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
 {
     if (!item) {

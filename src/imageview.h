@@ -161,6 +161,8 @@ public:
     void opacityUp();
     void opacityDown();
     void opacityReset();
+    void resetItemScale();
+    void resetItemRotation();
 
     /**
      * Arrangement of items. FreeForm is used only in Workspace mode.
@@ -324,6 +326,8 @@ private:
     int m_sessionTotal = 0;
     QString m_lastLoadError;
     bool m_hudFlashVisible = false;
+    /** Filename + index shown briefly after navigation / flash (not only when pinned). */
+    bool m_hudIdentityPulse = false;
     QString m_hudAction;
     QString m_hudDetail;
     QTimer *m_hudFlashTimer = nullptr;

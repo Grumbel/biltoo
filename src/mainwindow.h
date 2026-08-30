@@ -91,6 +91,8 @@ private slots:
     void returnToGallery();
     void clearWorkspaceExtras();
     void opacityReset();
+    void resetItemScale();
+    void resetItemRotation();
     void opacityDown();
     void opacityUp();
     void lowerSelected();
@@ -218,6 +220,8 @@ private:
     bool m_thumbsVisibleBeforeGallery = false;
     ImageView::LayoutMode m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
     QAction *m_opacityResetAct = nullptr;
+    QAction *m_resetScaleAct = nullptr;
+    QAction *m_resetRotationAct = nullptr;
     QAction *m_opacityDownAct = nullptr;
     QAction *m_opacityUpAct = nullptr;
     QAction *m_lowerAct = nullptr;

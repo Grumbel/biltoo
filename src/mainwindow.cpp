@@ -304,6 +304,16 @@ void MainWindow::opacityReset()
     m_imageView->opacityReset();
 }
 
+void MainWindow::resetItemScale()
+{
+    m_imageView->resetItemScale();
+}
+
+void MainWindow::resetItemRotation()
+{
+    m_imageView->resetItemRotation();
+}
+
 void MainWindow::clearWorkspaceExtras()
 {
     m_imageView->clearExtras();
