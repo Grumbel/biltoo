@@ -604,22 +604,21 @@ void MainWindow::createMenus()
     sortMenu->addAction(m_sortMTimeAct);
 
     m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_workspaceModeAct);
-
     m_viewMenu->addAction(m_backToGalleryAct);
 
-    auto *workspaceMenu = m_viewMenu->addMenu(tr("&Workspace"));
-    workspaceMenu->addAction(m_selectToolAct);
-    workspaceMenu->addAction(m_panToolAct);
-    workspaceMenu->addSeparator();
-    workspaceMenu->addAction(m_layoutFreeFormAct);
-    workspaceMenu->addSeparator();
-    auto *galleryMenu = workspaceMenu->addMenu(tr("&Gallery layouts"));
+    auto *galleryMenu = m_viewMenu->addMenu(tr("&Gallery"));
     galleryMenu->addAction(m_layoutSideBySideAct);
     galleryMenu->addAction(m_layoutVerticalAct);
     galleryMenu->addAction(m_layoutGridAct);
     galleryMenu->addAction(m_layoutMasonryAct);
     galleryMenu->addAction(m_layoutStackAct);
+
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_workspaceModeAct);
+
+    auto *workspaceMenu = m_viewMenu->addMenu(tr("&Workspace"));
+    workspaceMenu->addAction(m_selectToolAct);
+    workspaceMenu->addAction(m_panToolAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_raiseAct);
     workspaceMenu->addAction(m_lowerAct);
@@ -662,13 +661,14 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_flipHAct);
     m_contextMenu->addAction(m_flipVAct);
     m_contextMenu->addSeparator();
-    m_contextMenu->addAction(m_workspaceModeAct);
-    m_contextMenu->addAction(m_layoutFreeFormAct);
+    m_contextMenu->addAction(m_backToGalleryAct);
     m_contextMenu->addAction(m_layoutSideBySideAct);
     m_contextMenu->addAction(m_layoutVerticalAct);
     m_contextMenu->addAction(m_layoutGridAct);
     m_contextMenu->addAction(m_layoutMasonryAct);
     m_contextMenu->addAction(m_layoutStackAct);
+    m_contextMenu->addSeparator();
+    m_contextMenu->addAction(m_workspaceModeAct);
     m_contextMenu->addAction(m_raiseAct);
     m_contextMenu->addAction(m_lowerAct);
     m_contextMenu->addAction(m_clearExtrasAct);
@@ -703,7 +703,6 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_backToGalleryAct);
-    m_toolBar->addAction(m_layoutFreeFormAct);
     m_toolBar->addAction(m_layoutSideBySideAct);
     m_toolBar->addAction(m_layoutVerticalAct);
     m_toolBar->addAction(m_layoutGridAct);
@@ -1529,17 +1528,9 @@ void MainWindow::ensureMultiImageMode()
 
 void MainWindow::setLayoutFreeForm()
 {
-    ensureMultiImageMode();
-    m_galleryReturnActive = false;
-    if (m_backToGalleryAct) {
-        m_backToGalleryAct->setVisible(false);
-    }
-    m_imageView->setLayoutMode(ImageView::LayoutMode::FreeForm);
-    if (m_layoutFreeFormAct) {
-        m_layoutFreeFormAct->setChecked(true);
-    }
-    updateMasonryWidthControl();
-    updateWorkspaceActionVisibility();
+    // Free-form is Workspace mode, not a Gallery layout.
+    m_workspaceModeAct->setChecked(true);
+    toggleWorkspaceMode();
 }
 
 void MainWindow::populateGalleryCanvas()
@@ -1553,50 +1544,130 @@ void MainWindow::populateGalleryCanvas()
 
 void MainWindow::setLayoutSideBySide()
 {
-    ensureMultiImageMode();
+    m_galleryReturnActive = false;
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(false);
+    }
+    // Gallery is independent of Workspace Mode
+    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceModeAct->setChecked(false);
+    m_thumbnailBar->setWorkspaceMode(true);
+    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+        m_toggleThumbnailBarAct->setChecked(true);
+        m_thumbnailBar->setVisible(true);
+    }
+    m_imageView->enterGallery(ImageView::LayoutMode::SideBySide);
     populateGalleryCanvas();
-    m_imageView->setLayoutMode(ImageView::LayoutMode::SideBySide);
+    // Re-apply after items are on the canvas
+    m_imageView->enterGallery(ImageView::LayoutMode::SideBySide);
     m_galleryReturnLayout = ImageView::LayoutMode::SideBySide;
+    if (m_layoutSideBySideAct) {
+        m_layoutSideBySideAct->setChecked(true);
+    }
     updateMasonryWidthControl();
     updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutVertical()
 {
-    ensureMultiImageMode();
+    m_galleryReturnActive = false;
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(false);
+    }
+    // Gallery is independent of Workspace Mode
+    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceModeAct->setChecked(false);
+    m_thumbnailBar->setWorkspaceMode(true);
+    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+        m_toggleThumbnailBarAct->setChecked(true);
+        m_thumbnailBar->setVisible(true);
+    }
+    m_imageView->enterGallery(ImageView::LayoutMode::Vertical);
     populateGalleryCanvas();
-    m_imageView->setLayoutMode(ImageView::LayoutMode::Vertical);
+    // Re-apply after items are on the canvas
+    m_imageView->enterGallery(ImageView::LayoutMode::Vertical);
     m_galleryReturnLayout = ImageView::LayoutMode::Vertical;
+    if (m_layoutVerticalAct) {
+        m_layoutVerticalAct->setChecked(true);
+    }
     updateMasonryWidthControl();
     updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutGrid()
 {
-    ensureMultiImageMode();
+    m_galleryReturnActive = false;
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(false);
+    }
+    // Gallery is independent of Workspace Mode
+    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceModeAct->setChecked(false);
+    m_thumbnailBar->setWorkspaceMode(true);
+    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+        m_toggleThumbnailBarAct->setChecked(true);
+        m_thumbnailBar->setVisible(true);
+    }
+    m_imageView->enterGallery(ImageView::LayoutMode::Grid);
     populateGalleryCanvas();
-    m_imageView->setLayoutMode(ImageView::LayoutMode::Grid);
+    // Re-apply after items are on the canvas
+    m_imageView->enterGallery(ImageView::LayoutMode::Grid);
     m_galleryReturnLayout = ImageView::LayoutMode::Grid;
+    if (m_layoutGridAct) {
+        m_layoutGridAct->setChecked(true);
+    }
     updateMasonryWidthControl();
     updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutStack()
 {
-    ensureMultiImageMode();
+    m_galleryReturnActive = false;
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(false);
+    }
+    // Gallery is independent of Workspace Mode
+    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceModeAct->setChecked(false);
+    m_thumbnailBar->setWorkspaceMode(true);
+    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+        m_toggleThumbnailBarAct->setChecked(true);
+        m_thumbnailBar->setVisible(true);
+    }
+    m_imageView->enterGallery(ImageView::LayoutMode::Stack);
     populateGalleryCanvas();
-    m_imageView->setLayoutMode(ImageView::LayoutMode::Stack);
+    // Re-apply after items are on the canvas
+    m_imageView->enterGallery(ImageView::LayoutMode::Stack);
     m_galleryReturnLayout = ImageView::LayoutMode::Stack;
+    if (m_layoutStackAct) {
+        m_layoutStackAct->setChecked(true);
+    }
     updateMasonryWidthControl();
     updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutMasonry()
 {
-    ensureMultiImageMode();
+    m_galleryReturnActive = false;
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(false);
+    }
+    // Gallery is independent of Workspace Mode
+    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceModeAct->setChecked(false);
+    m_thumbnailBar->setWorkspaceMode(true);
+    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+        m_toggleThumbnailBarAct->setChecked(true);
+        m_thumbnailBar->setVisible(true);
+    }
+    m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
     populateGalleryCanvas();
-    m_imageView->setLayoutMode(ImageView::LayoutMode::Masonry);
+    // Re-apply after items are on the canvas
+    m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
     m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
+    if (m_layoutMasonryAct) {
+        m_layoutMasonryAct->setChecked(true);
+    }
     updateMasonryWidthControl();
     updateWorkspaceActionVisibility();
 }
@@ -1616,7 +1687,7 @@ void MainWindow::openGalleryItemInImageMode(const QString &path)
     }
     m_workspaceMode = false;
     m_workspaceModeAct->setChecked(false);
-    m_imageView->setWorkspaceMode(false);
+    m_imageView->setViewMode(ImageView::ViewMode::Image);
     m_thumbnailBar->setWorkspaceMode(false);
     setCurrentIndex(idx);
     if (m_backToGalleryAct) {
@@ -1630,9 +1701,12 @@ void MainWindow::returnToGallery()
     if (!m_galleryReturnActive) {
         return;
     }
-    ensureMultiImageMode();
+    m_workspaceMode = true;
+    m_workspaceModeAct->setChecked(false);
+    m_thumbnailBar->setWorkspaceMode(true);
+    m_imageView->enterGallery(m_galleryReturnLayout);
     populateGalleryCanvas();
-    m_imageView->setLayoutMode(m_galleryReturnLayout);
+    m_imageView->enterGallery(m_galleryReturnLayout);
     switch (m_galleryReturnLayout) {
     case ImageView::LayoutMode::SideBySide:
         if (m_layoutSideBySideAct) m_layoutSideBySideAct->setChecked(true);
@@ -1662,8 +1736,8 @@ void MainWindow::returnToGallery()
 
 void MainWindow::updateMasonryWidthControl()
 {
-    const bool show = m_workspaceMode
-                      && m_imageView
+    const bool show = m_imageView
+                      && m_imageView->isGalleryMode()
                       && m_imageView->layoutMode() == ImageView::LayoutMode::Masonry;
     if (m_masonryWidthAction) {
         m_masonryWidthAction->setVisible(show);
@@ -1706,32 +1780,35 @@ void MainWindow::clearWorkspaceExtras()
 
 void MainWindow::toggleWorkspaceMode()
 {
-    m_workspaceMode = m_workspaceModeAct->isChecked();
-    m_imageView->setWorkspaceMode(m_workspaceMode);
-    m_thumbnailBar->setWorkspaceMode(m_workspaceMode);
-    if (m_workspaceMode) {
-        // Workspace mode is free-form placement; gallery layouts are separate.
+    const bool on = m_workspaceModeAct->isChecked();
+    if (on) {
         m_galleryReturnActive = false;
         if (m_backToGalleryAct) {
             m_backToGalleryAct->setVisible(false);
         }
-        m_imageView->setLayoutMode(ImageView::LayoutMode::FreeForm);
-        if (m_layoutFreeFormAct) {
-            m_layoutFreeFormAct->setChecked(true);
-        }
-        // Seed the workspace with the current session image (or restore canvas)
+        m_workspaceMode = true;
+        m_thumbnailBar->setWorkspaceMode(true);
+        m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         if (m_imageView->itemCount() == 0
             && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
             m_imageView->addImage(m_files.at(m_currentIndex));
         }
         syncThumbnailWorkspaceSelection();
-        // Ensure thumbnail bar is visible when working with multi-select
         if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
             m_toggleThumbnailBarAct->setChecked(true);
             m_thumbnailBar->setVisible(true);
         }
+        // Uncheck gallery layout actions
+        for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
+                             m_layoutGridAct, m_layoutMasonryAct, m_layoutStackAct}) {
+            if (act) {
+                act->setChecked(false);
+            }
+        }
     } else {
-        // Ensure classic view shows the current session image, centred
+        m_workspaceMode = false;
+        m_thumbnailBar->setWorkspaceMode(false);
+        m_imageView->setViewMode(ImageView::ViewMode::Image);
         if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
             m_imageView->loadImage(m_files.at(m_currentIndex));
             m_thumbnailBar->setCurrentIndex(m_currentIndex);
@@ -1754,25 +1831,29 @@ void MainWindow::setPanTool()
 
 void MainWindow::updateWorkspaceActionVisibility()
 {
-    const bool on = m_workspaceMode;
-    const bool freeForm = on && m_imageView
-                          && m_imageView->layoutMode() == ImageView::LayoutMode::FreeForm;
-    // Layout choosers visible in any multi-image mode
-    for (QAction *act : {m_layoutFreeFormAct, m_layoutSideBySideAct,
-                         m_layoutVerticalAct, m_layoutGridAct, m_layoutMasonryAct,
-                         m_layoutStackAct}) {
+    const bool gallery = m_imageView && m_imageView->isGalleryMode();
+    const bool workspace = m_imageView && m_imageView->isWorkspaceMode();
+    const bool multi = gallery || workspace || m_workspaceMode;
+    // Gallery layout actions stay available whenever we have a session
+    const bool canGallery = !m_files.isEmpty();
+    for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
+                         m_layoutGridAct, m_layoutMasonryAct, m_layoutStackAct}) {
         if (act) {
-            act->setVisible(on);
-            act->setEnabled(on);
+            act->setVisible(canGallery);
+            act->setEnabled(canGallery);
         }
     }
-    // Free-form Workspace tools only
+    if (m_layoutFreeFormAct) {
+        // Free-form is Workspace Mode — keep action but off the main toolbar
+        m_layoutFreeFormAct->setVisible(false);
+    }
+    // Free-form Workspace tools only (never in Gallery)
     for (QAction *act : {m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
                          m_clearExtrasAct, m_selectToolAct, m_panToolAct}) {
         if (act) {
-            act->setVisible(freeForm);
-            act->setEnabled(freeForm);
+            act->setVisible(workspace);
+            act->setEnabled(workspace);
         }
     }
     if (m_undoAct) {
@@ -1780,7 +1861,7 @@ void MainWindow::updateWorkspaceActionVisibility()
         m_redoAct->setVisible(true);
     }
     if (m_workspaceToolBar) {
-        m_workspaceToolBar->setVisible(freeForm && !isFullScreen());
+        m_workspaceToolBar->setVisible(workspace && !isFullScreen());
     }
     if (m_backToGalleryAct && !m_galleryReturnActive) {
         m_backToGalleryAct->setVisible(false);

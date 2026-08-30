@@ -61,12 +61,11 @@ Use these names consistently in code comments, menus, and docs:
 
 | Term | Meaning |
 |------|---------|
-| **Image mode** (also “classic mode”) | Single-image viewing. One centred image; edge click / Go menu navigates the session; slideshow; no multi-item free placement. |
-| **Workspace mode** | Free-form multi-image canvas only. Thumbnail bar toggles membership; items remember position/scale/rotation off-canvas. Scale/rotate handles, opacity, z-order. View zoom pans/scales the *view*. |
-| **Gallery layouts** | Packaged arrangements: Side-by-Side, Vertical, Grid, Stack, Masonry. Items are not freely moved; view transform stays identity. Click opens **Image mode**; **Back to Gallery** or **Esc** returns to the same layout. |
-| **Free-form layout** | The only layout used by Workspace mode (user placement). |
+| **Image mode** | Single-image viewing (`ImageView::ViewMode::Image`). Edge nav, slideshow, no multi-item placement. |
+| **Gallery mode** | Session overview (`ViewMode::Gallery`) with packaged layouts (Masonry, Grid, …). Not part of Workspace. No move/scale handles. Click → Image mode; Back to Gallery / Esc return. |
+| **Workspace mode** | Free-form canvas only (`ViewMode::Workspace`). Handles, opacity, z-order, Select/Pan tools. |
 
-**Gallery ↔ Image:** choosing a gallery layout enters multi-image mode and places the full session on the canvas. Click opens Image mode for that file; Back to Gallery or Esc restores the layout. Workspace Mode toggle forces free-form.
+**UI:** View → **Gallery** (layouts) is separate from View → **Workspace Mode**. Toolbar shows gallery layout icons independently of the workspace tool strip (left, free-form only).
 
 ## UI expectations (current)
 

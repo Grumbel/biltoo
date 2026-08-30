@@ -76,10 +76,10 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         return nullptr;
     }
     auto *item = new ImageItem(path, image);
-    if (m_workspaceMode && m_layoutMode == LayoutMode::FreeForm) {
+    if (isWorkspaceMode()) {
         item->setInteractive(true);
         item->setScaleHandlesEnabled(true);
-    } else if (m_workspaceMode) {
+    } else if (isGalleryMode()) {
         item->setGallerySelectable(true);
     } else {
         item->setInteractive(false);
@@ -116,9 +116,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (generation != m_loadGeneration) {
             return; // superseded by a newer navigation / open
         }
-        if (path != m_classicPath || m_workspaceMode) {
+        if (path != m_classicPath || isMultiItemMode()) {
             // Stale image-mode navigation or switched to workspace
-            if (!(m_workspaceMode && m_items.isEmpty() && path == m_classicPath)) {
+            if (!(isMultiItemMode() && m_items.isEmpty() && path == m_classicPath)) {
                 if (path != m_classicPath) {
                     return;
                 }
@@ -129,7 +129,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             emit statusChanged();
             return;
         }
-        if (!m_workspaceMode) {
+        if (isImageMode()) {
             clearWorkspace();
             m_lastLoadError.clear();
             ImageItem *item = createItemFromImage(path, image);
@@ -376,7 +376,7 @@ QPointF ImageView::findEmptyPlacement(const QSizeF &itemSize) const
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
 {
-    if (!m_workspaceMode) {
+    if (isImageMode()) {
         return;
     }
 
@@ -445,7 +445,7 @@ void ImageView::clearExtras()
         delete item;
     }
     m_scene->clearSelection();
-    if (m_workspaceMode) {
+    if (isMultiItemMode()) {
         keep->setSelected(true);
     }
     m_fitMode = true;
@@ -455,20 +455,24 @@ void ImageView::clearExtras()
     emit workspacePathsChanged();
 }
 
-void ImageView::setWorkspaceMode(bool on)
+void ImageView::setViewMode(ViewMode mode)
 {
-    if (on == m_workspaceMode) {
+    if (mode == m_viewMode) {
         return;
     }
 
-    if (!on) {
-        // Leaving workspace: remember the canvas, then go classic
+    const ViewMode previous = m_viewMode;
+
+    if (previous == ViewMode::Workspace && mode != ViewMode::Workspace) {
         snapshotWorkspace();
-        m_workspaceMode = false;
+    }
+
+    if (mode == ViewMode::Image) {
+        m_viewMode = ViewMode::Image;
+        m_layoutMode = LayoutMode::FreeForm;
         viewport()->update();
         m_undoStack->clear();
         m_scene->clearSelection();
-        // Drop workspace pan/zoom so Image mode starts centred again
         resetTransform();
         if (horizontalScrollBar()) {
             horizontalScrollBar()->setValue(0);
@@ -476,7 +480,6 @@ void ImageView::setWorkspaceMode(bool on)
         if (verticalScrollBar()) {
             verticalScrollBar()->setValue(0);
         }
-        // Classic view of the last session path (caller may also loadImage)
         const QString path = !m_classicPath.isEmpty()
                                  ? m_classicPath
                                  : (m_items.isEmpty() ? QString() : m_items.first()->path());
@@ -489,21 +492,61 @@ void ImageView::setWorkspaceMode(bool on)
         return;
     }
 
-    // Entering workspace
-    m_workspaceMode = true;
-    viewport()->update();
-    if (!m_savedWorkspace.isEmpty()) {
-        restoreWorkspace();
-    } else {
-        // Seed with the current classic image if any
-        for (ImageItem *item : m_items) {
-            item->setInteractive(true);
+    if (mode == ViewMode::Workspace) {
+        m_viewMode = ViewMode::Workspace;
+        m_layoutMode = LayoutMode::FreeForm;
+        viewport()->update();
+        if (!m_savedWorkspace.isEmpty() && previous == ViewMode::Image) {
+            restoreWorkspace();
+        } else {
+            for (ImageItem *item : m_items) {
+                item->setInteractive(true);
+                item->setScaleHandlesEnabled(true);
+            }
+            if (!m_items.isEmpty()) {
+                m_scene->clearSelection();
+                m_items.first()->setSelected(true);
+            }
         }
-        if (!m_items.isEmpty()) {
-            m_scene->clearSelection();
-            m_items.first()->setSelected(true);
-        }
+        emit statusChanged();
+        return;
     }
+
+    // Gallery
+    m_viewMode = ViewMode::Gallery;
+    if (m_layoutMode == LayoutMode::FreeForm) {
+        m_layoutMode = LayoutMode::Masonry;
+    }
+    viewport()->update();
+    for (ImageItem *item : m_items) {
+        item->setGallerySelectable(true);
+    }
+    if (!m_items.isEmpty()) {
+        applyLayout();
+    }
+    emit statusChanged();
+}
+
+void ImageView::setWorkspaceMode(bool on)
+{
+    setViewMode(on ? ViewMode::Workspace : ViewMode::Image);
+}
+
+void ImageView::enterGallery(LayoutMode packagedLayout)
+{
+    if (packagedLayout == LayoutMode::FreeForm) {
+        packagedLayout = LayoutMode::Masonry;
+    }
+    if (m_viewMode == ViewMode::Workspace) {
+        snapshotFreeFormStates();
+        snapshotWorkspace();
+    }
+    m_viewMode = ViewMode::Gallery;
+    m_layoutMode = packagedLayout;
+    for (ImageItem *item : m_items) {
+        item->setGallerySelectable(true);
+    }
+    applyLayout();
     emit statusChanged();
 }
 
@@ -540,7 +583,7 @@ int ImageView::edgeZoneWidth() const
 
 ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
 {
-    if (m_workspaceMode || !m_imageModeNavEnabled) {
+    if (isMultiItemMode() || !m_imageModeNavEnabled) {
         return EdgeZone::None;
     }
     const int zone = edgeZoneWidth();
@@ -570,7 +613,7 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
 
 void ImageView::drawEdgeAffordances(QPainter &painter)
 {
-    if (m_hoverEdge == EdgeZone::None || m_workspaceMode || !m_imageModeNavEnabled) {
+    if (m_hoverEdge == EdgeZone::None || isMultiItemMode() || !m_imageModeNavEnabled) {
         return;
     }
 
@@ -624,7 +667,7 @@ void ImageView::paintEvent(QPaintEvent *event)
 {
     QGraphicsView::paintEvent(event);
     QPainter painter(viewport());
-    if (m_hoverEdge != EdgeZone::None && !m_workspaceMode && m_imageModeNavEnabled) {
+    if (m_hoverEdge != EdgeZone::None && isImageMode() && m_imageModeNavEnabled) {
         drawEdgeAffordances(painter);
     }
     if (m_hudVisible || m_hudFlashVisible) {
@@ -724,7 +767,7 @@ void ImageView::dropEvent(QDropEvent *event)
 
 void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 {
-    if (!m_workspaceMode) {
+    if (isImageMode()) {
         // Image mode: flat dark fill (matches setBackgroundBrush)
         painter->fillRect(rect, QColor(36, 36, 36));
         return;
@@ -753,8 +796,8 @@ bool ImageView::loadImage(const QString &path)
     m_classicPath = path;
     m_lastLoadError.clear();
 
-    if (m_workspaceMode) {
-        // Session navigation while in workspace does not destroy the canvas;
+    if (isMultiItemMode()) {
+        // Session navigation while in multi-item mode does not destroy the canvas;
         // only ensure the path is available as classic fallback.
         // Still show the navigated image if the workspace is empty.
         if (m_items.isEmpty()) {
@@ -773,7 +816,7 @@ bool ImageView::loadImage(const QString &path)
 
 bool ImageView::addImage(const QString &path)
 {
-    if (!m_workspaceMode) {
+    if (isImageMode()) {
         return false;
     }
 
@@ -841,7 +884,7 @@ void ImageView::zoomViewBy(qreal factor)
     // Packaged layouts place items in viewport-pixel scene units and keep the
     // view transform identity. Scaling the view breaks that invariant until the
     // next resize reapplies the layout — skip view zoom there.
-    if (m_workspaceMode && m_layoutMode != LayoutMode::FreeForm) {
+    if (isGalleryMode()) {
         return;
     }
 
@@ -875,7 +918,7 @@ void ImageView::zoomReset()
 {
     m_fitMode = false;
     m_fillMode = false;
-    if (m_workspaceMode) {
+    if (isMultiItemMode()) {
         resetTransform();
         emit statusChanged();
         return;
@@ -893,10 +936,14 @@ void ImageView::zoomFit()
 {
     m_fitMode = true;
     m_fillMode = false;
-    if (m_workspaceMode) {
-        if (m_layoutMode != LayoutMode::FreeForm && !m_items.isEmpty()) {
+    if (isGalleryMode()) {
+        if (!m_items.isEmpty()) {
             applyLayout();
-        } else if (!m_items.isEmpty()) {
+        }
+        return;
+    }
+    if (isWorkspaceMode()) {
+        if (!m_items.isEmpty()) {
             fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
                       Qt::KeepAspectRatio);
             emit statusChanged();
@@ -917,7 +964,11 @@ void ImageView::zoomFill()
 {
     m_fitMode = true;
     m_fillMode = true;
-    if (m_workspaceMode) {
+    if (isMultiItemMode()) {
+        if (isGalleryMode() && !m_items.isEmpty()) {
+            applyLayout();
+            return;
+        }
         if (!m_items.isEmpty()) {
             fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
                       Qt::KeepAspectRatioByExpanding);
@@ -1094,9 +1145,9 @@ void ImageView::setLayoutMode(LayoutMode mode)
     // Free-form: movable + chrome. Packaged (Gallery): selectable only.
     const bool freeForm = (mode == LayoutMode::FreeForm);
     for (ImageItem *item : m_items) {
-        if (!m_workspaceMode) {
+        if (isImageMode()) {
             item->setInteractive(false);
-        } else if (freeForm) {
+        } else if (isWorkspaceMode() || freeForm) {
             item->setInteractive(true);
             item->setScaleHandlesEnabled(true);
         } else {
@@ -1313,15 +1364,17 @@ QString ImageView::statusText() const
         if (!m_lastLoadError.isEmpty()) {
             return tr("Failed to load: %1").arg(QFileInfo(m_lastLoadError).fileName());
         }
-        if (!m_classicPath.isEmpty() && !m_workspaceMode) {
+        if (!m_classicPath.isEmpty() && isImageMode()) {
             return tr("Loading %1…").arg(QFileInfo(m_classicPath).fileName());
         }
         return tr("Ready");
     }
 
     const QString name = QFileInfo(item->path()).fileName();
-    if (m_workspaceMode) {
-        QString text = tr("Workspace: %1 images  |  View zoom: %2%  |  %3  |  %4×%5")
+    if (isMultiItemMode()) {
+        const QString modeLabel = isGalleryMode() ? tr("Gallery") : tr("Workspace");
+        QString text = tr("%1: %2 images  |  View zoom: %3%  |  %4  |  %5×%6")
+                           .arg(modeLabel)
                            .arg(m_items.size())
                            .arg(qRound(viewScale() * 100))
                            .arg(name)
@@ -1398,7 +1451,7 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 void ImageView::wheelEvent(QWheelEvent *event)
 {
     // Packaged workspace layouts own placement; do not scale the view.
-    if (m_workspaceMode && m_layoutMode != LayoutMode::FreeForm) {
+    if (isGalleryMode()) {
         event->ignore();
         return;
     }
@@ -1421,7 +1474,7 @@ void ImageView::wheelEvent(QWheelEvent *event)
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
-    if (m_workspaceMode && m_layoutMode != LayoutMode::FreeForm && !m_items.isEmpty()) {
+    if (isGalleryMode() && !m_items.isEmpty()) {
         applyLayout();
         return;
     }
@@ -1439,7 +1492,7 @@ qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
     // Image mode: left/right edge clicks navigate the session
-    if (!m_workspaceMode && event->button() == Qt::LeftButton
+    if (isImageMode() && event->button() == Qt::LeftButton
         && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
         const EdgeZone zone = edgeZoneAt(event->pos());
         if (zone == EdgeZone::Previous) {
@@ -1456,10 +1509,10 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
     // Image mode (when preferred), or Pan tool / Alt: left-drag pans
     if (event->button() == Qt::LeftButton) {
-        const bool wantPan = (!m_workspaceMode && m_imageModeLeftDragPan)
-                             || (m_workspaceMode && m_tool == Tool::Pan)
+        const bool wantPan = (isImageMode() && m_imageModeLeftDragPan)
+                             || (isWorkspaceMode() && m_tool == Tool::Pan)
                              || (event->modifiers() & Qt::AltModifier);
-        if (wantPan && !(m_workspaceMode && (event->modifiers() & Qt::ShiftModifier))) {
+        if (wantPan && !(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier))) {
             m_panning = true;
             m_lastMousePos = event->pos();
             setCursor(Qt::ClosedHandCursor);
@@ -1477,7 +1530,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     }
 
     // Workspace only: Shift + left button free-rotates
-    if (m_workspaceMode && event->button() == Qt::LeftButton
+    if (isWorkspaceMode() && event->button() == Qt::LeftButton
         && (event->modifiers() & Qt::ShiftModifier)) {
         ImageItem *hit = nullptr;
         const QPointF scenePos = mapToScene(event->pos());
@@ -1505,7 +1558,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     }
 
     // Workspace Select tool: let QGraphicsView handle selection / move
-    if (m_workspaceMode && event->button() == Qt::LeftButton) {
+    if (isMultiItemMode() && event->button() == Qt::LeftButton) {
         if (isGalleryLayout()
             && !(event->modifiers()
                  & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
@@ -1575,7 +1628,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         m_galleryPressItem = nullptr;
     }
 
-    if (!m_workspaceMode) {
+    if (isImageMode()) {
         updateHoverEdge(event->pos());
     }
 
@@ -1586,7 +1639,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 {
     // Rapid edge clicks arrive as double-clicks (second press is not a Press event).
     // Treat them as navigation, same as a single click on the affordance.
-    if (!m_workspaceMode && event->button() == Qt::LeftButton
+    if (isImageMode() && event->button() == Qt::LeftButton
         && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
         const EdgeZone zone = edgeZoneAt(event->pos());
         if (zone == EdgeZone::Previous) {

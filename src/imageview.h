@@ -38,16 +38,14 @@ struct WorkspaceItemState {
 };
 
 /**
- * Image view with an optional multi-item workspace.
+ * Central image area with three presentation modes:
  *
- * Image mode (workspace off): single centred non-interactive image. Left/right
- * edge clicks navigate the session; hover shows arrow affordances; double-click
- * toggles fullscreen.
+ * - Image: single centred non-interactive image; edge nav; slideshow.
+ * - Gallery: session arranged by a packaged layout (masonry, grid, …);
+ *   items are not freely moved; click opens Image mode for that file.
+ * - Workspace: free-form multi-image canvas (move/scale/rotate/opacity/z).
  *
- * Workspace mode: setWorkspacePaths() controls which images are shown. Each
- * path keeps position, scale, rotation, opacity and z-order while not shown.
- * Workspace state is snapshotted when the mode is turned off and restored
- * when it is turned back on.
+ * Gallery is not a Workspace layout — it is a separate mode of this view.
  */
 class ImageView : public QGraphicsView
 {
@@ -57,6 +55,12 @@ public:
     enum class Tool {
         Select,
         Pan
+    };
+
+    enum class ViewMode {
+        Image,
+        Gallery,
+        Workspace
     };
 
     /** Hover / hit zone on the left or right edge in Image mode. */
@@ -74,8 +78,19 @@ public:
     /** Add image and place its centre at scenePos once loaded. */
     bool addImageAt(const QString &path, const QPointF &scenePos);
     void clearWorkspace();
+
+    void setViewMode(ViewMode mode);
+    ViewMode viewMode() const { return m_viewMode; }
+    bool isImageMode() const { return m_viewMode == ViewMode::Image; }
+    bool isGalleryMode() const { return m_viewMode == ViewMode::Gallery; }
+    bool isWorkspaceMode() const { return m_viewMode == ViewMode::Workspace; }
+    bool isMultiItemMode() const { return m_viewMode != ViewMode::Image; }
+
+    /** @deprecated Prefer setViewMode(Workspace|Image). */
     void setWorkspaceMode(bool on);
-    bool workspaceMode() const { return m_workspaceMode; }
+    /** True only in free-form Workspace (not Gallery). */
+    bool workspaceMode() const { return isWorkspaceMode(); }
+
     void clearExtras();
 
     /**
@@ -136,6 +151,10 @@ public:
     void opacityDown();
     void opacityReset();
 
+    /**
+     * Arrangement of items. FreeForm is used only in Workspace mode.
+     * Other values are Gallery layouts.
+     */
     enum class LayoutMode {
         FreeForm,
         SideBySide,
@@ -150,11 +169,11 @@ public:
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout();
 
-    /** Packaged layout while in multi-image mode (Gallery presentation). */
-    bool isGalleryLayout() const
-    {
-        return m_workspaceMode && m_layoutMode != LayoutMode::FreeForm;
-    }
+    /** Gallery mode with a packaged layout. */
+    bool isGalleryLayout() const { return isGalleryMode(); }
+
+    /** Enter Gallery mode and apply the given packaged layout (not FreeForm). */
+    void enterGallery(LayoutMode packagedLayout);
 
     /** Fixed column width in pixels for Masonry (images scale to this width). */
     void setMasonryColumnWidth(int pixels);
@@ -258,7 +277,7 @@ private:
 
     bool m_fitMode = true;
     bool m_fillMode = false;
-    bool m_workspaceMode = false;
+    ViewMode m_viewMode = ViewMode::Image;
     bool m_imageModeNavEnabled = false;
     bool m_imageModeLeftDragPan = true;
     bool m_hudVisible = false;
