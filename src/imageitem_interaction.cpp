@@ -45,13 +45,18 @@ QString tooltipForHandle(ImageItem::Handle h)
 namespace {
 constexpr qreal kHandleScreenPx = 21.0;      // scale/rotate markers in *viewport* px
 constexpr qreal kRotateOffsetPx = 36.0;      // rotate handle distance from edge (viewport px)
-constexpr qreal kChromeBtnScreenPx = 22.0;   // flip / raise / lower diameter (viewport px)
-constexpr qreal kChromeHitScreenPx = 21.0;   // hit radius in viewport px
-constexpr qreal kChromeInsetPx = 10.0;       // inset from pixmap edge into the image
-constexpr qreal kChromeBtnGapPx = 6.0;       // gap between stacked chrome buttons
-constexpr qreal kSliderWidthPx = 90.0;
-constexpr qreal kSliderHeightPx = 9.0;
-constexpr qreal kSliderBottomInsetPx = 10.0; // opacity track above bottom edge
+// Chrome buttons (flip / raise / lower / reset): larger + roomier so they stay
+// readable and do not overlap each other or the edge/rotate handles.
+constexpr qreal kChromeBtnScreenPx = 34.0;   // diameter in viewport px (~50% larger)
+constexpr qreal kChromeHitScreenPx = 28.0;   // hit radius in viewport px
+constexpr qreal kChromeInsetPx = 18.0;       // distance from edge *into* the image
+constexpr qreal kChromeBtnGapPx = 12.0;      // gap between stacked chrome buttons
+constexpr qreal kSliderWidthPx = 100.0;
+constexpr qreal kSliderHeightPx = 10.0;
+// Inward from bottom edge mid — clears the mid-edge scale bar + a little air.
+constexpr qreal kSliderBottomInsetPx = 28.0;
+// Skip detailed chrome only when the frame is truly a few pixels across.
+constexpr qreal kMinFrameDiagPx = 16.0;
 } // namespace
 
 QRectF ImageItem::boundingRect() const
@@ -382,14 +387,46 @@ QRectF ImageItem::opacitySliderRect() const
 
 void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
 {
-    const QRectF track = opacitySliderRect();
-    if (track.width() <= 0) {
+    // Rebuild the same view-space track used by paint / handleAt so drag stays
+    // continuous under rotation and never jumps when item scale changes.
+    QGraphicsView *view = nullptr;
+    if (scene()) {
+        const QList<QGraphicsView *> views = scene()->views();
+        if (!views.isEmpty()) {
+            view = views.first();
+        }
+    }
+    if (!view) {
         return;
     }
-    // Project the pointer onto the track in view space so a rotated slider still
-    // responds along its visible axis (not raw local X).
-    const QPointF a = localToViewPx(QPointF(track.left(), track.center().y()));
-    const QPointF b = localToViewPx(QPointF(track.right(), track.center().y()));
+    auto toView = [this, view](const QPointF &local) -> QPointF {
+        return QPointF(view->mapFromScene(mapToScene(local)));
+    };
+    auto norm = [](QPointF v) -> QPointF {
+        const qreal len = qHypot(v.x(), v.y());
+        return len > 1e-6 ? v / len : QPointF(1, 0);
+    };
+    const QRectF localRect = QGraphicsPixmapItem::boundingRect();
+    const QPointF tl = toView(localRect.topLeft());
+    const QPointF tr = toView(localRect.topRight());
+    const QPointF br = toView(localRect.bottomRight());
+    const QPointF bl = toView(localRect.bottomLeft());
+    const QPointF centerV = toView(localRect.center());
+    if (QLineF(tl, br).length() < kMinFrameDiagPx) {
+        return;
+    }
+    const QPointF dirBottom = norm(bl - br);
+    const QPointF midBottom = (br + bl) * 0.5;
+    QPointF outBottom(-dirBottom.y(), dirBottom.x());
+    if (QPointF::dotProduct(outBottom, midBottom - centerV) < 0) {
+        outBottom = -outBottom;
+    }
+    const QPointF along = dirBottom;
+    const QPointF inward = -outBottom;
+    const QPointF trackCentre = midBottom + inward * kSliderBottomInsetPx;
+    const qreal halfW = kSliderWidthPx * 0.5;
+    const QPointF a = trackCentre - along * halfW;
+    const QPointF b = trackCentre + along * halfW;
     const QPointF p = sceneToViewPx(scenePos);
     const QPointF ab = b - a;
     const qreal ab2 = QPointF::dotProduct(ab, ab);
@@ -457,7 +494,8 @@ QPointF ImageItem::handleCenter(Handle h) const
     const qreal gap = qMin(kChromeBtnGapPx / sy, maxOff / 12.0);
     const qreal insetX = qMin(kChromeInsetPx / sx, maxOff / 4.0);
 
-    const qreal stackX = r.right() + insetX + qMin((kChromeBtnScreenPx / sx) / 2.0, maxOff / 4.0);
+    // Inside the right edge (matches view-space paint / hit placement).
+    const qreal stackX = r.right() - insetX - qMin((kChromeBtnScreenPx / sx) / 2.0, maxOff / 4.0);
     const int nChrome = 6;
     const qreal stackH = nChrome * btn + (nChrome - 1) * gap;
     const qreal stackTop = cy - stackH / 2.0;
@@ -545,8 +583,8 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     const QPointF centerV = toView(localRect.center());
     const QPointF p = toView(itemPos);
 
-    // Degenerate frame: only opacity / chrome near centre are reachable.
-    if (QLineF(tl, br).length() < 4.0) {
+    // Degenerate frame: no chrome hits (matches paint early-out).
+    if (QLineF(tl, br).length() < kMinFrameDiagPx) {
         return Handle::None;
     }
 
@@ -570,11 +608,14 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     const QPointF outBottom = outward(midBottom, dirBottom);
     const QPointF outLeft = outward(midLeft, dirLeft);
 
-    // Opacity track (mapped ends)
+    // Opacity track — same pure view-space geometry as paint
     {
-        const QRectF slider = opacitySliderRect();
-        const QPointF a = toView(QPointF(slider.left(), slider.center().y()));
-        const QPointF b = toView(QPointF(slider.right(), slider.center().y()));
+        const QPointF along = dirBottom;
+        const QPointF inward = -outBottom;
+        const QPointF trackCentre = midBottom + inward * kSliderBottomInsetPx;
+        const qreal halfW = kSliderWidthPx * 0.5;
+        const QPointF a = trackCentre - along * halfW;
+        const QPointF b = trackCentre + along * halfW;
         const QPointF ab = b - a;
         const qreal ab2 = QPointF::dotProduct(ab, ab);
         qreal tt = 0.0;
@@ -586,11 +627,11 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         }
     }
 
-    // Chrome buttons — same view-space stack as paint
+    // Chrome buttons — same view-space stack as paint (inside the frame)
     {
         const qreal btnR = kChromeBtnScreenPx / 2.0;
         const qreal inset = kChromeInsetPx + btnR;
-        const QPointF stackOrigin = midRight + outRight * inset;
+        const QPointF stackOrigin = midRight - outRight * inset;
         const QPointF along = dirRight;
         const int nChrome = 6;
         const qreal step = kChromeBtnScreenPx + kChromeBtnGapPx;
@@ -870,8 +911,10 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
 
     // Degenerate frame (item scale near zero / collapsed): skip detailed chrome
     // so we never feed zero-length edges into norm() or draw Inf positions.
+    // Threshold is deliberately higher than a few pixels so handles stay visible
+    // while the image is still clearly on screen.
     const qreal frameDiag = QLineF(tl, br).length();
-    const bool frameOk = frameDiag >= 4.0;
+    const bool frameOk = frameDiag >= kMinFrameDiagPx;
 
     // Selection frame
     QPen framePen(QColor(0, 160, 255), 0);
@@ -926,28 +969,24 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             {Handle::ScaleBottomLeft, bl, -dirBottom, dirLeft},
         };
         for (const Corner &co : corners) {
+            // L-bracket only: two thick arms along the visual edges meeting at the
+            // corner (same language as mid-edge bars). No centre square — it
+            // vanished inconsistently with scale and cluttered the corner.
             const bool hot = (m_hoverHandle == co.h || m_activeHandle == co.h);
             const QPointF c = co.corner;
             const QPointF d1 = norm(co.alongA);
             const QPointF d2 = norm(co.alongB);
-            const qreal arm = hs * (hot ? 1.25 : 1.05);
+            const qreal arm = hs * (hot ? 1.35 : 1.15);
+            const qreal thick = hs * (hot ? 0.42 : 0.34);
             QPen hp(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
             hp.setCosmetic(true);
-            hp.setWidthF(hot ? 2.25 : 1.75);
+            hp.setWidthF(thick);
             hp.setCapStyle(Qt::SquareCap);
+            hp.setJoinStyle(Qt::MiterJoin);
             painter->setPen(hp);
+            painter->setBrush(Qt::NoBrush);
             painter->drawLine(c, c + d1 * arm);
             painter->drawLine(c, c + d2 * arm);
-            const qreal half = hs * (hot ? 0.28 : 0.24);
-            // Grip square aligned to local axes mapped into view.
-            const QPointF lx = norm(toView(QPointF(1, 0)) - toView(QPointF(0, 0)));
-            const QPointF ly = norm(toView(QPointF(0, 1)) - toView(QPointF(0, 0)));
-            QPolygonF sq;
-            sq << c + (-lx - ly) * half << c + (lx - ly) * half
-               << c + (lx + ly) * half << c + (-lx + ly) * half;
-            painter->setBrush(hot ? QColor(255, 255, 255) : QColor(0, 160, 255, 230));
-            painter->drawPolygon(sq);
-            painter->setBrush(Qt::NoBrush);
         }
 
         // Edge stretch bars along each edge, mid-edge, constant view size.
@@ -983,15 +1022,16 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         }
     }
 
-    // Chrome buttons: constant viewport-pixel size and distance outside the
-    // visual right edge (HANDLES.md). Stack runs along the edge direction in
-    // view space so rotation does not change spacing or push buttons to infinity.
+    // Chrome buttons: constant viewport-pixel size, *inside* the visual right
+    // edge so they no longer collide with the mid-edge scale bar and rotate
+    // stem. Stack runs along the edge direction in view space.
     {
         const qreal btnR = kChromeBtnScreenPx / 2.0;
         const qreal flipR = kChromeBtnScreenPx * 0.62;
+        // Inward: opposite of outward normal. Clearance from the edge clears
+        // the edge-scale bar and leaves air before the rotate stem outside.
         const qreal inset = kChromeInsetPx + btnR;
-        // Stack along the local "right" edge mapped to view (dirRight / outRight).
-        const QPointF stackOrigin = midRight + outRight * inset;
+        const QPointF stackOrigin = midRight - outRight * inset;
         const QPointF along = dirRight; // unit, parallel to the edge
         const int nChrome = 6;
         const qreal step = kChromeBtnScreenPx + kChromeBtnGapPx;
@@ -1064,16 +1104,20 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         drawBtn(Handle::ResetRotation, 5, QStringLiteral("0°"));
     }
 
-    // Opacity slider along the bottom edge of the frame (view-space).
+    // Opacity slider: pure viewport placement along the bottom edge, inward.
+    // Never derive length/position from local / sx — that caused discontinuous
+    // jumps when scale crossed clamp thresholds (HANDLES.md).
     {
-        const QRectF track = opacitySliderRect();
-        const QPointF a = toView(QPointF(track.left(), track.center().y()));
-        const QPointF b = toView(QPointF(track.right(), track.center().y()));
-        const QPointF ab = b - a;
-        const qreal abLen = qHypot(ab.x(), ab.y());
-        const QPointF along = abLen > 1e-6 ? ab / abLen : QPointF(1, 0);
-        const QPointF perp(-along.y(), along.x());
+        const QPointF along = dirBottom;
+        const QPointF inward = -outBottom; // into the image
         const qreal thick = kSliderHeightPx;
+        // Clear the mid-edge scale bar (centred on midBottom) with extra air.
+        const QPointF trackCentre = midBottom + inward * kSliderBottomInsetPx;
+        const qreal halfW = kSliderWidthPx * 0.5;
+        const QPointF a = trackCentre - along * halfW;
+        const QPointF b = trackCentre + along * halfW;
+        const QPointF ab = b - a;
+        const QPointF perp = inward; // thickness grows inward; either side is fine
         const bool hot = (m_hoverHandle == Handle::OpacitySlider
                           || m_activeHandle == Handle::OpacitySlider);
         const qreal tval = (m_opacity - 0.05) / 0.95;
