@@ -342,9 +342,10 @@ void MainWindow::updateNavigationActions()
     const bool hasFiles = !m_files.isEmpty();
     const bool hasItem = m_imageView && m_imageView->itemCount() > 0;
 
-    // Session navigation is Image-mode oriented; disable in workspace mode
-    // Prev/Next/slideshow are Image mode only (not Gallery, not Workspace).
+    // Prev/Next are Image mode only. Slideshow may start from Gallery (enters
+    // Image mode on start); still unavailable in Workspace.
     const bool imageNav = hasMany && m_imageView && m_imageView->isImageMode();
+    const bool canSlideshow = hasMany && m_imageView && !m_imageView->isWorkspaceMode();
     m_previousAct->setEnabled(imageNav);
     m_nextAct->setEnabled(imageNav);
     if (m_firstAct) {
@@ -353,11 +354,13 @@ void MainWindow::updateNavigationActions()
     if (m_lastAct) {
         m_lastAct->setEnabled(imageNav);
     }
-    m_slideshowAct->setEnabled(imageNav);
+    m_slideshowAct->setEnabled(canSlideshow);
     if (m_imageView) {
         m_imageView->setImageModeNavigationEnabled(imageNav);
     }
-    if (!imageNav) {
+    // Stop only when slideshow cannot run (Workspace or single file), not merely
+    // because the user is browsing the Gallery with the action still available.
+    if (!canSlideshow) {
         stopSlideshow();
     }
 
@@ -529,6 +532,20 @@ void MainWindow::startSlideshow()
     if (m_files.size() <= 1 || isWorkspaceMode()) {
         m_slideshowAct->setChecked(false);
         return;
+    }
+    // Gallery: open the focused session image in Image mode, then advance.
+    if (isGalleryMode()) {
+        QString path;
+        if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+            path = m_files.at(m_currentIndex);
+        } else if (!m_files.isEmpty()) {
+            path = m_files.first();
+        }
+        if (path.isEmpty()) {
+            m_slideshowAct->setChecked(false);
+            return;
+        }
+        showPathInImageMode(path);
     }
     if (m_slideshowFullscreen && !isFullScreen()) {
         showFullScreen();
