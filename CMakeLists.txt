@@ -30,6 +30,10 @@ add_executable(qimgview
   src/main.cpp
   src/mainwindow.cpp
   src/mainwindow.h
+  src/icons.cpp
+  src/icons.h
+  src/gallerylayout.cpp
+  src/gallerylayout.h
   src/imageview.cpp
   src/imageview.h
   src/imageitem.cpp

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow.h"
+#include "icons.h"
 #include "imageview.h"
 #include "imageloader.h"
 #include "thumbnailbar.h"
@@ -51,33 +52,6 @@
 #include <algorithm>
 
 namespace {
-
-QIcon themeIcon(const QString &name, QStyle::StandardPixmap fallback)
-{
-    QIcon icon = QIcon::fromTheme(name);
-    if (!icon.isNull()) {
-        return icon;
-    }
-    // Bundled custom SVG when the icon theme has no match
-    const QString resource = QStringLiteral(":/icons/actions/%1.svg").arg(name);
-    if (QFile::exists(resource)) {
-        icon = QIcon(resource);
-        if (!icon.isNull()) {
-            return icon;
-        }
-    }
-    return QApplication::style()->standardIcon(fallback);
-}
-
-/** Bundled action icon (always from resources; used for coloured gallery glyphs). */
-QIcon resourceIcon(const QString &name)
-{
-    const QString resource = QStringLiteral(":/icons/actions/%1.svg").arg(name);
-    if (QFile::exists(resource)) {
-        return QIcon(resource);
-    }
-    return QIcon();
-}
 
 QString imageFileDialogFilter()
 {

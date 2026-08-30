@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
 
@@ -1377,147 +1378,44 @@ void ImageView::applyLayout()
     const qreal gap = 12.0;
     const qreal availW = qMax(32.0, static_cast<qreal>(viewport()->width()) - 2.0 * margin);
     const qreal availH = qMax(32.0, static_cast<qreal>(viewport()->height()) - 2.0 * margin);
-    const int n = m_items.size();
 
-    // Zero rotation so edges align (stack keeps rotation for A/B compare)
-    if (m_layoutMode != LayoutMode::Stack) {
-        for (ImageItem *item : m_items) {
-            item->setItemRotation(0.0);
-        }
+    GalleryLayout::Params params;
+    params.margin = margin;
+    params.gap = gap;
+    params.availW = availW;
+    params.availH = availH;
+    params.masonryColumns = m_masonryColumns;
+    params.masonryRows = m_masonryRows;
+    switch (m_layoutMode) {
+    case LayoutMode::SideBySide:
+        params.mode = GalleryLayout::Mode::SideBySide;
+        break;
+    case LayoutMode::Vertical:
+        params.mode = GalleryLayout::Mode::Vertical;
+        break;
+    case LayoutMode::Grid:
+        params.mode = GalleryLayout::Mode::Grid;
+        break;
+    case LayoutMode::GridCrop:
+        params.mode = GalleryLayout::Mode::GridCrop;
+        break;
+    case LayoutMode::Masonry:
+        params.mode = GalleryLayout::Mode::Masonry;
+        break;
+    case LayoutMode::MasonryRows:
+        params.mode = GalleryLayout::Mode::MasonryRows;
+        break;
+    case LayoutMode::Stack:
+        params.mode = GalleryLayout::Mode::Stack;
+        break;
+    default:
+        params.mode = GalleryLayout::Mode::Masonry;
+        break;
     }
-    // Crop cell is GridCrop-only; clear so other layouts show full images.
-    if (m_layoutMode != LayoutMode::GridCrop) {
-        for (ImageItem *item : m_items) {
-            item->setGalleryCellSize({});
-        }
-    }
 
-    if (m_layoutMode == LayoutMode::SideBySide) {
-        // Horizontal strip: each image fits the viewport height; scroll for overflow.
-        // Do not shrink to fit all images in one view (use Fit to Window for that).
-        qreal x = margin;
-        for (ImageItem *item : m_items) {
-            const QSizeF ns = nativeSize(item);
-            const qreal scale = availH / qMax(1.0, ns.height());
-            item->setItemScale(scale);
-            const qreal w = ns.width() * scale;
-            const qreal h = ns.height() * scale;
-            item->setPos(x + w / 2.0, margin + h / 2.0);
-            x += w + gap;
-            m_itemStates.insert(item->path(), captureState(item));
-        }
-    } else if (m_layoutMode == LayoutMode::Vertical) {
-        // Vertical strip: each image fits the viewport width; scroll for overflow.
-        qreal y = margin;
-        for (ImageItem *item : m_items) {
-            const QSizeF ns = nativeSize(item);
-            const qreal scale = availW / qMax(1.0, ns.width());
-            item->setItemScale(scale);
-            const qreal w = ns.width() * scale;
-            const qreal h = ns.height() * scale;
-            item->setPos(margin + w / 2.0, y + h / 2.0);
-            y += h + gap;
-            m_itemStates.insert(item->path(), captureState(item));
-        }
-    } else if (m_layoutMode == LayoutMode::Grid) {
-        const int cols = qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
-        const int rows = qMax(1, static_cast<int>(std::ceil(double(n) / double(cols))));
-        const qreal cellW = (availW - gap * qMax(0, cols - 1)) / cols;
-        const qreal cellH = (availH - gap * qMax(0, rows - 1)) / rows;
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = m_items.at(i);
-            const int col = i % cols;
-            const int row = i / cols;
-            const QSizeF ns = nativeSize(item);
-            const qreal scale = qMin(cellW / qMax(1.0, ns.width()),
-                                    cellH / qMax(1.0, ns.height()));
-            item->setItemScale(scale);
-            const qreal cx = margin + col * (cellW + gap) + cellW / 2.0;
-            const qreal cy = margin + row * (cellH + gap) + cellH / 2.0;
-            item->setPos(cx, cy);
-            m_itemStates.insert(item->path(), captureState(item));
-        }
-    } else if (m_layoutMode == LayoutMode::GridCrop) {
-        // Square cells spanning the view width; cover + centre-crop (thumb-crop style).
-        // Extra rows scroll vertically.
-        const int cols = qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
-        const qreal cell = (availW - gap * qMax(0, cols - 1)) / cols;
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = m_items.at(i);
-            const int col = i % cols;
-            const int row = i / cols;
-            const QSizeF ns = nativeSize(item);
-            // Cover: scale so the smaller image edge fills the cell, then crop.
-            const qreal scale = qMax(cell / qMax(1.0, ns.width()),
-                                    cell / qMax(1.0, ns.height()));
-            item->setItemScale(scale);
-            item->setGalleryCellSize(QSizeF(cell, cell));
-            const qreal cx = margin + col * (cell + gap) + cell / 2.0;
-            const qreal cy = margin + row * (cell + gap) + cell / 2.0;
-            item->setPos(cx, cy);
-            m_itemStates.insert(item->path(), captureState(item));
-        }
-    } else if (m_layoutMode == LayoutMode::Masonry) {
-        // N columns spanning the window width; pack into the shortest column.
-        const int cols = qBound(1, m_masonryColumns, n);
-        const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
-        QVector<qreal> colHeights(cols, 0.0);
-
-        for (ImageItem *item : m_items) {
-            const QSizeF ns = nativeSize(item);
-            const qreal scale = colW / qMax(1.0, ns.width());
-            item->setItemScale(scale);
-            const qreal h = ns.height() * scale;
-
-            int best = 0;
-            for (int c = 1; c < cols; ++c) {
-                if (colHeights.at(c) < colHeights.at(best)) {
-                    best = c;
-                }
-            }
-
-            const qreal cx = margin + best * (colW + gap) + colW / 2.0;
-            const qreal cy = margin + colHeights.at(best) + h / 2.0;
-            item->setPos(cx, cy);
-            colHeights[best] += h + gap;
-            m_itemStates.insert(item->path(), captureState(item));
-        }
-    } else if (m_layoutMode == LayoutMode::MasonryRows) {
-        // N rows spanning the window height; pack into the shortest row.
-        const int rows = qBound(1, m_masonryRows, n);
-        const qreal rowH = (availH - gap * qMax(0, rows - 1)) / rows;
-        QVector<qreal> rowWidths(rows, 0.0);
-
-        for (ImageItem *item : m_items) {
-            const QSizeF ns = nativeSize(item);
-            const qreal scale = rowH / qMax(1.0, ns.height());
-            item->setItemScale(scale);
-            const qreal w = ns.width() * scale;
-
-            int best = 0;
-            for (int r = 1; r < rows; ++r) {
-                if (rowWidths.at(r) < rowWidths.at(best)) {
-                    best = r;
-                }
-            }
-
-            const qreal cx = margin + rowWidths.at(best) + w / 2.0;
-            const qreal cy = margin + best * (rowH + gap) + rowH / 2.0;
-            item->setPos(cx, cy);
-            rowWidths[best] += w + gap;
-            m_itemStates.insert(item->path(), captureState(item));
-        }
-    } else if (m_layoutMode == LayoutMode::Stack) {
-        // Scale each to fit the view; overlap at centre for A/B comparison
-        for (ImageItem *item : m_items) {
-            const QSizeF ns = nativeSize(item);
-            const qreal scale = qMin(availW / qMax(1.0, ns.width()),
-                                    availH / qMax(1.0, ns.height()));
-            item->setItemScale(scale);
-            item->setPos(margin + availW / 2.0, margin + availH / 2.0);
-            m_itemStates.insert(item->path(), captureState(item));
-        }
-    }
+    GalleryLayout::pack(m_items, params, [this](ImageItem *item) {
+        m_itemStates.insert(item->path(), captureState(item));
+    });
 
     const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-margin, -margin, margin, margin);
     // Never call setHorizontalScrollBarPolicy here — it resizes the viewport and
