@@ -63,16 +63,18 @@ QRectF ImageItem::boundingRect() const
             return clip;
         }
     }
-    // Expand for external handles (scale/rotate) when selected so they are not clipped.
-    // Flip / raise / lower / opacity sit inside the pixmap and need no extra pad.
+    // Modest expansion for external handles when selected. Precise hit-testing is
+    // view-owned (viewport distances); this AABB only prevents scene clipping of
+    // the painted chrome. Clamp pad so near-zero item scale cannot explode the
+    // local rect to infinity (HANDLES.md).
     QRectF r = QGraphicsPixmapItem::boundingRect();
     if (isSelected() && m_interactive) {
-        // Pads must cover screen-pixel handle targets after rotation; use min
-        // device scale so the local AABB still contains the hit discs.
-        const qreal sMin = deviceScaleMin();
-        const qreal hitLocal = (kHandleScreenPx * 1.75) / sMin;
-        const qreal rotLocal = kRotateOffsetPx / sMin;
-        const qreal pad = hitLocal + rotLocal + 4.0 / sMin;
+        const qreal content = qMax(r.width(), r.height());
+        const qreal sMin = qMax(deviceScaleMin(), 1e-4);
+        const qreal ideal = (kHandleScreenPx * 1.75 + kRotateOffsetPx + 8.0) / sMin;
+        // Never pad more than ~half the content diagonal in local units; at very
+        // small scales the view still finds handles via selected-item queries.
+        const qreal pad = qMin(ideal, qMax(40.0, content * 0.75));
         r.adjust(-pad, -pad, pad, pad);
     }
     return r;
@@ -80,8 +82,11 @@ QRectF ImageItem::boundingRect() const
 
 QPainterPath ImageItem::shape() const
 {
-    // Hit-test the content plus handles when selected. Radii are in item-local
-    // units; use generous chrome ellipses so rotated items still receive events.
+    // Content body only. Transform chrome is hit-tested by ImageView in viewport
+    // space (selected-item loop + handleAt view-pixel distances). Expanding the
+    // item shape with /deviceScaleMin local radii caused the path to explode when
+    // scale approached zero (HANDLES.md). External handles remain reachable
+    // because the view queries selected items explicitly.
     QPainterPath path;
     if (!m_galleryCellSize.isEmpty()) {
         const QRectF clip = galleryClipLocal();
@@ -91,45 +96,6 @@ QPainterPath ImageItem::shape() const
         }
     }
     path.addRect(QGraphicsPixmapItem::boundingRect());
-    if (isSelected() && m_interactive) {
-        // Local radii from min device scale so a screen-pixel disc around each
-        // handle stays inside shape() after rotation / anisotropic scale.
-        const qreal sMin = deviceScaleMin();
-        const qreal r = (kHandleScreenPx * 2.0) / sMin;
-        QList<Handle> handles = {
-            Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
-        };
-        if (m_scaleHandlesEnabled) {
-            handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                                    Handle::ScaleBottomLeft, Handle::ScaleBottomRight,
-                                    Handle::ScaleTop, Handle::ScaleRight,
-                                    Handle::ScaleBottom, Handle::ScaleLeft}
-                      + handles;
-        }
-        for (Handle h : handles) {
-            const QPointF c = handleCenter(h);
-            path.addEllipse(c, r, r);
-        }
-        for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower,
-                          Handle::ResetScale, Handle::ResetRotation}) {
-            const QPointF c = handleCenter(h);
-            const qreal cr = ((h == Handle::FlipH || h == Handle::FlipV)
-                                  ? (kChromeBtnScreenPx * 0.70)
-                                  : (kChromeHitScreenPx * 1.25)) / sMin;
-            path.addEllipse(c, cr, cr);
-        }
-        const qreal pad = 10.0 / sMin;
-        path.addRect(opacitySliderRect().adjusted(-pad, -pad, pad, pad));
-        const QRectF content = QGraphicsPixmapItem::boundingRect();
-        path.moveTo(content.center().x(), content.top());
-        path.lineTo(handleCenter(Handle::RotateTop));
-        path.moveTo(content.right(), content.center().y());
-        path.lineTo(handleCenter(Handle::RotateRight));
-        path.moveTo(content.center().x(), content.bottom());
-        path.lineTo(handleCenter(Handle::RotateBottom));
-        path.moveTo(content.left(), content.center().y());
-        path.lineTo(handleCenter(Handle::RotateLeft));
-    }
     return path;
 }
 
@@ -288,29 +254,32 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
 {
     // Ctrl or Shift → scale from the opposite corner/edge (drawing-program style).
     // Default → uniform/anisotropic scale about the item centre.
+    //
+    // Edge stretch uses scene-space projections onto the *press-time* image axes
+    // so the ratio stays stable when scale approaches the clamp (HANDLES.md).
+    // Local ratios after each setItemScale amplify noise near zero.
     const bool fromCenter = !(mods & (Qt::ControlModifier | Qt::ShiftModifier));
-    const QPointF centre = scenePos; // unused name clash — use item centre
-    Q_UNUSED(centre);
     const QPointF itemCentre = this->scenePos();
+    const QRectF localR = QGraphicsPixmapItem::boundingRect();
+    const qreal halfW = localR.width() * 0.5;
+    const qreal halfH = localR.height() * 0.5;
+    constexpr qreal kMinDist = 1.0; // scene px; below this ignore the sample
 
     if (isCornerScaleHandle(m_activeHandle)) {
         if (fromCenter) {
             const qreal d0 = QLineF(itemCentre, m_pressScenePos).length();
             const qreal d1 = QLineF(itemCentre, scenePos).length();
-            if (d0 > 1.0) {
+            if (d0 > kMinDist) {
                 const qreal f = d1 / d0;
                 setItemScale(m_pressScaleX * f, m_pressScaleY * f);
             }
         } else {
-            // Keep opposite corner fixed in scene; scale so the dragged corner
-            // tracks the pointer along the ray from the anchor.
             const QPointF anchor = m_pressAnchorScene;
             const qreal d0 = QLineF(anchor, m_pressScenePos).length();
             const qreal d1 = QLineF(anchor, scenePos).length();
-            if (d0 > 1.0) {
+            if (d0 > kMinDist) {
                 const qreal f = d1 / d0;
                 setItemScale(m_pressScaleX * f, m_pressScaleY * f);
-                // Reposition so the anchor local point stays at anchor scene.
                 const QPointF now = mapToScene(m_pressAnchorLocal);
                 setPos(pos() + (anchor - now));
             }
@@ -319,41 +288,58 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     }
 
     if (isEdgeScaleHandle(m_activeHandle)) {
-        // mapFromScene undoes rotation+scale, so local X/Y are the image axes
-        // even when the frame is rotated on screen — stretch those axes only.
-        const QPointF local = mapFromScene(scenePos);
-        const QPointF pressLocal = m_pressItemPos;
+        // Unit image axes in *scene* at press (rotation fixed during this drag).
+        // Built from press scale + rotation so they do not change as we update scale.
+        const qreal rot = qDegreesToRadians(m_pressRotation);
+        const qreal c = qCos(rot);
+        const qreal s = qSin(rot);
+        // Local +X maps to scene direction (c, s) * scaleX; +Y to (-s, c) * scaleY
+        // after the usual Qt transform order (scale then rotate around centre).
+        // Transform is rotate then scale only; flips are baked into the pixmap
+        // so the geometric frame axes are unaffected.
+        QPointF axisX(c * m_pressScaleX, s * m_pressScaleX);
+        QPointF axisY(-s * m_pressScaleY, c * m_pressScaleY);
 
         qreal sx = m_pressScaleX;
         qreal sy = m_pressScaleY;
-        if (m_activeHandle == Handle::ScaleLeft || m_activeHandle == Handle::ScaleRight) {
-            if (fromCenter) {
-                const qreal x0 = qAbs(pressLocal.x());
-                const qreal x1 = qAbs(local.x());
-                if (x0 > 1.0) {
-                    sx = m_pressScaleX * (x1 / x0);
+        const bool stretchX = (m_activeHandle == Handle::ScaleLeft
+                               || m_activeHandle == Handle::ScaleRight);
+
+        if (fromCenter) {
+            const QPointF v0 = m_pressScenePos - itemCentre;
+            const QPointF v1 = scenePos - itemCentre;
+            if (stretchX) {
+                const qreal len0 = QPointF::dotProduct(v0, axisX) / qMax(1e-9, QPointF::dotProduct(axisX, axisX));
+                const qreal len1 = QPointF::dotProduct(v1, axisX) / qMax(1e-9, QPointF::dotProduct(axisX, axisX));
+                // len is in "press-scale units" of half-width; recover scale factor.
+                if (qAbs(len0) > 1e-6) {
+                    sx = m_pressScaleX * (qAbs(len1) / qAbs(len0));
                 }
             } else {
-                const qreal ax = m_pressAnchorLocal.x();
-                const qreal x0 = qAbs(pressLocal.x() - ax);
-                const qreal x1 = qAbs(local.x() - ax);
-                if (x0 > 1.0) {
-                    sx = m_pressScaleX * (x1 / x0);
+                const qreal len0 = QPointF::dotProduct(v0, axisY) / qMax(1e-9, QPointF::dotProduct(axisY, axisY));
+                const qreal len1 = QPointF::dotProduct(v1, axisY) / qMax(1e-9, QPointF::dotProduct(axisY, axisY));
+                if (qAbs(len0) > 1e-6) {
+                    sy = m_pressScaleY * (qAbs(len1) / qAbs(len0));
                 }
             }
         } else {
-            if (fromCenter) {
-                const qreal y0 = qAbs(pressLocal.y());
-                const qreal y1 = qAbs(local.y());
-                if (y0 > 1.0) {
-                    sy = m_pressScaleY * (y1 / y0);
+            // Anchor fixed: project (pointer - anchor) onto the stretch axis.
+            const QPointF anchor = m_pressAnchorScene;
+            const QPointF v0 = m_pressScenePos - anchor;
+            const QPointF v1 = scenePos - anchor;
+            if (stretchX) {
+                const qreal uAxis = qMax(1e-9, QPointF::dotProduct(axisX, axisX));
+                const qreal len0 = QPointF::dotProduct(v0, axisX) / uAxis;
+                const qreal len1 = QPointF::dotProduct(v1, axisX) / uAxis;
+                if (qAbs(len0) > 1e-6) {
+                    sx = m_pressScaleX * (qAbs(len1) / qAbs(len0));
                 }
             } else {
-                const qreal ay = m_pressAnchorLocal.y();
-                const qreal y0 = qAbs(pressLocal.y() - ay);
-                const qreal y1 = qAbs(local.y() - ay);
-                if (y0 > 1.0) {
-                    sy = m_pressScaleY * (y1 / y0);
+                const qreal uAxis = qMax(1e-9, QPointF::dotProduct(axisY, axisY));
+                const qreal len0 = QPointF::dotProduct(v0, axisY) / uAxis;
+                const qreal len1 = QPointF::dotProduct(v1, axisY) / uAxis;
+                if (qAbs(len0) > 1e-6) {
+                    sy = m_pressScaleY * (qAbs(len1) / qAbs(len0));
                 }
             }
         }
@@ -373,16 +359,20 @@ qreal ImageItem::chromeButtonSize() const
 QRectF ImageItem::opacitySliderRect() const
 {
     // Horizontal track along the bottom interior of the pixmap (rotates with image).
+    // Clamp local sizes so near-zero item scale does not produce a track larger
+    // than the pixmap itself (HANDLES.md).
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     auto axis = [this](const QPointF &localAxis) -> qreal {
         return qMax(1e-6, QLineF(localToViewPx(QPointF(0, 0)), localToViewPx(localAxis)).length());
     };
     const qreal sx = axis(QPointF(1, 0));
     const qreal sy = axis(QPointF(0, 1));
-    const qreal insetX = kChromeInsetPx / sx;
-    const qreal insetY = kChromeInsetPx / sy;
-    const qreal h = kSliderHeightPx / sy;
-    const qreal maxW = kSliderWidthPx / sx;
+    const qreal content = qMax(r.width(), r.height());
+    const qreal maxOff = qMax(20.0, content * 0.4);
+    const qreal insetX = qMin(kChromeInsetPx / sx, maxOff);
+    const qreal insetY = qMin(kChromeInsetPx / sy, maxOff);
+    const qreal h = qMin(kSliderHeightPx / sy, qMax(1.0, r.height() * 0.2));
+    const qreal maxW = qMin(kSliderWidthPx / sx, r.width());
     const qreal avail = qMax(0.0, r.width() - 2.0 * insetX);
     const qreal w = qMin(maxW, avail);
     const qreal x = r.left() + insetX + (avail - w) / 2.0;
@@ -441,11 +431,17 @@ qreal ImageItem::handleDistanceScreenPx(Handle h, const QPointF &itemPos) const
 
 QPointF ImageItem::handleCenter(Handle h) const
 {
+    // Local attachment points. Scale handles sit on the pixmap rect (align + rotate
+    // with the image). Rotate / chrome use *clamped* local offsets so near-zero
+    // scale cannot send centres to infinity; paint and hit-testing place the true
+    // constant-screen-distance positions in viewport space (see paintInteractionChrome
+    // and handleAt). Opacity uses the interior track.
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal cx = r.center().x();
     const qreal cy = r.center().y();
+    const qreal content = qMax(r.width(), r.height());
+    const qreal maxOff = qMax(40.0, content * 0.75);
 
-    // Screen pixels per local unit along each axis (handles anisotropic scale + view zoom).
     auto axisScreenPerLocal = [this](const QPointF &localAxis) -> qreal {
         const QPointF o = localToViewPx(QPointF(0, 0));
         const QPointF p = localToViewPx(localAxis);
@@ -455,15 +451,13 @@ QPointF ImageItem::handleCenter(Handle h) const
     const qreal sx = axisScreenPerLocal(QPointF(1, 0));
     const qreal sy = axisScreenPerLocal(QPointF(0, 1));
 
-    // Convert a desired *viewport-pixel* offset into local units along X or Y.
-    const qreal rotOffX = kRotateOffsetPx / sx;
-    const qreal rotOffY = kRotateOffsetPx / sy;
-    const qreal btn = kChromeBtnScreenPx / sy;   // stack runs along local Y
-    const qreal gap = kChromeBtnGapPx / sy;
-    const qreal insetX = kChromeInsetPx / sx;
+    const qreal rotOffX = qMin(kRotateOffsetPx / sx, maxOff);
+    const qreal rotOffY = qMin(kRotateOffsetPx / sy, maxOff);
+    const qreal btn = qMin(kChromeBtnScreenPx / sy, maxOff / 6.0);
+    const qreal gap = qMin(kChromeBtnGapPx / sy, maxOff / 12.0);
+    const qreal insetX = qMin(kChromeInsetPx / sx, maxOff / 4.0);
 
-    // Outside the right edge, centered vertically — avoids overlapping corner grips.
-    const qreal stackX = r.right() + insetX + (kChromeBtnScreenPx / sx) / 2.0;
+    const qreal stackX = r.right() + insetX + qMin((kChromeBtnScreenPx / sx) / 2.0, maxOff / 4.0);
     const int nChrome = 6;
     const qreal stackH = nChrome * btn + (nChrome - 1) * gap;
     const qreal stackTop = cy - stackH / 2.0;
@@ -521,12 +515,66 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         return Handle::None;
     }
 
-    // Prefer chrome and opacity using view-pixel distances (rotation-safe).
+    // All distances in viewport pixels so rotation / anisotropic scale / near-zero
+    // item scale cannot break hit testing (HANDLES.md). Centres for rotate and
+    // chrome match paintInteractionChrome exactly.
+    QGraphicsView *view = nullptr;
+    if (scene()) {
+        const QList<QGraphicsView *> views = scene()->views();
+        if (!views.isEmpty()) {
+            view = views.first();
+        }
+    }
+    if (!view) {
+        return Handle::None;
+    }
+
+    auto toView = [this, view](const QPointF &local) -> QPointF {
+        return QPointF(view->mapFromScene(mapToScene(local)));
+    };
+    auto norm = [](QPointF v) -> QPointF {
+        const qreal len = qHypot(v.x(), v.y());
+        return len > 1e-6 ? v / len : QPointF(1, 0);
+    };
+
+    const QRectF localRect = QGraphicsPixmapItem::boundingRect();
+    const QPointF tl = toView(localRect.topLeft());
+    const QPointF tr = toView(localRect.topRight());
+    const QPointF br = toView(localRect.bottomRight());
+    const QPointF bl = toView(localRect.bottomLeft());
+    const QPointF centerV = toView(localRect.center());
+    const QPointF p = toView(itemPos);
+
+    // Degenerate frame: only opacity / chrome near centre are reachable.
+    if (QLineF(tl, br).length() < 4.0) {
+        return Handle::None;
+    }
+
+    const QPointF dirTop = norm(tr - tl);
+    const QPointF dirRight = norm(br - tr);
+    const QPointF dirBottom = norm(bl - br);
+    const QPointF dirLeft = norm(tl - bl);
+    auto outward = [&](const QPointF &mid, const QPointF &along) -> QPointF {
+        QPointF n(-along.y(), along.x());
+        if (QPointF::dotProduct(n, mid - centerV) < 0) {
+            n = -n;
+        }
+        return n;
+    };
+    const QPointF midTop = (tl + tr) * 0.5;
+    const QPointF midRight = (tr + br) * 0.5;
+    const QPointF midBottom = (br + bl) * 0.5;
+    const QPointF midLeft = (bl + tl) * 0.5;
+    const QPointF outTop = outward(midTop, dirTop);
+    const QPointF outRight = outward(midRight, dirRight);
+    const QPointF outBottom = outward(midBottom, dirBottom);
+    const QPointF outLeft = outward(midLeft, dirLeft);
+
+    // Opacity track (mapped ends)
     {
         const QRectF slider = opacitySliderRect();
-        const QPointF a = localToViewPx(QPointF(slider.left(), slider.center().y()));
-        const QPointF b = localToViewPx(QPointF(slider.right(), slider.center().y()));
-        const QPointF p = localToViewPx(itemPos);
+        const QPointF a = toView(QPointF(slider.left(), slider.center().y()));
+        const QPointF b = toView(QPointF(slider.right(), slider.center().y()));
         const QPointF ab = b - a;
         const qreal ab2 = QPointF::dotProduct(ab, ab);
         qreal tt = 0.0;
@@ -538,68 +586,84 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         }
     }
 
-    Handle best = Handle::None;
-    qreal bestDist = 1e300;
-    for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower,
-                      Handle::ResetScale, Handle::ResetRotation}) {
-        const qreal d = handleDistanceScreenPx(h, itemPos);
-        // Flip toggles are drawn larger — match hit radius (~12px radius + pad).
-        const qreal limit = (h == Handle::FlipH || h == Handle::FlipV)
-                                ? (kChromeBtnScreenPx * 0.62 + 4.0)
-                                : kChromeHitScreenPx;
-        if (d <= limit && d <= bestDist) {
-            bestDist = d;
-            best = h;
+    // Chrome buttons — same view-space stack as paint
+    {
+        const qreal btnR = kChromeBtnScreenPx / 2.0;
+        const qreal inset = kChromeInsetPx + btnR;
+        const QPointF stackOrigin = midRight + outRight * inset;
+        const QPointF along = dirRight;
+        const int nChrome = 6;
+        const qreal step = kChromeBtnScreenPx + kChromeBtnGapPx;
+        const qreal stackH = nChrome * kChromeBtnScreenPx + (nChrome - 1) * kChromeBtnGapPx;
+        const QPointF stackStart = stackOrigin - along * (stackH / 2.0)
+                                   + along * (kChromeBtnScreenPx / 2.0);
+        const Handle chromeHandles[] = {
+            Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower,
+            Handle::ResetScale, Handle::ResetRotation
+        };
+        Handle best = Handle::None;
+        qreal bestDist = 1e300;
+        for (int i = 0; i < nChrome; ++i) {
+            const QPointF c = stackStart + along * (i * step);
+            const qreal d = QLineF(p, c).length();
+            const qreal limit = (chromeHandles[i] == Handle::FlipH
+                                 || chromeHandles[i] == Handle::FlipV)
+                                    ? (kChromeBtnScreenPx * 0.62 + 4.0)
+                                    : kChromeHitScreenPx;
+            if (d <= limit && d <= bestDist) {
+                bestDist = d;
+                best = chromeHandles[i];
+            }
+        }
+        if (best != Handle::None) {
+            return best;
         }
     }
-    if (best != Handle::None) {
-        return best;
-    }
 
-    best = Handle::None;
-    bestDist = kHandleScreenPx * 1.75;
-    // Corners and rotate handles: disc around centre.
-    QList<Handle> pointHandles = {
-        Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
+    // Scale corners + rotate knobs
+    Handle best = Handle::None;
+    qreal bestDist = kHandleScreenPx * 1.75;
+    struct PointH {
+        Handle h;
+        QPointF c;
     };
+    QList<PointH> points;
     if (m_scaleHandlesEnabled) {
-        pointHandles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                                     Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
-                       + pointHandles;
+        points << PointH{Handle::ScaleTopLeft, tl}
+               << PointH{Handle::ScaleTopRight, tr}
+               << PointH{Handle::ScaleBottomRight, br}
+               << PointH{Handle::ScaleBottomLeft, bl};
     }
-    for (Handle h : pointHandles) {
-        const qreal d = handleDistanceScreenPx(h, itemPos);
+    points << PointH{Handle::RotateTop, midTop + outTop * kRotateOffsetPx}
+           << PointH{Handle::RotateRight, midRight + outRight * kRotateOffsetPx}
+           << PointH{Handle::RotateBottom, midBottom + outBottom * kRotateOffsetPx}
+           << PointH{Handle::RotateLeft, midLeft + outLeft * kRotateOffsetPx};
+    for (const PointH &ph : points) {
+        const qreal d = QLineF(p, ph.c).length();
         if (d <= bestDist) {
             bestDist = d;
-            best = h;
+            best = ph.h;
         }
     }
 
-    // Edge stretch: distance to the edge segment in view space (matches the
-    // thick bar drawn along the edge), not only the midpoint disc.
+    // Edge stretch bars (short segment around mid-edge in view space)
     if (m_scaleHandlesEnabled) {
-        const QRectF r = QGraphicsPixmapItem::boundingRect();
-        struct EdgeSeg {
+        const qreal halfLen = kHandleScreenPx * 1.2;
+        const qreal edgeHit = kHandleScreenPx * 0.85;
+        struct EdgeH {
             Handle h;
-            QPointF aLocal;
-            QPointF bLocal;
+            QPointF mid;
+            QPointF along;
         };
-        const qreal half = (kHandleScreenPx * 2.4) / screenScale() * 0.5;
-        const EdgeSeg edges[] = {
-            {Handle::ScaleTop,    QPointF(r.center().x() - half, r.top()),
-                                  QPointF(r.center().x() + half, r.top())},
-            {Handle::ScaleBottom, QPointF(r.center().x() - half, r.bottom()),
-                                  QPointF(r.center().x() + half, r.bottom())},
-            {Handle::ScaleLeft,   QPointF(r.left(), r.center().y() - half),
-                                  QPointF(r.left(), r.center().y() + half)},
-            {Handle::ScaleRight,  QPointF(r.right(), r.center().y() - half),
-                                  QPointF(r.right(), r.center().y() + half)},
+        const EdgeH edges[] = {
+            {Handle::ScaleTop, midTop, dirTop},
+            {Handle::ScaleRight, midRight, dirRight},
+            {Handle::ScaleBottom, midBottom, dirBottom},
+            {Handle::ScaleLeft, midLeft, dirLeft},
         };
-        const QPointF p = localToViewPx(itemPos);
-        const qreal edgeHit = kHandleScreenPx * 0.85; // half thickness + pad
-        for (const EdgeSeg &ed : edges) {
-            const QPointF a = localToViewPx(ed.aLocal);
-            const QPointF b = localToViewPx(ed.bLocal);
+        for (const EdgeH &ed : edges) {
+            const QPointF a = ed.mid - ed.along * halfLen;
+            const QPointF b = ed.mid + ed.along * halfLen;
             const QPointF ab = b - a;
             const qreal ab2 = QPointF::dotProduct(ab, ab);
             qreal t = 0.0;
@@ -804,17 +868,30 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
 
     const qreal hs = kHandleScreenPx;
 
+    // Degenerate frame (item scale near zero / collapsed): skip detailed chrome
+    // so we never feed zero-length edges into norm() or draw Inf positions.
+    const qreal frameDiag = QLineF(tl, br).length();
+    const bool frameOk = frameDiag >= 4.0;
+
     // Selection frame
     QPen framePen(QColor(0, 160, 255), 0);
     framePen.setCosmetic(true);
     framePen.setWidthF(1.5);
     painter->setPen(framePen);
     painter->setBrush(Qt::NoBrush);
-    painter->drawPolygon(QPolygonF({tl, tr, br, bl}));
+    if (frameOk) {
+        painter->drawPolygon(QPolygonF({tl, tr, br, bl}));
+    } else {
+        // Minimal centred marker so the selection is still visible.
+        painter->drawEllipse(centerV, 6.0, 6.0);
+        painter->restore();
+        return;
+    }
 
-    // Rotate stems + knobs (centres from handleCenter so hit-test matches paint)
-    auto drawRotate = [&](Handle h, const QPointF &edgeMid) {
-        const QPointF c = toView(handleCenter(h));
+    // Rotate stems + knobs: constant viewport-pixel offset along outward normal
+    // of each edge (HANDLES.md). Never derive from local / sx.
+    auto drawRotate = [&](Handle h, const QPointF &edgeMid, const QPointF &outN) {
+        const QPointF c = edgeMid + outN * kRotateOffsetPx;
         const bool hot = (m_hoverHandle == h || m_activeHandle == h);
         QPen stem(QColor(0, 160, 255), 0);
         stem.setCosmetic(true);
@@ -829,10 +906,10 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         painter->setPen(hp);
         painter->drawEllipse(c, rad, rad);
     };
-    drawRotate(Handle::RotateTop, midTop);
-    drawRotate(Handle::RotateRight, midRight);
-    drawRotate(Handle::RotateBottom, midBottom);
-    drawRotate(Handle::RotateLeft, midLeft);
+    drawRotate(Handle::RotateTop, midTop, outTop);
+    drawRotate(Handle::RotateRight, midRight, outRight);
+    drawRotate(Handle::RotateBottom, midBottom, outBottom);
+    drawRotate(Handle::RotateLeft, midLeft, outLeft);
 
     if (m_scaleHandlesEnabled) {
         // Corner L-brackets: arms along the two adjacent edges in *view* space.
@@ -906,17 +983,30 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         }
     }
 
-    // Chrome buttons (outside right edge; centres from handleCenter).
+    // Chrome buttons: constant viewport-pixel size and distance outside the
+    // visual right edge (HANDLES.md). Stack runs along the edge direction in
+    // view space so rotation does not change spacing or push buttons to infinity.
     {
         const qreal btnR = kChromeBtnScreenPx / 2.0;
-        // Flip toggles are slightly larger and show on/off state.
-        const qreal flipR = kChromeBtnScreenPx * 0.62; // ~24px diameter
+        const qreal flipR = kChromeBtnScreenPx * 0.62;
+        const qreal inset = kChromeInsetPx + btnR;
+        // Stack along the local "right" edge mapped to view (dirRight / outRight).
+        const QPointF stackOrigin = midRight + outRight * inset;
+        const QPointF along = dirRight; // unit, parallel to the edge
+        const int nChrome = 6;
+        const qreal step = kChromeBtnScreenPx + kChromeBtnGapPx;
+        const qreal stackH = nChrome * kChromeBtnScreenPx + (nChrome - 1) * kChromeBtnGapPx;
+        // Centre the stack on the edge mid-point.
+        const QPointF stackStart = stackOrigin - along * (stackH / 2.0) + along * (kChromeBtnScreenPx / 2.0);
 
-        auto drawFlipToggle = [&](Handle h, bool on, const QString &glyph) {
-            const QPointF c = toView(handleCenter(h));
+        auto chromeCenterView = [&](int index) -> QPointF {
+            return stackStart + along * (index * step);
+        };
+
+        auto drawFlipToggle = [&](Handle h, int index, bool on, const QString &glyph) {
+            const QPointF c = chromeCenterView(index);
             const bool hovered = (m_hoverHandle == h);
             const qreal rad = flipR * (hovered ? 1.08 : 1.0);
-            // On = latched (bright fill); Off = outline-only dark body.
             QColor fill = on ? QColor(0, 160, 255, 245)
                              : QColor(40, 40, 40, 220);
             if (hovered && !on) {
@@ -928,7 +1018,6 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             painter->setPen(border);
             painter->setBrush(fill);
             painter->drawEllipse(c, rad, rad);
-            // Inner ring when on so the control reads as a toggle, not a one-shot.
             if (on) {
                 QPen ring(QColor(255, 255, 255, 200));
                 ring.setWidthF(1.25);
@@ -946,8 +1035,8 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
                               Qt::AlignCenter, glyph);
         };
 
-        auto drawBtn = [&](Handle h, const QString &glyph) {
-            const QPointF c = toView(handleCenter(h));
+        auto drawBtn = [&](Handle h, int index, const QString &glyph) {
+            const QPointF c = chromeCenterView(index);
             const bool hovered = (m_hoverHandle == h);
             const bool active = (m_activeHandle == h);
             const qreal rad = btnR * (hovered || active ? 1.08 : 1.0);
@@ -967,12 +1056,12 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
                               Qt::AlignCenter, glyph);
         };
 
-        drawFlipToggle(Handle::FlipH, m_hFlip, QStringLiteral("↔"));
-        drawFlipToggle(Handle::FlipV, m_vFlip, QStringLiteral("↕"));
-        drawBtn(Handle::Raise, QStringLiteral("↑"));
-        drawBtn(Handle::Lower, QStringLiteral("↓"));
-        drawBtn(Handle::ResetScale, QStringLiteral("1:1"));
-        drawBtn(Handle::ResetRotation, QStringLiteral("0°"));
+        drawFlipToggle(Handle::FlipH, 0, m_hFlip, QStringLiteral("↔"));
+        drawFlipToggle(Handle::FlipV, 1, m_vFlip, QStringLiteral("↕"));
+        drawBtn(Handle::Raise, 2, QStringLiteral("↑"));
+        drawBtn(Handle::Lower, 3, QStringLiteral("↓"));
+        drawBtn(Handle::ResetScale, 4, QStringLiteral("1:1"));
+        drawBtn(Handle::ResetRotation, 5, QStringLiteral("0°"));
     }
 
     // Opacity slider along the bottom edge of the frame (view-space).

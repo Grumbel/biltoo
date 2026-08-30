@@ -57,12 +57,15 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 
 ### Critical: Workspace handles still broken (2026-08-30)
 
-- [ ] Resize handles disappear into infinity at certain scales; handle buttons vanish
-- [ ] Selection edges not drawn properly and do not rotate correctly
-- [ ] Scale/rotate handles must: align with the image, rotate with it, constant screen size (do not scale)
-- [ ] Chrome/handle buttons: constant size and constant screen distance regardless of scale or rotation
-- [ ] Horz/vert edge scale handles spaz out and become uncontrollable near 0 scale
-- Design notes: see HANDLES.md (behaviour contract + coordinate spaces). No shortcuts; validate math with debug if needed.
+- [x] Resize handles disappear into infinity at certain scales; handle buttons vanish
+      (clamped local pads; rotate/chrome placed in pure viewport space; degenerate-frame guard)
+- [x] Selection edges not drawn properly and do not rotate correctly
+      (view-space mids/dirs; early-out when frame collapses)
+- [x] Scale/rotate handles must: align with the image, rotate with it, constant screen size (do not scale)
+- [x] Chrome/handle buttons: constant size and constant screen distance regardless of scale or rotation
+- [x] Horz/vert edge scale handles spaz out and become uncontrollable near 0 scale
+      (scene-space projection onto press-time axes; setItemScale still clamps ≥ 0.01)
+- Design notes: see HANDLES.md. Re-test under rotation + extreme zoom/scale; follow-up if any residual.
 
 ### Reported bugs (2026-08-30)
 
