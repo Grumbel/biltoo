@@ -66,6 +66,9 @@ public:
     QList<int> selectedIndices() const;
     void setSelectedIndices(const QList<int> &indices);
     /** Select every thumbnail (workspace: put all on canvas). */
+    void selectAllThumbs();
+    void selectNoneThumbs();
+    void invertThumbSelection();
 
     void setThumbSize(int pixels);
     int thumbSize() const { return m_thumbSize; }
@@ -116,9 +119,6 @@ private:
     void applyOrientation();
     void scheduleThumbnailLoads();
     void requestRemoveSelection();
-    void selectAllThumbs();
-    void selectNoneThumbs();
-    void invertThumbSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
     int labelBandHeight() const;
     int thumbSizeFromBarExtent(int extent) const;
