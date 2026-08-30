@@ -31,7 +31,7 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 ### Gallery / UX
 
 - [ ] Gallery rubber-band multi-select (optional)
-- [ ] Grid / Grid-Crop column count control (like masonry spin)
+- [x] Grid / Grid-Crop column count control (like masonry spin)
 - [x] Keyboard focus / arrow-key navigation between gallery tiles (spatial)
 - [x] Remember last Gallery layout across sessions (QSettings `lastGalleryLayout`)
 - [ ] Interaction summary / shortcuts still list a few pre-Gallery names (keep in sync)

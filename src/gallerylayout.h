@@ -32,6 +32,8 @@ struct Params {
     qreal availH = 600.0;
     int masonryColumns = 3;
     int masonryRows = 3;
+    /** Grid / GridCrop column count; 0 = automatic (ceil sqrt n). */
+    int gridColumns = 0;
 };
 
 /**

@@ -209,6 +209,9 @@ public:
     /** Number of columns for LayoutMode::Masonry (images scale to fit column width). */
     void setMasonryColumns(int columns);
     int masonryColumns() const { return m_masonryColumns; }
+    /** Grid / GridCrop columns; 0 = automatic. */
+    void setGridColumns(int columns);
+    int gridColumns() const { return m_gridColumns; }
 
     /** Number of rows for LayoutMode::MasonryRows (images scale to fit row height). */
     void setMasonryRows(int rows);
@@ -342,6 +345,7 @@ private:
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;
     int m_masonryColumns = 3;
+    int m_gridColumns = 0;
     int m_masonryRows = 3;
     std::atomic<quint64> m_loadGeneration{0};
     QSet<QString> m_pendingWorkspacePaths;

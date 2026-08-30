@@ -54,6 +54,7 @@ diverge from it.
 - User may activate one object → leave Gallery, enter **Image** on that path,
   remembering enough to **return** (layout, scroll, which cell was current).
 - Arrow keys move the session cursor among tiles by **scene position** (spatial neighbour); Home/End first/last; Enter opens.
+- Grid / Grid-Crop column count is user-configurable (toolbar spin; 0 = automatic).
 - User may not scale/rotate/opacity/stack objects as in Workspace.
 - Linear viewer navigation (slideshow, prev/next) is not the primary job here.
 

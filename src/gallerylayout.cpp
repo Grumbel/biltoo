@@ -76,7 +76,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Grid) {
-        const int cols = qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
+        const int cols = params.gridColumns > 0
+                             ? qMax(1, params.gridColumns)
+                             : qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
         const int rows = qMax(1, static_cast<int>(std::ceil(double(n) / double(cols))));
         const qreal cellW = (availW - gap * qMax(0, cols - 1)) / cols;
         const qreal cellH = (availH - gap * qMax(0, rows - 1)) / rows;
@@ -94,7 +96,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::GridCrop) {
-        const int cols = qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
+        const int cols = params.gridColumns > 0
+                             ? qMax(1, params.gridColumns)
+                             : qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
         const qreal cell = (availW - gap * qMax(0, cols - 1)) / cols;
         for (int i = 0; i < n; ++i) {
             ImageItem *item = items.at(i);

@@ -559,7 +559,7 @@ void MainWindow::createToolBar()
     m_masonryCountSpin->setSingleStep(1);
     m_masonryCountSpin->setValue(3);
     m_masonryCountSpin->setToolTip(
-        tr("Number of columns or rows in Masonry layout (fits the window)."));
+        tr("Columns (Grid / Masonry) or rows (Masonry Rows)."));
     masonryCountLayout->addWidget(m_masonryCountLabel);
     masonryCountLayout->addWidget(m_masonryCountSpin);
     m_masonryCountAction = m_toolBar->addWidget(masonryCountHost);
@@ -569,8 +569,12 @@ void MainWindow::createToolBar()
                 if (!m_imageView) {
                     return;
                 }
-                if (m_imageView->layoutMode() == ImageView::LayoutMode::MasonryRows) {
+                const auto mode = m_imageView->layoutMode();
+                if (mode == ImageView::LayoutMode::MasonryRows) {
                     m_imageView->setMasonryRows(count);
+                } else if (mode == ImageView::LayoutMode::Grid
+                           || mode == ImageView::LayoutMode::GridCrop) {
+                    m_imageView->setGridColumns(count);
                 } else {
                     m_imageView->setMasonryColumns(count);
                 }

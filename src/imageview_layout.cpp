@@ -608,6 +608,19 @@ void ImageView::setLayoutMode(LayoutMode mode)
     applyLayout();
 }
 
+void ImageView::setGridColumns(int columns)
+{
+    const int clamped = qMax(0, columns); // 0 = automatic
+    if (clamped == m_gridColumns) {
+        return;
+    }
+    m_gridColumns = clamped;
+    if (isGalleryMode()
+        && (m_layoutMode == LayoutMode::Grid || m_layoutMode == LayoutMode::GridCrop)) {
+        applyLayout();
+    }
+}
+
 void ImageView::setMasonryColumns(int columns)
 {
     const int clamped = qBound(1, columns, 32);
@@ -668,6 +681,7 @@ void ImageView::applyLayout()
     params.availW = availW;
     params.availH = availH;
     params.masonryColumns = m_masonryColumns;
+    params.gridColumns = m_gridColumns;
     params.masonryRows = m_masonryRows;
     switch (m_layoutMode) {
     case LayoutMode::SideBySide:

@@ -172,21 +172,30 @@ void MainWindow::updateMasonryCountControl()
         return;
     }
     const auto mode = m_imageView->layoutMode();
-    const bool columns = m_imageView->isGalleryMode()
-                         && mode == ImageView::LayoutMode::Masonry;
-    const bool rows = m_imageView->isGalleryMode()
-                      && mode == ImageView::LayoutMode::MasonryRows;
-    const bool show = columns || rows;
+    const bool gallery = m_imageView->isGalleryMode();
+    const bool masonryCols = gallery && mode == ImageView::LayoutMode::Masonry;
+    const bool masonryRows = gallery && mode == ImageView::LayoutMode::MasonryRows;
+    const bool gridCols = gallery
+                          && (mode == ImageView::LayoutMode::Grid
+                              || mode == ImageView::LayoutMode::GridCrop);
+    const bool show = masonryCols || masonryRows || gridCols;
     m_masonryCountAction->setVisible(show);
     if (!show || !m_masonryCountSpin) {
         return;
     }
     if (m_masonryCountLabel) {
-        m_masonryCountLabel->setText(rows ? tr("Rows:") : tr("Columns:"));
+        m_masonryCountLabel->setText(masonryRows ? tr("Rows:") : tr("Columns:"));
     }
     const QSignalBlocker blocker(m_masonryCountSpin);
-    m_masonryCountSpin->setValue(rows ? m_imageView->masonryRows()
-                                      : m_imageView->masonryColumns());
+    if (masonryRows) {
+        m_masonryCountSpin->setValue(m_imageView->masonryRows());
+    } else if (gridCols) {
+        // Show effective columns (auto -> computed-looking default of current setting or 0 spin as min 1)
+        const int g = m_imageView->gridColumns();
+        m_masonryCountSpin->setValue(g > 0 ? g : 3);
+    } else {
+        m_masonryCountSpin->setValue(m_imageView->masonryColumns());
+    }
 }
 
 void MainWindow::updateScrollBarPolicyForMode()

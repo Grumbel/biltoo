@@ -731,9 +731,11 @@ void MainWindow::readSettings()
     m_slideshowIntervalMs =
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
+    const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
     const int masonryRows = settings.value(QStringLiteral("masonryRows"), 3).toInt();
     if (m_imageView) {
         m_imageView->setMasonryColumns(masonryCols);
+        m_imageView->setGridColumns(gridCols);
         m_imageView->setMasonryRows(masonryRows);
     }
     if (m_masonryCountSpin) {
@@ -878,6 +880,11 @@ void MainWindow::writeSettings()
     }
     // Persist startup preference only — not the live session toggle
     settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);
+    if (m_imageView) {
+        settings.setValue(QStringLiteral("gridColumns"), m_imageView->gridColumns());
+        settings.setValue(QStringLiteral("masonryColumns"), m_imageView->masonryColumns());
+        settings.setValue(QStringLiteral("masonryRows"), m_imageView->masonryRows());
+    }
     if (m_imageView && m_imageView->isGalleryMode()) {
         settings.setValue(QStringLiteral("lastGalleryLayout"),
                           static_cast<int>(m_imageView->layoutMode()));
