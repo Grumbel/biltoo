@@ -13,6 +13,7 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QColor>
 #include <QCollator>
 #include <QDir>
 #include <QDockWidget>
@@ -2173,6 +2174,11 @@ void MainWindow::showPreferences()
     dlg.setSortModeIndex(m_sortMode == SortMode::Name ? 0 : 1);
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
     dlg.setImageModeLeftDragPan(m_imageView->imageModeLeftDragPan());
+    dlg.setBackgroundColor(m_imageView->backgroundColor());
+    dlg.setBackgroundColorAlt(m_imageView->backgroundColorAlt());
+    dlg.setBackgroundPatternIndex(
+        m_imageView->backgroundPattern() == ImageView::BackgroundPattern::Checkerboard ? 1 : 0);
+    dlg.setCheckerboardWorkspaceOnly(m_imageView->checkerboardWorkspaceOnly());
     if (dlg.exec() != QDialog::Accepted) {
         return;
     }
@@ -2181,6 +2187,12 @@ void MainWindow::showPreferences()
     setSortMode(dlg.sortModeIndex() == 1 ? SortMode::MTime : SortMode::Name);
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     m_imageView->setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
+    m_imageView->setBackgroundColor(dlg.backgroundColor());
+    m_imageView->setBackgroundColorAlt(dlg.backgroundColorAlt());
+    m_imageView->setBackgroundPattern(
+        dlg.backgroundPatternIndex() == 1 ? ImageView::BackgroundPattern::Checkerboard
+                                          : ImageView::BackgroundPattern::Solid);
+    m_imageView->setCheckerboardWorkspaceOnly(dlg.checkerboardWorkspaceOnly());
     writeSettings();
 }
 
@@ -2439,6 +2451,23 @@ void MainWindow::readSettings()
         if (m_toggleHudAct) {
             m_toggleHudAct->setChecked(hud);
         }
+        const QColor bg = QColor(settings.value(QStringLiteral("backgroundColor"),
+                                                QStringLiteral("#2a2a2a")).toString());
+        if (bg.isValid()) {
+            m_imageView->setBackgroundColor(bg);
+        }
+        const QColor bgAlt = QColor(settings.value(QStringLiteral("backgroundColorAlt"),
+                                                   QStringLiteral("#303030")).toString());
+        if (bgAlt.isValid()) {
+            m_imageView->setBackgroundColorAlt(bgAlt);
+        }
+        const QString pat = settings.value(QStringLiteral("backgroundPattern"),
+                                           QStringLiteral("checkerboard")).toString();
+        m_imageView->setBackgroundPattern(
+            pat == QLatin1String("solid") ? ImageView::BackgroundPattern::Solid
+                                          : ImageView::BackgroundPattern::Checkerboard);
+        m_imageView->setCheckerboardWorkspaceOnly(
+            settings.value(QStringLiteral("checkerboardWorkspaceOnly"), true).toBool());
     }
     if (m_thumbnailBar) {
         const bool labels =
@@ -2468,6 +2497,17 @@ void MainWindow::writeSettings()
                           m_imageView->masonryColumns());
         settings.setValue(QStringLiteral("masonryRows"),
                           m_imageView->masonryRows());
+        settings.setValue(QStringLiteral("backgroundColor"),
+                          m_imageView->backgroundColor().name(QColor::HexRgb));
+        settings.setValue(QStringLiteral("backgroundColorAlt"),
+                          m_imageView->backgroundColorAlt().name(QColor::HexRgb));
+        settings.setValue(QStringLiteral("backgroundPattern"),
+                          m_imageView->backgroundPattern()
+                                  == ImageView::BackgroundPattern::Solid
+                              ? QStringLiteral("solid")
+                              : QStringLiteral("checkerboard"));
+        settings.setValue(QStringLiteral("checkerboardWorkspaceOnly"),
+                          m_imageView->checkerboardWorkspaceOnly());
     }
     // Persist startup preference only — not the live session toggle
     settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);

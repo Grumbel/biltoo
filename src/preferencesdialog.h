@@ -4,6 +4,7 @@
 #ifndef PREFERENCESDIALOG_H
 #define PREFERENCESDIALOG_H
 
+#include <QColor>
 #include <QDialog>
 
 class QDoubleSpinBox;
@@ -36,17 +37,41 @@ public:
     bool imageModeLeftDragPan() const;
     void setImageModeLeftDragPan(bool on);
 
+    QColor backgroundColor() const;
+    void setBackgroundColor(const QColor &color);
+
+    QColor backgroundColorAlt() const;
+    void setBackgroundColorAlt(const QColor &color);
+
+    /** 0 = solid, 1 = checkerboard */
+    int backgroundPatternIndex() const;
+    void setBackgroundPatternIndex(int index);
+
+    bool checkerboardWorkspaceOnly() const;
+    void setCheckerboardWorkspaceOnly(bool on);
+
 private:
     void setupDefaultAppsGroup();
     void refreshDefaultAppsList();
     void onSetDefaultForChecked();
     void onSetDefaultForAll();
+    void updateColorButton(QPushButton *button, const QColor &color);
+    void chooseBackgroundColor();
+    void chooseBackgroundColorAlt();
+    void updateBackgroundControlsEnabled();
 
     QDoubleSpinBox *m_intervalSpin = nullptr;
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
     QCheckBox *m_imageModePanCheck = nullptr;
+
+    QPushButton *m_bgColorBtn = nullptr;
+    QPushButton *m_bgColorAltBtn = nullptr;
+    QComboBox *m_bgPatternCombo = nullptr;
+    QCheckBox *m_bgCheckerWorkspaceOnlyCheck = nullptr;
+    QColor m_bgColor{42, 42, 42};
+    QColor m_bgColorAlt{48, 48, 48};
 
     QTreeWidget *m_mimeTree = nullptr;
     QLabel *m_mimeStatusLabel = nullptr;

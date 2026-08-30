@@ -4,6 +4,7 @@
 #ifndef IMAGEVIEW_H
 #define IMAGEVIEW_H
 
+#include <QColor>
 #include <QGraphicsView>
 #include <atomic>
 #include <QHash>
@@ -55,6 +56,11 @@ public:
     enum class Tool {
         Select,
         Pan
+    };
+
+    enum class BackgroundPattern {
+        Solid,
+        Checkerboard
     };
 
     enum class ViewMode {
@@ -133,6 +139,16 @@ public:
     /** When true (default), left-drag pans in Image mode. */
     void setImageModeLeftDragPan(bool on);
     bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
+
+    void setBackgroundColor(const QColor &color);
+    QColor backgroundColor() const { return m_bgColor; }
+    void setBackgroundColorAlt(const QColor &color);
+    QColor backgroundColorAlt() const { return m_bgColorAlt; }
+    void setBackgroundPattern(BackgroundPattern pattern);
+    BackgroundPattern backgroundPattern() const { return m_bgPattern; }
+    /** When true, checkerboard is used only in Workspace; other modes stay solid. */
+    void setCheckerboardWorkspaceOnly(bool on);
+    bool checkerboardWorkspaceOnly() const { return m_bgCheckerWorkspaceOnly; }
 
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
@@ -303,6 +319,10 @@ private:
     ViewMode m_viewMode = ViewMode::Image;
     bool m_imageModeNavEnabled = false;
     bool m_imageModeLeftDragPan = true;
+    QColor m_bgColor{42, 42, 42};
+    QColor m_bgColorAlt{48, 48, 48};
+    BackgroundPattern m_bgPattern = BackgroundPattern::Checkerboard;
+    bool m_bgCheckerWorkspaceOnly = true;
     bool m_hudVisible = false;
     QString m_lastLoadError;
     bool m_hudFlashVisible = false;

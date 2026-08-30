@@ -5,6 +5,7 @@
 #include "defaultapps.h"
 
 #include <QCheckBox>
+#include <QColorDialog>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -91,11 +92,49 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
            "left-drag for other gestures; pan with Alt+left-drag or the middle "
            "mouse button instead."));
 
+    m_bgPatternCombo = new QComboBox(this);
+    m_bgPatternCombo->addItem(tr("Solid"), 0);
+    m_bgPatternCombo->addItem(tr("Checkerboard"), 1);
+    m_bgPatternCombo->setToolTip(tr("Canvas background fill style"));
+    m_bgPatternCombo->setWhatsThis(
+        tr("Solid fills the canvas with the primary colour. Checkerboard "
+           "alternates primary and secondary colours (useful for transparency)."));
+
+    m_bgColorBtn = new QPushButton(this);
+    m_bgColorBtn->setToolTip(tr("Primary background colour"));
+    m_bgColorBtn->setMinimumWidth(80);
+    connect(m_bgColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColor);
+
+    m_bgColorAltBtn = new QPushButton(this);
+    m_bgColorAltBtn->setToolTip(tr("Secondary colour for checkerboard pattern"));
+    m_bgColorAltBtn->setMinimumWidth(80);
+    connect(m_bgColorAltBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColorAlt);
+
+    m_bgCheckerWorkspaceOnlyCheck = new QCheckBox(
+        tr("Checkerboard only in Workspace mode"), this);
+    m_bgCheckerWorkspaceOnlyCheck->setChecked(true);
+    m_bgCheckerWorkspaceOnlyCheck->setToolTip(
+        tr("When enabled, Image and Gallery use a solid fill; only Workspace uses the checkerboard"));
+    m_bgCheckerWorkspaceOnlyCheck->setWhatsThis(
+        tr("Matches the default behaviour: a flat colour behind photos, and a "
+           "checkerboard on the free-form workspace so transparency is visible."));
+
+    connect(m_bgPatternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateBackgroundControlsEnabled(); });
+
+    updateColorButton(m_bgColorBtn, m_bgColor);
+    updateColorButton(m_bgColorAltBtn, m_bgColorAlt);
+    updateBackgroundControlsEnabled();
+
     auto *viewForm = new QFormLayout;
     viewForm->setContentsMargins(0, 0, 0, 0);
     viewForm->setHorizontalSpacing(12);
     viewForm->setVerticalSpacing(8);
     viewForm->addRow(QString(), m_imageModePanCheck);
+    viewForm->addRow(tr("Background pattern:"), m_bgPatternCombo);
+    viewForm->addRow(tr("Background colour:"), m_bgColorBtn);
+    viewForm->addRow(tr("Checker colour:"), m_bgColorAltBtn);
+    viewForm->addRow(QString(), m_bgCheckerWorkspaceOnlyCheck);
 
     auto *viewGroup = new QGroupBox(tr("View"), this);
     viewGroup->setLayout(viewForm);
@@ -303,4 +342,101 @@ bool PreferencesDialog::imageModeLeftDragPan() const
 void PreferencesDialog::setImageModeLeftDragPan(bool on)
 {
     m_imageModePanCheck->setChecked(on);
+}
+
+QColor PreferencesDialog::backgroundColor() const
+{
+    return m_bgColor;
+}
+
+void PreferencesDialog::setBackgroundColor(const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    m_bgColor = color;
+    updateColorButton(m_bgColorBtn, m_bgColor);
+}
+
+QColor PreferencesDialog::backgroundColorAlt() const
+{
+    return m_bgColorAlt;
+}
+
+void PreferencesDialog::setBackgroundColorAlt(const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    m_bgColorAlt = color;
+    updateColorButton(m_bgColorAltBtn, m_bgColorAlt);
+}
+
+int PreferencesDialog::backgroundPatternIndex() const
+{
+    return m_bgPatternCombo ? m_bgPatternCombo->currentData().toInt() : 0;
+}
+
+void PreferencesDialog::setBackgroundPatternIndex(int index)
+{
+    if (!m_bgPatternCombo) {
+        return;
+    }
+    const int i = m_bgPatternCombo->findData(index);
+    if (i >= 0) {
+        m_bgPatternCombo->setCurrentIndex(i);
+    }
+    updateBackgroundControlsEnabled();
+}
+
+bool PreferencesDialog::checkerboardWorkspaceOnly() const
+{
+    return m_bgCheckerWorkspaceOnlyCheck && m_bgCheckerWorkspaceOnlyCheck->isChecked();
+}
+
+void PreferencesDialog::setCheckerboardWorkspaceOnly(bool on)
+{
+    if (m_bgCheckerWorkspaceOnlyCheck) {
+        m_bgCheckerWorkspaceOnlyCheck->setChecked(on);
+    }
+}
+
+void PreferencesDialog::updateColorButton(QPushButton *button, const QColor &color)
+{
+    if (!button) {
+        return;
+    }
+    button->setText(color.name(QColor::HexRgb));
+    button->setStyleSheet(
+        QStringLiteral("QPushButton { background-color: %1; color: %2; }")
+            .arg(color.name(QColor::HexRgb),
+                 color.lightness() < 128 ? QStringLiteral("#ffffff")
+                                         : QStringLiteral("#000000")));
+}
+
+void PreferencesDialog::chooseBackgroundColor()
+{
+    const QColor c = QColorDialog::getColor(m_bgColor, this, tr("Background colour"));
+    if (c.isValid()) {
+        setBackgroundColor(c);
+    }
+}
+
+void PreferencesDialog::chooseBackgroundColorAlt()
+{
+    const QColor c = QColorDialog::getColor(m_bgColorAlt, this, tr("Checker colour"));
+    if (c.isValid()) {
+        setBackgroundColorAlt(c);
+    }
+}
+
+void PreferencesDialog::updateBackgroundControlsEnabled()
+{
+    const bool checker = backgroundPatternIndex() == 1;
+    if (m_bgColorAltBtn) {
+        m_bgColorAltBtn->setEnabled(checker);
+    }
+    if (m_bgCheckerWorkspaceOnlyCheck) {
+        m_bgCheckerWorkspaceOnlyCheck->setEnabled(checker);
+    }
 }

@@ -860,18 +860,57 @@ void ImageView::dropEvent(QDropEvent *event)
     event->acceptProposedAction();
 }
 
+void ImageView::setBackgroundColor(const QColor &color)
+{
+    if (!color.isValid() || color == m_bgColor) {
+        return;
+    }
+    m_bgColor = color;
+    viewport()->update();
+}
+
+void ImageView::setBackgroundColorAlt(const QColor &color)
+{
+    if (!color.isValid() || color == m_bgColorAlt) {
+        return;
+    }
+    m_bgColorAlt = color;
+    viewport()->update();
+}
+
+void ImageView::setBackgroundPattern(BackgroundPattern pattern)
+{
+    if (m_bgPattern == pattern) {
+        return;
+    }
+    m_bgPattern = pattern;
+    viewport()->update();
+}
+
+void ImageView::setCheckerboardWorkspaceOnly(bool on)
+{
+    if (m_bgCheckerWorkspaceOnly == on) {
+        return;
+    }
+    m_bgCheckerWorkspaceOnly = on;
+    viewport()->update();
+}
+
 void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 {
-    // Checkerboard is Workspace-only. Image and Gallery use a flat dark fill.
-    if (!isWorkspaceMode()) {
-        painter->fillRect(rect, QColor(36, 36, 36));
+    const bool useChecker =
+        m_bgPattern == BackgroundPattern::Checkerboard
+        && (!m_bgCheckerWorkspaceOnly || isWorkspaceMode());
+
+    if (!useChecker) {
+        painter->fillRect(rect, m_bgColor);
         return;
     }
 
-    // Subtle checkerboard in scene coordinates so it pans/zooms with the view
+    // Checkerboard in scene coordinates so it pans/zooms with the view
     constexpr int kCell = 16;
-    const QColor a(42, 42, 42);
-    const QColor b(48, 48, 48);
+    const QColor a = m_bgColor;
+    const QColor b = m_bgColorAlt.isValid() ? m_bgColorAlt : m_bgColor.lighter(120);
 
     const int x0 = static_cast<int>(std::floor(rect.left() / kCell)) * kCell;
     const int y0 = static_cast<int>(std::floor(rect.top() / kCell)) * kCell;
