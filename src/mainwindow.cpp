@@ -31,6 +31,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QShortcut>
+#include <QSignalBlocker>
 #include <QUndoStack>
 #include <QSizePolicy>
 #include <QSet>
@@ -121,6 +122,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_metadataDock->setObjectName(QStringLiteral("MetadataDock"));
     m_metadataDock->setWidget(m_metadataPanel);
     m_metadataDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_metadataDock->setFeatures(QDockWidget::DockWidgetClosable
+                                | QDockWidget::DockWidgetMovable
+                                | QDockWidget::DockWidgetFloatable);
     addDockWidget(Qt::RightDockWidgetArea, m_metadataDock);
     m_metadataDock->hide();
 
@@ -389,22 +393,45 @@ void MainWindow::createActions()
     m_toggleThumbnailBarAct->setStatusTip(tr("Show or hide the thumbnail bar"));
     connect(m_toggleThumbnailBarAct, &QAction::triggered, this, &MainWindow::toggleThumbnailBar);
 
-    m_toggleMetadataAct = new QAction(tr("Show &Metadata"), this);
+    // Use the dock's own toggle action so the close button and menu/toolbar stay in sync
+    m_toggleMetadataAct = m_metadataDock->toggleViewAction();
+    m_toggleMetadataAct->setText(tr("Show &Metadata"));
     m_toggleMetadataAct->setShortcut(Qt::CTRL | Qt::Key_E);
-    m_toggleMetadataAct->setCheckable(true);
-    m_toggleMetadataAct->setChecked(false);
     m_toggleMetadataAct->setIcon(themeIcon(QStringLiteral("dialog-information"), QStyle::SP_FileDialogInfoView));
     m_toggleMetadataAct->setStatusTip(tr("Show or hide the metadata side panel"));
-    connect(m_toggleMetadataAct, &QAction::triggered, this, &MainWindow::toggleMetadataPanel);
+    // Ensure closing via the dock title-bar [x] updates the action; showing again works
+    connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (m_toggleMetadataAct->isChecked() != visible) {
+            QSignalBlocker blocker(m_toggleMetadataAct);
+            m_toggleMetadataAct->setChecked(visible);
+        }
+    });
+
+    m_thumbnailsBottomAct = new QAction(tr("Thumbnails on &Bottom"), this);
+    m_thumbnailsBottomAct->setCheckable(true);
+    m_thumbnailsBottomAct->setStatusTip(tr("Place the thumbnail strip along the bottom edge"));
+    connect(m_thumbnailsBottomAct, &QAction::triggered, this, [this]() {
+        setThumbnailBarPosition(Qt::Horizontal);
+    });
+
+    m_thumbnailsLeftAct = new QAction(tr("Thumbnails on &Left"), this);
+    m_thumbnailsLeftAct->setCheckable(true);
+    m_thumbnailsLeftAct->setStatusTip(tr("Place the thumbnail strip along the left edge"));
+    connect(m_thumbnailsLeftAct, &QAction::triggered, this, [this]() {
+        setThumbnailBarPosition(Qt::Vertical);
+    });
+
+    m_thumbnailPositionGroup = new QActionGroup(this);
+    m_thumbnailPositionGroup->setExclusive(true);
+    m_thumbnailPositionGroup->addAction(m_thumbnailsBottomAct);
+    m_thumbnailPositionGroup->addAction(m_thumbnailsLeftAct);
+    m_thumbnailsBottomAct->setChecked(true);
 
     m_toggleScrollBarsAct = new QAction(tr("Show &Scrollbars"), this);
     m_toggleScrollBarsAct->setCheckable(true);
     m_toggleScrollBarsAct->setChecked(false);
     m_toggleScrollBarsAct->setStatusTip(tr("Show or hide scrollbars on the image view"));
     connect(m_toggleScrollBarsAct, &QAction::triggered, this, &MainWindow::toggleScrollBars);
-    connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
-        m_toggleMetadataAct->setChecked(visible);
-    });
 
     m_preferencesAct = new QAction(tr("&Preferences..."), this);
     m_preferencesAct->setShortcut(QKeySequence::Preferences);
@@ -467,6 +494,8 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_toggleThumbnailBarAct);
+    m_viewMenu->addAction(m_thumbnailsBottomAct);
+    m_viewMenu->addAction(m_thumbnailsLeftAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);
 
@@ -1206,9 +1235,70 @@ void MainWindow::toggleThumbnailBar()
     }
 }
 
-void MainWindow::toggleMetadataPanel()
+void MainWindow::setThumbnailBarPosition(Qt::Orientation orientation)
 {
-    m_metadataDock->setVisible(m_toggleMetadataAct->isChecked());
+    if (!m_centralSplitter || !m_thumbnailBar || !m_imageView) {
+        return;
+    }
+
+    const bool horizontalBar = (orientation == Qt::Horizontal);
+    if (m_thumbnailBar->barOrientation() == orientation
+        && m_centralSplitter->orientation()
+               == (horizontalBar ? Qt::Vertical : Qt::Horizontal)) {
+        if (m_thumbnailsBottomAct) {
+            m_thumbnailsBottomAct->setChecked(horizontalBar);
+        }
+        if (m_thumbnailsLeftAct) {
+            m_thumbnailsLeftAct->setChecked(!horizontalBar);
+        }
+        return;
+    }
+
+    const int thumbSize = m_thumbnailBar->thumbSize();
+    const bool barVisible = m_thumbnailBar->isVisible();
+
+    m_thumbnailBar->setBarOrientation(orientation);
+
+    // Re-parent widgets into the splitter in the right order
+    m_imageView->setParent(nullptr);
+    m_thumbnailBar->setParent(nullptr);
+    while (m_centralSplitter->count() > 0) {
+        m_centralSplitter->widget(0)->setParent(nullptr);
+    }
+
+    if (horizontalBar) {
+        // Image on top, thumbnails along the bottom
+        m_centralSplitter->setOrientation(Qt::Vertical);
+        m_centralSplitter->addWidget(m_imageView);
+        m_centralSplitter->addWidget(m_thumbnailBar);
+        m_centralSplitter->setStretchFactor(0, 1);
+        m_centralSplitter->setStretchFactor(1, 0);
+        m_imageView->setMinimumHeight(120);
+        m_imageView->setMinimumWidth(0);
+        const int barExtent = ThumbnailBar::extentForThumbSize(thumbSize);
+        m_centralSplitter->setSizes({qMax(200, height() - barExtent - 80), barExtent});
+    } else {
+        // Thumbnails on the left, image on the right
+        m_centralSplitter->setOrientation(Qt::Horizontal);
+        m_centralSplitter->addWidget(m_thumbnailBar);
+        m_centralSplitter->addWidget(m_imageView);
+        m_centralSplitter->setStretchFactor(0, 0);
+        m_centralSplitter->setStretchFactor(1, 1);
+        m_imageView->setMinimumWidth(120);
+        m_imageView->setMinimumHeight(0);
+        const int barExtent = ThumbnailBar::extentForThumbSize(thumbSize);
+        m_centralSplitter->setSizes({barExtent, qMax(200, width() - barExtent - 40)});
+    }
+
+    m_thumbnailBar->setThumbSize(thumbSize);
+    m_thumbnailBar->setVisible(barVisible);
+
+    if (m_thumbnailsBottomAct) {
+        m_thumbnailsBottomAct->setChecked(horizontalBar);
+    }
+    if (m_thumbnailsLeftAct) {
+        m_thumbnailsLeftAct->setChecked(!horizontalBar);
+    }
 }
 
 void MainWindow::toggleScrollBars()
@@ -1379,6 +1469,10 @@ void MainWindow::readSettings()
         const int thumbSize = settings.value(QStringLiteral("thumbnailSize"),
                                              ThumbnailBar::kDefaultThumbSize).toInt();
         m_thumbnailBar->setThumbSize(thumbSize);
+        const QString pos = settings.value(QStringLiteral("thumbnailBarPosition"),
+                                           QStringLiteral("bottom")).toString();
+        setThumbnailBarPosition(pos == QLatin1String("left") ? Qt::Vertical
+                                                             : Qt::Horizontal);
     }
     if (m_centralSplitter) {
         const QByteArray splitterState =
@@ -1386,9 +1480,12 @@ void MainWindow::readSettings()
         if (!splitterState.isEmpty()) {
             m_centralSplitter->restoreState(splitterState);
         } else if (m_thumbnailBar) {
-            // Default: image takes remaining space; thumb bar at preferred height
-            const int barH = ThumbnailBar::heightForThumbSize(m_thumbnailBar->thumbSize());
-            m_centralSplitter->setSizes({qMax(200, height() - barH - 80), barH});
+            const int extent = ThumbnailBar::extentForThumbSize(m_thumbnailBar->thumbSize());
+            if (m_thumbnailBar->barOrientation() == Qt::Horizontal) {
+                m_centralSplitter->setSizes({qMax(200, height() - extent - 80), extent});
+            } else {
+                m_centralSplitter->setSizes({extent, qMax(200, width() - extent - 40)});
+            }
         }
     }
     updateWorkspaceActionVisibility();
@@ -1420,6 +1517,10 @@ void MainWindow::writeSettings()
                       m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
     if (m_thumbnailBar) {
         settings.setValue(QStringLiteral("thumbnailSize"), m_thumbnailBar->thumbSize());
+        settings.setValue(QStringLiteral("thumbnailBarPosition"),
+                          m_thumbnailBar->barOrientation() == Qt::Vertical
+                              ? QStringLiteral("left")
+                              : QStringLiteral("bottom"));
     }
     if (m_centralSplitter) {
         settings.setValue(QStringLiteral("centralSplitter"), m_centralSplitter->saveState());

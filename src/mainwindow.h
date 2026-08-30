@@ -88,7 +88,6 @@ private slots:
     void toggleThumbnailBar();
     void about();
     void showPreferences();
-    void toggleMetadataPanel();
     void toggleScrollBars();
     void toggleWorkspaceMode();
     void setSelectTool();
@@ -111,6 +110,7 @@ private:
     void setCurrentIndex(int index);
     void updateNavigationActions();
     void applyThumbnailVisibility();
+    void setThumbnailBarPosition(Qt::Orientation orientation);
     void sortFileList();
     void readSettings();
     void writeSettings();
@@ -172,11 +172,14 @@ private:
     QAction *m_sortMTimeAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
+    QAction *m_thumbnailsBottomAct = nullptr;
+    QAction *m_thumbnailsLeftAct = nullptr;
     QAction *m_toggleMetadataAct = nullptr;
     QAction *m_toggleScrollBarsAct = nullptr;
     QAction *m_preferencesAct = nullptr;
     QAction *m_aboutAct = nullptr;
     QActionGroup *m_sortGroup = nullptr;
+    QActionGroup *m_thumbnailPositionGroup = nullptr;
 
     QStringList m_files;
     int m_currentIndex = -1;
