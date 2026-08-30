@@ -99,6 +99,12 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::showContextMenu);
     connect(m_imageView, &ImageView::mouseInfoChanged,
             this, &MainWindow::onMouseInfoChanged);
+    connect(m_imageView, &ImageView::navigatePreviousRequested,
+            this, &MainWindow::goPrevious);
+    connect(m_imageView, &ImageView::navigateNextRequested,
+            this, &MainWindow::goNext);
+    connect(m_imageView, &ImageView::fullscreenToggleRequested,
+            this, &MainWindow::toggleFullscreen);
 
     m_thumbnailBar = new ThumbnailBar(m_centralSplitter);
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
@@ -854,10 +860,13 @@ void MainWindow::setCurrentIndex(int index)
 void MainWindow::updateNavigationActions()
 {
     const bool hasMany = m_files.size() > 1;
-    // Session navigation is classic-mode oriented; disable in workspace mode
+    // Session navigation is Image-mode oriented; disable in workspace mode
     m_previousAct->setEnabled(hasMany && !m_workspaceMode);
     m_nextAct->setEnabled(hasMany && !m_workspaceMode);
     m_slideshowAct->setEnabled(hasMany && !m_workspaceMode);
+    if (m_imageView) {
+        m_imageView->setImageModeNavigationEnabled(hasMany && !m_workspaceMode);
+    }
     if (!hasMany || m_workspaceMode) {
         stopSlideshow();
     }
