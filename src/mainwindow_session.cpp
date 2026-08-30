@@ -14,6 +14,39 @@ QString imageFileDialogFilter()
     return QObject::tr("Images (%1);;All Files (*)").arg(patterns.join(QLatin1Char(' ')));
 }
 
+/** Undoable session removal (Gallery delete / thumb remove). */
+class SessionRemoveCommand : public QUndoCommand {
+public:
+    SessionRemoveCommand(MainWindow *mw, const QList<QPair<int, QString>> &entries)
+        : QUndoCommand(QObject::tr("Remove from session"))
+        , m_mw(mw)
+        , m_entries(entries)
+    {
+    }
+
+    void undo() override
+    {
+        if (m_mw) {
+            m_mw->restoreSessionEntries(m_entries);
+        }
+    }
+
+    void redo() override
+    {
+        if (m_mw) {
+            QList<int> indices;
+            for (const auto &e : m_entries) {
+                indices.append(e.first);
+            }
+            m_mw->applySessionRemoveIndices(indices);
+        }
+    }
+
+private:
+    MainWindow *m_mw = nullptr;
+    QList<QPair<int, QString>> m_entries;
+};
+
 } // namespace
 
 bool MainWindow::isImageFile(const QString &path)
@@ -431,6 +464,34 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         return;
     }
 
+    QList<int> sorted = indices;
+    std::sort(sorted.begin(), sorted.end());
+    sorted.erase(std::unique(sorted.begin(), sorted.end()), sorted.end());
+
+    QList<QPair<int, QString>> entries;
+    for (int idx : sorted) {
+        if (idx >= 0 && idx < m_files.size()) {
+            entries.append(qMakePair(idx, m_files.at(idx)));
+        }
+    }
+    if (entries.isEmpty()) {
+        return;
+    }
+
+    if (m_imageView && m_imageView->undoStack() && !m_sessionUndoGuard) {
+        // push() calls redo() → applySessionRemoveIndices
+        m_imageView->undoStack()->push(new SessionRemoveCommand(this, entries));
+        return;
+    }
+    applySessionRemoveIndices(sorted);
+}
+
+void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
+{
+    if (indices.isEmpty() || m_files.isEmpty()) {
+        return;
+    }
+
     stopSlideshow();
 
     QList<int> sorted = indices;
@@ -449,7 +510,9 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         }
         const QString path = m_files.at(idx);
         m_files.removeAt(idx);
-        if (isWorkspaceMode() && m_imageView) {
+        // Drop canvas objects in Workspace and Gallery so layout switches do
+        // not resurrect session-removed images from leftover items.
+        if (m_imageView && (isWorkspaceMode() || isGalleryMode())) {
             m_imageView->removeWorkspacePath(path);
         }
     }
@@ -478,7 +541,6 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         newIndex = m_files.indexOf(currentPath);
     }
     if (newIndex < 0) {
-        // Prefer the nearest index after the first removed slot
         newIndex = qBound(0, sorted.first(), m_files.size() - 1);
     }
 
@@ -490,10 +552,76 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         m_thumbnailBar->setCurrentIndex(newIndex);
         updateStatus();
         updateNavigationActions();
+    } else if (isGalleryMode()) {
+        m_currentIndex = newIndex;
+        m_thumbnailBar->setCurrentIndex(newIndex);
+        if (m_metadataPanel) {
+            m_metadataPanel->setImagePath(m_files.at(newIndex));
+        }
+        updateWindowTitle();
+        updateStatus();
+        updateNavigationActions();
+        // Canvas already updated via removeWorkspacePath; no full repack needed.
     } else {
         m_currentIndex = -1;
         setCurrentIndex(newIndex);
     }
+}
+
+void MainWindow::restoreSessionEntries(const QList<QPair<int, QString>> &entries)
+{
+    if (entries.isEmpty()) {
+        return;
+    }
+    // Insert lowest index first so positions match the pre-remove session order.
+    QList<QPair<int, QString>> sorted = entries;
+    std::sort(sorted.begin(), sorted.end(),
+              [](const QPair<int, QString> &a, const QPair<int, QString> &b) {
+                  return a.first < b.first;
+              });
+
+    m_sessionUndoGuard = true;
+    for (const auto &e : sorted) {
+        const int idx = qBound(0, e.first, m_files.size());
+        if (m_files.contains(e.second)) {
+            continue;
+        }
+        m_files.insert(idx, e.second);
+    }
+    m_thumbnailBar->setFiles(m_files);
+    if (isWorkspaceMode()) {
+        m_thumbnailBar->setMultiSelectEnabled(true);
+        syncThumbnailWorkspaceSelection();
+    }
+    applyThumbnailVisibility();
+
+    if (isGalleryMode() && m_imageView) {
+        m_imageView->setWorkspacePaths(m_files);
+    } else if (isWorkspaceMode() && m_imageView) {
+        m_imageView->setWorkspacePaths(m_files);
+    } else if (!m_files.isEmpty()) {
+        m_currentIndex = -1;
+        setCurrentIndex(qMin(m_currentIndex < 0 ? 0 : m_currentIndex, m_files.size() - 1));
+    }
+    updateWindowTitle();
+    updateStatus();
+    updateNavigationActions();
+    m_sessionUndoGuard = false;
+}
+
+void MainWindow::removeSessionPaths(const QStringList &paths)
+{
+    if (paths.isEmpty() || m_files.isEmpty()) {
+        return;
+    }
+    QList<int> indices;
+    for (const QString &path : paths) {
+        const int idx = m_files.indexOf(path);
+        if (idx >= 0) {
+            indices.append(idx);
+        }
+    }
+    removeSessionIndices(indices);
 }
 
 void MainWindow::updateNavigationActions()

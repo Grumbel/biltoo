@@ -38,6 +38,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::toggleFullscreen);
     connect(m_imageView, &ImageView::galleryItemOpenRequested,
             this, &MainWindow::openGalleryItemInImageMode);
+    connect(m_imageView, &ImageView::sessionRemovePathsRequested,
+            this, &MainWindow::removeSessionPaths);
     connect(m_imageView, &ImageView::galleryItemFocused,
             this, [this](const QString &path) {
                 const int idx = m_files.indexOf(path);

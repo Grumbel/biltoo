@@ -1173,20 +1173,32 @@ void ImageView::keyPressEvent(QKeyEvent *event)
     }
 
     if (event->key() == Qt::Key_Delete
-        || (event->key() == Qt::Key_Backspace && isWorkspaceMode())) {
-        // Remove selected items from the workspace (session list is unchanged);
-        // remember transform so re-adding restores position.
+        || (event->key() == Qt::Key_Backspace && isMultiItemMode())) {
         const QList<QGraphicsItem *> selected = m_scene->selectedItems();
-        bool removed = false;
+        QStringList paths;
         for (QGraphicsItem *gi : selected) {
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
                 if (m_items.contains(item)) {
-                    destroyCanvasItem(item);
-                    removed = true;
+                    paths.append(item->path());
                 }
             }
         }
-        if (removed) {
+        if (paths.isEmpty()) {
+            // fall through
+        } else if (isGalleryMode()) {
+            // Gallery tiles are the session — remove from session so a layout
+            // switch does not resurrect them via setWorkspacePaths(m_files).
+            emit sessionRemovePathsRequested(paths);
+            event->accept();
+            return;
+        } else if (isWorkspaceMode()) {
+            // Workspace: hide from canvas only; session membership stays
+            // (double-click / thumb toggle can bring them back with transform).
+            for (const QString &path : paths) {
+                if (ImageItem *item = findItemByPath(path)) {
+                    destroyCanvasItem(item);
+                }
+            }
             emit statusChanged();
             emit workspacePathsChanged();
             event->accept();

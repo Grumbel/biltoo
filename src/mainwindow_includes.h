@@ -53,6 +53,7 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QUndoCommand>
 #include <QUndoStack>
 #include <QUrl>
 #include <QVBoxLayout>

@@ -155,6 +155,11 @@ private slots:
     void onThumbnailCanvasMembershipToggled(int index);
     void onWorkspacePathsChanged();
     void removeSessionIndices(const QList<int> &indices);
+    void removeSessionPaths(const QStringList &paths);
+    /** Used by SessionRemoveCommand (redo). */
+    void applySessionRemoveIndices(const QList<int> &indices);
+    /** Used by SessionRemoveCommand (undo). */
+    void restoreSessionEntries(const QList<QPair<int, QString>> &entries);
 
 private:
     void createActions();
@@ -287,6 +292,7 @@ private:
     bool m_startInWorkspaceMode = false; // preference / startup default
     bool m_slideshowFullscreen = true;   // enter fullscreen when starting slideshow
     SortMode m_sortMode = SortMode::Name;
+    bool m_sessionUndoGuard = false;
     int m_slideshowIntervalMs = 3000;
     bool m_forceThumbnails = false;
     bool m_forceNoThumbnails = false;

@@ -280,6 +280,8 @@ signals:
     void galleryItemOpenRequested(const QString &path);
     /** Gallery keyboard focus moved to this path (session cursor). */
     void galleryItemFocused(const QString &path);
+    /** Gallery: selected tiles should leave the session (not only the canvas). */
+    void sessionRemovePathsRequested(const QStringList &paths);
     /** File URLs dropped onto the view (same semantics as MainWindow). */
     void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                       const QPointF &scenePos);

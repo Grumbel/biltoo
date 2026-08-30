@@ -643,11 +643,16 @@ void ThumbnailBar::keyPressEvent(QKeyEvent *event)
 void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
 {
     QListWidgetItem *hit = itemAt(event->pos());
-    if (hit) {
-        if (m_multiSelect) {
-            if (!hit->isSelected()) {
-                hit->setSelected(true);
-            }
+    // Right-click on an already-selected thumb must keep the multi-selection
+    // (including ExtendedSelection used for Ctrl/Shift in Image/Gallery).
+    // Only change selection when the hit item is outside the current selection.
+    if (hit && !hit->isSelected()) {
+        if (m_multiSelect
+            || selectionMode() != QAbstractItemView::SingleSelection) {
+            // Outside the selection: exclusive select the hit (standard).
+            clearSelection();
+            hit->setSelected(true);
+            setCurrentItem(hit);
         } else {
             setCurrentItem(hit);
         }
