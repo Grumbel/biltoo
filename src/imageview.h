@@ -181,6 +181,9 @@ private:
     QHash<QString, WorkspaceItemState> m_itemStates;
     /** Free-form positions restored when leaving a packaged layout. */
     QHash<QString, WorkspaceItemState> m_freeFormStates;
+    /** View pan/zoom while in free-form; restored with the item states. */
+    QTransform m_freeFormViewTransform;
+    bool m_hasFreeFormViewTransform = false;
     QList<WorkspaceItemState> m_savedWorkspace;
     QString m_classicPath;
 

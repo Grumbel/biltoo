@@ -41,6 +41,8 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Workspace mode: zoom buttons / wheel zoom the view (not individual items)
 - [x] QA: filter non-images in expandPaths; restore metadata after fullscreen
 - [x] QA: keep workspace thumbnail selection after sort; metadata fallback dimensions
+- [x] Image-mode zoom is view-level (consistent with Fit / 1:1)
+- [x] Persist free-form view transform (pan/zoom) when switching packaged layouts and back
 
 ## Near-term
 
@@ -50,9 +52,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [ ] Raise / lower and opacity controls directly on the selection chrome
 - [ ] Depend on qtimageformats / KImageFormats for more formats via Qt plugins
 - [ ] Optional thumbnail bar on the right (mirror of left) if requested
-- [ ] Image-mode zoom consistency (item scale vs view fit can desync after wheel zoom)
-- [ ] Persist free-form view transform (pan/zoom) when switching packaged layouts and back
-- [ ] Optional scrollbars when masonry/content exceeds the viewport (pan still works)
+- [ ] Masonry taller than viewport: use View → Show Scrollbars, or pan (middle / Alt)
 
 ## Broader image formats (research notes)
 

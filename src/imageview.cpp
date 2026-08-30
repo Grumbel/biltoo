@@ -523,49 +523,36 @@ void ImageView::zoomViewBy(qreal factor)
 
 void ImageView::zoomIn()
 {
-    if (m_workspaceMode) {
-        zoomViewBy(1.25);
-        return;
-    }
-    if (ImageItem *item = targetItem()) {
-        m_fitMode = false;
-        item->zoomBy(1.25);
-        emit statusChanged();
-    }
+    // View-level zoom in both modes (items keep their own scale/rotation)
+    zoomViewBy(1.25);
 }
 
 void ImageView::zoomOut()
 {
-    if (m_workspaceMode) {
-        zoomViewBy(1.0 / 1.25);
-        return;
-    }
-    if (ImageItem *item = targetItem()) {
-        m_fitMode = false;
-        item->zoomBy(1.0 / 1.25);
-        emit statusChanged();
-    }
+    zoomViewBy(1.0 / 1.25);
 }
 
 void ImageView::zoomReset()
 {
+    m_fitMode = false;
     if (m_workspaceMode) {
-        m_fitMode = false;
         resetTransform();
         emit statusChanged();
         return;
     }
+    // Image mode 1:1 — item at native scale, view identity, then centre
     if (ImageItem *item = targetItem()) {
-        m_fitMode = false;
         item->setItemScale(1.0);
+        resetTransform();
+        centerOn(item);
         emit statusChanged();
     }
 }
 
 void ImageView::zoomFit()
 {
+    m_fitMode = true;
     if (m_workspaceMode) {
-        m_fitMode = true;
         if (m_layoutMode != LayoutMode::FreeForm && !m_items.isEmpty()) {
             applyLayout();
         } else if (!m_items.isEmpty()) {
@@ -576,11 +563,11 @@ void ImageView::zoomFit()
         return;
     }
     if (ImageItem *item = targetItem()) {
-        m_fitMode = true;
+        // Keep item scale at 1; fit via the view transform
+        item->setItemScale(1.0);
         fitItem(item);
         emit statusChanged();
     } else if (m_items.size() > 1) {
-        m_fitMode = true;
         fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatio);
         emit statusChanged();
     }
@@ -662,6 +649,8 @@ void ImageView::snapshotFreeFormStates()
     for (ImageItem *item : m_items) {
         m_freeFormStates.insert(item->path(), captureState(item));
     }
+    m_freeFormViewTransform = transform();
+    m_hasFreeFormViewTransform = true;
 }
 
 void ImageView::restoreFreeFormStates()
@@ -673,12 +662,15 @@ void ImageView::restoreFreeFormStates()
             m_itemStates.insert(item->path(), *it);
         }
     }
+    if (m_hasFreeFormViewTransform) {
+        setTransform(m_freeFormViewTransform);
+    }
 }
 
 void ImageView::setLayoutMode(LayoutMode mode)
 {
     if (m_layoutMode == LayoutMode::FreeForm && mode != LayoutMode::FreeForm) {
-        // Leaving free-form: remember positions for when the user returns
+        // Leaving free-form: remember positions and view pan/zoom
         snapshotFreeFormStates();
     }
 
@@ -899,11 +891,12 @@ QString ImageView::statusText() const
         return text;
     }
 
+    // Image mode: zoom is view-level; item scale stays at 1 unless rotated etc.
     QString text = tr("%1  |  %2×%3  |  Zoom: %4%  |  Rotation: %5°")
                        .arg(name)
                        .arg(item->imageSize().width())
                        .arg(item->imageSize().height())
-                       .arg(qRound(item->itemScale() * 100))
+                       .arg(qRound(viewScale() * 100))
                        .arg(qRound(item->itemRotation()));
     if (item->itemOpacity() < 0.999) {
         text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
@@ -949,36 +942,10 @@ void ImageView::wheelEvent(QWheelEvent *event)
 {
     const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
 
-    if (m_workspaceMode) {
-        // Zoom the workspace view about the cursor
-        m_fitMode = false;
-        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-        scale(factor, factor);
-        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-        emit statusChanged();
-        event->accept();
-        return;
-    }
-
-    // Image mode: zoom the item under the mouse, or the selection
-    ImageItem *item = nullptr;
-    const QPointF scenePos = mapToScene(event->position().toPoint());
-    const QList<QGraphicsItem *> hits = m_scene->items(scenePos);
-    for (QGraphicsItem *gi : hits) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            item = ii;
-            break;
-        }
-    }
-    if (!item) {
-        item = targetItem();
-    }
-    if (!item) {
-        return;
-    }
-
+    // Both modes: zoom the view about the cursor (item handles still scale items)
     m_fitMode = false;
-    item->zoomBy(factor);
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    scale(factor, factor);
     emit statusChanged();
     event->accept();
 }
