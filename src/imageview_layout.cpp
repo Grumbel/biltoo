@@ -449,6 +449,13 @@ void ImageView::setViewMode(ViewMode mode)
         m_galleryHoverPath.clear();
         m_gallerySelectionAnchor = nullptr;
         setDragMode(QGraphicsView::NoDrag);
+        if (m_layoutDebounceTimer) {
+            m_layoutDebounceTimer->stop();
+        }
+        m_pendingGalleryRestore = false;
+        m_haveGalleryScroll = false;
+        m_haveGalleryViewCenter = false;
+        m_applyingLayout = false;
     }
 
     if (previous == ViewMode::Workspace && mode != ViewMode::Workspace) {
@@ -459,10 +466,15 @@ void ImageView::setViewMode(ViewMode mode)
         m_viewMode = ViewMode::Image;
         m_layoutMode = LayoutMode::FreeForm;
         viewport()->update();
+        if (m_layoutDebounceTimer) {
+            m_layoutDebounceTimer->stop();
+        }
+        m_applyingLayout = false;
         prepareImageModeCanvas();
-        const QString path = !m_classicPath.isEmpty()
-                                 ? m_classicPath
-                                 : (m_items.isEmpty() ? QString() : m_items.first()->path());
+        // Prefer explicit classic path. Do not pick m_items.first() when leaving
+        // Gallery — that re-decodes a random tile before setCurrentIndex loads
+        // the real target (double clear + decode spike).
+        const QString path = m_classicPath;
         clearWorkspace();
         m_pendingWorkspacePaths.clear();
         if (!path.isEmpty()) {
