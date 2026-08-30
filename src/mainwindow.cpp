@@ -222,7 +222,7 @@ void MainWindow::createActions()
     connect(m_zoom1to1Act, &QAction::triggered, this, &MainWindow::zoomReset);
 
     m_zoomFitAct = new QAction(tr("&Fit to Window"), this);
-    m_zoomFitAct->setShortcut(Qt::Key_F);
+    // F is reserved for fullscreen (common image-viewer convention)
     m_zoomFitAct->setIcon(themeIcon(QStringLiteral("zoom-fit-best"), QStyle::SP_TitleBarMaxButton));
     m_zoomFitAct->setStatusTip(tr("Fit image to the window"));
     connect(m_zoomFitAct, &QAction::triggered, this, &MainWindow::zoomFit);
@@ -234,10 +234,10 @@ void MainWindow::createActions()
     connect(m_zoomFillAct, &QAction::triggered, this, &MainWindow::zoomFill);
 
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
-    m_fullscreenAct->setShortcut(Qt::Key_F11);
+    m_fullscreenAct->setShortcuts({Qt::Key_F, Qt::Key_F11});
     m_fullscreenAct->setIcon(themeIcon(QStringLiteral("view-fullscreen"), QStyle::SP_TitleBarMaxButton));
     m_fullscreenAct->setCheckable(true);
-    m_fullscreenAct->setStatusTip(tr("Toggle fullscreen mode"));
+    m_fullscreenAct->setStatusTip(tr("Toggle fullscreen mode (F or F11)"));
     connect(m_fullscreenAct, &QAction::triggered, this, &MainWindow::toggleFullscreen);
 
     m_rotateLeftAct = new QAction(tr("Rotate &Left"), this);
@@ -1627,7 +1627,7 @@ void MainWindow::about()
            "comparing images side by side.</p>"
            "<p>Copyright © 2026 Ingo Ruhnke &lt;grumbel@gmail.com&gt;<br/>"
            "License: <b>GPL-3.0-or-later</b></p>"
-           "<p>Shortcuts: <b>F11</b> fullscreen, <b>Esc</b> leave fullscreen, "
+           "<p>Shortcuts: <b>F</b>/<b>F11</b> fullscreen, <b>Esc</b> leave fullscreen, "
            "<b>Ctrl+T</b> toolbar, <b>Space</b> slideshow.</p>"));
     // GNOME 2 HIG: single affirmative Close on the right is fine for about boxes
     box.setStandardButtons(QMessageBox::Close);

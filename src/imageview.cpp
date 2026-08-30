@@ -959,7 +959,10 @@ void ImageView::flashHud(const QString &action, const QString &detail)
 void ImageView::rotateLeft()
 {
     if (ImageItem *item = targetItem()) {
-        item->rotateBy(-90.0);
+        // Snap to the previous multiple of 90° (clean right-angles)
+        const qreal r = item->itemRotation();
+        const qreal next = std::ceil(r / 90.0 - 1e-6) * 90.0 - 90.0;
+        item->setItemRotation(next);
         if (m_fitMode) {
             fitItem(item, currentFitAspectMode());
         }
@@ -970,7 +973,10 @@ void ImageView::rotateLeft()
 void ImageView::rotateRight()
 {
     if (ImageItem *item = targetItem()) {
-        item->rotateBy(90.0);
+        // Snap to the next multiple of 90° (clean right-angles)
+        const qreal r = item->itemRotation();
+        const qreal next = std::floor(r / 90.0 + 1e-6) * 90.0 + 90.0;
+        item->setItemRotation(next);
         if (m_fitMode) {
             fitItem(item, currentFitAspectMode());
         }

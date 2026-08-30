@@ -399,7 +399,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
     }
 
     if (m_workspaceMode) {
-        setSelectionMode(QAbstractItemView::MultiSelection);
+        setSelectionMode(QAbstractItemView::ExtendedSelection);
     }
 
     if (count() > 0 && !m_workspaceMode) {
@@ -431,7 +431,8 @@ void ThumbnailBar::setWorkspaceMode(bool on)
 
     const bool blocked = blockSignals(true);
     if (on) {
-        setSelectionMode(QAbstractItemView::MultiSelection);
+        // ExtendedSelection: Ctrl/Shift + rubber-band multi-select
+        setSelectionMode(QAbstractItemView::ExtendedSelection);
         clearSelection();
     } else {
         setSelectionMode(QAbstractItemView::SingleSelection);
@@ -508,7 +509,7 @@ void ThumbnailBar::selectAllThumbs()
     const bool wasSingle = (!m_workspaceMode
                             && selectionMode() == QAbstractItemView::SingleSelection);
     if (wasSingle) {
-        setSelectionMode(QAbstractItemView::MultiSelection);
+        setSelectionMode(QAbstractItemView::ExtendedSelection);
     }
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
@@ -539,7 +540,7 @@ void ThumbnailBar::invertThumbSelection()
     const bool wasSingle = (!m_workspaceMode
                             && selectionMode() == QAbstractItemView::SingleSelection);
     if (wasSingle) {
-        setSelectionMode(QAbstractItemView::MultiSelection);
+        setSelectionMode(QAbstractItemView::ExtendedSelection);
     }
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
@@ -729,6 +730,7 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
         return;
     }
 
+    // Image mode: Ctrl/Shift+click adds that file to the workspace
     if (!m_workspaceMode
         && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
         QListWidgetItem *hit = itemAt(event->pos());
@@ -741,43 +743,41 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
 
     m_pressPos = event->pos();
     m_pressItem = itemAt(event->pos());
-    m_pressActive = (m_pressItem != nullptr);
+    m_pressActive = true;
     m_dragStarted = false;
 
-    if (!m_workspaceMode && m_pressItem) {
-        QListWidget::mousePressEvent(event);
-        return;
-    }
-
-    event->accept();
+    // Let QListWidget handle selection (including rubber-band in workspace)
+    QListWidget::mousePressEvent(event);
 }
 
 void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_pressActive && !m_dragStarted && (event->buttons() & Qt::LeftButton)
-        && m_pressItem) {
+    if (m_pressActive && !m_dragStarted && (event->buttons() & Qt::LeftButton)) {
         const int dist = (event->pos() - m_pressPos).manhattanLength();
         if (dist >= QApplication::startDragDistance()) {
-            m_dragStarted = true;
-
-            QList<QListWidgetItem *> items;
-            if (m_workspaceMode) {
-                items = selectedItems();
-                if (!m_pressItem->isSelected()) {
+            // Workspace: normal drag is rubber-band / scroll; Alt+drag starts a file drag
+            const bool fileDrag = !m_workspaceMode
+                || (event->modifiers() & Qt::AltModifier);
+            if (fileDrag && m_pressItem) {
+                m_dragStarted = true;
+                QList<QListWidgetItem *> items;
+                if (m_workspaceMode) {
+                    items = selectedItems();
+                    if (!m_pressItem->isSelected()) {
+                        items = {m_pressItem};
+                    }
+                } else {
                     items = {m_pressItem};
                 }
-            } else {
-                items = {m_pressItem};
+                if (items.isEmpty()) {
+                    items = {m_pressItem};
+                }
+                startFileDrag(items);
+                m_pressActive = false;
+                m_pressItem = nullptr;
+                event->accept();
+                return;
             }
-            if (items.isEmpty()) {
-                items = {m_pressItem};
-            }
-
-            startFileDrag(items);
-            m_pressActive = false;
-            m_pressItem = nullptr;
-            event->accept();
-            return;
         }
     }
     QListWidget::mouseMoveEvent(event);
@@ -785,18 +785,12 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 
 void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton && m_pressActive && !m_dragStarted) {
-        if (m_workspaceMode && m_pressItem) {
-            m_pressItem->setSelected(!m_pressItem->isSelected());
-            emit workspaceSelectionChanged();
-            m_pressActive = false;
-            m_pressItem = nullptr;
-            event->accept();
-            return;
-        }
-    }
+    const bool wasActive = m_pressActive;
     m_pressActive = false;
     m_pressItem = nullptr;
     m_dragStarted = false;
     QListWidget::mouseReleaseEvent(event);
+    if (m_workspaceMode && wasActive && event->button() == Qt::LeftButton) {
+        emit workspaceSelectionChanged();
+    }
 }

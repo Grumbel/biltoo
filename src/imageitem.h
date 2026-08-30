@@ -95,6 +95,7 @@ protected:
 
 private:
     void applyLocalTransform();
+    void updateDisplayedPixmap();
     void notifyViewStatus();
     QRectF contentRect() const;
     QPointF handleCenter(Handle h) const;

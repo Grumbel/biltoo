@@ -32,12 +32,12 @@ ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *pa
     , m_path(path)
     , m_source(image)
 {
-    setPixmap(QPixmap::fromImage(image));
     setTransformationMode(Qt::SmoothTransformation);
     // Classic viewer by default: not selectable/movable until workspace mode
     setFlags(ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
     setOffset(-image.width() / 2.0, -image.height() / 2.0); // origin at centre
+    updateDisplayedPixmap();
     applyLocalTransform();
 }
 
@@ -83,8 +83,9 @@ void ImageItem::setItemHFlip(bool on)
         return;
     }
     m_hFlip = on;
-    applyLocalTransform();
+    updateDisplayedPixmap();
     prepareGeometryChange();
+    update();
 }
 
 void ImageItem::setItemVFlip(bool on)
@@ -93,8 +94,9 @@ void ImageItem::setItemVFlip(bool on)
         return;
     }
     m_vFlip = on;
-    applyLocalTransform();
+    updateDisplayedPixmap();
     prepareGeometryChange();
+    update();
 }
 
 void ImageItem::toggleHFlip()
@@ -131,21 +133,37 @@ void ImageItem::setScaleHandlesEnabled(bool on)
 
 void ImageItem::applyLocalTransform()
 {
+    // Scale and rotate only — flips are applied to the pixmap so handles
+    // stay on the geometric top/left/right of the item frame.
     QTransform t;
     t.rotate(m_rotation);
-    const qreal sx = m_hFlip ? -m_scale : m_scale;
-    const qreal sy = m_vFlip ? -m_scale : m_scale;
-    t.scale(sx, sy);
+    t.scale(m_scale, m_scale);
     setTransform(t);
+}
+
+void ImageItem::updateDisplayedPixmap()
+{
+    if (!m_hFlip && !m_vFlip) {
+        setPixmap(QPixmap::fromImage(m_source));
+        return;
+    }
+    setPixmap(QPixmap::fromImage(m_source.mirrored(m_hFlip, m_vFlip)));
 }
 
 QPoint ImageItem::pixelAtScenePos(const QPointF &scenePos) const
 {
     const QPointF local = mapFromScene(scenePos) - offset();
-    const int x = static_cast<int>(local.x());
-    const int y = static_cast<int>(local.y());
+    int x = static_cast<int>(local.x());
+    int y = static_cast<int>(local.y());
     if (x < 0 || y < 0 || x >= m_source.width() || y >= m_source.height()) {
         return QPoint(-1, -1);
+    }
+    // Display is mirrored; map back to source pixel coordinates
+    if (m_hFlip) {
+        x = m_source.width() - 1 - x;
+    }
+    if (m_vFlip) {
+        y = m_source.height() - 1 - y;
     }
     return QPoint(x, y);
 }
