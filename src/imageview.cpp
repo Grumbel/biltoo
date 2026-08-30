@@ -263,13 +263,15 @@ void ImageView::restoreWorkspace()
 
 void ImageView::clearWorkspace()
 {
-    m_scene->clear();
-    m_items.clear();
-    m_pendingScenePos.clear();
-    m_mouseInfo = {};
     m_rotateItem = nullptr;
     m_rotating = false;
     m_dragItem = nullptr;
+    m_items.clear();
+    m_pendingScenePos.clear();
+    m_pendingWorkspacePaths.clear();
+    // clear() deletes all QGraphicsItems owned by the scene
+    m_scene->clear();
+    m_mouseInfo = {};
     emit mouseInfoChanged(m_mouseInfo);
 }
 
@@ -366,6 +368,13 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
     for (int i = m_items.size() - 1; i >= 0; --i) {
         ImageItem *item = m_items.at(i);
         if (!wanted.contains(item->path())) {
+            if (item == m_dragItem) {
+                m_dragItem = nullptr;
+            }
+            if (item == m_rotateItem) {
+                m_rotateItem = nullptr;
+                m_rotating = false;
+            }
             rememberItemState(item);
             m_scene->removeItem(item);
             m_items.removeAt(i);

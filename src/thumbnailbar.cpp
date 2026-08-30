@@ -399,7 +399,8 @@ void ThumbnailBar::setFiles(const QStringList &files)
     }
 
     if (m_workspaceMode) {
-        setSelectionMode(QAbstractItemView::ExtendedSelection);
+        setSelectionMode(QAbstractItemView::MultiSelection);
+        setSelectionRectVisible(false);
     }
 
     if (count() > 0 && !m_workspaceMode) {
@@ -431,9 +432,12 @@ void ThumbnailBar::setWorkspaceMode(bool on)
 
     const bool blocked = blockSignals(true);
     if (on) {
-        // ExtendedSelection: Ctrl/Shift + rubber-band multi-select
-        setSelectionMode(QAbstractItemView::ExtendedSelection);
+        // MultiSelection flag only; selection is driven by mouse handlers
+        // (no rubber-band). Click toggles, Shift+click ranges, Ctrl+click toggles.
+        setSelectionMode(QAbstractItemView::MultiSelection);
+        setSelectionRectVisible(false);
         clearSelection();
+        m_selectionAnchor = -1;
     } else {
         setSelectionMode(QAbstractItemView::SingleSelection);
         clearSelection();
@@ -457,6 +461,7 @@ void ThumbnailBar::setSelectedIndices(const QList<int> &indices)
 {
     const bool blocked = blockSignals(true);
     clearSelection();
+    m_selectionAnchor = indices.isEmpty() ? -1 : indices.last();
     for (int idx : indices) {
         if (idx >= 0 && idx < count()) {
             item(idx)->setSelected(true);
@@ -464,6 +469,9 @@ void ThumbnailBar::setSelectedIndices(const QList<int> &indices)
     }
     blockSignals(blocked);
 }
+
+
+
 
 void ThumbnailBar::onItemActivated(QListWidgetItem *item)
 {
@@ -509,13 +517,15 @@ void ThumbnailBar::selectAllThumbs()
     const bool wasSingle = (!m_workspaceMode
                             && selectionMode() == QAbstractItemView::SingleSelection);
     if (wasSingle) {
-        setSelectionMode(QAbstractItemView::ExtendedSelection);
+        setSelectionMode(QAbstractItemView::MultiSelection);
+        setSelectionRectVisible(false);
     }
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
             it->setSelected(true);
         }
     }
+    m_selectionAnchor = 0;
     if (m_workspaceMode) {
         emit workspaceSelectionChanged();
     }
@@ -524,6 +534,7 @@ void ThumbnailBar::selectAllThumbs()
 void ThumbnailBar::selectNoneThumbs()
 {
     clearSelection();
+    m_selectionAnchor = -1;
     if (!m_workspaceMode) {
         setSelectionMode(QAbstractItemView::SingleSelection);
     }
@@ -540,7 +551,8 @@ void ThumbnailBar::invertThumbSelection()
     const bool wasSingle = (!m_workspaceMode
                             && selectionMode() == QAbstractItemView::SingleSelection);
     if (wasSingle) {
-        setSelectionMode(QAbstractItemView::ExtendedSelection);
+        setSelectionMode(QAbstractItemView::MultiSelection);
+        setSelectionRectVisible(false);
     }
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
@@ -730,35 +742,72 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    // Image mode: Ctrl/Shift+click adds that file to the workspace
-    if (!m_workspaceMode
-        && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
-        QListWidgetItem *hit = itemAt(event->pos());
-        if (hit) {
+    QListWidgetItem *hit = itemAt(event->pos());
+    m_pressPos = event->pos();
+    m_pressItem = hit;
+    m_pressActive = true;
+    m_dragStarted = false;
+
+    // Image mode: Ctrl/Shift+click adds that file onto the workspace
+    if (!m_workspaceMode) {
+        if (hit && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
             emit indexAddToWorkspace(row(hit));
             event->accept();
             return;
         }
+        // Single click navigates the session (list selection)
+        QListWidget::mousePressEvent(event);
+        return;
     }
 
-    m_pressPos = event->pos();
-    m_pressItem = itemAt(event->pos());
-    m_pressActive = true;
-    m_dragStarted = false;
+    // Workspace mode: no rubber-band. Selection drives which images are on the canvas.
+    //  - Click: toggle that thumbnail
+    //  - Ctrl+click: toggle without moving the range anchor
+    //  - Shift+click: select inclusive range from anchor
+    if (!hit) {
+        event->accept();
+        return;
+    }
 
-    // Let QListWidget handle selection (including rubber-band in workspace)
-    QListWidget::mousePressEvent(event);
+    const int r = row(hit);
+    const bool ctrl = event->modifiers() & Qt::ControlModifier;
+    const bool shift = event->modifiers() & Qt::ShiftModifier;
+
+    if (shift && m_selectionAnchor >= 0 && m_selectionAnchor < count()) {
+        const int lo = qMin(m_selectionAnchor, r);
+        const int hi = qMax(m_selectionAnchor, r);
+        if (!ctrl) {
+            for (int i = 0; i < count(); ++i) {
+                if (QListWidgetItem *it = item(i)) {
+                    it->setSelected(i >= lo && i <= hi);
+                }
+            }
+        } else {
+            for (int i = lo; i <= hi; ++i) {
+                if (QListWidgetItem *it = item(i)) {
+                    it->setSelected(true);
+                }
+            }
+        }
+    } else {
+        hit->setSelected(!hit->isSelected());
+        m_selectionAnchor = r;
+    }
+
+    emit workspaceSelectionChanged();
+    event->accept();
 }
 
 void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_pressActive && !m_dragStarted && (event->buttons() & Qt::LeftButton)) {
+    if (m_pressActive && !m_dragStarted && (event->buttons() & Qt::LeftButton)
+        && m_pressItem) {
         const int dist = (event->pos() - m_pressPos).manhattanLength();
         if (dist >= QApplication::startDragDistance()) {
-            // Workspace: normal drag is rubber-band / scroll; Alt+drag starts a file drag
+            // Image mode: drag files out. Workspace: only with Alt (no rubber-band).
             const bool fileDrag = !m_workspaceMode
                 || (event->modifiers() & Qt::AltModifier);
-            if (fileDrag && m_pressItem) {
+            if (fileDrag) {
                 m_dragStarted = true;
                 QList<QListWidgetItem *> items;
                 if (m_workspaceMode) {
@@ -778,19 +827,26 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
                 event->accept();
                 return;
             }
+            // Workspace without Alt: ignore drag distance (no rubber-band)
+            event->accept();
+            return;
         }
     }
-    QListWidget::mouseMoveEvent(event);
+    if (!m_workspaceMode) {
+        QListWidget::mouseMoveEvent(event);
+    } else {
+        event->accept();
+    }
 }
 
 void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
 {
-    const bool wasActive = m_pressActive;
     m_pressActive = false;
     m_pressItem = nullptr;
     m_dragStarted = false;
-    QListWidget::mouseReleaseEvent(event);
-    if (m_workspaceMode && wasActive && event->button() == Qt::LeftButton) {
-        emit workspaceSelectionChanged();
+    if (!m_workspaceMode) {
+        QListWidget::mouseReleaseEvent(event);
+    } else {
+        event->accept();
     }
 }

@@ -186,9 +186,9 @@ void MainWindow::createActions()
     connect(m_openAct, &QAction::triggered, this, &MainWindow::openFiles);
 
     m_addAct = new QAction(tr("&Add Images..."), this);
-    m_addAct->setShortcut(Qt::CTRL | Qt::Key_A);
+    m_addAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_A);
     m_addAct->setIcon(themeIcon(QStringLiteral("list-add"), QStyle::SP_FileDialogNewFolder));
-    m_addAct->setStatusTip(tr("Add image files to the current session"));
+    m_addAct->setStatusTip(tr("Add image files to the current session (Ctrl+Shift+A)"));
     connect(m_addAct, &QAction::triggered, this, &MainWindow::addFiles);
 
     m_openDirAct = new QAction(tr("Open &Directory..."), this);
@@ -340,6 +340,13 @@ void MainWindow::createActions()
     m_redoAct = m_imageView->undoStack()->createRedoAction(this, tr("&Redo"));
     m_redoAct->setShortcuts(QKeySequence::Redo);
     m_redoAct->setIcon(themeIcon(QStringLiteral("edit-redo"), QStyle::SP_ArrowForward));
+
+    m_selectAllAct = new QAction(tr("Select &All"), this);
+    m_selectAllAct->setShortcut(QKeySequence::SelectAll);
+    m_selectAllAct->setIcon(themeIcon(QStringLiteral("edit-select-all"), QStyle::SP_DialogApplyButton));
+    m_selectAllAct->setStatusTip(
+        tr("Select all thumbnails (in workspace mode: show all on the canvas)"));
+    connect(m_selectAllAct, &QAction::triggered, this, &MainWindow::selectAllThumbnails);
 
     m_layoutFreeFormAct = new QAction(tr("&Free Form Layout"), this);
     m_layoutFreeFormAct->setCheckable(true);
@@ -520,6 +527,8 @@ void MainWindow::createMenus()
     m_editMenu = menuBar()->addMenu(tr("&Edit"));
     m_editMenu->addAction(m_undoAct);
     m_editMenu->addAction(m_redoAct);
+    m_editMenu->addSeparator();
+    m_editMenu->addAction(m_selectAllAct);
     m_editMenu->addSeparator();
     m_editMenu->addAction(m_preferencesAct);
 

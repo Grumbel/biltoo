@@ -89,6 +89,16 @@ Priority roughly: bugs first, then small polish, then larger features.
 - [x] **Larger handles in general**
 
 
+
+### Thumbnail bar interaction (settled)
+
+- **Image mode:** click = navigate session; Ctrl/Shift+click = add that file to workspace.
+- **Workspace mode:** click = toggle on canvas; Shift+click = range from anchor; Ctrl+click = toggle one.
+  No rubber-band rectangle select. Alt+drag still starts a file drag.
+- **Ctrl+A:** Select All thumbnails (enters workspace if needed, shows all on canvas).
+- **Add Images:** Ctrl+Shift+A (not Ctrl+A).
+- **[+]** on each thumb rejected as redundant with Add / Ctrl+click / workspace toggle.
+
 ## GUI / HIG review (GNOME 2 + common desktop conventions)
 
 Review date: 2026-08-30. Aim: classic single-document image viewer feel.

@@ -107,6 +107,7 @@ private slots:
     void updateWorkspaceActionVisibility();
     void updateStatus();
     void updateWindowTitle();
+    void selectAllThumbnails();
     void flashNavHud(const QString &action);
     void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
@@ -185,6 +186,7 @@ private:
     QAction *m_workspaceModeAct = nullptr;
     QAction *m_selectToolAct = nullptr;
     QAction *m_panToolAct = nullptr;
+    QAction *m_selectAllAct = nullptr;
     QAction *m_undoAct = nullptr;
     QAction *m_redoAct = nullptr;
     QAction *m_layoutFreeFormAct = nullptr;

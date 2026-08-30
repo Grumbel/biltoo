@@ -65,6 +65,7 @@ public:
 
     QList<int> selectedIndices() const;
     void setSelectedIndices(const QList<int> &indices);
+    /** Select every thumbnail (workspace: put all on canvas). */
 
     void setThumbSize(int pixels);
     int thumbSize() const { return m_thumbSize; }
@@ -125,6 +126,7 @@ private:
 
     std::atomic<quint64> m_generation{0};
     bool m_workspaceMode = false;
+    int m_selectionAnchor = -1;
     bool m_labelsVisible = true;
     int m_thumbSize = kDefaultThumbSize;
     int m_decodedSize = 0;
