@@ -108,6 +108,8 @@ private slots:
     void setSelectTool();
     void setPanTool();
     void updateWorkspaceActionVisibility();
+    void updateThumbnailBarForMode();
+    void updateScrollBarPolicyForMode();
     void updateMasonryWidthControl();
     void ensureMultiImageMode();
     /** Put every session image on the multi-image canvas (gallery). */
@@ -209,6 +211,8 @@ private:
     QSpinBox *m_masonryWidthSpin = nullptr;
     QAction *m_clearExtrasAct = nullptr;
     bool m_galleryReturnActive = false;
+    bool m_thumbsHiddenForGallery = false;
+    bool m_thumbsVisibleBeforeGallery = false;
     ImageView::LayoutMode m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
     QAction *m_opacityResetAct = nullptr;
     QAction *m_opacityDownAct = nullptr;

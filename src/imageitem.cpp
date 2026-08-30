@@ -174,10 +174,14 @@ void ImageItem::setInteractive(bool on)
 
 void ImageItem::setGallerySelectable(bool on)
 {
-    // Selectable for hit-testing / Stack focus; not movable; no transform chrome.
+    // Selectable for hit-testing / open-on-click; not movable; no transform chrome.
     m_interactive = false;
     m_scaleHandlesEnabled = false;
+    m_galleryHovered = false;
+    m_hoverHandle = Handle::None;
+    m_activeHandle = Handle::None;
     if (on) {
+        setAcceptHoverEvents(true);
         setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
     } else {
         setSelected(false);
@@ -564,14 +568,35 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->restore();
     }
 
-    if (!(option->state & QStyle::State_Selected) || !m_interactive) {
+    const QRectF r = QGraphicsPixmapItem::boundingRect();
+
+    // Gallery: soft hover / selection frame, never transform chrome.
+    if (!m_interactive) {
+        const bool selected = option->state & QStyle::State_Selected;
+        if (m_galleryHovered || selected) {
+            painter->save();
+            painter->setOpacity(1.0);
+            QPen pen(selected ? QColor(0, 180, 255) : QColor(220, 220, 220, 180), 0);
+            pen.setCosmetic(true);
+            pen.setWidthF(selected ? 2.5 : 1.5);
+            painter->setPen(pen);
+            painter->setBrush(Qt::NoBrush);
+            painter->drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5));
+            if (m_galleryHovered && !selected) {
+                painter->fillRect(r, QColor(255, 255, 255, 28));
+            }
+            painter->restore();
+        }
+        return;
+    }
+
+    if (!(option->state & QStyle::State_Selected)) {
         return;
     }
 
     painter->save();
     painter->setOpacity(1.0);
 
-    const QRectF r = QGraphicsPixmapItem::boundingRect();
     QPen pen(QColor(0, 160, 255), 0); // cosmetic width via setCosmetic
     pen.setCosmetic(true);
     pen.setWidthF(1.5);
@@ -772,6 +797,16 @@ void ImageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
+    if (!m_interactive && (flags() & ItemIsSelectable)) {
+        if (!m_galleryHovered) {
+            m_galleryHovered = true;
+            update();
+        }
+        setCursor(Qt::PointingHandCursor);
+        QGraphicsPixmapItem::hoverMoveEvent(event);
+        return;
+    }
+
     if (m_interactive && isSelected()) {
         const Handle h = handleAt(event->pos());
         if (h != m_hoverHandle) {
@@ -815,6 +850,10 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 
 void ImageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
+    if (m_galleryHovered) {
+        m_galleryHovered = false;
+        update();
+    }
     if (m_hoverHandle != Handle::None) {
         m_hoverHandle = Handle::None;
         setToolTip(QString());

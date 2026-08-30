@@ -81,8 +81,10 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         item->setScaleHandlesEnabled(true);
     } else if (isGalleryMode()) {
         item->setGallerySelectable(true);
+        item->setScaleHandlesEnabled(false);
     } else {
         item->setInteractive(false);
+        item->setScaleHandlesEnabled(false);
     }
     m_scene->addItem(item);
     m_items.append(item);
@@ -520,6 +522,7 @@ void ImageView::setViewMode(ViewMode mode)
     viewport()->update();
     for (ImageItem *item : m_items) {
         item->setGallerySelectable(true);
+        item->setScaleHandlesEnabled(false);
     }
     if (!m_items.isEmpty()) {
         applyLayout();
@@ -545,6 +548,7 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     m_layoutMode = packagedLayout;
     for (ImageItem *item : m_items) {
         item->setGallerySelectable(true);
+        item->setScaleHandlesEnabled(false);
     }
     applyLayout();
     emit statusChanged();
@@ -767,8 +771,8 @@ void ImageView::dropEvent(QDropEvent *event)
 
 void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 {
-    if (isImageMode()) {
-        // Image mode: flat dark fill (matches setBackgroundBrush)
+    // Checkerboard is Workspace-only. Image and Gallery use a flat dark fill.
+    if (!isWorkspaceMode()) {
         painter->fillRect(rect, QColor(36, 36, 36));
         return;
     }
@@ -1290,6 +1294,9 @@ void ImageView::applyLayout()
 
     const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-margin, -margin, margin, margin);
     m_scene->setSceneRect(bounds);
+    // Gallery content may exceed the viewport — allow scrolling.
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_fitMode = true;
     emit statusChanged();
 }
@@ -1450,9 +1457,18 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 void ImageView::wheelEvent(QWheelEvent *event)
 {
-    // Packaged workspace layouts own placement; do not scale the view.
+    // Gallery: scroll the view (do not zoom — packing owns item scale).
     if (isGalleryMode()) {
-        event->ignore();
+        const QPoint delta = event->pixelDelta().isNull()
+                                 ? event->angleDelta()
+                                 : event->pixelDelta();
+        if (horizontalScrollBar()) {
+            horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
+        }
+        if (verticalScrollBar()) {
+            verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
+        }
+        event->accept();
         return;
     }
 
@@ -1507,12 +1523,15 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    // Image mode (when preferred), or Pan tool / Alt: left-drag pans
-    if (event->button() == Qt::LeftButton) {
-        const bool wantPan = (isImageMode() && m_imageModeLeftDragPan)
-                             || (isWorkspaceMode() && m_tool == Tool::Pan)
-                             || (event->modifiers() & Qt::AltModifier);
-        if (wantPan && !(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier))) {
+    // Middle-button pan in any mode; Gallery also allows Alt+left pan.
+    if (event->button() == Qt::MiddleButton
+        || (event->button() == Qt::LeftButton
+            && ((isImageMode() && m_imageModeLeftDragPan)
+                || (isWorkspaceMode() && m_tool == Tool::Pan)
+                || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
+                || (event->modifiers() & Qt::AltModifier)))) {
+        if (!(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)
+              && event->button() == Qt::LeftButton)) {
             m_panning = true;
             m_lastMousePos = event->pos();
             setCursor(Qt::ClosedHandCursor);

@@ -144,6 +144,8 @@ private:
 
     Handle m_activeHandle = Handle::None;
     Handle m_hoverHandle = Handle::None;
+    /** Gallery: item under the mouse (no transform chrome). */
+    bool m_galleryHovered = false;
     QPointF m_pressScenePos;
     qreal m_pressScale = 1.0;
     qreal m_pressRotation = 0.0;

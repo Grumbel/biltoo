@@ -400,9 +400,10 @@ void MainWindow::createActions()
         tr("Gallery: pack images into columns of equal width (Pinterest-style)"));
     connect(m_layoutMasonryAct, &QAction::triggered, this, &MainWindow::setLayoutMasonry);
 
-    m_backToGalleryAct = new QAction(tr("&Back to Gallery"), this);
+    m_backToGalleryAct = new QAction(tr("&Back"), this);
     m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-previous"), QStyle::SP_ArrowBack));
-    m_backToGalleryAct->setStatusTip(tr("Return to the gallery layout"));
+    m_backToGalleryAct->setStatusTip(tr("Back to gallery"));
+    m_backToGalleryAct->setToolTip(tr("Back to gallery"));
     m_backToGalleryAct->setVisible(false);
     connect(m_backToGalleryAct, &QAction::triggered, this, &MainWindow::returnToGallery);
 
@@ -691,6 +692,8 @@ void MainWindow::createToolBar()
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
     // Left: file + undo/redo
+    // Back first (browser / file-manager style) when returning from Image mode
+    m_toolBar->addAction(m_backToGalleryAct);
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_addAct);
     m_toolBar->addSeparator();
@@ -702,7 +705,6 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipHAct);
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addSeparator();
-    m_toolBar->addAction(m_backToGalleryAct);
     m_toolBar->addAction(m_layoutSideBySideAct);
     m_toolBar->addAction(m_layoutVerticalAct);
     m_toolBar->addAction(m_layoutGridAct);
@@ -1552,10 +1554,6 @@ void MainWindow::setLayoutSideBySide()
     m_workspaceMode = true; // multi-item session UI (thumbs)
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
-    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
-        m_toggleThumbnailBarAct->setChecked(true);
-        m_thumbnailBar->setVisible(true);
-    }
     m_imageView->enterGallery(ImageView::LayoutMode::SideBySide);
     populateGalleryCanvas();
     // Re-apply after items are on the canvas
@@ -1578,10 +1576,6 @@ void MainWindow::setLayoutVertical()
     m_workspaceMode = true; // multi-item session UI (thumbs)
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
-    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
-        m_toggleThumbnailBarAct->setChecked(true);
-        m_thumbnailBar->setVisible(true);
-    }
     m_imageView->enterGallery(ImageView::LayoutMode::Vertical);
     populateGalleryCanvas();
     // Re-apply after items are on the canvas
@@ -1604,10 +1598,6 @@ void MainWindow::setLayoutGrid()
     m_workspaceMode = true; // multi-item session UI (thumbs)
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
-    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
-        m_toggleThumbnailBarAct->setChecked(true);
-        m_thumbnailBar->setVisible(true);
-    }
     m_imageView->enterGallery(ImageView::LayoutMode::Grid);
     populateGalleryCanvas();
     // Re-apply after items are on the canvas
@@ -1630,10 +1620,6 @@ void MainWindow::setLayoutStack()
     m_workspaceMode = true; // multi-item session UI (thumbs)
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
-    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
-        m_toggleThumbnailBarAct->setChecked(true);
-        m_thumbnailBar->setVisible(true);
-    }
     m_imageView->enterGallery(ImageView::LayoutMode::Stack);
     populateGalleryCanvas();
     // Re-apply after items are on the canvas
@@ -1656,10 +1642,6 @@ void MainWindow::setLayoutMasonry()
     m_workspaceMode = true; // multi-item session UI (thumbs)
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
-    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
-        m_toggleThumbnailBarAct->setChecked(true);
-        m_thumbnailBar->setVisible(true);
-    }
     m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
     populateGalleryCanvas();
     // Re-apply after items are on the canvas
@@ -1829,6 +1811,54 @@ void MainWindow::setPanTool()
     m_panToolAct->setChecked(true);
 }
 
+
+void MainWindow::updateScrollBarPolicyForMode()
+{
+    if (!m_imageView) {
+        return;
+    }
+    if (m_imageView->isGalleryMode()) {
+        m_imageView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        m_imageView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        return;
+    }
+    const bool show = m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked();
+    const auto policy = show ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff;
+    m_imageView->setHorizontalScrollBarPolicy(policy);
+    m_imageView->setVerticalScrollBarPolicy(policy);
+}
+
+void MainWindow::updateThumbnailBarForMode()
+{
+    if (!m_thumbnailBar) {
+        return;
+    }
+    const bool gallery = m_imageView && m_imageView->isGalleryMode();
+    if (gallery) {
+        if (!m_thumbsHiddenForGallery) {
+            m_thumbsVisibleBeforeGallery = m_thumbnailBar->isVisible();
+            m_thumbsHiddenForGallery = true;
+        }
+        if (m_thumbnailBar->isVisible()) {
+            m_thumbnailBar->setVisible(false);
+        }
+        if (m_toggleThumbnailBarAct) {
+            m_toggleThumbnailBarAct->setChecked(false);
+        }
+        return;
+    }
+
+    if (m_thumbsHiddenForGallery) {
+        m_thumbsHiddenForGallery = false;
+        if (m_thumbsVisibleBeforeGallery) {
+            m_thumbnailBar->setVisible(true);
+            if (m_toggleThumbnailBarAct) {
+                m_toggleThumbnailBarAct->setChecked(true);
+            }
+        }
+    }
+}
+
 void MainWindow::updateWorkspaceActionVisibility()
 {
     const bool gallery = m_imageView && m_imageView->isGalleryMode();
@@ -1866,6 +1896,8 @@ void MainWindow::updateWorkspaceActionVisibility()
     if (m_backToGalleryAct && !m_galleryReturnActive) {
         m_backToGalleryAct->setVisible(false);
     }
+    updateThumbnailBarForMode();
+    updateScrollBarPolicyForMode();
     updateMasonryWidthControl();
     updateNavigationActions();
 }
