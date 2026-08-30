@@ -1203,12 +1203,29 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         return;
     }
 
-    // Image mode: plain drop replaces the session; Shift/Ctrl appends.
-    if (modifiers & (Qt::ShiftModifier | Qt::ControlModifier)) {
-        appendFiles(paths);
-    } else {
-        loadFiles(paths);
+    // Image mode: always append to the session (Open still replaces).
+    // Drops from the thumbnail bar are already in the session — just navigate
+    // to the first path instead of wiping the session down to one file.
+    const QStringList expanded = expandPaths(paths);
+    if (expanded.isEmpty()) {
+        return;
     }
+    QStringList novel;
+    for (const QString &p : expanded) {
+        if (!m_files.contains(p)) {
+            novel.append(p);
+        }
+    }
+    if (!novel.isEmpty()) {
+        appendFiles(novel);
+    }
+    // Focus the first dropped path (existing or newly appended).
+    const QString focus = expanded.first();
+    const int idx = m_files.indexOf(focus);
+    if (idx >= 0) {
+        setCurrentIndex(idx);
+    }
+    Q_UNUSED(modifiers);
 }
 
 void MainWindow::onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,

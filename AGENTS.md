@@ -192,8 +192,9 @@ and Select/Pan live on the vertical workspace tool strip.
 - Context menu on the image view exposing the same core actions.
 - Status bar shows [index/total], filename, dimensions, zoom %, rotation.
 - Thumbnail bar at the bottom when more than one image is loaded.
-- Drag-and-drop of local image files: plain drop replaces the session in classic
-  mode; Shift/Ctrl+drop appends. In workspace mode drop appends to the session
+- Drag-and-drop of local image files: always appends to the session in Image mode
+  (File → Open still replaces). Paths already in the session only change the
+  current index. In workspace mode drop appends to the session
   (thumbnail bar) and places the images on the canvas.
 - Keyboard: Left/Right/Space/Backspace/PgUp/PgDn navigate; R / [ ] rotate; F fit.
 - Open Directory (Ctrl+Shift+O) and CLI directories expand to images sorted by name.

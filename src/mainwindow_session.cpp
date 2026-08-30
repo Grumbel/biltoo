@@ -178,6 +178,40 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     updateWorkspaceActionVisibility();
 }
 
+void MainWindow::newSession()
+{
+    stopSlideshow();
+    m_files.clear();
+    m_currentIndex = -1;
+    m_galleryReturnActive = false;
+    if (m_imageView) {
+        // Drop all canvas objects and classic path so Image mode does not
+        // reload the previous file after the mode switch.
+        m_imageView->clearWorkspace();
+        if (!m_imageView->isImageMode()) {
+            m_imageView->setViewMode(ImageView::ViewMode::Image);
+        }
+        m_imageView->prepareImageModeCanvas();
+    }
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setMultiSelectEnabled(false);
+        m_thumbnailBar->setFiles({});
+    }
+    if (m_workspaceModeAct) {
+        m_workspaceModeAct->setChecked(false);
+    }
+    applyThumbnailVisibility();
+    updateNavigationActions();
+    updateWorkspaceActionVisibility();
+    if (m_metadataPanel) {
+        m_metadataPanel->setImagePath(QString());
+    }
+    updateStatus();
+    if (statusBar()) {
+        statusBar()->showMessage(tr("New session."), 2000);
+    }
+}
+
 void MainWindow::appendFiles(const QStringList &paths)
 {
     QStringList images = expandPaths(paths);

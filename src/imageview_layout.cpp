@@ -129,6 +129,7 @@ void ImageView::clearWorkspace()
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
     m_pendingRestoreStates.clear();
+    m_classicPath.clear();
     // clear() deletes all QGraphicsItems owned by the scene
     m_scene->clear();
     m_mouseInfo = {};

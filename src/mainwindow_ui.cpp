@@ -11,6 +11,12 @@ void MainWindow::createActions()
     m_openAct->setStatusTip(tr("Open image files (replace session)"));
     connect(m_openAct, &QAction::triggered, this, &MainWindow::openFiles);
 
+    m_newAct = new QAction(tr("&New"), this);
+    m_newAct->setShortcut(QKeySequence::New);
+    m_newAct->setIcon(themeIcon(QStringLiteral("document-new"), QStyle::SP_FileDialogNewFolder));
+    m_newAct->setStatusTip(tr("Start a new empty session"));
+    connect(m_newAct, &QAction::triggered, this, &MainWindow::newSession);
+
     m_addAct = new QAction(tr("&Add Images..."), this);
     m_addAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_A);
     m_addAct->setIcon(themeIcon(QStringLiteral("list-add"), QStyle::SP_FileDialogNewFolder));
@@ -404,6 +410,7 @@ void MainWindow::createActions()
 void MainWindow::createMenus()
 {
     m_fileMenu = menuBar()->addMenu(tr("&File"));
+    m_fileMenu->addAction(m_newAct);
     m_fileMenu->addAction(m_openAct);
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);

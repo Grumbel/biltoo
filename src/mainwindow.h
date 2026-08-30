@@ -43,6 +43,9 @@ public:
     /** Append expanded paths to the current session (deduplicated). */
     void appendFiles(const QStringList &paths);
 
+    /** Clear session, canvas, and thumbnails (File → New). */
+    void newSession();
+
     void setRecursive(bool recursive) { m_recursive = recursive; }
     void setSortMode(SortMode mode);
     void setThumbnailsForced(bool show) { m_forceThumbnails = show; m_forceNoThumbnails = !show; }
@@ -192,6 +195,7 @@ private:
     QMenu *m_contextMenu = nullptr;
 
     QAction *m_openAct = nullptr;
+    QAction *m_newAct = nullptr;
     QAction *m_addAct = nullptr;
     QAction *m_openDirAct = nullptr;
     QAction *m_quitAct = nullptr;
