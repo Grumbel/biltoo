@@ -118,18 +118,28 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             }
         }
         if (image.isNull()) {
+            m_lastLoadError = path;
             emit statusChanged();
             return;
         }
         if (!m_workspaceMode) {
             clearWorkspace();
+            m_lastLoadError.clear();
             ImageItem *item = createItemFromImage(path, image);
             if (!item) {
+                m_lastLoadError = path;
+                emit statusChanged();
                 return;
             }
             item->setInteractive(false);
             m_fitMode = true;
             resetTransform();
+            if (horizontalScrollBar()) {
+                horizontalScrollBar()->setValue(0);
+            }
+            if (verticalScrollBar()) {
+                verticalScrollBar()->setValue(0);
+            }
             fitItem(item, currentFitAspectMode());
             emit statusChanged();
             return;
@@ -734,6 +744,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 bool ImageView::loadImage(const QString &path)
 {
     m_classicPath = path;
+    m_lastLoadError.clear();
 
     if (m_workspaceMode) {
         // Session navigation while in workspace does not destroy the canvas;
@@ -746,16 +757,8 @@ bool ImageView::loadImage(const QString &path)
         return true;
     }
 
-    // Classic mode: decode off the GUI thread, then centre when ready
-    clearWorkspace();
-    m_pendingWorkspacePaths.clear();
-    resetTransform();
-    if (horizontalScrollBar()) {
-        horizontalScrollBar()->setValue(0);
-    }
-    if (verticalScrollBar()) {
-        verticalScrollBar()->setValue(0);
-    }
+    // Classic mode: decode off the GUI thread. Keep the previous image until
+    // the new one is ready so rapid navigation does not flash an empty view.
     scheduleImageLoad(path, LoadReplace);
     emit statusChanged();
     return true;
@@ -1286,6 +1289,12 @@ QString ImageView::statusText() const
         item = primaryItem();
     }
     if (!item) {
+        if (!m_lastLoadError.isEmpty()) {
+            return tr("Failed to load: %1").arg(QFileInfo(m_lastLoadError).fileName());
+        }
+        if (!m_classicPath.isEmpty() && !m_workspaceMode) {
+            return tr("Loading %1…").arg(QFileInfo(m_classicPath).fileName());
+        }
         return tr("Ready");
     }
 

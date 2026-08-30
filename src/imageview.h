@@ -251,6 +251,7 @@ private:
     bool m_imageModeNavEnabled = false;
     bool m_imageModeLeftDragPan = true;
     bool m_hudVisible = false;
+    QString m_lastLoadError;
     bool m_hudFlashVisible = false;
     QString m_hudAction;
     QString m_hudDetail;

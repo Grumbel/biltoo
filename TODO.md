@@ -120,14 +120,34 @@ Review date: 2026-08-30. Aim: classic single-document image viewer feel.
   chrome toggles. Split into View (zoom/chrome), Image (rotate/flip), and
   Workspace (layouts/tools) menus, or use clear submenus. Keep accelerators unique.
 
-- [ ] **Keyboard map document** — *Small docs.*
-  Publish a short reference (Help → Keyboard Shortcuts or README section):
-  navigation, zoom, workspace, slideshow. Resolve any remaining conflicts
-  (e.g. H alone = HUD vs other apps using H for hide).
+- [x] **Keyboard map** (see below).
 
-- [ ] **Select All / session multi-select in Image mode** — *Medium.*
-  Ctrl+A is free again; could select all thumbnails or mark session range.
-  Only useful once multi-select session operations exist beyond workspace.
+### Keyboard map (reference)
+
+| Key | Action |
+|-----|--------|
+| F / F11 | Fullscreen |
+| Esc | Leave fullscreen (stops slideshow) |
+| Space | Start/stop slideshow |
+| ←/→, PgUp/PgDn | Previous / next |
+| Home / End | First / last |
+| F (Fit removed) | Fullscreen only; Fit via toolbar/menu |
+| Ctrl+0 | 1:1 zoom |
+| Ctrl++/− | Zoom in/out |
+| Ctrl+F | Zoom to fill |
+| [ ] / Ctrl+L / Ctrl+R | Rotate |
+| Ctrl+H / Ctrl+Shift+H | Flip H / V |
+| H | Toggle HUD |
+| Ctrl+A | Select all thumbnails |
+| Ctrl+Shift+A | Add images |
+| Ctrl+O | Open |
+| Ctrl+T | Toggle toolbar |
+| Ctrl+E | Metadata |
+| Delete | Remove from workspace / session (context) |
+| Shift+drag (workspace) | Free rotate; Ctrl constrains 90° |
+| Handle rotate + Shift/Ctrl | Snap 45° / 90° |
+
+- [x] **Select All** — Ctrl+A selects all thumbnails; workspace shows them on canvas.
 
 - [ ] **Toolbar customisation / density** — *Later.*
   GNOME 2 allowed hideable toolbars (we have Ctrl+T). Optional icon+text style
@@ -137,13 +157,11 @@ Review date: 2026-08-30. Aim: classic single-document image viewer feel.
   Left/right nav zones are mouse-only; ensure screen-reader / keyboard path
   stays first-class via Go menu (already present).
 
-- [ ] **Consistent disabled feedback** — *Small.*
-  Audit every action’s enabled state in workspace vs image mode so menus do
-  not offer no-ops (slideshow already disabled in workspace).
+- [x] **Consistent disabled feedback** — nav/slideshow image-mode only; rotate/flip
+  need an item; zoom gated on content; Select All needs files.
 
-- [ ] **Error dialogs for failed loads** — *Medium.*
-  Silent skip on bad files is fine for bulk open; a single-file failure should
-  surface a non-modal status or light dialog (HIG: inform, do not block loops).
+- [x] **Failed load feedback** — status line shows “Failed to load: …” / “Loading …”;
+  previous image kept until decode succeeds (no empty flash on rapid nav).
 
 
 ## Broader image formats (research notes)

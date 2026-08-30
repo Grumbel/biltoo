@@ -1029,6 +1029,9 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
 void MainWindow::updateNavigationActions()
 {
     const bool hasMany = m_files.size() > 1;
+    const bool hasFiles = !m_files.isEmpty();
+    const bool hasItem = m_imageView && m_imageView->itemCount() > 0;
+
     // Session navigation is Image-mode oriented; disable in workspace mode
     m_previousAct->setEnabled(hasMany && !m_workspaceMode);
     m_nextAct->setEnabled(hasMany && !m_workspaceMode);
@@ -1044,6 +1047,30 @@ void MainWindow::updateNavigationActions()
     }
     if (!hasMany || m_workspaceMode) {
         stopSlideshow();
+    }
+
+    // Transform actions need a target image on the canvas
+    for (QAction *act : {m_rotateLeftAct, m_rotateRightAct, m_flipHAct, m_flipVAct}) {
+        if (act) {
+            act->setEnabled(hasItem);
+        }
+    }
+
+    // Zoom always useful when something is shown (or for empty view reset)
+    for (QAction *act : {m_zoomInAct, m_zoomOutAct, m_zoom1to1Act, m_zoomFitAct, m_zoomFillAct}) {
+        if (act) {
+            act->setEnabled(hasItem || (!m_workspaceMode && hasFiles));
+        }
+    }
+
+    if (m_selectAllAct) {
+        m_selectAllAct->setEnabled(hasFiles);
+    }
+    if (m_hideThumbLabelsAct) {
+        m_hideThumbLabelsAct->setEnabled(m_thumbnailBar != nullptr);
+    }
+    if (m_toggleHudAct) {
+        m_toggleHudAct->setEnabled(true);
     }
 }
 
@@ -1694,6 +1721,7 @@ void MainWindow::updateWindowTitle()
 
 void MainWindow::updateStatus()
 {
+    updateNavigationActions();
     QString text = m_imageView->statusText();
     if (m_files.size() > 1 && m_currentIndex >= 0) {
         text = tr("[%1/%2]  %3")
