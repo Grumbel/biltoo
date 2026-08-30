@@ -517,18 +517,20 @@ void ImageView::setImageModeLeftDragPan(bool on)
     m_imageModeLeftDragPan = on;
 }
 
-void ImageView::setSessionPosition(int index, int total)
+void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
 {
     const bool changed = (m_sessionIndex != index || m_sessionTotal != total);
     m_sessionIndex = index;
     m_sessionTotal = total;
-    // Always pulse identity HUD on navigation so filename / [i/n] appear without
-    // requiring the pinned (H) HUD.
-    if (changed || total > 0) {
+    // Optional identity pulse: filename + index without pinned HUD (H).
+    // Slideshow auto-advance passes pulseIdentity=false so the overlay stays quiet.
+    if (pulseIdentity && (changed || total > 0)) {
         m_hudIdentityPulse = true;
         if (m_hudFlashTimer) {
             m_hudFlashTimer->start(1000);
         }
+    }
+    if (changed || pulseIdentity || m_hudVisible) {
         viewport()->update();
     }
 }
@@ -922,7 +924,7 @@ QStringList ImageView::itemPaths() const
 QString ImageView::sessionBadgeText() const
 {
     if (m_sessionTotal > 0 && m_sessionIndex >= 0 && m_sessionIndex < m_sessionTotal) {
-        return tr("[%1/%2]").arg(m_sessionIndex + 1).arg(m_sessionTotal);
+        return tr("%1/%2").arg(m_sessionIndex + 1).arg(m_sessionTotal);
     }
     return {};
 }

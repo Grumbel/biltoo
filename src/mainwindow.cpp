@@ -631,7 +631,9 @@ void MainWindow::updateStatus()
     updateNavigationActions();
     // Session index on ImageView so status bar and on-image HUD share [n/N].
     if (m_imageView) {
-        m_imageView->setSessionPosition(m_currentIndex, m_files.size());
+        // Silent while the slideshow timer advances; user Next/Prev still pulse.
+        m_imageView->setSessionPosition(m_currentIndex, m_files.size(),
+                                        !m_slideshowAdvancing);
     }
     m_statusLabel->setText(m_imageView->statusText());
 }

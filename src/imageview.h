@@ -139,10 +139,12 @@ public:
     bool checkerboardWorkspaceOnly() const { return m_bgCheckerWorkspaceOnly; }
 
     /**
-     * Session position for status line and HUD ([index/total], 1-based display).
+     * Session position for status line and HUD (index/total, 1-based display).
      * Pass total <= 1 or index < 0 to hide the prefix.
+     * @p pulseIdentity briefly shows filename/badge without a pinned HUD (H);
+     * use false for silent updates (e.g. slideshow auto-advance).
      */
-    void setSessionPosition(int index, int total);
+    void setSessionPosition(int index, int total, bool pulseIdentity = true);
     /** Select canvas item for @p path; ensure visible in Gallery. */
     void focusSessionPath(const QString &path);
     int sessionIndex() const { return m_sessionIndex; }
