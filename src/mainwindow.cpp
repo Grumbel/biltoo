@@ -91,6 +91,10 @@ MainWindow::MainWindow(QWidget *parent)
     m_centralSplitter->setHandleWidth(6);
 
     m_imageView = new ImageView(m_centralSplitter);
+    m_imageView->setAccessibleName(tr("Image view"));
+    m_imageView->setAccessibleDescription(
+        tr("Shows the current image. In image mode, click the left or right edge "
+           "to go to the previous or next image. Use Go menu for keyboard navigation."));
     m_imageView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_imageView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_imageView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -108,6 +112,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onFilesDropped);
 
     m_thumbnailBar = new ThumbnailBar(m_centralSplitter);
+    m_thumbnailBar->setAccessibleName(tr("Thumbnails"));
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
     connect(m_thumbnailBar, &ThumbnailBar::indexAddToWorkspace,
@@ -481,20 +486,36 @@ void MainWindow::createActions()
     m_thumbnailsBottomAct->setCheckable(true);
     m_thumbnailsBottomAct->setStatusTip(tr("Place the thumbnail strip along the bottom edge"));
     connect(m_thumbnailsBottomAct, &QAction::triggered, this, [this]() {
-        setThumbnailBarPosition(Qt::Horizontal);
+        setThumbnailBarPosition(ThumbnailEdge::Bottom);
+    });
+
+    m_thumbnailsTopAct = new QAction(tr("Thumbnails on &Top"), this);
+    m_thumbnailsTopAct->setCheckable(true);
+    m_thumbnailsTopAct->setStatusTip(tr("Place the thumbnail strip along the top edge"));
+    connect(m_thumbnailsTopAct, &QAction::triggered, this, [this]() {
+        setThumbnailBarPosition(ThumbnailEdge::Top);
     });
 
     m_thumbnailsLeftAct = new QAction(tr("Thumbnails on &Left"), this);
     m_thumbnailsLeftAct->setCheckable(true);
     m_thumbnailsLeftAct->setStatusTip(tr("Place the thumbnail strip along the left edge"));
     connect(m_thumbnailsLeftAct, &QAction::triggered, this, [this]() {
-        setThumbnailBarPosition(Qt::Vertical);
+        setThumbnailBarPosition(ThumbnailEdge::Left);
+    });
+
+    m_thumbnailsRightAct = new QAction(tr("Thumbnails on &Right"), this);
+    m_thumbnailsRightAct->setCheckable(true);
+    m_thumbnailsRightAct->setStatusTip(tr("Place the thumbnail strip along the right edge"));
+    connect(m_thumbnailsRightAct, &QAction::triggered, this, [this]() {
+        setThumbnailBarPosition(ThumbnailEdge::Right);
     });
 
     m_thumbnailPositionGroup = new QActionGroup(this);
     m_thumbnailPositionGroup->setExclusive(true);
     m_thumbnailPositionGroup->addAction(m_thumbnailsBottomAct);
+    m_thumbnailPositionGroup->addAction(m_thumbnailsTopAct);
     m_thumbnailPositionGroup->addAction(m_thumbnailsLeftAct);
+    m_thumbnailPositionGroup->addAction(m_thumbnailsRightAct);
     m_thumbnailsBottomAct->setChecked(true);
 
     m_toggleScrollBarsAct = new QAction(tr("Show &Scrollbars"), this);
@@ -533,50 +554,62 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_preferencesAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
-    m_viewMenu->addAction(m_zoomInAct);
-    m_viewMenu->addAction(m_zoomOutAct);
-    m_viewMenu->addAction(m_zoom1to1Act);
-    m_viewMenu->addAction(m_zoomFitAct);
-    m_viewMenu->addAction(m_zoomFillAct);
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_rotateLeftAct);
-    m_viewMenu->addAction(m_rotateRightAct);
-    m_viewMenu->addAction(m_flipHAct);
-    m_viewMenu->addAction(m_flipVAct);
+
+    auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));
+    zoomMenu->addAction(m_zoomInAct);
+    zoomMenu->addAction(m_zoomOutAct);
+    zoomMenu->addAction(m_zoom1to1Act);
+    zoomMenu->addAction(m_zoomFitAct);
+    zoomMenu->addAction(m_zoomFillAct);
+
+    auto *imageMenu = m_viewMenu->addMenu(tr("&Image"));
+    imageMenu->addAction(m_rotateLeftAct);
+    imageMenu->addAction(m_rotateRightAct);
+    imageMenu->addAction(m_flipHAct);
+    imageMenu->addAction(m_flipVAct);
+
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
-    m_viewMenu->addAction(m_hideThumbLabelsAct);
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_sortNameAct);
-    m_viewMenu->addAction(m_sortMTimeAct);
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_workspaceModeAct);
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_selectToolAct);
-    m_viewMenu->addAction(m_panToolAct);
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_layoutFreeFormAct);
-    m_viewMenu->addAction(m_layoutSideBySideAct);
-    m_viewMenu->addAction(m_layoutVerticalAct);
-    m_viewMenu->addAction(m_layoutGridAct);
-    m_viewMenu->addAction(m_layoutMasonryAct);
-    m_viewMenu->addAction(m_layoutStackAct);
-    m_viewMenu->addAction(m_raiseAct);
-    m_viewMenu->addAction(m_lowerAct);
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_opacityUpAct);
-    m_viewMenu->addAction(m_opacityDownAct);
-    m_viewMenu->addAction(m_opacityResetAct);
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_clearExtrasAct);
-    m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_toggleToolBarAct);
-    m_viewMenu->addAction(m_toggleThumbnailBarAct);
-    m_viewMenu->addAction(m_thumbnailsBottomAct);
-    m_viewMenu->addAction(m_thumbnailsLeftAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);
+
+    auto *thumbsMenu = m_viewMenu->addMenu(tr("&Thumbnails"));
+    thumbsMenu->addAction(m_toggleThumbnailBarAct);
+    thumbsMenu->addAction(m_hideThumbLabelsAct);
+    thumbsMenu->addSeparator();
+    thumbsMenu->addAction(m_thumbnailsBottomAct);
+    thumbsMenu->addAction(m_thumbnailsTopAct);
+    thumbsMenu->addAction(m_thumbnailsLeftAct);
+    thumbsMenu->addAction(m_thumbnailsRightAct);
+
+    m_viewMenu->addSeparator();
+    auto *sortMenu = m_viewMenu->addMenu(tr("&Sort"));
+    sortMenu->addAction(m_sortNameAct);
+    sortMenu->addAction(m_sortMTimeAct);
+
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_workspaceModeAct);
+
+    auto *workspaceMenu = m_viewMenu->addMenu(tr("&Workspace"));
+    workspaceMenu->addAction(m_selectToolAct);
+    workspaceMenu->addAction(m_panToolAct);
+    workspaceMenu->addSeparator();
+    workspaceMenu->addAction(m_layoutFreeFormAct);
+    workspaceMenu->addAction(m_layoutSideBySideAct);
+    workspaceMenu->addAction(m_layoutVerticalAct);
+    workspaceMenu->addAction(m_layoutGridAct);
+    workspaceMenu->addAction(m_layoutMasonryAct);
+    workspaceMenu->addAction(m_layoutStackAct);
+    workspaceMenu->addSeparator();
+    workspaceMenu->addAction(m_raiseAct);
+    workspaceMenu->addAction(m_lowerAct);
+    workspaceMenu->addAction(m_opacityUpAct);
+    workspaceMenu->addAction(m_opacityDownAct);
+    workspaceMenu->addAction(m_opacityResetAct);
+    workspaceMenu->addSeparator();
+    workspaceMenu->addAction(m_clearExtrasAct);
 
     m_goMenu = menuBar()->addMenu(tr("&Go"));
     m_goMenu->addAction(m_firstAct);
@@ -1578,71 +1611,96 @@ void MainWindow::toggleThumbnailBar()
     }
 }
 
-void MainWindow::setThumbnailBarPosition(Qt::Orientation orientation)
+void MainWindow::setThumbnailBarPosition(ThumbnailEdge edge)
 {
-    if (!m_centralSplitter || !m_thumbnailBar || !m_imageView) {
-        return;
-    }
+    m_thumbnailEdge = edge;
+    const bool horizontalBar =
+        (edge == ThumbnailEdge::Bottom || edge == ThumbnailEdge::Top);
+    const bool barFirst =
+        (edge == ThumbnailEdge::Top || edge == ThumbnailEdge::Left);
 
-    const bool horizontalBar = (orientation == Qt::Horizontal);
-    if (m_thumbnailBar->barOrientation() == orientation
-        && m_centralSplitter->orientation()
-               == (horizontalBar ? Qt::Vertical : Qt::Horizontal)) {
-        if (m_thumbnailsBottomAct) {
-            m_thumbnailsBottomAct->setChecked(horizontalBar);
+    const Qt::Orientation barOrientation =
+        horizontalBar ? Qt::Horizontal : Qt::Vertical;
+    const Qt::Orientation splitOrientation =
+        horizontalBar ? Qt::Vertical : Qt::Horizontal;
+
+    if (m_thumbnailBar->barOrientation() == barOrientation
+        && m_centralSplitter->orientation() == splitOrientation) {
+        // May still need to swap widget order (top vs bottom, left vs right)
+        const bool imageFirst = (m_centralSplitter->widget(0) == m_imageView);
+        if ((barFirst && !imageFirst) || (!barFirst && imageFirst)) {
+            // already correct order
+            updateThumbnailEdgeActions();
+            return;
         }
-        if (m_thumbnailsLeftAct) {
-            m_thumbnailsLeftAct->setChecked(!horizontalBar);
-        }
-        return;
     }
 
     const int thumbSize = m_thumbnailBar->thumbSize();
     const bool barVisible = m_thumbnailBar->isVisible();
 
-    m_thumbnailBar->setBarOrientation(orientation);
+    m_thumbnailBar->setBarOrientation(barOrientation);
 
-    // Re-parent widgets into the splitter in the right order
     m_imageView->setParent(nullptr);
     m_thumbnailBar->setParent(nullptr);
     while (m_centralSplitter->count() > 0) {
         m_centralSplitter->widget(0)->setParent(nullptr);
     }
 
-    if (horizontalBar) {
-        // Image on top, thumbnails along the bottom
-        m_centralSplitter->setOrientation(Qt::Vertical);
-        m_centralSplitter->addWidget(m_imageView);
-        m_centralSplitter->addWidget(m_thumbnailBar);
-        m_centralSplitter->setStretchFactor(0, 1);
-        m_centralSplitter->setStretchFactor(1, 0);
-        m_imageView->setMinimumHeight(120);
-        m_imageView->setMinimumWidth(0);
-        const int barExtent = ThumbnailBar::extentForThumbSize(thumbSize);
-        m_centralSplitter->setSizes({qMax(200, height() - barExtent - 80), barExtent});
-    } else {
-        // Thumbnails on the left, image on the right
-        m_centralSplitter->setOrientation(Qt::Horizontal);
+    m_centralSplitter->setOrientation(splitOrientation);
+    if (barFirst) {
         m_centralSplitter->addWidget(m_thumbnailBar);
         m_centralSplitter->addWidget(m_imageView);
         m_centralSplitter->setStretchFactor(0, 0);
         m_centralSplitter->setStretchFactor(1, 1);
+    } else {
+        m_centralSplitter->addWidget(m_imageView);
+        m_centralSplitter->addWidget(m_thumbnailBar);
+        m_centralSplitter->setStretchFactor(0, 1);
+        m_centralSplitter->setStretchFactor(1, 0);
+    }
+
+    const int barExtent = ThumbnailBar::extentForThumbSize(thumbSize);
+    if (horizontalBar) {
+        m_imageView->setMinimumHeight(120);
+        m_imageView->setMinimumWidth(0);
+        const int img = qMax(200, height() - barExtent - 80);
+        if (barFirst) {
+            m_centralSplitter->setSizes({barExtent, img});
+        } else {
+            m_centralSplitter->setSizes({img, barExtent});
+        }
+    } else {
         m_imageView->setMinimumWidth(120);
         m_imageView->setMinimumHeight(0);
-        const int barExtent = ThumbnailBar::extentForThumbSize(thumbSize);
-        m_centralSplitter->setSizes({barExtent, qMax(200, width() - barExtent - 40)});
+        const int img = qMax(200, width() - barExtent - 40);
+        if (barFirst) {
+            m_centralSplitter->setSizes({barExtent, img});
+        } else {
+            m_centralSplitter->setSizes({img, barExtent});
+        }
     }
 
     m_thumbnailBar->setThumbSize(thumbSize);
     m_thumbnailBar->setVisible(barVisible);
+    updateThumbnailEdgeActions();
+}
 
+void MainWindow::updateThumbnailEdgeActions()
+{
     if (m_thumbnailsBottomAct) {
-        m_thumbnailsBottomAct->setChecked(horizontalBar);
+        m_thumbnailsBottomAct->setChecked(m_thumbnailEdge == ThumbnailEdge::Bottom);
+    }
+    if (m_thumbnailsTopAct) {
+        m_thumbnailsTopAct->setChecked(m_thumbnailEdge == ThumbnailEdge::Top);
     }
     if (m_thumbnailsLeftAct) {
-        m_thumbnailsLeftAct->setChecked(!horizontalBar);
+        m_thumbnailsLeftAct->setChecked(m_thumbnailEdge == ThumbnailEdge::Left);
+    }
+    if (m_thumbnailsRightAct) {
+        m_thumbnailsRightAct->setChecked(m_thumbnailEdge == ThumbnailEdge::Right);
     }
 }
+
 
 void MainWindow::toggleScrollBars()
 {
@@ -1881,8 +1939,15 @@ void MainWindow::readSettings()
         m_thumbnailBar->setThumbSize(thumbSize);
         const QString pos = settings.value(QStringLiteral("thumbnailBarPosition"),
                                            QStringLiteral("bottom")).toString();
-        setThumbnailBarPosition(pos == QLatin1String("left") ? Qt::Vertical
-                                                             : Qt::Horizontal);
+        ThumbnailEdge edge = ThumbnailEdge::Bottom;
+        if (pos == QLatin1String("left")) {
+            edge = ThumbnailEdge::Left;
+        } else if (pos == QLatin1String("right")) {
+            edge = ThumbnailEdge::Right;
+        } else if (pos == QLatin1String("top")) {
+            edge = ThumbnailEdge::Top;
+        }
+        setThumbnailBarPosition(edge);
     }
     if (m_centralSplitter) {
         const QByteArray splitterState =
@@ -1951,9 +2016,13 @@ void MainWindow::writeSettings()
     if (m_thumbnailBar) {
         settings.setValue(QStringLiteral("thumbnailSize"), m_thumbnailBar->thumbSize());
         settings.setValue(QStringLiteral("thumbnailBarPosition"),
-                          m_thumbnailBar->barOrientation() == Qt::Vertical
+                          m_thumbnailEdge == ThumbnailEdge::Left
                               ? QStringLiteral("left")
-                              : QStringLiteral("bottom"));
+                              : m_thumbnailEdge == ThumbnailEdge::Right
+                                    ? QStringLiteral("right")
+                                    : m_thumbnailEdge == ThumbnailEdge::Top
+                                          ? QStringLiteral("top")
+                                          : QStringLiteral("bottom"));
     }
     if (m_centralSplitter) {
         settings.setValue(QStringLiteral("centralSplitter"), m_centralSplitter->saveState());

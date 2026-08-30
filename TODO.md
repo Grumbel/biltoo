@@ -51,7 +51,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [ ] Snap / align helpers
 - [ ] Richer Exif via libexiv2 (current panel uses Qt plugin text keys)
 - [ ] Depend on qtimageformats / KImageFormats for more formats via Qt plugins
-- [ ] Optional thumbnail bar on the right (mirror of left) if requested
+- [x] Optional thumbnail bar on the right (and top)
 - [ ] Masonry taller than viewport: use View → Show Scrollbars, or pan (middle / Alt)
 
 ### UX backlog (evaluated)
@@ -115,10 +115,8 @@ Review date: 2026-08-30. Aim: classic single-document image viewer feel.
 
 ### Still open — structural / larger effort
 
-- [ ] **View menu information architecture** — *Medium.*
-  The View menu mixes zoom, transform, sort, workspace mode, tools, layouts,
-  chrome toggles. Split into View (zoom/chrome), Image (rotate/flip), and
-  Workspace (layouts/tools) menus, or use clear submenus. Keep accelerators unique.
+- [x] **View menu information architecture** — submenus: Zoom, Image, Thumbnails,
+  Sort, Workspace.
 
 - [x] **Keyboard map** (see below).
 
@@ -153,7 +151,7 @@ Review date: 2026-08-30. Aim: classic single-document image viewer feel.
   GNOME 2 allowed hideable toolbars (we have Ctrl+T). Optional icon+text style
   preference is low priority while icons + tooltips remain clear.
 
-- [ ] **Accessible names for edge affordances** — *Small.*
+- [x] **Accessible names** for image view and thumbnail bar (edge nav described).
   Left/right nav zones are mouse-only; ensure screen-reader / keyboard path
   stays first-class via Go menu (already present).
 
@@ -179,7 +177,7 @@ Prefer staying on the `QImageReader` path where possible; libvips is the fallbac
 - [ ] OpenGL path for large images / many items
 - [ ] Persist workspace item state across sessions
 - [ ] Per-image view state persistence in Image mode
-- [ ] Thumbnail bar top position
+- [x] Thumbnail bar top / right positions
 - [ ] Animated GIF / multi-page TIFF frame navigation
 - [ ] Colour-managed display (ICC / OCIO) if format backends expose profiles
 

@@ -126,7 +126,9 @@ private:
     void setCurrentIndex(int index);
     void updateNavigationActions();
     void applyThumbnailVisibility();
-    void setThumbnailBarPosition(Qt::Orientation orientation);
+    enum class ThumbnailEdge { Bottom, Top, Left, Right };
+    void setThumbnailBarPosition(ThumbnailEdge edge);
+    void updateThumbnailEdgeActions();
     void sortFileList();
     void readSettings();
     void writeSettings();
@@ -206,7 +208,9 @@ private:
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
     QAction *m_thumbnailsBottomAct = nullptr;
+    QAction *m_thumbnailsTopAct = nullptr;
     QAction *m_thumbnailsLeftAct = nullptr;
+    QAction *m_thumbnailsRightAct = nullptr;
     QAction *m_toggleMetadataAct = nullptr;
     QAction *m_toggleScrollBarsAct = nullptr;
     QAction *m_preferencesAct = nullptr;
@@ -218,6 +222,7 @@ private:
     int m_currentIndex = -1;
     bool m_recursive = false;
     bool m_workspaceMode = false;
+    ThumbnailEdge m_thumbnailEdge = ThumbnailEdge::Bottom;
     bool m_startInWorkspaceMode = false; // preference / startup default
     bool m_slideshowFullscreen = true;   // enter fullscreen when starting slideshow
     SortMode m_sortMode = SortMode::Name;
