@@ -144,6 +144,8 @@ private:
     void createMenus();
     void createToolBar();
     void createStatusBar();
+    /** Associate shortcut-bearing actions with the window (fullscreen-safe). */
+    void bindViewerShortcuts();
     void updateFullscreenUi();
     void setCurrentIndex(int index);
     void updateNavigationActions();

@@ -91,6 +91,8 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
+    bindViewerShortcuts();
+
     // Application-wide shortcuts so they work while the image view has focus
     auto *escShortcut = new QShortcut(Qt::Key_Escape, this);
     escShortcut->setContext(Qt::ApplicationShortcut);

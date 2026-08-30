@@ -647,3 +647,23 @@ void MainWindow::createStatusBar()
     statusBar()->addPermanentWidget(m_mouseLabel);
 }
 
+
+void MainWindow::bindViewerShortcuts()
+{
+    // In fullscreen the menu bar and toolbars are hidden. QAction shortcuts with
+    // the default WindowShortcut context only fire reliably when the action is
+    // reachable through a visible widget (menu/toolbar). Associate every
+    // shortcut-bearing action with the main window and use ApplicationShortcut
+    // so H, Space, Ctrl+F, Ctrl+R, zoom, navigation, etc. keep working while
+    // the image view has focus.
+    //
+    // F/F11 are owned by dedicated QShortcuts in MainWindow (not the action),
+    // to avoid checkable-action desync on leave-fullscreen.
+    for (QAction *act : findChildren<QAction *>()) {
+        if (!act || act->shortcuts().isEmpty()) {
+            continue;
+        }
+        addAction(act);
+        act->setShortcutContext(Qt::ApplicationShortcut);
+    }
+}

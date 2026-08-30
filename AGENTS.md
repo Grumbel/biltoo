@@ -130,6 +130,10 @@ invariant 6).
 
 ### Sharp edges (do not paper over)
 
+- **Fullscreen shortcuts:** menu/toolbar are hidden in fullscreen. Every
+  `QAction` with a key sequence must be registered on the main window via
+  `bindViewerShortcuts()` (`addAction` + `Qt::ApplicationShortcut`). Do not
+  rely on menu-only WindowShortcut for viewer keys (H, Space, Ctrl+F, …).
 - Dual handle paths (item events + view-driven chrome hits) must stay consistent
   with device-space chrome painting.
 - Session ↔ canvas sync differs by mode; prefer named helpers over ad-hoc
