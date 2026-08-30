@@ -313,6 +313,7 @@ private:
     ImageItem *m_galleryPressItem = nullptr;
     QPoint m_galleryPressPos;
     bool m_galleryClickCandidate = false;
+    bool m_applyingLayout = false;
 };
 
 #endif // IMAGEVIEW_H

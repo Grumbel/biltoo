@@ -1198,10 +1198,14 @@ void ImageView::setMasonryColumnWidth(int pixels)
 
 void ImageView::applyLayout()
 {
-
+    if (m_applyingLayout) {
+        return;
+    }
     if (m_items.isEmpty() || m_layoutMode == LayoutMode::FreeForm) {
         return;
     }
+
+    m_applyingLayout = true;
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     resetTransform();
@@ -1269,10 +1273,6 @@ void ImageView::applyLayout()
         cols = qMin(cols, n);
         QVector<qreal> colHeights(cols, 0.0);
 
-        // Enable scrolling so tall columns remain reachable
-        setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-        setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-
         for (ImageItem *item : m_items) {
             const QSizeF ns = nativeSize(item);
             const qreal scale = colW / qMax(1.0, ns.width());
@@ -1305,11 +1305,11 @@ void ImageView::applyLayout()
     }
 
     const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-margin, -margin, margin, margin);
+    // Do not change scrollbar policy here: setHorizontalScrollBarPolicy can
+    // resize the viewport and re-enter applyLayout via resizeEvent (stack overflow).
     m_scene->setSceneRect(bounds);
-    // Gallery content may exceed the viewport — allow scrolling.
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_fitMode = true;
+    m_applyingLayout = false;
     emit statusChanged();
 }
 
@@ -1509,6 +1509,11 @@ void ImageView::wheelEvent(QWheelEvent *event)
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
+    // Avoid re-entry while applyLayout is adjusting the scene (scrollbar layout
+    // can shrink the viewport and fire another resize).
+    if (m_applyingLayout) {
+        return;
+    }
     if (isGalleryMode() && !m_items.isEmpty()) {
         applyLayout();
         return;
