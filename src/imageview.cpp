@@ -1192,14 +1192,26 @@ void ImageView::setLayoutMode(LayoutMode mode)
     applyLayout();
 }
 
-void ImageView::setMasonryColumnWidth(int pixels)
+void ImageView::setMasonryColumns(int columns)
 {
-    const int clamped = qBound(80, pixels, 800);
-    if (clamped == m_masonryColumnWidth) {
+    const int clamped = qBound(1, columns, 32);
+    if (clamped == m_masonryColumns) {
         return;
     }
-    m_masonryColumnWidth = clamped;
-    if (m_layoutMode == LayoutMode::Masonry) {
+    m_masonryColumns = clamped;
+    if (m_layoutMode == LayoutMode::Masonry && !m_items.isEmpty()) {
+        applyLayout();
+    }
+}
+
+void ImageView::setMasonryRows(int rows)
+{
+    const int clamped = qBound(1, rows, 32);
+    if (clamped == m_masonryRows) {
+        return;
+    }
+    m_masonryRows = clamped;
+    if (m_layoutMode == LayoutMode::MasonryRows && !m_items.isEmpty()) {
         applyLayout();
     }
 }
@@ -1284,10 +1296,9 @@ void ImageView::applyLayout()
             m_itemStates.insert(item->path(), captureState(item));
         }
     } else if (m_layoutMode == LayoutMode::Masonry) {
-        // Fixed column width (configurable); as many columns as fit; scroll for overflow
-        const qreal colW = static_cast<qreal>(qMax(40, m_masonryColumnWidth));
-        int cols = qMax(1, static_cast<int>(std::floor((availW + gap) / (colW + gap))));
-        cols = qMin(cols, n);
+        // N columns spanning the window width; pack into the shortest column.
+        const int cols = qBound(1, m_masonryColumns, n);
+        const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
         QVector<qreal> colHeights(cols, 0.0);
 
         for (ImageItem *item : m_items) {
@@ -1307,6 +1318,31 @@ void ImageView::applyLayout()
             const qreal cy = margin + colHeights.at(best) + h / 2.0;
             item->setPos(cx, cy);
             colHeights[best] += h + gap;
+            m_itemStates.insert(item->path(), captureState(item));
+        }
+    } else if (m_layoutMode == LayoutMode::MasonryRows) {
+        // N rows spanning the window height; pack into the shortest row.
+        const int rows = qBound(1, m_masonryRows, n);
+        const qreal rowH = (availH - gap * qMax(0, rows - 1)) / rows;
+        QVector<qreal> rowWidths(rows, 0.0);
+
+        for (ImageItem *item : m_items) {
+            const QSizeF ns = nativeSize(item);
+            const qreal scale = rowH / qMax(1.0, ns.height());
+            item->setItemScale(scale);
+            const qreal w = ns.width() * scale;
+
+            int best = 0;
+            for (int r = 1; r < rows; ++r) {
+                if (rowWidths.at(r) < rowWidths.at(best)) {
+                    best = r;
+                }
+            }
+
+            const qreal cx = margin + rowWidths.at(best) + w / 2.0;
+            const qreal cy = margin + best * (rowH + gap) + rowH / 2.0;
+            item->setPos(cx, cy);
+            rowWidths[best] += w + gap;
             m_itemStates.insert(item->path(), captureState(item));
         }
     } else if (m_layoutMode == LayoutMode::Stack) {

@@ -86,6 +86,7 @@ private slots:
     void setLayoutGrid();
     void setLayoutStack();
     void setLayoutMasonry();
+    void setLayoutMasonryRows();
     void openGalleryItemInImageMode(const QString &path);
     void returnToGallery();
     void clearWorkspaceExtras();
@@ -110,7 +111,7 @@ private slots:
     void updateWorkspaceActionVisibility();
     void updateThumbnailBarForMode();
     void updateScrollBarPolicyForMode();
-    void updateMasonryWidthControl();
+    void updateMasonryCountControl();
     void ensureMultiImageMode();
     /** Put every session image on the multi-image canvas (gallery). */
     void populateGalleryCanvas();
@@ -206,9 +207,11 @@ private:
     QAction *m_layoutGridAct = nullptr;
     QAction *m_layoutStackAct = nullptr;
     QAction *m_layoutMasonryAct = nullptr;
+    QAction *m_layoutMasonryRowsAct = nullptr;
     QAction *m_backToGalleryAct = nullptr;
-    QAction *m_masonryWidthAction = nullptr;
-    QSpinBox *m_masonryWidthSpin = nullptr;
+    QAction *m_masonryCountAction = nullptr;
+    QSpinBox *m_masonryCountSpin = nullptr;
+    QLabel *m_masonryCountLabel = nullptr;
     QAction *m_clearExtrasAct = nullptr;
     bool m_galleryReturnActive = false;
     bool m_thumbsHiddenForGallery = false;

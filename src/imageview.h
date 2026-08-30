@@ -163,8 +163,10 @@ public:
         Vertical,
         Grid,
         Stack,
-        /** Column packing (Pinterest-style): fixed column width, variable height. */
-        Masonry
+        /** Column masonry: N columns spanning the view width; variable row heights. */
+        Masonry,
+        /** Row masonry: N rows spanning the view height; variable column widths. */
+        MasonryRows
     };
 
     void setLayoutMode(LayoutMode mode);
@@ -179,9 +181,13 @@ public:
     /** Enter Gallery mode and apply the given packaged layout (not FreeForm). */
     void enterGallery(LayoutMode packagedLayout);
 
-    /** Fixed column width in pixels for Masonry (images scale to this width). */
-    void setMasonryColumnWidth(int pixels);
-    int masonryColumnWidth() const { return m_masonryColumnWidth; }
+    /** Number of columns for LayoutMode::Masonry (images scale to fit column width). */
+    void setMasonryColumns(int columns);
+    int masonryColumns() const { return m_masonryColumns; }
+
+    /** Number of rows for LayoutMode::MasonryRows (images scale to fit row height). */
+    void setMasonryRows(int rows);
+    int masonryRows() const { return m_masonryRows; }
 
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
@@ -293,7 +299,8 @@ private:
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;
-    int m_masonryColumnWidth = 240;
+    int m_masonryColumns = 3;
+    int m_masonryRows = 3;
     std::atomic<quint64> m_loadGeneration{0};
     QSet<QString> m_pendingWorkspacePaths;
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */

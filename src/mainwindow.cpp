@@ -397,8 +397,15 @@ void MainWindow::createActions()
     m_layoutMasonryAct->setCheckable(true);
     m_layoutMasonryAct->setIcon(themeIcon(QStringLiteral("view-full-screen"), QStyle::SP_FileDialogListView));
     m_layoutMasonryAct->setStatusTip(
-        tr("Gallery: pack images into columns of equal width (Pinterest-style)"));
+        tr("Gallery: pack into N columns that fill the window width"));
     connect(m_layoutMasonryAct, &QAction::triggered, this, &MainWindow::setLayoutMasonry);
+
+    m_layoutMasonryRowsAct = new QAction(tr("Layout Masonry &Rows"), this);
+    m_layoutMasonryRowsAct->setCheckable(true);
+    m_layoutMasonryRowsAct->setIcon(themeIcon(QStringLiteral("view-list-details"), QStyle::SP_FileDialogDetailedView));
+    m_layoutMasonryRowsAct->setStatusTip(
+        tr("Gallery: pack into N rows that fill the window height"));
+    connect(m_layoutMasonryRowsAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryRows);
 
     m_backToGalleryAct = new QAction(tr("&Back"), this);
     m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-previous"), QStyle::SP_ArrowBack));
@@ -413,6 +420,7 @@ void MainWindow::createActions()
     layoutGroup->addAction(m_layoutVerticalAct);
     layoutGroup->addAction(m_layoutGridAct);
     layoutGroup->addAction(m_layoutMasonryAct);
+    layoutGroup->addAction(m_layoutMasonryRowsAct);
     layoutGroup->addAction(m_layoutStackAct);
     layoutGroup->setExclusive(true);
     // No default checked gallery layout until the user chooses one.
@@ -616,6 +624,7 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutVerticalAct);
     galleryMenu->addAction(m_layoutGridAct);
     galleryMenu->addAction(m_layoutMasonryAct);
+    galleryMenu->addAction(m_layoutMasonryRowsAct);
     galleryMenu->addAction(m_layoutStackAct);
 
     m_viewMenu->addSeparator();
@@ -671,6 +680,7 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_layoutVerticalAct);
     m_contextMenu->addAction(m_layoutGridAct);
     m_contextMenu->addAction(m_layoutMasonryAct);
+    m_contextMenu->addAction(m_layoutMasonryRowsAct);
     m_contextMenu->addAction(m_layoutStackAct);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_workspaceModeAct);
@@ -714,30 +724,33 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_layoutGridAct);
     m_toolBar->addAction(m_layoutMasonryAct);
 
-    // Masonry column width — only shown while Masonry layout is active
-    auto *masonryWidthHost = new QWidget(m_toolBar);
-    auto *masonryWidthLayout = new QHBoxLayout(masonryWidthHost);
-    masonryWidthLayout->setContentsMargins(4, 0, 4, 0);
-    masonryWidthLayout->setSpacing(4);
-    auto *masonryWidthLabel = new QLabel(tr("Column:"), masonryWidthHost);
-    m_masonryWidthSpin = new QSpinBox(masonryWidthHost);
-    m_masonryWidthSpin->setRange(80, 800);
-    m_masonryWidthSpin->setSingleStep(10);
-    m_masonryWidthSpin->setSuffix(tr(" px"));
-    m_masonryWidthSpin->setValue(240);
-    m_masonryWidthSpin->setToolTip(
-        tr("Width of each column in Masonry layout. Images scale to this width."));
-    m_masonryWidthSpin->setWhatsThis(
-        tr("Width of each column in Masonry layout. Images scale to this width; "
-           "extra columns appear when the window is wider."));
-    masonryWidthLayout->addWidget(masonryWidthLabel);
-    masonryWidthLayout->addWidget(m_masonryWidthSpin);
-    m_masonryWidthAction = m_toolBar->addWidget(masonryWidthHost);
-    m_masonryWidthAction->setVisible(false);
-    connect(m_masonryWidthSpin, QOverload<int>::of(&QSpinBox::valueChanged),
-            this, [this](int pixels) {
-                if (m_imageView) {
-                    m_imageView->setMasonryColumnWidth(pixels);
+    m_toolBar->addAction(m_layoutMasonryRowsAct);
+
+    // Masonry column/row count — shown while a masonry layout is active
+    auto *masonryCountHost = new QWidget(m_toolBar);
+    auto *masonryCountLayout = new QHBoxLayout(masonryCountHost);
+    masonryCountLayout->setContentsMargins(4, 0, 4, 0);
+    masonryCountLayout->setSpacing(4);
+    m_masonryCountLabel = new QLabel(tr("Columns:"), masonryCountHost);
+    m_masonryCountSpin = new QSpinBox(masonryCountHost);
+    m_masonryCountSpin->setRange(1, 32);
+    m_masonryCountSpin->setSingleStep(1);
+    m_masonryCountSpin->setValue(3);
+    m_masonryCountSpin->setToolTip(
+        tr("Number of columns or rows in Masonry layout (fits the window)."));
+    masonryCountLayout->addWidget(m_masonryCountLabel);
+    masonryCountLayout->addWidget(m_masonryCountSpin);
+    m_masonryCountAction = m_toolBar->addWidget(masonryCountHost);
+    m_masonryCountAction->setVisible(false);
+    connect(m_masonryCountSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int count) {
+                if (!m_imageView) {
+                    return;
+                }
+                if (m_imageView->layoutMode() == ImageView::LayoutMode::MasonryRows) {
+                    m_imageView->setMasonryRows(count);
+                } else {
+                    m_imageView->setMasonryColumns(count);
                 }
             });
 
@@ -1568,7 +1581,7 @@ void MainWindow::setLayoutSideBySide()
     if (m_layoutSideBySideAct) {
         m_layoutSideBySideAct->setChecked(true);
     }
-    updateMasonryWidthControl();
+    updateMasonryCountControl();
     updateWorkspaceActionVisibility();
 }
 
@@ -1590,7 +1603,7 @@ void MainWindow::setLayoutVertical()
     if (m_layoutVerticalAct) {
         m_layoutVerticalAct->setChecked(true);
     }
-    updateMasonryWidthControl();
+    updateMasonryCountControl();
     updateWorkspaceActionVisibility();
 }
 
@@ -1612,7 +1625,7 @@ void MainWindow::setLayoutGrid()
     if (m_layoutGridAct) {
         m_layoutGridAct->setChecked(true);
     }
-    updateMasonryWidthControl();
+    updateMasonryCountControl();
     updateWorkspaceActionVisibility();
 }
 
@@ -1634,7 +1647,7 @@ void MainWindow::setLayoutStack()
     if (m_layoutStackAct) {
         m_layoutStackAct->setChecked(true);
     }
-    updateMasonryWidthControl();
+    updateMasonryCountControl();
     updateWorkspaceActionVisibility();
 }
 
@@ -1644,19 +1657,37 @@ void MainWindow::setLayoutMasonry()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setVisible(false);
     }
-    // Gallery is independent of Workspace Mode
-    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceMode = true;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
     m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
     populateGalleryCanvas();
-    // Re-apply after items are on the canvas
     m_imageView->enterGallery(ImageView::LayoutMode::Masonry);
     m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
     if (m_layoutMasonryAct) {
         m_layoutMasonryAct->setChecked(true);
     }
-    updateMasonryWidthControl();
+    updateMasonryCountControl();
+    updateWorkspaceActionVisibility();
+}
+
+void MainWindow::setLayoutMasonryRows()
+{
+    m_galleryReturnActive = false;
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(false);
+    }
+    m_workspaceMode = true;
+    m_workspaceModeAct->setChecked(false);
+    m_thumbnailBar->setWorkspaceMode(true);
+    m_imageView->enterGallery(ImageView::LayoutMode::MasonryRows);
+    populateGalleryCanvas();
+    m_imageView->enterGallery(ImageView::LayoutMode::MasonryRows);
+    m_galleryReturnLayout = ImageView::LayoutMode::MasonryRows;
+    if (m_layoutMasonryRowsAct) {
+        m_layoutMasonryRowsAct->setChecked(true);
+    }
+    updateMasonryCountControl();
     updateWorkspaceActionVisibility();
 }
 
@@ -1711,6 +1742,9 @@ void MainWindow::returnToGallery()
     case ImageView::LayoutMode::Masonry:
         if (m_layoutMasonryAct) m_layoutMasonryAct->setChecked(true);
         break;
+    case ImageView::LayoutMode::MasonryRows:
+        if (m_layoutMasonryRowsAct) m_layoutMasonryRowsAct->setChecked(true);
+        break;
     default:
         if (m_layoutMasonryAct) m_layoutMasonryAct->setChecked(true);
         break;
@@ -1718,22 +1752,31 @@ void MainWindow::returnToGallery()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setVisible(false);
     }
-    updateMasonryWidthControl();
+    updateMasonryCountControl();
     updateWorkspaceActionVisibility();
 }
 
-void MainWindow::updateMasonryWidthControl()
+void MainWindow::updateMasonryCountControl()
 {
-    const bool show = m_imageView
-                      && m_imageView->isGalleryMode()
-                      && m_imageView->layoutMode() == ImageView::LayoutMode::Masonry;
-    if (m_masonryWidthAction) {
-        m_masonryWidthAction->setVisible(show);
+    if (!m_imageView || !m_masonryCountAction) {
+        return;
     }
-    if (show && m_masonryWidthSpin && m_imageView) {
-        const QSignalBlocker blocker(m_masonryWidthSpin);
-        m_masonryWidthSpin->setValue(m_imageView->masonryColumnWidth());
+    const auto mode = m_imageView->layoutMode();
+    const bool columns = m_imageView->isGalleryMode()
+                         && mode == ImageView::LayoutMode::Masonry;
+    const bool rows = m_imageView->isGalleryMode()
+                      && mode == ImageView::LayoutMode::MasonryRows;
+    const bool show = columns || rows;
+    m_masonryCountAction->setVisible(show);
+    if (!show || !m_masonryCountSpin) {
+        return;
     }
+    if (m_masonryCountLabel) {
+        m_masonryCountLabel->setText(rows ? tr("Rows:") : tr("Columns:"));
+    }
+    const QSignalBlocker blocker(m_masonryCountSpin);
+    m_masonryCountSpin->setValue(rows ? m_imageView->masonryRows()
+                                      : m_imageView->masonryColumns());
 }
 
 void MainWindow::raiseSelected()
@@ -1788,7 +1831,8 @@ void MainWindow::toggleWorkspaceMode()
         }
         // Uncheck gallery layout actions
         for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
-                             m_layoutGridAct, m_layoutMasonryAct, m_layoutStackAct}) {
+                             m_layoutGridAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
+                         m_layoutStackAct}) {
             if (act) {
                 act->setChecked(false);
             }
@@ -1882,7 +1926,8 @@ void MainWindow::updateWorkspaceActionVisibility()
     //  loadFiles never refreshed visibility.)
     const bool canGallery = !m_files.isEmpty();
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
-                         m_layoutGridAct, m_layoutMasonryAct, m_layoutStackAct}) {
+                         m_layoutGridAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
+                         m_layoutStackAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(canGallery);
@@ -1913,7 +1958,7 @@ void MainWindow::updateWorkspaceActionVisibility()
     }
     updateThumbnailBarForMode();
     updateScrollBarPolicyForMode();
-    updateMasonryWidthControl();
+    updateMasonryCountControl();
     updateNavigationActions();
 }
 
@@ -2257,14 +2302,16 @@ void MainWindow::readSettings()
 
     m_slideshowIntervalMs =
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
-    const int masonryW = settings.value(QStringLiteral("masonryColumnWidth"), 240).toInt();
+    const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
+    const int masonryRows = settings.value(QStringLiteral("masonryRows"), 3).toInt();
     if (m_imageView) {
-        m_imageView->setMasonryColumnWidth(masonryW);
+        m_imageView->setMasonryColumns(masonryCols);
+        m_imageView->setMasonryRows(masonryRows);
     }
-    if (m_masonryWidthSpin) {
-        const QSignalBlocker blocker(m_masonryWidthSpin);
-        m_masonryWidthSpin->setValue(m_imageView ? m_imageView->masonryColumnWidth()
-                                                 : masonryW);
+    if (m_masonryCountSpin) {
+        const QSignalBlocker blocker(m_masonryCountSpin);
+        m_masonryCountSpin->setValue(m_imageView ? m_imageView->masonryColumns()
+                                                 : masonryCols);
     }
     m_slideshowFullscreen =
         settings.value(QStringLiteral("slideshowFullscreen"), true).toBool();
@@ -2360,8 +2407,10 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     if (m_imageView) {
-        settings.setValue(QStringLiteral("masonryColumnWidth"),
-                          m_imageView->masonryColumnWidth());
+        settings.setValue(QStringLiteral("masonryColumns"),
+                          m_imageView->masonryColumns());
+        settings.setValue(QStringLiteral("masonryRows"),
+                          m_imageView->masonryRows());
     }
     // Persist startup preference only — not the live session toggle
     settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);
