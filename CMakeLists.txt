@@ -43,6 +43,7 @@ add_executable(qimgview
   src/imageview.h
   src/imageview_types.h
   src/imageitem.cpp
+  src/imageitem_interaction.cpp
   src/imageitem.h
   src/imageloader.cpp
   src/imageloader.h
