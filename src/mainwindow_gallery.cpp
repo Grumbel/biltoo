@@ -12,11 +12,13 @@ void MainWindow::setLayoutFreeForm()
 
 void MainWindow::populateGalleryCanvas()
 {
-    if (!m_thumbnailBar || m_files.isEmpty()) {
+    // Gallery shows the whole session. Do not drive that through thumbnail
+    // multi-select — selectAllThumbs() left the strip in MultiSelection with
+    // every item highlighted, which survived into Image mode.
+    if (!m_imageView || m_files.isEmpty()) {
         return;
     }
-    m_thumbnailBar->selectAllThumbs();
-    syncCanvasFromThumbnailSelection();
+    m_imageView->setWorkspacePaths(m_files);
 }
 
 void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
@@ -33,6 +35,7 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
     }
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
+        m_thumbnailBar->selectNoneThumbs();
     }
     m_galleryReturnLayout = layout;
     // AUDIT M15: one enterGallery after the canvas is populated (not before+after).
@@ -126,6 +129,9 @@ void MainWindow::showPathInImageMode(const QString &path)
     m_imageView->setViewMode(ImageView::ViewMode::Image);
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
+        // setMultiSelectEnabled is a no-op when already off; still clear any
+        // residual multi-highlight left by gallery packing or Select All.
+        m_thumbnailBar->selectNoneThumbs();
     }
     setCurrentIndex(idx);
     updateUpToGalleryAction();

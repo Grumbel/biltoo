@@ -572,11 +572,13 @@ void ThumbnailBar::selectAllThumbs()
         return;
     }
     // Multi-select is native in workspace mode; Image mode stays single-select
-    // for navigation — Select All there is still useful before bulk remove.
+    // for navigation — Select All still useful before bulk remove. Prefer
+    // ExtendedSelection so Qt keeps a current item without leaving the bar
+    // stuck in permanent MultiSelection.
     const bool wasSingle = (!m_multiSelect
                             && selectionMode() == QAbstractItemView::SingleSelection);
     if (wasSingle) {
-        setSelectionMode(QAbstractItemView::MultiSelection);
+        setSelectionMode(QAbstractItemView::ExtendedSelection);
         setSelectionRectVisible(false);
     }
     for (int i = 0; i < count(); ++i) {
