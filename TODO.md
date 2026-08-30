@@ -49,7 +49,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 ## Near-term
 
 - [ ] Snap / align helpers
-- [ ] Richer Exif via libexiv2 (current panel uses Qt plugin text keys)
+- [x] Richer Exif via libexiv2 (optional; Summary + Exif/IPTC/XMP groups)
 - [ ] Depend on qtimageformats / KImageFormats for more formats via Qt plugins
 - [x] Optional thumbnail bar on the right (and top)
 - [ ] Masonry taller than viewport: use View → Show Scrollbars, or pan (middle / Alt)

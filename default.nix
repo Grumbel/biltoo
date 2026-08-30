@@ -5,6 +5,7 @@
 , qt6
 , wrapQtAppsHook
 , vips
+, exiv2
 }:
 
 stdenv.mkDerivation rec {
@@ -23,6 +24,7 @@ stdenv.mkDerivation rec {
     qt6.qtbase
     qt6.qttools
     vips
+    exiv2
   ];
 
   meta = with lib; {

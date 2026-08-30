@@ -10,9 +10,10 @@ class QTreeWidget;
 class QLabel;
 
 /**
- * Side panel listing file info and embedded image metadata (Exif/IPTC/XMP
- * text keys exposed by QImageReader). Not a full Exif library — that can
- * come later via libexiv2.
+ * Side panel listing file info and embedded image metadata.
+ * When built with libexiv2 (QIMGVIEW_HAVE_EXIV2), shows Exif/IPTC/XMP in
+ * grouped sections with a camera summary. Otherwise falls back to
+ * QImageReader text keys.
  */
 class MetadataPanel : public QWidget
 {
