@@ -820,3 +820,118 @@ No defect.
 ## Sign-off (deep pass 4)
 
 Infrastructure and HIG surface reviewed. No product code modified. Audit document is the accumulated record (`AUDIT.md`). Further passes would need **runtime** testing (ASan for H8/H9, manual Gallery zoom, screen reader) rather than more static reading of the same tree.
+
+---
+
+## Deep pass 5 (continuation)
+
+**Focus:** `GalleryLayout::pack` math, workspace snapshot vs duplicates, shape/hit residuals, DOMAIN invariants cross-check.  
+**Note:** Static coverage of this tree is near saturation; this pass closes the gaps called out in pass 4.
+
+| Step | Activity | Status |
+|------|----------|--------|
+| H1p | SideBySide / Vertical / Grid / GridCrop / Masonry / MasonryRows | [x] |
+| H2p | Workspace snapshot/`m_itemStates` vs duplicate paths | [x] |
+| H3p | `handleDrawSize` / shape padding vs viewport paint | [x] |
+| H4p | DOMAIN invariants vs implementation checklist | [x] |
+| H5p | Residual risk / what only runtime can prove | [x] |
+
+---
+
+### H1p — Gallery packing
+
+All modes guard native dimensions with `qMax(1.0, …)` before division — **no div-by-zero** on empty pixmaps.
+
+| Mode | Behaviour | Notes |
+|------|-----------|--------|
+| SideBySide | Scale to `availH`; advance x | Very wide total width → horizontal scroll; OK |
+| Vertical | Scale to `availW`; advance y | Tall strip; OK |
+| Grid | `cols = gridColumns or ceil(sqrt(n))`; cell fit min scale | Empty `n` not called from applyLayout when items empty |
+| GridCrop | Uniform cell; `setGalleryCellSize` for clip | Depends on item paint clip — implemented |
+| Masonry | Column shortest-top placement | Classic; column count clamped ≥1 |
+| MasonryRows | Row shortest-left | Symmetric to masonry |
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L32 | Low | **SideBySide / Vertical ignore `availW` / `availH` on the long axis** — by design (overflow scroll). Extreme aspect ratios produce huge scene rects; performance depends on FullViewportUpdate (already costly). |
+| L33 | Low | Pack **forces rotation 0 and opacity 1** for all tiles — correct for Gallery; any desire to preview workspace orientation in Gallery is out of scope / DOMAIN. |
+
+No algorithmic crash found in static read of `gallerylayout.cpp`.
+
+---
+
+### H2p — Snapshot identity vs DOMAIN duplicates
+
+DOMAIN: *Duplicate selection → new canvas objects, **same paths**, independent transforms.*
+
+Implementation:
+
+- `m_itemStates` and `rememberItemState` are **`QHash`/`insert` by path** → **one state per path**.
+- `m_savedWorkspace` is a **list** (can hold two entries with the same path).
+- `findItemByPath` returns the **first** match.
+- `LoadRestore` / `LoadAdd` skip if `findItemByPath` hits.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| **M27** | Medium | **Duplicates are first-class on the canvas but second-class in persistence.** Leaving Workspace and returning may restore only one object per path; the other transform is lost or merged via hash. Matches earlier M16 theme. |
+| M27b | Low | `snapshotWorkspace` list + hash dual structure is easy to desync when editing one path only. |
+
+---
+
+### H3p — Shape vs chrome paint
+
+- Chrome **drawing** is viewport-space in `paintEvent` (scale-invariant).
+- `shape()` / `boundingRect` still expand by **local** pads using `deviceScaleMin()` so Qt can deliver events near handles.
+- View-owned hits are primary; shape expansion is supporting.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| L34 | Low | Residual complexity: three notions of “handle size” (viewport draw px, local shape pad, hit radius). Documented in AGENTS; still a footgun for future edits (ties to H2). |
+
+---
+
+### H4p — DOMAIN invariants checklist
+
+| Invariant | Status |
+|-----------|--------|
+| One mode at a time (`ViewMode`) | **Held** |
+| Image canvas ≤1 image | **Held** (clear+replace load) |
+| Gallery no object move/scale chrome | **Held** (flags + pack) |
+| Workspace free transform | **Held** |
+| Framing must not clear rotation | **Violated by H6** on navigate reload |
+| Snapshot workspace on leave | **Attempted**; weakened by M27/H9 |
+| Slideshow Image-only | **Violated / extended** (Gallery start) — docs drift H1 |
+| Session order independent of canvas z | **Held** |
+
+---
+
+### H5p — Runtime-only residual risks
+
+| Risk | Why static analysis is insufficient |
+|------|-------------------------------------|
+| H8/H9 UAF | Needs ASan + mode switch during handle drag / Undo after restore |
+| H3a load cancel | Needs slow disk + rapid Next + drop |
+| Gallery zoom + resize | Needs interactive pack timing |
+| HiDPI chrome | Needs devicePixelRatio 2/3 screenshots |
+| AT-SPI / keyboard-only | Needs screen reader run |
+| GIO default-app | Needs desktop session |
+
+---
+
+## Audit completeness statement
+
+| Category | Coverage |
+|----------|----------|
+| All `src/*.cpp` / `*.h` | Read in one or more passes |
+| DOMAIN / TODO / AGENTS / REUSE / desktop / Nix / CMake | Reviewed |
+| Pack algorithms | Reviewed for structure and div-safety |
+| Automated proof of absence of races | **Not** done |
+| Product code changes from audit | **None** |
+
+**Recommendation:** Treat `AUDIT.md` as the backlog. Implementing **H7 → H8/H9 → H6 → H3a** yields the highest correctness return; then M-level UX. Further static passes on the same revision will mostly restate these items.
+
+---
+
+## Sign-off (deep pass 5)
+
+Gallery pack and workspace identity reviewed. Master priority list unchanged. Static audit of tip `03926e4` lineage considered **complete** for non-runtime analysis.
