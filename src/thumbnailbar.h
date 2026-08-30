@@ -36,6 +36,9 @@ public:
     /** Cell size for the current thumb size and font. */
     QSize cellSize(const QFont &font) const;
 
+    /** Caption band under the icon: font height + kLabelGap. */
+    static int labelBandHeight(const QFont &font);
+
 private:
     int m_thumbSize = 96;
 };
@@ -108,6 +111,8 @@ private:
     void selectNoneThumbs();
     void invertThumbSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
+    int labelBandHeight() const;
+    int thumbSizeFromBarExtent(int extent) const;
     static QImage makeThumbnail(const QString &path, int maxSize);
 
     std::atomic<quint64> m_generation{0};
