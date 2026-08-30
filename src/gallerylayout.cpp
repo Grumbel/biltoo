@@ -79,9 +79,11 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         const int cols = params.gridColumns > 0
                              ? qMax(1, params.gridColumns)
                              : qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
-        const int rows = qMax(1, static_cast<int>(std::ceil(double(n) / double(cols))));
+        // Width-driven square cells; vertical scroll. Fewer columns → larger tiles.
+        // Previously cellH packed all rows into availH, which shrank tiles as
+        // column count decreased (more rows into the same window height).
         const qreal cellW = (availW - gap * qMax(0, cols - 1)) / cols;
-        const qreal cellH = (availH - gap * qMax(0, rows - 1)) / rows;
+        const qreal cellH = cellW;
         for (int i = 0; i < n; ++i) {
             ImageItem *item = items.at(i);
             const int col = i % cols;
