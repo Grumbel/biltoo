@@ -29,6 +29,8 @@ add_executable(qimgview
   src/preferencesdialog.h
   src/metadatapanel.cpp
   src/metadatapanel.h
+  src/defaultapps.cpp
+  src/defaultapps.h
   src/icons.qrc
 )
 
@@ -56,6 +58,15 @@ if(PkgConfig_FOUND)
     message(STATUS "libexiv2 found — full Exif/IPTC/XMP metadata enabled")
   else()
     message(STATUS "libexiv2 not found — using Qt image plugin metadata only")
+  endif()
+
+  pkg_check_modules(GIO IMPORTED_TARGET gio-2.0)
+  if(GIO_FOUND)
+    target_link_libraries(qimgview PRIVATE PkgConfig::GIO)
+    target_compile_definitions(qimgview PRIVATE QIMGVIEW_HAVE_GIO=1)
+    message(STATUS "GLib GIO found — default application associations enabled")
+  else()
+    message(STATUS "GLib GIO not found — default-app preferences disabled")
   endif()
 endif()
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "preferencesdialog.h"
+#include "defaultapps.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -10,9 +11,13 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
 PreferencesDialog::PreferencesDialog(QWidget *parent)
@@ -107,6 +112,38 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     auto *viewGroup = new QGroupBox(tr("View"), this);
     viewGroup->setLayout(viewForm);
 
+    // --- Default application (GIO) ---
+    auto *defaultsGroup = new QGroupBox(tr("Default application"), this);
+    auto *defaultsLayout = new QVBoxLayout(defaultsGroup);
+
+    m_mimeStatusLabel = new QLabel(this);
+    m_mimeStatusLabel->setWordWrap(true);
+
+    m_mimeTree = new QTreeWidget(this);
+    m_mimeTree->setColumnCount(3);
+    m_mimeTree->setHeaderLabels({tr("Type"), tr("MIME"), tr("Current default")});
+    m_mimeTree->setRootIsDecorated(false);
+    m_mimeTree->setUniformRowHeights(true);
+    m_mimeTree->setMinimumHeight(160);
+    m_mimeTree->header()->setStretchLastSection(true);
+    m_mimeTree->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    m_mimeTree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+
+    auto *btnRow = new QHBoxLayout;
+    m_setCheckedBtn = new QPushButton(tr("Set as default for &checked"), this);
+    m_setAllBtn = new QPushButton(tr("Set as default for &all listed"), this);
+    btnRow->addWidget(m_setCheckedBtn);
+    btnRow->addWidget(m_setAllBtn);
+    btnRow->addStretch(1);
+
+    defaultsLayout->addWidget(m_mimeStatusLabel);
+    defaultsLayout->addWidget(m_mimeTree, 1);
+    defaultsLayout->addLayout(btnRow);
+
+    connect(m_setCheckedBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetDefaultForChecked);
+    connect(m_setAllBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetDefaultForAll);
+    refreshDefaultAppsList();
+
     // GNOME 2 HIG: Cancel left, OK right via QDialogButtonBox::GtkLayout-like order
     auto *buttons = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -122,8 +159,98 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     layout->addWidget(slideshowGroup);
     layout->addWidget(sessionGroup);
     layout->addWidget(viewGroup);
-    layout->addStretch(1);
+    layout->addWidget(defaultsGroup, 1);
     layout->addWidget(buttons);
+
+    setMinimumWidth(520);
+    resize(560, 640);
+}
+
+void PreferencesDialog::refreshDefaultAppsList()
+{
+    m_mimeTree->clear();
+
+    if (!DefaultApps::isAvailable()) {
+        m_mimeStatusLabel->setText(
+            tr("Setting default applications requires GLib GIO, which is not "
+               "enabled in this build. QImgView still appears under “Open with” "
+               "when its desktop file is installed."));
+        m_mimeTree->setEnabled(false);
+        m_setCheckedBtn->setEnabled(false);
+        m_setAllBtn->setEnabled(false);
+        return;
+    }
+
+    m_mimeStatusLabel->setText(
+        tr("Choose image types for which QImgView should be the system default. "
+           "Uses the FreeDesktop GIO API (qimgview.desktop must be installed)."));
+    m_mimeTree->setEnabled(true);
+    m_setCheckedBtn->setEnabled(true);
+    m_setAllBtn->setEnabled(true);
+
+    for (const DefaultApps::MimeStatus &s : DefaultApps::statusForSupportedTypes()) {
+        auto *item = new QTreeWidgetItem(m_mimeTree);
+        item->setText(0, s.label);
+        item->setText(1, s.mimeType);
+        item->setText(2, s.isUs
+                              ? tr("QImgView")
+                              : (s.currentAppName.isEmpty()
+                                     ? tr("(none)")
+                                     : s.currentAppName));
+        item->setToolTip(2, s.currentAppId.isEmpty() ? s.currentAppName : s.currentAppId);
+        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+        item->setCheckState(0, s.isUs ? Qt::Unchecked : Qt::Checked);
+        item->setData(0, Qt::UserRole, s.mimeType);
+        if (s.isUs) {
+            QFont f = item->font(2);
+            f.setBold(true);
+            item->setFont(2, f);
+        }
+    }
+}
+
+void PreferencesDialog::onSetDefaultForChecked()
+{
+    QStringList types;
+    for (int i = 0; i < m_mimeTree->topLevelItemCount(); ++i) {
+        QTreeWidgetItem *item = m_mimeTree->topLevelItem(i);
+        if (item && item->checkState(0) == Qt::Checked) {
+            types.append(item->data(0, Qt::UserRole).toString());
+        }
+    }
+    if (types.isEmpty()) {
+        QMessageBox::information(this, tr("Default application"),
+                                 tr("Check one or more types first."));
+        return;
+    }
+    QStringList errors;
+    const int ok = DefaultApps::setDefaultForTypes(types, &errors);
+    refreshDefaultAppsList();
+    if (!errors.isEmpty()) {
+        QMessageBox::warning(
+            this, tr("Default application"),
+            tr("Updated %1 of %2 types.
+
+%3")
+                .arg(ok)
+                .arg(types.size())
+                .arg(errors.join(QLatin1Char('
+'))));
+    } else {
+        QMessageBox::information(
+            this, tr("Default application"),
+            tr("QImgView is now the default for %n type(s).", nullptr, ok));
+    }
+}
+
+void PreferencesDialog::onSetDefaultForAll()
+{
+    for (int i = 0; i < m_mimeTree->topLevelItemCount(); ++i) {
+        if (QTreeWidgetItem *item = m_mimeTree->topLevelItem(i)) {
+            item->setCheckState(0, Qt::Checked);
+        }
+    }
+    onSetDefaultForChecked();
 }
 
 int PreferencesDialog::slideshowIntervalMs() const

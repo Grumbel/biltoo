@@ -10,6 +10,9 @@ class QDoubleSpinBox;
 class QSpinBox;
 class QComboBox;
 class QCheckBox;
+class QTreeWidget;
+class QLabel;
+class QPushButton;
 
 class PreferencesDialog : public QDialog
 {
@@ -38,12 +41,22 @@ public:
     void setImageModeLeftDragPan(bool on);
 
 private:
+    void setupDefaultAppsGroup();
+    void refreshDefaultAppsList();
+    void onSetDefaultForChecked();
+    void onSetDefaultForAll();
+
     QDoubleSpinBox *m_intervalSpin = nullptr;
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
     QSpinBox *m_masonryWidthSpin = nullptr;
     QCheckBox *m_imageModePanCheck = nullptr;
+
+    QTreeWidget *m_mimeTree = nullptr;
+    QLabel *m_mimeStatusLabel = nullptr;
+    QPushButton *m_setCheckedBtn = nullptr;
+    QPushButton *m_setAllBtn = nullptr;
 };
 
 #endif // PREFERENCESDIALOG_H

@@ -11,6 +11,6 @@ Exec=qimgview %F
 Icon=qimgview
 Terminal=false
 Categories=Graphics;Viewer;2DGraphics;RasterGraphics;
-MimeType=image/jpeg;image/png;image/gif;image/bmp;image/webp;image/tiff;image/svg+xml;image/x-xpixmap;
+MimeType=image/jpeg;image/png;image/gif;image/bmp;image/webp;image/tiff;image/svg+xml;image/x-xpixmap;image/x-portable-anymap;image/x-portable-bitmap;image/x-portable-graymap;image/x-portable-pixmap;image/x-tga;image/avif;image/heic;image/heif;image/jxl;
 Keywords=picture;photo;jpeg;png;
 StartupNotify=true
