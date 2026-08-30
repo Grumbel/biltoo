@@ -103,6 +103,10 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onThumbnailActivated);
     connect(m_thumbnailBar, &ThumbnailBar::indexAddToWorkspace,
             this, &MainWindow::onThumbnailAddToWorkspace);
+    connect(m_thumbnailBar, &ThumbnailBar::workspaceSelectionChanged,
+            this, &MainWindow::onThumbnailWorkspaceSelectionChanged);
+    connect(m_imageView, &ImageView::workspacePathsChanged,
+            this, &MainWindow::onWorkspacePathsChanged);
 
     layout->addWidget(m_imageView, 1);
     layout->addWidget(m_thumbnailBar, 0);
@@ -244,7 +248,8 @@ void MainWindow::createActions()
     m_workspaceModeAct->setChecked(false);
     m_workspaceModeAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_DesktopIcon));
     m_workspaceModeAct->setStatusTip(
-        tr("Compare multiple images on the view. Add via drop or Ctrl/Shift+click a thumbnail."));
+        tr("Compare multiple images on the view. Click thumbnails to show or hide them; "
+           "each image keeps its position and size."));
     connect(m_workspaceModeAct, &QAction::triggered, this, &MainWindow::toggleWorkspaceMode);
 
     m_selectToolAct = new QAction(tr("&Select"), this);
@@ -810,12 +815,73 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
         m_workspaceMode = true;
         m_workspaceModeAct->setChecked(true);
         m_imageView->setWorkspaceMode(true);
+        m_thumbnailBar->setWorkspaceMode(true);
         updateWorkspaceActionVisibility();
+        // Seed selection with the image being added
+        if (index >= 0 && index < m_files.size()) {
+            m_thumbnailBar->setSelectedIndices({index});
+        }
     }
     if (index < 0 || index >= m_files.size()) {
         return;
     }
     m_imageView->addImage(m_files.at(index));
+    syncThumbnailWorkspaceSelection();
+}
+
+void MainWindow::onThumbnailWorkspaceSelectionChanged()
+{
+    if (!m_workspaceMode) {
+        return;
+    }
+    applyWorkspaceSelectionFromThumbnails();
+}
+
+void MainWindow::onWorkspacePathsChanged()
+{
+    if (!m_workspaceMode) {
+        return;
+    }
+    syncThumbnailWorkspaceSelection();
+}
+
+void MainWindow::applyWorkspaceSelectionFromThumbnails()
+{
+    QStringList paths;
+    for (int idx : m_thumbnailBar->selectedIndices()) {
+        if (idx >= 0 && idx < m_files.size()) {
+            paths.append(m_files.at(idx));
+        }
+    }
+    m_imageView->setWorkspacePaths(paths);
+
+    // Keep session index / metadata in sync with last selected thumbnail
+    const QList<int> sel = m_thumbnailBar->selectedIndices();
+    if (!sel.isEmpty()) {
+        const int idx = sel.last();
+        if (idx != m_currentIndex && idx >= 0 && idx < m_files.size()) {
+            m_currentIndex = idx;
+            if (m_metadataPanel) {
+                m_metadataPanel->setImagePath(m_files.at(m_currentIndex));
+            }
+        }
+    }
+    updateStatus();
+}
+
+void MainWindow::syncThumbnailWorkspaceSelection()
+{
+    if (!m_workspaceMode) {
+        return;
+    }
+    QList<int> indices;
+    for (const QString &path : m_imageView->itemPaths()) {
+        const int idx = m_files.indexOf(path);
+        if (idx >= 0) {
+            indices.append(idx);
+        }
+    }
+    m_thumbnailBar->setSelectedIndices(indices);
 }
 
 void MainWindow::openFiles()
@@ -1015,10 +1081,24 @@ void MainWindow::toggleWorkspaceMode()
 {
     m_workspaceMode = m_workspaceModeAct->isChecked();
     m_imageView->setWorkspaceMode(m_workspaceMode);
-    if (!m_workspaceMode) {
+    m_thumbnailBar->setWorkspaceMode(m_workspaceMode);
+    if (m_workspaceMode) {
+        // Seed the workspace with the current session image (or restore canvas)
+        if (m_imageView->itemCount() == 0
+            && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+            m_imageView->addImage(m_files.at(m_currentIndex));
+        }
+        syncThumbnailWorkspaceSelection();
+        // Ensure thumbnail bar is visible when working with multi-select
+        if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+            m_toggleThumbnailBarAct->setChecked(true);
+            m_thumbnailBar->setVisible(true);
+        }
+    } else {
         // Ensure classic view shows the current session image, centred
         if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
             m_imageView->loadImage(m_files.at(m_currentIndex));
+            m_thumbnailBar->setCurrentIndex(m_currentIndex);
         }
     }
     updateWorkspaceActionVisibility();
@@ -1251,6 +1331,9 @@ void MainWindow::readSettings()
     }
     if (m_imageView) {
         m_imageView->setWorkspaceMode(m_workspaceMode);
+    }
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setWorkspaceMode(m_workspaceMode);
     }
     updateWorkspaceActionVisibility();
 

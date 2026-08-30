@@ -98,6 +98,8 @@ private slots:
     void showContextMenu(const QPoint &pos);
     void onThumbnailActivated(int index);
     void onThumbnailAddToWorkspace(int index);
+    void onThumbnailWorkspaceSelectionChanged();
+    void onWorkspacePathsChanged();
 
 private:
     void createActions();
@@ -111,6 +113,8 @@ private:
     void sortFileList();
     void readSettings();
     void writeSettings();
+    void syncThumbnailWorkspaceSelection();
+    void applyWorkspaceSelectionFromThumbnails();
     QStringList expandPaths(const QStringList &paths) const;
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
     static bool isImageFile(const QString &path);
