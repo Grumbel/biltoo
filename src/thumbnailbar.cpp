@@ -6,11 +6,13 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QClipboard>
 #include <QContextMenuEvent>
 #include <QDrag>
 #include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
+#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QListWidgetItem>
@@ -430,10 +432,68 @@ void ThumbnailBar::requestRemoveSelection()
     }
 }
 
+void ThumbnailBar::selectAllThumbs()
+{
+    if (count() == 0) {
+        return;
+    }
+    // Multi-select is native in workspace mode; Image mode stays single-select
+    // for navigation — Select All there is still useful before bulk remove.
+    const bool wasSingle = (!m_workspaceMode
+                            && selectionMode() == QAbstractItemView::SingleSelection);
+    if (wasSingle) {
+        setSelectionMode(QAbstractItemView::MultiSelection);
+    }
+    for (int i = 0; i < count(); ++i) {
+        if (QListWidgetItem *it = item(i)) {
+            it->setSelected(true);
+        }
+    }
+    if (m_workspaceMode) {
+        emit workspaceSelectionChanged();
+    }
+}
+
+void ThumbnailBar::selectNoneThumbs()
+{
+    clearSelection();
+    if (!m_workspaceMode) {
+        setSelectionMode(QAbstractItemView::SingleSelection);
+    }
+    if (m_workspaceMode) {
+        emit workspaceSelectionChanged();
+    }
+}
+
+void ThumbnailBar::invertThumbSelection()
+{
+    if (count() == 0) {
+        return;
+    }
+    const bool wasSingle = (!m_workspaceMode
+                            && selectionMode() == QAbstractItemView::SingleSelection);
+    if (wasSingle) {
+        setSelectionMode(QAbstractItemView::MultiSelection);
+    }
+    for (int i = 0; i < count(); ++i) {
+        if (QListWidgetItem *it = item(i)) {
+            it->setSelected(!it->isSelected());
+        }
+    }
+    if (m_workspaceMode) {
+        emit workspaceSelectionChanged();
+    }
+}
+
 void ThumbnailBar::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
         requestRemoveSelection();
+        event->accept();
+        return;
+    }
+    if (event->matches(QKeySequence::SelectAll)) {
+        selectAllThumbs();
         event->accept();
         return;
     }
@@ -458,13 +518,83 @@ void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
         indices.append(row(hit));
     }
 
+    const int total = count();
+    const int selectedCount = indices.size();
+
     QMenu menu(this);
-    QAction *removeAct = menu.addAction(tr("Remove from Session"));
+
+    QAction *selectAllAct = menu.addAction(tr("Select &All"));
+    selectAllAct->setShortcut(QKeySequence::SelectAll);
+    selectAllAct->setEnabled(total > 0 && selectedCount < total);
+
+    QAction *selectNoneAct = menu.addAction(tr("Select &None"));
+    selectNoneAct->setEnabled(selectedCount > 0);
+
+    QAction *invertAct = menu.addAction(tr("&Invert Selection"));
+    invertAct->setEnabled(total > 0);
+
+    menu.addSeparator();
+
+    QAction *removeAct = menu.addAction(tr("&Remove from Session"));
     removeAct->setShortcut(QKeySequence::Delete);
-    removeAct->setEnabled(!indices.isEmpty());
+    removeAct->setEnabled(selectedCount > 0);
+
+    QAction *removeOthersAct = menu.addAction(tr("Remove &Others from Session"));
+    removeOthersAct->setEnabled(selectedCount > 0 && selectedCount < total);
+
+    QAction *removeAllAct = menu.addAction(tr("Remove A&ll from Session"));
+    removeAllAct->setEnabled(total > 0);
+
+    menu.addSeparator();
+
+    QAction *copyPathsAct = menu.addAction(tr("&Copy Path(s)"));
+    copyPathsAct->setEnabled(selectedCount > 0 || hit != nullptr);
+
     QAction *chosen = menu.exec(event->globalPos());
-    if (chosen == removeAct && !indices.isEmpty()) {
+    if (!chosen) {
+        event->accept();
+        return;
+    }
+
+    if (chosen == selectAllAct) {
+        selectAllThumbs();
+    } else if (chosen == selectNoneAct) {
+        selectNoneThumbs();
+    } else if (chosen == invertAct) {
+        invertThumbSelection();
+    } else if (chosen == removeAct && selectedCount > 0) {
         emit removeIndicesRequested(indices);
+    } else if (chosen == removeOthersAct && selectedCount > 0) {
+        QList<int> others;
+        for (int i = 0; i < total; ++i) {
+            if (!indices.contains(i)) {
+                others.append(i);
+            }
+        }
+        if (!others.isEmpty()) {
+            emit removeIndicesRequested(others);
+        }
+    } else if (chosen == removeAllAct && total > 0) {
+        QList<int> all;
+        all.reserve(total);
+        for (int i = 0; i < total; ++i) {
+            all.append(i);
+        }
+        emit removeIndicesRequested(all);
+    } else if (chosen == copyPathsAct) {
+        QStringList paths;
+        if (selectedCount > 0) {
+            for (int idx : indices) {
+                if (QListWidgetItem *it = item(idx)) {
+                    paths.append(it->data(Qt::UserRole).toString());
+                }
+            }
+        } else if (hit) {
+            paths.append(hit->data(Qt::UserRole).toString());
+        }
+        if (!paths.isEmpty()) {
+            QGuiApplication::clipboard()->setText(paths.join(QLatin1Char('\n')));
+        }
     }
     event->accept();
 }

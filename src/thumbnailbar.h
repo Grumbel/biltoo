@@ -104,6 +104,9 @@ private:
     void applyOrientation();
     void scheduleThumbnailLoads();
     void requestRemoveSelection();
+    void selectAllThumbs();
+    void selectNoneThumbs();
+    void invertThumbSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
     static QImage makeThumbnail(const QString &path, int maxSize);
 
