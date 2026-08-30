@@ -52,102 +52,78 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] Slideshow disabled status tip explains reason
 
 ## Open
+
 - Full `.ts` locale packs (community)
 - Deeper automated GUI tests
+- Broader undo coverage (Workspace membership hide/show, sort reorder, layout switch)
+- Optional confirmation dialogs for destructive session replace (drop/Open)
 
-### Critical: Workspace handles still broken (2026-08-30)
+### Stability / polish (optional)
 
-- [x] Resize handles disappear into infinity at certain scales; handle buttons vanish
-      (clamped local pads; rotate/chrome placed in pure viewport space; degenerate-frame guard)
-- [x] Selection edges not drawn properly and do not rotate correctly
-      (view-space mids/dirs; early-out when frame collapses)
-- [x] Scale/rotate handles must: align with the image, rotate with it, constant screen size (do not scale)
-- [x] Chrome/handle buttons: constant size and constant screen distance regardless of scale or rotation
-- [x] Horz/vert edge scale handles spaz out and become uncontrollable near 0 scale
-      (scene-space projection onto press-time axes; setItemScale still clamps ≥ 0.01)
-- Design notes: see HANDLES.md. Re-test under rotation + extreme zoom/scale; follow-up if any residual.
+- [ ] Thumbnail click crash (needs reliable repro)
+- [ ] CLI `--workspace` / start-in-workspace still slightly confusing vs Preferences
+- [ ] Drag-load status: show count of images still decoding
+- [ ] AppStream screenshots for Flathub-style stores
+- [ ] Virtualize Gallery when sessions are huge (thousands of tiles)
+- [ ] Colour-managed display pipeline (beyond libexiv2 metadata)
 
-### Reported bugs (2026-08-30)
+## Done in this series (handles → session UX, 2026-08-30)
 
-- [x] F/F11 only enters fullscreen; cannot leave
-- [x] Drag&drop replaces the image set instead of adding (Gallery appends; Image still replace / Shift-append)
-- [x] Drag from thumbnail bar onto Gallery duplicates; Gallery ignores session re-drops (Workspace OK)
-- [x] Space does not pause slideshow in fullscreen
-- [x] Workspace edge resize handles should be thicker
-- [x] Mouse interaction with rotated handles / highlight disconnect (view-owned hover + larger hits)
-- [x] Workspace handles drawn at image stacking order; paint on top of all images
-- [x] Clicking near workspace handles can deselect the image
-- [x] Handles: bigger; input/highlight handles scale+rotation
-- [x] Checkerboard LOD snap when cells would go below ~16×16 screen px
+### Workspace chrome (`HANDLES.md`)
 
-### Gallery / UX
+- [x] View-space scale/rotate handles; constant screen size; rotate with image
+- [x] Degenerate-frame guards; scene-projection edge scale near 0
+- [x] Adaptive outside chrome (buttons / opacity); L-bracket corners
+- [x] Fast-click deselection / double-click handling polish
 
-- [x] Horizontal / Vertical near-fullscreen highlight: classic multi-select
-      (click / Ctrl / Shift / rubber-band) + double-click to open; no hover wash
+### Session & modes
 
-- [x] Gallery rubber-band multi-select
-- [x] Workspace rubber-band multi-select (Select tool, empty drag)
-- [x] Grid / Grid-Crop column count control (like masonry spin)
-- [x] Keyboard focus / arrow-key navigation between gallery tiles (spatial)
-- [x] Remember last Gallery layout across sessions (QSettings `lastGalleryLayout`)
-- [x] Interaction summary / shortcuts synced with current modes and keys
-- [x] Rename ThumbnailBar “workspace mode” → multi-select (`setMultiSelectEnabled`)
+- [x] Thumbnail: click = select; double-click = Workspace membership; drag adds
+- [x] Image-mode drop **appends** (Open still replaces); File → New empty session
+- [x] Gallery first-open showed one tile — enter Gallery before `setWorkspacePaths`
+- [x] Gallery thumb strip no longer force-select-all on enter
+- [x] Gallery pack order follows session/sort order (not async load order)
+- [x] Gallery scroll restore via scene-centre snapshot on Image round-trip
+- [x] Gallery Delete removes from **session** (undoable); layout switch does not resurrect
+- [x] Session-remove undo kept across canvas tile destroy (`preserveUndoOnDestroy`)
+- [x] Gallery → Image: stop layout debounce; no double decode of random first tile
 
-### Stability / polish
+### Gallery interaction
 
-- [ ] Thumbnail bar click crash: need better reproduction if still seen
-- [ ] Workspace item misalignment after mode switches: re-check after long sessions
-- [ ] Undo stack coverage for gallery open/return (currently workspace-oriented)
+- [x] Ctrl/Shift/rubber-band multi-select; preserve selection across layout switch
+- [x] Ctrl+click multi-select not cleared by `focusSessionPath` (use `revealGalleryPath`)
+- [x] Wheel **scrolls only** (no zoom); Horizontal/Masonry Rows map vertical wheel → H-scroll
+- [x] Zoom Fit/Fill use `fitInView` on packed bounds
+- [x] Grid cells width-driven (fewer columns → larger tiles); vertical scroll
+- [x] Sort: name, date, file size, width, height, pixel count; toolbar menu; repacks Gallery
 
-### Preferences / desktop integration
+### Workspace / chrome infra
 
-- [x] Default application tab: checkbox reflects current default; toggle applies immediately; mark-all / remove-all buttons
-- [x] Preferences dialog button order: GNOME 2 HIG (Cancel left, OK right); document in AGENTS.md
-- [x] Add `nix flake check` phase
+- [x] `destroyCanvasItem` centralizes UAF-safe deletion
+- [x] Workspace sceneRect expansion for middle-click pan / scrollbars
+- [x] Workspace rubber-band on Select tool
 
-### Later
+### Slideshow / packaging
 
-- [ ] OpenGL path for large images / many items
-- [ ] Persist workspace item state across sessions
-- [ ] Per-image view state persistence in Image mode
-- [ ] Animated GIF / multi-page TIFF frame navigation
-- [ ] Colour-managed display (ICC / OCIO) if format backends expose profiles
+- [x] `[` / `]` slower/faster interval (mpv-style)
+- [x] flake `apps.default` `meta.description`
 
-## Interaction summary
+## Interaction summary (current)
 
-| Gesture | Effect |
-|---------|--------|
-| Drop (Image mode) | Replace session |
-| Shift/Ctrl+Drop (Image mode) | Append to session |
-| Drop (Workspace) | Append session + place/move on canvas at drop point |
-| Double-click thumbnail (Workspace) | Toggle that image on/off the canvas |
-| Click thumbnail (Workspace) | Multi-select only (not membership) |
-| Drop (Gallery) | Append session + relayout |
-| Click gallery tile | Select (Ctrl toggle, Shift range, rubber-band) |
-| Double-click gallery tile / Enter | Open Image mode for that file |
-| Gallery arrows (spatial) / Home / End | Move session cursor among tiles |
-| **Up** / Esc / top edge (from Image after gallery open) | Return to Gallery |
-| Click left/right edge; ←/→ (Image) | Previous / next |
-| Hover gallery tile | HUD shows filename |
-| Double-click (Image) | Toggle fullscreen |
-| Click item (Workspace) | Select (handles) |
-| Drag empty space (Workspace Select) | Rubber-band multi-select |
-| Drag item (Workspace only) | Move |
-| Drag handles (Workspace only) | Scale / rotate / opacity / chrome |
-| Ctrl+D (Workspace) | Duplicate selection |
-| Wheel | Zoom view (Image/Workspace); Gallery scrolls, Ctrl+wheel zooms (plain wheel zooms if no overflow) |
-| Alt+LMB / Middle | Pan |
-| Delete (Workspace) | Remove from canvas (state kept) |
-| View → Gallery layouts | Enter Gallery with packing |
-| View → Workspace Mode | Free-form canvas |
-| Space | Slideshow start/stop (Image; from Gallery enters Image) |
-| F / F11 | Fullscreen |
-| H | HUD overlay (pin) |
-| Ctrl+E | Metadata panel |
-| Ctrl+T | Toolbar |
-| Ctrl+0 / Fit actions | Zoom 1:1 / fit / fill |
+| Input | Behaviour |
+|-------|-----------|
+| Click item (Gallery) | Select (exclusive) |
+| Ctrl/Meta+click (Gallery) | Toggle in multi-select |
+| Shift+click (Gallery) | Range from anchor |
+| Drag empty (Gallery / Workspace Select) | Rubber-band multi-select |
+| Double-click (Gallery) | Open in Image mode |
+| Delete (Gallery) | Remove from session (undoable) |
+| Delete (Workspace) | Remove from canvas only |
+| Wheel (Gallery) | Scroll only (strip layouts → horizontal) |
+| Wheel (Image / Workspace) | Zoom view |
+| Click thumb | Session select / navigate |
+| Double-click thumb (Workspace multi-select) | Toggle canvas membership |
+| Drag thumb → canvas | Add to session/canvas |
+| `[` / `]` | Slideshow interval slower / faster |
 
-## Broader image formats
-
-Prefer `QImageReader`; libvips optional fallback. See AGENTS.md / prior notes for plugin research.
-
+See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md).

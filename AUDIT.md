@@ -970,3 +970,15 @@ Gallery pack and workspace identity reviewed. Master priority list unchanged. St
 
 | L29 | Fixed | Context menu filtered by Image/Gallery/Workspace mode |
 | — | Polish | Slideshow status tip explains why disabled |
+
+| M15b | Fixed | enterGalleryMode: enterGallery **before** populate (first open after start) |
+| M4b | Fixed | Gallery wheel scrolls only; zoom is Image/Workspace |
+| — | Fixed | Gallery Fit/Fill via fitInView on packed bounds |
+| — | Fixed | Grid cells width-driven (fewer columns → larger tiles) |
+| — | Fixed | Session order for Gallery pack; sort modes expanded |
+| — | Fixed | Gallery Delete → session remove + undo; canvas drop preserves undo stack |
+| — | Fixed | Ctrl+click multi-select not cleared by session cursor focus |
+| — | Fixed | Gallery→Image: stop layout debounce; no double decode |
+| — | Fixed | Workspace rubber-band; sceneRect scroll/pan |
+| — | Fixed | Slideshow [ ] interval; flake apps.default meta |
+

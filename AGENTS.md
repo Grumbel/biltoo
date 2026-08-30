@@ -248,3 +248,10 @@ HIG-conformant on every desktop.
 - Do not hard-code icon paths or ship large icon sets unless agreed.
 - Do not depend on proprietary or non-free libraries.
 - Do not rewrite history of previously delivered bundles.
+
+## Session vs canvas (quick)
+
+- **Gallery Delete** removes paths from the **session** (undoable). Layout switches use `m_files` only.
+- **Workspace Delete** removes from the **canvas** only; session membership stays.
+- Gallery pack order follows session/`setWorkspacePaths` order, not async decode completion.
+- Gallery wheel scrolls only; do not add view-zoom on wheel in Gallery.

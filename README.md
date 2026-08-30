@@ -18,9 +18,11 @@ Agent / contributor notes: [AGENTS.md](AGENTS.md).
 
 - Fast single-image browsing with zoom, pan, rotate, and flip
 - Thumbnail bar for the current session; open files or directories from the UI or the command line
-- **Gallery**: packaged layouts (horizontal/vertical strip, grid, grid-crop, masonry); click an image to view it full size, **Up** to return
-- **Workspace mode**: free-form canvas — move, scale, rotate, opacity, and stacking order
-- Slideshow with optional fullscreen
+- **Gallery**: packaged layouts (horizontal/vertical strip, grid, grid-crop, masonry); multi-select; double-click opens Image mode; **Up** returns with scroll restore
+- **Workspace mode**: free-form canvas — move, scale, rotate, opacity, stacking; rubber-band select; view-space transform handles ([HANDLES.md](HANDLES.md))
+- Session sort by name, date, file size, width, height, or pixel count (menu + toolbar)
+- Slideshow with optional fullscreen; `[` / `]` adjust interval while running
+- Drag and drop **appends** to the session in Image mode (File → Open still replaces); File → New clears the session
 - Metadata panel (file info; optional Exif/IPTC/XMP when built with libexiv2)
 - Configurable canvas background (solid or checkerboard)
 - Theme icons, fullscreen, and preferences for sort order, slideshow, and default applications
@@ -36,12 +38,12 @@ Useful options:
 | Option | Description |
 |--------|-------------|
 | `-r`, `--recursive` | Expand directories recursively |
-| `--sort=name\|mtime` | Sort order for loaded files |
+| `--sort=name\|mtime` | Sort order for loaded files (UI also offers size / dimensions) |
 | `--slideshow` | Start the slideshow |
 | `--interval=ms` | Slideshow interval in milliseconds |
 | `--thumbnails` / `--no-thumbnails` | Force thumbnail bar on or off |
 
-Drag and drop image files onto the window. In normal mode a plain drop replaces the session; Shift or Ctrl+drop appends. In workspace mode, drops add images to the session and the canvas.
+Drag and drop image files onto the window. Drops **append** to the current session (Image, Gallery, and Workspace). Use **File → Open** to replace the session, or **File → New** for an empty session.
 
 ## Building
 

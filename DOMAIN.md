@@ -80,7 +80,8 @@ Image is not a multi-object canvas.
 |-----------|---------|--------------|
 | Open / replace session | New ordered path list; current index set | Always |
 | Append to session | Add paths; keep current if possible | Always |
-| Remove from session | Drop paths; fix current index | Always |
+| Remove from session | Drop paths; fix current index; Gallery Delete uses this (undoable) | Always |
+| Remove from canvas only | Drop Workspace objects; session unchanged | Workspace Delete |
 | Set current index | Point session at a path | Always |
 | Sort session | Reorder paths | Always |
 
@@ -89,7 +90,8 @@ Image is not a multi-object canvas.
 | Operation | Meaning | Allowed when |
 |-----------|---------|--------------|
 | Fit / Fill / 1:1 / Zoom ± | Change how the **view** frames the image | Image (primary); view pan/zoom may exist elsewhere |
-| Pan view | Move the view, not object local position | Image; Workspace pan tool; Gallery with explicit pan |
+| Pan view | Move the view, not object local position | Image; Workspace pan tool; Gallery scrollbars / wheel |
+| Wheel zoom | Scale the view transform | Image and Workspace only — **not** Gallery |
 | Previous / Next / First / Last | Change current index; show that path in Image | Image, session size > 1 |
 | Slideshow start/stop | Timed Next (from Gallery, enters Image first) | Image or Gallery start; not Workspace |
 | Fullscreen | Chrome on/off | Always |
