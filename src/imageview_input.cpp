@@ -40,9 +40,22 @@ int ImageView::edgeZoneWidth() const
     return qMax(48, static_cast<int>(width() * 0.12));
 }
 
+int ImageView::edgeZoneHeight() const
+{
+    return qMax(40, static_cast<int>(height() * 0.10));
+}
+
 ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
 {
-    if (isMultiItemMode() || !m_imageModeNavEnabled) {
+    if (!isImageMode()) {
+        return EdgeZone::None;
+    }
+    // Top strip: back to Gallery (when Image was opened from a gallery tile).
+    // Takes priority over left/right so the upper corners still return.
+    if (m_galleryReturnAvailable && viewPos.y() < edgeZoneHeight()) {
+        return EdgeZone::GalleryReturn;
+    }
+    if (!m_imageModeNavEnabled) {
         return EdgeZone::None;
     }
     const int zone = edgeZoneWidth();
@@ -62,7 +75,8 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
         return;
     }
     m_hoverEdge = zone;
-    if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next) {
+    if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next
+        || m_hoverEdge == EdgeZone::GalleryReturn) {
         setCursor(Qt::PointingHandCursor);
     } else if (!m_panning && !m_rotating) {
         setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
@@ -72,17 +86,49 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
 
 void ImageView::drawEdgeAffordances(QPainter &painter)
 {
-    if (m_hoverEdge == EdgeZone::None || isMultiItemMode() || !m_imageModeNavEnabled) {
+    if (m_hoverEdge == EdgeZone::None || !isImageMode()) {
+        return;
+    }
+    if (m_hoverEdge != EdgeZone::GalleryReturn && !m_imageModeNavEnabled) {
         return;
     }
 
     const QRect vr = viewport()->rect();
-    const int zone = edgeZoneWidth();
-    const int cy = vr.center().y();
-
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Soft hit-zone wash
+    const int r = 22;
+    constexpr int kEdgeMargin = 10;
+
+    auto drawChevronButton = [&](int cx, int cy, auto buildChevron) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(0, 0, 0, 140));
+        painter.drawEllipse(QPoint(cx, cy), r, r);
+        painter.setBrush(QColor(255, 255, 255, 230));
+        painter.drawEllipse(QPoint(cx, cy), r - 3, r - 3);
+        QPainterPath chevron;
+        buildChevron(chevron, cx, cy);
+        QPen pen(QColor(40, 40, 40), 3.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        painter.strokePath(chevron, pen);
+    };
+
+    if (m_hoverEdge == EdgeZone::GalleryReturn) {
+        const int zone = edgeZoneHeight();
+        QLinearGradient grad(0, 0, 0, zone);
+        grad.setColorAt(0.0, QColor(0, 0, 0, 90));
+        grad.setColorAt(1.0, QColor(0, 0, 0, 0));
+        painter.fillRect(QRect(0, 0, vr.width(), zone), grad);
+        const int cx = vr.center().x();
+        const int cy = kEdgeMargin + r;
+        drawChevronButton(cx, cy, [](QPainterPath &chevron, int cx, int cy) {
+            chevron.moveTo(cx - 10, cy + 5);
+            chevron.lineTo(cx, cy - 6);
+            chevron.lineTo(cx + 10, cy + 5);
+        });
+        return;
+    }
+
+    const int zone = edgeZoneWidth();
+    const int cy = vr.center().y();
     QLinearGradient grad;
     if (m_hoverEdge == EdgeZone::Previous) {
         grad = QLinearGradient(0, 0, zone, 0);
@@ -96,44 +142,38 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
         painter.fillRect(QRect(vr.width() - zone, 0, zone, vr.height()), grad);
     }
 
-    // Circular button with chevron — sit near the window edge
-    const int r = 22;
-    constexpr int kEdgeMargin = 10; // gap from window edge to button rim
     const int cx = (m_hoverEdge == EdgeZone::Previous)
                        ? (kEdgeMargin + r)
                        : (vr.width() - kEdgeMargin - r);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 140));
-    painter.drawEllipse(QPoint(cx, cy), r, r);
-    painter.setBrush(QColor(255, 255, 255, 230));
-    painter.drawEllipse(QPoint(cx, cy), r - 3, r - 3);
-
-    QPainterPath chevron;
     if (m_hoverEdge == EdgeZone::Previous) {
-        chevron.moveTo(cx + 5, cy - 10);
-        chevron.lineTo(cx - 6, cy);
-        chevron.lineTo(cx + 5, cy + 10);
+        drawChevronButton(cx, cy, [](QPainterPath &chevron, int cx, int cy) {
+            chevron.moveTo(cx + 5, cy - 10);
+            chevron.lineTo(cx - 6, cy);
+            chevron.lineTo(cx + 5, cy + 10);
+        });
     } else {
-        chevron.moveTo(cx - 5, cy - 10);
-        chevron.lineTo(cx + 6, cy);
-        chevron.lineTo(cx - 5, cy + 10);
+        drawChevronButton(cx, cy, [](QPainterPath &chevron, int cx, int cy) {
+            chevron.moveTo(cx - 5, cy - 10);
+            chevron.lineTo(cx + 6, cy);
+            chevron.lineTo(cx - 5, cy + 10);
+        });
     }
-    QPen pen(QColor(40, 40, 40), 3.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    painter.strokePath(chevron, pen);
 }
 
 void ImageView::paintEvent(QPaintEvent *event)
 {
     QGraphicsView::paintEvent(event);
     QPainter painter(viewport());
-    if (m_hoverEdge != EdgeZone::None && isImageMode() && m_imageModeNavEnabled) {
+    if (m_hoverEdge != EdgeZone::None && isImageMode()
+        && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
     // HUD layout:
     //   top-left  — transient actions (slideshow, fit, …), never Next/Prev
     //   top-right — session index [i/n]
     //   bottom    — filename (+ technical detail when the HUD is pinned)
-    if (m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse) {
+    if (m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
+        || !m_galleryHoverPath.isEmpty()) {
         QFont f = font();
         f.setPointSizeF(qMax(10.0, f.pointSizeF()));
         QFont boldF = f;
@@ -260,8 +300,9 @@ void ImageView::paintEvent(QPaintEvent *event)
             drawPanel({{badge, false}}, 0, margin, true, false);
         }
 
-        // Bottom: filename — pinned, or briefly after navigation / action flash
-        if (m_hudVisible || m_hudIdentityPulse || m_hudFlashVisible) {
+        // Bottom: filename — pinned, identity pulse, or gallery hover
+        if (m_hudVisible || m_hudIdentityPulse || m_hudFlashVisible
+            || !m_galleryHoverPath.isEmpty()) {
             QList<HudLine> bottom;
             const QString name = hudFileName();
             if (!name.isEmpty()) {
@@ -543,10 +584,15 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         // selected item body use the default move/select path below.
     }
 
-    // Image mode: left/right edge clicks navigate the session
+    // Image mode: edge clicks — top returns to Gallery; left/right navigate
     if (isImageMode() && event->button() == Qt::LeftButton
         && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
         const EdgeZone zone = edgeZoneAt(event->pos());
+        if (zone == EdgeZone::GalleryReturn) {
+            emit galleryReturnRequested();
+            event->accept();
+            return;
+        }
         if (zone == EdgeZone::Previous) {
             emit navigatePreviousRequested();
             event->accept();
@@ -696,6 +742,25 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
     if (isImageMode()) {
         updateHoverEdge(event->pos());
+    }
+
+    // Gallery: HUD shows the filename of the tile under the cursor.
+    if (isGalleryMode()) {
+        QString path;
+        const QPointF scenePos = mapToScene(event->pos());
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                path = ii->path();
+                break;
+            }
+        }
+        if (path != m_galleryHoverPath) {
+            m_galleryHoverPath = path;
+            viewport()->update();
+        }
+    } else if (!m_galleryHoverPath.isEmpty()) {
+        m_galleryHoverPath.clear();
+        viewport()->update();
     }
 
     // Workspace: drive handle hover from the view so highlight matches the

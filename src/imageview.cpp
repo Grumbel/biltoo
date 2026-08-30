@@ -274,7 +274,19 @@ void ImageView::setImageModeNavigationEnabled(bool on)
         return;
     }
     m_imageModeNavEnabled = on;
-    if (!on) {
+    if (!on && m_hoverEdge != EdgeZone::GalleryReturn) {
+        m_hoverEdge = EdgeZone::None;
+    }
+    viewport()->update();
+}
+
+void ImageView::setGalleryReturnAvailable(bool on)
+{
+    if (m_galleryReturnAvailable == on) {
+        return;
+    }
+    m_galleryReturnAvailable = on;
+    if (!on && m_hoverEdge == EdgeZone::GalleryReturn) {
         m_hoverEdge = EdgeZone::None;
     }
     viewport()->update();
@@ -781,6 +793,9 @@ QString ImageView::sessionBadgeText() const
 
 QString ImageView::hudFileName() const
 {
+    if (!m_galleryHoverPath.isEmpty()) {
+        return QFileInfo(m_galleryHoverPath).fileName();
+    }
     if (!m_lastLoadError.isEmpty()) {
         return QFileInfo(m_lastLoadError).fileName();
     }
@@ -910,6 +925,10 @@ void ImageView::leaveEvent(QEvent *event)
     }
     if (m_hoverEdge != EdgeZone::None) {
         m_hoverEdge = EdgeZone::None;
+        viewport()->update();
+    }
+    if (!m_galleryHoverPath.isEmpty()) {
+        m_galleryHoverPath.clear();
         viewport()->update();
     }
     QGraphicsView::leaveEvent(event);

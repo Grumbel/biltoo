@@ -261,6 +261,9 @@ void MainWindow::updateUpToGalleryAction()
     // Always shown; only enabled when Image mode was entered from Gallery.
     m_backToGalleryAct->setVisible(true);
     m_backToGalleryAct->setEnabled(m_galleryReturnActive);
+    if (m_imageView) {
+        m_imageView->setGalleryReturnAvailable(m_galleryReturnActive);
+    }
 }
 
 void MainWindow::updateWorkspaceActionVisibility()

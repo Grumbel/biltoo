@@ -53,11 +53,13 @@ public:
         Workspace
     };
 
-    /** Hover / hit zone on the left or right edge in Image mode. */
+    /** Hover / hit zone on viewport edges in Image mode. */
     enum class EdgeZone {
         None,
         Previous,
-        Next
+        Next,
+        /** Top edge: return to Gallery when opened from a gallery tile. */
+        GalleryReturn
     };
 
     explicit ImageView(QWidget *parent = nullptr);
@@ -89,6 +91,9 @@ public:
      * Typically true when the session has more than one image.
      */
     void setImageModeNavigationEnabled(bool on);
+    /** When true, Image mode top edge offers return-to-gallery. */
+    void setGalleryReturnAvailable(bool on);
+    bool galleryReturnAvailable() const { return m_galleryReturnAvailable; }
     bool imageModeNavigationEnabled() const { return m_imageModeNavEnabled; }
 
     /**
@@ -238,6 +243,8 @@ signals:
     /** Image mode: user activated previous / next via edge click. */
     void navigatePreviousRequested();
     void navigateNextRequested();
+    /** Image mode: user activated top-edge return to Gallery. */
+    void galleryReturnRequested();
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
     /**
@@ -302,6 +309,7 @@ private:
     QPointF findEmptyPlacement(const QSizeF &itemSize) const;
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
     int edgeZoneWidth() const;
+    int edgeZoneHeight() const;
     void updateHoverEdge(const QPoint &viewPos);
     void drawEdgeAffordances(QPainter &painter);
     static QSizeF nativeSize(const ImageItem *item);
@@ -325,6 +333,9 @@ private:
     bool m_fillMode = false;
     ViewMode m_viewMode = ViewMode::Image;
     bool m_imageModeNavEnabled = false;
+    bool m_galleryReturnAvailable = false;
+    /** Gallery: path under cursor for HUD filename (empty when none). */
+    QString m_galleryHoverPath;
     bool m_imageModeLeftDragPan = true;
     QColor m_bgColor{42, 42, 42};
     QColor m_bgColorAlt{48, 48, 48};

@@ -80,8 +80,9 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 | Drop (Gallery) | Append session + relayout |
 | Click gallery tile / Enter | Open Image mode for that file |
 | Gallery arrows (spatial) / Home / End | Move session cursor among tiles |
-| **Up** / Esc (from Image after gallery open) | Return to Gallery |
+| **Up** / Esc / top edge (from Image after gallery open) | Return to Gallery |
 | Click left/right edge; ←/→ (Image) | Previous / next |
+| Hover gallery tile | HUD shows filename |
 | Double-click (Image) | Toggle fullscreen |
 | Click item (Workspace) | Select (handles) |
 | Drag item (Workspace only) | Move |

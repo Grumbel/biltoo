@@ -148,6 +148,11 @@ void ImageView::focusSessionPath(const QString &path)
     item->setSelected(true);
     if (isGalleryMode()) {
         ensureVisible(item, 48, 48);
+        // Keyboard focus: show filename in the HUD like mouse hover.
+        if (m_galleryHoverPath != path) {
+            m_galleryHoverPath = path;
+            viewport()->update();
+        }
     }
 }
 
@@ -327,6 +332,9 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     const ViewMode previous = m_viewMode;
+    if (previous == ViewMode::Gallery) {
+        m_galleryHoverPath.clear();
+    }
 
     if (previous == ViewMode::Workspace && mode != ViewMode::Workspace) {
         snapshotWorkspace();

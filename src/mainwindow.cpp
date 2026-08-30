@@ -32,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::goPrevious);
     connect(m_imageView, &ImageView::navigateNextRequested,
             this, &MainWindow::goNext);
+    connect(m_imageView, &ImageView::galleryReturnRequested,
+            this, &MainWindow::returnToGallery);
     connect(m_imageView, &ImageView::fullscreenToggleRequested,
             this, &MainWindow::toggleFullscreen);
     connect(m_imageView, &ImageView::galleryItemOpenRequested,
