@@ -660,7 +660,7 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
                     images.append(full);
                 }
             }
-        } else if (info.isFile()) {
+        } else if (info.isFile() && isImageFile(path)) {
             images.append(path);
         }
     }
@@ -712,6 +712,11 @@ void MainWindow::setSortMode(SortMode mode)
                                 : QString();
     sortFileList();
     m_thumbnailBar->setFiles(m_files);
+    if (m_workspaceMode) {
+        // setFiles rebuilds the list; restore multi-select and canvas selection
+        m_thumbnailBar->setWorkspaceMode(true);
+        syncThumbnailWorkspaceSelection();
+    }
 
     int newIndex = 0;
     if (!current.isEmpty()) {
@@ -1419,6 +1424,8 @@ void MainWindow::updateFullscreenUi()
     if (fs) {
         m_toolBarVisibleBeforeFullscreen = m_toolBar->isVisible();
         m_thumbnailBarVisibleBeforeFullscreen = m_thumbnailBar->isVisible();
+        m_metadataVisibleBeforeFullscreen =
+            m_metadataDock && m_metadataDock->isVisible();
         m_toolBar->setVisible(false);
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
@@ -1435,6 +1442,15 @@ void MainWindow::updateFullscreenUi()
         m_thumbnailBar->setVisible(m_thumbnailBarVisibleBeforeFullscreen);
         m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
         m_toggleThumbnailBarAct->setChecked(m_thumbnailBarVisibleBeforeFullscreen);
+        if (m_metadataDock) {
+            m_metadataDock->setVisible(m_metadataVisibleBeforeFullscreen);
+        }
+        if (m_toggleMetadataAct) {
+            m_toggleMetadataAct->setChecked(m_metadataVisibleBeforeFullscreen);
+        }
+        if (m_workspaceMode && m_workspaceToolBar) {
+            m_workspaceToolBar->setVisible(true);
+        }
         menuBar()->setVisible(true);
         statusBar()->setVisible(true);
     }

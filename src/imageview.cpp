@@ -515,12 +515,9 @@ void ImageView::zoomViewBy(qreal factor)
 {
     m_fitMode = false;
     // Keep the viewport centre stable when zooming via toolbar/shortcuts
-    const QPoint anchor = viewport()->rect().center();
-    const QPointF sceneBefore = mapToScene(anchor);
+    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(factor, factor);
-    const QPointF sceneAfter = mapToScene(anchor);
-    const QPointF delta = sceneAfter - sceneBefore;
-    translate(delta.x(), delta.y());
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     emit statusChanged();
 }
 

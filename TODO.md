@@ -36,6 +36,11 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Metadata dock close button stays in sync with toolbar/menu toggle
 - [x] Image mode: left/right edge click = prev/next; hover arrows; double-click fullscreen
 - [x] libvips optional fallback loader (Qt first, then vips); dynamic file filters
+- [x] Packaged layouts scale images to fit the viewport; free-form positions restored
+- [x] Masonry (column-pack) layout
+- [x] Workspace mode: zoom buttons / wheel zoom the view (not individual items)
+- [x] QA: filter non-images in expandPaths; restore metadata after fullscreen
+- [x] QA: keep workspace thumbnail selection after sort; metadata fallback dimensions
 
 ## Near-term
 
@@ -45,6 +50,9 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [ ] Raise / lower and opacity controls directly on the selection chrome
 - [ ] Depend on qtimageformats / KImageFormats for more formats via Qt plugins
 - [ ] Optional thumbnail bar on the right (mirror of left) if requested
+- [ ] Image-mode zoom consistency (item scale vs view fit can desync after wheel zoom)
+- [ ] Persist free-form view transform (pan/zoom) when switching packaged layouts and back
+- [ ] Optional scrollbars when masonry/content exceeds the viewport (pan still works)
 
 ## Broader image formats (research notes)
 
@@ -60,7 +68,7 @@ Prefer staying on the `QImageReader` path where possible; libvips is the fallbac
 
 - [ ] OpenGL path for large images / many items
 - [ ] Persist workspace item state across sessions
-- [ ] Per-image view state persistence in classic mode
+- [ ] Per-image view state persistence in Image mode
 - [ ] Thumbnail bar top position
 - [ ] Animated GIF / multi-page TIFF frame navigation
 - [ ] Colour-managed display (ICC / OCIO) if format backends expose profiles
@@ -81,7 +89,9 @@ Prefer staying on the `QImageReader` path where possible; libvips is the fallbac
 | Drag corner handle | Uniform scale about centre |
 | Drag rotate handle | Free rotate about centre |
 | Shift+Drag on item | Free rotate (legacy) |
-| Wheel | Zoom under cursor |
+| Wheel (Image mode) | Zoom current image |
+| Wheel (Workspace) | Zoom the view about the cursor |
+| Zoom buttons (Workspace) | Zoom the view about centre |
 | Alt+LMB / Middle | Pan view |
 | Delete | Remove selected from workspace (state kept) |
 | Ctrl+Y | Side-by-side layout |
@@ -91,7 +101,8 @@ Prefer staying on the `QImageReader` path where possible; libvips is the fallbac
 | Esc | Exit fullscreen |
 | Ctrl+T | Toggle toolbar |
 | View → Thumbnails on Bottom/Left | Thumbnail bar placement |
+| View → Layout Masonry | Column packing (Pinterest-style) |
 | View → Show Scrollbars | Toggle scrollbars |
 | F11 | Toggle fullscreen |
 | Ctrl+E | Toggle metadata panel |
-| F5 | Slideshow (classic mode only; optional fullscreen) |
+| F5 | Slideshow (Image mode only; optional fullscreen) |

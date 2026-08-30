@@ -197,6 +197,7 @@ private:
 
     bool m_toolBarVisibleBeforeFullscreen = true;
     bool m_thumbnailBarVisibleBeforeFullscreen = true;
+    bool m_metadataVisibleBeforeFullscreen = false;
 };
 
 #endif // MAINWINDOW_H

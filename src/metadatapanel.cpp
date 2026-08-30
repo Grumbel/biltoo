@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "metadatapanel.h"
+#include "imageloader.h"
 
 #include <QFileInfo>
 #include <QDateTime>
@@ -79,27 +80,37 @@ void MetadataPanel::setImagePath(const QString &path)
     QImageReader reader(path);
     reader.setAutoTransform(true);
 
-    if (!reader.canRead()) {
-        addRow(tr("Error"), reader.errorString());
+    if (reader.canRead()) {
+        const QSize size = reader.size();
+        if (size.isValid()) {
+            addRow(tr("Dimensions"),
+                   tr("%1 × %2").arg(size.width()).arg(size.height()));
+        }
+        addRow(tr("Format"), QString::fromLatin1(reader.format()).toUpper());
+
+        // Embedded metadata exposed by the plugin (Exif, etc.)
+        const QStringList keys = reader.textKeys();
+        if (keys.isEmpty()) {
+            addRow(tr("Metadata"), tr("(none reported by Qt image plugin)"));
+        } else {
+            QStringList sorted = keys;
+            sorted.sort(Qt::CaseInsensitive);
+            for (const QString &key : sorted) {
+                addRow(key, reader.text(key));
+            }
+        }
         return;
     }
 
-    const QSize size = reader.size();
-    if (size.isValid()) {
+    // Qt cannot decode — try ImageLoader (libvips fallback) for dimensions only
+    const QImage decoded = ImageLoader::load(path);
+    if (!decoded.isNull()) {
         addRow(tr("Dimensions"),
-               tr("%1 × %2").arg(size.width()).arg(size.height()));
-    }
-    addRow(tr("Format"), QString::fromLatin1(reader.format()).toUpper());
-
-    // Embedded metadata exposed by the plugin (Exif, etc.)
-    const QStringList keys = reader.textKeys();
-    if (keys.isEmpty()) {
-        addRow(tr("Metadata"), tr("(none reported by Qt image plugin)"));
+               tr("%1 × %2").arg(decoded.width()).arg(decoded.height()));
+        addRow(tr("Format"),
+               tr("decoded via fallback loader (no Qt plugin metadata)"));
+        addRow(tr("Metadata"), tr("(none — file not handled by a Qt image plugin)"));
     } else {
-        QStringList sorted = keys;
-        sorted.sort(Qt::CaseInsensitive);
-        for (const QString &key : sorted) {
-            addRow(key, reader.text(key));
-        }
+        addRow(tr("Error"), reader.errorString());
     }
 }
