@@ -3,12 +3,12 @@
 
 #include "imageview.h"
 #include "imageitem.h"
+#include "imageloader.h"
 
 #include <QUndoCommand>
 #include <QUndoStack>
 
 #include <QFileInfo>
-#include <QImageReader>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -42,9 +42,7 @@ ImageView::~ImageView() = default;
 
 ImageItem *ImageView::loadItem(const QString &path)
 {
-    QImageReader reader(path);
-    reader.setAutoTransform(true);
-    const QImage image = reader.read();
+    const QImage image = ImageLoader::load(path);
     if (image.isNull()) {
         return nullptr;
     }

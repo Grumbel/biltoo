@@ -11,6 +11,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(PkgConfig)
 
 add_executable(qimgview
   src/main.cpp
@@ -20,6 +21,8 @@ add_executable(qimgview
   src/imageview.h
   src/imageitem.cpp
   src/imageitem.h
+  src/imageloader.cpp
+  src/imageloader.h
   src/thumbnailbar.cpp
   src/thumbnailbar.h
   src/preferencesdialog.cpp
@@ -34,6 +37,18 @@ target_link_libraries(qimgview PRIVATE
   Qt6::Gui
   Qt6::Widgets
 )
+
+# Optional libvips for formats Qt cannot decode
+if(PkgConfig_FOUND)
+  pkg_check_modules(VIPS IMPORTED_TARGET vips)
+  if(VIPS_FOUND)
+    target_link_libraries(qimgview PRIVATE PkgConfig::VIPS)
+    target_compile_definitions(qimgview PRIVATE QIMGVIEW_HAVE_VIPS=1)
+    message(STATUS "libvips found — broader image format support enabled")
+  else()
+    message(STATUS "libvips not found — using Qt image codecs only")
+  endif()
+endif()
 
 include(GNUInstallDirs)
 

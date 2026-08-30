@@ -35,6 +35,7 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Thumbnail bar position: bottom or left (View menu)
 - [x] Metadata dock close button stays in sync with toolbar/menu toggle
 - [x] Image mode: left/right edge click = prev/next; hover arrows; double-click fullscreen
+- [x] libvips optional fallback loader (Qt first, then vips); dynamic file filters
 
 ## Near-term
 
@@ -42,17 +43,16 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [ ] Richer Exif via libexiv2 (current panel uses Qt plugin text keys)
 - [ ] Rotation angle readout while Shift-dragging (status already updates)
 - [ ] Raise / lower and opacity controls directly on the selection chrome
-- [ ] Broader image formats — phased approach (see below)
-- [ ] File dialog / DnD filters derived from `QImageReader::supportedImageFormats()`
+- [ ] Depend on qtimageformats / KImageFormats for more formats via Qt plugins
 - [ ] Optional thumbnail bar on the right (mirror of left) if requested
 
 ## Broader image formats (research notes)
 
-Prefer staying on the `QImageReader` path where possible.
+Prefer staying on the `QImageReader` path where possible; libvips is the fallback.
 
-1. **qtimageformats** (first): WebP, TIFF, TGA, ICNS, JP2, … via official Qt plugins; Nix/CMake dep only.
+1. **qtimageformats**: WebP, TIFF, TGA, ICNS, JP2, … via official Qt plugins.
 2. **KImageFormats** (runtime): AVIF, HEIF, JXL, OpenEXR, PSD, QOI, camera RAW (LibRaw), …
-3. **libvips** fallback: when Qt cannot decode; low memory for large images; optional Magick loaders.
+3. **libvips** (done, optional at build time): decode when Qt fails; thumbnail shrink-on-load.
 4. **OpenImageIO**: only if EXR/VFX becomes a first-class goal (heavier deps).
 5. Avoid FreeImage (maintenance); avoid ImageMagick as the primary loader.
 

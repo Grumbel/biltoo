@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumbnailbar.h"
+#include "imageloader.h"
 
 #include <QFileInfo>
-#include <QImageReader>
 #include <QListWidgetItem>
 #include <QMouseEvent>
 #include <QMetaObject>
@@ -163,16 +163,7 @@ void ThumbnailBar::cancelPendingLoads()
 
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize)
 {
-    QImageReader reader(path);
-    reader.setAutoTransform(true);
-
-    QSize size = reader.size();
-    if (size.isValid()) {
-        size.scale(maxSize, maxSize, Qt::KeepAspectRatio);
-        reader.setScaledSize(size);
-    }
-
-    return reader.read();
+    return ImageLoader::loadThumbnail(path, maxSize);
 }
 
 void ThumbnailBar::scheduleThumbnailLoads()

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow.h"
+#include "imageloader.h"
 
 #include <QApplication>
 #include <QGuiApplication>
@@ -11,6 +12,8 @@
 
 int main(int argc, char *argv[])
 {
+    ImageLoader::init(argv[0]);
+
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("qimgview"));
     QApplication::setApplicationDisplayName(QStringLiteral("QImgView"));

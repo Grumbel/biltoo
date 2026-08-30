@@ -1,8 +1,10 @@
 { stdenv
 , lib
 , cmake
+, pkg-config
 , qt6
 , wrapQtAppsHook
+, vips
 }:
 
 stdenv.mkDerivation rec {
@@ -13,12 +15,14 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [
     cmake
+    pkg-config
     wrapQtAppsHook
   ];
 
   buildInputs = [
     qt6.qtbase
     qt6.qttools
+    vips
   ];
 
   meta = with lib; {

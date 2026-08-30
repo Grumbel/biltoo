@@ -3,6 +3,7 @@
 
 #include "mainwindow.h"
 #include "imageview.h"
+#include "imageloader.h"
 #include "thumbnailbar.h"
 #include "preferencesdialog.h"
 #include "metadatapanel.h"
@@ -64,16 +65,13 @@ QIcon themeIcon(const QString &name, QStyle::StandardPixmap fallback)
     return QApplication::style()->standardIcon(fallback);
 }
 
-const QStringList &imageSuffixes()
+QString imageFileDialogFilter()
 {
-    static const QStringList suffixes = {
-        QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"),
-        QStringLiteral("bmp"), QStringLiteral("gif"), QStringLiteral("webp"),
-        QStringLiteral("tif"), QStringLiteral("tiff"), QStringLiteral("svg"),
-        QStringLiteral("xpm"), QStringLiteral("pbm"), QStringLiteral("pgm"),
-        QStringLiteral("ppm"), QStringLiteral("ico"), QStringLiteral("xbm")
-    };
-    return suffixes;
+    QStringList patterns;
+    for (const QString &suffix : ImageLoader::imageSuffixes()) {
+        patterns.append(QStringLiteral("*.%1").arg(suffix));
+    }
+    return QObject::tr("Images (%1);;All Files (*)").arg(patterns.join(QLatin1Char(' ')));
 }
 
 } // namespace
@@ -631,7 +629,7 @@ void MainWindow::createStatusBar()
 
 bool MainWindow::isImageFile(const QString &path)
 {
-    return imageSuffixes().contains(QFileInfo(path).suffix().toLower());
+    return ImageLoader::isImageFile(path);
 }
 
 QStringList MainWindow::expandPaths(const QStringList &paths) const
@@ -963,7 +961,7 @@ void MainWindow::openFiles()
         this,
         tr("Open Images"),
         QString(),
-        tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.tif *.tiff);;All Files (*)"));
+        imageFileDialogFilter());
     if (!files.isEmpty()) {
         loadFiles(files);
     }
@@ -975,7 +973,7 @@ void MainWindow::addFiles()
         this,
         tr("Add Images"),
         QString(),
-        tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.tif *.tiff);;All Files (*)"));
+        imageFileDialogFilter());
     if (!files.isEmpty()) {
         appendFiles(files);
     }
