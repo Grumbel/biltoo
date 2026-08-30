@@ -75,6 +75,9 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
   Classic mode: left-drag pans, single centred non-interactive image.
   Workspace canvas is snapshotted when disabling the mode and restored when
   enabling again. Select/Pan tools on a left toolbar; Undo/Redo for moves.
+  In workspace mode the thumbnail bar toggles membership: click selects or
+  deselects an image on the canvas; each image remembers position, scale and
+  rotation while off-canvas. Selected items show scale and rotate handles.
   Scrollbars are hidden by default (View → Show Scrollbars).
 
 ## What not to do

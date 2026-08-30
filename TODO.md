@@ -26,18 +26,22 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] Workspace mode optional (off by default); DnD adds when enabled
 - [x] Workspace canvas persists while mode is off; classic view centres session image
 - [x] Undo/redo for workspace transforms; left Select/Pan tool strip
+- [x] Workspace thumbnail bar: click toggles image on/off the canvas
+- [x] Per-image position/scale/rotation remembered while deselected
+- [x] On-canvas scale (corner) and rotate handles on selected items
 
 ## Near-term
 
 - [ ] Snap / align helpers
 - [ ] Richer Exif via libexiv2 (current panel uses Qt plugin text keys)
 - [ ] Rotation angle readout while Shift-dragging (status already updates)
+- [ ] Raise / lower and opacity controls directly on the selection chrome
 
 ## Later
 
 - [ ] OpenGL path for large images / many items
 - [ ] ImageMagick / libvips for broader formats
-- [ ] Per-image view state persistence
+- [ ] Persist workspace item state across sessions
 
 ## Interaction summary
 
@@ -46,13 +50,16 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 | Drop (classic mode) | Replace session |
 | Shift+Drop (classic) | Append to session |
 | Drop (workspace mode) | Add images onto the workspace |
-| Ctrl/Shift+click thumbnail | Add that image to the workspace |
-| Click item | Select |
+| Click thumbnail (workspace) | Toggle image on/off the workspace (state kept) |
+| Ctrl/Shift+click thumbnail (classic) | Enable workspace mode and add image |
+| Click item | Select (shows scale/rotate handles) |
 | Drag item | Move |
-| Shift+Drag on item | Free rotate |
+| Drag corner handle | Uniform scale about centre |
+| Drag rotate handle | Free rotate about centre |
+| Shift+Drag on item | Free rotate (legacy) |
 | Wheel | Zoom under cursor |
 | Alt+LMB / Middle | Pan view |
-| Delete | Remove selected from workspace |
+| Delete | Remove selected from workspace (state kept) |
 | Ctrl+Y | Side-by-side layout |
 | Ctrl+Shift+W | Clear workspace extras |
 | Ctrl+Shift+Up/Down | Raise / Lower |
