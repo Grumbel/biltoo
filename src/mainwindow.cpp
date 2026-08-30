@@ -110,6 +110,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::goNext);
     connect(m_imageView, &ImageView::fullscreenToggleRequested,
             this, &MainWindow::toggleFullscreen);
+    connect(m_imageView, &ImageView::galleryItemOpenRequested,
+            this, &MainWindow::openGalleryItemInImageMode);
     connect(m_imageView, &ImageView::filesDropped,
             this, &MainWindow::onFilesDropped);
 
@@ -391,8 +393,14 @@ void MainWindow::createActions()
     m_layoutMasonryAct->setCheckable(true);
     m_layoutMasonryAct->setIcon(themeIcon(QStringLiteral("view-full-screen"), QStyle::SP_FileDialogListView));
     m_layoutMasonryAct->setStatusTip(
-        tr("Pack images into columns of equal width (Pinterest-style masonry)"));
+        tr("Gallery: pack images into columns of equal width (Pinterest-style)"));
     connect(m_layoutMasonryAct, &QAction::triggered, this, &MainWindow::setLayoutMasonry);
+
+    m_backToGalleryAct = new QAction(tr("&Back to Gallery"), this);
+    m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-previous"), QStyle::SP_ArrowBack));
+    m_backToGalleryAct->setStatusTip(tr("Return to the gallery layout"));
+    m_backToGalleryAct->setVisible(false);
+    connect(m_backToGalleryAct, &QAction::triggered, this, &MainWindow::returnToGallery);
 
     auto *layoutGroup = new QActionGroup(this);
     layoutGroup->addAction(m_layoutFreeFormAct);
@@ -594,16 +602,20 @@ void MainWindow::createMenus()
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_workspaceModeAct);
 
+    m_viewMenu->addAction(m_backToGalleryAct);
+
     auto *workspaceMenu = m_viewMenu->addMenu(tr("&Workspace"));
     workspaceMenu->addAction(m_selectToolAct);
     workspaceMenu->addAction(m_panToolAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_layoutFreeFormAct);
-    workspaceMenu->addAction(m_layoutSideBySideAct);
-    workspaceMenu->addAction(m_layoutVerticalAct);
-    workspaceMenu->addAction(m_layoutGridAct);
-    workspaceMenu->addAction(m_layoutMasonryAct);
-    workspaceMenu->addAction(m_layoutStackAct);
+    workspaceMenu->addSeparator();
+    auto *galleryMenu = workspaceMenu->addMenu(tr("&Gallery layouts"));
+    galleryMenu->addAction(m_layoutSideBySideAct);
+    galleryMenu->addAction(m_layoutVerticalAct);
+    galleryMenu->addAction(m_layoutGridAct);
+    galleryMenu->addAction(m_layoutMasonryAct);
+    galleryMenu->addAction(m_layoutStackAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_raiseAct);
     workspaceMenu->addAction(m_lowerAct);
@@ -686,6 +698,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipHAct);
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addSeparator();
+    m_toolBar->addAction(m_backToGalleryAct);
     m_toolBar->addAction(m_layoutFreeFormAct);
     m_toolBar->addAction(m_layoutSideBySideAct);
     m_toolBar->addAction(m_layoutVerticalAct);
@@ -1489,40 +1502,148 @@ void MainWindow::toggleSlideshow()
     }
 }
 
+void MainWindow::ensureMultiImageMode()
+{
+    if (m_workspaceMode) {
+        return;
+    }
+    m_workspaceMode = true;
+    m_workspaceModeAct->setChecked(true);
+    m_imageView->setWorkspaceMode(true);
+    m_thumbnailBar->setWorkspaceMode(true);
+    if (m_imageView->itemCount() == 0
+        && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+        m_imageView->addImage(m_files.at(m_currentIndex));
+    }
+    syncThumbnailWorkspaceSelection();
+    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+        m_toggleThumbnailBarAct->setChecked(true);
+        m_thumbnailBar->setVisible(true);
+    }
+    updateWorkspaceActionVisibility();
+}
+
 void MainWindow::setLayoutFreeForm()
 {
+    ensureMultiImageMode();
+    m_galleryReturnActive = false;
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(false);
+    }
     m_imageView->setLayoutMode(ImageView::LayoutMode::FreeForm);
+    if (m_layoutFreeFormAct) {
+        m_layoutFreeFormAct->setChecked(true);
+    }
     updateMasonryWidthControl();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutSideBySide()
 {
+    ensureMultiImageMode();
     m_imageView->setLayoutMode(ImageView::LayoutMode::SideBySide);
+    m_galleryReturnLayout = ImageView::LayoutMode::SideBySide;
     updateMasonryWidthControl();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutVertical()
 {
+    ensureMultiImageMode();
     m_imageView->setLayoutMode(ImageView::LayoutMode::Vertical);
+    m_galleryReturnLayout = ImageView::LayoutMode::Vertical;
     updateMasonryWidthControl();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutGrid()
 {
+    ensureMultiImageMode();
     m_imageView->setLayoutMode(ImageView::LayoutMode::Grid);
+    m_galleryReturnLayout = ImageView::LayoutMode::Grid;
     updateMasonryWidthControl();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutStack()
 {
+    ensureMultiImageMode();
     m_imageView->setLayoutMode(ImageView::LayoutMode::Stack);
+    m_galleryReturnLayout = ImageView::LayoutMode::Stack;
     updateMasonryWidthControl();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::setLayoutMasonry()
 {
+    ensureMultiImageMode();
     m_imageView->setLayoutMode(ImageView::LayoutMode::Masonry);
+    m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
     updateMasonryWidthControl();
+    updateWorkspaceActionVisibility();
+}
+
+void MainWindow::openGalleryItemInImageMode(const QString &path)
+{
+    if (path.isEmpty() || m_files.isEmpty()) {
+        return;
+    }
+    const int idx = m_files.indexOf(path);
+    if (idx < 0) {
+        return;
+    }
+    if (m_imageView && m_imageView->isGalleryLayout()) {
+        m_galleryReturnLayout = m_imageView->layoutMode();
+        m_galleryReturnActive = true;
+    }
+    m_workspaceMode = false;
+    m_workspaceModeAct->setChecked(false);
+    m_imageView->setWorkspaceMode(false);
+    m_thumbnailBar->setWorkspaceMode(false);
+    setCurrentIndex(idx);
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(m_galleryReturnActive);
+    }
+    updateWorkspaceActionVisibility();
+}
+
+void MainWindow::returnToGallery()
+{
+    if (!m_galleryReturnActive) {
+        return;
+    }
+    ensureMultiImageMode();
+    // Show all session images on the gallery canvas
+    if (m_thumbnailBar) {
+        m_thumbnailBar->selectAllThumbs();
+        applyWorkspaceSelectionFromThumbnails();
+    }
+    m_imageView->setLayoutMode(m_galleryReturnLayout);
+    switch (m_galleryReturnLayout) {
+    case ImageView::LayoutMode::SideBySide:
+        if (m_layoutSideBySideAct) m_layoutSideBySideAct->setChecked(true);
+        break;
+    case ImageView::LayoutMode::Vertical:
+        if (m_layoutVerticalAct) m_layoutVerticalAct->setChecked(true);
+        break;
+    case ImageView::LayoutMode::Grid:
+        if (m_layoutGridAct) m_layoutGridAct->setChecked(true);
+        break;
+    case ImageView::LayoutMode::Stack:
+        if (m_layoutStackAct) m_layoutStackAct->setChecked(true);
+        break;
+    case ImageView::LayoutMode::Masonry:
+        if (m_layoutMasonryAct) m_layoutMasonryAct->setChecked(true);
+        break;
+    default:
+        if (m_layoutMasonryAct) m_layoutMasonryAct->setChecked(true);
+        break;
+    }
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setVisible(false);
+    }
+    updateMasonryWidthControl();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::updateMasonryWidthControl()
@@ -1575,6 +1696,15 @@ void MainWindow::toggleWorkspaceMode()
     m_imageView->setWorkspaceMode(m_workspaceMode);
     m_thumbnailBar->setWorkspaceMode(m_workspaceMode);
     if (m_workspaceMode) {
+        // Workspace mode is free-form placement; gallery layouts are separate.
+        m_galleryReturnActive = false;
+        if (m_backToGalleryAct) {
+            m_backToGalleryAct->setVisible(false);
+        }
+        m_imageView->setLayoutMode(ImageView::LayoutMode::FreeForm);
+        if (m_layoutFreeFormAct) {
+            m_layoutFreeFormAct->setChecked(true);
+        }
         // Seed the workspace with the current session image (or restore canvas)
         if (m_imageView->itemCount() == 0
             && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
@@ -1611,25 +1741,35 @@ void MainWindow::setPanTool()
 void MainWindow::updateWorkspaceActionVisibility()
 {
     const bool on = m_workspaceMode;
+    const bool freeForm = on && m_imageView
+                          && m_imageView->layoutMode() == ImageView::LayoutMode::FreeForm;
+    // Layout choosers visible in any multi-image mode
     for (QAction *act : {m_layoutFreeFormAct, m_layoutSideBySideAct,
                          m_layoutVerticalAct, m_layoutGridAct, m_layoutMasonryAct,
-                         m_layoutStackAct,
-                         m_raiseAct, m_lowerAct,
-                         m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
-                         m_clearExtrasAct, m_selectToolAct, m_panToolAct}) {
+                         m_layoutStackAct}) {
         if (act) {
             act->setVisible(on);
             act->setEnabled(on);
         }
     }
-    // Undo/Redo stay in Edit menu always; enabled by the undo stack itself.
-    // Still show them on the workspace tool strip only in workspace mode.
+    // Free-form Workspace tools only
+    for (QAction *act : {m_raiseAct, m_lowerAct,
+                         m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
+                         m_clearExtrasAct, m_selectToolAct, m_panToolAct}) {
+        if (act) {
+            act->setVisible(freeForm);
+            act->setEnabled(freeForm);
+        }
+    }
     if (m_undoAct) {
         m_undoAct->setVisible(true);
         m_redoAct->setVisible(true);
     }
     if (m_workspaceToolBar) {
-        m_workspaceToolBar->setVisible(on && !isFullScreen());
+        m_workspaceToolBar->setVisible(freeForm && !isFullScreen());
+    }
+    if (m_backToGalleryAct && !m_galleryReturnActive) {
+        m_backToGalleryAct->setVisible(false);
     }
     updateMasonryWidthControl();
     updateNavigationActions();

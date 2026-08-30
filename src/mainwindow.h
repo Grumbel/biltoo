@@ -86,6 +86,8 @@ private slots:
     void setLayoutGrid();
     void setLayoutStack();
     void setLayoutMasonry();
+    void openGalleryItemInImageMode(const QString &path);
+    void returnToGallery();
     void clearWorkspaceExtras();
     void opacityReset();
     void opacityDown();
@@ -107,6 +109,7 @@ private slots:
     void setPanTool();
     void updateWorkspaceActionVisibility();
     void updateMasonryWidthControl();
+    void ensureMultiImageMode();
     void updateStatus();
     void updateWindowTitle();
     void selectAllThumbnails();
@@ -199,9 +202,12 @@ private:
     QAction *m_layoutGridAct = nullptr;
     QAction *m_layoutStackAct = nullptr;
     QAction *m_layoutMasonryAct = nullptr;
+    QAction *m_backToGalleryAct = nullptr;
     QAction *m_masonryWidthAction = nullptr;
     QSpinBox *m_masonryWidthSpin = nullptr;
     QAction *m_clearExtrasAct = nullptr;
+    bool m_galleryReturnActive = false;
+    ImageView::LayoutMode m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
     QAction *m_opacityResetAct = nullptr;
     QAction *m_opacityDownAct = nullptr;
     QAction *m_opacityUpAct = nullptr;

@@ -75,8 +75,14 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         return nullptr;
     }
     auto *item = new ImageItem(path, image);
-    item->setInteractive(m_workspaceMode);
-    item->setScaleHandlesEnabled(m_layoutMode == LayoutMode::FreeForm);
+    if (m_workspaceMode && m_layoutMode == LayoutMode::FreeForm) {
+        item->setInteractive(true);
+        item->setScaleHandlesEnabled(true);
+    } else if (m_workspaceMode) {
+        item->setGallerySelectable(true);
+    } else {
+        item->setInteractive(false);
+    }
     m_scene->addItem(item);
     m_items.append(item);
     return item;
@@ -1084,10 +1090,17 @@ void ImageView::setLayoutMode(LayoutMode mode)
 
     m_layoutMode = mode;
 
-    // Resize handles only make sense in free-form placement
-    const bool scaleHandles = (mode == LayoutMode::FreeForm);
+    // Free-form: movable + chrome. Packaged (Gallery): selectable only.
+    const bool freeForm = (mode == LayoutMode::FreeForm);
     for (ImageItem *item : m_items) {
-        item->setScaleHandlesEnabled(scaleHandles);
+        if (!m_workspaceMode) {
+            item->setInteractive(false);
+        } else if (freeForm) {
+            item->setInteractive(true);
+            item->setScaleHandlesEnabled(true);
+        } else {
+            item->setGallerySelectable(true);
+        }
     }
 
     if (mode == LayoutMode::FreeForm) {
@@ -1567,6 +1580,19 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+
+    // Gallery (packaged layout): double-click opens the image in Image mode.
+    if (isGalleryLayout() && event->button() == Qt::LeftButton) {
+        const QPointF scenePos = mapToScene(event->pos());
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                emit galleryItemOpenRequested(item->path());
+                event->accept();
+                return;
+            }
+        }
+    }
+
     QGraphicsView::mouseDoubleClickEvent(event);
 }
 

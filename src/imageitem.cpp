@@ -171,6 +171,21 @@ void ImageItem::setInteractive(bool on)
     }
 }
 
+void ImageItem::setGallerySelectable(bool on)
+{
+    // Selectable for hit-testing / Stack focus; not movable; no transform chrome.
+    m_interactive = false;
+    m_scaleHandlesEnabled = false;
+    if (on) {
+        setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
+    } else {
+        setSelected(false);
+        setFlags(ItemSendsGeometryChanges);
+    }
+    prepareGeometryChange();
+    update();
+}
+
 void ImageItem::setScaleHandlesEnabled(bool on)
 {
     if (m_scaleHandlesEnabled == on) {

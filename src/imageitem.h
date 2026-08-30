@@ -67,6 +67,12 @@ public:
     void setInteractive(bool on);
 
     /**
+     * Gallery (packaged) layout: selectable but not movable; no on-canvas chrome.
+     * Free-form workspace uses setInteractive(true) instead.
+     */
+    void setGallerySelectable(bool on);
+
+    /**
      * When false, corner scale (resize) handles are neither drawn nor hit-tested.
      * Used for fixed packaged layouts where scale is driven by the layout.
      */

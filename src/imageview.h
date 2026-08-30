@@ -150,6 +150,12 @@ public:
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout();
 
+    /** Packaged layout while in multi-image mode (Gallery presentation). */
+    bool isGalleryLayout() const
+    {
+        return m_workspaceMode && m_layoutMode != LayoutMode::FreeForm;
+    }
+
     /** Fixed column width in pixels for Masonry (images scale to this width). */
     void setMasonryColumnWidth(int pixels);
     int masonryColumnWidth() const { return m_masonryColumnWidth; }
@@ -175,6 +181,11 @@ signals:
     void navigateNextRequested();
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
+    /**
+     * Gallery layout: user activated an item (double-click) to open it in
+     * Image mode. Path is the image file path.
+     */
+    void galleryItemOpenRequested(const QString &path);
     /** File URLs dropped onto the view (same semantics as MainWindow). */
     void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                       const QPointF &scenePos);
