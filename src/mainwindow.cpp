@@ -32,6 +32,8 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QSettings>
+#include <QSpinBox>
+#include <QHBoxLayout>
 #include <QShortcut>
 #include <QSignalBlocker>
 #include <QUndoStack>
@@ -689,6 +691,34 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_layoutVerticalAct);
     m_toolBar->addAction(m_layoutGridAct);
     m_toolBar->addAction(m_layoutMasonryAct);
+
+    // Masonry column width — only shown while Masonry layout is active
+    auto *masonryWidthHost = new QWidget(m_toolBar);
+    auto *masonryWidthLayout = new QHBoxLayout(masonryWidthHost);
+    masonryWidthLayout->setContentsMargins(4, 0, 4, 0);
+    masonryWidthLayout->setSpacing(4);
+    auto *masonryWidthLabel = new QLabel(tr("Column:"), masonryWidthHost);
+    m_masonryWidthSpin = new QSpinBox(masonryWidthHost);
+    m_masonryWidthSpin->setRange(80, 800);
+    m_masonryWidthSpin->setSingleStep(10);
+    m_masonryWidthSpin->setSuffix(tr(" px"));
+    m_masonryWidthSpin->setValue(240);
+    m_masonryWidthSpin->setToolTip(
+        tr("Width of each column in Masonry layout. Images scale to this width."));
+    m_masonryWidthSpin->setWhatsThis(
+        tr("Width of each column in Masonry layout. Images scale to this width; "
+           "extra columns appear when the window is wider."));
+    masonryWidthLayout->addWidget(masonryWidthLabel);
+    masonryWidthLayout->addWidget(m_masonryWidthSpin);
+    m_masonryWidthAction = m_toolBar->addWidget(masonryWidthHost);
+    m_masonryWidthAction->setVisible(false);
+    connect(m_masonryWidthSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int pixels) {
+                if (m_imageView) {
+                    m_imageView->setMasonryColumnWidth(pixels);
+                }
+            });
+
     m_toolBar->addAction(m_layoutStackAct);
     m_toolBar->addAction(m_raiseAct);
     m_toolBar->addAction(m_lowerAct);
@@ -1462,31 +1492,51 @@ void MainWindow::toggleSlideshow()
 void MainWindow::setLayoutFreeForm()
 {
     m_imageView->setLayoutMode(ImageView::LayoutMode::FreeForm);
+    updateMasonryWidthControl();
 }
 
 void MainWindow::setLayoutSideBySide()
 {
     m_imageView->setLayoutMode(ImageView::LayoutMode::SideBySide);
+    updateMasonryWidthControl();
 }
 
 void MainWindow::setLayoutVertical()
 {
     m_imageView->setLayoutMode(ImageView::LayoutMode::Vertical);
+    updateMasonryWidthControl();
 }
 
 void MainWindow::setLayoutGrid()
 {
     m_imageView->setLayoutMode(ImageView::LayoutMode::Grid);
+    updateMasonryWidthControl();
 }
 
 void MainWindow::setLayoutStack()
 {
     m_imageView->setLayoutMode(ImageView::LayoutMode::Stack);
+    updateMasonryWidthControl();
 }
 
 void MainWindow::setLayoutMasonry()
 {
     m_imageView->setLayoutMode(ImageView::LayoutMode::Masonry);
+    updateMasonryWidthControl();
+}
+
+void MainWindow::updateMasonryWidthControl()
+{
+    const bool show = m_workspaceMode
+                      && m_imageView
+                      && m_imageView->layoutMode() == ImageView::LayoutMode::Masonry;
+    if (m_masonryWidthAction) {
+        m_masonryWidthAction->setVisible(show);
+    }
+    if (show && m_masonryWidthSpin && m_imageView) {
+        const QSignalBlocker blocker(m_masonryWidthSpin);
+        m_masonryWidthSpin->setValue(m_imageView->masonryColumnWidth());
+    }
 }
 
 void MainWindow::raiseSelected()
@@ -1581,6 +1631,7 @@ void MainWindow::updateWorkspaceActionVisibility()
     if (m_workspaceToolBar) {
         m_workspaceToolBar->setVisible(on && !isFullScreen());
     }
+    updateMasonryWidthControl();
     updateNavigationActions();
 }
 
@@ -1735,7 +1786,6 @@ void MainWindow::showPreferences()
     PreferencesDialog dlg(this);
     dlg.setSlideshowIntervalMs(m_slideshowIntervalMs);
     dlg.setSlideshowFullscreen(m_slideshowFullscreen);
-    dlg.setMasonryColumnWidth(m_imageView->masonryColumnWidth());
     dlg.setSortModeIndex(m_sortMode == SortMode::Name ? 0 : 1);
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
     dlg.setImageModeLeftDragPan(m_imageView->imageModeLeftDragPan());
@@ -1744,7 +1794,6 @@ void MainWindow::showPreferences()
     }
     setSlideshowIntervalMs(dlg.slideshowIntervalMs());
     m_slideshowFullscreen = dlg.slideshowFullscreen();
-    m_imageView->setMasonryColumnWidth(dlg.masonryColumnWidth());
     setSortMode(dlg.sortModeIndex() == 1 ? SortMode::MTime : SortMode::Name);
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     m_imageView->setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
@@ -1929,6 +1978,11 @@ void MainWindow::readSettings()
     const int masonryW = settings.value(QStringLiteral("masonryColumnWidth"), 240).toInt();
     if (m_imageView) {
         m_imageView->setMasonryColumnWidth(masonryW);
+    }
+    if (m_masonryWidthSpin) {
+        const QSignalBlocker blocker(m_masonryWidthSpin);
+        m_masonryWidthSpin->setValue(m_imageView ? m_imageView->masonryColumnWidth()
+                                                 : masonryW);
     }
     m_slideshowFullscreen =
         settings.value(QStringLiteral("slideshowFullscreen"), true).toBool();

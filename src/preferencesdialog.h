@@ -7,7 +7,6 @@
 #include <QDialog>
 
 class QDoubleSpinBox;
-class QSpinBox;
 class QComboBox;
 class QCheckBox;
 class QTreeWidget;
@@ -34,9 +33,6 @@ public:
     bool slideshowFullscreen() const;
     void setSlideshowFullscreen(bool on);
 
-    int masonryColumnWidth() const;
-    void setMasonryColumnWidth(int pixels);
-
     bool imageModeLeftDragPan() const;
     void setImageModeLeftDragPan(bool on);
 
@@ -50,7 +46,6 @@ private:
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
-    QSpinBox *m_masonryWidthSpin = nullptr;
     QCheckBox *m_imageModePanCheck = nullptr;
 
     QTreeWidget *m_mimeTree = nullptr;

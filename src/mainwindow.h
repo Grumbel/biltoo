@@ -21,6 +21,7 @@ class QAction;
 class QActionGroup;
 class QLabel;
 class QMenu;
+class QSpinBox;
 class QTimer;
 
 class MainWindow : public QMainWindow
@@ -105,6 +106,7 @@ private slots:
     void setSelectTool();
     void setPanTool();
     void updateWorkspaceActionVisibility();
+    void updateMasonryWidthControl();
     void updateStatus();
     void updateWindowTitle();
     void selectAllThumbnails();
@@ -197,6 +199,8 @@ private:
     QAction *m_layoutGridAct = nullptr;
     QAction *m_layoutStackAct = nullptr;
     QAction *m_layoutMasonryAct = nullptr;
+    QAction *m_masonryWidthAction = nullptr;
+    QSpinBox *m_masonryWidthSpin = nullptr;
     QAction *m_clearExtrasAct = nullptr;
     QAction *m_opacityResetAct = nullptr;
     QAction *m_opacityDownAct = nullptr;

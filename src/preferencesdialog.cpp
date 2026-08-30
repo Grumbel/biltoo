@@ -15,7 +15,6 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
-#include <QSpinBox>
 #include <QTabWidget>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -83,18 +82,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     auto *sessionGroup = new QGroupBox(tr("Session"), this);
     sessionGroup->setLayout(sessionForm);
 
-    // --- Workspace / Image mode ---
-    m_masonryWidthSpin = new QSpinBox(this);
-    m_masonryWidthSpin->setRange(80, 800);
-    m_masonryWidthSpin->setSingleStep(10);
-    m_masonryWidthSpin->setSuffix(tr(" px"));
-    m_masonryWidthSpin->setValue(240);
-    m_masonryWidthSpin->setToolTip(tr(
-        "Width of each column in Masonry layout. Images scale to this width."));
-    m_masonryWidthSpin->setWhatsThis(tr(
-        "Width of each column in Masonry layout. Images scale to this width; "
-        "extra columns appear when the window is wider."));
-
+    // --- View / Image mode ---
     m_imageModePanCheck = new QCheckBox(tr("Left-drag pans in image mode"), this);
     m_imageModePanCheck->setToolTip(
         tr("When enabled, dragging with the left mouse button pans the image"));
@@ -107,7 +95,6 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     viewForm->setContentsMargins(0, 0, 0, 0);
     viewForm->setHorizontalSpacing(12);
     viewForm->setVerticalSpacing(8);
-    viewForm->addRow(tr("Masonry column width:"), m_masonryWidthSpin);
     viewForm->addRow(QString(), m_imageModePanCheck);
 
     auto *viewGroup = new QGroupBox(tr("View"), this);
@@ -306,17 +293,6 @@ bool PreferencesDialog::slideshowFullscreen() const
 void PreferencesDialog::setSlideshowFullscreen(bool on)
 {
     m_slideshowFullscreenCheck->setChecked(on);
-}
-
-int PreferencesDialog::masonryColumnWidth() const
-{
-    return m_masonryWidthSpin->value();
-}
-
-void PreferencesDialog::setMasonryColumnWidth(int pixels)
-{
-    m_masonryWidthSpin->setValue(qBound(m_masonryWidthSpin->minimum(), pixels,
-                                       m_masonryWidthSpin->maximum()));
 }
 
 bool PreferencesDialog::imageModeLeftDragPan() const
