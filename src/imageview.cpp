@@ -505,8 +505,31 @@ ImageItem *ImageView::targetItem() const
     return nullptr;
 }
 
+qreal ImageView::viewScale() const
+{
+    const QTransform t = transform();
+    return std::hypot(t.m11(), t.m12());
+}
+
+void ImageView::zoomViewBy(qreal factor)
+{
+    m_fitMode = false;
+    // Keep the viewport centre stable when zooming via toolbar/shortcuts
+    const QPoint anchor = viewport()->rect().center();
+    const QPointF sceneBefore = mapToScene(anchor);
+    scale(factor, factor);
+    const QPointF sceneAfter = mapToScene(anchor);
+    const QPointF delta = sceneAfter - sceneBefore;
+    translate(delta.x(), delta.y());
+    emit statusChanged();
+}
+
 void ImageView::zoomIn()
 {
+    if (m_workspaceMode) {
+        zoomViewBy(1.25);
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         m_fitMode = false;
         item->zoomBy(1.25);
@@ -516,6 +539,10 @@ void ImageView::zoomIn()
 
 void ImageView::zoomOut()
 {
+    if (m_workspaceMode) {
+        zoomViewBy(1.0 / 1.25);
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         m_fitMode = false;
         item->zoomBy(1.0 / 1.25);
@@ -525,6 +552,12 @@ void ImageView::zoomOut()
 
 void ImageView::zoomReset()
 {
+    if (m_workspaceMode) {
+        m_fitMode = false;
+        resetTransform();
+        emit statusChanged();
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         m_fitMode = false;
         item->setItemScale(1.0);
@@ -534,12 +567,22 @@ void ImageView::zoomReset()
 
 void ImageView::zoomFit()
 {
+    if (m_workspaceMode) {
+        m_fitMode = true;
+        if (m_layoutMode != LayoutMode::FreeForm && !m_items.isEmpty()) {
+            applyLayout();
+        } else if (!m_items.isEmpty()) {
+            fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
+                      Qt::KeepAspectRatio);
+            emit statusChanged();
+        }
+        return;
+    }
     if (ImageItem *item = targetItem()) {
         m_fitMode = true;
         fitItem(item);
         emit statusChanged();
     } else if (m_items.size() > 1) {
-        // Fit the whole scene
         m_fitMode = true;
         fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatio);
         emit statusChanged();
@@ -841,6 +884,24 @@ QString ImageView::statusText() const
     }
 
     const QString name = QFileInfo(item->path()).fileName();
+    if (m_workspaceMode) {
+        QString text = tr("Workspace: %1 images  |  View zoom: %2%  |  %3  |  %4×%5")
+                           .arg(m_items.size())
+                           .arg(qRound(viewScale() * 100))
+                           .arg(name)
+                           .arg(item->imageSize().width())
+                           .arg(item->imageSize().height());
+        if (item->isSelected()) {
+            text += tr("  |  Item: %1%  |  Rot: %2°")
+                        .arg(qRound(item->itemScale() * 100))
+                        .arg(qRound(item->itemRotation()));
+        }
+        if (item->itemOpacity() < 0.999) {
+            text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
+        }
+        return text;
+    }
+
     QString text = tr("%1  |  %2×%3  |  Zoom: %4%  |  Rotation: %5°")
                        .arg(name)
                        .arg(item->imageSize().width())
@@ -849,10 +910,6 @@ QString ImageView::statusText() const
                        .arg(qRound(item->itemRotation()));
     if (item->itemOpacity() < 0.999) {
         text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
-    }
-
-    if (m_items.size() > 1) {
-        text = tr("Workspace: %1 images  |  %2").arg(m_items.size()).arg(text);
     }
     return text;
 }
@@ -893,7 +950,20 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 void ImageView::wheelEvent(QWheelEvent *event)
 {
-    // Zoom the item under the mouse, or the selection
+    const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
+
+    if (m_workspaceMode) {
+        // Zoom the workspace view about the cursor
+        m_fitMode = false;
+        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+        scale(factor, factor);
+        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+        emit statusChanged();
+        event->accept();
+        return;
+    }
+
+    // Image mode: zoom the item under the mouse, or the selection
     ImageItem *item = nullptr;
     const QPointF scenePos = mapToScene(event->position().toPoint());
     const QList<QGraphicsItem *> hits = m_scene->items(scenePos);
@@ -911,11 +981,7 @@ void ImageView::wheelEvent(QWheelEvent *event)
     }
 
     m_fitMode = false;
-    if (event->angleDelta().y() > 0) {
-        item->zoomBy(1.25);
-    } else {
-        item->zoomBy(1.0 / 1.25);
-    }
+    item->zoomBy(factor);
     emit statusChanged();
     event->accept();
 }

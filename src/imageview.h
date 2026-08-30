@@ -95,6 +95,8 @@ public:
     void zoomOut();
     void zoomReset();
     void zoomFit();
+    /** Current view-level scale factor (workspace zoom). */
+    qreal viewScale() const;
     void rotateLeft();
     void rotateRight();
 
@@ -171,6 +173,7 @@ private:
     void updateHoverEdge(const QPoint &viewPos);
     void drawEdgeAffordances(QPainter &painter);
     static QSizeF nativeSize(const ImageItem *item);
+    void zoomViewBy(qreal factor);
 
     QGraphicsScene *m_scene = nullptr;
     QList<ImageItem *> m_items;
