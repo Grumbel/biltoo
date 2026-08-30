@@ -23,9 +23,9 @@ QString tooltipForHandle(ImageItem::Handle h)
 {
     switch (h) {
     case ImageItem::Handle::FlipH:
-        return QObject::tr("Flip horizontal");
+        return QObject::tr("Toggle horizontal flip");
     case ImageItem::Handle::FlipV:
-        return QObject::tr("Flip vertical");
+        return QObject::tr("Toggle vertical flip");
     case ImageItem::Handle::Raise:
         return QObject::tr("Raise (bring forward)");
     case ImageItem::Handle::Lower:
@@ -110,10 +110,12 @@ QPainterPath ImageItem::shape() const
             const QPointF c = handleCenter(h);
             path.addEllipse(c, r, r);
         }
-        const qreal cr = (kChromeHitScreenPx * 1.25) / sMin;
         for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower,
                           Handle::ResetScale, Handle::ResetRotation}) {
             const QPointF c = handleCenter(h);
+            const qreal cr = ((h == Handle::FlipH || h == Handle::FlipV)
+                                  ? (kChromeBtnScreenPx * 0.70)
+                                  : (kChromeHitScreenPx * 1.25)) / sMin;
             path.addEllipse(c, cr, cr);
         }
         const qreal pad = 10.0 / sMin;
@@ -537,11 +539,15 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     }
 
     Handle best = Handle::None;
-    qreal bestDist = kChromeHitScreenPx;
+    qreal bestDist = 1e300;
     for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower,
                       Handle::ResetScale, Handle::ResetRotation}) {
         const qreal d = handleDistanceScreenPx(h, itemPos);
-        if (d <= bestDist) {
+        // Flip toggles are drawn larger — match hit radius (~12px radius + pad).
+        const qreal limit = (h == Handle::FlipH || h == Handle::FlipV)
+                                ? (kChromeBtnScreenPx * 0.62 + 4.0)
+                                : kChromeHitScreenPx;
+        if (d <= limit && d <= bestDist) {
             bestDist = d;
             best = h;
         }
@@ -622,6 +628,10 @@ void ImageItem::notifyViewStatus()
     }
     for (QGraphicsView *v : scene()->views()) {
         QMetaObject::invokeMethod(v, "refreshStatus", Qt::DirectConnection);
+        // Chrome lives in the viewport paint path (flip toggles, etc.).
+        if (v->viewport()) {
+            v->viewport()->update();
+        }
     }
 }
 
@@ -899,6 +909,43 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     // Chrome buttons (outside right edge; centres from handleCenter).
     {
         const qreal btnR = kChromeBtnScreenPx / 2.0;
+        // Flip toggles are slightly larger and show on/off state.
+        const qreal flipR = kChromeBtnScreenPx * 0.62; // ~24px diameter
+
+        auto drawFlipToggle = [&](Handle h, bool on, const QString &glyph) {
+            const QPointF c = toView(handleCenter(h));
+            const bool hovered = (m_hoverHandle == h);
+            const qreal rad = flipR * (hovered ? 1.08 : 1.0);
+            // On = latched (bright fill); Off = outline-only dark body.
+            QColor fill = on ? QColor(0, 160, 255, 245)
+                             : QColor(40, 40, 40, 220);
+            if (hovered && !on) {
+                fill = QColor(0, 100, 180, 200);
+            }
+            QPen border(on || hovered ? QColor(255, 255, 255) : QColor(0, 160, 255));
+            border.setWidthF(on ? 2.0 : (hovered ? 1.75 : 1.25));
+            border.setCosmetic(true);
+            painter->setPen(border);
+            painter->setBrush(fill);
+            painter->drawEllipse(c, rad, rad);
+            // Inner ring when on so the control reads as a toggle, not a one-shot.
+            if (on) {
+                QPen ring(QColor(255, 255, 255, 200));
+                ring.setWidthF(1.25);
+                ring.setCosmetic(true);
+                painter->setPen(ring);
+                painter->setBrush(Qt::NoBrush);
+                painter->drawEllipse(c, rad * 0.72, rad * 0.72);
+            }
+            painter->setPen(on ? QColor(255, 255, 255) : QColor(230, 230, 230));
+            QFont f = painter->font();
+            f.setPointSizeF(qMax(8.0, rad * 0.58));
+            f.setBold(true);
+            painter->setFont(f);
+            painter->drawText(QRectF(c.x() - rad, c.y() - rad, rad * 2, rad * 2),
+                              Qt::AlignCenter, glyph);
+        };
+
         auto drawBtn = [&](Handle h, const QString &glyph) {
             const QPointF c = toView(handleCenter(h));
             const bool hovered = (m_hoverHandle == h);
@@ -919,8 +966,9 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             painter->drawText(QRectF(c.x() - rad, c.y() - rad, rad * 2, rad * 2),
                               Qt::AlignCenter, glyph);
         };
-        drawBtn(Handle::FlipH, QStringLiteral("↔"));
-        drawBtn(Handle::FlipV, QStringLiteral("↕"));
+
+        drawFlipToggle(Handle::FlipH, m_hFlip, QStringLiteral("↔"));
+        drawFlipToggle(Handle::FlipV, m_vFlip, QStringLiteral("↕"));
         drawBtn(Handle::Raise, QStringLiteral("↑"));
         drawBtn(Handle::Lower, QStringLiteral("↓"));
         drawBtn(Handle::ResetScale, QStringLiteral("1:1"));
