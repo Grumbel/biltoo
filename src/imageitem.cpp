@@ -85,6 +85,16 @@ void ImageItem::setInteractive(bool on)
     }
 }
 
+void ImageItem::setScaleHandlesEnabled(bool on)
+{
+    if (m_scaleHandlesEnabled == on) {
+        return;
+    }
+    m_scaleHandlesEnabled = on;
+    prepareGeometryChange();
+    update();
+}
+
 void ImageItem::applyLocalTransform()
 {
     QTransform t;
@@ -138,10 +148,14 @@ QPainterPath ImageItem::shape() const
     path.addRect(QGraphicsPixmapItem::boundingRect());
     if (isSelected() && m_interactive) {
         const qreal r = handleHitRadius();
-        for (Handle h : {Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                         Handle::ScaleBottomLeft, Handle::ScaleBottomRight,
-                         Handle::Rotate, Handle::Raise, Handle::Lower,
-                         Handle::OpacityDown, Handle::OpacityUp}) {
+        QList<Handle> handles = {Handle::Rotate, Handle::Raise, Handle::Lower,
+                                  Handle::OpacityDown, Handle::OpacityUp};
+        if (m_scaleHandlesEnabled) {
+            handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
+                                    Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
+                      + handles;
+        }
+        for (Handle h : handles) {
             const QPointF c = handleCenter(h);
             path.addEllipse(c, r, r);
         }
@@ -207,9 +221,14 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     }
     const qreal r = handleHitRadius();
     const qreal r2 = r * r;
-    for (Handle h : {Handle::Rotate, Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                     Handle::ScaleBottomLeft, Handle::ScaleBottomRight,
-                     Handle::Raise, Handle::Lower, Handle::OpacityDown, Handle::OpacityUp}) {
+    QList<Handle> handles = {Handle::Rotate, Handle::Raise, Handle::Lower,
+                              Handle::OpacityDown, Handle::OpacityUp};
+    if (m_scaleHandlesEnabled) {
+        handles = QList<Handle>{Handle::ScaleTopLeft, Handle::ScaleTopRight,
+                                Handle::ScaleBottomLeft, Handle::ScaleBottomRight}
+                  + handles;
+    }
+    for (Handle h : handles) {
         const QPointF c = handleCenter(h);
         const QPointF d = itemPos - c;
         if (QPointF::dotProduct(d, d) <= r2) {
@@ -282,15 +301,18 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     const QPointF topMid(r.center().x(), r.top());
     painter->drawLine(topMid, rot);
 
-    // Scale handles (squares)
     const qreal hs = handleDrawSize();
-    painter->setBrush(QColor(0, 160, 255));
     pen.setWidthF(1.0);
     painter->setPen(pen);
-    for (Handle h : {Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                     Handle::ScaleBottomLeft, Handle::ScaleBottomRight}) {
-        const QPointF c = handleCenter(h);
-        painter->drawRect(QRectF(c.x() - hs / 2, c.y() - hs / 2, hs, hs));
+
+    // Scale handles (squares) — only in free-form layouts
+    if (m_scaleHandlesEnabled) {
+        painter->setBrush(QColor(0, 160, 255));
+        for (Handle h : {Handle::ScaleTopLeft, Handle::ScaleTopRight,
+                         Handle::ScaleBottomLeft, Handle::ScaleBottomRight}) {
+            const QPointF c = handleCenter(h);
+            painter->drawRect(QRectF(c.x() - hs / 2, c.y() - hs / 2, hs, hs));
+        }
     }
 
     // Rotate handle (circle)

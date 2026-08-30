@@ -53,6 +53,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     }
     auto *item = new ImageItem(path, image);
     item->setInteractive(m_workspaceMode);
+    item->setScaleHandlesEnabled(m_layoutMode == LayoutMode::FreeForm);
     m_scene->addItem(item);
     m_items.append(item);
     return item;
@@ -728,6 +729,12 @@ void ImageView::setLayoutMode(LayoutMode mode)
     }
 
     m_layoutMode = mode;
+
+    // Resize handles only make sense in free-form placement
+    const bool scaleHandles = (mode == LayoutMode::FreeForm);
+    for (ImageItem *item : m_items) {
+        item->setScaleHandlesEnabled(scaleHandles);
+    }
 
     if (mode == LayoutMode::FreeForm) {
         restoreFreeFormStates();

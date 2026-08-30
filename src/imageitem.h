@@ -54,6 +54,13 @@ public:
     /** When false, the item cannot be selected or dragged (classic viewer). */
     void setInteractive(bool on);
 
+    /**
+     * When false, corner scale (resize) handles are neither drawn nor hit-tested.
+     * Used for fixed packaged layouts where scale is driven by the layout.
+     */
+    void setScaleHandlesEnabled(bool on);
+    bool scaleHandlesEnabled() const { return m_scaleHandlesEnabled; }
+
     /** Map a scene position to integer pixel coordinates, or (-1,-1) if outside. */
     QPoint pixelAtScenePos(const QPointF &scenePos) const;
     QColor colorAtPixel(const QPoint &pixel) const;
@@ -90,6 +97,8 @@ private:
     qreal m_rotation = 0.0;
     qreal m_opacity = 1.0;
     bool m_interactive = false;
+    bool m_scaleHandlesEnabled = true;
+    bool m_scaleHandlesEnabled = true;
 
     Handle m_activeHandle = Handle::None;
     QPointF m_pressScenePos;
