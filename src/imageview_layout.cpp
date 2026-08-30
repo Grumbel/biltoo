@@ -285,8 +285,9 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     }
     delete item;
     // TransformCommand stores raw ImageItem*; drop undo history that would
-    // redo/undo against a deleted object.
-    if (m_undoStack) {
+    // redo/undo against a deleted object — unless a session-level command is
+    // intentionally removing canvas tiles and must stay on the stack.
+    if (m_undoStack && !m_preserveUndoOnDestroy) {
         m_undoStack->clear();
     }
     if (isWorkspaceMode()) {

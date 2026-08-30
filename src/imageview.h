@@ -111,6 +111,8 @@ public:
     void setWorkspacePaths(const QStringList &paths);
     /** Reorder canvas items to match @p paths (session / sort order). */
     void reorderItemsByPaths(const QStringList &paths);
+    /** When true, destroyCanvasItem does not clear the undo stack (session remove). */
+    void setPreserveUndoOnDestroy(bool on) { m_preserveUndoOnDestroy = on; }
     /**
      * Gallery: scroll/HUD focus for session cursor without collapsing multi-select.
      * (focusSessionPath exclusive-selects — for keyboard nav.)
@@ -363,6 +365,7 @@ private:
     QStringList m_pathOrder;
 
     QUndoStack *m_undoStack = nullptr;
+    bool m_preserveUndoOnDestroy = false;
 
     bool m_fitMode = true;
     bool m_fillMode = false;

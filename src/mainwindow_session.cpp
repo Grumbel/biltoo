@@ -503,6 +503,9 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
                                     : QString();
 
     // Remove highest indices first so remaining indices stay valid
+    if (m_imageView) {
+        m_imageView->setPreserveUndoOnDestroy(true);
+    }
     for (int i = sorted.size() - 1; i >= 0; --i) {
         const int idx = sorted.at(i);
         if (idx < 0 || idx >= m_files.size()) {
@@ -515,6 +518,9 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         if (m_imageView && (isWorkspaceMode() || isGalleryMode())) {
             m_imageView->removeWorkspacePath(path);
         }
+    }
+    if (m_imageView) {
+        m_imageView->setPreserveUndoOnDestroy(false);
     }
 
     m_thumbnailBar->setFiles(m_files);
