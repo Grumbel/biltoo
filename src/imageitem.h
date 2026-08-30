@@ -29,7 +29,6 @@ public:
         ScaleBottomRight,
         RotateTop,
         RotateRight,
-        RotateBottom,
         RotateLeft,
         Raise,
         Lower,
@@ -90,6 +89,7 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 private:
     void applyLocalTransform();
@@ -117,6 +117,7 @@ private:
     bool m_scaleHandlesEnabled = true;
 
     Handle m_activeHandle = Handle::None;
+    Handle m_hoverHandle = Handle::None;
     QPointF m_pressScenePos;
     qreal m_pressScale = 1.0;
     qreal m_pressRotation = 0.0;
