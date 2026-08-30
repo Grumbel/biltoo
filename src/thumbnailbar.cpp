@@ -13,7 +13,7 @@
 #include <algorithm>
 
 namespace {
-constexpr int kLabelPad = 28; // text + vertical margins around the icon
+constexpr int kLabelPad = 28; // text + margins around the icon
 constexpr int kGridPadX = 12;
 } // namespace
 
@@ -21,20 +21,16 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     : QListWidget(parent)
 {
     setViewMode(QListWidget::IconMode);
-    setFlow(QListWidget::LeftToRight);
-    setWrapping(false);
     setResizeMode(QListWidget::Adjust);
     setMovement(QListWidget::Static);
     setSpacing(4);
     setUniformItemSizes(true);
-    setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setFocusPolicy(Qt::NoFocus);
 
     qRegisterMetaType<QImage>("QImage");
 
+    applyOrientation();
     applyThumbMetrics();
 
     connect(this, &QListWidget::itemActivated, this, &ThumbnailBar::onItemActivated);
@@ -46,26 +42,64 @@ ThumbnailBar::~ThumbnailBar()
     cancelPendingLoads();
 }
 
-int ThumbnailBar::heightForThumbSize(int thumbSize)
+int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
     return thumbSize + kLabelPad;
 }
 
-int ThumbnailBar::thumbSizeForHeight(int height)
+int ThumbnailBar::thumbSizeForExtent(int extent)
 {
-    const int size = height - kLabelPad;
+    const int size = extent - kLabelPad;
     return qBound(kMinThumbSize, size, kMaxThumbSize);
+}
+
+void ThumbnailBar::applyOrientation()
+{
+    if (m_orientation == Qt::Horizontal) {
+        setFlow(QListWidget::LeftToRight);
+        setWrapping(false);
+        setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    } else {
+        setFlow(QListWidget::TopToBottom);
+        setWrapping(false);
+        setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    }
+}
+
+void ThumbnailBar::setBarOrientation(Qt::Orientation orientation)
+{
+    if (m_orientation == orientation) {
+        return;
+    }
+    m_orientation = orientation;
+    applyOrientation();
+    applyThumbMetrics();
 }
 
 void ThumbnailBar::applyThumbMetrics()
 {
     setIconSize(QSize(m_thumbSize, m_thumbSize));
     setGridSize(QSize(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad));
-    const int barH = heightForThumbSize(m_thumbSize);
-    setMinimumHeight(heightForThumbSize(kMinThumbSize));
-    setMaximumHeight(heightForThumbSize(kMaxThumbSize));
-    // Prefer current size; sizeHint reports barH
-    Q_UNUSED(barH);
+
+    const int extent = extentForThumbSize(m_thumbSize);
+    const int minExtent = extentForThumbSize(kMinThumbSize);
+    const int maxExtent = extentForThumbSize(kMaxThumbSize);
+
+    if (m_orientation == Qt::Horizontal) {
+        setMinimumHeight(minExtent);
+        setMaximumHeight(maxExtent);
+        setMinimumWidth(0);
+        setMaximumWidth(QWIDGETSIZE_MAX);
+    } else {
+        setMinimumWidth(minExtent);
+        setMaximumWidth(maxExtent);
+        setMinimumHeight(0);
+        setMaximumHeight(QWIDGETSIZE_MAX);
+    }
 
     const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + kLabelPad - 4);
     for (int i = 0; i < count(); ++i) {
@@ -77,12 +111,20 @@ void ThumbnailBar::applyThumbMetrics()
 
 QSize ThumbnailBar::sizeHint() const
 {
-    return QSize(400, heightForThumbSize(m_thumbSize));
+    const int extent = extentForThumbSize(m_thumbSize);
+    if (m_orientation == Qt::Horizontal) {
+        return QSize(400, extent);
+    }
+    return QSize(extent, 400);
 }
 
 QSize ThumbnailBar::minimumSizeHint() const
 {
-    return QSize(200, heightForThumbSize(kMinThumbSize));
+    const int extent = extentForThumbSize(kMinThumbSize);
+    if (m_orientation == Qt::Horizontal) {
+        return QSize(200, extent);
+    }
+    return QSize(extent, 200);
 }
 
 void ThumbnailBar::setThumbSize(int pixels)
@@ -103,8 +145,11 @@ void ThumbnailBar::setThumbSize(int pixels)
 void ThumbnailBar::resizeEvent(QResizeEvent *event)
 {
     QListWidget::resizeEvent(event);
-    // Follow the bar height so a splitter drag scales the icons
-    const int fitted = thumbSizeForHeight(event->size().height());
+    // Follow the thin axis so a splitter drag scales the icons
+    const int extent = (m_orientation == Qt::Horizontal)
+                           ? event->size().height()
+                           : event->size().width();
+    const int fitted = thumbSizeForExtent(extent);
     if (fitted != m_thumbSize) {
         setThumbSize(fitted);
     }

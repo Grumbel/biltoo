@@ -33,21 +33,33 @@ public:
     void setSelectedIndices(const QList<int> &indices);
 
     /**
-     * Pixel size of the square thumbnail icon. Also adjusts preferred height
+     * Pixel size of the square thumbnail icon. Also adjusts preferred extent
      * (icon + label). When raised above the last decode size, thumbnails are
      * reloaded asynchronously at the new resolution.
      */
     void setThumbSize(int pixels);
     int thumbSize() const { return m_thumbSize; }
 
-    /** Preferred bar height for a given thumb icon size (icon + label + padding). */
-    static int heightForThumbSize(int thumbSize);
-    /** Thumb icon size that fits in a bar of the given height. */
-    static int thumbSizeForHeight(int height);
+    /**
+     * Layout orientation of the strip:
+     * - Qt::Horizontal: bottom bar, icons flow left-to-right
+     * - Qt::Vertical: left bar, icons flow top-to-bottom
+     */
+    void setBarOrientation(Qt::Orientation orientation);
+    Qt::Orientation barOrientation() const { return m_orientation; }
+
+    /** Preferred bar extent along the thin axis for a given thumb icon size. */
+    static int extentForThumbSize(int thumbSize);
+    /** Thumb icon size that fits in a bar of the given thin-axis extent. */
+    static int thumbSizeForExtent(int extent);
 
     static constexpr int kDefaultThumbSize = 96;
     static constexpr int kMinThumbSize = 48;
     static constexpr int kMaxThumbSize = 256;
+
+    // Back-compat aliases used by MainWindow settings
+    static int heightForThumbSize(int thumbSize) { return extentForThumbSize(thumbSize); }
+    static int thumbSizeForHeight(int height) { return thumbSizeForExtent(height); }
 
 signals:
     void indexActivated(int index);
@@ -70,6 +82,7 @@ private slots:
 private:
     void cancelPendingLoads();
     void applyThumbMetrics();
+    void applyOrientation();
     void scheduleThumbnailLoads();
     static QImage makeThumbnail(const QString &path, int maxSize);
 
@@ -78,6 +91,7 @@ private:
     bool m_workspaceMode = false;
     int m_thumbSize = kDefaultThumbSize;
     int m_decodedSize = 0;
+    Qt::Orientation m_orientation = Qt::Horizontal;
     QStringList m_files;
 };
 
