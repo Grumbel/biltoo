@@ -93,6 +93,7 @@ private slots:
     void opacityReset();
     void resetItemScale();
     void resetItemRotation();
+    void duplicateSelected();
     void opacityDown();
     void opacityUp();
     void lowerSelected();
@@ -225,6 +226,7 @@ private:
     QAction *m_opacityResetAct = nullptr;
     QAction *m_resetScaleAct = nullptr;
     QAction *m_resetRotationAct = nullptr;
+    QAction *m_duplicateAct = nullptr;
     QAction *m_opacityDownAct = nullptr;
     QAction *m_opacityUpAct = nullptr;
     QAction *m_lowerAct = nullptr;

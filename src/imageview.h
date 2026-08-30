@@ -163,6 +163,8 @@ public:
     void opacityReset();
     void resetItemScale();
     void resetItemRotation();
+    /** Workspace: clone selection (same path, independent transforms). */
+    void duplicateSelected();
 
     /**
      * Arrangement of items. FreeForm is used only in Workspace mode.
@@ -279,6 +281,7 @@ private:
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
     void updateMouseInfo(const QPoint &viewPos);
+    /** Frame @p item in the view. Image mode: does not clear rotation/flips. */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
     Qt::AspectRatioMode currentFitAspectMode() const;
     void ensureVisibleItem(ImageItem *item);

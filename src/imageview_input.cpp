@@ -459,9 +459,10 @@ void ImageView::resizeEvent(QResizeEvent *event)
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
-    // Workspace: handle chrome on the selected item first (view-space hit test).
-    // Device-space chrome can sit outside shape() after rotation / anisotropic
-    // scale; QGraphicsScene would miss those clicks without this path.
+    // Workspace chrome hit-testing is view-owned (DOMAIN: free-object transforms).
+    // ImageItem::paint draws chrome in device pixels; shape() alone can miss those
+    // controls under rotation / anisotropic scale. This path is authoritative;
+    // item mouse handlers remain a fallback when the scene delivers the event.
     if (isWorkspaceMode() && event->button() == Qt::LeftButton
         && m_tool == Tool::Select) {
         const QPointF scenePos = mapToScene(event->pos());

@@ -279,6 +279,11 @@ void MainWindow::createActions()
     m_resetRotationAct->setStatusTip(tr("Reset rotation of the selected image(s) to 0°"));
     connect(m_resetRotationAct, &QAction::triggered, this, &MainWindow::resetItemRotation);
 
+    m_duplicateAct = new QAction(tr("&Duplicate"), this);
+    m_duplicateAct->setShortcut(Qt::CTRL | Qt::Key_D);
+    m_duplicateAct->setStatusTip(tr("Duplicate selected workspace image(s) for side-by-side comparison"));
+    connect(m_duplicateAct, &QAction::triggered, this, &MainWindow::duplicateSelected);
+
     m_clearExtrasAct = new QAction(tr("Clear Workspace &Extras"), this);
     m_clearExtrasAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_W);
     m_clearExtrasAct->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
@@ -466,6 +471,7 @@ void MainWindow::createMenus()
     workspaceMenu->addAction(m_opacityResetAct);
     workspaceMenu->addAction(m_resetScaleAct);
     workspaceMenu->addAction(m_resetRotationAct);
+    workspaceMenu->addAction(m_duplicateAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_clearExtrasAct);
 
@@ -609,6 +615,7 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_raiseAct);
     m_workspaceToolBar->addAction(m_lowerAct);
+    m_workspaceToolBar->addAction(m_duplicateAct);
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_undoAct);
     m_workspaceToolBar->addAction(m_redoAct);

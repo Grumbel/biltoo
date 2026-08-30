@@ -660,14 +660,58 @@ void ImageView::resetItemRotation()
     }
 }
 
+void ImageView::duplicateSelected()
+{
+    if (!isWorkspaceMode()) {
+        return;
+    }
+    QList<ImageItem *> sources;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            sources.append(item);
+        }
+    }
+    if (sources.isEmpty()) {
+        if (ImageItem *item = targetItem()) {
+            sources.append(item);
+        }
+    }
+    if (sources.isEmpty()) {
+        return;
+    }
+
+    m_scene->clearSelection();
+    for (ImageItem *src : sources) {
+        ImageItem *copy = createItemFromImage(src->path(), src->sourceImage());
+        if (!copy) {
+            continue;
+        }
+        copy->setItemScale(src->itemScaleX(), src->itemScaleY());
+        copy->setItemRotation(src->itemRotation());
+        copy->setItemHFlip(src->itemHFlip());
+        copy->setItemVFlip(src->itemVFlip());
+        copy->setItemOpacity(src->itemOpacity());
+        copy->setStackZ(src->stackZ() + 0.01);
+        // Offset so the duplicate is visible beside the original
+        copy->setPos(src->pos() + QPointF(40.0, 40.0));
+        copy->setSelected(true);
+    }
+    emit statusChanged();
+    emit workspacePathsChanged();
+    viewport()->update();
+}
+
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
 {
     if (!item) {
         return;
     }
+    // DOMAIN.md ownership (Image mode):
+    //   View matrix owns framing (fit / zoom / pan).
+    //   Object keeps rotation and flips; this helper must never clear them.
+    //   Object scale is normalized to 1 so residual Workspace scale does not
+    //   fight the view transform when showing a single image.
     if (isImageMode() || m_items.size() == 1) {
-        // View does zoom/pan fit; keep item rotation (toolbar rotate) and only
-        // normalize scale/position so residual workspace state does not stick.
         item->setItemScale(1.0);
         if (isImageMode()) {
             item->setPos(0, 0);

@@ -348,17 +348,26 @@ void MainWindow::updateNavigationActions()
         stopSlideshow();
     }
 
-    // Transform actions need a target image on the canvas
+    // DOMAIN: rotate/flip only in Image or Workspace (not Gallery)
+    const bool canTransform = hasItem && m_imageView
+                              && !m_imageView->isGalleryMode();
     for (QAction *act : {m_rotateLeftAct, m_rotateRightAct, m_flipHAct, m_flipVAct}) {
         if (act) {
-            act->setEnabled(hasItem);
+            act->setEnabled(canTransform);
+        }
+    }
+    for (QAction *act : {m_resetScaleAct, m_resetRotationAct}) {
+        if (act) {
+            act->setEnabled(canTransform);
         }
     }
 
-    // Zoom always useful when something is shown (or for empty view reset)
+    // Zoom: Image / Workspace with content; Image with files loading also OK
+    const bool canZoom = hasItem
+                         || (m_imageView && m_imageView->isImageMode() && hasFiles);
     for (QAction *act : {m_zoomInAct, m_zoomOutAct, m_zoom1to1Act, m_zoomFitAct, m_zoomFillAct}) {
         if (act) {
-            act->setEnabled(hasItem || (!isWorkspaceMode() && hasFiles));
+            act->setEnabled(canZoom);
         }
     }
 

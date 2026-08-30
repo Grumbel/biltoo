@@ -326,6 +326,11 @@ void MainWindow::resetItemRotation()
     m_imageView->resetItemRotation();
 }
 
+void MainWindow::duplicateSelected()
+{
+    m_imageView->duplicateSelected();
+}
+
 void MainWindow::clearWorkspaceExtras()
 {
     m_imageView->clearExtras();
