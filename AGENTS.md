@@ -18,6 +18,11 @@ See [TODO.md](TODO.md) for the roadmap and open questions.
   - `nix build` / `nix run` – package and run
 - Manual: standard out-of-source CMake against Qt6 Widgets.
 
+Version is the top-level plain-text `VERSION` file only (e.g. `0.1.0-dev` in
+git). Development builds append `.{revCount}+g{shortRev}` via the flake and
+`-DPROJECT_VERSION_FULL=…`. Do not hardcode the version in CMake `project()`,
+source, or the flake base string.
+
 Do not introduce qmake `.pro` files or Qt5-only APIs.
 
 ## Coding conventions
