@@ -430,9 +430,17 @@ void ThumbnailBar::scheduleThumbnailLoads()
     }
 }
 
+void ThumbnailBar::clearPressState()
+{
+    m_pressActive = false;
+    m_pressItem = nullptr;
+    m_dragStarted = false;
+}
+
 void ThumbnailBar::setFiles(const QStringList &files)
 {
     cancelPendingLoads();
+    clearPressState();
     clear();
     m_files = files;
 
@@ -478,6 +486,7 @@ void ThumbnailBar::setWorkspaceMode(bool on)
     if (m_workspaceMode == on) {
         return;
     }
+    clearPressState();
     m_workspaceMode = on;
 
     const bool blocked = blockSignals(true);
@@ -850,6 +859,12 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
 
 void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 {
+    // Drop stale press pointers if the model was rebuilt under us (setFiles,
+    // removeIndices, etc.). QListWidgetItem* is not stable across clear().
+    if (m_pressItem && row(m_pressItem) < 0) {
+        clearPressState();
+    }
+
     if (m_pressActive && !m_dragStarted && (event->buttons() & Qt::LeftButton)
         && m_pressItem) {
         const int dist = (event->pos() - m_pressPos).manhattanLength();
@@ -872,8 +887,7 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
                     items = {m_pressItem};
                 }
                 startFileDrag(items);
-                m_pressActive = false;
-                m_pressItem = nullptr;
+                clearPressState();
                 event->accept();
                 return;
             }
@@ -891,9 +905,7 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 
 void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
 {
-    m_pressActive = false;
-    m_pressItem = nullptr;
-    m_dragStarted = false;
+    clearPressState();
     if (!m_workspaceMode) {
         QListWidget::mouseReleaseEvent(event);
     } else {

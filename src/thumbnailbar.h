@@ -115,6 +115,7 @@ private slots:
 
 private:
     void cancelPendingLoads();
+    void clearPressState();
     void applyThumbMetrics();
     void applyOrientation();
     void scheduleThumbnailLoads();
