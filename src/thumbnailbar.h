@@ -120,6 +120,8 @@ private:
     void scheduleThumbnailLoads();
     void requestRemoveSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
+    /** Centre icons when the row/column is shorter than the viewport. */
+    void updateCenteringMargins();
     int labelBandHeight() const;
     int thumbSizeFromBarExtent(int extent) const;
     static QImage makeThumbnail(const QString &path, int maxSize);
@@ -127,6 +129,7 @@ private:
     std::atomic<quint64> m_generation{0};
     bool m_workspaceMode = false;
     int m_selectionAnchor = -1;
+    bool m_centeringGuard = false;
     bool m_labelsVisible = true;
     int m_thumbSize = kDefaultThumbSize;
     int m_decodedSize = 0;

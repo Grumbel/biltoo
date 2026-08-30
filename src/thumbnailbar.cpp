@@ -222,7 +222,55 @@ void ThumbnailBar::applyOrientation()
         setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     }
+    updateCenteringMargins();
 }
+
+void ThumbnailBar::updateCenteringMargins()
+{
+    if (m_centeringGuard) {
+        return;
+    }
+    m_centeringGuard = true;
+
+    // Reset then measure natural layout
+    setViewportMargins(0, 0, 0, 0);
+    doItemsLayout();
+
+    if (count() == 0) {
+        m_centeringGuard = false;
+        return;
+    }
+
+    QRect bounds;
+    for (int i = 0; i < count(); ++i) {
+        if (QListWidgetItem *it = item(i)) {
+            bounds |= visualItemRect(it);
+        }
+    }
+
+    int marginLeft = 0;
+    int marginTop = 0;
+    if (m_orientation == Qt::Horizontal) {
+        const int avail = viewport()->width();
+        if (bounds.width() > 0 && bounds.width() < avail) {
+            marginLeft = (avail - bounds.width()) / 2 - bounds.left();
+            marginLeft = qMax(0, marginLeft);
+        }
+    } else {
+        const int avail = viewport()->height();
+        if (bounds.height() > 0 && bounds.height() < avail) {
+            marginTop = (avail - bounds.height()) / 2 - bounds.top();
+            marginTop = qMax(0, marginTop);
+        }
+    }
+
+    if (marginLeft > 0 || marginTop > 0) {
+        setViewportMargins(marginLeft, marginTop, 0, 0);
+    }
+
+    m_centeringGuard = false;
+}
+
 
 void ThumbnailBar::setBarOrientation(Qt::Orientation orientation)
 {
@@ -321,6 +369,7 @@ void ThumbnailBar::cancelPendingLoads()
 void ThumbnailBar::resizeEvent(QResizeEvent *event)
 {
     QListWidget::resizeEvent(event);
+    updateCenteringMargins();
     const int extent = (m_orientation == Qt::Horizontal) ? height() : width();
     const int newSize = thumbSizeFromBarExtent(extent);
     if (newSize != m_thumbSize) {
@@ -408,6 +457,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
     }
 
     scheduleThumbnailLoads();
+    updateCenteringMargins();
 }
 
 void ThumbnailBar::setCurrentIndex(int index)
