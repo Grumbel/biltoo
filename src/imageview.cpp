@@ -313,6 +313,12 @@ void ImageView::setTool(Tool tool)
     } else {
         setCursor(Qt::ArrowCursor);
     }
+    // Workspace Select: rubber-band multi-select on empty drag (same as Gallery).
+    // Pan tool keeps NoDrag so middle/Alt pan stays the only view pan path.
+    if (isWorkspaceMode()) {
+        setDragMode(m_tool == Tool::Select ? QGraphicsView::RubberBandDrag
+                                           : QGraphicsView::NoDrag);
+    }
     emit toolChanged(m_tool);
 }
 

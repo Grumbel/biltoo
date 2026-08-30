@@ -85,7 +85,8 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] Horizontal / Vertical near-fullscreen highlight: classic multi-select
       (click / Ctrl / Shift / rubber-band) + double-click to open; no hover wash
 
-- [ ] Gallery rubber-band multi-select (optional)
+- [x] Gallery rubber-band multi-select
+- [x] Workspace rubber-band multi-select (Select tool, empty drag)
 - [x] Grid / Grid-Crop column count control (like masonry spin)
 - [x] Keyboard focus / arrow-key navigation between gallery tiles (spatial)
 - [x] Remember last Gallery layout across sessions (QSettings `lastGalleryLayout`)
@@ -130,6 +131,7 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 | Hover gallery tile | HUD shows filename |
 | Double-click (Image) | Toggle fullscreen |
 | Click item (Workspace) | Select (handles) |
+| Drag empty space (Workspace Select) | Rubber-band multi-select |
 | Drag item (Workspace only) | Move |
 | Drag handles (Workspace only) | Scale / rotate / opacity / chrome |
 | Ctrl+D (Workspace) | Duplicate selection |

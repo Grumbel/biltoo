@@ -424,6 +424,8 @@ void ImageView::setViewMode(ViewMode mode)
         m_viewMode = ViewMode::Workspace;
         m_layoutMode = LayoutMode::FreeForm;
         viewport()->update();
+        setDragMode(m_tool == Tool::Select ? QGraphicsView::RubberBandDrag
+                                           : QGraphicsView::NoDrag);
         if (!m_savedWorkspace.isEmpty() && previous == ViewMode::Image) {
             restoreWorkspace();
         } else {
