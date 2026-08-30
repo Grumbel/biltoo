@@ -18,6 +18,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QAbstractScrollArea>
 #include <QScrollBar>
 #include <QTimer>
 #include <QSet>
@@ -289,14 +290,54 @@ void ImageView::wheelEvent(QWheelEvent *event)
 {
     // Gallery: scroll the view (do not zoom — packing owns item scale).
     if (isGalleryMode()) {
-        const QPoint delta = event->pixelDelta().isNull()
-                                 ? event->angleDelta()
-                                 : event->pixelDelta();
-        if (horizontalScrollBar()) {
-            horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
+        QScrollBar *hBar = horizontalScrollBar();
+        QScrollBar *vBar = verticalScrollBar();
+        const bool canH = hBar && hBar->maximum() > hBar->minimum();
+        const bool canV = vBar && vBar->maximum() > vBar->minimum();
+
+        int dx = 0;
+        int dy = 0;
+        if (!event->pixelDelta().isNull()) {
+            dx = event->pixelDelta().x();
+            dy = event->pixelDelta().y();
+        } else {
+            // angleDelta is in eighths of a degree; 120 ≈ one notch.
+            dx = event->angleDelta().x();
+            dy = event->angleDelta().y();
         }
-        if (verticalScrollBar()) {
-            verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
+
+        // Shift+wheel → prefer horizontal (common UI convention).
+        if (event->modifiers() & Qt::ShiftModifier) {
+            if (dx == 0 && dy != 0) {
+                dx = dy;
+                dy = 0;
+            }
+        }
+
+        // Most mice only report a vertical wheel. If the gallery only scrolls on
+        // the other axis (e.g. Horizontal strip), map the delta to that axis.
+        if (dx == 0 && dy != 0 && !canV && canH) {
+            dx = dy;
+            dy = 0;
+        } else if (dy == 0 && dx != 0 && !canH && canV) {
+            dy = dx;
+            dx = 0;
+        }
+
+        bool moved = false;
+        if (canH && dx != 0) {
+            hBar->setValue(hBar->value() - dx);
+            moved = true;
+        }
+        if (canV && dy != 0) {
+            vBar->setValue(vBar->value() - dy);
+            moved = true;
+        }
+        if (!moved) {
+            // Layout still settling or no overflow: use QAbstractScrollArea
+            // (QGraphicsView does not scroll on wheel by default).
+            QAbstractScrollArea::wheelEvent(event);
+            return;
         }
         event->accept();
         return;
