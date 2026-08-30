@@ -111,6 +111,11 @@ public:
     void setWorkspacePaths(const QStringList &paths);
     /** Reorder canvas items to match @p paths (session / sort order). */
     void reorderItemsByPaths(const QStringList &paths);
+    /**
+     * Gallery: scroll/HUD focus for session cursor without collapsing multi-select.
+     * (focusSessionPath exclusive-selects — for keyboard nav.)
+     */
+    void revealGalleryPath(const QString &path);
     /** Remove one image from the workspace, remembering its transform. */
     void removeWorkspacePath(const QString &path);
 

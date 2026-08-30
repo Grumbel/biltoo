@@ -167,6 +167,23 @@ void ImageView::focusSessionPath(const QString &path)
     }
 }
 
+void ImageView::revealGalleryPath(const QString &path)
+{
+    if (path.isEmpty() || !isGalleryMode()) {
+        return;
+    }
+    ImageItem *item = findItemByPath(path);
+    if (!item) {
+        return;
+    }
+    // Do not clearSelection — preserves Ctrl/Shift/rubber-band multi-select.
+    ensureVisible(item, 48, 48);
+    if (m_galleryHoverPath != path) {
+        m_galleryHoverPath = path;
+        viewport()->update();
+    }
+}
+
 WorkspaceItemState ImageView::defaultStateForPath(const QString &path, int ordinal) const
 {
     WorkspaceItemState s;

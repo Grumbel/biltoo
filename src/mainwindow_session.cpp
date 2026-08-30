@@ -407,8 +407,11 @@ void MainWindow::setCurrentIndex(int index)
 
     // DOMAIN: only Image mode replaces the single-image canvas.
     // Gallery/Workspace keep multi-object canvas; update session cursor only.
+    // Gallery: do not exclusive-select (Ctrl+click multi-select is owned by the view).
     if (isImageMode()) {
         m_imageView->loadImage(path);
+    } else if (isGalleryMode() && m_imageView) {
+        m_imageView->revealGalleryPath(path);
     } else if (m_imageView) {
         m_imageView->focusSessionPath(path);
     }

@@ -661,16 +661,7 @@ void MainWindow::selectAllThumbnails()
     if (!m_thumbnailBar || m_files.isEmpty()) {
         return;
     }
-    if (!isWorkspaceMode()) {
-        if (m_workspaceModeAct) {
-            m_workspaceModeAct->setChecked(true);
-        }
-        if (m_imageView) {
-            m_imageView->setViewMode(ImageView::ViewMode::Workspace);
-        }
-        m_thumbnailBar->setMultiSelectEnabled(true);
-        updateWorkspaceActionVisibility();
-    }
+    // Session multi-select only — do not enter Workspace mode.
     m_thumbnailBar->selectAllThumbs();
 }
 

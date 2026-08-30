@@ -810,10 +810,17 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
     m_dragStarted = false;
     m_pressModifiers = event->modifiers();
 
-    // Image mode: Ctrl/Shift+click adds that file onto the workspace
+    // Image / Gallery session strip: Ctrl/Shift multi-select for bulk session
+    // ops (remove, etc.). Does not enter Workspace — that is explicit (mode
+    // toggle, double-click membership, or drag onto the canvas).
     if (!m_multiSelect) {
-        if (hit && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
-            emit indexAddToWorkspace(row(hit));
+        if (hit && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier
+                                          | Qt::MetaModifier))) {
+            if (selectionMode() == QAbstractItemView::SingleSelection) {
+                setSelectionMode(QAbstractItemView::ExtendedSelection);
+                setSelectionRectVisible(false);
+            }
+            QListWidget::mousePressEvent(event);
             event->accept();
             return;
         }
