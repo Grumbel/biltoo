@@ -336,6 +336,7 @@ void ImageView::setWorkspaceMode(bool on)
         // Leaving workspace: remember the canvas, then go classic
         snapshotWorkspace();
         m_workspaceMode = false;
+        viewport()->update();
         m_undoStack->clear();
         m_scene->clearSelection();
         // Classic view of the last session path (caller may also loadImage)
@@ -353,6 +354,7 @@ void ImageView::setWorkspaceMode(bool on)
 
     // Entering workspace
     m_workspaceMode = true;
+    viewport()->update();
     if (!m_savedWorkspace.isEmpty()) {
         restoreWorkspace();
     } else {
@@ -487,6 +489,32 @@ void ImageView::paintEvent(QPaintEvent *event)
     if (m_hoverEdge != EdgeZone::None && !m_workspaceMode && m_imageModeNavEnabled) {
         QPainter painter(viewport());
         drawEdgeAffordances(painter);
+    }
+}
+
+void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
+{
+    if (!m_workspaceMode) {
+        // Image mode: flat dark fill (matches setBackgroundBrush)
+        painter->fillRect(rect, QColor(36, 36, 36));
+        return;
+    }
+
+    // Subtle checkerboard in scene coordinates so it pans/zooms with the view
+    constexpr int kCell = 16;
+    const QColor a(42, 42, 42);
+    const QColor b(48, 48, 48);
+
+    const int x0 = static_cast<int>(std::floor(rect.left() / kCell)) * kCell;
+    const int y0 = static_cast<int>(std::floor(rect.top() / kCell)) * kCell;
+    const int x1 = static_cast<int>(std::ceil(rect.right() / kCell)) * kCell;
+    const int y1 = static_cast<int>(std::ceil(rect.bottom() / kCell)) * kCell;
+
+    for (int y = y0; y < y1; y += kCell) {
+        for (int x = x0; x < x1; x += kCell) {
+            const bool dark = ((x / kCell) + (y / kCell)) & 1;
+            painter->fillRect(QRect(x, y, kCell, kCell), dark ? a : b);
+        }
     }
 }
 
