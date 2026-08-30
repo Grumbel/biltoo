@@ -8,7 +8,37 @@
 #include <QMimeData>
 #include <QPoint>
 #include <QStringList>
+#include <QStyledItemDelegate>
 #include <atomic>
+
+/**
+ * Paints a square thumbnail with a single-line caption directly under it.
+ * Avoids QListWidget IconMode style padding and keeps label colour correct
+ * when the item is selected.
+ */
+class ThumbnailDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+public:
+    static constexpr int kLabelGap = 2;
+    static constexpr int kCellPadX = 2;
+
+    explicit ThumbnailDelegate(int thumbSize, QObject *parent = nullptr);
+
+    void setThumbSize(int pixels);
+    int thumbSize() const { return m_thumbSize; }
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option,
+               const QModelIndex &index) const override;
+    QSize sizeHint(const QStyleOptionViewItem &option,
+                   const QModelIndex &index) const override;
+
+    /** Cell size for the current thumb size and font. */
+    QSize cellSize(const QFont &font) const;
+
+private:
+    int m_thumbSize = 96;
+};
 
 class ThumbnailBar : public QListWidget
 {
@@ -22,54 +52,32 @@ public:
     void setCurrentIndex(int index);
     int currentIndex() const;
 
-    /**
-     * When true, plain click toggles multi-selection of thumbnails (workspace
-     * membership). When false, classic single-selection navigates the session.
-     */
     void setWorkspaceMode(bool on);
     bool workspaceMode() const { return m_workspaceMode; }
 
-    /** Selected row indices (sorted ascending). */
     QList<int> selectedIndices() const;
-    /** Programmatically set which rows are selected without emitting signals. */
     void setSelectedIndices(const QList<int> &indices);
 
-    /**
-     * Pixel size of the square thumbnail icon. Also adjusts preferred extent
-     * (icon + label). When raised above the last decode size, thumbnails are
-     * reloaded asynchronously at the new resolution.
-     */
     void setThumbSize(int pixels);
     int thumbSize() const { return m_thumbSize; }
 
-    /**
-     * Layout orientation of the strip:
-     * - Qt::Horizontal: bottom bar, icons flow left-to-right
-     * - Qt::Vertical: left bar, icons flow top-to-bottom
-     */
     void setBarOrientation(Qt::Orientation orientation);
     Qt::Orientation barOrientation() const { return m_orientation; }
 
-    /** Preferred bar extent along the thin axis for a given thumb icon size. */
     static int extentForThumbSize(int thumbSize);
-    /** Thumb icon size that fits in a bar of the given thin-axis extent. */
     static int thumbSizeForExtent(int extent);
 
     static constexpr int kDefaultThumbSize = 96;
     static constexpr int kMinThumbSize = 48;
     static constexpr int kMaxThumbSize = 256;
 
-    // Back-compat aliases used by MainWindow settings
     static int heightForThumbSize(int thumbSize) { return extentForThumbSize(thumbSize); }
     static int thumbSizeForHeight(int height) { return thumbSizeForExtent(height); }
 
 signals:
     void indexActivated(int index);
-    /** Ctrl/Shift+click in classic mode: request adding this image to the workspace. */
     void indexAddToWorkspace(int index);
-    /** Emitted after a toggle (or bulk change) of workspace membership selection. */
     void workspaceSelectionChanged();
-    /** Request removing these session indices (Delete key or context menu). */
     void removeIndicesRequested(const QList<int> &indices);
 
 protected:
@@ -99,15 +107,14 @@ private:
     void startFileDrag(const QList<QListWidgetItem *> &items);
     static QImage makeThumbnail(const QString &path, int maxSize);
 
-    // Generation counter so stale async results are ignored after setFiles()
     std::atomic<quint64> m_generation{0};
     bool m_workspaceMode = false;
     int m_thumbSize = kDefaultThumbSize;
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;
     QStringList m_files;
+    ThumbnailDelegate *m_delegate = nullptr;
 
-    /** Pending press used to distinguish click (toggle/navigate) from file drag. */
     QPoint m_pressPos;
     QListWidgetItem *m_pressItem = nullptr;
     bool m_pressActive = false;

@@ -18,16 +18,95 @@
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QMetaObject>
+#include <QPainter>
 #include <QResizeEvent>
+#include <QStyle>
 #include <QThreadPool>
 #include <QUrl>
 #include <algorithm>
 
-namespace {
-// Caption band under the icon: font height + minimal gap (no extra style padding).
-constexpr int kLabelGap = 2;
-constexpr int kGridPadX = 4;
-} // namespace
+// ---------------------------------------------------------------------------
+// ThumbnailDelegate — tight icon + caption, correct selected text colour
+// ---------------------------------------------------------------------------
+
+ThumbnailDelegate::ThumbnailDelegate(int thumbSize, QObject *parent)
+    : QStyledItemDelegate(parent)
+    , m_thumbSize(thumbSize)
+{
+}
+
+void ThumbnailDelegate::setThumbSize(int pixels)
+{
+    m_thumbSize = pixels;
+}
+
+QSize ThumbnailDelegate::cellSize(const QFont &font) const
+{
+    const int labelH = QFontMetrics(font).height() + kLabelGap;
+    return QSize(m_thumbSize + 2 * kCellPadX, m_thumbSize + labelH);
+}
+
+QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
+                                 const QModelIndex &index) const
+{
+    Q_UNUSED(index);
+    return cellSize(option.font);
+}
+
+void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+                              const QModelIndex &index) const
+{
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, false);
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+
+    const QRect cell = option.rect;
+    const bool selected = option.state & QStyle::State_Selected;
+    const bool hovered = option.state & QStyle::State_MouseOver;
+
+    // Background: selection / hover only — no extra chrome padding
+    if (selected) {
+        painter->fillRect(cell, option.palette.brush(QPalette::Highlight));
+    } else if (hovered) {
+        QColor c = option.palette.color(QPalette::Highlight);
+        c.setAlpha(40);
+        painter->fillRect(cell, c);
+    }
+
+    // Icon: top-centred in the cell, size = m_thumbSize
+    const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
+    const int iconX = cell.left() + (cell.width() - m_thumbSize) / 2;
+    const int iconY = cell.top();
+    const QRect iconRect(iconX, iconY, m_thumbSize, m_thumbSize);
+    if (!icon.isNull()) {
+        icon.paint(painter, iconRect, Qt::AlignCenter,
+                   selected ? QIcon::Selected : QIcon::Normal);
+    }
+
+    // Caption: single line, immediately under the icon (kLabelGap only)
+    const QString text = index.data(Qt::DisplayRole).toString();
+    if (!text.isEmpty()) {
+        const int labelTop = iconY + m_thumbSize + kLabelGap;
+        const QRect textRect(cell.left() + kCellPadX, labelTop,
+                             cell.width() - 2 * kCellPadX,
+                             QFontMetrics(option.font).height());
+
+        QColor textColor = selected
+            ? option.palette.color(QPalette::HighlightedText)
+            : option.palette.color(QPalette::Text);
+        painter->setPen(textColor);
+        painter->setFont(option.font);
+        const QString elided = QFontMetrics(option.font).elidedText(
+            text, Qt::ElideMiddle, textRect.width());
+        painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop, elided);
+    }
+
+    painter->restore();
+}
+
+// ---------------------------------------------------------------------------
+// ThumbnailBar
+// ---------------------------------------------------------------------------
 
 ThumbnailBar::ThumbnailBar(QWidget *parent)
     : QListWidget(parent)
@@ -46,18 +125,20 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setDragEnabled(true);
     setDragDropMode(QAbstractItemView::DragOnly);
     setDefaultDropAction(Qt::CopyAction);
-    // Drop style-provided item margins that inflate the caption band
-    setStyleSheet(QStringLiteral(
-        "QListWidget::item { padding: 0px; margin: 0px; border: none; }"));
 
-    // Compact caption under the icon
+    // Do not use a partial item stylesheet — it strips selected-text colours
+    // and fights the style's layout. Caption layout is owned by the delegate.
+
     QFont captionFont = font();
     if (captionFont.pointSizeF() > 0) {
-        captionFont.setPointSizeF(qMax(7.0, captionFont.pointSizeF() - 2.0));
+        captionFont.setPointSizeF(qMax(8.0, captionFont.pointSizeF() - 1.0));
     } else if (captionFont.pixelSize() > 0) {
-        captionFont.setPixelSize(qMax(9, captionFont.pixelSize() - 3));
+        captionFont.setPixelSize(qMax(10, captionFont.pixelSize() - 1));
     }
     setFont(captionFont);
+
+    m_delegate = new ThumbnailDelegate(m_thumbSize, this);
+    setItemDelegate(m_delegate);
 
     qRegisterMetaType<QImage>("QImage");
 
@@ -75,13 +156,13 @@ ThumbnailBar::~ThumbnailBar()
 
 int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
-    // Approximate single-line caption height when no widget font is available
-    return thumbSize + 12 + kLabelGap;
+    // Approximate caption band when no widget font is available (~12px)
+    return thumbSize + 12 + ThumbnailDelegate::kLabelGap;
 }
 
 int ThumbnailBar::thumbSizeForExtent(int extent)
 {
-    const int size = extent - (12 + kLabelGap);
+    const int size = extent - (12 + ThumbnailDelegate::kLabelGap);
     return qBound(kMinThumbSize, size, kMaxThumbSize);
 }
 
@@ -115,48 +196,46 @@ void ThumbnailBar::setBarOrientation(Qt::Orientation orientation)
 void ThumbnailBar::applyThumbMetrics()
 {
     setIconSize(QSize(m_thumbSize, m_thumbSize));
+    if (m_delegate) {
+        m_delegate->setThumbSize(m_thumbSize);
+    }
 
-    const int labelH = QFontMetrics(font()).height() + kLabelGap;
-    const int cellW = m_thumbSize + kGridPadX;
-    const int cellH = m_thumbSize + labelH;
-    setGridSize(QSize(cellW, cellH));
-
-    const int minExtent = kMinThumbSize + labelH;
-    const int maxExtent = kMaxThumbSize + labelH;
+    const QSize cell = m_delegate ? m_delegate->cellSize(font())
+                                  : QSize(m_thumbSize + 4, m_thumbSize + 14);
+    setGridSize(cell);
 
     if (m_orientation == Qt::Horizontal) {
-        setMinimumHeight(minExtent);
-        setMaximumHeight(maxExtent);
+        setMinimumHeight(kMinThumbSize + QFontMetrics(font()).height() + 2);
+        setMaximumHeight(kMaxThumbSize + QFontMetrics(font()).height() + 2);
         setMinimumWidth(0);
         setMaximumWidth(QWIDGETSIZE_MAX);
     } else {
-        setMinimumWidth(minExtent);
-        setMaximumWidth(maxExtent);
+        setMinimumWidth(kMinThumbSize + QFontMetrics(font()).height() + 2);
+        setMaximumWidth(kMaxThumbSize + QFontMetrics(font()).height() + 2);
         setMinimumHeight(0);
         setMaximumHeight(QWIDGETSIZE_MAX);
     }
 
-    const QSize hint(cellW, cellH);
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
-            it->setSizeHint(hint);
+            it->setSizeHint(cell);
         }
     }
 }
 
 QSize ThumbnailBar::sizeHint() const
 {
-    const int labelH = QFontMetrics(font()).height() + kLabelGap;
-    const int extent = m_thumbSize + labelH;
+    const QSize cell = m_delegate ? m_delegate->cellSize(font())
+                                  : QSize(m_thumbSize + 4, m_thumbSize + 14);
     if (m_orientation == Qt::Horizontal) {
-        return QSize(400, extent);
+        return QSize(400, cell.height());
     }
-    return QSize(extent, 400);
+    return QSize(cell.width(), 400);
 }
 
 QSize ThumbnailBar::minimumSizeHint() const
 {
-    const int labelH = QFontMetrics(font()).height() + kLabelGap;
+    const int labelH = QFontMetrics(font()).height() + 2;
     const int extent = kMinThumbSize + labelH;
     if (m_orientation == Qt::Horizontal) {
         return QSize(200, extent);
@@ -179,23 +258,30 @@ void ThumbnailBar::setThumbSize(int pixels)
     }
 }
 
+void ThumbnailBar::cancelPendingLoads()
+{
+    ++m_generation;
+}
+
 void ThumbnailBar::resizeEvent(QResizeEvent *event)
 {
     QListWidget::resizeEvent(event);
-    // Follow the thin axis so a splitter drag scales the icons
-    const int extent = (m_orientation == Qt::Horizontal)
-                           ? event->size().height()
-                           : event->size().width();
-    const int fitted = thumbSizeForExtent(extent);
-    if (fitted != m_thumbSize) {
-        setThumbSize(fitted);
+    // Map thin-axis extent to thumb size when the splitter is dragged
+    const int extent = (m_orientation == Qt::Horizontal) ? height() : width();
+    const int newSize = thumbSizeForExtent(extent);
+    if (newSize != m_thumbSize) {
+        setThumbSize(newSize);
     }
 }
 
-void ThumbnailBar::cancelPendingLoads()
+void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
 {
-    // Bump generation so in-flight jobs become no-ops when they finish
-    m_generation.fetch_add(1);
+    if (row < 0 || row >= count() || image.isNull()) {
+        return;
+    }
+    if (QListWidgetItem *it = item(row)) {
+        it->setIcon(QIcon(QPixmap::fromImage(image)));
+    }
 }
 
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize)
@@ -205,7 +291,6 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize)
 
 void ThumbnailBar::scheduleThumbnailLoads()
 {
-    cancelPendingLoads();
     const quint64 gen = m_generation.load();
     const int decodeSize = m_thumbSize;
     m_decodedSize = decodeSize;
@@ -233,44 +318,33 @@ void ThumbnailBar::setFiles(const QStringList &files)
     clear();
     m_files = files;
 
-    const int labelH = QFontMetrics(font()).height() + kLabelGap;
-    const QSize hint(m_thumbSize + kGridPadX, m_thumbSize + labelH);
+    const QSize cell = m_delegate ? m_delegate->cellSize(font())
+                                  : QSize(m_thumbSize + 4, m_thumbSize + 14);
     for (const QString &path : files) {
         auto *item = new QListWidgetItem(this);
         item->setText(QFileInfo(path).fileName());
         item->setToolTip(path);
         item->setData(Qt::UserRole, path);
-        item->setSizeHint(hint);
+        item->setSizeHint(cell);
         item->setIcon(QIcon::fromTheme(QStringLiteral("image-x-generic")));
     }
 
-    if (!files.isEmpty()) {
-        scheduleThumbnailLoads();
-    } else {
-        m_decodedSize = 0;
+    // Preserve selection mode after rebuild
+    if (m_workspaceMode) {
+        setSelectionMode(QAbstractItemView::MultiSelection);
     }
 
     if (count() > 0 && !m_workspaceMode) {
         setCurrentRow(0);
     }
-}
 
-void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
-{
-    QListWidgetItem *item = this->item(row);
-    if (!item || image.isNull()) {
-        return;
-    }
-    item->setIcon(QIcon(QPixmap::fromImage(image)));
+    scheduleThumbnailLoads();
 }
 
 void ThumbnailBar::setCurrentIndex(int index)
 {
     if (index >= 0 && index < count()) {
-        // Block signals so programmatic selection does not re-emit indexActivated
-        const bool blocked = blockSignals(true);
         setCurrentRow(index);
-        blockSignals(blocked);
         scrollToItem(item(index), QAbstractItemView::EnsureVisible);
     }
 }
@@ -346,9 +420,9 @@ void ThumbnailBar::requestRemoveSelection()
 {
     QList<int> indices = selectedIndices();
     if (indices.isEmpty()) {
-        const int row = currentRow();
-        if (row >= 0) {
-            indices.append(row);
+        const int r = currentRow();
+        if (r >= 0) {
+            indices.append(r);
         }
     }
     if (!indices.isEmpty()) {
@@ -371,7 +445,6 @@ void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
     QListWidgetItem *hit = itemAt(event->pos());
     if (hit) {
         if (m_workspaceMode) {
-            // Ensure the item under the cursor is part of the selection
             if (!hit->isSelected()) {
                 hit->setSelected(true);
             }
@@ -438,7 +511,6 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
     auto *drag = new QDrag(this);
     drag->setMimeData(data);
 
-    // Prefer the first item's icon as the drag pixmap
     if (QListWidgetItem *first = items.first()) {
         const QIcon icon = first->icon();
         if (!icon.isNull()) {
@@ -461,7 +533,6 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    // Classic mode: Ctrl/Shift+click adds to workspace without changing current
     if (!m_workspaceMode
         && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
         QListWidgetItem *hit = itemAt(event->pos());
@@ -472,14 +543,12 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    // Record press so a short click can toggle/navigate and a drag can export files
     m_pressPos = event->pos();
     m_pressItem = itemAt(event->pos());
     m_pressActive = (m_pressItem != nullptr);
     m_dragStarted = false;
 
     if (!m_workspaceMode && m_pressItem) {
-        // Keep selection/current in sync for single-selection navigation
         QListWidget::mousePressEvent(event);
         return;
     }
@@ -497,7 +566,6 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 
             QList<QListWidgetItem *> items;
             if (m_workspaceMode) {
-                // Drag all selected; if press item is outside selection, drag that one
                 items = selectedItems();
                 if (!m_pressItem->isSelected()) {
                     items = {m_pressItem};
@@ -523,7 +591,6 @@ void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && m_pressActive && !m_dragStarted) {
         if (m_workspaceMode && m_pressItem) {
-            // Click (no drag): toggle workspace membership
             m_pressItem->setSelected(!m_pressItem->isSelected());
             emit workspaceSelectionChanged();
             m_pressActive = false;
@@ -531,7 +598,6 @@ void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
             event->accept();
             return;
         }
-        // Image mode: current/selection already applied on press
     }
     m_pressActive = false;
     m_pressItem = nullptr;
