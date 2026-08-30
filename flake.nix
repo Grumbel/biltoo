@@ -37,6 +37,9 @@
       apps.${system}.default = {
         type = "app";
         program = "${qimgview}/bin/qimgview";
+        meta = {
+          description = "QImgView - Classic Qt image viewer with workspace semantics";
+        };
       };
 
       # `nix flake check` builds the package (and thus compiles sources).
