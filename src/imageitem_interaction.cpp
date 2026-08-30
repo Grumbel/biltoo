@@ -42,10 +42,10 @@ QString tooltipForHandle(ImageItem::Handle h)
 } // namespace
 
 namespace {
-constexpr qreal kHandleScreenPx = 13.0;
-constexpr qreal kRotateOffsetPx = 32.0;
+constexpr qreal kHandleScreenPx = 18.0;
+constexpr qreal kRotateOffsetPx = 40.0;
 constexpr qreal kChromeBtnScreenPx = 28.0;   // flip / raise / lower diameter (screen px)
-constexpr qreal kChromeHitScreenPx = 18.0;   // hit radius in screen px (generous)
+constexpr qreal kChromeHitScreenPx = 22.0;   // hit radius in screen px (generous)
 constexpr qreal kChromeInsetPx = 12.0;       // inset from pixmap edge into the image
 constexpr qreal kChromeBtnGapPx = 8.0;       // gap between stacked chrome buttons
 constexpr qreal kSliderWidthPx = 100.0;
@@ -69,7 +69,7 @@ QRectF ImageItem::boundingRect() const
         // Pads must cover screen-pixel handle targets after rotation; use min
         // device scale so the local AABB still contains the hit discs.
         const qreal sMin = deviceScaleMin();
-        const qreal hitLocal = (kHandleScreenPx * 1.35) / sMin;
+        const qreal hitLocal = (kHandleScreenPx * 1.75) / sMin;
         const qreal rotLocal = kRotateOffsetPx / sMin;
         const qreal pad = hitLocal + rotLocal + 4.0 / sMin;
         r.adjust(-pad, -pad, pad, pad);
@@ -94,7 +94,7 @@ QPainterPath ImageItem::shape() const
         // Local radii from min device scale so a screen-pixel disc around each
         // handle stays inside shape() after rotation / anisotropic scale.
         const qreal sMin = deviceScaleMin();
-        const qreal r = (kHandleScreenPx * 1.5) / sMin;
+        const qreal r = (kHandleScreenPx * 2.0) / sMin;
         QList<Handle> handles = {
             Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
         };
@@ -532,7 +532,7 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     }
 
     best = Handle::None;
-    bestDist = kHandleScreenPx * 1.35;
+    bestDist = kHandleScreenPx * 1.75;
     QList<Handle> handles = {
         Handle::RotateTop, Handle::RotateRight, Handle::RotateBottom, Handle::RotateLeft
     };
@@ -645,11 +645,28 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         return;
     }
 
-    if (!(option->state & QStyle::State_Selected)) {
+    // Selection transform chrome is painted by ImageView::drawForeground so
+    // handles sit above every image regardless of stackZ.
+    Q_UNUSED(r);
+}
+
+void ImageItem::paintInteractionChrome(QPainter *painter) const
+{
+    if (!m_interactive || !isSelected()) {
         return;
     }
-
+    const QRectF crop = galleryClipLocal();
+    const QRectF r = crop.isEmpty() ? QGraphicsPixmapItem::boundingRect() : crop;
     paintInteractionChrome(painter, r);
+}
+
+void ImageItem::setHoverHandle(Handle h)
+{
+    if (h == m_hoverHandle) {
+        return;
+    }
+    m_hoverHandle = h;
+    update();
 }
 
 void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRect) const
@@ -657,13 +674,27 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     // Chrome is drawn in *device* (viewport) pixels with an identity world
     // transform. Only the logical handle centres are mapped through the item
     // transform — so scaleX/scaleY never stretch the controls.
-    const QTransform itemToDevice = painter->worldTransform();
-    auto toDev = [&](const QPointF &local) {
-        return itemToDevice.map(local);
+    //
+    // Prefer the attached view's map so this works both from ImageItem::paint
+    // (painter already has item transform) and from ImageView::drawForeground
+    // (painter has only the view transform).
+    QGraphicsView *view = nullptr;
+    if (scene()) {
+        const QList<QGraphicsView *> views = scene()->views();
+        if (!views.isEmpty()) {
+            view = views.first();
+        }
+    }
+    auto toDev = [&](const QPointF &local) -> QPointF {
+        const QPointF scenePt = mapToScene(local);
+        if (view) {
+            return QPointF(view->mapFromScene(scenePt));
+        }
+        return painter->worldTransform().map(local);
     };
     auto mapDir = [&](const QPointF &localDelta) {
-        const QPointF a = itemToDevice.map(QPointF(0, 0));
-        const QPointF b = itemToDevice.map(localDelta);
+        const QPointF a = toDev(QPointF(0, 0));
+        const QPointF b = toDev(localDelta);
         QPointF d = b - a;
         const qreal len = qHypot(d.x(), d.y());
         if (len > 1e-6) {
@@ -739,8 +770,8 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             const QPointF c = toDev(handleCenter(ed.h));
             const QPointF along = mapDir(ed.localAlong);
             const QPointF perp(-along.y(), along.x());
-            const qreal len = hs * (hot ? 2.4 : 2.0);
-            const qreal thick = hs * (hot ? 0.45 : 0.35);
+            const qreal len = hs * (hot ? 2.8 : 2.4);
+            const qreal thick = hs * (hot ? 0.70 : 0.55);
             QPen hp(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
             hp.setCosmetic(true);
             hp.setWidthF(hot ? 2.0 : 1.5);

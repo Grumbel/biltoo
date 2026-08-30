@@ -125,6 +125,12 @@ public:
     void endHandleInteraction();
     bool hasActiveHandle() const { return m_activeHandle != Handle::None; }
 
+    /** Paint transform chrome in device pixels (identity world transform). */
+    void paintInteractionChrome(QPainter *painter) const;
+    /** View-driven hover highlight for chrome (keeps highlight in sync with hits). */
+    void setHoverHandle(Handle h);
+    Handle hoverHandle() const { return m_hoverHandle; }
+
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
@@ -165,7 +171,6 @@ private:
     bool isRotateHandle(Handle h) const;
     void drawCornerBracket(QPainter *painter, const QPointF &deviceCentre,
                            qreal dx, qreal dy, qreal armPx, bool hot) const;
-    /** Paint selection chrome in device pixels (identity world transform). */
     void paintInteractionChrome(QPainter *painter, const QRectF &localRect) const;
     /** Raise/Lower keep screen-upright glyphs (counter-rotated when painting). */
     bool isUprightChromeHandle(Handle h) const;
