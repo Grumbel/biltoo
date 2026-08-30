@@ -1,15 +1,21 @@
 # QImgView
 
-A classic Qt image viewer with an optional multi-image **workspace** for side-by-side comparison.
+A classic Qt image viewer with **Gallery** layouts for browsing a session and an optional free-form **Workspace** for comparing images side by side.
+
+## Project home
+
+- GitHub: <https://github.com/Grumbel/qimgview>
+- Radicle: `rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a`
 
 ## Features
 
 - Fast single-image browsing with zoom, pan, rotate, and flip
 - Thumbnail bar for the current session; open files or directories from the UI or the command line
-- **Workspace mode**: place several images on a canvas, scale and rotate them freely, adjust opacity and stacking order
-- Automatic layouts in workspace mode (side-by-side, grid, masonry, …)
+- **Gallery**: packaged layouts (horizontal/vertical strip, grid, grid-crop, masonry, stack); click an image to view it full size, **Up** to return
+- **Workspace mode**: free-form canvas — move, scale, rotate, opacity, and stacking order
 - Slideshow with optional fullscreen
 - Metadata panel (file info; optional Exif/IPTC/XMP when built with libexiv2)
+- Configurable canvas background (solid or checkerboard)
 - Theme icons, fullscreen, and preferences for sort order, slideshow, and default applications
 
 ## Usage
