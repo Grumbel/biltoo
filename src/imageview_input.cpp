@@ -321,7 +321,7 @@ void ImageView::paintEvent(QPaintEvent *event)
         const QString badge = sessionBadgeText();
         if (!badge.isEmpty()
             && (m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse)) {
-            drawPanel({{badge, false}}, 0, margin, true, false);
+            drawPanel({{badge, true}}, 0, margin, true, false);
         }
 
         // Bottom: filename — pinned, identity pulse, or gallery hover
