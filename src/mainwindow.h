@@ -55,6 +55,7 @@ protected:
     void changeEvent(QEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
     void openFiles();
@@ -117,6 +118,9 @@ private:
     void writeSettings();
     void syncThumbnailWorkspaceSelection();
     void applyWorkspaceSelectionFromThumbnails();
+    void showSlideshowCursor();
+    void hideSlideshowCursor();
+    void armSlideshowCursorHide();
     QStringList expandPaths(const QStringList &paths) const;
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
     static bool isImageFile(const QString &path);
@@ -131,6 +135,8 @@ private:
     QLabel *m_statusLabel = nullptr;
     QLabel *m_mouseLabel = nullptr;
     QTimer *m_slideshowTimer = nullptr;
+    QTimer *m_cursorHideTimer = nullptr;
+    bool m_slideshowCursorHidden = false;
 
     QMenu *m_fileMenu = nullptr;
     QMenu *m_editMenu = nullptr;

@@ -159,6 +159,11 @@ MainWindow::MainWindow(QWidget *parent)
     m_slideshowTimer->setTimerType(Qt::PreciseTimer);
     connect(m_slideshowTimer, &QTimer::timeout, this, &MainWindow::onSlideshowTick);
 
+    m_cursorHideTimer = new QTimer(this);
+    m_cursorHideTimer->setSingleShot(true);
+    m_cursorHideTimer->setInterval(1000);
+    connect(m_cursorHideTimer, &QTimer::timeout, this, &MainWindow::hideSlideshowCursor);
+
     m_thumbnailBar->setVisible(false);
     updateNavigationActions();
     readSettings();
@@ -1080,6 +1085,34 @@ void MainWindow::setSlideshowIntervalMs(int ms)
     }
 }
 
+void MainWindow::showSlideshowCursor()
+{
+    if (m_slideshowCursorHidden) {
+        QApplication::restoreOverrideCursor();
+        m_slideshowCursorHidden = false;
+    }
+}
+
+void MainWindow::hideSlideshowCursor()
+{
+    if (!m_slideshowTimer || !m_slideshowTimer->isActive()) {
+        return;
+    }
+    if (!m_slideshowCursorHidden) {
+        QApplication::setOverrideCursor(Qt::BlankCursor);
+        m_slideshowCursorHidden = true;
+    }
+}
+
+void MainWindow::armSlideshowCursorHide()
+{
+    if (!m_cursorHideTimer) {
+        return;
+    }
+    showSlideshowCursor();
+    m_cursorHideTimer->start();
+}
+
 void MainWindow::startSlideshow()
 {
     if (m_files.size() <= 1 || m_workspaceMode) {
@@ -1093,14 +1126,40 @@ void MainWindow::startSlideshow()
     m_slideshowAct->setChecked(true);
     m_slideshowAct->setText(tr("Stop &Slideshow"));
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-stop"), QStyle::SP_MediaStop));
+    qApp->installEventFilter(this);
+    armSlideshowCursorHide();
 }
 
 void MainWindow::stopSlideshow()
 {
     m_slideshowTimer->stop();
+    if (m_cursorHideTimer) {
+        m_cursorHideTimer->stop();
+    }
+    showSlideshowCursor();
+    qApp->removeEventFilter(this);
     m_slideshowAct->setChecked(false);
     m_slideshowAct->setText(tr("Play &Slideshow"));
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    Q_UNUSED(watched);
+    if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+        switch (event->type()) {
+        case QEvent::MouseMove:
+        case QEvent::HoverMove:
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseButtonRelease:
+        case QEvent::Wheel:
+            armSlideshowCursorHide();
+            break;
+        default:
+            break;
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::toggleSlideshow()
