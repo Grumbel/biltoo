@@ -586,14 +586,11 @@ void MainWindow::updateWindowTitle()
 void MainWindow::updateStatus()
 {
     updateNavigationActions();
-    QString text = m_imageView->statusText();
-    if (m_files.size() > 1 && m_currentIndex >= 0) {
-        text = tr("[%1/%2]  %3")
-                   .arg(m_currentIndex + 1)
-                   .arg(m_files.size())
-                   .arg(text);
+    // Session index on ImageView so status bar and on-image HUD share [n/N].
+    if (m_imageView) {
+        m_imageView->setSessionPosition(m_currentIndex, m_files.size());
     }
-    m_statusLabel->setText(text);
+    m_statusLabel->setText(m_imageView->statusText());
 }
 
 void MainWindow::onMouseInfoChanged(const ImageMouseInfo &info)

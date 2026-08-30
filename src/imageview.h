@@ -135,6 +135,14 @@ public:
     void setCheckerboardWorkspaceOnly(bool on);
     bool checkerboardWorkspaceOnly() const { return m_bgCheckerWorkspaceOnly; }
 
+    /**
+     * Session position for status line and HUD ([index/total], 1-based display).
+     * Pass total <= 1 or index < 0 to hide the prefix.
+     */
+    void setSessionPosition(int index, int total);
+    int sessionIndex() const { return m_sessionIndex; }
+    int sessionTotal() const { return m_sessionTotal; }
+
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
     bool hudVisible() const { return m_hudVisible; }
@@ -308,6 +316,8 @@ private:
     BackgroundPattern m_bgPattern = BackgroundPattern::Checkerboard;
     bool m_bgCheckerWorkspaceOnly = true;
     bool m_hudVisible = false;
+    int m_sessionIndex = -1;
+    int m_sessionTotal = 0;
     QString m_lastLoadError;
     bool m_hudFlashVisible = false;
     QString m_hudAction;

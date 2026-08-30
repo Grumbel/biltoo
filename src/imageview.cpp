@@ -482,6 +482,18 @@ void ImageView::setImageModeLeftDragPan(bool on)
     m_imageModeLeftDragPan = on;
 }
 
+void ImageView::setSessionPosition(int index, int total)
+{
+    if (m_sessionIndex == index && m_sessionTotal == total) {
+        return;
+    }
+    m_sessionIndex = index;
+    m_sessionTotal = total;
+    if (m_hudVisible || m_hudFlashVisible) {
+        viewport()->update();
+    }
+}
+
 void ImageView::setHudVisible(bool on)
 {
     if (m_hudVisible == on) {
@@ -658,14 +670,20 @@ QString ImageView::statusText() const
     if (!item) {
         item = primaryItem();
     }
+
+    QString prefix;
+    if (m_sessionTotal > 1 && m_sessionIndex >= 0 && m_sessionIndex < m_sessionTotal) {
+        prefix = tr("[%1/%2]  ").arg(m_sessionIndex + 1).arg(m_sessionTotal);
+    }
+
     if (!item) {
         if (!m_lastLoadError.isEmpty()) {
-            return tr("Failed to load: %1").arg(QFileInfo(m_lastLoadError).fileName());
+            return prefix + tr("Failed to load: %1").arg(QFileInfo(m_lastLoadError).fileName());
         }
         if (!m_classicPath.isEmpty() && isImageMode()) {
-            return tr("Loading %1…").arg(QFileInfo(m_classicPath).fileName());
+            return prefix + tr("Loading %1…").arg(QFileInfo(m_classicPath).fileName());
         }
-        return tr("Ready");
+        return prefix.isEmpty() ? tr("Ready") : prefix.trimmed();
     }
 
     const QString name = QFileInfo(item->path()).fileName();
@@ -686,7 +704,7 @@ QString ImageView::statusText() const
         if (item->itemOpacity() < 0.999) {
             text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
         }
-        return text;
+        return prefix + text;
     }
 
     // Image mode: zoom is view-level; item scale stays at 1 unless rotated etc.
@@ -709,7 +727,7 @@ QString ImageView::statusText() const
     if (item->itemOpacity() < 0.999) {
         text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
     }
-    return text;
+    return prefix + text;
 }
 
 qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
