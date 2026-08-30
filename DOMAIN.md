@@ -199,3 +199,33 @@ next / previous / slideshow:
 - In Workspace, multi-select on the strip drives which paths are requested on the canvas.
 - That multi-select behaviour is “session selection for Workspace,” not a fourth mode.
 
+
+
+## Shell session API (MainWindow)
+
+Named transitions (prefer these over ad-hoc mode toggles):
+
+| Method | DOMAIN operation |
+|--------|------------------|
+| `enterGalleryMode(layout)` | Mode := Gallery; pack session with layout |
+| `showPathInImageMode(path)` | Mode := Image; session current := path; optional gallery-return snapshot |
+| `returnToGallery()` | Restore Gallery from snapshot after Image |
+| `enterWorkspaceMode()` | Mode := Workspace |
+| `setCurrentIndex(i)` | Session cursor; **only Image** reloads the single-image canvas |
+| `duplicateSelected()` | Workspace: clone selection (same path, independent transforms) |
+
+`ImageView::focusSessionPath(path)` selects the canvas object for a session path
+(and ensures visibility in Gallery). Public for the shell.
+
+## Thumbnail strip vs mode
+
+`ThumbnailBar::setWorkspaceMode(true)` means **multi-select of session paths for
+canvas membership**, not a fourth app mode. App mode remains solely
+`ImageView::ViewMode`.
+
+## Chrome / handles (Workspace)
+
+- Geometry lives under the item transform (scale, rotation, position).
+- Interaction chrome is painted in **device pixels** and hit-tested primarily
+  by **ImageView** (view-owned path). Item mouse handlers are a fallback that
+  call the same `beginHandleInteraction` API.

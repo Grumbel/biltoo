@@ -60,6 +60,7 @@ public:
     void setCurrentIndex(int index);
     int currentIndex() const;
 
+    /** Multi-select session paths for Workspace canvas membership (not app ViewMode). */
     void setWorkspaceMode(bool on);
     bool workspaceMode() const { return m_workspaceMode; }
 

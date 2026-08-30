@@ -114,10 +114,17 @@ invariant 6).
 
 ### Mode transitions
 
-- Gallery layout actions → Gallery; remember layout for **Up**.
-- Open gallery cell → Image + gallery-return snapshot.
-- **Up** / return → Gallery only (never Workspace).
-- Workspace Mode action → Workspace (snapshot on leave, restore on enter).
+- Gallery layout actions → `MainWindow::enterGalleryMode(layout)`.
+- Open gallery cell → `showPathInImageMode(path)` (gallery-return snapshot).
+- **Up** / return → `returnToGallery()` only (never Workspace).
+- Workspace Mode → `enterWorkspaceMode()` / `setViewMode(Workspace)` (snapshot on leave).
+
+### Public helpers to prefer
+
+- `ImageView::setViewMode` / `isImageMode` / `isGalleryMode` / `isWorkspaceMode`
+- `ImageView::focusSessionPath`, `targetItem`, `duplicateSelected`
+- `ImageItem::isInteractive()` (workspace chrome eligibility)
+- Do **not** reintroduce `MainWindow::m_workspaceMode`
 
 ### Sharp edges (do not paper over)
 

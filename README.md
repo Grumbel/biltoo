@@ -1,6 +1,13 @@
 # QImgView
 
-A classic Qt image viewer with **Gallery** layouts for browsing a session and an optional free-form **Workspace** for comparing images side by side.
+A classic Qt image viewer with three presentation modes on one canvas:
+
+- **Image** — single-image browsing (zoom, pan, rotate, slideshow)
+- **Gallery** — session overview with packaged layouts
+- **Workspace** — free-form multi-image comparison
+
+Behavioural model (modes, operations, invariants): [DOMAIN.md](DOMAIN.md).
+Agent / contributor notes: [AGENTS.md](AGENTS.md).
 
 ## Project home
 

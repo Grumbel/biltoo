@@ -18,6 +18,13 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] VERSION file + Nix/CMake version wiring; separateDebugInfo
 - [x] Code layout: MainWindow / ImageView / ImageItem split TUs; GalleryLayout; icons helpers
 - [x] Clear residual view between Gallery layout switches; remove superfluous Stack layout
+- [x] DOMAIN.md language-level model; AGENTS architecture section
+- [x] Single mode source of truth (`ViewMode` only; no MainWindow mode bool)
+- [x] Mode-aware `setCurrentIndex` (Image loads; Gallery/Workspace focus only)
+- [x] Gallery keyboard: spatial arrows, Home/End, Enter to open
+- [x] Session helpers: `enterGalleryMode`, `showPathInImageMode`, `enterWorkspaceMode`
+- [x] Workspace Duplicate (Ctrl+D); reset scale/rotation; device-space chrome
+- [x] HUD identity pulse (filename / [i/n]); fit preserves rotation
 
 ## Open
 
@@ -25,9 +32,10 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 
 - [ ] Gallery rubber-band multi-select (optional)
 - [ ] Grid / Grid-Crop column count control (like masonry spin)
-- [ ] Keyboard focus ring / arrow-key navigation between gallery tiles
-- [ ] Remember last Gallery layout across sessions (QSettings)
+- [x] Keyboard focus / arrow-key navigation between gallery tiles (spatial)
+- [x] Remember last Gallery layout across sessions (QSettings `lastGalleryLayout`)
 - [ ] Interaction summary / shortcuts still list a few pre-Gallery names (keep in sync)
+- [ ] Rename ThumbnailBar “workspace mode” → multi-select (API alias)
 
 ### Stability / polish
 
