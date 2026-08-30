@@ -74,6 +74,13 @@ public:
     void setGallerySelectable(bool on);
 
     /**
+     * Gallery Grid-Crop: visible area is a centred cell of this size in *scene*
+     * units (after item scale). Empty size clears cropping.
+     */
+    void setGalleryCellSize(const QSizeF &sceneSize);
+    QSizeF galleryCellSize() const { return m_galleryCellSize; }
+
+    /**
      * When false, corner scale (resize) handles are neither drawn nor hit-tested.
      * Used for fixed packaged layouts where scale is driven by the layout.
      */
@@ -109,6 +116,8 @@ private:
     void refreshStackingOrder();
     void notifyViewStatus();
     QRectF contentRect() const;
+    /** Local clip rect for gallery crop, or empty if none. */
+    QRectF galleryClipLocal() const;
     /** Item-local centre of a handle (pre-transform local coordinates). */
     QPointF handleCenter(Handle h) const;
     /** Hit radius in item-local units for scale/rotate handles. */
@@ -141,6 +150,8 @@ private:
     bool m_vFlip = false;
     bool m_interactive = false;
     bool m_scaleHandlesEnabled = false;
+    /** Scene-space crop cell for Grid-Crop gallery; empty = no crop. */
+    QSizeF m_galleryCellSize;
 
     Handle m_activeHandle = Handle::None;
     Handle m_hoverHandle = Handle::None;

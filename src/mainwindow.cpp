@@ -395,8 +395,15 @@ void MainWindow::createActions()
     m_layoutGridAct = new QAction(tr("Layout &Grid"), this);
     m_layoutGridAct->setCheckable(true);
     m_layoutGridAct->setIcon(resourceIcon(QStringLiteral("gallery-grid")));
-    m_layoutGridAct->setStatusTip(tr("Gallery: arrange images in a grid"));
+    m_layoutGridAct->setStatusTip(tr("Gallery: grid with whole images (letterboxed in cells)"));
     connect(m_layoutGridAct, &QAction::triggered, this, &MainWindow::setLayoutGrid);
+
+    m_layoutGridCropAct = new QAction(tr("Layout Grid &Crop"), this);
+    m_layoutGridCropAct->setCheckable(true);
+    m_layoutGridCropAct->setIcon(resourceIcon(QStringLiteral("gallery-grid-crop")));
+    m_layoutGridCropAct->setStatusTip(
+        tr("Gallery: square grid, images centre-cropped to fill each cell"));
+    connect(m_layoutGridCropAct, &QAction::triggered, this, &MainWindow::setLayoutGridCrop);
 
     m_layoutStackAct = new QAction(tr("Layout Stac&k"), this);
     m_layoutStackAct->setCheckable(true);
@@ -430,6 +437,7 @@ void MainWindow::createActions()
     layoutGroup->addAction(m_layoutSideBySideAct);
     layoutGroup->addAction(m_layoutVerticalAct);
     layoutGroup->addAction(m_layoutGridAct);
+    layoutGroup->addAction(m_layoutGridCropAct);
     layoutGroup->addAction(m_layoutMasonryAct);
     layoutGroup->addAction(m_layoutMasonryRowsAct);
     layoutGroup->addAction(m_layoutStackAct);
@@ -634,6 +642,7 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutSideBySideAct);
     galleryMenu->addAction(m_layoutVerticalAct);
     galleryMenu->addAction(m_layoutGridAct);
+    galleryMenu->addAction(m_layoutGridCropAct);
     galleryMenu->addAction(m_layoutMasonryAct);
     galleryMenu->addAction(m_layoutMasonryRowsAct);
     galleryMenu->addAction(m_layoutStackAct);
@@ -690,6 +699,7 @@ void MainWindow::createMenus()
     m_contextMenu->addAction(m_layoutSideBySideAct);
     m_contextMenu->addAction(m_layoutVerticalAct);
     m_contextMenu->addAction(m_layoutGridAct);
+    m_contextMenu->addAction(m_layoutGridCropAct);
     m_contextMenu->addAction(m_layoutMasonryAct);
     m_contextMenu->addAction(m_layoutMasonryRowsAct);
     m_contextMenu->addAction(m_layoutStackAct);
@@ -733,6 +743,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_layoutSideBySideAct);
     m_toolBar->addAction(m_layoutVerticalAct);
     m_toolBar->addAction(m_layoutGridAct);
+    m_toolBar->addAction(m_layoutGridCropAct);
     m_toolBar->addAction(m_layoutMasonryAct);
 
     m_toolBar->addAction(m_layoutMasonryRowsAct);
@@ -1624,17 +1635,35 @@ void MainWindow::setLayoutGrid()
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
-    // Gallery is independent of Workspace Mode
-    m_workspaceMode = true; // multi-item session UI (thumbs)
+    m_workspaceMode = true;
     m_workspaceModeAct->setChecked(false);
     m_thumbnailBar->setWorkspaceMode(true);
     m_imageView->enterGallery(ImageView::LayoutMode::Grid);
     populateGalleryCanvas();
-    // Re-apply after items are on the canvas
     m_imageView->enterGallery(ImageView::LayoutMode::Grid);
     m_galleryReturnLayout = ImageView::LayoutMode::Grid;
     if (m_layoutGridAct) {
         m_layoutGridAct->setChecked(true);
+    }
+    updateMasonryCountControl();
+    updateWorkspaceActionVisibility();
+}
+
+void MainWindow::setLayoutGridCrop()
+{
+    m_galleryReturnActive = false;
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setEnabled(false);
+    }
+    m_workspaceMode = true;
+    m_workspaceModeAct->setChecked(false);
+    m_thumbnailBar->setWorkspaceMode(true);
+    m_imageView->enterGallery(ImageView::LayoutMode::GridCrop);
+    populateGalleryCanvas();
+    m_imageView->enterGallery(ImageView::LayoutMode::GridCrop);
+    m_galleryReturnLayout = ImageView::LayoutMode::GridCrop;
+    if (m_layoutGridCropAct) {
+        m_layoutGridCropAct->setChecked(true);
     }
     updateMasonryCountControl();
     updateWorkspaceActionVisibility();
@@ -1751,6 +1780,9 @@ void MainWindow::returnToGallery()
     case ImageView::LayoutMode::Grid:
         if (m_layoutGridAct) m_layoutGridAct->setChecked(true);
         break;
+    case ImageView::LayoutMode::GridCrop:
+        if (m_layoutGridCropAct) m_layoutGridCropAct->setChecked(true);
+        break;
     case ImageView::LayoutMode::Stack:
         if (m_layoutStackAct) m_layoutStackAct->setChecked(true);
         break;
@@ -1846,7 +1878,7 @@ void MainWindow::toggleWorkspaceMode()
         }
         // Uncheck gallery layout actions
         for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
-                             m_layoutGridAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
+                             m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
                          m_layoutStackAct}) {
             if (act) {
                 act->setChecked(false);
@@ -1952,7 +1984,7 @@ void MainWindow::updateWorkspaceActionVisibility()
     //  loadFiles never refreshed visibility.)
     const bool canGallery = !m_files.isEmpty();
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
-                         m_layoutGridAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
+                         m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
                          m_layoutStackAct}) {
         if (act) {
             act->setVisible(true);

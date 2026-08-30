@@ -162,6 +162,8 @@ public:
         SideBySide, // horizontal strip (UI: "Horizontal")
         Vertical,   // vertical strip
         Grid,
+        /** Square cells; image scaled to cover and centre-cropped (like thumb crop). */
+        GridCrop,
         Stack,
         /** Column masonry: N columns spanning the view width; variable row heights. */
         Masonry,

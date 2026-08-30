@@ -1312,6 +1312,12 @@ void ImageView::applyLayout()
             item->setItemRotation(0.0);
         }
     }
+    // Crop cell is GridCrop-only; clear so other layouts show full images.
+    if (m_layoutMode != LayoutMode::GridCrop) {
+        for (ImageItem *item : m_items) {
+            item->setGalleryCellSize({});
+        }
+    }
 
     if (m_layoutMode == LayoutMode::SideBySide) {
         // Horizontal strip: each image fits the viewport height; scroll for overflow.
@@ -1355,6 +1361,26 @@ void ImageView::applyLayout()
             item->setItemScale(scale);
             const qreal cx = margin + col * (cellW + gap) + cellW / 2.0;
             const qreal cy = margin + row * (cellH + gap) + cellH / 2.0;
+            item->setPos(cx, cy);
+            m_itemStates.insert(item->path(), captureState(item));
+        }
+    } else if (m_layoutMode == LayoutMode::GridCrop) {
+        // Square cells spanning the view width; cover + centre-crop (thumb-crop style).
+        // Extra rows scroll vertically.
+        const int cols = qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
+        const qreal cell = (availW - gap * qMax(0, cols - 1)) / cols;
+        for (int i = 0; i < n; ++i) {
+            ImageItem *item = m_items.at(i);
+            const int col = i % cols;
+            const int row = i / cols;
+            const QSizeF ns = nativeSize(item);
+            // Cover: scale so the smaller image edge fills the cell, then crop.
+            const qreal scale = qMax(cell / qMax(1.0, ns.width()),
+                                    cell / qMax(1.0, ns.height()));
+            item->setItemScale(scale);
+            item->setGalleryCellSize(QSizeF(cell, cell));
+            const qreal cx = margin + col * (cell + gap) + cell / 2.0;
+            const qreal cy = margin + row * (cell + gap) + cell / 2.0;
             item->setPos(cx, cy);
             m_itemStates.insert(item->path(), captureState(item));
         }

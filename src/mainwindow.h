@@ -84,6 +84,7 @@ private slots:
     void setLayoutSideBySide();
     void setLayoutVertical();
     void setLayoutGrid();
+    void setLayoutGridCrop();
     void setLayoutStack();
     void setLayoutMasonry();
     void setLayoutMasonryRows();
@@ -206,6 +207,7 @@ private:
     QAction *m_layoutSideBySideAct = nullptr;
     QAction *m_layoutVerticalAct = nullptr;
     QAction *m_layoutGridAct = nullptr;
+    QAction *m_layoutGridCropAct = nullptr;
     QAction *m_layoutStackAct = nullptr;
     QAction *m_layoutMasonryAct = nullptr;
     QAction *m_layoutMasonryRowsAct = nullptr;

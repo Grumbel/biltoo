@@ -164,6 +164,7 @@ void ImageItem::setInteractive(bool on)
 {
     m_interactive = on;
     if (on) {
+        setGalleryCellSize({});
         setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsGeometryChanges
                  | ItemIsFocusable);
     } else {
@@ -180,6 +181,10 @@ void ImageItem::setGallerySelectable(bool on)
     m_galleryHovered = false;
     m_hoverHandle = Handle::None;
     m_activeHandle = Handle::None;
+    // Crop is owned by the layout; clear when leaving gallery selectable.
+    if (!on) {
+        m_galleryCellSize = QSizeF();
+    }
     if (on) {
         setAcceptHoverEvents(true);
         setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
@@ -261,6 +266,13 @@ QRectF ImageItem::contentRect() const
 
 QRectF ImageItem::boundingRect() const
 {
+    // Gallery Grid-Crop: report the cell, not the full pixmap, so layout/hit-tests match.
+    if (!m_galleryCellSize.isEmpty()) {
+        const QRectF clip = galleryClipLocal();
+        if (!clip.isEmpty()) {
+            return clip;
+        }
+    }
     // Expand for external handles (scale/rotate) when selected so they are not clipped.
     // Flip / raise / lower / opacity sit inside the pixmap and need no extra pad.
     QRectF r = QGraphicsPixmapItem::boundingRect();
@@ -279,6 +291,13 @@ QPainterPath ImageItem::shape() const
     // Hit-test the content plus handles when selected. Radii are in item-local
     // units; use generous chrome ellipses so rotated items still receive events.
     QPainterPath path;
+    if (!m_galleryCellSize.isEmpty()) {
+        const QRectF clip = galleryClipLocal();
+        if (!clip.isEmpty()) {
+            path.addRect(clip);
+            return path;
+        }
+    }
     path.addRect(QGraphicsPixmapItem::boundingRect());
     if (isSelected() && m_interactive) {
         const qreal r = handleHitRadius() * 1.25;
@@ -558,17 +577,23 @@ QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
 void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                       QWidget *widget)
 {
+    const QRectF crop = galleryClipLocal();
+    const bool cropped = !crop.isEmpty();
+
     // Pixmap at item opacity; handles always fully opaque
     {
         QStyleOptionGraphicsItem opt = *option;
         opt.state &= ~QStyle::State_Selected;
         painter->save();
+        if (cropped) {
+            painter->setClipRect(crop);
+        }
         painter->setOpacity(m_opacity);
         QGraphicsPixmapItem::paint(painter, &opt, widget);
         painter->restore();
     }
 
-    const QRectF r = QGraphicsPixmapItem::boundingRect();
+    const QRectF r = cropped ? crop : QGraphicsPixmapItem::boundingRect();
 
     // Gallery: soft hover / selection frame, never transform chrome.
     if (!m_interactive) {
