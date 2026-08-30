@@ -30,16 +30,16 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 
 ### Reported bugs (2026-08-30)
 
-- [ ] F/F11 only enters fullscreen; cannot leave
-- [ ] Drag&drop replaces the image set instead of adding
-- [ ] Drag from thumbnail bar onto Gallery duplicates; Gallery should ignore that drop (Workspace OK)
-- [ ] Space does not pause slideshow in fullscreen
-- [ ] Workspace edge resize handles should be thicker
-- [ ] Mouse interaction with rotated handles broken (or highlight disconnect from clickable region)
-- [ ] Workspace handles drawn at image stacking order; must paint on top of all images
-- [ ] Clicking near workspace handles can deselect the image
-- [ ] Handles: bigger; input/highlight must handle scale+rotation without weirdness (double-check math)
-- [ ] Checkerboard must not scale continuously: LOD — when cells would go below ~16×16 screen px, snap cell size back (e.g. 32 scene units) so tiny squares are hidden
+- [x] F/F11 only enters fullscreen; cannot leave
+- [x] Drag&drop replaces the image set instead of adding (Gallery appends; Image still replace / Shift-append)
+- [x] Drag from thumbnail bar onto Gallery duplicates; Gallery ignores session re-drops (Workspace OK)
+- [x] Space does not pause slideshow in fullscreen
+- [x] Workspace edge resize handles should be thicker
+- [x] Mouse interaction with rotated handles / highlight disconnect (view-owned hover + larger hits)
+- [x] Workspace handles drawn at image stacking order; paint on top of all images
+- [x] Clicking near workspace handles can deselect the image
+- [x] Handles: bigger; input/highlight handles scale+rotation
+- [x] Checkerboard LOD snap when cells would go below ~16×16 screen px
 
 ### Gallery / UX
 
