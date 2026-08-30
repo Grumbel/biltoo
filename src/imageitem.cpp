@@ -12,6 +12,7 @@
 #include <QMetaObject>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPolygonF>
 #include <QStyle>
 #include <QStyleOptionGraphicsItem>
 #include <QtMath>
@@ -245,9 +246,16 @@ QRectF ImageItem::boundingRect() const
     if (isSelected() && m_interactive) {
         const qreal ss = screenScale();
         const qreal rotPad = handleHitRadius() + kRotateOffsetPx / ss + 4.0;
-        const qreal bottomPad = chromeButtonSize() + kChromeOffsetPx / ss + 8.0;
+        const qreal chromePad = chromeButtonSize() + kChromeOffsetPx / ss + 8.0;
         const qreal sidePad = qMax(handleHitRadius() + 4.0, rotPad);
-        r.adjust(-sidePad, -rotPad, sidePad, bottomPad);
+        r.adjust(-sidePad, -rotPad, sidePad, chromePad);
+        // Upright chrome can sit outside the simple bottom pad when rotated
+        r = r.united(opacitySliderRect().adjusted(-chromePad, -chromePad, chromePad, chromePad));
+        for (Handle h : {Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower}) {
+            const QPointF c = handleCenter(h);
+            const qreal rad = chromeButtonSize();
+            r = r.united(QRectF(c.x() - rad, c.y() - rad, rad * 2, rad * 2));
+        }
     }
     return r;
 }
@@ -331,7 +339,30 @@ qreal ImageItem::chromeButtonSize() const
     return kChromeBtnScreenPx / screenScale();
 }
 
-QRectF ImageItem::opacitySliderRect() const
+QPointF ImageItem::toItemFromUpright(const QPointF &uprightLocal) const
+{
+    // Upright frame = item local with rotation removed. After the item's
+    // rotation is applied by the view, these points sit under the
+    // axis-aligned bounds with upright glyphs.
+    if (qFuzzyIsNull(m_rotation)) {
+        return uprightLocal;
+    }
+    QTransform inv;
+    inv.rotate(-m_rotation);
+    return inv.map(uprightLocal);
+}
+
+QPointF ImageItem::toUprightFromItem(const QPointF &itemLocal) const
+{
+    if (qFuzzyIsNull(m_rotation)) {
+        return itemLocal;
+    }
+    QTransform rot;
+    rot.rotate(m_rotation);
+    return rot.map(itemLocal);
+}
+
+QRectF ImageItem::opacitySliderRectUpright() const
 {
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal ss = screenScale();
@@ -340,7 +371,6 @@ QRectF ImageItem::opacitySliderRect() const
     const qreal gapSlider = kSliderGapPx / ss;
     const qreal w = kSliderWidthPx / ss;
     const qreal h = kSliderHeightPx / ss;
-    // FlipH/V + Raise/Lower, then opacity slider
     constexpr int kChromeBtns = 4;
     const qreal rowW = kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider + w;
     const qreal rowLeft = r.center().x() - rowW / 2.0;
@@ -349,14 +379,28 @@ QRectF ImageItem::opacitySliderRect() const
     return QRectF(sliderLeft, y, w, h);
 }
 
+QRectF ImageItem::opacitySliderRect() const
+{
+    const QRectF upright = opacitySliderRectUpright();
+    if (qFuzzyIsNull(m_rotation)) {
+        return upright;
+    }
+    QPolygonF mapped;
+    mapped << toItemFromUpright(upright.topLeft())
+           << toItemFromUpright(upright.topRight())
+           << toItemFromUpright(upright.bottomRight())
+           << toItemFromUpright(upright.bottomLeft());
+    return mapped.boundingRect();
+}
+
 void ImageItem::setOpacityFromSliderPos(const QPointF &itemPos)
 {
-    const QRectF track = opacitySliderRect();
+    const QRectF track = opacitySliderRectUpright();
     if (track.width() <= 0) {
         return;
     }
-    const qreal t = qBound(0.0, (itemPos.x() - track.left()) / track.width(), 1.0);
-    // Map 0..1 → opacity 0.05..1.0
+    const QPointF upright = toUprightFromItem(itemPos);
+    const qreal t = qBound(0.0, (upright.x() - track.left()) / track.width(), 1.0);
     setItemOpacity(0.05 + t * 0.95);
 }
 
@@ -375,7 +419,8 @@ QPointF ImageItem::handleCenter(Handle h) const
     const qreal chromeY = r.bottom() + kChromeOffsetPx / ss + btn / 2.0;
     const qreal cx = r.center().x();
     auto chromeBtnCenter = [&](int index) {
-        return QPointF(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
+        const QPointF upright(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
+        return toItemFromUpright(upright);
     };
     switch (h) {
     case Handle::ScaleTopLeft:
@@ -413,12 +458,14 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         return Handle::None;
     }
 
-    // Opacity slider: rectangular hit target
-    const QRectF slider = opacitySliderRect().adjusted(
-        -4.0 / screenScale(), -6.0 / screenScale(),
-        4.0 / screenScale(), 6.0 / screenScale());
-    if (slider.contains(itemPos)) {
-        return Handle::OpacitySlider;
+    // Opacity slider: test in upright frame so rotation does not skew the hit box
+    {
+        const QRectF slider = opacitySliderRectUpright().adjusted(
+            -4.0 / screenScale(), -6.0 / screenScale(),
+            4.0 / screenScale(), 6.0 / screenScale());
+        if (slider.contains(toUprightFromItem(itemPos))) {
+            return Handle::OpacitySlider;
+        }
     }
 
     // Raise / lower use larger chrome radius
@@ -567,43 +614,58 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setPen(pen);
     }
 
-    // Chrome row: large raise/lower + opacity slider
-    const qreal btnR = chromeButtonSize() / 2.0;
-    auto drawChromeBtn = [&](Handle h, const QString &glyph) {
-        const QPointF c = handleCenter(h);
-        const bool hovered = (m_hoverHandle == h);
-        const bool active = (m_activeHandle == h);
-        const qreal r = btnR * (hovered || active ? 1.12 : 1.0);
-        QColor fill = hovered || active ? QColor(0, 140, 255, 240) : QColor(50, 50, 50, 230);
-        QPen border = pen;
-        border.setColor(hovered || active ? QColor(255, 255, 255) : QColor(0, 160, 255));
-        border.setWidthF(hovered || active ? 2.0 : 1.0);
-        border.setCosmetic(true);
-        painter->setBrush(fill);
-        painter->setPen(border);
-        painter->drawEllipse(c, r, r);
-        painter->setPen(QPen(Qt::white));
-        painter->save();
-        painter->translate(c);
-        const qreal ss = screenScale();
-        painter->scale(1.0 / ss, 1.0 / ss);
-        QFont f = painter->font();
-        f.setBold(true);
-        f.setPixelSize(hovered || active ? 18 : 16);
-        painter->setFont(f);
-        painter->drawText(QRectF(-16, -16, 32, 32), Qt::AlignCenter, glyph);
-        painter->restore();
-    };
-    drawChromeBtn(Handle::FlipH, QStringLiteral("↔"));
-    drawChromeBtn(Handle::FlipV, QStringLiteral("↕"));
-    drawChromeBtn(Handle::Raise, QStringLiteral("↑"));
-    drawChromeBtn(Handle::Lower, QStringLiteral("↓"));
-
-    // Opacity slider track + fill + thumb
+    // Chrome row: flip / raise / lower / opacity — upright under the AABB
+    painter->save();
+    if (!qFuzzyIsNull(m_rotation)) {
+        painter->rotate(-m_rotation);
+    }
     {
-        const QRectF track = opacitySliderRect();
+        const QRectF r = QGraphicsPixmapItem::boundingRect();
         const qreal ss = screenScale();
-        const qreal t = qBound(0.0, (m_opacity - 0.05) / 0.95, 1.0);
+        const qreal btn = kChromeBtnScreenPx / ss;
+        const qreal gapBtn = kChromeBtnGapPx / ss;
+        const qreal gapSlider = kSliderGapPx / ss;
+        const qreal sliderW = kSliderWidthPx / ss;
+        constexpr int kChromeBtns = 4;
+        const qreal rowW = kChromeBtns * btn + (kChromeBtns - 1) * gapBtn + gapSlider + sliderW;
+        const qreal rowLeft = r.center().x() - rowW / 2.0;
+        const qreal chromeY = r.bottom() + kChromeOffsetPx / ss + btn / 2.0;
+        const qreal btnR = btn / 2.0;
+
+        auto uprightBtnCenter = [&](int index) {
+            return QPointF(rowLeft + index * (btn + gapBtn) + btn / 2.0, chromeY);
+        };
+        auto drawChromeBtn = [&](Handle h, int index, const QString &glyph) {
+            const QPointF c = uprightBtnCenter(index);
+            const bool hovered = (m_hoverHandle == h);
+            const bool active = (m_activeHandle == h);
+            const qreal rad = btnR * (hovered || active ? 1.12 : 1.0);
+            QColor fill = hovered || active ? QColor(0, 140, 255, 240) : QColor(50, 50, 50, 230);
+            QPen border = pen;
+            border.setColor(hovered || active ? QColor(255, 255, 255) : QColor(0, 160, 255));
+            border.setWidthF(hovered || active ? 2.0 : 1.0);
+            border.setCosmetic(true);
+            painter->setBrush(fill);
+            painter->setPen(border);
+            painter->drawEllipse(c, rad, rad);
+            painter->setPen(QPen(Qt::white));
+            painter->save();
+            painter->translate(c);
+            painter->scale(1.0 / ss, 1.0 / ss);
+            QFont f = painter->font();
+            f.setBold(true);
+            f.setPixelSize(hovered || active ? 18 : 16);
+            painter->setFont(f);
+            painter->drawText(QRectF(-16, -16, 32, 32), Qt::AlignCenter, glyph);
+            painter->restore();
+        };
+        drawChromeBtn(Handle::FlipH, 0, QStringLiteral("↔"));
+        drawChromeBtn(Handle::FlipV, 1, QStringLiteral("↕"));
+        drawChromeBtn(Handle::Raise, 2, QStringLiteral("↑"));
+        drawChromeBtn(Handle::Lower, 3, QStringLiteral("↓"));
+
+        const QRectF track = opacitySliderRectUpright();
+        const qreal tval = qBound(0.0, (m_opacity - 0.05) / 0.95, 1.0);
         const bool hot = (m_hoverHandle == Handle::OpacitySlider
                           || m_activeHandle == Handle::OpacitySlider);
         QPen trackPen = Qt::NoPen;
@@ -616,14 +678,15 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setBrush(QColor(40, 40, 40, hot ? 230 : 200));
         painter->drawRoundedRect(track, 3.0 / ss, 3.0 / ss);
         QRectF filled = track;
-        filled.setWidth(track.width() * t);
+        filled.setWidth(track.width() * tval);
         painter->setBrush(QColor(140, 100, 200, 230));
         painter->drawRoundedRect(filled, 3.0 / ss, 3.0 / ss);
-        const QPointF thumb(track.left() + track.width() * t, track.center().y());
+        const QPointF thumb(track.left() + track.width() * tval, track.center().y());
         painter->setBrush(QColor(230, 230, 230));
         painter->setPen(QPen(QColor(30, 30, 30), 0));
         painter->drawEllipse(thumb, 7.0 / ss, 7.0 / ss);
     }
+    painter->restore();
 
     painter->restore();
 }

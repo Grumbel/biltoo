@@ -110,6 +110,9 @@ private:
     bool isRotateHandle(Handle h) const;
     void activateChromeHandle(Handle h);
     QRectF opacitySliderRect() const;
+    QRectF opacitySliderRectUpright() const;
+    QPointF toItemFromUpright(const QPointF &uprightLocal) const;
+    QPointF toUprightFromItem(const QPointF &itemLocal) const;
     qreal chromeButtonSize() const;
     void setOpacityFromSliderPos(const QPointF &itemPos);
 
