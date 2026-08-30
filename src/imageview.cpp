@@ -511,6 +511,11 @@ qreal ImageView::viewScale() const
     return std::hypot(t.m11(), t.m12());
 }
 
+void ImageView::refreshStatus()
+{
+    emit statusChanged();
+}
+
 void ImageView::zoomViewBy(qreal factor)
 {
     m_fitMode = false;

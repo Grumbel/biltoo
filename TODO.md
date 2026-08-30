@@ -43,13 +43,13 @@ QImgView is a classic Qt image viewer that treats the image area as a **workspac
 - [x] QA: keep workspace thumbnail selection after sort; metadata fallback dimensions
 - [x] Image-mode zoom is view-level (consistent with Fit / 1:1)
 - [x] Persist free-form view transform (pan/zoom) when switching packaged layouts and back
+- [x] Live rotation/scale readout while dragging handles (status bar)
+- [x] Raise / lower and opacity controls on the selection chrome
 
 ## Near-term
 
 - [ ] Snap / align helpers
 - [ ] Richer Exif via libexiv2 (current panel uses Qt plugin text keys)
-- [ ] Rotation angle readout while Shift-dragging (status already updates)
-- [ ] Raise / lower and opacity controls directly on the selection chrome
 - [ ] Depend on qtimageformats / KImageFormats for more formats via Qt plugins
 - [ ] Optional thumbnail bar on the right (mirror of left) if requested
 - [ ] Masonry taller than viewport: use View → Show Scrollbars, or pan (middle / Alt)

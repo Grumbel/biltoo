@@ -100,6 +100,9 @@ public:
     void rotateLeft();
     void rotateRight();
 
+    /** Invoked by ImageItem during handle interaction for live status updates. */
+    Q_INVOKABLE void refreshStatus();
+
     void raiseSelected();
     void lowerSelected();
     void opacityUp();

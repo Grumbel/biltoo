@@ -4,9 +4,12 @@
 #include "imageitem.h"
 
 #include <QCursor>
+#include <QGraphicsScene>
 #include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsView>
 #include <QLineF>
+#include <QMetaObject>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyle>
@@ -16,6 +19,8 @@
 namespace {
 constexpr qreal kHandleScreenPx = 9.0;
 constexpr qreal kRotateOffsetPx = 28.0;
+constexpr qreal kChromeOffsetPx = 26.0; // below content, screen pixels
+constexpr qreal kChromeSpacingPx = 22.0;
 } // namespace
 
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
@@ -118,8 +123,10 @@ QRectF ImageItem::boundingRect() const
     // Expand for handles when selected so they are not clipped
     QRectF r = QGraphicsPixmapItem::boundingRect();
     if (isSelected() && m_interactive) {
-        const qreal pad = handleHitRadius() + kRotateOffsetPx / qMax(m_scale, 0.01) + 4.0;
-        r.adjust(-pad, -pad, pad, pad);
+        const qreal topPad = handleHitRadius() + kRotateOffsetPx / qMax(m_scale, 0.01) + 4.0;
+        const qreal bottomPad = handleHitRadius() + kChromeOffsetPx / qMax(m_scale, 0.01) + 4.0;
+        const qreal sidePad = handleHitRadius() + 4.0;
+        r.adjust(-sidePad, -topPad, sidePad, bottomPad);
     }
     return r;
 }
@@ -133,14 +140,11 @@ QPainterPath ImageItem::shape() const
         const qreal r = handleHitRadius();
         for (Handle h : {Handle::ScaleTopLeft, Handle::ScaleTopRight,
                          Handle::ScaleBottomLeft, Handle::ScaleBottomRight,
-                         Handle::Rotate}) {
+                         Handle::Rotate, Handle::Raise, Handle::Lower,
+                         Handle::OpacityDown, Handle::OpacityUp}) {
             const QPointF c = handleCenter(h);
             path.addEllipse(c, r, r);
         }
-        // Thin corridor to the rotate handle
-        const QPointF topMid = handleCenter(Handle::ScaleTopLeft) * 0.5
-                               + handleCenter(Handle::ScaleTopRight) * 0.5;
-        // Actually use content top centre
         const QRectF cr = QGraphicsPixmapItem::boundingRect();
         path.moveTo(cr.center().x(), cr.top());
         path.lineTo(handleCenter(Handle::Rotate));
@@ -159,10 +163,19 @@ qreal ImageItem::handleHitRadius() const
     return handleDrawSize() * 1.2;
 }
 
+bool ImageItem::isChromeHandle(Handle h) const
+{
+    return h == Handle::Raise || h == Handle::Lower
+           || h == Handle::OpacityDown || h == Handle::OpacityUp;
+}
+
 QPointF ImageItem::handleCenter(Handle h) const
 {
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal rotOff = kRotateOffsetPx / qMax(m_scale, 0.01);
+    const qreal chromeY = r.bottom() + kChromeOffsetPx / qMax(m_scale, 0.01);
+    const qreal spacing = kChromeSpacingPx / qMax(m_scale, 0.01);
+    const qreal cx = r.center().x();
     switch (h) {
     case Handle::ScaleTopLeft:
         return r.topLeft();
@@ -173,7 +186,15 @@ QPointF ImageItem::handleCenter(Handle h) const
     case Handle::ScaleBottomRight:
         return r.bottomRight();
     case Handle::Rotate:
-        return QPointF(r.center().x(), r.top() - rotOff);
+        return QPointF(cx, r.top() - rotOff);
+    case Handle::Raise:
+        return QPointF(cx - 1.5 * spacing, chromeY);
+    case Handle::Lower:
+        return QPointF(cx - 0.5 * spacing, chromeY);
+    case Handle::OpacityDown:
+        return QPointF(cx + 0.5 * spacing, chromeY);
+    case Handle::OpacityUp:
+        return QPointF(cx + 1.5 * spacing, chromeY);
     default:
         return QPointF();
     }
@@ -187,7 +208,8 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     const qreal r = handleHitRadius();
     const qreal r2 = r * r;
     for (Handle h : {Handle::Rotate, Handle::ScaleTopLeft, Handle::ScaleTopRight,
-                     Handle::ScaleBottomLeft, Handle::ScaleBottomRight}) {
+                     Handle::ScaleBottomLeft, Handle::ScaleBottomRight,
+                     Handle::Raise, Handle::Lower, Handle::OpacityDown, Handle::OpacityUp}) {
         const QPointF c = handleCenter(h);
         const QPointF d = itemPos - c;
         if (QPointF::dotProduct(d, d) <= r2) {
@@ -195,6 +217,37 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         }
     }
     return Handle::None;
+}
+
+void ImageItem::notifyViewStatus()
+{
+    if (!scene()) {
+        return;
+    }
+    for (QGraphicsView *v : scene()->views()) {
+        QMetaObject::invokeMethod(v, "refreshStatus", Qt::DirectConnection);
+    }
+}
+
+void ImageItem::activateChromeHandle(Handle h)
+{
+    switch (h) {
+    case Handle::Raise:
+        setZValue(zValue() + 1.0);
+        break;
+    case Handle::Lower:
+        setZValue(zValue() - 1.0);
+        break;
+    case Handle::OpacityUp:
+        setItemOpacity(m_opacity + 0.1);
+        break;
+    case Handle::OpacityDown:
+        setItemOpacity(m_opacity - 0.1);
+        break;
+    default:
+        break;
+    }
+    notifyViewStatus();
 }
 
 QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -244,6 +297,26 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     painter->setBrush(QColor(255, 200, 40));
     painter->drawEllipse(rot, hs / 2, hs / 2);
 
+    // Chrome buttons under the image: raise, lower, opacity − / +
+    auto drawChrome = [&](Handle h, const QString &glyph, const QColor &fill) {
+        const QPointF c = handleCenter(h);
+        painter->setBrush(fill);
+        painter->setPen(pen);
+        painter->drawEllipse(c, hs / 2 + 1, hs / 2 + 1);
+        painter->setPen(QPen(Qt::white));
+        QFont f = painter->font();
+        f.setBold(true);
+        f.setPointSizeF(qMax(7.0, hs * 0.55));
+        painter->setFont(f);
+        const QFontMetricsF fm(f);
+        const QRectF tr(c.x() - hs, c.y() - hs, hs * 2, hs * 2);
+        painter->drawText(tr, Qt::AlignCenter, glyph);
+    };
+    drawChrome(Handle::Raise, QStringLiteral("↑"), QColor(60, 60, 60, 220));
+    drawChrome(Handle::Lower, QStringLiteral("↓"), QColor(60, 60, 60, 220));
+    drawChrome(Handle::OpacityDown, QStringLiteral("−"), QColor(80, 50, 120, 220));
+    drawChrome(Handle::OpacityUp, QStringLiteral("+"), QColor(80, 50, 120, 220));
+
     painter->restore();
 }
 
@@ -252,6 +325,11 @@ void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
     if (m_interactive && event->button() == Qt::LeftButton) {
         const Handle h = handleAt(event->pos());
         if (h != Handle::None) {
+            if (isChromeHandle(h)) {
+                activateChromeHandle(h);
+                event->accept();
+                return;
+            }
             m_activeHandle = h;
             m_pressScenePos = event->scenePos();
             m_pressScale = m_scale;
@@ -284,6 +362,7 @@ void ImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
                 setItemScale(m_pressScale * (d1 / d0));
             }
         }
+        notifyViewStatus();
         event->accept();
         return;
     }
@@ -315,6 +394,12 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
         case Handle::ScaleTopRight:
         case Handle::ScaleBottomLeft:
             setCursor(Qt::SizeBDiagCursor);
+            break;
+        case Handle::Raise:
+        case Handle::Lower:
+        case Handle::OpacityDown:
+        case Handle::OpacityUp:
+            setCursor(Qt::PointingHandCursor);
             break;
         default:
             unsetCursor();

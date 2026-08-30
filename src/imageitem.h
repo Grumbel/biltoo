@@ -12,8 +12,8 @@
  * A single image on the workspace. Owns its pixmap, source pixels (for colour
  * sampling), and local scale/rotation applied around the item centre.
  *
- * When selected and interactive, draws scale and rotate handles and supports
- * direct manipulation of those handles with the mouse.
+ * When selected and interactive, draws scale/rotate handles and chrome buttons
+ * for raise, lower and opacity, and supports direct manipulation with the mouse.
  */
 class ImageItem : public QGraphicsPixmapItem
 {
@@ -27,7 +27,11 @@ public:
         ScaleTopRight,
         ScaleBottomLeft,
         ScaleBottomRight,
-        Rotate
+        Rotate,
+        Raise,
+        Lower,
+        OpacityDown,
+        OpacityUp
     };
 
     explicit ImageItem(const QString &path, const QImage &image,
@@ -71,11 +75,14 @@ protected:
 
 private:
     void applyLocalTransform();
+    void notifyViewStatus();
     QRectF contentRect() const;
     /** Handle centres in item coordinates (pre-transform / local). */
     QPointF handleCenter(Handle h) const;
     qreal handleHitRadius() const;
     qreal handleDrawSize() const;
+    bool isChromeHandle(Handle h) const;
+    void activateChromeHandle(Handle h);
 
     QString m_path;
     QImage m_source;
