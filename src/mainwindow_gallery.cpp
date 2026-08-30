@@ -165,6 +165,95 @@ void MainWindow::enterWorkspaceMode()
     toggleWorkspaceMode();
 }
 
+
+void MainWindow::updateMasonryCountControl()
+{
+    if (!m_imageView || !m_masonryCountAction) {
+        return;
+    }
+    const auto mode = m_imageView->layoutMode();
+    const bool columns = m_imageView->isGalleryMode()
+                         && mode == ImageView::LayoutMode::Masonry;
+    const bool rows = m_imageView->isGalleryMode()
+                      && mode == ImageView::LayoutMode::MasonryRows;
+    const bool show = columns || rows;
+    m_masonryCountAction->setVisible(show);
+    if (!show || !m_masonryCountSpin) {
+        return;
+    }
+    if (m_masonryCountLabel) {
+        m_masonryCountLabel->setText(rows ? tr("Rows:") : tr("Columns:"));
+    }
+    const QSignalBlocker blocker(m_masonryCountSpin);
+    m_masonryCountSpin->setValue(rows ? m_imageView->masonryRows()
+                                      : m_imageView->masonryColumns());
+}
+
+void MainWindow::updateScrollBarPolicyForMode()
+{
+    if (!m_imageView) {
+        return;
+    }
+    Qt::ScrollBarPolicy h = Qt::ScrollBarAlwaysOff;
+    Qt::ScrollBarPolicy v = Qt::ScrollBarAlwaysOff;
+    if (m_imageView->isGalleryMode()) {
+        // AlwaysOn keeps the viewport size stable so gallery packing does not
+        // oscillate when AsNeeded scrollbars appear/disappear.
+        h = Qt::ScrollBarAlwaysOn;
+        v = Qt::ScrollBarAlwaysOn;
+    } else if (m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked()) {
+        h = Qt::ScrollBarAsNeeded;
+        v = Qt::ScrollBarAsNeeded;
+    }
+    if (m_imageView->horizontalScrollBarPolicy() != h) {
+        m_imageView->setHorizontalScrollBarPolicy(h);
+    }
+    if (m_imageView->verticalScrollBarPolicy() != v) {
+        m_imageView->setVerticalScrollBarPolicy(v);
+    }
+}
+
+void MainWindow::updateThumbnailBarForMode()
+{
+    if (!m_thumbnailBar) {
+        return;
+    }
+    const bool gallery = m_imageView && m_imageView->isGalleryMode();
+    if (gallery) {
+        if (!m_thumbsHiddenForGallery) {
+            m_thumbsVisibleBeforeGallery = m_thumbnailBar->isVisible();
+            m_thumbsHiddenForGallery = true;
+        }
+        if (m_thumbnailBar->isVisible()) {
+            m_thumbnailBar->setVisible(false);
+        }
+        if (m_toggleThumbnailBarAct) {
+            m_toggleThumbnailBarAct->setChecked(false);
+        }
+        return;
+    }
+
+    if (m_thumbsHiddenForGallery) {
+        m_thumbsHiddenForGallery = false;
+        if (m_thumbsVisibleBeforeGallery) {
+            m_thumbnailBar->setVisible(true);
+            if (m_toggleThumbnailBarAct) {
+                m_toggleThumbnailBarAct->setChecked(true);
+            }
+        }
+    }
+}
+
+void MainWindow::updateUpToGalleryAction()
+{
+    if (!m_backToGalleryAct) {
+        return;
+    }
+    // Always shown; only enabled when Image mode was entered from Gallery.
+    m_backToGalleryAct->setVisible(true);
+    m_backToGalleryAct->setEnabled(m_galleryReturnActive);
+}
+
 void MainWindow::updateWorkspaceActionVisibility()
 {
     updateUpToGalleryAction();
