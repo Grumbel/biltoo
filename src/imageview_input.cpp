@@ -726,7 +726,10 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 break;
             }
         }
-        const bool ctrl = event->modifiers() & Qt::ControlModifier;
+        // Ctrl (and Meta on platforms where that is the multi-select modifier)
+        // toggles membership without clearing the rest of the selection.
+        const bool ctrl = event->modifiers()
+                          & (Qt::ControlModifier | Qt::MetaModifier);
         const bool shift = event->modifiers() & Qt::ShiftModifier;
 
         if (hit && shift && m_gallerySelectionAnchor) {

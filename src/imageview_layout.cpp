@@ -358,7 +358,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
     // Keep canvas order aligned with session/sort order (not async load order).
     reorderItemsByPaths(m_pathOrder);
 
-    if (m_scene->selectedItems().isEmpty() && !m_items.isEmpty()) {
+    // Workspace: seed a selection if empty. Gallery must not steal focus to
+    // "last item" on layout switch / path refresh (preserves multi-select).
+    if (isWorkspaceMode() && m_scene->selectedItems().isEmpty() && !m_items.isEmpty()) {
         m_items.last()->setSelected(true);
     }
 
@@ -496,16 +498,40 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     if (packagedLayout == LayoutMode::FreeForm) {
         packagedLayout = LayoutMode::Masonry;
     }
+    // Preserve multi-select when only switching Gallery layout (not entering
+    // from Image/Workspace — prepareGalleryCanvas clears selection).
+    QStringList selectedPaths;
+    QString anchorPath;
+    const bool layoutSwitch = isGalleryMode();
+    if (layoutSwitch && m_scene) {
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                selectedPaths.append(ii->path());
+            }
+        }
+        if (m_gallerySelectionAnchor) {
+            anchorPath = m_gallerySelectionAnchor->path();
+        }
+    }
+
     if (m_viewMode == ViewMode::Workspace) {
         snapshotFreeFormStates();
         snapshotWorkspace();
     }
-    // Clear residual Image/Workspace view state before packing so the old
-    // composition is not left painted behind the new layout.
-    prepareGalleryCanvas();
+    if (layoutSwitch) {
+        // Soft reset: keep items and selection paths; only clear view zoom.
+        resetTransform();
+        m_fitMode = true;
+        m_fillMode = false;
+    } else {
+        // Clear residual Image/Workspace view state before packing.
+        prepareGalleryCanvas();
+    }
     m_viewMode = ViewMode::Gallery;
     m_layoutMode = packagedLayout;
-    m_gallerySelectionAnchor = nullptr;
+    if (!layoutSwitch) {
+        m_gallerySelectionAnchor = nullptr;
+    }
     setDragMode(QGraphicsView::RubberBandDrag);
     for (ImageItem *item : m_items) {
         applyItemModeFlags(item);
@@ -514,6 +540,19 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
         item->setItemRotation(0.0);
     }
     applyLayout();
+
+    if (layoutSwitch && !selectedPaths.isEmpty()) {
+        m_scene->clearSelection();
+        for (const QString &path : selectedPaths) {
+            if (ImageItem *item = findItemByPath(path)) {
+                item->setSelected(true);
+            }
+        }
+        m_gallerySelectionAnchor = anchorPath.isEmpty()
+            ? nullptr
+            : findItemByPath(anchorPath);
+    }
+
     emit statusChanged();
 }
 
