@@ -168,3 +168,200 @@
 ## Sign-off
 
 Full static audit of the tree as of tip above. No behavioural code was modified in this pass. Next engineering work should pick severity order from the tables, not ad-hoc drive-by fixes.
+
+---
+
+## Deep pass (continuation)
+
+**Date:** 2026-08-30 (same tip + this amendment)  
+**Method:** Line-level follow-up on H3 load pipeline, fit/rotation (M12), gallery zoom (M4), dual chrome (H2), metadata, mode transitions, shortcut matrix.
+
+| Step | Activity | Status |
+|------|----------|--------|
+| D1 | `scheduleImageLoad` / `onImageLoaded` all roles | [x] |
+| D2 | Image-mode rotation/flip lifetime across navigation | [x] |
+| D3 | `fitItem` / `zoomReset` vs DOMAIN framing rules | [x] |
+| D4 | Gallery wheel zoom vs `zoomViewBy` / relayout | [x] |
+| D5 | Slideshow vs `enterGalleryMode` / layout actions | [x] |
+| D6 | Metadata panel load model | [x] |
+| D7 | `ImageItem` mouse/hover vs view-owned chrome | [x] |
+| D8 | `enterGalleryMode` double apply | [x] |
+| D9 | Session navigation wrap, slideshow interaction | [x] |
+| D10 | Shortcut collisions (spot check) | [x] |
+
+---
+
+### D1 — Async load generation model
+
+**How it works**
+
+- Every `scheduleImageLoad` does `++m_loadGeneration` and captures `gen` in the worker.
+- `LoadReplace` completion **requires** `generation == m_loadGeneration` (latest wins).
+- `LoadAdd` / `LoadRestore` do **not** compare generation; they gate on `m_pendingWorkspacePaths` and `findItemByPath`.
+
+**Findings**
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| H3a | High | **Shared generation counter for all roles.** A `LoadAdd`/`LoadRestore` scheduled while a `LoadReplace` is in flight bumps `m_loadGeneration` and **drops the Image-mode navigation result**. Example: rapid Next, then something schedules an add (or gallery restore path), replace decode is discarded → blank or stuck previous frame until another navigate. |
+| H3b | Medium | **No mode token on completion.** `LoadReplace` checks `isImageMode()` at completion time. If user switched to Gallery/Workspace after scheduling replace, the branch may no-op or seed workspace empty canvas depending on conditions — easy to reason wrong under stress. |
+| H3c | Medium | **Gallery populate** goes through thumb selection → `syncCanvasFromThumbnailSelection` → many adds; each add bumps generation and can cancel an in-flight classic load if modes interleave. |
+| H3d | Low | Null image on replace sets `m_lastLoadError` but does not clear a previous successful pixmap if clearWorkspace was not reached — actually clear happens only on success path; failed load keeps old image (good) but status may show error for path that is not displayed. |
+
+**Recommendation (later):** Separate counters or roles: replace-gen vs add-set; pass `ViewMode` expected at schedule time; ignore completions when mode mismatch.
+
+---
+
+### D2 — Image-mode rotation/flip lifetime (**DOMAIN violation**)
+
+In `onImageLoaded` for `LoadReplace` + Image mode:
+
+```text
+item->setItemScale(1.0);
+item->setItemRotation(0.0);
+item->setPos(0, 0);
+```
+
+Every successful navigation/open builds a **new** `ImageItem` with **rotation forced to 0**. Flips live on the item; a new item starts unflipped unless applied from saved state (not done here).
+
+DOMAIN.md: *“The image may still carry rotation and flips; framing must not erase them unless the user asks to reset.”*
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| H6 | High | **Rotate/flip in Image mode is lost on Next/Prev/reload.** User rotates, steps once, orientation is gone. Not a view-only framing bug — object orientation is wiped at decode apply. |
+| M12 ✓ | Confirmed OK for fit | `fitItem` comments and body only normalize **scale** and view matrix; they do **not** clear rotation. The wipe is solely in `onImageLoaded` replace path. |
+
+**Recommendation:** Persist per-path orientation in session or `m_itemStates`, reapply after decode; only clear on explicit Reset.
+
+---
+
+### D3 — Zoom 1:1 in Image mode
+
+`zoomReset()` in Image mode calls `item->setItemScale(1.0)` and `resetTransform()` — correct for 1:1 **pixels**, leaves rotation intact. Consistent with fitItem’s scale normalization. No new issue beyond H6 when combined with reload.
+
+---
+
+### D4 — Gallery zoom inconsistency (deepens M4)
+
+| Path | Gallery behaviour |
+|------|-------------------|
+| `zoomViewBy` / toolbar Zoom In/Out | **Early return** — no view zoom |
+| `wheelEvent` Ctrl/Meta or no-overflow plain wheel | **Scales the view transform** |
+| `applyLayout` / resize debounce | **`resetTransform()`** — zoom discarded |
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M4a | Medium | Toolbar zoom disabled in Gallery while wheel zoom works — **inconsistent affordances**. |
+| M4b | Medium | Any relayout/resize **silently resets** wheel zoom — feels like a bug if user zoomed to inspect. |
+| M4c | Low | Status/`viewScale()` may report zoom until next pack; after pack, identity without HUD explanation. |
+
+---
+
+### D5 — Slideshow vs Gallery entry
+
+- `updateNavigationActions`: stops slideshow only when `!canSlideshow` (Workspace or ≤1 file).
+- `enterGalleryMode` does **not** call `stopSlideshow()`.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M7a | Medium | **Start slideshow (Image), then activate a Gallery layout action:** timer keeps running; `onSlideshowTick` → `goNext` → `setCurrentIndex` only `focusSessionPath` in Gallery (does not show full-screen next image). Slideshow appears “running” (action checked, cursor hide) while user browses tiles — **mode/timer mismatch**. |
+| M7b | Low | Entering Gallery from slideshow does not flash stop; UI still shows Stop Slideshow. |
+
+**Recommendation:** `stopSlideshow()` at start of `enterGalleryMode` / Workspace enter; or advance only when `isImageMode()`.
+
+---
+
+### D6 — Metadata panel
+
+- `setImagePath` runs **synchronously** on the GUI thread (Exiv2 read in-panel).
+- No async cancel issue (M9 largely **cleared** for race-on-completion).
+- Large files / slow FS can **stall UI** when stepping quickly through a session with the dock visible.
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M9 → L15 | Low | Sync Exiv2 on GUI thread — jank risk, not a stale-result race. |
+
+---
+
+### D7 — Dual chrome path (deepens H2)
+
+| Path | Still active? |
+|------|----------------|
+| `ImageView` mouse press/move — handleAt, drag, hover setHoverHandle, viewport cursor | Yes — primary |
+| `ImageItem::mousePressEvent` → `beginHandleInteraction` | Yes — “fallback” |
+| `ImageItem::hoverMoveEvent` | Yes — sets `m_hoverHandle`, tooltips, **item** cursor, `update()` |
+| `ImageItem::paint` | Selection frame only; chrome not drawn here |
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| H2a | High | Two drag pipelines can both accept the same gesture depending on scene delivery order — **double begin** or fight with view’s `m_handleDragItem`. |
+| H2b | Medium | Item hover still drives cursor on the **item** while view sets **viewport** cursor — competing cursors. |
+| H2c | Low | Gallery branch sets `m_galleryHovered` and `update()` though paint no longer uses hover wash — **dead state + extra repaints**. |
+
+---
+
+### D8 — `enterGalleryMode` double pack
+
+```text
+m_imageView->enterGallery(layout);
+populateGalleryCanvas();
+m_imageView->enterGallery(layout);  // second time
+```
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M15 | Medium | **Double enterGallery** forces two full packs and duplicate work; second call papered over async item arrival. Fragile; should be single enter after items settle (or pack-on-item-added). |
+
+---
+
+### D9 — Navigation / slideshow
+
+- `goNext`/`goPrevious` wrap the session (circular) — fine for slideshow.
+- User Next while slideshow active **stops** slideshow (`!m_slideshowAdvancing`) — good.
+- Timer tick sets `m_slideshowAdvancing` so it does not self-stop — good.
+- Combined with M7a, ticks in Gallery only move session cursor — weak.
+
+---
+
+### D10 — Shortcuts (spot check)
+
+| Combo | Binding | Notes |
+|-------|---------|--------|
+| Space | Slideshow ApplicationShortcut | Gallery now enabled — OK |
+| H | HUD | vs Ctrl+H flip — distinct |
+| R / Ctrl+R / ] | Rotate right | Bare **R** rotates — can surprise in text fields if any; app has few text fields |
+| Ctrl+F | Zoom fill | Not find — OK for viewer |
+| F / F11 | Dedicated QShortcuts + menu action without shortcut | Good leave-fullscreen story |
+| Ctrl+Shift+Up/Down | Raise/Lower | Overlap logic — OK |
+
+No hard duplicate key conflicts found in the action table beyond intentional multi-key rotate.
+
+Preferences dialog: standard `QDialog` + buttons; ApplicationShortcuts may still fire **H**/**Space** while dialog focused depending on Qt focus — residual M6.
+
+---
+
+### D11 — Additional notes from deep read
+
+| ID | Severity | Issue |
+|----|----------|--------|
+| M16 | Medium | **`findItemByPath` prevents second canvas object with same path.** `duplicateSelected` must use a distinct identity or path key — if duplicates share path, restore/add skips. Verify duplicate implementation allows two items same path. |
+| L16 | Low | Gallery item hover cursor is PointingHand though primary action is select not open — mild HIG mismatch (hand usually means open/navigate). |
+| L17 | Low | `zoomViewBy` comment still says packaged layouts skip zoom; wheel path contradicts — comment debt. |
+
+---
+
+## Updated priority list (after deep pass)
+
+1. **H6** — Persist Image-mode rotation/flip across navigation (DOMAIN).  
+2. **H3a** — Split generation / don’t let LoadAdd cancel LoadReplace.  
+3. **H2 / H2a** — Single chrome interaction owner (view only).  
+4. **M7a** — Stop slideshow when leaving Image mode.  
+5. **M4a/b** — One Gallery zoom policy (toolbar + wheel + relayout).  
+6. **M15** — Single `enterGallery` after canvas populated.  
+7. Docs H1/M14 alignment.  
+
+---
+
+## Sign-off (deep pass)
+
+Static deep pass complete for load pipeline, orientation lifetime, gallery zoom, slideshow/mode, metadata, chrome dual path, gallery enter. Still no runtime execution in this environment. No product code modified in this amendment.
