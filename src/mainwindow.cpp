@@ -569,6 +569,7 @@ void MainWindow::showKeyboardShortcuts()
         "←/→ or edge click — previous / next<br/>"
         "Home / End — first / last<br/>"
         "Space — start/stop slideshow<br/>"
+        "[ / ] — slower / faster slideshow (interval)<br/>"
         "Esc — leave fullscreen (or return to Gallery)</p>"
         "<p><b>View</b><br/>"
         "F / F11 — fullscreen<br/>"

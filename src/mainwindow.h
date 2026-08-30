@@ -53,6 +53,10 @@ public:
     void setSlideshowIntervalMs(int ms);
     void startSlideshow();
     void stopSlideshow();
+    /** Shorter interval (faster); shortcut ]. */
+    void slideshowFaster();
+    /** Longer interval (slower); shortcut [. */
+    void slideshowSlower();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -216,6 +220,8 @@ private:
     QAction *m_firstAct = nullptr;
     QAction *m_lastAct = nullptr;
     QAction *m_slideshowAct = nullptr;
+    QAction *m_slideshowFasterAct = nullptr;
+    QAction *m_slideshowSlowerAct = nullptr;
     QAction *m_workspaceModeAct = nullptr;
     QAction *m_selectToolAct = nullptr;
     QAction *m_panToolAct = nullptr;

@@ -559,9 +559,43 @@ void MainWindow::goLast()
 
 void MainWindow::setSlideshowIntervalMs(int ms)
 {
-    m_slideshowIntervalMs = qMax(500, ms);
+    m_slideshowIntervalMs = qBound(200, ms, 60000);
     if (m_slideshowTimer->isActive()) {
         m_slideshowTimer->setInterval(m_slideshowIntervalMs);
+    }
+}
+
+void MainWindow::slideshowFaster()
+{
+    // mpv ]: higher playback speed → shorter dwell per slide
+    const int next = qMax(200, int(qRound(m_slideshowIntervalMs / 1.25)));
+    if (next == m_slideshowIntervalMs && m_slideshowIntervalMs <= 200) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Slideshow already at minimum interval (0.2 s)"), 2000);
+        }
+        return;
+    }
+    setSlideshowIntervalMs(next);
+    if (statusBar()) {
+        statusBar()->showMessage(
+            tr("Slideshow interval: %1 s").arg(m_slideshowIntervalMs / 1000.0, 0, 'f', 2), 2000);
+    }
+}
+
+void MainWindow::slideshowSlower()
+{
+    // mpv [: lower playback speed → longer dwell per slide
+    const int next = qMin(60000, int(qRound(m_slideshowIntervalMs * 1.25)));
+    if (next == m_slideshowIntervalMs && m_slideshowIntervalMs >= 60000) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Slideshow already at maximum interval (60 s)"), 2000);
+        }
+        return;
+    }
+    setSlideshowIntervalMs(next);
+    if (statusBar()) {
+        statusBar()->showMessage(
+            tr("Slideshow interval: %1 s").arg(m_slideshowIntervalMs / 1000.0, 0, 'f', 2), 2000);
     }
 }
 
