@@ -477,8 +477,17 @@ void ImageView::zoomFit()
     m_fitMode = true;
     m_fillMode = false;
     if (isGalleryMode()) {
+        // Fit the packed gallery into the viewport. applyLayout() alone only
+        // resets to identity after a view-zoom when the pack already matches
+        // the window — use fitInView so +/- zoom is actually undone to "all
+        // tiles visible".
         if (!m_items.isEmpty()) {
-            applyLayout();
+            const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
+            if (bounds.isValid() && !bounds.isEmpty()) {
+                m_scene->setSceneRect(bounds);
+                fitInView(bounds, Qt::KeepAspectRatio);
+            }
+            emit statusChanged();
         }
         return;
     }
@@ -504,11 +513,18 @@ void ImageView::zoomFill()
 {
     m_fitMode = true;
     m_fillMode = true;
-    if (isMultiItemMode()) {
-        if (isGalleryMode() && !m_items.isEmpty()) {
-            applyLayout();
-            return;
+    if (isGalleryMode()) {
+        if (!m_items.isEmpty()) {
+            const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
+            if (bounds.isValid() && !bounds.isEmpty()) {
+                m_scene->setSceneRect(bounds);
+                fitInView(bounds, Qt::KeepAspectRatioByExpanding);
+            }
+            emit statusChanged();
         }
+        return;
+    }
+    if (isWorkspaceMode()) {
         if (!m_items.isEmpty()) {
             fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
                       Qt::KeepAspectRatioByExpanding);
