@@ -120,7 +120,11 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     // LoadRestore pending is owned by m_pendingRestoreStates (AUDIT M27).
     // AUDIT H3a: only LoadReplace advances the generation token so workspace
     // adds cannot cancel an in-flight Image-mode navigation decode.
-    const quint64 gen = (role == LoadReplace) ? ++m_loadGeneration : m_loadGeneration;
+    // (Cannot use ?: on atomic — pre-increment yields T, bare atomic is not T.)
+    quint64 gen = m_loadGeneration.load();
+    if (role == LoadReplace) {
+        gen = ++m_loadGeneration;
+    }
     QThreadPool::globalInstance()->start([this, path, role, gen]() {
         const QImage image = ImageLoader::load(path);
         QMetaObject::invokeMethod(this, "onImageLoaded", Qt::QueuedConnection,
