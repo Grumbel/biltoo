@@ -16,6 +16,7 @@ See [TODO.md](TODO.md) for the roadmap and open questions.
 - Primary build system: **Nix flake** + CMake + Qt6.
   - `nix develop` – development shell
   - `nix build` / `nix run` – package and run
+  - `nix flake check` – builds the package (compile gate)
 - Manual: standard out-of-source CMake against Qt6 Widgets.
 - Debug info: `nix build` uses **RelWithDebInfo** and `separateDebugInfo`
   (symbols via `nix build .#debug`). Dev shell sets `CMAKE_BUILD_TYPE=Debug`
@@ -108,8 +109,26 @@ Use these names consistently in code comments, menus, and docs:
   screen-pixel radii so chrome stays clickable under rotation/zoom.
   Scrollbars are hidden by default (View → Show Scrollbars).
   Preferences: General tab (slideshow / session / view) and Default application tab.
+  Default application checkboxes reflect the current association (checked = QImgView
+  is default); toggling applies immediately. “Set all as default” / “Remove all as
+  default” cover the full list. Dialog buttons follow GNOME 2 HIG (Cancel left, OK right).
+
+## Dialog button order (GNOME 2 HIG)
+
+Preferences and other action dialogs use **GNOME 2 Human Interface Guidelines**
+button placement:
+
+- **Cancel** (or equivalent dismiss) on the **left**
+- Affirmative action (**OK**, **Apply**, …) on the **right**
+- Affirmative button is the default (Return); Esc activates Cancel
+
+Do not rely on `QDialogButtonBox` alone for order: under many Qt styles
+(e.g. Fusion) the platform hint yields Windows/KDE order (OK left of Cancel).
+Build the button row explicitly (`Cancel`, stretch, `OK`) so the layout stays
+HIG-conformant on every desktop.
 
 ## What not to do
+
 
 - Do not add image-editing features (crop, filters, pixel changes) unless
   explicitly requested.
