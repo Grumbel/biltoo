@@ -131,63 +131,111 @@ void ImageView::paintEvent(QPaintEvent *event)
     if (m_hudVisible || m_hudFlashVisible) {
         QFont f = font();
         f.setPointSizeF(qMax(10.0, f.pointSizeF()));
-        painter.setFont(f);
+        QFont boldF = f;
+        boldF.setBold(true);
         const QFontMetrics fm(f);
+        const QFontMetrics fmBold(boldF);
         const int margin = 10;
         const int pad = 8;
-        const int maxW = qMax(40, viewport()->width() - 2 * margin);
+        const int lineGap = 2;
+        // Background must stay inside the viewport; text area is inset by pad.
+        const int maxBgW = qMax(40, viewport()->width() - 2 * margin);
+        const int maxTextW = qMax(20, maxBgW - 2 * pad);
 
-        QStringList lines;
+        auto wrapLine = [&](const QString &text, const QFontMetrics &metrics) {
+            QStringList out;
+            if (metrics.horizontalAdvance(text) <= maxTextW) {
+                out << text;
+                return out;
+            }
+            // Prefer splitting status segments on " | " so long HUDs wrap cleanly.
+            const QString sep = QStringLiteral(" | ");
+            const QStringList parts = text.split(sep, Qt::KeepEmptyParts);
+            if (parts.size() <= 1) {
+                out << metrics.elidedText(text, Qt::ElideMiddle, maxTextW);
+                return out;
+            }
+            QString current;
+            for (const QString &part : parts) {
+                const QString candidate = current.isEmpty() ? part : current + sep + part;
+                if (metrics.horizontalAdvance(candidate) <= maxTextW) {
+                    current = candidate;
+                    continue;
+                }
+                if (!current.isEmpty()) {
+                    out << current;
+                }
+                if (metrics.horizontalAdvance(part) <= maxTextW) {
+                    current = part;
+                } else {
+                    out << metrics.elidedText(part, Qt::ElideMiddle, maxTextW);
+                    current.clear();
+                }
+            }
+            if (!current.isEmpty()) {
+                out << current;
+            }
+            return out;
+        };
+
+        struct HudLine {
+            QString text;
+            bool bold = false;
+        };
+        QList<HudLine> hudLines;
         if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
             QString actionLine = m_hudAction;
             if (!m_hudDetail.isEmpty()) {
                 actionLine += QLatin1Char(' ') + m_hudDetail;
             }
-            lines << actionLine;
+            for (const QString &w : wrapLine(actionLine, fmBold)) {
+                hudLines.append({w, true});
+            }
         }
         if (m_hudVisible) {
-            lines << statusText();
+            for (const QString &w : wrapLine(statusText(), fm)) {
+                hudLines.append({w, false});
+            }
         } else if (m_hudFlashVisible && m_hudDetail.isEmpty()) {
-            // Flash without pin: still show filename under the action
             ImageItem *item = targetItem();
             if (!item) {
                 item = primaryItem();
             }
             if (item) {
-                lines << QFileInfo(item->path()).fileName();
+                for (const QString &w : wrapLine(QFileInfo(item->path()).fileName(), fm)) {
+                    hudLines.append({w, false});
+                }
             }
         }
 
-        if (!lines.isEmpty()) {
+        if (!hudLines.isEmpty()) {
             int textW = 0;
             int textH = 0;
-            QStringList elidedLines;
-            for (const QString &line : lines) {
-                const QString el = fm.elidedText(line, Qt::ElideMiddle, maxW - 2 * pad);
-                elidedLines << el;
-                textW = qMax(textW, fm.horizontalAdvance(el));
-                textH += fm.height();
+            for (const HudLine &hl : hudLines) {
+                const QFontMetrics &m = hl.bold ? fmBold : fm;
+                // boundingRect is more reliable than horizontalAdvance for bold glyphs.
+                textW = qMax(textW, m.boundingRect(hl.text).width());
+                textH += m.height();
             }
-            if (elidedLines.size() > 1) {
-                textH += 2 * (elidedLines.size() - 1); // line gap
+            if (hudLines.size() > 1) {
+                textH += lineGap * (hudLines.size() - 1);
             }
-            const QRect bg(margin, margin, textW + 2 * pad, textH + 2 * pad);
+            textW = qMin(textW, maxTextW);
+            const int bgW = qMin(maxBgW, textW + 2 * pad);
+            const QRect bg(margin, margin, bgW, textH + 2 * pad);
             painter.setPen(Qt::NoPen);
             painter.setBrush(QColor(0, 0, 0, 170));
             painter.drawRoundedRect(bg, 6, 6);
             painter.setPen(QColor(240, 240, 240));
             int y = bg.top() + pad;
-            for (int i = 0; i < elidedLines.size(); ++i) {
-                if (i == 0 && m_hudFlashVisible && !m_hudAction.isEmpty()) {
-                    QFont bold = f;
-                    bold.setBold(true);
-                    painter.setFont(bold);
-                } else {
-                    painter.setFont(f);
-                }
-                painter.drawText(QRect(bg.left() + pad, y, textW, fm.height()),
-                                 Qt::AlignLeft | Qt::AlignVCenter, elidedLines.at(i));
-                y += fm.height() + 2;
+            const int textAreaW = bg.width() - 2 * pad;
+            for (const HudLine &hl : hudLines) {
+                const QFont &lf = hl.bold ? boldF : f;
+                const QFontMetrics &m = hl.bold ? fmBold : fm;
+                painter.setFont(lf);
+                painter.drawText(QRect(bg.left() + pad, y, textAreaW, m.height()),
+                                 Qt::AlignLeft | Qt::AlignVCenter, hl.text);
+                y += m.height() + lineGap;
             }
         }
     }
