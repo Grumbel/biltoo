@@ -94,9 +94,11 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role)
 {
-    Q_UNUSED(generation);
-    // Replace loads only care about the latest classic path
+    // Replace loads only care about the latest request
     if (role == LoadReplace) {
+        if (generation != m_loadGeneration) {
+            return; // superseded by a newer navigation / open
+        }
         if (path != m_classicPath || m_workspaceMode) {
             // Stale image-mode navigation or switched to workspace
             if (!(m_workspaceMode && m_items.isEmpty() && path == m_classicPath)) {
@@ -1437,13 +1439,24 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if (!m_workspaceMode && event->button() == Qt::LeftButton) {
-        // Ignore double-clicks that land on the nav edge zones
-        if (edgeZoneAt(event->pos()) == EdgeZone::None) {
-            emit fullscreenToggleRequested();
+    // Rapid edge clicks arrive as double-clicks (second press is not a Press event).
+    // Treat them as navigation, same as a single click on the affordance.
+    if (!m_workspaceMode && event->button() == Qt::LeftButton
+        && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
+        const EdgeZone zone = edgeZoneAt(event->pos());
+        if (zone == EdgeZone::Previous) {
+            emit navigatePreviousRequested();
             event->accept();
             return;
         }
+        if (zone == EdgeZone::Next) {
+            emit navigateNextRequested();
+            event->accept();
+            return;
+        }
+        emit fullscreenToggleRequested();
+        event->accept();
+        return;
     }
     QGraphicsView::mouseDoubleClickEvent(event);
 }
