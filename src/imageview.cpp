@@ -600,6 +600,12 @@ void ImageView::zoomViewBy(qreal factor)
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(factor, factor);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    // Handle sizes depend on view scale — refresh geometry for selected items
+    for (ImageItem *item : m_items) {
+        if (item->isSelected()) {
+            item->updateHandleLayout();
+        }
+    }
     emit statusChanged();
 }
 
@@ -1046,10 +1052,15 @@ void ImageView::wheelEvent(QWheelEvent *event)
 {
     const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
 
-    // Both modes: zoom the view about the cursor (item handles still scale items)
+    // Both modes: zoom the view about the cursor
     m_fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
+    for (ImageItem *item : m_items) {
+        if (item->isSelected()) {
+            item->updateHandleLayout();
+        }
+    }
     emit statusChanged();
     event->accept();
 }

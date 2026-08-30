@@ -133,8 +133,9 @@ QRectF ImageItem::boundingRect() const
     // Expand for handles when selected so they are not clipped
     QRectF r = QGraphicsPixmapItem::boundingRect();
     if (isSelected() && m_interactive) {
-        const qreal topPad = handleHitRadius() + kRotateOffsetPx / qMax(m_scale, 0.01) + 4.0;
-        const qreal bottomPad = handleHitRadius() + kChromeOffsetPx / qMax(m_scale, 0.01) + 4.0;
+        const qreal ss = screenScale();
+        const qreal topPad = handleHitRadius() + kRotateOffsetPx / ss + 4.0;
+        const qreal bottomPad = handleHitRadius() + kChromeOffsetPx / ss + 4.0;
         const qreal sidePad = handleHitRadius() + 4.0;
         r.adjust(-sidePad, -topPad, sidePad, bottomPad);
     }
@@ -166,15 +167,35 @@ QPainterPath ImageItem::shape() const
     return path;
 }
 
+qreal ImageItem::screenScale() const
+{
+    // Item local scale × view transform scale → pixels per local unit
+    qreal s = qMax(m_scale, 0.01);
+    if (scene()) {
+        const QList<QGraphicsView *> views = scene()->views();
+        if (!views.isEmpty() && views.first()) {
+            const QTransform t = views.first()->transform();
+            s *= std::hypot(t.m11(), t.m12());
+        }
+    }
+    return qMax(s, 0.01);
+}
+
 qreal ImageItem::handleDrawSize() const
 {
-    // Keep handle roughly constant on screen
-    return kHandleScreenPx / qMax(m_scale, 0.01);
+    // Constant size in screen pixels regardless of item or view zoom
+    return kHandleScreenPx / screenScale();
 }
 
 qreal ImageItem::handleHitRadius() const
 {
     return handleDrawSize() * 1.2;
+}
+
+void ImageItem::updateHandleLayout()
+{
+    prepareGeometryChange();
+    update();
 }
 
 bool ImageItem::isChromeHandle(Handle h) const
@@ -186,9 +207,10 @@ bool ImageItem::isChromeHandle(Handle h) const
 QPointF ImageItem::handleCenter(Handle h) const
 {
     const QRectF r = QGraphicsPixmapItem::boundingRect();
-    const qreal rotOff = kRotateOffsetPx / qMax(m_scale, 0.01);
-    const qreal chromeY = r.bottom() + kChromeOffsetPx / qMax(m_scale, 0.01);
-    const qreal spacing = kChromeSpacingPx / qMax(m_scale, 0.01);
+    const qreal ss = screenScale();
+    const qreal rotOff = kRotateOffsetPx / ss;
+    const qreal chromeY = r.bottom() + kChromeOffsetPx / ss;
+    const qreal spacing = kChromeSpacingPx / ss;
     const qreal cx = r.center().x();
     switch (h) {
     case Handle::ScaleTopLeft:
@@ -326,13 +348,18 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setPen(pen);
         painter->drawEllipse(c, hs / 2 + 1, hs / 2 + 1);
         painter->setPen(QPen(Qt::white));
+        // Counter-scale text so glyph size stays readable on screen
+        painter->save();
+        painter->translate(c);
+        const qreal ss = screenScale();
+        painter->scale(1.0 / ss, 1.0 / ss);
         QFont f = painter->font();
         f.setBold(true);
-        f.setPointSizeF(qMax(7.0, hs * 0.55));
+        f.setPixelSize(11);
         painter->setFont(f);
-        const QFontMetricsF fm(f);
-        const QRectF tr(c.x() - hs, c.y() - hs, hs * 2, hs * 2);
+        const QRectF tr(-12, -12, 24, 24);
         painter->drawText(tr, Qt::AlignCenter, glyph);
+        painter->restore();
     };
     drawChrome(Handle::Raise, QStringLiteral("↑"), QColor(60, 60, 60, 220));
     drawChrome(Handle::Lower, QStringLiteral("↓"), QColor(60, 60, 60, 220));

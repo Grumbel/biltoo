@@ -68,6 +68,9 @@ public:
     /** Which handle (if any) is under the given item-local position. */
     Handle handleAt(const QPointF &itemPos) const;
 
+    /** Call after view zoom so handle hit areas/bounds stay correct. */
+    void updateHandleLayout();
+
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
@@ -88,6 +91,8 @@ private:
     QPointF handleCenter(Handle h) const;
     qreal handleHitRadius() const;
     qreal handleDrawSize() const;
+    /** Combined item×view scale so handles stay constant on screen. */
+    qreal screenScale() const;
     bool isChromeHandle(Handle h) const;
     void activateChromeHandle(Handle h);
 
