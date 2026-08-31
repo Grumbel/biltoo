@@ -139,18 +139,21 @@ ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &in
 QSize ImageView::probeImageSize(const QString &path) const
 {
     QImageReader reader(path);
+    reader.setAutoTransform(true);
     QSize s = reader.size();
     if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
-        // Some formats need a partial read; avoid full decode here — 1×1 packs.
-        s = QSize(1, 1);
+        // Unknown size until decode — use a neutral square so pack is stable;
+        // applyLayout runs again when setSourceImage reports the real size.
+        s = QSize(1000, 1000);
     }
     return s;
 }
 
 int ImageView::pendingDecodeCount() const
 {
-    return m_pendingWorkspacePaths.size() + m_pendingRestoreStates.size()
-           + m_galleryDecodeScheduled.size();
+    // m_galleryDecodeScheduled ⊆ m_pendingWorkspacePaths for gallery window loads;
+    // do not double-count.
+    return m_pendingWorkspacePaths.size() + m_pendingRestoreStates.size();
 }
 
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
@@ -182,7 +185,8 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
-    if (path.isEmpty() || m_galleryDecodeScheduled.contains(path)
+    if (path.isEmpty() || m_galleryDecodeFailed.contains(path)
+        || m_galleryDecodeScheduled.contains(path)
         || m_pendingWorkspacePaths.contains(path)) {
         return;
     }
@@ -191,10 +195,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
     if (m_galleryDecodeScheduled.size() >= kMaxConcurrentGalleryDecodes) {
-        return;
+        return; // caller (updateGalleryDecodeWindow) will retry after a slot frees
     }
     m_galleryDecodeScheduled.insert(path);
-    m_pendingWorkspacePaths.insert(path); // so status counts it
+    m_pendingWorkspacePaths.insert(path);
     emit statusChanged();
     const quint64 gen = m_loadGeneration.load();
     QThreadPool::globalInstance()->start([this, path, gen]() {
@@ -311,22 +315,35 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window
     m_galleryDecodeScheduled.remove(path);
     if (!m_pendingWorkspacePaths.contains(path)) {
-        // May still be a scheduled gallery decode that was cancelled
+        // Cancelled (e.g. path removed from session) — drop the result.
         emit statusChanged();
+        if (isGalleryMode()) {
+            updateGalleryDecodeWindow();
+        }
         return;
     }
     m_pendingWorkspacePaths.remove(path);
 
     if (ImageItem *existing = findItemByPath(path)) {
-        // Placeholder or re-decode into an existing tile
-        if (!image.isNull()) {
-            existing->setSourceImage(image);
+        if (image.isNull()) {
+            m_galleryDecodeFailed.insert(path);
+            emit statusChanged();
             if (isGalleryMode()) {
-                // Geometry already packed from intrinsic size; only refresh paint.
-                existing->update();
-            } else if (m_layoutMode != LayoutMode::FreeForm) {
-                applyLayout();
+                updateGalleryDecodeWindow();
             }
+            return;
+        }
+        const QSize before = existing->imageSize();
+        existing->setSourceImage(image);
+        if (isGalleryMode()) {
+            // Probe size can differ from decoded size — reflow so scale/pos stay valid.
+            if (before != image.size()) {
+                scheduleApplyLayout();
+            } else {
+                existing->update();
+            }
+        } else if (m_layoutMode != LayoutMode::FreeForm) {
+            applyLayout();
         }
         emit statusChanged();
         if (isGalleryMode()) {
@@ -336,7 +353,11 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     }
 
     if (image.isNull()) {
+        m_galleryDecodeFailed.insert(path);
         emit statusChanged();
+        if (isGalleryMode()) {
+            updateGalleryDecodeWindow();
+        }
         return;
     }
 

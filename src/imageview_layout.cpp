@@ -129,6 +129,8 @@ void ImageView::clearWorkspace()
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
     m_pendingRestoreStates.clear();
+    m_galleryDecodeScheduled.clear();
+    m_galleryDecodeFailed.clear();
     m_classicPath.clear();
     // clear() deletes all QGraphicsItems owned by the scene
     m_scene->clear();
@@ -361,6 +363,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
         ImageItem *item = m_items.at(i);
         if (!wanted.contains(item->path())) {
             m_galleryDecodeScheduled.remove(item->path());
+            m_galleryDecodeFailed.remove(item->path());
             destroyCanvasItem(item);
         }
     }
@@ -407,38 +410,44 @@ void ImageView::updateGalleryDecodeWindow()
 
     const bool virtualize = m_items.size() >= kGalleryVirtualThreshold
                             || m_pathOrder.size() >= kGalleryVirtualThreshold;
-    if (!virtualize) {
-        // Small sessions: ensure anything still pending as placeholder gets loaded.
+
+    // Visible-first priority, then the rest of the session. Never unload decoded
+    // tiles — clearing pixels while a job was in flight left permanent placeholders
+    // and size/scale mismatches broke pack geometry.
+    QStringList visible;
+    QStringList rest;
+    if (virtualize) {
+        const QRect viewRect = viewport()->rect().adjusted(
+            -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
+            kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
+        const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
         for (ImageItem *item : m_items) {
-            if (item && !item->hasDecodedPixels()) {
-                scheduleGalleryDecode(item->path());
+            if (!item || item->hasDecodedPixels()
+                || m_galleryDecodeFailed.contains(item->path())) {
+                continue;
+            }
+            const QRectF tile = item->contentSceneRect();
+            if (tile.isNull() || tile.intersects(sceneVisible)) {
+                visible.append(item->path());
+            } else {
+                rest.append(item->path());
             }
         }
-        return;
+    } else {
+        for (ImageItem *item : m_items) {
+            if (!item || item->hasDecodedPixels()
+                || m_galleryDecodeFailed.contains(item->path())) {
+                continue;
+            }
+            visible.append(item->path());
+        }
     }
 
-    const QRect viewRect = viewport()->rect().adjusted(
-        -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
-        kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
-    const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
-
-    // Unload far tiles to bound pixel memory; schedule visible ones.
-    for (ImageItem *item : m_items) {
-        if (!item) {
-            continue;
-        }
-        const QRectF tile = item->contentSceneRect();
-        const bool near = tile.isNull() || tile.intersects(sceneVisible);
-        if (near) {
-            if (!item->hasDecodedPixels()) {
-                scheduleGalleryDecode(item->path());
-            }
-        } else if (item->hasDecodedPixels()) {
-            // Keep intrinsic size; free decoded QImage/pixmap.
-            item->clearDecodedPixels();
-            m_galleryDecodeScheduled.remove(item->path());
-            m_pendingWorkspacePaths.remove(item->path());
-        }
+    for (const QString &path : visible) {
+        scheduleGalleryDecode(path);
+    }
+    for (const QString &path : rest) {
+        scheduleGalleryDecode(path);
     }
     emit statusChanged();
 }
@@ -453,6 +462,7 @@ void ImageView::removeWorkspacePath(const QString &path)
     m_pendingWorkspacePaths.remove(path);
     m_pendingScenePos.remove(path);
     m_galleryDecodeScheduled.remove(path);
+    m_galleryDecodeFailed.remove(path);
     destroyCanvasItem(item);
     emit statusChanged();
     emit workspacePathsChanged();

@@ -429,6 +429,8 @@ private:
     QSet<QString> m_pendingWorkspacePaths;
     /** Gallery virtualization: paths scheduled for decode this window. */
     QSet<QString> m_galleryDecodeScheduled;
+    /** Paths that failed decode — do not spin forever on placeholders. */
+    QSet<QString> m_galleryDecodeFailed;
     static constexpr int kGalleryVirtualThreshold = 80;
     static constexpr int kGalleryDecodeOverscanPx = 400;
     static constexpr int kMaxConcurrentGalleryDecodes = 12;
