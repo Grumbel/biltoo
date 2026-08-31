@@ -114,7 +114,37 @@ ImageView::ImageView(QWidget *parent)
     });
 }
 
-ImageView::~ImageView() = default;
+ImageView::~ImageView()
+{
+    // Invalidate any queued onImageLoaded invocations from the thread pool.
+    ++m_loadGeneration;
+
+    if (m_hudFlashTimer) {
+        m_hudFlashTimer->stop();
+    }
+    if (m_slideshowProgressTimer) {
+        m_slideshowProgressTimer->stop();
+    }
+    if (m_layoutDebounceTimer) {
+        m_layoutDebounceTimer->stop();
+    }
+
+    // Scene clear emits selectionChanged; our handler calls viewport()->update().
+    // That is unsafe once ~QWidget has started deleting children — tear the
+    // scene down here while ImageView is still fully constructed.
+    if (m_scene) {
+        disconnect(m_scene, nullptr, this, nullptr);
+        m_scene->blockSignals(true);
+        m_scene->clear();
+        m_items.clear();
+        m_pendingWorkspacePaths.clear();
+        m_galleryDecodeScheduled.clear();
+        m_galleryDecodeFailed.clear();
+        setScene(nullptr);
+        delete m_scene;
+        m_scene = nullptr;
+    }
+}
 
 ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image)
 {
