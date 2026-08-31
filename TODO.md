@@ -8,6 +8,89 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - **Gallery** — session overview with packaged layouts (not free-form editing)
 - **Workspace** — free-form multi-image canvas (move, handles, opacity, z-order)
 
+## Version plan
+
+### 0.1.0 — stable viewer (current feature set)
+
+Ship what exists today as a reliable release. **No new editing features** in this
+line beyond bugfixes, polish, and docs.
+
+Focus:
+
+- [ ] Stabilize Image / Gallery / Workspace interactions and mode transitions
+- [ ] Fix remaining crashes, layout edge cases, and selection/context-menu bugs
+- [ ] Keyboard shortcuts, HUD, slideshow, and desktop integration as documented
+- [ ] Packaging (Nix/CMake), AppStream, `.desktop`, i18n scaffolding
+- [ ] Regression smoke tests (`--help`, basic open/session paths)
+- [ ] Drop the `-dev` suffix on `VERSION` when ready to tag
+
+Rotate/flip in the UI remain **view/session transforms** only until 0.2.0
+persist/export lands.
+
+### 0.2.0 — non-destructive quick edits (future)
+
+Goal: a small set of **viewer-grade** edits — not a GIMP substitute. Edits are
+**non-destructive** while working (adjustable stack / sidecar) and can be
+**written permanently** on explicit save/export (sidecar next to the file
+and/or a derived image). Prefer lossless paths where the format allows
+(e.g. JPEG orientation).
+
+#### Design constraints (0.2.0)
+
+- [ ] Edit stack per path (ordered ops); undo/redo within the stack
+- [ ] Sidecar or XMP-style persistence so originals stay intact until export
+- [ ] Explicit **Save** / **Export** (overwrite vs derived file vs sidecar-only)
+- [ ] Preview in Image mode; optional badges in Gallery for “has edits”
+- [ ] Batch apply to Gallery multi-select where the op is unambiguous
+- [ ] Keep the UI shallow: few tools, keyboard-friendly, no layer system
+
+#### Operations — priority candidates
+
+**Geometry (first)**
+
+- [ ] **Rotate / flip — permanent** — persist today’s ±90° / H/V flip (lossless
+      JPEG orientation when possible; otherwise rewrite pixels on export)
+- [ ] **Crop** — free rectangle, aspect presets (1:1, 4:3, 16:9, original),
+      rule-of-thirds guides; non-destructive until export
+- [ ] **Straighten** — fine rotation (± a few degrees) with optional
+      auto-horizon later; distinct from 90° snaps
+- [ ] **Resize / export bounds** — max edge or megapixels on export only
+      (does not replace a full image editor’s resample UI)
+
+**Annotation & markup**
+
+- [ ] **Text annotation** — one or a few labels, font size/colour, optional
+      background pill; not a full typesetter
+- [ ] **Basic drawing** — pen, highlighter, arrow, rectangle, ellipse;
+      stroke colour/width; no layers or vector node editing
+- [ ] **Callout / number pins** — quick “1, 2, 3” markers for review feedback
+- [ ] **Blur / redact region** — privacy boxes (solid or pixelate) for
+      screenshots and shareable exports
+- [ ] **Watermark** — simple text or image stamp, corner/centre presets,
+      opacity; aimed at share exports
+
+**Tonal quick adjusts (optional, keep minimal)**
+
+- [ ] **Brightness / contrast** or a single **Exposure** slider
+- [ ] **White balance** — temperature/tint or click-grey
+- [ ] **Saturation / vibrance** — one control, not a HSL suite
+- [ ] **Sharpen** — light unsharp or clarity; default off
+- [ ] **Greyscale** — one-shot B&W for review or export
+
+**Metadata-oriented (fits a viewer)**
+
+- [ ] **Rating / colour label** — session + sidecar; filter in Gallery later
+- [ ] **Caption / title** — short text bound to the file (XMP/IPTC when built
+      with Exiv2)
+- [ ] **Auto-orient on save** — bake EXIF orientation into pixels/sidecar so
+      other apps agree (complement existing load-time autorot)
+
+#### Explicitly out of scope for 0.2.0
+
+Layers, masks, healing/clone, perspective warp, curves/levels full UI, raw
+develop, plugins marketplace, multi-page PDF editing. Those belong in a real
+editor; QImgView stays a **viewer with quick fixes**.
+
 ## Done (recent)
 
 - [x] Gallery as its own ViewMode (not a Workspace layout)
