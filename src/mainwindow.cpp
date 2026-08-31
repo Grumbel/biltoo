@@ -758,16 +758,14 @@ void MainWindow::showContextMenu(const QPoint &pos)
     }
     menu.addAction(m_zoomFitAct);
     menu.addAction(m_zoom1to1Act);
-    if (!isGalleryMode()) {
-        menu.addSeparator();
-        menu.addAction(m_rotateLeftAct);
-        menu.addAction(m_rotateRightAct);
-        menu.addAction(m_flipHAct);
-        menu.addAction(m_flipVAct);
-        if (isWorkspaceMode()) {
-            menu.addAction(m_resetScaleAct);
-            menu.addAction(m_resetRotationAct);
-        }
+    menu.addSeparator();
+    menu.addAction(m_rotateLeftAct);
+    menu.addAction(m_rotateRightAct);
+    menu.addAction(m_flipHAct);
+    menu.addAction(m_flipVAct);
+    if (isWorkspaceMode()) {
+        menu.addAction(m_resetScaleAct);
+        menu.addAction(m_resetRotationAct);
     }
     menu.addSeparator();
     if (m_backToGalleryAct && m_backToGalleryAct->isEnabled()) {

@@ -55,7 +55,7 @@ diverge from it.
   remembering enough to **return** (layout, scroll, which cell was current).
 - Arrow keys move the session cursor among tiles by **scene position** (spatial neighbour); Home/End first/last; Enter opens.
 - Grid / Grid-Crop column count is user-configurable (toolbar spin; 0 = automatic).
-- User may not scale/rotate/opacity/stack objects as in Workspace.
+- User may rotate (±90°) and flip selected tiles; scale/opacity/stack remain Workspace-only.
 - Linear viewer navigation (slideshow, prev/next) is not the primary job here.
 
 ### Workspace mode — “arrange several pictures freely”
@@ -100,8 +100,8 @@ Image is not a multi-object canvas.
 
 | Operation | Meaning | Allowed when |
 |-----------|---------|--------------|
-| Rotate ±90° / free rotate | Change object rotation | Image (single object) and Workspace (targets); **not** Gallery |
-| Flip H/V | Mirror | Same as rotate |
+| Rotate ±90° / free rotate | Change object rotation | Image (single object); Gallery (selection, ±90°); Workspace (targets, free rotate) |
+| Flip H/V | Mirror | Image; Gallery (selection); Workspace |
 | Reset rotation / reset scale | Identity orientation or scale | Same |
 | Move object | Change object position on canvas | **Workspace only** |
 | Scale / stretch | Change object scale | **Workspace only** (Image uses view zoom) |
@@ -125,7 +125,7 @@ Image is not a multi-object canvas.
 |------|----------------------------------|
 | Image | The single canvas image (primary) |
 | Workspace | Canvas selection; if empty and only one object, that object |
-| Gallery | None |
+| Gallery | Selected tiles (±90° rotate / flip; pack preserves transforms) |
 
 ## Invariants
 

@@ -5,6 +5,7 @@
 #include "imageitem.h"
 
 #include <QtMath>
+#include <cmath>
 #include <QVector>
 
 namespace GalleryLayout {
@@ -17,6 +18,24 @@ QSizeF nativeSize(const ImageItem *item)
         return {};
     }
     return QSizeF(item->pixmap().size());
+}
+
+/** Pixmap size with 90°-class rotation applied (for packing aspect ratio). */
+QSizeF layoutSize(const ImageItem *item)
+{
+    const QSizeF ns = layoutSize(item);
+    if (!item || ns.isEmpty()) {
+        return ns;
+    }
+    // Snap-ish: treat near-90 / near-270 as swapped axes (Gallery uses ±90 steps).
+    qreal r = std::fmod(std::abs(item->itemRotation()), 360.0);
+    if (r > 180.0) {
+        r = 360.0 - r;
+    }
+    if (r > 45.0 && r < 135.0) {
+        return QSizeF(ns.height(), ns.width());
+    }
+    return ns;
 }
 
 void finish(ImageItem *item, const std::function<void(ImageItem *)> &afterEach)
@@ -41,10 +60,10 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     const qreal availH = params.availH;
     const int n = items.size();
 
-    // Gallery tiles are a clean overview: full opacity, upright, no residual
-    // Workspace opacity/rotation bleeding through between layout switches.
+    // Full opacity for the overview; keep intentional rotate/flip from Gallery
+    // (or Image). Residual free-form angles are cleared when *entering* Gallery
+    // from Workspace — pack itself must not wipe user transforms.
     for (ImageItem *item : items) {
-        item->setItemRotation(0.0);
         item->setItemOpacity(1.0);
         if (params.mode != Mode::GridCrop) {
             item->setGalleryCellSize({});
@@ -54,7 +73,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     if (params.mode == Mode::SideBySide) {
         qreal x = margin;
         for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = availH / qMax(1.0, ns.height());
             item->setItemScale(scale);
             const qreal w = ns.width() * scale;
@@ -66,7 +85,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     } else if (params.mode == Mode::Vertical) {
         qreal y = margin;
         for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = availW / qMax(1.0, ns.width());
             item->setItemScale(scale);
             const qreal w = ns.width() * scale;
@@ -88,7 +107,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             ImageItem *item = items.at(i);
             const int col = i % cols;
             const int row = i / cols;
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = qMin(cellW / qMax(1.0, ns.width()),
                                     cellH / qMax(1.0, ns.height()));
             item->setItemScale(scale);
@@ -106,7 +125,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             ImageItem *item = items.at(i);
             const int col = i % cols;
             const int row = i / cols;
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = qMax(cell / qMax(1.0, ns.width()),
                                     cell / qMax(1.0, ns.height()));
             item->setItemScale(scale);
@@ -121,7 +140,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
         QVector<qreal> colHeights(cols, 0.0);
         for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = colW / qMax(1.0, ns.width());
             item->setItemScale(scale);
             const qreal h = ns.height() * scale;
@@ -142,7 +161,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         const qreal rowH = (availH - gap * qMax(0, rows - 1)) / rows;
         QVector<qreal> rowWidths(rows, 0.0);
         for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = rowH / qMax(1.0, ns.height());
             item->setItemScale(scale);
             const qreal w = ns.width() * scale;

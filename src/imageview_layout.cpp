@@ -571,9 +571,14 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     setDragMode(QGraphicsView::RubberBandDrag);
     for (ImageItem *item : m_items) {
         applyItemModeFlags(item);
-        // Pack also resets these; do it here so a delayed layout still looks clean.
         item->setItemOpacity(1.0);
-        item->setItemRotation(0.0);
+        // Entering Gallery from Image/Workspace: upright overview. Switching
+        // layout inside Gallery keeps user rotate/flip on the tiles.
+        if (!layoutSwitch) {
+            item->setItemRotation(0.0);
+            item->setItemHFlip(false);
+            item->setItemVFlip(false);
+        }
     }
     applyLayout();
 
@@ -725,13 +730,10 @@ ImageItem *ImageView::primaryItem() const
 
 ImageItem *ImageView::targetItem() const
 {
-    // DOMAIN.md transform targets:
-    //   Gallery → none
+    // Transform targets:
     //   Image → primary (sole) canvas object
-    //   Workspace → selection; if empty and exactly one object, that object
-    if (isGalleryMode()) {
-        return nullptr;
-    }
+    //   Gallery / Workspace → first selected item; Workspace also falls back to
+    //   the sole object when the selection is empty
     const QList<QGraphicsItem *> selected = m_scene->selectedItems();
     for (QGraphicsItem *gi : selected) {
         if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
@@ -742,6 +744,33 @@ ImageItem *ImageView::targetItem() const
         return m_items.isEmpty() ? nullptr : m_items.first();
     }
     return nullptr;
+}
+
+QList<ImageItem *> ImageView::transformTargets() const
+{
+    QList<ImageItem *> out;
+    if (!m_scene) {
+        return out;
+    }
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            out.append(item);
+        }
+    }
+    if (!out.isEmpty()) {
+        return out;
+    }
+    if (isImageMode() || m_items.size() == 1) {
+        if (!m_items.isEmpty()) {
+            out.append(m_items.first());
+        }
+    }
+    return out;
+}
+
+bool ImageView::hasTransformTargets() const
+{
+    return !transformTargets().isEmpty();
 }
 
 QSizeF ImageView::nativeSize(const ImageItem *item)

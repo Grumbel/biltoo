@@ -90,6 +90,8 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 
 ### Gallery interaction
 
+- [x] Rotate/flip selected tiles; right-click keeps multi-select for context menu
+
 - [x] Ctrl/Shift/rubber-band multi-select; preserve selection across layout switch
 - [x] Ctrl+click multi-select not cleared by `focusSessionPath` (use `revealGalleryPath`)
 - [x] Wheel **scrolls only** (no zoom); Horizontal/Masonry Rows map vertical wheel → H-scroll

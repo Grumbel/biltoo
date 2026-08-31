@@ -667,9 +667,8 @@ void MainWindow::updateNavigationActions()
         stopSlideshow();
     }
 
-    // DOMAIN: rotate/flip only in Image or Workspace (not Gallery)
-    const bool canTransform = hasItem && m_imageView
-                              && !m_imageView->isGalleryMode();
+    // Rotate/flip: Image (current), Workspace (selection), Gallery (selection)
+    const bool canTransform = m_imageView && m_imageView->hasTransformTargets();
     for (QAction *act : {m_rotateLeftAct, m_rotateRightAct, m_flipHAct, m_flipVAct}) {
         if (act) {
             act->setEnabled(canTransform);

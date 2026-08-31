@@ -722,6 +722,30 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
+    // Gallery right-click: do not let QGraphicsView alter selection (that
+    // cancels multi-select before the context menu opens). If the click is on
+    // an unselected tile, select only that tile; if it is already selected,
+    // keep the current multi-select for bulk rotate/flip/delete.
+    if (isGalleryMode() && event->button() == Qt::RightButton) {
+        const QPointF scenePos = mapToScene(event->pos());
+        ImageItem *hit = nullptr;
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                hit = ii;
+                break;
+            }
+        }
+        if (hit && !hit->isSelected()) {
+            m_scene->clearSelection();
+            hit->setSelected(true);
+            m_gallerySelectionAnchor = hit;
+            emit galleryItemFocused(hit->path());
+            emit statusChanged();
+        }
+        event->accept();
+        return;
+    }
+
     // Gallery: classic multi-select (click / Ctrl / Shift); open is double-click.
     if (isGalleryMode() && event->button() == Qt::LeftButton
         && !(event->modifiers() & Qt::AltModifier)) {

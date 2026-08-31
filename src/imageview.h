@@ -332,6 +332,9 @@ private:
     ImageItem *findItemByPath(const QString &path) const;
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
+    /** Selected items (or sole Image-mode item) for rotate/flip. */
+    QList<ImageItem *> transformTargets() const;
+    bool hasTransformTargets() const;
     void updateMouseInfo(const QPoint &viewPos);
     /** Frame @p item in the view. Image mode: does not clear rotation/flips. */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);

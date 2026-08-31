@@ -92,7 +92,7 @@ targets, or session ↔ canvas sync. If code and DOMAIN.md disagree, fix the cod
 | Mode | Canvas | Transforms | Session nav / slideshow |
 |------|--------|------------|-------------------------|
 | **Image** | ≤1 object, path = current | Rotate/flip/reset; **view** zooms | Yes |
-| **Gallery** | One object per session path, packed | None (open → Image) | No |
+| **Gallery** | One object per session path, packed | Rotate/flip selection | No |
 | **Workspace** | Free objects, subset of session | Move/scale/rotate/opacity/z | No |
 
 ### Ownership contracts
@@ -110,7 +110,7 @@ invariant 6).
 
 - **Image:** primary (sole) canvas item.
 - **Workspace:** selection; if none and exactly one item, that item.
-- **Gallery:** no transform targets.
+- **Gallery:** selected tiles for ±90° rotate and flip; no free move/scale chrome.
 
 ### Mode transitions
 

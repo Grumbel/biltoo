@@ -38,6 +38,9 @@ ImageView::ImageView(QWidget *parent)
 {
     m_scene = new QGraphicsScene(this);
     setScene(m_scene);
+    connect(m_scene, &QGraphicsScene::selectionChanged, this, [this]() {
+        emit statusChanged();
+    });
     m_undoStack = new QUndoStack(this);
     qRegisterMetaType<QImage>("QImage");
     qRegisterMetaType<quint64>("quint64");
@@ -552,26 +555,40 @@ void ImageView::zoomFill()
 
 void ImageView::flipHorizontal()
 {
-    if (ImageItem *item = targetItem()) {
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : targets) {
         item->toggleHFlip();
         rememberItemState(item);
-        if (m_fitMode) {
+        if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
-        emit statusChanged();
     }
+    if (isGalleryMode()) {
+        applyLayout();
+    }
+    emit statusChanged();
 }
 
 void ImageView::flipVertical()
 {
-    if (ImageItem *item = targetItem()) {
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : targets) {
         item->toggleVFlip();
         rememberItemState(item);
-        if (m_fitMode) {
+        if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
-        emit statusChanged();
     }
+    if (isGalleryMode()) {
+        applyLayout();
+    }
+    emit statusChanged();
 }
 
 void ImageView::setImageModeLeftDragPan(bool on)
@@ -674,32 +691,46 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
 
 void ImageView::rotateLeft()
 {
-    if (ImageItem *item = targetItem()) {
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : targets) {
         // Snap to the previous multiple of 90° (clean right-angles)
         const qreal r = item->itemRotation();
         const qreal next = std::ceil(r / 90.0 - 1e-6) * 90.0 - 90.0;
         item->setItemRotation(next);
         rememberItemState(item);
-        if (m_fitMode) {
+        if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
-        emit statusChanged();
     }
+    if (isGalleryMode()) {
+        applyLayout();
+    }
+    emit statusChanged();
 }
 
 void ImageView::rotateRight()
 {
-    if (ImageItem *item = targetItem()) {
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : targets) {
         // Snap to the next multiple of 90° (clean right-angles)
         const qreal r = item->itemRotation();
         const qreal next = std::floor(r / 90.0 + 1e-6) * 90.0 + 90.0;
         item->setItemRotation(next);
         rememberItemState(item);
-        if (m_fitMode) {
+        if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
-        emit statusChanged();
     }
+    if (isGalleryMode()) {
+        applyLayout();
+    }
+    emit statusChanged();
 }
 
 namespace {
