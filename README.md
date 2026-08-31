@@ -14,7 +14,7 @@ Agent / contributor notes: [AGENTS.md](AGENTS.md).
 ## Project home
 
 - GitHub: <https://github.com/Grumbel/qimgview>
-- Radicle: `rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a`
+- Radicle: [`rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a`](https://radicle.network/nodes/rosa.radicle.network/rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a)
 
 ## Features
 
