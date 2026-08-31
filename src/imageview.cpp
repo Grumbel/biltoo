@@ -1777,7 +1777,9 @@ void ImageView::duplicateSelected()
 
     m_scene->clearSelection();
     for (ImageItem *src : sources) {
-        ImageItem *copy = createItemFromImage(src->path(), src->sourceImage());
+        // Copy current displayed pixels as-is (no second session-crop pass).
+        ImageItem *copy = createItemFromImage(src->path(), src->sourceImage(),
+                                              /*applyStoredSessionCrop=*/false);
         if (!copy) {
             continue;
         }
