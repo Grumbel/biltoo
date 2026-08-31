@@ -19,6 +19,7 @@
 #include <QPointer>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPolygonF>
 #include <QPaintEvent>
 #include <QScrollBar>
 #include <QRubberBand>
@@ -908,12 +909,29 @@ void ImageView::rotateRight()
 
 namespace {
 
+/** Scene polygons of the image content (rotation-aware), not AABB alone. */
 bool contentOverlaps(const ImageItem *a, const ImageItem *b)
 {
     if (!a || !b || a == b) {
         return false;
     }
-    return a->contentSceneRect().intersects(b->contentSceneRect());
+    const QPolygonF pa = a->contentScenePolygon();
+    const QPolygonF pb = b->contentScenePolygon();
+    if (pa.isEmpty() || pb.isEmpty()) {
+        return false;
+    }
+    // Intersection of transformed content quads (rotation-aware). AABB alone
+    // misses some diagonal overlaps and is a poor proxy for "covering".
+    if (pa.intersects(pb)) {
+        return true;
+    }
+    // Contains checks: a small item fully inside a large one can fail
+    // QPolygonF::intersects on some Qt builds when edges do not cross.
+    if (pb.containsPoint(pa.boundingRect().center(), Qt::OddEvenFill)
+        || pa.containsPoint(pb.boundingRect().center(), Qt::OddEvenFill)) {
+        return true;
+    }
+    return false;
 }
 
 } // namespace
@@ -923,14 +941,15 @@ void ImageView::raiseItem(ImageItem *item)
     if (!item || !isWorkspaceMode() || m_items.size() < 2) {
         return;
     }
-    // Among overlapping images currently above this one, take the lowest
-    // (the first cover) and place just above it.
+    // One step up: among overlapping neighbours at the same z or above, take
+    // the lowest and place just above it. Equal z must count — otherwise two
+    // images that share a stack level never respond to Raise/Lower.
     ImageItem *cover = nullptr;
     for (ImageItem *other : m_items) {
         if (!contentOverlaps(item, other)) {
             continue;
         }
-        if (other->stackZ() <= item->stackZ()) {
+        if (other->stackZ() < item->stackZ()) {
             continue;
         }
         if (!cover || other->stackZ() < cover->stackZ()) {
@@ -938,7 +957,7 @@ void ImageView::raiseItem(ImageItem *item)
         }
     }
     if (!cover) {
-        return; // already on top of every overlapping neighbour
+        return; // already strictly above every overlapping neighbour
     }
     item->setStackZ(cover->stackZ() + 1.0);
     emit statusChanged();
@@ -949,14 +968,14 @@ void ImageView::lowerItem(ImageItem *item)
     if (!item || !isWorkspaceMode() || m_items.size() < 2) {
         return;
     }
-    // Among overlapping images currently below this one, take the highest
-    // (the first substrate) and place just under it.
+    // One step down: among overlapping neighbours at the same z or below, take
+    // the highest and place just under it (equal z included; see raiseItem).
     ImageItem *under = nullptr;
     for (ImageItem *other : m_items) {
         if (!contentOverlaps(item, other)) {
             continue;
         }
-        if (other->stackZ() >= item->stackZ()) {
+        if (other->stackZ() > item->stackZ()) {
             continue;
         }
         if (!under || other->stackZ() > under->stackZ()) {
@@ -964,7 +983,7 @@ void ImageView::lowerItem(ImageItem *item)
         }
     }
     if (!under) {
-        return; // already under every overlapping neighbour
+        return; // already strictly below every overlapping neighbour
     }
     item->setStackZ(under->stackZ() - 1.0);
     emit statusChanged();

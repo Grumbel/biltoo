@@ -155,6 +155,11 @@ QRectF ImageItem::contentSceneRect() const
     return mapToScene(contentRect()).boundingRect();
 }
 
+QPolygonF ImageItem::contentScenePolygon() const
+{
+    return mapToScene(contentRect());
+}
+
 void ImageItem::refreshStackingOrder()
 {
     // Stacking order is only m_stackZ (Raise/Lower). Selecting an item must not

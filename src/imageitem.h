@@ -7,6 +7,7 @@
 #include <QGraphicsPixmapItem>
 #include <QImage>
 #include <QString>
+#include <QPolygonF>
 
 /**
  * A single image on the workspace. Owns its pixmap, source pixels (for colour
@@ -71,6 +72,8 @@ public:
     qreal stackZ() const { return m_stackZ; }
     /** Scene AABB of the pixmap only (no chrome pad). */
     QRectF contentSceneRect() const;
+    /** Content quad in scene coordinates (respects item scale/rotation). */
+    QPolygonF contentScenePolygon() const;
     void setStackZ(qreal z);
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }
