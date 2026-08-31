@@ -440,12 +440,12 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
         }
     }
 
-    // Print page guide (Workspace): white paper sheet in scene units.
+    // Page guide paper (under images): plain white sheet in scene units.
     if (m_pageGuideVisible && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
             painter->save();
-            painter->setPen(QPen(QColor(180, 180, 180), 0));
+            painter->setPen(Qt::NoPen);
             painter->setBrush(Qt::white);
             painter->drawRect(page);
             painter->restore();
@@ -455,10 +455,29 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
-    // Chrome is painted in paintEvent (viewport device space) so handle size
-    // stays scale-invariant. Keep this override empty.
-    Q_UNUSED(painter);
-    Q_UNUSED(rect);
+    // Page guide outline above images so the frame stays visible when tiles
+    // cover the white sheet. Transform chrome stays in paintEvent (viewport space).
+    if (m_pageGuideVisible && isWorkspaceMode()) {
+        const QRectF page = pageGuideSceneRect();
+        if (page.intersects(rect)) {
+            painter->save();
+            QPen pen(QColor(40, 100, 200, 220));
+            pen.setStyle(Qt::DashLine);
+            pen.setWidthF(0);
+            pen.setCosmetic(true);
+            painter->setPen(pen);
+            painter->setBrush(Qt::NoBrush);
+            painter->drawRect(page);
+            QRectF margin = page.adjusted(page.width() * 0.05, page.height() * 0.05,
+                                          -page.width() * 0.05, -page.height() * 0.05);
+            QPen marginPen(QColor(40, 100, 200, 120));
+            marginPen.setStyle(Qt::DotLine);
+            marginPen.setCosmetic(true);
+            painter->setPen(marginPen);
+            painter->drawRect(margin);
+            painter->restore();
+        }
+    }
 }
 
 
