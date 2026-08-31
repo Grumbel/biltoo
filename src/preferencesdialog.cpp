@@ -30,13 +30,18 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 
     // --- Slideshow ---
     m_intervalSpin = new QDoubleSpinBox(this);
-    m_intervalSpin->setRange(0.5, 60.0);
-    m_intervalSpin->setSingleStep(0.5);
-    m_intervalSpin->setDecimals(1);
+    // 0 s = as fast as the machine can advance; milliseconds via three decimals.
+    m_intervalSpin->setRange(0.0, 60.0);
+    m_intervalSpin->setSingleStep(0.1);
+    m_intervalSpin->setDecimals(3);
     m_intervalSpin->setSuffix(tr(" s"));
-    m_intervalSpin->setToolTip(tr("Time between slides when the slideshow is running"));
+    m_intervalSpin->setToolTip(
+        tr("Time between slides when the slideshow is running (0 = maximum speed)"));
     m_intervalSpin->setWhatsThis(
-        tr("How long each image is shown during a slideshow, in seconds."));
+        tr("How long each image is shown during a slideshow, in seconds. "
+           "Values below one second are allowed; 0 advances as fast as the "
+           "event loop permits. Use [ and ] while viewing to adjust with "
+           "adaptive steps."));
 
     m_slideshowFullscreenCheck = new QCheckBox(tr("Start slideshow in fullscreen"), this);
     m_slideshowFullscreenCheck->setToolTip(
@@ -387,7 +392,7 @@ int PreferencesDialog::slideshowIntervalMs() const
 
 void PreferencesDialog::setSlideshowIntervalMs(int ms)
 {
-    const double seconds = qBound(0.5, ms / 1000.0, 60.0);
+    const double seconds = qBound(0.0, ms / 1000.0, 60.0);
     m_intervalSpin->setValue(seconds);
 }
 

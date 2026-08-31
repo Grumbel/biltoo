@@ -106,7 +106,13 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 ### Slideshow / packaging
 
 - [x] `[` / `]` slower/faster interval (mpv-style)
+- [x] `[` / `]` no longer conflict with rotate (Ctrl+L / Ctrl+R / R only)
+- [x] Interval range 0…60 s (milliseconds; 0 = max speed)
+- [x] Adaptive step sizes (fine near 0, coarser at long dwells)
+- [x] HUD flash shows current interval on `[` / `]` and on start
+- [x] Preferences + CLI accept 0 ms / sub-second values
 - [x] flake `apps.default` `meta.description`
+- [x] `.desktop` uses `%F` for multiple images
 
 ## Interaction summary (current)
 

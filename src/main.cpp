@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
     if (parser.isSet(intervalOption)) {
         bool ok = false;
         const int ms = parser.value(intervalOption).toInt(&ok);
-        if (ok && ms > 0) {
+        if (ok && ms >= 0) {
             window.setSlideshowIntervalMs(ms);
         }
     }
