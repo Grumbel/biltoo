@@ -15,6 +15,7 @@
 #include <QPageSize>
 #include <QSettings>
 #include <QScreen>
+#include <QStatusBar>
 #include <QMessageBox>
 
 namespace {
