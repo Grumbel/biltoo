@@ -155,15 +155,18 @@ ImageView::~ImageView()
     }
 }
 
-ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image)
+ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image,
+                                          bool applyStoredSessionCrop)
 {
     if (image.isNull()) {
         return nullptr;
     }
     auto *item = new ImageItem(path, image);
     applyItemModeFlags(item);
-    // Session crop (like rotation/flip) survives navigation: apply on full decode.
-    {
+    // Session crop survives navigation: apply only on full on-disk decodes.
+    // Workspace Duplicate passes already-final pixels (possibly cropped) — do
+    // not re-apply the path crop or the rect is interpreted on the wrong size.
+    if (applyStoredSessionCrop) {
         const auto it = m_itemStates.constFind(path);
         if (it != m_itemStates.cend()) {
             applySessionCrop(item, *it);

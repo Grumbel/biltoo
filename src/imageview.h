@@ -371,7 +371,14 @@ private:
         LoadRestore = 2
     };
 
-    ImageItem *createItemFromImage(const QString &path, const QImage &image);
+    /**
+     * Create a canvas item from decoded pixels.
+     * @p applyStoredSessionCrop — when true (normal disk decode), re-apply the
+     * path's session crop from m_itemStates. When false, @p image is used as-is
+     * (Workspace duplicate: pixels already include any crop/transform bake).
+     */
+    ImageItem *createItemFromImage(const QString &path, const QImage &image,
+                                   bool applyStoredSessionCrop = true);
     /** Interactive / gallery / static flags for the current ViewMode. */
     void applyItemModeFlags(ImageItem *item);
     void scheduleImageLoad(const QString &path, LoadRole role);
