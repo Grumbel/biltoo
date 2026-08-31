@@ -41,5 +41,8 @@
     <file alias="actions/gallery-grid-crop.svg">../data/icons/actions/gallery-grid-crop.svg</file>
     <file alias="actions/gallery-masonry.svg">../data/icons/actions/gallery-masonry.svg</file>
     <file alias="actions/gallery-masonry-rows.svg">../data/icons/actions/gallery-masonry-rows.svg</file>
+    <file alias="actions/workspace-mode.svg">../data/icons/actions/workspace-mode.svg</file>
+    <file alias="actions/print-page-guide.svg">../data/icons/actions/print-page-guide.svg</file>
+    <file alias="actions/show-thumbnails.svg">../data/icons/actions/show-thumbnails.svg</file>
   </qresource>
 </RCC>

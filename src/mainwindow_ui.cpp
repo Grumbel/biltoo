@@ -54,7 +54,7 @@ void MainWindow::createActions()
 
     m_pageGuideAct = new QAction(tr("Print &Page Guide"), this);
     m_pageGuideAct->setCheckable(true);
-    m_pageGuideAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_FileDialogListView));
+    m_pageGuideAct->setIcon(resourceIcon(QStringLiteral("print-page-guide")));
     m_pageGuideAct->setStatusTip(
         tr("Workspace: show a paper-sized frame to arrange images for printing"));
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
@@ -199,7 +199,7 @@ void MainWindow::createActions()
     m_workspaceModeAct = new QAction(tr("&Workspace Mode"), this);
     m_workspaceModeAct->setCheckable(true);
     m_workspaceModeAct->setChecked(false);
-    m_workspaceModeAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_DesktopIcon));
+    m_workspaceModeAct->setIcon(resourceIcon(QStringLiteral("workspace-mode")));
     m_workspaceModeAct->setStatusTip(tr("Free-form canvas for comparing images"));
     connect(m_workspaceModeAct, &QAction::triggered, this, &MainWindow::toggleWorkspaceMode);
 
@@ -410,7 +410,7 @@ void MainWindow::createActions()
     m_toggleThumbnailBarAct->setShortcut(Qt::CTRL | Qt::Key_M);
     m_toggleThumbnailBarAct->setCheckable(true);
     m_toggleThumbnailBarAct->setChecked(false);
-    m_toggleThumbnailBarAct->setIcon(themeIcon(QStringLiteral("view-list-icons"), QStyle::SP_FileDialogListView));
+    m_toggleThumbnailBarAct->setIcon(resourceIcon(QStringLiteral("show-thumbnails")));
     m_toggleThumbnailBarAct->setStatusTip(tr("Show or hide the thumbnail bar"));
     connect(m_toggleThumbnailBarAct, &QAction::triggered, this, &MainWindow::toggleThumbnailBar);
 
