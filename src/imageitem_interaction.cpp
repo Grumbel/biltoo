@@ -938,6 +938,39 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     Q_UNUSED(r);
 }
 
+
+void ImageItem::paintSelectionFrame(QPainter *painter) const
+{
+    if (!painter || !scene()) {
+        return;
+    }
+    const QList<QGraphicsView *> views = scene()->views();
+    if (views.isEmpty()) {
+        return;
+    }
+    QGraphicsView *view = views.first();
+    const QRectF localRect = contentRect();
+    auto toView = [this, view](const QPointF &local) -> QPointF {
+        return QPointF(view->mapFromScene(mapToScene(local)));
+    };
+    const QPointF tl = toView(localRect.topLeft());
+    const QPointF tr = toView(localRect.topRight());
+    const QPointF br = toView(localRect.bottomRight());
+    const QPointF bl = toView(localRect.bottomLeft());
+    QPolygonF poly;
+    poly << tl << tr << br << bl;
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    QPen pen(QColor(60, 140, 255, 220));
+    pen.setWidthF(0);
+    pen.setCosmetic(true);
+    pen.setStyle(Qt::DashLine);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPolygon(poly);
+    painter->restore();
+}
+
 void ImageItem::paintInteractionChrome(QPainter *painter) const
 {
     if (!m_interactive || !isSelected()) {

@@ -181,8 +181,14 @@ void ImageView::paintEvent(QPaintEvent *event)
         }
         std::sort(selected.begin(), selected.end(),
                   [](ImageItem *a, ImageItem *b) { return a->stackZ() < b->stackZ(); });
-        for (ImageItem *item : selected) {
-            item->paintInteractionChrome(&painter);
+        if (selected.size() == 1) {
+            selected.first()->paintInteractionChrome(&painter);
+        } else if (selected.size() > 1) {
+            // Multi-select: per-item outline only; group scale handles on the union.
+            for (ImageItem *item : selected) {
+                item->paintSelectionFrame(&painter);
+            }
+            paintGroupSelectionChrome(&painter, selected);
         }
     }
     if (m_hoverEdge != EdgeZone::None && isImageMode()
@@ -481,6 +487,208 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 }
 
 
+
+QRectF ImageView::selectionSceneBounds(const QList<ImageItem *> &items) const
+{
+    QRectF bounds;
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        const QRectF r = item->contentSceneRect();
+        if (!r.isValid() || r.isEmpty()) {
+            continue;
+        }
+        bounds = bounds.isValid() ? bounds.united(r) : r;
+    }
+    return bounds;
+}
+
+int ImageView::groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const
+{
+    const QRectF sceneBounds = selectionSceneBounds(items);
+    if (!sceneBounds.isValid() || sceneBounds.isEmpty()) {
+        return -1;
+    }
+    const QRect viewRect = mapFromScene(sceneBounds).boundingRect();
+    constexpr int hs = 8; // half-size hit in viewport px (matches drawn handles)
+    const QPoint corners[8] = {
+        viewRect.topLeft(),
+        QPoint(viewRect.center().x(), viewRect.top()),
+        viewRect.topRight(),
+        QPoint(viewRect.right(), viewRect.center().y()),
+        viewRect.bottomRight(),
+        QPoint(viewRect.center().x(), viewRect.bottom()),
+        viewRect.bottomLeft(),
+        QPoint(viewRect.left(), viewRect.center().y()),
+    };
+    for (int i = 0; i < 8; ++i) {
+        if (QLineF(viewPos, corners[i]).length() <= hs + 4) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const
+{
+    if (!painter) {
+        return;
+    }
+    const QRectF sceneBounds = selectionSceneBounds(items);
+    if (!sceneBounds.isValid() || sceneBounds.isEmpty()) {
+        return;
+    }
+    const QRect viewRect = mapFromScene(sceneBounds).boundingRect();
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    QPen framePen(QColor(60, 140, 255, 200));
+    framePen.setWidthF(0);
+    framePen.setCosmetic(true);
+    framePen.setStyle(Qt::SolidLine);
+    painter->setPen(framePen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(viewRect);
+
+    constexpr qreal hs = 7.0;
+    const QPointF pts[8] = {
+        viewRect.topLeft(),
+        QPointF(viewRect.center().x(), viewRect.top()),
+        viewRect.topRight(),
+        QPointF(viewRect.right(), viewRect.center().y()),
+        viewRect.bottomRight(),
+        QPointF(viewRect.center().x(), viewRect.bottom()),
+        viewRect.bottomLeft(),
+        QPointF(viewRect.left(), viewRect.center().y()),
+    };
+    painter->setBrush(QColor(255, 255, 255, 240));
+    painter->setPen(QPen(QColor(40, 100, 220), 0));
+    for (const QPointF &p : pts) {
+        painter->drawRect(QRectF(p.x() - hs / 2.0, p.y() - hs / 2.0, hs, hs));
+    }
+    painter->restore();
+}
+
+bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
+{
+    if (handle < 0 || items.size() < 2) {
+        return false;
+    }
+    const QRectF bounds = selectionSceneBounds(items);
+    if (!bounds.isValid() || bounds.isEmpty()) {
+        return false;
+    }
+    m_groupHandle = handle;
+    m_groupScaleDrag = true;
+    m_groupBoundsStart = bounds;
+    m_groupCenterStart = bounds.center();
+    m_groupDragItems = items;
+    m_groupDragStartStates.clear();
+    for (ImageItem *item : items) {
+        m_groupDragStartStates.append(captureState(item));
+    }
+    return true;
+}
+
+void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods)
+{
+    if (!m_groupScaleDrag || m_groupDragItems.isEmpty()
+        || m_groupDragStartStates.size() != m_groupDragItems.size()) {
+        return;
+    }
+    const QRectF b = m_groupBoundsStart;
+    // Fixed opposite corner / edge as anchor
+    QPointF anchor = m_groupCenterStart;
+    switch (m_groupHandle) {
+    case 0: anchor = b.bottomRight(); break; // TL
+    case 1: anchor = QPointF(b.center().x(), b.bottom()); break; // T
+    case 2: anchor = b.bottomLeft(); break; // TR
+    case 3: anchor = QPointF(b.left(), b.center().y()); break; // R
+    case 4: anchor = b.topLeft(); break; // BR
+    case 5: anchor = QPointF(b.center().x(), b.top()); break; // B
+    case 6: anchor = b.topRight(); break; // BL
+    case 7: anchor = QPointF(b.right(), b.center().y()); break; // L
+    default: break;
+    }
+
+    qreal sx = 1.0;
+    qreal sy = 1.0;
+    const qreal eps = 1.0;
+    switch (m_groupHandle) {
+    case 0: // TL
+        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
+        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
+        break;
+    case 1: // T
+        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
+        sx = (mods & Qt::ShiftModifier) ? sy : 1.0;
+        break;
+    case 2: // TR
+        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
+        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
+        break;
+    case 3: // R
+        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
+        sy = (mods & Qt::ShiftModifier) ? sx : 1.0;
+        break;
+    case 4: // BR
+        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
+        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
+        break;
+    case 5: // B
+        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
+        sx = (mods & Qt::ShiftModifier) ? sy : 1.0;
+        break;
+    case 6: // BL
+        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
+        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
+        break;
+    case 7: // L
+        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
+        sy = (mods & Qt::ShiftModifier) ? sx : 1.0;
+        break;
+    default:
+        break;
+    }
+    // Corners: uniform scale unless Shift (free axes).
+    if (m_groupHandle == 0 || m_groupHandle == 2 || m_groupHandle == 4 || m_groupHandle == 6) {
+        if (!(mods & Qt::ShiftModifier)) {
+            const qreal s = (qAbs(sx) + qAbs(sy)) * 0.5;
+            sx = (sx < 0 ? -1 : 1) * s;
+            sy = (sy < 0 ? -1 : 1) * s;
+        }
+    }
+    sx = qBound(0.05, qAbs(sx), 20.0) * (sx < 0 ? -1.0 : 1.0);
+    sy = qBound(0.05, qAbs(sy), 20.0) * (sy < 0 ? -1.0 : 1.0);
+    // Disallow negative scale (mirrors) for group — keep positive.
+    sx = qAbs(sx);
+    sy = qAbs(sy);
+
+    for (int i = 0; i < m_groupDragItems.size(); ++i) {
+        ImageItem *item = m_groupDragItems.at(i);
+        const WorkspaceItemState &st = m_groupDragStartStates.at(i);
+        if (!item) {
+            continue;
+        }
+        const QPointF rel = st.pos - anchor;
+        item->setPos(anchor + QPointF(rel.x() * sx, rel.y() * sy));
+        const qreal baseX = st.scale > 0 ? st.scale : 1.0;
+        const qreal baseY = st.scaleY > 0 ? st.scaleY : baseX;
+        item->setItemScale(baseX * sx, baseY * sy);
+    }
+    m_fitMode = false;
+    emit statusChanged();
+}
+
+void ImageView::endGroupScale()
+{
+    // Undo is committed from mouseReleaseEvent (TransformCommand is local there).
+    m_groupScaleDrag = false;
+    m_groupHandle = -1;
+    m_groupDragItems.clear();
+    m_groupDragStartStates.clear();
+}
+
 void ImageView::updateGalleryHoverAt(const QPoint &viewPos)
 {
     if (!isGalleryMode() || !m_scene) {
@@ -672,17 +880,38 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                   [](ImageItem *a, ImageItem *b) {
                       return a->stackZ() > b->stackZ();
                   });
-        for (ImageItem *item : candidates) {
-            // Ensure selection so chrome is active
-            if (!item->isSelected()) {
-                continue; // only selected items show chrome
+        // Multi-select: group scale handles take priority; skip per-item chrome.
+        if (candidates.size() > 1
+            || (m_scene && m_scene->selectedItems().size() > 1)) {
+            QList<ImageItem *> selected;
+            for (QGraphicsItem *gi : m_scene->selectedItems()) {
+                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    if (ii->isInteractive() && m_items.contains(ii)) {
+                        selected.append(ii);
+                    }
+                }
             }
-            if (item->beginHandleInteraction(scenePos, event->modifiers())) {
-                m_handleDragItem = item;
-                m_dragItem = item;
-                m_dragStartState = captureState(item);
-                event->accept();
-                return;
+            if (selected.size() > 1) {
+                const int gh = groupHandleAt(event->pos(), selected);
+                if (gh >= 0 && beginGroupScale(gh, selected)) {
+                    event->accept();
+                    return;
+                }
+                // No group handle: fall through to move/select (no per-item handles).
+            }
+        } else {
+            for (ImageItem *item : candidates) {
+                // Ensure selection so chrome is active
+                if (!item->isSelected()) {
+                    continue; // only selected items show chrome
+                }
+                if (item->beginHandleInteraction(scenePos, event->modifiers())) {
+                    m_handleDragItem = item;
+                    m_dragItem = item;
+                    m_dragStartState = captureState(item);
+                    event->accept();
+                    return;
+                }
             }
         }
         // Empty-space clicks still fall through (clear selection). Clicks on a
@@ -886,6 +1115,13 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
     updateMouseInfo(event->pos());
 
+    if (m_groupScaleDrag) {
+        updateGroupScale(mapToScene(event->pos()), event->modifiers());
+        viewport()->update();
+        event->accept();
+        return;
+    }
+
     if (m_handleDragItem && m_handleDragItem->hasActiveHandle()) {
         m_handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
                                                     event->modifiers());
@@ -1029,6 +1265,51 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+    if (m_groupScaleDrag && event->button() == Qt::LeftButton) {
+        if (m_undoStack && !m_groupDragItems.isEmpty()) {
+            m_undoStack->beginMacro(tr("Scale selection"));
+            for (int i = 0; i < m_groupDragItems.size(); ++i) {
+                ImageItem *item = m_groupDragItems.at(i);
+                if (!item || i >= m_groupDragStartStates.size()) {
+                    continue;
+                }
+                const WorkspaceItemState after = captureState(item);
+                const WorkspaceItemState &before = m_groupDragStartStates.at(i);
+                if (after.pos == before.pos
+                    && qFuzzyCompare(after.scale, before.scale)
+                    && qFuzzyCompare(after.scaleY > 0 ? after.scaleY : 1.0,
+                                     before.scaleY > 0 ? before.scaleY : 1.0)) {
+                    continue;
+                }
+                // Inline undo entry matching other transform paths.
+                class TransformCommand : public QUndoCommand {
+                public:
+                    TransformCommand(ImageView *view, ImageItem *item,
+                                     const WorkspaceItemState &before,
+                                     const WorkspaceItemState &after)
+                        : m_view(view), m_item(item), m_before(before), m_after(after)
+                    {
+                        setText(QObject::tr("Transform"));
+                    }
+                    void undo() override { if (m_view && m_item) m_view->applyState(m_item, m_before); }
+                    void redo() override { if (m_view && m_item) m_view->applyState(m_item, m_after); }
+                private:
+                    ImageView *m_view;
+                    ImageItem *m_item;
+                    WorkspaceItemState m_before, m_after;
+                };
+                m_undoStack->push(new TransformCommand(this, item, before, after));
+            }
+            m_undoStack->endMacro();
+        }
+        endGroupScale();
+        if (isWorkspaceMode()) {
+            updateWorkspaceSceneRect();
+        }
+        event->accept();
+        return;
+    }
+
     if (m_handleDragItem && event->button() == Qt::LeftButton) {
         m_handleDragItem->endHandleInteraction();
         const WorkspaceItemState after = captureState(m_handleDragItem);

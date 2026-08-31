@@ -393,6 +393,12 @@ private:
     int edgeZoneHeight() const;
     void updateHoverEdge(const QPoint &viewPos);
     void drawEdgeAffordances(QPainter &painter);
+    QRectF selectionSceneBounds(const QList<ImageItem *> &items) const;
+    void paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const;
+    int groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const;
+    bool beginGroupScale(int handle, const QList<ImageItem *> &items);
+    void updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    void endGroupScale();
     void updateGalleryHoverAt(const QPoint &viewPos);
     static QSizeF nativeSize(const ImageItem *item);
     void zoomViewBy(qreal factor);
@@ -486,6 +492,13 @@ private:
     qreal m_rotateItemStart = 0.0;
 
     ImageItem *m_handleDragItem = nullptr;
+    /** Multi-select: which group scale handle is active (-1 = none). */
+    int m_groupHandle = -1;
+    bool m_groupScaleDrag = false;
+    QRectF m_groupBoundsStart;
+    QPointF m_groupCenterStart;
+    QList<WorkspaceItemState> m_groupDragStartStates;
+    QList<ImageItem *> m_groupDragItems;
     ImageItem *m_dragItem = nullptr;
     WorkspaceItemState m_dragStartState;
 

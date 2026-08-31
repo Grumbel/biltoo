@@ -187,6 +187,10 @@ void ImageView::clearWorkspace()
     // AUDIT H8/H9: drop live pointers and undo commands that reference items
     // about to be destroyed.
     m_handleDragItem = nullptr;
+    m_groupScaleDrag = false;
+    m_groupHandle = -1;
+    m_groupDragItems.clear();
+    m_groupDragStartStates.clear();
     m_rotateItem = nullptr;
     m_rotating = false;
     m_dragItem = nullptr;

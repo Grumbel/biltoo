@@ -139,6 +139,8 @@ public:
 
     /** Paint transform chrome in device pixels (identity world transform). */
     void paintInteractionChrome(QPainter *painter) const;
+    /** Selection outline only (multi-select); no scale/rotate/chrome buttons. */
+    void paintSelectionFrame(QPainter *painter) const;
     /** View-driven hover highlight for chrome (keeps highlight in sync with hits). */
     void setHoverHandle(Handle h);
     Handle hoverHandle() const { return m_hoverHandle; }
