@@ -297,6 +297,42 @@ void ImageItem::updateDisplayedPixmap()
     setPixmap(QPixmap::fromImage(m_source.flipped(axes)));
 }
 
+bool ImageItem::cropToLocalRect(const QRectF &localRect)
+{
+    if (m_source.isNull() && pixmap().isNull()) {
+        return false;
+    }
+    const QRectF cr = contentRect();
+    const QRect r = localRect.normalized().intersected(cr).toAlignedRect();
+    if (r.width() < 1 || r.height() < 1) {
+        return false;
+    }
+    // Crop in displayed-pixel space so the rectangle matches what the user saw.
+    QImage displayed = pixmap().isNull() ? m_source : pixmap().toImage();
+    if (displayed.isNull()) {
+        return false;
+    }
+    const QRect bounds(0, 0, displayed.width(), displayed.height());
+    const QRect srcRect = r.translated(-offset()).toRect().intersected(bounds);
+    if (srcRect.width() < 1 || srcRect.height() < 1) {
+        return false;
+    }
+    QImage cropped = displayed.copy(srcRect);
+    if (cropped.isNull()) {
+        return false;
+    }
+    // Flips are baked into the crop; rotation remains an item transform.
+    m_hFlip = false;
+    m_vFlip = false;
+    prepareGeometryChange();
+    m_source = cropped;
+    setOffset(QPointF(0, 0));
+    setPixmap(QPixmap::fromImage(m_source));
+    applyLocalTransform();
+    update();
+    return true;
+}
+
 QPoint ImageItem::pixelAtScenePos(const QPointF &scenePos) const
 {
     const QPointF local = mapFromScene(scenePos) - offset();

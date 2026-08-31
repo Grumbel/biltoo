@@ -34,6 +34,11 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::goNext);
     connect(m_imageView, &ImageView::galleryReturnRequested,
             this, &MainWindow::returnFromImageMode);
+    connect(m_imageView, &ImageView::cropModeChanged, this, [this](bool on) {
+        if (m_cropAct) {
+            m_cropAct->setChecked(on);
+        }
+    });
     connect(m_imageView, &ImageView::fullscreenToggleRequested,
             this, &MainWindow::toggleFullscreen);
     connect(m_imageView, &ImageView::galleryItemOpenRequested,
@@ -101,6 +106,10 @@ MainWindow::MainWindow(QWidget *parent)
     auto *escShortcut = new QShortcut(Qt::Key_Escape, this);
     escShortcut->setContext(Qt::ApplicationShortcut);
     connect(escShortcut, &QShortcut::activated, this, [this]() {
+        if (m_imageView && m_imageView->isCropMode()) {
+            m_imageView->cancelCrop();
+            return;
+        }
         if (isFullScreen()) {
             showNormal();
             return;
@@ -303,6 +312,19 @@ void MainWindow::flipHorizontal()
 void MainWindow::flipVertical()
 {
     m_imageView->flipVertical();
+}
+
+void MainWindow::toggleCropMode()
+{
+    if (!m_imageView) {
+        return;
+    }
+    // Sync checkable action with ImageView (may refuse e.g. Gallery / no image).
+    const bool want = m_cropAct && m_cropAct->isChecked();
+    m_imageView->setCropMode(want);
+    if (m_cropAct) {
+        m_cropAct->setChecked(m_imageView->isCropMode());
+    }
 }
 
 void MainWindow::toggleHud()
@@ -1260,6 +1282,11 @@ void MainWindow::writeSettings()
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape) {
+        if (m_imageView && m_imageView->isCropMode()) {
+            m_imageView->cancelCrop();
+            event->accept();
+            return;
+        }
         if (isFullScreen()) {
             showNormal();
             event->accept();

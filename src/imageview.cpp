@@ -769,6 +769,377 @@ void ImageView::flipVertical()
     emit statusChanged();
 }
 
+ImageItem *ImageView::cropTargetItem() const
+{
+    if (isGalleryMode()) {
+        return nullptr;
+    }
+    if (ImageItem *t = targetItem()) {
+        if (t->hasDecodedPixels() || !t->pixmap().isNull()) {
+            return t;
+        }
+    }
+    return primaryItem();
+}
+
+void ImageView::ensureCropRectValid()
+{
+    ImageItem *item = cropTargetItem();
+    if (!item) {
+        m_cropRect = QRectF();
+        return;
+    }
+    const QRectF cr = item->contentRect();
+    if (!m_cropRect.isValid() || m_cropRect.isEmpty()) {
+        m_cropRect = cr;
+        return;
+    }
+    m_cropRect = m_cropRect.normalized().intersected(cr);
+    if (m_cropRect.width() < 1.0) {
+        m_cropRect.setWidth(1.0);
+    }
+    if (m_cropRect.height() < 1.0) {
+        m_cropRect.setHeight(1.0);
+    }
+    // Keep inside content after min-size clamp.
+    if (m_cropRect.right() > cr.right()) {
+        m_cropRect.moveRight(cr.right());
+    }
+    if (m_cropRect.bottom() > cr.bottom()) {
+        m_cropRect.moveBottom(cr.bottom());
+    }
+    if (m_cropRect.left() < cr.left()) {
+        m_cropRect.moveLeft(cr.left());
+    }
+    if (m_cropRect.top() < cr.top()) {
+        m_cropRect.moveTop(cr.top());
+    }
+}
+
+void ImageView::setCropMode(bool on)
+{
+    if (on == m_cropMode) {
+        return;
+    }
+    if (on) {
+        if (isGalleryMode()) {
+            return;
+        }
+        ImageItem *item = cropTargetItem();
+        if (!item || (!item->hasDecodedPixels() && item->pixmap().isNull())) {
+            flashHud(tr("Crop"), tr("No image"));
+            return;
+        }
+        cancelZoomRegion();
+        m_cropMode = true;
+        m_cropRect = item->contentRect();
+        m_cropActiveHandle = CropHandle::None;
+        m_cropHoverHandle = CropHandle::None;
+        m_cropRubberBanding = false;
+        flashHud(tr("Crop mode"), tr("Drag handles · Enter apply · Esc cancel"));
+        emit cropModeChanged(true);
+        emit statusChanged();
+        viewport()->update();
+        return;
+    }
+    leaveCropModeInternal(false);
+}
+
+void ImageView::toggleCropMode()
+{
+    setCropMode(!m_cropMode);
+}
+
+void ImageView::applyCrop()
+{
+    leaveCropModeInternal(true);
+}
+
+void ImageView::cancelCrop()
+{
+    leaveCropModeInternal(false);
+}
+
+void ImageView::leaveCropModeInternal(bool apply)
+{
+    if (!m_cropMode) {
+        return;
+    }
+    ImageItem *item = cropTargetItem();
+    if (apply && item) {
+        ensureCropRectValid();
+        const QRectF full = item->contentRect();
+        // Skip no-op full-frame crops.
+        if (m_cropRect.isValid()
+            && (qAbs(m_cropRect.left() - full.left()) > 0.5
+                || qAbs(m_cropRect.top() - full.top()) > 0.5
+                || qAbs(m_cropRect.width() - full.width()) > 0.5
+                || qAbs(m_cropRect.height() - full.height()) > 0.5)) {
+            if (item->cropToLocalRect(m_cropRect)) {
+                rememberItemState(item);
+                if (isImageMode()) {
+                    m_fitMode = true;
+                    fitItem(item, currentFitAspectMode());
+                } else if (isWorkspaceMode()) {
+                    updateWorkspaceSceneRect();
+                }
+                flashHud(tr("Cropped"),
+                         QStringLiteral("%1×%2")
+                             .arg(item->imageSize().width())
+                             .arg(item->imageSize().height()));
+            }
+        }
+    }
+    m_cropMode = false;
+    m_cropRect = QRectF();
+    m_cropActiveHandle = CropHandle::None;
+    m_cropHoverHandle = CropHandle::None;
+    m_cropRubberBanding = false;
+    emit cropModeChanged(false);
+    emit statusChanged();
+    viewport()->unsetCursor();
+    viewport()->update();
+}
+
+QRectF ImageView::cropRectView() const
+{
+    ImageItem *item = cropTargetItem();
+    if (!item || !m_cropRect.isValid()) {
+        return QRectF();
+    }
+    const QPolygonF poly = item->mapToScene(m_cropRect);
+    QRectF sceneBounds = poly.boundingRect();
+    const QPoint tl = mapFromScene(sceneBounds.topLeft());
+    const QPoint br = mapFromScene(sceneBounds.bottomRight());
+    return QRectF(tl, br).normalized();
+}
+
+ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
+{
+    if (!m_cropMode) {
+        return CropHandle::None;
+    }
+    ImageItem *item = cropTargetItem();
+    if (!item || !m_cropRect.isValid()) {
+        return CropHandle::None;
+    }
+    // Map crop rect corners through item → scene → view (handles stay screen-sized).
+    const QRectF r = m_cropRect;
+    auto toView = [this, item](const QPointF &local) {
+        return mapFromScene(item->mapToScene(local));
+    };
+    const QPoint tl = toView(r.topLeft());
+    const QPoint tr = toView(r.topRight());
+    const QPoint bl = toView(r.bottomLeft());
+    const QPoint br = toView(r.bottomRight());
+    const QPoint tm((tl.x() + tr.x()) / 2, (tl.y() + tr.y()) / 2);
+    const QPoint bm((bl.x() + br.x()) / 2, (bl.y() + br.y()) / 2);
+    const QPoint lm((tl.x() + bl.x()) / 2, (tl.y() + bl.y()) / 2);
+    const QPoint rm((tr.x() + br.x()) / 2, (tr.y() + br.y()) / 2);
+
+    constexpr qreal kHit = 12.0;
+    auto near = [&](const QPoint &p) {
+        return QLineF(viewPos, p).length() <= kHit;
+    };
+    if (near(tl)) {
+        return CropHandle::TopLeft;
+    }
+    if (near(tr)) {
+        return CropHandle::TopRight;
+    }
+    if (near(bl)) {
+        return CropHandle::BottomLeft;
+    }
+    if (near(br)) {
+        return CropHandle::BottomRight;
+    }
+    if (near(tm)) {
+        return CropHandle::Top;
+    }
+    if (near(bm)) {
+        return CropHandle::Bottom;
+    }
+    if (near(lm)) {
+        return CropHandle::Left;
+    }
+    if (near(rm)) {
+        return CropHandle::Right;
+    }
+    return CropHandle::None;
+}
+
+void ImageView::paintCropOverlay(QPainter &painter)
+{
+    if (!m_cropMode) {
+        return;
+    }
+    ImageItem *item = cropTargetItem();
+    if (!item || !m_cropRect.isValid()) {
+        return;
+    }
+    ensureCropRectValid();
+    const QRectF contentScene = item->mapToScene(item->contentRect()).boundingRect();
+    const QRectF cropScene = item->mapToScene(m_cropRect).boundingRect();
+    const QRect contentView = QRect(mapFromScene(contentScene.topLeft()),
+                                    mapFromScene(contentScene.bottomRight()))
+                                  .normalized();
+    const QRect cropView = QRect(mapFromScene(cropScene.topLeft()),
+                                 mapFromScene(cropScene.bottomRight()))
+                               .normalized();
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    // Dim everything outside the crop (viewport-space; covers outside content too).
+    QPainterPath outer;
+    outer.addRect(QRectF(viewport()->rect()));
+    QPainterPath hole;
+    hole.addRect(QRectF(cropView));
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, 140));
+    painter.drawPath(outer.subtracted(hole));
+
+    // Crop frame
+    painter.setBrush(Qt::NoBrush);
+    QPen frame(QColor(255, 255, 255, 230), 1.5);
+    frame.setCosmetic(true);
+    painter.setPen(frame);
+    painter.drawRect(cropView);
+    QPen dash(QColor(40, 40, 40, 200), 1.0, Qt::DashLine);
+    dash.setCosmetic(true);
+    painter.setPen(dash);
+    painter.drawRect(cropView.adjusted(1, 1, -1, -1));
+
+    // Edge / corner handles (constant screen size).
+    constexpr int kR = 5;
+    auto drawHandle = [&](const QPoint &c) {
+        painter.setPen(QPen(QColor(40, 40, 40), 1.0));
+        painter.setBrush(QColor(255, 255, 255, 240));
+        painter.drawEllipse(c, kR, kR);
+    };
+    const QPoint tl = cropView.topLeft();
+    const QPoint tr = cropView.topRight();
+    const QPoint bl = cropView.bottomLeft();
+    const QPoint br = cropView.bottomRight();
+    drawHandle(tl);
+    drawHandle(tr);
+    drawHandle(bl);
+    drawHandle(br);
+    drawHandle(QPoint((tl.x() + tr.x()) / 2, tl.y()));
+    drawHandle(QPoint((bl.x() + br.x()) / 2, bl.y()));
+    drawHandle(QPoint(tl.x(), (tl.y() + bl.y()) / 2));
+    drawHandle(QPoint(tr.x(), (tr.y() + br.y()) / 2));
+
+    Q_UNUSED(contentView);
+    painter.restore();
+}
+
+void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
+{
+    ImageItem *item = cropTargetItem();
+    if (!item || h == CropHandle::None) {
+        return;
+    }
+    m_cropActiveHandle = h;
+    m_cropDragStartRect = m_cropRect;
+    m_cropDragStartLocal = item->mapFromScene(mapToScene(viewPos));
+}
+
+void ImageView::updateCropHandleDrag(const QPoint &viewPos)
+{
+    ImageItem *item = cropTargetItem();
+    if (!item || m_cropActiveHandle == CropHandle::None) {
+        return;
+    }
+    const QPointF local = item->mapFromScene(mapToScene(viewPos));
+    const QRectF cr = item->contentRect();
+    QRectF r = m_cropDragStartRect;
+    const qreal minSide = 4.0;
+
+    switch (m_cropActiveHandle) {
+    case CropHandle::Left:
+        r.setLeft(qBound(cr.left(), local.x(), r.right() - minSide));
+        break;
+    case CropHandle::Right:
+        r.setRight(qBound(r.left() + minSide, local.x(), cr.right()));
+        break;
+    case CropHandle::Top:
+        r.setTop(qBound(cr.top(), local.y(), r.bottom() - minSide));
+        break;
+    case CropHandle::Bottom:
+        r.setBottom(qBound(r.top() + minSide, local.y(), cr.bottom()));
+        break;
+    case CropHandle::TopLeft:
+        r.setLeft(qBound(cr.left(), local.x(), r.right() - minSide));
+        r.setTop(qBound(cr.top(), local.y(), r.bottom() - minSide));
+        break;
+    case CropHandle::TopRight:
+        r.setRight(qBound(r.left() + minSide, local.x(), cr.right()));
+        r.setTop(qBound(cr.top(), local.y(), r.bottom() - minSide));
+        break;
+    case CropHandle::BottomLeft:
+        r.setLeft(qBound(cr.left(), local.x(), r.right() - minSide));
+        r.setBottom(qBound(r.top() + minSide, local.y(), cr.bottom()));
+        break;
+    case CropHandle::BottomRight:
+        r.setRight(qBound(r.left() + minSide, local.x(), cr.right()));
+        r.setBottom(qBound(r.top() + minSide, local.y(), cr.bottom()));
+        break;
+    case CropHandle::None:
+        break;
+    }
+    m_cropRect = r.normalized().intersected(cr);
+    viewport()->update();
+}
+
+void ImageView::endCropHandleDrag()
+{
+    m_cropActiveHandle = CropHandle::None;
+    ensureCropRectValid();
+    viewport()->update();
+}
+
+void ImageView::beginCropRubberBand(const QPoint &viewPos)
+{
+    ImageItem *item = cropTargetItem();
+    if (!item) {
+        return;
+    }
+    const QPointF local = item->mapFromScene(mapToScene(viewPos));
+    if (!item->contentRect().contains(local)) {
+        return;
+    }
+    m_cropRubberBanding = true;
+    m_cropRubberOriginLocal = local;
+    m_cropRect = QRectF(local, QSizeF(0, 0));
+    viewport()->update();
+}
+
+void ImageView::updateCropRubberBand(const QPoint &viewPos)
+{
+    ImageItem *item = cropTargetItem();
+    if (!item || !m_cropRubberBanding) {
+        return;
+    }
+    const QPointF local = item->mapFromScene(mapToScene(viewPos));
+    const QRectF cr = item->contentRect();
+    QRectF r = QRectF(m_cropRubberOriginLocal, local).normalized().intersected(cr);
+    if (r.width() < 1.0) {
+        r.setWidth(1.0);
+    }
+    if (r.height() < 1.0) {
+        r.setHeight(1.0);
+    }
+    m_cropRect = r.intersected(cr);
+    viewport()->update();
+}
+
+void ImageView::endCropRubberBand()
+{
+    m_cropRubberBanding = false;
+    ensureCropRectValid();
+    viewport()->update();
+}
+
 void ImageView::setImageModeLeftDragPan(bool on)
 {
     m_imageModeLeftDragPan = on;

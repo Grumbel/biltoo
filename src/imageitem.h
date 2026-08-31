@@ -90,6 +90,13 @@ public:
     void zoomBy(qreal factor);
     void rotateBy(qreal degrees);
 
+    /**
+     * Crop displayed content to @p localRect (item coordinates, contentRect space).
+     * Bakes current H/V flips into the new source pixels and clears flip flags.
+     * Returns false if the rect is empty or outside the image.
+     */
+    bool cropToLocalRect(const QRectF &localRect);
+
     /** When false, the item cannot be selected or dragged (classic viewer). */
     void setInteractive(bool on);
     bool isInteractive() const { return m_interactive; }

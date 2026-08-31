@@ -168,7 +168,9 @@ void ImageView::paintEvent(QPaintEvent *event)
     // Workspace chrome in *viewport* device pixels (not scene drawForeground).
     // Painting here keeps handles a constant on-screen size under any view or
     // item scale — the same coordinate space as edge affordances and the HUD.
-    if (isWorkspaceMode() && m_scene) {
+    if (m_cropMode) {
+        paintCropOverlay(painter);
+    } else if (isWorkspaceMode() && m_scene) {
         QList<ImageItem *> selected;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
@@ -191,7 +193,7 @@ void ImageView::paintEvent(QPaintEvent *event)
             paintGroupSelectionChrome(&painter, selected);
         }
     }
-    if (m_hoverEdge != EdgeZone::None && isImageMode()
+    if (!m_cropMode && m_hoverEdge != EdgeZone::None && isImageMode()
         && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
@@ -199,7 +201,8 @@ void ImageView::paintEvent(QPaintEvent *event)
     //   top-left  — transient actions (slideshow, fit, …), never Next/Prev
     //   top-right — session index [i/n]
     //   bottom    — filename (+ technical detail when the HUD is pinned)
-    if (m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
+    // Crop mode: always show a pinned “Crop mode” cue so the tool state is clear.
+    if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
         || !m_galleryHoverPath.isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
@@ -317,8 +320,12 @@ void ImageView::paintEvent(QPaintEvent *event)
             }
         };
 
-        // Top-left: transient actions only (slideshow start/stop, …)
-        if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
+        // Top-left: crop mode cue (persistent while active) or transient flash.
+        if (m_cropMode) {
+            drawPanel({{tr("Crop mode"), true},
+                       {tr("Drag · handles · Enter apply · Esc cancel"), false}},
+                      margin, margin, false, false);
+        } else if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
             QString actionLine = m_hudAction;
             if (!m_hudDetail.isEmpty()) {
                 actionLine += QLatin1Char(' ') + m_hudDetail;
@@ -861,6 +868,25 @@ void ImageView::resizeEvent(QResizeEvent *event)
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
+    // Crop mode: handles adjust the draft rect; drag on image starts rubber-band.
+    if (m_cropMode && event->button() == Qt::LeftButton) {
+        const CropHandle h = cropHandleAt(event->pos());
+        if (h != CropHandle::None) {
+            beginCropHandleDrag(h, event->pos());
+            event->accept();
+            return;
+        }
+        // Middle/Alt still pan; plain left on the image body → new rubber-band crop.
+        if (!(event->modifiers()
+              & (Qt::AltModifier | Qt::ControlModifier | Qt::ShiftModifier))) {
+            beginCropRubberBand(event->pos());
+            if (m_cropRubberBanding) {
+                event->accept();
+                return;
+            }
+        }
+    }
+
     // One-shot rubber-band zoom (Z): capture the region before other tools.
     if (m_zoomRegionArmed && event->button() == Qt::LeftButton) {
         m_zoomRegionDragging = true;
@@ -1099,6 +1125,48 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_cropMode && m_cropActiveHandle != CropHandle::None) {
+        updateCropHandleDrag(event->pos());
+        event->accept();
+        return;
+    }
+    if (m_cropMode && m_cropRubberBanding) {
+        updateCropRubberBand(event->pos());
+        event->accept();
+        return;
+    }
+    if (m_cropMode) {
+        const CropHandle h = cropHandleAt(event->pos());
+        if (h != m_cropHoverHandle) {
+            m_cropHoverHandle = h;
+            viewport()->update();
+        }
+        switch (h) {
+        case CropHandle::Left:
+        case CropHandle::Right:
+            viewport()->setCursor(Qt::SizeHorCursor);
+            break;
+        case CropHandle::Top:
+        case CropHandle::Bottom:
+            viewport()->setCursor(Qt::SizeVerCursor);
+            break;
+        case CropHandle::TopLeft:
+        case CropHandle::BottomRight:
+            viewport()->setCursor(Qt::SizeFDiagCursor);
+            break;
+        case CropHandle::TopRight:
+        case CropHandle::BottomLeft:
+            viewport()->setCursor(Qt::SizeBDiagCursor);
+            break;
+        case CropHandle::None:
+            viewport()->setCursor(Qt::CrossCursor);
+            break;
+        }
+        updateMouseInfo(event->pos());
+        event->accept();
+        return;
+    }
+
     if (m_zoomRegionDragging && m_zoomRubberBand) {
         m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, event->pos()).normalized());
         event->accept();
@@ -1272,6 +1340,18 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_cropMode && m_cropActiveHandle != CropHandle::None
+        && event->button() == Qt::LeftButton) {
+        endCropHandleDrag();
+        event->accept();
+        return;
+    }
+    if (m_cropMode && m_cropRubberBanding && event->button() == Qt::LeftButton) {
+        endCropRubberBand();
+        event->accept();
+        return;
+    }
+
     if (m_zoomRegionDragging) {
         const QRect viewRect = QRect(m_zoomRegionOrigin, event->pos()).normalized();
         m_zoomRegionDragging = false;
@@ -1453,6 +1533,19 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
 
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
+    if (m_cropMode) {
+        if (event->key() == Qt::Key_Escape) {
+            cancelCrop();
+            event->accept();
+            return;
+        }
+        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+            applyCrop();
+            event->accept();
+            return;
+        }
+    }
+
     if (event->key() == Qt::Key_Escape && (m_zoomRegionArmed || m_zoomRegionDragging)) {
         cancelZoomRegion();
         event->accept();

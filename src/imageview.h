@@ -165,6 +165,19 @@ public:
     /** True when rotate/flip have at least one target (selection or sole image). */
     bool hasTransformTargets() const;
 
+    /**
+     * Interactive crop (Image mode, or a single Workspace target).
+     * Toggle on: draft rect = full content; dim outside; edge/corner handles.
+     * Enter applies pixel crop; Esc / toggle off cancels.
+     */
+    void setCropMode(bool on);
+    bool isCropMode() const { return m_cropMode; }
+    void toggleCropMode();
+    /** Commit the draft crop rect to pixels and leave crop mode. */
+    void applyCrop();
+    /** Discard the draft and leave crop mode. */
+    void cancelCrop();
+
     /** When true (default), left-drag pans in Image mode. */
     void setImageModeLeftDragPan(bool on);
     bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
@@ -313,6 +326,8 @@ signals:
     void galleryReturnRequested();
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
+    /** Crop mode toggled on/off (toolbar checkable state). */
+    void cropModeChanged(bool active);
     /**
      * Gallery layout: user clicked an item to open it in Image mode.
      * Path is the image file path.
@@ -366,6 +381,32 @@ private:
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
     QList<ImageItem *> transformTargets() const;
+
+    /** Crop-mode interaction (viewport chrome; item-local draft rect). */
+    enum class CropHandle {
+        None,
+        Left,
+        Right,
+        Top,
+        Bottom,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    };
+    ImageItem *cropTargetItem() const;
+    void ensureCropRectValid();
+    QRectF cropRectItemLocal() const { return m_cropRect; }
+    QRectF cropRectView() const;
+    CropHandle cropHandleAt(const QPoint &viewPos) const;
+    void paintCropOverlay(QPainter &painter);
+    void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
+    void updateCropHandleDrag(const QPoint &viewPos);
+    void endCropHandleDrag();
+    void beginCropRubberBand(const QPoint &viewPos);
+    void updateCropRubberBand(const QPoint &viewPos);
+    void endCropRubberBand();
+    void leaveCropModeInternal(bool apply);
     void updateMouseInfo(const QPoint &viewPos);
     /** Frame @p item in the view. Image mode: does not clear rotation/flips. */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
@@ -507,6 +548,17 @@ private:
     qreal m_rotateItemStart = 0.0;
 
     ImageItem *m_handleDragItem = nullptr;
+
+    bool m_cropMode = false;
+    /** Draft crop in crop-target item local coordinates (contentRect space). */
+    QRectF m_cropRect;
+    CropHandle m_cropActiveHandle = CropHandle::None;
+    CropHandle m_cropHoverHandle = CropHandle::None;
+    bool m_cropRubberBanding = false;
+    QPointF m_cropRubberOriginLocal;
+    QRectF m_cropDragStartRect;
+    QPointF m_cropDragStartLocal;
+
     /** Multi-select: which group scale handle is active (-1 = none). */
     int m_groupHandle = -1;
     bool m_groupScaleDrag = false;

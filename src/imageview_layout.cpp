@@ -845,6 +845,10 @@ void ImageView::setViewMode(ViewMode mode)
         return;
     }
 
+    if (m_cropMode) {
+        leaveCropModeInternal(false);
+    }
+
     const ViewMode previous = m_viewMode;
     if (previous == ViewMode::Gallery) {
         m_galleryHoverPath.clear();

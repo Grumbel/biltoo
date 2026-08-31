@@ -446,6 +446,9 @@ void MainWindow::setCurrentIndex(int index)
         }
         return;
     }
+    if (m_imageView && m_imageView->isCropMode()) {
+        m_imageView->cancelCrop();
+    }
 
     m_currentIndex = index;
     const QString path = m_files.at(m_currentIndex);
@@ -688,6 +691,15 @@ void MainWindow::updateNavigationActions()
     for (QAction *act : {m_rotateLeftAct, m_rotateRightAct, m_flipHAct, m_flipVAct}) {
         if (act) {
             act->setEnabled(canTransform);
+        }
+    }
+    // Crop: Image mode or a single Workspace target with decoded pixels.
+    if (m_cropAct) {
+        const bool canCrop = m_imageView && !m_imageView->isGalleryMode()
+                             && m_imageView->hasTransformTargets();
+        m_cropAct->setEnabled(canCrop);
+        if (!canCrop && m_imageView && m_imageView->isCropMode()) {
+            m_imageView->cancelCrop();
         }
     }
     for (QAction *act : {m_resetScaleAct, m_resetRotationAct}) {

@@ -138,6 +138,15 @@ void MainWindow::createActions()
     m_flipVAct->setStatusTip(tr("Flip image vertically"));
     connect(m_flipVAct, &QAction::triggered, this, &MainWindow::flipVertical);
 
+    m_cropAct = new QAction(tr("&Crop"), this);
+    m_cropAct->setCheckable(true);
+    m_cropAct->setShortcut(Qt::Key_C);
+    m_cropAct->setIcon(themeIcon(QStringLiteral("transform-crop"), QStyle::SP_DialogYesButton));
+    m_cropAct->setStatusTip(
+        tr("Crop mode: drag a rectangle, adjust handles; Enter applies, Esc cancels"));
+    m_cropAct->setToolTip(tr("Crop mode"));
+    connect(m_cropAct, &QAction::triggered, this, &MainWindow::toggleCropMode);
+
     m_toggleHudAct = new QAction(tr("Show &HUD Overlay"), this);
     m_toggleHudAct->setShortcut(Qt::Key_H);
     m_toggleHudAct->setCheckable(true);
@@ -524,6 +533,7 @@ void MainWindow::createMenus()
     imageMenu->addAction(m_rotateRightAct);
     imageMenu->addAction(m_flipHAct);
     imageMenu->addAction(m_flipVAct);
+    imageMenu->addAction(m_cropAct);
 
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
@@ -637,6 +647,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_rotateRightAct);
     m_toolBar->addAction(m_flipHAct);
     m_toolBar->addAction(m_flipVAct);
+    m_toolBar->addAction(m_cropAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_layoutSideBySideAct);
     m_toolBar->addAction(m_layoutVerticalAct);
