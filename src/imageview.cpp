@@ -138,12 +138,10 @@ ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &in
 
 QSize ImageView::probeImageSize(const QString &path) const
 {
-    QImageReader reader(path);
-    reader.setAutoTransform(true);
-    QSize s = reader.size();
+    // Header-only when possible (Qt, then VIPS); see ImageLoader::probeSize.
+    QSize s = ImageLoader::probeSize(path);
     if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
-        // Unknown size until decode — use a neutral square so pack is stable;
-        // applyLayout runs again when setSourceImage reports the real size.
+        // Last resort so pack has geometry until the first full decode reflows.
         s = QSize(1000, 1000);
     }
     return s;

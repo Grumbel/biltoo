@@ -5,6 +5,7 @@
 #define IMAGELOADER_H
 
 #include <QImage>
+#include <QSize>
 #include <QString>
 #include <QStringList>
 
@@ -19,6 +20,13 @@ void init(const char *argv0);
 
 /** True when this build linked against libvips. */
 bool hasVips();
+
+/**
+ * Fast size probe without a full pixel decode when the backend allows it.
+ * Tries QImageReader::size() (with auto-transform), then a libvips header open
+ * when built with VIPS. Returns an invalid QSize on failure.
+ */
+QSize probeSize(const QString &path);
 
 /**
  * Load a full image as 8-bit RGB(A) suitable for display.

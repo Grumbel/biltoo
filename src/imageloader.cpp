@@ -11,6 +11,7 @@
 
 #include <QFile>
 #include <QFileInfo>
+#include <QSize>
 #include <QImageReader>
 
 namespace ImageLoader {
@@ -182,7 +183,73 @@ QImage loadWithVips(const QString &path, int maxEdge)
 
 #endif // QIMGVIEW_HAVE_VIPS
 
+QSize probeSizeWithQt(const QString &path)
+{
+    QImageReader reader(path);
+    reader.setAutoTransform(true);
+    const QSize s = reader.size();
+    if (s.isValid() && s.width() > 0 && s.height() > 0) {
+        return s;
+    }
+    return {};
+}
+
+#ifdef QIMGVIEW_HAVE_VIPS
+
+QSize probeSizeWithVips(const QString &path)
+{
+    const QByteArray file = QFile::encodeName(path);
+    // Header-first open — no full rasterisation for typical formats.
+    VipsImage *in = vips_image_new_from_file(file.constData(),
+                                             "access", VIPS_ACCESS_SEQUENTIAL,
+                                             nullptr);
+    if (!in) {
+        in = vips_image_new_from_file(file.constData(), nullptr);
+    }
+    if (!in) {
+        return {};
+    }
+
+    int w = vips_image_get_width(in);
+    int h = vips_image_get_height(in);
+
+    // Match load-time vips_autorot: orientations 5–8 swap display axes.
+    int orientation = 0;
+    if (vips_image_get_typeof(in, VIPS_META_ORIENTATION) != 0) {
+        vips_image_get_int(in, VIPS_META_ORIENTATION, &orientation);
+    }
+    g_object_unref(in);
+
+    if (orientation >= 5 && orientation <= 8) {
+        const int tmp = w;
+        w = h;
+        h = tmp;
+    }
+    if (w <= 0 || h <= 0) {
+        return {};
+    }
+    return QSize(w, h);
+}
+
+#endif // QIMGVIEW_HAVE_VIPS
+
 } // namespace
+
+QSize probeSize(const QString &path)
+{
+    if (path.isEmpty() || !QFile::exists(path)) {
+        return {};
+    }
+    const QSize qt = probeSizeWithQt(path);
+    if (qt.isValid()) {
+        return qt;
+    }
+#ifdef QIMGVIEW_HAVE_VIPS
+    return probeSizeWithVips(path);
+#else
+    return {};
+#endif
+}
 
 void init(const char *argv0)
 {

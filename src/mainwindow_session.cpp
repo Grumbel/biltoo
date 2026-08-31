@@ -108,8 +108,7 @@ void MainWindow::sortFileList()
     };
 
     auto imageSize = [](const QString &path) {
-        QImageReader reader(path);
-        return reader.size(); // may be invalid if unknown
+        return ImageLoader::probeSize(path); // header-only when possible
     };
 
     switch (m_sortMode) {
