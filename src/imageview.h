@@ -363,6 +363,12 @@ private:
     void updateWorkspaceSceneRect();
     void snapshotWorkspace();
     void restoreWorkspace();
+    /** Detach Gallery tiles from the scene (keep decoded pixels). */
+    void stashGalleryItems();
+    /** Reattach stashed Gallery tiles; no-op if empty. */
+    void restoreStashedGalleryItems();
+    /** Delete any stashed Gallery tiles (session change / teardown). */
+    void discardStashedGallery();
     void snapshotFreeFormStates();
     void restoreFreeFormStates();
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
@@ -387,6 +393,9 @@ private:
     QTransform m_freeFormViewTransform;
     bool m_hasFreeFormViewTransform = false;
     QList<WorkspaceItemState> m_savedWorkspace;
+    /** Gallery tiles kept while in Image mode (decoded pixels retained). */
+    QList<ImageItem *> m_stashedGalleryItems;
+    QStringList m_stashedGalleryPathOrder;
     QString m_classicPath;
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */
     QStringList m_pathOrder;

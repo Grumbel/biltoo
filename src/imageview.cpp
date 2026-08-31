@@ -132,6 +132,8 @@ ImageView::~ImageView()
     // Scene clear emits selectionChanged; our handler calls viewport()->update().
     // That is unsafe once ~QWidget has started deleting children — tear the
     // scene down here while ImageView is still fully constructed.
+    discardStashedGallery();
+
     if (m_scene) {
         disconnect(m_scene, nullptr, this, nullptr);
         m_scene->blockSignals(true);
@@ -353,7 +355,17 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     }
     m_pendingWorkspacePaths.remove(path);
 
-    if (ImageItem *existing = findItemByPath(path)) {
+    ImageItem *existing = findItemByPath(path);
+    if (!existing) {
+        // Decode may finish while Gallery tiles are stashed (user in Image mode).
+        for (ImageItem *cand : m_stashedGalleryItems) {
+            if (cand && cand->path() == path) {
+                existing = cand;
+                break;
+            }
+        }
+    }
+    if (existing) {
         if (image.isNull()) {
             m_galleryDecodeFailed.insert(path);
             emit statusChanged();
@@ -387,6 +399,12 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (isGalleryMode()) {
             updateGalleryDecodeWindow();
         }
+        return;
+    }
+
+    // Do not spawn Gallery tiles onto the Image-mode canvas.
+    if (isImageMode()) {
+        emit statusChanged();
         return;
     }
 

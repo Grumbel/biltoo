@@ -113,6 +113,71 @@ void ImageView::restoreWorkspace()
     emit statusChanged();
 }
 
+void ImageView::discardStashedGallery()
+{
+    for (ImageItem *item : m_stashedGalleryItems) {
+        delete item;
+    }
+    m_stashedGalleryItems.clear();
+    m_stashedGalleryPathOrder.clear();
+}
+
+void ImageView::stashGalleryItems()
+{
+    // Replace any previous stash (should be empty when leaving Gallery).
+    discardStashedGallery();
+    if (m_items.isEmpty()) {
+        return;
+    }
+    m_stashedGalleryPathOrder = m_pathOrder;
+    m_stashedGalleryItems = m_items;
+    m_gallerySelectionAnchor = nullptr;
+    m_galleryHoverPath.clear();
+    for (ImageItem *item : m_stashedGalleryItems) {
+        if (!item) {
+            continue;
+        }
+        item->setSelected(false);
+        if (item->scene()) {
+            item->scene()->removeItem(item);
+        }
+    }
+    m_items.clear();
+    // Keep m_galleryDecodeScheduled / failed — paths still valid on return.
+    // Pending LoadAdd for missing tiles can finish after restore.
+}
+
+void ImageView::restoreStashedGalleryItems()
+{
+    if (m_stashedGalleryItems.isEmpty()) {
+        return;
+    }
+    // Live canvas should be empty (Image mode held a single item that
+    // clearWorkspace removes before Gallery is entered).
+    for (ImageItem *item : m_items) {
+        if (item && item->scene()) {
+            item->scene()->removeItem(item);
+        }
+        delete item;
+    }
+    m_items = m_stashedGalleryItems;
+    m_stashedGalleryItems.clear();
+    if (!m_stashedGalleryPathOrder.isEmpty()) {
+        m_pathOrder = m_stashedGalleryPathOrder;
+    }
+    m_stashedGalleryPathOrder.clear();
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        if (!item->scene()) {
+            m_scene->addItem(item);
+        }
+        applyItemModeFlags(item);
+    }
+    reorderItemsByPaths(m_pathOrder);
+}
+
 void ImageView::clearWorkspace()
 {
     // AUDIT H8/H9: drop live pointers and undo commands that reference items
@@ -125,6 +190,8 @@ void ImageView::clearWorkspace()
     if (m_undoStack) {
         m_undoStack->clear();
     }
+    // Session wipe / explicit clear — drop Gallery cache too.
+    discardStashedGallery();
     m_items.clear();
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
@@ -137,6 +204,7 @@ void ImageView::clearWorkspace()
     m_mouseInfo = {};
     emit mouseInfoChanged(m_mouseInfo);
 }
+
 
 ImageItem *ImageView::findItemByPath(const QString &path) const
 {
@@ -533,6 +601,10 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     if (mode == ViewMode::Image) {
+        if (previous == ViewMode::Gallery) {
+            // Keep tiles + decoded pixels for a fast return to Gallery.
+            stashGalleryItems();
+        }
         m_viewMode = ViewMode::Image;
         m_layoutMode = LayoutMode::FreeForm;
         viewport()->update();
@@ -545,8 +617,25 @@ void ImageView::setViewMode(ViewMode mode)
         // Gallery — that re-decodes a random tile before setCurrentIndex loads
         // the real target (double clear + decode spike).
         const QString path = m_classicPath;
-        clearWorkspace();
+        // Clear live canvas only — do not discardStashedGallery().
+        m_handleDragItem = nullptr;
+        m_rotateItem = nullptr;
+        m_rotating = false;
+        m_dragItem = nullptr;
+        m_gallerySelectionAnchor = nullptr;
+        if (m_undoStack) {
+            m_undoStack->clear();
+        }
+        m_items.clear();
+        m_pendingScenePos.clear();
         m_pendingWorkspacePaths.clear();
+        m_pendingRestoreStates.clear();
+        m_classicPath.clear();
+        if (m_scene) {
+            m_scene->clear();
+        }
+        m_mouseInfo = {};
+        emit mouseInfoChanged(m_mouseInfo);
         if (!path.isEmpty()) {
             scheduleImageLoad(path, LoadReplace);
         }
@@ -603,6 +692,12 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     QStringList selectedPaths;
     QString anchorPath;
     const bool layoutSwitch = isGalleryMode();
+
+    // Returning from Image: reattach cached tiles before packing.
+    if (!layoutSwitch && !m_stashedGalleryItems.isEmpty()) {
+        restoreStashedGalleryItems();
+    }
+
     if (layoutSwitch && m_scene) {
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
