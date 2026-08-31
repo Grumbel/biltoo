@@ -343,7 +343,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             {
                 const auto it = m_itemStates.constFind(path);
                 if (it != m_itemStates.cend()) {
-                    item->setItemRotation(cardinalRotationOrZero(it->rotation));
+                    item->setItemRotation(ImageView::cardinalRotationOrZero(it->rotation));
                     item->setItemHFlip(it->hFlip);
                     item->setItemVFlip(it->vFlip);
                 } else {
