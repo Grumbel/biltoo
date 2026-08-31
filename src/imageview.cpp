@@ -779,7 +779,7 @@ void ImageView::flipHorizontal()
     }
     for (ImageItem *item : targets) {
         item->toggleHFlip();
-        rememberItemState(item);
+        commitItemSessionEdit(item);
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
@@ -787,7 +787,6 @@ void ImageView::flipHorizontal()
     if (isGalleryMode()) {
         applyLayout();
     }
-    emit statusChanged();
 }
 
 void ImageView::flipVertical()
@@ -798,7 +797,7 @@ void ImageView::flipVertical()
     }
     for (ImageItem *item : targets) {
         item->toggleVFlip();
-        rememberItemState(item);
+        commitItemSessionEdit(item);
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
@@ -806,7 +805,6 @@ void ImageView::flipVertical()
     if (isGalleryMode()) {
         applyLayout();
     }
-    emit statusChanged();
 }
 
 ImageItem *ImageView::cropTargetItem() const
@@ -1084,7 +1082,6 @@ void ImageView::leaveCropModeInternal(bool apply)
         recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
         if (!fullFrame) {
             if (item->cropToLocalRect(m_cropRect)) {
-                rememberItemState(item);
                 discardStashedGallery();
                 if (isImageMode()) {
                     m_fitMode = true;
@@ -1092,7 +1089,7 @@ void ImageView::leaveCropModeInternal(bool apply)
                 } else if (isWorkspaceMode()) {
                     updateWorkspaceSceneRect();
                 }
-                emit sessionCropApplied(item->path(), item->sourceImage());
+                commitItemSessionEdit(item);
                 flashHud(tr("Cropped"),
                          QStringLiteral("%1×%2")
                              .arg(item->imageSize().width())
@@ -1100,7 +1097,6 @@ void ImageView::leaveCropModeInternal(bool apply)
             }
         } else {
             // Reset / full frame: keep full pixels; clear session crop metadata.
-            rememberItemState(item);
             discardStashedGallery();
             if (isImageMode()) {
                 m_fitMode = true;
@@ -1108,7 +1104,7 @@ void ImageView::leaveCropModeInternal(bool apply)
             } else if (isWorkspaceMode()) {
                 updateWorkspaceSceneRect();
             }
-            emit sessionCropApplied(item->path(), item->sourceImage());
+            commitItemSessionEdit(item);
             flashHud(tr("Crop reset"), tr("Full image"));
         }
     } else if (item && m_cropShowingFullImage) {
@@ -1543,11 +1539,9 @@ void ImageView::rotateLeft()
         return;
     }
     for (ImageItem *item : targets) {
-        // Snap to the previous multiple of 90° (clean right-angles)
-        const qreal r = item->itemRotation();
-        const qreal next = std::ceil(r / 90.0 - 1e-6) * 90.0 - 90.0;
-        item->setItemRotation(next);
-        rememberItemState(item);
+        // Cardinal orientation only — free Workspace tilt is preserved.
+        item->rotateOrientationBy(-90.0);
+        commitItemSessionEdit(item);
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
@@ -1555,7 +1549,6 @@ void ImageView::rotateLeft()
     if (isGalleryMode()) {
         applyLayout();
     }
-    emit statusChanged();
 }
 
 void ImageView::rotateRight()
@@ -1565,11 +1558,8 @@ void ImageView::rotateRight()
         return;
     }
     for (ImageItem *item : targets) {
-        // Snap to the next multiple of 90° (clean right-angles)
-        const qreal r = item->itemRotation();
-        const qreal next = std::floor(r / 90.0 + 1e-6) * 90.0 + 90.0;
-        item->setItemRotation(next);
-        rememberItemState(item);
+        item->rotateOrientationBy(90.0);
+        commitItemSessionEdit(item);
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
@@ -1577,7 +1567,6 @@ void ImageView::rotateRight()
     if (isGalleryMode()) {
         applyLayout();
     }
-    emit statusChanged();
 }
 
 namespace {
@@ -1806,10 +1795,9 @@ void ImageView::resetItemRotation()
     }
     for (ImageItem *item : targets) {
         item->setItemRotation(0.0);
-        rememberItemState(item);
+        commitItemSessionEdit(item);
     }
     if (!targets.isEmpty()) {
-        emit statusChanged();
         viewport()->update();
     }
 }

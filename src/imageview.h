@@ -353,6 +353,8 @@ signals:
     void cropModeChanged(bool active);
     /** Session crop committed; @p image is the new displayed pixels for @p path. */
     void sessionCropApplied(const QString &path, const QImage &image);
+    /** Flip / rotate / crop appearance for filmstrip (may include baked transforms). */
+    void sessionAppearanceChanged(const QString &path, const QImage &image);
     /**
      * Gallery layout: user clicked an item to open it in Image mode.
      * Path is the image file path.
@@ -472,6 +474,9 @@ private:
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void rememberItemState(ImageItem *item);
+    /** Persist session state and refresh filmstrip for this item. */
+    void commitItemSessionEdit(ImageItem *item);
+    QImage sessionAppearanceImage(const ImageItem *item) const;
     /** Detach from view state, remove from scene, delete. Safe against drag/handle ptrs. */
     void destroyCanvasItem(ImageItem *item);
     /** Expand sceneRect around free-form items so pan/scrollbars have range. */

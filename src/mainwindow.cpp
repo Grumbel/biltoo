@@ -39,6 +39,12 @@ MainWindow::MainWindow(QWidget *parent)
             m_cropAct->setChecked(on);
         }
     });
+    connect(m_imageView, &ImageView::sessionAppearanceChanged, this,
+            [this](const QString &path, const QImage &image) {
+                if (m_thumbnailBar) {
+                    m_thumbnailBar->setSessionImageOverride(path, image);
+                }
+            });
     connect(m_imageView, &ImageView::sessionCropApplied, this,
             [this](const QString &path, const QImage &image) {
                 if (m_thumbnailBar) {

@@ -468,13 +468,15 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
         return;
     }
     m_sessionImageOverrides.insert(path, image);
-    const int row = m_files.indexOf(path);
-    if (row < 0) {
+    const QImage thumb = squareThumbnailFromImage(image, m_thumbSize);
+    if (thumb.isNull()) {
         return;
     }
-    const QImage thumb = squareThumbnailFromImage(image, m_thumbSize);
-    if (!thumb.isNull()) {
-        setThumbnailIcon(row, thumb);
+    // Duplicate session slots share a path — update every matching row.
+    for (int row = 0; row < m_files.size(); ++row) {
+        if (m_files.at(row) == path) {
+            setThumbnailIcon(row, thumb);
+        }
     }
 }
 

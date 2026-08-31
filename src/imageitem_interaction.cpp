@@ -890,6 +890,16 @@ void ImageItem::activateChromeHandle(Handle h)
     default:
         break;
     }
+    // Persist session state + filmstrip (flip / 90° / reset). Raise/Lower only
+    // change z-order but still refresh status.
+    if (scene()) {
+        for (QGraphicsView *v : scene()->views()) {
+            if (auto *iv = qobject_cast<ImageView *>(v)) {
+                iv->commitItemSessionEdit(this);
+                break;
+            }
+        }
+    }
     notifyViewStatus();
 }
 
@@ -1356,6 +1366,17 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
 
 void ImageItem::endHandleInteraction()
 {
+    // Free-rotate / scale: persist when the gesture finishes.
+    if (m_activeHandle != Handle::None && m_activeHandle != Handle::OpacitySlider) {
+        if (scene()) {
+            for (QGraphicsView *v : scene()->views()) {
+                if (auto *iv = qobject_cast<ImageView *>(v)) {
+                    iv->commitItemSessionEdit(this);
+                    break;
+                }
+            }
+        }
+    }
     m_activeHandle = Handle::None;
 }
 

@@ -21,6 +21,7 @@
 #include <QMetaObject>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QTransform>
 #include <QPaintEvent>
 #include <QScrollBar>
 #include <QTimer>
@@ -99,6 +100,47 @@ void ImageView::rememberItemState(ImageItem *item)
         return;
     }
     m_itemStates.insert(item->path(), captureState(item));
+}
+
+QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
+{
+    if (!item) {
+        return {};
+    }
+    QImage img = item->sourceImage();
+    if (img.isNull()) {
+        return {};
+    }
+    // Live flips (post-crop flips are already baked into sourceImage).
+    if (item->itemHFlip()) {
+        img = img.mirrored(true, false);
+    }
+    if (item->itemVFlip()) {
+        img = img.mirrored(false, true);
+    }
+    // Cardinal orientation only — free Workspace tilt is placement, not filmstrip.
+    const qreal orient = item->itemOrientation();
+    if (qAbs(orient) > 0.5) {
+        QTransform xform;
+        xform.rotate(orient);
+        img = img.transformed(xform, Qt::SmoothTransformation);
+    }
+    return img;
+}
+
+void ImageView::commitItemSessionEdit(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    rememberItemState(item);
+    const QImage appearance = sessionAppearanceImage(item);
+    if (!appearance.isNull()) {
+        emit sessionAppearanceChanged(item->path(), appearance);
+        // Keep legacy signal so crop listeners stay in sync.
+        emit sessionCropApplied(item->path(), appearance);
+    }
+    emit statusChanged();
 }
 
 void ImageView::snapshotWorkspace()
