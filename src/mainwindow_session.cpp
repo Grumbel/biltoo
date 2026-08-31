@@ -308,6 +308,7 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     setCurrentIndex(idx);
     updateNavigationActions();
     updateWorkspaceActionVisibility();
+    rememberSessionHistory(m_files);
 }
 
 void MainWindow::newSession()
@@ -1051,3 +1052,110 @@ void MainWindow::toggleSlideshow()
     }
 }
 
+QString MainWindow::historyEntryLabel(const QStringList &paths) const
+{
+    if (paths.isEmpty()) {
+        return tr("(empty)");
+    }
+    const QFileInfo first(paths.first());
+    const QString dir = first.absolutePath();
+    bool sameDir = true;
+    for (const QString &p : paths) {
+        if (QFileInfo(p).absolutePath() != dir) {
+            sameDir = false;
+            break;
+        }
+    }
+    if (paths.size() == 1) {
+        return first.fileName();
+    }
+    if (sameDir) {
+        const QString folder = QFileInfo(dir).fileName();
+        return tr("%1 — %n image(s)", "history entry", paths.size()).arg(folder);
+    }
+    return tr("%1 (+%n more)", "history entry", paths.size() - 1)
+        .arg(first.fileName());
+}
+
+void MainWindow::rememberSessionHistory(const QStringList &paths)
+{
+    if (paths.isEmpty()) {
+        return;
+    }
+    QStringList normalized;
+    normalized.reserve(paths.size());
+    for (const QString &p : paths) {
+        const QString abs = QFileInfo(p).absoluteFilePath();
+        if (!abs.isEmpty()) {
+            normalized.append(abs);
+        }
+    }
+    if (normalized.isEmpty()) {
+        return;
+    }
+
+    for (int i = m_sessionHistory.size() - 1; i >= 0; --i) {
+        if (m_sessionHistory.at(i) == normalized) {
+            m_sessionHistory.removeAt(i);
+        }
+    }
+    m_sessionHistory.prepend(normalized);
+    while (m_sessionHistory.size() > kMaxSessionHistory) {
+        m_sessionHistory.removeLast();
+    }
+    rebuildHistoryMenu();
+}
+
+void MainWindow::rebuildHistoryMenu()
+{
+    if (!m_historyMenu) {
+        return;
+    }
+    m_historyMenu->clear();
+    if (m_sessionHistory.isEmpty()) {
+        auto *empty = m_historyMenu->addAction(tr("(No history yet)"));
+        empty->setEnabled(false);
+        m_historyMenu->addSeparator();
+        if (m_clearHistoryAct) {
+            m_historyMenu->addAction(m_clearHistoryAct);
+            m_clearHistoryAct->setEnabled(false);
+        }
+        return;
+    }
+
+    for (int i = 0; i < m_sessionHistory.size(); ++i) {
+        const QStringList &entry = m_sessionHistory.at(i);
+        QAction *act = m_historyMenu->addAction(historyEntryLabel(entry));
+        act->setData(i);
+        act->setStatusTip(entry.size() <= 3
+                              ? entry.join(QStringLiteral(", "))
+                              : tr("%1 paths").arg(entry.size()));
+        connect(act, &QAction::triggered, this, &MainWindow::openHistoryEntry);
+    }
+    m_historyMenu->addSeparator();
+    if (m_clearHistoryAct) {
+        m_historyMenu->addAction(m_clearHistoryAct);
+        m_clearHistoryAct->setEnabled(true);
+    }
+}
+
+void MainWindow::openHistoryEntry()
+{
+    auto *act = qobject_cast<QAction *>(sender());
+    if (!act) {
+        return;
+    }
+    const int index = act->data().toInt();
+    if (index < 0 || index >= m_sessionHistory.size()) {
+        return;
+    }
+    // Copy paths — loadFiles will reshuffle history.
+    const QStringList paths = m_sessionHistory.at(index);
+    loadFiles(paths);
+}
+
+void MainWindow::clearSessionHistory()
+{
+    m_sessionHistory.clear();
+    rebuildHistoryMenu();
+}

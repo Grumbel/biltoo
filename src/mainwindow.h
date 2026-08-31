@@ -182,6 +182,11 @@ private:
     void sortFileList();
     void readSettings();
     void writeSettings();
+    void rememberSessionHistory(const QStringList &paths);
+    void rebuildHistoryMenu();
+    void openHistoryEntry();
+    void clearSessionHistory();
+    QString historyEntryLabel(const QStringList &paths) const;
     void syncThumbnailWorkspaceSelection();
     /** Push thumbnail multi-select onto the canvas (Workspace membership / Gallery seed). */
     void syncCanvasFromThumbnailSelection();
@@ -210,6 +215,8 @@ private:
     bool m_slideshowCursorHidden = false;
 
     QMenu *m_fileMenu = nullptr;
+    QMenu *m_historyMenu = nullptr;
+    QAction *m_clearHistoryAct = nullptr;
     QMenu *m_editMenu = nullptr;
     QMenu *m_viewMenu = nullptr;
     QMenu *m_goMenu = nullptr;
@@ -293,6 +300,9 @@ private:
     QActionGroup *m_thumbnailPositionGroup = nullptr;
 
     QStringList m_files;
+    /** Past sessions (full path lists), newest first. */
+    QList<QStringList> m_sessionHistory;
+    static constexpr int kMaxSessionHistory = 20;
     int m_currentIndex = -1;
     bool m_recursive = false;
     ThumbnailEdge m_thumbnailEdge = ThumbnailEdge::Bottom;

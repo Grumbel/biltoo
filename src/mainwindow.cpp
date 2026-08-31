@@ -1118,12 +1118,31 @@ void MainWindow::readSettings()
             m_hideThumbLabelsAct->setChecked(!labels);
         }
     }
+
+    // Session history (full path lists per open)
+    m_sessionHistory.clear();
+    const int histCount = settings.beginReadArray(QStringLiteral("sessionHistory"));
+    for (int i = 0; i < histCount && i < kMaxSessionHistory; ++i) {
+        settings.setArrayIndex(i);
+        const QStringList paths = settings.value(QStringLiteral("paths")).toStringList();
+        if (!paths.isEmpty()) {
+            m_sessionHistory.append(paths);
+        }
+    }
+    settings.endArray();
+    rebuildHistoryMenu();
 }
 
 void MainWindow::writeSettings()
 {
     QSettings settings;
     settings.setValue(QStringLiteral("geometry"), saveGeometry());
+    settings.beginWriteArray(QStringLiteral("sessionHistory"), m_sessionHistory.size());
+    for (int i = 0; i < m_sessionHistory.size(); ++i) {
+        settings.setArrayIndex(i);
+        settings.setValue(QStringLiteral("paths"), m_sessionHistory.at(i));
+    }
+    settings.endArray();
     settings.setValue(QStringLiteral("windowState"), saveState());
     settings.setValue(QStringLiteral("toolBarVisible"),
                       isFullScreen() ? m_toolBarVisibleBeforeFullscreen
