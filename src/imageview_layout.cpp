@@ -8,6 +8,7 @@
 
 #include <QPrinter>
 #include <QPageLayout>
+#include <QPageSize>
 
 #include <QUndoCommand>
 #include <QUndoStack>
@@ -420,10 +421,21 @@ void ImageView::setPageGuideVisible(bool on)
 
 void ImageView::setPageGuideFromPrinter(const QPrinter &printer)
 {
+    // fullRect = physical paper (size + orientation). paintRect is only the
+    // printable inset and can look unchanged when the user picks a different
+    // stock size with similar aspect (or when margins dominate).
     const QPageLayout layout = printer.pageLayout();
-    QRectF mm = layout.paintRect(QPageLayout::Millimeter);
-    if (!mm.isValid() || mm.width() <= 0 || mm.height() <= 0) {
-        mm = QRectF(0, 0, 210.0, 297.0);
+    QRectF mm = layout.fullRect(QPageLayout::Millimeter);
+    if (!mm.isValid() || mm.width() <= 1.0 || mm.height() <= 1.0) {
+        const QSizeF sz = layout.pageSize().size(QPageSize::Millimeter);
+        if (sz.width() > 1.0 && sz.height() > 1.0) {
+            mm = QRectF(QPointF(0, 0), sz);
+            if (layout.orientation() == QPageLayout::Landscape && mm.width() < mm.height()) {
+                mm = QRectF(0, 0, mm.height(), mm.width());
+            }
+        } else {
+            mm = QRectF(0, 0, 210.0, 297.0);
+        }
     }
     constexpr qreal pxPerMm = 96.0 / 25.4;
     m_pageGuideSize = QSizeF(mm.width() * pxPerMm, mm.height() * pxPerMm);

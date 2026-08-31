@@ -4,11 +4,13 @@
 #include "mainwindow.h"
 #include "imageview.h"
 
+#include <QGuiApplication>
 #include <QPainter>
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
 #include <QPageLayout>
+#include <QScreen>
 
 namespace {
 
@@ -21,6 +23,7 @@ void renderViewToPrinter(ImageView *view, QPrinter *printer)
     if (!painter.isActive()) {
         return;
     }
+    // pageRect is the paintable area in the painter's coordinate system.
     const QRectF page = printer->pageRect(QPrinter::DevicePixel);
     if (!page.isValid() || page.width() <= 0 || page.height() <= 0) {
         return;
@@ -59,6 +62,14 @@ void MainWindow::printPreview()
 
     QPrintPreviewDialog preview(&printer, this);
     preview.setWindowTitle(tr("Print Preview"));
+    // Default dialog size is a small fixed hint; enlarge to something usable.
+    if (QScreen *screen = QGuiApplication::primaryScreen()) {
+        const QSize avail = screen->availableGeometry().size();
+        preview.resize(qMax(900, avail.width() * 3 / 4),
+                       qMax(700, avail.height() * 3 / 4));
+    } else {
+        preview.resize(1000, 750);
+    }
     connect(&preview, &QPrintPreviewDialog::paintRequested, this,
             [this](QPrinter *p) {
                 if (m_imageView && p) {

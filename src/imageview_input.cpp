@@ -440,28 +440,14 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
         }
     }
 
-    // Print page guide (Workspace): fixed paper frame in scene units so images
-    // can be arranged to match the printable area.
+    // Print page guide (Workspace): white paper sheet in scene units.
     if (m_pageGuideVisible && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
             painter->save();
-            QPen pen(QColor(40, 100, 200, 200));
-            pen.setStyle(Qt::DashLine);
-            // Keep dash roughly constant in screen pixels.
-            pen.setWidthF(0);
-            pen.setCosmetic(true);
-            painter->setPen(pen);
-            painter->setBrush(Qt::NoBrush);
+            painter->setPen(QPen(QColor(180, 180, 180), 0));
+            painter->setBrush(Qt::white);
             painter->drawRect(page);
-            // Soft margin hint (5% inset)
-            QRectF margin = page.adjusted(page.width() * 0.05, page.height() * 0.05,
-                                          -page.width() * 0.05, -page.height() * 0.05);
-            QPen marginPen(QColor(40, 100, 200, 100));
-            marginPen.setStyle(Qt::DotLine);
-            marginPen.setCosmetic(true);
-            painter->setPen(marginPen);
-            painter->drawRect(margin);
             painter->restore();
         }
     }
