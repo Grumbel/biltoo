@@ -41,6 +41,9 @@ public:
         RotateLeft,
         FlipH,
         FlipV,
+        /** 90° object rotation (Workspace chrome). */
+        Rotate90CCW,
+        Rotate90CW,
         Raise,
         Lower,
         ResetScale,

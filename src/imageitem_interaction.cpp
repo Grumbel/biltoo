@@ -26,6 +26,10 @@ QString tooltipForHandle(ImageItem::Handle h)
         return QObject::tr("Toggle horizontal flip");
     case ImageItem::Handle::FlipV:
         return QObject::tr("Toggle vertical flip");
+    case ImageItem::Handle::Rotate90CCW:
+        return QObject::tr("Rotate 90° counter-clockwise");
+    case ImageItem::Handle::Rotate90CW:
+        return QObject::tr("Rotate 90° clockwise");
     case ImageItem::Handle::Raise:
         return QObject::tr("Raise (bring forward)");
     case ImageItem::Handle::Lower:
@@ -50,8 +54,12 @@ constexpr qreal kChromeBtnScreenPx = 34.0;   // diameter in viewport px
 constexpr qreal kChromeHitScreenPx = 28.0;   // hit radius in viewport px
 // Outside offset from the visual right edge to the button column centre.
 constexpr qreal kChromeOutsidePx = 18.0;     // a little more air from the frame
-constexpr qreal kChromeBtnGapPx = 16.0;      // gap between stacked chrome buttons
-constexpr qreal kChromeClearPx = 14.0;       // min air between stack and rotate knob
+constexpr qreal kChromeBtnGapPx = 14.0;      // gap within a chrome button group
+constexpr qreal kChromeClearPx = 16.0;       // min air from group edge to rotate knob
+constexpr qreal kChromeGroupGapPx = 22.0;    // extra gap between upper/lower groups (rotate lives here)
+constexpr int kChromeUpperCount = 4;         // flip / flip / 90°CCW / 90°CW
+constexpr int kChromeLowerCount = 4;         // raise / lower / 1:1 / 0°
+constexpr int kChromeCount = kChromeUpperCount + kChromeLowerCount;
 constexpr qreal kSliderWidthPx = 100.0;
 constexpr qreal kSliderHeightPx = 10.0;
 // Outside offset from the visual bottom edge to the opacity track centre-line.
@@ -108,46 +116,44 @@ FrameViewGeom makeFrameViewGeom(const QPointF &tl, const QPointF &tr,
 // Top-right outside column. Stack runs along the right edge direction starting
 // near the top-right corner. If the stack would collide with the right rotate
 // knob, the whole column is shifted further "up" (toward / past the top edge).
-void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[6])
+// Two chrome groups on the right edge, split around the free-rotate knob:
+//   upper: FlipH, FlipV, Rotate90CCW, Rotate90CW
+//   lower: Raise, Lower, ResetScale, ResetRotation
+void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
 {
-    const int n = 6;
     const qreal btn = kChromeBtnScreenPx;
     const qreal gap = kChromeBtnGapPx;
     const qreal step = btn + gap;
-    const qreal stackH = n * btn + (n - 1) * gap;
     const qreal colOffset = kChromeOutsidePx + btn * 0.5;
-    // Column axis: outside the right edge.
-    const QPointF colOriginOnEdge = g.tr; // top-right corner
-    const QPointF colBase = colOriginOnEdge + g.outRight * colOffset;
-    // Along-edge direction from top toward bottom.
-    const QPointF along = g.dirRight;
-    // Default: first button centre just below the top-right corner, outside.
-    // along increases from top toward bottom along the right edge.
-    qreal firstAlong = btn * 0.5 + 4.0;
+    const QPointF colBase = g.tr + g.outRight * colOffset;
+    const QPointF along = g.dirRight; // top → bottom along the right edge
 
-    // Right rotate knob: shift the stack upward when it would collide.
     const QPointF rotR = g.midRight + g.outRight * kRotateOffsetPx;
     const qreal rotClear = kHandleScreenPx * 0.5 + kChromeClearPx + btn * 0.5;
     auto distAlong = [&](const QPointF &p) {
         return QPointF::dotProduct(p - colBase, along);
     };
     const qreal rotAlong = distAlong(rotR);
-    // Lateral separation along outward axis (column vs knob).
     const qreal lateral = qAbs(colOffset - kRotateOffsetPx);
     const qreal needAlongClear = qMax(0.0, rotClear - lateral);
 
-    const qreal stackBotAlong = firstAlong + (n - 1) * step;
-    // Overlap if stack interval intersects [rotAlong - need, rotAlong + need].
-    if (stackBotAlong >= rotAlong - needAlongClear
-        && firstAlong <= rotAlong + needAlongClear) {
-        // Place bottom of stack just above the clearance zone (toward top).
-        const qreal newBot = rotAlong - needAlongClear - 1.0;
-        firstAlong = newBot - (n - 1) * step;
+    // Reserve a band around the rotate knob for free dragging.
+    const qreal upperLastAlong = rotAlong - needAlongClear - kChromeGroupGapPx * 0.5;
+    const qreal lowerFirstAlong = rotAlong + needAlongClear + kChromeGroupGapPx * 0.5;
+
+    // Upper group: last centre sits just above the reserved band.
+    qreal firstUpper = upperLastAlong - (kChromeUpperCount - 1) * step;
+    // Prefer starting near the top-right corner when there is room.
+    const qreal preferUpper = btn * 0.5 + 4.0;
+    if (preferUpper + (kChromeUpperCount - 1) * step <= upperLastAlong) {
+        firstUpper = preferUpper;
     }
 
-    const QPointF first = colBase + along * firstAlong;
-    for (int i = 0; i < n; ++i) {
-        outCenters[i] = first + along * (i * step);
+    for (int i = 0; i < kChromeUpperCount; ++i) {
+        outCenters[i] = colBase + along * (firstUpper + i * step);
+    }
+    for (int i = 0; i < kChromeLowerCount; ++i) {
+        outCenters[kChromeUpperCount + i] = colBase + along * (lowerFirstAlong + i * step);
     }
 }
 
@@ -331,6 +337,7 @@ void ImageItem::updateHandleLayout()
 bool ImageItem::isChromeHandle(Handle h) const
 {
     return h == Handle::FlipH || h == Handle::FlipV
+        || h == Handle::Rotate90CCW || h == Handle::Rotate90CW
         || h == Handle::Raise || h == Handle::Lower
         || h == Handle::ResetScale || h == Handle::ResetRotation
         || h == Handle::OpacitySlider;
@@ -564,6 +571,7 @@ QList<ImageItem::Handle> ImageItem::activeHandles() const
     handles << Handle::RotateTop << Handle::RotateRight
             << Handle::RotateBottom << Handle::RotateLeft
             << Handle::FlipH << Handle::FlipV
+            << Handle::Rotate90CCW << Handle::Rotate90CW
             << Handle::Raise << Handle::Lower
             << Handle::ResetScale << Handle::ResetRotation
             << Handle::OpacitySlider;
@@ -611,10 +619,9 @@ QPointF ImageItem::handleCenter(Handle h) const
 
     // Outside top-right (approx local; paint/hit use chromeCentersView).
     const qreal stackX = r.right() + outX;
-    const int nChrome = 6;
-    const qreal stackH = nChrome * btn + (nChrome - 1) * gap;
     const qreal stackTop = r.top() + 4.0 / sy;
     auto chromeBtnCenter = [&](int index) {
+        // Approximate local centres; precise hit/paint use chromeCentersView.
         return QPointF(stackX, stackTop + index * (btn + gap) + btn / 2.0);
     };
 
@@ -647,14 +654,18 @@ QPointF ImageItem::handleCenter(Handle h) const
         return chromeBtnCenter(0);
     case Handle::FlipV:
         return chromeBtnCenter(1);
-    case Handle::Raise:
+    case Handle::Rotate90CCW:
         return chromeBtnCenter(2);
-    case Handle::Lower:
+    case Handle::Rotate90CW:
         return chromeBtnCenter(3);
-    case Handle::ResetScale:
+    case Handle::Raise:
         return chromeBtnCenter(4);
-    case Handle::ResetRotation:
+    case Handle::Lower:
         return chromeBtnCenter(5);
+    case Handle::ResetScale:
+        return chromeBtnCenter(6);
+    case Handle::ResetRotation:
+        return chromeBtnCenter(7);
     case Handle::OpacitySlider:
         return opacitySliderRect().center();
     default:
@@ -738,15 +749,15 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
             return Handle::OpacitySlider;
         }
 
-        QPointF centers[6];
+        QPointF centers[kChromeCount];
         chromeCentersView(fg, centers);
         const Handle chromeHandles[] = {
-            Handle::FlipH, Handle::FlipV, Handle::Raise, Handle::Lower,
-            Handle::ResetScale, Handle::ResetRotation
+            Handle::FlipH, Handle::FlipV, Handle::Rotate90CCW, Handle::Rotate90CW,
+            Handle::Raise, Handle::Lower, Handle::ResetScale, Handle::ResetRotation
         };
         Handle best = Handle::None;
         qreal bestDist = 1e300;
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < kChromeCount; ++i) {
             const qreal d = QLineF(p, centers[i]).length();
             const qreal limit = (chromeHandles[i] == Handle::FlipH
                                  || chromeHandles[i] == Handle::FlipV)
@@ -849,6 +860,12 @@ void ImageItem::activateChromeHandle(Handle h)
         break;
     case Handle::FlipV:
         toggleVFlip();
+        break;
+    case Handle::Rotate90CCW:
+        rotateBy(-90.0);
+        break;
+    case Handle::Rotate90CW:
+        rotateBy(90.0);
         break;
     case Handle::Raise:
     case Handle::Lower: {
@@ -1164,10 +1181,10 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     }
 
     // Chrome buttons: top-right *outside*. Adaptive — stack shifts upward when
-    // the right rotate knob would collide (see chromeCentersView).
+    // split upper/lower groups around the right rotate knob (see chromeCentersView).
     {
         const FrameViewGeom fg = makeFrameViewGeom(tl, tr, br, bl);
-        QPointF centers[6];
+        QPointF centers[kChromeCount];
         chromeCentersView(fg, centers);
 
         const qreal btnR = kChromeBtnScreenPx / 2.0;
@@ -1228,10 +1245,12 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
 
         drawFlipToggle(Handle::FlipH, 0, m_hFlip, QStringLiteral("↔"));
         drawFlipToggle(Handle::FlipV, 1, m_vFlip, QStringLiteral("↕"));
-        drawBtn(Handle::Raise, 2, QStringLiteral("↑"));
-        drawBtn(Handle::Lower, 3, QStringLiteral("↓"));
-        drawBtn(Handle::ResetScale, 4, QStringLiteral("1:1"));
-        drawBtn(Handle::ResetRotation, 5, QStringLiteral("0°"));
+        drawBtn(Handle::Rotate90CCW, 2, QStringLiteral("↺"));
+        drawBtn(Handle::Rotate90CW, 3, QStringLiteral("↻"));
+        drawBtn(Handle::Raise, 4, QStringLiteral("↑"));
+        drawBtn(Handle::Lower, 5, QStringLiteral("↓"));
+        drawBtn(Handle::ResetScale, 6, QStringLiteral("1:1"));
+        drawBtn(Handle::ResetRotation, 7, QStringLiteral("0°"));
     }
 
     // Opacity: bottom-right *outside*. Left edge stays clear of the bottom
@@ -1283,6 +1302,7 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
         return false;
     }
     if (h == Handle::FlipH || h == Handle::FlipV
+        || h == Handle::Rotate90CCW || h == Handle::Rotate90CW
         || h == Handle::Raise || h == Handle::Lower
         || h == Handle::ResetScale || h == Handle::ResetRotation) {
         activateChromeHandle(h);
