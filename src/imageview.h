@@ -13,6 +13,7 @@
 #include <QList>
 #include <QImage>
 #include <QSet>
+#include <QSizeF>
 #include <QString>
 #include <QStringList>
 #include <QUrl>
@@ -23,6 +24,8 @@ class ImageItem;
 class QGraphicsScene;
 class QTimer;
 class QUndoStack;
+class QPrinter;
+class QPainter;
 
 /**
  * Central image area with three presentation modes:
@@ -77,6 +80,16 @@ public:
      */
     bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos);
     void clearWorkspace();
+
+    /** Workspace: show a paper-sized frame (scene units) for print layout. */
+    void setPageGuideVisible(bool on);
+    bool pageGuideVisible() const { return m_pageGuideVisible; }
+    /** Update guide size from a printer page layout (millimetres → scene px). */
+    void setPageGuideFromPrinter(const QPrinter &printer);
+    /** Scene rectangle of the page guide (centred on the origin). */
+    QRectF pageGuideSceneRect() const;
+    /** Paint current mode content into @p pageRect on @p painter (print/preview). */
+    void renderForPrint(QPainter *painter, const QRectF &pageRect) const;
     /** Drop cached Gallery tiles (e.g. after loading a new session). */
     void discardStashedGallery();
 
@@ -402,6 +415,8 @@ private:
     QUndoStack *m_undoStack = nullptr;
     bool m_preserveUndoOnDestroy = false;
 
+    bool m_pageGuideVisible = false;
+    QSizeF m_pageGuideSize; // scene px from printer page; empty → A4@96dpi
     bool m_fitMode = true;
     bool m_fillMode = false;
     ViewMode m_viewMode = ViewMode::Image;

@@ -408,36 +408,61 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 
     if (!useChecker) {
         painter->fillRect(rect, m_bgColor);
-        return;
+    } else {
+        // Checkerboard in scene coordinates so it pans with the view. Cell size is
+        // LOD-snapped so on-screen square size stays in a comfortable range: when
+        // a 16-scene-unit cell would shrink below ~16 device px, double the scene
+        // cell (and again) until squares are large enough — never draw a dense
+        // field of sub-pixel checkers.
+        const qreal viewScale = qMax(1e-6, transform().m11());
+        constexpr qreal kBaseCell = 16.0;
+        constexpr qreal kMinScreenPx = 16.0;
+        qreal cell = kBaseCell;
+        while (cell * viewScale < kMinScreenPx && cell < 4096.0) {
+            cell *= 2.0;
+        }
+
+        const QColor a = m_bgColor;
+        const QColor b = m_bgColorAlt.isValid() ? m_bgColorAlt : m_bgColor.lighter(120);
+
+        const qreal x0 = std::floor(rect.left() / cell) * cell;
+        const qreal y0 = std::floor(rect.top() / cell) * cell;
+        const qreal x1 = std::ceil(rect.right() / cell) * cell;
+        const qreal y1 = std::ceil(rect.bottom() / cell) * cell;
+
+        for (qreal y = y0; y < y1; y += cell) {
+            for (qreal x = x0; x < x1; x += cell) {
+                const int ix = static_cast<int>(std::floor(x / cell));
+                const int iy = static_cast<int>(std::floor(y / cell));
+                const bool dark = ((ix + iy) & 1) != 0;
+                painter->fillRect(QRectF(x, y, cell, cell), dark ? a : b);
+            }
+        }
     }
 
-    // Checkerboard in scene coordinates so it pans with the view. Cell size is
-    // LOD-snapped so on-screen square size stays in a comfortable range: when
-    // a 16-scene-unit cell would shrink below ~16 device px, double the scene
-    // cell (and again) until squares are large enough — never draw a dense
-    // field of sub-pixel checkers.
-    const qreal viewScale = qMax(1e-6, transform().m11());
-    constexpr qreal kBaseCell = 16.0;
-    constexpr qreal kMinScreenPx = 16.0;
-    qreal cell = kBaseCell;
-    while (cell * viewScale < kMinScreenPx && cell < 4096.0) {
-        cell *= 2.0;
-    }
-
-    const QColor a = m_bgColor;
-    const QColor b = m_bgColorAlt.isValid() ? m_bgColorAlt : m_bgColor.lighter(120);
-
-    const qreal x0 = std::floor(rect.left() / cell) * cell;
-    const qreal y0 = std::floor(rect.top() / cell) * cell;
-    const qreal x1 = std::ceil(rect.right() / cell) * cell;
-    const qreal y1 = std::ceil(rect.bottom() / cell) * cell;
-
-    for (qreal y = y0; y < y1; y += cell) {
-        for (qreal x = x0; x < x1; x += cell) {
-            const int ix = static_cast<int>(std::floor(x / cell));
-            const int iy = static_cast<int>(std::floor(y / cell));
-            const bool dark = ((ix + iy) & 1) != 0;
-            painter->fillRect(QRectF(x, y, cell, cell), dark ? a : b);
+    // Print page guide (Workspace): fixed paper frame in scene units so images
+    // can be arranged to match the printable area.
+    if (m_pageGuideVisible && isWorkspaceMode()) {
+        const QRectF page = pageGuideSceneRect();
+        if (page.intersects(rect)) {
+            painter->save();
+            QPen pen(QColor(40, 100, 200, 200));
+            pen.setStyle(Qt::DashLine);
+            // Keep dash roughly constant in screen pixels.
+            pen.setWidthF(0);
+            pen.setCosmetic(true);
+            painter->setPen(pen);
+            painter->setBrush(Qt::NoBrush);
+            painter->drawRect(page);
+            // Soft margin hint (5% inset)
+            QRectF margin = page.adjusted(page.width() * 0.05, page.height() * 0.05,
+                                          -page.width() * 0.05, -page.height() * 0.05);
+            QPen marginPen(QColor(40, 100, 200, 100));
+            marginPen.setStyle(Qt::DotLine);
+            marginPen.setCosmetic(true);
+            painter->setPen(marginPen);
+            painter->drawRect(margin);
+            painter->restore();
         }
     }
 }

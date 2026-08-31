@@ -6,6 +6,9 @@
 #include "imageitem.h"
 #include "imageloader.h"
 
+#include <QPrinter>
+#include <QPageLayout>
+
 #include <QUndoCommand>
 #include <QUndoStack>
 
@@ -371,6 +374,9 @@ void ImageView::updateWorkspaceSceneRect()
         return;
     }
     QRectF bounds = m_scene->itemsBoundingRect();
+    if (m_pageGuideVisible) {
+        bounds = bounds.united(pageGuideSceneRect());
+    }
     // Viewport in scene coordinates — ensure room to pan around content.
     const QRectF viewScene = mapToScene(viewport()->rect()).boundingRect();
     const qreal mx = qMax(96.0, viewScene.width() * 0.35);
@@ -392,6 +398,104 @@ void ImageView::updateWorkspaceSceneRect()
     }
     m_scene->setSceneRect(bounds);
 }
+
+
+void ImageView::setPageGuideVisible(bool on)
+{
+    if (m_pageGuideVisible == on) {
+        return;
+    }
+    m_pageGuideVisible = on;
+    if (m_pageGuideVisible && !m_pageGuideSize.isValid()) {
+        // Default: A4 portrait at 96 CSS-px per inch (layout reference, not print DPI).
+        constexpr qreal pxPerMm = 96.0 / 25.4;
+        m_pageGuideSize = QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm);
+    }
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    viewport()->update();
+    emit statusChanged();
+}
+
+void ImageView::setPageGuideFromPrinter(const QPrinter &printer)
+{
+    const QPageLayout layout = printer.pageLayout();
+    QRectF mm = layout.paintRect(QPageLayout::Millimeter);
+    if (!mm.isValid() || mm.width() <= 0 || mm.height() <= 0) {
+        mm = QRectF(0, 0, 210.0, 297.0);
+    }
+    constexpr qreal pxPerMm = 96.0 / 25.4;
+    m_pageGuideSize = QSizeF(mm.width() * pxPerMm, mm.height() * pxPerMm);
+    if (m_pageGuideVisible) {
+        if (isWorkspaceMode()) {
+            updateWorkspaceSceneRect();
+        }
+        viewport()->update();
+        emit statusChanged();
+    }
+}
+
+
+void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
+{
+    if (!painter || !painter->isActive() || !pageRect.isValid()) {
+        return;
+    }
+
+    if (isWorkspaceMode() && m_pageGuideVisible && m_scene) {
+        const QRectF source = pageGuideSceneRect();
+        m_scene->render(painter, pageRect, source, Qt::KeepAspectRatio);
+        return;
+    }
+
+    if (isImageMode()) {
+        ImageItem *item = primaryItem();
+        if (!item) {
+            item = targetItem();
+        }
+        if (item && item->hasDecodedPixels()) {
+            const QImage &img = item->sourceImage();
+            if (!img.isNull()) {
+                QSizeF fitted(img.size());
+                fitted.scale(pageRect.size(), Qt::KeepAspectRatio);
+                const QRectF target(
+                    pageRect.center().x() - fitted.width() / 2.0,
+                    pageRect.center().y() - fitted.height() / 2.0,
+                    fitted.width(), fitted.height());
+                painter->save();
+                painter->translate(target.center());
+                painter->rotate(item->itemRotation());
+                painter->scale(item->itemHFlip() ? -1.0 : 1.0,
+                               item->itemVFlip() ? -1.0 : 1.0);
+                painter->translate(-target.center());
+                painter->drawImage(target, img);
+                painter->restore();
+                return;
+            }
+        }
+    }
+
+    if (m_scene) {
+        QRectF source = m_scene->itemsBoundingRect();
+        if (!source.isValid() || source.isEmpty()) {
+            return;
+        }
+        source.adjust(-4, -4, 4, 4);
+        m_scene->render(painter, pageRect, source, Qt::KeepAspectRatio);
+    }
+}
+
+QRectF ImageView::pageGuideSceneRect() const
+{
+    QSizeF sz = m_pageGuideSize;
+    if (!sz.isValid() || sz.width() <= 0 || sz.height() <= 0) {
+        constexpr qreal pxPerMm = 96.0 / 25.4;
+        sz = QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm);
+    }
+    return QRectF(-sz.width() / 2.0, -sz.height() / 2.0, sz.width(), sz.height());
+}
+
 
 void ImageView::reorderItemsByPaths(const QStringList &paths)
 {

@@ -29,6 +29,23 @@ void MainWindow::createActions()
     m_openDirAct->setStatusTip(tr("Open all images in a directory"));
     connect(m_openDirAct, &QAction::triggered, this, &MainWindow::openDirectory);
 
+    m_printAct = new QAction(tr("&Print..."), this);
+    m_printAct->setShortcut(QKeySequence::Print);
+    m_printAct->setIcon(themeIcon(QStringLiteral("document-print"), QStyle::SP_FileDialogDetailedView));
+    m_printAct->setStatusTip(tr("Print the current image or Workspace page"));
+    connect(m_printAct, &QAction::triggered, this, &MainWindow::printDocument);
+
+    m_printPreviewAct = new QAction(tr("Print Pre&view..."), this);
+    m_printPreviewAct->setIcon(themeIcon(QStringLiteral("document-print-preview"), QStyle::SP_FileDialogContentsView));
+    m_printPreviewAct->setStatusTip(tr("Preview how the page will print"));
+    connect(m_printPreviewAct, &QAction::triggered, this, &MainWindow::printPreview);
+
+    m_pageGuideAct = new QAction(tr("Print &Page Guide"), this);
+    m_pageGuideAct->setCheckable(true);
+    m_pageGuideAct->setStatusTip(
+        tr("Workspace: show a paper-sized frame to arrange images for printing"));
+    connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
+
     m_quitAct = new QAction(tr("&Quit"), this);
     m_quitAct->setShortcut(QKeySequence::Quit);
     m_quitAct->setIcon(themeIcon(QStringLiteral("application-exit"), QStyle::SP_DialogCloseButton));
@@ -465,6 +482,9 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
     m_fileMenu->addSeparator();
+    m_fileMenu->addAction(m_printAct);
+    m_fileMenu->addAction(m_printPreviewAct);
+    m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 
     m_editMenu = menuBar()->addMenu(tr("&Edit"));
@@ -492,6 +512,7 @@ void MainWindow::createMenus()
 
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
+    m_viewMenu->addAction(m_pageGuideAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);

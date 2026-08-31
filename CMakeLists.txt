@@ -23,7 +23,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets PrintSupport)
 find_package(PkgConfig)
 
 add_executable(qimgview
@@ -32,6 +32,7 @@ add_executable(qimgview
   src/mainwindow_ui.cpp
   src/mainwindow_gallery.cpp
   src/mainwindow_session.cpp
+  src/mainwindow_print.cpp
   src/mainwindow.h
   src/mainwindow_includes.h
   src/icons.cpp
@@ -67,6 +68,7 @@ target_link_libraries(qimgview PRIVATE
   Qt6::Core
   Qt6::Gui
   Qt6::Widgets
+  Qt6::PrintSupport
 )
 
 # Optional libvips for formats Qt cannot decode

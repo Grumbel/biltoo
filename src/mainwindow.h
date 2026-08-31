@@ -72,6 +72,9 @@ public:
     void slideshowFaster();
     /** Longer interval (slower); shortcut [. */
     void slideshowSlower();
+    void printDocument();
+    void printPreview();
+    void togglePageGuide();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -234,6 +237,9 @@ private:
     QAction *m_addAct = nullptr;
     QAction *m_openDirAct = nullptr;
     QAction *m_quitAct = nullptr;
+    QAction *m_printAct = nullptr;
+    QAction *m_printPreviewAct = nullptr;
+    QAction *m_pageGuideAct = nullptr;
     QAction *m_zoomInAct = nullptr;
     QAction *m_zoomOutAct = nullptr;
     QAction *m_zoom1to1Act = nullptr;
