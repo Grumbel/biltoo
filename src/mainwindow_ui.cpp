@@ -141,7 +141,14 @@ void MainWindow::createActions()
     m_cropAct = new QAction(tr("&Crop"), this);
     m_cropAct->setCheckable(true);
     m_cropAct->setShortcut(Qt::Key_C);
-    m_cropAct->setIcon(themeIcon(QStringLiteral("transform-crop"), QStyle::SP_DialogYesButton));
+    // Prefer bundled crop glyph; fall back to theme / style.
+    {
+        const QIcon bundled = resourceIcon(QStringLiteral("transform-crop"));
+        m_cropAct->setIcon(bundled.isNull()
+                               ? themeIcon(QStringLiteral("transform-crop"),
+                                             QStyle::SP_DialogYesButton)
+                               : bundled);
+    }
     m_cropAct->setStatusTip(
         tr("Crop mode: drag a rectangle, adjust handles; Enter applies, Esc cancels"));
     m_cropAct->setToolTip(tr("Crop mode"));

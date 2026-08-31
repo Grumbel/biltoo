@@ -44,5 +44,6 @@
     <file alias="actions/workspace-mode.svg">../data/icons/actions/workspace-mode.svg</file>
     <file alias="actions/print-page-guide.svg">../data/icons/actions/print-page-guide.svg</file>
     <file alias="actions/show-thumbnails.svg">../data/icons/actions/show-thumbnails.svg</file>
+    <file alias="actions/transform-crop.svg">../data/icons/actions/transform-crop.svg</file>
   </qresource>
 </RCC>

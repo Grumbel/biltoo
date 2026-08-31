@@ -303,8 +303,8 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect)
         return false;
     }
     const QRectF cr = contentRect();
-    const QRect r = localRect.normalized().intersected(cr).toAlignedRect();
-    if (r.width() < 1 || r.height() < 1) {
+    const QRectF local = localRect.normalized().intersected(cr);
+    if (local.width() < 1.0 || local.height() < 1.0) {
         return false;
     }
     // Crop in displayed-pixel space so the rectangle matches what the user saw.
@@ -313,10 +313,12 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect)
         return false;
     }
     const QRect bounds(0, 0, displayed.width(), displayed.height());
-    // contentRect is in item space (includes pixmap offset); pixmap pixels are
-    // origin-relative — shift by -offset() using QPoint (QRect::translated).
+    // contentRect is centred via setOffset(-w/2, -h/2); map local → pixmap pixels.
     const QPointF off = offset();
-    const QRect srcRect = r.translated(-qRound(off.x()), -qRound(off.y()))
+    const QRect srcRect = QRect(qRound(local.left() - off.x()),
+                                qRound(local.top() - off.y()),
+                                qMax(1, qRound(local.width())),
+                                qMax(1, qRound(local.height())))
                               .intersected(bounds);
     if (srcRect.width() < 1 || srcRect.height() < 1) {
         return false;
@@ -326,14 +328,11 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect)
         return false;
     }
     // Flips are baked into the crop; rotation remains an item transform.
+    // setSourceImage() recentres with offset (-w/2, -h/2) — never force (0,0)
+    // or the item origin shifts and Image/Gallery framing looks offset.
     m_hFlip = false;
     m_vFlip = false;
-    prepareGeometryChange();
-    m_source = cropped;
-    setOffset(QPointF(0, 0));
-    setPixmap(QPixmap::fromImage(m_source));
-    applyLocalTransform();
-    update();
+    setSourceImage(cropped);
     return true;
 }
 
