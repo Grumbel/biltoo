@@ -316,7 +316,9 @@ QStringList imageSuffixes()
         QStringLiteral("exr"),  QStringLiteral("hdr"),  QStringLiteral("pic"),
         QStringLiteral("tga"),  QStringLiteral("pcx"),  QStringLiteral("psd"),
         QStringLiteral("dds"),  QStringLiteral("fits"), QStringLiteral("fit"),
-        QStringLiteral("vips")
+        QStringLiteral("vips"),
+        // KDE KImageFormats plugins (runtime): GIMP XCF, Krita, OpenRaster, …
+        QStringLiteral("xcf"),  QStringLiteral("kra"),  QStringLiteral("ora")
     };
 
     static const QStringList suffixes = [] {

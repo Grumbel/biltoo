@@ -21,6 +21,7 @@
 
       qimgview = pkgs.qt6Packages.callPackage ./default.nix {
         inherit version;
+        kimageformats = pkgs.kdePackages.kimageformats;
       };
     in
     {

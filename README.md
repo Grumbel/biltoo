@@ -47,6 +47,14 @@ Useful options:
 
 Drag and drop image files onto the window. Drops **append** to the current session (Image, Gallery, and Workspace). Use **File → Open** to replace the session, or **File → New** for an empty session.
 
+## Image formats
+
+Decoding uses Qt’s `QImageReader`, then optional **libvips**. For **GIMP `.xcf`**
+(and Krita `.kra`, OpenRaster `.ora`, and related types), install **KImageFormats**
+so the Qt imageformat plugins are on the plugin path. The Nix package pulls this
+in automatically. XCF coverage matches KImageFormats (roughly up to XCF v12;
+zlib-compressed and newest GIMP 3 files may not load).
+
 ## Building
 
 **Nix** (recommended):

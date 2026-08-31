@@ -18,6 +18,10 @@ See [TODO.md](TODO.md) for the roadmap and open questions.
   - `nix build` / `nix run` – package and run
   - `nix flake check` – builds the package (compile gate)
 - Manual: standard out-of-source CMake against Qt6 Widgets.
+- **Extra formats (XCF, KRA, ORA, …):** install KDE **KImageFormats** so Qt loads
+  its `imageformats` plugins at runtime (Nix: `kimageformats` via the flake).
+  No link-time dependency in CMake; `QImageReader` discovers the plugins.
+  XCF support is limited to older format versions (see KImageFormats docs).
 - Debug info: `nix build` uses **RelWithDebInfo** and `separateDebugInfo`
   (symbols via `nix build .#debug`). Dev shell sets `CMAKE_BUILD_TYPE=Debug`
   for local cmake builds.

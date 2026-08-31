@@ -7,6 +7,7 @@
 , vips
 , exiv2
 , glib
+, kimageformats
 , version ? "0.1.0-dev"
 }:
 
@@ -28,6 +29,8 @@ stdenv.mkDerivation (finalAttrs: {
     vips
     exiv2
     glib
+    # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
+    kimageformats
   ];
 
   # Keep symbols, strip into a separate "debug" output for gdb/coredumpctl.
