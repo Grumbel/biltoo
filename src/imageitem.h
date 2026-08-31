@@ -70,6 +70,8 @@ public:
     qreal itemOpacity() const { return m_opacity; }
     /** Persistent stacking order (selection may temporarily raise the item). */
     qreal stackZ() const { return m_stackZ; }
+    /** Item-local pixmap/content rect (no chrome pad). */
+    QRectF contentRect() const;
     /** Scene AABB of the pixmap only (no chrome pad). */
     QRectF contentSceneRect() const;
     /** Content quad in scene coordinates (respects item scale/rotation). */
@@ -170,7 +172,6 @@ private:
     void updateDisplayedPixmap();
     void refreshStackingOrder();
     void notifyViewStatus();
-    QRectF contentRect() const;
     /** Local clip rect for gallery crop, or empty if none. */
     QRectF galleryClipLocal() const;
     /** Item-local centre of a handle (pre-transform local coordinates). */
