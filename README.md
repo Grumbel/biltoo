@@ -1,33 +1,49 @@
 # QImgView
 
-A classic Qt image viewer with three presentation modes on one canvas:
+A classic desktop image viewer with three ways to look at a session on one canvas:
 
-- **Image** — single-image browsing (zoom, pan, rotate, slideshow)
-- **Gallery** — session overview with packaged layouts
-- **Workspace** — free-form multi-image comparison
-
-Behavioural model (modes, operations, invariants): [DOMAIN.md](DOMAIN.md).
-Agent / contributor notes: [AGENTS.md](AGENTS.md).
+- **Image** — browse one file at a time (zoom, pan, rotate, flip, slideshow)
+- **Gallery** — see the whole session laid out (strip, grid, masonry, …)
+- **Workspace** — arrange several images freely for comparison
 
 ![QImgView main window](screenshot.png)
 
-## Project home
-
-- GitHub: <https://github.com/Grumbel/qimgview>
-- Radicle: [`rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a`](https://radicle.network/nodes/rosa.radicle.network/rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a)
-
 ## Features
 
-- Fast single-image browsing with zoom, pan, rotate, and flip
-- Thumbnail bar for the current session; open files or directories from the UI or the command line
-- **Gallery**: packaged layouts (horizontal/vertical strip, grid, grid-crop, masonry); multi-select; double-click opens Image mode; **Up** returns with scroll restore
-- **Workspace mode**: free-form canvas — move, scale, rotate, opacity, stacking; rubber-band select; view-space transform handles ([HANDLES.md](HANDLES.md))
-- Session sort by name, date, file size, width, height, or pixel count (menu + toolbar)
-- Slideshow with optional fullscreen; `[` / `]` adjust interval while running
-- Drag and drop **appends** to the session in Image mode (File → Open still replaces); File → New clears the session
-- Metadata panel (file info; optional Exif/IPTC/XMP when built with libexiv2)
-- Configurable canvas background (solid or checkerboard)
-- Theme icons, fullscreen, and preferences for sort order, slideshow, and default applications
+**Session**
+
+- Open files or directories; append more via File → Add, drag-and-drop, or the command line
+- File → Open replaces the session; File → New clears it
+- History menu to reopen recent sessions
+- Sort by name, date, file size, width, height, or pixel count
+- Thumbnail bar (show/hide, edge placement, optional labels)
+
+**Image mode**
+
+- Zoom in/out, 1:1, fit, fill, and rubber-band zoom to a region
+- Pan, rotate (±90°), flip horizontal/vertical
+- Slideshow with adjustable speed (`[` / `]`); optional fullscreen while playing
+- Edge navigation and keyboard prev/next/first/last
+
+**Gallery**
+
+- Layouts: side-by-side, vertical strip, grid, grid-crop, masonry (columns or rows)
+- Multi-select; double-click (or Enter) opens Image mode
+- Return to Gallery with viewport restored
+
+**Workspace**
+
+- Free placement: move, scale, rotate, opacity, raise/lower
+- Rubber-band multi-select; transform handles on the selection
+- Open the current selection in a new window
+- Delete removes from the canvas only (session membership stays)
+
+**General**
+
+- Fullscreen, on-canvas HUD, configurable background (solid or checkerboard)
+- Metadata side panel (file info; colour/structure extras when available)
+- Preferences for slideshow, start mode, thumbnails, and default applications
+- Theme icons and standard desktop shortcuts
 
 ## Usage
 
@@ -35,40 +51,36 @@ Agent / contributor notes: [AGENTS.md](AGENTS.md).
 qimgview [options] [files-or-directories…]
 ```
 
-Useful options:
-
 | Option | Description |
 |--------|-------------|
 | `-r`, `--recursive` | Expand directories recursively |
-| `--start-at=N` | Start at the N-th image (1-based) |
-| `--sort=name\|mtime` | Sort session by name or modification time |
+| `--start-at=N` | Start at the *N*-th image (1-based) |
+| `--sort=name\|mtime` | Sort by name or modification time |
 | `--mode=image\|gallery\|workspace` | Start in Image, Gallery (masonry), or Workspace |
-| `--slideshow` | Start a slideshow after loading images |
+| `--slideshow` | Start slideshow after loading |
 | `--interval=ms` | Slideshow interval in milliseconds |
 | `-f`, `--fullscreen` | Start in fullscreen |
-| `--thumbnails` / `--no-thumbnails` | Force thumbnail bar on or off |
+| `--thumbnails` / `--no-thumbnails` | Force the thumbnail bar on or off |
 
-Drag and drop image files onto the window. Drops **append** to the current session (Image, Gallery, and Workspace). Use **File → Open** to replace the session, or **File → New** for an empty session.
+Drag-and-drop onto the window **appends** to the session. Use **File → Open** to replace it.
 
 ## Image formats
 
-Decoding uses Qt’s `QImageReader`, then optional **libvips**. For **GIMP `.xcf`**
-(and Krita `.kra`, OpenRaster `.ora`, and related types), install **KImageFormats**
-so the Qt imageformat plugins are on the plugin path. The Nix package pulls this
-in automatically. XCF coverage matches KImageFormats (roughly up to XCF v12;
-zlib-compressed and newest GIMP 3 files may not load).
+Common formats go through Qt. Extra types such as GIMP `.xcf` (and related plugin formats) work when **KImageFormats** is installed. The Nix package includes that dependency.
 
-## Building
+## Install / build
 
-**Nix** (recommended):
+**Nix**
 
 ```bash
-nix develop    # development shell
+nix run github:Grumbel/qimgview
+# or, from a checkout:
+nix develop    # shell
 nix build      # package
-nix run        # build and run
+nix run        # run
 ```
 
-**Manual** (Qt6 Widgets, CMake; optional libvips, libexiv2, GLib GIO):
+**CMake** (Qt 6 Widgets)
 
 ```bash
 mkdir build && cd build
@@ -77,13 +89,13 @@ cmake --build .
 ./qimgview
 ```
 
-## Desktop integration
-
-The package installs:
-
-- `share/applications/qimgview.desktop`
-- `share/icons/hicolor/scalable/apps/qimgview.svg`
+Optional libraries (vips, exiv2, …) are detected at configure time when present.
 
 ## License
 
-GPL-3.0-or-later. See [LICENSE](LICENSE) and [REUSE.md](REUSE.md).
+GPL-3.0-or-later. See [LICENSES](LICENSES) and [REUSE.md](REUSE.md).
+
+## Links
+
+- GitHub: <https://github.com/Grumbel/qimgview>
+- Radicle: [`rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a`](https://radicle.network/nodes/rosa.radicle.network/rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a)
