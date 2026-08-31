@@ -401,6 +401,17 @@ void ImageView::updateWorkspaceSceneRect()
 }
 
 
+
+qreal ImageView::pageGuidePxPerMm()
+{
+    // Workspace items use native image pixels as scene units. A 12MP photo is
+    // ~4000px wide; at screen 96dpi an A4 sheet is only ~794px and looks tiny.
+    // Use 300dpi so a page is roughly photo-scale (~2480×3508 for A4) while
+    // still mapping 1:1 to physical paper on print/PDF.
+    constexpr qreal kPageGuideDpi = 300.0;
+    return kPageGuideDpi / 25.4;
+}
+
 void ImageView::setPageGuideVisible(bool on)
 {
     if (m_pageGuideVisible == on) {
@@ -408,8 +419,7 @@ void ImageView::setPageGuideVisible(bool on)
     }
     m_pageGuideVisible = on;
     if (m_pageGuideVisible && !m_pageGuideSize.isValid()) {
-        // Default: A4 portrait at 96 CSS-px per inch (layout reference, not print DPI).
-        constexpr qreal pxPerMm = 96.0 / 25.4;
+        const qreal pxPerMm = pageGuidePxPerMm();
         m_pageGuideSize = QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm);
     }
     if (isWorkspaceMode()) {
@@ -437,7 +447,7 @@ void ImageView::setPageGuideFromPrinter(const QPrinter &printer)
             mm = QRectF(0, 0, 210.0, 297.0);
         }
     }
-    constexpr qreal pxPerMm = 96.0 / 25.4;
+    const qreal pxPerMm = pageGuidePxPerMm();
     m_pageGuideSize = QSizeF(mm.width() * pxPerMm, mm.height() * pxPerMm);
     if (m_pageGuideVisible) {
         if (isWorkspaceMode()) {
@@ -504,7 +514,7 @@ QRectF ImageView::pageGuideSceneRect() const
 {
     QSizeF sz = m_pageGuideSize;
     if (!sz.isValid() || sz.width() <= 0 || sz.height() <= 0) {
-        constexpr qreal pxPerMm = 96.0 / 25.4;
+        const qreal pxPerMm = pageGuidePxPerMm();
         sz = QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm);
     }
     return QRectF(-sz.width() / 2.0, -sz.height() / 2.0, sz.width(), sz.height());

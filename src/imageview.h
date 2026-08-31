@@ -88,6 +88,8 @@ public:
     void setPageGuideFromPrinter(const QPrinter &printer);
     /** Scene rectangle of the page guide (centred on the origin). */
     QRectF pageGuideSceneRect() const;
+    /** Scene pixels per millimetre for the page guide (layout scale). */
+    static qreal pageGuidePxPerMm();
     /** Paint current mode content into @p pageRect on @p painter (print/preview). */
     void renderForPrint(QPainter *painter, const QRectF &pageRect) const;
     /** Drop cached Gallery tiles (e.g. after loading a new session). */
@@ -416,7 +418,7 @@ private:
     bool m_preserveUndoOnDestroy = false;
 
     bool m_pageGuideVisible = false;
-    QSizeF m_pageGuideSize; // scene px from printer page; empty → A4@96dpi
+    QSizeF m_pageGuideSize; // scene px from printer page; empty → A4 at kPageGuideDpi
     bool m_fitMode = true;
     bool m_fillMode = false;
     ViewMode m_viewMode = ViewMode::Image;
