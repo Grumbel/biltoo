@@ -38,6 +38,34 @@
 #include <cmath>
 #include <algorithm>
 
+namespace {
+
+/**
+ * Image mode only inherits cardinal (90°) object rotation.
+ * Free angles are a Workspace placement transform and stay on the canvas item.
+ */
+bool isCardinalRotation(qreal degrees)
+{
+    const qreal n = std::fmod(std::fmod(degrees, 360.0) + 360.0, 360.0);
+    const qreal nearest = qRound(n / 90.0) * 90.0;
+    return qAbs(n - nearest) < 0.51;
+}
+
+qreal cardinalRotationOrZero(qreal degrees)
+{
+    if (!isCardinalRotation(degrees)) {
+        return 0.0;
+    }
+    const qreal n = std::fmod(std::fmod(degrees, 360.0) + 360.0, 360.0);
+    qreal snapped = qRound(n / 90.0) * 90.0;
+    if (snapped >= 360.0) {
+        snapped = 0.0;
+    }
+    return snapped;
+}
+
+} // namespace
+
 ImageView::ImageView(QWidget *parent)
     : QGraphicsView(parent)
 {
