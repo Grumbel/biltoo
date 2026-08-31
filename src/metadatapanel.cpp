@@ -11,6 +11,8 @@
 #include <QImageReader>
 #include <QLabel>
 #include <QLocale>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QSet>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -217,12 +219,195 @@ bool loadExiv2Metadata(QTreeWidget *tree, const QString &path)
 
 } // namespace
 
+
+
+QString imageFormatName(QImage::Format fmt)
+{
+    switch (fmt) {
+    case QImage::Format_Invalid: return QObject::tr("Invalid");
+    case QImage::Format_Mono: return QObject::tr("Mono");
+    case QImage::Format_MonoLSB: return QObject::tr("Mono (LSB)");
+    case QImage::Format_Indexed8: return QObject::tr("Indexed 8-bit");
+    case QImage::Format_RGB32: return QObject::tr("RGB32");
+    case QImage::Format_ARGB32: return QObject::tr("ARGB32");
+    case QImage::Format_ARGB32_Premultiplied: return QObject::tr("ARGB32 premultiplied");
+    case QImage::Format_RGB16: return QObject::tr("RGB16");
+    case QImage::Format_ARGB8565_Premultiplied: return QObject::tr("ARGB8565");
+    case QImage::Format_RGB666: return QObject::tr("RGB666");
+    case QImage::Format_ARGB6666_Premultiplied: return QObject::tr("ARGB6666");
+    case QImage::Format_RGB555: return QObject::tr("RGB555");
+    case QImage::Format_ARGB8555_Premultiplied: return QObject::tr("ARGB8555");
+    case QImage::Format_RGB888: return QObject::tr("RGB888");
+    case QImage::Format_RGB444: return QObject::tr("RGB444");
+    case QImage::Format_ARGB4444_Premultiplied: return QObject::tr("ARGB4444");
+    case QImage::Format_RGBX8888: return QObject::tr("RGBX8888");
+    case QImage::Format_RGBA8888: return QObject::tr("RGBA8888");
+    case QImage::Format_RGBA8888_Premultiplied: return QObject::tr("RGBA8888 premultiplied");
+    case QImage::Format_BGR30: return QObject::tr("BGR30");
+    case QImage::Format_A2BGR30_Premultiplied: return QObject::tr("A2BGR30");
+    case QImage::Format_RGB30: return QObject::tr("RGB30");
+    case QImage::Format_A2RGB30_Premultiplied: return QObject::tr("A2RGB30");
+    case QImage::Format_Alpha8: return QObject::tr("Alpha8");
+    case QImage::Format_Grayscale8: return QObject::tr("Grayscale 8-bit");
+    case QImage::Format_Grayscale16: return QObject::tr("Grayscale 16-bit");
+    case QImage::Format_RGBX64: return QObject::tr("RGBX64");
+    case QImage::Format_RGBA64: return QObject::tr("RGBA64");
+    case QImage::Format_RGBA64_Premultiplied: return QObject::tr("RGBA64 premultiplied");
+    default: return QObject::tr("Format %1").arg(static_cast<int>(fmt));
+    }
+}
+
+
+ImageHistogramWidget::ImageHistogramWidget(QWidget *parent)
+    : QWidget(parent)
+{
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    clear();
+}
+
+void ImageHistogramWidget::clear()
+{
+    m_luma = QVector<int>(256, 0);
+    m_r = QVector<int>(256, 0);
+    m_g = QVector<int>(256, 0);
+    m_b = QVector<int>(256, 0);
+    m_peak = 0;
+    update();
+}
+
+void ImageHistogramWidget::setFromImage(const QImage &image)
+{
+    clear();
+    if (image.isNull()) {
+        return;
+    }
+    QImage src = image;
+    if (src.width() > 384 || src.height() > 384) {
+        src = src.scaled(384, 384, Qt::KeepAspectRatio, Qt::FastTransformation);
+    }
+    src = src.convertToFormat(QImage::Format_RGB32);
+
+    const int w = src.width();
+    const int h = src.height();
+    for (int y = 0; y < h; ++y) {
+        const QRgb *line = reinterpret_cast<const QRgb *>(src.constScanLine(y));
+        for (int x = 0; x < w; ++x) {
+            const QRgb px = line[x];
+            const int r = qRed(px);
+            const int g = qGreen(px);
+            const int b = qBlue(px);
+            const int yv = (299 * r + 587 * g + 114 * b) / 1000;
+            ++m_r[r];
+            ++m_g[g];
+            ++m_b[b];
+            ++m_luma[qBound(0, yv, 255)];
+        }
+    }
+    m_peak = 1;
+    for (int i = 0; i < 256; ++i) {
+        m_peak = qMax(m_peak, m_luma[i]);
+        m_peak = qMax(m_peak, m_r[i]);
+        m_peak = qMax(m_peak, m_g[i]);
+        m_peak = qMax(m_peak, m_b[i]);
+    }
+    update();
+}
+
+void ImageHistogramWidget::paintEvent(QPaintEvent *)
+{
+    QPainter p(this);
+    p.fillRect(rect(), QColor(30, 30, 30));
+    if (m_peak <= 0) {
+        p.setPen(QColor(120, 120, 120));
+        p.drawText(rect(), Qt::AlignCenter, tr("No histogram"));
+        return;
+    }
+
+    const int w = width();
+    const int h = height();
+    auto drawChannel = [&](const QVector<int> &bins, const QColor &color) {
+        p.setPen(QPen(color, 1));
+        for (int i = 0; i < 256; ++i) {
+            const qreal x0 = (static_cast<qreal>(i) / 256.0) * w;
+            const qreal barH = (static_cast<qreal>(bins[i]) / static_cast<qreal>(m_peak)) * (h - 2);
+            p.drawLine(QPointF(x0, h - 1), QPointF(x0, h - 1 - barH));
+        }
+    };
+    drawChannel(m_luma, QColor(220, 220, 220));
+    drawChannel(m_r, QColor(220, 60, 60));
+    drawChannel(m_g, QColor(60, 200, 80));
+    drawChannel(m_b, QColor(60, 120, 220));
+    p.setPen(QColor(60, 60, 60));
+    p.drawRect(rect().adjusted(0, 0, -1, -1));
+}
+
+ImagePaletteWidget::ImagePaletteWidget(QWidget *parent)
+    : QWidget(parent)
+{
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+}
+
+void ImagePaletteWidget::clear()
+{
+    m_colors.clear();
+    setVisible(false);
+    updateGeometry();
+    update();
+}
+
+void ImagePaletteWidget::setColors(const QVector<QColor> &colors)
+{
+    m_colors = colors;
+    setVisible(!m_colors.isEmpty());
+    updateGeometry();
+    update();
+}
+
+QSize ImagePaletteWidget::sizeHint() const
+{
+    if (m_colors.isEmpty()) {
+        return QSize(120, 0);
+    }
+    const int rows = qMin(4, (m_colors.size() + 15) / 16);
+    return QSize(200, rows * 14 + 4);
+}
+
+void ImagePaletteWidget::paintEvent(QPaintEvent *)
+{
+    if (m_colors.isEmpty()) {
+        return;
+    }
+    QPainter p(this);
+    p.fillRect(rect(), QColor(30, 30, 30));
+    const int maxShow = qMin(m_colors.size(), 64);
+    const int cols = 16;
+    const int cell = qMax(8, (width() - 4) / cols);
+    for (int i = 0; i < maxShow; ++i) {
+        const int row = i / cols;
+        const int col = i % cols;
+        const QRect r(2 + col * cell, 2 + row * cell, cell - 1, cell - 1);
+        p.fillRect(r, m_colors.at(i));
+        p.setPen(QColor(0, 0, 0, 80));
+        p.drawRect(r);
+    }
+}
+
 MetadataPanel::MetadataPanel(QWidget *parent)
     : QWidget(parent)
 {
     m_header = new QLabel(tr("No image"), this);
     m_header->setWordWrap(true);
     m_header->setStyleSheet(QStringLiteral("font-weight: bold;"));
+
+    m_histogramLabel = new QLabel(tr("Histogram"), this);
+    m_histogramLabel->setVisible(false);
+    m_histogram = new ImageHistogramWidget(this);
+    m_histogram->setVisible(false);
+
+    m_paletteLabel = new QLabel(tr("Palette"), this);
+    m_paletteLabel->setVisible(false);
+    m_palette = new ImagePaletteWidget(this);
+    m_palette->clear();
 
     m_tree = new QTreeWidget(this);
     m_tree->setColumnCount(2);
@@ -239,20 +424,33 @@ MetadataPanel::MetadataPanel(QWidget *parent)
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(6);
     layout->addWidget(m_header);
+    layout->addWidget(m_histogramLabel);
+    layout->addWidget(m_histogram);
+    layout->addWidget(m_paletteLabel);
+    layout->addWidget(m_palette);
     layout->addWidget(m_tree, 1);
 
     setMinimumWidth(240);
-#ifdef QIMGVIEW_HAVE_EXIV2
     setWhatsThis(tr("File and image metadata."));
-#else
-    setWhatsThis(tr("File and image metadata."));
-#endif
 }
 
 void MetadataPanel::clear()
 {
     m_header->setText(tr("No image"));
     m_tree->clear();
+    if (m_histogram) {
+        m_histogram->clear();
+        m_histogram->setVisible(false);
+    }
+    if (m_histogramLabel) {
+        m_histogramLabel->setVisible(false);
+    }
+    if (m_palette) {
+        m_palette->clear();
+    }
+    if (m_paletteLabel) {
+        m_paletteLabel->setVisible(false);
+    }
 }
 
 void MetadataPanel::addRow(const QString &key, const QString &value)
@@ -266,9 +464,87 @@ void MetadataPanel::addRow(const QString &key, const QString &value)
     item->setToolTip(1, value);
 }
 
+void MetadataPanel::fillImageAnalysis(const QString &path)
+{
+    QImageReader reader(path);
+    reader.setAutoTransform(true);
+
+    QTreeWidgetItem *structGroup = ensureGroup(m_tree, tr("Image"));
+
+    const int frameCount = reader.imageCount();
+    if (frameCount > 1) {
+        addChildRow(structGroup, tr("Frames / pages"), QString::number(frameCount));
+    }
+
+    QImage image = reader.read();
+    if (image.isNull()) {
+        image = ImageLoader::load(path);
+    }
+    if (image.isNull()) {
+        addChildRow(structGroup, tr("Pixels"), tr("(could not decode)"));
+        return;
+    }
+
+    addChildRow(structGroup, tr("Pixel format"), imageFormatName(image.format()));
+    addChildRow(structGroup, tr("Bit depth"),
+                tr("%1 bits/pixel").arg(image.depth()));
+    addChildRow(structGroup, tr("Alpha"),
+                image.hasAlphaChannel() ? tr("Yes") : tr("No"));
+    if (image.colorCount() > 0) {
+        addChildRow(structGroup, tr("Colour count"),
+                    QString::number(image.colorCount()));
+    }
+
+    // True layer stacks (PSD etc.) are not exposed by Qt; multi-frame is above.
+    // Avoid a dead “Layers: unavailable” row — only report what we can know.
+
+    m_histogram->setFromImage(image);
+    m_histogram->setVisible(true);
+    m_histogramLabel->setVisible(true);
+
+    QVector<QColor> palette;
+    const QList<QRgb> table = image.colorTable();
+    if (!table.isEmpty()) {
+        palette.reserve(table.size());
+        for (QRgb c : table) {
+            palette.append(QColor::fromRgba(c));
+        }
+        QTreeWidgetItem *palGroup = ensureGroup(m_tree, tr("Palette"));
+        addChildRow(palGroup, tr("Entries"), QString::number(table.size()));
+        const int show = qMin(16, table.size());
+        for (int i = 0; i < show; ++i) {
+            const QColor col = palette.at(i);
+            addChildRow(palGroup, tr("#%1").arg(i),
+                        col.name(QColor::HexArgb));
+        }
+        if (table.size() > show) {
+            addChildRow(palGroup, tr("…"),
+                        tr("%1 more").arg(table.size() - show));
+        }
+        m_palette->setColors(palette);
+        m_paletteLabel->setVisible(true);
+    } else {
+        m_palette->clear();
+        m_paletteLabel->setVisible(false);
+    }
+}
+
 void MetadataPanel::setImagePath(const QString &path)
 {
     m_tree->clear();
+    if (m_histogram) {
+        m_histogram->clear();
+        m_histogram->setVisible(false);
+    }
+    if (m_histogramLabel) {
+        m_histogramLabel->setVisible(false);
+    }
+    if (m_palette) {
+        m_palette->clear();
+    }
+    if (m_paletteLabel) {
+        m_paletteLabel->setVisible(false);
+    }
 
     if (path.isEmpty()) {
         clear();
@@ -302,12 +578,14 @@ void MetadataPanel::setImagePath(const QString &path)
         if (!decoded.isNull()) {
             addChildRow(fileGroup, tr("Dimensions"),
                         tr("%1 × %2").arg(decoded.width()).arg(decoded.height()));
-            addChildRow(fileGroup, tr("Format"),
-                        tr("fallback loader"));
+            addChildRow(fileGroup, tr("Format"), tr("fallback loader"));
         } else {
             addChildRow(fileGroup, tr("Error"), reader.errorString());
         }
     }
+
+    // Structure, histogram, palette (always — even when Exiv data follows).
+    fillImageAnalysis(path);
 
 #ifdef QIMGVIEW_HAVE_EXIV2
     if (loadExiv2Metadata(m_tree, path)) {
@@ -315,7 +593,6 @@ void MetadataPanel::setImagePath(const QString &path)
     }
 #endif
 
-    // Qt plugin text keys (limited; used when Exiv2 is absent or finds nothing)
     if (reader.canRead()) {
         const QStringList keys = reader.textKeys();
         if (keys.isEmpty()) {
@@ -323,7 +600,7 @@ void MetadataPanel::setImagePath(const QString &path)
 #ifdef QIMGVIEW_HAVE_EXIV2
                         tr("(no Exif/IPTC/XMP found)")
 #else
-                        tr("(none reported by Qt image plugin; build with libexiv2 for full Exif)")
+                        tr("(none from image plugin)")
 #endif
             );
         } else {

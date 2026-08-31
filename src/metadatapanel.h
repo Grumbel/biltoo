@@ -5,15 +5,56 @@
 #define METADATAPANEL_H
 
 #include <QWidget>
+#include <QVector>
+#include <QColor>
+#include <QImage>
 
 class QTreeWidget;
 class QLabel;
 
+/** Compact luminance / RGB histogram for the metadata side panel. */
+class ImageHistogramWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit ImageHistogramWidget(QWidget *parent = nullptr);
+    void clear();
+    void setFromImage(const QImage &image);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    QSize sizeHint() const override { return QSize(200, 72); }
+    QSize minimumSizeHint() const override { return QSize(120, 56); }
+
+private:
+    QVector<int> m_luma;
+    QVector<int> m_r;
+    QVector<int> m_g;
+    QVector<int> m_b;
+    int m_peak = 0;
+};
+
+/** Colour table swatches for indexed images (e.g. palette PNG/GIF). */
+class ImagePaletteWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit ImagePaletteWidget(QWidget *parent = nullptr);
+    void clear();
+    void setColors(const QVector<QColor> &colors);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override { return QSize(120, 24); }
+
+private:
+    QVector<QColor> m_colors;
+};
+
 /**
- * Side panel listing file info and embedded image metadata.
- * When built with libexiv2 (QIMGVIEW_HAVE_EXIV2), shows Exif/IPTC/XMP in
- * grouped sections with a camera summary. Otherwise falls back to
- * QImageReader text keys.
+ * Side panel listing file info, image structure, histogram, palette, and
+ * embedded metadata (Exif/IPTC/XMP via libexiv2 when available).
  */
 class MetadataPanel : public QWidget
 {
@@ -27,8 +68,13 @@ public:
 
 private:
     void addRow(const QString &key, const QString &value);
+    void fillImageAnalysis(const QString &path);
 
     QLabel *m_header = nullptr;
+    ImageHistogramWidget *m_histogram = nullptr;
+    QLabel *m_histogramLabel = nullptr;
+    ImagePaletteWidget *m_palette = nullptr;
+    QLabel *m_paletteLabel = nullptr;
     QTreeWidget *m_tree = nullptr;
 };
 
