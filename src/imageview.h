@@ -379,6 +379,11 @@ private:
     void updateWorkspaceSceneRect();
     void snapshotWorkspace();
     void restoreWorkspace();
+    /** Detach Workspace tiles from the scene (keep decoded pixels + view). */
+    void stashWorkspaceItems();
+    /** Reattach stashed Workspace tiles; no-op if empty. */
+    void restoreStashedWorkspaceItems();
+    void discardStashedWorkspace();
     /** Detach Gallery tiles from the scene (keep decoded pixels). */
     void stashGalleryItems();
     /** Reattach stashed Gallery tiles; no-op if empty. */
@@ -413,6 +418,10 @@ private:
     QTransform m_freeFormViewTransform;
     bool m_hasFreeFormViewTransform = false;
     QList<WorkspaceItemState> m_savedWorkspace;
+    /** Workspace tiles kept while in Image mode (decoded pixels retained). */
+    QList<ImageItem *> m_stashedWorkspaceItems;
+    QTransform m_stashedWorkspaceViewTransform;
+    bool m_hasStashedWorkspaceView = false;
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     QList<ImageItem *> m_stashedGalleryItems;
     QStringList m_stashedGalleryPathOrder;

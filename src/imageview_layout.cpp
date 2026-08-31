@@ -117,6 +117,86 @@ void ImageView::restoreWorkspace()
     emit statusChanged();
 }
 
+void ImageView::discardStashedWorkspace()
+{
+    for (ImageItem *item : m_stashedWorkspaceItems) {
+        if (!item) {
+            continue;
+        }
+        if (QGraphicsScene *sc = item->scene()) {
+            sc->removeItem(item);
+        }
+        delete item;
+    }
+    m_stashedWorkspaceItems.clear();
+    m_hasStashedWorkspaceView = false;
+}
+
+void ImageView::stashWorkspaceItems()
+{
+    // Replace any previous workspace stash (e.g. nested mode switches).
+    discardStashedWorkspace();
+    if (m_items.isEmpty()) {
+        return;
+    }
+    m_stashedWorkspaceItems = m_items;
+    m_stashedWorkspaceViewTransform = transform();
+    m_hasStashedWorkspaceView = true;
+    m_handleDragItem = nullptr;
+    m_groupScaleDrag = false;
+    m_groupHandle = -1;
+    m_groupDragItems.clear();
+    m_groupDragStartStates.clear();
+    m_rotateItem = nullptr;
+    m_rotating = false;
+    m_dragItem = nullptr;
+    for (ImageItem *item : m_stashedWorkspaceItems) {
+        if (!item) {
+            continue;
+        }
+        // Keep selection flags on the item for restore; only detach from scene.
+        if (item->scene()) {
+            item->scene()->removeItem(item);
+        }
+    }
+    m_items.clear();
+}
+
+void ImageView::restoreStashedWorkspaceItems()
+{
+    if (m_stashedWorkspaceItems.isEmpty()) {
+        return;
+    }
+    // Drop Image-mode canvas (single tile) without touching the stash.
+    while (!m_items.isEmpty()) {
+        destroyCanvasItem(m_items.last());
+    }
+    if (m_scene) {
+        m_scene->blockSignals(true);
+        m_scene->clear();
+        m_scene->blockSignals(false);
+    }
+    m_items = m_stashedWorkspaceItems;
+    m_stashedWorkspaceItems.clear();
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        if (!item->scene()) {
+            m_scene->addItem(item);
+        }
+        applyItemModeFlags(item);
+    }
+    if (m_hasStashedWorkspaceView) {
+        setTransform(m_stashedWorkspaceViewTransform);
+        m_hasStashedWorkspaceView = false;
+    }
+    m_fitMode = false;
+    m_fillMode = false;
+    updateWorkspaceSceneRect();
+    viewport()->update();
+}
+
 void ImageView::discardStashedGallery()
 {
     for (ImageItem *item : m_stashedGalleryItems) {
@@ -208,7 +288,8 @@ void ImageView::clearWorkspace()
     while (!m_items.isEmpty()) {
         destroyCanvasItem(m_items.last());
     }
-    // Session wipe / explicit clear — drop Gallery cache too.
+    // Session wipe / explicit clear — drop mode stashes too.
+    discardStashedWorkspace();
     discardStashedGallery();
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
@@ -377,6 +458,7 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     }
     // Also drop from gallery stash so discardStashedGallery cannot double-free.
     m_stashedGalleryItems.removeAll(item);
+    m_stashedWorkspaceItems.removeAll(item);
 
     rememberItemState(item);
     m_items.removeAll(item);
@@ -765,6 +847,10 @@ void ImageView::setViewMode(ViewMode mode)
         if (previous == ViewMode::Gallery) {
             // Keep tiles + decoded pixels for a fast return to Gallery.
             stashGalleryItems();
+        } else if (previous == ViewMode::Workspace) {
+            // Keep free-form tiles + pixels + view for a fast return to Workspace.
+            // snapshotWorkspace() already ran above for durable state backup.
+            stashWorkspaceItems();
         }
         m_viewMode = ViewMode::Image;
         m_layoutMode = LayoutMode::FreeForm;
@@ -778,7 +864,7 @@ void ImageView::setViewMode(ViewMode mode)
         // Gallery — that re-decodes a random tile before setCurrentIndex loads
         // the real target (double clear + decode spike).
         const QString path = m_classicPath;
-        // Clear live canvas only — do not discardStashedGallery().
+        // Clear live canvas only — do not discard stashes.
         m_handleDragItem = nullptr;
         m_groupScaleDrag = false;
         m_groupHandle = -1;
@@ -818,13 +904,17 @@ void ImageView::setViewMode(ViewMode mode)
         viewport()->update();
         setDragMode(m_tool == Tool::Select ? QGraphicsView::RubberBandDrag
                                            : QGraphicsView::NoDrag);
-        if (!m_savedWorkspace.isEmpty() && previous == ViewMode::Image) {
+        if (previous == ViewMode::Image && !m_stashedWorkspaceItems.isEmpty()) {
+            // Fast path: reattach live items (no re-decode).
+            restoreStashedWorkspaceItems();
+        } else if (!m_savedWorkspace.isEmpty() && previous == ViewMode::Image) {
+            // Fallback: rebuild from snapshot (e.g. stash was discarded).
             restoreWorkspace();
         } else {
             for (ImageItem *item : m_items) {
                 applyItemModeFlags(item);
             }
-            if (!m_items.isEmpty()) {
+            if (!m_items.isEmpty() && m_scene->selectedItems().isEmpty()) {
                 m_scene->clearSelection();
                 m_items.first()->setSelected(true);
             }
@@ -882,6 +972,9 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
         snapshotFreeFormStates();
         snapshotWorkspace();
     }
+    // Leaving Workspace/Image for Gallery: drop workspace stash (layout uses
+    // live m_items or rebuilds from session paths).
+    discardStashedWorkspace();
     if (layoutSwitch) {
         // Soft reset: keep items and selection paths; only clear view zoom.
         // Drop scroll snapshot — user asked for a new layout, not return-from-Image.
