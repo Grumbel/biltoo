@@ -41,17 +41,20 @@ void MainWindow::createActions()
     connect(m_printPreviewAct, &QAction::triggered, this, &MainWindow::printPreview);
 
     m_pageSetupAct = new QAction(tr("Page &Setup..."), this);
+    m_pageSetupAct->setIcon(themeIcon(QStringLiteral("document-page-setup"), QStyle::SP_FileDialogInfoView));
     m_pageSetupAct->setStatusTip(
         tr("Paper size and orientation for the page guide, preview, and PDF export"));
     connect(m_pageSetupAct, &QAction::triggered, this, &MainWindow::pageSetup);
 
     m_exportPdfAct = new QAction(tr("Export &PDF..."), this);
+    m_exportPdfAct->setIcon(themeIcon(QStringLiteral("application-pdf"), QStyle::SP_FileDialogContentsView));
     m_exportPdfAct->setStatusTip(
         tr("Write a PDF using the app page size (not the physical printer tray)"));
     connect(m_exportPdfAct, &QAction::triggered, this, &MainWindow::exportPdf);
 
     m_pageGuideAct = new QAction(tr("Print &Page Guide"), this);
     m_pageGuideAct->setCheckable(true);
+    m_pageGuideAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_FileDialogListView));
     m_pageGuideAct->setStatusTip(
         tr("Workspace: show a paper-sized frame to arrange images for printing"));
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
@@ -712,10 +715,14 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_workspaceToolBar->setOrientation(Qt::Vertical);
     addToolBar(Qt::LeftToolBarArea, m_workspaceToolBar);
-    // Select / Pan only — Undo/Redo live on the main toolbar; Raise/Lower and
-    // Duplicate are available on item chrome / View menu / context menu.
+    // Select / Pan, then print layout (page guide is Workspace-centric).
     m_workspaceToolBar->addAction(m_selectToolAct);
     m_workspaceToolBar->addAction(m_panToolAct);
+    m_workspaceToolBar->addSeparator();
+    m_workspaceToolBar->addAction(m_pageGuideAct);
+    m_workspaceToolBar->addAction(m_pageSetupAct);
+    m_workspaceToolBar->addAction(m_printPreviewAct);
+    m_workspaceToolBar->addAction(m_exportPdfAct);
     m_workspaceToolBar->hide();
 }
 
