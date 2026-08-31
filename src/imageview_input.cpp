@@ -676,17 +676,29 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     sx = qAbs(sx);
     sy = qAbs(sy);
 
+    if (!qIsFinite(sx) || !qIsFinite(sy) || !qIsFinite(anchor.x()) || !qIsFinite(anchor.y())) {
+        return;
+    }
     for (int i = 0; i < m_groupDragItems.size(); ++i) {
         ImageItem *item = m_groupDragItems.at(i);
         const WorkspaceItemState &st = m_groupDragStartStates.at(i);
-        if (!item) {
+        if (!item || !m_items.contains(item)) {
             continue;
         }
         const QPointF rel = st.pos - anchor;
-        item->setPos(anchor + QPointF(rel.x() * sx, rel.y() * sy));
+        const QPointF newPos = anchor + QPointF(rel.x() * sx, rel.y() * sy);
+        if (!qIsFinite(newPos.x()) || !qIsFinite(newPos.y())) {
+            continue;
+        }
+        item->setPos(newPos);
         const qreal baseX = st.scale > 0 ? st.scale : 1.0;
         const qreal baseY = st.scaleY > 0 ? st.scaleY : baseX;
-        item->setItemScale(baseX * sx, baseY * sy);
+        const qreal nx = baseX * sx;
+        const qreal ny = baseY * sy;
+        if (!qIsFinite(nx) || !qIsFinite(ny)) {
+            continue;
+        }
+        item->setItemScale(nx, ny);
     }
     m_fitMode = false;
     emit statusChanged();
@@ -1583,12 +1595,18 @@ void ImageView::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         } else if (isWorkspaceMode()) {
-            // Workspace: hide from canvas only; session membership stays
-            // (double-click / thumb toggle can bring them back with transform).
-            for (const QString &path : paths) {
-                if (ImageItem *item = findItemByPath(path)) {
-                    destroyCanvasItem(item);
+            // Workspace: hide from canvas only; session membership stays.
+            // Destroy by item pointer (same path may exist twice after Duplicate).
+            QList<ImageItem *> toRemove;
+            for (QGraphicsItem *gi : selected) {
+                if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    if (m_items.contains(item)) {
+                        toRemove.append(item);
+                    }
                 }
+            }
+            for (ImageItem *item : toRemove) {
+                destroyCanvasItem(item);
             }
             emit statusChanged();
             emit workspacePathsChanged();

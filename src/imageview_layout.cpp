@@ -120,6 +120,12 @@ void ImageView::restoreWorkspace()
 void ImageView::discardStashedGallery()
 {
     for (ImageItem *item : m_stashedGalleryItems) {
+        if (!item) {
+            continue;
+        }
+        if (QGraphicsScene *sc = item->scene()) {
+            sc->removeItem(item);
+        }
         delete item;
     }
     m_stashedGalleryItems.clear();
@@ -198,17 +204,24 @@ void ImageView::clearWorkspace()
     if (m_undoStack) {
         m_undoStack->clear();
     }
+    // Destroy live canvas items via removeItem+delete (never leave BSP dangling).
+    while (!m_items.isEmpty()) {
+        destroyCanvasItem(m_items.last());
+    }
     // Session wipe / explicit clear — drop Gallery cache too.
     discardStashedGallery();
-    m_items.clear();
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
     m_pendingRestoreStates.clear();
     m_galleryDecodeScheduled.clear();
     m_galleryDecodeFailed.clear();
     m_classicPath.clear();
-    // clear() deletes all QGraphicsItems owned by the scene
-    m_scene->clear();
+    // Any stragglers not tracked in m_items (should be none).
+    if (m_scene) {
+        m_scene->blockSignals(true);
+        m_scene->clear();
+        m_scene->blockSignals(false);
+    }
     m_mouseInfo = {};
     emit mouseInfoChanged(m_mouseInfo);
 }
@@ -357,24 +370,20 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     }
     // Group scale holds raw pointers — drop before delete or BSP paint UAF.
     if (m_groupScaleDrag || !m_groupDragItems.isEmpty()) {
-        m_groupDragItems.removeAll(item);
-        if (m_groupDragItems.isEmpty()) {
-            m_groupScaleDrag = false;
-            m_groupHandle = -1;
-            m_groupDragStartStates.clear();
-        } else if (m_groupDragStartStates.size() == m_groupDragItems.size() + 1) {
-            // States were parallel to items; rebuild by clearing (safer than index guess).
-            m_groupScaleDrag = false;
-            m_groupHandle = -1;
-            m_groupDragItems.clear();
-            m_groupDragStartStates.clear();
-        }
+        m_groupScaleDrag = false;
+        m_groupHandle = -1;
+        m_groupDragItems.clear();
+        m_groupDragStartStates.clear();
     }
+    // Also drop from gallery stash so discardStashedGallery cannot double-free.
+    m_stashedGalleryItems.removeAll(item);
+
     rememberItemState(item);
+    // Deselect without notifying the scene until after removeItem when possible.
     item->setSelected(false);
-    m_items.removeOne(item);
-    if (item->scene()) {
-        item->scene()->removeItem(item);
+    m_items.removeAll(item);
+    if (QGraphicsScene *sc = item->scene()) {
+        sc->removeItem(item);
     }
     delete item;
     // TransformCommand stores raw ImageItem*; drop undo history that would
@@ -766,6 +775,10 @@ void ImageView::setViewMode(ViewMode mode)
         const QString path = m_classicPath;
         // Clear live canvas only — do not discardStashedGallery().
         m_handleDragItem = nullptr;
+        m_groupScaleDrag = false;
+        m_groupHandle = -1;
+        m_groupDragItems.clear();
+        m_groupDragStartStates.clear();
         m_rotateItem = nullptr;
         m_rotating = false;
         m_dragItem = nullptr;
@@ -773,13 +786,17 @@ void ImageView::setViewMode(ViewMode mode)
         if (m_undoStack) {
             m_undoStack->clear();
         }
-        m_items.clear();
+        while (!m_items.isEmpty()) {
+            destroyCanvasItem(m_items.last());
+        }
         m_pendingScenePos.clear();
         m_pendingWorkspacePaths.clear();
         m_pendingRestoreStates.clear();
         m_classicPath.clear();
         if (m_scene) {
+            m_scene->blockSignals(true);
             m_scene->clear();
+            m_scene->blockSignals(false);
         }
         m_mouseInfo = {};
         emit mouseInfoChanged(m_mouseInfo);
