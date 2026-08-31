@@ -5,6 +5,7 @@
 #define THUMBNAILBAR_H
 
 #include <QHash>
+#include <QSet>
 #include <QImage>
 #include <QListWidget>
 #include <QMimeData>
@@ -90,6 +91,10 @@ public:
     void setLabelsVisible(bool on);
     bool labelsVisible() const { return m_labelsVisible; }
 
+    /** Session rows currently on the Workspace canvas (membership badge). */
+    void setOnCanvasIndices(const QSet<int> &indices);
+    bool isOnCanvas(int row) const { return m_onCanvasIndices.contains(row); }
+
     void setBarOrientation(Qt::Orientation orientation);
     Qt::Orientation barOrientation() const { return m_orientation; }
 
@@ -157,6 +162,7 @@ private:
     QStringList m_files;
     /** Session-only images (crop, …) preferred over on-disk decode for thumbs. */
     QHash<QString, QImage> m_sessionImageOverrides;
+    QSet<int> m_onCanvasIndices;
     ThumbnailDelegate *m_delegate = nullptr;
 
     QPoint m_pressPos;

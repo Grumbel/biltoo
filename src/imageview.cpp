@@ -65,6 +65,7 @@ ImageView::ImageView(QWidget *parent)
     setScene(m_scene);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, [this]() {
         emit statusChanged();
+        emit canvasSelectionChanged();
     });
     m_undoStack = new QUndoStack(this);
     qRegisterMetaType<QImage>("QImage");

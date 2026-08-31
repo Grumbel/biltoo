@@ -203,6 +203,7 @@ private:
     void clearSessionHistory();
     QString historyEntryLabel(const QStringList &paths) const;
     void syncThumbnailWorkspaceSelection();
+    void syncThumbnailCanvasMembership();
     /** Push thumbnail multi-select onto the canvas (Workspace membership / Gallery seed). */
     void syncCanvasFromThumbnailSelection();
     void showSlideshowCursor();
@@ -216,6 +217,7 @@ private:
 
     ImageView *m_imageView = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
+    bool m_syncingSelection = false;
     QSplitter *m_centralSplitter = nullptr;
     MetadataPanel *m_metadataPanel = nullptr;
     QString m_metadataPath;

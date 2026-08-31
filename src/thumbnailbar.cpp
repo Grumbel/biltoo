@@ -126,6 +126,26 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
                           fm.elidedText(text, Qt::ElideMiddle, textRect.width()));
     }
 
+
+    // Workspace membership: corner mark when this session slot is on the canvas.
+    // option.widget is the viewport; its parent is the ThumbnailBar.
+    if (auto *bar = qobject_cast<const ThumbnailBar *>(
+            option.widget ? option.widget->parentWidget() : nullptr)) {
+        if (bar->isOnCanvas(index.row())) {
+            const int mark = qMax(8, iconSide / 7);
+            const QRect badgeRect(iconX + iconSide - mark - 2, iconY + 2, mark, mark);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(53, 132, 228));
+            painter->drawRoundedRect(badgeRect, 2, 2);
+            painter->setPen(QColor(255, 255, 255));
+            QFont bf = option.font;
+            bf.setBold(true);
+            bf.setPixelSize(qMax(7, mark - 2));
+            painter->setFont(bf);
+            painter->drawText(badgeRect, Qt::AlignCenter, QStringLiteral("✓"));
+        }
+    }
+
     painter->restore();
 }
 
@@ -431,6 +451,16 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
         setThumbnailIcon(row, thumb);
     }
 }
+
+void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)
+{
+    if (m_onCanvasIndices == indices) {
+        return;
+    }
+    m_onCanvasIndices = indices;
+    viewport()->update();
+}
+
 
 void ThumbnailBar::scheduleThumbnailLoads()
 {

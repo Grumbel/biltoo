@@ -75,6 +75,14 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::removeSessionIndices);
     connect(m_imageView, &ImageView::workspacePathsChanged,
             this, &MainWindow::onWorkspacePathsChanged);
+    connect(m_imageView, &ImageView::canvasSelectionChanged, this, [this]() {
+        if (m_syncingSelection || !isWorkspaceMode() || !m_thumbnailBar || !m_imageView) {
+            return;
+        }
+        m_syncingSelection = true;
+        m_thumbnailBar->setSelectedIndices(m_imageView->selectedSessionIndices());
+        m_syncingSelection = false;
+    });
 
     m_centralSplitter->addWidget(m_imageView);
     m_centralSplitter->addWidget(m_thumbnailBar);
@@ -196,8 +204,6 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
 
 void MainWindow::onThumbnailWorkspaceSelectionChanged()
 {
-    // Selection is independent of canvas membership. Only keep session
-    // index / metadata aligned with the last selected thumbnail.
     if (!isWorkspaceMode()) {
         return;
     }
@@ -211,6 +217,12 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
                 m_metadataPanel->setImagePath(m_metadataPath);
             }
         }
+    }
+    // Shared selection: filmstrip multi-select drives canvas selection by session slot.
+    if (!m_syncingSelection && m_imageView) {
+        m_syncingSelection = true;
+        m_imageView->selectBySessionIndices(sel);
+        m_syncingSelection = false;
     }
     updateStatus();
 }
@@ -242,15 +254,16 @@ void MainWindow::onThumbnailCanvasMembershipToggled(int index)
     } else {
         m_imageView->addImageForSession(path, index);
     }
+    syncThumbnailCanvasMembership();
     updateStatus();
 }
 
 void MainWindow::onWorkspacePathsChanged()
 {
-    // Canvas membership no longer mirrors thumbnail selection.
     if (!isWorkspaceMode()) {
         return;
     }
+    syncThumbnailCanvasMembership();
     updateStatus();
 }
 
@@ -270,8 +283,15 @@ void MainWindow::syncCanvasFromThumbnailSelection()
 
 void MainWindow::syncThumbnailWorkspaceSelection()
 {
-    // Selection is no longer forced to match canvas membership (double-click
-    // and drag-and-drop own membership; strip selection is independent).
+    // Kept for callers; membership badge is syncThumbnailCanvasMembership().
+}
+
+void MainWindow::syncThumbnailCanvasMembership()
+{
+    if (!m_thumbnailBar || !m_imageView) {
+        return;
+    }
+    m_thumbnailBar->setOnCanvasIndices(m_imageView->workspaceSessionIndices());
 }
 
 void MainWindow::zoomIn()
@@ -436,6 +456,7 @@ void MainWindow::duplicateSelected()
     }
     // Bind new canvas copies (still selected) to the new session slots.
     m_imageView->bindSelectedSessionIndices(firstNew);
+    syncThumbnailCanvasMembership();
     if (m_thumbnailBar) {
         m_thumbnailBar->setFiles(m_files);
         if (isWorkspaceMode()) {
@@ -1358,8 +1379,9 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         return;
     }
 
-    // Workspace mode: append novel paths to the session; place or move on canvas
-    // at the drop point (drag from the thumbnail bar lands where expected).
+    // Workspace mode: place each drop as a canvas instance at the drop point.
+    // Paths already on the canvas are *duplicated* (not moved); a new session
+    // slot is appended so the filmstrip can address the copy independently.
     if (isWorkspaceMode()) {
         const QStringList expanded = expandPaths(paths);
         if (expanded.isEmpty()) {
@@ -1376,14 +1398,28 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         }
         int i = 0;
         for (const QString &img : expanded) {
+            const bool alreadyOnCanvas = m_imageView->workspacePathOccurrenceCount(img) > 0;
+            if (alreadyOnCanvas) {
+                // New session entry for the duplicate instance.
+                m_files.append(img);
+                if (m_thumbnailBar) {
+                    m_thumbnailBar->setFiles(m_files);
+                    m_thumbnailBar->setMultiSelectEnabled(true);
+                }
+            }
+            const int slot = m_files.lastIndexOf(img);
             if (!scenePos.isNull()) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
                 m_imageView->placeOrMoveImageAt(img, pos);
             } else {
-                m_imageView->addImage(img);
+                m_imageView->addImageForSession(img, slot);
+            }
+            if (slot >= 0) {
+                m_imageView->bindSelectedSessionIndices(slot);
             }
             ++i;
         }
+        syncThumbnailCanvasMembership();
         if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
             m_toggleThumbnailBarAct->setChecked(true);
             m_thumbnailBar->setVisible(true);

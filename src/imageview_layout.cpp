@@ -1297,18 +1297,73 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos)
     if (path.isEmpty() || isImageMode()) {
         return false;
     }
-    if (ImageItem *existing = findItemByPath(path)) {
-        existing->setPos(scenePos);
-        if (m_scene) {
-            m_scene->clearSelection();
+    // Workspace free-form: re-dropping a path that is already on the canvas
+    // creates another instance at the drop point (does not move the original).
+    if (ImageItem *donor = findItemByPath(path)) {
+        if (donor->hasDecodedPixels() || !donor->sourceImage().isNull()) {
+            ImageItem *copy = createItemFromImage(path, donor->sourceImage(),
+                                                  /*applyStoredSessionCrop=*/false);
+            if (copy) {
+                copy->setItemScale(donor->itemScaleX(), donor->itemScaleY());
+                copy->setItemRotation(donor->itemRotation());
+                copy->setItemHFlip(donor->itemHFlip());
+                copy->setItemVFlip(donor->itemVFlip());
+                copy->setItemOpacity(donor->itemOpacity());
+                copy->setStackZ(donor->stackZ() + 0.01);
+                copy->setPos(scenePos);
+                copy->setSessionIndex(-1); // caller binds session slot
+                if (m_scene) {
+                    m_scene->clearSelection();
+                }
+                copy->setSelected(true);
+                updateWorkspaceSceneRect();
+                ensureVisibleItem(copy);
+                emit statusChanged();
+                emit workspacePathsChanged();
+                return true;
+            }
         }
-        existing->setSelected(true);
-        updateWorkspaceSceneRect();
-        ensureVisibleItem(existing);
-        emit statusChanged();
-        return true;
     }
-    return addImageAt(path, scenePos);
+    m_pendingScenePos.insert(path, scenePos);
+    // Prefer schedule over addImage(): path may already exist as another slot.
+    scheduleImageLoad(path, LoadAdd);
+    emit statusChanged();
+    return true;
+}
+
+QSet<int> ImageView::workspaceSessionIndices() const
+{
+    QSet<int> out;
+    for (ImageItem *item : m_items) {
+        if (item->sessionIndex() >= 0) {
+            out.insert(item->sessionIndex());
+        }
+    }
+    return out;
+}
+
+void ImageView::selectBySessionIndices(const QList<int> &indices)
+{
+    if (!m_scene) {
+        return;
+    }
+    m_scene->clearSelection();
+    for (int idx : indices) {
+        if (ImageItem *item = findItemBySessionIndex(idx)) {
+            item->setSelected(true);
+        }
+    }
+}
+
+QList<int> ImageView::selectedSessionIndices() const
+{
+    QList<int> out;
+    for (ImageItem *item : m_items) {
+        if (item->isSelected() && item->sessionIndex() >= 0) {
+            out.append(item->sessionIndex());
+        }
+    }
+    return out;
 }
 
 

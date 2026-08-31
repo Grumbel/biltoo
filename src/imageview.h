@@ -77,10 +77,14 @@ public:
     /** Add image and place its centre at scenePos once loaded. */
     bool addImageAt(const QString &path, const QPointF &scenePos);
     /**
-     * Workspace: if @p path is already on the canvas, move it to @p scenePos;
-     * otherwise load and place it there. Returns true if handled.
+     * Workspace: place @p path at @p scenePos. If the path is already on the
+     * canvas, a new instance is created (duplicate) — the original is not moved.
      */
     bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos);
+    /** Session slots currently represented on the Workspace canvas. */
+    QSet<int> workspaceSessionIndices() const;
+    QList<int> selectedSessionIndices() const;
+    void selectBySessionIndices(const QList<int> &indices);
     void clearWorkspace();
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
@@ -331,6 +335,8 @@ signals:
     void toolChanged(ImageView::Tool tool);
     /** Emitted when items are removed from the workspace (e.g. Delete key). */
     void workspacePathsChanged();
+    /** Workspace/Gallery canvas selection changed (session-index aware). */
+    void canvasSelectionChanged();
     /** Image mode: user activated previous / next via edge click. */
     void navigatePreviousRequested();
     void navigateNextRequested();
