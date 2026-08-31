@@ -16,6 +16,7 @@
 #include <QFontMetrics>
 #include <QKeyEvent>
 #include <QMetaObject>
+#include <QPointer>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
@@ -204,9 +205,16 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         gen = ++m_loadGeneration;
     }
     emit statusChanged(); // pending count for status bar
-    QThreadPool::globalInstance()->start([this, path, role, gen]() {
+    // QPointer: worker must not invokeMethod on a destroyed view (secondary
+    // windows with WA_DeleteOnClose, app exit). Generation only filters
+    // superseding once the slot runs on the GUI thread.
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start([guard, path, role, gen]() {
         const QImage image = ImageLoader::load(path);
-        QMetaObject::invokeMethod(this, "onImageLoaded", Qt::QueuedConnection,
+        if (!guard) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,
                                   Q_ARG(QString, path),
                                   Q_ARG(QImage, image),
                                   Q_ARG(quint64, gen),
@@ -232,9 +240,13 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     m_pendingWorkspacePaths.insert(path);
     emit statusChanged();
     const quint64 gen = m_loadGeneration.load();
-    QThreadPool::globalInstance()->start([this, path, gen]() {
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start([guard, path, gen]() {
         const QImage image = ImageLoader::load(path);
-        QMetaObject::invokeMethod(this, "onImageLoaded", Qt::QueuedConnection,
+        if (!guard) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,
                                   Q_ARG(QString, path),
                                   Q_ARG(QImage, image),
                                   Q_ARG(quint64, gen),

@@ -20,6 +20,7 @@
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QMetaObject>
+#include <QPointer>
 #include <QPainter>
 #include <QResizeEvent>
 #include <QStyle>
@@ -415,15 +416,17 @@ void ThumbnailBar::scheduleThumbnailLoads()
 
     for (int i = 0; i < m_files.size(); ++i) {
         const QString path = m_files.at(i);
-        QThreadPool::globalInstance()->start([this, i, path, gen, decodeSize]() {
-            if (gen != m_generation.load()) {
+        // QPointer: bar may be destroyed while pool jobs still run.
+        const QPointer<ThumbnailBar> guard(this);
+        QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
+            if (!guard || gen != guard->m_generation.load()) {
                 return;
             }
             const QImage image = makeThumbnail(path, decodeSize);
-            if (image.isNull() || gen != m_generation.load()) {
+            if (!guard || image.isNull() || gen != guard->m_generation.load()) {
                 return;
             }
-            QMetaObject::invokeMethod(this, "setThumbnailIcon", Qt::QueuedConnection,
+            QMetaObject::invokeMethod(guard, "setThumbnailIcon", Qt::QueuedConnection,
                                       Q_ARG(int, i),
                                       Q_ARG(QImage, image));
         });
