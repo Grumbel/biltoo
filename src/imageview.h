@@ -77,6 +77,8 @@ public:
      */
     bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos);
     void clearWorkspace();
+    /** Drop cached Gallery tiles (e.g. after loading a new session). */
+    void discardStashedGallery();
 
     void setViewMode(ViewMode mode);
     /** Reset view/scene so Image mode is not affected by prior canvas state. */
@@ -367,8 +369,6 @@ private:
     void stashGalleryItems();
     /** Reattach stashed Gallery tiles; no-op if empty. */
     void restoreStashedGalleryItems();
-    /** Delete any stashed Gallery tiles (session change / teardown). */
-    void discardStashedGallery();
     void snapshotFreeFormStates();
     void restoreFreeFormStates();
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;

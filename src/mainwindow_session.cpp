@@ -301,6 +301,15 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     m_thumbnailBar->setFiles(m_files);
     applyThumbnailVisibility();
 
+    // New session paths: drop any Gallery tile cache from the previous session.
+    if (m_imageView) {
+        m_imageView->discardStashedGallery();
+        if (isGalleryMode() || isWorkspaceMode()) {
+            // Rebuild multi-item canvas to match m_files (History / Open / CLI).
+            m_imageView->setWorkspacePaths(m_files);
+        }
+    }
+
     int idx = startAt;
     if (idx < 0 || idx >= m_files.size()) {
         idx = 0;
