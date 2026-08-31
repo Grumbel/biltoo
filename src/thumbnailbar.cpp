@@ -22,6 +22,7 @@
 #include <QMetaObject>
 #include <QPointer>
 #include <QPainter>
+#include <QPainterPath>
 #include <QResizeEvent>
 #include <QStyle>
 #include <QThreadPool>
@@ -127,22 +128,42 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     }
 
 
-    // Workspace membership: corner mark when this session slot is on the canvas.
+    // Workspace membership: dog-ear fold on the top-right of the thumbnail.
+    // Reads at a glance without competing with the selection highlight.
     // option.widget is the viewport; its parent is the ThumbnailBar.
     if (auto *bar = qobject_cast<const ThumbnailBar *>(
             option.widget ? option.widget->parentWidget() : nullptr)) {
-        if (bar->isOnCanvas(index.row())) {
-            const int mark = qMax(8, iconSide / 7);
-            const QRect badgeRect(iconX + iconSide - mark - 2, iconY + 2, mark, mark);
+        if (bar->isOnCanvas(index.row()) && iconSide > 8) {
+            const int fold = qBound(10, iconSide / 4, 28);
+            const QPoint topRight(iconX + iconSide, iconY);
+            const QPoint left(topRight.x() - fold, topRight.y());
+            const QPoint bottom(topRight.x(), topRight.y() + fold);
+
+            // Cover the corner of the image with the folded page face.
+            QPainterPath face;
+            face.moveTo(left);
+            face.lineTo(topRight);
+            face.lineTo(bottom);
+            face.closeSubpath();
             painter->setPen(Qt::NoPen);
+            // Accent that stays visible on both light and dark thumbnails.
             painter->setBrush(QColor(53, 132, 228));
-            painter->drawRoundedRect(badgeRect, 2, 2);
-            painter->setPen(QColor(255, 255, 255));
-            QFont bf = option.font;
-            bf.setBold(true);
-            bf.setPixelSize(qMax(7, mark - 2));
-            painter->setFont(bf);
-            painter->drawText(badgeRect, Qt::AlignCenter, QStringLiteral("✓"));
+            painter->drawPath(face);
+
+            // Underside of the fold (slightly darker triangle along the diagonal).
+            const QPoint mid((left.x() + bottom.x()) / 2, (left.y() + bottom.y()) / 2);
+            QPainterPath under;
+            under.moveTo(left);
+            under.lineTo(mid);
+            under.lineTo(bottom);
+            under.closeSubpath();
+            painter->setBrush(QColor(30, 90, 180));
+            painter->drawPath(under);
+
+            // Soft edge so the fold sits on the image.
+            painter->setPen(QPen(QColor(0, 0, 0, 90), 1.0));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawLine(left, bottom);
         }
     }
 
