@@ -875,71 +875,39 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     }
 
     // Workspace chrome hit-testing is view-owned (DOMAIN: free-object transforms).
-    // ImageItem::paint draws chrome in device pixels; shape() alone can miss those
-    // controls under rotation / anisotropic scale. This path is authoritative;
-    // item mouse handlers remain a fallback when the scene delivers the event.
+    // Chrome is painted above all tiles in viewport space; hit-testing must
+    // similarly ignore scene z-order of other images under the pointer.
     if (isWorkspaceMode() && event->button() == Qt::LeftButton
         && m_tool == Tool::Select) {
         const QPointF scenePos = mapToScene(event->pos());
-        QList<ImageItem *> candidates;
+        QList<ImageItem *> selected;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive()) {
-                    candidates.append(ii);
+                if (ii->isInteractive() && m_items.contains(ii)) {
+                    selected.append(ii);
                 }
             }
         }
-        // Also consider the topmost interactive item under the cursor (for
-        // clicking a handle after selecting via the body).
-        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive() && !candidates.contains(ii)) {
-                    candidates.append(ii);
-                }
-                break; // topmost under cursor only as extra candidate
+        if (selected.size() > 1) {
+            // Multi-select: group frame only (no per-item handles).
+            const int gh = groupHandleAt(event->pos(), selected);
+            if (gh >= 0 && beginGroupScale(gh, selected)) {
+                event->accept();
+                return;
+            }
+        } else if (selected.size() == 1) {
+            // Single selection: test that item's handles first, even when the
+            // pointer is over another tile's pixmap (handles are drawn on top).
+            ImageItem *item = selected.first();
+            if (item->beginHandleInteraction(scenePos, event->modifiers())) {
+                m_handleDragItem = item;
+                m_dragItem = item;
+                m_dragStartState = captureState(item);
+                event->accept();
+                return;
             }
         }
-        // Highest stackZ first
-        std::sort(candidates.begin(), candidates.end(),
-                  [](ImageItem *a, ImageItem *b) {
-                      return a->stackZ() > b->stackZ();
-                  });
-        // Multi-select: group scale handles take priority; skip per-item chrome.
-        if (candidates.size() > 1
-            || (m_scene && m_scene->selectedItems().size() > 1)) {
-            QList<ImageItem *> selected;
-            for (QGraphicsItem *gi : m_scene->selectedItems()) {
-                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    if (ii->isInteractive() && m_items.contains(ii)) {
-                        selected.append(ii);
-                    }
-                }
-            }
-            if (selected.size() > 1) {
-                const int gh = groupHandleAt(event->pos(), selected);
-                if (gh >= 0 && beginGroupScale(gh, selected)) {
-                    event->accept();
-                    return;
-                }
-                // No group handle: fall through to move/select (no per-item handles).
-            }
-        } else {
-            for (ImageItem *item : candidates) {
-                // Ensure selection so chrome is active
-                if (!item->isSelected()) {
-                    continue; // only selected items show chrome
-                }
-                if (item->beginHandleInteraction(scenePos, event->modifiers())) {
-                    m_handleDragItem = item;
-                    m_dragItem = item;
-                    m_dragStartState = captureState(item);
-                    event->accept();
-                    return;
-                }
-            }
-        }
-        // Empty-space clicks still fall through (clear selection). Clicks on a
-        // selected item body use the default move/select path below.
+        // No handle hit — fall through to move/select / clear.
     }
 
     // Image mode: edge clicks — top returns to Gallery; left/right navigate
