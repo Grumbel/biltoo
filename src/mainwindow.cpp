@@ -869,8 +869,8 @@ void MainWindow::readSettings()
     }
     setSortMode(m_sortMode); // checks the matching action (may re-sort empty list)
 
-    m_slideshowIntervalMs =
-        settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt();
+    setSlideshowIntervalMs(
+        settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt());
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
     const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
     const int masonryRows = settings.value(QStringLiteral("masonryRows"), 3).toInt();

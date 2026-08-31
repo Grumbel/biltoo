@@ -796,43 +796,125 @@ void MainWindow::goLast()
 
 void MainWindow::setSlideshowIntervalMs(int ms)
 {
-    m_slideshowIntervalMs = qBound(200, ms, 60000);
-    if (m_slideshowTimer->isActive()) {
+    // 0 ms = as fast as the event loop allows; upper bound keeps UI usable.
+    m_slideshowIntervalMs = qBound(0, ms, 60000);
+    if (m_slideshowTimer && m_slideshowTimer->isActive()) {
         m_slideshowTimer->setInterval(m_slideshowIntervalMs);
     }
 }
 
+namespace {
+
+/** Human-readable slideshow dwell for HUD / status line. */
+QString formatSlideshowInterval(int ms)
+{
+    if (ms <= 0) {
+        return QCoreApplication::translate("MainWindow", "0 ms (max speed)");
+    }
+    if (ms < 1000) {
+        return QCoreApplication::translate("MainWindow", "%1 ms").arg(ms);
+    }
+    const double sec = ms / 1000.0;
+    // Whole seconds when exact; one decimal otherwise.
+    if (ms % 1000 == 0) {
+        return QCoreApplication::translate("MainWindow", "%1 s").arg(ms / 1000);
+    }
+    return QCoreApplication::translate("MainWindow", "%1 s").arg(sec, 0, 'f', 1);
+}
+
+/**
+ * Adaptive step toward a shorter interval (faster slideshow).
+ * Fine additive steps near zero; coarser / multiplicative at longer dwells.
+ */
+int slideshowIntervalFaster(int ms)
+{
+    if (ms <= 0) {
+        return 0;
+    }
+    if (ms <= 50) {
+        return qMax(0, ms - 10);
+    }
+    if (ms <= 200) {
+        return qMax(0, ms - 25);
+    }
+    if (ms <= 1000) {
+        return qMax(0, ms - 100);
+    }
+    if (ms <= 5000) {
+        return qMax(1000, int(qRound(ms / 1.25)));
+    }
+    return qMax(5000, int(qRound(ms / 1.25)));
+}
+
+/**
+ * Adaptive step toward a longer interval (slower slideshow).
+ */
+int slideshowIntervalSlower(int ms)
+{
+    if (ms < 50) {
+        return ms + 10;
+    }
+    if (ms < 200) {
+        return ms + 25;
+    }
+    if (ms < 1000) {
+        return ms + 100;
+    }
+    if (ms < 5000) {
+        const int next = int(qRound(ms * 1.25));
+        return qMin(5000, qMax(ms + 1, next));
+    }
+    const int next = int(qRound(ms * 1.25));
+    return qMin(60000, qMax(ms + 1, next));
+}
+
+} // namespace
+
 void MainWindow::slideshowFaster()
 {
     // mpv ]: higher playback speed → shorter dwell per slide
-    const int next = qMax(200, int(qRound(m_slideshowIntervalMs / 1.25)));
-    if (next == m_slideshowIntervalMs && m_slideshowIntervalMs <= 200) {
+    const int next = slideshowIntervalFaster(m_slideshowIntervalMs);
+    if (next == m_slideshowIntervalMs) {
+        const QString msg = tr("Slideshow already at maximum speed (0 ms)");
+        if (m_imageView) {
+            m_imageView->flashHud(tr("Slideshow interval"), msg);
+        }
         if (statusBar()) {
-            statusBar()->showMessage(tr("Slideshow already at minimum interval (0.2 s)"), 2000);
+            statusBar()->showMessage(msg, 2000);
         }
         return;
     }
     setSlideshowIntervalMs(next);
+    const QString detail = formatSlideshowInterval(m_slideshowIntervalMs);
+    if (m_imageView) {
+        m_imageView->flashHud(tr("Slideshow interval"), detail);
+    }
     if (statusBar()) {
-        statusBar()->showMessage(
-            tr("Slideshow interval: %1 s").arg(m_slideshowIntervalMs / 1000.0, 0, 'f', 2), 2000);
+        statusBar()->showMessage(tr("Slideshow interval: %1").arg(detail), 2000);
     }
 }
 
 void MainWindow::slideshowSlower()
 {
     // mpv [: lower playback speed → longer dwell per slide
-    const int next = qMin(60000, int(qRound(m_slideshowIntervalMs * 1.25)));
-    if (next == m_slideshowIntervalMs && m_slideshowIntervalMs >= 60000) {
+    const int next = slideshowIntervalSlower(m_slideshowIntervalMs);
+    if (next == m_slideshowIntervalMs) {
+        const QString msg = tr("Slideshow already at maximum interval (60 s)");
+        if (m_imageView) {
+            m_imageView->flashHud(tr("Slideshow interval"), msg);
+        }
         if (statusBar()) {
-            statusBar()->showMessage(tr("Slideshow already at maximum interval (60 s)"), 2000);
+            statusBar()->showMessage(msg, 2000);
         }
         return;
     }
     setSlideshowIntervalMs(next);
+    const QString detail = formatSlideshowInterval(m_slideshowIntervalMs);
+    if (m_imageView) {
+        m_imageView->flashHud(tr("Slideshow interval"), detail);
+    }
     if (statusBar()) {
-        statusBar()->showMessage(
-            tr("Slideshow interval: %1 s").arg(m_slideshowIntervalMs / 1000.0, 0, 'f', 2), 2000);
+        statusBar()->showMessage(tr("Slideshow interval: %1").arg(detail), 2000);
     }
 }
 
@@ -893,10 +975,9 @@ void MainWindow::startSlideshow()
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-stop"), QStyle::SP_MediaStop));
     qApp->installEventFilter(this);
     armSlideshowCursorHide();
-    {
-        const double sec = m_slideshowIntervalMs / 1000.0;
+    if (m_imageView) {
         m_imageView->flashHud(tr("▶  Slideshow"),
-                              tr("%1 s").arg(sec, 0, 'f', sec >= 10.0 ? 0 : 1));
+                              formatSlideshowInterval(m_slideshowIntervalMs));
     }
 }
 
