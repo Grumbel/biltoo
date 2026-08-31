@@ -1605,9 +1605,18 @@ void ImageView::keyPressEvent(QKeyEvent *event)
                     }
                 }
             }
+            setUpdatesEnabled(false);
+            if (m_scene) {
+                m_scene->blockSignals(true);
+            }
             for (ImageItem *item : toRemove) {
                 destroyCanvasItem(item);
             }
+            if (m_scene) {
+                m_scene->blockSignals(false);
+            }
+            setUpdatesEnabled(true);
+            viewport()->update();
             emit statusChanged();
             emit workspacePathsChanged();
             event->accept();

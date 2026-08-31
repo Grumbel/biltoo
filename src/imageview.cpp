@@ -41,6 +41,10 @@ ImageView::ImageView(QWidget *parent)
     : QGraphicsView(parent)
 {
     m_scene = new QGraphicsScene(this);
+    // BSP indexing is fragile with frequent add/remove (Duplicate + Delete):
+    // deferred paints can walk a tree that still holds freed items. Linear
+    // search is fine for Workspace/Gallery counts we care about.
+    m_scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     setScene(m_scene);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, [this]() {
         emit statusChanged();

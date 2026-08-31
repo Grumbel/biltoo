@@ -379,11 +379,16 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     m_stashedGalleryItems.removeAll(item);
 
     rememberItemState(item);
-    // Deselect without notifying the scene until after removeItem when possible.
-    item->setSelected(false);
     m_items.removeAll(item);
     if (QGraphicsScene *sc = item->scene()) {
+        // selectionChanged → statusChanged → paint must not run mid-teardown
+        // (re-entrant paint was UAF in the BSP / item lists).
+        const bool blocked = sc->blockSignals(true);
+        item->setSelected(false);
         sc->removeItem(item);
+        sc->blockSignals(blocked);
+    } else {
+        item->setSelected(false);
     }
     delete item;
     // TransformCommand stores raw ImageItem*; drop undo history that would
