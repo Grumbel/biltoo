@@ -19,6 +19,7 @@
 #include <QPointer>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPolygonF>
 #include <QPaintEvent>
 #include <QScrollBar>
