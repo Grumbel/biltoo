@@ -139,6 +139,8 @@ public:
     void rotateRight();
     void flipHorizontal();
     void flipVertical();
+    /** True when rotate/flip have at least one target (selection or sole image). */
+    bool hasTransformTargets() const;
 
     /** When true (default), left-drag pans in Image mode. */
     void setImageModeLeftDragPan(bool on);
@@ -332,9 +334,7 @@ private:
     ImageItem *findItemByPath(const QString &path) const;
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
-    /** Selected items (or sole Image-mode item) for rotate/flip. */
     QList<ImageItem *> transformTargets() const;
-    bool hasTransformTargets() const;
     void updateMouseInfo(const QPoint &viewPos);
     /** Frame @p item in the view. Image mode: does not clear rotation/flips. */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
