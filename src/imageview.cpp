@@ -162,6 +162,13 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     }
     auto *item = new ImageItem(path, image);
     applyItemModeFlags(item);
+    // Session crop (like rotation/flip) survives navigation: apply on full decode.
+    {
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.cend()) {
+            applySessionCrop(item, *it);
+        }
+    }
     m_scene->addItem(item);
     m_items.append(item);
     return item;
@@ -295,7 +302,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 return;
             }
             // Never inherit Gallery/Workspace placement or scale.
-            // DOMAIN: user rotation/flips persist across navigation (AUDIT H6).
+            // DOMAIN: user rotation/flips/crop persist across navigation (AUDIT H6).
+            // Crop was applied in createItemFromImage from m_itemStates.
             item->setInteractive(false);
             item->setScaleHandlesEnabled(false);
             item->setItemScale(1.0);
@@ -394,9 +402,15 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         const QSize before = existing->imageSize();
         existing->setSourceImage(image);
+        {
+            const auto it = m_itemStates.constFind(path);
+            if (it != m_itemStates.cend()) {
+                applySessionCrop(existing, *it);
+            }
+        }
         if (isGalleryMode()) {
             // Probe size can differ from decoded size — reflow so scale/pos stay valid.
-            if (before != image.size()) {
+            if (before != existing->imageSize()) {
                 scheduleApplyLayout();
             } else {
                 existing->update();
@@ -861,6 +875,75 @@ void ImageView::cancelCrop()
     leaveCropModeInternal(false);
 }
 
+void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item || !state.hasCrop || state.cropRect.isEmpty()) {
+        return;
+    }
+    // state.cropRect is top-left origin on the full on-disk image; contentRect is centred.
+    const QSize sz = item->imageSize();
+    if (sz.width() < 1 || sz.height() < 1) {
+        return;
+    }
+    const QRect bounds(0, 0, sz.width(), sz.height());
+    const QRect src = state.cropRect.intersected(bounds);
+    if (src.width() < 1 || src.height() < 1) {
+        return;
+    }
+    const QPointF off = item->offset();
+    const QRectF local(src.x() + off.x(), src.y() + off.y(), src.width(), src.height());
+    item->cropToLocalRect(local);
+}
+
+void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
+{
+    if (!item) {
+        return;
+    }
+    const QRectF cr = item->contentRect();
+    const QRectF local = localCrop.normalized().intersected(cr);
+    if (local.width() < 1.0 || local.height() < 1.0) {
+        return;
+    }
+    const QPointF off = item->offset();
+    // Current pixmap pixel rect (after any prior session crop).
+    int dx = qRound(local.left() - off.x());
+    int dy = qRound(local.top() - off.y());
+    int dw = qMax(1, qRound(local.width()));
+    int dh = qMax(1, qRound(local.height()));
+    // Map through active flips so cropRect is in unflipped source space
+    // (cropToLocalRect bakes flips into pixels and clears the flags).
+    const int iw = item->imageSize().width();
+    const int ih = item->imageSize().height();
+    if (item->itemHFlip()) {
+        dx = iw - dx - dw;
+    }
+    if (item->itemVFlip()) {
+        dy = ih - dy - dh;
+    }
+    const QRect disp(dx, dy, dw, dh);
+
+    WorkspaceItemState s;
+    const auto it = m_itemStates.constFind(item->path());
+    if (it != m_itemStates.cend()) {
+        s = *it;
+    } else {
+        s = captureState(item);
+    }
+    if (s.hasCrop && !s.cropRect.isEmpty()) {
+        // Compose onto the existing original-space crop.
+        s.cropRect = QRect(s.cropRect.x() + disp.x(),
+                           s.cropRect.y() + disp.y(),
+                           disp.width(),
+                           disp.height());
+    } else {
+        s.cropRect = disp;
+    }
+    s.hasCrop = true;
+    s.path = item->path();
+    m_itemStates.insert(item->path(), s);
+}
+
 void ImageView::leaveCropModeInternal(bool apply)
 {
     if (!m_cropMode) {
@@ -876,8 +959,13 @@ void ImageView::leaveCropModeInternal(bool apply)
                 || qAbs(m_cropRect.top() - full.top()) > 0.5
                 || qAbs(m_cropRect.width() - full.width()) > 0.5
                 || qAbs(m_cropRect.height() - full.height()) > 0.5)) {
+            // Remember original-space crop *before* mutating the pixmap.
+            recordSessionCrop(item, m_cropRect);
             if (item->cropToLocalRect(m_cropRect)) {
+                // Preserve hasCrop while refreshing transform fields.
                 rememberItemState(item);
+                // Gallery tiles may still hold the full decode — drop so they rebuild.
+                discardStashedGallery();
                 if (isImageMode()) {
                     m_fitMode = true;
                     fitItem(item, currentFitAspectMode());

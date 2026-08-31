@@ -7,6 +7,7 @@
 #include <QColor>
 #include <QPoint>
 #include <QPointF>
+#include <QRect>
 #include <QString>
 
 /** Pixel under the cursor for the status / colour readout. */
@@ -28,6 +29,13 @@ struct WorkspaceItemState {
     qreal z = 0.0;
     bool hFlip = false;
     bool vFlip = false;
+    /**
+     * Session crop in original on-disk pixel coordinates (top-left origin).
+     * Applied after decode so navigation reloads keep the crop (same lifetime
+     * as rotation/flip in m_itemStates).
+     */
+    bool hasCrop = false;
+    QRect cropRect;
 };
 
 #endif // IMAGEVIEW_TYPES_H

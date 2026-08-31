@@ -71,6 +71,12 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.z = item->stackZ();
     s.hFlip = item->itemHFlip();
     s.vFlip = item->itemVFlip();
+    // Crop is session metadata (not recoverable from the live pixmap alone).
+    const auto it = m_itemStates.constFind(item->path());
+    if (it != m_itemStates.cend()) {
+        s.hasCrop = it->hasCrop;
+        s.cropRect = it->cropRect;
+    }
     return s;
 }
 
@@ -83,6 +89,8 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
     item->setStackZ(state.z);
     item->setItemHFlip(state.hFlip);
     item->setItemVFlip(state.vFlip);
+    // Session crop is applied at decode time (createItemFromImage / setSourceImage),
+    // not here — otherwise a second apply would crop the already-cropped pixmap.
 }
 
 void ImageView::rememberItemState(ImageItem *item)

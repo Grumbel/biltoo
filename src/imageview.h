@@ -381,6 +381,13 @@ private:
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
     QList<ImageItem *> transformTargets() const;
+    /** Apply session crop from @p state to a freshly decoded item (no-op if none). */
+    void applySessionCrop(ImageItem *item, const WorkspaceItemState &state);
+    /**
+     * Map item-local draft rect to source pixel rect of the *current* pixmap,
+     * then compose into original on-disk coordinates in @p state.
+     */
+    void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
 
     /** Crop-mode interaction (viewport chrome; item-local draft rect). */
     enum class CropHandle {
