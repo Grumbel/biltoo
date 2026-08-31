@@ -857,7 +857,7 @@ void ImageView::setCropMode(bool on)
         m_cropActiveHandle = CropHandle::None;
         m_cropHoverHandle = CropHandle::None;
         m_cropRubberBanding = false;
-        flashHud(tr("Crop mode"), tr("Handles · Reset · Enter apply · Esc cancel"));
+        flashHud(tr("Crop mode"), tr("Handles · Reset · Apply · Esc"));
         emit cropModeChanged(true);
         emit statusChanged();
         viewport()->update();
@@ -1129,9 +1129,29 @@ QRect ImageView::cropResetButtonView() const
     }
     constexpr int kW = 56;
     constexpr int kH = 22;
-    const int x = qRound(cropView.center().x() - kW / 2.0);
+    constexpr int kGap = 6;
+    const int totalW = kW * 2 + kGap;
+    const int x0 = qRound(cropView.center().x() - totalW / 2.0);
     const int y = qRound(cropView.top()) - kH - 6;
-    return QRect(x, y, kW, kH);
+    return QRect(x0, y, kW, kH);
+}
+
+QRect ImageView::cropApplyButtonView() const
+{
+    if (!m_cropMode || !m_cropRect.isValid()) {
+        return QRect();
+    }
+    const QRectF cropView = cropRectView();
+    if (!cropView.isValid()) {
+        return QRect();
+    }
+    constexpr int kW = 56;
+    constexpr int kH = 22;
+    constexpr int kGap = 6;
+    const int totalW = kW * 2 + kGap;
+    const int x0 = qRound(cropView.center().x() - totalW / 2.0);
+    const int y = qRound(cropView.top()) - kH - 6;
+    return QRect(x0 + kW + kGap, y, kW, kH);
 }
 
 ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
@@ -1143,7 +1163,11 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (!item || !m_cropRect.isValid()) {
         return CropHandle::None;
     }
-    // Reset control sits above the crop frame (checked first).
+    // Controls sit above the crop frame (checked before edge handles).
+    const QRect applyBtn = cropApplyButtonView();
+    if (applyBtn.contains(viewPos)) {
+        return CropHandle::Apply;
+    }
     const QRect resetBtn = cropResetButtonView();
     if (resetBtn.contains(viewPos)) {
         return CropHandle::Reset;
@@ -1254,21 +1278,30 @@ void ImageView::paintCropOverlay(QPainter &painter)
     drawHandle(QPoint(tl.x(), (tl.y() + bl.y()) / 2));
     drawHandle(QPoint(tr.x(), (tr.y() + br.y()) / 2));
 
-    // Reset control — expand draft to the full image (clears session crop on Enter).
-    const QRect resetBtn = cropResetButtonView();
-    if (resetBtn.isValid()) {
-        const bool hover = (m_cropHoverHandle == CropHandle::Reset);
+    // Reset / Apply controls above the crop frame.
+    auto drawTextButton = [&](const QRect &btn, CropHandle kind, const QString &label,
+                              bool primary) {
+        if (!btn.isValid()) {
+            return;
+        }
+        const bool hover = (m_cropHoverHandle == kind);
         painter.setPen(QPen(QColor(40, 40, 40), 1.0));
-        painter.setBrush(hover ? QColor(255, 255, 255, 255) : QColor(255, 255, 255, 230));
-        painter.drawRoundedRect(resetBtn, 4, 4);
-        painter.setPen(QColor(30, 30, 30));
+        if (primary) {
+            painter.setBrush(hover ? QColor(90, 160, 255, 255) : QColor(70, 140, 240, 240));
+        } else {
+            painter.setBrush(hover ? QColor(255, 255, 255, 255) : QColor(255, 255, 255, 230));
+        }
+        painter.drawRoundedRect(btn, 4, 4);
+        painter.setPen(primary ? QColor(255, 255, 255) : QColor(30, 30, 30));
         QFont f = painter.font();
         f.setPointSize(qMax(8, f.pointSize()));
         f.setBold(true);
         painter.setFont(f);
-        // Local QPoint `tr` (top-right) shadows QObject::tr — call explicitly.
-        painter.drawText(resetBtn, Qt::AlignCenter, ImageView::tr("Reset"));
-    }
+        painter.drawText(btn, Qt::AlignCenter, label);
+    };
+    // Local QPoint names must not hide QObject::tr — use ImageView::tr.
+    drawTextButton(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"), false);
+    drawTextButton(cropApplyButtonView(), CropHandle::Apply, ImageView::tr("Apply"), true);
 
     Q_UNUSED(contentView);
     painter.restore();
@@ -1277,7 +1310,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
 void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || h == CropHandle::None || h == CropHandle::Reset) {
+    if (!item || h == CropHandle::None || h == CropHandle::Reset || h == CropHandle::Apply) {
         return;
     }
     m_cropActiveHandle = h;
@@ -1326,6 +1359,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         r.setBottom(qBound(r.top() + minSide, local.y(), cr.bottom()));
         break;
     case CropHandle::Reset:
+    case CropHandle::Apply:
     case CropHandle::None:
         break;
     }

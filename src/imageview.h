@@ -410,14 +410,17 @@ private:
         BottomLeft,
         BottomRight,
         /** Clears the draft rect to the full image (reset session crop on apply). */
-        Reset
+        Reset,
+        /** Commits the draft crop (same as Enter). */
+        Apply
     };
     ImageItem *cropTargetItem() const;
     void ensureCropRectValid();
     QRectF cropRectItemLocal() const { return m_cropRect; }
     QRectF cropRectView() const;
-    /** Viewport rect of the reset control (empty when not in crop mode). */
+    /** Viewport rects of Reset / Apply controls above the crop frame. */
     QRect cropResetButtonView() const;
+    QRect cropApplyButtonView() const;
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
