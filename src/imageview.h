@@ -272,6 +272,8 @@ public:
     QSize imageSize() const;
     int itemCount() const;
     QStringList itemPaths() const;
+    /** Paths of selected canvas items (Gallery/Workspace). Image mode: current path. */
+    QStringList selectedPaths() const;
 
 signals:
     void statusChanged();

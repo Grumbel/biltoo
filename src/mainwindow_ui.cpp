@@ -307,6 +307,12 @@ void MainWindow::createActions()
     m_duplicateAct->setStatusTip(tr("Duplicate selected workspace image(s) for side-by-side comparison"));
     connect(m_duplicateAct, &QAction::triggered, this, &MainWindow::duplicateSelected);
 
+    m_openSelectionNewWindowAct = new QAction(tr("Open Selection in &New Window"), this);
+    m_openSelectionNewWindowAct->setStatusTip(
+        tr("Open the selected images in a new QImgView window"));
+    connect(m_openSelectionNewWindowAct, &QAction::triggered,
+            this, &MainWindow::openSelectionInNewWindow);
+
     m_clearExtrasAct = new QAction(tr("Clear Workspace &Extras"), this);
     m_clearExtrasAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_W);
     m_clearExtrasAct->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
@@ -671,15 +677,10 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_workspaceToolBar->setOrientation(Qt::Vertical);
     addToolBar(Qt::LeftToolBarArea, m_workspaceToolBar);
+    // Select / Pan only — Undo/Redo live on the main toolbar; Raise/Lower and
+    // Duplicate are available on item chrome / View menu / context menu.
     m_workspaceToolBar->addAction(m_selectToolAct);
     m_workspaceToolBar->addAction(m_panToolAct);
-    m_workspaceToolBar->addSeparator();
-    m_workspaceToolBar->addAction(m_raiseAct);
-    m_workspaceToolBar->addAction(m_lowerAct);
-    m_workspaceToolBar->addAction(m_duplicateAct);
-    m_workspaceToolBar->addSeparator();
-    m_workspaceToolBar->addAction(m_undoAct);
-    m_workspaceToolBar->addAction(m_redoAct);
     m_workspaceToolBar->hide();
 }
 

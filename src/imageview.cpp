@@ -1043,6 +1043,26 @@ QStringList ImageView::itemPaths() const
     return paths;
 }
 
+QStringList ImageView::selectedPaths() const
+{
+    QStringList paths;
+    if (isImageMode()) {
+        if (ImageItem *item = primaryItem()) {
+            paths.append(item->path());
+        } else if (!m_classicPath.isEmpty()) {
+            paths.append(m_classicPath);
+        }
+        return paths;
+    }
+    // Gallery / Workspace: preserve session/canvas order, not click order.
+    for (ImageItem *item : m_items) {
+        if (item->isSelected()) {
+            paths.append(item->path());
+        }
+    }
+    return paths;
+}
+
 QString ImageView::sessionBadgeText() const
 {
     if (m_sessionTotal > 0 && m_sessionIndex >= 0 && m_sessionIndex < m_sessionTotal) {

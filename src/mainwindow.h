@@ -109,6 +109,8 @@ private slots:
     void resetItemScale();
     void resetItemRotation();
     void duplicateSelected();
+    /** Open selected canvas paths in a new MainWindow (WA_DeleteOnClose). */
+    void openSelectionInNewWindow();
     void opacityDown();
     void opacityUp();
     void lowerSelected();
@@ -261,6 +263,7 @@ private:
     QAction *m_resetScaleAct = nullptr;
     QAction *m_resetRotationAct = nullptr;
     QAction *m_duplicateAct = nullptr;
+    QAction *m_openSelectionNewWindowAct = nullptr;
     QAction *m_opacityDownAct = nullptr;
     QAction *m_opacityUpAct = nullptr;
     QAction *m_lowerAct = nullptr;

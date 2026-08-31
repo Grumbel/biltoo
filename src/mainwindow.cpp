@@ -377,6 +377,24 @@ void MainWindow::duplicateSelected()
     m_imageView->duplicateSelected();
 }
 
+void MainWindow::openSelectionInNewWindow()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const QStringList paths = m_imageView->selectedPaths();
+    if (paths.isEmpty()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Nothing selected to open in a new window."), 3000);
+        }
+        return;
+    }
+    auto *window = new MainWindow;
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    window->show();
+    window->loadFiles(paths);
+}
+
 void MainWindow::clearWorkspaceExtras()
 {
     m_imageView->clearExtras();
@@ -750,6 +768,9 @@ void MainWindow::showContextMenu(const QPoint &pos)
     QMenu menu(this);
     menu.addAction(m_openAct);
     menu.addAction(m_addAct);
+    if (m_openSelectionNewWindowAct) {
+        menu.addAction(m_openSelectionNewWindowAct);
+    }
     menu.addSeparator();
     if (isImageMode()) {
         menu.addAction(m_previousAct);
@@ -766,16 +787,15 @@ void MainWindow::showContextMenu(const QPoint &pos)
     if (isWorkspaceMode()) {
         menu.addAction(m_resetScaleAct);
         menu.addAction(m_resetRotationAct);
+        menu.addAction(m_duplicateAct);
+        menu.addAction(m_raiseAct);
+        menu.addAction(m_lowerAct);
     }
     menu.addSeparator();
     if (m_backToGalleryAct && m_backToGalleryAct->isEnabled()) {
         menu.addAction(m_backToGalleryAct);
     }
-    menu.addAction(m_workspaceModeAct);
-    if (isWorkspaceMode()) {
-        menu.addAction(m_raiseAct);
-        menu.addAction(m_lowerAct);
-    }
+    // Workspace mode toggle stays on the main toolbar / View menu only.
     menu.addSeparator();
     menu.addAction(m_fullscreenAct);
     menu.addAction(m_preferencesAct);

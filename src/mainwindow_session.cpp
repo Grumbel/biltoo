@@ -698,6 +698,10 @@ void MainWindow::updateNavigationActions()
     if (m_toggleHudAct) {
         m_toggleHudAct->setEnabled(true);
     }
+    if (m_openSelectionNewWindowAct) {
+        const bool canOpenSel = m_imageView && !m_imageView->selectedPaths().isEmpty();
+        m_openSelectionNewWindowAct->setEnabled(canOpenSel);
+    }
 }
 
 void MainWindow::onThumbnailActivated(int index)
