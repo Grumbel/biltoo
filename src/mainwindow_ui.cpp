@@ -473,13 +473,6 @@ void MainWindow::createMenus()
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 
-    // Top-level History — past sessions (full path lists), not single files.
-    m_historyMenu = menuBar()->addMenu(tr("&History"));
-    m_historyMenu->setStatusTip(tr("Reopen a previous session (all images from that open)"));
-    m_clearHistoryAct = new QAction(tr("&Clear History"), this);
-    m_clearHistoryAct->setStatusTip(tr("Remove all remembered sessions"));
-    connect(m_clearHistoryAct, &QAction::triggered, this, &MainWindow::clearSessionHistory);
-
     m_editMenu = menuBar()->addMenu(tr("&Edit"));
     m_editMenu->addAction(m_undoAct);
     m_editMenu->addAction(m_redoAct);
@@ -564,6 +557,13 @@ void MainWindow::createMenus()
     m_goMenu->addAction(m_slideshowAct);
     m_goMenu->addAction(m_slideshowFasterAct);
     m_goMenu->addAction(m_slideshowSlowerAct);
+
+    // Past sessions (full path lists) — after navigation, before Help.
+    m_historyMenu = menuBar()->addMenu(tr("&History"));
+    m_historyMenu->setStatusTip(tr("Reopen a previous session (all images from that open)"));
+    m_clearHistoryAct = new QAction(tr("&Clear History"), this);
+    m_clearHistoryAct->setStatusTip(tr("Remove all remembered sessions"));
+    connect(m_clearHistoryAct, &QAction::triggered, this, &MainWindow::clearSessionHistory);
 
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
     m_helpMenu->addAction(m_keyboardShortcutsAct);
