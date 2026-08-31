@@ -326,6 +326,7 @@ void MainWindow::newSession()
     m_files.clear();
     m_currentIndex = -1;
     m_galleryReturnActive = false;
+    m_workspaceReturnActive = false;
     if (m_imageView) {
         // Drop all canvas objects and classic path so Image mode does not
         // reload the previous file after the mode switch.

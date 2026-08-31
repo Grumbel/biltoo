@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::navigateNextRequested,
             this, &MainWindow::goNext);
     connect(m_imageView, &ImageView::galleryReturnRequested,
-            this, &MainWindow::returnToGallery);
+            this, &MainWindow::returnFromImageMode);
     connect(m_imageView, &ImageView::fullscreenToggleRequested,
             this, &MainWindow::toggleFullscreen);
     connect(m_imageView, &ImageView::galleryItemOpenRequested,
@@ -105,8 +105,9 @@ MainWindow::MainWindow(QWidget *parent)
             showNormal();
             return;
         }
-        if (m_galleryReturnActive && m_imageView && m_imageView->isImageMode()) {
-            returnToGallery();
+        if ((m_galleryReturnActive || m_workspaceReturnActive)
+            && m_imageView && m_imageView->isImageMode()) {
+            returnFromImageMode();
         }
     });
 
@@ -439,6 +440,7 @@ void MainWindow::toggleWorkspaceMode()
     if (on) {
         stopSlideshow();
         m_galleryReturnActive = false;
+        m_workspaceReturnActive = false;
         if (m_backToGalleryAct) {
             m_backToGalleryAct->setEnabled(false);
         }
@@ -1263,8 +1265,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
-        if (m_galleryReturnActive && m_imageView && m_imageView->isImageMode()) {
-            returnToGallery();
+        if ((m_galleryReturnActive || m_workspaceReturnActive)
+            && m_imageView && m_imageView->isImageMode()) {
+            returnFromImageMode();
             event->accept();
             return;
         }

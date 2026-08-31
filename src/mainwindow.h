@@ -115,7 +115,10 @@ private slots:
     void setLayoutMasonry();
     void setLayoutMasonryRows();
     void openGalleryItemInImageMode(const QString &path);
+    /** Up / top-edge: return to Gallery or Workspace after open-from-Image. */
+    void returnFromImageMode();
     void returnToGallery();
+    void returnToWorkspace();
     void opacityReset();
     void resetItemScale();
     void resetItemRotation();
@@ -282,6 +285,8 @@ private:
     QSpinBox *m_masonryCountSpin = nullptr;
     QLabel *m_masonryCountLabel = nullptr;
     bool m_galleryReturnActive = false;
+    /** Image was opened from Workspace (double-click); Up restores Workspace. */
+    bool m_workspaceReturnActive = false;
     bool m_thumbsHiddenForGallery = false;
     bool m_thumbsVisibleBeforeGallery = false;
     ImageView::LayoutMode m_galleryReturnLayout = ImageView::LayoutMode::Masonry;

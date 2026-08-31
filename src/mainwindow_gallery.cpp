@@ -28,6 +28,7 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
     stopSlideshow();
     // DOMAIN: Mode := Gallery; pack all session paths with layout.
     m_galleryReturnActive = false;
+    m_workspaceReturnActive = false;
     if (m_backToGalleryAct) {
         m_backToGalleryAct->setEnabled(false);
     }
@@ -121,10 +122,15 @@ void MainWindow::showPathInImageMode(const QString &path)
     if (idx < 0) {
         return;
     }
+    // Remember where Image was opened from so Up can restore that mode.
     if (m_imageView && m_imageView->isGalleryLayout()) {
         m_galleryReturnLayout = m_imageView->layoutMode();
         m_galleryReturnActive = true;
+        m_workspaceReturnActive = false;
         m_imageView->snapshotGalleryViewport();
+    } else if (m_imageView && m_imageView->isWorkspaceMode()) {
+        m_workspaceReturnActive = true;
+        m_galleryReturnActive = false;
     }
     if (m_workspaceModeAct) {
         m_workspaceModeAct->setChecked(false);
@@ -147,12 +153,24 @@ void MainWindow::openGalleryItemInImageMode(const QString &path)
     showPathInImageMode(path);
 }
 
+void MainWindow::returnFromImageMode()
+{
+    if (m_workspaceReturnActive) {
+        returnToWorkspace();
+        return;
+    }
+    if (m_galleryReturnActive) {
+        returnToGallery();
+    }
+}
+
 void MainWindow::returnToGallery()
 {
     if (!m_galleryReturnActive) {
         return;
     }
     m_galleryReturnActive = false;
+    m_workspaceReturnActive = false;
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
                                   ? m_files.at(m_currentIndex)
                                   : QString();
@@ -174,6 +192,20 @@ void MainWindow::returnToGallery()
             m_imageView->applyPendingGalleryRestore();
         });
     }
+}
+
+void MainWindow::returnToWorkspace()
+{
+    if (!m_workspaceReturnActive) {
+        return;
+    }
+    m_workspaceReturnActive = false;
+    m_galleryReturnActive = false;
+    // setViewMode(Workspace) from Image restores stashed free-form tiles
+    // (or the durable snapshot if the stash was discarded).
+    enterWorkspaceMode();
+    updateUpToGalleryAction();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::enterWorkspaceMode()
@@ -325,11 +357,19 @@ void MainWindow::updateUpToGalleryAction()
     if (!m_backToGalleryAct) {
         return;
     }
-    // Always shown; only enabled when Image mode was entered from Gallery.
+    // Always shown; enabled when Image mode was entered from Gallery or Workspace.
+    const bool canReturn = m_galleryReturnActive || m_workspaceReturnActive;
     m_backToGalleryAct->setVisible(true);
-    m_backToGalleryAct->setEnabled(m_galleryReturnActive);
+    m_backToGalleryAct->setEnabled(canReturn);
+    if (m_workspaceReturnActive) {
+        m_backToGalleryAct->setStatusTip(tr("Up to workspace"));
+        m_backToGalleryAct->setToolTip(tr("Up to workspace"));
+    } else {
+        m_backToGalleryAct->setStatusTip(tr("Up to gallery"));
+        m_backToGalleryAct->setToolTip(tr("Up to gallery"));
+    }
     if (m_imageView) {
-        m_imageView->setGalleryReturnAvailable(m_galleryReturnActive);
+        m_imageView->setGalleryReturnAvailable(canReturn);
     }
 }
 

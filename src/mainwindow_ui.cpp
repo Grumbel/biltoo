@@ -289,7 +289,7 @@ void MainWindow::createActions()
     m_backToGalleryAct->setStatusTip(tr("Up to gallery"));
     m_backToGalleryAct->setToolTip(tr("Up to gallery"));
     m_backToGalleryAct->setEnabled(false);
-    connect(m_backToGalleryAct, &QAction::triggered, this, &MainWindow::returnToGallery);
+    connect(m_backToGalleryAct, &QAction::triggered, this, &MainWindow::returnFromImageMode);
 
     // Gallery layouts only (Workspace Mode is separate; Free Form is not a layout).
     auto *layoutGroup = new QActionGroup(this);

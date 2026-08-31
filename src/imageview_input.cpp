@@ -51,7 +51,7 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     if (!isImageMode()) {
         return EdgeZone::None;
     }
-    // Top strip: back to Gallery (when Image was opened from a gallery tile).
+    // Top strip: back to Gallery or Workspace (when Image was opened from there).
     // Takes priority over left/right so the upper corners still return.
     if (m_galleryReturnAvailable && viewPos.y() < edgeZoneHeight()) {
         return EdgeZone::GalleryReturn;
@@ -910,7 +910,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         // No handle hit — fall through to move/select / clear.
     }
 
-    // Image mode: edge clicks — top returns to Gallery; left/right navigate
+    // Image mode: edge clicks — top returns to Gallery/Workspace; left/right navigate
     if (isImageMode() && event->button() == Qt::LeftButton
         && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
         const EdgeZone zone = edgeZoneAt(event->pos());

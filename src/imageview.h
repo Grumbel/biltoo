@@ -63,7 +63,7 @@ public:
         None,
         Previous,
         Next,
-        /** Top edge: return to Gallery when opened from a gallery tile. */
+        /** Top edge: return to Gallery or Workspace when Image was opened from there. */
         GalleryReturn
     };
 
@@ -309,7 +309,7 @@ signals:
     /** Image mode: user activated previous / next via edge click. */
     void navigatePreviousRequested();
     void navigateNextRequested();
-    /** Image mode: user activated top-edge return to Gallery. */
+    /** Image mode: user activated top-edge return (Gallery or Workspace). */
     void galleryReturnRequested();
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
