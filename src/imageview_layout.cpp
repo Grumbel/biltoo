@@ -101,6 +101,10 @@ void ImageView::snapshotWorkspace()
         m_savedWorkspace.append(s);
         m_itemStates.insert(s.path, s);
     }
+    // Durable view backup when the live stash is later discarded (e.g. Gallery).
+    m_savedWorkspaceViewTransform = transform();
+    m_savedWorkspaceViewCenter = mapToScene(viewport()->rect().center());
+    m_hasSavedWorkspaceView = true;
 }
 
 void ImageView::restoreWorkspace()
@@ -114,6 +118,16 @@ void ImageView::restoreWorkspace()
         scheduleImageLoad(state.path, LoadRestore);
     }
     m_fitMode = false;
+    m_fillMode = false;
+    // Apply zoom before scene-rect expansion; pan after range is valid.
+    if (m_hasSavedWorkspaceView) {
+        setTransform(m_savedWorkspaceViewTransform);
+    }
+    updateWorkspaceSceneRect();
+    if (m_hasSavedWorkspaceView) {
+        centerOn(m_savedWorkspaceViewCenter);
+        m_hasSavedWorkspaceView = false;
+    }
     emit statusChanged();
 }
 
@@ -136,12 +150,15 @@ void ImageView::stashWorkspaceItems()
 {
     // Replace any previous workspace stash (e.g. nested mode switches).
     discardStashedWorkspace();
+    // Zoom lives in the view matrix; pan lives in scrollbars — capture both.
+    // Scene centre is robust across sceneRect rebuilds (same idea as Gallery).
+    m_stashedWorkspaceViewTransform = transform();
+    m_stashedWorkspaceViewCenter = mapToScene(viewport()->rect().center());
+    m_hasStashedWorkspaceView = true;
     if (m_items.isEmpty()) {
         return;
     }
     m_stashedWorkspaceItems = m_items;
-    m_stashedWorkspaceViewTransform = transform();
-    m_hasStashedWorkspaceView = true;
     m_handleDragItem = nullptr;
     m_groupScaleDrag = false;
     m_groupHandle = -1;
@@ -187,13 +204,18 @@ void ImageView::restoreStashedWorkspaceItems()
         }
         applyItemModeFlags(item);
     }
-    if (m_hasStashedWorkspaceView) {
-        setTransform(m_stashedWorkspaceViewTransform);
-        m_hasStashedWorkspaceView = false;
-    }
     m_fitMode = false;
     m_fillMode = false;
+    // Order: zoom → expand sceneRect for the new scale → pan to saved centre.
+    // updateWorkspaceSceneRect alone would leave scrollbars at Image-mode zeros.
+    if (m_hasStashedWorkspaceView) {
+        setTransform(m_stashedWorkspaceViewTransform);
+    }
     updateWorkspaceSceneRect();
+    if (m_hasStashedWorkspaceView) {
+        centerOn(m_stashedWorkspaceViewCenter);
+        m_hasStashedWorkspaceView = false;
+    }
     viewport()->update();
 }
 

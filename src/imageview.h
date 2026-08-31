@@ -420,8 +420,14 @@ private:
     QList<WorkspaceItemState> m_savedWorkspace;
     /** Workspace tiles kept while in Image mode (decoded pixels retained). */
     QList<ImageItem *> m_stashedWorkspaceItems;
+    /** View zoom (matrix) and pan (scene centre) while tiles are stashed. */
     QTransform m_stashedWorkspaceViewTransform;
+    QPointF m_stashedWorkspaceViewCenter;
     bool m_hasStashedWorkspaceView = false;
+    /** Durable view backup with snapshotWorkspace (stash may be discarded). */
+    QTransform m_savedWorkspaceViewTransform;
+    QPointF m_savedWorkspaceViewCenter;
+    bool m_hasSavedWorkspaceView = false;
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     QList<ImageItem *> m_stashedGalleryItems;
     QStringList m_stashedGalleryPathOrder;
