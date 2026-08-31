@@ -113,10 +113,11 @@ Image is not a multi-object canvas.
 
 | Operation | Meaning | Rules |
 |-----------|---------|--------|
-| Enter Image on path P | Mode := Image; canvas shows P; session current := P | From Gallery open or session navigation |
+| Enter Image on path P | Mode := Image; canvas shows P; session current := P | From Gallery/Workspace open or session navigation |
 | Return to Gallery | Mode := Gallery; restore remembered layout/scroll/cell | Only if Gallery was left via “open image” |
+| Return to Workspace | Mode := Workspace; restore free-object snapshot/stash | Only if Workspace was left via “open image” |
 | Enter Gallery with layout L | Mode := Gallery; pack all session paths with L | From UI layout actions |
-| Enter Workspace | Mode := Workspace; restore free objects if snapshotted | Explicit user choice |
+| Enter Workspace | Mode := Workspace; restore free objects if snapshotted | Explicit user choice or return-from-Image |
 | Leave Workspace | Snapshot free objects; then Image or Gallery | Snapshot must not be silently discarded |
 
 ## Transform targets
@@ -137,7 +138,8 @@ Image is not a multi-object canvas.
 6. **View framing must not erase user orientation** (rotation/flips) unless the operation is explicitly “reset” or “load fresh image.”
 7. **Slideshow ⇒ Image mode and session size > 1.** Otherwise slideshow is idle.
 8. **Gallery → Image → Return** restores Gallery state; it does not open Workspace.
-9. **Targets of transform** follow the table above.
+9. **Workspace → Image → Return** restores the Workspace free-object stash/snapshot; it does not open Gallery.
+10. **Targets of transform** follow the table above.
 
 ## Pseudo-API (behavioural)
 

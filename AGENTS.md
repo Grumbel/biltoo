@@ -120,7 +120,8 @@ invariant 6).
 
 - Gallery layout actions → `MainWindow::enterGalleryMode(layout)`.
 - Open gallery cell → `showPathInImageMode(path)` (gallery-return snapshot).
-- **Up** / return → `returnToGallery()` only (never Workspace).
+- Open workspace item (double-click body) → `showPathInImageMode(path)` (workspace-return).
+- **Up** / top-edge / Esc → `returnFromImageMode()` (Gallery or Workspace, matching open origin).
 - Workspace Mode → `enterWorkspaceMode()` / `setViewMode(Workspace)` (snapshot on leave).
 
 ### Public helpers to prefer
