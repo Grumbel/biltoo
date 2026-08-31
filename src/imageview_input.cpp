@@ -1198,69 +1198,104 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
-    if (isWorkspaceMode() && m_tool == Tool::Select && !m_handleDragItem && !m_panning) {
+    if (isWorkspaceMode() && m_tool == Tool::Select && !m_handleDragItem
+        && !m_groupScaleDrag && !m_panning) {
         const QPointF scenePos = mapToScene(event->pos());
-        ImageItem *hoverOwner = nullptr;
-        ImageItem::Handle hoverH = ImageItem::Handle::None;
         QList<ImageItem *> candidates;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive()) {
+                if (ii->isInteractive() && m_items.contains(ii)) {
                     candidates.append(ii);
                 }
             }
         }
-        std::sort(candidates.begin(), candidates.end(),
-                  [](ImageItem *a, ImageItem *b) { return a->stackZ() > b->stackZ(); });
-        for (ImageItem *item : candidates) {
-            const ImageItem::Handle h = item->handleAt(item->mapFromScene(scenePos));
-            if (h != ImageItem::Handle::None) {
-                hoverOwner = item;
-                hoverH = h;
-                break;
+
+        // Multi-select: only group scale handles (individual chrome is hidden).
+        if (candidates.size() > 1) {
+            for (ImageItem *item : candidates) {
+                if (item->hoverHandle() != ImageItem::Handle::None) {
+                    item->setHoverHandle(ImageItem::Handle::None);
+                }
             }
-        }
-        bool hoverChanged = false;
-        for (ImageItem *item : candidates) {
-            const ImageItem::Handle next =
-                (item == hoverOwner) ? hoverH : ImageItem::Handle::None;
-            if (item->hoverHandle() != next) {
-                hoverChanged = true;
+            const int gh = groupHandleAt(event->pos(), candidates);
+            if (gh >= 0) {
+                // 0=TL 1=T 2=TR 3=R 4=BR 5=B 6=BL 7=L
+                switch (gh) {
+                case 0: case 4: // TL, BR — NW–SE diagonal
+                    viewport()->setCursor(Qt::SizeFDiagCursor);
+                    break;
+                case 2: case 6: // TR, BL — NE–SW diagonal
+                    viewport()->setCursor(Qt::SizeBDiagCursor);
+                    break;
+                case 1: case 5:
+                    viewport()->setCursor(Qt::SizeVerCursor);
+                    break;
+                case 3: case 7:
+                    viewport()->setCursor(Qt::SizeHorCursor);
+                    break;
+                default:
+                    viewport()->setCursor(Qt::ArrowCursor);
+                    break;
+                }
+            } else if (!m_panning) {
+                viewport()->unsetCursor();
             }
-            item->setHoverHandle(next);
-        }
-        if (hoverChanged) {
-            // Chrome is painted in paintEvent — refresh viewport when highlight moves.
-            viewport()->update();
-        }
-        // Cursor for chrome even when QGraphicsItem hover is not delivered
-        // (handle outside shape / under another pixmap).
-        if (hoverOwner && hoverH != ImageItem::Handle::None) {
-            using H = ImageItem::Handle;
-            switch (hoverH) {
-            case H::RotateTop: case H::RotateRight:
-            case H::RotateBottom: case H::RotateLeft:
-                viewport()->setCursor(Qt::CrossCursor);
-                break;
-            case H::ScaleTopLeft: case H::ScaleBottomRight:
-            case H::ScaleTopRight: case H::ScaleBottomLeft:
-                viewport()->setCursor(Qt::SizeFDiagCursor);
-                break;
-            case H::ScaleTop: case H::ScaleBottom:
-                viewport()->setCursor(Qt::SizeVerCursor);
-                break;
-            case H::ScaleLeft: case H::ScaleRight:
-                viewport()->setCursor(Qt::SizeHorCursor);
-                break;
-            case H::OpacitySlider:
-                viewport()->setCursor(Qt::SizeHorCursor);
-                break;
-            default:
-                viewport()->setCursor(Qt::PointingHandCursor);
-                break;
+        } else {
+            ImageItem *hoverOwner = nullptr;
+            ImageItem::Handle hoverH = ImageItem::Handle::None;
+            std::sort(candidates.begin(), candidates.end(),
+                      [](ImageItem *a, ImageItem *b) { return a->stackZ() > b->stackZ(); });
+            for (ImageItem *item : candidates) {
+                const ImageItem::Handle h = item->handleAt(item->mapFromScene(scenePos));
+                if (h != ImageItem::Handle::None) {
+                    hoverOwner = item;
+                    hoverH = h;
+                    break;
+                }
             }
-        } else if (!m_panning && !m_handleDragItem) {
-            viewport()->unsetCursor();
+            bool hoverChanged = false;
+            for (ImageItem *item : candidates) {
+                const ImageItem::Handle next =
+                    (item == hoverOwner) ? hoverH : ImageItem::Handle::None;
+                if (item->hoverHandle() != next) {
+                    hoverChanged = true;
+                }
+                item->setHoverHandle(next);
+            }
+            if (hoverChanged) {
+                viewport()->update();
+            }
+            if (hoverOwner && hoverH != ImageItem::Handle::None) {
+                using H = ImageItem::Handle;
+                switch (hoverH) {
+                case H::RotateTop: case H::RotateRight:
+                case H::RotateBottom: case H::RotateLeft:
+                    viewport()->setCursor(Qt::CrossCursor);
+                    break;
+                case H::ScaleTopLeft: case H::ScaleBottomRight:
+                    // NW–SE diagonal
+                    viewport()->setCursor(Qt::SizeFDiagCursor);
+                    break;
+                case H::ScaleTopRight: case H::ScaleBottomLeft:
+                    // NE–SW diagonal
+                    viewport()->setCursor(Qt::SizeBDiagCursor);
+                    break;
+                case H::ScaleTop: case H::ScaleBottom:
+                    viewport()->setCursor(Qt::SizeVerCursor);
+                    break;
+                case H::ScaleLeft: case H::ScaleRight:
+                    viewport()->setCursor(Qt::SizeHorCursor);
+                    break;
+                case H::OpacitySlider:
+                    viewport()->setCursor(Qt::SizeHorCursor);
+                    break;
+                default:
+                    viewport()->setCursor(Qt::PointingHandCursor);
+                    break;
+                }
+            } else if (!m_panning && !m_handleDragItem) {
+                viewport()->unsetCursor();
+            }
         }
     }
 
