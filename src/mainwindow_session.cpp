@@ -336,7 +336,8 @@ void MainWindow::newSession()
     updateNavigationActions();
     updateWorkspaceActionVisibility();
     if (m_metadataPanel) {
-        m_metadataPanel->setImagePath(QString());
+        m_metadataPath.clear();
+        m_metadataPanel->clear();
     }
     updateStatus();
     if (statusBar()) {
@@ -410,7 +411,8 @@ void MainWindow::appendFiles(const QStringList &paths)
     if (isWorkspaceMode()) {
         m_currentIndex = newIndex;
         if (m_metadataPanel && newIndex >= 0 && newIndex < m_files.size()) {
-            m_metadataPanel->setImagePath(m_files.at(newIndex));
+            m_metadataPath = m_files.at(newIndex);
+            m_metadataPanel->setImagePath(m_metadataPath);
         }
         updateStatus();
         updateNavigationActions();
@@ -450,7 +452,8 @@ void MainWindow::setCurrentIndex(int index)
 
     m_thumbnailBar->setCurrentIndex(m_currentIndex);
     if (m_metadataPanel) {
-        m_metadataPanel->setImagePath(path);
+        m_metadataPath = path;
+        m_metadataPanel->setImagePath(m_metadataPath);
     }
     updateWindowTitle();
     updateStatus();
@@ -533,6 +536,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         m_currentIndex = -1;
         m_imageView->clearWorkspace();
         if (m_metadataPanel) {
+            m_metadataPath.clear();
             m_metadataPanel->clear();
         }
         updateWindowTitle();
@@ -552,7 +556,8 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     if (isWorkspaceMode()) {
         m_currentIndex = newIndex;
         if (m_metadataPanel) {
-            m_metadataPanel->setImagePath(m_files.at(newIndex));
+            m_metadataPath = m_files.at(newIndex);
+            m_metadataPanel->setImagePath(m_metadataPath);
         }
         m_thumbnailBar->setCurrentIndex(newIndex);
         updateStatus();
@@ -561,7 +566,8 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         m_currentIndex = newIndex;
         m_thumbnailBar->setCurrentIndex(newIndex);
         if (m_metadataPanel) {
-            m_metadataPanel->setImagePath(m_files.at(newIndex));
+            m_metadataPath = m_files.at(newIndex);
+            m_metadataPanel->setImagePath(m_metadataPath);
         }
         updateWindowTitle();
         updateStatus();

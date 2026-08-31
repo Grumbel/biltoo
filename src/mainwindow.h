@@ -151,6 +151,8 @@ private slots:
     /** Put every session image on the multi-image canvas (gallery). */
     void populateGalleryCanvas();
     void updateStatus();
+    /** Refresh metadata dock from selection / session focus (deduped by path). */
+    void updateMetadataPanel();
     void updateWindowTitle();
     void selectAllThumbnails();
     void onMouseInfoChanged(const ImageMouseInfo &info);
@@ -196,6 +198,7 @@ private:
     ThumbnailBar *m_thumbnailBar = nullptr;
     QSplitter *m_centralSplitter = nullptr;
     MetadataPanel *m_metadataPanel = nullptr;
+    QString m_metadataPath;
     QDockWidget *m_metadataDock = nullptr;
     QToolBar *m_toolBar = nullptr;
     QToolBar *m_workspaceToolBar = nullptr;

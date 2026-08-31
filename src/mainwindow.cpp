@@ -191,7 +191,8 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
         if (idx != m_currentIndex && idx >= 0 && idx < m_files.size()) {
             m_currentIndex = idx;
             if (m_metadataPanel) {
-                m_metadataPanel->setImagePath(m_files.at(m_currentIndex));
+                m_metadataPath = m_files.at(m_currentIndex);
+                m_metadataPanel->setImagePath(m_metadataPath);
             }
         }
     }
@@ -747,9 +748,34 @@ void MainWindow::updateWindowTitle()
     }
 }
 
+void MainWindow::updateMetadataPanel()
+{
+    if (!m_metadataPanel || !m_imageView) {
+        return;
+    }
+    QString path;
+    // Prefer canvas selection (Workspace / Gallery); else session index.
+    const QStringList selected = m_imageView->selectedPaths();
+    if (!selected.isEmpty()) {
+        path = selected.first();
+    } else if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+        path = m_files.at(m_currentIndex);
+    }
+    if (path == m_metadataPath) {
+        return;
+    }
+    m_metadataPath = path;
+    if (path.isEmpty()) {
+        m_metadataPanel->clear();
+    } else {
+        m_metadataPanel->setImagePath(path);
+    }
+}
+
 void MainWindow::updateStatus()
 {
     updateNavigationActions();
+    updateMetadataPanel();
     // Session index on ImageView so status bar and on-image HUD share n/N.
     if (m_imageView) {
         // Silent while the slideshow timer advances; user Next/Prev still pulse.
