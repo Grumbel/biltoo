@@ -456,8 +456,10 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
     }
 
     if (isWorkspaceMode() && m_pageGuideVisible && m_scene) {
+        // Exact mapping: guide scene rect → page rect. KeepAspectRatio letterboxed
+        // when full-sheet guide and margin-only pageRect differed, shifting items.
         const QRectF source = pageGuideSceneRect();
-        m_scene->render(painter, pageRect, source, Qt::KeepAspectRatio);
+        m_scene->render(painter, pageRect, source, Qt::IgnoreAspectRatio);
         return;
     }
 
