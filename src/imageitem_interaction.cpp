@@ -116,42 +116,53 @@ FrameViewGeom makeFrameViewGeom(const QPointF &tl, const QPointF &tr,
 // Top-right outside column. Stack runs along the right edge direction starting
 // near the top-right corner. If the stack would collide with the right rotate
 // knob, the whole column is shifted further "up" (toward / past the top edge).
-// Two chrome groups in *screen* space, to the right of the view AABB of the
-// rotated frame. Buttons stay upright and do not spin with free/90° rotation;
-// only the AABB size changes on 90° turns.
-//   upper: FlipH, FlipV, Rotate90CCW, Rotate90CW
-//   lower: Raise, Lower, ResetScale, ResetRotation
-// Free-rotate knobs remain on the content mid-edges (rotated).
+// Two chrome groups outside the *rotated* right edge, split around the free-
+// rotate knob (along-edge layout — tracks the content frame).
+//   upper: FlipH, FlipV, Rotate90CCW, Rotate90CW  — prefer top of edge
+//   lower: Raise, Lower, ResetScale, ResetRotation — prefer bottom of edge
 void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
 {
     const qreal btn = kChromeBtnScreenPx;
     const qreal step = btn + kChromeBtnGapPx;
+    const qreal colOffset = kChromeOutsidePx + btn * 0.5;
+    const QPointF colBase = g.tr + g.outRight * colOffset;
+    const QPointF along = g.dirRight; // top → bottom along the right edge
 
-    const qreal minX = qMin(qMin(g.tl.x(), g.tr.x()), qMin(g.br.x(), g.bl.x()));
-    const qreal maxX = qMax(qMax(g.tl.x(), g.tr.x()), qMax(g.br.x(), g.bl.x()));
-    const qreal minY = qMin(qMin(g.tl.y(), g.tr.y()), qMin(g.br.y(), g.bl.y()));
-    const qreal maxY = qMax(qMax(g.tl.y(), g.tr.y()), qMax(g.br.y(), g.bl.y()));
+    const QPointF rotR = g.midRight + g.outRight * kRotateOffsetPx;
+    const qreal rotClear = kHandleScreenPx * 0.5 + kChromeClearPx + btn * 0.5;
+    auto distAlong = [&](const QPointF &p) {
+        return QPointF::dotProduct(p - colBase, along);
+    };
+    const qreal rotAlong = distAlong(rotR);
+    const qreal lateral = qAbs(colOffset - kRotateOffsetPx);
+    const qreal needAlongClear = qMax(0.0, rotClear - lateral);
 
-    const qreal colX = maxX + kChromeOutsidePx + btn * 0.5;
-    const qreal midY = 0.5 * (minY + maxY);
+    // Reserved band around the free-rotate knob.
+    const qreal upperLastAlong = rotAlong - needAlongClear - kChromeGroupGapPx * 0.5;
+    const qreal lowerFirstAlong = rotAlong + needAlongClear + kChromeGroupGapPx * 0.5;
 
-    // Leave a vertical band around the AABB mid for the free-rotate knob.
-    const qreal needClear = kHandleScreenPx * 0.5 + kChromeClearPx + btn * 0.5
-                            + kChromeGroupGapPx * 0.5;
-    const qreal upperLastY = midY - needClear;
-    const qreal lowerFirstY = midY + needClear;
+    // Upper group: prefer flush with the top-right corner when it fits above
+    // the reserved band; otherwise pack against the band from above.
+    const qreal preferTop = btn * 0.5 + 4.0;
+    qreal firstUpper = preferTop;
+    if (preferTop + (kChromeUpperCount - 1) * step > upperLastAlong) {
+        firstUpper = upperLastAlong - (kChromeUpperCount - 1) * step;
+    }
 
-    qreal firstUpperY = upperLastY - (kChromeUpperCount - 1) * step;
-    const qreal preferTop = minY + btn * 0.5 + 4.0;
-    if (preferTop + (kChromeUpperCount - 1) * step <= upperLastY) {
-        firstUpperY = preferTop;
+    // Lower group: prefer flush with the bottom-right corner when it fits below
+    // the reserved band; otherwise pack against the band from below.
+    const qreal edgeLen = distAlong(g.br + g.outRight * colOffset);
+    const qreal preferBottomFirst = edgeLen - ((kChromeLowerCount - 1) * step + btn * 0.5 + 4.0);
+    qreal firstLower = preferBottomFirst;
+    if (preferBottomFirst < lowerFirstAlong) {
+        firstLower = lowerFirstAlong;
     }
 
     for (int i = 0; i < kChromeUpperCount; ++i) {
-        outCenters[i] = QPointF(colX, firstUpperY + i * step);
+        outCenters[i] = colBase + along * (firstUpper + i * step);
     }
     for (int i = 0; i < kChromeLowerCount; ++i) {
-        outCenters[kChromeUpperCount + i] = QPointF(colX, lowerFirstY + i * step);
+        outCenters[kChromeUpperCount + i] = colBase + along * (firstLower + i * step);
     }
 }
 

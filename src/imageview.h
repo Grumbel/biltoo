@@ -316,6 +316,9 @@ public:
 
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
+    /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
+    void commitItemSessionEdit(ImageItem *item);
+    QImage sessionAppearanceImage(const ImageItem *item) const;
 
     QString statusText() const;
     /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */
@@ -474,9 +477,6 @@ private:
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void rememberItemState(ImageItem *item);
-    /** Persist session state and refresh filmstrip for this item. */
-    void commitItemSessionEdit(ImageItem *item);
-    QImage sessionAppearanceImage(const ImageItem *item) const;
     /** Detach from view state, remove from scene, delete. Safe against drag/handle ptrs. */
     void destroyCanvasItem(ImageItem *item);
     /** Expand sceneRect around free-form items so pan/scrollbars have range. */
