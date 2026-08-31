@@ -599,7 +599,7 @@ void MainWindow::showKeyboardShortcuts()
         "F / F11 — fullscreen<br/>"
         "H — toggle HUD<br/>"
         "Ctrl+0 — zoom 1:1 · Ctrl++ / Ctrl+- — zoom<br/>"
-        "Ctrl+F — fill · Fit action — fit to window<br/>"
+        "Ctrl+F — fill · Fit — fit to window · Z — zoom to region<br/>"
         "Ctrl+T — toolbar · Ctrl+E — metadata</p>"
         "<p><b>Image</b><br/>"
         "R / Ctrl+R — rotate right · Ctrl+L — rotate left<br/>"

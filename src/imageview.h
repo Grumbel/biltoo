@@ -133,6 +133,13 @@ public:
     void zoomFit();
     /** Cover the viewport (may crop); uses KeepAspectRatioByExpanding. */
     void zoomFill();
+    /**
+     * One-shot rubber-band zoom: next left-drag selects a region to zoom into.
+     * Esc cancels. Bound to Z from the main window.
+     */
+    void armZoomRegion();
+    void cancelZoomRegion();
+    bool zoomRegionArmed() const { return m_zoomRegionArmed; }
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
     void rotateLeft();
@@ -442,6 +449,11 @@ private:
 
     QPoint m_lastMousePos;
     bool m_panning = false;
+    /** One-shot rubber-band zoom (Z): armed until drag completes or Esc. */
+    bool m_zoomRegionArmed = false;
+    bool m_zoomRegionDragging = false;
+    QPoint m_zoomRegionOrigin;
+    class QRubberBand *m_zoomRubberBand = nullptr;
 
     bool m_rotating = false;
     ImageItem *m_rotateItem = nullptr;

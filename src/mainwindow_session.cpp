@@ -682,7 +682,8 @@ void MainWindow::updateNavigationActions()
     // Zoom: Image / Workspace with content; Image with files loading also OK
     const bool canZoom = hasItem
                          || (m_imageView && m_imageView->isImageMode() && hasFiles);
-    for (QAction *act : {m_zoomInAct, m_zoomOutAct, m_zoom1to1Act, m_zoomFitAct, m_zoomFillAct}) {
+    for (QAction *act : {m_zoomInAct, m_zoomOutAct, m_zoom1to1Act, m_zoomFitAct, m_zoomFillAct,
+                         m_zoomRegionAct}) {
         if (act) {
             act->setEnabled(canZoom);
         }

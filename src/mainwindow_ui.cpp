@@ -65,6 +65,16 @@ void MainWindow::createActions()
     m_zoomFillAct->setStatusTip(tr("Fill the window (may crop the image)"));
     connect(m_zoomFillAct, &QAction::triggered, this, &MainWindow::zoomFill);
 
+    m_zoomRegionAct = new QAction(tr("Zoom to &Region…"), this);
+    m_zoomRegionAct->setShortcut(Qt::Key_Z);
+    m_zoomRegionAct->setStatusTip(
+        tr("Drag a rectangle to zoom into that area (one-shot; Esc cancels)"));
+    connect(m_zoomRegionAct, &QAction::triggered, this, [this]() {
+        if (m_imageView) {
+            m_imageView->armZoomRegion();
+        }
+    });
+
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
     // Keyboard F/F11 are QShortcut ApplicationShortcuts in MainWindow so leave
     // fullscreen cannot get stuck when the checkable action and window state
@@ -478,6 +488,7 @@ void MainWindow::createMenus()
     zoomMenu->addAction(m_zoom1to1Act);
     zoomMenu->addAction(m_zoomFitAct);
     zoomMenu->addAction(m_zoomFillAct);
+    zoomMenu->addAction(m_zoomRegionAct);
 
     auto *imageMenu = m_viewMenu->addMenu(tr("&Image"));
     imageMenu->addAction(m_rotateLeftAct);

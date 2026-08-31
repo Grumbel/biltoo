@@ -659,6 +659,32 @@ void ImageView::zoomFill()
     }
 }
 
+void ImageView::armZoomRegion()
+{
+    if (m_items.isEmpty() && isImageMode() && m_classicPath.isEmpty()) {
+        return;
+    }
+    cancelZoomRegion();
+    m_zoomRegionArmed = true;
+    setCursor(Qt::CrossCursor);
+    emit statusChanged();
+    viewport()->update();
+}
+
+void ImageView::cancelZoomRegion()
+{
+    m_zoomRegionArmed = false;
+    m_zoomRegionDragging = false;
+    if (m_zoomRubberBand) {
+        m_zoomRubberBand->hide();
+    }
+    if (!m_panning && !m_rotating) {
+        setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+    }
+    emit statusChanged();
+}
+
+
 void ImageView::flipHorizontal()
 {
     const QList<ImageItem *> targets = transformTargets();
@@ -1200,6 +1226,9 @@ QString ImageView::hudFileName() const
 
 QString ImageView::statusText() const
 {
+    if (m_zoomRegionArmed || m_zoomRegionDragging) {
+        return tr("Zoom region: drag a rectangle · Esc cancels");
+    }
     // Technical status only (no index badge, no bare filename — those live in
     // dedicated HUD corners). Used as secondary bottom line when the HUD is pinned.
     ImageItem *item = targetItem();

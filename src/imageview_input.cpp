@@ -30,6 +30,7 @@
 #include <QMimeData>
 #include <QUrl>
 #include <QWheelEvent>
+#include <QRubberBand>
 #include <QtMath>
 #include <cmath>
 #include <algorithm>
@@ -598,6 +599,19 @@ void ImageView::resizeEvent(QResizeEvent *event)
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
+    // One-shot rubber-band zoom (Z): capture the region before other tools.
+    if (m_zoomRegionArmed && event->button() == Qt::LeftButton) {
+        m_zoomRegionDragging = true;
+        m_zoomRegionOrigin = event->pos();
+        if (!m_zoomRubberBand) {
+            m_zoomRubberBand = new QRubberBand(QRubberBand::Rectangle, viewport());
+        }
+        m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, QSize()));
+        m_zoomRubberBand->show();
+        event->accept();
+        return;
+    }
+
     // Workspace chrome hit-testing is view-owned (DOMAIN: free-object transforms).
     // ImageItem::paint draws chrome in device pixels; shape() alone can miss those
     // controls under rotation / anisotropic scale. This path is authoritative;
@@ -834,6 +848,12 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_zoomRegionDragging && m_zoomRubberBand) {
+        m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, event->pos()).normalized());
+        event->accept();
+        return;
+    }
+
     updateMouseInfo(event->pos());
 
     if (m_handleDragItem && m_handleDragItem->hasActiveHandle()) {
@@ -959,6 +979,26 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_zoomRegionDragging) {
+        const QRect viewRect = QRect(m_zoomRegionOrigin, event->pos()).normalized();
+        m_zoomRegionDragging = false;
+        if (m_zoomRubberBand) {
+            m_zoomRubberBand->hide();
+        }
+        // Ignore tiny clicks — treat as cancel rather than extreme zoom.
+        if (viewRect.width() >= 8 && viewRect.height() >= 8) {
+            const QRectF sceneRect = mapToScene(viewRect).boundingRect();
+            if (sceneRect.isValid() && !sceneRect.isEmpty()) {
+                m_fitMode = false;
+                m_fillMode = false;
+                fitInView(sceneRect, Qt::KeepAspectRatio);
+                emit statusChanged();
+            }
+        }
+        cancelZoomRegion();
+        event->accept();
+        return;
+    }
     if (m_handleDragItem && event->button() == Qt::LeftButton) {
         m_handleDragItem->endHandleInteraction();
         const WorkspaceItemState after = captureState(m_handleDragItem);
@@ -1075,6 +1115,12 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
 
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
+    if (event->key() == Qt::Key_Escape && (m_zoomRegionArmed || m_zoomRegionDragging)) {
+        cancelZoomRegion();
+        event->accept();
+        return;
+    }
+
     // Image mode: Left/Right (and friends) navigate the session. QGraphicsView
     // would otherwise scroll the viewport when the image is zoomed or the view
     // has focus (typical in fullscreen), swallowing the QAction shortcuts.
