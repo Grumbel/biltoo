@@ -40,7 +40,7 @@ A classic desktop image viewer with three ways to look at a session on one canva
 
 **General**
 
-- Print and print preview (File menu); Workspace **Print Page Guide** (View) shows a paper frame to arrange images for the page
+- **Page Setup**, Print, Print Preview, and **Export PDF** (File); Workspace **Print Page Guide** (View) matches the app page size
 - Fullscreen, on-canvas HUD, configurable background (solid or checkerboard)
 - Metadata side panel (file info; colour/structure extras when available)
 - Preferences for slideshow, start mode, thumbnails, and default applications

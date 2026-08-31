@@ -74,6 +74,8 @@ public:
     void slideshowSlower();
     void printDocument();
     void printPreview();
+    void pageSetup();
+    void exportPdf();
     void togglePageGuide();
 
 protected:
@@ -239,6 +241,8 @@ private:
     QAction *m_quitAct = nullptr;
     QAction *m_printAct = nullptr;
     QAction *m_printPreviewAct = nullptr;
+    QAction *m_pageSetupAct = nullptr;
+    QAction *m_exportPdfAct = nullptr;
     QAction *m_pageGuideAct = nullptr;
     QAction *m_zoomInAct = nullptr;
     QAction *m_zoomOutAct = nullptr;

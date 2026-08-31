@@ -4,8 +4,10 @@
 #include "mainwindow.h"
 #include "imageview.h"
 
+#include <QFileDialog>
 #include <QGuiApplication>
 #include <QPainter>
+#include <QPageSetupDialog>
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
@@ -13,6 +15,7 @@
 #include <QPageSize>
 #include <QSettings>
 #include <QScreen>
+#include <QMessageBox>
 
 namespace {
 
@@ -47,8 +50,7 @@ void loadPrintSettings(QPrinter *printer)
         layout.setOrientation(static_cast<QPageLayout::Orientation>(orient));
     }
 
-    // Paint the whole sheet so the Workspace page guide matches the print
-    // mapping 1:1 (no margin-only rescaling).
+    // Whole sheet: matches Workspace page guide 1:1.
     layout.setMode(QPageLayout::FullPageMode);
     printer->setPageLayout(layout);
     printer->setFullPage(true);
@@ -88,12 +90,19 @@ void preparePrinter(QPrinter *printer)
     printer->setFullPage(true);
 }
 
+void syncPageGuide(ImageView *view, QPrinter *printer)
+{
+    if (!view || !printer) {
+        return;
+    }
+    view->setPageGuideFromPrinter(*printer);
+}
+
 void renderViewToPrinter(ImageView *view, QPrinter *printer)
 {
     if (!view || !printer) {
         return;
     }
-    // Ensure full-page coordinates match the guide (full sheet).
     QPageLayout layout = printer->pageLayout();
     layout.setMode(QPageLayout::FullPageMode);
     printer->setPageLayout(layout);
@@ -117,6 +126,23 @@ void renderViewToPrinter(ImageView *view, QPrinter *printer)
 
 } // namespace
 
+void MainWindow::pageSetup()
+{
+    QPrinter printer(QPrinter::HighResolution);
+    preparePrinter(&printer);
+
+    QPageSetupDialog dialog(&printer, this);
+    dialog.setWindowTitle(tr("Page Setup"));
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+    savePrintSettings(&printer);
+    preparePrinter(&printer);
+    if (m_imageView) {
+        syncPageGuide(m_imageView, &printer);
+    }
+}
+
 void MainWindow::printDocument()
 {
     if (!m_imageView) {
@@ -125,16 +151,21 @@ void MainWindow::printDocument()
 
     QPrinter printer(QPrinter::HighResolution);
     preparePrinter(&printer);
-    m_imageView->setPageGuideFromPrinter(printer);
+    syncPageGuide(m_imageView, &printer);
 
     QPrintDialog dialog(&printer, this);
     dialog.setWindowTitle(tr("Print"));
+    // Page size for physical devices is often forced by the driver/tray.
+    // App paper size is still applied; use Export PDF for a guaranteed size.
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
+    // Keep *our* page size as the document layout even if the dialog changed
+    // the destination device — re-apply saved setup, then only honour
+    // destination-related changes from the dialog by saving after.
     savePrintSettings(&printer);
-    preparePrinter(&printer); // re-assert FullPageMode after dialog
-    m_imageView->setPageGuideFromPrinter(printer);
+    preparePrinter(&printer);
+    syncPageGuide(m_imageView, &printer);
     renderViewToPrinter(m_imageView, &printer);
 }
 
@@ -146,7 +177,7 @@ void MainWindow::printPreview()
 
     QPrinter printer(QPrinter::HighResolution);
     preparePrinter(&printer);
-    m_imageView->setPageGuideFromPrinter(printer);
+    syncPageGuide(m_imageView, &printer);
 
     QPrintPreviewDialog preview(&printer, this);
     preview.setWindowTitle(tr("Print Preview"));
@@ -162,18 +193,45 @@ void MainWindow::printPreview()
                 if (!m_imageView || !p) {
                     return;
                 }
-                // Preview may change page size/orientation; keep full-page mode
-                // and refresh the on-canvas guide to match.
+                // Preview may edit layout; treat that as the new app page setup.
                 QPageLayout layout = p->pageLayout();
                 layout.setMode(QPageLayout::FullPageMode);
                 p->setPageLayout(layout);
                 p->setFullPage(true);
-                m_imageView->setPageGuideFromPrinter(*p);
+                savePrintSettings(p);
+                syncPageGuide(m_imageView, p);
                 renderViewToPrinter(m_imageView, p);
             });
     preview.exec();
     savePrintSettings(&printer);
-    m_imageView->setPageGuideFromPrinter(printer);
+    syncPageGuide(m_imageView, &printer);
+}
+
+void MainWindow::exportPdf()
+{
+    if (!m_imageView) {
+        return;
+    }
+
+    const QString path = QFileDialog::getSaveFileName(
+        this,
+        tr("Export PDF"),
+        QString(),
+        tr("PDF files (*.pdf)"));
+    if (path.isEmpty()) {
+        return;
+    }
+
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(path);
+    preparePrinter(&printer);
+    syncPageGuide(m_imageView, &printer);
+    renderViewToPrinter(m_imageView, &printer);
+
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Exported PDF: %1").arg(path), 5000);
+    }
 }
 
 void MainWindow::togglePageGuide()
@@ -185,7 +243,7 @@ void MainWindow::togglePageGuide()
     if (on) {
         QPrinter printer(QPrinter::HighResolution);
         preparePrinter(&printer);
-        m_imageView->setPageGuideFromPrinter(printer);
+        syncPageGuide(m_imageView, &printer);
     }
     m_imageView->setPageGuideVisible(on);
 }

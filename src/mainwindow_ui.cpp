@@ -40,6 +40,16 @@ void MainWindow::createActions()
     m_printPreviewAct->setStatusTip(tr("Preview how the page will print"));
     connect(m_printPreviewAct, &QAction::triggered, this, &MainWindow::printPreview);
 
+    m_pageSetupAct = new QAction(tr("Page &Setup..."), this);
+    m_pageSetupAct->setStatusTip(
+        tr("Paper size and orientation for the page guide, preview, and PDF export"));
+    connect(m_pageSetupAct, &QAction::triggered, this, &MainWindow::pageSetup);
+
+    m_exportPdfAct = new QAction(tr("Export &PDF..."), this);
+    m_exportPdfAct->setStatusTip(
+        tr("Write a PDF using the app page size (not the physical printer tray)"));
+    connect(m_exportPdfAct, &QAction::triggered, this, &MainWindow::exportPdf);
+
     m_pageGuideAct = new QAction(tr("Print &Page Guide"), this);
     m_pageGuideAct->setCheckable(true);
     m_pageGuideAct->setStatusTip(
@@ -484,6 +494,8 @@ void MainWindow::createMenus()
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_printAct);
     m_fileMenu->addAction(m_printPreviewAct);
+    m_fileMenu->addAction(m_pageSetupAct);
+    m_fileMenu->addAction(m_exportPdfAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 
