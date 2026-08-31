@@ -2009,6 +2009,14 @@ QString ImageView::statusText() const
         if (item->itemOpacity() < 0.999) {
             text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
         }
+        {
+            const auto it = m_itemStates.constFind(item->path());
+            if (it != m_itemStates.cend() && it->hasCrop && !it->cropRect.isEmpty()) {
+                text += tr("  |  Cropped: %1×%2")
+                            .arg(it->cropRect.width())
+                            .arg(it->cropRect.height());
+            }
+        }
         return text;
     }
 
@@ -2030,6 +2038,15 @@ QString ImageView::statusText() const
     }
     if (item->itemOpacity() < 0.999) {
         text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
+    }
+    {
+        const auto it = m_itemStates.constFind(item->path());
+        if (it != m_itemStates.cend() && it->hasCrop && !it->cropRect.isEmpty()) {
+            // cropRect is original-space size of the kept region.
+            text += tr("  |  Cropped: %1×%2")
+                        .arg(it->cropRect.width())
+                        .arg(it->cropRect.height());
+        }
     }
     return text;
 }
