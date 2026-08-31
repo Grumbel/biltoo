@@ -305,7 +305,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 return;
             }
             // Never inherit Gallery/Workspace placement or scale.
-            // DOMAIN: user rotation/flips/crop persist across navigation (AUDIT H6).
+            // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
+            // Arbitrary Workspace rotation stays on the free-form item only.
             // Crop was applied in createItemFromImage from m_itemStates.
             item->setInteractive(false);
             item->setScaleHandlesEnabled(false);
@@ -314,7 +315,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             {
                 const auto it = m_itemStates.constFind(path);
                 if (it != m_itemStates.cend()) {
-                    item->setItemRotation(it->rotation);
+                    item->setItemRotation(cardinalRotationOrZero(it->rotation));
                     item->setItemHFlip(it->hFlip);
                     item->setItemVFlip(it->vFlip);
                 } else {
