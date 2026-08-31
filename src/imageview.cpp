@@ -463,26 +463,6 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     }
 }
 
-void ImageView::clearExtras()
-{
-    if (m_items.size() <= 1) {
-        return;
-    }
-    ImageItem *keep = m_items.first();
-    for (int i = m_items.size() - 1; i >= 1; --i) {
-        destroyCanvasItem(m_items.at(i));
-    }
-    m_scene->clearSelection();
-    if (isMultiItemMode()) {
-        keep->setSelected(true);
-    }
-    m_fitMode = true;
-    fitItem(keep, currentFitAspectMode());
-    m_undoStack->clear();
-    emit statusChanged();
-    emit workspacePathsChanged();
-}
-
 void ImageView::setTool(Tool tool)
 {
     if (m_tool == tool) {

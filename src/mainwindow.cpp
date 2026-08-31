@@ -396,11 +396,6 @@ void MainWindow::openSelectionInNewWindow()
     window->loadFiles(paths);
 }
 
-void MainWindow::clearWorkspaceExtras()
-{
-    m_imageView->clearExtras();
-}
-
 void MainWindow::toggleWorkspaceMode()
 {
     const bool on = m_workspaceModeAct->isChecked();

@@ -310,13 +310,14 @@ void MainWindow::updateWorkspaceActionVisibility()
         m_layoutFreeFormAct->setVisible(false);
         m_layoutFreeFormAct->setEnabled(false);
     }
-    // Free-form Workspace tools only (never in Gallery)
+    // Workspace tools: keep menu entries stable; grey out outside Workspace.
+    // (Hiding them made the Workspace menu appear to grow/shrink with mode.)
     for (QAction *act : {m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
                          m_resetScaleAct, m_resetRotationAct, m_duplicateAct,
-                         m_clearExtrasAct, m_selectToolAct, m_panToolAct}) {
+                         m_selectToolAct, m_panToolAct}) {
         if (act) {
-            act->setVisible(workspace);
+            act->setVisible(true);
             act->setEnabled(workspace);
         }
     }

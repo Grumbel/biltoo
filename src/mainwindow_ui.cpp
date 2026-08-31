@@ -321,12 +321,6 @@ void MainWindow::createActions()
     connect(m_openSelectionNewWindowAct, &QAction::triggered,
             this, &MainWindow::openSelectionInNewWindow);
 
-    m_clearExtrasAct = new QAction(tr("Clear Workspace &Extras"), this);
-    m_clearExtrasAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_W);
-    m_clearExtrasAct->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
-    m_clearExtrasAct->setStatusTip(tr("Remove comparison images; keep the primary image"));
-    connect(m_clearExtrasAct, &QAction::triggered, this, &MainWindow::clearWorkspaceExtras);
-
     m_sortNameAct = new QAction(tr("Sort by &Name"), this);
     m_sortNameAct->setCheckable(true);
     m_sortNameAct->setChecked(true);
@@ -545,8 +539,6 @@ void MainWindow::createMenus()
     workspaceMenu->addAction(m_resetScaleAct);
     workspaceMenu->addAction(m_resetRotationAct);
     workspaceMenu->addAction(m_duplicateAct);
-    workspaceMenu->addSeparator();
-    workspaceMenu->addAction(m_clearExtrasAct);
 
     m_goMenu = menuBar()->addMenu(tr("&Go"));
     m_goMenu->addAction(m_firstAct);

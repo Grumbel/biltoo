@@ -104,7 +104,6 @@ private slots:
     void setLayoutMasonryRows();
     void openGalleryItemInImageMode(const QString &path);
     void returnToGallery();
-    void clearWorkspaceExtras();
     void opacityReset();
     void resetItemScale();
     void resetItemRotation();
@@ -265,7 +264,6 @@ private:
     QAction *m_masonryCountAction = nullptr;
     QSpinBox *m_masonryCountSpin = nullptr;
     QLabel *m_masonryCountLabel = nullptr;
-    QAction *m_clearExtrasAct = nullptr;
     bool m_galleryReturnActive = false;
     bool m_thumbsHiddenForGallery = false;
     bool m_thumbsVisibleBeforeGallery = false;

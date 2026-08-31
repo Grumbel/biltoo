@@ -93,7 +93,6 @@ public:
     /** @deprecated Alias for isWorkspaceMode(). */
     bool workspaceMode() const { return isWorkspaceMode(); }
 
-    void clearExtras();
 
     /**
      * Enable left/right edge navigation affordances in Image mode.
