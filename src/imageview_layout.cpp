@@ -1366,6 +1366,43 @@ QList<int> ImageView::selectedSessionIndices() const
     return out;
 }
 
+void ImageView::rebindWorkspaceSessionIndices(const QStringList &sessionFiles)
+{
+    if (sessionFiles.isEmpty()) {
+        for (ImageItem *item : m_items) {
+            item->setSessionIndex(-1);
+        }
+        return;
+    }
+
+    QSet<int> used;
+    // Keep valid unique bindings (index in range and path matches).
+    for (ImageItem *item : m_items) {
+        const int si = item->sessionIndex();
+        if (si >= 0 && si < sessionFiles.size()
+            && sessionFiles.at(si) == item->path() && !used.contains(si)) {
+            used.insert(si);
+        } else {
+            item->setSessionIndex(-1);
+        }
+    }
+
+    // Assign free slots to unbound items with the same path (occurrence order).
+    for (int i = 0; i < sessionFiles.size(); ++i) {
+        if (used.contains(i)) {
+            continue;
+        }
+        const QString &path = sessionFiles.at(i);
+        for (ImageItem *item : m_items) {
+            if (item->sessionIndex() < 0 && item->path() == path) {
+                item->setSessionIndex(i);
+                used.insert(i);
+                break;
+            }
+        }
+    }
+}
+
 
 ImageItem *ImageView::primaryItem() const
 {

@@ -198,8 +198,8 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
     if (index < 0 || index >= m_files.size()) {
         return;
     }
-    m_imageView->addImage(m_files.at(index));
-    syncThumbnailWorkspaceSelection();
+    m_imageView->addImageForSession(m_files.at(index), index);
+    syncThumbnailCanvasMembership();
 }
 
 void MainWindow::onThumbnailWorkspaceSelectionChanged()
@@ -291,6 +291,8 @@ void MainWindow::syncThumbnailCanvasMembership()
     if (!m_thumbnailBar || !m_imageView) {
         return;
     }
+    // Ensure every on-canvas item is tied to a session row (badges + shared selection).
+    m_imageView->rebindWorkspaceSessionIndices(m_files);
     m_thumbnailBar->setOnCanvasIndices(m_imageView->workspaceSessionIndices());
 }
 

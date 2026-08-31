@@ -85,6 +85,11 @@ public:
     QSet<int> workspaceSessionIndices() const;
     QList<int> selectedSessionIndices() const;
     void selectBySessionIndices(const QList<int> &indices);
+    /**
+     * Assign sessionIndex on canvas items from @p sessionFiles order.
+     * Matches by path occurrence so duplicates and older unbound items work.
+     */
+    void rebindWorkspaceSessionIndices(const QStringList &sessionFiles);
     void clearWorkspace();
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
