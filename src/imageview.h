@@ -623,6 +623,9 @@ private:
     bool m_cropMode = false;
     /** True while crop mode shows the full on-disk image (not the cropped pixmap). */
     bool m_cropShowingFullImage = false;
+    /** Workspace free-rotate stashed while crop runs axis-aligned. */
+    qreal m_cropStashedPlacementRotation = 0.0;
+    bool m_cropHadStashedPlacement = false;
     /** Draft crop in crop-target item local coordinates (contentRect space). */
     QRectF m_cropRect;
     CropHandle m_cropActiveHandle = CropHandle::None;

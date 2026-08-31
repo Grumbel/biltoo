@@ -867,7 +867,19 @@ void ImageView::setCropMode(bool on)
             return;
         }
         cancelZoomRegion();
+        // Crop handles are axis-aligned in item space; free Workspace placement
+        // rotation makes rubber-band and edge grips unusable. Unrotate for the
+        // crop session and restore on exit.
+        m_cropStashedPlacementRotation = item->itemRotation();
+        m_cropHadStashedPlacement = qAbs(m_cropStashedPlacementRotation) > 0.05;
+        if (m_cropHadStashedPlacement) {
+            item->setItemRotation(0.0);
+        }
         if (!prepareCropModeFullImage(item)) {
+            if (m_cropHadStashedPlacement) {
+                item->setItemRotation(m_cropStashedPlacementRotation);
+            }
+            m_cropHadStashedPlacement = false;
             flashHud(tr("Crop"), tr("Could not load full image"));
             return;
         }
@@ -875,7 +887,10 @@ void ImageView::setCropMode(bool on)
         m_cropActiveHandle = CropHandle::None;
         m_cropHoverHandle = CropHandle::None;
         m_cropRubberBanding = false;
-        flashHud(tr("Crop mode"), tr("Handles · Reset · Apply · Esc"));
+        flashHud(tr("Crop mode"),
+                 m_cropHadStashedPlacement
+                     ? tr("Unrotated for crop · Handles · Apply · Esc")
+                     : tr("Handles · Reset · Apply · Esc"));
         emit cropModeChanged(true);
         emit statusChanged();
         viewport()->update();
@@ -911,12 +926,8 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     }
 
     item->setSourceImage(full);
-    // Content 90°/flip live in pixels; placement angle only on Workspace.
-    if (isImageMode()) {
-        item->setItemRotation(0.0);
-    } else {
-        item->setItemRotation(item->itemRotation()); // keep free placement
-    }
+    // Always axis-aligned while cropping (placement was stashed in setCropMode).
+    item->setItemRotation(0.0);
     item->setItemHFlip(false);
     item->setItemVFlip(false);
     {
@@ -1129,6 +1140,12 @@ void ImageView::leaveCropModeInternal(bool apply)
         // Esc / toggle off: put the previous session crop back on the canvas.
         restoreSessionCropAppearance(item);
     }
+    // Restore Workspace free placement rotation after crop UI.
+    if (item && m_cropHadStashedPlacement) {
+        item->setItemRotation(m_cropStashedPlacementRotation);
+    }
+    m_cropHadStashedPlacement = false;
+    m_cropStashedPlacementRotation = 0.0;
     m_cropMode = false;
     m_cropShowingFullImage = false;
     m_cropRect = QRectF();
