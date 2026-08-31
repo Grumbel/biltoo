@@ -913,29 +913,52 @@ void ImageView::rotateRight()
 
 namespace {
 
-/** Scene polygons of the image content (rotation-aware), not AABB alone. */
+/** Overlap for stacking: scene AABB of content (rotation expands the box). */
 bool contentOverlaps(const ImageItem *a, const ImageItem *b)
 {
     if (!a || !b || a == b) {
         return false;
+    }
+    // Prefer AABB so partial / edge overlaps still count as a stack step.
+    // Polygon-only tests were missing some overlaps and made Raise jump.
+    if (a->contentSceneRect().intersects(b->contentSceneRect())) {
+        return true;
     }
     const QPolygonF pa = a->contentScenePolygon();
     const QPolygonF pb = b->contentScenePolygon();
     if (pa.isEmpty() || pb.isEmpty()) {
         return false;
     }
-    // Intersection of transformed content quads (rotation-aware). AABB alone
-    // misses some diagonal overlaps and is a poor proxy for "covering".
     if (pa.intersects(pb)) {
         return true;
     }
-    // Contains checks: a small item fully inside a large one can fail
-    // QPolygonF::intersects on some Qt builds when edges do not cross.
     if (pb.containsPoint(pa.boundingRect().center(), Qt::OddEvenFill)
         || pa.containsPoint(pb.boundingRect().center(), Qt::OddEvenFill)) {
         return true;
     }
     return false;
+}
+
+/** Overlapping stack including @p item, sorted bottom → top (stable on ties). */
+QList<ImageItem *> overlappingStack(ImageItem *item, const QList<ImageItem *> &all)
+{
+    QList<ImageItem *> layer;
+    if (!item) {
+        return layer;
+    }
+    layer.append(item);
+    for (ImageItem *other : all) {
+        if (other && other != item && contentOverlaps(item, other)) {
+            layer.append(other);
+        }
+    }
+    std::sort(layer.begin(), layer.end(), [](ImageItem *a, ImageItem *b) {
+        if (!qFuzzyCompare(a->stackZ(), b->stackZ())) {
+            return a->stackZ() < b->stackZ();
+        }
+        return a < b;
+    });
+    return layer;
 }
 
 } // namespace
@@ -945,25 +968,23 @@ void ImageView::raiseItem(ImageItem *item)
     if (!item || !isWorkspaceMode() || m_items.size() < 2) {
         return;
     }
-    // One step up: among overlapping neighbours at the same z or above, take
-    // the lowest and place just above it. Equal z must count — otherwise two
-    // images that share a stack level never respond to Raise/Lower.
-    ImageItem *cover = nullptr;
-    for (ImageItem *other : m_items) {
-        if (!contentOverlaps(item, other)) {
-            continue;
-        }
-        if (other->stackZ() < item->stackZ()) {
-            continue;
-        }
-        if (!cover || other->stackZ() < cover->stackZ()) {
-            cover = other;
-        }
+    // One step: swap z with the next higher overlapping neighbour. Setting
+    // z = cover.z+1 skipped intermediates when z values were sparse (e.g. 1→3
+    // while 2 was an overlapping neighbour already at 3-epsilon).
+    const QList<ImageItem *> layer = overlappingStack(item, m_items);
+    const int idx = layer.indexOf(item);
+    if (idx < 0 || idx + 1 >= layer.size()) {
+        return; // already top among overlapping
     }
-    if (!cover) {
-        return; // already strictly above every overlapping neighbour
+    ImageItem *above = layer.at(idx + 1);
+    const qreal za = item->stackZ();
+    const qreal zb = above->stackZ();
+    if (qFuzzyCompare(za, zb)) {
+        item->setStackZ(zb + 1.0);
+    } else {
+        item->setStackZ(zb);
+        above->setStackZ(za);
     }
-    item->setStackZ(cover->stackZ() + 1.0);
     emit statusChanged();
 }
 
@@ -972,24 +993,20 @@ void ImageView::lowerItem(ImageItem *item)
     if (!item || !isWorkspaceMode() || m_items.size() < 2) {
         return;
     }
-    // One step down: among overlapping neighbours at the same z or below, take
-    // the highest and place just under it (equal z included; see raiseItem).
-    ImageItem *under = nullptr;
-    for (ImageItem *other : m_items) {
-        if (!contentOverlaps(item, other)) {
-            continue;
-        }
-        if (other->stackZ() > item->stackZ()) {
-            continue;
-        }
-        if (!under || other->stackZ() > under->stackZ()) {
-            under = other;
-        }
+    const QList<ImageItem *> layer = overlappingStack(item, m_items);
+    const int idx = layer.indexOf(item);
+    if (idx <= 0) {
+        return; // already bottom among overlapping
     }
-    if (!under) {
-        return; // already strictly below every overlapping neighbour
+    ImageItem *below = layer.at(idx - 1);
+    const qreal za = item->stackZ();
+    const qreal zb = below->stackZ();
+    if (qFuzzyCompare(za, zb)) {
+        item->setStackZ(zb - 1.0);
+    } else {
+        item->setStackZ(zb);
+        below->setStackZ(za);
     }
-    item->setStackZ(under->stackZ() - 1.0);
     emit statusChanged();
 }
 
