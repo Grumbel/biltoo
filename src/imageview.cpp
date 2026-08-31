@@ -11,6 +11,7 @@
 
 #include <QApplication>
 #include <QFileInfo>
+#include <QImageReader>
 #include <QFont>
 #include <QFontMetrics>
 #include <QKeyEvent>
@@ -98,11 +99,17 @@ ImageView::ImageView(QWidget *parent)
             updateGalleryHoverAt(m_lastHoverViewPos);
         }
     };
-    connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [refreshHover](int) {
+    connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
+        if (isGalleryMode()) {
+            updateGalleryDecodeWindow();
+        }
     });
-    connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [refreshHover](int) {
+    connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
+        if (isGalleryMode()) {
+            updateGalleryDecodeWindow();
+        }
     });
 }
 
@@ -118,6 +125,32 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     m_scene->addItem(item);
     m_items.append(item);
     return item;
+}
+
+ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
+{
+    auto *item = new ImageItem(path, intrinsicSize);
+    applyItemModeFlags(item);
+    m_scene->addItem(item);
+    m_items.append(item);
+    return item;
+}
+
+QSize ImageView::probeImageSize(const QString &path) const
+{
+    QImageReader reader(path);
+    QSize s = reader.size();
+    if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
+        // Some formats need a partial read; avoid full decode here — 1×1 packs.
+        s = QSize(1, 1);
+    }
+    return s;
+}
+
+int ImageView::pendingDecodeCount() const
+{
+    return m_pendingWorkspacePaths.size() + m_pendingRestoreStates.size()
+           + m_galleryDecodeScheduled.size();
 }
 
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
@@ -136,6 +169,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     if (role == LoadReplace) {
         gen = ++m_loadGeneration;
     }
+    emit statusChanged(); // pending count for status bar
     QThreadPool::globalInstance()->start([this, path, role, gen]() {
         const QImage image = ImageLoader::load(path);
         QMetaObject::invokeMethod(this, "onImageLoaded", Qt::QueuedConnection,
@@ -143,6 +177,33 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                                   Q_ARG(QImage, image),
                                   Q_ARG(quint64, gen),
                                   Q_ARG(int, static_cast<int>(role)));
+    });
+}
+
+void ImageView::scheduleGalleryDecode(const QString &path)
+{
+    if (path.isEmpty() || m_galleryDecodeScheduled.contains(path)
+        || m_pendingWorkspacePaths.contains(path)) {
+        return;
+    }
+    ImageItem *item = findItemByPath(path);
+    if (item && item->hasDecodedPixels()) {
+        return;
+    }
+    if (m_galleryDecodeScheduled.size() >= kMaxConcurrentGalleryDecodes) {
+        return;
+    }
+    m_galleryDecodeScheduled.insert(path);
+    m_pendingWorkspacePaths.insert(path); // so status counts it
+    emit statusChanged();
+    const quint64 gen = m_loadGeneration.load();
+    QThreadPool::globalInstance()->start([this, path, gen]() {
+        const QImage image = ImageLoader::load(path);
+        QMetaObject::invokeMethod(this, "onImageLoaded", Qt::QueuedConnection,
+                                  Q_ARG(QString, path),
+                                  Q_ARG(QImage, image),
+                                  Q_ARG(quint64, gen),
+                                  Q_ARG(int, static_cast<int>(LoadAdd)));
     });
 }
 
@@ -247,17 +308,41 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         return;
     }
 
-    // LoadAdd: one canvas object per path from session/thumb sync
+    // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window
+    m_galleryDecodeScheduled.remove(path);
     if (!m_pendingWorkspacePaths.contains(path)) {
+        // May still be a scheduled gallery decode that was cancelled
+        emit statusChanged();
         return;
     }
     m_pendingWorkspacePaths.remove(path);
-    if (image.isNull() || findItemByPath(path)) {
+
+    if (ImageItem *existing = findItemByPath(path)) {
+        // Placeholder or re-decode into an existing tile
+        if (!image.isNull()) {
+            existing->setSourceImage(image);
+            if (isGalleryMode()) {
+                // Geometry already packed from intrinsic size; only refresh paint.
+                existing->update();
+            } else if (m_layoutMode != LayoutMode::FreeForm) {
+                applyLayout();
+            }
+        }
+        emit statusChanged();
+        if (isGalleryMode()) {
+            updateGalleryDecodeWindow();
+        }
+        return;
+    }
+
+    if (image.isNull()) {
+        emit statusChanged();
         return;
     }
 
     ImageItem *item = createItemFromImage(path, image);
     if (!item) {
+        emit statusChanged();
         return;
     }
     // Flags already match ViewMode via createItemFromImage / applyItemModeFlags.
@@ -277,7 +362,6 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             applyState(item, *it);
         } else {
             WorkspaceItemState s = defaultStateForPath(path, m_items.size() - 1);
-            // Prefer non-overlapping placement using the decoded size
             const QSizeF sz(image.width(), image.height());
             s.pos = findEmptyPlacement(sz);
             applyState(item, s);
@@ -294,6 +378,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     }
     emit statusChanged();
     emit workspacePathsChanged();
+    if (isGalleryMode()) {
+        updateGalleryDecodeWindow();
+    }
 }
 
 void ImageView::clearExtras()
@@ -1125,6 +1212,10 @@ QString ImageView::statusText() const
                            .arg(qRound(viewScale() * 100))
                            .arg(item->imageSize().width())
                            .arg(item->imageSize().height());
+        const int pending = pendingDecodeCount();
+        if (pending > 0) {
+            text += tr("  |  Decoding: %n", "status pending decodes", pending);
+        }
         if (item->isSelected()) {
             if (qAbs(item->itemScaleX() - item->itemScaleY()) < 0.005) {
                 text += tr("  |  Item: %1%  |  Rot: %2°")

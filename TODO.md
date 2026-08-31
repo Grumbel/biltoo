@@ -147,7 +147,7 @@ editor; QImgView stays a **viewer with quick fixes**.
 - [ ] CLI `--workspace` / start-in-workspace still slightly confusing vs Preferences
 - [ ] Drag-load status: show count of images still decoding
 - [ ] AppStream screenshots for Flathub-style stores
-- [ ] Virtualize Gallery when sessions are huge (thousands of tiles)
+- [x] Virtualize Gallery when sessions are huge (viewport decode window + placeholders)
 - [ ] Colour-managed display pipeline (beyond libexiv2 metadata)
 
 ## Done in this series (handles → session UX, 2026-08-30)
@@ -199,6 +199,7 @@ editor; QImgView stays a **viewer with quick fixes**.
 - [x] Pinned HUD: 1px bottom progress line during slideshow dwell
 - [x] Workspace toolbar: Select/Pan only (no Undo/Raise/Duplicate)
 - [x] Context menu: Open Selection in New Window; Duplicate; no Workspace toggle
+- [x] Drag/open decode status: pending image count on status bar + HUD line
 - [x] flake `apps.default` `meta.description`
 - [x] `.desktop` uses `%F` for multiple images
 

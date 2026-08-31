@@ -360,17 +360,25 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
     for (int i = m_items.size() - 1; i >= 0; --i) {
         ImageItem *item = m_items.at(i);
         if (!wanted.contains(item->path())) {
+            m_galleryDecodeScheduled.remove(item->path());
             destroyCanvasItem(item);
         }
     }
 
     m_pathOrder = paths;
 
+    const bool virtualize = isGalleryMode() && paths.size() >= kGalleryVirtualThreshold;
+
     for (const QString &path : paths) {
         if (findItemByPath(path)) {
             continue;
         }
-        scheduleImageLoad(path, LoadAdd);
+        if (virtualize) {
+            // Fast size probe + placeholder; full decode is viewport-windowed.
+            createPlaceholderItem(path, probeImageSize(path));
+        } else {
+            scheduleImageLoad(path, LoadAdd);
+        }
     }
 
     // Keep canvas order aligned with session/sort order (not async load order).
@@ -382,8 +390,57 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
         m_items.last()->setSelected(true);
     }
 
+    if (isGalleryMode() && !m_items.isEmpty()) {
+        applyLayout();
+        updateGalleryDecodeWindow();
+    }
+
     emit statusChanged();
     emit workspacePathsChanged();
+}
+
+void ImageView::updateGalleryDecodeWindow()
+{
+    if (!isGalleryMode() || m_items.isEmpty()) {
+        return;
+    }
+
+    const bool virtualize = m_items.size() >= kGalleryVirtualThreshold
+                            || m_pathOrder.size() >= kGalleryVirtualThreshold;
+    if (!virtualize) {
+        // Small sessions: ensure anything still pending as placeholder gets loaded.
+        for (ImageItem *item : m_items) {
+            if (item && !item->hasDecodedPixels()) {
+                scheduleGalleryDecode(item->path());
+            }
+        }
+        return;
+    }
+
+    const QRect viewRect = viewport()->rect().adjusted(
+        -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
+        kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
+    const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
+
+    // Unload far tiles to bound pixel memory; schedule visible ones.
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        const QRectF tile = item->contentSceneRect();
+        const bool near = tile.isNull() || tile.intersects(sceneVisible);
+        if (near) {
+            if (!item->hasDecodedPixels()) {
+                scheduleGalleryDecode(item->path());
+            }
+        } else if (item->hasDecodedPixels()) {
+            // Keep intrinsic size; free decoded QImage/pixmap.
+            item->clearDecodedPixels();
+            m_galleryDecodeScheduled.remove(item->path());
+            m_pendingWorkspacePaths.remove(item->path());
+        }
+    }
+    emit statusChanged();
 }
 
 
@@ -395,6 +452,7 @@ void ImageView::removeWorkspacePath(const QString &path)
     }
     m_pendingWorkspacePaths.remove(path);
     m_pendingScenePos.remove(path);
+    m_galleryDecodeScheduled.remove(path);
     destroyCanvasItem(item);
     emit statusChanged();
     emit workspacePathsChanged();
@@ -966,5 +1024,6 @@ void ImageView::applyLayout()
     m_applyingLayout = false;
     // Re-apply scroll after centerOn(0,0) above when returning from Image.
     applyPendingGalleryRestore();
+    updateGalleryDecodeWindow();
 }
 

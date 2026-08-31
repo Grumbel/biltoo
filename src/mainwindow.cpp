@@ -713,6 +713,14 @@ void MainWindow::updateStatus()
             statusBar()->showMessage(
                 tr("Could not load “%1”").arg(QFileInfo(err).fileName()), 5000);
         }
+        // Drag/open decode progress (also covers Gallery virtualization window).
+        const int pending = m_imageView->pendingDecodeCount();
+        if (pending > 0 && statusBar()) {
+            statusBar()->showMessage(
+                tr("Decoding %n image…", "decode progress", pending), 0);
+        } else if (statusBar() && statusBar()->currentMessage().startsWith(tr("Decoding "))) {
+            statusBar()->clearMessage();
+        }
     }
     m_statusLabel->setText(m_imageView->statusText());
 }

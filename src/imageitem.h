@@ -49,10 +49,17 @@ public:
 
     explicit ImageItem(const QString &path, const QImage &image,
                        QGraphicsItem *parent = nullptr);
+    /** Placeholder tile (Gallery virtualization) — geometry from @p intrinsicSize. */
+    explicit ImageItem(const QString &path, const QSize &intrinsicSize,
+                       QGraphicsItem *parent = nullptr);
 
     QString path() const { return m_path; }
-    QSize imageSize() const { return m_source.size(); }
+    QSize imageSize() const;
     const QImage &sourceImage() const { return m_source; }
+    bool hasDecodedPixels() const { return !m_source.isNull(); }
+    /** Replace or clear decoded pixels; keeps path and intrinsic size. */
+    void setSourceImage(const QImage &image);
+    void clearDecodedPixels();
 
     /** Uniform scale factor (geometric mean of X/Y); prefer itemScaleX/Y when anisotropic. */
     qreal itemScale() const;
@@ -189,6 +196,8 @@ private:
 
     QString m_path;
     QImage m_source;
+    /** Valid when m_source is null (placeholder) or as size cache. */
+    QSize m_intrinsicSize;
     qreal m_scaleX = 1.0;
     qreal m_scaleY = 1.0;
     qreal m_rotation = 0.0;

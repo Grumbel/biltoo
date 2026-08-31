@@ -21,14 +21,76 @@ ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *pa
     : QGraphicsPixmapItem(parent)
     , m_path(path)
     , m_source(image)
+    , m_intrinsicSize(image.size())
 {
     setTransformationMode(Qt::SmoothTransformation);
     // Classic viewer by default: not selectable/movable until workspace mode
     setFlags(ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
-    setOffset(-image.width() / 2.0, -image.height() / 2.0); // origin at centre
-    updateDisplayedPixmap();
+    if (!m_source.isNull()) {
+        setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+        updateDisplayedPixmap();
+    } else {
+        m_intrinsicSize = QSize(1, 1);
+        setOffset(-0.5, -0.5);
+    }
     applyLocalTransform();
+}
+
+ImageItem::ImageItem(const QString &path, const QSize &intrinsicSize, QGraphicsItem *parent)
+    : QGraphicsPixmapItem(parent)
+    , m_path(path)
+    , m_intrinsicSize(intrinsicSize.isValid() && intrinsicSize.width() > 0
+                           && intrinsicSize.height() > 0
+                       ? intrinsicSize
+                       : QSize(1, 1))
+{
+    setTransformationMode(Qt::SmoothTransformation);
+    setFlags(ItemSendsGeometryChanges);
+    setAcceptHoverEvents(true);
+    setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
+    applyLocalTransform();
+}
+
+QSize ImageItem::imageSize() const
+{
+    if (!m_source.isNull()) {
+        return m_source.size();
+    }
+    return m_intrinsicSize.isValid() ? m_intrinsicSize : QSize(1, 1);
+}
+
+void ImageItem::setSourceImage(const QImage &image)
+{
+    prepareGeometryChange();
+    m_source = image;
+    if (!m_source.isNull()) {
+        m_intrinsicSize = m_source.size();
+        setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+        updateDisplayedPixmap();
+    } else {
+        setPixmap(QPixmap());
+        const QSize s = imageSize();
+        setOffset(-s.width() / 2.0, -s.height() / 2.0);
+    }
+    applyLocalTransform();
+    update();
+}
+
+void ImageItem::clearDecodedPixels()
+{
+    if (m_source.isNull()) {
+        return;
+    }
+    prepareGeometryChange();
+    if (!m_intrinsicSize.isValid() || m_intrinsicSize.isEmpty()) {
+        m_intrinsicSize = m_source.size();
+    }
+    m_source = QImage();
+    setPixmap(QPixmap());
+    const QSize s = imageSize();
+    setOffset(-s.width() / 2.0, -s.height() / 2.0);
+    update();
 }
 
 qreal ImageItem::itemScale() const
@@ -90,7 +152,7 @@ void ImageItem::setStackZ(qreal z)
 
 QRectF ImageItem::contentSceneRect() const
 {
-    return mapToScene(QGraphicsPixmapItem::boundingRect()).boundingRect();
+    return mapToScene(contentRect()).boundingRect();
 }
 
 void ImageItem::refreshStackingOrder()
@@ -188,7 +250,7 @@ QRectF ImageItem::galleryClipLocal() const
     const qreal s = qMax(0.001, qMax(m_scaleX, m_scaleY));
     const qreal lw = m_galleryCellSize.width() / s;
     const qreal lh = m_galleryCellSize.height() / s;
-    const QRectF br = QGraphicsPixmapItem::boundingRect();
+    const QRectF br = contentRect();
     return QRectF(br.center().x() - lw / 2.0,
                   br.center().y() - lh / 2.0,
                   lw, lh);
@@ -259,6 +321,10 @@ QColor ImageItem::colorAtPixel(const QPoint &pixel) const
 
 QRectF ImageItem::contentRect() const
 {
-    return QGraphicsPixmapItem::boundingRect();
+    if (!m_source.isNull() && !pixmap().isNull()) {
+        return QGraphicsPixmapItem::boundingRect();
+    }
+    const QSize s = imageSize();
+    return QRectF(offset(), QSizeF(s));
 }
 

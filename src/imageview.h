@@ -274,6 +274,8 @@ public:
     QStringList itemPaths() const;
     /** Paths of selected canvas items (Gallery/Workspace). Image mode: current path. */
     QStringList selectedPaths() const;
+    /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */
+    int pendingDecodeCount() const;
 
 signals:
     void statusChanged();
@@ -333,6 +335,10 @@ private:
     /** Interactive / gallery / static flags for the current ViewMode. */
     void applyItemModeFlags(ImageItem *item);
     void scheduleImageLoad(const QString &path, LoadRole role);
+    ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
+    QSize probeImageSize(const QString &path) const;
+    void updateGalleryDecodeWindow();
+    void scheduleGalleryDecode(const QString &path);
     ImageItem *findItemByPath(const QString &path) const;
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
@@ -421,6 +427,11 @@ private:
     int m_masonryRows = 3;
     std::atomic<quint64> m_loadGeneration{0};
     QSet<QString> m_pendingWorkspacePaths;
+    /** Gallery virtualization: paths scheduled for decode this window. */
+    QSet<QString> m_galleryDecodeScheduled;
+    static constexpr int kGalleryVirtualThreshold = 80;
+    static constexpr int kGalleryDecodeOverscanPx = 400;
+    static constexpr int kMaxConcurrentGalleryDecodes = 12;
     /** Queue of workspace restores still waiting for decode (supports same path twice). */
     QList<WorkspaceItemState> m_pendingRestoreStates;
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */

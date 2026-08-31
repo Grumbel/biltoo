@@ -17,7 +17,8 @@ QSizeF nativeSize(const ImageItem *item)
     if (!item) {
         return {};
     }
-    return QSizeF(item->pixmap().size());
+    // Prefer intrinsic/decoded image size so placeholders pack correctly.
+    return QSizeF(item->imageSize());
 }
 
 /** Pixmap size with 90°-class rotation applied (for packing aspect ratio). */

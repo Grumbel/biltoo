@@ -217,7 +217,7 @@ QRectF ImageItem::boundingRect() const
     // view-owned (viewport distances); this AABB only prevents scene clipping of
     // the painted chrome. Clamp pad so near-zero item scale cannot explode the
     // local rect to infinity (HANDLES.md).
-    QRectF r = QGraphicsPixmapItem::boundingRect();
+    QRectF r = contentRect();
     if (isSelected() && m_interactive) {
         const qreal content = qMax(r.width(), r.height());
         const qreal sMin = qMax(deviceScaleMin(), 1e-4);
@@ -245,7 +245,7 @@ QPainterPath ImageItem::shape() const
             return path;
         }
     }
-    path.addRect(QGraphicsPixmapItem::boundingRect());
+    path.addRect(contentRect());
     return path;
 }
 
@@ -902,11 +902,18 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->setClipRect(crop);
         }
         painter->setOpacity(m_opacity);
-        QGraphicsPixmapItem::paint(painter, &opt, widget);
+        if (m_source.isNull() || pixmap().isNull()) {
+            // Placeholder while Gallery decode is pending or unloaded.
+            painter->fillRect(contentRect(), QColor(48, 48, 48));
+            painter->setPen(QPen(QColor(70, 70, 70), 0));
+            painter->drawRect(contentRect());
+        } else {
+            QGraphicsPixmapItem::paint(painter, &opt, widget);
+        }
         painter->restore();
     }
 
-    const QRectF r = cropped ? crop : QGraphicsPixmapItem::boundingRect();
+    const QRectF r = cropped ? crop : contentRect();
 
     // Gallery: selection frame only (classic multi-select). Hover is for HUD
     // filename, not a full-tile wash — near-fullscreen packs stay usable.
