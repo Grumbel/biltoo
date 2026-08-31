@@ -116,44 +116,42 @@ FrameViewGeom makeFrameViewGeom(const QPointF &tl, const QPointF &tr,
 // Top-right outside column. Stack runs along the right edge direction starting
 // near the top-right corner. If the stack would collide with the right rotate
 // knob, the whole column is shifted further "up" (toward / past the top edge).
-// Two chrome groups on the right edge, split around the free-rotate knob:
+// Two chrome groups in *screen* space, to the right of the view AABB of the
+// rotated frame. Buttons stay upright and do not spin with free/90° rotation;
+// only the AABB size changes on 90° turns.
 //   upper: FlipH, FlipV, Rotate90CCW, Rotate90CW
 //   lower: Raise, Lower, ResetScale, ResetRotation
+// Free-rotate knobs remain on the content mid-edges (rotated).
 void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
 {
     const qreal btn = kChromeBtnScreenPx;
-    const qreal gap = kChromeBtnGapPx;
-    const qreal step = btn + gap;
-    const qreal colOffset = kChromeOutsidePx + btn * 0.5;
-    const QPointF colBase = g.tr + g.outRight * colOffset;
-    const QPointF along = g.dirRight; // top → bottom along the right edge
+    const qreal step = btn + kChromeBtnGapPx;
 
-    const QPointF rotR = g.midRight + g.outRight * kRotateOffsetPx;
-    const qreal rotClear = kHandleScreenPx * 0.5 + kChromeClearPx + btn * 0.5;
-    auto distAlong = [&](const QPointF &p) {
-        return QPointF::dotProduct(p - colBase, along);
-    };
-    const qreal rotAlong = distAlong(rotR);
-    const qreal lateral = qAbs(colOffset - kRotateOffsetPx);
-    const qreal needAlongClear = qMax(0.0, rotClear - lateral);
+    const qreal minX = qMin(qMin(g.tl.x(), g.tr.x()), qMin(g.br.x(), g.bl.x()));
+    const qreal maxX = qMax(qMax(g.tl.x(), g.tr.x()), qMax(g.br.x(), g.bl.x()));
+    const qreal minY = qMin(qMin(g.tl.y(), g.tr.y()), qMin(g.br.y(), g.bl.y()));
+    const qreal maxY = qMax(qMax(g.tl.y(), g.tr.y()), qMax(g.br.y(), g.bl.y()));
 
-    // Reserve a band around the rotate knob for free dragging.
-    const qreal upperLastAlong = rotAlong - needAlongClear - kChromeGroupGapPx * 0.5;
-    const qreal lowerFirstAlong = rotAlong + needAlongClear + kChromeGroupGapPx * 0.5;
+    const qreal colX = maxX + kChromeOutsidePx + btn * 0.5;
+    const qreal midY = 0.5 * (minY + maxY);
 
-    // Upper group: last centre sits just above the reserved band.
-    qreal firstUpper = upperLastAlong - (kChromeUpperCount - 1) * step;
-    // Prefer starting near the top-right corner when there is room.
-    const qreal preferUpper = btn * 0.5 + 4.0;
-    if (preferUpper + (kChromeUpperCount - 1) * step <= upperLastAlong) {
-        firstUpper = preferUpper;
+    // Leave a vertical band around the AABB mid for the free-rotate knob.
+    const qreal needClear = kHandleScreenPx * 0.5 + kChromeClearPx + btn * 0.5
+                            + kChromeGroupGapPx * 0.5;
+    const qreal upperLastY = midY - needClear;
+    const qreal lowerFirstY = midY + needClear;
+
+    qreal firstUpperY = upperLastY - (kChromeUpperCount - 1) * step;
+    const qreal preferTop = minY + btn * 0.5 + 4.0;
+    if (preferTop + (kChromeUpperCount - 1) * step <= upperLastY) {
+        firstUpperY = preferTop;
     }
 
     for (int i = 0; i < kChromeUpperCount; ++i) {
-        outCenters[i] = colBase + along * (firstUpper + i * step);
+        outCenters[i] = QPointF(colX, firstUpperY + i * step);
     }
     for (int i = 0; i < kChromeLowerCount; ++i) {
-        outCenters[kChromeUpperCount + i] = colBase + along * (lowerFirstAlong + i * step);
+        outCenters[kChromeUpperCount + i] = QPointF(colX, lowerFirstY + i * step);
     }
 }
 
@@ -862,10 +860,10 @@ void ImageItem::activateChromeHandle(Handle h)
         toggleVFlip();
         break;
     case Handle::Rotate90CCW:
-        rotateBy(-90.0);
+        rotateOrientationBy(-90.0);
         break;
     case Handle::Rotate90CW:
-        rotateBy(90.0);
+        rotateOrientationBy(90.0);
         break;
     case Handle::Raise:
     case Handle::Lower: {
@@ -1339,11 +1337,17 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
         const qreal deltaDeg = qRadiansToDegrees(a1 - a0);
         qreal angle = m_pressRotation + deltaDeg;
         if (mods & Qt::ControlModifier) {
+            // Snap total to cardinal — re-decompose (clears fine tilt).
             angle = qRound(angle / 90.0) * 90.0;
+            setItemRotation(angle);
         } else if (mods & Qt::ShiftModifier) {
             angle = qRound(angle / 45.0) * 45.0;
+            setItemRotation(angle);
+        } else {
+            // Free rotate: change only fine tilt; 90° chrome keeps orientation.
+            const qreal pressFine = m_pressRotation - m_orientation;
+            setFineRotation(pressFine + deltaDeg);
         }
-        setItemRotation(angle);
     } else if (isScaleHandle(m_activeHandle)) {
         applyScaleHandleDrag(scenePos, mods);
     }

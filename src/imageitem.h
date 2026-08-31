@@ -72,7 +72,12 @@ public:
     qreal itemScale() const;
     qreal itemScaleX() const { return m_scaleX; }
     qreal itemScaleY() const { return m_scaleY; }
+    /** Total display rotation (orientation + free/fine). */
     qreal itemRotation() const { return m_rotation; }
+    /** Cardinal content orientation (0/90/180/270), used by 90° chrome. */
+    qreal itemOrientation() const { return m_orientation; }
+    /** Workspace-only free tilt on top of orientation. */
+    qreal itemFineRotation() const { return m_fineRotation; }
     qreal itemOpacity() const { return m_opacity; }
     /** Persistent stacking order (selection may temporarily raise the item). */
     qreal stackZ() const { return m_stackZ; }
@@ -90,6 +95,10 @@ public:
     void setItemScale(qreal scale);
     void setItemScale(qreal scaleX, qreal scaleY);
     void setItemRotation(qreal degrees);
+    /** ±90° content orientation; does not clear free/fine tilt. */
+    void rotateOrientationBy(qreal degrees);
+    /** Workspace free-rotate handle: set fine tilt only. */
+    void setFineRotation(qreal degrees);
     void setItemOpacity(qreal opacity);
     void setItemHFlip(bool on);
     void setItemVFlip(bool on);
@@ -221,6 +230,10 @@ private:
     qreal m_scaleX = 1.0;
     qreal m_scaleY = 1.0;
     qreal m_rotation = 0.0;
+    /** Cardinal base (multiples of 90). */
+    qreal m_orientation = 0.0;
+    /** Free tilt relative to orientation (Workspace). */
+    qreal m_fineRotation = 0.0;
     qreal m_opacity = 1.0;
     qreal m_stackZ = 0.0;
     bool m_hFlip = false;

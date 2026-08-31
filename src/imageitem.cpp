@@ -112,15 +112,60 @@ void ImageItem::setItemScale(qreal scaleX, qreal scaleY)
     prepareGeometryChange();
 }
 
+static qreal normalizeDegrees(qreal degrees)
+{
+    while (degrees >= 360.0) {
+        degrees -= 360.0;
+    }
+    while (degrees < 0.0) {
+        degrees += 360.0;
+    }
+    return degrees;
+}
+
 void ImageItem::setItemRotation(qreal degrees)
 {
-    m_rotation = degrees;
-    while (m_rotation >= 360.0) {
-        m_rotation -= 360.0;
+    // Decompose into cardinal orientation + free residual so 90° chrome and
+    // free-rotate stay independent concepts when possible.
+    const qreal n = normalizeDegrees(degrees);
+    qreal nearest = qRound(n / 90.0) * 90.0;
+    if (nearest >= 360.0) {
+        nearest = 0.0;
     }
-    while (m_rotation < 0.0) {
-        m_rotation += 360.0;
+    m_orientation = nearest;
+    m_fineRotation = n - nearest;
+    // Keep residual in (-45, 45] so orientation is the true nearest cardinal.
+    if (m_fineRotation > 45.0) {
+        m_orientation = normalizeDegrees(m_orientation + 90.0);
+        m_fineRotation -= 90.0;
+    } else if (m_fineRotation <= -45.0) {
+        m_orientation = normalizeDegrees(m_orientation - 90.0);
+        m_fineRotation += 90.0;
     }
+    m_rotation = normalizeDegrees(m_orientation + m_fineRotation);
+    applyLocalTransform();
+    prepareGeometryChange();
+}
+
+void ImageItem::rotateOrientationBy(qreal degrees)
+{
+    // 90° chrome: change content orientation only; keep free tilt.
+    m_orientation = normalizeDegrees(m_orientation + degrees);
+    // Snap to cardinal in case of accumulated float error.
+    m_orientation = qRound(m_orientation / 90.0) * 90.0;
+    if (m_orientation >= 360.0) {
+        m_orientation = 0.0;
+    }
+    m_rotation = normalizeDegrees(m_orientation + m_fineRotation);
+    applyLocalTransform();
+    prepareGeometryChange();
+}
+
+void ImageItem::setFineRotation(qreal degrees)
+{
+    // Free-rotate handle: only the residual; orientation stays put.
+    m_fineRotation = degrees;
+    m_rotation = normalizeDegrees(m_orientation + m_fineRotation);
     applyLocalTransform();
     prepareGeometryChange();
 }
@@ -132,6 +177,7 @@ void ImageItem::zoomBy(qreal factor)
 
 void ImageItem::rotateBy(qreal degrees)
 {
+    // Generic spin (shortcuts): treat as total-angle change and re-decompose.
     setItemRotation(m_rotation + degrees);
 }
 
