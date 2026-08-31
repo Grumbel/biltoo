@@ -388,24 +388,48 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     }
 }
 
+QImage ThumbnailBar::squareThumbnailFromImage(const QImage &image, int maxSize)
+{
+    if (image.isNull() || maxSize < 1) {
+        return QImage();
+    }
+    // Center-crop to square so the cell is filled edge-to-edge
+    const int side = qMin(image.width(), image.height());
+    if (side <= 0) {
+        return QImage();
+    }
+    const int x = (image.width() - side) / 2;
+    const int y = (image.height() - side) / 2;
+    QImage square = image.copy(x, y, side, side);
+    if (square.width() != maxSize || square.height() != maxSize) {
+        square = square.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    }
+    return square;
+}
+
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize)
 {
     QImage image = ImageLoader::loadThumbnail(path, maxSize);
     if (image.isNull()) {
         return image;
     }
-    // Center-crop to square so the cell is filled edge-to-edge
-    const int side = qMin(image.width(), image.height());
-    if (side <= 0) {
-        return image;
+    return squareThumbnailFromImage(image, maxSize);
+}
+
+void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &image)
+{
+    if (path.isEmpty() || image.isNull()) {
+        return;
     }
-    const int x = (image.width() - side) / 2;
-    const int y = (image.height() - side) / 2;
-    image = image.copy(x, y, side, side);
-    if (image.width() != maxSize || image.height() != maxSize) {
-        image = image.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    m_sessionImageOverrides.insert(path, image);
+    const int row = m_files.indexOf(path);
+    if (row < 0) {
+        return;
     }
-    return image;
+    const QImage thumb = squareThumbnailFromImage(image, m_thumbSize);
+    if (!thumb.isNull()) {
+        setThumbnailIcon(row, thumb);
+    }
 }
 
 void ThumbnailBar::scheduleThumbnailLoads()
@@ -416,6 +440,15 @@ void ThumbnailBar::scheduleThumbnailLoads()
 
     for (int i = 0; i < m_files.size(); ++i) {
         const QString path = m_files.at(i);
+        // Prefer session override (e.g. cropped pixels) over on-disk thumbnails.
+        if (m_sessionImageOverrides.contains(path)) {
+            const QImage thumb = squareThumbnailFromImage(m_sessionImageOverrides.value(path),
+                                                          decodeSize);
+            if (!thumb.isNull()) {
+                setThumbnailIcon(i, thumb);
+            }
+            continue;
+        }
         // QPointer: bar may be destroyed while pool jobs still run.
         const QPointer<ThumbnailBar> guard(this);
         QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
@@ -424,6 +457,10 @@ void ThumbnailBar::scheduleThumbnailLoads()
             }
             const QImage image = makeThumbnail(path, decodeSize);
             if (!guard || image.isNull() || gen != guard->m_generation.load()) {
+                return;
+            }
+            // A crop may have landed while this job ran — do not clobber it.
+            if (guard->m_sessionImageOverrides.contains(path)) {
                 return;
             }
             QMetaObject::invokeMethod(guard, "setThumbnailIcon", Qt::QueuedConnection,
@@ -446,6 +483,17 @@ void ThumbnailBar::setFiles(const QStringList &files)
     clearPressState();
     clear();
     m_files = files;
+    // Drop overrides for paths no longer in the session.
+    {
+        QHash<QString, QImage> kept;
+        for (const QString &path : m_files) {
+            auto it = m_sessionImageOverrides.constFind(path);
+            if (it != m_sessionImageOverrides.cend()) {
+                kept.insert(path, it.value());
+            }
+        }
+        m_sessionImageOverrides.swap(kept);
+    }
 
     const QSize cell = m_delegate ? m_delegate->cellSize(font())
                                   : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight());

@@ -972,6 +972,7 @@ void ImageView::leaveCropModeInternal(bool apply)
                 } else if (isWorkspaceMode()) {
                     updateWorkspaceSceneRect();
                 }
+                emit sessionCropApplied(item->path(), item->sourceImage());
                 flashHud(tr("Cropped"),
                          QStringLiteral("%1×%2")
                              .arg(item->imageSize().width())

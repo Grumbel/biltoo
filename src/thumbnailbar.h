@@ -4,6 +4,8 @@
 #ifndef THUMBNAILBAR_H
 #define THUMBNAILBAR_H
 
+#include <QHash>
+#include <QImage>
 #include <QListWidget>
 #include <QMimeData>
 #include <QPoint>
@@ -59,6 +61,13 @@ public:
     void setFiles(const QStringList &files);
     void setCurrentIndex(int index);
     int currentIndex() const;
+
+    /**
+     * Session appearance override (e.g. after crop): keep a full image for
+     * this path and rebuild the square cell icon. Survives thumb-size reloads
+     * until setFiles() clears the strip.
+     */
+    void setSessionImageOverride(const QString &path, const QImage &image);
 
     /** Multi-select session paths for Workspace canvas membership (not app ViewMode). */
     void setMultiSelectEnabled(bool on);
@@ -135,6 +144,7 @@ private:
     int labelBandHeight() const;
     int thumbSizeFromBarExtent(int extent) const;
     static QImage makeThumbnail(const QString &path, int maxSize);
+    static QImage squareThumbnailFromImage(const QImage &image, int maxSize);
 
     std::atomic<quint64> m_generation{0};
     bool m_multiSelect = false;
@@ -145,6 +155,8 @@ private:
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;
     QStringList m_files;
+    /** Session-only images (crop, …) preferred over on-disk decode for thumbs. */
+    QHash<QString, QImage> m_sessionImageOverrides;
     ThumbnailDelegate *m_delegate = nullptr;
 
     QPoint m_pressPos;

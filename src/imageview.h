@@ -328,6 +328,8 @@ signals:
     void fullscreenToggleRequested();
     /** Crop mode toggled on/off (toolbar checkable state). */
     void cropModeChanged(bool active);
+    /** Session crop committed; @p image is the new displayed pixels for @p path. */
+    void sessionCropApplied(const QString &path, const QImage &image);
     /**
      * Gallery layout: user clicked an item to open it in Image mode.
      * Path is the image file path.
