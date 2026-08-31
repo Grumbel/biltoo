@@ -97,6 +97,8 @@ public:
     void setItemRotation(qreal degrees);
     /** ±90° content orientation; does not clear free/fine tilt. */
     void rotateOrientationBy(qreal degrees);
+    /** Set cardinal orientation; preserves free/fine tilt. */
+    void setOrientation(qreal degrees);
     /** Workspace free-rotate handle: set fine tilt only. */
     void setFineRotation(qreal degrees);
     void setItemOpacity(qreal opacity);

@@ -25,6 +25,8 @@ struct WorkspaceItemState {
     qreal scale = 1.0;   // scaleX
     qreal scaleY = 1.0;
     qreal rotation = 0.0;
+    /** Cardinal content orientation (0/90/180/270); Image mode uses this only. */
+    qreal orientation = 0.0;
     qreal opacity = 1.0;
     qreal z = 0.0;
     bool hFlip = false;

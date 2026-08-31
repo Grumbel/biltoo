@@ -68,6 +68,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.scale = item->itemScaleX();
     s.scaleY = item->itemScaleY();
     s.rotation = item->itemRotation();
+    s.orientation = item->itemOrientation();
     s.opacity = item->itemOpacity();
     s.z = item->stackZ();
     s.hFlip = item->itemHFlip();
@@ -140,6 +141,37 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         // Keep legacy signal so crop listeners stay in sync.
         emit sessionCropApplied(item->path(), appearance);
     }
+
+    // Propagate pixel / flip / orientation session edits to every canvas and
+    // stashed Workspace instance of this path. Placement (pos, scale, free
+    // tilt) on Workspace copies is preserved.
+    const QString path = item->path();
+    const QImage src = item->sourceImage();
+    const bool hFlip = item->itemHFlip();
+    const bool vFlip = item->itemVFlip();
+    const qreal orient = item->itemOrientation();
+
+    auto syncOne = [&](ImageItem *other) {
+        if (!other || other == item || other->path() != path) {
+            return;
+        }
+        if (!src.isNull()) {
+            other->setSourceImage(src);
+        }
+        other->setItemHFlip(hFlip);
+        other->setItemVFlip(vFlip);
+        other->setOrientation(orient);
+    };
+    for (ImageItem *other : m_items) {
+        syncOne(other);
+    }
+    for (ImageItem *other : m_stashedWorkspaceItems) {
+        syncOne(other);
+    }
+    for (ImageItem *other : m_stashedGalleryItems) {
+        syncOne(other);
+    }
+
     emit statusChanged();
 }
 

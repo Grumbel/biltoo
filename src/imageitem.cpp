@@ -149,9 +149,13 @@ void ImageItem::setItemRotation(qreal degrees)
 
 void ImageItem::rotateOrientationBy(qreal degrees)
 {
-    // 90° chrome: change content orientation only; keep free tilt.
-    m_orientation = normalizeDegrees(m_orientation + degrees);
-    // Snap to cardinal in case of accumulated float error.
+    setOrientation(m_orientation + degrees);
+}
+
+void ImageItem::setOrientation(qreal degrees)
+{
+    // Cardinal content orientation only; free/fine tilt is preserved.
+    m_orientation = normalizeDegrees(degrees);
     m_orientation = qRound(m_orientation / 90.0) * 90.0;
     if (m_orientation >= 360.0) {
         m_orientation = 0.0;

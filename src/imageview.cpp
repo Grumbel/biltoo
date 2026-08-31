@@ -40,14 +40,10 @@
 
 qreal ImageView::cardinalRotationOrZero(qreal degrees)
 {
-    // Image mode only inherits cardinal (90°) object rotation. Free angles are
-    // a Workspace placement transform and stay on the canvas item.
+    // Image mode: always nearest 90° content orientation. Free Workspace tilt
+    // (residual off the cardinal) is discarded — never shown as an arbitrary angle.
     const qreal n = std::fmod(std::fmod(degrees, 360.0) + 360.0, 360.0);
-    const qreal nearest = qRound(n / 90.0) * 90.0;
-    if (qAbs(n - nearest) >= 0.51) {
-        return 0.0;
-    }
-    qreal snapped = nearest;
+    qreal snapped = qRound(n / 90.0) * 90.0;
     if (snapped >= 360.0) {
         snapped = 0.0;
     }
@@ -332,7 +328,14 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             {
                 const auto it = m_itemStates.constFind(path);
                 if (it != m_itemStates.cend()) {
-                    item->setItemRotation(ImageView::cardinalRotationOrZero(it->rotation));
+                    // Orientation is the cardinal content angle; free tilt is Workspace-only.
+                    // Fall back to snapping total rotation for states captured before
+                    // orientation was stored (defaults to 0).
+                    const qreal orientSrc =
+                        (qAbs(it->orientation) > 0.01 || qAbs(it->rotation) < 0.5)
+                            ? it->orientation
+                            : it->rotation;
+                    item->setItemRotation(ImageView::cardinalRotationOrZero(orientSrc));
                     item->setItemHFlip(it->hFlip);
                     item->setItemVFlip(it->vFlip);
                 } else {
@@ -964,7 +967,12 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     if (it == m_itemStates.cend()) {
         return;
     }
-    item->setItemRotation(it->rotation);
+    if (isImageMode()) {
+        item->setItemRotation(ImageView::cardinalRotationOrZero(
+            qAbs(it->orientation) > 0.01 ? it->orientation : it->rotation));
+    } else {
+        item->setItemRotation(it->rotation);
+    }
     item->setItemHFlip(it->hFlip);
     item->setItemVFlip(it->vFlip);
     applySessionCrop(item, *it);
