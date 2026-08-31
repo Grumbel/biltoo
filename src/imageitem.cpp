@@ -313,7 +313,11 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect)
         return false;
     }
     const QRect bounds(0, 0, displayed.width(), displayed.height());
-    const QRect srcRect = r.translated(-offset()).toRect().intersected(bounds);
+    // contentRect is in item space (includes pixmap offset); pixmap pixels are
+    // origin-relative — shift by -offset() using QPoint (QRect::translated).
+    const QPointF off = offset();
+    const QRect srcRect = r.translated(-qRound(off.x()), -qRound(off.y()))
+                              .intersected(bounds);
     if (srcRect.width() < 1 || srcRect.height() < 1) {
         return false;
     }
