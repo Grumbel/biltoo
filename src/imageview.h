@@ -431,6 +431,11 @@ private:
     void endCropRubberBand();
     void leaveCropModeInternal(bool apply);
     /**
+     * Image mode: keep only multiples of 90° from session state; free Workspace
+     * angles map to 0°.
+     */
+    static qreal cardinalRotationOrZero(qreal degrees);
+    /**
      * Enter crop: show full on-disk pixels with prior crop as the draft rect
      * so the region can grow. Returns false if the image cannot be prepared.
      */
