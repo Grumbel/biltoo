@@ -580,7 +580,7 @@ void MainWindow::showKeyboardShortcuts()
         "Ctrl+F — fill · Fit action — fit to window<br/>"
         "Ctrl+T — toolbar · Ctrl+E — metadata</p>"
         "<p><b>Image</b><br/>"
-        "R / ] / Ctrl+R — rotate right · [ / Ctrl+L — rotate left<br/>"
+        "R / Ctrl+R — rotate right · Ctrl+L — rotate left<br/>"
         "Ctrl+H / Ctrl+Shift+H — flip horizontal / vertical</p>"
         "<p><b>Workspace</b><br/>"
         "Ctrl+D — duplicate · Delete — remove from canvas<br/>"

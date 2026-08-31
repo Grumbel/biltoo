@@ -75,13 +75,13 @@ void MainWindow::createActions()
     connect(m_fullscreenAct, &QAction::triggered, this, &MainWindow::toggleFullscreen);
 
     m_rotateLeftAct = new QAction(tr("Rotate &Left"), this);
-    m_rotateLeftAct->setShortcuts({Qt::CTRL | Qt::Key_L, Qt::Key_BracketLeft});
+    m_rotateLeftAct->setShortcut(Qt::CTRL | Qt::Key_L);
     m_rotateLeftAct->setIcon(themeIcon(QStringLiteral("object-rotate-left"), QStyle::SP_ArrowBack));
     m_rotateLeftAct->setStatusTip(tr("Rotate 90° counter-clockwise"));
     connect(m_rotateLeftAct, &QAction::triggered, this, &MainWindow::rotateLeft);
 
     m_rotateRightAct = new QAction(tr("Rotate &Right"), this);
-    m_rotateRightAct->setShortcuts({Qt::CTRL | Qt::Key_R, Qt::Key_BracketRight, Qt::Key_R});
+    m_rotateRightAct->setShortcuts({Qt::CTRL | Qt::Key_R, Qt::Key_R});
     m_rotateRightAct->setIcon(themeIcon(QStringLiteral("object-rotate-right"), QStyle::SP_ArrowForward));
     m_rotateRightAct->setStatusTip(tr("Rotate 90° clockwise"));
     connect(m_rotateRightAct, &QAction::triggered, this, &MainWindow::rotateRight);
