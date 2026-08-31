@@ -129,11 +129,17 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
 
     // Workspace membership: dog-ear fold on the top-right of the thumbnail.
-    // Reads at a glance without competing with the selection highlight.
-    // option.widget is the viewport; its parent is the ThumbnailBar.
-    if (auto *bar = qobject_cast<const ThumbnailBar *>(
-            option.widget ? option.widget->parentWidget() : nullptr)) {
-        if (bar->isOnCanvas(index.row()) && iconSide > 8) {
+    // Resolve ThumbnailBar via the delegate parent (always the bar). Do not rely
+    // on option.widget->parentWidget(): option.widget is often the list itself,
+    // so parentWidget() is the splitter and the cast fails — badge never draws.
+    const ThumbnailBar *bar = qobject_cast<const ThumbnailBar *>(parent());
+    if (!bar && option.widget) {
+        bar = qobject_cast<const ThumbnailBar *>(option.widget);
+        if (!bar) {
+            bar = qobject_cast<const ThumbnailBar *>(option.widget->parentWidget());
+        }
+    }
+    if (bar && bar->isOnCanvas(index.row()) && iconSide > 8) {
             const int fold = qBound(10, iconSide / 4, 28);
             const QPoint topRight(iconX + iconSide, iconY);
             const QPoint left(topRight.x() - fold, topRight.y());
@@ -164,7 +170,6 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             painter->setPen(QPen(QColor(0, 0, 0, 90), 1.0));
             painter->setBrush(Qt::NoBrush);
             painter->drawLine(left, bottom);
-        }
     }
 
     painter->restore();

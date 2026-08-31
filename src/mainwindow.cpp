@@ -511,9 +511,9 @@ void MainWindow::toggleWorkspaceMode()
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         if (m_imageView->itemCount() == 0
             && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-            m_imageView->addImage(m_files.at(m_currentIndex));
+            m_imageView->addImageForSession(m_files.at(m_currentIndex), m_currentIndex);
         }
-        syncThumbnailWorkspaceSelection();
+        syncThumbnailCanvasMembership();
         if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
             m_toggleThumbnailBarAct->setChecked(true);
             m_thumbnailBar->setVisible(true);
