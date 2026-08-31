@@ -61,6 +61,20 @@ public:
     QColor hudPanelColor() const;
     void setHudPanelColor(const QColor &color);
 
+    bool scrollBarsVisible() const;
+    void setScrollBarsVisible(bool on);
+
+    bool thumbnailLabelsVisible() const;
+    void setThumbnailLabelsVisible(bool on);
+
+    /** 0 = bottom, 1 = top, 2 = left, 3 = right */
+    int thumbnailPositionIndex() const;
+    void setThumbnailPositionIndex(int index);
+
+    /** ImageView::LayoutMode int for Gallery (1…6). */
+    int defaultGalleryLayoutMode() const;
+    void setDefaultGalleryLayoutMode(int layoutMode);
+
 private:
     void refreshDefaultAppsList();
     void onMimeItemChanged(QTreeWidgetItem *item, int column);
@@ -93,6 +107,11 @@ private:
     QPushButton *m_hudPanelColorBtn = nullptr;
     QColor m_hudTextColor{255, 255, 255};
     QColor m_hudPanelColor{0, 0, 0, 160};
+
+    QCheckBox *m_scrollBarsCheck = nullptr;
+    QCheckBox *m_thumbLabelsCheck = nullptr;
+    QComboBox *m_thumbPosCombo = nullptr;
+    QComboBox *m_galleryLayoutCombo = nullptr;
 
     QTreeWidget *m_mimeTree = nullptr;
     QLabel *m_mimeStatusLabel = nullptr;

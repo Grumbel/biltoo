@@ -243,10 +243,9 @@ MetadataPanel::MetadataPanel(QWidget *parent)
 
     setMinimumWidth(240);
 #ifdef QIMGVIEW_HAVE_EXIV2
-    setWhatsThis(tr("Shows file information and Exif/IPTC/XMP metadata via Exiv2."));
+    setWhatsThis(tr("File and image metadata."));
 #else
-    setWhatsThis(tr("Shows file information and metadata reported by the image plugin. "
-                    "Build with libexiv2 for full Exif/IPTC/XMP support."));
+    setWhatsThis(tr("File and image metadata."));
 #endif
 }
 

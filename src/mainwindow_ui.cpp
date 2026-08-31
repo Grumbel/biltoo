@@ -160,9 +160,7 @@ void MainWindow::createActions()
     m_workspaceModeAct->setCheckable(true);
     m_workspaceModeAct->setChecked(false);
     m_workspaceModeAct->setIcon(themeIcon(QStringLiteral("view-paged"), QStyle::SP_DesktopIcon));
-    m_workspaceModeAct->setStatusTip(
-        tr("Compare multiple images on the view. Click thumbnails to show or hide them; "
-           "each image keeps its position and size."));
+    m_workspaceModeAct->setStatusTip(tr("Free-form canvas for comparing images"));
     connect(m_workspaceModeAct, &QAction::triggered, this, &MainWindow::toggleWorkspaceMode);
 
     m_selectToolAct = new QAction(tr("&Select"), this);
@@ -474,7 +472,6 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_preferencesAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
-
     auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));
     zoomMenu->addAction(m_zoomInAct);
     zoomMenu->addAction(m_zoomOutAct);
@@ -504,7 +501,6 @@ void MainWindow::createMenus()
     thumbsMenu->addAction(m_thumbnailsLeftAct);
     thumbsMenu->addAction(m_thumbnailsRightAct);
 
-    m_viewMenu->addSeparator();
     auto *sortMenu = m_viewMenu->addMenu(tr("&Sort"));
     sortMenu->addAction(m_sortNameAct);
     sortMenu->addAction(m_sortMTimeAct);
@@ -513,10 +509,10 @@ void MainWindow::createMenus()
     sortMenu->addAction(m_sortHeightAct);
     sortMenu->addAction(m_sortPixelCountAct);
 
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_backToGalleryAct);
-
-    auto *galleryMenu = m_viewMenu->addMenu(tr("&Gallery"));
+    // Top-level Gallery and Workspace — not buried under View.
+    auto *galleryMenu = menuBar()->addMenu(tr("&Gallery"));
+    galleryMenu->addAction(m_backToGalleryAct);
+    galleryMenu->addSeparator();
     galleryMenu->addAction(m_layoutSideBySideAct);
     galleryMenu->addAction(m_layoutVerticalAct);
     galleryMenu->addAction(m_layoutGridAct);
@@ -524,10 +520,9 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutMasonryAct);
     galleryMenu->addAction(m_layoutMasonryRowsAct);
 
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_workspaceModeAct);
-
-    auto *workspaceMenu = m_viewMenu->addMenu(tr("&Workspace"));
+    auto *workspaceMenu = menuBar()->addMenu(tr("&Workspace"));
+    workspaceMenu->addAction(m_workspaceModeAct);
+    workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_selectToolAct);
     workspaceMenu->addAction(m_panToolAct);
     workspaceMenu->addSeparator();
@@ -556,9 +551,6 @@ void MainWindow::createMenus()
     m_helpMenu->addAction(m_keyboardShortcutsAct);
     m_helpMenu->addSeparator();
     m_helpMenu->addAction(m_aboutAct);
-
-    // Context menu is built per-mode in showContextMenu() so Gallery does not
-    // list Workspace-only tools and Image keeps prev/next.
 }
 
 void MainWindow::createToolBar()

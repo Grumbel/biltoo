@@ -624,12 +624,10 @@ void MainWindow::about()
     box.setIconPixmap(QApplication::windowIcon().pixmap(64, 64));
     box.setText(tr("<h3>QImgView %1</h3>").arg(QApplication::applicationVersion()));
     box.setInformativeText(
-        tr("<p>A classic image viewer with an optional workspace for "
-           "comparing images side by side.</p>"
+        tr("<p>A classic image viewer with Gallery overview and a free-form "
+           "Workspace for comparing images.</p>"
            "<p>Copyright © 2026 Ingo Ruhnke &lt;grumbel@gmail.com&gt;<br/>"
-           "License: <b>GPL-3.0-or-later</b></p>"
-           "<p>Shortcuts: <b>F</b>/<b>F11</b> fullscreen, <b>Esc</b> leave fullscreen, "
-           "<b>Ctrl+T</b> toolbar, <b>Space</b> slideshow.</p>"));
+           "License: GPL-3.0-or-later</p>"));
     // GNOME 2 HIG: single affirmative Close on the right is fine for about boxes
     box.setStandardButtons(QMessageBox::Close);
     box.button(QMessageBox::Close)->setText(tr("&Close"));
@@ -653,6 +651,27 @@ void MainWindow::showPreferences()
     dlg.setHudFontPointSize(m_imageView->hudFontPointSize());
     dlg.setHudTextColor(m_imageView->hudTextColor());
     dlg.setHudPanelColor(m_imageView->hudPanelColor());
+    dlg.setScrollBarsVisible(m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
+    dlg.setThumbnailLabelsVisible(m_hideThumbLabelsAct && !m_hideThumbLabelsAct->isChecked());
+    {
+        int pos = 0;
+        if (m_thumbnailEdge == ThumbnailEdge::Top) pos = 1;
+        else if (m_thumbnailEdge == ThumbnailEdge::Left) pos = 2;
+        else if (m_thumbnailEdge == ThumbnailEdge::Right) pos = 3;
+        dlg.setThumbnailPositionIndex(pos);
+    }
+    {
+        int layoutMode = static_cast<int>(ImageView::LayoutMode::Masonry);
+        if (m_imageView && m_imageView->isGalleryMode()) {
+            layoutMode = static_cast<int>(m_imageView->layoutMode());
+        } else if (m_galleryReturnActive) {
+            layoutMode = static_cast<int>(m_galleryReturnLayout);
+        } else {
+            QSettings settings;
+            layoutMode = settings.value(QStringLiteral("lastGalleryLayout"), layoutMode).toInt();
+        }
+        dlg.setDefaultGalleryLayoutMode(layoutMode);
+    }
     if (dlg.exec() != QDialog::Accepted) {
         return;
     }
@@ -677,6 +696,34 @@ void MainWindow::showPreferences()
     m_imageView->setHudFontPointSize(dlg.hudFontPointSize());
     m_imageView->setHudTextColor(dlg.hudTextColor());
     m_imageView->setHudPanelColor(dlg.hudPanelColor());
+
+    if (m_toggleScrollBarsAct) {
+        m_toggleScrollBarsAct->setChecked(dlg.scrollBarsVisible());
+        toggleScrollBars();
+    }
+    if (m_hideThumbLabelsAct) {
+        m_hideThumbLabelsAct->setChecked(!dlg.thumbnailLabelsVisible());
+        if (m_thumbnailBar) {
+            m_thumbnailBar->setLabelsVisible(dlg.thumbnailLabelsVisible());
+        }
+    }
+    {
+        const int pos = dlg.thumbnailPositionIndex();
+        ThumbnailEdge edge = ThumbnailEdge::Bottom;
+        if (pos == 1) edge = ThumbnailEdge::Top;
+        else if (pos == 2) edge = ThumbnailEdge::Left;
+        else if (pos == 3) edge = ThumbnailEdge::Right;
+        setThumbnailBarPosition(edge);
+    }
+    {
+        const int layoutMode = dlg.defaultGalleryLayoutMode();
+        m_galleryReturnLayout = static_cast<ImageView::LayoutMode>(layoutMode);
+        QSettings settings;
+        settings.setValue(QStringLiteral("lastGalleryLayout"), layoutMode);
+        if (m_imageView && m_imageView->isGalleryMode()) {
+            m_imageView->setLayoutMode(static_cast<ImageView::LayoutMode>(layoutMode));
+        }
+    }
     writeSettings();
 }
 

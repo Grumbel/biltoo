@@ -35,21 +35,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_intervalSpin->setSingleStep(0.1);
     m_intervalSpin->setDecimals(3);
     m_intervalSpin->setSuffix(tr(" s"));
-    m_intervalSpin->setToolTip(
-        tr("Time between slides when the slideshow is running (0 = maximum speed)"));
-    m_intervalSpin->setWhatsThis(
-        tr("How long each image is shown during a slideshow, in seconds. "
-           "Values below one second are allowed; 0 advances as fast as the "
-           "event loop permits. Use [ and ] while viewing to adjust with "
-           "adaptive steps."));
+    m_intervalSpin->setToolTip(tr("Seconds between slides (0 = as fast as possible)"));
 
     m_slideshowFullscreenCheck = new QCheckBox(tr("Start slideshow in fullscreen"), this);
     m_slideshowFullscreenCheck->setToolTip(
         tr("Enter fullscreen automatically when starting a slideshow"));
-    m_slideshowFullscreenCheck->setWhatsThis(
-        tr("When enabled, Play Slideshow switches to fullscreen for an uncluttered "
-           "presentation. Leaving the slideshow does not exit fullscreen; use F11 "
-           "or Esc for that."));
 
     auto *slideshowForm = new QFormLayout;
     slideshowForm->setContentsMargins(0, 0, 0, 0);
@@ -70,17 +60,10 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_sortCombo->addItem(tr("Height (pixels)"), 4);
     m_sortCombo->addItem(tr("Image size (pixels)"), 5);
     m_sortCombo->setToolTip(tr("Default order when loading a set of images"));
-    m_sortCombo->setWhatsThis(
-        tr("Name (natural) sorts img2 before img10. "
-           "Modification time orders files by when they were last changed."));
 
     m_workspaceCheck = new QCheckBox(tr("Start in workspace mode"), this);
     m_workspaceCheck->setToolTip(
         tr("When enabled, QImgView starts with the multi-image workspace active"));
-    m_workspaceCheck->setWhatsThis(
-        tr("Workspace mode is off by default. Turn this on only if you usually "
-           "compare several images at once. You can still toggle workspace mode "
-           "from the toolbar or View menu during a session."));
 
     auto *sessionForm = new QFormLayout;
     sessionForm->setContentsMargins(0, 0, 0, 0);
@@ -95,19 +78,12 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     // --- View / Image mode ---
     m_imageModePanCheck = new QCheckBox(tr("Left-drag pans in image mode"), this);
     m_imageModePanCheck->setToolTip(
-        tr("When enabled, dragging with the left mouse button pans the image"));
-    m_imageModePanCheck->setWhatsThis(
-        tr("In image mode, left-drag pans by default. Turn this off to reserve "
-           "left-drag for other gestures; pan with Alt+left-drag or the middle "
-           "mouse button instead."));
+        tr("Drag with the left button to pan in Image mode"));
 
     m_bgPatternCombo = new QComboBox(this);
     m_bgPatternCombo->addItem(tr("Solid"), 0);
     m_bgPatternCombo->addItem(tr("Checkerboard"), 1);
     m_bgPatternCombo->setToolTip(tr("Canvas background fill style"));
-    m_bgPatternCombo->setWhatsThis(
-        tr("Solid fills the canvas with the primary colour. Checkerboard "
-           "alternates primary and secondary colours (useful for transparency)."));
 
     m_bgColorBtn = new QPushButton(this);
     m_bgColorBtn->setToolTip(tr("Primary background colour"));
@@ -123,10 +99,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
         tr("Checkerboard only in Workspace mode"), this);
     m_bgCheckerWorkspaceOnlyCheck->setChecked(true);
     m_bgCheckerWorkspaceOnlyCheck->setToolTip(
-        tr("When enabled, Image and Gallery use a solid fill; only Workspace uses the checkerboard"));
-    m_bgCheckerWorkspaceOnlyCheck->setWhatsThis(
-        tr("Matches the default behaviour: a flat colour behind photos, and a "
-           "checkerboard on the free-form workspace so transparency is visible."));
+        tr("Use the checkerboard only on the Workspace canvas"));
 
     connect(m_bgPatternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateBackgroundControlsEnabled(); });
@@ -178,11 +151,45 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 
     auto *hudGroup = new QGroupBox(tr("HUD overlay"), this);
     hudGroup->setLayout(hudForm);
-    hudGroup->setWhatsThis(
-        tr("Appearance of the on-image status overlay (filename, index, flash messages). "
-           "Toggle the overlay with H."));
 
-    // --- General tab (slideshow / session / view / HUD) ---
+    // --- Interface (chrome that is not pure view colours) ---
+    m_scrollBarsCheck = new QCheckBox(tr("Show scrollbars"), this);
+    m_scrollBarsCheck->setToolTip(tr("Show scrollbars on the image view"));
+
+    m_thumbLabelsCheck = new QCheckBox(tr("Show thumbnail labels"), this);
+    m_thumbLabelsCheck->setChecked(true);
+    m_thumbLabelsCheck->setToolTip(tr("Show file names under thumbnails"));
+
+    m_thumbPosCombo = new QComboBox(this);
+    m_thumbPosCombo->addItem(tr("Bottom"), 0);
+    m_thumbPosCombo->addItem(tr("Top"), 1);
+    m_thumbPosCombo->addItem(tr("Left"), 2);
+    m_thumbPosCombo->addItem(tr("Right"), 3);
+    m_thumbPosCombo->setToolTip(tr("Where the thumbnail strip is placed"));
+
+    m_galleryLayoutCombo = new QComboBox(this);
+    // Indices match ImageView::LayoutMode (FreeForm=0 is not a Gallery layout).
+    m_galleryLayoutCombo->addItem(tr("Horizontal"), 1);
+    m_galleryLayoutCombo->addItem(tr("Vertical"), 2);
+    m_galleryLayoutCombo->addItem(tr("Grid"), 3);
+    m_galleryLayoutCombo->addItem(tr("Grid (crop)"), 4);
+    m_galleryLayoutCombo->addItem(tr("Masonry"), 5);
+    m_galleryLayoutCombo->addItem(tr("Masonry rows"), 6);
+    m_galleryLayoutCombo->setToolTip(tr("Default Gallery layout for new sessions"));
+
+    auto *ifaceForm = new QFormLayout;
+    ifaceForm->setContentsMargins(0, 0, 0, 0);
+    ifaceForm->setHorizontalSpacing(12);
+    ifaceForm->setVerticalSpacing(8);
+    ifaceForm->addRow(QString(), m_scrollBarsCheck);
+    ifaceForm->addRow(QString(), m_thumbLabelsCheck);
+    ifaceForm->addRow(tr("Thumbnail position:"), m_thumbPosCombo);
+    ifaceForm->addRow(tr("Gallery layout:"), m_galleryLayoutCombo);
+
+    auto *ifaceGroup = new QGroupBox(tr("Interface"), this);
+    ifaceGroup->setLayout(ifaceForm);
+
+    // --- General tab ---
     auto *generalPage = new QWidget(this);
     auto *generalLayout = new QVBoxLayout(generalPage);
     generalLayout->setContentsMargins(8, 8, 8, 8);
@@ -191,6 +198,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     generalLayout->addWidget(sessionGroup);
     generalLayout->addWidget(viewGroup);
     generalLayout->addWidget(hudGroup);
+    generalLayout->addWidget(ifaceGroup);
     generalLayout->addStretch(1);
 
     // --- Default application tab (GIO) ---
@@ -217,7 +225,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_removeAllBtn = new QPushButton(tr("&Remove all as default"), defaultsPage);
     m_setAllBtn->setToolTip(tr("Make QImgView the default handler for every listed type"));
     m_removeAllBtn->setToolTip(
-        tr("Clear QImgView as the default for every listed type (system default is restored)"));
+        tr("Stop using QImgView as the default for these types"));
     btnRow->addWidget(m_setAllBtn);
     btnRow->addWidget(m_removeAllBtn);
     btnRow->addStretch(1);
@@ -245,11 +253,12 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
     connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
 
+    // GNOME 2 HIG: action buttons grouped on the right — Cancel, then OK.
     auto *buttonRow = new QHBoxLayout;
     buttonRow->setContentsMargins(0, 0, 0, 0);
-    buttonRow->setSpacing(8);
-    buttonRow->addWidget(cancelBtn);
+    buttonRow->setSpacing(6);
     buttonRow->addStretch(1);
+    buttonRow->addWidget(cancelBtn);
     buttonRow->addWidget(okBtn);
 
     auto *layout = new QVBoxLayout(this);
@@ -269,9 +278,7 @@ void PreferencesDialog::refreshDefaultAppsList()
 
     if (!DefaultApps::isAvailable()) {
         m_mimeStatusLabel->setText(
-            tr("Setting default applications requires GLib GIO, which is not "
-               "enabled in this build. QImgView still appears under “Open with” "
-               "when its desktop file is installed."));
+            tr("Default-application settings are not available in this build."));
         m_mimeTree->setEnabled(false);
         m_setAllBtn->setEnabled(false);
         m_removeAllBtn->setEnabled(false);
@@ -604,5 +611,60 @@ void PreferencesDialog::updateBackgroundControlsEnabled()
     }
     if (m_bgCheckerWorkspaceOnlyCheck) {
         m_bgCheckerWorkspaceOnlyCheck->setEnabled(checker);
+    }
+}
+
+bool PreferencesDialog::scrollBarsVisible() const
+{
+    return m_scrollBarsCheck && m_scrollBarsCheck->isChecked();
+}
+
+void PreferencesDialog::setScrollBarsVisible(bool on)
+{
+    if (m_scrollBarsCheck) {
+        m_scrollBarsCheck->setChecked(on);
+    }
+}
+
+bool PreferencesDialog::thumbnailLabelsVisible() const
+{
+    return m_thumbLabelsCheck && m_thumbLabelsCheck->isChecked();
+}
+
+void PreferencesDialog::setThumbnailLabelsVisible(bool on)
+{
+    if (m_thumbLabelsCheck) {
+        m_thumbLabelsCheck->setChecked(on);
+    }
+}
+
+int PreferencesDialog::thumbnailPositionIndex() const
+{
+    return m_thumbPosCombo ? m_thumbPosCombo->currentIndex() : 0;
+}
+
+void PreferencesDialog::setThumbnailPositionIndex(int index)
+{
+    if (m_thumbPosCombo && index >= 0 && index < m_thumbPosCombo->count()) {
+        m_thumbPosCombo->setCurrentIndex(index);
+    }
+}
+
+int PreferencesDialog::defaultGalleryLayoutMode() const
+{
+    if (!m_galleryLayoutCombo) {
+        return 5; // Masonry
+    }
+    return m_galleryLayoutCombo->currentData().toInt();
+}
+
+void PreferencesDialog::setDefaultGalleryLayoutMode(int layoutMode)
+{
+    if (!m_galleryLayoutCombo) {
+        return;
+    }
+    const int idx = m_galleryLayoutCombo->findData(layoutMode);
+    if (idx >= 0) {
+        m_galleryLayoutCombo->setCurrentIndex(idx);
     }
 }
