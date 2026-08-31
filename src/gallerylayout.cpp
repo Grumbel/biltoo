@@ -73,7 +73,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     if (params.mode == Mode::SideBySide) {
         qreal x = margin;
         for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = availH / qMax(1.0, ns.height());
             item->setItemScale(scale);
             const qreal w = ns.width() * scale;
@@ -85,7 +85,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     } else if (params.mode == Mode::Vertical) {
         qreal y = margin;
         for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = availW / qMax(1.0, ns.width());
             item->setItemScale(scale);
             const qreal w = ns.width() * scale;
@@ -107,7 +107,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             ImageItem *item = items.at(i);
             const int col = i % cols;
             const int row = i / cols;
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = qMin(cellW / qMax(1.0, ns.width()),
                                     cellH / qMax(1.0, ns.height()));
             item->setItemScale(scale);
@@ -125,7 +125,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             ImageItem *item = items.at(i);
             const int col = i % cols;
             const int row = i / cols;
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = qMax(cell / qMax(1.0, ns.width()),
                                     cell / qMax(1.0, ns.height()));
             item->setItemScale(scale);
@@ -140,7 +140,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
         QVector<qreal> colHeights(cols, 0.0);
         for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = colW / qMax(1.0, ns.width());
             item->setItemScale(scale);
             const qreal h = ns.height() * scale;
@@ -161,7 +161,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         const qreal rowH = (availH - gap * qMax(0, rows - 1)) / rows;
         QVector<qreal> rowWidths(rows, 0.0);
         for (ImageItem *item : items) {
-            const QSizeF ns = nativeSize(item);
+            const QSizeF ns = layoutSize(item);
             const qreal scale = rowH / qMax(1.0, ns.height());
             item->setItemScale(scale);
             const qreal w = ns.width() * scale;
