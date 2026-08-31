@@ -319,6 +319,12 @@ public:
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     QImage sessionAppearanceImage(const ImageItem *item) const;
+    /** Bake ±90° content into pixels and session state (not placement). */
+    void bakeItemRotate90(ImageItem *item, int quarterTurns);
+    /** Bake flip into pixels and session state. */
+    void bakeItemFlip(ImageItem *item, bool horizontal, bool vertical);
+    /** Apply contentQuarterTurns / contentHFlip / contentVFlip after decode+crop. */
+    void applyContentBakes(ImageItem *item, const WorkspaceItemState &state);
 
     QString statusText() const;
     /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */

@@ -183,6 +183,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         const auto it = m_itemStates.constFind(path);
         if (it != m_itemStates.cend()) {
             applySessionCrop(item, *it);
+            applyContentBakes(item, *it);
         }
     }
     m_scene->addItem(item);
@@ -326,20 +327,16 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             item->setItemScale(1.0);
             item->setPos(0, 0);
             {
+                // Image mode: no Workspace placement rotation. Content 90°/flip
+                // are already in pixels (createItemFromImage applies content bakes).
+                item->setItemRotation(0.0);
                 const auto it = m_itemStates.constFind(path);
                 if (it != m_itemStates.cend()) {
-                    // Orientation is the cardinal content angle; free tilt is Workspace-only.
-                    // Fall back to snapping total rotation for states captured before
-                    // orientation was stored (defaults to 0).
-                    const qreal orientSrc =
-                        (qAbs(it->orientation) > 0.01 || qAbs(it->rotation) < 0.5)
-                            ? it->orientation
-                            : it->rotation;
-                    item->setItemRotation(ImageView::cardinalRotationOrZero(orientSrc));
-                    item->setItemHFlip(it->hFlip);
-                    item->setItemVFlip(it->vFlip);
-                } else {
-                    item->setItemRotation(0.0);
+                    // Legacy unbaked flips only if content flags not used yet.
+                    if (!it->contentHFlip && !it->contentVFlip) {
+                        item->setItemHFlip(it->hFlip);
+                        item->setItemVFlip(it->vFlip);
+                    }
                 }
             }
             prepareImageModeCanvas();
@@ -781,8 +778,7 @@ void ImageView::flipHorizontal()
         return;
     }
     for (ImageItem *item : targets) {
-        item->toggleHFlip();
-        commitItemSessionEdit(item);
+        bakeItemFlip(item, true, false);
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
@@ -799,8 +795,7 @@ void ImageView::flipVertical()
         return;
     }
     for (ImageItem *item : targets) {
-        item->toggleVFlip();
-        commitItemSessionEdit(item);
+        bakeItemFlip(item, false, true);
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
@@ -901,26 +896,35 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         return false;
     }
 
-    qreal rot = item->itemRotation();
-    bool hFlip = item->itemHFlip();
-    bool vFlip = item->itemVFlip();
     QRect priorCrop;
     bool hadCrop = false;
+    bool hFlip = false;
+    bool vFlip = false;
     {
         const auto it = m_itemStates.constFind(path);
         if (it != m_itemStates.cend()) {
-            rot = it->rotation;
-            hFlip = it->hFlip;
-            vFlip = it->vFlip;
             hadCrop = it->hasCrop;
             priorCrop = it->cropRect;
+            hFlip = it->contentHFlip || it->hFlip;
+            vFlip = it->contentVFlip || it->vFlip;
         }
     }
 
     item->setSourceImage(full);
-    item->setItemRotation(rot);
-    item->setItemHFlip(hFlip);
-    item->setItemVFlip(vFlip);
+    // Content 90°/flip live in pixels; placement angle only on Workspace.
+    if (isImageMode()) {
+        item->setItemRotation(0.0);
+    } else {
+        item->setItemRotation(item->itemRotation()); // keep free placement
+    }
+    item->setItemHFlip(false);
+    item->setItemVFlip(false);
+    {
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.cend()) {
+            applyContentBakes(item, *it);
+        }
+    }
     m_cropShowingFullImage = true;
 
     const QRectF cr = item->contentRect();
@@ -967,15 +971,20 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     if (it == m_itemStates.cend()) {
         return;
     }
+    // Reload full pixels then session crop + content bakes; placement only on Workspace.
+    const QImage full = ImageLoader::load(item->path());
+    if (!full.isNull()) {
+        item->setSourceImage(full);
+    }
     if (isImageMode()) {
-        item->setItemRotation(ImageView::cardinalRotationOrZero(
-            qAbs(it->orientation) > 0.01 ? it->orientation : it->rotation));
+        item->setItemRotation(0.0);
     } else {
         item->setItemRotation(it->rotation);
     }
-    item->setItemHFlip(it->hFlip);
-    item->setItemVFlip(it->vFlip);
+    item->setItemHFlip(false);
+    item->setItemVFlip(false);
     applySessionCrop(item, *it);
+    applyContentBakes(item, *it);
     if (isImageMode()) {
         m_fitMode = true;
         fitItem(item, currentFitAspectMode());
@@ -1547,9 +1556,7 @@ void ImageView::rotateLeft()
         return;
     }
     for (ImageItem *item : targets) {
-        // Cardinal orientation only — free Workspace tilt is preserved.
-        item->rotateOrientationBy(-90.0);
-        commitItemSessionEdit(item);
+        bakeItemRotate90(item, -1);
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
@@ -1566,8 +1573,7 @@ void ImageView::rotateRight()
         return;
     }
     for (ImageItem *item : targets) {
-        item->rotateOrientationBy(90.0);
-        commitItemSessionEdit(item);
+        bakeItemRotate90(item, 1);
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }

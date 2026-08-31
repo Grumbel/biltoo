@@ -865,17 +865,38 @@ void ImageItem::activateChromeHandle(Handle h)
 {
     switch (h) {
     case Handle::FlipH:
-        toggleHFlip();
-        break;
     case Handle::FlipV:
-        toggleVFlip();
-        break;
     case Handle::Rotate90CCW:
-        rotateOrientationBy(-90.0);
+    case Handle::Rotate90CW: {
+        if (scene()) {
+            for (QGraphicsView *v : scene()->views()) {
+                if (auto *iv = qobject_cast<ImageView *>(v)) {
+                    if (h == Handle::FlipH) {
+                        iv->bakeItemFlip(this, true, false);
+                    } else if (h == Handle::FlipV) {
+                        iv->bakeItemFlip(this, false, true);
+                    } else if (h == Handle::Rotate90CCW) {
+                        iv->bakeItemRotate90(this, -1);
+                    } else {
+                        iv->bakeItemRotate90(this, 1);
+                    }
+                    notifyViewStatus();
+                    return;
+                }
+            }
+        }
+        // Fallback without a view: bake pixels only.
+        if (h == Handle::FlipH) {
+            bakeFlip(true, false);
+        } else if (h == Handle::FlipV) {
+            bakeFlip(false, true);
+        } else if (h == Handle::Rotate90CCW) {
+            bakeRotate90(-1);
+        } else {
+            bakeRotate90(1);
+        }
         break;
-    case Handle::Rotate90CW:
-        rotateOrientationBy(90.0);
-        break;
+    }
     case Handle::Raise:
     case Handle::Lower: {
         if (scene()) {
@@ -1358,17 +1379,12 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
         const qreal deltaDeg = qRadiansToDegrees(a1 - a0);
         qreal angle = m_pressRotation + deltaDeg;
         if (mods & Qt::ControlModifier) {
-            // Snap total to cardinal — re-decompose (clears fine tilt).
+            // Snap placement to 90° — still placement only, not content.
             angle = qRound(angle / 90.0) * 90.0;
-            setItemRotation(angle);
         } else if (mods & Qt::ShiftModifier) {
             angle = qRound(angle / 45.0) * 45.0;
-            setItemRotation(angle);
-        } else {
-            // Free rotate: change only fine tilt; 90° chrome keeps orientation.
-            const qreal pressFine = m_pressRotation - m_orientation;
-            setFineRotation(pressFine + deltaDeg);
         }
+        setItemRotation(angle);
     } else if (isScaleHandle(m_activeHandle)) {
         applyScaleHandleDrag(scenePos, mods);
     }

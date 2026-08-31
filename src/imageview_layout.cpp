@@ -67,12 +67,22 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.pos = item->pos();
     s.scale = item->itemScaleX();
     s.scaleY = item->itemScaleY();
-    s.rotation = item->itemRotation();
-    s.orientation = item->itemOrientation();
+    s.rotation = item->itemRotation(); // placement only
+    s.orientation = 0.0;
     s.opacity = item->itemOpacity();
     s.z = item->stackZ();
     s.hFlip = item->itemHFlip();
     s.vFlip = item->itemVFlip();
+    // Preserve content-bake counters when capturing from a live item that already
+    // has pixels baked — merge from prior state if present.
+    const auto prev = m_itemStates.constFind(item->path());
+    if (prev != m_itemStates.cend()) {
+        s.contentQuarterTurns = prev->contentQuarterTurns;
+        s.contentHFlip = prev->contentHFlip;
+        s.contentVFlip = prev->contentVFlip;
+        s.hasCrop = prev->hasCrop;
+        s.cropRect = prev->cropRect;
+    }
     // Crop is session metadata (not recoverable from the live pixmap alone).
     const auto it = m_itemStates.constFind(item->path());
     if (it != m_itemStates.cend()) {
@@ -110,22 +120,17 @@ void ImageView::rememberItemState(ImageItem *item)
         } else {
             s.path = item->path();
         }
-        const qreal prevOrient = s.orientation;
-        const qreal fine = s.rotation - prevOrient;
+        // Placement rotation stays Workspace-only (s.rotation unchanged).
         s.hFlip = item->itemHFlip();
         s.vFlip = item->itemVFlip();
-        s.orientation = item->itemOrientation();
-        s.rotation = s.orientation + fine;
-        // Crop metadata is owned by recordSessionCrop / prior state.
-        if (it != m_itemStates.cend()) {
-            s.hasCrop = it->hasCrop;
-            s.cropRect = it->cropRect;
-        }
-        // Re-read crop after recordSessionCrop may have updated the map just before us.
+        s.orientation = 0.0;
         const auto cropIt = m_itemStates.constFind(item->path());
         if (cropIt != m_itemStates.cend()) {
             s.hasCrop = cropIt->hasCrop;
             s.cropRect = cropIt->cropRect;
+            s.contentQuarterTurns = cropIt->contentQuarterTurns;
+            s.contentHFlip = cropIt->contentHFlip;
+            s.contentVFlip = cropIt->contentVFlip;
         }
         m_itemStates.insert(item->path(), s);
         return;
@@ -138,25 +143,83 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     if (!item) {
         return {};
     }
+    // Content 90°/flip/crop are baked into source pixels. Placement rotation is not.
     QImage img = item->sourceImage();
     if (img.isNull()) {
         return {};
     }
-    // Live flips (post-crop flips are already baked into sourceImage).
+    // Legacy live flip flags (should be empty after bake).
     if (item->itemHFlip()) {
         img = img.mirrored(true, false);
     }
     if (item->itemVFlip()) {
         img = img.mirrored(false, true);
     }
-    // Cardinal orientation only — free Workspace tilt is placement, not filmstrip.
-    const qreal orient = item->itemOrientation();
-    if (qAbs(orient) > 0.5) {
-        QTransform xform;
-        xform.rotate(orient);
-        img = img.transformed(xform, Qt::SmoothTransformation);
-    }
     return img;
+}
+
+
+void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    // Order: flips then quarter turns (matches bakeFlip / bakeRotate90 live order).
+    if (state.contentHFlip || state.contentVFlip) {
+        item->bakeFlip(state.contentHFlip, state.contentVFlip);
+    }
+    if (state.contentQuarterTurns != 0) {
+        item->bakeRotate90(state.contentQuarterTurns);
+    }
+}
+
+void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
+{
+    if (!item || quarterTurns == 0) {
+        return;
+    }
+    item->bakeRotate90(quarterTurns);
+    WorkspaceItemState s;
+    const auto it = m_itemStates.constFind(item->path());
+    if (it != m_itemStates.cend()) {
+        s = *it;
+    } else {
+        s = captureState(item);
+    }
+    int turns = (s.contentQuarterTurns + quarterTurns) % 4;
+    if (turns < 0) {
+        turns += 4;
+    }
+    s.contentQuarterTurns = turns;
+    s.orientation = 0.0;
+    m_itemStates.insert(item->path(), s);
+    commitItemSessionEdit(item);
+}
+
+void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
+{
+    if (!item || (!horizontal && !vertical)) {
+        return;
+    }
+    item->bakeFlip(horizontal, vertical);
+    WorkspaceItemState s;
+    const auto it = m_itemStates.constFind(item->path());
+    if (it != m_itemStates.cend()) {
+        s = *it;
+    } else {
+        s = captureState(item);
+    }
+    // Flip composition in content space (before quarter turns on reload).
+    if (horizontal) {
+        s.contentHFlip = !s.contentHFlip;
+    }
+    if (vertical) {
+        s.contentVFlip = !s.contentVFlip;
+    }
+    s.hFlip = false;
+    s.vFlip = false;
+    m_itemStates.insert(item->path(), s);
+    commitItemSessionEdit(item);
 }
 
 void ImageView::commitItemSessionEdit(ImageItem *item)
@@ -179,7 +242,6 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     const QImage src = item->sourceImage();
     const bool hFlip = item->itemHFlip();
     const bool vFlip = item->itemVFlip();
-    const qreal orient = item->itemOrientation();
 
     auto syncOne = [&](ImageItem *other) {
         if (!other || other == item || other->path() != path) {
@@ -190,7 +252,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         }
         other->setItemHFlip(hFlip);
         other->setItemVFlip(vFlip);
-        other->setOrientation(orient);
+        // Placement rotation on Workspace copies is left unchanged.
     };
     for (ImageItem *other : m_items) {
         syncOne(other);
@@ -210,13 +272,15 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
             if (slot.path != path) {
                 continue;
             }
-            const qreal fine = slot.rotation - slot.orientation;
             slot.hasCrop = st->hasCrop;
             slot.cropRect = st->cropRect;
             slot.hFlip = hFlip;
             slot.vFlip = vFlip;
-            slot.orientation = orient;
-            slot.rotation = orient + fine;
+            slot.contentQuarterTurns = st->contentQuarterTurns;
+            slot.contentHFlip = st->contentHFlip;
+            slot.contentVFlip = st->contentVFlip;
+            slot.orientation = 0.0;
+            // slot.rotation is Workspace placement — leave unchanged.
         }
     }
 
@@ -248,13 +312,15 @@ void ImageView::restoreWorkspace()
         if (it == m_itemStates.cend()) {
             continue;
         }
-        const qreal fine = slot.rotation - slot.orientation;
         slot.hasCrop = it->hasCrop;
         slot.cropRect = it->cropRect;
         slot.hFlip = it->hFlip;
         slot.vFlip = it->vFlip;
-        slot.orientation = it->orientation;
-        slot.rotation = it->orientation + fine;
+        slot.contentQuarterTurns = it->contentQuarterTurns;
+        slot.contentHFlip = it->contentHFlip;
+        slot.contentVFlip = it->contentVFlip;
+        slot.orientation = 0.0;
+        // slot.rotation is placement — leave as snapshot.
     }
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
     m_pendingRestoreStates = m_savedWorkspace;
@@ -355,24 +421,20 @@ void ImageView::restoreStashedWorkspaceItems()
         if (it == m_itemStates.cend()) {
             continue;
         }
-        if (it->hasCrop && !it->cropRect.isEmpty()) {
-            if (item->imageSize() != it->cropRect.size()) {
-                const QImage full = ImageLoader::load(item->path());
-                if (!full.isNull()) {
-                    item->setSourceImage(full);
-                    applySessionCrop(item, *it);
-                }
-            }
-        } else {
-            // Crop cleared in Image mode: restore full on-disk pixels if needed.
+        // Rebuild content pixels from disk when session crop/bake may be stale.
+        const bool needRebuild = it->hasCrop || it->contentQuarterTurns != 0
+            || it->contentHFlip || it->contentVFlip;
+        if (needRebuild) {
             const QImage full = ImageLoader::load(item->path());
-            if (!full.isNull() && item->imageSize() != full.size()) {
+            if (!full.isNull()) {
                 item->setSourceImage(full);
+                applySessionCrop(item, *it);
+                applyContentBakes(item, *it);
             }
         }
-        item->setItemHFlip(it->hFlip);
-        item->setItemVFlip(it->vFlip);
-        item->setOrientation(it->orientation);
+        // Placement rotation is already on the stashed item — do not touch.
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
     }
     m_fitMode = false;
     m_fillMode = false;

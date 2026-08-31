@@ -125,53 +125,81 @@ static qreal normalizeDegrees(qreal degrees)
 
 void ImageItem::setItemRotation(qreal degrees)
 {
-    // Decompose into cardinal orientation + free residual so 90° chrome and
-    // free-rotate stay independent concepts when possible.
-    const qreal n = normalizeDegrees(degrees);
-    qreal nearest = qRound(n / 90.0) * 90.0;
-    if (nearest >= 360.0) {
-        nearest = 0.0;
-    }
-    m_orientation = nearest;
-    m_fineRotation = n - nearest;
-    // Keep residual in (-45, 45] so orientation is the true nearest cardinal.
-    if (m_fineRotation > 45.0) {
-        m_orientation = normalizeDegrees(m_orientation + 90.0);
-        m_fineRotation -= 90.0;
-    } else if (m_fineRotation <= -45.0) {
-        m_orientation = normalizeDegrees(m_orientation - 90.0);
-        m_fineRotation += 90.0;
-    }
-    m_rotation = normalizeDegrees(m_orientation + m_fineRotation);
+    // Placement only — never content. Content 90° turns use bakeRotate90().
+    m_rotation = normalizeDegrees(degrees);
+    m_orientation = 0.0;
+    m_fineRotation = m_rotation;
     applyLocalTransform();
     prepareGeometryChange();
+}
+
+void ImageItem::bakeRotate90(int quarterTurns)
+{
+    if (m_source.isNull() || quarterTurns == 0) {
+        return;
+    }
+    quarterTurns %= 4;
+    if (quarterTurns < 0) {
+        quarterTurns += 4;
+    }
+    if (quarterTurns == 0) {
+        return;
+    }
+    prepareGeometryChange();
+    QTransform xform;
+    xform.rotate(90.0 * quarterTurns);
+    m_source = m_source.transformed(xform, Qt::SmoothTransformation);
+    m_intrinsicSize = m_source.size();
+    setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+    // Flips stay as flags or already baked; keep placement angle.
+    updateDisplayedPixmap();
+    applyLocalTransform();
+    update();
+}
+
+void ImageItem::bakeFlip(bool horizontal, bool vertical)
+{
+    if (m_source.isNull() || (!horizontal && !vertical)) {
+        return;
+    }
+    prepareGeometryChange();
+    m_source = m_source.mirrored(horizontal, vertical);
+    // Bake any pending display flips into the same op.
+    if (m_hFlip) {
+        m_source = m_source.mirrored(true, false);
+    }
+    if (m_vFlip) {
+        m_source = m_source.mirrored(false, true);
+    }
+    m_hFlip = false;
+    m_vFlip = false;
+    m_intrinsicSize = m_source.size();
+    setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+    updateDisplayedPixmap();
+    applyLocalTransform();
+    update();
 }
 
 void ImageItem::rotateOrientationBy(qreal degrees)
 {
-    setOrientation(m_orientation + degrees);
+    // Legacy: treat as content bake (±90 only).
+    const int steps = qRound(degrees / 90.0);
+    if (steps != 0) {
+        bakeRotate90(steps);
+    }
 }
 
 void ImageItem::setOrientation(qreal degrees)
 {
-    // Cardinal content orientation only; free/fine tilt is preserved.
-    m_orientation = normalizeDegrees(degrees);
-    m_orientation = qRound(m_orientation / 90.0) * 90.0;
-    if (m_orientation >= 360.0) {
-        m_orientation = 0.0;
-    }
-    m_rotation = normalizeDegrees(m_orientation + m_fineRotation);
-    applyLocalTransform();
-    prepareGeometryChange();
+    Q_UNUSED(degrees);
+    // Content orientation is pixel data; no separate transform.
+    m_orientation = 0.0;
 }
 
 void ImageItem::setFineRotation(qreal degrees)
 {
-    // Free-rotate handle: only the residual; orientation stays put.
-    m_fineRotation = degrees;
-    m_rotation = normalizeDegrees(m_orientation + m_fineRotation);
-    applyLocalTransform();
-    prepareGeometryChange();
+    // Alias: free-rotate is placement rotation.
+    setItemRotation(degrees);
 }
 
 void ImageItem::zoomBy(qreal factor)
@@ -242,12 +270,12 @@ void ImageItem::setItemVFlip(bool on)
 
 void ImageItem::toggleHFlip()
 {
-    setItemHFlip(!m_hFlip);
+    bakeFlip(true, false);
 }
 
 void ImageItem::toggleVFlip()
 {
-    setItemVFlip(!m_vFlip);
+    bakeFlip(false, true);
 }
 
 void ImageItem::setInteractive(bool on)

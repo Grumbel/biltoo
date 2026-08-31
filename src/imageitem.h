@@ -72,11 +72,13 @@ public:
     qreal itemScale() const;
     qreal itemScaleX() const { return m_scaleX; }
     qreal itemScaleY() const { return m_scaleY; }
-    /** Total display rotation (orientation + free/fine). */
+    /**
+     * Workspace *placement* rotation only (free-rotate handle).
+     * Content 90° turns are baked into pixels — not stored here.
+     */
     qreal itemRotation() const { return m_rotation; }
-    /** Cardinal content orientation (0/90/180/270), used by 90° chrome. */
+    /** @deprecated content is baked; always 0 after bake pipeline. */
     qreal itemOrientation() const { return m_orientation; }
-    /** Workspace-only free tilt on top of orientation. */
     qreal itemFineRotation() const { return m_fineRotation; }
     qreal itemOpacity() const { return m_opacity; }
     /** Persistent stacking order (selection may temporarily raise the item). */
@@ -94,12 +96,15 @@ public:
     /** Set both axes to the same factor (gallery layouts, zoom-by). */
     void setItemScale(qreal scale);
     void setItemScale(qreal scaleX, qreal scaleY);
+    /** Workspace placement angle (free rotate). Does not touch pixels. */
     void setItemRotation(qreal degrees);
-    /** ±90° content orientation; does not clear free/fine tilt. */
+    /** Bake ±90° into source pixels; placement angle unchanged. */
+    void bakeRotate90(int quarterTurns);
+    /** Bake horizontal/vertical mirror into source pixels; clears flip flags. */
+    void bakeFlip(bool horizontal, bool vertical);
+    /** @deprecated use bakeRotate90 */
     void rotateOrientationBy(qreal degrees);
-    /** Set cardinal orientation; preserves free/fine tilt. */
     void setOrientation(qreal degrees);
-    /** Workspace free-rotate handle: set fine tilt only. */
     void setFineRotation(qreal degrees);
     void setItemOpacity(qreal opacity);
     void setItemHFlip(bool on);

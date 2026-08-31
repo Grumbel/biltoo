@@ -24,9 +24,14 @@ struct WorkspaceItemState {
     QPointF pos;
     qreal scale = 1.0;   // scaleX
     qreal scaleY = 1.0;
+    /** Workspace placement angle only (free rotate). Never content. */
     qreal rotation = 0.0;
-    /** Cardinal content orientation (0/90/180/270); Image mode uses this only. */
+    /** @deprecated kept for older session merges; prefer contentQuarterTurns. */
     qreal orientation = 0.0;
+    /** Content transforms baked into pixels (disk → crop → flip → quarter turns). */
+    int contentQuarterTurns = 0; // 0..3
+    bool contentHFlip = false;
+    bool contentVFlip = false;
     qreal opacity = 1.0;
     qreal z = 0.0;
     bool hFlip = false;
