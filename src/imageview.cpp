@@ -1430,28 +1430,23 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         return;
     }
 
-    // Workspace: the second click of a double-click is delivered as
-    // MouseButtonDblClick only — there is no second mousePressEvent.
-    // Transform chrome sits outside ImageItem::shape(), so the base
-    // QGraphicsView path sees empty space and clears selection. Treat a
-    // double-click on chrome like a press; swallow empty double-clicks so
-    // rapid clicks do not deselect.
+    // Workspace: double-click on chrome starts a handle drag; on the image
+    // body opens Image mode (same path as Gallery). Empty space is swallowed
+    // so the missing second press does not clear selection via the base class.
     if (isWorkspaceMode() && event->button() == Qt::LeftButton
         && m_tool == Tool::Select && m_scene) {
         const QPointF scenePos = mapToScene(event->pos());
-        QList<ImageItem *> candidates;
+        // Selected item handles first (chrome is above tiles).
+        QList<ImageItem *> selected;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive()) {
-                    candidates.append(ii);
+                if (ii->isInteractive() && m_items.contains(ii)) {
+                    selected.append(ii);
                 }
             }
         }
-        std::sort(candidates.begin(), candidates.end(),
-                  [](ImageItem *a, ImageItem *b) {
-                      return a->stackZ() > b->stackZ();
-                  });
-        for (ImageItem *item : candidates) {
+        if (selected.size() == 1) {
+            ImageItem *item = selected.first();
             if (item->beginHandleInteraction(scenePos, event->modifiers())) {
                 m_handleDragItem = item;
                 m_dragItem = item;
@@ -1459,17 +1454,26 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
                 event->accept();
                 return;
             }
+        } else if (selected.size() > 1) {
+            const int gh = groupHandleAt(event->pos(), selected);
+            if (gh >= 0 && beginGroupScale(gh, selected)) {
+                event->accept();
+                return;
+            }
         }
-        // Body of an interactive item: keep selection, do not propagate.
+        // Image body under cursor → Image mode (reuse Gallery open signal).
         for (QGraphicsItem *gi : m_scene->items(scenePos)) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive()) {
+                if (ii->isInteractive() && m_items.contains(ii)) {
+                    const QString path = ii->path();
+                    if (!path.isEmpty()) {
+                        emit galleryItemOpenRequested(path);
+                    }
                     event->accept();
                     return;
                 }
             }
         }
-        // Empty space: swallow — single click on empty still clears via press.
         event->accept();
         return;
     }
