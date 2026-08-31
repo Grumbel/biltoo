@@ -846,18 +846,111 @@ void ImageView::setCropMode(bool on)
             return;
         }
         cancelZoomRegion();
+        if (!prepareCropModeFullImage(item)) {
+            flashHud(tr("Crop"), tr("Could not load full image"));
+            return;
+        }
         m_cropMode = true;
-        m_cropRect = item->contentRect();
         m_cropActiveHandle = CropHandle::None;
         m_cropHoverHandle = CropHandle::None;
         m_cropRubberBanding = false;
-        flashHud(tr("Crop mode"), tr("Drag handles · Enter apply · Esc cancel"));
+        flashHud(tr("Crop mode"), tr("Handles · Reset · Enter apply · Esc cancel"));
         emit cropModeChanged(true);
         emit statusChanged();
         viewport()->update();
         return;
     }
     leaveCropModeInternal(false);
+}
+
+bool ImageView::prepareCropModeFullImage(ImageItem *item)
+{
+    if (!item) {
+        return false;
+    }
+    const QString path = item->path();
+    // Always edit against the full on-disk image so the crop region can grow.
+    const QImage full = ImageLoader::load(path);
+    if (full.isNull()) {
+        return false;
+    }
+
+    qreal rot = item->itemRotation();
+    bool hFlip = item->itemHFlip();
+    bool vFlip = item->itemVFlip();
+    QRect priorCrop;
+    bool hadCrop = false;
+    {
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.cend()) {
+            rot = it->rotation;
+            hFlip = it->hFlip;
+            vFlip = it->vFlip;
+            hadCrop = it->hasCrop;
+            priorCrop = it->cropRect;
+        }
+    }
+
+    item->setSourceImage(full);
+    item->setItemRotation(rot);
+    item->setItemHFlip(hFlip);
+    item->setItemVFlip(vFlip);
+    m_cropShowingFullImage = true;
+
+    const QRectF cr = item->contentRect();
+    if (hadCrop && !priorCrop.isEmpty()) {
+        const QSize sz = item->imageSize();
+        const QRect bounds(0, 0, sz.width(), sz.height());
+        const QRect src = priorCrop.intersected(bounds);
+        if (src.width() >= 1 && src.height() >= 1) {
+            const QPointF off = item->offset();
+            int dx = src.x();
+            int dy = src.y();
+            int dw = src.width();
+            int dh = src.height();
+            if (hFlip) {
+                dx = sz.width() - dx - dw;
+            }
+            if (vFlip) {
+                dy = sz.height() - dy - dh;
+            }
+            m_cropRect = QRectF(dx + off.x(), dy + off.y(), dw, dh);
+        } else {
+            m_cropRect = cr;
+        }
+    } else {
+        m_cropRect = cr;
+    }
+    ensureCropRectValid();
+
+    if (isImageMode()) {
+        m_fitMode = true;
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    return true;
+}
+
+void ImageView::restoreSessionCropAppearance(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    const auto it = m_itemStates.constFind(item->path());
+    if (it == m_itemStates.cend()) {
+        return;
+    }
+    item->setItemRotation(it->rotation);
+    item->setItemHFlip(it->hFlip);
+    item->setItemVFlip(it->vFlip);
+    applySessionCrop(item, *it);
+    if (isImageMode()) {
+        m_fitMode = true;
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
 }
 
 void ImageView::toggleCropMode()
@@ -906,7 +999,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         return;
     }
     const QPointF off = item->offset();
-    // Current pixmap pixel rect (after any prior session crop).
+    // Crop mode always edits the full on-disk image — store absolute source rect.
     int dx = qRound(local.left() - off.x());
     int dy = qRound(local.top() - off.y());
     int dw = qMax(1, qRound(local.width()));
@@ -930,16 +1023,19 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     } else {
         s = captureState(item);
     }
-    if (s.hasCrop && !s.cropRect.isEmpty()) {
-        // Compose onto the existing original-space crop.
-        s.cropRect = QRect(s.cropRect.x() + disp.x(),
-                           s.cropRect.y() + disp.y(),
-                           disp.width(),
-                           disp.height());
+    // Full-frame draft clears the session crop (Reset or expanded to entire image).
+    const bool fullFrame =
+        qAbs(local.left() - cr.left()) < 0.5
+        && qAbs(local.top() - cr.top()) < 0.5
+        && qAbs(local.width() - cr.width()) < 0.5
+        && qAbs(local.height() - cr.height()) < 0.5;
+    if (fullFrame) {
+        s.hasCrop = false;
+        s.cropRect = QRect();
     } else {
+        s.hasCrop = true;
         s.cropRect = disp;
     }
-    s.hasCrop = true;
     s.path = item->path();
     m_itemStates.insert(item->path(), s);
 }
@@ -953,18 +1049,17 @@ void ImageView::leaveCropModeInternal(bool apply)
     if (apply && item) {
         ensureCropRectValid();
         const QRectF full = item->contentRect();
-        // Skip no-op full-frame crops.
-        if (m_cropRect.isValid()
-            && (qAbs(m_cropRect.left() - full.left()) > 0.5
-                || qAbs(m_cropRect.top() - full.top()) > 0.5
-                || qAbs(m_cropRect.width() - full.width()) > 0.5
-                || qAbs(m_cropRect.height() - full.height()) > 0.5)) {
-            // Remember original-space crop *before* mutating the pixmap.
-            recordSessionCrop(item, m_cropRect);
+        const bool fullFrame =
+            !m_cropRect.isValid()
+            || (qAbs(m_cropRect.left() - full.left()) < 0.5
+                && qAbs(m_cropRect.top() - full.top()) < 0.5
+                && qAbs(m_cropRect.width() - full.width()) < 0.5
+                && qAbs(m_cropRect.height() - full.height()) < 0.5);
+        // Record absolute crop (or clear it) while the full image is still loaded.
+        recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
+        if (!fullFrame) {
             if (item->cropToLocalRect(m_cropRect)) {
-                // Preserve hasCrop while refreshing transform fields.
                 rememberItemState(item);
-                // Gallery tiles may still hold the full decode — drop so they rebuild.
                 discardStashedGallery();
                 if (isImageMode()) {
                     m_fitMode = true;
@@ -978,9 +1073,25 @@ void ImageView::leaveCropModeInternal(bool apply)
                              .arg(item->imageSize().width())
                              .arg(item->imageSize().height()));
             }
+        } else {
+            // Reset / full frame: keep full pixels; clear session crop metadata.
+            rememberItemState(item);
+            discardStashedGallery();
+            if (isImageMode()) {
+                m_fitMode = true;
+                fitItem(item, currentFitAspectMode());
+            } else if (isWorkspaceMode()) {
+                updateWorkspaceSceneRect();
+            }
+            emit sessionCropApplied(item->path(), item->sourceImage());
+            flashHud(tr("Crop reset"), tr("Full image"));
         }
+    } else if (item && m_cropShowingFullImage) {
+        // Esc / toggle off: put the previous session crop back on the canvas.
+        restoreSessionCropAppearance(item);
     }
     m_cropMode = false;
+    m_cropShowingFullImage = false;
     m_cropRect = QRectF();
     m_cropActiveHandle = CropHandle::None;
     m_cropHoverHandle = CropHandle::None;
@@ -1004,6 +1115,22 @@ QRectF ImageView::cropRectView() const
     return QRectF(tl, br).normalized();
 }
 
+QRect ImageView::cropResetButtonView() const
+{
+    if (!m_cropMode || !m_cropRect.isValid()) {
+        return QRect();
+    }
+    const QRectF cropView = cropRectView();
+    if (!cropView.isValid()) {
+        return QRect();
+    }
+    constexpr int kW = 56;
+    constexpr int kH = 22;
+    const int x = qRound(cropView.center().x() - kW / 2.0);
+    const int y = qRound(cropView.top()) - kH - 6;
+    return QRect(x, y, kW, kH);
+}
+
 ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
 {
     if (!m_cropMode) {
@@ -1012,6 +1139,11 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     ImageItem *item = cropTargetItem();
     if (!item || !m_cropRect.isValid()) {
         return CropHandle::None;
+    }
+    // Reset control sits above the crop frame (checked first).
+    const QRect resetBtn = cropResetButtonView();
+    if (resetBtn.contains(viewPos)) {
+        return CropHandle::Reset;
     }
     // Map crop rect corners through item → scene → view (handles stay screen-sized).
     const QRectF r = m_cropRect;
@@ -1119,6 +1251,21 @@ void ImageView::paintCropOverlay(QPainter &painter)
     drawHandle(QPoint(tl.x(), (tl.y() + bl.y()) / 2));
     drawHandle(QPoint(tr.x(), (tr.y() + br.y()) / 2));
 
+    // Reset control — expand draft to the full image (clears session crop on Enter).
+    const QRect resetBtn = cropResetButtonView();
+    if (resetBtn.isValid()) {
+        const bool hover = (m_cropHoverHandle == CropHandle::Reset);
+        painter.setPen(QPen(QColor(40, 40, 40), 1.0));
+        painter.setBrush(hover ? QColor(255, 255, 255, 255) : QColor(255, 255, 255, 230));
+        painter.drawRoundedRect(resetBtn, 4, 4);
+        painter.setPen(QColor(30, 30, 30));
+        QFont f = painter.font();
+        f.setPointSize(qMax(8, f.pointSize()));
+        f.setBold(true);
+        painter.setFont(f);
+        painter.drawText(resetBtn, Qt::AlignCenter, tr("Reset"));
+    }
+
     Q_UNUSED(contentView);
     painter.restore();
 }
@@ -1126,7 +1273,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
 void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || h == CropHandle::None) {
+    if (!item || h == CropHandle::None || h == CropHandle::Reset) {
         return;
     }
     m_cropActiveHandle = h;
@@ -1174,6 +1321,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         r.setRight(qBound(r.left() + minSide, local.x(), cr.right()));
         r.setBottom(qBound(r.top() + minSide, local.y(), cr.bottom()));
         break;
+    case CropHandle::Reset:
     case CropHandle::None:
         break;
     }

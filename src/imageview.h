@@ -401,12 +401,16 @@ private:
         TopLeft,
         TopRight,
         BottomLeft,
-        BottomRight
+        BottomRight,
+        /** Clears the draft rect to the full image (reset session crop on apply). */
+        Reset
     };
     ImageItem *cropTargetItem() const;
     void ensureCropRectValid();
     QRectF cropRectItemLocal() const { return m_cropRect; }
     QRectF cropRectView() const;
+    /** Viewport rect of the reset control (empty when not in crop mode). */
+    QRect cropResetButtonView() const;
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
@@ -416,6 +420,13 @@ private:
     void updateCropRubberBand(const QPoint &viewPos);
     void endCropRubberBand();
     void leaveCropModeInternal(bool apply);
+    /**
+     * Enter crop: show full on-disk pixels with prior crop as the draft rect
+     * so the region can grow. Returns false if the image cannot be prepared.
+     */
+    bool prepareCropModeFullImage(ImageItem *item);
+    /** Cancel path: put the session crop (if any) back on the live item. */
+    void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);
     /** Frame @p item in the view. Image mode: does not clear rotation/flips. */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
@@ -559,6 +570,8 @@ private:
     ImageItem *m_handleDragItem = nullptr;
 
     bool m_cropMode = false;
+    /** True while crop mode shows the full on-disk image (not the cropped pixmap). */
+    bool m_cropShowingFullImage = false;
     /** Draft crop in crop-target item local coordinates (contentRect space). */
     QRectF m_cropRect;
     CropHandle m_cropActiveHandle = CropHandle::None;

@@ -323,7 +323,7 @@ void ImageView::paintEvent(QPaintEvent *event)
         // Top-left: crop mode cue (persistent while active) or transient flash.
         if (m_cropMode) {
             drawPanel({{tr("Crop mode"), true},
-                       {tr("Drag · handles · Enter apply · Esc cancel"), false}},
+                       {tr("Handles · Reset · Enter apply · Esc cancel"), false}},
                       margin, margin, false, false);
         } else if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
             QString actionLine = m_hudAction;
@@ -871,6 +871,16 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     // Crop mode: handles adjust the draft rect; drag on image starts rubber-band.
     if (m_cropMode && event->button() == Qt::LeftButton) {
         const CropHandle h = cropHandleAt(event->pos());
+        if (h == CropHandle::Reset) {
+            // Expand draft to the full image; Enter commits a cleared session crop.
+            if (ImageItem *item = cropTargetItem()) {
+                m_cropRect = item->contentRect();
+                ensureCropRectValid();
+                viewport()->update();
+            }
+            event->accept();
+            return;
+        }
         if (h != CropHandle::None) {
             beginCropHandleDrag(h, event->pos());
             event->accept();
@@ -1157,6 +1167,9 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         case CropHandle::TopRight:
         case CropHandle::BottomLeft:
             viewport()->setCursor(Qt::SizeBDiagCursor);
+            break;
+        case CropHandle::Reset:
+            viewport()->setCursor(Qt::PointingHandCursor);
             break;
         case CropHandle::None:
             viewport()->setCursor(Qt::CrossCursor);
