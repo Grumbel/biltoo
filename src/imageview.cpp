@@ -20,6 +20,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QScrollBar>
+#include <QRubberBand>
 #include <QTimer>
 #include <QSet>
 #include <QThreadPool>
