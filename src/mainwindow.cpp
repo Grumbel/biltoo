@@ -227,10 +227,20 @@ void MainWindow::onThumbnailCanvasMembershipToggled(int index)
         updateWorkspaceActionVisibility();
     }
     const QString path = m_files.at(index);
-    if (m_imageView->itemPaths().contains(path)) {
-        m_imageView->removeWorkspacePath(path);
+    // Session index identifies duplicate paths; do not toggle by filename alone.
+    // Fall back to path-occurrence order for canvas items not yet bound to a slot.
+    int occurrence = 0;
+    for (int i = 0; i < index; ++i) {
+        if (m_files.at(i) == path) {
+            ++occurrence;
+        }
+    }
+    if (m_imageView->hasWorkspaceSessionIndex(index)) {
+        m_imageView->removeWorkspaceSessionIndex(index);
+    } else if (m_imageView->workspacePathOccurrenceCount(path) > occurrence) {
+        m_imageView->removeWorkspacePathOccurrence(path, occurrence);
     } else {
-        m_imageView->addImage(path);
+        m_imageView->addImageForSession(path, index);
     }
     updateStatus();
 }
@@ -424,6 +434,8 @@ void MainWindow::duplicateSelected()
     if (m_files.size() == firstNew) {
         return;
     }
+    // Bind new canvas copies (still selected) to the new session slots.
+    m_imageView->bindSelectedSessionIndices(firstNew);
     if (m_thumbnailBar) {
         m_thumbnailBar->setFiles(m_files);
         if (isWorkspaceMode()) {

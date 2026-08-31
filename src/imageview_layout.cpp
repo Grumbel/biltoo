@@ -348,6 +348,90 @@ ImageItem *ImageView::findItemByPath(const QString &path) const
     return nullptr;
 }
 
+ImageItem *ImageView::findItemBySessionIndex(int sessionIndex) const
+{
+    if (sessionIndex < 0) {
+        return nullptr;
+    }
+    for (ImageItem *item : m_items) {
+        if (item->sessionIndex() == sessionIndex) {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
+bool ImageView::hasWorkspaceSessionIndex(int sessionIndex) const
+{
+    return findItemBySessionIndex(sessionIndex) != nullptr;
+}
+
+void ImageView::removeWorkspaceSessionIndex(int sessionIndex)
+{
+    ImageItem *item = findItemBySessionIndex(sessionIndex);
+    if (!item) {
+        return;
+    }
+    const QString path = item->path();
+    m_pendingWorkspacePaths.remove(path);
+    m_pendingScenePos.remove(path);
+    m_pendingSessionIndexByPath.remove(path);
+    m_galleryDecodeScheduled.remove(path);
+    m_galleryDecodeFailed.remove(path);
+    destroyCanvasItem(item);
+    emit statusChanged();
+    emit workspacePathsChanged();
+}
+
+void ImageView::bindSelectedSessionIndices(int firstSessionIndex)
+{
+    if (firstSessionIndex < 0) {
+        return;
+    }
+    int next = firstSessionIndex;
+    for (ImageItem *item : m_items) {
+        if (item->isSelected()) {
+            item->setSessionIndex(next++);
+        }
+    }
+}
+
+int ImageView::workspacePathOccurrenceCount(const QString &path) const
+{
+    int n = 0;
+    for (ImageItem *item : m_items) {
+        if (item->path() == path) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+void ImageView::removeWorkspacePathOccurrence(const QString &path, int occurrence)
+{
+    if (occurrence < 0) {
+        return;
+    }
+    int found = 0;
+    for (ImageItem *item : m_items) {
+        if (item->path() != path) {
+            continue;
+        }
+        if (found == occurrence) {
+            m_pendingWorkspacePaths.remove(path);
+            m_pendingScenePos.remove(path);
+            m_pendingSessionIndexByPath.remove(path);
+            m_galleryDecodeScheduled.remove(path);
+            m_galleryDecodeFailed.remove(path);
+            destroyCanvasItem(item);
+            emit statusChanged();
+            emit workspacePathsChanged();
+            return;
+        }
+        ++found;
+    }
+}
+
 void ImageView::focusSessionPath(const QString &path)
 {
     if (path.isEmpty()) {
@@ -1145,6 +1229,55 @@ bool ImageView::addImage(const QString &path)
         return true;
     }
 
+    scheduleImageLoad(path, LoadAdd);
+    emit statusChanged();
+    return true;
+}
+
+bool ImageView::addImageForSession(const QString &path, int sessionIndex)
+{
+    if (isImageMode() || path.isEmpty()) {
+        return false;
+    }
+    if (sessionIndex >= 0) {
+        if (ImageItem *existing = findItemBySessionIndex(sessionIndex)) {
+            m_scene->clearSelection();
+            existing->setSelected(true);
+            ensureVisibleItem(existing);
+            emit statusChanged();
+            return true;
+        }
+    }
+    // Another session slot may already show this path — clone decoded pixels.
+    if (ImageItem *donor = findItemByPath(path)) {
+        if (donor->hasDecodedPixels() || !donor->sourceImage().isNull()) {
+            ImageItem *copy = createItemFromImage(path, donor->sourceImage(),
+                                                  /*applyStoredSessionCrop=*/false);
+            if (copy) {
+                copy->setSessionIndex(sessionIndex);
+                copy->setItemScale(donor->itemScaleX(), donor->itemScaleY());
+                copy->setItemRotation(donor->itemRotation());
+                copy->setItemHFlip(donor->itemHFlip());
+                copy->setItemVFlip(donor->itemVFlip());
+                copy->setItemOpacity(donor->itemOpacity());
+                copy->setStackZ(donor->stackZ() + 0.01);
+                copy->setPos(donor->pos() + QPointF(40.0, 40.0));
+                if (m_scene) {
+                    m_scene->clearSelection();
+                }
+                copy->setSelected(true);
+                if (isWorkspaceMode()) {
+                    updateWorkspaceSceneRect();
+                }
+                emit statusChanged();
+                emit workspacePathsChanged();
+                return true;
+            }
+        }
+    }
+    if (sessionIndex >= 0) {
+        m_pendingSessionIndexByPath.insert(path, sessionIndex);
+    }
     scheduleImageLoad(path, LoadAdd);
     emit statusChanged();
     return true;

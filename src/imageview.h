@@ -72,6 +72,8 @@ public:
 
     bool loadImage(const QString &path);
     bool addImage(const QString &path);
+    /** Add (or select) the canvas instance bound to @p sessionIndex. */
+    bool addImageForSession(const QString &path, int sessionIndex);
     /** Add image and place its centre at scenePos once loaded. */
     bool addImageAt(const QString &path, const QPointF &scenePos);
     /**
@@ -137,6 +139,16 @@ public:
     void revealGalleryPath(const QString &path);
     /** Remove one image from the workspace, remembering its transform. */
     void removeWorkspacePath(const QString &path);
+    /** Remove the canvas item bound to this session slot (duplicate-safe). */
+    void removeWorkspaceSessionIndex(int sessionIndex);
+    bool hasWorkspaceSessionIndex(int sessionIndex) const;
+    ImageItem *findItemBySessionIndex(int sessionIndex) const;
+    /** Assign sequential session indices to currently selected items starting at @p first. */
+    void bindSelectedSessionIndices(int firstSessionIndex);
+    /** How many canvas items currently show @p path. */
+    int workspacePathOccurrenceCount(const QString &path) const;
+    /** Remove the n-th canvas item with @p path (0-based, m_items order). */
+    void removeWorkspacePathOccurrence(const QString &path, int occurrence);
 
     void setTool(Tool tool);
     Tool tool() const { return m_tool; }
@@ -567,6 +579,8 @@ private:
     QList<WorkspaceItemState> m_pendingRestoreStates;
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */
     QHash<QString, QPointF> m_pendingScenePos;
+    /** Session slot to assign when a LoadAdd for @p path finishes. */
+    QHash<QString, int> m_pendingSessionIndexByPath;
     ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;

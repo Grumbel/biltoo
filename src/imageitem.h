@@ -55,6 +55,9 @@ public:
                        QGraphicsItem *parent = nullptr);
 
     QString path() const { return m_path; }
+    /** Index in the session file list (-1 = unbound). Distinguishes duplicates. */
+    int sessionIndex() const { return m_sessionIndex; }
+    void setSessionIndex(int index) { m_sessionIndex = index; }
     QSize imageSize() const;
     const QImage &sourceImage() const { return m_source; }
     bool hasDecodedPixels() const { return !m_source.isNull(); }
@@ -208,6 +211,7 @@ private:
     QList<Handle> activeHandles() const;
 
     QString m_path;
+    int m_sessionIndex = -1;
     QImage m_source;
     /** Valid when m_source is null (placeholder) or as size cache. */
     QSize m_intrinsicSize;

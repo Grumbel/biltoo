@@ -465,6 +465,10 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         emit statusChanged();
         return;
     }
+    // Bind session slot if this LoadAdd was requested for a specific index.
+    if (m_pendingSessionIndexByPath.contains(path)) {
+        item->setSessionIndex(m_pendingSessionIndexByPath.take(path));
+    }
     // Flags already match ViewMode via createItemFromImage / applyItemModeFlags.
     // Do not force interactive — that flashes handles in Gallery.
 
