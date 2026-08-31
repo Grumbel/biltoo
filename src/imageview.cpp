@@ -1063,6 +1063,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     } else {
         s = captureState(item);
     }
+    s.sessionIndex = item->sessionIndex();
     // Full-frame draft clears the session crop (Reset or expanded to entire image).
     const bool fullFrame =
         qAbs(local.left() - cr.left()) < 0.5

@@ -64,6 +64,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
 {
     WorkspaceItemState s;
     s.path = item->path();
+    s.sessionIndex = item->sessionIndex();
     s.pos = item->pos();
     s.scale = item->itemScaleX();
     s.scaleY = item->itemScaleY();
@@ -73,15 +74,20 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.z = item->stackZ();
     s.hFlip = item->itemHFlip();
     s.vFlip = item->itemVFlip();
-    // Preserve content-bake counters when capturing from a live item that already
-    // has pixels baked — merge from prior state if present.
+    // Merge path-keyed session appearance only for the same session slot (or
+    // when this item is the sole instance of the path).
     const auto prev = m_itemStates.constFind(item->path());
     if (prev != m_itemStates.cend()) {
-        s.contentQuarterTurns = prev->contentQuarterTurns;
-        s.contentHFlip = prev->contentHFlip;
-        s.contentVFlip = prev->contentVFlip;
-        s.hasCrop = prev->hasCrop;
-        s.cropRect = prev->cropRect;
+        const bool sameSlot = (item->sessionIndex() < 0 && prev->sessionIndex < 0)
+            || (item->sessionIndex() >= 0 && item->sessionIndex() == prev->sessionIndex);
+        if (sameSlot) {
+            s.contentQuarterTurns = prev->contentQuarterTurns;
+            s.contentHFlip = prev->contentHFlip;
+            s.contentVFlip = prev->contentVFlip;
+            s.hasCrop = prev->hasCrop;
+            s.cropRect = prev->cropRect;
+            s.sessionIndex = prev->sessionIndex >= 0 ? prev->sessionIndex : s.sessionIndex;
+        }
     }
     // Crop is session metadata (not recoverable from the live pixmap alone).
     const auto it = m_itemStates.constFind(item->path());
@@ -239,12 +245,23 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     // stashed Workspace instance of this path. Placement (pos, scale, free
     // tilt) on Workspace copies is preserved.
     const QString path = item->path();
+    const int sessionIndex = item->sessionIndex();
     const QImage src = item->sourceImage();
     const bool hFlip = item->itemHFlip();
     const bool vFlip = item->itemVFlip();
 
+    // Duplicates share a path but are independent instances. Only sync the same
+    // session slot (and never clobber other Workspace copies of the path).
     auto syncOne = [&](ImageItem *other) {
         if (!other || other == item || other->path() != path) {
+            return;
+        }
+        if (sessionIndex >= 0) {
+            if (other->sessionIndex() != sessionIndex) {
+                return;
+            }
+        } else if (other->sessionIndex() >= 0) {
+            // Edited item unbound; leave bound instances alone.
             return;
         }
         if (!src.isNull()) {
@@ -252,7 +269,6 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         }
         other->setItemHFlip(hFlip);
         other->setItemVFlip(vFlip);
-        // Placement rotation on Workspace copies is left unchanged.
     };
     for (ImageItem *other : m_items) {
         syncOne(other);
@@ -264,12 +280,16 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         syncOne(other);
     }
 
-    // Keep durable Workspace snapshot crop/appearance in sync so the fallback
-    // restoreWorkspace() path (re-decode) also gets the Image-mode crop.
+    // Durable snapshot: only slots matching path + sessionIndex (or path-only
+    // when session is unbound).
     const auto st = m_itemStates.constFind(path);
     if (st != m_itemStates.cend()) {
         for (WorkspaceItemState &slot : m_savedWorkspace) {
             if (slot.path != path) {
+                continue;
+            }
+            if (sessionIndex >= 0 && slot.sessionIndex >= 0
+                && slot.sessionIndex != sessionIndex) {
                 continue;
             }
             slot.hasCrop = st->hasCrop;
@@ -280,7 +300,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
             slot.contentHFlip = st->contentHFlip;
             slot.contentVFlip = st->contentVFlip;
             slot.orientation = 0.0;
-            // slot.rotation is Workspace placement — leave unchanged.
+            slot.sessionIndex = sessionIndex >= 0 ? sessionIndex : slot.sessionIndex;
         }
     }
 
@@ -312,6 +332,12 @@ void ImageView::restoreWorkspace()
         if (it == m_itemStates.cend()) {
             continue;
         }
+        // Only merge path-level appearance into slots that share the same
+        // session index (or unbound snapshot slots).
+        if (slot.sessionIndex >= 0 && it->sessionIndex >= 0
+            && slot.sessionIndex != it->sessionIndex) {
+            continue;
+        }
         slot.hasCrop = it->hasCrop;
         slot.cropRect = it->cropRect;
         slot.hFlip = it->hFlip;
@@ -320,7 +346,6 @@ void ImageView::restoreWorkspace()
         slot.contentHFlip = it->contentHFlip;
         slot.contentVFlip = it->contentVFlip;
         slot.orientation = 0.0;
-        // slot.rotation is placement — leave as snapshot.
     }
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
     m_pendingRestoreStates = m_savedWorkspace;
@@ -414,27 +439,36 @@ void ImageView::restoreStashedWorkspaceItems()
             m_scene->addItem(item);
         }
         applyItemModeFlags(item);
-        // Authoritative session crop / appearance after Image-mode edits.
-        // Stash pixel sync can miss (path races, discard, failed setSourceImage);
-        // re-apply from m_itemStates so Workspace always matches the session.
-        const auto it = m_itemStates.constFind(item->path());
-        if (it == m_itemStates.cend()) {
-            continue;
-        }
-        // Rebuild content pixels from disk when session crop/bake may be stale.
-        const bool needRebuild = it->hasCrop || it->contentQuarterTurns != 0
-            || it->contentHFlip || it->contentVFlip;
-        if (needRebuild) {
-            const QImage full = ImageLoader::load(item->path());
-            if (!full.isNull()) {
-                item->setSourceImage(full);
-                applySessionCrop(item, *it);
-                applyContentBakes(item, *it);
+        // Path-keyed m_itemStates is shared by duplicates — do not rebuild every
+        // instance from it. Live stash pixels are authoritative per item; only
+        // re-apply path session crop when this is the unique canvas instance of
+        // the path (or the slot matches a single-slot path edit).
+        int samePath = 0;
+        for (ImageItem *peer : m_items) {
+            if (peer && peer->path() == item->path()) {
+                ++samePath;
             }
         }
-        // Placement rotation is already on the stashed item — do not touch.
-        item->setItemHFlip(false);
-        item->setItemVFlip(false);
+        if (samePath <= 1) {
+            const auto it = m_itemStates.constFind(item->path());
+            if (it != m_itemStates.cend()) {
+                const bool needRebuild = it->hasCrop || it->contentQuarterTurns != 0
+                    || it->contentHFlip || it->contentVFlip;
+                if (needRebuild) {
+                    const QSize want = it->hasCrop ? it->cropRect.size() : QSize();
+                    const bool sizeMismatch = it->hasCrop
+                        && item->imageSize() != want;
+                    if (sizeMismatch || item->sourceImage().isNull()) {
+                        const QImage full = ImageLoader::load(item->path());
+                        if (!full.isNull()) {
+                            item->setSourceImage(full);
+                            applySessionCrop(item, *it);
+                            applyContentBakes(item, *it);
+                        }
+                    }
+                }
+            }
+        }
     }
     m_fitMode = false;
     m_fillMode = false;

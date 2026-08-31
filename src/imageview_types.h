@@ -21,6 +21,8 @@ struct ImageMouseInfo {
 /** Persisted free-form / workspace placement for one path. */
 struct WorkspaceItemState {
     QString path;
+    /** Filmstrip / session slot; -1 = unbound. Distinguishes path duplicates. */
+    int sessionIndex = -1;
     QPointF pos;
     qreal scale = 1.0;   // scaleX
     qreal scaleY = 1.0;
