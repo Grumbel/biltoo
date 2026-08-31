@@ -144,7 +144,7 @@ editor; QImgView stays a **viewer with quick fixes**.
 ### Stability / polish (optional)
 
 - [ ] Thumbnail click crash (needs reliable repro)
-- [ ] CLI `--workspace` / start-in-workspace still slightly confusing vs Preferences
+- [x] CLI `--mode=image|gallery|workspace` (overrides Preferences start-in-workspace for the launch)
 - [ ] Drag-load status: show count of images still decoding
 - [ ] AppStream screenshots for Flathub-style stores
 - [x] Virtualize Gallery when sessions are huge (viewport decode window + placeholders)

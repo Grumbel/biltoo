@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
     parser.setApplicationDescription(
         QCoreApplication::translate("main",
-            "Classic Qt image viewer with workspace semantics"));
+            "QImgView — Image, Gallery, and Workspace image viewer"));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addPositionalArgument(
@@ -66,17 +66,12 @@ int main(int argc, char *argv[])
         QCoreApplication::translate("main", "Image files or directories to open"),
         QStringLiteral("[file|dir...]"));
 
-    QCommandLineOption fullscreenOption(
-        QStringList() << QStringLiteral("f") << QStringLiteral("fullscreen"),
-        QCoreApplication::translate("main", "Start in fullscreen mode"));
-    parser.addOption(fullscreenOption);
-
-    // Documented flag; fit-on-load is already the default Image-mode behaviour.
-    QCommandLineOption fitOption(
-        QStringList() << QStringLiteral("fit"),
+    // --- Input / session ---
+    QCommandLineOption recursiveOption(
+        QStringList() << QStringLiteral("r") << QStringLiteral("recursive"),
         QCoreApplication::translate("main",
-            "Fit image to window on load (default behaviour)"));
-    parser.addOption(fitOption);
+            "Recurse into subdirectories when a directory is given"));
+    parser.addOption(recursiveOption);
 
     QCommandLineOption startAtOption(
         QStringList() << QStringLiteral("start-at"),
@@ -84,19 +79,21 @@ int main(int argc, char *argv[])
         QStringLiteral("N"));
     parser.addOption(startAtOption);
 
-    QCommandLineOption recursiveOption(
-        QStringList() << QStringLiteral("r") << QStringLiteral("recursive"),
-        QCoreApplication::translate("main",
-            "Recurse into subdirectories when a directory is given"));
-    parser.addOption(recursiveOption);
-
     QCommandLineOption sortOption(
         QStringList() << QStringLiteral("sort"),
         QCoreApplication::translate("main",
-            "Sort images by name or mtime (default: name)"),
+            "Sort session by file name or modification time"),
         QStringLiteral("name|mtime"));
     parser.addOption(sortOption);
 
+    QCommandLineOption modeOption(
+        QStringList() << QStringLiteral("mode"),
+        QCoreApplication::translate("main",
+            "Start in Image, Gallery (masonry), or Workspace mode"),
+        QStringLiteral("image|gallery|workspace"));
+    parser.addOption(modeOption);
+
+    // --- Playback ---
     QCommandLineOption slideshowOption(
         QStringList() << QStringLiteral("slideshow"),
         QCoreApplication::translate("main", "Start a slideshow after loading images"));
@@ -108,6 +105,12 @@ int main(int argc, char *argv[])
             "Slideshow interval in milliseconds (default: 3000)"),
         QStringLiteral("ms"));
     parser.addOption(intervalOption);
+
+    // --- Window / chrome ---
+    QCommandLineOption fullscreenOption(
+        QStringList() << QStringLiteral("f") << QStringLiteral("fullscreen"),
+        QCoreApplication::translate("main", "Start in fullscreen mode"));
+    parser.addOption(fullscreenOption);
 
     QCommandLineOption thumbnailsOption(
         QStringList() << QStringLiteral("thumbnails"),
@@ -165,11 +168,35 @@ int main(int argc, char *argv[])
         window.show();
     }
 
+    const QString cliMode = parser.isSet(modeOption)
+        ? parser.value(modeOption)
+        : QString();
+
+    // Workspace before load so loadFiles can place the full session on the canvas
+    // (same path as Preferences "Start in workspace mode").
+    if (cliMode.compare(QLatin1String("workspace"), Qt::CaseInsensitive) == 0
+        || cliMode.compare(QLatin1String("work"), Qt::CaseInsensitive) == 0) {
+        window.applyCliViewMode(QStringLiteral("workspace"));
+    } else if (cliMode.compare(QLatin1String("image"), Qt::CaseInsensitive) == 0
+               || cliMode.compare(QLatin1String("classic"), Qt::CaseInsensitive) == 0) {
+        // Override Preferences start-in-workspace for this launch.
+        window.applyCliViewMode(QStringLiteral("image"));
+    }
+
     if (!files.isEmpty()) {
         window.loadFiles(files, startAt);
+        if (cliMode.compare(QLatin1String("gallery"), Qt::CaseInsensitive) == 0) {
+            window.applyCliViewMode(QStringLiteral("gallery"));
+        } else if (cliMode.compare(QLatin1String("workspace"), Qt::CaseInsensitive) == 0
+                   || cliMode.compare(QLatin1String("work"), Qt::CaseInsensitive) == 0) {
+            // Ensure full session on canvas if load raced preference/mode.
+            window.applyCliViewMode(QStringLiteral("workspace"));
+        }
         if (parser.isSet(slideshowOption)) {
             window.startSlideshow();
         }
+    } else if (!cliMode.isEmpty()) {
+        window.applyCliViewMode(cliMode);
     }
 
     return app.exec();

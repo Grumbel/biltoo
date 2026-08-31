@@ -40,9 +40,12 @@ Useful options:
 | Option | Description |
 |--------|-------------|
 | `-r`, `--recursive` | Expand directories recursively |
-| `--sort=name\|mtime` | Sort order for loaded files (UI also offers size / dimensions) |
-| `--slideshow` | Start the slideshow |
+| `--start-at=N` | Start at the N-th image (1-based) |
+| `--sort=name\|mtime` | Sort session by name or modification time |
+| `--mode=image\|gallery\|workspace` | Start in Image, Gallery (masonry), or Workspace |
+| `--slideshow` | Start a slideshow after loading images |
 | `--interval=ms` | Slideshow interval in milliseconds |
+| `-f`, `--fullscreen` | Start in fullscreen |
 | `--thumbnails` / `--no-thumbnails` | Force thumbnail bar on or off |
 
 Drag and drop image files onto the window. Drops **append** to the current session (Image, Gallery, and Workspace). Use **File → Open** to replace the session, or **File → New** for an empty session.

@@ -61,6 +61,13 @@ public:
     void setSlideshowIntervalMs(int ms);
     void startSlideshow();
     void stopSlideshow();
+    /**
+     * CLI --mode: switch presentation after the window exists.
+     * @p mode is "image", "gallery", or "workspace" (case-insensitive).
+     * Gallery uses Masonry. Workspace places the full session on the canvas.
+     * Unknown values are ignored.
+     */
+    void applyCliViewMode(const QString &mode);
     /** Shorter interval (faster); shortcut ]. */
     void slideshowFaster();
     /** Longer interval (slower); shortcut [. */

@@ -208,6 +208,8 @@ and Select/Pan live on the vertical workspace tool strip.
 - Slideshow (F5): advances automatically; `--slideshow` and `--interval=ms` on the CLI.
   Manual navigation or thumbnail click pauses the slideshow. Optional auto-fullscreen
   (Preferences, on by default). Disabled in workspace mode.
+- CLI `--mode=image|gallery|workspace` selects the start presentation (Gallery uses
+  masonry). Overrides Preferences “Start in workspace mode” for that launch only.
 - Thumbnails are decoded asynchronously on the global QThreadPool.
 - Sort by name or mtime (View menu; `--sort=name|mtime`).
 - Open replaces the session; Add Images… / Shift or Ctrl+drop appends (deduplicated).

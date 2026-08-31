@@ -189,6 +189,49 @@ void MainWindow::enterWorkspaceMode()
     toggleWorkspaceMode();
 }
 
+void MainWindow::applyCliViewMode(const QString &mode)
+{
+    const QString m = mode.trimmed().toLower();
+    if (m.isEmpty()) {
+        return;
+    }
+    if (m == QLatin1String("image") || m == QLatin1String("classic")) {
+        if (isWorkspaceMode()) {
+            if (m_workspaceModeAct) {
+                m_workspaceModeAct->setChecked(false);
+            }
+            toggleWorkspaceMode();
+        } else if (isGalleryMode()) {
+            QString path;
+            if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
+                path = m_files.at(m_currentIndex);
+            } else if (!m_files.isEmpty()) {
+                path = m_files.first();
+            }
+            if (!path.isEmpty()) {
+                showPathInImageMode(path);
+            } else if (m_imageView) {
+                m_imageView->setViewMode(ImageView::ViewMode::Image);
+                updateWorkspaceActionVisibility();
+            }
+        }
+        return;
+    }
+    if (m == QLatin1String("gallery")) {
+        enterGalleryMode(ImageView::LayoutMode::Masonry);
+        return;
+    }
+    if (m == QLatin1String("workspace") || m == QLatin1String("work")) {
+        enterWorkspaceMode();
+        if (m_imageView && !m_files.isEmpty()) {
+            m_imageView->setWorkspacePaths(m_files);
+        }
+        updateWorkspaceActionVisibility();
+        return;
+    }
+}
+
+
 
 void MainWindow::updateMasonryCountControl()
 {
