@@ -1263,7 +1263,8 @@ void ImageView::paintCropOverlay(QPainter &painter)
         f.setPointSize(qMax(8, f.pointSize()));
         f.setBold(true);
         painter.setFont(f);
-        painter.drawText(resetBtn, Qt::AlignCenter, tr("Reset"));
+        // Local QPoint `tr` (top-right) shadows QObject::tr — call explicitly.
+        painter.drawText(resetBtn, Qt::AlignCenter, ImageView::tr("Reset"));
     }
 
     Q_UNUSED(contentView);
