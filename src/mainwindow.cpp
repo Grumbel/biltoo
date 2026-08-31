@@ -375,7 +375,44 @@ void MainWindow::resetItemRotation()
 
 void MainWindow::duplicateSelected()
 {
+    if (!m_imageView) {
+        return;
+    }
+    // Capture paths before canvas clears selection / creates copies.
+    const QStringList sourcePaths = m_imageView->selectedPaths();
     m_imageView->duplicateSelected();
+    if (sourcePaths.isEmpty()) {
+        return;
+    }
+    // Each Workspace copy is a distinct session entry (same path allowed twice).
+    // Do not go through appendFiles() — that deduplicates and rebuilds selection.
+    const int firstNew = m_files.size();
+    for (const QString &path : sourcePaths) {
+        if (!path.isEmpty()) {
+            m_files.append(path);
+        }
+    }
+    if (m_files.size() == firstNew) {
+        return;
+    }
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setFiles(m_files);
+        if (isWorkspaceMode()) {
+            m_thumbnailBar->setMultiSelectEnabled(true);
+            // Select the newly appended session slots.
+            QList<int> indices;
+            for (int i = firstNew; i < m_files.size(); ++i) {
+                indices.append(i);
+            }
+            m_thumbnailBar->setSelectedIndices(indices);
+        }
+    }
+    applyThumbnailVisibility();
+    updateWorkspaceActionVisibility();
+    if (statusBar()) {
+        statusBar()->showMessage(
+            tr("Duplicated %n image(s) into the session", "", sourcePaths.size()), 3000);
+    }
 }
 
 void MainWindow::openSelectionInNewWindow()

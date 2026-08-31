@@ -355,6 +355,21 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     if (item == m_gallerySelectionAnchor) {
         m_gallerySelectionAnchor = nullptr;
     }
+    // Group scale holds raw pointers — drop before delete or BSP paint UAF.
+    if (m_groupScaleDrag || !m_groupDragItems.isEmpty()) {
+        m_groupDragItems.removeAll(item);
+        if (m_groupDragItems.isEmpty()) {
+            m_groupScaleDrag = false;
+            m_groupHandle = -1;
+            m_groupDragStartStates.clear();
+        } else if (m_groupDragStartStates.size() == m_groupDragItems.size() + 1) {
+            // States were parallel to items; rebuild by clearing (safer than index guess).
+            m_groupScaleDrag = false;
+            m_groupHandle = -1;
+            m_groupDragItems.clear();
+            m_groupDragStartStates.clear();
+        }
+    }
     rememberItemState(item);
     item->setSelected(false);
     m_items.removeOne(item);

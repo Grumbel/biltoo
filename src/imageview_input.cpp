@@ -174,7 +174,7 @@ void ImageView::paintEvent(QPaintEvent *event)
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
                 // Only paint chrome for items we still own (guards against a
                 // stale selection entry after destroyCanvasItem).
-                if (ii->isInteractive() && m_items.contains(ii)) {
+                if (ii->isInteractive() && m_items.contains(ii) && ii->scene() == m_scene) {
                     selected.append(ii);
                 }
             }
@@ -594,6 +594,18 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
 {
     if (!m_groupScaleDrag || m_groupDragItems.isEmpty()
         || m_groupDragStartStates.size() != m_groupDragItems.size()) {
+        return;
+    }
+    // Drop any pointers no longer on our canvas (deleted mid-drag).
+    for (int i = m_groupDragItems.size() - 1; i >= 0; --i) {
+        ImageItem *item = m_groupDragItems.at(i);
+        if (!item || !m_items.contains(item) || item->scene() != m_scene) {
+            m_groupDragItems.removeAt(i);
+            m_groupDragStartStates.removeAt(i);
+        }
+    }
+    if (m_groupDragItems.isEmpty()) {
+        endGroupScale();
         return;
     }
     const QRectF b = m_groupBoundsStart;
