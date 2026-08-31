@@ -66,6 +66,14 @@ ImageView::ImageView(QWidget *parent)
         viewport()->update();
     });
 
+    m_slideshowProgressTimer = new QTimer(this);
+    m_slideshowProgressTimer->setInterval(33); // ~30 Hz; cheap 1px redraw
+    connect(m_slideshowProgressTimer, &QTimer::timeout, this, [this]() {
+        if (m_hudVisible && m_slideshowProgressActive && m_slideshowProgressIntervalMs > 0) {
+            viewport()->update();
+        }
+    });
+
     setRenderHint(QPainter::SmoothPixmapTransform, true);
     setAcceptDrops(true);
     setDragMode(QGraphicsView::NoDrag);
@@ -596,6 +604,14 @@ void ImageView::setHudVisible(bool on)
         return;
     }
     m_hudVisible = on;
+    // Progress line only paints with the pinned HUD; drive the timer accordingly.
+    if (m_slideshowProgressTimer) {
+        if (on && m_slideshowProgressActive && m_slideshowProgressIntervalMs > 0) {
+            m_slideshowProgressTimer->start();
+        } else {
+            m_slideshowProgressTimer->stop();
+        }
+    }
     viewport()->update();
 }
 
@@ -635,6 +651,23 @@ void ImageView::flashHud(const QString &action, const QString &detail)
     m_hudIdentityPulse = true;
     if (m_hudFlashTimer) {
         m_hudFlashTimer->start(1000);
+    }
+    viewport()->update();
+}
+
+void ImageView::setSlideshowProgress(bool active, int intervalMs)
+{
+    m_slideshowProgressActive = active;
+    m_slideshowProgressIntervalMs = active ? qMax(0, intervalMs) : 0;
+    if (active) {
+        m_slideshowProgressElapsed.start();
+        if (m_hudVisible && m_slideshowProgressIntervalMs > 0 && m_slideshowProgressTimer) {
+            m_slideshowProgressTimer->start();
+        } else if (m_slideshowProgressTimer) {
+            m_slideshowProgressTimer->stop();
+        }
+    } else if (m_slideshowProgressTimer) {
+        m_slideshowProgressTimer->stop();
     }
     viewport()->update();
 }

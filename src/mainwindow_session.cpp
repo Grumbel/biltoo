@@ -799,7 +799,12 @@ void MainWindow::setSlideshowIntervalMs(int ms)
     // 0 ms = as fast as the event loop allows; upper bound keeps UI usable.
     m_slideshowIntervalMs = qBound(0, ms, 60000);
     if (m_slideshowTimer && m_slideshowTimer->isActive()) {
-        m_slideshowTimer->setInterval(m_slideshowIntervalMs);
+        // Restart so the current dwell and the HUD progress line match the new
+        // interval instead of keeping a stale remaining time.
+        m_slideshowTimer->start(m_slideshowIntervalMs);
+        if (m_imageView) {
+            m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        }
     }
 }
 
@@ -976,6 +981,7 @@ void MainWindow::startSlideshow()
     qApp->installEventFilter(this);
     armSlideshowCursorHide();
     if (m_imageView) {
+        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }
@@ -1000,8 +1006,11 @@ void MainWindow::stopSlideshow()
         m_slideshowAct->setText(tr("Play &Slideshow"));
         m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     }
-    if (wasRunning && m_imageView) {
-        m_imageView->flashHud(tr("■  Slideshow stopped"));
+    if (m_imageView) {
+        m_imageView->setSlideshowProgress(false);
+        if (wasRunning) {
+            m_imageView->flashHud(tr("■  Slideshow stopped"));
+        }
     }
 }
 

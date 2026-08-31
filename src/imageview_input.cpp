@@ -343,6 +343,31 @@ void ImageView::paintEvent(QPaintEvent *event)
             drawPanel(bottom, margin, 0, false, true);
         }
     }
+
+    // Slideshow dwell: single device pixel along the bottom edge while the full
+    // HUD is pinned. No track, no panel — only the filled fraction of the width.
+    if (m_hudVisible && m_slideshowProgressActive && m_slideshowProgressIntervalMs > 0) {
+        const qint64 elapsed = m_slideshowProgressElapsed.isValid()
+            ? m_slideshowProgressElapsed.elapsed()
+            : 0;
+        qreal fraction = qreal(elapsed) / qreal(m_slideshowProgressIntervalMs);
+        if (fraction < 0.0) {
+            fraction = 0.0;
+        } else if (fraction > 1.0) {
+            fraction = 1.0;
+        }
+        const int viewW = viewport()->width();
+        const int viewH = viewport()->height();
+        if (viewW > 0 && viewH > 0 && fraction > 0.0) {
+            const int barW = qMax(1, int(qRound(fraction * viewW)));
+            QColor c = m_hudTextColor.isValid() ? m_hudTextColor : QColor(255, 255, 255);
+            // Soft so it does not fight the image; still readable on dark or light.
+            c.setAlpha(200);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(c);
+            painter.drawRect(0, viewH - 1, barW, 1);
+        }
+    }
 }
 
 void ImageView::dragEnterEvent(QDragEnterEvent *event)

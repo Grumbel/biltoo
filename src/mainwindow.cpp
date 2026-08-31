@@ -439,6 +439,10 @@ void MainWindow::onSlideshowTick()
     m_slideshowAdvancing = true;
     goNext();
     m_slideshowAdvancing = false;
+    // New dwell begins after advance — reset the pinned-HUD progress line.
+    if (m_imageView && m_slideshowTimer && m_slideshowTimer->isActive()) {
+        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+    }
 }
 
 void MainWindow::toggleToolBar()

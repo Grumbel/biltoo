@@ -7,6 +7,7 @@
 #include "imageview_types.h"
 
 #include <QColor>
+#include <QElapsedTimer>
 #include <QGraphicsView>
 #include <QHash>
 #include <QList>
@@ -180,6 +181,14 @@ public:
      * Visible for ~1.8s; never used for Next/Prev (session badge covers that).
      */
     void flashHud(const QString &action, const QString &detail = QString());
+
+    /**
+     * Slideshow dwell progress for the pinned HUD: a 1px line at the bottom of
+     * the viewport. Call with active=true and the current interval when a slide
+     * starts (or interval changes while running); active=false when the
+     * slideshow stops. The line is drawn only while the full HUD is pinned.
+     */
+    void setSlideshowProgress(bool active, int intervalMs = 0);
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -394,6 +403,11 @@ private:
     QString m_hudAction;
     QString m_hudDetail;
     QTimer *m_hudFlashTimer = nullptr;
+    /** Slideshow progress (pinned HUD only): active dwell countdown. */
+    bool m_slideshowProgressActive = false;
+    int m_slideshowProgressIntervalMs = 0;
+    QElapsedTimer m_slideshowProgressElapsed;
+    QTimer *m_slideshowProgressTimer = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;

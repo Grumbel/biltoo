@@ -111,6 +111,7 @@ QImgView is a classic Qt image viewer with three presentation modes on one canva
 - [x] Adaptive step sizes (fine near 0, coarser at long dwells)
 - [x] HUD flash shows current interval on `[` / `]` and on start
 - [x] Preferences + CLI accept 0 ms / sub-second values
+- [x] Pinned HUD: 1px bottom progress line during slideshow dwell
 - [x] flake `apps.default` `meta.description`
 - [x] `.desktop` uses `%F` for multiple images
 
