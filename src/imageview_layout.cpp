@@ -100,6 +100,36 @@ void ImageView::rememberItemState(ImageItem *item)
     if (!item) {
         return;
     }
+    // Image mode must not overwrite Workspace placement (pos / scale / free tilt)
+    // stored for the same path — only session appearance fields change there.
+    if (isImageMode()) {
+        WorkspaceItemState s;
+        const auto it = m_itemStates.constFind(item->path());
+        if (it != m_itemStates.cend()) {
+            s = *it;
+        } else {
+            s.path = item->path();
+        }
+        const qreal prevOrient = s.orientation;
+        const qreal fine = s.rotation - prevOrient;
+        s.hFlip = item->itemHFlip();
+        s.vFlip = item->itemVFlip();
+        s.orientation = item->itemOrientation();
+        s.rotation = s.orientation + fine;
+        // Crop metadata is owned by recordSessionCrop / prior state.
+        if (it != m_itemStates.cend()) {
+            s.hasCrop = it->hasCrop;
+            s.cropRect = it->cropRect;
+        }
+        // Re-read crop after recordSessionCrop may have updated the map just before us.
+        const auto cropIt = m_itemStates.constFind(item->path());
+        if (cropIt != m_itemStates.cend()) {
+            s.hasCrop = cropIt->hasCrop;
+            s.cropRect = cropIt->cropRect;
+        }
+        m_itemStates.insert(item->path(), s);
+        return;
+    }
     m_itemStates.insert(item->path(), captureState(item));
 }
 
@@ -172,6 +202,24 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         syncOne(other);
     }
 
+    // Keep durable Workspace snapshot crop/appearance in sync so the fallback
+    // restoreWorkspace() path (re-decode) also gets the Image-mode crop.
+    const auto st = m_itemStates.constFind(path);
+    if (st != m_itemStates.cend()) {
+        for (WorkspaceItemState &slot : m_savedWorkspace) {
+            if (slot.path != path) {
+                continue;
+            }
+            const qreal fine = slot.rotation - slot.orientation;
+            slot.hasCrop = st->hasCrop;
+            slot.cropRect = st->cropRect;
+            slot.hFlip = hFlip;
+            slot.vFlip = vFlip;
+            slot.orientation = orient;
+            slot.rotation = orient + fine;
+        }
+    }
+
     emit statusChanged();
 }
 
@@ -193,6 +241,21 @@ void ImageView::restoreWorkspace()
 {
     clearWorkspace();
     m_pendingWorkspacePaths.clear();
+    // Merge session appearance (crop / flip / orientation) from the live map into
+    // the durable snapshot so Image-mode edits survive a full rebuild.
+    for (WorkspaceItemState &slot : m_savedWorkspace) {
+        const auto it = m_itemStates.constFind(slot.path);
+        if (it == m_itemStates.cend()) {
+            continue;
+        }
+        const qreal fine = slot.rotation - slot.orientation;
+        slot.hasCrop = it->hasCrop;
+        slot.cropRect = it->cropRect;
+        slot.hFlip = it->hFlip;
+        slot.vFlip = it->vFlip;
+        slot.orientation = it->orientation;
+        slot.rotation = it->orientation + fine;
+    }
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
     m_pendingRestoreStates = m_savedWorkspace;
     for (const WorkspaceItemState &state : m_savedWorkspace) {
@@ -285,6 +348,31 @@ void ImageView::restoreStashedWorkspaceItems()
             m_scene->addItem(item);
         }
         applyItemModeFlags(item);
+        // Authoritative session crop / appearance after Image-mode edits.
+        // Stash pixel sync can miss (path races, discard, failed setSourceImage);
+        // re-apply from m_itemStates so Workspace always matches the session.
+        const auto it = m_itemStates.constFind(item->path());
+        if (it == m_itemStates.cend()) {
+            continue;
+        }
+        if (it->hasCrop && !it->cropRect.isEmpty()) {
+            if (item->imageSize() != it->cropRect.size()) {
+                const QImage full = ImageLoader::load(item->path());
+                if (!full.isNull()) {
+                    item->setSourceImage(full);
+                    applySessionCrop(item, *it);
+                }
+            }
+        } else {
+            // Crop cleared in Image mode: restore full on-disk pixels if needed.
+            const QImage full = ImageLoader::load(item->path());
+            if (!full.isNull() && item->imageSize() != full.size()) {
+                item->setSourceImage(full);
+            }
+        }
+        item->setItemHFlip(it->hFlip);
+        item->setItemVFlip(it->vFlip);
+        item->setOrientation(it->orientation);
     }
     m_fitMode = false;
     m_fillMode = false;
