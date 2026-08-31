@@ -470,13 +470,15 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_openAct);
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
-    m_historyMenu = m_fileMenu->addMenu(tr("&History"));
+    m_fileMenu->addSeparator();
+    m_fileMenu->addAction(m_quitAct);
+
+    // Top-level History — past sessions (full path lists), not single files.
+    m_historyMenu = menuBar()->addMenu(tr("&History"));
     m_historyMenu->setStatusTip(tr("Reopen a previous session (all images from that open)"));
     m_clearHistoryAct = new QAction(tr("&Clear History"), this);
     m_clearHistoryAct->setStatusTip(tr("Remove all remembered sessions"));
     connect(m_clearHistoryAct, &QAction::triggered, this, &MainWindow::clearSessionHistory);
-    m_fileMenu->addSeparator();
-    m_fileMenu->addAction(m_quitAct);
 
     m_editMenu = menuBar()->addMenu(tr("&Edit"));
     m_editMenu->addAction(m_undoAct);
