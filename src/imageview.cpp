@@ -184,6 +184,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         if (it != m_itemStates.cend()) {
             applySessionCrop(item, *it);
             applyContentBakes(item, *it);
+            item->setSessionCrop(it->hasCrop, it->cropRect);
         }
     }
     m_scene->addItem(item);
@@ -377,10 +378,17 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (image.isNull()) {
             return;
         }
-        ImageItem *item = createItemFromImage(path, image);
+        // Do not apply path-keyed crop — restore uses this slot's own state
+        // (Workspace duplicates must not inherit another instance's crop).
+        ImageItem *item = createItemFromImage(path, image, /*applyStoredSessionCrop=*/false);
         if (!item) {
             return;
         }
+        if (state.hasCrop) {
+            applySessionCrop(item, state);
+        }
+        applyContentBakes(item, state);
+        item->setSessionCrop(state.hasCrop, state.cropRect);
         applyState(item, state);
         if (m_layoutMode != LayoutMode::FreeForm) {
             applyLayout();
@@ -1089,7 +1097,12 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         s.cropRect = disp;
     }
     s.path = item->path();
-    m_itemStates.insert(item->path(), s);
+    // Always store crop on the item instance (duplicate-safe).
+    item->setSessionCrop(s.hasCrop, s.cropRect);
+    // Path-keyed map is for bound session / Image mode only.
+    if (item->sessionIndex() >= 0) {
+        m_itemStates.insert(item->path(), s);
+    }
 }
 
 void ImageView::leaveCropModeInternal(bool apply)
@@ -1180,12 +1193,15 @@ QRect ImageView::cropResetButtonView() const
     if (!cropView.isValid()) {
         return QRect();
     }
+    // Inside the crop rect, bottom-centred — stays on-screen when the crop
+    // is reset/expanded (outside-top placement could leave the viewport).
     constexpr int kW = 56;
     constexpr int kH = 22;
     constexpr int kGap = 6;
+    constexpr int kInset = 8;
     const int totalW = kW * 2 + kGap;
     const int x0 = qRound(cropView.center().x() - totalW / 2.0);
-    const int y = qRound(cropView.top()) - kH - 6;
+    const int y = qRound(cropView.bottom()) - kH - kInset;
     return QRect(x0, y, kW, kH);
 }
 
@@ -1201,9 +1217,10 @@ QRect ImageView::cropApplyButtonView() const
     constexpr int kW = 56;
     constexpr int kH = 22;
     constexpr int kGap = 6;
+    constexpr int kInset = 8;
     const int totalW = kW * 2 + kGap;
     const int x0 = qRound(cropView.center().x() - totalW / 2.0);
-    const int y = qRound(cropView.top()) - kH - 6;
+    const int y = qRound(cropView.bottom()) - kH - kInset;
     return QRect(x0 + kW + kGap, y, kW, kH);
 }
 
@@ -1239,7 +1256,7 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     const QPoint lm((tl.x() + bl.x()) / 2, (tl.y() + bl.y()) / 2);
     const QPoint rm((tr.x() + br.x()) / 2, (tr.y() + br.y()) / 2);
 
-    constexpr qreal kHit = 12.0;
+    constexpr qreal kHit = 16.0;
     auto near = [&](const QPoint &p) {
         return QLineF(viewPos, p).length() <= kHit;
     };
@@ -1313,32 +1330,76 @@ void ImageView::paintCropOverlay(QPainter &painter)
     painter.setPen(dash);
     painter.drawRect(cropView.adjusted(1, 1, -1, -1));
 
-    // Bold corner / edge handles; grow on hover to match Workspace chrome language.
+    // Bold corner (line-arc-line) + edge bars — same language as Workspace chrome.
     const QPoint tl = cropView.topLeft();
     const QPoint tr = cropView.topRight();
     const QPoint bl = cropView.bottomLeft();
     const QPoint br = cropView.bottomRight();
-    struct CropPt { QPoint c; CropHandle h; };
-    const CropPt pts[] = {
-        {tl, CropHandle::TopLeft},
-        {tr, CropHandle::TopRight},
-        {bl, CropHandle::BottomLeft},
-        {br, CropHandle::BottomRight},
-        {QPoint((tl.x() + tr.x()) / 2, tl.y()), CropHandle::Top},
-        {QPoint((bl.x() + br.x()) / 2, bl.y()), CropHandle::Bottom},
-        {QPoint(tl.x(), (tl.y() + bl.y()) / 2), CropHandle::Left},
-        {QPoint(tr.x(), (tr.y() + br.y()) / 2), CropHandle::Right},
+    const qreal hs = 14.0;
+    auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB,
+                          CropHandle h) {
+        const bool hot = (m_cropHoverHandle == h || m_cropActiveHandle == h);
+        auto unit = [](QPointF v) {
+            const qreal len = qHypot(v.x(), v.y());
+            return len > 1e-6 ? v / len : QPointF(1, 0);
+        };
+        const QPointF d1 = unit(alongA);
+        const QPointF d2 = unit(alongB);
+        const qreal arm = hs * (hot ? 1.35 : 1.1);
+        const qreal rad = hs * (hot ? 0.5 : 0.38);
+        QPen hp(hot ? QColor(255, 255, 255) : QColor(120, 80, 10), 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(hot ? 2.6 : 2.0);
+        hp.setCapStyle(Qt::RoundCap);
+        painter.setPen(hp);
+        painter.setBrush(Qt::NoBrush);
+        const QPointF p1 = c + d1 * rad;
+        const QPointF p2 = c + d2 * rad;
+        painter.drawLine(p1, c + d1 * arm);
+        painter.drawLine(p2, c + d2 * arm);
+        const QPointF inward = unit(-(d1 + d2));
+        const QPointF arcC = c - inward * rad;
+        const qreal a1 = qAtan2(p1.y() - arcC.y(), p1.x() - arcC.x());
+        const qreal a2 = qAtan2(p2.y() - arcC.y(), p2.x() - arcC.x());
+        qreal span = qRadiansToDegrees(a2 - a1);
+        while (span > 180.0) span -= 360.0;
+        while (span < -180.0) span += 360.0;
+        painter.drawArc(QRectF(arcC.x() - rad, arcC.y() - rad, rad * 2.0, rad * 2.0),
+                        qRound(qRadiansToDegrees(-a1) * 16), qRound(-span * 16));
     };
-    for (const CropPt &pt : pts) {
-        const bool hot = (m_cropHoverHandle == pt.h || m_cropActiveHandle == pt.h);
-        const qreal r = hot ? 7.0 : 5.0;
+    // along directions point along the crop edges away from the corner.
+    drawCorner(tl, QPointF(1, 0), QPointF(0, 1), CropHandle::TopLeft);
+    drawCorner(tr, QPointF(-1, 0), QPointF(0, 1), CropHandle::TopRight);
+    drawCorner(bl, QPointF(1, 0), QPointF(0, -1), CropHandle::BottomLeft);
+    drawCorner(br, QPointF(-1, 0), QPointF(0, -1), CropHandle::BottomRight);
+
+    auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, CropHandle h) {
+        const bool hot = (m_cropHoverHandle == h || m_cropActiveHandle == h);
+        auto unit = [](QPointF v) {
+            const qreal len = qHypot(v.x(), v.y());
+            return len > 1e-6 ? v / len : QPointF(1, 0);
+        };
+        const QPointF a = unit(along);
+        const QPointF perp(-a.y(), a.x());
+        const qreal len = hs * (hot ? 2.2 : 1.7);
+        const qreal thick = hs * (hot ? 0.42 : 0.30);
         QPen hp(hot ? QColor(255, 255, 255) : QColor(120, 80, 10), 0);
         hp.setCosmetic(true);
         hp.setWidthF(hot ? 1.6 : 1.15);
         painter.setPen(hp);
         painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
-        painter.drawRect(QRectF(pt.c.x() - r / 2.0, pt.c.y() - r / 2.0, r, r));
-    }
+        QPolygonF bar;
+        bar << mid + a * (len / 2) + perp * (thick / 2)
+            << mid - a * (len / 2) + perp * (thick / 2)
+            << mid - a * (len / 2) - perp * (thick / 2)
+            << mid + a * (len / 2) - perp * (thick / 2);
+        painter.drawPolygon(bar);
+        painter.setBrush(Qt::NoBrush);
+    };
+    drawEdgeBar(QPointF((tl.x() + tr.x()) / 2.0, tl.y()), QPointF(1, 0), CropHandle::Top);
+    drawEdgeBar(QPointF((bl.x() + br.x()) / 2.0, bl.y()), QPointF(1, 0), CropHandle::Bottom);
+    drawEdgeBar(QPointF(tl.x(), (tl.y() + bl.y()) / 2.0), QPointF(0, 1), CropHandle::Left);
+    drawEdgeBar(QPointF(tr.x(), (tr.y() + br.y()) / 2.0), QPointF(0, 1), CropHandle::Right);
 
     // Reset / Apply controls above the crop frame.
     auto drawTextButton = [&](const QRect &btn, CropHandle kind, const QString &label,
