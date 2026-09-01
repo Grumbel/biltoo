@@ -745,27 +745,64 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
         return;
     }
     m_sessionAppearance.remove(sessionId);
-    auto wipe = [&](QList<ImageItem *> &list) {
-        for (int i = list.size() - 1; i >= 0; --i) {
-            ImageItem *item = list.at(i);
-            if (!item || item->sessionId() != sessionId) {
-                continue;
+
+    // Collect first — destroyCanvasItem mutates m_items / stashes.
+    QList<ImageItem *> doomed;
+    auto collect = [&](const QList<ImageItem *> &list) {
+        for (ImageItem *item : list) {
+            if (item && item->sessionId() == sessionId && !doomed.contains(item)) {
+                doomed.append(item);
             }
-            if (QGraphicsScene *sc = item->scene()) {
-                sc->removeItem(item);
-            }
-            list.removeAt(i);
-            delete item;
         }
     };
-    wipe(m_items);
-    wipe(m_stashedWorkspaceItems);
-    wipe(m_stashedGalleryItems);
+    collect(m_items);
+    collect(m_stashedWorkspaceItems);
+    collect(m_stashedGalleryItems);
+
+    QStringList removedPaths;
+    for (ImageItem *item : doomed) {
+        if (!item) {
+            continue;
+        }
+        removedPaths.append(item->path());
+        // destroyCanvasItem clears selection anchor / drag pointers and
+        // removes from m_items and both stashes (safe if already only in one).
+        destroyCanvasItem(item);
+    }
+
     for (int i = m_savedWorkspace.size() - 1; i >= 0; --i) {
         if (m_savedWorkspace.at(i).sessionId == sessionId) {
             m_savedWorkspace.removeAt(i);
         }
     }
+
+    // Keep path order aligned with remaining tiles so a later pack does not
+    // invent holes for deleted session rows. Do not applyLayout here — Gallery
+    // leaves gaps until the user presses a layout action (or explicit reload).
+    if (!removedPaths.isEmpty() && !m_pathOrder.isEmpty()) {
+        QSet<QString> stillPresent;
+        for (ImageItem *item : m_items) {
+            if (item) {
+                stillPresent.insert(item->path());
+            }
+        }
+        QStringList pruned;
+        pruned.reserve(m_pathOrder.size());
+        for (const QString &path : m_pathOrder) {
+            if (stillPresent.contains(path)) {
+                pruned.append(path);
+            }
+        }
+        // Paths only on canvas (not in prior order) stay appended via reorder.
+        m_pathOrder = pruned;
+    }
+
+    // Gallery: leave packed positions as-is (empty gap until explicit re-layout).
+    // Workspace: scene rect still needs a refresh after destroyCanvasItem.
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    viewport()->update();
     emit statusChanged();
     emit workspacePathsChanged();
 }
@@ -1587,13 +1624,21 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     }
 
     if (layoutSwitch && m_scene) {
+        // Only trust items we still own — selection can briefly hold stale
+        // pointers after session deletes that skipped destroyCanvasItem.
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                selectedPaths.append(ii->path());
+            auto *ii = qgraphicsitem_cast<ImageItem *>(gi);
+            if (!ii || !m_items.contains(ii) || ii->scene() != m_scene) {
+                continue;
             }
+            selectedPaths.append(ii->path());
         }
-        if (m_gallerySelectionAnchor) {
+        if (m_gallerySelectionAnchor
+            && m_items.contains(m_gallerySelectionAnchor)
+            && m_gallerySelectionAnchor->scene() == m_scene) {
             anchorPath = m_gallerySelectionAnchor->path();
+        } else {
+            m_gallerySelectionAnchor = nullptr;
         }
     }
 
@@ -1624,14 +1669,30 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     }
     setDragMode(QGraphicsView::RubberBandDrag);
     for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
         applyItemModeFlags(item);
         item->setItemOpacity(1.0);
         // Entering Gallery from Image/Workspace: upright overview. Switching
-        // layout inside Gallery keeps user rotate/flip on the tiles.
+        // layout inside Gallery keeps user content transforms on the tiles.
         if (!layoutSwitch) {
             item->setItemRotation(0.0);
             item->setItemHFlip(false);
             item->setItemVFlip(false);
+        }
+    }
+    // Explicit layout action: pack only live items (drop stale path-order holes).
+    if (layoutSwitch) {
+        QStringList livePaths;
+        livePaths.reserve(m_items.size());
+        for (ImageItem *item : m_items) {
+            if (item) {
+                livePaths.append(item->path());
+            }
+        }
+        if (!livePaths.isEmpty()) {
+            m_pathOrder = livePaths;
         }
     }
     applyLayout();
