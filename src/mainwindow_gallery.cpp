@@ -128,7 +128,6 @@ void MainWindow::showPathInImageMode(const QString &path)
         m_galleryReturnLayout = m_imageView->layoutMode();
         m_galleryReturnActive = true;
         m_workspaceReturnActive = false;
-        m_imageView->snapshotGalleryViewport();
     } else if (m_imageView && m_imageView->isWorkspaceMode()) {
         m_workspaceReturnActive = true;
         m_galleryReturnActive = false;
@@ -136,8 +135,8 @@ void MainWindow::showPathInImageMode(const QString &path)
     if (m_workspaceModeAct) {
         m_workspaceModeAct->setChecked(false);
     }
-    // Single Image-mode decode: setCurrentIndex → loadImage after the canvas is empty.
-    m_imageView->setViewMode(ImageView::ViewMode::Image);
+    // Phase 3: snapshot + stash + mode switch in one transition.
+    m_imageView->leaveGalleryForImage();
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
         // setMultiSelectEnabled is a no-op when already off; still clear any
@@ -175,16 +174,27 @@ void MainWindow::returnToGallery()
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
                                   ? m_files.at(m_currentIndex)
                                   : QString();
-    // Arm restore before re-enter so every applyLayout re-centres on the
-    // snapshotted scene point while session images load back onto the canvas.
-    if (m_imageView) {
-        m_imageView->restoreGalleryViewport(focusPath);
+    const ImageView::LayoutMode layout = m_galleryReturnLayout;
+
+    stopSlideshow();
+    if (m_backToGalleryAct) {
+        m_backToGalleryAct->setEnabled(false);
     }
-    enterGalleryMode(m_galleryReturnLayout);
+    if (m_workspaceModeAct) {
+        m_workspaceModeAct->setChecked(false);
+    }
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setMultiSelectEnabled(false);
+        m_thumbnailBar->selectNoneThumbs();
+    }
+
+    // Phase 3: restore arm + enter Gallery + apply pending centre in one place.
+    if (m_imageView) {
+        m_imageView->returnToGalleryFromImage(layout, focusPath);
+    }
+    populateGalleryCanvas();
     if (m_imageView) {
         m_imageView->applyPendingGalleryRestore();
-        // Thumb bar hide + scrollbar AlwaysOn resize after mode switch; pack
-        // again on the settled viewport, then re-apply the scene centre.
         QTimer::singleShot(0, this, [this, focusPath]() {
             if (!m_imageView || !m_imageView->isGalleryMode()) {
                 return;
@@ -193,6 +203,42 @@ void MainWindow::returnToGallery()
             m_imageView->applyPendingGalleryRestore();
         });
     }
+
+    m_galleryReturnLayout = layout;
+    for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
+                         m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct}) {
+        if (act) {
+            act->setChecked(false);
+        }
+    }
+    QAction *check = nullptr;
+    switch (layout) {
+    case ImageView::LayoutMode::SideBySide:
+        check = m_layoutSideBySideAct;
+        break;
+    case ImageView::LayoutMode::Vertical:
+        check = m_layoutVerticalAct;
+        break;
+    case ImageView::LayoutMode::Grid:
+        check = m_layoutGridAct;
+        break;
+    case ImageView::LayoutMode::GridCrop:
+        check = m_layoutGridCropAct;
+        break;
+    case ImageView::LayoutMode::Masonry:
+        check = m_layoutMasonryAct;
+        break;
+    case ImageView::LayoutMode::MasonryRows:
+        check = m_layoutMasonryRowsAct;
+        break;
+    default:
+        break;
+    }
+    if (check) {
+        check->setChecked(true);
+    }
+    updateUpToGalleryAction();
+    updateWorkspaceActionVisibility();
 }
 
 void MainWindow::returnToWorkspace()

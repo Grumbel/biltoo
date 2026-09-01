@@ -74,12 +74,11 @@ MainWindow::MainWindow(QWidget *parent)
                     m_galleryReturnLayout = m_imageView->layoutMode();
                     m_galleryReturnActive = true;
                     m_workspaceReturnActive = false;
-                    m_imageView->snapshotGalleryViewport();
                 }
                 if (m_workspaceModeAct) {
                     m_workspaceModeAct->setChecked(false);
                 }
-                m_imageView->setViewMode(ImageView::ViewMode::Image);
+                m_imageView->leaveGalleryForImage();
                 if (m_thumbnailBar) {
                     m_thumbnailBar->setMultiSelectEnabled(false);
                     m_thumbnailBar->selectNoneThumbs();
@@ -101,12 +100,11 @@ MainWindow::MainWindow(QWidget *parent)
                     m_galleryReturnLayout = m_imageView->layoutMode();
                     m_galleryReturnActive = true;
                     m_workspaceReturnActive = false;
-                    m_imageView->snapshotGalleryViewport();
                 }
                 if (m_workspaceModeAct) {
                     m_workspaceModeAct->setChecked(false);
                 }
-                m_imageView->setViewMode(ImageView::ViewMode::Image);
+                m_imageView->leaveGalleryForImage();
                 if (m_thumbnailBar) {
                     m_thumbnailBar->setMultiSelectEnabled(false);
                     m_thumbnailBar->selectNoneThumbs();

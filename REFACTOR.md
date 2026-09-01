@@ -137,3 +137,5 @@ update one list.
 - Phase 1c: this document.
 - Phase 2: `SessionAppearanceStore` wraps id-keyed appearance; ImageView uses
   `m_appearance.get/set/remove` instead of a raw QHash.
+- Phase 3: `leaveGalleryForImage()` / `returnToGalleryFromImage()` own viewport
+  snapshot + mode switch so callers cannot forget snapshot or clear it early.

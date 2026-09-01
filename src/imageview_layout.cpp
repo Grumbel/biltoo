@@ -1637,6 +1637,24 @@ void ImageView::setViewMode(ViewMode mode)
     emit statusChanged();
 }
 
+void ImageView::leaveGalleryForImage()
+{
+    // Snapshot must run while still in Gallery (scrollbars + scene centre valid).
+    if (isGalleryMode()) {
+        snapshotGalleryViewport();
+    }
+    setViewMode(ViewMode::Image);
+}
+
+void ImageView::returnToGalleryFromImage(LayoutMode layout, const QString &focusPath)
+{
+    // Arm restore before enterGallery/applyLayout so packs re-centre on the
+    // snapshotted scene point (flags preserved across Gallery→Image leave).
+    restoreGalleryViewport(focusPath);
+    enterGallery(layout);
+    applyPendingGalleryRestore();
+}
+
 void ImageView::enterGallery(LayoutMode packagedLayout)
 {
     if (packagedLayout == LayoutMode::FreeForm) {
