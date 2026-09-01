@@ -223,7 +223,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     resetTransform();
-    if (!m_pendingGalleryRestore) {
+    if (!m_gallery.pendingRestore()) {
         centerOn(0, 0);
     }
 

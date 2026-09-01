@@ -154,7 +154,7 @@ void ImageView::paintEvent(QPaintEvent *event)
     //   bottom    — filename (+ technical detail when the HUD is pinned)
     // Crop mode: always show a pinned “Crop mode” cue so the tool state is clear.
     if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
-        || !m_galleryHoverPath.isEmpty()) {
+        || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
         const int pt = qBound(8, m_hudFontPointSize, 48);
@@ -293,7 +293,7 @@ void ImageView::paintEvent(QPaintEvent *event)
         }
 
         // Bottom: filename — pinned HUD, identity pulse after user nav, or gallery hover
-        if (m_hudVisible || m_hudIdentityPulse || !m_galleryHoverPath.isEmpty()) {
+        if (m_hudVisible || m_hudIdentityPulse || !m_gallery.hoverPath().isEmpty()) {
             QList<HudLine> bottom;
             const QString name = hudFileName();
             if (!name.isEmpty()) {

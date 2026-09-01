@@ -146,8 +146,8 @@ QRectF ImageView::selectionSceneBounds(const QList<ImageItem *> &items) const
 void ImageView::updateGalleryHoverAt(const QPoint &viewPos)
 {
     if (!isGalleryMode() || !m_scene) {
-        if (!m_galleryHoverPath.isEmpty()) {
-            m_galleryHoverPath.clear();
+        if (!m_gallery.hoverPath().isEmpty()) {
+            m_gallery.clearHoverPath();
             viewport()->update();
         }
         return;
@@ -160,8 +160,8 @@ void ImageView::updateGalleryHoverAt(const QPoint &viewPos)
             break;
         }
     }
-    if (path != m_galleryHoverPath) {
-        m_galleryHoverPath = path;
+    if (path != m_gallery.hoverPath()) {
+        m_gallery.setHoverPath(path);
         viewport()->update();
     }
 }
@@ -468,7 +468,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         if (hit && !hit->isSelected()) {
             m_scene->clearSelection();
             hit->setSelected(true);
-            m_gallerySelectionAnchor = hit;
+            m_gallery.setSelectionAnchor(hit);
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
             } else if (!hit->path().isEmpty()) {
@@ -497,9 +497,9 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                           & (Qt::ControlModifier | Qt::MetaModifier);
         const bool shift = event->modifiers() & Qt::ShiftModifier;
 
-        if (hit && shift && m_gallerySelectionAnchor) {
+        if (hit && shift && m_gallery.selectionAnchor()) {
             // Session-order range from anchor to hit (inclusive).
-            int i0 = m_items.indexOf(m_gallerySelectionAnchor);
+            int i0 = m_items.indexOf(m_gallery.selectionAnchor());
             int i1 = m_items.indexOf(hit);
             if (i0 < 0) {
                 i0 = i1;
@@ -527,7 +527,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         if (hit && ctrl) {
             hit->setSelected(!hit->isSelected());
             if (hit->isSelected()) {
-                m_gallerySelectionAnchor = hit;
+                m_gallery.setSelectionAnchor(hit);
             }
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
@@ -542,7 +542,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         if (hit) {
             m_scene->clearSelection();
             hit->setSelected(true);
-            m_gallerySelectionAnchor = hit;
+            m_gallery.setSelectionAnchor(hit);
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
             } else if (!hit->path().isEmpty()) {

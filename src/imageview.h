@@ -6,6 +6,7 @@
 
 #include "imageview_types.h"
 #include "sessionappearance.h"
+#include "gallerycontroller.h"
 
 #include <QColor>
 #include <QElapsedTimer>
@@ -42,6 +43,8 @@ class QPainter;
 class ImageView : public QGraphicsView
 {
     Q_OBJECT
+
+    friend class GalleryController;
 
 public:
     enum class Tool {
@@ -614,6 +617,8 @@ private:
     void zoomViewBy(qreal factor);
 
     QGraphicsScene *m_scene = nullptr;
+    /** Gallery-mode collaborator (stash, viewport snapshot, transitions). */
+    GalleryController m_gallery;
     QList<ImageItem *> m_items;
     /**
      * Path-keyed placement / legacy unbound appearance.
@@ -645,8 +650,6 @@ private:
     QPointF m_savedWorkspaceViewCenter;
     bool m_hasSavedWorkspaceView = false;
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
-    QList<ImageItem *> m_stashedGalleryItems;
-    QStringList m_stashedGalleryPathOrder;
     QString m_classicPath;
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */
     QStringList m_pathOrder;
@@ -662,7 +665,6 @@ private:
     bool m_imageModeNavEnabled = false;
     bool m_galleryReturnAvailable = false;
     /** Gallery: path under cursor for HUD filename (empty when none). */
-    QString m_galleryHoverPath;
     /** Last mouse position in viewport coords (gallery hover + scroll). */
     QPoint m_lastHoverViewPos;
     bool m_imageModeLeftDragPan = true;
@@ -766,21 +768,10 @@ private:
     ImageItem *m_dragItem = nullptr;
     WorkspaceItemState m_dragStartState;
 
-    /** Gallery click-to-open: press on an item, release without dragging. */
-    /** Anchor for Shift+click range selection in Gallery (session order). */
-    ImageItem *m_gallerySelectionAnchor = nullptr;
     bool m_applyingLayout = false;
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     int m_galleryRelayoutSuppressCount = 0;
     QTimer *m_layoutDebounceTimer = nullptr;
-    int m_galleryScrollH = 0;
-    int m_galleryScrollV = 0;
-    bool m_haveGalleryScroll = false;
-    /** Scene-space viewport centre when leaving Gallery (stable across bar policy). */
-    QPointF m_galleryViewCenter;
-    bool m_haveGalleryViewCenter = false;
-    QString m_galleryFocusPath;
-    bool m_pendingGalleryRestore = false;
 };
 
 #endif // IMAGEVIEW_H

@@ -294,7 +294,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     ImageItem *existing = findItemByPath(path);
     if (!existing) {
         // Decode may finish while Gallery tiles are stashed (user in Image mode).
-        for (ImageItem *cand : m_stashedGalleryItems) {
+        for (ImageItem *cand : m_gallery.stashedItems()) {
             if (cand && cand->path() == path) {
                 existing = cand;
                 break;

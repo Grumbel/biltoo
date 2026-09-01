@@ -328,7 +328,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     };
     collect(m_items);
     collect(m_stashedWorkspaceItems);
-    collect(m_stashedGalleryItems);
+    collect(m_gallery.stashedItems());
 
     auto shouldSync = [&](ImageItem *other) -> bool {
         if (!other || other == item) {
@@ -468,7 +468,7 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     };
     collect(m_items);
     collect(m_stashedWorkspaceItems);
-    collect(m_stashedGalleryItems);
+    collect(m_gallery.stashedItems());
 
     QStringList removedPaths;
     for (ImageItem *item : doomed) {
@@ -540,11 +540,7 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
             verticalScrollBar()->setValue(scrollV);
         }
         // Remember for deferred reassert after thumb-strip / splitter layout.
-        m_galleryViewCenter = keptCenter;
-        m_haveGalleryViewCenter = !keptCenter.isNull();
-        m_galleryScrollH = scrollH;
-        m_galleryScrollV = scrollV;
-        m_haveGalleryScroll = true;
+        m_gallery.setViewportSnapshot(keptCenter, scrollH, scrollV);
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
@@ -664,8 +660,8 @@ void ImageView::focusSessionPath(const QString &path)
     if (isGalleryMode()) {
         ensureVisible(item, 48, 48);
         // Keyboard focus: show filename in the HUD like mouse hover.
-        if (m_galleryHoverPath != path) {
-            m_galleryHoverPath = path;
+        if (m_gallery.hoverPath() != path) {
+            m_gallery.setHoverPath(path);
             viewport()->update();
         }
     }
@@ -682,8 +678,8 @@ void ImageView::revealGalleryPath(const QString &path)
     }
     // Do not clearSelection — preserves Ctrl/Shift/rubber-band multi-select.
     ensureVisible(item, 48, 48);
-    if (m_galleryHoverPath != path) {
-        m_galleryHoverPath = path;
+    if (m_gallery.hoverPath() != path) {
+        m_gallery.setHoverPath(path);
         viewport()->update();
     }
 }
@@ -707,8 +703,8 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     if (item == m_handleDragItem) {
         m_handleDragItem = nullptr;
     }
-    if (item == m_gallerySelectionAnchor) {
-        m_gallerySelectionAnchor = nullptr;
+    if (item == m_gallery.selectionAnchor()) {
+        m_gallery.setSelectionAnchor(nullptr);
     }
     // Group scale holds raw pointers — drop before delete or BSP paint UAF.
     if (m_groupScaleDrag || m_groupRotateDrag || !m_groupDragItems.isEmpty()) {
@@ -720,7 +716,7 @@ void ImageView::destroyCanvasItem(ImageItem *item)
         m_groupDragStartStates.clear();
     }
     // Also drop from gallery stash so discardStashedGallery cannot double-free.
-    m_stashedGalleryItems.removeAll(item);
+    m_gallery.stashedItems().removeAll(item);
     m_stashedWorkspaceItems.removeAll(item);
 
     rememberItemState(item);

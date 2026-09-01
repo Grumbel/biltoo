@@ -42,6 +42,7 @@
 
 ImageView::ImageView(QWidget *parent)
     : QGraphicsView(parent)
+    , m_gallery(this)
 {
     m_scene = new QGraphicsScene(this);
     // BSP indexing is fragile with frequent add/remove (Duplicate + Delete):
@@ -393,8 +394,8 @@ void ImageView::leaveEvent(QEvent *event)
         m_hoverEdge = EdgeZone::None;
         viewport()->update();
     }
-    if (!m_galleryHoverPath.isEmpty()) {
-        m_galleryHoverPath.clear();
+    if (!m_gallery.hoverPath().isEmpty()) {
+        m_gallery.clearHoverPath();
         viewport()->update();
     }
     QGraphicsView::leaveEvent(event);

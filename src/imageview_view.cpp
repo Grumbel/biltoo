@@ -393,8 +393,8 @@ QString ImageView::sessionBadgeText() const
 
 QString ImageView::hudFileName() const
 {
-    if (!m_galleryHoverPath.isEmpty()) {
-        return QFileInfo(m_galleryHoverPath).fileName();
+    if (!m_gallery.hoverPath().isEmpty()) {
+        return QFileInfo(m_gallery.hoverPath()).fileName();
     }
     if (!m_lastLoadError.isEmpty()) {
         return QFileInfo(m_lastLoadError).fileName();

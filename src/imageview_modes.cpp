@@ -23,7 +23,7 @@ void ImageView::clearLiveCanvas()
     m_rotateItem = nullptr;
     m_rotating = false;
     m_dragItem = nullptr;
-    m_gallerySelectionAnchor = nullptr;
+    m_gallery.setSelectionAnchor(nullptr);
     if (m_undoStack) {
         m_undoStack->clear();
     }
@@ -107,22 +107,22 @@ void ImageView::setViewMode(ViewMode mode)
 
     const ViewMode previous = m_viewMode;
     if (previous == ViewMode::Gallery) {
-        m_galleryHoverPath.clear();
-        m_gallerySelectionAnchor = nullptr;
+        m_gallery.clearHoverPath();
+        m_gallery.setSelectionAnchor(nullptr);
         setDragMode(QGraphicsView::NoDrag);
         // Stop deferred packs immediately — a pending 0ms debounce after
         // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
         if (m_layoutDebounceTimer) {
             m_layoutDebounceTimer->stop();
         }
-        m_pendingGalleryRestore = false;
+        m_gallery.setPendingRestore(false);
         m_applyingLayout = false;
         // Gallery → Image: keep scroll/centre snapshot from snapshotGalleryViewport()
         // (called just before setViewMode) so return-to-Gallery can restore it.
         // Any other leave path drops the snapshot.
         if (mode != ViewMode::Image) {
-            m_haveGalleryScroll = false;
-            m_haveGalleryViewCenter = false;
+            m_gallery.clearScroll();
+            m_gallery.clearViewCenter();
         }
     }
 
@@ -162,7 +162,7 @@ void ImageView::setViewMode(ViewMode mode)
         m_rotateItem = nullptr;
         m_rotating = false;
         m_dragItem = nullptr;
-        m_gallerySelectionAnchor = nullptr;
+        m_gallery.setSelectionAnchor(nullptr);
         if (m_undoStack) {
             m_undoStack->clear();
         }
