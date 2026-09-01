@@ -451,6 +451,14 @@ void MainWindow::toggleThumbnailLabels()
     m_thumbnailBar->setLabelsVisible(!m_hideThumbLabelsAct->isChecked());
 }
 
+void MainWindow::toggleThumbnailCrop()
+{
+    if (!m_thumbnailBar || !m_cropThumbnailsAct) {
+        return;
+    }
+    m_thumbnailBar->setCropToSquare(m_cropThumbnailsAct->isChecked());
+}
+
 void MainWindow::ensureMultiImageMode()
 {
     if (isWorkspaceMode()) {
@@ -1207,6 +1215,11 @@ void MainWindow::readSettings()
         const int thumbSize = settings.value(QStringLiteral("thumbnailSize"),
                                              ThumbnailBar::kDefaultThumbSize).toInt();
         m_thumbnailBar->setThumbSize(thumbSize);
+        const bool cropThumbs = settings.value(QStringLiteral("thumbnailCropToSquare"), true).toBool();
+        m_thumbnailBar->setCropToSquare(cropThumbs);
+        if (m_cropThumbnailsAct) {
+            m_cropThumbnailsAct->setChecked(cropThumbs);
+        }
         const QString pos = settings.value(QStringLiteral("thumbnailBarPosition"),
                                            QStringLiteral("bottom")).toString();
         ThumbnailEdge edge = ThumbnailEdge::Bottom;
@@ -1405,6 +1418,8 @@ void MainWindow::writeSettings()
     if (m_thumbnailBar) {
         settings.setValue(QStringLiteral("thumbnailLabelsVisible"),
                           m_thumbnailBar->labelsVisible());
+        settings.setValue(QStringLiteral("thumbnailCropToSquare"),
+                          m_thumbnailBar->cropToSquare());
     }
 }
 

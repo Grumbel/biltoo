@@ -67,7 +67,7 @@ public:
 
     /**
      * Session appearance override (e.g. after crop): keep a full image for
-     * this path and rebuild the square cell icon. Survives thumb-size reloads
+     * this path and rebuild the cell icon. Survives thumb-size reloads
      * until setFiles() clears the strip.
      */
     void setSessionImageOverride(const QString &path, const QImage &image);
@@ -95,6 +95,13 @@ public:
 
     void setLabelsVisible(bool on);
     bool labelsVisible() const { return m_labelsVisible; }
+
+    /**
+     * When true (default), center-crop to a square cell. When false, fit the
+     * full image with letterboxing so aspect ratio is visible.
+     */
+    void setCropToSquare(bool on);
+    bool cropToSquare() const { return m_cropToSquare; }
 
     /** Session rows currently on the Workspace canvas (membership badge). */
     void setOnCanvasIndices(const QSet<int> &indices);
@@ -153,14 +160,15 @@ private:
     void updateCenteringMargins();
     int labelBandHeight() const;
     int thumbSizeFromBarExtent(int extent) const;
-    static QImage makeThumbnail(const QString &path, int maxSize);
-    static QImage squareThumbnailFromImage(const QImage &image, int maxSize);
+    QImage makeThumbnail(const QString &path, int maxSize) const;
+    QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
 
     std::atomic<quint64> m_generation{0};
     bool m_multiSelect = false;
     int m_selectionAnchor = -1;
     bool m_centeringGuard = false;
     bool m_labelsVisible = true;
+    bool m_cropToSquare = true;
     int m_thumbSize = kDefaultThumbSize;
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;

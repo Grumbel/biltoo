@@ -172,6 +172,13 @@ void MainWindow::createActions()
     m_hideThumbLabelsAct->setStatusTip(tr("Hide filenames under thumbnails"));
     connect(m_hideThumbLabelsAct, &QAction::triggered, this, &MainWindow::toggleThumbnailLabels);
 
+    m_cropThumbnailsAct = new QAction(tr("&Crop Thumbnails to Square"), this);
+    m_cropThumbnailsAct->setCheckable(true);
+    m_cropThumbnailsAct->setChecked(true);
+    m_cropThumbnailsAct->setStatusTip(
+        tr("When checked, thumbnails are center-cropped to a square; uncheck to show full aspect ratio"));
+    connect(m_cropThumbnailsAct, &QAction::triggered, this, &MainWindow::toggleThumbnailCrop);
+
     m_previousAct = new QAction(tr("&Previous Image"), this);
     m_previousAct->setShortcuts({Qt::Key_Left, Qt::Key_Backspace, Qt::Key_PageUp});
     m_previousAct->setIcon(themeIcon(QStringLiteral("go-previous"), QStyle::SP_ArrowBack));
@@ -561,6 +568,7 @@ void MainWindow::createMenus()
     auto *thumbsMenu = m_viewMenu->addMenu(tr("&Thumbnails"));
     thumbsMenu->addAction(m_toggleThumbnailBarAct);
     thumbsMenu->addAction(m_hideThumbLabelsAct);
+    thumbsMenu->addAction(m_cropThumbnailsAct);
     thumbsMenu->addSeparator();
     thumbsMenu->addAction(m_thumbnailsBottomAct);
     thumbsMenu->addAction(m_thumbnailsTopAct);

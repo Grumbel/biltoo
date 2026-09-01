@@ -434,32 +434,60 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     }
 }
 
-QImage ThumbnailBar::squareThumbnailFromImage(const QImage &image, int maxSize)
+QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize) const
 {
     if (image.isNull() || maxSize < 1) {
         return QImage();
     }
-    // Center-crop to square so the cell is filled edge-to-edge
-    const int side = qMin(image.width(), image.height());
-    if (side <= 0) {
+    if (m_cropToSquare) {
+        // Center-crop to square so the cell is filled edge-to-edge.
+        const int side = qMin(image.width(), image.height());
+        if (side <= 0) {
+            return QImage();
+        }
+        const int x = (image.width() - side) / 2;
+        const int y = (image.height() - side) / 2;
+        QImage square = image.copy(x, y, side, side);
+        if (square.width() != maxSize || square.height() != maxSize) {
+            square = square.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio,
+                                   Qt::SmoothTransformation);
+        }
+        return square;
+    }
+    // Fit full image into the square cell (letterbox) so aspect ratio is visible.
+    QImage fitted = image.scaled(maxSize, maxSize, Qt::KeepAspectRatio,
+                                 Qt::SmoothTransformation);
+    if (fitted.isNull()) {
         return QImage();
     }
-    const int x = (image.width() - side) / 2;
-    const int y = (image.height() - side) / 2;
-    QImage square = image.copy(x, y, side, side);
-    if (square.width() != maxSize || square.height() != maxSize) {
-        square = square.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    }
-    return square;
+    QImage cell(maxSize, maxSize, QImage::Format_ARGB32_Premultiplied);
+    cell.fill(QColor(40, 40, 40));
+    QPainter painter(&cell);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    const int ox = (maxSize - fitted.width()) / 2;
+    const int oy = (maxSize - fitted.height()) / 2;
+    painter.drawImage(ox, oy, fitted);
+    painter.end();
+    return cell;
 }
 
-QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize)
+void ThumbnailBar::setCropToSquare(bool on)
+{
+    if (m_cropToSquare == on) {
+        return;
+    }
+    m_cropToSquare = on;
+    ++m_generation;
+    scheduleThumbnailLoads();
+}
+
+QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
 {
     QImage image = ImageLoader::loadThumbnail(path, maxSize);
     if (image.isNull()) {
         return image;
     }
-    return squareThumbnailFromImage(image, maxSize);
+    return prepareThumbnailFromImage(image, maxSize);
 }
 
 void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &image)
@@ -468,7 +496,7 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
         return;
     }
     m_sessionImageOverrides.insert(path, image);
-    const QImage thumb = squareThumbnailFromImage(image, m_thumbSize);
+    const QImage thumb = prepareThumbnailFromImage(image, m_thumbSize);
     if (thumb.isNull()) {
         return;
     }
@@ -494,7 +522,7 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
         return;
     }
     m_sessionIdImageOverrides.insert(sessionId, image);
-    const QImage thumb = squareThumbnailFromImage(image, m_thumbSize);
+    const QImage thumb = prepareThumbnailFromImage(image, m_thumbSize);
     if (thumb.isNull()) {
         return;
     }
@@ -531,7 +559,7 @@ void ThumbnailBar::scheduleThumbnailLoads()
             const SessionImageId sid = m_sessionIds.at(i);
             if (sid != kInvalidSessionImageId
                 && m_sessionIdImageOverrides.contains(sid)) {
-                const QImage thumb = squareThumbnailFromImage(
+                const QImage thumb = prepareThumbnailFromImage(
                     m_sessionIdImageOverrides.value(sid), decodeSize);
                 if (!thumb.isNull()) {
                     setThumbnailIcon(i, thumb);
@@ -540,7 +568,7 @@ void ThumbnailBar::scheduleThumbnailLoads()
             }
         }
         if (m_sessionImageOverrides.contains(path)) {
-            const QImage thumb = squareThumbnailFromImage(m_sessionImageOverrides.value(path),
+            const QImage thumb = prepareThumbnailFromImage(m_sessionImageOverrides.value(path),
                                                           decodeSize);
             if (!thumb.isNull()) {
                 setThumbnailIcon(i, thumb);
@@ -554,7 +582,7 @@ void ThumbnailBar::scheduleThumbnailLoads()
             if (!bar || gen != bar->m_generation.load()) {
                 return;
             }
-            const QImage image = makeThumbnail(path, decodeSize);
+            const QImage image = bar->makeThumbnail(path, decodeSize);
             bar = guard.data();
             if (!bar || image.isNull() || gen != bar->m_generation.load()) {
                 return;

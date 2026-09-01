@@ -107,6 +107,7 @@ private slots:
     void toggleCropMode();
     void toggleHud();
     void toggleThumbnailLabels();
+    void toggleThumbnailCrop();
     void goPrevious();
     void goNext();
     void goFirst();
@@ -279,6 +280,7 @@ private:
     QAction *m_cropAct = nullptr;
     QAction *m_toggleHudAct = nullptr;
     QAction *m_hideThumbLabelsAct = nullptr;
+    QAction *m_cropThumbnailsAct = nullptr;
     QAction *m_previousAct = nullptr;
     QAction *m_nextAct = nullptr;
     QAction *m_firstAct = nullptr;
