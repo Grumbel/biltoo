@@ -7,6 +7,7 @@
 #include "imageitem.h"
 
 #include <QScrollBar>
+#include <QTimer>
 #include <QSet>
 
 GalleryController::GalleryController(ImageView *view)
@@ -170,6 +171,29 @@ void GalleryController::reassertViewport()
         if (m_view->verticalScrollBar()) {
             m_view->verticalScrollBar()->setValue(m_scrollV);
         }
+    }
+}
+
+
+void GalleryController::onLeave(int nextMode)
+{
+    const auto next = static_cast<ImageView::ViewMode>(nextMode);
+    m_hoverPath.clear();
+    m_selectionAnchor = nullptr;
+    m_view->setDragMode(QGraphicsView::NoDrag);
+    // Stop deferred packs immediately — a pending 0ms debounce after
+    // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
+    if (m_view->m_layoutDebounceTimer) {
+        m_view->m_layoutDebounceTimer->stop();
+    }
+    m_pendingRestore = false;
+    m_view->m_applyingLayout = false;
+    // Gallery → Image: keep scroll/centre snapshot from snapshotViewport()
+    // (called just before setViewMode) so return-to-Gallery can restore it.
+    // Any other leave path drops the snapshot.
+    if (next != ImageView::ViewMode::Image) {
+        m_haveScroll = false;
+        m_haveViewCenter = false;
     }
 }
 

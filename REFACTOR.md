@@ -186,3 +186,6 @@ by id (new model work — not part of early-phase exit criteria).
   ImageView public API delegates; no behaviour change.
 - Phase 5k: `clearInteractionState()` shared host helper; Workspace enter
   path of `setViewMode` owned by `WorkspaceController::enter`.
+- Phase 5l: Gallery leave cleanup → `GalleryController::onLeave`; residual
+  `setViewMode(Gallery)` path routes through `GalleryController::enter`
+  (MainWindow already uses enterGallery only).

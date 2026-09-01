@@ -33,6 +33,8 @@ public:
     void applyPendingRestore();
     void reassertViewport();
 
+    /** Gallery → other mode: clear hover/anchor, stop pack, optional snapshot drop. */
+    void onLeave(int nextMode);
     void leaveForImageMode();
     void returnFromImage(int layoutMode, const QString &focusPath = QString());
     void enter(int packagedLayout);

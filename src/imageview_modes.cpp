@@ -112,23 +112,7 @@ void ImageView::setViewMode(ViewMode mode)
 
     const ViewMode previous = m_viewMode;
     if (previous == ViewMode::Gallery) {
-        m_gallery.clearHoverPath();
-        m_gallery.setSelectionAnchor(nullptr);
-        setDragMode(QGraphicsView::NoDrag);
-        // Stop deferred packs immediately — a pending 0ms debounce after
-        // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
-        if (m_layoutDebounceTimer) {
-            m_layoutDebounceTimer->stop();
-        }
-        m_gallery.setPendingRestore(false);
-        m_applyingLayout = false;
-        // Gallery → Image: keep scroll/centre snapshot from snapshotGalleryViewport()
-        // (called just before setViewMode) so return-to-Gallery can restore it.
-        // Any other leave path drops the snapshot.
-        if (mode != ViewMode::Image) {
-            m_gallery.clearScroll();
-            m_gallery.clearViewCenter();
-        }
+        m_gallery.onLeave(static_cast<int>(mode));
     }
 
     if (previous == ViewMode::Workspace && mode != ViewMode::Workspace) {
@@ -187,19 +171,13 @@ void ImageView::setViewMode(ViewMode mode)
         return;
     }
 
-    // Gallery
-    prepareGalleryCanvas();
-    m_viewMode = ViewMode::Gallery;
-    if (m_layoutMode == LayoutMode::FreeForm) {
-        m_layoutMode = LayoutMode::Masonry;
+    // Gallery — sole entry is GalleryController::enter (also used by enterGallery).
+    // setViewMode(Gallery) is not used by MainWindow; keep a safe path that
+    // restores stash and packs rather than a second divergent implementation.
+    LayoutMode layout = m_layoutMode;
+    if (layout == LayoutMode::FreeForm) {
+        layout = LayoutMode::Masonry;
     }
-    for (ImageItem *item : m_items) {
-        applyItemModeFlags(item);
-        item->setItemOpacity(1.0);
-        item->setItemRotation(0.0);
-    }
-    if (!m_items.isEmpty()) {
-        applyLayout(GalleryPackReason::EnterGallery);
-    }
-    emit statusChanged();
+    m_gallery.enter(static_cast<int>(layout));
 }
+
