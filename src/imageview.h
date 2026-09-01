@@ -368,6 +368,11 @@ public:
      * restore the last snapshot scroll, then ensure the focused item is visible.
      */
     void restoreGalleryViewport(const QString &focusPath = QString());
+    /**
+     * Re-apply the last Gallery viewport snapshot (centre + scroll) without
+     * packing or ensureVisible. Used after session delete / splitter churn.
+     */
+    void reassertGalleryViewport();
 
     /** Number of columns for LayoutMode::Masonry (images scale to fit column width). */
     void setMasonryColumns(int columns);

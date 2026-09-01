@@ -594,9 +594,10 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     // Remove highest indices first so remaining indices stay valid
     if (m_imageView) {
         m_imageView->setPreserveUndoOnDestroy(true);
-        // Thumb-strip setFiles can resize the splitter → ImageView::resizeEvent
-        // would otherwise schedule applyLayout and jump scroll.
+        // Thumb-strip setFiles can resize the splitter → scrollbar range rebuild.
+        // Snapshot once; each remove pins sceneRect; reassert after the churn.
         if (isGalleryMode()) {
+            m_imageView->snapshotGalleryViewport();
             m_imageView->setGalleryRelayoutSuppressed(true);
         }
     }
@@ -677,12 +678,16 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         setCurrentIndex(newIndex);
     }
 
-    if (m_imageView && m_imageView->galleryRelayoutSuppressed()) {
-        // Release after nested events from thumb setCurrentIndex / status bar.
+    if (m_imageView && isGalleryMode()) {
+        // Immediate reassert after thumb setFiles / index updates.
+        m_imageView->reassertGalleryViewport();
+        // Release suppress and reassert again after splitter/layout events.
         QTimer::singleShot(0, m_imageView, [v = m_imageView]() {
-            if (v) {
-                v->setGalleryRelayoutSuppressed(false);
+            if (!v) {
+                return;
             }
+            v->reassertGalleryViewport();
+            v->setGalleryRelayoutSuppressed(false);
         });
     }
 }

@@ -798,7 +798,19 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     }
     m_appearance.remove(sessionId);
 
-    const QRectF keptSceneRect = (m_scene && isGalleryMode()) ? m_scene->sceneRect() : QRectF();
+    // Capture view before any item is destroyed — Qt may shrink sceneRect
+    // while removeItem runs, which zeroes scrollbar ranges mid-loop.
+    const bool gallery = isGalleryMode();
+    QRectF keptSceneRect = (m_scene && gallery) ? m_scene->sceneRect() : QRectF();
+    if (gallery && m_scene && !keptSceneRect.isValid()) {
+        keptSceneRect = m_scene->itemsBoundingRect();
+        if (keptSceneRect.isValid()) {
+            keptSceneRect.adjust(-64, -64, 64, 64);
+        }
+    }
+    const QPointF keptCenter = gallery
+        ? mapToScene(viewport()->rect().center())
+        : QPointF();
     const int scrollH = horizontalScrollBar() ? horizontalScrollBar()->value() : 0;
     const int scrollV = verticalScrollBar() ? verticalScrollBar()->value() : 0;
 
@@ -869,16 +881,27 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     }
 
     // Gallery: leave packed positions as-is (empty gap until explicit re-layout).
-    // Keep sceneRect so scrollbars/viewport size do not change (avoids resizeEvent
-    // → applyLayout and scroll jumps).
-    if (isGalleryMode() && m_scene && keptSceneRect.isValid()) {
-        m_scene->setSceneRect(keptSceneRect);
+    // Pin sceneRect so scrollbar range does not collapse when tiles are removed.
+    if (gallery && m_scene) {
+        if (keptSceneRect.isValid()) {
+            m_scene->setSceneRect(keptSceneRect);
+        }
+        // Centre is more stable than raw scrollbar values across range rebuilds.
+        if (!keptCenter.isNull()) {
+            centerOn(keptCenter);
+        }
         if (horizontalScrollBar()) {
             horizontalScrollBar()->setValue(scrollH);
         }
         if (verticalScrollBar()) {
             verticalScrollBar()->setValue(scrollV);
         }
+        // Remember for deferred reassert after thumb-strip / splitter layout.
+        m_galleryViewCenter = keptCenter;
+        m_haveGalleryViewCenter = !keptCenter.isNull();
+        m_galleryScrollH = scrollH;
+        m_galleryScrollV = scrollV;
+        m_haveGalleryScroll = true;
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
@@ -1858,17 +1881,7 @@ void ImageView::applyPendingGalleryRestore()
         return;
     }
 
-    // Prefer scene-centre restore (survives scrollbar policy / range rebuild).
-    if (m_haveGalleryViewCenter) {
-        centerOn(m_galleryViewCenter);
-    } else if (m_haveGalleryScroll) {
-        if (horizontalScrollBar()) {
-            horizontalScrollBar()->setValue(m_galleryScrollH);
-        }
-        if (verticalScrollBar()) {
-            verticalScrollBar()->setValue(m_galleryScrollV);
-        }
-    }
+    reassertGalleryViewport();
 
     ImageItem *focus = nullptr;
     if (!m_galleryFocusPath.isEmpty()) {
@@ -1890,6 +1903,24 @@ void ImageView::applyPendingGalleryRestore()
     // centerOn(0,0) and wipe the restored position.
     if (m_pendingWorkspacePaths.isEmpty() && !m_items.isEmpty()) {
         m_pendingGalleryRestore = false;
+    }
+}
+
+void ImageView::reassertGalleryViewport()
+{
+    if (!isGalleryMode()) {
+        return;
+    }
+    if (m_haveGalleryViewCenter) {
+        centerOn(m_galleryViewCenter);
+    }
+    if (m_haveGalleryScroll) {
+        if (horizontalScrollBar()) {
+            horizontalScrollBar()->setValue(m_galleryScrollH);
+        }
+        if (verticalScrollBar()) {
+            verticalScrollBar()->setValue(m_galleryScrollV);
+        }
     }
 }
 
