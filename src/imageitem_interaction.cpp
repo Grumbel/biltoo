@@ -175,14 +175,17 @@ void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
 {
     // Vertical track outside the *left* edge.
     // a = bottom end (opacity 5%), b = top end (opacity 100%).
-    // Placement mirrors chrome adaptive layout: prefer bottom of the left edge
-    // when the frame is tall enough; always clear the left rotate knob / scale
-    // bar; fall back to packing above or below the mid-edge reserved band.
+    //
+    // Large frames: pin to the lower left, below the free-rotate / scale band.
+    // Small frames: centre on the left mid-edge (not the top). Outward offset
+    // already separates the track from the rotate knob; along-edge placement
+    // stays mid-anchored so the slider does not jump to the top corner.
     const QPointF alongUp = g.dirLeft; // bl → tl
     const qreal outDist = kSliderOutsidePx + kSliderHeightPx * 0.5;
     const qreal trackLen = kSliderWidthPx;
     const qreal cornerMargin = kHandleScreenPx * 0.6;
     const qreal edgeLen = QLineF(g.bl, g.tl).length();
+    const qreal topLimit = edgeLen - cornerMargin;
 
     auto projFromBl = [&](const QPointF &p) {
         return QPointF::dotProduct(p - g.bl, alongUp);
@@ -193,29 +196,29 @@ void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
     const qreal rotAlong = projFromBl(rotL);
     const qreal needClear = kHandleScreenPx * 0.5 + kSliderClearPx;
     const qreal zoneLo = rotAlong - needClear;
-    const qreal zoneHi = rotAlong + needClear;
 
-    // Prefer attached near the bottom of the left edge when the full track
-    // fits below the reserved mid-edge band.
-    qreal aAlong = cornerMargin;
-    qreal bAlong = aAlong + trackLen;
-    if (bAlong > zoneLo) {
-        // Pack just below the reserved band.
-        bAlong = zoneLo;
-        aAlong = bAlong - trackLen;
+    qreal aAlong = 0.0;
+    qreal bAlong = 0.0;
+    if (cornerMargin + trackLen <= zoneLo) {
+        // Tall enough: attach to the bottom of the left edge.
+        aAlong = cornerMargin;
+        bAlong = aAlong + trackLen;
+    } else {
+        // Short frame: centre on the left mid-edge, clamp into the free span.
+        aAlong = edgeLen * 0.5 - trackLen * 0.5;
+        bAlong = aAlong + trackLen;
         if (aAlong < cornerMargin) {
-            // Not enough room below: try above the band, else clamp into edge.
-            aAlong = zoneHi;
+            aAlong = cornerMargin;
             bAlong = aAlong + trackLen;
-            const qreal topLimit = edgeLen - cornerMargin;
-            if (bAlong > topLimit) {
-                bAlong = topLimit;
-                aAlong = bAlong - trackLen;
-            }
-            if (aAlong < cornerMargin) {
-                aAlong = cornerMargin;
-                bAlong = qMin(aAlong + trackLen, topLimit);
-            }
+        }
+        if (bAlong > topLimit) {
+            bAlong = topLimit;
+            aAlong = bAlong - trackLen;
+        }
+        if (aAlong < cornerMargin) {
+            // Edge shorter than the nominal track: span the free edge.
+            aAlong = cornerMargin;
+            bAlong = qMax(aAlong, topLimit);
         }
     }
 
