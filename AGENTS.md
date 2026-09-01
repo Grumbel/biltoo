@@ -21,6 +21,8 @@ in the chrome/identity series, residual risks, and how to continue.
   - `nix build` / `nix run` – package and run
   - `nix flake check` – builds the package (compile gate)
 - Manual: standard out-of-source CMake against Qt6 Widgets.
+- **Sandbox / agent host without Nix:** see [AGENT-ENV.md](AGENT-ENV.md)
+  (Ubuntu 24.04 packages, Qt 6.4.2, bootstrap commands, Qt 6.9 `flipped` caveat).
 - **Extra formats (XCF, KRA, ORA, …):** install KDE **KImageFormats** so Qt loads
   its `imageformats` plugins at runtime (Nix: `kimageformats` via the flake).
   No link-time dependency in CMake; `QImageReader` discovers the plugins.
