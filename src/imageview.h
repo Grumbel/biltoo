@@ -122,6 +122,11 @@ public:
     void rebindWorkspaceSession(const QStringList &sessionFiles,
                                 const QVector<SessionImageId> &sessionIds);
     void clearWorkspace();
+    // =====================================================================
+    // Mode-controller host API
+    // Used by ImageController / GalleryController / WorkspaceController.
+    // Prefer these over reaching into ImageView internals.
+    // =====================================================================
     /** Clear drag/group/rotate interaction pointers (items stay on canvas). */
     void clearInteractionState();
     /** Controller host: stop layout debounce and clear applyingLayout. */

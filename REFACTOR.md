@@ -162,9 +162,16 @@ update one list.
 
 ## Structural stop line
 
-Phases 1–4 (and follow-ups 2b/2c/3b/4b) are complete. Remaining work is either
-product features (TODO.md), optional Phase 5 after QA, or Workspace placement
-by id (new model work — not part of early-phase exit criteria).
+Phases 1–4 (and follow-ups 2b/2c/3b/4b) are complete.
+
+Phase 5 mode-controller extraction (5a–5u) is complete for the current design:
+`setViewMode` dispatches leave/enter to GalleryController, WorkspaceController,
+and ImageController; ImageView exposes a public host API (no `friend`);
+classic path is owned by ImageController.
+
+Remaining work is either product features (TODO.md), further host-API
+narrowing if desired, or Workspace placement by id (new model work — not
+part of early-phase exit criteria).
 - Phase 5b: Workspace stash/snapshot/free-form placement moved to
   imageview_workspace.cpp (file split by mode).
 - Phase 5c: setViewMode / prepare*Canvas / clearLiveCanvas moved to
@@ -209,3 +216,5 @@ by id (new model work — not part of early-phase exit criteria).
   `scheduleRestoreLoad`, snapshot/stash wrappers, …); drop `friend`.
 - Phase 5u: `m_classicPath` owned by `ImageController`; ImageView exposes
   classicPath/hasClassicPath/setClassicPath/clearClassicPath/takeClassicPath.
+- Phase 5v: document mode-controller host API banner on ImageView; update
+  structural stop line to mark Phase 5 controller work complete.
