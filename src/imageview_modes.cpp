@@ -88,6 +88,18 @@ void ImageView::applyToolDragMode()
     }
 }
 
+void ImageView::clearFitFillModes()
+{
+    m_fitMode = false;
+    m_fillMode = false;
+}
+
+void ImageView::enableFitMode()
+{
+    m_fitMode = true;
+    m_fillMode = false;
+}
+
 
 
 void ImageView::clearInteractionState()

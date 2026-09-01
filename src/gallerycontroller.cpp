@@ -39,11 +39,11 @@ void GalleryController::stashItems()
 {
     // Replace any previous stash (should be empty when leaving Gallery).
     discardStash();
-    if (m_view->m_items.isEmpty()) {
+    if (m_view->liveItems().isEmpty()) {
         return;
     }
-    m_stashedPathOrder = m_view->m_pathOrder;
-    m_stashedItems = m_view->m_items;
+    m_stashedPathOrder = m_view->pathOrder();
+    m_stashedItems = m_view->liveItems();
     m_selectionAnchor = nullptr;
     m_hoverPath.clear();
     for (ImageItem *item : m_stashedItems) {
@@ -55,7 +55,7 @@ void GalleryController::stashItems()
             item->scene()->removeItem(item);
         }
     }
-    m_view->m_items.clear();
+    m_view->liveItems().clear();
     // Keep gallery decode scheduled / failed on the view — paths still valid
     // on return. Pending LoadAdd for missing tiles can finish after restore.
 }
@@ -67,28 +67,28 @@ void GalleryController::restoreStashedItems()
     }
     // Live canvas should be empty (Image mode held a single item that
     // clearWorkspace removes before Gallery is entered).
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         if (item && item->scene()) {
             item->scene()->removeItem(item);
         }
         delete item;
     }
-    m_view->m_items = m_stashedItems;
+    m_view->liveItems() = m_stashedItems;
     m_stashedItems.clear();
     if (!m_stashedPathOrder.isEmpty()) {
-        m_view->m_pathOrder = m_stashedPathOrder;
+        m_view->pathOrder() = m_stashedPathOrder;
     }
     m_stashedPathOrder.clear();
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         if (!item) {
             continue;
         }
         if (!item->scene()) {
-            m_view->m_scene->addItem(item);
+            m_view->canvasScene()->addItem(item);
         }
         m_view->applyItemModeFlags(item);
     }
-    m_view->reorderItemsByPaths(m_view->m_pathOrder);
+    m_view->reorderItemsByPaths(m_view->pathOrder());
 }
 
 void GalleryController::snapshotViewport()
@@ -151,7 +151,7 @@ void GalleryController::applyPendingRestore()
 
     // Stay pending while loads complete — each applyLayout would otherwise
     // centerOn(0,0) and wipe the restored position.
-    if (m_view->m_pendingWorkspacePaths.isEmpty() && !m_view->m_items.isEmpty()) {
+    if (m_view->m_pendingWorkspacePaths.isEmpty() && !m_view->liveItems().isEmpty()) {
         m_pendingRestore = false;
     }
 }
@@ -233,26 +233,26 @@ void GalleryController::enter(int packagedLayoutInt)
         restoreStashedItems();
     }
 
-    if (layoutSwitch && m_view->m_scene) {
+    if (layoutSwitch && m_view->canvasScene()) {
         // Only trust items we still own — selection can briefly hold stale
         // pointers after session deletes that skipped destroyCanvasItem.
-        for (QGraphicsItem *gi : m_view->m_scene->selectedItems()) {
+        for (QGraphicsItem *gi : m_view->canvasScene()->selectedItems()) {
             auto *ii = qgraphicsitem_cast<ImageItem *>(gi);
-            if (!ii || !m_view->m_items.contains(ii) || ii->scene() != m_view->m_scene) {
+            if (!ii || !m_view->liveItems().contains(ii) || ii->scene() != m_view->canvasScene()) {
                 continue;
             }
             selectedPaths.append(ii->path());
         }
         if (m_selectionAnchor
-            && m_view->m_items.contains(m_selectionAnchor)
-            && m_selectionAnchor->scene() == m_view->m_scene) {
+            && m_view->liveItems().contains(m_selectionAnchor)
+            && m_selectionAnchor->scene() == m_view->canvasScene()) {
             anchorPath = m_selectionAnchor->path();
         } else {
             m_selectionAnchor = nullptr;
         }
     }
 
-    if (m_view->m_viewMode == ImageView::ViewMode::Workspace) {
+    if (m_view->isWorkspaceMode()) {
         m_view->snapshotFreeFormStates();
         m_view->snapshotWorkspace();
     }
@@ -266,8 +266,7 @@ void GalleryController::enter(int packagedLayoutInt)
         m_haveViewCenter = false;
         m_pendingRestore = false;
         m_view->resetTransform();
-        m_view->m_fitMode = true;
-        m_view->m_fillMode = false;
+        m_view->enableFitMode();  // layout-switch soft reset
     } else {
         // Clear residual Image/Workspace view state before packing.
         m_view->prepareGalleryCanvas();
@@ -277,7 +276,7 @@ void GalleryController::enter(int packagedLayoutInt)
         m_selectionAnchor = nullptr;
     }
     m_view->setDragMode(QGraphicsView::RubberBandDrag);
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         if (!item) {
             continue;
         }
@@ -294,20 +293,20 @@ void GalleryController::enter(int packagedLayoutInt)
     // Explicit layout action: pack only live items (drop stale path-order holes).
     if (layoutSwitch) {
         QStringList livePaths;
-        livePaths.reserve(m_view->m_items.size());
-        for (ImageItem *item : m_view->m_items) {
+        livePaths.reserve(m_view->liveItems().size());
+        for (ImageItem *item : m_view->liveItems()) {
             if (item) {
                 livePaths.append(item->path());
             }
         }
         if (!livePaths.isEmpty()) {
-            m_view->m_pathOrder = livePaths;
+            m_view->pathOrder() = livePaths;
         }
     }
     m_view->applyLayout(GalleryPackReason::EnterGallery);
 
     if (layoutSwitch && !selectedPaths.isEmpty()) {
-        m_view->m_scene->clearSelection();
+        m_view->canvasScene()->clearSelection();
         for (const QString &path : selectedPaths) {
             if (ImageItem *item = m_view->findItemByPath(path)) {
                 item->setSelected(true);

@@ -18,7 +18,7 @@ WorkspaceController::WorkspaceController(ImageView *view)
 void WorkspaceController::snapshot()
 {
     m_savedItems.clear();
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         const WorkspaceItemState s = m_view->captureState(item);
         m_savedItems.append(s);
         // Path map is session/Image appearance only; unbound duplicates stay
@@ -79,8 +79,7 @@ void WorkspaceController::restore()
         m_view->m_itemStates.insert(state.path, state);
         m_view->scheduleImageLoad(state.path, ImageView::LoadRestore);
     }
-    m_view->m_fitMode = false;
-    m_view->m_fillMode = false;
+    m_view->clearFitFillModes();
     // Apply zoom before scene-rect expansion; pan after range is valid.
     if (m_hasSavedView) {
         m_view->setTransform(m_savedViewTransform);
@@ -117,10 +116,10 @@ void WorkspaceController::stashItems()
     m_stashedViewTransform = m_view->transform();
     m_stashedViewCenter = m_view->mapToScene(m_view->viewport()->rect().center());
     m_hasStashedView = true;
-    if (m_view->m_items.isEmpty()) {
+    if (m_view->liveItems().isEmpty()) {
         return;
     }
-    m_stashedItems = m_view->m_items;
+    m_stashedItems = m_view->liveItems();
     m_view->clearInteractionState();
     for (ImageItem *item : m_stashedItems) {
         if (!item) {
@@ -131,7 +130,7 @@ void WorkspaceController::stashItems()
             item->scene()->removeItem(item);
         }
     }
-    m_view->m_items.clear();
+    m_view->liveItems().clear();
 }
 
 void WorkspaceController::restoreStashedItems()
@@ -140,22 +139,22 @@ void WorkspaceController::restoreStashedItems()
         return;
     }
     // Drop Image-mode canvas (single tile) without touching the stash.
-    while (!m_view->m_items.isEmpty()) {
-        m_view->destroyCanvasItem(m_view->m_items.last());
+    while (!m_view->liveItems().isEmpty()) {
+        m_view->destroyCanvasItem(m_view->liveItems().last());
     }
-    if (m_view->m_scene) {
-        m_view->m_scene->blockSignals(true);
-        m_view->m_scene->clear();
-        m_view->m_scene->blockSignals(false);
+    if (m_view->canvasScene()) {
+        m_view->canvasScene()->blockSignals(true);
+        m_view->canvasScene()->clear();
+        m_view->canvasScene()->blockSignals(false);
     }
-    m_view->m_items = m_stashedItems;
+    m_view->liveItems() = m_stashedItems;
     m_stashedItems.clear();
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         if (!item) {
             continue;
         }
         if (!item->scene()) {
-            m_view->m_scene->addItem(item);
+            m_view->canvasScene()->addItem(item);
         }
         m_view->applyItemModeFlags(item);
         // Prefer per-session-slot appearance (value copy for this slot).
@@ -169,7 +168,7 @@ void WorkspaceController::restoreStashedItems()
         }
         if (!app) {
             int samePath = 0;
-            for (ImageItem *peer : m_view->m_items) {
+            for (ImageItem *peer : m_view->liveItems()) {
                 if (peer && peer->path() == item->path()) {
                     ++samePath;
                 }
@@ -209,8 +208,7 @@ void WorkspaceController::restoreStashedItems()
             item->setSessionCrop(app->hasCrop, app->cropRect);
         }
     }
-    m_view->m_fitMode = false;
-    m_view->m_fillMode = false;
+    m_view->clearFitFillModes();
     // Order: zoom → expand sceneRect for the new scale → pan to saved centre.
     // updateWorkspaceSceneRect alone would leave scrollbars at Image-mode zeros.
     if (m_hasStashedView) {
@@ -227,7 +225,7 @@ void WorkspaceController::restoreStashedItems()
 void WorkspaceController::snapshotFreeFormStates()
 {
     m_freeFormStates.clear();
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         m_freeFormStates.insert(item->path(), m_view->captureState(item));
     }
     m_freeFormViewTransform = m_view->transform();
@@ -236,7 +234,7 @@ void WorkspaceController::snapshotFreeFormStates()
 
 void WorkspaceController::restoreFreeFormStates()
 {
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         const auto it = m_freeFormStates.constFind(item->path());
         if (it != m_freeFormStates.constEnd()) {
             m_view->applyState(item, *it);

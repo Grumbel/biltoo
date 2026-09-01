@@ -200,3 +200,5 @@ by id (new model work — not part of early-phase exit criteria).
   `clearSceneKeepingStashes`, `scheduleReplaceLoad`); Image enter uses them.
 - Phase 5q: host helpers `liveItems`, `canvasScene`, `applyModeFlagsToLiveItems`,
   `ensurePrimarySelection`, `applyToolDragMode`; Workspace/Gallery enter use them.
+- Phase 5r: stash/restore paths use `liveItems`/`canvasScene`/`pathOrder`;
+  `clearFitFillModes` for free-form restore.

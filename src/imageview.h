@@ -149,6 +149,13 @@ public:
     void ensurePrimarySelection();
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
+    /** Controller host: session path order used for Gallery packing. */
+    QStringList &pathOrder() { return m_pathOrder; }
+    const QStringList &pathOrder() const { return m_pathOrder; }
+    /** Controller host: disable Image-mode fit/fill when restoring free-form. */
+    void clearFitFillModes();
+    /** Controller host: Image/Gallery soft reset to fit, not fill. */
+    void enableFitMode();
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
     void clearLiveCanvas();
 
