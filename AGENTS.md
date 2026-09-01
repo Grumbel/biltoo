@@ -11,6 +11,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
 
+**Handoff:** [SESSION.md](SESSION.md) — SessionImageId model, what shipped
+in the chrome/identity series, residual risks, and how to continue.
+
 ## Build & run
 
 - Primary build system: **Nix flake** + CMake + Qt6.

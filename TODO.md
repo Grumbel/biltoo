@@ -18,6 +18,12 @@ line beyond bugfixes, polish, and docs.
 Focus:
 
 - [ ] Stabilize Image / Gallery / Workspace interactions and mode transitions
+- [ ] Session-image identity acceptance (see SESSION.md §4–§5):
+  - [ ] Duplicate / drop-duplicate: flip/crop one tile does not affect the other
+  - [ ] Image-mode crop of slot B updates only Workspace tile B after return
+  - [ ] Gallery open of a duplicated path uses session id (not first path match)
+  - [ ] Session remove undo restores stable ids / Workspace association
+  - [ ] No unbound Workspace tiles after normal add/dup/drop paths
 - [ ] Fix remaining crashes, layout edge cases, and selection/context-menu bugs
 - [ ] Keyboard shortcuts, HUD, slideshow, and desktop integration as documented
 - [ ] Packaging (Nix/CMake), AppStream, `.desktop`, i18n scaffolding

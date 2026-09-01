@@ -407,3 +407,19 @@ bound to indices 0 and 1:
 - Leaving and re-entering Workspace preserves both appearances independently.
 
 Until those hold without path-first shortcuts, duplicate identity is incomplete.
+
+
+---
+
+## 12. Handoff status (see SESSION.md)
+
+Implementation now keys appearance and peer sync on **`SessionImageId`**.
+Path-keyed `m_itemStates` remains a legacy last-writer cache only.
+
+**Do not** reintroduce:
+
+- `clearWorkspace()` on Image-mode LoadReplace (use `clearLiveCanvas()`)
+- Peer sync by path or by `m_currentSessionId` in Workspace
+- Crop prior rect from path map when a session id is bound
+
+Full residual list and bundle index: [SESSION.md](SESSION.md).

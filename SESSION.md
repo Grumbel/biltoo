@@ -1,0 +1,194 @@
+# Session handoff — identity, chrome, crop (bundles 001–024)
+
+**Tip ref:** `ae3043f` (Workspace flip/rotate: sync only by SessionImageId)  
+**Apply order:** `qimgview-001-…` through `qimgview-024-…` from artifacts, each
+`git pull <bundle> HEAD` in sequence. Base is upstream `Grumbel/qimgview` tip
+at the time the series started.
+
+Related docs: [DOMAIN.md](DOMAIN.md), [IDENTITY.md](IDENTITY.md), [HANDLES.md](HANDLES.md),
+[AUDIT.md](AUDIT.md), [TODO.md](TODO.md).
+
+---
+
+## 1. Product model (agreed)
+
+- **Session** = ordered list of **session images**.
+- Each **session image** has a **stable id** + a **disk path** (decode source).
+- **Same path may appear multiple times**; those entries are independent.
+- **Gallery** = layouts over the session list.
+- **Image mode** = focus + **content edit** one session image (crop, flip, 90°).
+- **Workspace** = optional free placement of session images; each tile ↔ one
+  session image (plus pos/scale/free tilt/opacity/z).
+
+Identity key: **`SessionImageId` (`qint64`, never 0, never reused after remove).**  
+List **index** is order only (navigation, filmstrip row) and may shift.
+
+---
+
+## 2. What landed in this series (by theme)
+
+### Workspace chrome / handles (early bundles ~001–012 area)
+
+- Opacity slider vertical on the **left**; constant size; bottom-anchored when
+  the frame is tall enough, otherwise packed under the rotate handle (same
+  pattern as other chrome).
+- Vertical cursor on the opacity track.
+- Flip chrome reflects **content** flip state after baking.
+- Bolder, shared handle style (line–arc–line corners); hover grow.
+- Group selection: rigid rotate of the whole group.
+- Crop handles aligned with Workspace style; Reset/Apply outside bottom,
+  clamp inside viewport if off-screen.
+- Middle-mouse pan allowed in crop mode.
+- Crop undo command.
+- Free zoom/pan: no selection-chasing on zoom.
+- Qt `QImage::mirrored` → `flipped`.
+
+### Session identity (014–019, 024)
+
+- **`SessionImageId`** type in `imageview_types.h`.
+- `MainWindow::m_sessionIds` parallel to `m_files`; alloc on load/append/dup;
+  remove/sort keep pairs aligned.
+- `ImageItem::sessionId`, `m_sessionAppearance[id]`.
+- Image open from Workspace: `sessionImageOpenRequested(id)`.
+- Filmstrip overrides by id (`ThumbnailBar::setSessionIds` + id overrides).
+- **Image LoadReplace uses `clearLiveCanvas()`** — must **not** discard
+  Workspace/Gallery stashes (was the root cause of “crop doesn’t stick”).
+- Crop prior rect from **session id / item**, not path map alone.
+- **Peer sync only when both have the same non-zero SessionImageId** (024).
+- Workspace must not invent id from `m_currentSessionId` (024).
+- Drop-duplicate: `placeOrMoveImageAt(path, pos, sid, slot)` binds id immediately.
+
+### Build / packaging
+
+- CMake: stricter warnings (`-Wall -Wextra -Wpedantic` + more); optional
+  `QIMGVIEW_WERROR`.
+- Warning cleanups (shadow, unused, double-promotion, QWidget::data shadow).
+- Nix: `libsysprof-capture` in `buildInputs` to silence pkg-config noise from
+  glib’s `Requires.private: sysprof-capture-4`.
+
+---
+
+## 3. Critical code map
+
+| Concern | Where |
+|---------|--------|
+| Session list + ids | `MainWindow::m_files`, `m_sessionIds`, `allocSessionId`, `sessionIdAt` |
+| Appearance by id | `ImageView::m_sessionAppearance` |
+| Path last-writer cache (legacy) | `ImageView::m_itemStates` — **do not use as identity** |
+| Edit commit + peer sync | `ImageView::commitItemSessionEdit` |
+| Flip / 90° | `bakeItemFlip`, `bakeItemRotate90` |
+| Crop enter prior | `prepareCropModeFullImage` |
+| Crop record | `recordSessionCrop` |
+| Live vs full wipe | `clearLiveCanvas` vs `clearWorkspace` |
+| Stash | `stashWorkspaceItems` / `restoreStashedWorkspaceItems` |
+| Duplicate UI | `MainWindow::duplicateSelected` + `ImageView::duplicateSelected` |
+| Drop duplicate | `MainWindow::handleDroppedUrls` → `placeOrMoveImageAt(..., sid, slot)` |
+| Rebind | `rebindWorkspaceSession(files, ids)` |
+| Async load bind | `m_pendingSessionBinds` |
+
+---
+
+## 4. Correct end-to-end path (verify when continuing)
+
+1. Workspace: open image A → one session image id₁, tile bound to id₁.
+2. Duplicate (or drag-drop same path onto canvas) → id₂ + new tile bound to id₂.
+3. Flip chrome on **tile₂ only** → only tile₂ pixels/content flags change.
+4. Double-click tile₂ → Image mode with `currentSessionId = id₂`; stash keeps tiles.
+5. Crop apply → `m_sessionAppearance[id₂]` + sync only peers with id₂ (stashed tile₂).
+6. Return Workspace → tile₂ cropped; tile₁ unchanged.
+7. Re-enter crop on tile₁ vs tile₂ → each shows **its own** prior rect.
+
+If any step fails, check **sessionId on the live item** first (`-1`/`0` means
+unbound and edits will not propagate correctly in Workspace).
+
+---
+
+## 5. Known residual issues / incomplete work
+
+### High priority
+
+1. **Unbound tiles (`sessionId == 0`)**  
+   Still possible if something adds to the canvas without going through
+   `addImageForSession` / `placeOrMoveImageAt(..., id)` / rebind. Workspace
+   edits on unbound tiles **do not** write `m_sessionAppearance` and **do not**
+   sync (by design after 024). Ensure every placement path assigns an id.
+
+2. **Open-by-path still exists**  
+   `galleryItemOpenRequested(path)`, `showPathInImageMode`, `indexOf(path)` resolve
+   the **first** session row with that path. Prefer id or explicit index when
+   duplicates exist. Gallery open should eventually pass session id.
+
+3. **`m_itemStates[path]` still written**  
+   Last-writer cache for legacy. Any code that **reads** path map for appearance
+   on a **bound** id will mis-handle duplicates. Audit remaining readers.
+
+4. **Filmstrip path-only override signal**  
+   3-arg id signals exist; path-only emits may still update all rows with that
+   path if anything connects the old overload.
+
+5. **Session undo remove/restore**  
+   `SessionRemoveCommand` stores path+index, not id. Restore allocates **new**
+   ids — Workspace associations after undo may not match pre-remove ids.
+
+6. **`setWorkspacePaths(paths)` path-only**  
+   Gallery/session rebuild still path-keyed; path duplicates in Gallery are
+   underspecified (DOMAIN: one object per session image — needs packing by id).
+
+### Medium
+
+7. **Group flip / multi-select**  
+   `transformTargets()` flips **all selected** items. Intended for multi-select;
+   not a bug if selection includes duplicates.
+
+8. **Opacity / handle polish**  
+   Largely done; re-check after large/small frame transitions and HiDPI.
+
+9. **`-Wnull-dereference`**  
+   May still appear from Qt `QPointer` inlines depending on GCC version; local
+   `guard.data()` pattern used in thumbnail jobs.
+
+### Low / docs
+
+10. **IDENTITY.md §1+** still describes some pre-id implementation detail;
+    §0 is the intended model. Prefer this SESSION.md for “what to do next”.
+11. **AUDIT.md H2p / M27** partially addressed by ids; mark fixed when
+    verified at runtime.
+12. **TODO.md 0.1.0** still lists broad stabilize items — fold identity
+    acceptance tests into that list.
+
+---
+
+## 6. Bundle index (this series)
+
+| Bundle | Topic |
+|--------|--------|
+| 001–013 | Chrome, opacity, crop UI, group rotate, undo, zoom, early session-slot work |
+| 014–015 | IDENTITY.md / DOMAIN.md mental model |
+| 016–017 | `SessionImageId`, appearance map, rebind + pending binds |
+| 018 | **Stash preserved** across Image LoadReplace |
+| 019 | Crop prior by session id |
+| 020–022 | Compiler warnings + fixes |
+| 023 | Nix `libsysprof-capture` |
+| 024 | **Strict id-only peer sync**; drop-duplicate binds id |
+
+---
+
+## 7. Suggested next session checklist
+
+1. Runtime: duplicate → flip one → drop-duplicate → flip one → Image crop each.
+2. Grep for remaining **identity hazards**:
+   - `m_itemStates.constFind` / `findItemByPath` used for appearance or open
+   - `indexOf(path)` for navigation into Image mode
+   - `clearWorkspace()` on Image-mode load paths (should be `clearLiveCanvas`)
+3. Gallery: open tile when path is duplicated — pass session id.
+4. Session remove undo: store/restore `SessionImageId`.
+5. Optional: stop writing path appearance entirely once readers are gone.
+6. Mark AUDIT M16/M27 resolved after verification.
+
+---
+
+## 8. Author / commit convention (this series)
+
+- Author: `Ingo Ruhnke <grumbel@gmail.com>`
+- Trailer: `Co-authored-by: Grok <grok@x.ai>`
+- Bundles: `qimgview-NNN-short-name.bundle`, ref `HEAD`, stack cleanly.
