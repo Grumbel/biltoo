@@ -1264,9 +1264,12 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             // could not update it. Force a full re-decode so LoadAdd applies
             // m_sessionAppearance for this id (safe; pixels must be on-disk full).
             if (newlyBoundId && existing->hasDecodedPixels()
-                && sid != kInvalidSessionImageId
-                && m_sessionAppearance.contains(sid)) {
-                const WorkspaceItemState &app = m_sessionAppearance.constFind(sid).value();
+                && sid != kInvalidSessionImageId) {
+                const auto appIt = m_sessionAppearance.constFind(sid);
+                if (appIt == m_sessionAppearance.cend()) {
+                    continue;
+                }
+                const WorkspaceItemState &app = *appIt;
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
                     existing->clearDecodedPixels();
