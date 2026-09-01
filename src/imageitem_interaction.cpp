@@ -893,11 +893,13 @@ void ImageItem::activateChromeHandle(Handle h)
                 }
             }
         }
-        // Fallback without a view: bake pixels only.
+        // Fallback without a view: bake pixels and toggle content indicators.
         if (h == Handle::FlipH) {
             bakeFlip(true, false);
+            m_contentHFlip = !m_contentHFlip;
         } else if (h == Handle::FlipV) {
             bakeFlip(false, true);
+            m_contentVFlip = !m_contentVFlip;
         } else if (h == Handle::Rotate90CCW) {
             bakeRotate90(-1);
         } else {
