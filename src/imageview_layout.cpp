@@ -1998,6 +1998,11 @@ bool ImageView::hasTransformTargets() const
     return !transformTargets().isEmpty();
 }
 
+bool ImageView::hasSingleCropTarget() const
+{
+    return transformTargets().size() == 1;
+}
+
 QSizeF ImageView::nativeSize(const ImageItem *item)
 {
     if (!item) {

@@ -142,6 +142,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::workspacePathsChanged,
             this, &MainWindow::onWorkspacePathsChanged);
     connect(m_imageView, &ImageView::canvasSelectionChanged, this, [this]() {
+        // Crop and other selection-sensitive actions depend on target count.
+        updateNavigationActions();
         if (m_syncingSelection || !isWorkspaceMode() || !m_thumbnailBar || !m_imageView) {
             return;
         }

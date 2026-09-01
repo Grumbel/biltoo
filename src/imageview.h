@@ -198,6 +198,8 @@ public:
     void flipVertical();
     /** True when rotate/flip have at least one target (selection or sole image). */
     bool hasTransformTargets() const;
+    /** True when crop is allowed: exactly one transform target (not multi-select). */
+    bool hasSingleCropTarget() const;
 
     /**
      * Interactive crop (Image mode, or a single Workspace target).

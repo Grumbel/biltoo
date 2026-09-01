@@ -941,6 +941,11 @@ void ImageView::setCropMode(bool on)
         if (isGalleryMode()) {
             return;
         }
+        // Crop edits one image only; multi-select must not silently pick the first.
+        if (!hasSingleCropTarget()) {
+            flashHud(tr("Crop"), tr("Select a single image"));
+            return;
+        }
         ImageItem *item = cropTargetItem();
         if (!item || (!item->hasDecodedPixels() && item->pixmap().isNull())) {
             flashHud(tr("Crop"), tr("No image"));

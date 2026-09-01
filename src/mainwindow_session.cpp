@@ -775,10 +775,10 @@ void MainWindow::updateNavigationActions()
             act->setEnabled(canTransform);
         }
     }
-    // Crop: Image mode or a single Workspace target with decoded pixels.
+    // Crop: Image mode or exactly one Workspace target (not multi-select).
     if (m_cropAct) {
         const bool canCrop = m_imageView && !m_imageView->isGalleryMode()
-                             && m_imageView->hasTransformTargets();
+                             && m_imageView->hasSingleCropTarget();
         m_cropAct->setEnabled(canCrop);
         if (!canCrop && m_imageView && m_imageView->isCropMode()) {
             m_imageView->cancelCrop();
