@@ -173,14 +173,17 @@ void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
 // whole track shifts toward the bottom-right corner / further right.
 void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
 {
-    // Vertical track outside the *left* edge.
-    // a = bottom end (opacity 5%), b = top end (opacity 100%).
+    // Vertical track outside the *left* edge — same adaptive idea as
+    // chromeCentersView lower group: constant size, prefer bottom, pack
+    // against the mid-edge rotate clearance when the free span is tight.
     //
-    // Tall frames: bottom of the track sits at the bottom-left (clear of the
-    // corner scale handle); the track extends upward and stays below the
-    // mid-edge free-rotate knob.
-    // Short frames: top is pinned just below the rotate knob; the track
-    // extends downward (shortened if needed) — never above the rotate handle.
+    // a = bottom end (opacity 5%), b = top end (opacity 100%).
+    // Track length is always kSliderWidthPx (never shrinks).
+    //
+    // Free span = [cornerMargin, maxTop] where maxTop is just below the left
+    // free-rotate knob. If the full track fits there, bottom-anchor it.
+    // Otherwise pin the top to maxTop and keep full length (bottom may extend
+    // past the image bottom), matching how chrome buttons spill when cramped.
     const QPointF alongUp = g.dirLeft; // bl → tl
     const qreal outDist = kSliderOutsidePx + kSliderHeightPx * 0.5;
     const qreal trackLen = kSliderWidthPx;
@@ -193,28 +196,16 @@ void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
     const QPointF rotL = g.midLeft + g.outLeft * kRotateOffsetPx;
     const qreal rotAlong = projFromBl(rotL);
     const qreal needClear = kHandleScreenPx * 0.5 + kSliderClearPx;
-    // Highest allowed position for the top of the track (below rotate/scale).
     const qreal maxTop = rotAlong - needClear;
 
-    qreal aAlong = 0.0;
-    qreal bAlong = 0.0;
-    if (cornerMargin + trackLen <= maxTop) {
-        // Big enough: anchor the bottom of the track to the image bottom.
-        aAlong = cornerMargin;
-        bAlong = aAlong + trackLen;
-    } else {
-        // Short: pin the top below the rotate handle; grow downward.
+    // Prefer bottom-anchored (clear of corner scale handle).
+    qreal aAlong = cornerMargin;
+    qreal bAlong = aAlong + trackLen;
+    if (bAlong > maxTop) {
+        // Not enough free space under the rotate knob: pin top to maxTop,
+        // keep full track length (extends below the frame if needed).
         bAlong = maxTop;
         aAlong = bAlong - trackLen;
-        if (aAlong < cornerMargin) {
-            aAlong = cornerMargin;
-        }
-        if (bAlong <= aAlong + 4.0) {
-            bAlong = aAlong + 4.0;
-            if (bAlong > maxTop) {
-                bAlong = qMax(aAlong + 4.0, maxTop);
-            }
-        }
     }
 
     const QPointF origin = g.bl + g.outLeft * outDist;

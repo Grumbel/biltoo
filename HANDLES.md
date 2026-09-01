@@ -27,11 +27,11 @@ editor:
   in viewport pixels at all scales/rotations. Raise/Lower glyphs stay
   screen-upright; others may follow the item or stay upright as designed.
 - **Opacity track** is a vertical slider outside the visual left edge. Bottom
-  end is minimum opacity (5%), top end is fully opaque (100%). On tall frames
-  the bottom of the track is anchored to the bottom-left (clear of the corner
-  scale handle) and the track extends upward below the mid-edge free-rotate
-  knob. On short frames the top is pinned just below that rotate knob and the
-  track shortens downward — it never moves above the rotate handle.
+  end is minimum opacity (5%), top end is fully opaque (100%). Track length is
+  constant (viewport px). Placement matches chrome adaptive layout: prefer
+  bottom-anchored (clear of the corner scale handle) when the free span under
+  the mid-edge free-rotate knob is long enough; otherwise pin the top just
+  below that knob and keep full length (bottom may extend past the frame).
 - Hit targets match painted centres (view-pixel distance tests). Input is owned
   exclusively by ImageView (viewport).
 
