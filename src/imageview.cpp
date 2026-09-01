@@ -1300,36 +1300,45 @@ void ImageView::paintCropOverlay(QPainter &painter)
     painter.setBrush(QColor(0, 0, 0, 140));
     painter.drawPath(outer.subtracted(hole));
 
-    // Crop frame
+    // Crop frame — amber family (distinct from single-select blue / group violet).
     painter.setBrush(Qt::NoBrush);
-    QPen frame(QColor(255, 255, 255, 230), 1.5);
+    QPen frame(QColor(255, 190, 40, 240), 0);
     frame.setCosmetic(true);
+    frame.setWidthF(1.75);
     painter.setPen(frame);
     painter.drawRect(cropView);
-    QPen dash(QColor(40, 40, 40, 200), 1.0, Qt::DashLine);
+    QPen dash(QColor(40, 30, 10, 180), 0, Qt::DashLine);
     dash.setCosmetic(true);
+    dash.setWidthF(1.0);
     painter.setPen(dash);
     painter.drawRect(cropView.adjusted(1, 1, -1, -1));
 
-    // Edge / corner handles (constant screen size).
-    constexpr int kR = 5;
-    auto drawHandle = [&](const QPoint &c) {
-        painter.setPen(QPen(QColor(40, 40, 40), 1.0));
-        painter.setBrush(QColor(255, 255, 255, 240));
-        painter.drawEllipse(c, kR, kR);
-    };
+    // Bold corner / edge handles; grow on hover to match Workspace chrome language.
     const QPoint tl = cropView.topLeft();
     const QPoint tr = cropView.topRight();
     const QPoint bl = cropView.bottomLeft();
     const QPoint br = cropView.bottomRight();
-    drawHandle(tl);
-    drawHandle(tr);
-    drawHandle(bl);
-    drawHandle(br);
-    drawHandle(QPoint((tl.x() + tr.x()) / 2, tl.y()));
-    drawHandle(QPoint((bl.x() + br.x()) / 2, bl.y()));
-    drawHandle(QPoint(tl.x(), (tl.y() + bl.y()) / 2));
-    drawHandle(QPoint(tr.x(), (tr.y() + br.y()) / 2));
+    struct CropPt { QPoint c; CropHandle h; };
+    const CropPt pts[] = {
+        {tl, CropHandle::TopLeft},
+        {tr, CropHandle::TopRight},
+        {bl, CropHandle::BottomLeft},
+        {br, CropHandle::BottomRight},
+        {QPoint((tl.x() + tr.x()) / 2, tl.y()), CropHandle::Top},
+        {QPoint((bl.x() + br.x()) / 2, bl.y()), CropHandle::Bottom},
+        {QPoint(tl.x(), (tl.y() + bl.y()) / 2), CropHandle::Left},
+        {QPoint(tr.x(), (tr.y() + br.y()) / 2), CropHandle::Right},
+    };
+    for (const CropPt &pt : pts) {
+        const bool hot = (m_cropHoverHandle == pt.h || m_cropActiveHandle == pt.h);
+        const qreal r = hot ? 7.0 : 5.0;
+        QPen hp(hot ? QColor(255, 255, 255) : QColor(120, 80, 10), 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(hot ? 1.6 : 1.15);
+        painter.setPen(hp);
+        painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
+        painter.drawRect(QRectF(pt.c.x() - r / 2.0, pt.c.y() - r / 2.0, r, r));
+    }
 
     // Reset / Apply controls above the crop frame.
     auto drawTextButton = [&](const QRect &btn, CropHandle kind, const QString &label,
