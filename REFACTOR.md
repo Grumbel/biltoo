@@ -148,3 +148,5 @@ update one list.
   and optional appearance; restore reuses the same id and re-applies appearance.
 - Phase 3b: leaveForImageMode() (Gallery+Workspace→Image);
   returnToWorkspaceFromImage() mirrors returnToGalleryFromImage.
+- Phase 2b: bound session images no longer last-write appearance
+  into m_itemStates (path map); m_appearance is the only content store.

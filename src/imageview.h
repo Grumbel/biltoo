@@ -612,7 +612,11 @@ private:
 
     QGraphicsScene *m_scene = nullptr;
     QList<ImageItem *> m_items;
-    /** Persistent per-path transforms while workspace mode is active. */
+    /**
+     * Path-keyed placement / legacy unbound appearance.
+     * Bound session images: content appearance is m_appearance only.
+     * Path map remains Workspace free-placement cache and unbound fallback.
+     */
     QHash<QString, WorkspaceItemState> m_itemStates;
     /**
      * Per-session-slot appearance (crop / content flip / quarter turns).

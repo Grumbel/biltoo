@@ -1170,12 +1170,8 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     item->setContentHFlip(state.contentHFlip);
     item->setContentVFlip(state.contentVFlip);
     applyState(item, state);
-    if (item->sessionIndex() >= 0) {
-        WorkspaceItemState s = state;
-        s.path = item->path();
-        s.sessionIndex = item->sessionIndex();
-        m_itemStates.insert(item->path(), s);
-    }
+    // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
+    // Do not write crop state into the path map for bound tiles.
     commitItemSessionEdit(item);
     if (isImageMode()) {
         m_fitMode = true;

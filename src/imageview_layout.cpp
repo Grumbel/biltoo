@@ -113,22 +113,30 @@ void ImageView::rememberItemState(ImageItem *item)
     if (!item) {
         return;
     }
-    // Image mode must not overwrite Workspace placement (pos / scale / free tilt)
-    // stored for the same path — only session appearance fields change there.
+    const SessionImageId sid =
+        item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+
+    // Image mode must not overwrite Workspace placement (pos / scale / free tilt).
+    // Bound session images: appearance lives only in m_appearance (Phase 2).
     if (isImageMode()) {
+        if (sid != kInvalidSessionImageId) {
+            // Leave path-map placement untouched; do not last-write crop/flip by path.
+            return;
+        }
+        // Unbound legacy tile: path map is the only store.
         WorkspaceItemState s;
         const auto it = m_itemStates.constFind(item->path());
         if (it != m_itemStates.cend()) {
-            s = *it; // keep placement fields for Workspace return
+            s = *it;
         } else {
             s.path = item->path();
         }
-        // Placement rotation stays Workspace-only (s.rotation unchanged).
         s.sessionIndex = item->sessionIndex() >= 0 ? item->sessionIndex() : s.sessionIndex;
         s.hFlip = item->itemHFlip();
         s.vFlip = item->itemVFlip();
         s.orientation = 0.0;
-        // Prefer live item appearance (crop/content), not a stale path entry.
         s.hasCrop = item->sessionHasCrop();
         s.cropRect = item->sessionCropRect();
         s.contentHFlip = item->contentHFlip();
@@ -139,6 +147,8 @@ void ImageView::rememberItemState(ImageItem *item)
         m_itemStates.insert(item->path(), s);
         return;
     }
+    // Workspace / Gallery: path map still holds free placement for this instance.
+    // Appearance for bound ids is written in commitItemSessionEdit → m_appearance.
     m_itemStates.insert(item->path(), captureState(item));
 }
 
@@ -283,8 +293,9 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
                 }
             }
             m_appearance.set(sid, slot);
-            // Path map is last-writer only; never read it back into this slot.
-            m_itemStates.insert(item->path(), slot);
+            // Bound: do not last-write appearance onto the path map (duplicates
+            // share a path). Placement remains in m_itemStates from Workspace
+            // rememberItemState / snapshot only.
             if (item->sessionIndex() >= 0) {
                 m_sessionSlotStates.insert(item->sessionIndex(), slot);
             }
