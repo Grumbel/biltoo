@@ -315,34 +315,8 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
             return true;
         }
     }
-    // Another session slot may already show this path — clone decoded pixels.
-    if (ImageItem *donor = findItemByPath(path)) {
-        if (donor->hasDecodedPixels() || !donor->sourceImage().isNull()) {
-            ImageItem *copy = createItemFromImage(path, donor->sourceImage(),
-                                                  /*applyStoredSessionCrop=*/false);
-            if (copy) {
-                copy->setSessionId(sessionId);
-                copy->setSessionIndex(sessionIndex);
-                copy->setItemScale(donor->itemScaleX(), donor->itemScaleY());
-                copy->setItemRotation(donor->itemRotation());
-                copy->setItemHFlip(donor->itemHFlip());
-                copy->setItemVFlip(donor->itemVFlip());
-                copy->setItemOpacity(donor->itemOpacity());
-                copy->setStackZ(donor->stackZ() + 0.01);
-                copy->setPos(donor->pos() + QPointF(40.0, 40.0));
-                if (m_scene) {
-                    m_scene->clearSelection();
-                }
-                copy->setSelected(true);
-                if (isWorkspaceMode()) {
-                    updateWorkspaceSceneRect();
-                }
-                emit statusChanged();
-                emit workspacePathsChanged();
-                return true;
-            }
-        }
-    }
+    // Session-bound add: always decode fresh so content flips/crops of a peer
+    // tile with the same path are not shared as baked pixels.
     if (sessionId != kInvalidSessionImageId || sessionIndex >= 0) {
         PendingSessionBind b;
         b.path = path;

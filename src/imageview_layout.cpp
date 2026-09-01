@@ -149,8 +149,12 @@ void ImageView::rememberItemState(ImageItem *item)
         m_itemStates.insert(item->path(), s);
         return;
     }
-    // Workspace / Gallery: path map still holds free placement for this instance.
-    // Appearance for bound ids is written in commitItemSessionEdit → m_appearance.
+    // Workspace / Gallery: path map is legacy placement for *unbound* tiles only.
+    // Bound session images must not last-write content or pose by path — duplicates
+    // share a path and would steal each other's flips / crops.
+    if (item->sessionId() != kInvalidSessionImageId) {
+        return;
+    }
     m_itemStates.insert(item->path(), captureState(item));
 }
 
@@ -550,8 +554,8 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     }
     // Pending binds for this session id.
     for (int i = m_pendingSessionBinds.size() - 1; i >= 0; --i) {
-        if (m_pendingSessionBinds.at(i).id == sessionId
-            || removedPaths.contains(m_pendingSessionBinds.at(i).path)) {
+        // Match by session id only — same path may still need other binds.
+        if (m_pendingSessionBinds.at(i).id == sessionId) {
             m_pendingSessionBinds.removeAt(i);
         }
     }
@@ -637,15 +641,72 @@ void ImageView::removeWorkspaceSessionIndex(int sessionIndex)
     if (!item) {
         return;
     }
+    // Prefer id-based detach when the tile is bound (duplicate-safe).
+    if (item->sessionId() != kInvalidSessionImageId) {
+        detachCanvasSessionId(item->sessionId());
+        return;
+    }
     const QString path = item->path();
-    m_pendingWorkspacePaths.remove(path);
-    m_pendingScenePos.remove(path);
-    m_pendingSessionIndexByPath.remove(path);
-    m_galleryDecodeScheduled.remove(path);
-    m_galleryDecodeFailed.remove(path);
+    // Only cancel pending work if no other live tile still uses this path.
+    bool pathStillLive = false;
+    for (ImageItem *other : m_items) {
+        if (other && other != item && other->path() == path) {
+            pathStillLive = true;
+            break;
+        }
+    }
+    if (!pathStillLive) {
+        m_pendingWorkspacePaths.remove(path);
+        m_pendingScenePos.remove(path);
+        m_pendingSessionIndexByPath.remove(path);
+        m_galleryDecodeScheduled.remove(path);
+        m_galleryDecodeFailed.remove(path);
+    }
     destroyCanvasItem(item);
     emit statusChanged();
     emit workspacePathsChanged();
+}
+
+void ImageView::detachCanvasSessionId(SessionImageId sessionId)
+{
+    if (sessionId == kInvalidSessionImageId) {
+        return;
+    }
+    // Canvas membership only — keep session appearance and session list entry.
+    QList<ImageItem *> doomed;
+    for (ImageItem *item : m_items) {
+        if (item && item->sessionId() == sessionId) {
+            doomed.append(item);
+        }
+    }
+    for (ImageItem *item : doomed) {
+        const QString path = item->path();
+        bool pathStillLive = false;
+        for (ImageItem *other : m_items) {
+            if (other && other != item && other->path() == path) {
+                pathStillLive = true;
+                break;
+            }
+        }
+        if (!pathStillLive) {
+            takePendingWorkspacePath(path);
+            m_pendingScenePos.remove(path);
+            m_pendingSessionIndexByPath.remove(path);
+            m_galleryDecodeScheduled.remove(path);
+            m_galleryDecodeFailed.remove(path);
+        }
+        // Drop pending binds for this id only (not every same-path bind).
+        for (int i = m_pendingSessionBinds.size() - 1; i >= 0; --i) {
+            if (m_pendingSessionBinds.at(i).id == sessionId) {
+                m_pendingSessionBinds.removeAt(i);
+            }
+        }
+        destroyCanvasItem(item);
+    }
+    if (!doomed.isEmpty()) {
+        emit statusChanged();
+        emit workspacePathsChanged();
+    }
 }
 
 void ImageView::bindSelectedSessionIndices(int firstSessionIndex)

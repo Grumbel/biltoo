@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include "imageitem.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -268,20 +269,15 @@ void MainWindow::onThumbnailCanvasMembershipToggled(int index)
         updateWorkspaceActionVisibility();
     }
     const QString path = m_session.paths().at(index);
-    // Session index identifies duplicate paths; do not toggle by filename alone.
-    // Fall back to path-occurrence order for canvas items not yet bound to a slot.
-    int occurrence = 0;
-    for (int i = 0; i < index; ++i) {
-        if (m_session.paths().at(i) == path) {
-            ++occurrence;
-        }
-    }
-    if (m_imageView->hasWorkspaceSessionIndex(index)) {
+    const SessionImageId sid = sessionIdAt(index);
+    // Identity is SessionImageId only — never path / occurrence (duplicates).
+    if (sid != kInvalidSessionImageId && m_imageView->findItemBySessionId(sid)) {
+        m_imageView->detachCanvasSessionId(sid);
+    } else if (sid == kInvalidSessionImageId
+               && m_imageView->hasWorkspaceSessionIndex(index)) {
         m_imageView->removeWorkspaceSessionIndex(index);
-    } else if (m_imageView->workspacePathOccurrenceCount(path) > occurrence) {
-        m_imageView->removeWorkspacePathOccurrence(path, occurrence);
     } else {
-        m_imageView->addImageForSession(path, sessionIdAt(index), index);
+        m_imageView->addImageForSession(path, sid, index);
     }
     syncThumbnailCanvasMembership();
     updateStatus();
@@ -322,7 +318,24 @@ void MainWindow::syncThumbnailCanvasMembership()
     }
     // Ensure every on-canvas item is tied to a session row (badges + shared selection).
     m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
-    m_thumbnailBar->setOnCanvasIndices(m_imageView->workspaceSessionIndices());
+    // Badge by stable id → session row, not path (duplicate-safe).
+    QSet<int> onCanvas;
+    for (ImageItem *item : m_imageView->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        int idx = -1;
+        if (item->sessionId() != kInvalidSessionImageId) {
+            idx = m_session.indexOfId(item->sessionId());
+        }
+        if (idx < 0) {
+            idx = item->sessionIndex();
+        }
+        if (idx >= 0) {
+            onCanvas.insert(idx);
+        }
+    }
+    m_thumbnailBar->setOnCanvasIndices(onCanvas);
 }
 
 void MainWindow::zoomIn()

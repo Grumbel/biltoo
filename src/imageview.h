@@ -307,6 +307,8 @@ public:
     ImageItem *findItemBySessionIndex(int sessionIndex) const;
     ImageItem *findItemBySessionId(SessionImageId sessionId) const;
     void removeWorkspaceSessionId(SessionImageId sessionId);
+    /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
+    void detachCanvasSessionId(SessionImageId sessionId);
     /** Assign sequential session indices to currently selected items starting at @p first. */
     void bindSelectedSessionIndices(int firstSessionIndex);
     /** Bind selected canvas items to stable session ids (same order). */
