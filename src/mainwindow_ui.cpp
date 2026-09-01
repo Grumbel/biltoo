@@ -539,6 +539,22 @@ void MainWindow::createMenus()
     m_editMenu->addSeparator();
     m_editMenu->addAction(m_selectAllAct);
     m_editMenu->addSeparator();
+    // Content transforms (not View — they edit the image / session appearance).
+    m_editMenu->addAction(m_rotateLeftAct);
+    m_editMenu->addAction(m_rotateRightAct);
+    m_editMenu->addAction(m_flipHAct);
+    m_editMenu->addAction(m_flipVAct);
+    m_editMenu->addAction(m_cropAct);
+    m_editMenu->addSeparator();
+    // Session order applies across modes; keep with other document edits.
+    auto *sortMenu = m_editMenu->addMenu(tr("&Sort Session"));
+    sortMenu->addAction(m_sortNameAct);
+    sortMenu->addAction(m_sortMTimeAct);
+    sortMenu->addAction(m_sortFileSizeAct);
+    sortMenu->addAction(m_sortWidthAct);
+    sortMenu->addAction(m_sortHeightAct);
+    sortMenu->addAction(m_sortPixelCountAct);
+    m_editMenu->addSeparator();
     m_editMenu->addAction(m_preferencesAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
@@ -549,22 +565,14 @@ void MainWindow::createMenus()
     zoomMenu->addAction(m_zoomFitAct);
     zoomMenu->addAction(m_zoomFillAct);
     zoomMenu->addAction(m_zoomRegionAct);
-
-    auto *imageMenu = m_viewMenu->addMenu(tr("&Image"));
-    imageMenu->addAction(m_rotateLeftAct);
-    imageMenu->addAction(m_rotateRightAct);
-    imageMenu->addAction(m_flipHAct);
-    imageMenu->addAction(m_flipVAct);
-    imageMenu->addAction(m_cropAct);
-
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
     m_viewMenu->addAction(m_pageGuideAct);
     m_viewMenu->addAction(m_fullscreenAct);
+    m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);
-
     auto *thumbsMenu = m_viewMenu->addMenu(tr("&Thumbnails"));
     thumbsMenu->addAction(m_toggleThumbnailBarAct);
     thumbsMenu->addAction(m_hideThumbLabelsAct);
@@ -574,14 +582,6 @@ void MainWindow::createMenus()
     thumbsMenu->addAction(m_thumbnailsTopAct);
     thumbsMenu->addAction(m_thumbnailsLeftAct);
     thumbsMenu->addAction(m_thumbnailsRightAct);
-
-    auto *sortMenu = m_viewMenu->addMenu(tr("&Sort"));
-    sortMenu->addAction(m_sortNameAct);
-    sortMenu->addAction(m_sortMTimeAct);
-    sortMenu->addAction(m_sortFileSizeAct);
-    sortMenu->addAction(m_sortWidthAct);
-    sortMenu->addAction(m_sortHeightAct);
-    sortMenu->addAction(m_sortPixelCountAct);
 
     // Top-level Gallery and Workspace — not buried under View.
     auto *galleryMenu = menuBar()->addMenu(tr("&Gallery"));
@@ -604,11 +604,14 @@ void MainWindow::createMenus()
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_raiseAct);
     workspaceMenu->addAction(m_lowerAct);
+    workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_opacityUpAct);
     workspaceMenu->addAction(m_opacityDownAct);
     workspaceMenu->addAction(m_opacityResetAct);
+    workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_resetScaleAct);
     workspaceMenu->addAction(m_resetRotationAct);
+    workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_duplicateAct);
 
     m_goMenu = menuBar()->addMenu(tr("&Go"));

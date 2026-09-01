@@ -967,7 +967,7 @@ void MainWindow::showContextMenu(const QPoint &pos)
     if (m_backToGalleryAct && m_backToGalleryAct->isEnabled()) {
         menu.addAction(m_backToGalleryAct);
     }
-    // Workspace mode toggle stays on the main toolbar / View menu only.
+    // Workspace mode toggle stays on the main toolbar / Workspace menu only.
     menu.addSeparator();
     menu.addAction(m_fullscreenAct);
     menu.addAction(m_preferencesAct);
