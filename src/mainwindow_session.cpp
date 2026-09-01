@@ -733,9 +733,25 @@ void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entrie
     m_sessionUndoGuard = false;
 }
 
+void MainWindow::removeSessionIds(const QVector<SessionImageId> &ids)
+{
+    if (ids.isEmpty() || m_session.isEmpty()) {
+        return;
+    }
+    QList<int> indices;
+    for (SessionImageId id : ids) {
+        const int idx = indexOfSessionId(id);
+        if (idx >= 0) {
+            indices.append(idx);
+        }
+    }
+    removeSessionIndices(indices);
+}
+
 void MainWindow::removeSessionPaths(const QStringList &paths)
 {
-    if (paths.isEmpty() || m_session.paths().isEmpty()) {
+    // Path-only fallback (first match per path). Prefer removeSessionIds.
+    if (paths.isEmpty() || m_session.isEmpty()) {
         return;
     }
     QList<int> indices;

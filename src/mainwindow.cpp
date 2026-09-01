@@ -67,13 +67,20 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::openSessionIndexInImageMode);
     connect(m_imageView, &ImageView::sessionRemovePathsRequested,
             this, &MainWindow::removeSessionPaths);
+    connect(m_imageView, &ImageView::sessionRemoveIdsRequested,
+            this, &MainWindow::removeSessionIds);
+    connect(m_imageView, &ImageView::sessionImageFocused,
+            this, [this](SessionImageId id) {
+                const int idx = indexOfSessionId(id);
+                if (idx >= 0) {
+                    setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
+                }
+            });
     connect(m_imageView, &ImageView::galleryItemFocused,
             this, [this](const QString &path) {
                 const int idx = m_session.paths().indexOf(path);
                 if (idx >= 0) {
-                    // Mouse and keyboard both emit this; keyboard already called
-                    // focusSessionPath (ensureVisible). Do not scroll again on
-                    // mouse clicks — that jumps the gallery under the cursor.
+                    // Path fallback for unbound tiles.
                     setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
                 }
             });

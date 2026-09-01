@@ -2360,11 +2360,6 @@ void ImageView::setGalleryRelayoutSuppressed(bool on)
     }
 }
 
-void ImageView::scheduleApplyLayout()
-{
-    // Phase 1: Gallery does not pack from debounce/resize/decode.
-    // Kept so old call sites compile; use applyLayout(reason) instead.
-}
 
 void ImageView::reloadFromDisk(bool relayoutGallery)
 {

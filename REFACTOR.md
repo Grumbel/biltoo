@@ -153,4 +153,13 @@ update one list.
 - Phase 2c: remove deprecated index-keyed m_sessionSlotStates; appearance
   is SessionImageId-only. recordSessionCrop writes path map only when unbound.
 - MainWindow openSessionIndex/ImageInImageMode consolidates Image entry.
+- Gallery focus/remove prefer SessionImageId (sessionImageFocused /
+  sessionRemoveIdsRequested); path signals remain unbound fallbacks.
+- Removed dead scheduleApplyLayout no-op (pack is explicit-only).
 - Phase 5 (file split by mode) remains optional after manual QA — not started.
+
+## Structural stop line
+
+Phases 1–4 (and follow-ups 2b/2c/3b/4b) are complete. Remaining work is either
+product features (TODO.md), optional Phase 5 after QA, or Workspace placement
+by id (new model work — not part of early-phase exit criteria).

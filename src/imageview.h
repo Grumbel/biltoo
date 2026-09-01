@@ -355,10 +355,6 @@ public:
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);
     void applyPendingGalleryRestore();
-    /** Coalesce resize-driven gallery relayouts. */
-    /** @deprecated No automatic Gallery pack; kept as no-op. */
-    void scheduleApplyLayout();
-
     /** Gallery mode with a packaged layout. */
     bool isGalleryLayout() const { return isGalleryMode(); }
 
@@ -453,9 +449,13 @@ signals:
     void sessionSlotOpenRequested(int sessionIndex);
     /** Open session image by stable id (preferred over index). */
     void sessionImageOpenRequested(SessionImageId sessionId);
-    /** Gallery keyboard focus moved to this path (session cursor). */
+    /** Gallery focus moved (path fallback when tile is unbound). */
     void galleryItemFocused(const QString &path);
-    /** Gallery: selected tiles should leave the session (not only the canvas). */
+    /** Gallery focus by stable session id (preferred when tile is bound). */
+    void sessionImageFocused(SessionImageId sessionId);
+    /** Gallery: remove selected session images by id (duplicate-safe). */
+    void sessionRemoveIdsRequested(const QVector<SessionImageId> &ids);
+    /** Gallery: path-only remove for unbound tiles. */
     void sessionRemovePathsRequested(const QStringList &paths);
     /** File URLs dropped onto the view (same semantics as MainWindow). */
     void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,

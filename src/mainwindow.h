@@ -205,6 +205,7 @@ private slots:
     SessionImageId currentSessionId() const;
     SessionImageId allocSessionId();
     void removeSessionPaths(const QStringList &paths);
+    void removeSessionIds(const QVector<SessionImageId> &ids);
 
 private:
     void createActions();

@@ -1245,7 +1245,11 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             m_scene->clearSelection();
             hit->setSelected(true);
             m_gallerySelectionAnchor = hit;
-            emit galleryItemFocused(hit->path());
+            if (hit->sessionId() != kInvalidSessionImageId) {
+                emit sessionImageFocused(hit->sessionId());
+            } else if (!hit->path().isEmpty()) {
+                emit galleryItemFocused(hit->path());
+            }
             emit statusChanged();
         }
         event->accept();
@@ -1286,7 +1290,11 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             for (int i = i0; i <= i1 && i < m_items.size(); ++i) {
                 m_items.at(i)->setSelected(true);
             }
-            emit galleryItemFocused(hit->path());
+            if (hit->sessionId() != kInvalidSessionImageId) {
+                emit sessionImageFocused(hit->sessionId());
+            } else if (!hit->path().isEmpty()) {
+                emit galleryItemFocused(hit->path());
+            }
             event->accept();
             emit statusChanged();
             return;
@@ -1297,7 +1305,11 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             if (hit->isSelected()) {
                 m_gallerySelectionAnchor = hit;
             }
-            emit galleryItemFocused(hit->path());
+            if (hit->sessionId() != kInvalidSessionImageId) {
+                emit sessionImageFocused(hit->sessionId());
+            } else if (!hit->path().isEmpty()) {
+                emit galleryItemFocused(hit->path());
+            }
             event->accept();
             emit statusChanged();
             return;
@@ -1307,7 +1319,11 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             m_scene->clearSelection();
             hit->setSelected(true);
             m_gallerySelectionAnchor = hit;
-            emit galleryItemFocused(hit->path());
+            if (hit->sessionId() != kInvalidSessionImageId) {
+                emit sessionImageFocused(hit->sessionId());
+            } else if (!hit->path().isEmpty()) {
+                emit galleryItemFocused(hit->path());
+            }
             event->accept();
             emit statusChanged();
             return;
@@ -1859,7 +1875,11 @@ void ImageView::keyPressEvent(QKeyEvent *event)
                                   ? m_items.first()
                                   : m_items.last();
             focusSessionPath(item->path());
-            emit galleryItemFocused(item->path());
+            if (item->sessionId() != kInvalidSessionImageId) {
+                emit sessionImageFocused(item->sessionId());
+            } else if (!item->path().isEmpty()) {
+                emit galleryItemFocused(item->path());
+            }
             event->accept();
             return;
         }
@@ -1921,7 +1941,11 @@ void ImageView::keyPressEvent(QKeyEvent *event)
             }
             if (best) {
                 focusSessionPath(best->path());
+                if (best->sessionId() != kInvalidSessionImageId) {
+                emit sessionImageFocused(best->sessionId());
+            } else if (!best->path().isEmpty()) {
                 emit galleryItemFocused(best->path());
+            }
                 event->accept();
                 return;
             }
@@ -1931,20 +1955,30 @@ void ImageView::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_Delete
         || (event->key() == Qt::Key_Backspace && isMultiItemMode())) {
         const QList<QGraphicsItem *> selected = m_scene->selectedItems();
-        QStringList paths;
+        QVector<SessionImageId> removeIds;
+        QStringList removePaths;
         for (QGraphicsItem *gi : selected) {
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (m_items.contains(item)) {
-                    paths.append(item->path());
+                if (!m_items.contains(item)) {
+                    continue;
+                }
+                if (item->sessionId() != kInvalidSessionImageId) {
+                    removeIds.append(item->sessionId());
+                } else if (!item->path().isEmpty()) {
+                    removePaths.append(item->path());
                 }
             }
         }
-        if (paths.isEmpty()) {
+        if (removeIds.isEmpty() && removePaths.isEmpty()) {
             // fall through
         } else if (isGalleryMode()) {
-            // Gallery tiles are the session — remove from session so a layout
-            // switch does not resurrect them via setWorkspacePaths(m_files).
-            emit sessionRemovePathsRequested(paths);
+            // Gallery tiles are the session — remove by id when bound.
+            if (!removeIds.isEmpty()) {
+                emit sessionRemoveIdsRequested(removeIds);
+            }
+            if (!removePaths.isEmpty()) {
+                emit sessionRemovePathsRequested(removePaths);
+            }
             event->accept();
             return;
         } else if (isWorkspaceMode()) {
