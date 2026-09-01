@@ -77,7 +77,7 @@ void WorkspaceController::restore()
     m_view->pendingRestoreStates() = m_savedItems;
     for (const WorkspaceItemState &state : m_savedItems) {
         m_view->itemStates().insert(state.path, state);
-        m_view->scheduleImageLoad(state.path, ImageView::LoadRestore);
+        m_view->scheduleRestoreLoad(state.path);
     }
     m_view->clearFitFillModes();
     // Apply zoom before scene-rect expansion; pan after range is valid.

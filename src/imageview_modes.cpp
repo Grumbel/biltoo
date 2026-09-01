@@ -57,6 +57,14 @@ void ImageView::scheduleReplaceLoad(const QString &path)
     scheduleImageLoad(path, LoadReplace);
 }
 
+void ImageView::scheduleRestoreLoad(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    scheduleImageLoad(path, LoadRestore);
+}
+
 void ImageView::applyModeFlagsToLiveItems()
 {
     for (ImageItem *item : m_items) {

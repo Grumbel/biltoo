@@ -46,9 +46,6 @@ class ImageView : public QGraphicsView
 {
     Q_OBJECT
 
-    friend class GalleryController;
-    friend class WorkspaceController;
-    friend class ImageController;
 
 public:
     enum class Tool {
@@ -166,6 +163,21 @@ public:
     void clearPendingWorkspacePaths() { m_pendingWorkspacePaths.clear(); }
     QList<WorkspaceItemState> &pendingRestoreStates() { return m_pendingRestoreStates; }
     const QList<WorkspaceItemState> &pendingRestoreStates() const { return m_pendingRestoreStates; }
+
+    // --- Controller host operations (mode controllers; prefer these over friend) ---
+    /** Apply interactive/gallery/static flags for the current ViewMode. */
+    void applyItemModeFlags(ImageItem *item);
+    ImageItem *findItemByPath(const QString &path) const;
+    ImageItem *targetItem() const;
+    void applySessionCrop(ImageItem *item, const WorkspaceItemState &state);
+    void destroyCanvasItem(ImageItem *item);
+    void updateWorkspaceSceneRect();
+    /** Queue LoadRestore for workspace rebuild from durable snapshot. */
+    void scheduleRestoreLoad(const QString &path);
+    void snapshotWorkspace();
+    void discardStashedWorkspace();
+    void snapshotFreeFormStates();
+
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
     void clearLiveCanvas();
 
@@ -549,18 +561,14 @@ private:
     ImageItem *createItemFromImage(const QString &path, const QImage &image,
                                    bool applyStoredSessionCrop = true);
     /** Interactive / gallery / static flags for the current ViewMode. */
-    void applyItemModeFlags(ImageItem *item);
     void scheduleImageLoad(const QString &path, LoadRole role);
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     QSize probeImageSize(const QString &path) const;
     void updateGalleryDecodeWindow();
     void scheduleGalleryDecode(const QString &path);
-    ImageItem *findItemByPath(const QString &path) const;
     ImageItem *primaryItem() const;
-    ImageItem *targetItem() const;
     QList<ImageItem *> transformTargets() const;
     /** Apply session crop from @p state to a freshly decoded item (no-op if none). */
-    void applySessionCrop(ImageItem *item, const WorkspaceItemState &state);
     /**
      * Apply stored session appearance (crop + content bakes) for @p item's
      * session id / index / unbound path. Pixels must be the full on-disk image.
@@ -624,21 +632,16 @@ private:
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void rememberItemState(ImageItem *item);
     /** Detach from view state, remove from scene, delete. Safe against drag/handle ptrs. */
-    void destroyCanvasItem(ImageItem *item);
     /** Expand sceneRect around free-form items so pan/scrollbars have range. */
-    void updateWorkspaceSceneRect();
-    void snapshotWorkspace();
     void restoreWorkspace();
     /** Detach Workspace tiles from the scene (keep decoded pixels + view). */
     void stashWorkspaceItems();
     /** Reattach stashed Workspace tiles; no-op if empty. */
     void restoreStashedWorkspaceItems();
-    void discardStashedWorkspace();
     /** Detach Gallery tiles from the scene (keep decoded pixels). */
     void stashGalleryItems();
     /** Reattach stashed Gallery tiles; no-op if empty. */
     void restoreStashedGalleryItems();
-    void snapshotFreeFormStates();
     void restoreFreeFormStates();
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
     /** Centre position that does not overlap existing items (viewport-aware). */

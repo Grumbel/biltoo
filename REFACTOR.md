@@ -204,3 +204,6 @@ by id (new model work — not part of early-phase exit criteria).
   `clearFitFillModes` for free-form restore.
 - Phase 5s: appearance/itemStates/pending-load host accessors; controllers
   no longer touch those private fields by name.
+- Phase 5t: promote controller-used operations to public host API
+  (`applyItemModeFlags`, `findItemByPath`, `destroyCanvasItem`,
+  `scheduleRestoreLoad`, snapshot/stash wrappers, …); drop `friend`.
