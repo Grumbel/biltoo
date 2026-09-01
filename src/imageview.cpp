@@ -489,12 +489,18 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         // Prefer session-id appearance; path map is last-writer only for unbound.
         applyStoredAppearance(existing);
         if (isGalleryMode()) {
-            // Keep pack positions stable: decoded size may differ from the probe
-            // used at layout time, but a full reflow here is what made Gallery
-            // "jump" on delete when a pending decode finished. Explicit layout
-            // (toolbar / F5) is the only intentional repack.
-            Q_UNUSED(before);
-            existing->update();
+            // Default: keep pack stable when probe vs decode differ slightly.
+            // If pixel size changed substantially (crop / 90° content), repack
+            // so the tile is not left tiny or huge under the old scale.
+            const QSize after = existing->imageSize();
+            const bool sizeChanged =
+                before.isValid() && after.isValid()
+                && (before.width() != after.width() || before.height() != after.height());
+            if (sizeChanged && m_galleryRelayoutSuppressCount == 0) {
+                applyLayout(GalleryPackReason::ContentChange);
+            } else {
+                existing->update();
+            }
         } else if (m_layoutMode != LayoutMode::FreeForm
                    && m_galleryRelayoutSuppressCount == 0) {
             applyLayout(GalleryPackReason::SessionMutate);
@@ -1312,12 +1318,16 @@ void ImageView::leaveCropModeInternal(bool apply)
         recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
         if (!fullFrame) {
             if (item->cropToLocalRect(m_cropRect)) {
-                invalidateStashedGalleryForSession(item->sessionId());
+                // Keep stashed Gallery tiles: commitItemSessionEdit peer-syncs
+                // cropped pixels. Invalidating forced a full-size probe + pack
+                // then a crop decode without repack → tiny tiles on return.
                 if (isImageMode()) {
                     m_fitMode = true;
                     fitItem(item, currentFitAspectMode());
                 } else if (isWorkspaceMode()) {
                     updateWorkspaceSceneRect();
+                } else if (isGalleryMode()) {
+                    applyLayout(GalleryPackReason::ContentChange);
                 }
                 commitItemSessionEdit(item);
                 // Undo: restore pre-crop-mode appearance + session crop metadata.
@@ -1368,12 +1378,13 @@ void ImageView::leaveCropModeInternal(bool apply)
             }
         } else {
             // Reset / full frame: keep full pixels; clear session crop metadata.
-            invalidateStashedGalleryForSession(item->sessionId());
             if (isImageMode()) {
                 m_fitMode = true;
                 fitItem(item, currentFitAspectMode());
             } else if (isWorkspaceMode()) {
                 updateWorkspaceSceneRect();
+            } else if (isGalleryMode()) {
+                applyLayout(GalleryPackReason::ContentChange);
             }
             commitItemSessionEdit(item);
             if (m_undoStack && m_cropEnterValid
