@@ -181,26 +181,37 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     // not re-apply the path crop or the rect is interpreted on the wrong size.
     if (applyStoredSessionCrop) {
         // Prefer stable session-image id appearance; path map is legacy only.
+        //
+        // Image mode LoadReplace: the sole canvas item is the current session
+        // image, so m_currentSessionId / m_sessionIndex identify it correctly.
+        //
+        // Gallery / Workspace LoadAdd: each tile is bound to its own session id
+        // *after* creation (pendingSessionBinds). Using m_currentSessionId here
+        // would bake the *navigated* image's crop into every newly decoded tile
+        // when leaving Image crop for Gallery — do not apply cursor appearance
+        // in multi-item modes.
         const WorkspaceItemState *app = nullptr;
         WorkspaceItemState pathFallback;
-        if (m_currentSessionId != kInvalidSessionImageId) {
-            const auto sit = m_sessionAppearance.constFind(m_currentSessionId);
-            if (sit != m_sessionAppearance.cend()) {
-                app = &(*sit);
+        if (isImageMode()) {
+            if (m_currentSessionId != kInvalidSessionImageId) {
+                const auto sit = m_sessionAppearance.constFind(m_currentSessionId);
+                if (sit != m_sessionAppearance.cend()) {
+                    app = &(*sit);
+                }
+                // Bound session image with no appearance entry = full frame, no path fallback.
+            } else if (m_sessionIndex >= 0) {
+                const auto sit = m_sessionSlotStates.constFind(m_sessionIndex);
+                if (sit != m_sessionSlotStates.cend()) {
+                    app = &(*sit);
+                }
             }
-            // Bound session image with no appearance entry = full frame, no path fallback.
-        } else if (m_sessionIndex >= 0) {
-            const auto sit = m_sessionSlotStates.constFind(m_sessionIndex);
-            if (sit != m_sessionSlotStates.cend()) {
-                app = &(*sit);
-            }
-        }
-        // Path map only when unbound (no session image id).
-        if (!app && m_currentSessionId == kInvalidSessionImageId) {
-            const auto it = m_itemStates.constFind(path);
-            if (it != m_itemStates.cend()) {
-                pathFallback = *it;
-                app = &pathFallback;
+            // Path map only when unbound (no session image id).
+            if (!app && m_currentSessionId == kInvalidSessionImageId) {
+                const auto it = m_itemStates.constFind(path);
+                if (it != m_itemStates.cend()) {
+                    pathFallback = *it;
+                    app = &pathFallback;
+                }
             }
         }
         if (app) {
