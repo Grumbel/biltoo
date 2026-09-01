@@ -1490,7 +1490,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             const SessionImageId sid = sessionIdAt(slot);
             if (!scenePos.isNull()) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
-                m_imageView->placeOrMoveImageAt(img, pos);
+                m_imageView->placeOrMoveImageAt(img, pos, sid, slot);
             } else {
                 m_imageView->addImageForSession(img, sid, slot);
             }

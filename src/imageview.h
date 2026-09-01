@@ -83,6 +83,8 @@ public:
      * canvas, a new instance is created (duplicate) — the original is not moved.
      */
     bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos);
+    bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
+                            SessionImageId sessionId, int sessionIndex);
     /** Session slots currently represented on the Workspace canvas. */
     QSet<int> workspaceSessionIndices() const;
     QList<int> selectedSessionIndices() const;

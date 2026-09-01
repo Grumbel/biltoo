@@ -185,20 +185,28 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         return;
     }
     item->bakeRotate90(quarterTurns);
-    WorkspaceItemState s;
-    const auto it = m_itemStates.constFind(item->path());
-    if (it != m_itemStates.cend()) {
-        s = *it;
-    } else {
-        s = captureState(item);
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_currentSessionId;
     }
-    int turns = (s.contentQuarterTurns + quarterTurns) % 4;
+    int prevTurns = 0;
+    if (sid != kInvalidSessionImageId) {
+        const auto it = m_sessionAppearance.constFind(sid);
+        if (it != m_sessionAppearance.cend()) {
+            prevTurns = it->contentQuarterTurns;
+        }
+    }
+    int turns = (prevTurns + quarterTurns) % 4;
     if (turns < 0) {
         turns += 4;
     }
-    s.contentQuarterTurns = turns;
-    s.orientation = 0.0;
-    m_itemStates.insert(item->path(), s);
+    if (sid != kInvalidSessionImageId) {
+        WorkspaceItemState s = captureState(item);
+        s.sessionId = sid;
+        s.contentQuarterTurns = turns;
+        s.orientation = 0.0;
+        m_sessionAppearance.insert(sid, s);
+    }
     commitItemSessionEdit(item);
 }
 
@@ -208,25 +216,18 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         return;
     }
     item->bakeFlip(horizontal, vertical);
-    WorkspaceItemState s;
-    const auto it = m_itemStates.constFind(item->path());
-    if (it != m_itemStates.cend()) {
-        s = *it;
-    } else {
-        s = captureState(item);
-    }
-    // Flip composition in content space (before quarter turns on reload).
+    // Toggle against this item's content flags only — never path-keyed state
+    // (duplicates sharing a path would otherwise share one flip bit).
+    bool h = item->contentHFlip();
+    bool v = item->contentVFlip();
     if (horizontal) {
-        s.contentHFlip = !s.contentHFlip;
+        h = !h;
     }
     if (vertical) {
-        s.contentVFlip = !s.contentVFlip;
+        v = !v;
     }
-    s.hFlip = false;
-    s.vFlip = false;
-    item->setContentHFlip(s.contentHFlip);
-    item->setContentVFlip(s.contentVFlip);
-    m_itemStates.insert(item->path(), s);
+    item->setContentHFlip(h);
+    item->setContentVFlip(v);
     commitItemSessionEdit(item);
 }
 
@@ -240,10 +241,15 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     // Per-session-image appearance is a value copy keyed by stable id.
     {
         SessionImageId sid = item->sessionId();
-        if (sid == kInvalidSessionImageId) {
+        // Image mode may bind the cursor id when the live item is not yet tagged.
+        // Workspace/Gallery must not invent an id — that merges edits onto peers.
+        if (sid == kInvalidSessionImageId && isImageMode()) {
             sid = m_currentSessionId;
         }
         if (sid != kInvalidSessionImageId) {
+            if (item->sessionId() == kInvalidSessionImageId) {
+                item->setSessionId(sid);
+            }
             WorkspaceItemState slot = captureState(item);
             slot.sessionId = sid;
             slot.sessionIndex = item->sessionIndex();
@@ -254,12 +260,9 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
                 && prev->contentQuarterTurns != 0) {
                 slot.contentQuarterTurns = prev->contentQuarterTurns;
             }
-            const auto pathIt = m_itemStates.constFind(item->path());
-            if (pathIt != m_itemStates.cend() && pathIt->contentQuarterTurns != 0) {
-                slot.contentQuarterTurns = pathIt->contentQuarterTurns;
-            }
             m_sessionAppearance.insert(sid, slot);
-            m_itemStates.insert(item->path(), slot); // legacy consumers
+            // Path map is last-writer only; never read it back into this slot.
+            m_itemStates.insert(item->path(), slot);
             if (item->sessionIndex() >= 0) {
                 m_sessionSlotStates.insert(item->sessionIndex(), slot);
             }
@@ -276,18 +279,15 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     // Propagate pixel / flip / orientation session edits to matching canvas and
     // stashed instances. Placement (pos, scale, free tilt) is preserved.
     const QString path = item->path();
-    const SessionImageId sessionId = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : m_currentSessionId;
-    const int sessionIndex = item->sessionIndex();
+    // Strict identity: only a valid SessionImageId. Never m_currentSessionId
+    // fallback here — that would push this item's pixels onto another tile.
+    const SessionImageId sessionId = item->sessionId();
     const QImage src = item->sourceImage();
     const bool hFlip = item->itemHFlip();
     const bool vFlip = item->itemVFlip();
     const bool contentH = item->contentHFlip();
     const bool contentV = item->contentVFlip();
-    const bool fromImageMode = isImageMode();
 
-    // Peers: any other canvas/stashed item (match by stable id, not path).
     QList<ImageItem *> peers;
     auto collect = [&](const QList<ImageItem *> &list) {
         for (ImageItem *other : list) {
@@ -304,31 +304,10 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         if (!other || other == item) {
             return false;
         }
-        // Primary: same stable session-image id.
-        if (sessionId != kInvalidSessionImageId
-            && other->sessionId() == sessionId) {
-            return true;
-        }
-        // Legacy fallback: same list index while ids are still unbound.
-        if (sessionId == kInvalidSessionImageId && sessionIndex >= 0
-            && other->sessionIndex() == sessionIndex
-            && other->path() == path) {
-            return true;
-        }
-        // Image mode, single path peer, no ids: last-resort sole instance.
-        if (fromImageMode && sessionId == kInvalidSessionImageId
-            && other->path() == path) {
-            int pathPeers = 0;
-            ImageItem *only = nullptr;
-            for (ImageItem *p : peers) {
-                if (p->path() == path) {
-                    ++pathPeers;
-                    only = p;
-                }
-            }
-            return pathPeers == 1 && other == only;
-        }
-        return false;
+        // Same stable session-image id only. Path / list-index must never merge
+        // independent duplicates on the Workspace.
+        return sessionId != kInvalidSessionImageId
+            && other->sessionId() == sessionId;
     };
 
     auto syncOne = [&](ImageItem *other) {
@@ -401,12 +380,24 @@ void ImageView::restoreWorkspace()
     // Merge session appearance (crop / flip / orientation) from the live map into
     // the durable snapshot so Image-mode edits survive a full rebuild.
     for (WorkspaceItemState &slot : m_savedWorkspace) {
+        if (slot.sessionId != kInvalidSessionImageId) {
+            const auto sit = m_sessionAppearance.constFind(slot.sessionId);
+            if (sit != m_sessionAppearance.cend()) {
+                slot.hasCrop = sit->hasCrop;
+                slot.cropRect = sit->cropRect;
+                slot.hFlip = sit->hFlip;
+                slot.vFlip = sit->vFlip;
+                slot.contentQuarterTurns = sit->contentQuarterTurns;
+                slot.contentHFlip = sit->contentHFlip;
+                slot.contentVFlip = sit->contentVFlip;
+                continue;
+            }
+        }
         const auto it = m_itemStates.constFind(slot.path);
         if (it == m_itemStates.cend()) {
             continue;
         }
-        // Path-level appearance only merges into matching bound session slots.
-        // Unbound duplicates keep the appearance captured in their own list entry.
+        // Path-level appearance only for matching bound session slots (legacy).
         if (slot.sessionIndex < 0 || it->sessionIndex < 0
             || slot.sessionIndex != it->sessionIndex) {
             continue;
@@ -1768,7 +1759,8 @@ bool ImageView::addImageAt(const QString &path, const QPointF &scenePos)
     return addImage(path);
 }
 
-bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos)
+bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
+                                     SessionImageId sessionId, int sessionIndex)
 {
     if (path.isEmpty() || isImageMode()) {
         return false;
@@ -1784,14 +1776,24 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos)
                 copy->setItemRotation(donor->itemRotation());
                 copy->setItemHFlip(donor->itemHFlip());
                 copy->setItemVFlip(donor->itemVFlip());
+                copy->setContentHFlip(donor->contentHFlip());
+                copy->setContentVFlip(donor->contentVFlip());
+                copy->setSessionCrop(donor->sessionHasCrop(), donor->sessionCropRect());
                 copy->setItemOpacity(donor->itemOpacity());
                 copy->setStackZ(donor->stackZ() + 0.01);
                 copy->setPos(scenePos);
-                copy->setSessionIndex(-1); // caller binds session slot
+                copy->setSessionId(sessionId);
+                copy->setSessionIndex(sessionIndex);
                 if (m_scene) {
                     m_scene->clearSelection();
                 }
                 copy->setSelected(true);
+                if (sessionId != kInvalidSessionImageId) {
+                    WorkspaceItemState slot = captureState(copy);
+                    slot.sessionId = sessionId;
+                    slot.sessionIndex = sessionIndex;
+                    m_sessionAppearance.insert(sessionId, slot);
+                }
                 updateWorkspaceSceneRect();
                 ensureVisibleItem(copy);
                 emit statusChanged();
@@ -1801,10 +1803,21 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos)
         }
     }
     m_pendingScenePos.insert(path, scenePos);
-    // Prefer schedule over addImage(): path may already exist as another slot.
+    if (sessionId != kInvalidSessionImageId || sessionIndex >= 0) {
+        PendingSessionBind b;
+        b.path = path;
+        b.id = sessionId;
+        b.index = sessionIndex;
+        m_pendingSessionBinds.append(b);
+    }
     scheduleImageLoad(path, LoadAdd);
     emit statusChanged();
     return true;
+}
+
+bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos)
+{
+    return placeOrMoveImageAt(path, scenePos, kInvalidSessionImageId, -1);
 }
 
 QSet<int> ImageView::workspaceSessionIndices() const
