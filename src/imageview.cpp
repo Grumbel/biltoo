@@ -188,14 +188,15 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
             if (sit != m_sessionAppearance.cend()) {
                 app = &(*sit);
             }
-        }
-        if (!app && m_sessionIndex >= 0) {
+            // Bound session image with no appearance entry = full frame, no path fallback.
+        } else if (m_sessionIndex >= 0) {
             const auto sit = m_sessionSlotStates.constFind(m_sessionIndex);
             if (sit != m_sessionSlotStates.cend()) {
                 app = &(*sit);
             }
         }
-        if (!app) {
+        // Path map only when unbound (no session image id).
+        if (!app && m_currentSessionId == kInvalidSessionImageId) {
             const auto it = m_itemStates.constFind(path);
             if (it != m_itemStates.cend()) {
                 pathFallback = *it;
@@ -998,35 +999,57 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         return false;
     }
 
-    QRect priorCrop;
-    bool hadCrop = false;
-    bool hFlip = false;
-    bool vFlip = false;
-    {
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()) {
-            hadCrop = it->hasCrop;
-            priorCrop = it->cropRect;
-            hFlip = it->contentHFlip || it->hFlip;
-            vFlip = it->contentVFlip || it->vFlip;
+    // Prior crop + content flags for *this* session image only — never path map alone.
+    WorkspaceItemState app;
+    bool haveApp = false;
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : m_currentSessionId;
+    if (sid != kInvalidSessionImageId) {
+        const auto it = m_sessionAppearance.constFind(sid);
+        if (it != m_sessionAppearance.cend()) {
+            app = *it;
+            haveApp = true;
         }
     }
+    if (!haveApp && item->sessionHasCrop()) {
+        app.hasCrop = true;
+        app.cropRect = item->sessionCropRect();
+        app.contentHFlip = item->contentHFlip();
+        app.contentVFlip = item->contentVFlip();
+        haveApp = true;
+    }
+    if (!haveApp) {
+        // Last resort for unbound single-instance tiles.
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.cend()) {
+            app = *it;
+            haveApp = true;
+        }
+    }
+
+    const QRect priorCrop = (haveApp && app.hasCrop) ? app.cropRect : QRect();
+    const bool hadCrop = haveApp && app.hasCrop && !priorCrop.isEmpty();
+    const bool hFlip = haveApp && (app.contentHFlip || app.hFlip);
+    const bool vFlip = haveApp && (app.contentVFlip || app.vFlip);
 
     item->setSourceImage(full);
     // Always axis-aligned while cropping (placement was stashed in setCropMode).
     item->setItemRotation(0.0);
     item->setItemHFlip(false);
     item->setItemVFlip(false);
-    {
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()) {
-            applyContentBakes(item, *it);
-        }
+    // Re-apply content flips/quarter turns for this session image on the full frame
+    // (crop draft is drawn in that space). Do not bake the crop yet.
+    if (haveApp) {
+        WorkspaceItemState contentOnly = app;
+        contentOnly.hasCrop = false;
+        contentOnly.cropRect = QRect();
+        applyContentBakes(item, contentOnly);
     }
     m_cropShowingFullImage = true;
 
     const QRectF cr = item->contentRect();
-    if (hadCrop && !priorCrop.isEmpty()) {
+    if (hadCrop) {
         const QSize sz = item->imageSize();
         const QRect bounds(0, 0, sz.width(), sz.height());
         const QRect src = priorCrop.intersected(bounds);
@@ -1065,11 +1088,33 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     if (!item) {
         return;
     }
-    const auto it = m_itemStates.constFind(item->path());
-    if (it == m_itemStates.cend()) {
-        return;
+    WorkspaceItemState app;
+    bool have = false;
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : m_currentSessionId;
+    if (sid != kInvalidSessionImageId) {
+        const auto it = m_sessionAppearance.constFind(sid);
+        if (it != m_sessionAppearance.cend()) {
+            app = *it;
+            have = true;
+        }
     }
-    // Reload full pixels then session crop + content bakes; placement only on Workspace.
+    if (!have && item->sessionHasCrop()) {
+        app.hasCrop = true;
+        app.cropRect = item->sessionCropRect();
+        app.contentHFlip = item->contentHFlip();
+        app.contentVFlip = item->contentVFlip();
+        have = true;
+    }
+    if (!have) {
+        const auto it = m_itemStates.constFind(item->path());
+        if (it == m_itemStates.cend()) {
+            return;
+        }
+        app = *it;
+        have = true;
+    }
     const QImage full = ImageLoader::load(item->path());
     if (!full.isNull()) {
         item->setSourceImage(full);
@@ -1077,12 +1122,13 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     if (isImageMode()) {
         item->setItemRotation(0.0);
     } else {
-        item->setItemRotation(it->rotation);
+        item->setItemRotation(app.rotation);
     }
     item->setItemHFlip(false);
     item->setItemVFlip(false);
-    applySessionCrop(item, *it);
-    applyContentBakes(item, *it);
+    applySessionCrop(item, app);
+    applyContentBakes(item, app);
+    item->setSessionCrop(app.hasCrop, app.cropRect);
     if (isImageMode()) {
         m_fitMode = true;
         fitItem(item, currentFitAspectMode());
@@ -1184,13 +1230,20 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     }
     const QRect disp(dx, dy, dw, dh);
 
-    WorkspaceItemState s;
-    const auto it = m_itemStates.constFind(item->path());
-    if (it != m_itemStates.cend()) {
-        s = *it;
-    } else {
-        s = captureState(item);
+    WorkspaceItemState s = captureState(item);
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : m_currentSessionId;
+    if (sid != kInvalidSessionImageId) {
+        const auto it = m_sessionAppearance.constFind(sid);
+        if (it != m_sessionAppearance.cend()) {
+            // Keep content transforms from the session-image store.
+            s.contentQuarterTurns = it->contentQuarterTurns;
+            s.contentHFlip = it->contentHFlip;
+            s.contentVFlip = it->contentVFlip;
+        }
     }
+    s.sessionId = sid;
     s.sessionIndex = item->sessionIndex();
     // Full-frame draft clears the session crop (Reset or expanded to entire image).
     const bool fullFrame =
@@ -1206,12 +1259,12 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         s.cropRect = disp;
     }
     s.path = item->path();
-    // Always store crop on the item instance (duplicate-safe).
     item->setSessionCrop(s.hasCrop, s.cropRect);
-    // Path-keyed map is for bound session / Image mode only.
-    if (item->sessionIndex() >= 0) {
-        m_itemStates.insert(item->path(), s);
+    if (sid != kInvalidSessionImageId) {
+        m_sessionAppearance.insert(sid, s);
     }
+    // Path map remains a last-writer cache for unbound single-instance paths.
+    m_itemStates.insert(item->path(), s);
 }
 
 void ImageView::leaveCropModeInternal(bool apply)
