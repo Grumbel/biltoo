@@ -33,6 +33,19 @@ void ImageView::clearPendingLoads()
     m_pendingRestoreStates.clear();
 }
 
+void ImageView::takePendingWorkspacePath(const QString &path)
+{
+    const auto it = m_pendingWorkspacePaths.find(path);
+    if (it == m_pendingWorkspacePaths.end()) {
+        return;
+    }
+    if (it.value() <= 1) {
+        m_pendingWorkspacePaths.erase(it);
+    } else {
+        it.value() -= 1;
+    }
+}
+
 void ImageView::clearSceneKeepingStashes()
 {
     if (!m_scene) {

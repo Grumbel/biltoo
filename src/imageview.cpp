@@ -177,7 +177,13 @@ int ImageView::pendingDecodeCount() const
 {
     // m_galleryDecodeScheduled ⊆ m_pendingWorkspacePaths for gallery window loads;
     // do not double-count.
-    return m_pendingWorkspacePaths.size() + m_pendingRestoreStates.size();
+    {
+        int pendingAdds = 0;
+        for (int n : m_pendingWorkspacePaths) {
+            pendingAdds += n;
+        }
+        return pendingAdds + m_pendingRestoreStates.size();
+    }
 }
 
 

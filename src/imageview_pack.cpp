@@ -172,7 +172,7 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
         }
         m_galleryDecodeFailed.remove(path);
         m_galleryDecodeScheduled.remove(path);
-        m_pendingWorkspacePaths.remove(path);
+        takePendingWorkspacePath(path);
         item->clearDecodedPixels();
         PendingSessionBind b;
         b.path = path;

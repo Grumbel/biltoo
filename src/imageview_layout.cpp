@@ -645,7 +645,7 @@ void ImageView::removeWorkspacePathOccurrence(const QString &path, int occurrenc
             continue;
         }
         if (found == occurrence) {
-            m_pendingWorkspacePaths.remove(path);
+            takePendingWorkspacePath(path);
             m_pendingScenePos.remove(path);
             m_pendingSessionIndexByPath.remove(path);
             m_galleryDecodeScheduled.remove(path);

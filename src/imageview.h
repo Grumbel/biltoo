@@ -170,6 +170,8 @@ public:
     const QHash<QString, WorkspaceItemState> &itemStates() const { return m_itemStates; }
     bool hasPendingWorkspacePaths() const { return !m_pendingWorkspacePaths.isEmpty(); }
     void clearPendingWorkspacePaths() { m_pendingWorkspacePaths.clear(); }
+    void addPendingWorkspacePath(const QString &path) { m_pendingWorkspacePaths[path] += 1; }
+    void takePendingWorkspacePath(const QString &path);
     QList<WorkspaceItemState> &pendingRestoreStates() { return m_pendingRestoreStates; }
     const QList<WorkspaceItemState> &pendingRestoreStates() const { return m_pendingRestoreStates; }
 
@@ -742,7 +744,8 @@ private:
     int m_gridColumns = 0;
     int m_masonryRows = 3;
     std::atomic<quint64> m_loadGeneration{0};
-    QSet<QString> m_pendingWorkspacePaths;
+    /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
+    QHash<QString, int> m_pendingWorkspacePaths;
     /** Gallery virtualization: paths scheduled for decode this window. */
     QSet<QString> m_galleryDecodeScheduled;
     /** Paths that failed decode — do not spin forever on placeholders. */

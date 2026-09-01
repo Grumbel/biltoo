@@ -6,6 +6,7 @@
 #include "imageloader.h"
 
 #include <QSet>
+#include <QHash>
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
 {
@@ -19,47 +20,130 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         return;
     }
 
-    QSet<QString> wanted(paths.begin(), paths.end());
-    // Collect first — destroy mutates m_items; never walk a list while deleting.
+    const bool haveIds = !sessionIds.isEmpty();
+
+    // --- Remove tiles that are not part of the new session -------------------
+    // Prefer session-id identity. Fall back to path occurrence counts so
+    // duplicate paths remain as separate tiles (same path, distinct items).
     QList<ImageItem *> doomed;
     QSet<ImageItem *> doomedSeen;
-    for (ImageItem *item : m_items) {
-        if (!item || !wanted.contains(item->path()) || doomedSeen.contains(item)) {
-            continue;
+    auto doom = [&](ImageItem *item) {
+        if (!item || doomedSeen.contains(item)) {
+            return;
         }
         doomedSeen.insert(item);
         doomed.append(item);
+    };
+
+    if (haveIds) {
+        QSet<SessionImageId> wantedIds;
+        for (SessionImageId id : sessionIds) {
+            if (id != kInvalidSessionImageId) {
+                wantedIds.insert(id);
+            }
+        }
+        QSet<QString> wantedPaths(paths.begin(), paths.end());
+        for (ImageItem *item : m_items) {
+            if (!item) {
+                continue;
+            }
+            const SessionImageId sid = item->sessionId();
+            if (sid != kInvalidSessionImageId) {
+                if (!wantedIds.contains(sid)) {
+                    doom(item);
+                }
+            } else if (!wantedPaths.contains(item->path())) {
+                doom(item);
+            }
+        }
+        // Excess unbound tiles for a path beyond the number of unbound session rows.
+        QHash<QString, int> unboundWanted;
+        QSet<SessionImageId> boundWantedIds = wantedIds;
+        for (int i = 0; i < paths.size(); ++i) {
+            const SessionImageId sid = (i < sessionIds.size()) ? sessionIds.at(i)
+                                                              : kInvalidSessionImageId;
+            if (sid == kInvalidSessionImageId) {
+                unboundWanted[paths.at(i)] += 1;
+            }
+        }
+        QHash<QString, int> unboundSeen;
+        for (ImageItem *item : m_items) {
+            if (!item || doomedSeen.contains(item)) {
+                continue;
+            }
+            if (item->sessionId() != kInvalidSessionImageId) {
+                continue;
+            }
+            const int n = ++unboundSeen[item->path()];
+            if (n > unboundWanted.value(item->path())) {
+                doom(item);
+            }
+        }
+    } else {
+        QHash<QString, int> wantedCount;
+        for (const QString &path : paths) {
+            wantedCount[path] += 1;
+        }
+        QHash<QString, int> seenCount;
+        for (ImageItem *item : m_items) {
+            if (!item) {
+                continue;
+            }
+            const int n = ++seenCount[item->path()];
+            if (n > wantedCount.value(item->path())) {
+                doom(item);
+            }
+        }
     }
+
     for (ImageItem *item : doomed) {
         m_galleryDecodeScheduled.remove(item->path());
         m_galleryDecodeFailed.remove(item->path());
+        m_pendingWorkspacePaths.remove(item->path());
         destroyCanvasItem(item);
     }
 
     m_pathOrder = paths;
 
     const bool virtualize = isGalleryMode() && paths.size() >= kGalleryVirtualThreshold;
-    const bool haveIds = !sessionIds.isEmpty();
 
+    // --- Ensure one live tile per session row (duplicates = separate items) ---
+    QSet<ImageItem *> claimed;
     for (int i = 0; i < paths.size(); ++i) {
         const QString &path = paths.at(i);
         const SessionImageId sid = (haveIds && i < sessionIds.size())
             ? sessionIds.at(i)
             : kInvalidSessionImageId;
 
-        if (ImageItem *existing = findItemByPath(path)) {
-            // Bind session identity so Image-mode edits can peer-sync this tile.
+        ImageItem *existing = nullptr;
+        if (sid != kInvalidSessionImageId) {
+            existing = findItemBySessionId(sid);
+        }
+        if (!existing) {
+            // Next unclaimed live tile with this path (occurrence match).
+            for (ImageItem *item : m_items) {
+                if (!item || item->path() != path || claimed.contains(item)) {
+                    continue;
+                }
+                // Do not steal a tile already bound to a different session id.
+                if (sid != kInvalidSessionImageId
+                    && item->sessionId() != kInvalidSessionImageId
+                    && item->sessionId() != sid) {
+                    continue;
+                }
+                existing = item;
+                break;
+            }
+        }
+
+        if (existing) {
+            claimed.insert(existing);
             const bool newlyBoundId = (sid != kInvalidSessionImageId
                                       && existing->sessionId() == kInvalidSessionImageId);
             if (newlyBoundId) {
                 existing->setSessionId(sid);
             }
-            if (existing->sessionIndex() < 0) {
-                existing->setSessionIndex(i);
-            }
-            // If this tile never had an id while Image-mode edits ran, peer sync
-            // could not update it. Force a full re-decode so LoadAdd applies
-            // m_appearance for this id (safe; pixels must be on-disk full).
+            existing->setSessionIndex(i);
             if (newlyBoundId && existing->hasDecodedPixels()
                 && sid != kInvalidSessionImageId) {
                 const WorkspaceItemState *appPtr = m_appearance.get(sid);
@@ -71,7 +155,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     || app.contentQuarterTurns != 0) {
                     existing->clearDecodedPixels();
                     m_galleryDecodeScheduled.remove(path);
-                    m_pendingWorkspacePaths.remove(path);
+                    takePendingWorkspacePath(path);
                     m_galleryDecodeFailed.remove(path);
                     PendingSessionBind b;
                     b.path = path;
@@ -88,6 +172,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             continue;
         }
 
+        // No tile for this session row yet — create / schedule one.
         if (sid != kInvalidSessionImageId || i >= 0) {
             PendingSessionBind b;
             b.path = path;
@@ -98,13 +183,13 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         }
 
         if (virtualize) {
-            // Fast size probe + placeholder; full decode is viewport-windowed.
             ImageItem *ph = createPlaceholderItem(path, probeImageSize(path));
             if (ph) {
                 if (sid != kInvalidSessionImageId) {
                     ph->setSessionId(sid);
                 }
                 ph->setSessionIndex(i);
+                claimed.insert(ph);
             }
         } else {
             scheduleImageLoad(path, LoadAdd);
@@ -176,7 +261,7 @@ void ImageView::removeWorkspacePath(const QString &path)
     if (!item) {
         return;
     }
-    m_pendingWorkspacePaths.remove(path);
+    takePendingWorkspacePath(path);
     m_pendingScenePos.remove(path);
     m_galleryDecodeScheduled.remove(path);
     m_galleryDecodeFailed.remove(path);

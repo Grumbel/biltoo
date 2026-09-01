@@ -77,7 +77,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         return;
     }
     if (role == LoadAdd) {
-        m_pendingWorkspacePaths.insert(path);
+        addPendingWorkspacePath(path);
     }
     // LoadRestore pending is owned by m_pendingRestoreStates (AUDIT M27).
     // AUDIT H3a: only LoadReplace advances the generation token so workspace
@@ -108,19 +108,25 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
     if (path.isEmpty() || m_galleryDecodeFailed.contains(path)
-        || m_galleryDecodeScheduled.contains(path)
-        || m_pendingWorkspacePaths.contains(path)) {
+        || m_galleryDecodeScheduled.contains(path)) {
         return;
     }
-    ImageItem *item = findItemByPath(path);
-    if (item && item->hasDecodedPixels()) {
+    // Decode if any live occurrence still lacks pixels (duplicates share one decode).
+    bool needsPixels = false;
+    for (ImageItem *item : m_items) {
+        if (item && item->path() == path && !item->hasDecodedPixels()) {
+            needsPixels = true;
+            break;
+        }
+    }
+    if (!needsPixels) {
         return;
     }
     if (m_galleryDecodeScheduled.size() >= kMaxConcurrentGalleryDecodes) {
         return; // caller (updateGalleryDecodeWindow) will retry after a slot frees
     }
     m_galleryDecodeScheduled.insert(path);
-    m_pendingWorkspacePaths.insert(path);
+    addPendingWorkspacePath(path);
     emit statusChanged();
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
@@ -279,7 +285,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         return;
     }
 
-    // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window
+    // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
+    // Duplicate paths are separate session images: fill every undecoded live
+    // occurrence, then create until live count matches pathOrder occurrences.
     m_galleryDecodeScheduled.remove(path);
     if (!m_pendingWorkspacePaths.contains(path)) {
         // Cancelled (e.g. path removed from session) — drop the result.
@@ -289,54 +297,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         return;
     }
-    m_pendingWorkspacePaths.remove(path);
-
-    ImageItem *existing = findItemByPath(path);
-    if (!existing) {
-        // Decode may finish while Gallery tiles are stashed (user in Image mode).
-        for (ImageItem *cand : m_gallery.stashedItems()) {
-            if (cand && cand->path() == path) {
-                existing = cand;
-                break;
-            }
-        }
-    }
-    if (existing) {
-        if (image.isNull()) {
-            m_galleryDecodeFailed.insert(path);
-            emit statusChanged();
-            if (isGalleryMode()) {
-                updateGalleryDecodeWindow();
-            }
-            return;
-        }
-        const QSize before = existing->imageSize();
-        existing->setSourceImage(image);
-        // Prefer session-id appearance; path map is last-writer only for unbound.
-        applyStoredAppearance(existing);
-        if (isGalleryMode()) {
-            // Default: keep pack stable when probe vs decode differ slightly.
-            // If pixel size changed substantially (crop / 90° content), repack
-            // so the tile is not left tiny or huge under the old scale.
-            const QSize after = existing->imageSize();
-            const bool sizeChanged =
-                before.isValid() && after.isValid()
-                && (before.width() != after.width() || before.height() != after.height());
-            if (sizeChanged && m_galleryRelayoutSuppressCount == 0) {
-                applyLayout(GalleryPackReason::ContentChange);
-            } else {
-                existing->update();
-            }
-        } else if (m_layoutMode != LayoutMode::FreeForm
-                   && m_galleryRelayoutSuppressCount == 0) {
-            applyLayout(GalleryPackReason::SessionMutate);
-        }
-        emit statusChanged();
-        if (isGalleryMode()) {
-            updateGalleryDecodeWindow();
-        }
-        return;
-    }
+    takePendingWorkspacePath(path);
 
     if (image.isNull()) {
         m_galleryDecodeFailed.insert(path);
@@ -347,66 +308,105 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         return;
     }
 
-    // Do not spawn Gallery tiles onto the Image-mode canvas.
     if (isImageMode()) {
+        // Fill stashed Gallery placeholders while user is in Image mode.
+        for (ImageItem *cand : m_gallery.stashedItems()) {
+            if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
+                cand->setSourceImage(image);
+                applyStoredAppearance(cand);
+            }
+        }
         emit statusChanged();
         return;
     }
 
-    ImageItem *item = createItemFromImage(path, image);
-    if (!item) {
-        emit statusChanged();
-        return;
+    int wanted = 0;
+    for (const QString &p : m_pathOrder) {
+        if (p == path) {
+            ++wanted;
+        }
     }
-    // Bind stable session-image id / list index from the pending queue.
-    for (int i = 0; i < m_pendingSessionBinds.size(); ++i) {
-        if (m_pendingSessionBinds.at(i).path != path) {
+    // Ad-hoc add (not yet reflected in pathOrder): at least one more than current.
+    if (wanted <= 0) {
+        for (ImageItem *it : m_items) {
+            if (it && it->path() == path) {
+                ++wanted;
+            }
+        }
+        ++wanted;
+    }
+
+    bool sizeChanged = false;
+    int have = 0;
+    for (ImageItem *existing : m_items) {
+        if (!existing || existing->path() != path) {
             continue;
         }
-        const PendingSessionBind b = m_pendingSessionBinds.takeAt(i);
-        if (b.id != kInvalidSessionImageId) {
-            item->setSessionId(b.id);
+        ++have;
+        if (!existing->hasDecodedPixels()) {
+            const QSize before = existing->imageSize();
+            existing->setSourceImage(image);
+            applyStoredAppearance(existing);
+            const QSize after = existing->imageSize();
+            if (before.isValid() && after.isValid()
+                && (before.width() != after.width() || before.height() != after.height())) {
+                sizeChanged = true;
+            } else {
+                existing->update();
+            }
         }
-        if (b.index >= 0) {
-            item->setSessionIndex(b.index);
+    }
+    for (ImageItem *cand : m_gallery.stashedItems()) {
+        if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
+            cand->setSourceImage(image);
+            applyStoredAppearance(cand);
         }
-        // Full on-disk decode — apply per-id crop/flip/rotate if any.
-        applyStoredAppearance(item);
-        break;
     }
-    if (m_pendingSessionIndexByPath.contains(path)) {
-        item->setSessionIndex(m_pendingSessionIndexByPath.take(path));
-    }
-    // Flags already match ViewMode via createItemFromImage / applyItemModeFlags.
-    // Do not force interactive — that flashes handles in Gallery.
 
-    // Drop position, remembered state, or empty-space placement
-    if (isGalleryMode()) {
-        // Packaged layouts own geometry. Never restore Workspace free-form pose
-        // (arbitrary placement rotation / scale / flips) onto Gallery tiles —
-        // that state lives in m_itemStates after snapshotWorkspace and would
-        // otherwise reappear on every LoadAdd after entering Gallery.
-        item->setItemRotation(0.0);
-        item->setItemHFlip(false);
-        item->setItemVFlip(false);
-        item->setItemOpacity(1.0);
-        // pos/scale assigned by applyLayout() below.
-    } else if (m_pendingScenePos.contains(path)) {
-        const QPointF pos = m_pendingScenePos.take(path);
-        item->setPos(pos);
-        item->setItemScale(1.0);
-        item->setItemRotation(0.0);
-        item->setItemOpacity(1.0);
-        item->setStackZ(m_items.size() - 1);
-    } else {
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()) {
-            applyState(item, *it);
+    // Create missing occurrences (each duplicate is a normal separate tile).
+    while (have < wanted) {
+
+        ImageItem *item = createItemFromImage(path, image);
+        if (!item) {
+            break;
+        }
+        ++have;
+        // Bind pending session row if any remain for this path.
+        for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
+            if (m_pendingSessionBinds.at(bi).path == path) {
+                const PendingSessionBind b = m_pendingSessionBinds.takeAt(bi);
+                if (b.id != kInvalidSessionImageId) {
+                    item->setSessionId(b.id);
+                }
+                if (b.index >= 0) {
+                    item->setSessionIndex(b.index);
+                }
+                break;
+            }
+        }
+        applyStoredAppearance(item);
+        if (isGalleryMode()) {
+            item->setItemRotation(0.0);
+            item->setItemHFlip(false);
+            item->setItemVFlip(false);
+            item->setItemOpacity(1.0);
+        } else if (m_pendingScenePos.contains(path)) {
+            const QPointF pos = m_pendingScenePos.take(path);
+            item->setPos(pos);
+            item->setItemScale(1.0);
+            item->setItemRotation(0.0);
+            item->setItemOpacity(1.0);
+            item->setStackZ(m_items.size() - 1);
         } else {
-            WorkspaceItemState s = defaultStateForPath(path, m_items.size() - 1);
-            const QSizeF sz(image.width(), image.height());
-            s.pos = findEmptyPlacement(sz);
-            applyState(item, s);
+            const auto it = m_itemStates.constFind(path);
+            if (it != m_itemStates.cend()) {
+                applyState(item, *it);
+            } else {
+                WorkspaceItemState s = defaultStateForPath(path, m_items.size() - 1);
+                const QSizeF sz(image.width(), image.height());
+                s.pos = findEmptyPlacement(sz);
+                applyState(item, s);
+            }
         }
     }
 
@@ -414,9 +414,12 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (!m_pathOrder.isEmpty()) {
             reorderItemsByPaths(m_pathOrder);
         }
-        // Gallery session-delete holds suppress so a late LoadAdd cannot repack.
         if (!(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
-            applyLayout(GalleryPackReason::SessionMutate);
+            if (sizeChanged) {
+                applyLayout(GalleryPackReason::ContentChange);
+            } else {
+                applyLayout(GalleryPackReason::SessionMutate);
+            }
         }
     } else {
         updateWorkspaceSceneRect();
@@ -427,6 +430,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         updateGalleryDecodeWindow();
     }
 }
+
 
 bool ImageView::loadImage(const QString &path)
 {
