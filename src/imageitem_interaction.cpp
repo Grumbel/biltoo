@@ -949,10 +949,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->setOpacity(1.0);
             QPen pen(QColor(0, 180, 255), 0);
             pen.setCosmetic(true);
-            pen.setWidthF(2.5);
+            pen.setWidthF(4.0);
             painter->setPen(pen);
             painter->setBrush(Qt::NoBrush);
-            painter->drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5));
+            // Inset by half the stroke so the frame sits on the tile edge.
+            painter->drawRect(r.adjusted(2.0, 2.0, -2.0, -2.0));
             painter->restore();
         }
         return;
