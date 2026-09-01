@@ -163,13 +163,24 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
         return;
     }
     prepareGeometryChange();
-    m_source = m_source.mirrored(horizontal, vertical);
+    {
+        Qt::Orientations axes;
+        if (horizontal) {
+            axes |= Qt::Horizontal;
+        }
+        if (vertical) {
+            axes |= Qt::Vertical;
+        }
+        if (axes) {
+            m_source = m_source.flipped(axes);
+        }
+    }
     // Bake any pending display flips into the same op.
     if (m_hFlip) {
-        m_source = m_source.mirrored(true, false);
+        m_source = m_source.flipped(Qt::Horizontal);
     }
     if (m_vFlip) {
-        m_source = m_source.mirrored(false, true);
+        m_source = m_source.flipped(Qt::Vertical);
     }
     m_hFlip = false;
     m_vFlip = false;

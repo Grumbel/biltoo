@@ -163,10 +163,10 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     }
     // Legacy live flip flags (should be empty after bake).
     if (item->itemHFlip()) {
-        img = img.mirrored(true, false);
+        img = img.flipped(Qt::Horizontal);
     }
     if (item->itemVFlip()) {
-        img = img.mirrored(false, true);
+        img = img.flipped(Qt::Vertical);
     }
     return img;
 }
