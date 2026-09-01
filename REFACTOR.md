@@ -189,3 +189,5 @@ by id (new model work — not part of early-phase exit criteria).
 - Phase 5l: Gallery leave cleanup → `GalleryController::onLeave`; residual
   `setViewMode(Gallery)` path routes through `GalleryController::enter`
   (MainWindow already uses enterGallery only).
+- Phase 5m: Workspace leave → `WorkspaceController::onLeave` (durable
+  snapshot; live stash when next mode is Image).

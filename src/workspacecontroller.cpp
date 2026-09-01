@@ -248,6 +248,21 @@ void WorkspaceController::restoreFreeFormStates()
     }
 }
 
+
+void WorkspaceController::onLeave(int nextMode)
+{
+    const auto next = static_cast<ImageView::ViewMode>(nextMode);
+    // Durable placement + appearance backup for rebuild if the live stash is
+    // later discarded (e.g. entering Gallery).
+    snapshot();
+    if (next == ImageView::ViewMode::Image) {
+        // Keep free-form tiles + pixels + view for a fast return to Workspace.
+        stashItems();
+    }
+    // Gallery path: GalleryController::enter discards the workspace stash after
+    // packing from live items / session paths.
+}
+
 void WorkspaceController::enter(int previousMode)
 {
     const auto previous = static_cast<ImageView::ViewMode>(previousMode);

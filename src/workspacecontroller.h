@@ -36,6 +36,8 @@ public:
     /** Enter Workspace mode from @p previous (setViewMode Workspace branch). */
     /** Enter Workspace mode from previous ViewMode (int = ImageView::ViewMode). */
     void enter(int previousMode);
+    /** Leaving Workspace: durable snapshot; stash live tiles when next is Image. */
+    void onLeave(int nextMode);
     void snapshotFreeFormStates();
     void restoreFreeFormStates();
 
