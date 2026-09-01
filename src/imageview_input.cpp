@@ -568,9 +568,10 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
     // and crop amber.
     const QColor frameCol(150, 90, 220, 220);
     const QColor handleFill(180, 120, 255, 240);
+    const QColor handleFillHot(210, 160, 255, 255);
     const QColor handleEdge(80, 40, 140);
-    const QColor rotFill(220, 160, 255);
-    const QColor rotHot(255, 230, 120);
+    const QColor rotFill(200, 140, 255);
+    const QColor rotFillHot(255, 230, 120);
 
     QPen framePen(frameCol, 0);
     framePen.setCosmetic(true);
@@ -579,7 +580,6 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(viewRect);
 
-    constexpr qreal hs = 6.0;
     const QPointF pts[8] = {
         viewRect.topLeft(),
         QPointF(viewRect.center().x(), viewRect.top()),
@@ -590,13 +590,15 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         viewRect.bottomLeft(),
         QPointF(viewRect.left(), viewRect.center().y()),
     };
-    QPen hp(handleEdge, 0);
-    hp.setCosmetic(true);
-    hp.setWidthF(1.15);
-    painter->setPen(hp);
-    painter->setBrush(handleFill);
-    for (const QPointF &p : pts) {
-        painter->drawRect(QRectF(p.x() - hs / 2.0, p.y() - hs / 2.0, hs, hs));
+    for (int i = 0; i < 8; ++i) {
+        const bool hot = (m_groupHoverHandle == i || m_groupHandle == i);
+        const qreal hs = hot ? 8.0 : 5.5;
+        QPen hp(hot ? QColor(255, 255, 255) : handleEdge, 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(hot ? 1.6 : 1.15);
+        painter->setPen(hp);
+        painter->setBrush(hot ? handleFillHot : handleFill);
+        painter->drawRect(QRectF(pts[i].x() - hs / 2.0, pts[i].y() - hs / 2.0, hs, hs));
     }
 
     // Rotate knobs outside mid-edges (same offset language as single-item).
@@ -617,14 +619,17 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
     stem.setCosmetic(true);
     stem.setWidthF(1.25);
     for (int i = 0; i < 4; ++i) {
+        const int handleId = 8 + i;
+        const bool hot = (m_groupHoverHandle == handleId || m_groupHandle == handleId);
         painter->setPen(stem);
         painter->drawLine(edgeMid[i], rot[i]);
-        painter->setBrush(rotFill);
-        QPen rp(handleEdge, 0);
+        const qreal rad = hot ? 7.0 : 5.0;
+        painter->setBrush(hot ? rotFillHot : rotFill);
+        QPen rp(hot ? QColor(255, 255, 255) : handleEdge, 0);
         rp.setCosmetic(true);
-        rp.setWidthF(1.15);
+        rp.setWidthF(hot ? 1.6 : 1.15);
         painter->setPen(rp);
-        painter->drawEllipse(rot[i], 5.5, 5.5);
+        painter->drawEllipse(rot[i], rad, rad);
     }
 
     painter->restore();
@@ -772,6 +777,7 @@ void ImageView::endGroupScale()
     m_groupScaleDrag = false;
     m_groupRotateDrag = false;
     m_groupHandle = -1;
+    m_groupHoverHandle = -1;
     m_groupDragItems.clear();
     m_groupDragStartStates.clear();
 }
@@ -1383,7 +1389,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             }
         }
 
-        // Multi-select: only group scale handles (individual chrome is hidden).
+        // Multi-select: only group handles (individual chrome is hidden).
         if (candidates.size() > 1) {
             for (ImageItem *item : candidates) {
                 if (item->hoverHandle() != ImageItem::Handle::None) {
@@ -1391,6 +1397,10 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                 }
             }
             const int gh = groupHandleAt(event->pos(), candidates);
+            if (gh != m_groupHoverHandle) {
+                m_groupHoverHandle = gh;
+                viewport()->update();
+            }
             if (gh >= 0) {
                 // 0=TL 1=T 2=TR 3=R 4=BR 5=B 6=BL 7=L; 8–11 rotate
                 switch (gh) {
@@ -1417,6 +1427,10 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                 viewport()->unsetCursor();
             }
         } else {
+            if (m_groupHoverHandle != -1) {
+                m_groupHoverHandle = -1;
+                viewport()->update();
+            }
             ImageItem *hoverOwner = nullptr;
             ImageItem::Handle hoverH = ImageItem::Handle::None;
             std::sort(candidates.begin(), candidates.end(),

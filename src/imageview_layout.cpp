@@ -408,6 +408,7 @@ void ImageView::stashWorkspaceItems()
     m_groupScaleDrag = false;
     m_groupRotateDrag = false;
     m_groupHandle = -1;
+    m_groupHoverHandle = -1;
     m_groupDragItems.clear();
     m_groupDragStartStates.clear();
     m_rotateItem = nullptr;
@@ -574,6 +575,7 @@ void ImageView::clearWorkspace()
     m_groupScaleDrag = false;
     m_groupRotateDrag = false;
     m_groupHandle = -1;
+    m_groupHoverHandle = -1;
     m_groupDragItems.clear();
     m_groupDragStartStates.clear();
     m_rotateItem = nullptr;
@@ -837,6 +839,7 @@ void ImageView::destroyCanvasItem(ImageItem *item)
         m_groupScaleDrag = false;
         m_groupRotateDrag = false;
         m_groupHandle = -1;
+        m_groupHoverHandle = -1;
         m_groupDragItems.clear();
         m_groupDragStartStates.clear();
     }
@@ -1257,6 +1260,7 @@ void ImageView::setViewMode(ViewMode mode)
         m_groupScaleDrag = false;
         m_groupRotateDrag = false;
         m_groupHandle = -1;
+        m_groupHoverHandle = -1;
         m_groupDragItems.clear();
         m_groupDragStartStates.clear();
         m_rotateItem = nullptr;

@@ -640,6 +640,7 @@ private:
 
     /** Multi-select: which group handle is active (-1 = none). 0–7 scale, 8–11 rotate. */
     int m_groupHandle = -1;
+    int m_groupHoverHandle = -1;
     bool m_groupScaleDrag = false;
     bool m_groupRotateDrag = false;
     QRectF m_groupBoundsStart;
