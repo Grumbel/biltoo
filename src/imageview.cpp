@@ -1310,44 +1310,112 @@ QRectF ImageView::cropRectView() const
     return QRectF(tl, br).normalized();
 }
 
-QRect ImageView::cropResetButtonView() const
+namespace {
+// Shared layout for Reset + Apply: prefer outside below the crop rect; only
+// pull inside when the outside placement would leave the viewport.
+struct CropButtonLayout {
+    int x0 = 0;
+    int y = 0;
+    int w = 56;
+    int h = 22;
+    int gap = 6;
+    bool valid = false;
+};
+
+CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportRect)
 {
-    if (!m_cropMode || !m_cropRect.isValid()) {
-        return QRect();
+    CropButtonLayout L;
+    if (!cropView.isValid() || !viewportRect.isValid()) {
+        return L;
     }
-    const QRectF cropView = cropRectView();
-    if (!cropView.isValid()) {
-        return QRect();
-    }
-    // Inside the crop rect, bottom-centred — stays on-screen when the crop
-    // is reset/expanded (outside-top placement could leave the viewport).
     constexpr int kW = 56;
     constexpr int kH = 22;
     constexpr int kGap = 6;
-    constexpr int kInset = 8;
+    constexpr int kOutsideGap = 8;
+    constexpr int kInsideInset = 8;
+    constexpr int kMargin = 6;
+
     const int totalW = kW * 2 + kGap;
-    const int x0 = qRound(cropView.center().x() - totalW / 2.0);
-    const int y = qRound(cropView.bottom()) - kH - kInset;
-    return QRect(x0, y, kW, kH);
+    int x0 = qRound(cropView.center().x() - totalW / 2.0);
+    // Prefer outside, centred under the crop bottom edge.
+    int yOutside = qRound(cropView.bottom()) + kOutsideGap;
+    // Fallback: inside the crop, bottom-centred.
+    int yInside = qRound(cropView.bottom()) - kH - kInsideInset;
+
+    // Clamp horizontally into the viewport so labels stay reachable.
+    const int minX = viewportRect.left() + kMargin;
+    const int maxX = viewportRect.right() - kMargin - totalW;
+    if (maxX >= minX) {
+        x0 = qBound(minX, x0, maxX);
+    } else {
+        x0 = minX;
+    }
+
+    auto fullyVisible = [&](int y) {
+        const QRect row(x0, y, totalW, kH);
+        return viewportRect.contains(row);
+    };
+
+    int y = yOutside;
+    if (!fullyVisible(yOutside)) {
+        // Outside would clip — try inside the crop frame.
+        if (fullyVisible(yInside)) {
+            y = yInside;
+        } else {
+            // Still not fully visible: clamp the row into the viewport.
+            y = qBound(viewportRect.top() + kMargin,
+                       yOutside,
+                       viewportRect.bottom() - kMargin - kH);
+            // Prefer inside if that clamp is closer to the crop bottom interior.
+            if (cropView.height() > kH + 2 * kInsideInset
+                && viewportRect.intersects(QRect(x0, yInside, totalW, kH))) {
+                const int yClampedInside = qBound(viewportRect.top() + kMargin,
+                                                  yInside,
+                                                  viewportRect.bottom() - kMargin - kH);
+                // Use the placement that keeps the row fully on-screen.
+                if (fullyVisible(yClampedInside)) {
+                    y = yClampedInside;
+                } else if (fullyVisible(y)) {
+                    // keep clamped outside
+                } else {
+                    y = yClampedInside;
+                }
+            }
+        }
+    }
+
+    L.x0 = x0;
+    L.y = y;
+    L.w = kW;
+    L.h = kH;
+    L.gap = kGap;
+    L.valid = true;
+    return L;
+}
+} // namespace
+
+QRect ImageView::cropResetButtonView() const
+{
+    if (!m_cropMode || !m_cropRect.isValid() || !viewport()) {
+        return QRect();
+    }
+    const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
+    if (!L.valid) {
+        return QRect();
+    }
+    return QRect(L.x0, L.y, L.w, L.h);
 }
 
 QRect ImageView::cropApplyButtonView() const
 {
-    if (!m_cropMode || !m_cropRect.isValid()) {
+    if (!m_cropMode || !m_cropRect.isValid() || !viewport()) {
         return QRect();
     }
-    const QRectF cropView = cropRectView();
-    if (!cropView.isValid()) {
+    const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
+    if (!L.valid) {
         return QRect();
     }
-    constexpr int kW = 56;
-    constexpr int kH = 22;
-    constexpr int kGap = 6;
-    constexpr int kInset = 8;
-    const int totalW = kW * 2 + kGap;
-    const int x0 = qRound(cropView.center().x() - totalW / 2.0);
-    const int y = qRound(cropView.bottom()) - kH - kInset;
-    return QRect(x0 + kW + kGap, y, kW, kH);
+    return QRect(L.x0 + L.w + L.gap, L.y, L.w, L.h);
 }
 
 ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
@@ -1529,7 +1597,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
     drawEdgeBar(QPointF(tl.x(), (tl.y() + bl.y()) / 2.0), QPointF(0, 1), CropHandle::Left);
     drawEdgeBar(QPointF(tr.x(), (tr.y() + br.y()) / 2.0), QPointF(0, 1), CropHandle::Right);
 
-    // Reset / Apply controls above the crop frame.
+    // Reset / Apply: outside below crop when possible, inside if off-screen.
     auto drawTextButton = [&](const QRect &btn, CropHandle kind, const QString &label,
                               bool primary) {
         if (!btn.isValid()) {
