@@ -169,3 +169,5 @@ by id (new model work — not part of early-phase exit criteria).
   imageview_workspace.cpp (file split by mode).
 - Phase 5c: setViewMode / prepare*Canvas / clearLiveCanvas moved to
   imageview_modes.cpp.
+- Phase 5d: applyLayout/pack settings → imageview_pack.cpp;
+  setWorkspacePaths/add/place/rebind → imageview_canvas.cpp.
