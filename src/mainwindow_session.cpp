@@ -502,7 +502,7 @@ SessionImageId MainWindow::currentSessionId() const
     return sessionIdAt(m_currentIndex);
 }
 
-void MainWindow::setCurrentIndex(int index)
+void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
 {
     if (m_files.isEmpty() || index < 0 || index >= m_files.size()) {
         return;
@@ -536,7 +536,10 @@ void MainWindow::setCurrentIndex(int index)
     if (isImageMode()) {
         m_imageView->loadImage(path);
     } else if (isGalleryMode() && m_imageView) {
-        m_imageView->revealGalleryPath(path);
+        // Keyboard / programmatic nav may ask to scroll; mouse selection does not.
+        if (ensureGalleryVisible) {
+            m_imageView->revealGalleryPath(path);
+        }
     } else if (m_imageView) {
         m_imageView->focusSessionPath(path);
     }

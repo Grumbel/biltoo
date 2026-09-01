@@ -121,7 +121,10 @@ MainWindow::MainWindow(QWidget *parent)
             this, [this](const QString &path) {
                 const int idx = m_files.indexOf(path);
                 if (idx >= 0) {
-                    setCurrentIndex(idx);
+                    // Mouse and keyboard both emit this; keyboard already called
+                    // focusSessionPath (ensureVisible). Do not scroll again on
+                    // mouse clicks — that jumps the gallery under the cursor.
+                    setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
                 }
             });
     connect(m_imageView, &ImageView::filesDropped,

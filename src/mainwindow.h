@@ -196,7 +196,13 @@ private:
     /** Associate shortcut-bearing actions with the window (fullscreen-safe). */
     void bindViewerShortcuts();
     void updateFullscreenUi();
-    void setCurrentIndex(int index);
+    /**
+     * @p ensureGalleryVisible — when true (default), Gallery scrolls the
+     * session tile into view. Mouse selection passes false so clicking a
+     * tile does not jump the view; keyboard nav still scrolls via
+     * focusSessionPath.
+     */
+    void setCurrentIndex(int index, bool ensureGalleryVisible = true);
     void updateNavigationActions();
     void applyThumbnailVisibility();
     enum class ThumbnailEdge { Bottom, Top, Left, Right };
