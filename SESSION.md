@@ -1,6 +1,6 @@
 # Session handoff — identity, chrome, crop (bundles 001–024)
 
-**Tip ref:** `ae3043f` (Workspace flip/rotate: sync only by SessionImageId)  
+**Tip ref (identity series):** `ae3043f` — see **Continuation handoff** below for later tip `b1fde01`  
 **Apply order:** `qimgview-001-…` through `qimgview-024-…` from artifacts, each
 `git pull <bundle> HEAD` in sequence. Base is upstream `Grumbel/qimgview` tip
 at the time the series started.
@@ -186,6 +186,43 @@ unbound and edits will not propagate correctly in Workspace).
 6. Mark AUDIT M16/M27 resolved after verification.
 
 ---
+
+
+---
+
+## Continuation handoff (controllers → project, bundles ~016–038)
+
+**Tip ref:** `b1fde01` (session-id membership / no path-map flip leakage)  
+**Stack:** upstream + `qimgview-016-…` through `qimgview-038-…` (see artifacts).
+
+### What landed after the identity series
+
+| Theme | Bundles (approx.) | Notes |
+|-------|-------------------|--------|
+| Mode controllers | 016–027 | `GalleryController`, `WorkspaceController`, `ImageController`; host API on ImageView; Phase 5 marked complete in REFACTOR.md |
+| Duplicate tiles / holes | 028–030 | Multiplicity-aware remove + pack; LoadAdd creates all pathOrder occurrences; no pointer aliasing in reorder |
+| Crash on history open | 029 | Collect-then-destroy; reorder dedupe by distinct item |
+| Undo | 031–032 | Flip/rotate/raise/opacity/reset; Duplicate = session + canvas |
+| Menus | 033 | Content ops + sort under Edit; View = display |
+| Edge scale Ctrl | 034 | Mid-edge matches corner (default opposite edge) |
+| Project + export | 035–037 | `.qimgview` JSON + SHA-256; Export PNG; fit page guide; relink |
+| Membership / flip id | 038 | Thumbnail toggle by SessionImageId; bound tiles skip path map |
+
+### Remaining residuals (updated)
+
+1. **Runtime QA** still needed for duplicate × membership × flip × project round-trip.
+2. Undo still missing for membership hide/show, sort, layout switch.
+3. Path map `m_itemStates` still exists for unbound tiles; prefer id-only long term.
+4. Relink does not rewrite the project file automatically after manual locate.
+5. Fit page guide uses content AABB (not a print page size); printer setup clears content rect.
+
+### Doc pointers
+
+- Controllers / host API: [REFACTOR.md](REFACTOR.md) Phase 5 + post-Phase 5 log  
+- Project format: [TODO.md](TODO.md) “Workspace project files”  
+- User-facing export: [README.md](README.md) “Project files and export”  
+- Domain persistence: [DOMAIN.md](DOMAIN.md)
+
 
 ## 8. Author / commit convention (this series)
 

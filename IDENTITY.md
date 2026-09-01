@@ -421,5 +421,9 @@ Path-keyed `m_itemStates` remains a legacy last-writer cache only.
 - `clearWorkspace()` on Image-mode LoadReplace (use `clearLiveCanvas()`)
 - Peer sync by path or by `m_currentSessionId` in Workspace
 - Crop prior rect from path map when a session id is bound
+- Thumbnail canvas membership by path occurrence (use `detachCanvasSessionId` /
+  `addImageForSession` with `SessionImageId`)
+- Writing bound-tile content appearance into the path map (`rememberItemState`)
 
-Full residual list and bundle index: [SESSION.md](SESSION.md).
+Full residual list and bundle index: [SESSION.md](SESSION.md) (including
+continuation for project/export/controllers).

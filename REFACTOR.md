@@ -218,3 +218,16 @@ part of early-phase exit criteria).
   classicPath/hasClassicPath/setClassicPath/clearClassicPath/takeClassicPath.
 - Phase 5v: document mode-controller host API banner on ImageView; update
   structural stop line to mark Phase 5 controller work complete.
+
+### Post–Phase 5 (product polish, same session)
+
+- Duplicate path tiles are first-class (occurrence + SessionImageId); Gallery
+  remove repacks without holes; history open no longer double-destroys items.
+- Undo: content bake (flip/rotate), geometry (raise/lower/opacity/reset),
+  session remove, Duplicate (SessionDuplicateCommand).
+- Menus: content transforms and session sort under Edit; View is display/chrome.
+- Edge H/V scale handles match corner Ctrl semantics (default opposite edge).
+- Project files (`.qimgview` JSON + SHA-256 assets), Export PNG, fit page guide
+  to content, missing-asset relink on load.
+- Workspace thumbnail membership and path-map appearance use SessionImageId
+  only (no path-occurrence hide / cross-duplicate flip leakage).

@@ -82,6 +82,18 @@ diverge from it.
 - Slideshow and edge-next are off: this is not a linear viewer.
 
 **Law:** Gallery is not a kind of Workspace. Workspace is not a kind of Gallery.
+
+### Persistence and export (non-destructive)
+
+- **Project file** (`.qimgview`): ordered session images (stable ids), content
+  appearance, optional Workspace free-form poses, asset list with SHA-256.
+  Does not write into source image files.
+- **Export PNG / PDF**: render canvas region (content bounds or page guide) to a
+  new file. Page guide is optional framing for print/export, not the definition
+  of Workspace.
+- **Identity:** thumbnail canvas membership, duplicate tiles, and content edits
+  key on `SessionImageId`, never path alone when duplicates exist.
+
 Image is not a multi-object canvas.
 
 ## Shared operations (mode-filtered)

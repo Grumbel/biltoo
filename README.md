@@ -92,6 +92,16 @@ cmake --build .
 
 Optional libraries (vips, exiv2, …) are detected at configure time when present.
 
+## Project files and export
+
+- **Open/Save Project** (`.qimgview`): JSON session document with per-image
+  `SessionImageId`, non-destructive appearance, optional Workspace poses, and
+  **SHA-256** content addressing for external files (relink on load if paths moved).
+- **Export PNG**: rasterize Workspace **content bounds** or the **page guide** at a
+  chosen pixel width (optional transparent background). Sources are never overwritten.
+- **Fit Page Guide to Content**: sizes the optional print guide to the current
+  arrangement (export framing; Workspace remains ad-hoc, not paper-first).
+
 ## License
 
 GPL-3.0-or-later. See [LICENSES](LICENSES) and [REUSE.md](REUSE.md).

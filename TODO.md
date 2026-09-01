@@ -19,11 +19,11 @@ Focus:
 
 - [ ] Stabilize Image / Gallery / Workspace interactions and mode transitions
 - [ ] Session-image identity acceptance (see SESSION.md §4–§5):
-  - [ ] Duplicate / drop-duplicate: flip/crop one tile does not affect the other
+  - [x] Duplicate / drop-duplicate: flip/crop one tile does not affect the other
   - [ ] Image-mode crop of slot B updates only Workspace tile B after return
-  - [ ] Gallery open of a duplicated path uses session id (not first path match)
-  - [ ] Session remove undo restores stable ids / Workspace association
-  - [ ] No unbound Workspace tiles after normal add/dup/drop paths
+  - [x] Gallery open of a duplicated path uses session id (not first path match)
+  - [x] Session remove undo restores stable ids / Workspace association
+  - [x] No unbound Workspace tiles after normal add/dup/drop paths
 - [ ] Fix remaining crashes, layout edge cases, and selection/context-menu bugs
 - [ ] Keyboard shortcuts, HUD, slideshow, and desktop integration as documented
 - [ ] Packaging (Nix/CMake), AppStream, `.desktop`, i18n scaffolding
@@ -45,7 +45,9 @@ and/or a derived image). Prefer lossless paths where the format allows
 
 - [ ] Edit stack per path (ordered ops); undo/redo within the stack
 - [ ] Sidecar or XMP-style persistence so originals stay intact until export
-- [ ] Explicit **Save** / **Export** (overwrite vs derived file vs sidecar-only)
+- [x] Project **Save** / **Open** (`.qimgview`) — session + appearance + poses
+- [x] **Export PNG** (content or page guide, chosen width)
+- [ ] Explicit per-file Save / Export overwrite vs derived file vs sidecar-only
 - [ ] Preview in Image mode; optional badges in Gallery for “has edits”
 - [ ] Batch apply to Gallery multi-select where the op is unambiguous
 - [ ] Keep the UI shallow: few tools, keyboard-friendly, no layer system
@@ -144,7 +146,8 @@ editor; QImgView stays a **viewer with quick fixes**.
 
 - Full `.ts` locale packs (community)
 - Deeper automated GUI tests
-- Broader undo coverage (Workspace membership hide/show, sort reorder, layout switch)
+- [x] Broader undo coverage for transforms, crop, session remove, Duplicate
+- [ ] Undo for Workspace membership hide/show, sort reorder, layout switch
 - Optional confirmation dialogs for destructive session replace (drop/Open)
 
 ### Stability / polish (optional)
@@ -251,6 +254,13 @@ default frame of meaning.
 ```
 
 Relink UI: prompt to locate missing assets on load; warn on SHA-256 mismatch.
+
+### Session identity (Workspace / duplicates)
+
+- Canvas membership (thumbnail double-click) keys on **SessionImageId**
+  (`detachCanvasSessionId` / `addImageForSession`), never path occurrence.
+- Bound tiles do not write content appearance into the path map.
+- Session-bound canvas add decodes fresh (no clone of peer baked pixels).
 
 
 ## Interaction summary (current)
