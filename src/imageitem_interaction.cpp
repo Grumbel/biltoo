@@ -1170,42 +1170,38 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             {Handle::ScaleBottomLeft, bl, -dirBottom, dirLeft},
         };
         for (const Corner &co : corners) {
-            // Rounded corner: short arm along each edge with a quarter-arc join
-            // (h-line / arc / v-line language — not two separate rectangles).
+            // Single continuous L: two arms through the corner with RoundJoin so
+            // the elbow is a smooth fillet. Stroke weight matches edge scale bars.
             const bool hot = (m_hoverHandle == co.h || m_activeHandle == co.h);
             const QPointF c = co.corner;
             const QPointF d1 = norm(co.alongA);
             const QPointF d2 = norm(co.alongB);
-            const qreal arm = hs * (hot ? 1.55 : 1.15);
-            const qreal rad = hs * (hot ? 0.55 : 0.42);
-            const QColor edgeCol = hot ? QColor(255, 255, 255) : QColor(0, 120, 200);
-            QPen hp(edgeCol, 0);
+            const qreal arm = hs * (hot ? 1.7 : 1.35);
+            // Match edge-bar thickness (hs * ~0.30–0.48), not a hairline.
+            const qreal thick = hs * (hot ? 0.48 : 0.36);
+            const QColor strokeCol = hot ? QColor(255, 255, 255) : QColor(0, 160, 255);
+            QPainterPath path;
+            path.moveTo(c + d1 * arm);
+            path.lineTo(c);
+            path.lineTo(c + d2 * arm);
+            QPen hp(strokeCol, 0);
             hp.setCosmetic(true);
-            hp.setWidthF(hot ? 2.4 : 1.8);
+            hp.setWidthF(thick);
             hp.setCapStyle(Qt::RoundCap);
             hp.setJoinStyle(Qt::RoundJoin);
             painter->setPen(hp);
             painter->setBrush(Qt::NoBrush);
-            // Arms start after the arc so the stroke reads as one continuous corner.
-            const QPointF p1 = c + d1 * rad;
-            const QPointF p2 = c + d2 * rad;
-            painter->drawLine(p1, c + d1 * arm);
-            painter->drawLine(p2, c + d2 * arm);
-            // Quarter-circle through the corner from d1 to d2.
-            // Arc centre sits inward along d1+d2; sweep from -d1 to -d2 side.
-            const QPointF inward = norm(-(d1 + d2));
-            const QPointF arcC = c - inward * rad;
-            // Angles of vectors from arcC to p1 / p2
-            const qreal a1 = qAtan2(p1.y() - arcC.y(), p1.x() - arcC.x());
-            const qreal a2 = qAtan2(p2.y() - arcC.y(), p2.x() - arcC.x());
-            // Normalize sweep to the short (≤180°) arc inside the corner.
-            qreal span = qRadiansToDegrees(a2 - a1);
-            while (span > 180.0) span -= 360.0;
-            while (span < -180.0) span += 360.0;
-            const QRectF arcRect(arcC.x() - rad, arcC.y() - rad, rad * 2.0, rad * 2.0);
-            painter->drawArc(arcRect,
-                             qRound(qRadiansToDegrees(-a1) * 16),
-                             qRound(-span * 16));
+            painter->drawPath(path);
+            // Soft fill under the stroke so hot state reads solid like edge bars.
+            if (hot) {
+                QPen glow(QColor(0, 160, 255, 180), 0);
+                glow.setCosmetic(true);
+                glow.setWidthF(thick * 0.55);
+                glow.setCapStyle(Qt::RoundCap);
+                glow.setJoinStyle(Qt::RoundJoin);
+                painter->setPen(glow);
+                painter->drawPath(path);
+            }
         }
 
         // Edge stretch bars along each edge, mid-edge, constant view size.

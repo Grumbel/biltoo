@@ -875,6 +875,12 @@ void ImageView::setCropMode(bool on)
             return;
         }
         cancelZoomRegion();
+        // Snapshot appearance before full-image reload so Apply can be undone.
+        m_cropEnterSource = item->sourceImage().copy();
+        m_cropEnterState = captureState(item);
+        m_cropEnterState.hasCrop = item->sessionHasCrop();
+        m_cropEnterState.cropRect = item->sessionCropRect();
+        m_cropEnterValid = !m_cropEnterSource.isNull();
         // Crop handles are axis-aligned in item space; free Workspace placement
         // rotation makes rubber-band and edge grips unusable. Unrotate for the
         // crop session and restore on exit.
@@ -884,6 +890,8 @@ void ImageView::setCropMode(bool on)
             item->setItemRotation(0.0);
         }
         if (!prepareCropModeFullImage(item)) {
+            m_cropEnterValid = false;
+            m_cropEnterSource = QImage();
             if (m_cropHadStashedPlacement) {
                 item->setItemRotation(m_cropStashedPlacementRotation);
             }
@@ -1017,6 +1025,36 @@ void ImageView::toggleCropMode()
     setCropMode(!m_cropMode);
 }
 
+void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
+                                    const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    if (!src.isNull()) {
+        item->setSourceImage(src);
+    }
+    item->setSessionCrop(state.hasCrop, state.cropRect);
+    item->setContentHFlip(state.contentHFlip);
+    item->setContentVFlip(state.contentVFlip);
+    applyState(item, state);
+    if (item->sessionIndex() >= 0) {
+        WorkspaceItemState s = state;
+        s.path = item->path();
+        s.sessionIndex = item->sessionIndex();
+        m_itemStates.insert(item->path(), s);
+    }
+    commitItemSessionEdit(item);
+    if (isImageMode()) {
+        m_fitMode = true;
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    viewport()->update();
+    emit statusChanged();
+}
+
 void ImageView::applyCrop()
 {
     leaveCropModeInternal(true);
@@ -1132,6 +1170,47 @@ void ImageView::leaveCropModeInternal(bool apply)
                     updateWorkspaceSceneRect();
                 }
                 commitItemSessionEdit(item);
+                // Undo: restore pre-crop-mode appearance + session crop metadata.
+                if (m_undoStack && m_cropEnterValid) {
+                    class CropCommand : public QUndoCommand {
+                    public:
+                        CropCommand(ImageView *view, ImageItem *item,
+                                    const QImage &beforeSrc, const QImage &afterSrc,
+                                    const WorkspaceItemState &beforeSt,
+                                    const WorkspaceItemState &afterSt)
+                            : m_view(view)
+                            , m_item(item)
+                            , m_beforeSrc(beforeSrc)
+                            , m_afterSrc(afterSrc)
+                            , m_beforeSt(beforeSt)
+                            , m_afterSt(afterSt)
+                        {
+                            setText(QObject::tr("Crop"));
+                        }
+                        void undo() override { apply(m_beforeSrc, m_beforeSt); }
+                        void redo() override { apply(m_afterSrc, m_afterSt); }
+                    private:
+                        void apply(const QImage &src, const WorkspaceItemState &st)
+                        {
+                            if (!m_view || !m_item) {
+                                return;
+                            }
+                            m_view->applyCropAppearance(m_item, src, st);
+                        }
+                        ImageView *m_view;
+                        ImageItem *m_item;
+                        QImage m_beforeSrc;
+                        QImage m_afterSrc;
+                        WorkspaceItemState m_beforeSt;
+                        WorkspaceItemState m_afterSt;
+                    };
+                    WorkspaceItemState afterSt = captureState(item);
+                    afterSt.hasCrop = item->sessionHasCrop();
+                    afterSt.cropRect = item->sessionCropRect();
+                    m_undoStack->push(new CropCommand(
+                        this, item, m_cropEnterSource, item->sourceImage().copy(),
+                        m_cropEnterState, afterSt));
+                }
                 flashHud(tr("Cropped"),
                          QStringLiteral("%1×%2")
                              .arg(item->imageSize().width())
@@ -1147,6 +1226,48 @@ void ImageView::leaveCropModeInternal(bool apply)
                 updateWorkspaceSceneRect();
             }
             commitItemSessionEdit(item);
+            if (m_undoStack && m_cropEnterValid
+                && (m_cropEnterState.hasCrop
+                    || m_cropEnterSource.size() != item->sourceImage().size())) {
+                class CropCommand : public QUndoCommand {
+                public:
+                    CropCommand(ImageView *view, ImageItem *item,
+                                const QImage &beforeSrc, const QImage &afterSrc,
+                                const WorkspaceItemState &beforeSt,
+                                const WorkspaceItemState &afterSt)
+                        : m_view(view)
+                        , m_item(item)
+                        , m_beforeSrc(beforeSrc)
+                        , m_afterSrc(afterSrc)
+                        , m_beforeSt(beforeSt)
+                        , m_afterSt(afterSt)
+                    {
+                        setText(QObject::tr("Crop reset"));
+                    }
+                    void undo() override { apply(m_beforeSrc, m_beforeSt); }
+                    void redo() override { apply(m_afterSrc, m_afterSt); }
+                private:
+                    void apply(const QImage &src, const WorkspaceItemState &st)
+                    {
+                        if (!m_view || !m_item) {
+                            return;
+                        }
+                        m_view->applyCropAppearance(m_item, src, st);
+                    }
+                    ImageView *m_view;
+                    ImageItem *m_item;
+                    QImage m_beforeSrc;
+                    QImage m_afterSrc;
+                    WorkspaceItemState m_beforeSt;
+                    WorkspaceItemState m_afterSt;
+                };
+                WorkspaceItemState afterSt = captureState(item);
+                afterSt.hasCrop = item->sessionHasCrop();
+                afterSt.cropRect = item->sessionCropRect();
+                m_undoStack->push(new CropCommand(
+                    this, item, m_cropEnterSource, item->sourceImage().copy(),
+                    m_cropEnterState, afterSt));
+            }
             flashHud(tr("Crop reset"), tr("Full image"));
         }
     } else if (item && m_cropShowingFullImage) {
@@ -1161,6 +1282,8 @@ void ImageView::leaveCropModeInternal(bool apply)
     m_cropStashedPlacementRotation = 0.0;
     m_cropMode = false;
     m_cropShowingFullImage = false;
+    m_cropEnterValid = false;
+    m_cropEnterSource = QImage();
     m_cropRect = QRectF();
     m_cropActiveHandle = CropHandle::None;
     m_cropHoverHandle = CropHandle::None;
@@ -1345,27 +1468,29 @@ void ImageView::paintCropOverlay(QPainter &painter)
         };
         const QPointF d1 = unit(alongA);
         const QPointF d2 = unit(alongB);
-        const qreal arm = hs * (hot ? 1.35 : 1.1);
-        const qreal rad = hs * (hot ? 0.5 : 0.38);
-        QPen hp(hot ? QColor(255, 255, 255) : QColor(120, 80, 10), 0);
+        const qreal arm = hs * (hot ? 1.55 : 1.25);
+        const qreal thick = hs * (hot ? 0.48 : 0.36);
+        QPainterPath path;
+        path.moveTo(c + d1 * arm);
+        path.lineTo(c);
+        path.lineTo(c + d2 * arm);
+        QPen hp(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
         hp.setCosmetic(true);
-        hp.setWidthF(hot ? 2.6 : 2.0);
+        hp.setWidthF(thick);
         hp.setCapStyle(Qt::RoundCap);
+        hp.setJoinStyle(Qt::RoundJoin);
         painter.setPen(hp);
         painter.setBrush(Qt::NoBrush);
-        const QPointF p1 = c + d1 * rad;
-        const QPointF p2 = c + d2 * rad;
-        painter.drawLine(p1, c + d1 * arm);
-        painter.drawLine(p2, c + d2 * arm);
-        const QPointF inward = unit(-(d1 + d2));
-        const QPointF arcC = c - inward * rad;
-        const qreal a1 = qAtan2(p1.y() - arcC.y(), p1.x() - arcC.x());
-        const qreal a2 = qAtan2(p2.y() - arcC.y(), p2.x() - arcC.x());
-        qreal span = qRadiansToDegrees(a2 - a1);
-        while (span > 180.0) span -= 360.0;
-        while (span < -180.0) span += 360.0;
-        painter.drawArc(QRectF(arcC.x() - rad, arcC.y() - rad, rad * 2.0, rad * 2.0),
-                        qRound(qRadiansToDegrees(-a1) * 16), qRound(-span * 16));
+        painter.drawPath(path);
+        if (hot) {
+            QPen glow(QColor(255, 190, 40, 200), 0);
+            glow.setCosmetic(true);
+            glow.setWidthF(thick * 0.55);
+            glow.setCapStyle(Qt::RoundCap);
+            glow.setJoinStyle(Qt::RoundJoin);
+            painter.setPen(glow);
+            painter.drawPath(path);
+        }
     };
     // along directions point along the crop edges away from the corner.
     drawCorner(tl, QPointF(1, 0), QPointF(0, 1), CropHandle::TopLeft);
