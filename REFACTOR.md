@@ -156,7 +156,9 @@ update one list.
 - Gallery focus/remove prefer SessionImageId (sessionImageFocused /
   sessionRemoveIdsRequested); path signals remain unbound fallbacks.
 - Removed dead scheduleApplyLayout no-op (pack is explicit-only).
-- Phase 5 (file split by mode) remains optional after manual QA — not started.
+- Phase 5a: Gallery transitions/stash/viewport moved to imageview_gallery.cpp
+  (file split by mode; controllers deferred). Removed dead
+  invalidateStashedGalleryForSession after crop keeps stash for peer-sync.
 
 ## Structural stop line
 
