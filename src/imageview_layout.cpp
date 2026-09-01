@@ -2204,6 +2204,17 @@ void ImageView::applyLayout()
         reorderItemsByPaths(m_pathOrder);
     }
 
+    // Gallery overview is axis-aligned. Strip any leftover Workspace placement
+    // tilt/flips before packing (content 90°/flip remain in baked pixels).
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        item->setItemRotation(0.0);
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+    }
+
     m_applyingLayout = true;
 
     // Packaged layouts use view pixels as scene units so images scale to the window

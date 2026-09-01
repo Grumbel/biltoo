@@ -555,7 +555,17 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     // Do not force interactive — that flashes handles in Gallery.
 
     // Drop position, remembered state, or empty-space placement
-    if (m_pendingScenePos.contains(path)) {
+    if (isGalleryMode()) {
+        // Packaged layouts own geometry. Never restore Workspace free-form pose
+        // (arbitrary placement rotation / scale / flips) onto Gallery tiles —
+        // that state lives in m_itemStates after snapshotWorkspace and would
+        // otherwise reappear on every LoadAdd after entering Gallery.
+        item->setItemRotation(0.0);
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+        item->setItemOpacity(1.0);
+        // pos/scale assigned by applyLayout() below.
+    } else if (m_pendingScenePos.contains(path)) {
         const QPointF pos = m_pendingScenePos.take(path);
         item->setPos(pos);
         item->setItemScale(1.0);
