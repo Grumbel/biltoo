@@ -5,11 +5,13 @@
 #define MAINWINDOW_H
 
 #include "imageview.h"
+#include "imageview_types.h"
 
 #include <QMainWindow>
 #include <QUrl>
 #include <QEvent>
 #include <QStringList>
+#include <QVector>
 #include <QMimeData>
 
 class ThumbnailBar;
@@ -178,6 +180,10 @@ private slots:
     void onThumbnailCanvasMembershipToggled(int index);
     void onWorkspacePathsChanged();
     void removeSessionIndices(const QList<int> &indices);
+    SessionImageId sessionIdAt(int index) const;
+    int indexOfSessionId(SessionImageId id) const;
+    SessionImageId currentSessionId() const;
+    SessionImageId allocSessionId();
     void removeSessionPaths(const QStringList &paths);
 
 private:
@@ -324,6 +330,9 @@ private:
     QActionGroup *m_thumbnailPositionGroup = nullptr;
 
     QStringList m_files;
+    /** Parallel to m_files: stable session-image ids (never reused after remove). */
+    QVector<SessionImageId> m_sessionIds;
+    SessionImageId m_nextSessionId = 1;
     /** Past sessions (full path lists), newest first. */
     QList<QStringList> m_sessionHistory;
     static constexpr int kMaxSessionHistory = 20;

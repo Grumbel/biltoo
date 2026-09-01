@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include <QVector>
 
 namespace {
 
@@ -99,6 +100,11 @@ void MainWindow::sortFileList()
     if (m_files.size() <= 1) {
         return;
     }
+    // Ensure parallel id vector matches (legacy / partial updates).
+    while (m_sessionIds.size() < m_files.size()) {
+        m_sessionIds.append(allocSessionId());
+    }
+    m_sessionIds.resize(m_files.size());
 
     auto nameLess = [](const QString &a, const QString &b) {
         QCollator collator;
@@ -111,63 +117,83 @@ void MainWindow::sortFileList()
         return ImageLoader::probeSize(path); // header-only when possible
     };
 
+    // Sort indices so path list and stable ids stay aligned.
+    QVector<int> order(m_files.size());
+    for (int i = 0; i < order.size(); ++i) {
+        order[i] = i;
+    }
+    auto pathAt = [&](int i) -> const QString & { return m_files.at(i); };
+
     switch (m_sortMode) {
     case SortMode::MTime:
-        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
-            const QFileInfo fa(a), fb(b);
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const QFileInfo fa(pathAt(ia)), fb(pathAt(ib));
             if (fa.lastModified() != fb.lastModified()) {
                 return fa.lastModified() < fb.lastModified();
             }
-            return nameLess(a, b);
+            return nameLess(pathAt(ia), pathAt(ib));
         });
         break;
     case SortMode::FileSize:
-        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
-            const qint64 sa = QFileInfo(a).size();
-            const qint64 sb = QFileInfo(b).size();
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const qint64 sa = QFileInfo(pathAt(ia)).size();
+            const qint64 sb = QFileInfo(pathAt(ib)).size();
             if (sa != sb) {
                 return sa < sb;
             }
-            return nameLess(a, b);
+            return nameLess(pathAt(ia), pathAt(ib));
         });
         break;
     case SortMode::Width:
-        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
-            const int wa = imageSize(a).width();
-            const int wb = imageSize(b).width();
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const int wa = imageSize(pathAt(ia)).width();
+            const int wb = imageSize(pathAt(ib)).width();
             if (wa != wb) {
                 return wa < wb;
             }
-            return nameLess(a, b);
+            return nameLess(pathAt(ia), pathAt(ib));
         });
         break;
     case SortMode::Height:
-        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
-            const int ha = imageSize(a).height();
-            const int hb = imageSize(b).height();
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const int ha = imageSize(pathAt(ia)).height();
+            const int hb = imageSize(pathAt(ib)).height();
             if (ha != hb) {
                 return ha < hb;
             }
-            return nameLess(a, b);
+            return nameLess(pathAt(ia), pathAt(ib));
         });
         break;
     case SortMode::PixelCount:
-        std::stable_sort(m_files.begin(), m_files.end(), [&](const QString &a, const QString &b) {
-            const QSize sa = imageSize(a);
-            const QSize sb = imageSize(b);
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const QSize sa = imageSize(pathAt(ia));
+            const QSize sb = imageSize(pathAt(ib));
             const qint64 pa = qint64(sa.width()) * sa.height();
             const qint64 pb = qint64(sb.width()) * sb.height();
             if (pa != pb) {
                 return pa < pb;
             }
-            return nameLess(a, b);
+            return nameLess(pathAt(ia), pathAt(ib));
         });
         break;
     case SortMode::Name:
     default:
-        std::stable_sort(m_files.begin(), m_files.end(), nameLess);
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            return nameLess(pathAt(ia), pathAt(ib));
+        });
         break;
     }
+
+    QStringList newFiles;
+    QVector<SessionImageId> newIds;
+    newFiles.reserve(order.size());
+    newIds.reserve(order.size());
+    for (int i : order) {
+        newFiles.append(m_files.at(i));
+        newIds.append(m_sessionIds.at(i));
+    }
+    m_files = newFiles;
+    m_sessionIds = newIds;
 }
 
 void MainWindow::setSortMode(SortMode mode)
@@ -201,6 +227,7 @@ void MainWindow::setSortMode(SortMode mode)
                                 : QString();
     sortFileList();
     m_thumbnailBar->setFiles(m_files);
+        m_thumbnailBar->setSessionIds(m_sessionIds);
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -295,10 +322,16 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     }
 
     m_files = images;
+    m_sessionIds.clear();
+    m_sessionIds.reserve(m_files.size());
+    for (int i = 0; i < m_files.size(); ++i) {
+        m_sessionIds.append(allocSessionId());
+    }
     sortFileList();
     m_currentIndex = -1;
 
     m_thumbnailBar->setFiles(m_files);
+        m_thumbnailBar->setSessionIds(m_sessionIds);
     applyThumbnailVisibility();
 
     // New session paths: drop any Gallery tile cache from the previous session.
@@ -324,6 +357,7 @@ void MainWindow::newSession()
 {
     stopSlideshow();
     m_files.clear();
+    m_sessionIds.clear();
     m_currentIndex = -1;
     m_galleryReturnActive = false;
     m_workspaceReturnActive = false;
@@ -376,6 +410,7 @@ void MainWindow::appendFiles(const QStringList &paths)
     for (const QString &path : images) {
         if (!seen.contains(path)) {
             m_files.append(path);
+            m_sessionIds.append(allocSessionId());
             seen.insert(path);
             ++added;
         }
@@ -389,6 +424,7 @@ void MainWindow::appendFiles(const QStringList &paths)
 
     sortFileList();
     m_thumbnailBar->setFiles(m_files);
+        m_thumbnailBar->setSessionIds(m_sessionIds);
     if (isWorkspaceMode()) {
         // setFiles rebuilds items; re-apply multi-select mode and canvas selection
         m_thumbnailBar->setMultiSelectEnabled(true);
@@ -434,6 +470,38 @@ void MainWindow::appendFiles(const QStringList &paths)
     }
 }
 
+
+SessionImageId MainWindow::allocSessionId()
+{
+    return m_nextSessionId++;
+}
+
+SessionImageId MainWindow::sessionIdAt(int index) const
+{
+    if (index < 0 || index >= m_sessionIds.size()) {
+        return kInvalidSessionImageId;
+    }
+    return m_sessionIds.at(index);
+}
+
+int MainWindow::indexOfSessionId(SessionImageId id) const
+{
+    if (id == kInvalidSessionImageId) {
+        return -1;
+    }
+    for (int i = 0; i < m_sessionIds.size(); ++i) {
+        if (m_sessionIds.at(i) == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+SessionImageId MainWindow::currentSessionId() const
+{
+    return sessionIdAt(m_currentIndex);
+}
+
 void MainWindow::setCurrentIndex(int index)
 {
     if (m_files.isEmpty() || index < 0 || index >= m_files.size()) {
@@ -457,6 +525,7 @@ void MainWindow::setCurrentIndex(int index)
     // sessionIndex (crop/flip sync to the matching Workspace slot).
     if (m_imageView) {
         m_imageView->setSessionPosition(m_currentIndex, m_files.size(), true);
+        m_imageView->setCurrentSessionId(currentSessionId());
     }
 
     // DOMAIN: only Image mode replaces the single-image canvas.
@@ -534,11 +603,15 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
             continue;
         }
         const QString path = m_files.at(idx);
+        const SessionImageId sid = sessionIdAt(idx);
         m_files.removeAt(idx);
-        // Drop canvas objects in Workspace and Gallery so layout switches do
-        // not resurrect session-removed images from leftover items.
-        if (m_imageView && (isWorkspaceMode() || isGalleryMode())) {
-            m_imageView->removeWorkspacePath(path);
+        if (idx >= 0 && idx < m_sessionIds.size()) {
+            m_sessionIds.removeAt(idx);
+        }
+        // Drop the canvas object for this session image only (not every path match).
+        if (m_imageView && sid != kInvalidSessionImageId
+            && (isWorkspaceMode() || isGalleryMode())) {
+            m_imageView->removeWorkspaceSessionId(sid);
         }
     }
     if (m_imageView) {
@@ -546,6 +619,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     }
 
     m_thumbnailBar->setFiles(m_files);
+        m_thumbnailBar->setSessionIds(m_sessionIds);
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -618,8 +692,10 @@ void MainWindow::restoreSessionEntries(const QList<QPair<int, QString>> &entries
             continue;
         }
         m_files.insert(idx, e.second);
+        m_sessionIds.insert(idx, allocSessionId());
     }
     m_thumbnailBar->setFiles(m_files);
+        m_thumbnailBar->setSessionIds(m_sessionIds);
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();

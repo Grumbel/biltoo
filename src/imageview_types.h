@@ -9,6 +9,16 @@
 #include <QPointF>
 #include <QRect>
 #include <QString>
+#include <QtGlobal>
+
+/**
+ * Stable identity of a session image (one entry in the ordered session list).
+ * Never reuse an id after removal. Index in the session list is order only and
+ * may shift on insert/delete; this id does not.
+ * 0 is invalid / unbound.
+ */
+using SessionImageId = qint64;
+inline constexpr SessionImageId kInvalidSessionImageId = 0;
 
 /** Pixel under the cursor for the status / colour readout. */
 struct ImageMouseInfo {
@@ -18,10 +28,18 @@ struct ImageMouseInfo {
     QString path;
 };
 
-/** Persisted free-form / workspace placement for one path. */
+/**
+ * Placement + content appearance for one session image / canvas object.
+ * Identity is @a sessionId (not path). Path is the decode source only.
+ */
 struct WorkspaceItemState {
     QString path;
-    /** Filmstrip / session slot; -1 = unbound. Distinguishes path duplicates. */
+    /** Stable session-image id; 0 = unbound. */
+    SessionImageId sessionId = kInvalidSessionImageId;
+    /**
+     * @deprecated List position cache only — not identity. Prefer sessionId.
+     * May be -1 when unknown; do not use for matching after insert/delete.
+     */
     int sessionIndex = -1;
     QPointF pos;
     qreal scale = 1.0;   // scaleX
@@ -40,8 +58,7 @@ struct WorkspaceItemState {
     bool vFlip = false;
     /**
      * Session crop in original on-disk pixel coordinates (top-left origin).
-     * Applied after decode so navigation reloads keep the crop (same lifetime
-     * as rotation/flip in m_itemStates).
+     * Applied after decode so navigation reloads keep the crop.
      */
     bool hasCrop = false;
     QRect cropRect;

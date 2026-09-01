@@ -74,6 +74,7 @@ public:
     bool addImage(const QString &path);
     /** Add (or select) the canvas instance bound to @p sessionIndex. */
     bool addImageForSession(const QString &path, int sessionIndex);
+    bool addImageForSession(const QString &path, SessionImageId sessionId, int sessionIndex);
     /** Add image and place its centre at scenePos once loaded. */
     bool addImageAt(const QString &path, const QPointF &scenePos);
     /**
@@ -152,8 +153,12 @@ public:
     void removeWorkspaceSessionIndex(int sessionIndex);
     bool hasWorkspaceSessionIndex(int sessionIndex) const;
     ImageItem *findItemBySessionIndex(int sessionIndex) const;
+    ImageItem *findItemBySessionId(SessionImageId sessionId) const;
+    void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Assign sequential session indices to currently selected items starting at @p first. */
     void bindSelectedSessionIndices(int firstSessionIndex);
+    /** Bind selected canvas items to stable session ids (same order). */
+    void bindSelectedSessionIds(const QList<SessionImageId> &ids);
     /** How many canvas items currently show @p path. */
     int workspacePathOccurrenceCount(const QString &path) const;
     /** Remove the n-th canvas item with @p path (0-based, m_items order). */
@@ -223,6 +228,8 @@ public:
      * use false for silent updates (e.g. slideshow auto-advance).
      */
     void setSessionPosition(int index, int total, bool pulseIdentity = true);
+    void setCurrentSessionId(SessionImageId id);
+    SessionImageId currentSessionId() const { return m_currentSessionId; }
     /** Select canvas item for @p path; ensure visible in Gallery. */
     void focusSessionPath(const QString &path);
     int sessionIndex() const { return m_sessionIndex; }
@@ -365,8 +372,10 @@ signals:
     void cropModeChanged(bool active);
     /** Session crop committed; @p image is the new displayed pixels for @p path. */
     void sessionCropApplied(const QString &path, const QImage &image);
+    void sessionCropApplied(SessionImageId sessionId, const QString &path, const QImage &image);
     /** Flip / rotate / crop appearance for filmstrip (may include baked transforms). */
     void sessionAppearanceChanged(const QString &path, const QImage &image);
+    void sessionAppearanceChanged(SessionImageId sessionId, const QString &path, const QImage &image);
     /**
      * Gallery layout: user clicked an item to open it in Image mode.
      * Path is the image file path.
@@ -377,6 +386,8 @@ signals:
      * Prefer this over path-only open when the canvas item is session-bound.
      */
     void sessionSlotOpenRequested(int sessionIndex);
+    /** Open session image by stable id (preferred over index). */
+    void sessionImageOpenRequested(SessionImageId sessionId);
     /** Gallery keyboard focus moved to this path (session cursor). */
     void galleryItemFocused(const QString &path);
     /** Gallery: selected tiles should leave the session (not only the canvas). */
@@ -537,6 +548,9 @@ private:
      * Per-session-slot appearance (crop / content flip / quarter turns).
      * Keyed by session index so path duplicates stay independent value copies.
      */
+    /** Per-session-image appearance, keyed by stable SessionImageId. */
+    QHash<SessionImageId, WorkspaceItemState> m_sessionAppearance;
+    /** @deprecated index-keyed; prefer m_sessionAppearance. */
     QHash<int, WorkspaceItemState> m_sessionSlotStates;
     /** Free-form positions restored when leaving a packaged layout. */
     QHash<QString, WorkspaceItemState> m_freeFormStates;
@@ -586,6 +600,7 @@ private:
     QColor m_hudPanelColor{0, 0, 0, 160};
     int m_sessionIndex = -1;
     int m_sessionTotal = 0;
+    SessionImageId m_currentSessionId = kInvalidSessionImageId;
     QString m_lastLoadError;
     bool m_hudFlashVisible = false;
     /** Filename + index shown briefly after navigation / flash (not only when pinned). */

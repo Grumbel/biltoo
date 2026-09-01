@@ -64,7 +64,8 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
 {
     WorkspaceItemState s;
     s.path = item->path();
-    s.sessionIndex = item->sessionIndex();
+    s.sessionId = item->sessionId();
+    s.sessionIndex = item->sessionIndex(); // order cache only
     s.pos = item->pos();
     s.scale = item->itemScaleX();
     s.scaleY = item->itemScaleY();
@@ -236,38 +237,48 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     }
     rememberItemState(item);
 
-    // Per-session-slot appearance is a value copy — independent of other
-    // slots that share the same path (duplicates).
-    if (item->sessionIndex() >= 0) {
-        WorkspaceItemState slot = captureState(item);
-        slot.sessionIndex = item->sessionIndex();
-        slot.path = item->path();
-        // contentQuarterTurns lives on the path/slot maps; captureState merges it.
-        const auto prevSlot = m_sessionSlotStates.constFind(item->sessionIndex());
-        if (prevSlot != m_sessionSlotStates.cend()) {
-            // Keep quarter turns from the slot map if capture had none from path.
-            if (slot.contentQuarterTurns == 0 && prevSlot->contentQuarterTurns != 0) {
-                slot.contentQuarterTurns = prevSlot->contentQuarterTurns;
+    // Per-session-image appearance is a value copy keyed by stable id.
+    {
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId) {
+            sid = m_currentSessionId;
+        }
+        if (sid != kInvalidSessionImageId) {
+            WorkspaceItemState slot = captureState(item);
+            slot.sessionId = sid;
+            slot.sessionIndex = item->sessionIndex();
+            slot.path = item->path();
+            const auto prev = m_sessionAppearance.constFind(sid);
+            if (prev != m_sessionAppearance.cend()
+                && slot.contentQuarterTurns == 0
+                && prev->contentQuarterTurns != 0) {
+                slot.contentQuarterTurns = prev->contentQuarterTurns;
             }
-        }
-        const auto pathIt = m_itemStates.constFind(item->path());
-        if (pathIt != m_itemStates.cend() && pathIt->contentQuarterTurns != 0) {
-            slot.contentQuarterTurns = pathIt->contentQuarterTurns;
-        }
-        m_sessionSlotStates.insert(item->sessionIndex(), slot);
-        // Path map tracks the last-edited slot for single-instance consumers.
-        m_itemStates.insert(item->path(), slot);
-
-        const QImage appearance = sessionAppearanceImage(item);
-        if (!appearance.isNull()) {
-            emit sessionAppearanceChanged(item->path(), appearance);
-            emit sessionCropApplied(item->path(), appearance);
+            const auto pathIt = m_itemStates.constFind(item->path());
+            if (pathIt != m_itemStates.cend() && pathIt->contentQuarterTurns != 0) {
+                slot.contentQuarterTurns = pathIt->contentQuarterTurns;
+            }
+            m_sessionAppearance.insert(sid, slot);
+            m_itemStates.insert(item->path(), slot); // legacy consumers
+            if (item->sessionIndex() >= 0) {
+                m_sessionSlotStates.insert(item->sessionIndex(), slot);
+            }
+            const QImage appearance = sessionAppearanceImage(item);
+            if (!appearance.isNull()) {
+                emit sessionAppearanceChanged(sid, item->path(), appearance);
+                emit sessionCropApplied(sid, item->path(), appearance);
+                emit sessionAppearanceChanged(item->path(), appearance);
+                emit sessionCropApplied(item->path(), appearance);
+            }
         }
     }
 
     // Propagate pixel / flip / orientation session edits to matching canvas and
     // stashed instances. Placement (pos, scale, free tilt) is preserved.
     const QString path = item->path();
+    const SessionImageId sessionId = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : m_currentSessionId;
     const int sessionIndex = item->sessionIndex();
     const QImage src = item->sourceImage();
     const bool hFlip = item->itemHFlip();
@@ -276,11 +287,11 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     const bool contentV = item->contentVFlip();
     const bool fromImageMode = isImageMode();
 
-    // Collect path peers across live + stashed lists for sole-instance fallback.
+    // Peers: any other canvas/stashed item (match by stable id, not path).
     QList<ImageItem *> peers;
     auto collect = [&](const QList<ImageItem *> &list) {
         for (ImageItem *other : list) {
-            if (other && other != item && other->path() == path) {
+            if (other && other != item) {
                 peers.append(other);
             }
         }
@@ -289,29 +300,34 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     collect(m_stashedWorkspaceItems);
     collect(m_stashedGalleryItems);
 
-    int slotMatches = 0;
-    for (ImageItem *other : peers) {
-        if (sessionIndex >= 0 && other->sessionIndex() == sessionIndex) {
-            ++slotMatches;
-        }
-    }
-
     auto shouldSync = [&](ImageItem *other) -> bool {
-        if (!other || other == item || other->path() != path) {
+        if (!other || other == item) {
             return false;
         }
-        // Exact session slot match (Image ↔ Workspace bound tiles).
-        if (sessionIndex >= 0 && other->sessionIndex() == sessionIndex) {
+        // Primary: same stable session-image id.
+        if (sessionId != kInvalidSessionImageId
+            && other->sessionId() == sessionId) {
             return true;
         }
-        // Image-mode edit with no bound peer for this slot: update the sole
-        // path instance so a single Workspace tile of this file still receives
-        // crop/flip/rotate. Multiple path instances stay independent.
-        if (fromImageMode && sessionIndex >= 0 && slotMatches == 0
-            && peers.size() == 1 && other == peers.first()) {
+        // Legacy fallback: same list index while ids are still unbound.
+        if (sessionId == kInvalidSessionImageId && sessionIndex >= 0
+            && other->sessionIndex() == sessionIndex
+            && other->path() == path) {
             return true;
         }
-        // Workspace unbound source: never push onto other path instances.
+        // Image mode, single path peer, no ids: last-resort sole instance.
+        if (fromImageMode && sessionId == kInvalidSessionImageId
+            && other->path() == path) {
+            int pathPeers = 0;
+            ImageItem *only = nullptr;
+            for (ImageItem *p : peers) {
+                if (p->path() == path) {
+                    ++pathPeers;
+                    only = p;
+                }
+            }
+            return pathPeers == 1 && other == only;
+        }
         return false;
     };
 
@@ -508,7 +524,13 @@ void ImageView::restoreStashedWorkspaceItems()
         // Fall back to path map only for the sole instance of a path.
         const WorkspaceItemState *app = nullptr;
         WorkspaceItemState pathFallback;
-        if (item->sessionIndex() >= 0) {
+        if (item->sessionId() != kInvalidSessionImageId) {
+            const auto sit = m_sessionAppearance.constFind(item->sessionId());
+            if (sit != m_sessionAppearance.cend()) {
+                app = &(*sit);
+            }
+        }
+        if (!app && item->sessionIndex() >= 0) {
             const auto sit = m_sessionSlotStates.constFind(item->sessionIndex());
             if (sit != m_sessionSlotStates.cend()) {
                 app = &(*sit);
@@ -707,6 +729,60 @@ ImageItem *ImageView::findItemBySessionIndex(int sessionIndex) const
     return nullptr;
 }
 
+ImageItem *ImageView::findItemBySessionId(SessionImageId sessionId) const
+{
+    if (sessionId == kInvalidSessionImageId) {
+        return nullptr;
+    }
+    for (ImageItem *item : m_items) {
+        if (item->sessionId() == sessionId) {
+            return item;
+        }
+    }
+    for (ImageItem *item : m_stashedWorkspaceItems) {
+        if (item && item->sessionId() == sessionId) {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
+void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
+{
+    if (sessionId == kInvalidSessionImageId) {
+        return;
+    }
+    m_sessionAppearance.remove(sessionId);
+    auto wipe = [&](QList<ImageItem *> &list) {
+        for (int i = list.size() - 1; i >= 0; --i) {
+            ImageItem *item = list.at(i);
+            if (!item || item->sessionId() != sessionId) {
+                continue;
+            }
+            if (QGraphicsScene *sc = item->scene()) {
+                sc->removeItem(item);
+            }
+            list.removeAt(i);
+            delete item;
+        }
+    };
+    wipe(m_items);
+    wipe(m_stashedWorkspaceItems);
+    wipe(m_stashedGalleryItems);
+    for (int i = m_savedWorkspace.size() - 1; i >= 0; --i) {
+        if (m_savedWorkspace.at(i).sessionId == sessionId) {
+            m_savedWorkspace.removeAt(i);
+        }
+    }
+    emit statusChanged();
+    emit workspacePathsChanged();
+}
+
+void ImageView::setCurrentSessionId(SessionImageId id)
+{
+    m_currentSessionId = id;
+}
+
 bool ImageView::hasWorkspaceSessionIndex(int sessionIndex) const
 {
     return findItemBySessionIndex(sessionIndex) != nullptr;
@@ -738,12 +814,30 @@ void ImageView::bindSelectedSessionIndices(int firstSessionIndex)
     for (ImageItem *item : m_items) {
         if (item->isSelected()) {
             item->setSessionIndex(next);
-            // Seed independent slot appearance from the live value copy.
-            WorkspaceItemState slot = captureState(item);
-            slot.sessionIndex = next;
-            slot.path = item->path();
-            m_sessionSlotStates.insert(next, slot);
             ++next;
+        }
+    }
+}
+
+void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
+{
+    int i = 0;
+    for (ImageItem *item : m_items) {
+        if (!item->isSelected()) {
+            continue;
+        }
+        if (i >= ids.size()) {
+            break;
+        }
+        const SessionImageId id = ids.at(i++);
+        item->setSessionId(id);
+        WorkspaceItemState slot = captureState(item);
+        slot.sessionId = id;
+        slot.sessionIndex = item->sessionIndex();
+        slot.path = item->path();
+        m_sessionAppearance.insert(id, slot);
+        if (item->sessionIndex() >= 0) {
+            m_sessionSlotStates.insert(item->sessionIndex(), slot);
         }
     }
 }
@@ -1590,10 +1684,22 @@ bool ImageView::addImage(const QString &path)
     return true;
 }
 
-bool ImageView::addImageForSession(const QString &path, int sessionIndex)
+bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId,
+                                     int sessionIndex)
 {
     if (isImageMode() || path.isEmpty()) {
         return false;
+    }
+    if (sessionId != kInvalidSessionImageId) {
+        if (ImageItem *existing = findItemBySessionId(sessionId)) {
+            if (existing->scene() == m_scene) {
+                m_scene->clearSelection();
+                existing->setSelected(true);
+                ensureVisibleItem(existing);
+                emit statusChanged();
+                return true;
+            }
+        }
     }
     if (sessionIndex >= 0) {
         if (ImageItem *existing = findItemBySessionIndex(sessionIndex)) {
@@ -1610,6 +1716,7 @@ bool ImageView::addImageForSession(const QString &path, int sessionIndex)
             ImageItem *copy = createItemFromImage(path, donor->sourceImage(),
                                                   /*applyStoredSessionCrop=*/false);
             if (copy) {
+                copy->setSessionId(sessionId);
                 copy->setSessionIndex(sessionIndex);
                 copy->setItemScale(donor->itemScaleX(), donor->itemScaleY());
                 copy->setItemRotation(donor->itemRotation());
@@ -1637,6 +1744,11 @@ bool ImageView::addImageForSession(const QString &path, int sessionIndex)
     scheduleImageLoad(path, LoadAdd);
     emit statusChanged();
     return true;
+}
+
+bool ImageView::addImageForSession(const QString &path, int sessionIndex)
+{
+    return addImageForSession(path, kInvalidSessionImageId, sessionIndex);
 }
 
 bool ImageView::addImageAt(const QString &path, const QPointF &scenePos)

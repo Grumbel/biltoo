@@ -180,11 +180,16 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     // Workspace Duplicate passes already-final pixels (possibly cropped) — do
     // not re-apply the path crop or the rect is interpreted on the wrong size.
     if (applyStoredSessionCrop) {
-        // Prefer per-session-slot appearance (duplicates are independent).
-        // Fall back to path-keyed state for legacy single-instance paths.
+        // Prefer stable session-image id appearance; path map is legacy only.
         const WorkspaceItemState *app = nullptr;
         WorkspaceItemState pathFallback;
-        if (m_sessionIndex >= 0 && isImageMode()) {
+        if (m_currentSessionId != kInvalidSessionImageId) {
+            const auto sit = m_sessionAppearance.constFind(m_currentSessionId);
+            if (sit != m_sessionAppearance.cend()) {
+                app = &(*sit);
+            }
+        }
+        if (!app && m_sessionIndex >= 0) {
             const auto sit = m_sessionSlotStates.constFind(m_sessionIndex);
             if (sit != m_sessionSlotStates.cend()) {
                 app = &(*sit);
@@ -337,6 +342,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             }
             // Bind to the session cursor so Image-mode crop/flip targets the
             // matching Workspace slot (not every canvas instance of this path).
+            if (m_currentSessionId != kInvalidSessionImageId) {
+                item->setSessionId(m_currentSessionId);
+            }
             if (m_sessionIndex >= 0) {
                 item->setSessionIndex(m_sessionIndex);
             }
@@ -2461,7 +2469,9 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         for (QGraphicsItem *gi : m_scene->items(scenePos)) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
                 if (ii->isInteractive() && m_items.contains(ii)) {
-                    if (ii->sessionIndex() >= 0) {
+                    if (ii->sessionId() != kInvalidSessionImageId) {
+                        emit sessionImageOpenRequested(ii->sessionId());
+                    } else if (ii->sessionIndex() >= 0) {
                         emit sessionSlotOpenRequested(ii->sessionIndex());
                     } else {
                         const QString path = ii->path();

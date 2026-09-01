@@ -39,22 +39,55 @@ MainWindow::MainWindow(QWidget *parent)
             m_cropAct->setChecked(on);
         }
     });
-    connect(m_imageView, &ImageView::sessionAppearanceChanged, this,
-            [this](const QString &path, const QImage &image) {
+    connect(m_imageView,
+            QOverload<SessionImageId, const QString &, const QImage &>::of(
+                &ImageView::sessionAppearanceChanged),
+            this,
+            [this](SessionImageId id, const QString &path, const QImage &image) {
                 if (m_thumbnailBar) {
-                    m_thumbnailBar->setSessionImageOverride(path, image);
+                    m_thumbnailBar->setSessionImageOverride(id, path, image);
                 }
             });
-    connect(m_imageView, &ImageView::sessionCropApplied, this,
-            [this](const QString &path, const QImage &image) {
+    connect(m_imageView,
+            QOverload<SessionImageId, const QString &, const QImage &>::of(
+                &ImageView::sessionCropApplied),
+            this,
+            [this](SessionImageId id, const QString &path, const QImage &image) {
                 if (m_thumbnailBar) {
-                    m_thumbnailBar->setSessionImageOverride(path, image);
+                    m_thumbnailBar->setSessionImageOverride(id, path, image);
                 }
             });
     connect(m_imageView, &ImageView::fullscreenToggleRequested,
             this, &MainWindow::toggleFullscreen);
     connect(m_imageView, &ImageView::galleryItemOpenRequested,
             this, &MainWindow::openGalleryItemInImageMode);
+    connect(m_imageView, &ImageView::sessionImageOpenRequested,
+            this, [this](SessionImageId sessionId) {
+                const int idx = indexOfSessionId(sessionId);
+                if (idx < 0) {
+                    return;
+                }
+                if (m_imageView && m_imageView->isWorkspaceMode()) {
+                    m_workspaceReturnActive = true;
+                    m_galleryReturnActive = false;
+                } else if (m_imageView && m_imageView->isGalleryLayout()) {
+                    m_galleryReturnLayout = m_imageView->layoutMode();
+                    m_galleryReturnActive = true;
+                    m_workspaceReturnActive = false;
+                    m_imageView->snapshotGalleryViewport();
+                }
+                if (m_workspaceModeAct) {
+                    m_workspaceModeAct->setChecked(false);
+                }
+                m_imageView->setViewMode(ImageView::ViewMode::Image);
+                if (m_thumbnailBar) {
+                    m_thumbnailBar->setMultiSelectEnabled(false);
+                    m_thumbnailBar->selectNoneThumbs();
+                }
+                setCurrentIndex(idx);
+                updateUpToGalleryAction();
+                updateWorkspaceActionVisibility();
+            });
     connect(m_imageView, &ImageView::sessionSlotOpenRequested,
             this, [this](int sessionIndex) {
                 if (sessionIndex < 0 || sessionIndex >= m_files.size()) {
@@ -231,7 +264,7 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
     if (index < 0 || index >= m_files.size()) {
         return;
     }
-    m_imageView->addImageForSession(m_files.at(index), index);
+    m_imageView->addImageForSession(m_files.at(index), sessionIdAt(index), index);
     syncThumbnailCanvasMembership();
 }
 
@@ -285,7 +318,7 @@ void MainWindow::onThumbnailCanvasMembershipToggled(int index)
     } else if (m_imageView->workspacePathOccurrenceCount(path) > occurrence) {
         m_imageView->removeWorkspacePathOccurrence(path, occurrence);
     } else {
-        m_imageView->addImageForSession(path, index);
+        m_imageView->addImageForSession(path, sessionIdAt(index), index);
     }
     syncThumbnailCanvasMembership();
     updateStatus();
@@ -481,19 +514,25 @@ void MainWindow::duplicateSelected()
     // Each Workspace copy is a distinct session entry (same path allowed twice).
     // Do not go through appendFiles() — that deduplicates and rebuilds selection.
     const int firstNew = m_files.size();
+    QList<SessionImageId> newIds;
     for (const QString &path : sourcePaths) {
         if (!path.isEmpty()) {
             m_files.append(path);
+            const SessionImageId id = allocSessionId();
+            m_sessionIds.append(id);
+            newIds.append(id);
         }
     }
     if (m_files.size() == firstNew) {
         return;
     }
-    // Bind new canvas copies (still selected) to the new session slots.
+    // Bind new canvas copies (still selected) to the new session images.
     m_imageView->bindSelectedSessionIndices(firstNew);
+    m_imageView->bindSelectedSessionIds(newIds);
     syncThumbnailCanvasMembership();
     if (m_thumbnailBar) {
         m_thumbnailBar->setFiles(m_files);
+        m_thumbnailBar->setSessionIds(m_sessionIds);
         if (isWorkspaceMode()) {
             m_thumbnailBar->setMultiSelectEnabled(true);
             // Select the newly appended session slots.
@@ -544,7 +583,7 @@ void MainWindow::toggleWorkspaceMode()
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         if (m_imageView->itemCount() == 0
             && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-            m_imageView->addImageForSession(m_files.at(m_currentIndex), m_currentIndex);
+            m_imageView->addImageForSession(m_files.at(m_currentIndex), currentSessionId(), m_currentIndex);
         }
         syncThumbnailCanvasMembership();
         if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
@@ -911,6 +950,7 @@ void MainWindow::updateStatus()
         // Silent while the slideshow timer advances; user Next/Prev still pulse.
         m_imageView->setSessionPosition(m_currentIndex, m_files.size(),
                                         !m_slideshowAdvancing);
+        m_imageView->setCurrentSessionId(currentSessionId());
         const QString err = m_imageView->lastLoadError();
         if (!err.isEmpty() && statusBar()) {
             statusBar()->showMessage(
@@ -1437,20 +1477,26 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             if (alreadyOnCanvas) {
                 // New session entry for the duplicate instance.
                 m_files.append(img);
+                m_sessionIds.append(allocSessionId());
                 if (m_thumbnailBar) {
                     m_thumbnailBar->setFiles(m_files);
+                    m_thumbnailBar->setSessionIds(m_sessionIds);
                     m_thumbnailBar->setMultiSelectEnabled(true);
                 }
             }
             const int slot = m_files.lastIndexOf(img);
+            const SessionImageId sid = sessionIdAt(slot);
             if (!scenePos.isNull()) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
                 m_imageView->placeOrMoveImageAt(img, pos);
             } else {
-                m_imageView->addImageForSession(img, slot);
+                m_imageView->addImageForSession(img, sid, slot);
             }
             if (slot >= 0) {
                 m_imageView->bindSelectedSessionIndices(slot);
+                if (sid != kInvalidSessionImageId) {
+                    m_imageView->bindSelectedSessionIds({sid});
+                }
             }
             ++i;
         }

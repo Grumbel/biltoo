@@ -4,6 +4,7 @@
 #ifndef IMAGEITEM_H
 #define IMAGEITEM_H
 
+#include "imageview_types.h"
 #include <QGraphicsPixmapItem>
 #include <QImage>
 #include <QString>
@@ -59,7 +60,16 @@ public:
                        QGraphicsItem *parent = nullptr);
 
     QString path() const { return m_path; }
-    /** Index in the session file list (-1 = unbound). Distinguishes duplicates. */
+    /**
+     * Stable session-image id (0 = unbound). Survives session insert/delete;
+     * list index does not. Identity for appearance and Workspace association.
+     */
+    SessionImageId sessionId() const { return m_sessionId; }
+    void setSessionId(SessionImageId id) { m_sessionId = id; }
+    /**
+     * @deprecated Order in the session list only — shifts on insert/delete.
+     * Prefer sessionId() for identity.
+     */
     int sessionIndex() const { return m_sessionIndex; }
     void setSessionIndex(int index) { m_sessionIndex = index; }
     QSize imageSize() const;
@@ -252,7 +262,8 @@ private:
     QList<Handle> activeHandles() const;
 
     QString m_path;
-    int m_sessionIndex = -1;
+    SessionImageId m_sessionId = kInvalidSessionImageId;
+    int m_sessionIndex = -1; // list order cache only
     QImage m_source;
     /** Valid when m_source is null (placeholder) or as size cache. */
     QSize m_intrinsicSize;

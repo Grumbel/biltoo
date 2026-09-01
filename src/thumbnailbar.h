@@ -7,7 +7,9 @@
 #include <QHash>
 #include <QSet>
 #include <QImage>
+#include "imageview_types.h"
 #include <QListWidget>
+#include <QVector>
 #include <QMimeData>
 #include <QPoint>
 #include <QStringList>
@@ -69,6 +71,9 @@ public:
      * until setFiles() clears the strip.
      */
     void setSessionImageOverride(const QString &path, const QImage &image);
+    void setSessionImageOverride(SessionImageId sessionId, const QString &path,
+                                 const QImage &image);
+    void setSessionIds(const QVector<SessionImageId> &ids);
 
     /** Multi-select session paths for Workspace canvas membership (not app ViewMode). */
     void setMultiSelectEnabled(bool on);
@@ -162,6 +167,8 @@ private:
     QStringList m_files;
     /** Session-only images (crop, …) preferred over on-disk decode for thumbs. */
     QHash<QString, QImage> m_sessionImageOverrides;
+    QHash<SessionImageId, QImage> m_sessionIdImageOverrides;
+    QVector<SessionImageId> m_sessionIds;
     QSet<int> m_onCanvasIndices;
     ThumbnailDelegate *m_delegate = nullptr;
 

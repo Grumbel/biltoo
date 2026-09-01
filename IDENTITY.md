@@ -4,6 +4,12 @@ Related: DOMAIN.md, AUDIT.md (H2p / M16 / M27), HANDLES.md.
 
 ---
 
+## 0.1 Implementation identity key
+
+**`SessionImageId` (`qint64`, never zero, never reused)** is the stable id of a
+session image. List index is order only and may change on insert/delete/sort.
+Canvas items and appearance maps bind by `SessionImageId`.
+
 ## 0. Intended mental model (product)
 
 This is the model to implement against. Everything below §1 is how the *code*

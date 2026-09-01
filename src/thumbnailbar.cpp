@@ -472,12 +472,40 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
     if (thumb.isNull()) {
         return;
     }
-    // Duplicate session slots share a path — update every matching row.
+    // Path-only: update every matching row (legacy). Prefer id overload.
     for (int row = 0; row < m_files.size(); ++row) {
         if (m_files.at(row) == path) {
             setThumbnailIcon(row, thumb);
         }
     }
+}
+
+void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
+{
+    m_sessionIds = ids;
+}
+
+void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QString &path,
+                                           const QImage &image)
+{
+    if (sessionId == kInvalidSessionImageId || image.isNull()) {
+        // Fall back to path-wide update.
+        setSessionImageOverride(path, image);
+        return;
+    }
+    m_sessionIdImageOverrides.insert(sessionId, image);
+    const QImage thumb = squareThumbnailFromImage(image, m_thumbSize);
+    if (thumb.isNull()) {
+        return;
+    }
+    for (int row = 0; row < m_sessionIds.size() && row < m_files.size(); ++row) {
+        if (m_sessionIds.at(row) == sessionId) {
+            setThumbnailIcon(row, thumb);
+            return;
+        }
+    }
+    // Id not in strip yet — keep path fallback for visibility.
+    setSessionImageOverride(path, image);
 }
 
 void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)
@@ -498,7 +526,19 @@ void ThumbnailBar::scheduleThumbnailLoads()
 
     for (int i = 0; i < m_files.size(); ++i) {
         const QString path = m_files.at(i);
-        // Prefer session override (e.g. cropped pixels) over on-disk thumbnails.
+        // Prefer per-session-image override (stable id), then path legacy.
+        if (i < m_sessionIds.size()) {
+            const SessionImageId sid = m_sessionIds.at(i);
+            if (sid != kInvalidSessionImageId
+                && m_sessionIdImageOverrides.contains(sid)) {
+                const QImage thumb = squareThumbnailFromImage(
+                    m_sessionIdImageOverrides.value(sid), decodeSize);
+                if (!thumb.isNull()) {
+                    setThumbnailIcon(i, thumb);
+                }
+                continue;
+            }
+        }
         if (m_sessionImageOverrides.contains(path)) {
             const QImage thumb = squareThumbnailFromImage(m_sessionImageOverrides.value(path),
                                                           decodeSize);
@@ -537,6 +577,8 @@ void ThumbnailBar::clearPressState()
 
 void ThumbnailBar::setFiles(const QStringList &files)
 {
+    m_sessionIdImageOverrides.clear();
+    // m_sessionIds updated separately via setSessionIds when available.
     cancelPendingLoads();
     clearPressState();
     clear();
