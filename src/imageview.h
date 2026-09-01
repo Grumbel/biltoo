@@ -372,6 +372,11 @@ signals:
      * Path is the image file path.
      */
     void galleryItemOpenRequested(const QString &path);
+    /**
+     * Open the session slot @p sessionIndex in Image mode (duplicate-safe).
+     * Prefer this over path-only open when the canvas item is session-bound.
+     */
+    void sessionSlotOpenRequested(int sessionIndex);
     /** Gallery keyboard focus moved to this path (session cursor). */
     void galleryItemFocused(const QString &path);
     /** Gallery: selected tiles should leave the session (not only the canvas). */
@@ -528,6 +533,11 @@ private:
     QList<ImageItem *> m_items;
     /** Persistent per-path transforms while workspace mode is active. */
     QHash<QString, WorkspaceItemState> m_itemStates;
+    /**
+     * Per-session-slot appearance (crop / content flip / quarter turns).
+     * Keyed by session index so path duplicates stay independent value copies.
+     */
+    QHash<int, WorkspaceItemState> m_sessionSlotStates;
     /** Free-form positions restored when leaving a packaged layout. */
     QHash<QString, WorkspaceItemState> m_freeFormStates;
     /** View pan/zoom while in free-form; restored with the item states. */

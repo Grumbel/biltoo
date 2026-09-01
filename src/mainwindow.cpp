@@ -55,6 +55,33 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::toggleFullscreen);
     connect(m_imageView, &ImageView::galleryItemOpenRequested,
             this, &MainWindow::openGalleryItemInImageMode);
+    connect(m_imageView, &ImageView::sessionSlotOpenRequested,
+            this, [this](int sessionIndex) {
+                if (sessionIndex < 0 || sessionIndex >= m_files.size()) {
+                    return;
+                }
+                // Remember return target.
+                if (m_imageView && m_imageView->isWorkspaceMode()) {
+                    m_workspaceReturnActive = true;
+                    m_galleryReturnActive = false;
+                } else if (m_imageView && m_imageView->isGalleryLayout()) {
+                    m_galleryReturnLayout = m_imageView->layoutMode();
+                    m_galleryReturnActive = true;
+                    m_workspaceReturnActive = false;
+                    m_imageView->snapshotGalleryViewport();
+                }
+                if (m_workspaceModeAct) {
+                    m_workspaceModeAct->setChecked(false);
+                }
+                m_imageView->setViewMode(ImageView::ViewMode::Image);
+                if (m_thumbnailBar) {
+                    m_thumbnailBar->setMultiSelectEnabled(false);
+                    m_thumbnailBar->selectNoneThumbs();
+                }
+                setCurrentIndex(sessionIndex);
+                updateUpToGalleryAction();
+                updateWorkspaceActionVisibility();
+            });
     connect(m_imageView, &ImageView::sessionRemovePathsRequested,
             this, &MainWindow::removeSessionPaths);
     connect(m_imageView, &ImageView::galleryItemFocused,

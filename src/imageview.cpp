@@ -180,11 +180,27 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     // Workspace Duplicate passes already-final pixels (possibly cropped) — do
     // not re-apply the path crop or the rect is interpreted on the wrong size.
     if (applyStoredSessionCrop) {
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()) {
-            applySessionCrop(item, *it);
-            applyContentBakes(item, *it);
-            item->setSessionCrop(it->hasCrop, it->cropRect);
+        // Prefer per-session-slot appearance (duplicates are independent).
+        // Fall back to path-keyed state for legacy single-instance paths.
+        const WorkspaceItemState *app = nullptr;
+        WorkspaceItemState pathFallback;
+        if (m_sessionIndex >= 0 && isImageMode()) {
+            const auto sit = m_sessionSlotStates.constFind(m_sessionIndex);
+            if (sit != m_sessionSlotStates.cend()) {
+                app = &(*sit);
+            }
+        }
+        if (!app) {
+            const auto it = m_itemStates.constFind(path);
+            if (it != m_itemStates.cend()) {
+                pathFallback = *it;
+                app = &pathFallback;
+            }
+        }
+        if (app) {
+            applySessionCrop(item, *app);
+            applyContentBakes(item, *app);
+            item->setSessionCrop(app->hasCrop, app->cropRect);
         }
     }
     m_scene->addItem(item);
@@ -2124,6 +2140,7 @@ void ImageView::duplicateSelected()
     m_scene->clearSelection();
     for (ImageItem *src : sources) {
         // Copy current displayed pixels as-is (no second session-crop pass).
+        // Value copy of current pixels + appearance (not a shared reference).
         ImageItem *copy = createItemFromImage(src->path(), src->sourceImage(),
                                               /*applyStoredSessionCrop=*/false);
         if (!copy) {
@@ -2133,6 +2150,9 @@ void ImageView::duplicateSelected()
         copy->setItemRotation(src->itemRotation());
         copy->setItemHFlip(src->itemHFlip());
         copy->setItemVFlip(src->itemVFlip());
+        copy->setContentHFlip(src->contentHFlip());
+        copy->setContentVFlip(src->contentVFlip());
+        copy->setSessionCrop(src->sessionHasCrop(), src->sessionCropRect());
         copy->setItemOpacity(src->itemOpacity());
         copy->setStackZ(src->stackZ() + 0.01);
         // Offset so the duplicate is visible beside the original
@@ -2436,13 +2456,18 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
                 return;
             }
         }
-        // Image body under cursor → Image mode (reuse Gallery open signal).
+        // Image body under cursor → Image mode for *this* session slot
+        // (path-only open would always hit the first duplicate in the session).
         for (QGraphicsItem *gi : m_scene->items(scenePos)) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
                 if (ii->isInteractive() && m_items.contains(ii)) {
-                    const QString path = ii->path();
-                    if (!path.isEmpty()) {
-                        emit galleryItemOpenRequested(path);
+                    if (ii->sessionIndex() >= 0) {
+                        emit sessionSlotOpenRequested(ii->sessionIndex());
+                    } else {
+                        const QString path = ii->path();
+                        if (!path.isEmpty()) {
+                            emit galleryItemOpenRequested(path);
+                        }
                     }
                     event->accept();
                     return;

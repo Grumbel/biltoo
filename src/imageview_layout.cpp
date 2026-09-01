@@ -235,9 +235,29 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         return;
     }
     rememberItemState(item);
-    // Path-level filmstrip / session appearance is only for bound session slots.
-    // Unbound Workspace duplicates keep appearance on the item instance only.
+
+    // Per-session-slot appearance is a value copy — independent of other
+    // slots that share the same path (duplicates).
     if (item->sessionIndex() >= 0) {
+        WorkspaceItemState slot = captureState(item);
+        slot.sessionIndex = item->sessionIndex();
+        slot.path = item->path();
+        // contentQuarterTurns lives on the path/slot maps; captureState merges it.
+        const auto prevSlot = m_sessionSlotStates.constFind(item->sessionIndex());
+        if (prevSlot != m_sessionSlotStates.cend()) {
+            // Keep quarter turns from the slot map if capture had none from path.
+            if (slot.contentQuarterTurns == 0 && prevSlot->contentQuarterTurns != 0) {
+                slot.contentQuarterTurns = prevSlot->contentQuarterTurns;
+            }
+        }
+        const auto pathIt = m_itemStates.constFind(item->path());
+        if (pathIt != m_itemStates.cend() && pathIt->contentQuarterTurns != 0) {
+            slot.contentQuarterTurns = pathIt->contentQuarterTurns;
+        }
+        m_sessionSlotStates.insert(item->sessionIndex(), slot);
+        // Path map tracks the last-edited slot for single-instance consumers.
+        m_itemStates.insert(item->path(), slot);
+
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
             emit sessionAppearanceChanged(item->path(), appearance);
@@ -484,52 +504,56 @@ void ImageView::restoreStashedWorkspaceItems()
             m_scene->addItem(item);
         }
         applyItemModeFlags(item);
-        // Path-keyed appearance is applied only to the matching session slot,
-        // or to the sole canvas instance of this path when no slot match exists.
-        // Live stash pixels are preferred when already in sync (commitItemSessionEdit).
-        const auto it = m_itemStates.constFind(item->path());
-        if (it == m_itemStates.cend()) {
-            continue;
-        }
-        int samePath = 0;
-        int slotMatches = 0;
-        for (ImageItem *peer : m_items) {
-            if (!peer || peer->path() != item->path()) {
-                continue;
-            }
-            ++samePath;
-            if (it->sessionIndex >= 0 && peer->sessionIndex() == it->sessionIndex) {
-                ++slotMatches;
+        // Prefer per-session-slot appearance (value copy for this slot).
+        // Fall back to path map only for the sole instance of a path.
+        const WorkspaceItemState *app = nullptr;
+        WorkspaceItemState pathFallback;
+        if (item->sessionIndex() >= 0) {
+            const auto sit = m_sessionSlotStates.constFind(item->sessionIndex());
+            if (sit != m_sessionSlotStates.cend()) {
+                app = &(*sit);
             }
         }
-        const bool slotMatch = (it->sessionIndex >= 0
-                                && item->sessionIndex() == it->sessionIndex);
-        const bool soleFallback = (samePath == 1 && slotMatches == 0);
-        if (!slotMatch && !soleFallback) {
+        if (!app) {
+            int samePath = 0;
+            for (ImageItem *peer : m_items) {
+                if (peer && peer->path() == item->path()) {
+                    ++samePath;
+                }
+            }
+            if (samePath == 1) {
+                const auto it = m_itemStates.constFind(item->path());
+                if (it != m_itemStates.cend()) {
+                    pathFallback = *it;
+                    app = &pathFallback;
+                }
+            }
+        }
+        if (!app) {
             continue;
         }
         // Pixels are usually already updated by commitItemSessionEdit while
-        // stashed. Rebuild only when size/metadata disagree with path state.
-        const QSize want = it->hasCrop ? it->cropRect.size() : QSize();
-        const bool sizeMismatch = it->hasCrop && item->imageSize() != want;
+        // stashed. Rebuild only when size/metadata disagree with slot state.
+        const QSize want = app->hasCrop ? app->cropRect.size() : QSize();
+        const bool sizeMismatch = app->hasCrop && item->imageSize() != want;
         const bool missing = item->sourceImage().isNull();
         const bool flagsMismatch =
-            item->contentHFlip() != it->contentHFlip
-            || item->contentVFlip() != it->contentVFlip
-            || item->sessionHasCrop() != it->hasCrop;
+            item->contentHFlip() != app->contentHFlip
+            || item->contentVFlip() != app->contentVFlip
+            || item->sessionHasCrop() != app->hasCrop;
         if (!(sizeMismatch || missing || flagsMismatch)) {
             continue;
         }
-        if (!it->hasCrop && it->contentQuarterTurns == 0
-            && !it->contentHFlip && !it->contentVFlip) {
+        if (!app->hasCrop && app->contentQuarterTurns == 0
+            && !app->contentHFlip && !app->contentVFlip) {
             continue;
         }
         const QImage full = ImageLoader::load(item->path());
         if (!full.isNull()) {
             item->setSourceImage(full);
-            applySessionCrop(item, *it);
-            applyContentBakes(item, *it);
-            item->setSessionCrop(it->hasCrop, it->cropRect);
+            applySessionCrop(item, *app);
+            applyContentBakes(item, *app);
+            item->setSessionCrop(app->hasCrop, app->cropRect);
         }
     }
     m_fitMode = false;
@@ -713,7 +737,13 @@ void ImageView::bindSelectedSessionIndices(int firstSessionIndex)
     int next = firstSessionIndex;
     for (ImageItem *item : m_items) {
         if (item->isSelected()) {
-            item->setSessionIndex(next++);
+            item->setSessionIndex(next);
+            // Seed independent slot appearance from the live value copy.
+            WorkspaceItemState slot = captureState(item);
+            slot.sessionIndex = next;
+            slot.path = item->path();
+            m_sessionSlotStates.insert(next, slot);
+            ++next;
         }
     }
 }
