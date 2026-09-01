@@ -264,8 +264,8 @@ QStringList ImageView::selectedPaths() const
     if (isImageMode()) {
         if (ImageItem *item = primaryItem()) {
             paths.append(item->path());
-        } else if (!m_classicPath.isEmpty()) {
-            paths.append(m_classicPath);
+        } else if (hasClassicPath()) {
+            paths.append(classicPath());
         }
         return paths;
     }

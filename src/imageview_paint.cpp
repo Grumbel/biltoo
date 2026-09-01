@@ -122,7 +122,7 @@ void ImageView::paintEvent(QPaintEvent *event)
     }
 
     // Empty session: invite the user to open or drop images.
-    if (m_items.isEmpty() && m_classicPath.isEmpty() && !m_cropMode) {
+    if (m_items.isEmpty() && !hasClassicPath() && !m_cropMode) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();

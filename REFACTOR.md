@@ -207,3 +207,5 @@ by id (new model work — not part of early-phase exit criteria).
 - Phase 5t: promote controller-used operations to public host API
   (`applyItemModeFlags`, `findItemByPath`, `destroyCanvasItem`,
   `scheduleRestoreLoad`, snapshot/stash wrappers, …); drop `friend`.
+- Phase 5u: `m_classicPath` owned by `ImageController`; ImageView exposes
+  classicPath/hasClassicPath/setClassicPath/clearClassicPath/takeClassicPath.

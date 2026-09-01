@@ -145,10 +145,10 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (generation != m_loadGeneration) {
             return; // superseded by a newer navigation / open
         }
-        if (path != m_classicPath || isMultiItemMode()) {
+        if (path != classicPath() || isMultiItemMode()) {
             // Stale image-mode navigation or switched to workspace
-            if (!(isMultiItemMode() && m_items.isEmpty() && path == m_classicPath)) {
-                if (path != m_classicPath) {
+            if (!(isMultiItemMode() && m_items.isEmpty() && path == classicPath())) {
+                if (path != classicPath()) {
                     return;
                 }
             }
@@ -430,7 +430,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
 
 bool ImageView::loadImage(const QString &path)
 {
-    m_classicPath = path;
+    setClassicPath(path);
     m_lastLoadError.clear();
 
     if (isMultiItemMode()) {

@@ -9,6 +9,13 @@ ImageController::ImageController(ImageView *view)
 {
 }
 
+QString ImageController::takeClassicPath()
+{
+    const QString path = m_classicPath;
+    m_classicPath.clear();
+    return path;
+}
+
 void ImageController::enter()
 {
     // Gallery/Workspace → Image: stash already done in the matching onLeave.
@@ -17,7 +24,7 @@ void ImageController::enter()
     m_view->prepareImageModeCanvas();
     // Prefer explicit classic path. Do not pick live items when leaving Gallery —
     // that re-decodes a random tile before setCurrentIndex loads the real target.
-    const QString path = m_view->takeClassicPath();
+    const QString path = takeClassicPath();
     // Clear live canvas only — do not discard stashes.
     m_view->clearLiveCanvas();
     m_view->clearPendingLoads();

@@ -152,12 +152,12 @@ void ImageView::setGalleryRelayoutSuppressed(bool on)
 void ImageView::reloadFromDisk(bool relayoutGallery)
 {
     if (isImageMode()) {
-        if (m_classicPath.isEmpty()) {
+        if (!hasClassicPath()) {
             return;
         }
         // Force a fresh decode of the focused session image only.
-        scheduleImageLoad(m_classicPath, LoadReplace);
-        flashHud(tr("Reload"), QFileInfo(m_classicPath).fileName());
+        scheduleImageLoad(classicPath(), LoadReplace);
+        flashHud(tr("Reload"), QFileInfo(classicPath()).fileName());
         return;
     }
 

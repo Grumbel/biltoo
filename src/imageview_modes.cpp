@@ -25,13 +25,6 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
     viewport()->update();
 }
 
-QString ImageView::takeClassicPath()
-{
-    const QString path = m_classicPath;
-    m_classicPath.clear();
-    return path;
-}
-
 void ImageView::clearPendingLoads()
 {
     m_pendingScenePos.clear();
@@ -155,7 +148,7 @@ void ImageView::clearWorkspace()
     m_pendingSessionIndexByPath.clear();
     m_galleryDecodeScheduled.clear();
     m_galleryDecodeFailed.clear();
-    m_classicPath.clear();
+    clearClassicPath();
     if (m_scene) {
         m_scene->blockSignals(true);
         m_scene->clear();

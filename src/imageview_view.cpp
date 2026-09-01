@@ -222,7 +222,7 @@ void ImageView::zoomFill()
 
 void ImageView::armZoomRegion()
 {
-    if (m_items.isEmpty() && isImageMode() && m_classicPath.isEmpty()) {
+    if (m_items.isEmpty() && isImageMode() && !hasClassicPath()) {
         return;
     }
     cancelZoomRegion();
@@ -406,8 +406,8 @@ QString ImageView::hudFileName() const
     if (item) {
         return QFileInfo(item->path()).fileName();
     }
-    if (!m_classicPath.isEmpty()) {
-        return QFileInfo(m_classicPath).fileName();
+    if (hasClassicPath()) {
+        return QFileInfo(classicPath()).fileName();
     }
     return {};
 }
@@ -428,7 +428,7 @@ QString ImageView::statusText() const
         if (!m_lastLoadError.isEmpty()) {
             return tr("Failed to load “%1”").arg(QFileInfo(m_lastLoadError).fileName());
         }
-        if (!m_classicPath.isEmpty() && isImageMode()) {
+        if (hasClassicPath() && isImageMode()) {
             return tr("Loading…");
         }
         if (isGalleryMode()) {

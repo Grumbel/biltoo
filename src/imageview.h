@@ -128,8 +128,12 @@ public:
     void stopDeferredPacking();
     /** Controller host: set m_viewMode + m_layoutMode and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
-    /** Controller host: return classic path and clear it. */
-    QString takeClassicPath();
+    /** Controller host: classic path owned by ImageController. */
+    QString classicPath() const { return m_image.classicPath(); }
+    bool hasClassicPath() const { return m_image.hasClassicPath(); }
+    void setClassicPath(const QString &path) { m_image.setClassicPath(path); }
+    void clearClassicPath() { m_image.clearClassicPath(); }
+    QString takeClassicPath() { return m_image.takeClassicPath(); }
     /** Controller host: drop in-flight workspace/gallery pending load queues. */
     void clearPendingLoads();
     /** Controller host: scene->clear with signals blocked (stashes already detached). */
@@ -686,7 +690,6 @@ private:
     /** Content appearance by stable session-image id (Phase 2 store). */
     SessionAppearanceStore m_appearance;
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
-    QString m_classicPath;
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */
     QStringList m_pathOrder;
 
