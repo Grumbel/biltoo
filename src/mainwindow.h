@@ -135,6 +135,9 @@ private slots:
     void setLayoutMasonry();
     void setLayoutMasonryRows();
     void openGalleryItemInImageMode(const QString &path);
+    /** Enter Image mode on a session row (preferred; duplicate-safe). */
+    void openSessionIndexInImageMode(int sessionIndex);
+    void openSessionImageInImageMode(SessionImageId sessionId);
     /** Up / top-edge: return to Gallery or Workspace after open-from-Image. */
     void returnFromImageMode();
     void returnToGallery();

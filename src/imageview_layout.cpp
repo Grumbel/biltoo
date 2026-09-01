@@ -296,9 +296,6 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
             // Bound: do not last-write appearance onto the path map (duplicates
             // share a path). Placement remains in m_itemStates from Workspace
             // rememberItemState / snapshot only.
-            if (item->sessionIndex() >= 0) {
-                m_sessionSlotStates.insert(item->sessionIndex(), slot);
-            }
             const QImage appearance = sessionAppearanceImage(item);
             if (!appearance.isNull()) {
                 emit sessionAppearanceChanged(sid, item->path(), appearance);
@@ -543,12 +540,6 @@ void ImageView::restoreStashedWorkspaceItems()
         if (item->sessionId() != kInvalidSessionImageId) {
             if (const WorkspaceItemState *sit = m_appearance.get(item->sessionId())) {
                 app = sit;
-            }
-        }
-        if (!app && item->sessionIndex() >= 0) {
-            const auto sit = m_sessionSlotStates.constFind(item->sessionIndex());
-            if (sit != m_sessionSlotStates.cend()) {
-                app = &(*sit);
             }
         }
         if (!app) {
@@ -954,9 +945,6 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
         m_appearance.set(id, slot);
-        if (item->sessionIndex() >= 0) {
-            m_sessionSlotStates.insert(item->sessionIndex(), slot);
-        }
     }
 }
 

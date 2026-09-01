@@ -113,14 +113,9 @@ void MainWindow::setLayoutMasonryRows()
     enterGalleryMode(ImageView::LayoutMode::MasonryRows);
 }
 
-void MainWindow::showPathInImageMode(const QString &path)
+void MainWindow::openSessionIndexInImageMode(int sessionIndex)
 {
-    // DOMAIN: enter Image on path; session current := path.
-    if (path.isEmpty() || m_session.paths().isEmpty()) {
-        return;
-    }
-    const int idx = m_session.paths().indexOf(path);
-    if (idx < 0) {
+    if (sessionIndex < 0 || sessionIndex >= m_session.size()) {
         return;
     }
     // Remember where Image was opened from so Up can restore that mode.
@@ -136,16 +131,39 @@ void MainWindow::showPathInImageMode(const QString &path)
         m_workspaceModeAct->setChecked(false);
     }
     // Phase 3: snapshot + stash + mode switch in one transition.
-    m_imageView->leaveForImageMode();
+    if (m_imageView) {
+        m_imageView->leaveForImageMode();
+    }
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
-        // setMultiSelectEnabled is a no-op when already off; still clear any
-        // residual multi-highlight left by gallery packing or Select All.
         m_thumbnailBar->selectNoneThumbs();
     }
-    setCurrentIndex(idx);
+    setCurrentIndex(sessionIndex);
     updateUpToGalleryAction();
     updateWorkspaceActionVisibility();
+}
+
+void MainWindow::openSessionImageInImageMode(SessionImageId sessionId)
+{
+    const int idx = indexOfSessionId(sessionId);
+    if (idx < 0) {
+        return;
+    }
+    openSessionIndexInImageMode(idx);
+}
+
+void MainWindow::showPathInImageMode(const QString &path)
+{
+    // Path-only fallback (first match). Prefer openSessionImageInImageMode when
+    // the session image id is known — duplicates share a path.
+    if (path.isEmpty() || m_session.isEmpty()) {
+        return;
+    }
+    const int idx = m_session.paths().indexOf(path);
+    if (idx < 0) {
+        return;
+    }
+    openSessionIndexInImageMode(idx);
 }
 
 void MainWindow::openGalleryItemInImageMode(const QString &path)

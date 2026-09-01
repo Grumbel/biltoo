@@ -150,3 +150,7 @@ update one list.
   returnToWorkspaceFromImage() mirrors returnToGalleryFromImage.
 - Phase 2b: bound session images no longer last-write appearance
   into m_itemStates (path map); m_appearance is the only content store.
+- Phase 2c: remove deprecated index-keyed m_sessionSlotStates; appearance
+  is SessionImageId-only. recordSessionCrop writes path map only when unbound.
+- MainWindow openSessionIndex/ImageInImageMode consolidates Image entry.
+- Phase 5 (file split by mode) remains optional after manual QA — not started.

@@ -198,14 +198,8 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
                     app = &(*sit);
                 }
                 // Bound session image with no appearance entry = full frame, no path fallback.
-            } else if (m_sessionIndex >= 0) {
-                const auto sit = m_sessionSlotStates.constFind(m_sessionIndex);
-                if (sit != m_sessionSlotStates.cend()) {
-                    app = &(*sit);
-                }
-            }
-            // Path map only when unbound (no session image id).
-            if (!app && m_currentSessionId == kInvalidSessionImageId) {
+            } else {
+                // Path map only when unbound (no session image id).
                 const auto it = m_itemStates.constFind(path);
                 if (it != m_itemStates.cend()) {
                     pathFallback = *it;
@@ -1206,11 +1200,6 @@ void ImageView::applyStoredAppearance(ImageItem *item)
             app = &(*it);
         }
         // Bound session image with no appearance entry = full frame.
-    } else if (item->sessionIndex() >= 0) {
-        const auto it = m_sessionSlotStates.constFind(item->sessionIndex());
-        if (it != m_sessionSlotStates.cend()) {
-            app = &(*it);
-        }
     } else {
         // Path map only when unbound (no session image id).
         const auto it = m_itemStates.constFind(item->path());
@@ -1298,9 +1287,10 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     item->setSessionCrop(s.hasCrop, s.cropRect);
     if (sid != kInvalidSessionImageId) {
         m_appearance.set(sid, s);
+    } else {
+        // Unbound only: path map is the sole store.
+        m_itemStates.insert(item->path(), s);
     }
-    // Path map remains a last-writer cache for unbound single-instance paths.
-    m_itemStates.insert(item->path(), s);
 }
 
 void ImageView::leaveCropModeInternal(bool apply)

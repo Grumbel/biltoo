@@ -62,57 +62,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::galleryItemOpenRequested,
             this, &MainWindow::openGalleryItemInImageMode);
     connect(m_imageView, &ImageView::sessionImageOpenRequested,
-            this, [this](SessionImageId sessionId) {
-                const int idx = indexOfSessionId(sessionId);
-                if (idx < 0) {
-                    return;
-                }
-                if (m_imageView && m_imageView->isWorkspaceMode()) {
-                    m_workspaceReturnActive = true;
-                    m_galleryReturnActive = false;
-                } else if (m_imageView && m_imageView->isGalleryLayout()) {
-                    m_galleryReturnLayout = m_imageView->layoutMode();
-                    m_galleryReturnActive = true;
-                    m_workspaceReturnActive = false;
-                }
-                if (m_workspaceModeAct) {
-                    m_workspaceModeAct->setChecked(false);
-                }
-                m_imageView->leaveForImageMode();
-                if (m_thumbnailBar) {
-                    m_thumbnailBar->setMultiSelectEnabled(false);
-                    m_thumbnailBar->selectNoneThumbs();
-                }
-                setCurrentIndex(idx);
-                updateUpToGalleryAction();
-                updateWorkspaceActionVisibility();
-            });
+            this, &MainWindow::openSessionImageInImageMode);
     connect(m_imageView, &ImageView::sessionSlotOpenRequested,
-            this, [this](int sessionIndex) {
-                if (sessionIndex < 0 || sessionIndex >= m_session.paths().size()) {
-                    return;
-                }
-                // Remember return target.
-                if (m_imageView && m_imageView->isWorkspaceMode()) {
-                    m_workspaceReturnActive = true;
-                    m_galleryReturnActive = false;
-                } else if (m_imageView && m_imageView->isGalleryLayout()) {
-                    m_galleryReturnLayout = m_imageView->layoutMode();
-                    m_galleryReturnActive = true;
-                    m_workspaceReturnActive = false;
-                }
-                if (m_workspaceModeAct) {
-                    m_workspaceModeAct->setChecked(false);
-                }
-                m_imageView->leaveForImageMode();
-                if (m_thumbnailBar) {
-                    m_thumbnailBar->setMultiSelectEnabled(false);
-                    m_thumbnailBar->selectNoneThumbs();
-                }
-                setCurrentIndex(sessionIndex);
-                updateUpToGalleryAction();
-                updateWorkspaceActionVisibility();
-            });
+            this, &MainWindow::openSessionIndexInImageMode);
     connect(m_imageView, &ImageView::sessionRemovePathsRequested,
             this, &MainWindow::removeSessionPaths);
     connect(m_imageView, &ImageView::galleryItemFocused,
