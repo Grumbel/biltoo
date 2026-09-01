@@ -18,7 +18,7 @@ QString imageFileDialogFilter()
 /** Undoable session removal (Gallery delete / thumb remove). */
 class SessionRemoveCommand : public QUndoCommand {
 public:
-    SessionRemoveCommand(MainWindow *mw, const QList<QPair<int, QString>> &entries)
+    SessionRemoveCommand(MainWindow *mw, const QList<SessionEntrySnapshot> &entries)
         : QUndoCommand(QObject::tr("Remove from session"))
         , m_mw(mw)
         , m_entries(entries)
@@ -37,7 +37,7 @@ public:
         if (m_mw) {
             QList<int> indices;
             for (const auto &e : m_entries) {
-                indices.append(e.first);
+                indices.append(e.index);
             }
             m_mw->applySessionRemoveIndices(indices);
         }
@@ -45,7 +45,7 @@ public:
 
 private:
     MainWindow *m_mw = nullptr;
-    QList<QPair<int, QString>> m_entries;
+    QList<SessionEntrySnapshot> m_entries;
 };
 
 } // namespace
@@ -542,11 +542,26 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
     std::sort(sorted.begin(), sorted.end());
     sorted.erase(std::unique(sorted.begin(), sorted.end()), sorted.end());
 
-    QList<QPair<int, QString>> entries;
+    QList<SessionEntrySnapshot> entries;
     for (int idx : sorted) {
-        if (idx >= 0 && idx < m_session.paths().size()) {
-            entries.append(qMakePair(idx, m_session.paths().at(idx)));
+        if (idx < 0 || idx >= m_session.paths().size()) {
+            continue;
         }
+        SessionEntrySnapshot snap;
+        snap.index = idx;
+        snap.path = m_session.pathAt(idx);
+        snap.id = m_session.idAt(idx);
+        // Capture appearance before redo removes canvas object / store entry.
+        if (m_imageView && snap.id != kInvalidSessionImageId
+            && m_imageView->hasSessionAppearance(snap.id)) {
+            snap.appearance = m_imageView->sessionAppearanceValue(snap.id);
+            snap.hasAppearance = true;
+            snap.appearance.sessionId = snap.id;
+            if (snap.appearance.path.isEmpty()) {
+                snap.appearance.path = snap.path;
+            }
+        }
+        entries.append(snap);
     }
     if (entries.isEmpty()) {
         return;
@@ -672,28 +687,32 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     }
 }
 
-void MainWindow::restoreSessionEntries(const QList<QPair<int, QString>> &entries)
+void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entries)
 {
     if (entries.isEmpty()) {
         return;
     }
     // Insert lowest index first so positions match the pre-remove session order.
-    QList<QPair<int, QString>> sorted = entries;
+    QList<SessionEntrySnapshot> sorted = entries;
     std::sort(sorted.begin(), sorted.end(),
-              [](const QPair<int, QString> &a, const QPair<int, QString> &b) {
-                  return a.first < b.first;
+              [](const SessionEntrySnapshot &a, const SessionEntrySnapshot &b) {
+                  return a.index < b.index;
               });
 
     m_sessionUndoGuard = true;
     for (const auto &e : sorted) {
-        const int idx = qBound(0, e.first, m_session.paths().size());
-        if (m_session.paths().contains(e.second)) {
+        // Identity is SessionImageId — skip if already present (duplicate-safe).
+        if (e.id != kInvalidSessionImageId && m_session.indexOfId(e.id) >= 0) {
             continue;
         }
-        m_session.insert(idx, e.second);
+        const int idx = qBound(0, e.index, m_session.size());
+        m_session.insert(idx, e.path, e.id);
+        if (m_imageView && e.hasAppearance && e.id != kInvalidSessionImageId) {
+            m_imageView->setSessionAppearance(e.id, e.appearance);
+        }
     }
     m_thumbnailBar->setFiles(m_session.paths());
-        m_thumbnailBar->setSessionIds(m_session.ids());
+    m_thumbnailBar->setSessionIds(m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();

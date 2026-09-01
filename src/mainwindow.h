@@ -27,6 +27,19 @@ class QMenu;
 class QSpinBox;
 class QTimer;
 
+/**
+ * Snapshot of one session row for undo of remove.
+ * Identity is @a id; path is decode source only. Appearance restores
+ * ImageView store content (crop / content flips / quarter turns).
+ */
+struct SessionEntrySnapshot {
+    int index = -1;
+    QString path;
+    SessionImageId id = kInvalidSessionImageId;
+    WorkspaceItemState appearance;
+    bool hasAppearance = false;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -52,7 +65,7 @@ public:
 
     /** SessionRemoveCommand redo/undo (must be public — called from QUndoCommand). */
     void applySessionRemoveIndices(const QList<int> &indices);
-    void restoreSessionEntries(const QList<QPair<int, QString>> &entries);
+    void restoreSessionEntries(const QList<SessionEntrySnapshot> &entries);
 
     /** Clear session, canvas, and thumbnails (File → New). */
     void newSession();

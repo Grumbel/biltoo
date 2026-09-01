@@ -144,3 +144,5 @@ update one list.
 - Phase 4b: close SessionDocument mutation API — no mutable paths()/ids();
   MainWindow uses setPaths / replaceAll / append / insert / removeAt / clear
   only so list lengths stay aligned and ids are never reused after remove.
+- Session remove undo: SessionEntrySnapshot stores index+path+SessionImageId
+  and optional appearance; restore reuses the same id and re-applies appearance.

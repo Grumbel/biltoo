@@ -380,6 +380,11 @@ public:
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     QImage sessionAppearanceImage(const ImageItem *item) const;
+    /** Copy of stored appearance for @p id (empty/default if none). */
+    WorkspaceItemState sessionAppearanceValue(SessionImageId id) const;
+    bool hasSessionAppearance(SessionImageId id) const;
+    /** Restore appearance after session undo (store only; no canvas mutate). */
+    void setSessionAppearance(SessionImageId id, const WorkspaceItemState &state);
     /** Bake ±90° content into pixels and session state (not placement). */
     void bakeItemRotate90(ImageItem *item, int quarterTurns);
     /** Bake flip into pixels and session state. */

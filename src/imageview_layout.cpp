@@ -163,6 +163,28 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
 }
 
 
+
+WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
+{
+    if (id == kInvalidSessionImageId) {
+        return {};
+    }
+    return m_appearance.value(id);
+}
+
+bool ImageView::hasSessionAppearance(SessionImageId id) const
+{
+    return id != kInvalidSessionImageId && m_appearance.contains(id);
+}
+
+void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState &state)
+{
+    if (id == kInvalidSessionImageId) {
+        return;
+    }
+    m_appearance.set(id, state);
+}
+
 void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &state)
 {
     if (!item) {
