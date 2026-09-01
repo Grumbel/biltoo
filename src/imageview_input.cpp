@@ -198,6 +198,35 @@ void ImageView::paintEvent(QPaintEvent *event)
         && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
+
+    // Empty session: invite the user to open or drop images.
+    if (m_items.isEmpty() && m_classicPath.isEmpty() && !m_cropMode) {
+        painter.save();
+        painter.setRenderHint(QPainter::TextAntialiasing, true);
+        QFont titleFont = font();
+        titleFont.setPointSize(qBound(12, titleFont.pointSize() + 4, 28));
+        titleFont.setBold(true);
+        QFont hintFont = font();
+        hintFont.setPointSize(qBound(10, hintFont.pointSize() + 1, 20));
+        const QString title = tr("Drop images here or open a file");
+        const QString hint = tr("File → Open…  ·  Ctrl+O  ·  drag and drop");
+        const QFontMetrics titleFm(titleFont);
+        const QFontMetrics hintFm(hintFont);
+        const int gap = 8;
+        const int totalH = titleFm.height() + gap + hintFm.height();
+        const int cx = viewport()->width() / 2;
+        const int cy = viewport()->height() / 2 - totalH / 2;
+        painter.setFont(titleFont);
+        painter.setPen(QColor(220, 220, 220, 230));
+        painter.drawText(QRect(0, cy, viewport()->width(), titleFm.height()),
+                         Qt::AlignHCenter | Qt::AlignVCenter, title);
+        painter.setFont(hintFont);
+        painter.setPen(QColor(180, 180, 180, 200));
+        painter.drawText(QRect(0, cy + titleFm.height() + gap, viewport()->width(),
+                               hintFm.height()),
+                         Qt::AlignHCenter | Qt::AlignVCenter, hint);
+        painter.restore();
+    }
     // HUD layout:
     //   top-left  — transient actions (slideshow, fit, …), never Next/Prev
     //   top-right — session index [i/n]
