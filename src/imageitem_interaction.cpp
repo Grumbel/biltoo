@@ -229,12 +229,12 @@ QRectF ImageItem::boundingRect() const
     // local rect to infinity (HANDLES.md).
     QRectF r = contentRect();
     if (isSelected() && m_interactive) {
+        // Modest constant local pad only. Do not divide by view/item scale:
+        // zoom used to change this AABB and QGraphicsView would scroll to keep
+        // the selected item on screen, fighting free-form pan/zoom. Chrome is
+        // painted in viewport space; hit-testing is view-owned.
         const qreal content = qMax(r.width(), r.height());
-        const qreal sMin = qMax(deviceScaleMin(), 1e-4);
-        const qreal ideal = (kHandleScreenPx * 1.75 + kRotateOffsetPx + 8.0) / sMin;
-        // Never pad more than ~half the content diagonal in local units; at very
-        // small scales the view still finds handles via selected-item queries.
-        const qreal pad = qMin(ideal, qMax(40.0, content * 0.75));
+        const qreal pad = qMin(96.0, qMax(32.0, content * 0.12));
         r.adjust(-pad, -pad, pad, pad);
     }
     return r;

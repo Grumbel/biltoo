@@ -1008,15 +1008,13 @@ void ImageView::wheelEvent(QWheelEvent *event)
 
     const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
 
-    // Image mode and free-form Workspace: zoom the view about the cursor
+    // Image mode and free-form Workspace: zoom the view about the cursor.
+    // Do not touch selected-item geometry here — prepareGeometryChange on
+    // handle pads was expanding AABBs and fighting the user's pan/zoom.
     m_fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
-    for (ImageItem *item : m_items) {
-        if (item->isSelected()) {
-            item->updateHandleLayout();
-        }
-    }
+    viewport()->update(); // refresh viewport-space chrome at the new scale
     emit statusChanged();
     event->accept();
 }

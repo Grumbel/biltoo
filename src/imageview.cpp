@@ -645,11 +645,9 @@ void ImageView::zoomViewBy(qreal factor)
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(factor, factor);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-    // Handle sizes depend on view scale — refresh geometry for selected items
-    for (ImageItem *item : m_items) {
-        if (item->isSelected()) {
-            item->updateHandleLayout();
-        }
+    // Viewport-space chrome only — no selected-item prepareGeometryChange.
+    if (viewport()) {
+        viewport()->update();
     }
     emit statusChanged();
 }
