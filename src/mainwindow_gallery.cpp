@@ -136,7 +136,7 @@ void MainWindow::showPathInImageMode(const QString &path)
         m_workspaceModeAct->setChecked(false);
     }
     // Phase 3: snapshot + stash + mode switch in one transition.
-    m_imageView->leaveGalleryForImage();
+    m_imageView->leaveForImageMode();
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
         // setMultiSelectEnabled is a no-op when already off; still clear any
@@ -248,9 +248,15 @@ void MainWindow::returnToWorkspace()
     }
     m_workspaceReturnActive = false;
     m_galleryReturnActive = false;
-    // setViewMode(Workspace) from Image restores stashed free-form tiles
-    // (or the durable snapshot if the stash was discarded).
-    enterWorkspaceMode();
+    // Phase 3: restore stashed free-form tiles (or durable snapshot) in one place.
+    if (m_imageView) {
+        m_imageView->returnToWorkspaceFromImage();
+    } else {
+        enterWorkspaceMode();
+    }
+    if (m_workspaceModeAct) {
+        m_workspaceModeAct->setChecked(true);
+    }
     updateUpToGalleryAction();
     updateWorkspaceActionVisibility();
 }

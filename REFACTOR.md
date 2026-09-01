@@ -146,3 +146,5 @@ update one list.
   only so list lengths stay aligned and ids are never reused after remove.
 - Session remove undo: SessionEntrySnapshot stores index+path+SessionImageId
   and optional appearance; restore reuses the same id and re-applies appearance.
+- Phase 3b: leaveForImageMode() (Gallery+Workspace→Image);
+  returnToWorkspaceFromImage() mirrors returnToGalleryFromImage.

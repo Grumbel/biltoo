@@ -78,7 +78,7 @@ MainWindow::MainWindow(QWidget *parent)
                 if (m_workspaceModeAct) {
                     m_workspaceModeAct->setChecked(false);
                 }
-                m_imageView->leaveGalleryForImage();
+                m_imageView->leaveForImageMode();
                 if (m_thumbnailBar) {
                     m_thumbnailBar->setMultiSelectEnabled(false);
                     m_thumbnailBar->selectNoneThumbs();
@@ -104,7 +104,7 @@ MainWindow::MainWindow(QWidget *parent)
                 if (m_workspaceModeAct) {
                     m_workspaceModeAct->setChecked(false);
                 }
-                m_imageView->leaveGalleryForImage();
+                m_imageView->leaveForImageMode();
                 if (m_thumbnailBar) {
                     m_thumbnailBar->setMultiSelectEnabled(false);
                     m_thumbnailBar->selectNoneThumbs();

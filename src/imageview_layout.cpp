@@ -1690,12 +1690,13 @@ void ImageView::setViewMode(ViewMode mode)
     emit statusChanged();
 }
 
-void ImageView::leaveGalleryForImage()
+void ImageView::leaveForImageMode()
 {
     // Snapshot must run while still in Gallery (scrollbars + scene centre valid).
     if (isGalleryMode()) {
         snapshotGalleryViewport();
     }
+    // Workspace: setViewMode snapshots + stashes free-form tiles.
     setViewMode(ViewMode::Image);
 }
 
@@ -1706,6 +1707,11 @@ void ImageView::returnToGalleryFromImage(LayoutMode layout, const QString &focus
     restoreGalleryViewport(focusPath);
     enterGallery(layout);
     applyPendingGalleryRestore();
+}
+
+void ImageView::returnToWorkspaceFromImage()
+{
+    setViewMode(ViewMode::Workspace);
 }
 
 void ImageView::enterGallery(LayoutMode packagedLayout)

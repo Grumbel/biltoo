@@ -140,12 +140,13 @@ public:
     void setViewMode(ViewMode mode);
 
     /**
-     * Gallery → Image transition (Phase 3).
-     * Snapshots the Gallery viewport (when leaving Gallery), stashes tiles,
-     * and switches to Image mode. Caller loads the focused path afterward
-     * (e.g. setCurrentIndex → loadImage).
+     * Gallery or Workspace → Image (Phase 3).
+     * Gallery: snapshot viewport then stash tiles. Workspace: durable snapshot
+     * + stash (inside setViewMode). Caller loads the focused path afterward.
      */
-    void leaveGalleryForImage();
+    void leaveForImageMode();
+    /** @deprecated Prefer leaveForImageMode(); identical behaviour. */
+    void leaveGalleryForImage() { leaveForImageMode(); }
 
     /**
      * Image → Gallery transition (Phase 3).
@@ -154,6 +155,12 @@ public:
      * Caller may still populate session paths (populateGalleryCanvas).
      */
     void returnToGalleryFromImage(LayoutMode layout, const QString &focusPath = QString());
+
+    /**
+     * Image → Workspace transition (Phase 3).
+     * Restores stashed free-form tiles (or durable snapshot) via setViewMode.
+     */
+    void returnToWorkspaceFromImage();
     /** Reset view/scene so Image mode is not affected by prior canvas state. */
     void prepareImageModeCanvas();
     void prepareGalleryCanvas();
