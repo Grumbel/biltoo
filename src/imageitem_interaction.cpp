@@ -176,49 +176,39 @@ void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
     // Vertical track outside the *left* edge.
     // a = bottom end (opacity 5%), b = top end (opacity 100%).
     //
-    // Large frames: pin to the lower left, below the free-rotate / scale band.
-    // Small frames: centre on the left mid-edge (not the top). Outward offset
-    // already separates the track from the rotate knob; along-edge placement
-    // stays mid-anchored so the slider does not jump to the top corner.
+    // Top of the track is always anchored just below the left free-rotate
+    // knob (mid-edge). The track grows downward toward the bottom-left
+    // corner and stays clear of the corner scale handle. When the free
+    // span is shorter than the nominal length, the track shortens in place
+    // — it never jumps above the rotate handle.
     const QPointF alongUp = g.dirLeft; // bl → tl
     const qreal outDist = kSliderOutsidePx + kSliderHeightPx * 0.5;
     const qreal trackLen = kSliderWidthPx;
     const qreal cornerMargin = kHandleScreenPx * 0.6;
-    const qreal edgeLen = QLineF(g.bl, g.tl).length();
-    const qreal topLimit = edgeLen - cornerMargin;
 
     auto projFromBl = [&](const QPointF &p) {
         return QPointF::dotProduct(p - g.bl, alongUp);
     };
 
-    // Reserved band around the left free-rotate knob (and left scale bar).
     const QPointF rotL = g.midLeft + g.outLeft * kRotateOffsetPx;
     const qreal rotAlong = projFromBl(rotL);
     const qreal needClear = kHandleScreenPx * 0.5 + kSliderClearPx;
-    const qreal zoneLo = rotAlong - needClear;
-
-    qreal aAlong = 0.0;
-    qreal bAlong = 0.0;
-    if (cornerMargin + trackLen <= zoneLo) {
-        // Tall enough: attach to the bottom of the left edge.
+    // Top of slider sits below the rotate/scale mid-edge band.
+    qreal bAlong = rotAlong - needClear;
+    qreal aAlong = bAlong - trackLen;
+    // Keep clear of the bottom-left corner scale handle.
+    if (aAlong < cornerMargin) {
         aAlong = cornerMargin;
-        bAlong = aAlong + trackLen;
-    } else {
-        // Short frame: centre on the left mid-edge, clamp into the free span.
-        aAlong = edgeLen * 0.5 - trackLen * 0.5;
-        bAlong = aAlong + trackLen;
-        if (aAlong < cornerMargin) {
-            aAlong = cornerMargin;
-            bAlong = aAlong + trackLen;
+    }
+    // Degenerate / very short edge: keep a valid ordered segment below mid.
+    if (bAlong <= aAlong + 4.0) {
+        bAlong = aAlong + 4.0;
+        const qreal edgeLen = QLineF(g.bl, g.tl).length();
+        if (bAlong > rotAlong - 2.0) {
+            bAlong = qMax(aAlong + 4.0, rotAlong - 2.0);
         }
-        if (bAlong > topLimit) {
-            bAlong = topLimit;
-            aAlong = bAlong - trackLen;
-        }
-        if (aAlong < cornerMargin) {
-            // Edge shorter than the nominal track: span the free edge.
-            aAlong = cornerMargin;
-            bAlong = qMax(aAlong, topLimit);
+        if (bAlong > edgeLen - cornerMargin) {
+            bAlong = qMax(aAlong + 4.0, edgeLen - cornerMargin);
         }
     }
 
@@ -1180,36 +1170,42 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             {Handle::ScaleBottomLeft, bl, -dirBottom, dirLeft},
         };
         for (const Corner &co : corners) {
-            // L-bracket: two arms along the visual edges. Filled when hot so the
-            // highlight matches edge scale bars (same blue family).
+            // Rounded corner: short arm along each edge with a quarter-arc join
+            // (h-line / arc / v-line language — not two separate rectangles).
             const bool hot = (m_hoverHandle == co.h || m_activeHandle == co.h);
             const QPointF c = co.corner;
             const QPointF d1 = norm(co.alongA);
             const QPointF d2 = norm(co.alongB);
-            const qreal arm = hs * (hot ? 1.55 : 1.05);
-            const qreal thick = hs * (hot ? 0.48 : 0.30);
-            const QColor base(0, 160, 255, hot ? 255 : 230);
+            const qreal arm = hs * (hot ? 1.55 : 1.15);
+            const qreal rad = hs * (hot ? 0.55 : 0.42);
             const QColor edgeCol = hot ? QColor(255, 255, 255) : QColor(0, 120, 200);
             QPen hp(edgeCol, 0);
             hp.setCosmetic(true);
-            hp.setWidthF(hot ? 1.6 : 1.15);
-            hp.setCapStyle(Qt::SquareCap);
-            hp.setJoinStyle(Qt::MiterJoin);
+            hp.setWidthF(hot ? 2.4 : 1.8);
+            hp.setCapStyle(Qt::RoundCap);
+            hp.setJoinStyle(Qt::RoundJoin);
             painter->setPen(hp);
-            painter->setBrush(base);
-            // Draw as two short filled capsules along the arms (consistent with edge bars).
-            auto drawArm = [&](const QPointF &dir) {
-                const QPointF perp(-dir.y(), dir.x());
-                QPolygonF bar;
-                bar << c + perp * (thick / 2)
-                    << c + dir * arm + perp * (thick / 2)
-                    << c + dir * arm - perp * (thick / 2)
-                    << c - perp * (thick / 2);
-                painter->drawPolygon(bar);
-            };
-            drawArm(d1);
-            drawArm(d2);
             painter->setBrush(Qt::NoBrush);
+            // Arms start after the arc so the stroke reads as one continuous corner.
+            const QPointF p1 = c + d1 * rad;
+            const QPointF p2 = c + d2 * rad;
+            painter->drawLine(p1, c + d1 * arm);
+            painter->drawLine(p2, c + d2 * arm);
+            // Quarter-circle through the corner from d1 to d2.
+            // Arc centre sits inward along d1+d2; sweep from -d1 to -d2 side.
+            const QPointF inward = norm(-(d1 + d2));
+            const QPointF arcC = c - inward * rad;
+            // Angles of vectors from arcC to p1 / p2
+            const qreal a1 = qAtan2(p1.y() - arcC.y(), p1.x() - arcC.x());
+            const qreal a2 = qAtan2(p2.y() - arcC.y(), p2.x() - arcC.x());
+            // Normalize sweep to the short (≤180°) arc inside the corner.
+            qreal span = qRadiansToDegrees(a2 - a1);
+            while (span > 180.0) span -= 360.0;
+            while (span < -180.0) span += 360.0;
+            const QRectF arcRect(arcC.x() - rad, arcC.y() - rad, rad * 2.0, rad * 2.0);
+            painter->drawArc(arcRect,
+                             qRound(qRadiansToDegrees(-a1) * 16),
+                             qRound(-span * 16));
         }
 
         // Edge stretch bars along each edge, mid-edge, constant view size.

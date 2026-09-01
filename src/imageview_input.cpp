@@ -590,16 +590,67 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         viewRect.bottomLeft(),
         QPointF(viewRect.left(), viewRect.center().y()),
     };
-    for (int i = 0; i < 8; ++i) {
-        const bool hot = (m_groupHoverHandle == i || m_groupHandle == i);
-        const qreal hs = hot ? 8.0 : 5.5;
+    // Corners 0,2,4,6: rounded line-arc-line; edges 1,3,5,7: short bars.
+    auto unit = [](QPointF v) {
+        const qreal len = qHypot(v.x(), v.y());
+        return len > 1e-6 ? v / len : QPointF(1, 0);
+    };
+    auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB, int id) {
+        const bool hot = (m_groupHoverHandle == id || m_groupHandle == id);
+        const QPointF d1 = unit(alongA);
+        const QPointF d2 = unit(alongB);
+        const qreal hs = hot ? 12.0 : 10.0;
+        const qreal arm = hs * 1.15;
+        const qreal rad = hs * 0.4;
+        QPen hp(hot ? QColor(255, 255, 255) : handleEdge, 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(hot ? 2.4 : 1.8);
+        hp.setCapStyle(Qt::RoundCap);
+        painter->setPen(hp);
+        painter->setBrush(Qt::NoBrush);
+        const QPointF p1 = c + d1 * rad;
+        const QPointF p2 = c + d2 * rad;
+        painter->drawLine(p1, c + d1 * arm);
+        painter->drawLine(p2, c + d2 * arm);
+        const QPointF inward = unit(-(d1 + d2));
+        const QPointF arcC = c - inward * rad;
+        const qreal a1 = qAtan2(p1.y() - arcC.y(), p1.x() - arcC.x());
+        const qreal a2 = qAtan2(p2.y() - arcC.y(), p2.x() - arcC.x());
+        qreal span = qRadiansToDegrees(a2 - a1);
+        while (span > 180.0) span -= 360.0;
+        while (span < -180.0) span += 360.0;
+        painter->drawArc(QRectF(arcC.x() - rad, arcC.y() - rad, rad * 2.0, rad * 2.0),
+                         qRound(qRadiansToDegrees(-a1) * 16), qRound(-span * 16));
+    };
+    auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, int id) {
+        const bool hot = (m_groupHoverHandle == id || m_groupHandle == id);
+        const QPointF a = unit(along);
+        const QPointF perp(-a.y(), a.x());
+        const qreal hs = hot ? 12.0 : 10.0;
+        const qreal len = hs * 1.8;
+        const qreal thick = hs * 0.35;
         QPen hp(hot ? QColor(255, 255, 255) : handleEdge, 0);
         hp.setCosmetic(true);
         hp.setWidthF(hot ? 1.6 : 1.15);
         painter->setPen(hp);
         painter->setBrush(hot ? handleFillHot : handleFill);
-        painter->drawRect(QRectF(pts[i].x() - hs / 2.0, pts[i].y() - hs / 2.0, hs, hs));
-    }
+        QPolygonF bar;
+        bar << mid + a * (len / 2) + perp * (thick / 2)
+            << mid - a * (len / 2) + perp * (thick / 2)
+            << mid - a * (len / 2) - perp * (thick / 2)
+            << mid + a * (len / 2) - perp * (thick / 2);
+        painter->drawPolygon(bar);
+        painter->setBrush(Qt::NoBrush);
+    };
+    // pts: 0 TL, 1 T, 2 TR, 3 R, 4 BR, 5 B, 6 BL, 7 L
+    drawCorner(pts[0], QPointF(1, 0), QPointF(0, 1), 0);
+    drawEdgeBar(pts[1], QPointF(1, 0), 1);
+    drawCorner(pts[2], QPointF(-1, 0), QPointF(0, 1), 2);
+    drawEdgeBar(pts[3], QPointF(0, 1), 3);
+    drawCorner(pts[4], QPointF(-1, 0), QPointF(0, -1), 4);
+    drawEdgeBar(pts[5], QPointF(1, 0), 5);
+    drawCorner(pts[6], QPointF(1, 0), QPointF(0, -1), 6);
+    drawEdgeBar(pts[7], QPointF(0, 1), 7);
 
     // Rotate knobs outside mid-edges (same offset language as single-item).
     constexpr qreal kRotateOffset = 28.0;
@@ -1477,7 +1528,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                     viewport()->setCursor(Qt::SizeHorCursor);
                     break;
                 case H::OpacitySlider:
-                    viewport()->setCursor(Qt::SizeHorCursor);
+                    viewport()->setCursor(Qt::SizeVerCursor);
                     break;
                 default:
                     viewport()->setCursor(Qt::PointingHandCursor);
