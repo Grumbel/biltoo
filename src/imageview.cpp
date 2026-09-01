@@ -1246,8 +1246,34 @@ void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &stat
     if (sz.width() < 1 || sz.height() < 1) {
         return;
     }
+    QRect crop = state.cropRect;
+    // Scale when the live decode size differs from the size at record time
+    // (decoder / EXIF orientation mismatch on some files).
+    const QSize recorded = state.cropSourceSize;
+    if (recorded.isValid() && recorded.width() > 0 && recorded.height() > 0
+        && recorded != sz) {
+        crop = QRect(
+            qRound(crop.x() * double(sz.width()) / double(recorded.width())),
+            qRound(crop.y() * double(sz.height()) / double(recorded.height())),
+            qMax(1, qRound(crop.width() * double(sz.width()) / double(recorded.width()))),
+            qMax(1, qRound(crop.height() * double(sz.height()) / double(recorded.height()))));
+    } else if (!recorded.isValid()
+               && (crop.right() >= sz.width() || crop.bottom() >= sz.height())) {
+        // Legacy crops without cropSourceSize: if the rect only fits the
+        // orientation-swapped size, map from that space (common EXIF mismatch).
+        const QSize swapped(sz.height(), sz.width());
+        if (swapped.width() > 0 && swapped.height() > 0
+            && crop.right() < swapped.width() && crop.bottom() < swapped.height()
+            && (swapped.width() != sz.width() || swapped.height() != sz.height())) {
+            crop = QRect(
+                qRound(crop.x() * double(sz.width()) / double(swapped.width())),
+                qRound(crop.y() * double(sz.height()) / double(swapped.height())),
+                qMax(1, qRound(crop.width() * double(sz.width()) / double(swapped.width()))),
+                qMax(1, qRound(crop.height() * double(sz.height()) / double(swapped.height()))));
+        }
+    }
     const QRect bounds(0, 0, sz.width(), sz.height());
-    const QRect src = state.cropRect.intersected(bounds);
+    const QRect src = crop.intersected(bounds);
     if (src.width() < 1 || src.height() < 1) {
         return;
     }
@@ -1308,9 +1334,11 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     if (fullFrame) {
         s.hasCrop = false;
         s.cropRect = QRect();
+        s.cropSourceSize = QSize();
     } else {
         s.hasCrop = true;
         s.cropRect = disp;
+        s.cropSourceSize = QSize(iw, ih);
     }
     s.path = item->path();
     item->setSessionCrop(s.hasCrop, s.cropRect);

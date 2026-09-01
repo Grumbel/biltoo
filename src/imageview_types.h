@@ -8,6 +8,7 @@
 #include <QPoint>
 #include <QPointF>
 #include <QRect>
+#include <QSize>
 #include <QString>
 #include <QtGlobal>
 
@@ -57,11 +58,15 @@ struct WorkspaceItemState {
     bool hFlip = false;
     bool vFlip = false;
     /**
-     * Session crop in original on-disk pixel coordinates (top-left origin).
-     * Applied after decode so navigation reloads keep the crop.
+     * Session crop in original on-disk pixel coordinates (top-left origin),
+     * relative to @a cropSourceSize at record time. Applied after decode so
+     * navigation reloads keep the crop. If the decode size differs (EXIF /
+     * decoder variance), the rect is scaled to the live image size.
      */
     bool hasCrop = false;
     QRect cropRect;
+    /** Image size when cropRect was recorded; empty = assume live size. */
+    QSize cropSourceSize;
 };
 
 #endif // IMAGEVIEW_TYPES_H

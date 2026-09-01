@@ -396,13 +396,13 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect)
     if (local.width() < 1.0 || local.height() < 1.0) {
         return false;
     }
-    // Crop in displayed-pixel space so the rectangle matches what the user saw.
-    QImage displayed = pixmap().isNull() ? m_source : pixmap().toImage();
-    if (displayed.isNull()) {
+    // Always crop m_source — the display pixmap may include itemHFlip/VFlip
+    // bake for painting and must not redefine the crop coordinate space.
+    if (m_source.isNull()) {
         return false;
     }
-    const QRect bounds(0, 0, displayed.width(), displayed.height());
-    // contentRect is centred via setOffset(-w/2, -h/2); map local → pixmap pixels.
+    const QRect bounds(0, 0, m_source.width(), m_source.height());
+    // contentRect is centred via setOffset(-w/2, -h/2); map local → source pixels.
     const QPointF off = offset();
     const QRect srcRect = QRect(qRound(local.left() - off.x()),
                                 qRound(local.top() - off.y()),
@@ -412,7 +412,7 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect)
     if (srcRect.width() < 1 || srcRect.height() < 1) {
         return false;
     }
-    QImage cropped = displayed.copy(srcRect);
+    QImage cropped = m_source.copy(srcRect);
     if (cropped.isNull()) {
         return false;
     }
