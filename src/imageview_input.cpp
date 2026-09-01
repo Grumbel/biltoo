@@ -214,7 +214,6 @@ void ImageView::paintEvent(QPaintEvent *event)
         const QFontMetrics hintFm(hintFont);
         const int gap = 8;
         const int totalH = titleFm.height() + gap + hintFm.height();
-        const int cx = viewport()->width() / 2;
         const int cy = viewport()->height() / 2 - totalH / 2;
         painter.setFont(titleFont);
         painter.setPen(QColor(220, 220, 220, 230));
