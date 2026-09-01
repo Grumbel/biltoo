@@ -13,7 +13,7 @@
 class ImageItem;
 
 /**
- * Why Gallery may repack. Decode, delete, and view resize are not reasons.
+ * Why Gallery may repack. Decode and view resize are not reasons.
  * applyLayout(reason) is the only pack entry point for Gallery.
  */
 enum class GalleryPackReason {
@@ -21,7 +21,7 @@ enum class GalleryPackReason {
     EnterGallery,   /**< Entering Gallery or rebuilding from session list */
     Reload,         /**< F5 / explicit reload with relayout */
     ContentChange,  /**< Content flip/rotate changed tile aspect for pack */
-    SessionMutate,  /**< Intentional add/duplicate that must show new tiles */
+    SessionMutate,  /**< Add/duplicate/remove that must show tiles without holes */
 };
 
 /**

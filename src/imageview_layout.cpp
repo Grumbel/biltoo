@@ -7,6 +7,7 @@
 #include "imageloader.h"
 #include "sessionappearance.h"
 
+#include <QHash>
 #include <QPrinter>
 #include <QPageLayout>
 #include <QPageSize>
@@ -502,34 +503,47 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
         }
     }
 
-    // Keep path order aligned with remaining tiles so a later pack does not
-    // invent holes for deleted session rows. Do not applyLayout here — Gallery
-    // leaves gaps until the user presses a layout action (or explicit reload).
-    if (!removedPaths.isEmpty() && !m_pathOrder.isEmpty()) {
-        QSet<QString> stillPresent;
+    // Keep path order aligned with remaining tiles (one path-order slot per
+    // live item, including duplicate paths). A set-based prune left extra
+    // path-order entries for the same path and later packs could look sparse.
+    if (!removedPaths.isEmpty()) {
+        QHash<QString, int> remaining;
         for (ImageItem *item : m_items) {
             if (item) {
-                stillPresent.insert(item->path());
+                remaining[item->path()] += 1;
             }
         }
         QStringList pruned;
-        pruned.reserve(m_pathOrder.size());
+        pruned.reserve(m_items.size());
         for (const QString &path : m_pathOrder) {
-            if (stillPresent.contains(path)) {
+            const auto it = remaining.find(path);
+            if (it != remaining.end() && it.value() > 0) {
                 pruned.append(path);
+                it.value() -= 1;
             }
         }
-        // Paths only on canvas (not in prior order) stay appended via reorder.
+        // Live tiles not represented in the prior order (should be rare).
+        for (ImageItem *item : m_items) {
+            if (!item) {
+                continue;
+            }
+            const auto it = remaining.find(item->path());
+            if (it != remaining.end() && it.value() > 0) {
+                pruned.append(item->path());
+                it.value() -= 1;
+            }
+        }
         m_pathOrder = pruned;
     }
 
-    // Gallery: leave packed positions as-is (empty gap until explicit re-layout).
-    // Pin sceneRect so scrollbar range does not collapse when tiles are removed.
+    // Gallery: repack so deleted tiles do not leave empty holes. Preserve the
+    // pre-delete viewport centre afterward (same idea as return-from-Image).
     if (gallery && m_scene) {
-        if (keptSceneRect.isValid()) {
+        if (!m_items.isEmpty()) {
+            applyLayout(GalleryPackReason::SessionMutate);
+        } else if (keptSceneRect.isValid()) {
             m_scene->setSceneRect(keptSceneRect);
         }
-        // Centre is more stable than raw scrollbar values across range rebuilds.
         if (!keptCenter.isNull()) {
             centerOn(keptCenter);
         }
@@ -539,7 +553,6 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
         if (verticalScrollBar()) {
             verticalScrollBar()->setValue(scrollV);
         }
-        // Remember for deferred reassert after thumb-strip / splitter layout.
         m_gallery.setViewportSnapshot(keptCenter, scrollH, scrollV);
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
