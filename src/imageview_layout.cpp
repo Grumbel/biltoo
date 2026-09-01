@@ -1161,7 +1161,7 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
     if (transparentBackground) {
         img.fill(Qt::transparent);
     } else {
-        img.fill(m_backgroundColor.isValid() ? m_backgroundColor : QColor(Qt::black));
+        img.fill(backgroundColor());
     }
     QPainter painter(&img);
     painter.setRenderHint(QPainter::Antialiasing, true);
