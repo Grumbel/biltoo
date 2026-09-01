@@ -5,6 +5,7 @@
 #define IMAGEVIEW_H
 
 #include "imageview_types.h"
+#include "sessionappearance.h"
 
 #include <QColor>
 #include <QElapsedTimer>
@@ -325,9 +326,10 @@ public:
 
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layoutMode; }
-    void applyLayout();
+    void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);
     void applyPendingGalleryRestore();
     /** Coalesce resize-driven gallery relayouts. */
+    /** @deprecated No automatic Gallery pack; kept as no-op. */
     void scheduleApplyLayout();
 
     /** Gallery mode with a packaged layout. */

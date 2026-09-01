@@ -1,0 +1,137 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+# QImgView structural refactor
+
+This document is the plan of record. It follows DOMAIN.md / IDENTITY.md / SESSION.md.
+Implementation must not invent a second domain model.
+
+## Goals
+
+1. **One source of truth for session image appearance** (crop, content flips, quarter turns)
+   keyed by `SessionImageId`, never by path alone when duplicates exist.
+2. **Gallery packing is explicit-only** — never a side effect of resize, delete, or decode.
+3. **Mode transitions are boring** — snapshot what must survive, restore what was snapshotted,
+   never clear the snapshot you just took.
+4. **Shrink `ImageView`** — move session document and layout policy out so mode UI is not
+   also the database.
+
+Non-goals for early phases: rewrite Qt widgets, change user-visible features, drop Workspace.
+
+## Current pain (evidence)
+
+| Symptom | Structural cause |
+|---------|------------------|
+| Delete repacks Gallery | Pack triggered from resize / decode / debounce |
+| Scroll lost Gallery→Image→Gallery | `setViewMode` cleared viewport snapshot |
+| Crop wrong only in Image mode | Appearance maps + decode size mismatch; path vs id |
+| Suppress counters / singleShot(0) | No pack *policy*; only timing workarounds |
+
+## Target architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ MainWindow (shell: menus, session list m_files/ids)     │
+└─────────────┬───────────────────────────┬───────────────┘
+              │                           │
+              ▼                           ▼
+┌──────────────────────────┐   ┌──────────────────────────┐
+│ SessionDocument          │   │ ImageView (presentation) │
+│  - ordered ids + paths   │   │  - mode, input, chrome   │
+│  - appearance by id      │◄──│  - asks document for     │
+│  - allocate / remove id  │   │    appearance on decode  │
+└──────────────────────────┘   └────────────┬─────────────┘
+                                            │
+                               ┌────────────┴────────────┐
+                               │ GalleryPackPolicy       │
+                               │  pack(reason) only      │
+                               └─────────────────────────┘
+```
+
+Long-term, `m_files` / `m_sessionIds` move into `SessionDocument` owned by MainWindow
+(or a shared model). Early phases keep ownership in MainWindow and only extract
+**appearance** + **pack policy** from ImageView.
+
+## Phases
+
+### Phase 1 — Policy and single crop apply path (this work)
+
+**1a. Gallery pack reasons**
+
+```text
+enum class GalleryPackReason {
+  ExplicitLayout,  // layout toolbar / menu
+  EnterGallery,    // enter mode / populate
+  Reload,          // F5
+  ContentChange,   // rotate/flip that changes tile aspect in pack
+  SessionMutate,   // intentional add/duplicate that must show new tiles
+};
+```
+
+- `applyLayout(GalleryPackReason)` is the only pack entry.
+- `scheduleApplyLayout` is removed or becomes a no-op (no resize/decode pack).
+- Delete never packs. Resize never packs.
+
+**1b. Session appearance apply helper**
+
+- `sessionappearance.{h,cpp}`: scale crop rect when `cropSourceSize` ≠ live size;
+  apply crop + content bakes to an `ImageItem`.
+- ImageView calls this from `applySessionCrop` / `applyStoredAppearance` instead of
+  duplicating geometry math.
+
+**1c. Document invariants in REFACTOR.md / comments**
+
+- Snapshot before mode leave; do not clear snapshot when destination needs it.
+- Appearance identity is `SessionImageId`.
+
+**Exit criteria:** Delete does not move other tiles; F5 / layout still pack; crop apply
+code has one implementation.
+
+### Phase 2 — SessionAppearanceStore inside ImageView
+
+- Replace raw `QHash<SessionImageId, WorkspaceItemState> m_sessionAppearance` with a
+  small class: `get/set/remove/clear`, `applyTo(ImageItem*)`.
+- Stop writing appearance only into `m_itemStates` for bound session images (path map
+  remains legacy fallback for unbound tiles only).
+- `captureState` / `recordSessionCrop` write through the store.
+
+**Exit criteria:** No feature change; all crop/flip persistence goes through the store API.
+
+### Phase 3 — Mode transition object
+
+- `ModeTransition` or methods `leaveGalleryToImage()`, `returnToGallery()` that own:
+  viewport snapshot, stash/restore tiles, prepare canvas, pending restore flag.
+- `setViewMode` becomes a thin dispatcher; cannot clear Gallery scroll snapshot on
+  Gallery→Image.
+
+**Exit criteria:** Scroll restore and stash logic not scattered across MainWindow +
+setViewMode + enterGallery.
+
+### Phase 4 — SessionDocument (MainWindow)
+
+- Move `m_files`, `m_sessionIds`, alloc/remove into `SessionDocument`.
+- Signals: `sessionChanged`, `appearanceChanged(id)`.
+- ImageView and ThumbnailBar observe the document.
+
+**Exit criteria:** MainWindow session methods become facades; duplicates and delete
+update one list.
+
+### Phase 5 — Optional split of ImageView files by mode
+
+- `gallery_controller` / `workspace_controller` as collaborators, not new windows.
+- Only after Phases 1–4 stabilize tests and manual QA.
+
+## Rules while refactoring
+
+- No behaviour change without a failing scenario or explicit product decision.
+- Prefer delete of dead paths (`scheduleApplyLayout` from resize) over new flags.
+- Keep GPLv3+ / REUSE headers on new files.
+- Ship as small commits; each phase should be bisectable.
+
+## Progress log
+
+- Phase 1a: `GalleryPackReason` + `applyLayout(reason)`; `scheduleApplyLayout` no-op.
+- Phase 1b: `sessionappearance.{h,cpp}` owns crop scale/apply geometry.
+- Phase 1c: this document.

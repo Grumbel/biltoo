@@ -1,0 +1,57 @@
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "sessionappearance.h"
+#include "imageitem.h"
+
+#include <QtMath>
+
+namespace SessionAppearance {
+
+QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live)
+{
+    if (crop.isEmpty() || live.width() < 1 || live.height() < 1) {
+        return {};
+    }
+    if (!recorded.isValid() || recorded.width() < 1 || recorded.height() < 1
+        || recorded == live) {
+        return crop;
+    }
+    return QRect(
+        qRound(crop.x() * double(live.width()) / double(recorded.width())),
+        qRound(crop.y() * double(live.height()) / double(recorded.height())),
+        qMax(1, qRound(crop.width() * double(live.width()) / double(recorded.width()))),
+        qMax(1, qRound(crop.height() * double(live.height()) / double(recorded.height()))));
+}
+
+void applyCrop(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item || !state.hasCrop || state.cropRect.isEmpty()) {
+        return;
+    }
+    const QSize sz = item->imageSize();
+    if (sz.width() < 1 || sz.height() < 1) {
+        return;
+    }
+    QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, sz);
+    // Legacy: rect only fits orientation-swapped dimensions.
+    if (state.cropSourceSize.isEmpty()
+        && (crop.right() >= sz.width() || crop.bottom() >= sz.height())) {
+        const QSize swapped(sz.height(), sz.width());
+        if (swapped.width() > 0 && swapped.height() > 0
+            && crop.right() < swapped.width() && crop.bottom() < swapped.height()
+            && swapped != sz) {
+            crop = scaleCropRect(state.cropRect, swapped, sz);
+        }
+    }
+    const QRect bounds(0, 0, sz.width(), sz.height());
+    const QRect src = crop.intersected(bounds);
+    if (src.width() < 1 || src.height() < 1) {
+        return;
+    }
+    const QPointF off = item->offset();
+    const QRectF local(src.x() + off.x(), src.y() + off.y(), src.width(), src.height());
+    item->cropToLocalRect(local);
+}
+
+} // namespace SessionAppearance

@@ -5,6 +5,7 @@
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
+#include "sessionappearance.h"
 
 #include <QUndoCommand>
 #include <QUndoStack>
@@ -79,12 +80,8 @@ ImageView::ImageView(QWidget *parent)
     m_layoutDebounceTimer->setSingleShot(true);
     m_layoutDebounceTimer->setInterval(0);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
-        if (m_galleryRelayoutSuppressCount > 0) {
-            return;
-        }
-        if (isGalleryMode() && !m_items.isEmpty()) {
-            applyLayout();
-        }
+        // Automatic debounce pack removed (Phase 1). Explicit applyLayout only.
+        Q_UNUSED(this);
     });
     connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
         m_hudFlashVisible = false;
@@ -457,7 +454,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         applyState(item, app);
         if (m_layoutMode != LayoutMode::FreeForm
             && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
-            applyLayout();
+            applyLayout(GalleryPackReason::SessionMutate);
         }
         emit statusChanged();
         emit workspacePathsChanged();
@@ -508,7 +505,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             existing->update();
         } else if (m_layoutMode != LayoutMode::FreeForm
                    && m_galleryRelayoutSuppressCount == 0) {
-            applyLayout();
+            applyLayout(GalleryPackReason::SessionMutate);
         }
         emit statusChanged();
         if (isGalleryMode()) {
@@ -595,7 +592,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         // Gallery session-delete holds suppress so a late LoadAdd cannot repack.
         if (!(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
-            applyLayout();
+            applyLayout(GalleryPackReason::SessionMutate);
         }
     } else {
         updateWorkspaceSceneRect();
@@ -881,7 +878,7 @@ void ImageView::flipHorizontal()
         }
     }
     if (isGalleryMode()) {
-        applyLayout();
+        applyLayout(GalleryPackReason::ContentChange);
     }
 }
 
@@ -898,7 +895,7 @@ void ImageView::flipVertical()
         }
     }
     if (isGalleryMode()) {
-        applyLayout();
+        applyLayout(GalleryPackReason::ContentChange);
     }
 }
 
@@ -1246,48 +1243,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
 
 void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &state)
 {
-    if (!item || !state.hasCrop || state.cropRect.isEmpty()) {
-        return;
-    }
-    // state.cropRect is top-left origin on the full on-disk image; contentRect is centred.
-    const QSize sz = item->imageSize();
-    if (sz.width() < 1 || sz.height() < 1) {
-        return;
-    }
-    QRect crop = state.cropRect;
-    // Scale when the live decode size differs from the size at record time
-    // (decoder / EXIF orientation mismatch on some files).
-    const QSize recorded = state.cropSourceSize;
-    if (recorded.isValid() && recorded.width() > 0 && recorded.height() > 0
-        && recorded != sz) {
-        crop = QRect(
-            qRound(crop.x() * double(sz.width()) / double(recorded.width())),
-            qRound(crop.y() * double(sz.height()) / double(recorded.height())),
-            qMax(1, qRound(crop.width() * double(sz.width()) / double(recorded.width()))),
-            qMax(1, qRound(crop.height() * double(sz.height()) / double(recorded.height()))));
-    } else if (!recorded.isValid()
-               && (crop.right() >= sz.width() || crop.bottom() >= sz.height())) {
-        // Legacy crops without cropSourceSize: if the rect only fits the
-        // orientation-swapped size, map from that space (common EXIF mismatch).
-        const QSize swapped(sz.height(), sz.width());
-        if (swapped.width() > 0 && swapped.height() > 0
-            && crop.right() < swapped.width() && crop.bottom() < swapped.height()
-            && (swapped.width() != sz.width() || swapped.height() != sz.height())) {
-            crop = QRect(
-                qRound(crop.x() * double(sz.width()) / double(swapped.width())),
-                qRound(crop.y() * double(sz.height()) / double(swapped.height())),
-                qMax(1, qRound(crop.width() * double(sz.width()) / double(swapped.width()))),
-                qMax(1, qRound(crop.height() * double(sz.height()) / double(swapped.height()))));
-        }
-    }
-    const QRect bounds(0, 0, sz.width(), sz.height());
-    const QRect src = crop.intersected(bounds);
-    if (src.width() < 1 || src.height() < 1) {
-        return;
-    }
-    const QPointF off = item->offset();
-    const QRectF local(src.x() + off.x(), src.y() + off.y(), src.width(), src.height());
-    item->cropToLocalRect(local);
+    SessionAppearance::applyCrop(item, state);
 }
 
 void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
@@ -2086,7 +2042,7 @@ void ImageView::rotateLeft()
         }
     }
     if (isGalleryMode()) {
-        applyLayout();
+        applyLayout(GalleryPackReason::ContentChange);
     }
 }
 
@@ -2103,7 +2059,7 @@ void ImageView::rotateRight()
         }
     }
     if (isGalleryMode()) {
-        applyLayout();
+        applyLayout(GalleryPackReason::ContentChange);
     }
 }
 

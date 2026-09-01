@@ -565,7 +565,7 @@ void MainWindow::duplicateSelected()
     applyThumbnailVisibility();
     if (isGalleryMode() && m_imageView) {
         // Explicit duplicate: pack so the new session tiles appear in the layout.
-        m_imageView->applyLayout();
+        m_imageView->applyLayout(GalleryPackReason::SessionMutate);
     }
     updateWorkspaceActionVisibility();
     if (statusBar()) {

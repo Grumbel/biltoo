@@ -5,6 +5,7 @@
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
+#include "sessionappearance.h"
 
 #include <QPrinter>
 #include <QPageLayout>
@@ -1393,7 +1394,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     }
 
     if (isGalleryMode() && !m_items.isEmpty()) {
-        applyLayout();
+        applyLayout(GalleryPackReason::EnterGallery);
         updateGalleryDecodeWindow();
     }
 
@@ -1635,7 +1636,7 @@ void ImageView::setViewMode(ViewMode mode)
         item->setItemRotation(0.0);
     }
     if (!m_items.isEmpty()) {
-        applyLayout();
+        applyLayout(GalleryPackReason::EnterGallery);
     }
     emit statusChanged();
 }
@@ -1728,7 +1729,7 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
             m_pathOrder = livePaths;
         }
     }
-    applyLayout();
+    applyLayout(GalleryPackReason::EnterGallery);
 
     if (layoutSwitch && !selectedPaths.isEmpty()) {
         m_scene->clearSelection();
@@ -2235,7 +2236,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
     for (ImageItem *item : m_items) {
         applyItemModeFlags(item);
     }
-    applyLayout();
+    applyLayout(GalleryPackReason::EnterGallery);
 }
 
 void ImageView::setGridColumns(int columns)
@@ -2247,7 +2248,7 @@ void ImageView::setGridColumns(int columns)
     m_gridColumns = clamped;
     if (isGalleryMode()
         && (m_layoutMode == LayoutMode::Grid || m_layoutMode == LayoutMode::GridCrop)) {
-        applyLayout();
+        applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
 
@@ -2259,7 +2260,7 @@ void ImageView::setMasonryColumns(int columns)
     }
     m_masonryColumns = clamped;
     if (m_layoutMode == LayoutMode::Masonry && !m_items.isEmpty()) {
-        applyLayout();
+        applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
 
@@ -2271,7 +2272,7 @@ void ImageView::setMasonryRows(int rows)
     }
     m_masonryRows = clamped;
     if (m_layoutMode == LayoutMode::MasonryRows && !m_items.isEmpty()) {
-        applyLayout();
+        applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
 
@@ -2289,14 +2290,8 @@ void ImageView::setGalleryRelayoutSuppressed(bool on)
 
 void ImageView::scheduleApplyLayout()
 {
-    if (m_galleryRelayoutSuppressCount > 0) {
-        return;
-    }
-    if (!m_layoutDebounceTimer) {
-        applyLayout();
-        return;
-    }
-    m_layoutDebounceTimer->start();
+    // Phase 1: Gallery does not pack from debounce/resize/decode.
+    // Kept so old call sites compile; use applyLayout(reason) instead.
 }
 
 void ImageView::reloadFromDisk(bool relayoutGallery)
@@ -2336,15 +2331,16 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
         }
     }
     if (isGalleryMode() && relayoutGallery) {
-        applyLayout();
+        applyLayout(GalleryPackReason::Reload);
     }
     flashHud(tr("Reload"),
              isGalleryMode() ? tr("Gallery") : tr("Workspace"));
     emit statusChanged();
 }
 
-void ImageView::applyLayout()
+void ImageView::applyLayout(GalleryPackReason reason)
 {
+    Q_UNUSED(reason);
     if (m_applyingLayout) {
         return;
     }
