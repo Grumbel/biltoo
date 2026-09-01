@@ -19,34 +19,6 @@
 #include <QtMath>
 
 namespace {
-QString tooltipForHandle(ImageItem::Handle h)
-{
-    switch (h) {
-    case ImageItem::Handle::FlipH:
-        return QObject::tr("Toggle horizontal flip");
-    case ImageItem::Handle::FlipV:
-        return QObject::tr("Toggle vertical flip");
-    case ImageItem::Handle::Rotate90CCW:
-        return QObject::tr("Rotate 90° counter-clockwise");
-    case ImageItem::Handle::Rotate90CW:
-        return QObject::tr("Rotate 90° clockwise");
-    case ImageItem::Handle::Raise:
-        return QObject::tr("Raise (bring forward)");
-    case ImageItem::Handle::Lower:
-        return QObject::tr("Lower (send backward)");
-    case ImageItem::Handle::ResetScale:
-        return QObject::tr("Reset scale to 100%");
-    case ImageItem::Handle::ResetRotation:
-        return QObject::tr("Reset rotation to 0°");
-    case ImageItem::Handle::OpacitySlider:
-        return QObject::tr("Opacity");
-    default:
-        return QString();
-    }
-}
-} // namespace
-
-namespace {
 constexpr qreal kHandleScreenPx = 16.0;      // scale/rotate markers in *viewport* px (grow on hover)
 constexpr qreal kRotateOffsetPx = 36.0;      // rotate handle distance from edge (viewport px)
 // Chrome buttons (flip / raise / lower / reset): larger + roomier.
@@ -424,8 +396,6 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     const bool fromCenter = isCornerScaleHandle(m_activeHandle) ? modifier : !modifier;
     const QPointF itemCentre = this->scenePos();
     const QRectF localR = QGraphicsPixmapItem::boundingRect();
-    const qreal halfW = localR.width() * 0.5;
-    const qreal halfH = localR.height() * 0.5;
     constexpr qreal kMinDist = 1.0; // scene px; below this ignore the sample
 
     if (isCornerScaleHandle(m_activeHandle)) {
@@ -1317,6 +1287,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         const QPointF ab = b - a;
         const qreal abLen = qHypot(ab.x(), ab.y());
         const QPointF along = abLen > 1e-6 ? ab / abLen : QPointF(0, -1);
+        Q_UNUSED(along);
         const QPointF perp = fg.outLeft;
         const qreal thick = kSliderHeightPx;
         const bool hot = (m_hoverHandle == Handle::OpacitySlider

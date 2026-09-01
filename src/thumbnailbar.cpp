@@ -550,18 +550,20 @@ void ThumbnailBar::scheduleThumbnailLoads()
         // QPointer: bar may be destroyed while pool jobs still run.
         const QPointer<ThumbnailBar> guard(this);
         QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
-            if (!guard || gen != guard->m_generation.load()) {
+            ThumbnailBar *bar = guard.data();
+            if (!bar || gen != bar->m_generation.load()) {
                 return;
             }
             const QImage image = makeThumbnail(path, decodeSize);
-            if (!guard || image.isNull() || gen != guard->m_generation.load()) {
+            bar = guard.data();
+            if (!bar || image.isNull() || gen != bar->m_generation.load()) {
                 return;
             }
             // A crop may have landed while this job ran — do not clobber it.
-            if (guard->m_sessionImageOverrides.contains(path)) {
+            if (bar->m_sessionImageOverrides.contains(path)) {
                 return;
             }
-            QMetaObject::invokeMethod(guard, "setThumbnailIcon", Qt::QueuedConnection,
+            QMetaObject::invokeMethod(bar, "setThumbnailIcon", Qt::QueuedConnection,
                                       Q_ARG(int, i),
                                       Q_ARG(QImage, image));
         });
@@ -902,7 +904,7 @@ QStringList ThumbnailBar::mimeTypes() const
 
 QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
 {
-    auto *data = new QMimeData;
+    auto *mime = new QMimeData;
     QList<QUrl> urls;
     urls.reserve(items.size());
     for (QListWidgetItem *it : items) {
@@ -914,8 +916,8 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
             urls.append(QUrl::fromLocalFile(path));
         }
     }
-    data->setUrls(urls);
-    return data;
+    mime->setUrls(urls);
+    return mime;
 }
 
 Qt::DropActions ThumbnailBar::supportedDragActions() const
@@ -928,14 +930,14 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
     if (items.isEmpty()) {
         return;
     }
-    QMimeData *data = mimeData(items);
-    if (!data || data->urls().isEmpty()) {
-        delete data;
+    QMimeData *mime = mimeData(items);
+    if (!mime || mime->urls().isEmpty()) {
+        delete mime;
         return;
     }
 
     auto *drag = new QDrag(this);
-    drag->setMimeData(data);
+    drag->setMimeData(mime);
 
     if (QListWidgetItem *first = items.first()) {
         const QIcon icon = first->icon();

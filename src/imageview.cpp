@@ -2181,10 +2181,10 @@ void ImageView::resetItemScale()
         }
     }
     if (targets.isEmpty()) {
-        if (ImageItem *item = targetItem()) {
-            targets.append(item);
-        } else if (ImageItem *item = primaryItem()) {
-            targets.append(item);
+        if (ImageItem *t = targetItem()) {
+            targets.append(t);
+        } else if (ImageItem *p = primaryItem()) {
+            targets.append(p);
         }
     }
     for (ImageItem *item : targets) {
@@ -2207,10 +2207,10 @@ void ImageView::resetItemRotation()
         }
     }
     if (targets.isEmpty()) {
-        if (ImageItem *item = targetItem()) {
-            targets.append(item);
-        } else if (ImageItem *item = primaryItem()) {
-            targets.append(item);
+        if (ImageItem *t = targetItem()) {
+            targets.append(t);
+        } else if (ImageItem *p = primaryItem()) {
+            targets.append(p);
         }
     }
     for (ImageItem *item : targets) {

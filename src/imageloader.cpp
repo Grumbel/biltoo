@@ -73,11 +73,7 @@ QImage vipsToQImage(VipsImage *inImage)
         }
         current = joined;
     } else if (bands == 2) {
-        // Grey + alpha → RGBA (duplicate grey into RGB)
-        VipsImage *rgb = nullptr;
-        VipsImage *parts[] = {current, current, current};
-        // Extract band 0 three times is wrong for bandjoin of same image with 2 bands
-        // Use bandmean / extract
+        // Grey + alpha → RGBA (duplicate grey into RGB channels + alpha).
         VipsImage *grey = nullptr;
         VipsImage *alpha = nullptr;
         if (vips_extract_band(current, &grey, 0, nullptr) != 0

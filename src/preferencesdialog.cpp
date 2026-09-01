@@ -518,9 +518,9 @@ void PreferencesDialog::updateColorButton(QPushButton *button, const QColor &col
     if (color.alpha() < 255) {
         const QColor base(60, 60, 60);
         const qreal a = color.alphaF();
-        solid.setRgbF(color.redF() * a + base.redF() * (1.0 - a),
-                      color.greenF() * a + base.greenF() * (1.0 - a),
-                      color.blueF() * a + base.blueF() * (1.0 - a));
+        solid.setRgbF(qreal(color.redF()) * a + qreal(base.redF()) * (1.0 - a),
+                      qreal(color.greenF()) * a + qreal(base.greenF()) * (1.0 - a),
+                      qreal(color.blueF()) * a + qreal(base.blueF()) * (1.0 - a));
         solid.setAlpha(255);
     }
     button->setStyleSheet(

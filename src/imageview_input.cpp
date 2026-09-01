@@ -121,10 +121,10 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
         painter.fillRect(QRect(0, 0, vr.width(), zone), grad);
         const int cx = vr.center().x();
         const int cy = kEdgeMargin + r;
-        drawChevronButton(cx, cy, [](QPainterPath &chevron, int cx, int cy) {
-            chevron.moveTo(cx - 10, cy + 5);
-            chevron.lineTo(cx, cy - 6);
-            chevron.lineTo(cx + 10, cy + 5);
+        drawChevronButton(cx, cy, [](QPainterPath &chevron, int px, int py) {
+            chevron.moveTo(px - 10, py + 5);
+            chevron.lineTo(px, py - 6);
+            chevron.lineTo(px + 10, py + 5);
         });
         return;
     }
@@ -148,16 +148,16 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
                        ? (kEdgeMargin + r)
                        : (vr.width() - kEdgeMargin - r);
     if (m_hoverEdge == EdgeZone::Previous) {
-        drawChevronButton(cx, cy, [](QPainterPath &chevron, int cx, int cy) {
-            chevron.moveTo(cx + 5, cy - 10);
-            chevron.lineTo(cx - 6, cy);
-            chevron.lineTo(cx + 5, cy + 10);
+        drawChevronButton(cx, cy, [](QPainterPath &chevron, int px, int py) {
+            chevron.moveTo(px + 5, py - 10);
+            chevron.lineTo(px - 6, py);
+            chevron.lineTo(px + 5, py + 10);
         });
     } else {
-        drawChevronButton(cx, cy, [](QPainterPath &chevron, int cx, int cy) {
-            chevron.moveTo(cx - 5, cy - 10);
-            chevron.lineTo(cx + 6, cy);
-            chevron.lineTo(cx - 5, cy + 10);
+        drawChevronButton(cx, cy, [](QPainterPath &chevron, int px, int py) {
+            chevron.moveTo(px - 5, py - 10);
+            chevron.lineTo(px + 6, py);
+            chevron.lineTo(px - 5, py + 10);
         });
     }
 }

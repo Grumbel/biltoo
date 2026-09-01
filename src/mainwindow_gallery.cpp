@@ -326,7 +326,6 @@ void MainWindow::updateThumbnailBarForMode()
     if (!m_thumbnailBar) {
         return;
     }
-    const bool gallery = m_imageView && m_imageView->isGalleryMode();
     if (gallery) {
         if (!m_thumbsHiddenForGallery) {
             m_thumbsVisibleBeforeGallery = m_thumbnailBar->isVisible();
@@ -376,7 +375,6 @@ void MainWindow::updateUpToGalleryAction()
 void MainWindow::updateWorkspaceActionVisibility()
 {
     updateUpToGalleryAction();
-    const bool gallery = m_imageView && m_imageView->isGalleryMode();
     const bool workspace = m_imageView && m_imageView->isWorkspaceMode();
     // Gallery layout actions: always visible; enabled once a session exists.
     // (Previously they stayed hidden until Workspace Mode was toggled because
