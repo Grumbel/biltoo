@@ -395,7 +395,6 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     const bool modifier = mods & (Qt::ControlModifier | Qt::ShiftModifier);
     const bool fromCenter = isCornerScaleHandle(m_activeHandle) ? modifier : !modifier;
     const QPointF itemCentre = this->scenePos();
-    const QRectF localR = QGraphicsPixmapItem::boundingRect();
     constexpr qreal kMinDist = 1.0; // scene px; below this ignore the sample
 
     if (isCornerScaleHandle(m_activeHandle)) {

@@ -326,6 +326,7 @@ void MainWindow::updateThumbnailBarForMode()
     if (!m_thumbnailBar) {
         return;
     }
+    const bool gallery = m_imageView && m_imageView->isGalleryMode();
     if (gallery) {
         if (!m_thumbsHiddenForGallery) {
             m_thumbsVisibleBeforeGallery = m_thumbnailBar->isVisible();
