@@ -1738,8 +1738,15 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
             }
         }
     }
-    if (sessionIndex >= 0) {
-        m_pendingSessionIndexByPath.insert(path, sessionIndex);
+    if (sessionId != kInvalidSessionImageId || sessionIndex >= 0) {
+        PendingSessionBind b;
+        b.path = path;
+        b.id = sessionId;
+        b.index = sessionIndex;
+        m_pendingSessionBinds.append(b);
+        if (sessionIndex >= 0) {
+            m_pendingSessionIndexByPath.insert(path, sessionIndex);
+        }
     }
     scheduleImageLoad(path, LoadAdd);
     emit statusChanged();
@@ -1836,37 +1843,89 @@ QList<int> ImageView::selectedSessionIndices() const
 
 void ImageView::rebindWorkspaceSessionIndices(const QStringList &sessionFiles)
 {
+    // Legacy path-only rebind (no stable ids available).
+    rebindWorkspaceSession(sessionFiles, {});
+}
+
+void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
+                                       const QVector<SessionImageId> &sessionIds)
+{
     if (sessionFiles.isEmpty()) {
         for (ImageItem *item : m_items) {
             item->setSessionIndex(-1);
+            // Keep sessionId — still identifies the session image if list is rebuilt.
         }
         return;
     }
 
-    QSet<int> used;
-    // Keep valid unique bindings (index in range and path matches).
+    QSet<int> usedIndex;
+    QSet<SessionImageId> usedId;
+
+    // 1) Prefer stable id: refresh list-order cache (sessionIndex) from id position.
     for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId sid = item->sessionId();
+        if (sid != kInvalidSessionImageId) {
+            int found = -1;
+            for (int i = 0; i < sessionIds.size() && i < sessionFiles.size(); ++i) {
+                if (sessionIds.at(i) == sid) {
+                    found = i;
+                    break;
+                }
+            }
+            if (found >= 0 && sessionFiles.at(found) == item->path()) {
+                item->setSessionIndex(found);
+                usedIndex.insert(found);
+                usedId.insert(sid);
+                continue;
+            }
+            // Id not in current session list — unbound from list order.
+            item->setSessionIndex(-1);
+            continue;
+        }
+        // No id yet — validate legacy index.
         const int si = item->sessionIndex();
         if (si >= 0 && si < sessionFiles.size()
-            && sessionFiles.at(si) == item->path() && !used.contains(si)) {
-            used.insert(si);
+            && sessionFiles.at(si) == item->path() && !usedIndex.contains(si)) {
+            usedIndex.insert(si);
+            if (si < sessionIds.size()) {
+                item->setSessionId(sessionIds.at(si));
+                usedId.insert(sessionIds.at(si));
+            }
         } else {
             item->setSessionIndex(-1);
         }
     }
 
-    // Assign free slots to unbound items with the same path (occurrence order).
+    // 2) Assign remaining session rows to unbound canvas items by path occurrence.
     for (int i = 0; i < sessionFiles.size(); ++i) {
-        if (used.contains(i)) {
+        if (usedIndex.contains(i)) {
             continue;
         }
         const QString &path = sessionFiles.at(i);
+        const SessionImageId sid = (i < sessionIds.size()) ? sessionIds.at(i)
+                                                           : kInvalidSessionImageId;
         for (ImageItem *item : m_items) {
-            if (item->sessionIndex() < 0 && item->path() == path) {
-                item->setSessionIndex(i);
-                used.insert(i);
-                break;
+            if (!item || item->sessionIndex() >= 0) {
+                continue;
             }
+            if (item->path() != path) {
+                continue;
+            }
+            // Do not steal an item that already has a different stable id.
+            if (item->sessionId() != kInvalidSessionImageId
+                && sid != kInvalidSessionImageId
+                && item->sessionId() != sid) {
+                continue;
+            }
+            item->setSessionIndex(i);
+            if (sid != kInvalidSessionImageId) {
+                item->setSessionId(sid);
+            }
+            usedIndex.insert(i);
+            break;
         }
     }
 }

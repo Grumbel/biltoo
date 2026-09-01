@@ -503,7 +503,30 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         emit statusChanged();
         return;
     }
-    // Bind session slot if this LoadAdd was requested for a specific index.
+    // Bind stable session-image id / list index from the pending queue.
+    for (int i = 0; i < m_pendingSessionBinds.size(); ++i) {
+        if (m_pendingSessionBinds.at(i).path != path) {
+            continue;
+        }
+        const PendingSessionBind b = m_pendingSessionBinds.takeAt(i);
+        if (b.id != kInvalidSessionImageId) {
+            item->setSessionId(b.id);
+            const auto app = m_sessionAppearance.constFind(b.id);
+            if (app != m_sessionAppearance.cend()) {
+                // Pixels may already be full decode; apply content appearance.
+                if (app->hasCrop || app->contentHFlip || app->contentVFlip
+                    || app->contentQuarterTurns != 0) {
+                    applySessionCrop(item, *app);
+                    applyContentBakes(item, *app);
+                    item->setSessionCrop(app->hasCrop, app->cropRect);
+                }
+            }
+        }
+        if (b.index >= 0) {
+            item->setSessionIndex(b.index);
+        }
+        break;
+    }
     if (m_pendingSessionIndexByPath.contains(path)) {
         item->setSessionIndex(m_pendingSessionIndexByPath.take(path));
     }

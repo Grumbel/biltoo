@@ -358,7 +358,7 @@ void MainWindow::syncThumbnailCanvasMembership()
         return;
     }
     // Ensure every on-canvas item is tied to a session row (badges + shared selection).
-    m_imageView->rebindWorkspaceSessionIndices(m_files);
+    m_imageView->rebindWorkspaceSession(m_files, m_sessionIds);
     m_thumbnailBar->setOnCanvasIndices(m_imageView->workspaceSessionIndices());
 }
 

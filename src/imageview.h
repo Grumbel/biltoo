@@ -10,6 +10,7 @@
 #include <QElapsedTimer>
 #include <QGraphicsView>
 #include <QHash>
+#include <QVector>
 #include <QList>
 #include <QImage>
 #include <QSet>
@@ -87,10 +88,13 @@ public:
     QList<int> selectedSessionIndices() const;
     void selectBySessionIndices(const QList<int> &indices);
     /**
-     * Assign sessionIndex on canvas items from @p sessionFiles order.
+     * Assign sessionIndex from @p sessionFiles order (legacy). Prefer
+     * rebindWorkspaceSession with stable ids.
      * Matches by path occurrence so duplicates and older unbound items work.
      */
     void rebindWorkspaceSessionIndices(const QStringList &sessionFiles);
+    void rebindWorkspaceSession(const QStringList &sessionFiles,
+                                const QVector<SessionImageId> &sessionIds);
     void clearWorkspace();
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
@@ -634,6 +638,12 @@ private:
     QHash<QString, QPointF> m_pendingScenePos;
     /** Session slot to assign when a LoadAdd for @p path finishes. */
     QHash<QString, int> m_pendingSessionIndexByPath;
+    struct PendingSessionBind {
+        QString path;
+        SessionImageId id = kInvalidSessionImageId;
+        int index = -1;
+    };
+    QList<PendingSessionBind> m_pendingSessionBinds;
     ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;
