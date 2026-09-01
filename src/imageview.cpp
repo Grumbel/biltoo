@@ -319,6 +319,11 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 emit statusChanged();
                 return;
             }
+            // Bind to the session cursor so Image-mode crop/flip targets the
+            // matching Workspace slot (not every canvas instance of this path).
+            if (m_sessionIndex >= 0) {
+                item->setSessionIndex(m_sessionIndex);
+            }
             // Never inherit Gallery/Workspace placement or scale.
             // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
             // Arbitrary Workspace rotation stays on the free-form item only.

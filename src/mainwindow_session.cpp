@@ -453,6 +453,12 @@ void MainWindow::setCurrentIndex(int index)
     m_currentIndex = index;
     const QString path = m_files.at(m_currentIndex);
 
+    // Publish session cursor before decode so Image-mode items bind the correct
+    // sessionIndex (crop/flip sync to the matching Workspace slot).
+    if (m_imageView) {
+        m_imageView->setSessionPosition(m_currentIndex, m_files.size(), true);
+    }
+
     // DOMAIN: only Image mode replaces the single-image canvas.
     // Gallery/Workspace keep multi-object canvas; update session cursor only.
     // Gallery: do not exclusive-select (Ctrl+click multi-select is owned by the view).
