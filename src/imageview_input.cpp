@@ -1050,14 +1050,14 @@ void ImageView::wheelEvent(QWheelEvent *event)
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
-    if (m_applyingLayout || m_galleryRelayoutSuppressCount > 0) {
+    if (m_applyingLayout) {
         return;
     }
-    if (isGalleryMode() && !m_items.isEmpty()) {
-        // Defer so scrollbar/geometry changes from setSceneRect settle first.
-        // Suppressed during session delete so thumb-strip geometry changes do not
-        // repack the gallery or jump scroll.
-        scheduleApplyLayout();
+    // Gallery: never repack from resize. Thumb-strip setFiles, scrollbar
+    // policy, and splitter drags all resize this view; packing here made
+    // session delete look like an automatic layout. Pack only on explicit
+    // layout actions / F5 (applyLayout callers).
+    if (isGalleryMode()) {
         return;
     }
     if (m_fitMode && m_items.size() == 1) {

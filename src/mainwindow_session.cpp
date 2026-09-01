@@ -635,16 +635,8 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         syncThumbnailWorkspaceSelection();
     }
     applyThumbnailVisibility();
-    if (m_imageView && isGalleryMode()) {
-        // Thumb setFiles queues a resize on the gallery view. That resize must
-        // still see suppress=true, otherwise scheduleApplyLayout runs after we
-        // return and repacks. Release on the next event-loop tick.
-        QTimer::singleShot(0, m_imageView, [v = m_imageView]() {
-            if (v) {
-                v->setGalleryRelayoutSuppressed(false);
-            }
-        });
-    }
+    // Gallery suppress stays on until the end of this function (and one more
+    // event-loop tick) so setCurrentIndex / status updates cannot repack.
 
     if (m_files.isEmpty()) {
         m_currentIndex = -1;
@@ -656,6 +648,9 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         updateWindowTitle();
         updateStatus();
         updateNavigationActions();
+        if (m_imageView) {
+            m_imageView->setGalleryRelayoutSuppressed(false);
+        }
         return;
     }
 
@@ -686,10 +681,19 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         updateWindowTitle();
         updateStatus();
         updateNavigationActions();
-        // Canvas already updated via removeWorkspacePath; no full repack needed.
+        // Canvas already updated via removeWorkspaceSessionId; no full repack.
     } else {
         m_currentIndex = -1;
         setCurrentIndex(newIndex);
+    }
+
+    if (m_imageView && m_imageView->galleryRelayoutSuppressed()) {
+        // Release after nested events from thumb setCurrentIndex / status bar.
+        QTimer::singleShot(0, m_imageView, [v = m_imageView]() {
+            if (v) {
+                v->setGalleryRelayoutSuppressed(false);
+            }
+        });
     }
 }
 

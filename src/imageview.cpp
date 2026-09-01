@@ -79,6 +79,9 @@ ImageView::ImageView(QWidget *parent)
     m_layoutDebounceTimer->setSingleShot(true);
     m_layoutDebounceTimer->setInterval(0);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (m_galleryRelayoutSuppressCount > 0) {
+            return;
+        }
         if (isGalleryMode() && !m_items.isEmpty()) {
             applyLayout();
         }
@@ -452,7 +455,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         applyContentBakes(item, app);
         item->setSessionCrop(app.hasCrop, app.cropRect);
         applyState(item, app);
-        if (m_layoutMode != LayoutMode::FreeForm) {
+        if (m_layoutMode != LayoutMode::FreeForm
+            && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
             applyLayout();
         }
         emit statusChanged();
@@ -502,7 +506,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             // (toolbar / F5) is the only intentional repack.
             Q_UNUSED(before);
             existing->update();
-        } else if (m_layoutMode != LayoutMode::FreeForm) {
+        } else if (m_layoutMode != LayoutMode::FreeForm
+                   && m_galleryRelayoutSuppressCount == 0) {
             applyLayout();
         }
         emit statusChanged();
@@ -588,7 +593,10 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (!m_pathOrder.isEmpty()) {
             reorderItemsByPaths(m_pathOrder);
         }
-        applyLayout();
+        // Gallery session-delete holds suppress so a late LoadAdd cannot repack.
+        if (!(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
+            applyLayout();
+        }
     } else {
         updateWorkspaceSceneRect();
     }
