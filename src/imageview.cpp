@@ -1347,14 +1347,15 @@ void ImageView::paintCropOverlay(QPainter &painter)
             return;
         }
         const bool hover = (m_cropHoverHandle == kind);
-        painter.setPen(QPen(QColor(40, 40, 40), 1.0));
+        painter.setPen(QPen(primary ? QColor(120, 80, 10) : QColor(40, 40, 40), 1.0));
         if (primary) {
-            painter.setBrush(hover ? QColor(90, 160, 255, 255) : QColor(70, 140, 240, 240));
+            // Amber primary to match crop handle language.
+            painter.setBrush(hover ? QColor(255, 210, 70, 255) : QColor(240, 175, 40, 245));
         } else {
-            painter.setBrush(hover ? QColor(255, 255, 255, 255) : QColor(255, 255, 255, 230));
+            painter.setBrush(hover ? QColor(255, 245, 220, 255) : QColor(255, 255, 255, 230));
         }
         painter.drawRoundedRect(btn, 4, 4);
-        painter.setPen(primary ? QColor(255, 255, 255) : QColor(30, 30, 30));
+        painter.setPen(primary ? QColor(40, 25, 5) : QColor(30, 30, 30));
         QFont f = painter.font();
         f.setPointSize(qMax(8, f.pointSize()));
         f.setBold(true);
