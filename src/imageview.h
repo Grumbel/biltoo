@@ -139,6 +139,16 @@ public:
     void clearSceneKeepingStashes();
     /** Controller host: LoadReplace for a path (no-op if empty). */
     void scheduleReplaceLoad(const QString &path);
+    /** Controller host: live canvas item list. */
+    QList<ImageItem *> &liveItems() { return m_items; }
+    const QList<ImageItem *> &liveItems() const { return m_items; }
+    QGraphicsScene *canvasScene() { return m_scene; }
+    /** Controller host: applyItemModeFlags to every live item. */
+    void applyModeFlagsToLiveItems();
+    /** Controller host: if live items exist and none selected, select first. */
+    void ensurePrimarySelection();
+    /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
+    void applyToolDragMode();
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
     void clearLiveCanvas();
 

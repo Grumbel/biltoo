@@ -272,8 +272,7 @@ void GalleryController::enter(int packagedLayoutInt)
         // Clear residual Image/Workspace view state before packing.
         m_view->prepareGalleryCanvas();
     }
-    m_view->m_viewMode = ImageView::ViewMode::Gallery;
-    m_view->m_layoutMode = packagedLayout;
+    m_view->setActiveMode(ImageView::ViewMode::Gallery, packagedLayout);
     if (!layoutSwitch) {
         m_selectionAnchor = nullptr;
     }

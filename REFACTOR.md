@@ -198,3 +198,5 @@ by id (new model work — not part of early-phase exit criteria).
 - Phase 5p: controller host helpers on ImageView (`stopDeferredPacking`,
   `setActiveMode`, `takeClassicPath`, `clearPendingLoads`,
   `clearSceneKeepingStashes`, `scheduleReplaceLoad`); Image enter uses them.
+- Phase 5q: host helpers `liveItems`, `canvasScene`, `applyModeFlagsToLiveItems`,
+  `ensurePrimarySelection`, `applyToolDragMode`; Workspace/Gallery enter use them.

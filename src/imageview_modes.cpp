@@ -57,6 +57,39 @@ void ImageView::scheduleReplaceLoad(const QString &path)
     scheduleImageLoad(path, LoadReplace);
 }
 
+void ImageView::applyModeFlagsToLiveItems()
+{
+    for (ImageItem *item : m_items) {
+        if (item) {
+            applyItemModeFlags(item);
+        }
+    }
+}
+
+void ImageView::ensurePrimarySelection()
+{
+    if (m_items.isEmpty() || !m_scene) {
+        return;
+    }
+    if (!m_scene->selectedItems().isEmpty()) {
+        return;
+    }
+    if (ImageItem *first = m_items.first()) {
+        first->setSelected(true);
+    }
+}
+
+void ImageView::applyToolDragMode()
+{
+    if (m_tool == Tool::Select) {
+        setDragMode(QGraphicsView::RubberBandDrag);
+    } else {
+        setDragMode(QGraphicsView::NoDrag);
+    }
+}
+
+
+
 void ImageView::clearInteractionState()
 {
     m_handleDragItem = nullptr;
