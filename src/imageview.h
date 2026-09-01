@@ -146,6 +146,13 @@ public:
      * scene after their state is saved.
      */
     void setWorkspacePaths(const QStringList &paths);
+    /**
+     * Same as path-only overload, but binds each path to the parallel
+     * @p sessionIds entry (stable SessionImageId). Gallery/Workspace loads
+     * then apply per-id crop/flip/rotate from m_sessionAppearance.
+     */
+    void setWorkspacePaths(const QStringList &paths,
+                           const QVector<SessionImageId> &sessionIds);
     /** Reorder canvas items to match @p paths (session / sort order). */
     void reorderItemsByPaths(const QStringList &paths);
     /** When true, destroyCanvasItem does not clear the undo stack (session remove). */
@@ -455,6 +462,11 @@ private:
     QList<ImageItem *> transformTargets() const;
     /** Apply session crop from @p state to a freshly decoded item (no-op if none). */
     void applySessionCrop(ImageItem *item, const WorkspaceItemState &state);
+    /**
+     * Apply stored session appearance (crop + content bakes) for @p item's
+     * session id / index / unbound path. Pixels must be the full on-disk image.
+     */
+    void applyStoredAppearance(ImageItem *item);
     /**
      * Map item-local draft rect to source pixel rect of the *current* pixmap,
      * then compose into original on-disk coordinates in @p state.

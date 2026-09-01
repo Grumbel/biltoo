@@ -493,12 +493,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         const QSize before = existing->imageSize();
         existing->setSourceImage(image);
-        {
-            const auto it = m_itemStates.constFind(path);
-            if (it != m_itemStates.cend()) {
-                applySessionCrop(existing, *it);
-            }
-        }
+        // Prefer session-id appearance; path map is last-writer only for unbound.
+        applyStoredAppearance(existing);
         if (isGalleryMode()) {
             // Probe size can differ from decoded size — reflow so scale/pos stay valid.
             if (before != existing->imageSize()) {
@@ -544,20 +540,12 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         const PendingSessionBind b = m_pendingSessionBinds.takeAt(i);
         if (b.id != kInvalidSessionImageId) {
             item->setSessionId(b.id);
-            const auto app = m_sessionAppearance.constFind(b.id);
-            if (app != m_sessionAppearance.cend()) {
-                // Pixels may already be full decode; apply content appearance.
-                if (app->hasCrop || app->contentHFlip || app->contentVFlip
-                    || app->contentQuarterTurns != 0) {
-                    applySessionCrop(item, *app);
-                    applyContentBakes(item, *app);
-                    item->setSessionCrop(app->hasCrop, app->cropRect);
-                }
-            }
         }
         if (b.index >= 0) {
             item->setSessionIndex(b.index);
         }
+        // Full on-disk decode — apply per-id crop/flip/rotate if any.
+        applyStoredAppearance(item);
         break;
     }
     if (m_pendingSessionIndexByPath.contains(path)) {
@@ -1196,6 +1184,46 @@ void ImageView::applyCrop()
 void ImageView::cancelCrop()
 {
     leaveCropModeInternal(false);
+}
+
+void ImageView::applyStoredAppearance(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    const WorkspaceItemState *app = nullptr;
+    WorkspaceItemState fallback;
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId) {
+        const auto it = m_sessionAppearance.constFind(sid);
+        if (it != m_sessionAppearance.cend()) {
+            app = &(*it);
+        }
+        // Bound session image with no appearance entry = full frame.
+    } else if (item->sessionIndex() >= 0) {
+        const auto it = m_sessionSlotStates.constFind(item->sessionIndex());
+        if (it != m_sessionSlotStates.cend()) {
+            app = &(*it);
+        }
+    } else {
+        // Path map only when unbound (no session image id).
+        const auto it = m_itemStates.constFind(item->path());
+        if (it != m_itemStates.cend()) {
+            fallback = *it;
+            app = &fallback;
+        }
+    }
+    if (!app) {
+        return;
+    }
+    if (!app->hasCrop && !app->contentHFlip && !app->contentVFlip
+        && app->contentQuarterTurns == 0) {
+        item->setSessionCrop(false, QRect());
+        return;
+    }
+    applySessionCrop(item, *app);
+    applyContentBakes(item, *app);
+    item->setSessionCrop(app->hasCrop, app->cropRect);
 }
 
 void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &state)

@@ -12,15 +12,16 @@ void MainWindow::setLayoutFreeForm()
 
 void MainWindow::populateGalleryCanvas()
 {
-    // Gallery shows the whole session. Do not drive that through thumbnail
-    // multi-select — selectAllThumbs() left the strip in MultiSelection with
-    // every item highlighted, which survived into Image mode.
+    // DOMAIN: Gallery shows the full session list (m_files), not the previous
+    // Workspace membership. Clearing the canvas first ensures Workspace-only
+    // tiles do not linger when switching modes.
     // Caller must already be in Gallery (setWorkspacePaths is a no-op in Image).
     if (!m_imageView || m_files.isEmpty()) {
         return;
     }
-    m_imageView->setWorkspacePaths(m_files);
+    m_imageView->setWorkspacePaths(m_files, m_sessionIds);
 }
+
 
 void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
 {
@@ -256,7 +257,7 @@ void MainWindow::applyCliViewMode(const QString &mode)
     if (m == QLatin1String("workspace") || m == QLatin1String("work")) {
         enterWorkspaceMode();
         if (m_imageView && !m_files.isEmpty()) {
-            m_imageView->setWorkspacePaths(m_files);
+            m_imageView->setWorkspacePaths(m_files, m_sessionIds);
         }
         updateWorkspaceActionVisibility();
         return;

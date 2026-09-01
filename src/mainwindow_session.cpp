@@ -339,7 +339,7 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
         m_imageView->discardStashedGallery();
         if (isGalleryMode() || isWorkspaceMode()) {
             // Rebuild multi-item canvas to match m_files (History / Open / CLI).
-            m_imageView->setWorkspacePaths(m_files);
+            m_imageView->setWorkspacePaths(m_files, m_sessionIds);
         }
     }
 
@@ -703,9 +703,9 @@ void MainWindow::restoreSessionEntries(const QList<QPair<int, QString>> &entries
     applyThumbnailVisibility();
 
     if (isGalleryMode() && m_imageView) {
-        m_imageView->setWorkspacePaths(m_files);
+        m_imageView->setWorkspacePaths(m_files, m_sessionIds);
     } else if (isWorkspaceMode() && m_imageView) {
-        m_imageView->setWorkspacePaths(m_files);
+        m_imageView->setWorkspacePaths(m_files, m_sessionIds);
     } else if (!m_files.isEmpty()) {
         m_currentIndex = -1;
         setCurrentIndex(qMin(m_currentIndex < 0 ? 0 : m_currentIndex, m_files.size() - 1));

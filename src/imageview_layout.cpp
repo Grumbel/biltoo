@@ -1219,6 +1219,12 @@ void ImageView::reorderItemsByPaths(const QStringList &paths)
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
 {
+    setWorkspacePaths(paths, {});
+}
+
+void ImageView::setWorkspacePaths(const QStringList &paths,
+                                  const QVector<SessionImageId> &sessionIds)
+{
     if (isImageMode()) {
         return;
     }
@@ -1236,14 +1242,70 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
     m_pathOrder = paths;
 
     const bool virtualize = isGalleryMode() && paths.size() >= kGalleryVirtualThreshold;
+    const bool haveIds = !sessionIds.isEmpty();
 
-    for (const QString &path : paths) {
-        if (findItemByPath(path)) {
+    for (int i = 0; i < paths.size(); ++i) {
+        const QString &path = paths.at(i);
+        const SessionImageId sid = (haveIds && i < sessionIds.size())
+            ? sessionIds.at(i)
+            : kInvalidSessionImageId;
+
+        if (ImageItem *existing = findItemByPath(path)) {
+            // Bind session identity so Image-mode edits can peer-sync this tile.
+            const bool newlyBoundId = (sid != kInvalidSessionImageId
+                                      && existing->sessionId() == kInvalidSessionImageId);
+            if (newlyBoundId) {
+                existing->setSessionId(sid);
+            }
+            if (existing->sessionIndex() < 0) {
+                existing->setSessionIndex(i);
+            }
+            // If this tile never had an id while Image-mode edits ran, peer sync
+            // could not update it. Force a full re-decode so LoadAdd applies
+            // m_sessionAppearance for this id (safe; pixels must be on-disk full).
+            if (newlyBoundId && existing->hasDecodedPixels()
+                && sid != kInvalidSessionImageId
+                && m_sessionAppearance.contains(sid)) {
+                const WorkspaceItemState &app = m_sessionAppearance.constFind(sid).value();
+                if (app.hasCrop || app.contentHFlip || app.contentVFlip
+                    || app.contentQuarterTurns != 0) {
+                    existing->clearDecodedPixels();
+                    m_galleryDecodeScheduled.remove(path);
+                    m_pendingWorkspacePaths.remove(path);
+                    m_galleryDecodeFailed.remove(path);
+                    PendingSessionBind b;
+                    b.path = path;
+                    b.id = sid;
+                    b.index = i;
+                    m_pendingSessionBinds.append(b);
+                    if (isGalleryMode()) {
+                        scheduleGalleryDecode(path);
+                    } else {
+                        scheduleImageLoad(path, LoadAdd);
+                    }
+                }
+            }
             continue;
         }
+
+        if (sid != kInvalidSessionImageId || i >= 0) {
+            PendingSessionBind b;
+            b.path = path;
+            b.id = sid;
+            b.index = i;
+            m_pendingSessionBinds.append(b);
+            m_pendingSessionIndexByPath.insert(path, i);
+        }
+
         if (virtualize) {
             // Fast size probe + placeholder; full decode is viewport-windowed.
-            createPlaceholderItem(path, probeImageSize(path));
+            ImageItem *ph = createPlaceholderItem(path, probeImageSize(path));
+            if (ph) {
+                if (sid != kInvalidSessionImageId) {
+                    ph->setSessionId(sid);
+                }
+                ph->setSessionIndex(i);
+            }
         } else {
             scheduleImageLoad(path, LoadAdd);
         }
@@ -1251,6 +1313,10 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
 
     // Keep canvas order aligned with session/sort order (not async load order).
     reorderItemsByPaths(m_pathOrder);
+
+    if (haveIds) {
+        rebindWorkspaceSession(paths, sessionIds);
+    }
 
     // Workspace: seed a selection if empty. Gallery must not steal focus to
     // "last item" on layout switch / path refresh (preserves multi-select).
