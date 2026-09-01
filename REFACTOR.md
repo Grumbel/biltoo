@@ -171,3 +171,4 @@ by id (new model work — not part of early-phase exit criteria).
   imageview_modes.cpp.
 - Phase 5d: applyLayout/pack settings → imageview_pack.cpp;
   setWorkspacePaths/add/place/rebind → imageview_canvas.cpp.
+- Phase 5e: crop mode + session crop appearance → imageview_crop.cpp.
