@@ -9,6 +9,54 @@
 #include <QUndoStack>
 #include <QTimer>
 
+
+void ImageView::stopDeferredPacking()
+{
+    if (m_layoutDebounceTimer) {
+        m_layoutDebounceTimer->stop();
+    }
+    m_applyingLayout = false;
+}
+
+void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
+{
+    m_viewMode = mode;
+    m_layoutMode = layout;
+    viewport()->update();
+}
+
+QString ImageView::takeClassicPath()
+{
+    const QString path = m_classicPath;
+    m_classicPath.clear();
+    return path;
+}
+
+void ImageView::clearPendingLoads()
+{
+    m_pendingScenePos.clear();
+    m_pendingWorkspacePaths.clear();
+    m_pendingRestoreStates.clear();
+}
+
+void ImageView::clearSceneKeepingStashes()
+{
+    if (!m_scene) {
+        return;
+    }
+    m_scene->blockSignals(true);
+    m_scene->clear();
+    m_scene->blockSignals(false);
+}
+
+void ImageView::scheduleReplaceLoad(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    scheduleImageLoad(path, LoadReplace);
+}
+
 void ImageView::clearInteractionState()
 {
     m_handleDragItem = nullptr;

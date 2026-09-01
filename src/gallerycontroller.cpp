@@ -183,11 +183,8 @@ void GalleryController::onLeave(int nextMode)
     m_view->setDragMode(QGraphicsView::NoDrag);
     // Stop deferred packs immediately — a pending 0ms debounce after
     // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
-    if (m_view->m_layoutDebounceTimer) {
-        m_view->m_layoutDebounceTimer->stop();
-    }
+    m_view->stopDeferredPacking();
     m_pendingRestore = false;
-    m_view->m_applyingLayout = false;
     // Gallery → Image: keep scroll/centre snapshot from snapshotViewport()
     // (called just before setViewMode) so return-to-Gallery can restore it.
     // Any other leave path drops the snapshot.

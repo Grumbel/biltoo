@@ -3,10 +3,6 @@
 
 #include "imagecontroller.h"
 #include "imageview.h"
-#include "imageitem.h"
-
-#include <QTimer>
-#include <QUndoStack>
 
 ImageController::ImageController(ImageView *view)
     : m_view(view)
@@ -16,39 +12,16 @@ ImageController::ImageController(ImageView *view)
 void ImageController::enter()
 {
     // Gallery/Workspace → Image: stash already done in the matching onLeave.
-    m_view->m_viewMode = ImageView::ViewMode::Image;
-    m_view->m_layoutMode = ImageView::LayoutMode::FreeForm;
-    m_view->viewport()->update();
-    if (m_view->m_layoutDebounceTimer) {
-        m_view->m_layoutDebounceTimer->stop();
-    }
-    m_view->m_applyingLayout = false;
+    m_view->setActiveMode(ImageView::ViewMode::Image, ImageView::LayoutMode::FreeForm);
+    m_view->stopDeferredPacking();
     m_view->prepareImageModeCanvas();
-    // Prefer explicit classic path. Do not pick m_items.first() when leaving
-    // Gallery — that re-decodes a random tile before setCurrentIndex loads
-    // the real target (double clear + decode spike).
-    const QString path = m_view->m_classicPath;
+    // Prefer explicit classic path. Do not pick live items when leaving Gallery —
+    // that re-decodes a random tile before setCurrentIndex loads the real target.
+    const QString path = m_view->takeClassicPath();
     // Clear live canvas only — do not discard stashes.
-    m_view->clearInteractionState();
-    if (m_view->m_undoStack) {
-        m_view->m_undoStack->clear();
-    }
-    while (!m_view->m_items.isEmpty()) {
-        m_view->destroyCanvasItem(m_view->m_items.last());
-    }
-    m_view->m_pendingScenePos.clear();
-    m_view->m_pendingWorkspacePaths.clear();
-    m_view->m_pendingRestoreStates.clear();
-    m_view->m_classicPath.clear();
-    if (m_view->m_scene) {
-        m_view->m_scene->blockSignals(true);
-        m_view->m_scene->clear();
-        m_view->m_scene->blockSignals(false);
-    }
-    m_view->m_mouseInfo = {};
-    emit m_view->mouseInfoChanged(m_view->m_mouseInfo);
-    if (!path.isEmpty()) {
-        m_view->scheduleImageLoad(path, ImageView::LoadReplace);
-    }
+    m_view->clearLiveCanvas();
+    m_view->clearPendingLoads();
+    m_view->clearSceneKeepingStashes();
+    m_view->scheduleReplaceLoad(path);
     emit m_view->statusChanged();
 }

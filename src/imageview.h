@@ -127,6 +127,18 @@ public:
     void clearWorkspace();
     /** Clear drag/group/rotate interaction pointers (items stay on canvas). */
     void clearInteractionState();
+    /** Controller host: stop layout debounce and clear applyingLayout. */
+    void stopDeferredPacking();
+    /** Controller host: set m_viewMode + m_layoutMode and refresh viewport. */
+    void setActiveMode(ViewMode mode, LayoutMode layout);
+    /** Controller host: return classic path and clear it. */
+    QString takeClassicPath();
+    /** Controller host: drop in-flight workspace/gallery pending load queues. */
+    void clearPendingLoads();
+    /** Controller host: scene->clear with signals blocked (stashes already detached). */
+    void clearSceneKeepingStashes();
+    /** Controller host: LoadReplace for a path (no-op if empty). */
+    void scheduleReplaceLoad(const QString &path);
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
     void clearLiveCanvas();
 

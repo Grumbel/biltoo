@@ -195,3 +195,6 @@ by id (new model work — not part of early-phase exit criteria).
   (symmetric with Workspace leave).
 - Phase 5o: `ImageController` collaborator owns Image-mode enter
   (prepare canvas, clear live items, reload classic path).
+- Phase 5p: controller host helpers on ImageView (`stopDeferredPacking`,
+  `setActiveMode`, `takeClassicPath`, `clearPendingLoads`,
+  `clearSceneKeepingStashes`, `scheduleReplaceLoad`); Image enter uses them.
