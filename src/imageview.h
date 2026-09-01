@@ -468,6 +468,15 @@ public:
     void bakeItemRotate90(ImageItem *item, int quarterTurns);
     /** Bake flip into pixels and session state. */
     void bakeItemFlip(ImageItem *item, bool horizontal, bool vertical);
+    /** Push geometry-only undo (pos/scale/rotation/opacity/z/item flips). */
+    void pushItemGeometryCommand(const QString &text, ImageItem *item,
+                                 const WorkspaceItemState &before,
+                                 const WorkspaceItemState &after);
+    /** Push content bake undo (pixels + session appearance). */
+    void pushItemContentCommand(const QString &text, ImageItem *item,
+                                const QImage &beforeSrc, const QImage &afterSrc,
+                                const WorkspaceItemState &before,
+                                const WorkspaceItemState &after);
     /** Apply contentQuarterTurns / contentHFlip / contentVFlip after decode+crop. */
     void applyContentBakes(ImageItem *item, const WorkspaceItemState &state);
 

@@ -61,6 +61,97 @@ QList<ImageItem *> overlappingStack(ImageItem *item, const QList<ImageItem *> &a
 } // namespace
 
 
+void ImageView::pushItemGeometryCommand(const QString &text, ImageItem *item,
+                                        const WorkspaceItemState &before,
+                                        const WorkspaceItemState &after)
+{
+    if (!m_undoStack || !item) {
+        return;
+    }
+    class TransformCommand : public QUndoCommand {
+    public:
+        TransformCommand(ImageView *view, ImageItem *it,
+                         const WorkspaceItemState &b, const WorkspaceItemState &a,
+                         const QString &label)
+            : m_view(view), m_item(it), m_before(b), m_after(a)
+        {
+            setText(label);
+        }
+        void undo() override
+        {
+            if (!m_view || !m_item) {
+                return;
+            }
+            m_view->applyState(m_item, m_before);
+            if (m_view->isWorkspaceMode()) {
+                m_view->updateWorkspaceSceneRect();
+            }
+            m_view->viewport()->update();
+            emit m_view->statusChanged();
+        }
+        void redo() override
+        {
+            if (!m_view || !m_item) {
+                return;
+            }
+            m_view->applyState(m_item, m_after);
+            if (m_view->isWorkspaceMode()) {
+                m_view->updateWorkspaceSceneRect();
+            }
+            m_view->viewport()->update();
+            emit m_view->statusChanged();
+        }
+    private:
+        ImageView *m_view;
+        ImageItem *m_item;
+        WorkspaceItemState m_before, m_after;
+    };
+    m_undoStack->push(new TransformCommand(this, item, before, after, text));
+}
+
+void ImageView::pushItemContentCommand(const QString &text, ImageItem *item,
+                                       const QImage &beforeSrc, const QImage &afterSrc,
+                                       const WorkspaceItemState &before,
+                                       const WorkspaceItemState &after)
+{
+    if (!m_undoStack || !item) {
+        return;
+    }
+    class ContentCommand : public QUndoCommand {
+    public:
+        ContentCommand(ImageView *view, ImageItem *it,
+                       const QImage &bSrc, const QImage &aSrc,
+                       const WorkspaceItemState &b, const WorkspaceItemState &a,
+                       const QString &label)
+            : m_view(view), m_item(it)
+            , m_beforeSrc(bSrc), m_afterSrc(aSrc)
+            , m_before(b), m_after(a)
+        {
+            setText(label);
+        }
+        void undo() override { apply(m_beforeSrc, m_before); }
+        void redo() override { apply(m_afterSrc, m_after); }
+    private:
+        void apply(const QImage &src, const WorkspaceItemState &st)
+        {
+            if (!m_view || !m_item) {
+                return;
+            }
+            // Reuse crop appearance path: pixels + content flags + geometry + session store.
+            m_view->applyCropAppearance(m_item, src, st);
+            if (m_view->isGalleryMode()) {
+                m_view->applyLayout(GalleryPackReason::ContentChange);
+            }
+        }
+        ImageView *m_view;
+        ImageItem *m_item;
+        QImage m_beforeSrc, m_afterSrc;
+        WorkspaceItemState m_before, m_after;
+    };
+    m_undoStack->push(new ContentCommand(this, item, beforeSrc, afterSrc, before, after, text));
+}
+
+
 void ImageView::flipHorizontal()
 {
     const QList<ImageItem *> targets = transformTargets();
@@ -143,6 +234,8 @@ void ImageView::raiseItem(ImageItem *item)
         return; // already top among overlapping
     }
     ImageItem *above = layer.at(idx + 1);
+    const WorkspaceItemState beforeItem = captureState(item);
+    const WorkspaceItemState beforeAbove = captureState(above);
     const qreal za = item->stackZ();
     const qreal zb = above->stackZ();
     if (qFuzzyCompare(za, zb)) {
@@ -150,6 +243,12 @@ void ImageView::raiseItem(ImageItem *item)
     } else {
         item->setStackZ(zb);
         above->setStackZ(za);
+    }
+    if (m_undoStack) {
+        m_undoStack->beginMacro(tr("Raise"));
+        pushItemGeometryCommand(tr("Raise"), item, beforeItem, captureState(item));
+        pushItemGeometryCommand(tr("Raise"), above, beforeAbove, captureState(above));
+        m_undoStack->endMacro();
     }
     emit statusChanged();
 }
@@ -165,6 +264,8 @@ void ImageView::lowerItem(ImageItem *item)
         return; // already bottom among overlapping
     }
     ImageItem *below = layer.at(idx - 1);
+    const WorkspaceItemState beforeItem = captureState(item);
+    const WorkspaceItemState beforeBelow = captureState(below);
     const qreal za = item->stackZ();
     const qreal zb = below->stackZ();
     if (qFuzzyCompare(za, zb)) {
@@ -172,6 +273,12 @@ void ImageView::lowerItem(ImageItem *item)
     } else {
         item->setStackZ(zb);
         below->setStackZ(za);
+    }
+    if (m_undoStack) {
+        m_undoStack->beginMacro(tr("Lower"));
+        pushItemGeometryCommand(tr("Lower"), item, beforeItem, captureState(item));
+        pushItemGeometryCommand(tr("Lower"), below, beforeBelow, captureState(below));
+        m_undoStack->endMacro();
     }
     emit statusChanged();
 }
@@ -231,7 +338,9 @@ void ImageView::opacityUp()
         return;
     }
     if (ImageItem *item = targetItem()) {
+        const WorkspaceItemState before = captureState(item);
         item->setItemOpacity(item->itemOpacity() + 0.1);
+        pushItemGeometryCommand(tr("Opacity"), item, before, captureState(item));
         emit statusChanged();
     }
 }
@@ -242,7 +351,9 @@ void ImageView::opacityDown()
         return;
     }
     if (ImageItem *item = targetItem()) {
+        const WorkspaceItemState before = captureState(item);
         item->setItemOpacity(item->itemOpacity() - 0.1);
+        pushItemGeometryCommand(tr("Opacity"), item, before, captureState(item));
         emit statusChanged();
     }
 }
@@ -253,7 +364,9 @@ void ImageView::opacityReset()
         return;
     }
     if (ImageItem *item = targetItem()) {
+        const WorkspaceItemState before = captureState(item);
         item->setItemOpacity(1.0);
+        pushItemGeometryCommand(tr("Reset opacity"), item, before, captureState(item));
         emit statusChanged();
     }
 }
@@ -269,19 +382,29 @@ void ImageView::resetItemScale()
         }
     }
     if (targets.isEmpty()) {
-        if (ImageItem *t = targetItem()) {
-            targets.append(t);
+        if (ImageItem *tgt = targetItem()) {
+            targets.append(tgt);
         } else if (ImageItem *p = primaryItem()) {
             targets.append(p);
         }
     }
+    if (targets.isEmpty()) {
+        return;
+    }
+    const bool macro = m_undoStack && targets.size() > 1;
+    if (macro) {
+        m_undoStack->beginMacro(tr("Reset scale"));
+    }
     for (ImageItem *item : targets) {
+        const WorkspaceItemState before = captureState(item);
         item->setItemScale(1.0, 1.0);
+        pushItemGeometryCommand(tr("Reset scale"), item, before, captureState(item));
     }
-    if (!targets.isEmpty()) {
-        emit statusChanged();
-        viewport()->update();
+    if (macro) {
+        m_undoStack->endMacro();
     }
+    emit statusChanged();
+    viewport()->update();
 }
 
 void ImageView::resetItemRotation()
@@ -295,19 +418,29 @@ void ImageView::resetItemRotation()
         }
     }
     if (targets.isEmpty()) {
-        if (ImageItem *t = targetItem()) {
-            targets.append(t);
+        if (ImageItem *tgt = targetItem()) {
+            targets.append(tgt);
         } else if (ImageItem *p = primaryItem()) {
             targets.append(p);
         }
     }
+    if (targets.isEmpty()) {
+        return;
+    }
+    const bool macro = m_undoStack && targets.size() > 1;
+    if (macro) {
+        m_undoStack->beginMacro(tr("Reset rotation"));
+    }
     for (ImageItem *item : targets) {
+        const WorkspaceItemState before = captureState(item);
         item->setItemRotation(0.0);
         commitItemSessionEdit(item);
+        pushItemGeometryCommand(tr("Reset rotation"), item, before, captureState(item));
     }
-    if (!targets.isEmpty()) {
-        viewport()->update();
+    if (macro) {
+        m_undoStack->endMacro();
     }
+    viewport()->update();
 }
 
 void ImageView::duplicateSelected()

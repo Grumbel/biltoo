@@ -218,17 +218,30 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     if (!item || quarterTurns == 0) {
         return;
     }
+    const QImage beforeSrc = item->sourceImage().copy();
+    WorkspaceItemState beforeSt = captureState(item);
+    beforeSt.hasCrop = item->sessionHasCrop();
+    beforeSt.cropRect = item->sessionCropRect();
+    beforeSt.contentHFlip = item->contentHFlip();
+    beforeSt.contentVFlip = item->contentVFlip();
+    {
+        const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        if (sid0 != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *it = m_appearance.get(sid0)) {
+                beforeSt.contentQuarterTurns = it->contentQuarterTurns;
+                beforeSt.sessionId = sid0;
+            }
+        }
+    }
+
     item->bakeRotate90(quarterTurns);
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_currentSessionId;
     }
-    int prevTurns = 0;
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
-            prevTurns = it->contentQuarterTurns;
-        }
-    }
+    int prevTurns = beforeSt.contentQuarterTurns;
     int turns = (prevTurns + quarterTurns) % 4;
     if (turns < 0) {
         turns += 4;
@@ -238,9 +251,23 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.sessionId = sid;
         s.contentQuarterTurns = turns;
         s.orientation = 0.0;
+        s.hasCrop = item->sessionHasCrop();
+        s.cropRect = item->sessionCropRect();
+        s.contentHFlip = item->contentHFlip();
+        s.contentVFlip = item->contentVFlip();
         m_appearance.set(sid, s);
     }
     commitItemSessionEdit(item);
+
+    WorkspaceItemState afterSt = captureState(item);
+    afterSt.hasCrop = item->sessionHasCrop();
+    afterSt.cropRect = item->sessionCropRect();
+    afterSt.contentHFlip = item->contentHFlip();
+    afterSt.contentVFlip = item->contentVFlip();
+    afterSt.contentQuarterTurns = turns;
+    afterSt.sessionId = sid;
+    pushItemContentCommand(tr("Rotate"), item, beforeSrc, item->sourceImage().copy(),
+                           beforeSt, afterSt);
 }
 
 void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
@@ -248,6 +275,24 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     if (!item || (!horizontal && !vertical)) {
         return;
     }
+    const QImage beforeSrc = item->sourceImage().copy();
+    WorkspaceItemState beforeSt = captureState(item);
+    beforeSt.hasCrop = item->sessionHasCrop();
+    beforeSt.cropRect = item->sessionCropRect();
+    beforeSt.contentHFlip = item->contentHFlip();
+    beforeSt.contentVFlip = item->contentVFlip();
+    {
+        const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        if (sid0 != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *it = m_appearance.get(sid0)) {
+                beforeSt.contentQuarterTurns = it->contentQuarterTurns;
+                beforeSt.sessionId = sid0;
+            }
+        }
+    }
+
     item->bakeFlip(horizontal, vertical);
     // Toggle against this item's content flags only — never path-keyed state
     // (duplicates sharing a path would otherwise share one flip bit).
@@ -262,6 +307,19 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     item->setContentHFlip(h);
     item->setContentVFlip(v);
     commitItemSessionEdit(item);
+
+    WorkspaceItemState afterSt = captureState(item);
+    afterSt.hasCrop = item->sessionHasCrop();
+    afterSt.cropRect = item->sessionCropRect();
+    afterSt.contentHFlip = h;
+    afterSt.contentVFlip = v;
+    afterSt.contentQuarterTurns = beforeSt.contentQuarterTurns;
+    afterSt.sessionId = beforeSt.sessionId;
+    pushItemContentCommand(horizontal && !vertical ? tr("Flip horizontal")
+                          : vertical && !horizontal ? tr("Flip vertical")
+                          : tr("Flip"),
+                           item, beforeSrc, item->sourceImage().copy(),
+                           beforeSt, afterSt);
 }
 
 void ImageView::commitItemSessionEdit(ImageItem *item)
