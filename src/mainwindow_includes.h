@@ -9,6 +9,7 @@
 #include "mainwindow.h"
 #include "icons.h"
 #include "imageview.h"
+#include "sessiondocument.h"
 #include "imageloader.h"
 #include "thumbnailbar.h"
 #include "preferencesdialog.h"

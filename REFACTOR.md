@@ -139,3 +139,5 @@ update one list.
   `m_appearance.get/set/remove` instead of a raw QHash.
 - Phase 3: `leaveGalleryForImage()` / `returnToGalleryFromImage()` own viewport
   snapshot + mode switch so callers cannot forget snapshot or clear it early.
+- Phase 4: `SessionDocument` owns ordered paths + session ids; MainWindow
+  holds `m_session` and facades alloc/indexOf/remove through it.

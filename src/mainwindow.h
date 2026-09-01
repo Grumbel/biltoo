@@ -5,6 +5,7 @@
 #define MAINWINDOW_H
 
 #include "imageview.h"
+#include "sessiondocument.h"
 #include "imageview_types.h"
 
 #include <QMainWindow>
@@ -340,10 +341,8 @@ private:
     QActionGroup *m_sortGroup = nullptr;
     QActionGroup *m_thumbnailPositionGroup = nullptr;
 
-    QStringList m_files;
-    /** Parallel to m_files: stable session-image ids (never reused after remove). */
-    QVector<SessionImageId> m_sessionIds;
-    SessionImageId m_nextSessionId = 1;
+    /** Working set: ordered paths + stable session-image ids (Phase 4). */
+    SessionDocument m_session;
     /** Past sessions (full path lists), newest first. */
     QList<QStringList> m_sessionHistory;
     static constexpr int kMaxSessionHistory = 20;

@@ -12,14 +12,14 @@ void MainWindow::setLayoutFreeForm()
 
 void MainWindow::populateGalleryCanvas()
 {
-    // DOMAIN: Gallery shows the full session list (m_files), not the previous
+    // DOMAIN: Gallery shows the full session list (m_session.paths()), not the previous
     // Workspace membership. Clearing the canvas first ensures Workspace-only
     // tiles do not linger when switching modes.
     // Caller must already be in Gallery (setWorkspacePaths is a no-op in Image).
-    if (!m_imageView || m_files.isEmpty()) {
+    if (!m_imageView || m_session.paths().isEmpty()) {
         return;
     }
-    m_imageView->setWorkspacePaths(m_files, m_sessionIds);
+    m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
 }
 
 
@@ -116,10 +116,10 @@ void MainWindow::setLayoutMasonryRows()
 void MainWindow::showPathInImageMode(const QString &path)
 {
     // DOMAIN: enter Image on path; session current := path.
-    if (path.isEmpty() || m_files.isEmpty()) {
+    if (path.isEmpty() || m_session.paths().isEmpty()) {
         return;
     }
-    const int idx = m_files.indexOf(path);
+    const int idx = m_session.paths().indexOf(path);
     if (idx < 0) {
         return;
     }
@@ -171,8 +171,8 @@ void MainWindow::returnToGallery()
     }
     m_galleryReturnActive = false;
     m_workspaceReturnActive = false;
-    const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
-                                  ? m_files.at(m_currentIndex)
+    const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                                  ? m_session.paths().at(m_currentIndex)
                                   : QString();
     const ImageView::LayoutMode layout = m_galleryReturnLayout;
 
@@ -282,10 +282,10 @@ void MainWindow::applyCliViewMode(const QString &mode)
             toggleWorkspaceMode();
         } else if (isGalleryMode()) {
             QString path;
-            if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-                path = m_files.at(m_currentIndex);
-            } else if (!m_files.isEmpty()) {
-                path = m_files.first();
+            if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+                path = m_session.paths().at(m_currentIndex);
+            } else if (!m_session.paths().isEmpty()) {
+                path = m_session.paths().first();
             }
             if (!path.isEmpty()) {
                 showPathInImageMode(path);
@@ -302,8 +302,8 @@ void MainWindow::applyCliViewMode(const QString &mode)
     }
     if (m == QLatin1String("workspace") || m == QLatin1String("work")) {
         enterWorkspaceMode();
-        if (m_imageView && !m_files.isEmpty()) {
-            m_imageView->setWorkspacePaths(m_files, m_sessionIds);
+        if (m_imageView && !m_session.paths().isEmpty()) {
+            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
         }
         updateWorkspaceActionVisibility();
         return;
@@ -427,7 +427,7 @@ void MainWindow::updateWorkspaceActionVisibility()
     // Gallery layout actions: always visible; enabled once a session exists.
     // (Previously they stayed hidden until Workspace Mode was toggled because
     //  loadFiles never refreshed visibility.)
-    const bool canGallery = !m_files.isEmpty();
+    const bool canGallery = !m_session.paths().isEmpty();
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
                          m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct}) {
         if (act) {

@@ -97,14 +97,14 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
 
 void MainWindow::sortFileList()
 {
-    if (m_files.size() <= 1) {
+    if (m_session.paths().size() <= 1) {
         return;
     }
     // Ensure parallel id vector matches (legacy / partial updates).
-    while (m_sessionIds.size() < m_files.size()) {
-        m_sessionIds.append(allocSessionId());
+    while (m_session.ids().size() < m_session.paths().size()) {
+        m_session.ids().append(allocSessionId());
     }
-    m_sessionIds.resize(m_files.size());
+    m_session.ids().resize(m_session.paths().size());
 
     auto nameLess = [](const QString &a, const QString &b) {
         QCollator collator;
@@ -118,11 +118,11 @@ void MainWindow::sortFileList()
     };
 
     // Sort indices so path list and stable ids stay aligned.
-    QVector<int> order(m_files.size());
+    QVector<int> order(m_session.paths().size());
     for (int i = 0; i < order.size(); ++i) {
         order[i] = i;
     }
-    auto pathAt = [&](int i) -> const QString & { return m_files.at(i); };
+    auto pathAt = [&](int i) -> const QString & { return m_session.paths().at(i); };
 
     switch (m_sortMode) {
     case SortMode::MTime:
@@ -189,11 +189,11 @@ void MainWindow::sortFileList()
     newFiles.reserve(order.size());
     newIds.reserve(order.size());
     for (int i : order) {
-        newFiles.append(m_files.at(i));
-        newIds.append(m_sessionIds.at(i));
+        newFiles.append(m_session.paths().at(i));
+        newIds.append(m_session.ids().at(i));
     }
-    m_files = newFiles;
-    m_sessionIds = newIds;
+    m_session.paths() = newFiles;
+    m_session.ids() = newIds;
 }
 
 void MainWindow::setSortMode(SortMode mode)
@@ -218,16 +218,16 @@ void MainWindow::setSortMode(SortMode mode)
         m_sortPixelCountAct->setChecked(mode == SortMode::PixelCount);
     }
 
-    if (m_files.isEmpty()) {
+    if (m_session.paths().isEmpty()) {
         return;
     }
 
-    const QString current = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
-                                ? m_files.at(m_currentIndex)
+    const QString current = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                                ? m_session.paths().at(m_currentIndex)
                                 : QString();
     sortFileList();
-    m_thumbnailBar->setFiles(m_files);
-        m_thumbnailBar->setSessionIds(m_sessionIds);
+    m_thumbnailBar->setFiles(m_session.paths());
+        m_thumbnailBar->setSessionIds(m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -235,7 +235,7 @@ void MainWindow::setSortMode(SortMode mode)
 
     int newIndex = 0;
     if (!current.isEmpty()) {
-        newIndex = m_files.indexOf(current);
+        newIndex = m_session.paths().indexOf(current);
         if (newIndex < 0) {
             newIndex = 0;
         }
@@ -257,7 +257,7 @@ void MainWindow::setSortMode(SortMode mode)
         }
     } else if (isWorkspaceMode() && m_imageView) {
         // Keep canvas membership; only path order for any future gallery use.
-        m_imageView->reorderItemsByPaths(m_files);
+        m_imageView->reorderItemsByPaths(m_session.paths());
     }
 
     applyThumbnailVisibility();
@@ -295,11 +295,11 @@ void MainWindow::sortByPixelCount()
 
 void MainWindow::applyThumbnailVisibility()
 {
-    bool show = m_files.size() > 1;
+    bool show = m_session.paths().size() > 1;
     if (m_forceNoThumbnails) {
         show = false;
     } else if (m_forceThumbnails) {
-        show = !m_files.isEmpty();
+        show = !m_session.paths().isEmpty();
     }
     m_thumbnailBar->setVisible(show && !isFullScreen());
     m_toggleThumbnailBarAct->setChecked(show);
@@ -321,43 +321,43 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
         return;
     }
 
-    m_files = images;
-    m_sessionIds.clear();
-    m_sessionIds.reserve(m_files.size());
-    for (int i = 0; i < m_files.size(); ++i) {
-        m_sessionIds.append(allocSessionId());
+    m_session.paths() = images;
+    m_session.ids().clear();
+    m_session.ids().reserve(m_session.paths().size());
+    for (int i = 0; i < m_session.paths().size(); ++i) {
+        m_session.ids().append(allocSessionId());
     }
     sortFileList();
     m_currentIndex = -1;
 
-    m_thumbnailBar->setFiles(m_files);
-        m_thumbnailBar->setSessionIds(m_sessionIds);
+    m_thumbnailBar->setFiles(m_session.paths());
+        m_thumbnailBar->setSessionIds(m_session.ids());
     applyThumbnailVisibility();
 
     // New session paths: drop any Gallery tile cache from the previous session.
     if (m_imageView) {
         m_imageView->discardStashedGallery();
         if (isGalleryMode() || isWorkspaceMode()) {
-            // Rebuild multi-item canvas to match m_files (History / Open / CLI).
-            m_imageView->setWorkspacePaths(m_files, m_sessionIds);
+            // Rebuild multi-item canvas to match m_session.paths() (History / Open / CLI).
+            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
         }
     }
 
     int idx = startAt;
-    if (idx < 0 || idx >= m_files.size()) {
+    if (idx < 0 || idx >= m_session.paths().size()) {
         idx = 0;
     }
     setCurrentIndex(idx);
     updateNavigationActions();
     updateWorkspaceActionVisibility();
-    rememberSessionHistory(m_files);
+    rememberSessionHistory(m_session.paths());
 }
 
 void MainWindow::newSession()
 {
     stopSlideshow();
-    m_files.clear();
-    m_sessionIds.clear();
+    m_session.paths().clear();
+    m_session.ids().clear();
     m_currentIndex = -1;
     m_galleryReturnActive = false;
     m_workspaceReturnActive = false;
@@ -400,17 +400,17 @@ void MainWindow::appendFiles(const QStringList &paths)
         return;
     }
 
-    const QString current = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
-                                ? m_files.at(m_currentIndex)
+    const QString current = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                                ? m_session.paths().at(m_currentIndex)
                                 : QString();
 
     // Deduplicate while preserving order of existing entries
-    QSet<QString> seen(m_files.begin(), m_files.end());
+    QSet<QString> seen(m_session.paths().begin(), m_session.paths().end());
     int added = 0;
     for (const QString &path : images) {
         if (!seen.contains(path)) {
-            m_files.append(path);
-            m_sessionIds.append(allocSessionId());
+            m_session.paths().append(path);
+            m_session.ids().append(allocSessionId());
             seen.insert(path);
             ++added;
         }
@@ -423,8 +423,8 @@ void MainWindow::appendFiles(const QStringList &paths)
     const QStringList workspacePaths = isWorkspaceMode() ? m_imageView->itemPaths() : QStringList();
 
     sortFileList();
-    m_thumbnailBar->setFiles(m_files);
-        m_thumbnailBar->setSessionIds(m_sessionIds);
+    m_thumbnailBar->setFiles(m_session.paths());
+        m_thumbnailBar->setSessionIds(m_session.ids());
     if (isWorkspaceMode()) {
         // setFiles rebuilds items; re-apply multi-select mode and canvas selection
         m_thumbnailBar->setMultiSelectEnabled(true);
@@ -433,7 +433,7 @@ void MainWindow::appendFiles(const QStringList &paths)
         if (m_thumbnailBar->selectedIndices().isEmpty() && !workspacePaths.isEmpty()) {
             QList<int> indices;
             for (const QString &path : workspacePaths) {
-                const int idx = m_files.indexOf(path);
+                const int idx = m_session.paths().indexOf(path);
                 if (idx >= 0) {
                     indices.append(idx);
                 }
@@ -446,7 +446,7 @@ void MainWindow::appendFiles(const QStringList &paths)
 
     int newIndex = 0;
     if (!current.isEmpty()) {
-        newIndex = m_files.indexOf(current);
+        newIndex = m_session.paths().indexOf(current);
         if (newIndex < 0) {
             newIndex = 0;
         }
@@ -457,8 +457,8 @@ void MainWindow::appendFiles(const QStringList &paths)
 
     if (isWorkspaceMode()) {
         m_currentIndex = newIndex;
-        if (m_metadataPanel && newIndex >= 0 && newIndex < m_files.size()) {
-            m_metadataPath = m_files.at(newIndex);
+        if (m_metadataPanel && newIndex >= 0 && newIndex < m_session.paths().size()) {
+            m_metadataPath = m_session.paths().at(newIndex);
             m_metadataPanel->setImagePath(m_metadataPath);
         }
         updateStatus();
@@ -473,28 +473,17 @@ void MainWindow::appendFiles(const QStringList &paths)
 
 SessionImageId MainWindow::allocSessionId()
 {
-    return m_nextSessionId++;
+    return m_session.allocId();
 }
 
 SessionImageId MainWindow::sessionIdAt(int index) const
 {
-    if (index < 0 || index >= m_sessionIds.size()) {
-        return kInvalidSessionImageId;
-    }
-    return m_sessionIds.at(index);
+    return m_session.idAt(index);
 }
 
 int MainWindow::indexOfSessionId(SessionImageId id) const
 {
-    if (id == kInvalidSessionImageId) {
-        return -1;
-    }
-    for (int i = 0; i < m_sessionIds.size(); ++i) {
-        if (m_sessionIds.at(i) == id) {
-            return i;
-        }
-    }
-    return -1;
+    return m_session.indexOfId(id);
 }
 
 SessionImageId MainWindow::currentSessionId() const
@@ -504,13 +493,13 @@ SessionImageId MainWindow::currentSessionId() const
 
 void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
 {
-    if (m_files.isEmpty() || index < 0 || index >= m_files.size()) {
+    if (m_session.paths().isEmpty() || index < 0 || index >= m_session.paths().size()) {
         return;
     }
     if (index == m_currentIndex) {
         // Still refresh Image canvas if empty (e.g. after mode switch)
         if (isImageMode() && m_imageView && m_imageView->itemCount() == 0) {
-            m_imageView->loadImage(m_files.at(m_currentIndex));
+            m_imageView->loadImage(m_session.paths().at(m_currentIndex));
         }
         return;
     }
@@ -519,13 +508,13 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     }
 
     m_currentIndex = index;
-    const QString path = m_files.at(m_currentIndex);
+    const QString path = m_session.paths().at(m_currentIndex);
 
     // Publish session cursor before decode so Image-mode items bind the correct
     // sessionIndex (crop/flip sync to the matching Workspace slot).
     // Slideshow auto-advance must not pulse filename/index (only user nav or pinned HUD).
     if (m_imageView) {
-        m_imageView->setSessionPosition(m_currentIndex, m_files.size(),
+        m_imageView->setSessionPosition(m_currentIndex, m_session.paths().size(),
                                         !m_slideshowAdvancing);
         m_imageView->setCurrentSessionId(currentSessionId());
     }
@@ -556,7 +545,7 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
 
 void MainWindow::removeSessionIndices(const QList<int> &indices)
 {
-    if (indices.isEmpty() || m_files.isEmpty()) {
+    if (indices.isEmpty() || m_session.paths().isEmpty()) {
         return;
     }
 
@@ -566,8 +555,8 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
 
     QList<QPair<int, QString>> entries;
     for (int idx : sorted) {
-        if (idx >= 0 && idx < m_files.size()) {
-            entries.append(qMakePair(idx, m_files.at(idx)));
+        if (idx >= 0 && idx < m_session.paths().size()) {
+            entries.append(qMakePair(idx, m_session.paths().at(idx)));
         }
     }
     if (entries.isEmpty()) {
@@ -584,7 +573,7 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
 
 void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
 {
-    if (indices.isEmpty() || m_files.isEmpty()) {
+    if (indices.isEmpty() || m_session.paths().isEmpty()) {
         return;
     }
 
@@ -594,8 +583,8 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     std::sort(sorted.begin(), sorted.end());
     sorted.erase(std::unique(sorted.begin(), sorted.end()), sorted.end());
 
-    const QString currentPath = (m_currentIndex >= 0 && m_currentIndex < m_files.size())
-                                    ? m_files.at(m_currentIndex)
+    const QString currentPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                                    ? m_session.paths().at(m_currentIndex)
                                     : QString();
 
     // Remove highest indices first so remaining indices stay valid
@@ -609,15 +598,12 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     }
     for (int i = sorted.size() - 1; i >= 0; --i) {
         const int idx = sorted.at(i);
-        if (idx < 0 || idx >= m_files.size()) {
+        if (idx < 0 || idx >= m_session.paths().size()) {
             continue;
         }
-        const QString path = m_files.at(idx);
-        const SessionImageId sid = sessionIdAt(idx);
-        m_files.removeAt(idx);
-        if (idx >= 0 && idx < m_sessionIds.size()) {
-            m_sessionIds.removeAt(idx);
-        }
+        const QString path = m_session.pathAt(idx);
+        const SessionImageId sid = m_session.idAt(idx);
+        m_session.removeAt(idx);
         // Drop the canvas object for this session image only (not every path match).
         if (m_imageView && sid != kInvalidSessionImageId
             && (isWorkspaceMode() || isGalleryMode())) {
@@ -628,8 +614,8 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         m_imageView->setPreserveUndoOnDestroy(false);
     }
 
-    m_thumbnailBar->setFiles(m_files);
-        m_thumbnailBar->setSessionIds(m_sessionIds);
+    m_thumbnailBar->setFiles(m_session.paths());
+        m_thumbnailBar->setSessionIds(m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -638,7 +624,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     // Gallery suppress stays on until the end of this function (and one more
     // event-loop tick) so setCurrentIndex / status updates cannot repack.
 
-    if (m_files.isEmpty()) {
+    if (m_session.paths().isEmpty()) {
         m_currentIndex = -1;
         m_imageView->clearWorkspace();
         if (m_metadataPanel) {
@@ -656,16 +642,16 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
 
     int newIndex = 0;
     if (!currentPath.isEmpty()) {
-        newIndex = m_files.indexOf(currentPath);
+        newIndex = m_session.paths().indexOf(currentPath);
     }
     if (newIndex < 0) {
-        newIndex = qBound(0, sorted.first(), m_files.size() - 1);
+        newIndex = qBound(0, sorted.first(), m_session.paths().size() - 1);
     }
 
     if (isWorkspaceMode()) {
         m_currentIndex = newIndex;
         if (m_metadataPanel) {
-            m_metadataPath = m_files.at(newIndex);
+            m_metadataPath = m_session.paths().at(newIndex);
             m_metadataPanel->setImagePath(m_metadataPath);
         }
         m_thumbnailBar->setCurrentIndex(newIndex);
@@ -675,7 +661,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         m_currentIndex = newIndex;
         m_thumbnailBar->setCurrentIndex(newIndex);
         if (m_metadataPanel) {
-            m_metadataPath = m_files.at(newIndex);
+            m_metadataPath = m_session.paths().at(newIndex);
             m_metadataPanel->setImagePath(m_metadataPath);
         }
         updateWindowTitle();
@@ -711,15 +697,15 @@ void MainWindow::restoreSessionEntries(const QList<QPair<int, QString>> &entries
 
     m_sessionUndoGuard = true;
     for (const auto &e : sorted) {
-        const int idx = qBound(0, e.first, m_files.size());
-        if (m_files.contains(e.second)) {
+        const int idx = qBound(0, e.first, m_session.paths().size());
+        if (m_session.paths().contains(e.second)) {
             continue;
         }
-        m_files.insert(idx, e.second);
-        m_sessionIds.insert(idx, allocSessionId());
+        m_session.paths().insert(idx, e.second);
+        m_session.ids().insert(idx, allocSessionId());
     }
-    m_thumbnailBar->setFiles(m_files);
-        m_thumbnailBar->setSessionIds(m_sessionIds);
+    m_thumbnailBar->setFiles(m_session.paths());
+        m_thumbnailBar->setSessionIds(m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -727,12 +713,12 @@ void MainWindow::restoreSessionEntries(const QList<QPair<int, QString>> &entries
     applyThumbnailVisibility();
 
     if (isGalleryMode() && m_imageView) {
-        m_imageView->setWorkspacePaths(m_files, m_sessionIds);
+        m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
     } else if (isWorkspaceMode() && m_imageView) {
-        m_imageView->setWorkspacePaths(m_files, m_sessionIds);
-    } else if (!m_files.isEmpty()) {
+        m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+    } else if (!m_session.paths().isEmpty()) {
         m_currentIndex = -1;
-        setCurrentIndex(qMin(m_currentIndex < 0 ? 0 : m_currentIndex, m_files.size() - 1));
+        setCurrentIndex(qMin(m_currentIndex < 0 ? 0 : m_currentIndex, m_session.paths().size() - 1));
     }
     updateWindowTitle();
     updateStatus();
@@ -742,12 +728,12 @@ void MainWindow::restoreSessionEntries(const QList<QPair<int, QString>> &entries
 
 void MainWindow::removeSessionPaths(const QStringList &paths)
 {
-    if (paths.isEmpty() || m_files.isEmpty()) {
+    if (paths.isEmpty() || m_session.paths().isEmpty()) {
         return;
     }
     QList<int> indices;
     for (const QString &path : paths) {
-        const int idx = m_files.indexOf(path);
+        const int idx = m_session.paths().indexOf(path);
         if (idx >= 0) {
             indices.append(idx);
         }
@@ -757,8 +743,8 @@ void MainWindow::removeSessionPaths(const QStringList &paths)
 
 void MainWindow::updateNavigationActions()
 {
-    const bool hasMany = m_files.size() > 1;
-    const bool hasFiles = !m_files.isEmpty();
+    const bool hasMany = m_session.paths().size() > 1;
+    const bool hasFiles = !m_session.paths().isEmpty();
     const bool hasItem = m_imageView && m_imageView->itemCount() > 0;
 
     // Prev/Next are Image mode only. Slideshow may start from Gallery (enters
@@ -895,7 +881,7 @@ void MainWindow::reloadFromDisk()
 
 void MainWindow::goPrevious()
 {
-    if (m_files.size() <= 1) {
+    if (m_session.paths().size() <= 1) {
         return;
     }
     if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
@@ -903,21 +889,21 @@ void MainWindow::goPrevious()
     }
     int idx = m_currentIndex - 1;
     if (idx < 0) {
-        idx = m_files.size() - 1;
+        idx = m_session.paths().size() - 1;
     }
     setCurrentIndex(idx);
 }
 
 void MainWindow::goNext()
 {
-    if (m_files.size() <= 1) {
+    if (m_session.paths().size() <= 1) {
         return;
     }
     if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
         stopSlideshow();
     }
     int idx = m_currentIndex + 1;
-    if (idx >= m_files.size()) {
+    if (idx >= m_session.paths().size()) {
         idx = 0;
     }
     setCurrentIndex(idx);
@@ -925,7 +911,7 @@ void MainWindow::goNext()
 
 void MainWindow::goFirst()
 {
-    if (m_files.isEmpty()) {
+    if (m_session.paths().isEmpty()) {
         return;
     }
     if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
@@ -936,13 +922,13 @@ void MainWindow::goFirst()
 
 void MainWindow::goLast()
 {
-    if (m_files.isEmpty()) {
+    if (m_session.paths().isEmpty()) {
         return;
     }
     if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
         stopSlideshow();
     }
-    setCurrentIndex(m_files.size() - 1);
+    setCurrentIndex(m_session.paths().size() - 1);
 }
 
 void MainWindow::setSlideshowIntervalMs(int ms)
@@ -1104,17 +1090,17 @@ void MainWindow::armSlideshowCursorHide()
 
 void MainWindow::startSlideshow()
 {
-    if (m_files.size() <= 1 || isWorkspaceMode()) {
+    if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
         m_slideshowAct->setChecked(false);
         return;
     }
     // Gallery: open the focused session image in Image mode, then advance.
     if (isGalleryMode()) {
         QString path;
-        if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-            path = m_files.at(m_currentIndex);
-        } else if (!m_files.isEmpty()) {
-            path = m_files.first();
+        if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+            path = m_session.paths().at(m_currentIndex);
+        } else if (!m_session.paths().isEmpty()) {
+            path = m_session.paths().first();
         }
         if (path.isEmpty()) {
             m_slideshowAct->setChecked(false);

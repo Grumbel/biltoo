@@ -89,7 +89,7 @@ MainWindow::MainWindow(QWidget *parent)
             });
     connect(m_imageView, &ImageView::sessionSlotOpenRequested,
             this, [this](int sessionIndex) {
-                if (sessionIndex < 0 || sessionIndex >= m_files.size()) {
+                if (sessionIndex < 0 || sessionIndex >= m_session.paths().size()) {
                     return;
                 }
                 // Remember return target.
@@ -117,7 +117,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::removeSessionPaths);
     connect(m_imageView, &ImageView::galleryItemFocused,
             this, [this](const QString &path) {
-                const int idx = m_files.indexOf(path);
+                const int idx = m_session.paths().indexOf(path);
                 if (idx >= 0) {
                     // Mouse and keyboard both emit this; keyboard already called
                     // focusSessionPath (ensureVisible). Do not scroll again on
@@ -261,14 +261,14 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         m_thumbnailBar->setMultiSelectEnabled(true);
         updateWorkspaceActionVisibility();
-        if (index >= 0 && index < m_files.size()) {
+        if (index >= 0 && index < m_session.paths().size()) {
             m_thumbnailBar->setSelectedIndices({index});
         }
     }
-    if (index < 0 || index >= m_files.size()) {
+    if (index < 0 || index >= m_session.paths().size()) {
         return;
     }
-    m_imageView->addImageForSession(m_files.at(index), sessionIdAt(index), index);
+    m_imageView->addImageForSession(m_session.paths().at(index), sessionIdAt(index), index);
     syncThumbnailCanvasMembership();
 }
 
@@ -280,10 +280,10 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
     const QList<int> sel = m_thumbnailBar->selectedIndices();
     if (!sel.isEmpty()) {
         const int idx = sel.last();
-        if (idx != m_currentIndex && idx >= 0 && idx < m_files.size()) {
+        if (idx != m_currentIndex && idx >= 0 && idx < m_session.paths().size()) {
             m_currentIndex = idx;
             if (m_metadataPanel) {
-                m_metadataPath = m_files.at(m_currentIndex);
+                m_metadataPath = m_session.paths().at(m_currentIndex);
                 m_metadataPanel->setImagePath(m_metadataPath);
             }
         }
@@ -299,7 +299,7 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
 
 void MainWindow::onThumbnailCanvasMembershipToggled(int index)
 {
-    if (index < 0 || index >= m_files.size() || !m_imageView) {
+    if (index < 0 || index >= m_session.paths().size() || !m_imageView) {
         return;
     }
     if (!isWorkspaceMode()) {
@@ -308,12 +308,12 @@ void MainWindow::onThumbnailCanvasMembershipToggled(int index)
         m_thumbnailBar->setMultiSelectEnabled(true);
         updateWorkspaceActionVisibility();
     }
-    const QString path = m_files.at(index);
+    const QString path = m_session.paths().at(index);
     // Session index identifies duplicate paths; do not toggle by filename alone.
     // Fall back to path-occurrence order for canvas items not yet bound to a slot.
     int occurrence = 0;
     for (int i = 0; i < index; ++i) {
-        if (m_files.at(i) == path) {
+        if (m_session.paths().at(i) == path) {
             ++occurrence;
         }
     }
@@ -343,8 +343,8 @@ void MainWindow::syncCanvasFromThumbnailSelection()
     // (e.g. future context-menu actions). Not used for ordinary clicks.
     QStringList paths;
     for (int idx : m_thumbnailBar->selectedIndices()) {
-        if (idx >= 0 && idx < m_files.size()) {
-            paths.append(m_files.at(idx));
+        if (idx >= 0 && idx < m_session.paths().size()) {
+            paths.append(m_session.paths().at(idx));
         }
     }
     m_imageView->setWorkspacePaths(paths);
@@ -362,7 +362,7 @@ void MainWindow::syncThumbnailCanvasMembership()
         return;
     }
     // Ensure every on-canvas item is tied to a session row (badges + shared selection).
-    m_imageView->rebindWorkspaceSession(m_files, m_sessionIds);
+    m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
     m_thumbnailBar->setOnCanvasIndices(m_imageView->workspaceSessionIndices());
 }
 
@@ -466,11 +466,11 @@ void MainWindow::ensureMultiImageMode()
     m_imageView->setViewMode(ImageView::ViewMode::Workspace);
     m_thumbnailBar->setMultiSelectEnabled(true);
     if (m_imageView->itemCount() == 0
-        && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-        m_imageView->addImage(m_files.at(m_currentIndex));
+        && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        m_imageView->addImage(m_session.paths().at(m_currentIndex));
     }
     syncThumbnailWorkspaceSelection();
-    if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+    if (m_session.paths().size() > 1 && !m_thumbnailBar->isVisible()) {
         m_toggleThumbnailBarAct->setChecked(true);
         m_thumbnailBar->setVisible(true);
     }
@@ -528,33 +528,33 @@ void MainWindow::duplicateSelected()
     }
     // Each copy is a distinct session entry (same path allowed twice).
     // Do not go through appendFiles() — that deduplicates and rebuilds selection.
-    const int firstNew = m_files.size();
+    const int firstNew = m_session.paths().size();
     QList<SessionImageId> newIds;
     for (const QString &path : sourcePaths) {
         if (!path.isEmpty()) {
-            m_files.append(path);
+            m_session.paths().append(path);
             const SessionImageId id = allocSessionId();
-            m_sessionIds.append(id);
+            m_session.ids().append(id);
             newIds.append(id);
         }
     }
-    if (m_files.size() == firstNew) {
+    if (m_session.paths().size() == firstNew) {
         return;
     }
     // Bind new canvas copies (still selected) to the new session images.
     m_imageView->bindSelectedSessionIndices(firstNew);
     m_imageView->bindSelectedSessionIds(newIds);
     // Ensure every canvas tile has a stable id (originals included).
-    m_imageView->rebindWorkspaceSession(m_files, m_sessionIds);
+    m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
     syncThumbnailCanvasMembership();
     if (m_thumbnailBar) {
-        m_thumbnailBar->setFiles(m_files);
-        m_thumbnailBar->setSessionIds(m_sessionIds);
+        m_thumbnailBar->setFiles(m_session.paths());
+        m_thumbnailBar->setSessionIds(m_session.ids());
         if (isWorkspaceMode()) {
             m_thumbnailBar->setMultiSelectEnabled(true);
             // Select the newly appended session slots.
             QList<int> indices;
-            for (int i = firstNew; i < m_files.size(); ++i) {
+            for (int i = firstNew; i < m_session.paths().size(); ++i) {
                 indices.append(i);
             }
             m_thumbnailBar->setSelectedIndices(indices);
@@ -603,11 +603,11 @@ void MainWindow::toggleWorkspaceMode()
         m_thumbnailBar->setMultiSelectEnabled(true);
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         if (m_imageView->itemCount() == 0
-            && m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-            m_imageView->addImageForSession(m_files.at(m_currentIndex), currentSessionId(), m_currentIndex);
+            && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+            m_imageView->addImageForSession(m_session.paths().at(m_currentIndex), currentSessionId(), m_currentIndex);
         }
         syncThumbnailCanvasMembership();
-        if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+        if (m_session.paths().size() > 1 && !m_thumbnailBar->isVisible()) {
             m_toggleThumbnailBarAct->setChecked(true);
             m_thumbnailBar->setVisible(true);
         }
@@ -622,8 +622,8 @@ void MainWindow::toggleWorkspaceMode()
     } else {
         m_thumbnailBar->setMultiSelectEnabled(false);
         m_imageView->setViewMode(ImageView::ViewMode::Image);
-        if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-            m_imageView->loadImage(m_files.at(m_currentIndex));
+        if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+            m_imageView->loadImage(m_session.paths().at(m_currentIndex));
             m_thumbnailBar->setCurrentIndex(m_currentIndex);
         }
     }
@@ -921,7 +921,7 @@ void MainWindow::showPreferences()
 
 void MainWindow::selectAllThumbnails()
 {
-    if (!m_thumbnailBar || m_files.isEmpty()) {
+    if (!m_thumbnailBar || m_session.paths().isEmpty()) {
         return;
     }
     // Session multi-select only — do not enter Workspace mode.
@@ -930,8 +930,8 @@ void MainWindow::selectAllThumbnails()
 
 void MainWindow::updateWindowTitle()
 {
-    if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-        const QString name = QFileInfo(m_files.at(m_currentIndex)).fileName();
+    if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        const QString name = QFileInfo(m_session.paths().at(m_currentIndex)).fileName();
         // GNOME-style: document name first, then app
         setWindowTitle(tr("%1 — QImgView").arg(name));
     } else {
@@ -949,8 +949,8 @@ void MainWindow::updateMetadataPanel()
     const QStringList selected = m_imageView->selectedPaths();
     if (!selected.isEmpty()) {
         path = selected.first();
-    } else if (m_currentIndex >= 0 && m_currentIndex < m_files.size()) {
-        path = m_files.at(m_currentIndex);
+    } else if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        path = m_session.paths().at(m_currentIndex);
     }
     if (path == m_metadataPath) {
         return;
@@ -970,7 +970,7 @@ void MainWindow::updateStatus()
     // Session index on ImageView so status bar and on-image HUD share n/N.
     if (m_imageView) {
         // Silent while the slideshow timer advances; user Next/Prev still pulse.
-        m_imageView->setSessionPosition(m_currentIndex, m_files.size(),
+        m_imageView->setSessionPosition(m_currentIndex, m_session.paths().size(),
                                         !m_slideshowAdvancing);
         m_imageView->setCurrentSessionId(currentSessionId());
         const QString err = m_imageView->lastLoadError();
@@ -1493,7 +1493,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         }
         QStringList novel;
         for (const QString &p : expanded) {
-            if (!m_files.contains(p)) {
+            if (!m_session.paths().contains(p)) {
                 novel.append(p);
             }
         }
@@ -1505,15 +1505,15 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             const bool alreadyOnCanvas = m_imageView->workspacePathOccurrenceCount(img) > 0;
             if (alreadyOnCanvas) {
                 // New session entry for the duplicate instance.
-                m_files.append(img);
-                m_sessionIds.append(allocSessionId());
+                m_session.paths().append(img);
+                m_session.ids().append(allocSessionId());
                 if (m_thumbnailBar) {
-                    m_thumbnailBar->setFiles(m_files);
-                    m_thumbnailBar->setSessionIds(m_sessionIds);
+                    m_thumbnailBar->setFiles(m_session.paths());
+                    m_thumbnailBar->setSessionIds(m_session.ids());
                     m_thumbnailBar->setMultiSelectEnabled(true);
                 }
             }
-            const int slot = m_files.lastIndexOf(img);
+            const int slot = m_session.paths().lastIndexOf(img);
             const SessionImageId sid = sessionIdAt(slot);
             if (!scenePos.isNull()) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
@@ -1530,7 +1530,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             ++i;
         }
         syncThumbnailCanvasMembership();
-        if (m_files.size() > 1 && !m_thumbnailBar->isVisible()) {
+        if (m_session.paths().size() > 1 && !m_thumbnailBar->isVisible()) {
             m_toggleThumbnailBarAct->setChecked(true);
             m_thumbnailBar->setVisible(true);
         }
@@ -1550,12 +1550,12 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             if (p.isEmpty()) {
                 continue;
             }
-            m_files.append(p);
-            m_sessionIds.append(allocSessionId());
+            m_session.paths().append(p);
+            m_session.ids().append(allocSessionId());
         }
         if (m_thumbnailBar) {
-            m_thumbnailBar->setFiles(m_files);
-            m_thumbnailBar->setSessionIds(m_sessionIds);
+            m_thumbnailBar->setFiles(m_session.paths());
+            m_thumbnailBar->setSessionIds(m_session.ids());
         }
         applyThumbnailVisibility();
         const ImageView::LayoutMode layout = m_imageView
@@ -1578,7 +1578,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     }
     QStringList novel;
     for (const QString &p : expanded) {
-        if (!m_files.contains(p)) {
+        if (!m_session.paths().contains(p)) {
             novel.append(p);
         }
     }
@@ -1587,7 +1587,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     }
     // Focus the first dropped path (existing or newly appended).
     const QString focus = expanded.first();
-    const int idx = m_files.indexOf(focus);
+    const int idx = m_session.paths().indexOf(focus);
     if (idx >= 0) {
         setCurrentIndex(idx);
     }

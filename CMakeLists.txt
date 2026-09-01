@@ -46,6 +46,8 @@ add_executable(qimgview
   src/imageview_types.h
   src/sessionappearance.cpp
   src/sessionappearance.h
+  src/sessiondocument.cpp
+  src/sessiondocument.h
   src/imageitem.cpp
   src/imageitem_interaction.cpp
   src/imageitem.h
