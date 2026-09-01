@@ -599,17 +599,48 @@ void ImageView::restoreStashedWorkspaceItems()
 
 void ImageView::discardStashedGallery()
 {
-    for (ImageItem *item : m_stashedGalleryItems) {
-        if (!item) {
+    // Take ownership first so re-entrant callers (and double-discard) see an
+    // empty list. Duplicates in the list would otherwise double-free.
+    QList<ImageItem *> doomed = m_stashedGalleryItems;
+    m_stashedGalleryItems.clear();
+    m_stashedGalleryPathOrder.clear();
+    QSet<ImageItem *> seen;
+    for (ImageItem *item : doomed) {
+        if (!item || seen.contains(item)) {
             continue;
         }
+        seen.insert(item);
         if (QGraphicsScene *sc = item->scene()) {
             sc->removeItem(item);
         }
         delete item;
     }
-    m_stashedGalleryItems.clear();
-    m_stashedGalleryPathOrder.clear();
+}
+
+void ImageView::invalidateStashedGalleryForSession(SessionImageId sessionId)
+{
+    // After Image-mode crop/flip the matching Gallery tile is stale. Drop only
+    // that session row from the stash so return-to-Gallery re-decodes it.
+    // Never free the whole stash — other tiles must survive for scroll restore.
+    if (sessionId == kInvalidSessionImageId) {
+        return;
+    }
+    QList<ImageItem *> keep;
+    keep.reserve(m_stashedGalleryItems.size());
+    for (ImageItem *item : m_stashedGalleryItems) {
+        if (!item) {
+            continue;
+        }
+        if (item->sessionId() == sessionId) {
+            if (QGraphicsScene *sc = item->scene()) {
+                sc->removeItem(item);
+            }
+            delete item;
+            continue;
+        }
+        keep.append(item);
+    }
+    m_stashedGalleryItems = keep;
 }
 
 void ImageView::stashGalleryItems()

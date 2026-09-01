@@ -134,6 +134,8 @@ public:
     void renderForPrint(QPainter *painter, const QRectF &pageRect) const;
     /** Drop cached Gallery tiles (e.g. after loading a new session). */
     void discardStashedGallery();
+    /** Drop one stashed Gallery tile by session id (crop/flip stale pixels). */
+    void invalidateStashedGalleryForSession(SessionImageId sessionId);
 
     void setViewMode(ViewMode mode);
 

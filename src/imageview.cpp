@@ -1326,7 +1326,7 @@ void ImageView::leaveCropModeInternal(bool apply)
         recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
         if (!fullFrame) {
             if (item->cropToLocalRect(m_cropRect)) {
-                discardStashedGallery();
+                invalidateStashedGalleryForSession(item->sessionId());
                 if (isImageMode()) {
                     m_fitMode = true;
                     fitItem(item, currentFitAspectMode());
@@ -1382,7 +1382,7 @@ void ImageView::leaveCropModeInternal(bool apply)
             }
         } else {
             // Reset / full frame: keep full pixels; clear session crop metadata.
-            discardStashedGallery();
+            invalidateStashedGalleryForSession(item->sessionId());
             if (isImageMode()) {
                 m_fitMode = true;
                 fitItem(item, currentFitAspectMode());
