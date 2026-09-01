@@ -176,11 +176,11 @@ void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
     // Vertical track outside the *left* edge.
     // a = bottom end (opacity 5%), b = top end (opacity 100%).
     //
-    // Top of the track is always anchored just below the left free-rotate
-    // knob (mid-edge). The track grows downward toward the bottom-left
-    // corner and stays clear of the corner scale handle. When the free
-    // span is shorter than the nominal length, the track shortens in place
-    // — it never jumps above the rotate handle.
+    // Tall frames: bottom of the track sits at the bottom-left (clear of the
+    // corner scale handle); the track extends upward and stays below the
+    // mid-edge free-rotate knob.
+    // Short frames: top is pinned just below the rotate knob; the track
+    // extends downward (shortened if needed) — never above the rotate handle.
     const QPointF alongUp = g.dirLeft; // bl → tl
     const qreal outDist = kSliderOutsidePx + kSliderHeightPx * 0.5;
     const qreal trackLen = kSliderWidthPx;
@@ -193,22 +193,27 @@ void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
     const QPointF rotL = g.midLeft + g.outLeft * kRotateOffsetPx;
     const qreal rotAlong = projFromBl(rotL);
     const qreal needClear = kHandleScreenPx * 0.5 + kSliderClearPx;
-    // Top of slider sits below the rotate/scale mid-edge band.
-    qreal bAlong = rotAlong - needClear;
-    qreal aAlong = bAlong - trackLen;
-    // Keep clear of the bottom-left corner scale handle.
-    if (aAlong < cornerMargin) {
+    // Highest allowed position for the top of the track (below rotate/scale).
+    const qreal maxTop = rotAlong - needClear;
+
+    qreal aAlong = 0.0;
+    qreal bAlong = 0.0;
+    if (cornerMargin + trackLen <= maxTop) {
+        // Big enough: anchor the bottom of the track to the image bottom.
         aAlong = cornerMargin;
-    }
-    // Degenerate / very short edge: keep a valid ordered segment below mid.
-    if (bAlong <= aAlong + 4.0) {
-        bAlong = aAlong + 4.0;
-        const qreal edgeLen = QLineF(g.bl, g.tl).length();
-        if (bAlong > rotAlong - 2.0) {
-            bAlong = qMax(aAlong + 4.0, rotAlong - 2.0);
+        bAlong = aAlong + trackLen;
+    } else {
+        // Short: pin the top below the rotate handle; grow downward.
+        bAlong = maxTop;
+        aAlong = bAlong - trackLen;
+        if (aAlong < cornerMargin) {
+            aAlong = cornerMargin;
         }
-        if (bAlong > edgeLen - cornerMargin) {
-            bAlong = qMax(aAlong + 4.0, edgeLen - cornerMargin);
+        if (bAlong <= aAlong + 4.0) {
+            bAlong = aAlong + 4.0;
+            if (bAlong > maxTop) {
+                bAlong = qMax(aAlong + 4.0, maxTop);
+            }
         }
     }
 
