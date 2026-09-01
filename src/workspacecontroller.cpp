@@ -24,10 +24,10 @@ void WorkspaceController::snapshot()
         // Path map is session/Image appearance only; unbound duplicates stay
         // in the list and must not collapse into a single path entry.
         if (s.sessionId != kInvalidSessionImageId) {
-            m_view->m_appearance.set(s.sessionId, s);
+            m_view->appearance().set(s.sessionId, s);
         }
         if (s.sessionIndex >= 0) {
-            m_view->m_itemStates.insert(s.path, s);
+            m_view->itemStates().insert(s.path, s);
         }
     }
     // Durable view backup when the live stash is later discarded (e.g. Gallery).
@@ -39,12 +39,12 @@ void WorkspaceController::snapshot()
 void WorkspaceController::restore()
 {
     m_view->clearWorkspace();
-    m_view->m_pendingWorkspacePaths.clear();
+    m_view->clearPendingWorkspacePaths();
     // Merge session appearance (crop / flip / orientation) from the live map into
     // the durable snapshot so Image-mode edits survive a full rebuild.
     for (WorkspaceItemState &slot : m_savedItems) {
         if (slot.sessionId != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *sit = m_view->m_appearance.get(slot.sessionId)) {
+            if (const WorkspaceItemState *sit = m_view->appearance().get(slot.sessionId)) {
                 slot.hasCrop = sit->hasCrop;
                 slot.cropRect = sit->cropRect;
                 slot.hFlip = sit->hFlip;
@@ -55,8 +55,8 @@ void WorkspaceController::restore()
                 continue;
             }
         }
-        const auto it = m_view->m_itemStates.constFind(slot.path);
-        if (it == m_view->m_itemStates.cend()) {
+        const auto it = m_view->itemStates().constFind(slot.path);
+        if (it == m_view->itemStates().cend()) {
             continue;
         }
         // Path-level appearance only for matching bound session slots (legacy).
@@ -74,9 +74,9 @@ void WorkspaceController::restore()
         slot.orientation = 0.0;
     }
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
-    m_view->m_pendingRestoreStates = m_savedItems;
+    m_view->pendingRestoreStates() = m_savedItems;
     for (const WorkspaceItemState &state : m_savedItems) {
-        m_view->m_itemStates.insert(state.path, state);
+        m_view->itemStates().insert(state.path, state);
         m_view->scheduleImageLoad(state.path, ImageView::LoadRestore);
     }
     m_view->clearFitFillModes();
@@ -162,7 +162,7 @@ void WorkspaceController::restoreStashedItems()
         const WorkspaceItemState *app = nullptr;
         WorkspaceItemState pathFallback;
         if (item->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *sit = m_view->m_appearance.get(item->sessionId())) {
+            if (const WorkspaceItemState *sit = m_view->appearance().get(item->sessionId())) {
                 app = sit;
             }
         }
@@ -174,8 +174,8 @@ void WorkspaceController::restoreStashedItems()
                 }
             }
             if (samePath == 1) {
-                const auto it = m_view->m_itemStates.constFind(item->path());
-                if (it != m_view->m_itemStates.cend()) {
+                const auto it = m_view->itemStates().constFind(item->path());
+                if (it != m_view->itemStates().cend()) {
                     pathFallback = *it;
                     app = &pathFallback;
                 }
@@ -238,7 +238,7 @@ void WorkspaceController::restoreFreeFormStates()
         const auto it = m_freeFormStates.constFind(item->path());
         if (it != m_freeFormStates.constEnd()) {
             m_view->applyState(item, *it);
-            m_view->m_itemStates.insert(item->path(), *it);
+            m_view->itemStates().insert(item->path(), *it);
         }
     }
     if (m_hasFreeFormViewTransform) {

@@ -151,7 +151,7 @@ void GalleryController::applyPendingRestore()
 
     // Stay pending while loads complete — each applyLayout would otherwise
     // centerOn(0,0) and wipe the restored position.
-    if (m_view->m_pendingWorkspacePaths.isEmpty() && !m_view->liveItems().isEmpty()) {
+    if (!m_view->hasPendingWorkspacePaths() && !m_view->liveItems().isEmpty()) {
         m_pendingRestore = false;
     }
 }

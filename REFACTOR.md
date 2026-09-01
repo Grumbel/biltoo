@@ -202,3 +202,5 @@ by id (new model work — not part of early-phase exit criteria).
   `ensurePrimarySelection`, `applyToolDragMode`; Workspace/Gallery enter use them.
 - Phase 5r: stash/restore paths use `liveItems`/`canvasScene`/`pathOrder`;
   `clearFitFillModes` for free-form restore.
+- Phase 5s: appearance/itemStates/pending-load host accessors; controllers
+  no longer touch those private fields by name.

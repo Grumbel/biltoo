@@ -156,6 +156,16 @@ public:
     void clearFitFillModes();
     /** Controller host: Image/Gallery soft reset to fit, not fill. */
     void enableFitMode();
+    /** Controller host: session appearance store (id-keyed). */
+    SessionAppearanceStore &appearance() { return m_appearance; }
+    const SessionAppearanceStore &appearance() const { return m_appearance; }
+    /** Controller host: path-keyed placement / unbound appearance cache. */
+    QHash<QString, WorkspaceItemState> &itemStates() { return m_itemStates; }
+    const QHash<QString, WorkspaceItemState> &itemStates() const { return m_itemStates; }
+    bool hasPendingWorkspacePaths() const { return !m_pendingWorkspacePaths.isEmpty(); }
+    void clearPendingWorkspacePaths() { m_pendingWorkspacePaths.clear(); }
+    QList<WorkspaceItemState> &pendingRestoreStates() { return m_pendingRestoreStates; }
+    const QList<WorkspaceItemState> &pendingRestoreStates() const { return m_pendingRestoreStates; }
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
     void clearLiveCanvas();
 
