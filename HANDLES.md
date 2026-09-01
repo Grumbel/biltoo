@@ -16,8 +16,8 @@ editor:
   when the item is rotated). It moves, rotates, and scales with the image.
 - **Scale handles** sit on the frame (corners + mid-edges). Their **positions**
   track the frame exactly (so they “align with the image” and rotate with it).
-  Their **drawn size** is constant in viewport pixels; they never grow or shrink
-  with item scale or view zoom.
+  Base **drawn size** is constant in viewport pixels (independent of item scale
+  or view zoom); they grow modestly on hover/active for hit feedback.
 - **Rotate handles** sit a fixed viewport-pixel distance outside the mid-edges
   (along the outward normal of the visual edge). Stems connect edge mid to knob.
   Knobs are constant screen size. Positions rotate with the image; distance does
@@ -95,7 +95,7 @@ Scale handles stay at the mapped corners / edge mids (no extra offset).
 
 | Handle | Default (no modifier) | Ctrl or Shift |
 |--------|------------------------|---------------|
-| Corner | Uniform scale about item centre (distance ratio) | Uniform scale about opposite corner (anchor fixed in scene) |
+| Corner | Uniform scale about opposite corner (anchor fixed in scene) | Uniform scale about item centre (distance ratio) |
 | Edge   | Anisotropic scale about centre (stretch one axis) | Anisotropic scale about opposite edge (anchor fixed) |
 
 Axes for edge stretch are the item’s local X/Y (image axes), not screen axes,

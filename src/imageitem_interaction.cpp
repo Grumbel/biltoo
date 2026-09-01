@@ -47,7 +47,7 @@ QString tooltipForHandle(ImageItem::Handle h)
 } // namespace
 
 namespace {
-constexpr qreal kHandleScreenPx = 21.0;      // scale/rotate markers in *viewport* px
+constexpr qreal kHandleScreenPx = 16.0;      // scale/rotate markers in *viewport* px (grow on hover)
 constexpr qreal kRotateOffsetPx = 36.0;      // rotate handle distance from edge (viewport px)
 // Chrome buttons (flip / raise / lower / reset): larger + roomier.
 constexpr qreal kChromeBtnScreenPx = 34.0;   // diameter in viewport px
@@ -424,13 +424,15 @@ void ImageItem::drawCornerBracket(QPainter *painter, const QPointF &c,
 
 void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    // Ctrl or Shift → scale from the opposite corner/edge (drawing-program style).
-    // Default → uniform/anisotropic scale about the item centre.
+    // Corner handles: default scales about the opposite corner (drawing-program
+    // usual); Ctrl or Shift scales about the item centre.
+    // Edge handles: default anisotropic about centre; Ctrl/Shift about opposite edge.
     //
     // Edge stretch uses scene-space projections onto the *press-time* image axes
     // so the ratio stays stable when scale approaches the clamp (HANDLES.md).
     // Local ratios after each setItemScale amplify noise near zero.
-    const bool fromCenter = !(mods & (Qt::ControlModifier | Qt::ShiftModifier));
+    const bool modifier = mods & (Qt::ControlModifier | Qt::ShiftModifier);
+    const bool fromCenter = isCornerScaleHandle(m_activeHandle) ? modifier : !modifier;
     const QPointF itemCentre = this->scenePos();
     const QRectF localR = QGraphicsPixmapItem::boundingRect();
     const qreal halfW = localR.width() * 0.5;
@@ -1145,11 +1147,11 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         stem.setWidthF(1.25);
         painter->setPen(stem);
         painter->drawLine(edgeMid, c);
-        const qreal rad = hs * (hot ? 0.42 : 0.36);
+        const qreal rad = hs * (hot ? 0.52 : 0.34);
         painter->setBrush(hot ? QColor(255, 230, 80) : QColor(255, 200, 40));
         QPen hp(hot ? QColor(255, 255, 255) : QColor(40, 40, 40), 0);
         hp.setCosmetic(true);
-        hp.setWidthF(hot ? 1.75 : 1.25);
+        hp.setWidthF(hot ? 1.75 : 1.15);
         painter->setPen(hp);
         painter->drawEllipse(c, rad, rad);
     };
@@ -1173,24 +1175,36 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             {Handle::ScaleBottomLeft, bl, -dirBottom, dirLeft},
         };
         for (const Corner &co : corners) {
-            // L-bracket only: two thick arms along the visual edges meeting at the
-            // corner (same language as mid-edge bars). No centre square — it
-            // vanished inconsistently with scale and cluttered the corner.
+            // L-bracket: two arms along the visual edges. Filled when hot so the
+            // highlight matches edge scale bars (same blue family).
             const bool hot = (m_hoverHandle == co.h || m_activeHandle == co.h);
             const QPointF c = co.corner;
             const QPointF d1 = norm(co.alongA);
             const QPointF d2 = norm(co.alongB);
-            const qreal arm = hs * (hot ? 1.35 : 1.15);
-            const qreal thick = hs * (hot ? 0.42 : 0.34);
-            QPen hp(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
+            const qreal arm = hs * (hot ? 1.55 : 1.05);
+            const qreal thick = hs * (hot ? 0.48 : 0.30);
+            const QColor base(0, 160, 255, hot ? 255 : 230);
+            const QColor edgeCol = hot ? QColor(255, 255, 255) : QColor(0, 120, 200);
+            QPen hp(edgeCol, 0);
             hp.setCosmetic(true);
-            hp.setWidthF(thick);
+            hp.setWidthF(hot ? 1.6 : 1.15);
             hp.setCapStyle(Qt::SquareCap);
             hp.setJoinStyle(Qt::MiterJoin);
             painter->setPen(hp);
+            painter->setBrush(base);
+            // Draw as two short filled capsules along the arms (consistent with edge bars).
+            auto drawArm = [&](const QPointF &dir) {
+                const QPointF perp(-dir.y(), dir.x());
+                QPolygonF bar;
+                bar << c + perp * (thick / 2)
+                    << c + dir * arm + perp * (thick / 2)
+                    << c + dir * arm - perp * (thick / 2)
+                    << c - perp * (thick / 2);
+                painter->drawPolygon(bar);
+            };
+            drawArm(d1);
+            drawArm(d2);
             painter->setBrush(Qt::NoBrush);
-            painter->drawLine(c, c + d1 * arm);
-            painter->drawLine(c, c + d2 * arm);
         }
 
         // Edge stretch bars along each edge, mid-edge, constant view size.
@@ -1209,13 +1223,15 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             const bool hot = (m_hoverHandle == ed.h || m_activeHandle == ed.h);
             const QPointF along = norm(ed.along);
             const QPointF perp(-along.y(), along.x());
-            const qreal len = hs * (hot ? 2.2 : 1.9);
-            const qreal thick = hs * (hot ? 0.42 : 0.34);
-            QPen hp(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
+            const qreal len = hs * (hot ? 2.4 : 1.7);
+            const qreal thick = hs * (hot ? 0.48 : 0.30);
+            const QColor base = hot ? QColor(0, 160, 255, 255) : QColor(0, 160, 255, 230);
+            const QColor edgeCol = hot ? QColor(255, 255, 255) : QColor(0, 120, 200);
+            QPen hp(edgeCol, 0);
             hp.setCosmetic(true);
-            hp.setWidthF(hot ? 1.5 : 1.15);
+            hp.setWidthF(hot ? 1.6 : 1.15);
             painter->setPen(hp);
-            painter->setBrush(hot ? QColor(80, 200, 255) : QColor(0, 160, 255, 230));
+            painter->setBrush(base);
             QPolygonF bar;
             bar << ed.mid + along * (len / 2) + perp * (thick / 2)
                 << ed.mid - along * (len / 2) + perp * (thick / 2)
