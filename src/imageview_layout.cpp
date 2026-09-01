@@ -74,32 +74,20 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.z = item->stackZ();
     s.hFlip = item->itemHFlip();
     s.vFlip = item->itemVFlip();
-    // Per-instance crop (Workspace duplicates stay independent).
+    // Live item is authoritative for per-instance appearance (crop + content
+    // flips). Do not overwrite from the path map — that was clearing content
+    // flags for unbound Workspace items after bakeFlip/bakeRotate90.
     s.hasCrop = item->sessionHasCrop();
     s.cropRect = item->sessionCropRect();
-    // Merge path-keyed session appearance only for the same bound session slot.
+    s.contentHFlip = item->contentHFlip();
+    s.contentVFlip = item->contentVFlip();
+    // Quarter turns live only on the path map (not stored on ImageItem).
     const auto prev = m_itemStates.constFind(item->path());
     if (prev != m_itemStates.cend()) {
-        // Unbound Workspace duplicates (sessionIndex < 0) are independent
-        // instances — never inherit path-keyed crop/content from each other.
-        const bool sameSlot = (item->sessionIndex() >= 0 && prev->sessionIndex >= 0
-            && item->sessionIndex() == prev->sessionIndex);
-        if (sameSlot) {
-            s.contentQuarterTurns = prev->contentQuarterTurns;
-            s.contentHFlip = prev->contentHFlip;
-            s.contentVFlip = prev->contentVFlip;
-            s.hasCrop = prev->hasCrop;
-            s.cropRect = prev->cropRect;
-            s.sessionIndex = prev->sessionIndex >= 0 ? prev->sessionIndex : s.sessionIndex;
-        }
-    }
-    // Bound session slots may still refresh crop from the path map when the
-    // item has not recorded a per-instance crop yet (e.g. Image-mode path).
-    if (!s.hasCrop && item->sessionIndex() >= 0) {
-        const auto it = m_itemStates.constFind(item->path());
-        if (it != m_itemStates.cend() && it->hasCrop) {
-            s.hasCrop = it->hasCrop;
-            s.cropRect = it->cropRect;
+        s.contentQuarterTurns = prev->contentQuarterTurns;
+        if (s.sessionIndex < 0 && prev->sessionIndex >= 0) {
+            // Keep a path-level session index hint when the item is unbound.
+            s.sessionIndex = prev->sessionIndex;
         }
     }
     return s;
@@ -257,9 +245,8 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         }
     }
 
-    // Propagate pixel / flip / orientation session edits to every canvas and
-    // stashed Workspace instance of this path. Placement (pos, scale, free
-    // tilt) on Workspace copies is preserved.
+    // Propagate pixel / flip / orientation session edits to matching canvas and
+    // stashed instances. Placement (pos, scale, free tilt) is preserved.
     const QString path = item->path();
     const int sessionIndex = item->sessionIndex();
     const QImage src = item->sourceImage();
@@ -267,16 +254,49 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     const bool vFlip = item->itemVFlip();
     const bool contentH = item->contentHFlip();
     const bool contentV = item->contentVFlip();
+    const bool fromImageMode = isImageMode();
 
-    // Duplicates share a path but are independent instances. Only sync canvas
-    // items that share the same bound session slot (sessionIndex >= 0).
-    // Unbound Workspace duplicates never receive each other's baked pixels.
-    auto syncOne = [&](ImageItem *other) {
-        if (!other || other == item || other->path() != path) {
-            return;
+    // Collect path peers across live + stashed lists for sole-instance fallback.
+    QList<ImageItem *> peers;
+    auto collect = [&](const QList<ImageItem *> &list) {
+        for (ImageItem *other : list) {
+            if (other && other != item && other->path() == path) {
+                peers.append(other);
+            }
         }
-        if (sessionIndex < 0 || other->sessionIndex() < 0
-            || other->sessionIndex() != sessionIndex) {
+    };
+    collect(m_items);
+    collect(m_stashedWorkspaceItems);
+    collect(m_stashedGalleryItems);
+
+    int slotMatches = 0;
+    for (ImageItem *other : peers) {
+        if (sessionIndex >= 0 && other->sessionIndex() == sessionIndex) {
+            ++slotMatches;
+        }
+    }
+
+    auto shouldSync = [&](ImageItem *other) -> bool {
+        if (!other || other == item || other->path() != path) {
+            return false;
+        }
+        // Exact session slot match (Image ↔ Workspace bound tiles).
+        if (sessionIndex >= 0 && other->sessionIndex() == sessionIndex) {
+            return true;
+        }
+        // Image-mode edit with no bound peer for this slot: update the sole
+        // path instance so a single Workspace tile of this file still receives
+        // crop/flip/rotate. Multiple path instances stay independent.
+        if (fromImageMode && sessionIndex >= 0 && slotMatches == 0
+            && peers.size() == 1 && other == peers.first()) {
+            return true;
+        }
+        // Workspace unbound source: never push onto other path instances.
+        return false;
+    };
+
+    auto syncOne = [&](ImageItem *other) {
+        if (!shouldSync(other)) {
             return;
         }
         if (!src.isNull()) {
@@ -288,13 +308,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         other->setContentVFlip(contentV);
         other->setSessionCrop(item->sessionHasCrop(), item->sessionCropRect());
     };
-    for (ImageItem *other : m_items) {
-        syncOne(other);
-    }
-    for (ImageItem *other : m_stashedWorkspaceItems) {
-        syncOne(other);
-    }
-    for (ImageItem *other : m_stashedGalleryItems) {
+    for (ImageItem *other : peers) {
         syncOne(other);
     }
 
@@ -470,44 +484,52 @@ void ImageView::restoreStashedWorkspaceItems()
             m_scene->addItem(item);
         }
         applyItemModeFlags(item);
-        // Path-keyed m_itemStates holds the last Image/session appearance for
-        // this path. Apply it only to the matching session slot (or the sole
-        // canvas instance of the path). Other duplicates keep stash pixels.
+        // Path-keyed appearance is applied only to the matching session slot,
+        // or to the sole canvas instance of this path when no slot match exists.
+        // Live stash pixels are preferred when already in sync (commitItemSessionEdit).
         const auto it = m_itemStates.constFind(item->path());
         if (it == m_itemStates.cend()) {
             continue;
         }
         int samePath = 0;
+        int slotMatches = 0;
         for (ImageItem *peer : m_items) {
-            if (peer && peer->path() == item->path()) {
-                ++samePath;
+            if (!peer || peer->path() != item->path()) {
+                continue;
+            }
+            ++samePath;
+            if (it->sessionIndex >= 0 && peer->sessionIndex() == it->sessionIndex) {
+                ++slotMatches;
             }
         }
-        const bool slotMatch = (item->sessionIndex() >= 0 && it->sessionIndex >= 0
+        const bool slotMatch = (it->sessionIndex >= 0
                                 && item->sessionIndex() == it->sessionIndex);
-        const bool soleInstance = (samePath <= 1);
-        if (!slotMatch && !soleInstance) {
+        const bool soleFallback = (samePath == 1 && slotMatches == 0);
+        if (!slotMatch && !soleFallback) {
             continue;
         }
-        // Prefer slot match when both exist; sole instance is the Image-mode path.
-        if (samePath > 1 && !slotMatch) {
-            continue;
-        }
-        const bool needRebuild = it->hasCrop || it->contentQuarterTurns != 0
-            || it->contentHFlip || it->contentVFlip;
-        if (!needRebuild) {
-            continue;
-        }
+        // Pixels are usually already updated by commitItemSessionEdit while
+        // stashed. Rebuild only when size/metadata disagree with path state.
         const QSize want = it->hasCrop ? it->cropRect.size() : QSize();
         const bool sizeMismatch = it->hasCrop && item->imageSize() != want;
-        if (sizeMismatch || item->sourceImage().isNull()) {
-            const QImage full = ImageLoader::load(item->path());
-            if (!full.isNull()) {
-                item->setSourceImage(full);
-                applySessionCrop(item, *it);
-                applyContentBakes(item, *it);
-                item->setSessionCrop(it->hasCrop, it->cropRect);
-            }
+        const bool missing = item->sourceImage().isNull();
+        const bool flagsMismatch =
+            item->contentHFlip() != it->contentHFlip
+            || item->contentVFlip() != it->contentVFlip
+            || item->sessionHasCrop() != it->hasCrop;
+        if (!(sizeMismatch || missing || flagsMismatch)) {
+            continue;
+        }
+        if (!it->hasCrop && it->contentQuarterTurns == 0
+            && !it->contentHFlip && !it->contentVFlip) {
+            continue;
+        }
+        const QImage full = ImageLoader::load(item->path());
+        if (!full.isNull()) {
+            item->setSourceImage(full);
+            applySessionCrop(item, *it);
+            applyContentBakes(item, *it);
+            item->setSessionCrop(it->hasCrop, it->cropRect);
         }
     }
     m_fitMode = false;
