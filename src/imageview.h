@@ -150,7 +150,7 @@ public:
     /**
      * Same as path-only overload, but binds each path to the parallel
      * @p sessionIds entry (stable SessionImageId). Gallery/Workspace loads
-     * then apply per-id crop/flip/rotate from m_sessionAppearance.
+     * then apply per-id crop/flip/rotate from m_appearance.
      */
     void setWorkspacePaths(const QStringList &paths,
                            const QVector<SessionImageId> &sessionIds);
@@ -587,8 +587,9 @@ private:
      * Keyed by session index so path duplicates stay independent value copies.
      */
     /** Per-session-image appearance, keyed by stable SessionImageId. */
-    QHash<SessionImageId, WorkspaceItemState> m_sessionAppearance;
-    /** @deprecated index-keyed; prefer m_sessionAppearance. */
+    /** Content appearance by stable session-image id (Phase 2 store). */
+    SessionAppearanceStore m_appearance;
+    /** @deprecated index-keyed; prefer m_appearance. */
     QHash<int, WorkspaceItemState> m_sessionSlotStates;
     /** Free-form positions restored when leaving a packaged layout. */
     QHash<QString, WorkspaceItemState> m_freeFormStates;

@@ -194,8 +194,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         WorkspaceItemState pathFallback;
         if (isImageMode()) {
             if (m_currentSessionId != kInvalidSessionImageId) {
-                const auto sit = m_sessionAppearance.constFind(m_currentSessionId);
-                if (sit != m_sessionAppearance.cend()) {
+                if (const WorkspaceItemState *sit = m_appearance.get(m_currentSessionId)) {
                     app = &(*sit);
                 }
                 // Bound session image with no appearance entry = full frame, no path fallback.
@@ -427,12 +426,11 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             return;
         }
         // Prefer live session-image appearance over the leave-mode snapshot when
-        // Image-mode edits updated m_sessionAppearance while Workspace was stashed.
+        // Image-mode edits updated m_appearance while Workspace was stashed.
         WorkspaceItemState app = state;
         if (state.sessionId != kInvalidSessionImageId) {
             item->setSessionId(state.sessionId);
-            const auto it = m_sessionAppearance.constFind(state.sessionId);
-            if (it != m_sessionAppearance.cend()) {
+            if (const WorkspaceItemState *it = m_appearance.get(state.sessionId)) {
                 app = *it;
                 // Keep placement from the snapshot.
                 app.pos = state.pos;
@@ -1025,8 +1023,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         ? item->sessionId()
         : m_currentSessionId;
     if (sid != kInvalidSessionImageId) {
-        const auto it = m_sessionAppearance.constFind(sid);
-        if (it != m_sessionAppearance.cend()) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             app = *it;
             haveApp = true;
         }
@@ -1113,8 +1110,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         ? item->sessionId()
         : m_currentSessionId;
     if (sid != kInvalidSessionImageId) {
-        const auto it = m_sessionAppearance.constFind(sid);
-        if (it != m_sessionAppearance.cend()) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             app = *it;
             have = true;
         }
@@ -1210,8 +1206,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     WorkspaceItemState fallback;
     const SessionImageId sid = item->sessionId();
     if (sid != kInvalidSessionImageId) {
-        const auto it = m_sessionAppearance.constFind(sid);
-        if (it != m_sessionAppearance.cend()) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             app = &(*it);
         }
         // Bound session image with no appearance entry = full frame.
@@ -1279,8 +1274,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         ? item->sessionId()
         : m_currentSessionId;
     if (sid != kInvalidSessionImageId) {
-        const auto it = m_sessionAppearance.constFind(sid);
-        if (it != m_sessionAppearance.cend()) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             // Keep content transforms from the session-image store.
             s.contentQuarterTurns = it->contentQuarterTurns;
             s.contentHFlip = it->contentHFlip;
@@ -1307,7 +1301,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     s.path = item->path();
     item->setSessionCrop(s.hasCrop, s.cropRect);
     if (sid != kInvalidSessionImageId) {
-        m_sessionAppearance.insert(sid, s);
+        m_appearance.set(sid, s);
     }
     // Path map remains a last-writer cache for unbound single-instance paths.
     m_itemStates.insert(item->path(), s);

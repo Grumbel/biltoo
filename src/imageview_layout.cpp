@@ -192,8 +192,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     }
     int prevTurns = 0;
     if (sid != kInvalidSessionImageId) {
-        const auto it = m_sessionAppearance.constFind(sid);
-        if (it != m_sessionAppearance.cend()) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             prevTurns = it->contentQuarterTurns;
         }
     }
@@ -206,7 +205,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.sessionId = sid;
         s.contentQuarterTurns = turns;
         s.orientation = 0.0;
-        m_sessionAppearance.insert(sid, s);
+        m_appearance.set(sid, s);
     }
     commitItemSessionEdit(item);
 }
@@ -255,13 +254,13 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
             slot.sessionId = sid;
             slot.sessionIndex = item->sessionIndex();
             slot.path = item->path();
-            const auto prev = m_sessionAppearance.constFind(sid);
-            if (prev != m_sessionAppearance.cend()
-                && slot.contentQuarterTurns == 0
-                && prev->contentQuarterTurns != 0) {
-                slot.contentQuarterTurns = prev->contentQuarterTurns;
+            if (const WorkspaceItemState *prev = m_appearance.get(sid)) {
+                if (slot.contentQuarterTurns == 0
+                    && prev->contentQuarterTurns != 0) {
+                    slot.contentQuarterTurns = prev->contentQuarterTurns;
+                }
             }
-            m_sessionAppearance.insert(sid, slot);
+            m_appearance.set(sid, slot);
             // Path map is last-writer only; never read it back into this slot.
             m_itemStates.insert(item->path(), slot);
             if (item->sessionIndex() >= 0) {
@@ -330,8 +329,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
 
     // Durable snapshot: update the entry for this session image id.
     if (sessionId != kInvalidSessionImageId) {
-        const auto st = m_sessionAppearance.constFind(sessionId);
-        if (st != m_sessionAppearance.cend()) {
+        if (const WorkspaceItemState *st = m_appearance.get(sessionId)) {
             for (WorkspaceItemState &slot : m_savedWorkspace) {
                 if (slot.sessionId != sessionId) {
                     continue;
@@ -362,7 +360,7 @@ void ImageView::snapshotWorkspace()
         // Path map is session/Image appearance only; unbound duplicates stay
         // in the list and must not collapse into a single path entry.
         if (s.sessionId != kInvalidSessionImageId) {
-            m_sessionAppearance.insert(s.sessionId, s);
+            m_appearance.set(s.sessionId, s);
         }
         if (s.sessionIndex >= 0) {
             m_itemStates.insert(s.path, s);
@@ -382,8 +380,7 @@ void ImageView::restoreWorkspace()
     // the durable snapshot so Image-mode edits survive a full rebuild.
     for (WorkspaceItemState &slot : m_savedWorkspace) {
         if (slot.sessionId != kInvalidSessionImageId) {
-            const auto sit = m_sessionAppearance.constFind(slot.sessionId);
-            if (sit != m_sessionAppearance.cend()) {
+            if (const WorkspaceItemState *sit = m_appearance.get(slot.sessionId)) {
                 slot.hasCrop = sit->hasCrop;
                 slot.cropRect = sit->cropRect;
                 slot.hFlip = sit->hFlip;
@@ -511,9 +508,8 @@ void ImageView::restoreStashedWorkspaceItems()
         const WorkspaceItemState *app = nullptr;
         WorkspaceItemState pathFallback;
         if (item->sessionId() != kInvalidSessionImageId) {
-            const auto sit = m_sessionAppearance.constFind(item->sessionId());
-            if (sit != m_sessionAppearance.cend()) {
-                app = &(*sit);
+            if (const WorkspaceItemState *sit = m_appearance.get(item->sessionId())) {
+                app = sit;
             }
         }
         if (!app && item->sessionIndex() >= 0) {
@@ -745,7 +741,7 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     if (sessionId == kInvalidSessionImageId) {
         return;
     }
-    m_sessionAppearance.remove(sessionId);
+    m_appearance.remove(sessionId);
 
     const QRectF keptSceneRect = (m_scene && isGalleryMode()) ? m_scene->sceneRect() : QRectF();
     const int scrollH = horizontalScrollBar() ? horizontalScrollBar()->value() : 0;
@@ -893,7 +889,7 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         slot.sessionId = id;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        m_sessionAppearance.insert(id, slot);
+        m_appearance.set(id, slot);
         if (item->sessionIndex() >= 0) {
             m_sessionSlotStates.insert(item->sessionIndex(), slot);
         }
@@ -1328,14 +1324,14 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             }
             // If this tile never had an id while Image-mode edits ran, peer sync
             // could not update it. Force a full re-decode so LoadAdd applies
-            // m_sessionAppearance for this id (safe; pixels must be on-disk full).
+            // m_appearance for this id (safe; pixels must be on-disk full).
             if (newlyBoundId && existing->hasDecodedPixels()
                 && sid != kInvalidSessionImageId) {
-                const auto appIt = m_sessionAppearance.constFind(sid);
-                if (appIt == m_sessionAppearance.cend()) {
+                const WorkspaceItemState *appPtr = m_appearance.get(sid);
+                if (!appPtr) {
                     continue;
                 }
-                const WorkspaceItemState &app = *appIt;
+                const WorkspaceItemState &app = *appPtr;
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
                     existing->clearDecodedPixels();
@@ -1956,7 +1952,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
                     WorkspaceItemState slot = captureState(copy);
                     slot.sessionId = sessionId;
                     slot.sessionIndex = sessionIndex;
-                    m_sessionAppearance.insert(sessionId, slot);
+                    m_appearance.set(sessionId, slot);
                 }
                 updateWorkspaceSceneRect();
                 ensureVisibleItem(copy);

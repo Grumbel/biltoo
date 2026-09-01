@@ -135,3 +135,5 @@ update one list.
 - Phase 1a: `GalleryPackReason` + `applyLayout(reason)`; `scheduleApplyLayout` no-op.
 - Phase 1b: `sessionappearance.{h,cpp}` owns crop scale/apply geometry.
 - Phase 1c: this document.
+- Phase 2: `SessionAppearanceStore` wraps id-keyed appearance; ImageView uses
+  `m_appearance.get/set/remove` instead of a raw QHash.

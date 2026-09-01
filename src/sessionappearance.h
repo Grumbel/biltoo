@@ -6,10 +6,23 @@
 
 #include "imageview_types.h"
 
+#include <QHash>
 #include <QRect>
 #include <QSize>
 
 class ImageItem;
+
+/**
+ * Why Gallery may repack. Decode, delete, and view resize are not reasons.
+ * applyLayout(reason) is the only pack entry point for Gallery.
+ */
+enum class GalleryPackReason {
+    ExplicitLayout, /**< Layout toolbar / menu while already in Gallery */
+    EnterGallery,   /**< Entering Gallery or rebuilding from session list */
+    Reload,         /**< F5 / explicit reload with relayout */
+    ContentChange,  /**< Content flip/rotate changed tile aspect for pack */
+    SessionMutate,  /**< Intentional add/duplicate that must show new tiles */
+};
 
 /**
  * Session content appearance helpers (DOMAIN: session image crop / flips /
@@ -32,15 +45,25 @@ void applyCrop(ImageItem *item, const WorkspaceItemState &state);
 } // namespace SessionAppearance
 
 /**
- * Why Gallery may repack. Decode, delete, and view resize are not reasons.
- * applyLayout(reason) is the only pack entry point for Gallery.
+ * Per–session-image content appearance (crop, content flips, quarter turns).
+ * Identity is SessionImageId — never path (IDENTITY.md).
+ *
+ * Path-keyed maps on ImageView remain legacy fallbacks for unbound tiles only.
  */
-enum class GalleryPackReason {
-    ExplicitLayout, /**< Layout toolbar / menu while already in Gallery */
-    EnterGallery,   /**< Entering Gallery or rebuilding from session list */
-    Reload,         /**< F5 / explicit reload with relayout */
-    ContentChange,  /**< Content flip/rotate changed tile aspect for pack */
-    SessionMutate,  /**< Intentional add/duplicate that must show new tiles */
+class SessionAppearanceStore
+{
+public:
+    const WorkspaceItemState *get(SessionImageId id) const;
+    WorkspaceItemState value(SessionImageId id) const;
+    bool contains(SessionImageId id) const;
+    void set(SessionImageId id, const WorkspaceItemState &state);
+    void remove(SessionImageId id);
+    void clear();
+    int size() const { return m_byId.size(); }
+    bool isEmpty() const { return m_byId.isEmpty(); }
+
+private:
+    QHash<SessionImageId, WorkspaceItemState> m_byId;
 };
 
 #endif // SESSIONAPPEARANCE_H
