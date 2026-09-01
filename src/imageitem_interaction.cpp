@@ -60,11 +60,12 @@ constexpr qreal kChromeGroupGapPx = 22.0;    // extra gap between upper/lower gr
 constexpr int kChromeUpperCount = 4;         // flip / flip / 90°CCW / 90°CW
 constexpr int kChromeLowerCount = 4;         // raise / lower / 1:1 / 0°
 constexpr int kChromeCount = kChromeUpperCount + kChromeLowerCount;
-constexpr qreal kSliderWidthPx = 100.0;
-constexpr qreal kSliderHeightPx = 10.0;
-// Outside offset from the visual bottom edge to the opacity track centre-line.
+// Opacity track length (along the left edge) and thickness (perpendicular).
+constexpr qreal kSliderWidthPx = 100.0;   // track length in viewport px
+constexpr qreal kSliderHeightPx = 10.0;   // track thickness in viewport px
+// Outside offset from the visual left edge to the opacity track centre-line.
 constexpr qreal kSliderOutsidePx = 18.0;
-// Min air between opacity track left end and bottom scale/rotate clearance.
+// Min air between opacity track and left scale/rotate clearance along the edge.
 constexpr qreal kSliderClearPx = 16.0;
 // Skip detailed chrome only when the frame is truly a few pixels across.
 constexpr qreal kMinFrameDiagPx = 16.0;
@@ -172,50 +173,55 @@ void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
 // whole track shifts toward the bottom-right corner / further right.
 void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
 {
-    const qreal halfW = kSliderWidthPx * 0.5;
-    const QPointF along = g.dirBottom; // br → bl is dirBottom? wait: dirBottom = norm(bl - br) so br→bl
-    // We want left→right visually along the bottom. Edge runs br→bl as dirBottom.
-    // Right corner is br; left is bl. So "right end" is toward br = -dirBottom from mid.
-    const QPointF toRight = -along; // from mid toward br
-    const QPointF toLeft = along;   // from mid toward bl
-
-    // Track centre-line outside the bottom edge.
+    // Vertical track outside the *left* edge.
+    // a = bottom end (opacity 5%), b = top end (opacity 100%).
+    // Placement mirrors chrome adaptive layout: prefer bottom of the left edge
+    // when the frame is tall enough; always clear the left rotate knob / scale
+    // bar; fall back to packing above or below the mid-edge reserved band.
+    const QPointF alongUp = g.dirLeft; // bl → tl
     const qreal outDist = kSliderOutsidePx + kSliderHeightPx * 0.5;
-    // Prefer right-aligned: right end near br, with a small margin from the corner.
+    const qreal trackLen = kSliderWidthPx;
     const qreal cornerMargin = kHandleScreenPx * 0.6;
-    QPointF rightEnd = g.br + g.outBottom * outDist + toLeft * cornerMargin;
-    QPointF leftEnd = rightEnd + toLeft * kSliderWidthPx;
+    const qreal edgeLen = QLineF(g.bl, g.tl).length();
 
-    // Clearance around bottom rotate knob and mid-edge scale bar.
-    const QPointF rotB = g.midBottom + g.outBottom * kRotateOffsetPx;
-    const qreal scaleHalf = kHandleScreenPx * 1.1; // half length of edge bar
-    // Forbidden region along the track line: anything left of (mid + clearance)
-    // measured toward the right means leftEnd must stay to the right of zone.
-    // Project rot / scale extents onto the bottom edge axis (along = toward left).
-    auto proj = [&](const QPointF &p) {
-        return QPointF::dotProduct(p - g.midBottom, along);
+    auto projFromBl = [&](const QPointF &p) {
+        return QPointF::dotProduct(p - g.bl, alongUp);
     };
-    // along increases toward left (bl). Smaller proj = more to the right.
-    const qreal rotProj = proj(rotB);
-    const qreal scaleRightProj = -scaleHalf; // right edge of scale bar in proj
-    const qreal scaleLeftProj = scaleHalf;
-    // The "right edge of the h-scale and rotation handler" in along-coords
-    // (the most rightward forbidden point, i.e. minimum proj of the zone).
-    const qreal zoneRight = qMin(rotProj - (kHandleScreenPx * 0.5 + kSliderClearPx),
-                                 scaleRightProj - kSliderClearPx);
-    // leftEnd of slider has proj = proj(leftEnd). It must be < zoneRight
-    // (strictly to the right of the zone's right edge). If leftEnd is too far
-    // left (proj too large), shift the whole track rightward (decrease proj).
-    qreal leftProj = proj(leftEnd);
-    if (leftProj > zoneRight) {
-        const qreal shift = leftProj - zoneRight; // positive: how much to move right
-        leftEnd = leftEnd - along * shift;  // -along = toRight
-        rightEnd = rightEnd - along * shift;
+
+    // Reserved band around the left free-rotate knob (and left scale bar).
+    const QPointF rotL = g.midLeft + g.outLeft * kRotateOffsetPx;
+    const qreal rotAlong = projFromBl(rotL);
+    const qreal needClear = kHandleScreenPx * 0.5 + kSliderClearPx;
+    const qreal zoneLo = rotAlong - needClear;
+    const qreal zoneHi = rotAlong + needClear;
+
+    // Prefer attached near the bottom of the left edge when the full track
+    // fits below the reserved mid-edge band.
+    qreal aAlong = cornerMargin;
+    qreal bAlong = aAlong + trackLen;
+    if (bAlong > zoneLo) {
+        // Pack just below the reserved band.
+        bAlong = zoneLo;
+        aAlong = bAlong - trackLen;
+        if (aAlong < cornerMargin) {
+            // Not enough room below: try above the band, else clamp into edge.
+            aAlong = zoneHi;
+            bAlong = aAlong + trackLen;
+            const qreal topLimit = edgeLen - cornerMargin;
+            if (bAlong > topLimit) {
+                bAlong = topLimit;
+                aAlong = bAlong - trackLen;
+            }
+            if (aAlong < cornerMargin) {
+                aAlong = cornerMargin;
+                bAlong = qMin(aAlong + trackLen, topLimit);
+            }
+        }
     }
 
-    // a = left, b = right for tval 0→1 left-to-right.
-    *aOut = leftEnd;
-    *bOut = rightEnd;
+    const QPointF origin = g.bl + g.outLeft * outDist;
+    *aOut = origin + alongUp * aAlong;
+    *bOut = origin + alongUp * bAlong;
 }
 } // namespace
 
@@ -525,11 +531,11 @@ qreal ImageItem::chromeButtonSize() const
 QRectF ImageItem::opacitySliderRect() const
 {
     // Approximate local rect for legacy callers only. Paint / hit / drag use
-    // opacityTrackView() in viewport space (bottom-right outside, adaptive).
+    // opacityTrackView() in viewport space (left outside, vertical, adaptive).
     const QRectF r = QGraphicsPixmapItem::boundingRect();
-    const qreal w = qMin(r.width() * 0.4, r.width());
-    const qreal h = qMin(8.0, r.height() * 0.1);
-    return QRectF(r.right() - w - 4.0, r.bottom() + 4.0, w, h);
+    const qreal h = qMin(r.height() * 0.4, r.height());
+    const qreal w = qMin(8.0, r.width() * 0.1);
+    return QRectF(r.left() - w - 4.0, r.bottom() - h - 4.0, w, h);
 }
 
 void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
@@ -1293,16 +1299,16 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         drawBtn(Handle::ResetRotation, 7, QStringLiteral("0°"));
     }
 
-    // Opacity: bottom-right *outside*. Left edge stays clear of the bottom
-    // scale bar and rotate knob (see opacityTrackView).
+    // Opacity: left *outside*, vertical. Bottom end = 5%, top end = 100%.
+    // Clears the left scale bar and rotate knob (see opacityTrackView).
     {
         const FrameViewGeom fg = makeFrameViewGeom(tl, tr, br, bl);
         QPointF a, b;
         opacityTrackView(fg, &a, &b);
         const QPointF ab = b - a;
         const qreal abLen = qHypot(ab.x(), ab.y());
-        const QPointF along = abLen > 1e-6 ? ab / abLen : QPointF(1, 0);
-        const QPointF perp = fg.outBottom;
+        const QPointF along = abLen > 1e-6 ? ab / abLen : QPointF(0, -1);
+        const QPointF perp = fg.outLeft;
         const qreal thick = kSliderHeightPx;
         const bool hot = (m_hoverHandle == Handle::OpacitySlider
                           || m_activeHandle == Handle::OpacitySlider);

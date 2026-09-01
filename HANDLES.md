@@ -22,11 +22,14 @@ editor:
   (along the outward normal of the visual edge). Stems connect edge mid to knob.
   Knobs are constant screen size. Positions rotate with the image; distance does
   not scale with item scale.
-- **Chrome buttons** (flip, raise/lower, reset, opacity) sit a fixed viewport-
-  pixel distance outside one visual edge (currently the “right” side of the
-  local bounding box, mapped). Same size and spacing in viewport pixels at all
-  scales/rotations. Raise/Lower glyphs stay screen-upright; others may follow
-  the item or stay upright as designed.
+- **Chrome buttons** (flip, raise/lower, reset) sit a fixed viewport-pixel
+  distance outside the visual right edge of the frame. Same size and spacing
+  in viewport pixels at all scales/rotations. Raise/Lower glyphs stay
+  screen-upright; others may follow the item or stay upright as designed.
+- **Opacity track** is a vertical slider outside the visual left edge. Bottom
+  end is minimum opacity (5%), top end is fully opaque (100%). Placement is
+  adaptive: prefer the lower part of the left edge when the frame is tall
+  enough; always clear the left rotate knob and scale bar.
 - Hit targets match painted centres (view-pixel distance tests). Input is owned
   exclusively by ImageView (viewport).
 
