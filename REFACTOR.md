@@ -176,3 +176,5 @@ by id (new model work — not part of early-phase exit criteria).
   → imageview_load.cpp.
 - Phase 5g: zoom/HUD/background → imageview_view.cpp;
   flip/rotate/stack/opacity/duplicate → imageview_transform.cpp.
+- Phase 5h: paintEvent/draw* → imageview_paint.cpp;
+  group scale/rotate → imageview_group.cpp.
