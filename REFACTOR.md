@@ -167,3 +167,5 @@ product features (TODO.md), optional Phase 5 after QA, or Workspace placement
 by id (new model work — not part of early-phase exit criteria).
 - Phase 5b: Workspace stash/snapshot/free-form placement moved to
   imageview_workspace.cpp (file split by mode).
+- Phase 5c: setViewMode / prepare*Canvas / clearLiveCanvas moved to
+  imageview_modes.cpp.
