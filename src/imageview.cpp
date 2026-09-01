@@ -2591,13 +2591,20 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
     }
 
     // Gallery: double-click opens the tile in Image mode (classic file view).
+    // Prefer SessionImageId so duplicate paths open the correct session row.
     if (isGalleryMode() && event->button() == Qt::LeftButton) {
         const QPointF scenePos = mapToScene(event->pos());
         for (QGraphicsItem *gi : m_scene->items(scenePos)) {
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                const QString path = item->path();
-                if (!path.isEmpty()) {
-                    emit galleryItemOpenRequested(path);
+                if (item->sessionId() != kInvalidSessionImageId) {
+                    emit sessionImageOpenRequested(item->sessionId());
+                } else if (item->sessionIndex() >= 0) {
+                    emit sessionSlotOpenRequested(item->sessionIndex());
+                } else {
+                    const QString path = item->path();
+                    if (!path.isEmpty()) {
+                        emit galleryItemOpenRequested(path);
+                    }
                 }
                 event->accept();
                 return;

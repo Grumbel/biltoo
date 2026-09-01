@@ -1842,7 +1842,13 @@ void ImageView::keyPressEvent(QKeyEvent *event)
 
         if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
             if (ImageItem *item = selectedGalleryItem()) {
-                emit galleryItemOpenRequested(item->path());
+                if (item->sessionId() != kInvalidSessionImageId) {
+                    emit sessionImageOpenRequested(item->sessionId());
+                } else if (item->sessionIndex() >= 0) {
+                    emit sessionSlotOpenRequested(item->sessionIndex());
+                } else if (!item->path().isEmpty()) {
+                    emit galleryItemOpenRequested(item->path());
+                }
                 event->accept();
                 return;
             }
