@@ -532,9 +532,8 @@ void MainWindow::duplicateSelected()
     QList<SessionImageId> newIds;
     for (const QString &path : sourcePaths) {
         if (!path.isEmpty()) {
-            m_session.paths().append(path);
             const SessionImageId id = allocSessionId();
-            m_session.ids().append(id);
+            m_session.append(path, id);
             newIds.append(id);
         }
     }
@@ -1505,15 +1504,14 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             const bool alreadyOnCanvas = m_imageView->workspacePathOccurrenceCount(img) > 0;
             if (alreadyOnCanvas) {
                 // New session entry for the duplicate instance.
-                m_session.paths().append(img);
-                m_session.ids().append(allocSessionId());
+                m_session.append(img);
                 if (m_thumbnailBar) {
                     m_thumbnailBar->setFiles(m_session.paths());
                     m_thumbnailBar->setSessionIds(m_session.ids());
                     m_thumbnailBar->setMultiSelectEnabled(true);
                 }
             }
-            const int slot = m_session.paths().lastIndexOf(img);
+            const int slot = m_session.lastIndexOfPath(img);
             const SessionImageId sid = sessionIdAt(slot);
             if (!scenePos.isNull()) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
@@ -1550,8 +1548,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             if (p.isEmpty()) {
                 continue;
             }
-            m_session.paths().append(p);
-            m_session.ids().append(allocSessionId());
+            m_session.append(p);
         }
         if (m_thumbnailBar) {
             m_thumbnailBar->setFiles(m_session.paths());

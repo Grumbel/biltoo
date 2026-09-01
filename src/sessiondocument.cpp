@@ -37,6 +37,11 @@ int SessionDocument::indexOfPath(const QString &path) const
     return m_paths.indexOf(path);
 }
 
+int SessionDocument::lastIndexOfPath(const QString &path) const
+{
+    return m_paths.lastIndexOf(path);
+}
+
 SessionImageId SessionDocument::allocId()
 {
     return m_nextId++;
@@ -55,6 +60,19 @@ void SessionDocument::setPaths(const QStringList &paths)
     m_ids.reserve(m_paths.size());
     for (int i = 0; i < m_paths.size(); ++i) {
         m_ids.append(allocId());
+    }
+}
+
+void SessionDocument::replaceAll(const QStringList &paths, const QVector<SessionImageId> &ids)
+{
+    Q_ASSERT(paths.size() == ids.size());
+    m_paths = paths;
+    m_ids = ids;
+    // Advance next id past any retained ids so we never reuse.
+    for (SessionImageId id : m_ids) {
+        if (id >= m_nextId) {
+            m_nextId = id + 1;
+        }
     }
 }
 

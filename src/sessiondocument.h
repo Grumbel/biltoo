@@ -16,6 +16,9 @@
  *
  * MainWindow owns one SessionDocument as the working set. Canvas views
  * (ImageView, ThumbnailBar) observe paths/ids — they do not own the list.
+ *
+ * Mutations go through these methods only so path/id lengths stay aligned
+ * and ids are never reused after remove.
  */
 class SessionDocument
 {
@@ -24,26 +27,30 @@ public:
     bool isEmpty() const { return m_paths.isEmpty(); }
 
     const QStringList &paths() const { return m_paths; }
-    /** Mutable access for bulk assign / sort in-place during migration. */
-    QStringList &paths() { return m_paths; }
-
     const QVector<SessionImageId> &ids() const { return m_ids; }
-    QVector<SessionImageId> &ids() { return m_ids; }
 
     QString pathAt(int index) const;
     SessionImageId idAt(int index) const;
     int indexOfId(SessionImageId id) const;
     int indexOfPath(const QString &path) const;
+    /** Last index of @p path (duplicate-safe). -1 if absent. */
+    int lastIndexOfPath(const QString &path) const;
 
     /** Never reuses an id after remove. */
     SessionImageId allocId();
 
     void clear();
+    /** Replace list; allocates a fresh id for every path. */
     void setPaths(const QStringList &paths);
+    /**
+     * Replace list with parallel paths and ids (same size required).
+     * Used for sort / reorder while preserving SessionImageId identity.
+     */
+    void replaceAll(const QStringList &paths, const QVector<SessionImageId> &ids);
     void append(const QString &path, SessionImageId id = kInvalidSessionImageId);
     void insert(int index, const QString &path, SessionImageId id = kInvalidSessionImageId);
     void removeAt(int index);
-    /** Keep ids aligned when paths are reordered (e.g. sort). */
+    /** Pad or trim ids to match paths (legacy recovery only). */
     void ensureIdsAligned();
 
 private:

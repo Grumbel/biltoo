@@ -101,10 +101,7 @@ void MainWindow::sortFileList()
         return;
     }
     // Ensure parallel id vector matches (legacy / partial updates).
-    while (m_session.ids().size() < m_session.paths().size()) {
-        m_session.ids().append(allocSessionId());
-    }
-    m_session.ids().resize(m_session.paths().size());
+    m_session.ensureIdsAligned();
 
     auto nameLess = [](const QString &a, const QString &b) {
         QCollator collator;
@@ -192,8 +189,7 @@ void MainWindow::sortFileList()
         newFiles.append(m_session.paths().at(i));
         newIds.append(m_session.ids().at(i));
     }
-    m_session.paths() = newFiles;
-    m_session.ids() = newIds;
+    m_session.replaceAll(newFiles, newIds);
 }
 
 void MainWindow::setSortMode(SortMode mode)
@@ -321,12 +317,7 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
         return;
     }
 
-    m_session.paths() = images;
-    m_session.ids().clear();
-    m_session.ids().reserve(m_session.paths().size());
-    for (int i = 0; i < m_session.paths().size(); ++i) {
-        m_session.ids().append(allocSessionId());
-    }
+    m_session.setPaths(images);
     sortFileList();
     m_currentIndex = -1;
 
@@ -356,8 +347,7 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
 void MainWindow::newSession()
 {
     stopSlideshow();
-    m_session.paths().clear();
-    m_session.ids().clear();
+    m_session.clear();
     m_currentIndex = -1;
     m_galleryReturnActive = false;
     m_workspaceReturnActive = false;
@@ -409,8 +399,7 @@ void MainWindow::appendFiles(const QStringList &paths)
     int added = 0;
     for (const QString &path : images) {
         if (!seen.contains(path)) {
-            m_session.paths().append(path);
-            m_session.ids().append(allocSessionId());
+            m_session.append(path);
             seen.insert(path);
             ++added;
         }
@@ -701,8 +690,7 @@ void MainWindow::restoreSessionEntries(const QList<QPair<int, QString>> &entries
         if (m_session.paths().contains(e.second)) {
             continue;
         }
-        m_session.paths().insert(idx, e.second);
-        m_session.ids().insert(idx, allocSessionId());
+        m_session.insert(idx, e.second);
     }
     m_thumbnailBar->setFiles(m_session.paths());
         m_thumbnailBar->setSessionIds(m_session.ids());

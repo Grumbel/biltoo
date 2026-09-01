@@ -141,3 +141,6 @@ update one list.
   snapshot + mode switch so callers cannot forget snapshot or clear it early.
 - Phase 4: `SessionDocument` owns ordered paths + session ids; MainWindow
   holds `m_session` and facades alloc/indexOf/remove through it.
+- Phase 4b: close SessionDocument mutation API — no mutable paths()/ids();
+  MainWindow uses setPaths / replaceAll / append / insert / removeAt / clear
+  only so list lengths stay aligned and ids are never reused after remove.
