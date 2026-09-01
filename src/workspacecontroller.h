@@ -33,6 +33,9 @@ public:
     void stashItems();
     void restoreStashedItems();
 
+    /** Enter Workspace mode from @p previous (setViewMode Workspace branch). */
+    /** Enter Workspace mode from previous ViewMode (int = ImageView::ViewMode). */
+    void enter(int previousMode);
     void snapshotFreeFormStates();
     void restoreFreeFormStates();
 

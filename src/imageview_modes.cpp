@@ -9,10 +9,8 @@
 #include <QUndoStack>
 #include <QTimer>
 
-void ImageView::clearLiveCanvas()
+void ImageView::clearInteractionState()
 {
-    // Destroy only the live scene items. Mode stashes (Workspace/Gallery tiles
-    // kept while in Image mode) must survive Image-mode LoadReplace / Next.
     m_handleDragItem = nullptr;
     m_groupScaleDrag = false;
     m_groupRotateDrag = false;
@@ -24,6 +22,13 @@ void ImageView::clearLiveCanvas()
     m_rotating = false;
     m_dragItem = nullptr;
     m_gallery.setSelectionAnchor(nullptr);
+}
+
+void ImageView::clearLiveCanvas()
+{
+    // Destroy only the live scene items. Mode stashes (Workspace/Gallery tiles
+    // kept while in Image mode) must survive Image-mode LoadReplace / Next.
+    clearInteractionState();
     if (m_undoStack) {
         m_undoStack->clear();
     }
@@ -152,17 +157,7 @@ void ImageView::setViewMode(ViewMode mode)
         // the real target (double clear + decode spike).
         const QString path = m_classicPath;
         // Clear live canvas only — do not discard stashes.
-        m_handleDragItem = nullptr;
-        m_groupScaleDrag = false;
-        m_groupRotateDrag = false;
-        m_groupHandle = -1;
-        m_groupHoverHandle = -1;
-        m_groupDragItems.clear();
-        m_groupDragStartStates.clear();
-        m_rotateItem = nullptr;
-        m_rotating = false;
-        m_dragItem = nullptr;
-        m_gallery.setSelectionAnchor(nullptr);
+        clearInteractionState();
         if (m_undoStack) {
             m_undoStack->clear();
         }
@@ -188,28 +183,7 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     if (mode == ViewMode::Workspace) {
-        m_viewMode = ViewMode::Workspace;
-        m_layoutMode = LayoutMode::FreeForm;
-        viewport()->update();
-        setDragMode(m_tool == Tool::Select ? QGraphicsView::RubberBandDrag
-                                           : QGraphicsView::NoDrag);
-        if (previous == ViewMode::Image && !m_workspace.stashedItems().isEmpty()) {
-            // Fast path: reattach live items (no re-decode).
-            restoreStashedWorkspaceItems();
-        } else if (!m_workspace.savedItems().isEmpty() && previous == ViewMode::Image) {
-            // Fallback: rebuild from snapshot (e.g. stash was discarded).
-            restoreWorkspace();
-        } else {
-            for (ImageItem *item : m_items) {
-                applyItemModeFlags(item);
-            }
-            if (!m_items.isEmpty() && m_scene->selectedItems().isEmpty()) {
-                m_scene->clearSelection();
-                m_items.first()->setSelected(true);
-            }
-        }
-        updateWorkspaceSceneRect();
-        emit statusChanged();
+        m_workspace.enter(static_cast<int>(previous));
         return;
     }
 

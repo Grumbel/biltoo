@@ -123,6 +123,8 @@ public:
     void rebindWorkspaceSession(const QStringList &sessionFiles,
                                 const QVector<SessionImageId> &sessionIds);
     void clearWorkspace();
+    /** Clear drag/group/rotate interaction pointers (items stay on canvas). */
+    void clearInteractionState();
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
     void clearLiveCanvas();
 

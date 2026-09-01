@@ -121,16 +121,7 @@ void WorkspaceController::stashItems()
         return;
     }
     m_stashedItems = m_view->m_items;
-    m_view->m_handleDragItem = nullptr;
-    m_view->m_groupScaleDrag = false;
-    m_view->m_groupRotateDrag = false;
-    m_view->m_groupHandle = -1;
-    m_view->m_groupHoverHandle = -1;
-    m_view->m_groupDragItems.clear();
-    m_view->m_groupDragStartStates.clear();
-    m_view->m_rotateItem = nullptr;
-    m_view->m_rotating = false;
-    m_view->m_dragItem = nullptr;
+    m_view->clearInteractionState();
     for (ImageItem *item : m_stashedItems) {
         if (!item) {
             continue;
@@ -255,5 +246,33 @@ void WorkspaceController::restoreFreeFormStates()
     if (m_hasFreeFormViewTransform) {
         m_view->setTransform(m_freeFormViewTransform);
     }
+}
+
+void WorkspaceController::enter(int previousMode)
+{
+    const auto previous = static_cast<ImageView::ViewMode>(previousMode);
+    m_view->m_viewMode = ImageView::ViewMode::Workspace;
+    m_view->m_layoutMode = ImageView::LayoutMode::FreeForm;
+    m_view->viewport()->update();
+    m_view->setDragMode(m_view->m_tool == ImageView::Tool::Select
+                            ? QGraphicsView::RubberBandDrag
+                            : QGraphicsView::NoDrag);
+    if (previous == ImageView::ViewMode::Image && !m_stashedItems.isEmpty()) {
+        // Fast path: reattach live items (no re-decode).
+        restoreStashedItems();
+    } else if (!m_savedItems.isEmpty() && previous == ImageView::ViewMode::Image) {
+        // Fallback: rebuild from snapshot (e.g. stash was discarded).
+        restore();
+    } else {
+        for (ImageItem *item : m_view->m_items) {
+            m_view->applyItemModeFlags(item);
+        }
+        if (!m_view->m_items.isEmpty() && m_view->m_scene->selectedItems().isEmpty()) {
+            m_view->m_scene->clearSelection();
+            m_view->m_items.first()->setSelected(true);
+        }
+    }
+    m_view->updateWorkspaceSceneRect();
+    emit m_view->statusChanged();
 }
 

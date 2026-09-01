@@ -184,3 +184,5 @@ by id (new model work — not part of early-phase exit criteria).
 - Phase 5j: `WorkspaceController` collaborator owns Workspace tile stash,
   durable snapshot, free-form placement cache, and related helpers.
   ImageView public API delegates; no behaviour change.
+- Phase 5k: `clearInteractionState()` shared host helper; Workspace enter
+  path of `setViewMode` owned by `WorkspaceController::enter`.
