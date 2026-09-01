@@ -362,16 +362,16 @@ void ImageView::paintEvent(QPaintEvent *event)
             drawPanel({{actionLine, true}}, margin, margin, false, false);
         }
 
-        // Top-right: session index (pinned HUD, flash, or identity pulse after nav)
+        // Top-right: session index — pinned HUD or brief identity pulse after
+        // user navigation. Not during pure action flashes (slideshow start, …)
+        // and not on automatic slideshow advance (pulseIdentity=false).
         const QString badge = sessionBadgeText();
-        if (!badge.isEmpty()
-            && (m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse)) {
+        if (!badge.isEmpty() && (m_hudVisible || m_hudIdentityPulse)) {
             drawPanel({{badge, true}}, 0, margin, true, false);
         }
 
-        // Bottom: filename — pinned, identity pulse, or gallery hover
-        if (m_hudVisible || m_hudIdentityPulse || m_hudFlashVisible
-            || !m_galleryHoverPath.isEmpty()) {
+        // Bottom: filename — pinned HUD, identity pulse after user nav, or gallery hover
+        if (m_hudVisible || m_hudIdentityPulse || !m_galleryHoverPath.isEmpty()) {
             QList<HudLine> bottom;
             const QString name = hudFileName();
             if (!name.isEmpty()) {

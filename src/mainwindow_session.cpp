@@ -523,8 +523,10 @@ void MainWindow::setCurrentIndex(int index)
 
     // Publish session cursor before decode so Image-mode items bind the correct
     // sessionIndex (crop/flip sync to the matching Workspace slot).
+    // Slideshow auto-advance must not pulse filename/index (only user nav or pinned HUD).
     if (m_imageView) {
-        m_imageView->setSessionPosition(m_currentIndex, m_files.size(), true);
+        m_imageView->setSessionPosition(m_currentIndex, m_files.size(),
+                                        !m_slideshowAdvancing);
         m_imageView->setCurrentSessionId(currentSessionId());
     }
 
