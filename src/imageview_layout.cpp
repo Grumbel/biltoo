@@ -406,6 +406,7 @@ void ImageView::stashWorkspaceItems()
     m_stashedWorkspaceItems = m_items;
     m_handleDragItem = nullptr;
     m_groupScaleDrag = false;
+    m_groupRotateDrag = false;
     m_groupHandle = -1;
     m_groupDragItems.clear();
     m_groupDragStartStates.clear();
@@ -571,6 +572,7 @@ void ImageView::clearWorkspace()
     // about to be destroyed.
     m_handleDragItem = nullptr;
     m_groupScaleDrag = false;
+    m_groupRotateDrag = false;
     m_groupHandle = -1;
     m_groupDragItems.clear();
     m_groupDragStartStates.clear();
@@ -831,8 +833,9 @@ void ImageView::destroyCanvasItem(ImageItem *item)
         m_gallerySelectionAnchor = nullptr;
     }
     // Group scale holds raw pointers — drop before delete or BSP paint UAF.
-    if (m_groupScaleDrag || !m_groupDragItems.isEmpty()) {
+    if (m_groupScaleDrag || m_groupRotateDrag || !m_groupDragItems.isEmpty()) {
         m_groupScaleDrag = false;
+        m_groupRotateDrag = false;
         m_groupHandle = -1;
         m_groupDragItems.clear();
         m_groupDragStartStates.clear();
@@ -1252,6 +1255,7 @@ void ImageView::setViewMode(ViewMode mode)
         // Clear live canvas only — do not discard stashes.
         m_handleDragItem = nullptr;
         m_groupScaleDrag = false;
+        m_groupRotateDrag = false;
         m_groupHandle = -1;
         m_groupDragItems.clear();
         m_groupDragStartStates.clear();

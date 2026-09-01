@@ -514,6 +514,9 @@ private:
     bool beginGroupScale(int handle, const QList<ImageItem *> &items);
     void updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods);
     void endGroupScale();
+    /** Handles 0–7 = scale corners/edges; 8–11 = rotate (T/R/B/L). */
+    bool isGroupRotateHandle(int handle) const { return handle >= 8 && handle <= 11; }
+    void updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods);
     void updateGalleryHoverAt(const QPoint &viewPos);
     static QSizeF nativeSize(const ImageItem *item);
     void zoomViewBy(qreal factor);
@@ -635,11 +638,14 @@ private:
     QRectF m_cropDragStartRect;
     QPointF m_cropDragStartLocal;
 
-    /** Multi-select: which group scale handle is active (-1 = none). */
+    /** Multi-select: which group handle is active (-1 = none). 0–7 scale, 8–11 rotate. */
     int m_groupHandle = -1;
     bool m_groupScaleDrag = false;
+    bool m_groupRotateDrag = false;
     QRectF m_groupBoundsStart;
     QPointF m_groupCenterStart;
+    QPointF m_groupPressScenePos;
+    qreal m_groupPressAngleDeg = 0.0;
     QList<WorkspaceItemState> m_groupDragStartStates;
     QList<ImageItem *> m_groupDragItems;
     ImageItem *m_dragItem = nullptr;

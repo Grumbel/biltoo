@@ -518,19 +518,33 @@ int ImageView::groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &it
         return -1;
     }
     const QRect viewRect = mapFromScene(sceneBounds).boundingRect();
-    constexpr int hs = 8; // half-size hit in viewport px (matches drawn handles)
-    const QPoint corners[8] = {
+    constexpr qreal kScaleHit = 10.0;
+    constexpr qreal kRotateOffset = 28.0;
+    constexpr qreal kRotateHit = 12.0;
+    const QPointF corners[8] = {
         viewRect.topLeft(),
-        QPoint(viewRect.center().x(), viewRect.top()),
+        QPointF(viewRect.center().x(), viewRect.top()),
         viewRect.topRight(),
-        QPoint(viewRect.right(), viewRect.center().y()),
+        QPointF(viewRect.right(), viewRect.center().y()),
         viewRect.bottomRight(),
-        QPoint(viewRect.center().x(), viewRect.bottom()),
+        QPointF(viewRect.center().x(), viewRect.bottom()),
         viewRect.bottomLeft(),
-        QPoint(viewRect.left(), viewRect.center().y()),
+        QPointF(viewRect.left(), viewRect.center().y()),
     };
+    // Prefer rotate knobs (outside) so they are not stolen by edge scale hits.
+    const QPointF rot[4] = {
+        QPointF(viewRect.center().x(), viewRect.top() - kRotateOffset),    // 8 T
+        QPointF(viewRect.right() + kRotateOffset, viewRect.center().y()),  // 9 R
+        QPointF(viewRect.center().x(), viewRect.bottom() + kRotateOffset), // 10 B
+        QPointF(viewRect.left() - kRotateOffset, viewRect.center().y()),   // 11 L
+    };
+    for (int i = 0; i < 4; ++i) {
+        if (QLineF(QPointF(viewPos), rot[i]).length() <= kRotateHit) {
+            return 8 + i;
+        }
+    }
     for (int i = 0; i < 8; ++i) {
-        if (QLineF(viewPos, corners[i]).length() <= hs + 4) {
+        if (QLineF(QPointF(viewPos), corners[i]).length() <= kScaleHit) {
             return i;
         }
     }
@@ -549,15 +563,23 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
     const QRect viewRect = mapFromScene(sceneBounds).boundingRect();
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
-    QPen framePen(QColor(60, 140, 255, 200));
-    framePen.setWidthF(0);
+
+    // Group chrome: violet family so it is distinct from single-select blue
+    // and crop amber.
+    const QColor frameCol(150, 90, 220, 220);
+    const QColor handleFill(180, 120, 255, 240);
+    const QColor handleEdge(80, 40, 140);
+    const QColor rotFill(220, 160, 255);
+    const QColor rotHot(255, 230, 120);
+
+    QPen framePen(frameCol, 0);
     framePen.setCosmetic(true);
-    framePen.setStyle(Qt::SolidLine);
+    framePen.setWidthF(1.75);
     painter->setPen(framePen);
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(viewRect);
 
-    constexpr qreal hs = 7.0;
+    constexpr qreal hs = 6.0;
     const QPointF pts[8] = {
         viewRect.topLeft(),
         QPointF(viewRect.center().x(), viewRect.top()),
@@ -568,11 +590,43 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         viewRect.bottomLeft(),
         QPointF(viewRect.left(), viewRect.center().y()),
     };
-    painter->setBrush(QColor(255, 255, 255, 240));
-    painter->setPen(QPen(QColor(40, 100, 220), 0));
+    QPen hp(handleEdge, 0);
+    hp.setCosmetic(true);
+    hp.setWidthF(1.15);
+    painter->setPen(hp);
+    painter->setBrush(handleFill);
     for (const QPointF &p : pts) {
         painter->drawRect(QRectF(p.x() - hs / 2.0, p.y() - hs / 2.0, hs, hs));
     }
+
+    // Rotate knobs outside mid-edges (same offset language as single-item).
+    constexpr qreal kRotateOffset = 28.0;
+    const QPointF rot[4] = {
+        QPointF(viewRect.center().x(), viewRect.top() - kRotateOffset),
+        QPointF(viewRect.right() + kRotateOffset, viewRect.center().y()),
+        QPointF(viewRect.center().x(), viewRect.bottom() + kRotateOffset),
+        QPointF(viewRect.left() - kRotateOffset, viewRect.center().y()),
+    };
+    const QPointF edgeMid[4] = {
+        QPointF(viewRect.center().x(), viewRect.top()),
+        QPointF(viewRect.right(), viewRect.center().y()),
+        QPointF(viewRect.center().x(), viewRect.bottom()),
+        QPointF(viewRect.left(), viewRect.center().y()),
+    };
+    QPen stem(frameCol, 0);
+    stem.setCosmetic(true);
+    stem.setWidthF(1.25);
+    for (int i = 0; i < 4; ++i) {
+        painter->setPen(stem);
+        painter->drawLine(edgeMid[i], rot[i]);
+        painter->setBrush(rotFill);
+        QPen rp(handleEdge, 0);
+        rp.setCosmetic(true);
+        rp.setWidthF(1.15);
+        painter->setPen(rp);
+        painter->drawEllipse(rot[i], 5.5, 5.5);
+    }
+
     painter->restore();
 }
 
@@ -586,7 +640,8 @@ bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
         return false;
     }
     m_groupHandle = handle;
-    m_groupScaleDrag = true;
+    m_groupScaleDrag = !isGroupRotateHandle(handle);
+    m_groupRotateDrag = isGroupRotateHandle(handle);
     m_groupBoundsStart = bounds;
     m_groupCenterStart = bounds.center();
     m_groupDragItems = items;
@@ -715,9 +770,65 @@ void ImageView::endGroupScale()
 {
     // Undo is committed from mouseReleaseEvent (TransformCommand is local there).
     m_groupScaleDrag = false;
+    m_groupRotateDrag = false;
     m_groupHandle = -1;
     m_groupDragItems.clear();
     m_groupDragStartStates.clear();
+}
+
+void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods)
+{
+    if (!m_groupRotateDrag || m_groupDragItems.isEmpty()
+        || m_groupDragStartStates.size() != m_groupDragItems.size()) {
+        return;
+    }
+    for (int i = m_groupDragItems.size() - 1; i >= 0; --i) {
+        ImageItem *item = m_groupDragItems.at(i);
+        if (!item || !m_items.contains(item) || item->scene() != m_scene) {
+            m_groupDragItems.removeAt(i);
+            m_groupDragStartStates.removeAt(i);
+        }
+    }
+    if (m_groupDragItems.isEmpty()) {
+        return;
+    }
+
+    const QPointF centre = m_groupCenterStart;
+    // Angle from group centre to pointer; seed from first press stored in
+    // m_groupPressScenePos when the drag starts (set in mouse path).
+    const QPointF v0 = m_groupPressScenePos - centre;
+    const QPointF v1 = scenePos - centre;
+    if (QLineF(QPointF(0, 0), v0).length() < 1e-3) {
+        return;
+    }
+    qreal delta = qRadiansToDegrees(qAtan2(v1.y(), v1.x()) - qAtan2(v0.y(), v0.x()));
+    if (mods & Qt::ControlModifier) {
+        delta = qRound(delta / 90.0) * 90.0;
+    } else if (mods & Qt::ShiftModifier) {
+        delta = qRound(delta / 45.0) * 45.0;
+    }
+    const qreal rad = qDegreesToRadians(delta);
+    const qreal c = qCos(rad);
+    const qreal s = qSin(rad);
+
+    for (int i = 0; i < m_groupDragItems.size(); ++i) {
+        ImageItem *item = m_groupDragItems.at(i);
+        const WorkspaceItemState &st = m_groupDragStartStates.at(i);
+        if (!item || !m_items.contains(item)) {
+            continue;
+        }
+        // Orbit position around group centre; add the same delta to placement angle.
+        const QPointF rel = st.pos - centre;
+        const QPointF newPos(centre.x() + rel.x() * c - rel.y() * s,
+                             centre.y() + rel.x() * s + rel.y() * c);
+        if (!qIsFinite(newPos.x()) || !qIsFinite(newPos.y())) {
+            continue;
+        }
+        item->setPos(newPos);
+        item->setItemRotation(st.rotation + delta);
+    }
+    m_fitMode = false;
+    emit statusChanged();
 }
 
 void ImageView::updateGalleryHoverAt(const QPoint &viewPos)
@@ -933,6 +1044,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             // Multi-select: group frame only (no per-item handles).
             const int gh = groupHandleAt(event->pos(), selected);
             if (gh >= 0 && beginGroupScale(gh, selected)) {
+                m_groupPressScenePos = mapToScene(event->pos());
                 event->accept();
                 return;
             }
@@ -1200,6 +1312,12 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+    if (m_groupRotateDrag) {
+        updateGroupRotate(mapToScene(event->pos()), event->modifiers());
+        viewport()->update();
+        event->accept();
+        return;
+    }
 
     if (m_handleDragItem && m_handleDragItem->hasActiveHandle()) {
         m_handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
@@ -1254,7 +1372,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
     if (isWorkspaceMode() && m_tool == Tool::Select && !m_handleDragItem
-        && !m_groupScaleDrag && !m_panning) {
+        && !m_groupScaleDrag && !m_groupRotateDrag && !m_panning) {
         const QPointF scenePos = mapToScene(event->pos());
         QList<ImageItem *> candidates;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
@@ -1274,7 +1392,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             }
             const int gh = groupHandleAt(event->pos(), candidates);
             if (gh >= 0) {
-                // 0=TL 1=T 2=TR 3=R 4=BR 5=B 6=BL 7=L
+                // 0=TL 1=T 2=TR 3=R 4=BR 5=B 6=BL 7=L; 8–11 rotate
                 switch (gh) {
                 case 0: case 4: // TL, BR — NW–SE diagonal
                     viewport()->setCursor(Qt::SizeFDiagCursor);
@@ -1287,6 +1405,9 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                     break;
                 case 3: case 7:
                     viewport()->setCursor(Qt::SizeHorCursor);
+                    break;
+                case 8: case 9: case 10: case 11:
+                    viewport()->setCursor(Qt::CrossCursor);
                     break;
                 default:
                     viewport()->setCursor(Qt::ArrowCursor);
@@ -1391,9 +1512,10 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         event->accept();
         return;
     }
-    if (m_groupScaleDrag && event->button() == Qt::LeftButton) {
+    if ((m_groupScaleDrag || m_groupRotateDrag) && event->button() == Qt::LeftButton) {
         if (m_undoStack && !m_groupDragItems.isEmpty()) {
-            m_undoStack->beginMacro(tr("Scale selection"));
+            m_undoStack->beginMacro(m_groupRotateDrag ? tr("Rotate selection")
+                                                      : tr("Scale selection"));
             for (int i = 0; i < m_groupDragItems.size(); ++i) {
                 ImageItem *item = m_groupDragItems.at(i);
                 if (!item || i >= m_groupDragStartStates.size()) {
@@ -1404,7 +1526,8 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
                 if (after.pos == before.pos
                     && qFuzzyCompare(after.scale, before.scale)
                     && qFuzzyCompare(after.scaleY > 0 ? after.scaleY : 1.0,
-                                     before.scaleY > 0 ? before.scaleY : 1.0)) {
+                                     before.scaleY > 0 ? before.scaleY : 1.0)
+                    && qFuzzyCompare(after.rotation, before.rotation)) {
                     continue;
                 }
                 // Inline undo entry matching other transform paths.
