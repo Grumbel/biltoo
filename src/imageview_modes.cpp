@@ -193,10 +193,10 @@ void ImageView::setViewMode(ViewMode mode)
         viewport()->update();
         setDragMode(m_tool == Tool::Select ? QGraphicsView::RubberBandDrag
                                            : QGraphicsView::NoDrag);
-        if (previous == ViewMode::Image && !m_stashedWorkspaceItems.isEmpty()) {
+        if (previous == ViewMode::Image && !m_workspace.stashedItems().isEmpty()) {
             // Fast path: reattach live items (no re-decode).
             restoreStashedWorkspaceItems();
-        } else if (!m_savedWorkspace.isEmpty() && previous == ViewMode::Image) {
+        } else if (!m_workspace.savedItems().isEmpty() && previous == ViewMode::Image) {
             // Fallback: rebuild from snapshot (e.g. stash was discarded).
             restoreWorkspace();
         } else {

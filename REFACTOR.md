@@ -178,3 +178,9 @@ by id (new model work — not part of early-phase exit criteria).
   flip/rotate/stack/opacity/duplicate → imageview_transform.cpp.
 - Phase 5h: paintEvent/draw* → imageview_paint.cpp;
   group scale/rotate → imageview_group.cpp.
+- Phase 5i: `GalleryController` collaborator owns Gallery stash, viewport
+  snapshot, selection anchor, hover path, and enter/leave/return helpers.
+  ImageView public API delegates; no behaviour change.
+- Phase 5j: `WorkspaceController` collaborator owns Workspace tile stash,
+  durable snapshot, free-form placement cache, and related helpers.
+  ImageView public API delegates; no behaviour change.

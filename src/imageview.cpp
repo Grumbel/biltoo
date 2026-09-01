@@ -43,6 +43,7 @@
 ImageView::ImageView(QWidget *parent)
     : QGraphicsView(parent)
     , m_gallery(this)
+    , m_workspace(this)
 {
     m_scene = new QGraphicsScene(this);
     // BSP indexing is fragile with frequent add/remove (Duplicate + Delete):

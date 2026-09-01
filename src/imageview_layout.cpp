@@ -327,7 +327,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         }
     };
     collect(m_items);
-    collect(m_stashedWorkspaceItems);
+    collect(m_workspace.stashedItems());
     collect(m_gallery.stashedItems());
 
     auto shouldSync = [&](ImageItem *other) -> bool {
@@ -360,7 +360,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     // Durable snapshot: update the entry for this session image id.
     if (sessionId != kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_appearance.get(sessionId)) {
-            for (WorkspaceItemState &slot : m_savedWorkspace) {
+            for (WorkspaceItemState &slot : m_workspace.savedItems()) {
                 if (slot.sessionId != sessionId) {
                     continue;
                 }
@@ -426,7 +426,7 @@ ImageItem *ImageView::findItemBySessionId(SessionImageId sessionId) const
             return item;
         }
     }
-    for (ImageItem *item : m_stashedWorkspaceItems) {
+    for (ImageItem *item : m_workspace.stashedItems()) {
         if (item && item->sessionId() == sessionId) {
             return item;
         }
@@ -467,7 +467,7 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
         }
     };
     collect(m_items);
-    collect(m_stashedWorkspaceItems);
+    collect(m_workspace.stashedItems());
     collect(m_gallery.stashedItems());
 
     QStringList removedPaths;
@@ -496,9 +496,9 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
         }
     }
 
-    for (int i = m_savedWorkspace.size() - 1; i >= 0; --i) {
-        if (m_savedWorkspace.at(i).sessionId == sessionId) {
-            m_savedWorkspace.removeAt(i);
+    for (int i = m_workspace.savedItems().size() - 1; i >= 0; --i) {
+        if (m_workspace.savedItems().at(i).sessionId == sessionId) {
+            m_workspace.savedItems().removeAt(i);
         }
     }
 
@@ -717,7 +717,7 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     }
     // Also drop from gallery stash so discardStashedGallery cannot double-free.
     m_gallery.stashedItems().removeAll(item);
-    m_stashedWorkspaceItems.removeAll(item);
+    m_workspace.stashedItems().removeAll(item);
 
     rememberItemState(item);
     m_items.removeAll(item);

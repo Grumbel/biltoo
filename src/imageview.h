@@ -7,6 +7,7 @@
 #include "imageview_types.h"
 #include "sessionappearance.h"
 #include "gallerycontroller.h"
+#include "workspacecontroller.h"
 
 #include <QColor>
 #include <QElapsedTimer>
@@ -45,6 +46,7 @@ class ImageView : public QGraphicsView
     Q_OBJECT
 
     friend class GalleryController;
+    friend class WorkspaceController;
 
 public:
     enum class Tool {
@@ -619,6 +621,8 @@ private:
     QGraphicsScene *m_scene = nullptr;
     /** Gallery-mode collaborator (stash, viewport snapshot, transitions). */
     GalleryController m_gallery;
+    /** Workspace-mode collaborator (stash, free-form snapshot, transitions). */
+    WorkspaceController m_workspace;
     QList<ImageItem *> m_items;
     /**
      * Path-keyed placement / legacy unbound appearance.
@@ -633,22 +637,6 @@ private:
     /** Per-session-image appearance, keyed by stable SessionImageId. */
     /** Content appearance by stable session-image id (Phase 2 store). */
     SessionAppearanceStore m_appearance;
-    /** Free-form positions restored when leaving a packaged layout. */
-    QHash<QString, WorkspaceItemState> m_freeFormStates;
-    /** View pan/zoom while in free-form; restored with the item states. */
-    QTransform m_freeFormViewTransform;
-    bool m_hasFreeFormViewTransform = false;
-    QList<WorkspaceItemState> m_savedWorkspace;
-    /** Workspace tiles kept while in Image mode (decoded pixels retained). */
-    QList<ImageItem *> m_stashedWorkspaceItems;
-    /** View zoom (matrix) and pan (scene centre) while tiles are stashed. */
-    QTransform m_stashedWorkspaceViewTransform;
-    QPointF m_stashedWorkspaceViewCenter;
-    bool m_hasStashedWorkspaceView = false;
-    /** Durable view backup with snapshotWorkspace (stash may be discarded). */
-    QTransform m_savedWorkspaceViewTransform;
-    QPointF m_savedWorkspaceViewCenter;
-    bool m_hasSavedWorkspaceView = false;
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     QString m_classicPath;
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */

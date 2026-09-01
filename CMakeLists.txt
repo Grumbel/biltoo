@@ -44,6 +44,8 @@ add_executable(qimgview
   src/imageview_gallery.cpp
   src/gallerycontroller.cpp
   src/gallerycontroller.h
+  src/workspacecontroller.cpp
+  src/workspacecontroller.h
   src/imageview_workspace.cpp
   src/imageview_modes.cpp
   src/imageview_pack.cpp
