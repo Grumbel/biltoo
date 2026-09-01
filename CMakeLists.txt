@@ -48,6 +48,8 @@ add_executable(qimgview
   src/imageview_canvas.cpp
   src/imageview_crop.cpp
   src/imageview_load.cpp
+  src/imageview_view.cpp
+  src/imageview_transform.cpp
   src/imageview_input.cpp
   src/imageview.h
   src/imageview_types.h

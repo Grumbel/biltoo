@@ -174,3 +174,5 @@ by id (new model work — not part of early-phase exit criteria).
 - Phase 5e: crop mode + session crop appearance → imageview_crop.cpp.
 - Phase 5f: decode/load (createItem, schedule*, onImageLoaded, loadImage)
   → imageview_load.cpp.
+- Phase 5g: zoom/HUD/background → imageview_view.cpp;
+  flip/rotate/stack/opacity/duplicate → imageview_transform.cpp.

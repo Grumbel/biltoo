@@ -1,0 +1,385 @@
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "imageview.h"
+#include "imageitem.h"
+
+#include <QUndoCommand>
+#include <QUndoStack>
+#include <QtMath>
+
+namespace {
+
+/** Overlap for stacking: scene AABB of content (rotation expands the box). */
+bool contentOverlaps(const ImageItem *a, const ImageItem *b)
+{
+    if (!a || !b || a == b) {
+        return false;
+    }
+    // Prefer AABB so partial / edge overlaps still count as a stack step.
+    // Polygon-only tests were missing some overlaps and made Raise jump.
+    if (a->contentSceneRect().intersects(b->contentSceneRect())) {
+        return true;
+    }
+    const QPolygonF pa = a->contentScenePolygon();
+    const QPolygonF pb = b->contentScenePolygon();
+    if (pa.isEmpty() || pb.isEmpty()) {
+        return false;
+    }
+    if (pa.intersects(pb)) {
+        return true;
+    }
+    if (pb.containsPoint(pa.boundingRect().center(), Qt::OddEvenFill)
+        || pa.containsPoint(pb.boundingRect().center(), Qt::OddEvenFill)) {
+        return true;
+    }
+    return false;
+}
+
+/** Overlapping stack including @p item, sorted bottom → top (stable on ties). */
+QList<ImageItem *> overlappingStack(ImageItem *item, const QList<ImageItem *> &all)
+{
+    QList<ImageItem *> layer;
+    if (!item) {
+        return layer;
+    }
+    layer.append(item);
+    for (ImageItem *other : all) {
+        if (other && other != item && contentOverlaps(item, other)) {
+            layer.append(other);
+        }
+    }
+    std::sort(layer.begin(), layer.end(), [](ImageItem *a, ImageItem *b) {
+        if (!qFuzzyCompare(a->stackZ(), b->stackZ())) {
+            return a->stackZ() < b->stackZ();
+        }
+        return a < b;
+    });
+    return layer;
+}
+
+} // namespace
+
+
+void ImageView::flipHorizontal()
+{
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : targets) {
+        bakeItemFlip(item, true, false);
+        if (m_fitMode && isImageMode()) {
+            fitItem(item, currentFitAspectMode());
+        }
+    }
+    if (isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+    }
+}
+
+void ImageView::flipVertical()
+{
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : targets) {
+        bakeItemFlip(item, false, true);
+        if (m_fitMode && isImageMode()) {
+            fitItem(item, currentFitAspectMode());
+        }
+    }
+    if (isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+    }
+}
+
+void ImageView::rotateLeft()
+{
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : targets) {
+        bakeItemRotate90(item, -1);
+        if (m_fitMode && isImageMode()) {
+            fitItem(item, currentFitAspectMode());
+        }
+    }
+    if (isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+    }
+}
+
+void ImageView::rotateRight()
+{
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : targets) {
+        bakeItemRotate90(item, 1);
+        if (m_fitMode && isImageMode()) {
+            fitItem(item, currentFitAspectMode());
+        }
+    }
+    if (isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+    }
+}
+
+void ImageView::raiseItem(ImageItem *item)
+{
+    if (!item || !isWorkspaceMode() || m_items.size() < 2) {
+        return;
+    }
+    // One step: swap z with the next higher overlapping neighbour. Setting
+    // z = cover.z+1 skipped intermediates when z values were sparse (e.g. 1→3
+    // while 2 was an overlapping neighbour already at 3-epsilon).
+    const QList<ImageItem *> layer = overlappingStack(item, m_items);
+    const int idx = layer.indexOf(item);
+    if (idx < 0 || idx + 1 >= layer.size()) {
+        return; // already top among overlapping
+    }
+    ImageItem *above = layer.at(idx + 1);
+    const qreal za = item->stackZ();
+    const qreal zb = above->stackZ();
+    if (qFuzzyCompare(za, zb)) {
+        item->setStackZ(zb + 1.0);
+    } else {
+        item->setStackZ(zb);
+        above->setStackZ(za);
+    }
+    emit statusChanged();
+}
+
+void ImageView::lowerItem(ImageItem *item)
+{
+    if (!item || !isWorkspaceMode() || m_items.size() < 2) {
+        return;
+    }
+    const QList<ImageItem *> layer = overlappingStack(item, m_items);
+    const int idx = layer.indexOf(item);
+    if (idx <= 0) {
+        return; // already bottom among overlapping
+    }
+    ImageItem *below = layer.at(idx - 1);
+    const qreal za = item->stackZ();
+    const qreal zb = below->stackZ();
+    if (qFuzzyCompare(za, zb)) {
+        item->setStackZ(zb - 1.0);
+    } else {
+        item->setStackZ(zb);
+        below->setStackZ(za);
+    }
+    emit statusChanged();
+}
+
+void ImageView::raiseSelected()
+{
+    if (!isWorkspaceMode()) {
+        return;
+    }
+    // Raise each selection from top-most down so mutual overlaps stay stable.
+    QList<ImageItem *> sel;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            sel.append(ii);
+        }
+    }
+    if (sel.isEmpty()) {
+        if (ImageItem *item = targetItem()) {
+            raiseItem(item);
+        }
+        return;
+    }
+    std::sort(sel.begin(), sel.end(),
+              [](ImageItem *a, ImageItem *b) { return a->stackZ() > b->stackZ(); });
+    for (ImageItem *item : sel) {
+        raiseItem(item);
+    }
+}
+
+void ImageView::lowerSelected()
+{
+    if (!isWorkspaceMode()) {
+        return;
+    }
+    QList<ImageItem *> sel;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            sel.append(ii);
+        }
+    }
+    if (sel.isEmpty()) {
+        if (ImageItem *item = targetItem()) {
+            lowerItem(item);
+        }
+        return;
+    }
+    std::sort(sel.begin(), sel.end(),
+              [](ImageItem *a, ImageItem *b) { return a->stackZ() < b->stackZ(); });
+    for (ImageItem *item : sel) {
+        lowerItem(item);
+    }
+}
+
+void ImageView::opacityUp()
+{
+    if (!isWorkspaceMode()) {
+        return;
+    }
+    if (ImageItem *item = targetItem()) {
+        item->setItemOpacity(item->itemOpacity() + 0.1);
+        emit statusChanged();
+    }
+}
+
+void ImageView::opacityDown()
+{
+    if (!isWorkspaceMode()) {
+        return;
+    }
+    if (ImageItem *item = targetItem()) {
+        item->setItemOpacity(item->itemOpacity() - 0.1);
+        emit statusChanged();
+    }
+}
+
+void ImageView::opacityReset()
+{
+    if (!isWorkspaceMode()) {
+        return;
+    }
+    if (ImageItem *item = targetItem()) {
+        item->setItemOpacity(1.0);
+        emit statusChanged();
+    }
+}
+
+void ImageView::resetItemScale()
+{
+    QList<ImageItem *> targets;
+    if (isWorkspaceMode()) {
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                targets.append(item);
+            }
+        }
+    }
+    if (targets.isEmpty()) {
+        if (ImageItem *t = targetItem()) {
+            targets.append(t);
+        } else if (ImageItem *p = primaryItem()) {
+            targets.append(p);
+        }
+    }
+    for (ImageItem *item : targets) {
+        item->setItemScale(1.0, 1.0);
+    }
+    if (!targets.isEmpty()) {
+        emit statusChanged();
+        viewport()->update();
+    }
+}
+
+void ImageView::resetItemRotation()
+{
+    QList<ImageItem *> targets;
+    if (isWorkspaceMode()) {
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                targets.append(item);
+            }
+        }
+    }
+    if (targets.isEmpty()) {
+        if (ImageItem *t = targetItem()) {
+            targets.append(t);
+        } else if (ImageItem *p = primaryItem()) {
+            targets.append(p);
+        }
+    }
+    for (ImageItem *item : targets) {
+        item->setItemRotation(0.0);
+        commitItemSessionEdit(item);
+    }
+    if (!targets.isEmpty()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::duplicateSelected()
+{
+    if (!isWorkspaceMode() && !isGalleryMode()) {
+        return;
+    }
+    QList<ImageItem *> sources;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            sources.append(item);
+        }
+    }
+    if (sources.isEmpty()) {
+        if (ImageItem *item = targetItem()) {
+            sources.append(item);
+        }
+    }
+    if (sources.isEmpty()) {
+        return;
+    }
+
+    m_scene->clearSelection();
+    for (ImageItem *src : sources) {
+        // Copy current displayed pixels as-is (no second session-crop pass).
+        // Value copy of current pixels + appearance (not a shared reference).
+        ImageItem *copy = createItemFromImage(src->path(), src->sourceImage(),
+                                              /*applyStoredSessionCrop=*/false);
+        if (!copy) {
+            continue;
+        }
+        copy->setContentHFlip(src->contentHFlip());
+        copy->setContentVFlip(src->contentVFlip());
+        copy->setSessionCrop(src->sessionHasCrop(), src->sessionCropRect());
+        if (isWorkspaceMode()) {
+            copy->setItemScale(src->itemScaleX(), src->itemScaleY());
+            copy->setItemRotation(src->itemRotation());
+            copy->setItemHFlip(src->itemHFlip());
+            copy->setItemVFlip(src->itemVFlip());
+            copy->setItemOpacity(src->itemOpacity());
+            copy->setStackZ(src->stackZ() + 0.01);
+            // Offset so the duplicate is visible beside the original
+            copy->setPos(src->pos() + QPointF(40.0, 40.0));
+        } else {
+            // Gallery: upright tile; MainWindow packs after binding session ids.
+            copy->setItemRotation(0.0);
+            copy->setItemHFlip(false);
+            copy->setItemVFlip(false);
+            copy->setItemOpacity(1.0);
+            copy->setPos(src->pos());
+        }
+        copy->setSelected(true);
+    }
+    emit statusChanged();
+    emit workspacePathsChanged();
+    viewport()->update();
+}
+
+qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
+{
+    const QPointF c = item->scenePos();
+    return qRadiansToDegrees(std::atan2(scenePos.y() - c.y(), scenePos.x() - c.x()));
+}
+
+qreal ImageView::cardinalRotationOrZero(qreal degrees)
+{
+    // Image mode: always nearest 90° content orientation. Free Workspace tilt
+    // (residual off the cardinal) is discarded — never shown as an arbitrary angle.
+    const qreal n = std::fmod(std::fmod(degrees, 360.0) + 360.0, 360.0);
+    qreal snapped = qRound(n / 90.0) * 90.0;
+    if (snapped >= 360.0) {
+        snapped = 0.0;
+    }
+    return snapped;
+}
