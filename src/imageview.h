@@ -198,6 +198,9 @@ public:
     void applyCrop();
     /** Discard the draft and leave crop mode. */
     void cancelCrop();
+    /** Restore pixels + session crop metadata (used by crop undo/redo). */
+    void applyCropAppearance(ImageItem *item, const QImage &src,
+                            const WorkspaceItemState &state);
 
     /** When true (default), left-drag pans in Image mode. */
     void setImageModeLeftDragPan(bool on);
@@ -629,6 +632,10 @@ private:
     /** Workspace free-rotate stashed while crop runs axis-aligned. */
     qreal m_cropStashedPlacementRotation = 0.0;
     bool m_cropHadStashedPlacement = false;
+    /** Appearance + session state when crop mode was entered (for Apply undo). */
+    QImage m_cropEnterSource;
+    WorkspaceItemState m_cropEnterState;
+    bool m_cropEnterValid = false;
     /** Draft crop in crop-target item local coordinates (contentRect space). */
     QRectF m_cropRect;
     CropHandle m_cropActiveHandle = CropHandle::None;
