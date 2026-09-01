@@ -74,12 +74,16 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.z = item->stackZ();
     s.hFlip = item->itemHFlip();
     s.vFlip = item->itemVFlip();
-    // Merge path-keyed session appearance only for the same session slot (or
-    // when this item is the sole instance of the path).
+    // Per-instance crop (Workspace duplicates stay independent).
+    s.hasCrop = item->sessionHasCrop();
+    s.cropRect = item->sessionCropRect();
+    // Merge path-keyed session appearance only for the same bound session slot.
     const auto prev = m_itemStates.constFind(item->path());
     if (prev != m_itemStates.cend()) {
-        const bool sameSlot = (item->sessionIndex() < 0 && prev->sessionIndex < 0)
-            || (item->sessionIndex() >= 0 && item->sessionIndex() == prev->sessionIndex);
+        // Unbound Workspace duplicates (sessionIndex < 0) are independent
+        // instances — never inherit path-keyed crop/content from each other.
+        const bool sameSlot = (item->sessionIndex() >= 0 && prev->sessionIndex >= 0
+            && item->sessionIndex() == prev->sessionIndex);
         if (sameSlot) {
             s.contentQuarterTurns = prev->contentQuarterTurns;
             s.contentHFlip = prev->contentHFlip;
@@ -89,11 +93,14 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             s.sessionIndex = prev->sessionIndex >= 0 ? prev->sessionIndex : s.sessionIndex;
         }
     }
-    // Crop is session metadata (not recoverable from the live pixmap alone).
-    const auto it = m_itemStates.constFind(item->path());
-    if (it != m_itemStates.cend()) {
-        s.hasCrop = it->hasCrop;
-        s.cropRect = it->cropRect;
+    // Bound session slots may still refresh crop from the path map when the
+    // item has not recorded a per-instance crop yet (e.g. Image-mode path).
+    if (!s.hasCrop && item->sessionIndex() >= 0) {
+        const auto it = m_itemStates.constFind(item->path());
+        if (it != m_itemStates.cend() && it->hasCrop) {
+            s.hasCrop = it->hasCrop;
+            s.cropRect = it->cropRect;
+        }
     }
     return s;
 }
@@ -239,11 +246,14 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         return;
     }
     rememberItemState(item);
-    const QImage appearance = sessionAppearanceImage(item);
-    if (!appearance.isNull()) {
-        emit sessionAppearanceChanged(item->path(), appearance);
-        // Keep legacy signal so crop listeners stay in sync.
-        emit sessionCropApplied(item->path(), appearance);
+    // Path-level filmstrip / session appearance is only for bound session slots.
+    // Unbound Workspace duplicates keep appearance on the item instance only.
+    if (item->sessionIndex() >= 0) {
+        const QImage appearance = sessionAppearanceImage(item);
+        if (!appearance.isNull()) {
+            emit sessionAppearanceChanged(item->path(), appearance);
+            emit sessionCropApplied(item->path(), appearance);
+        }
     }
 
     // Propagate pixel / flip / orientation session edits to every canvas and
@@ -257,18 +267,15 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     const bool contentH = item->contentHFlip();
     const bool contentV = item->contentVFlip();
 
-    // Duplicates share a path but are independent instances. Only sync the same
-    // session slot (and never clobber other Workspace copies of the path).
+    // Duplicates share a path but are independent instances. Only sync canvas
+    // items that share the same bound session slot (sessionIndex >= 0).
+    // Unbound Workspace duplicates never receive each other's baked pixels.
     auto syncOne = [&](ImageItem *other) {
         if (!other || other == item || other->path() != path) {
             return;
         }
-        if (sessionIndex >= 0) {
-            if (other->sessionIndex() != sessionIndex) {
-                return;
-            }
-        } else if (other->sessionIndex() >= 0) {
-            // Edited item unbound; leave bound instances alone.
+        if (sessionIndex < 0 || other->sessionIndex() < 0
+            || other->sessionIndex() != sessionIndex) {
             return;
         }
         if (!src.isNull()) {
@@ -291,25 +298,32 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
 
     // Durable snapshot: only slots matching path + sessionIndex (or path-only
     // when session is unbound).
-    const auto st = m_itemStates.constFind(path);
-    if (st != m_itemStates.cend()) {
-        for (WorkspaceItemState &slot : m_savedWorkspace) {
-            if (slot.path != path) {
-                continue;
+    // Only propagate path-keyed appearance into durable slots that share the
+    // same bound session index. Unbound edits stay on the live item pixels.
+    if (sessionIndex >= 0) {
+        const auto st = m_itemStates.constFind(path);
+        if (st != m_itemStates.cend()) {
+            for (WorkspaceItemState &slot : m_savedWorkspace) {
+                if (slot.path != path) {
+                    continue;
+                }
+                if (slot.sessionIndex >= 0 && slot.sessionIndex != sessionIndex) {
+                    continue;
+                }
+                // Do not push bound appearance onto unbound duplicate slots.
+                if (slot.sessionIndex < 0) {
+                    continue;
+                }
+                slot.hasCrop = st->hasCrop;
+                slot.cropRect = st->cropRect;
+                slot.hFlip = hFlip;
+                slot.vFlip = vFlip;
+                slot.contentQuarterTurns = st->contentQuarterTurns;
+                slot.contentHFlip = st->contentHFlip;
+                slot.contentVFlip = st->contentVFlip;
+                slot.orientation = 0.0;
+                slot.sessionIndex = sessionIndex;
             }
-            if (sessionIndex >= 0 && slot.sessionIndex >= 0
-                && slot.sessionIndex != sessionIndex) {
-                continue;
-            }
-            slot.hasCrop = st->hasCrop;
-            slot.cropRect = st->cropRect;
-            slot.hFlip = hFlip;
-            slot.vFlip = vFlip;
-            slot.contentQuarterTurns = st->contentQuarterTurns;
-            slot.contentHFlip = st->contentHFlip;
-            slot.contentVFlip = st->contentVFlip;
-            slot.orientation = 0.0;
-            slot.sessionIndex = sessionIndex >= 0 ? sessionIndex : slot.sessionIndex;
         }
     }
 
@@ -322,7 +336,11 @@ void ImageView::snapshotWorkspace()
     for (ImageItem *item : m_items) {
         const WorkspaceItemState s = captureState(item);
         m_savedWorkspace.append(s);
-        m_itemStates.insert(s.path, s);
+        // Path map is session/Image appearance only; unbound duplicates stay
+        // in the list and must not collapse into a single path entry.
+        if (s.sessionIndex >= 0) {
+            m_itemStates.insert(s.path, s);
+        }
     }
     // Durable view backup when the live stash is later discarded (e.g. Gallery).
     m_savedWorkspaceViewTransform = transform();
@@ -341,10 +359,10 @@ void ImageView::restoreWorkspace()
         if (it == m_itemStates.cend()) {
             continue;
         }
-        // Only merge path-level appearance into slots that share the same
-        // session index (or unbound snapshot slots).
-        if (slot.sessionIndex >= 0 && it->sessionIndex >= 0
-            && slot.sessionIndex != it->sessionIndex) {
+        // Path-level appearance only merges into matching bound session slots.
+        // Unbound duplicates keep the appearance captured in their own list entry.
+        if (slot.sessionIndex < 0 || it->sessionIndex < 0
+            || slot.sessionIndex != it->sessionIndex) {
             continue;
         }
         slot.hasCrop = it->hasCrop;

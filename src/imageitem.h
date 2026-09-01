@@ -8,6 +8,7 @@
 #include <QImage>
 #include <QString>
 #include <QPolygonF>
+#include <QRect>
 
 /**
  * A single image on the workspace. Owns its pixmap, source pixels (for colour
@@ -101,6 +102,18 @@ public:
     bool contentVFlip() const { return m_contentVFlip; }
     void setContentHFlip(bool on) { m_contentHFlip = on; }
     void setContentVFlip(bool on) { m_contentVFlip = on; }
+    /**
+     * Per-instance session crop in on-disk pixel coordinates (top-left origin).
+     * Independent of path-keyed ImageView state so Workspace duplicates do not
+     * share crops.
+     */
+    bool sessionHasCrop() const { return m_sessionHasCrop; }
+    QRect sessionCropRect() const { return m_sessionCropRect; }
+    void setSessionCrop(bool has, const QRect &rect)
+    {
+        m_sessionHasCrop = has;
+        m_sessionCropRect = has ? rect : QRect();
+    }
 
     /** Set both axes to the same factor (gallery layouts, zoom-by). */
     void setItemScale(qreal scale);
@@ -257,6 +270,8 @@ private:
     /** Net baked content flips (chrome indicator); independent of m_hFlip/m_vFlip. */
     bool m_contentHFlip = false;
     bool m_contentVFlip = false;
+    bool m_sessionHasCrop = false;
+    QRect m_sessionCropRect;
     bool m_interactive = false;
     bool m_scaleHandlesEnabled = false;
     /** Scene-space crop cell for Grid-Crop gallery; empty = no crop. */
