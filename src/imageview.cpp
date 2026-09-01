@@ -1826,6 +1826,34 @@ void ImageView::paintCropOverlay(QPainter &painter)
     drawTextButton(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"), false);
     drawTextButton(cropApplyButtonView(), CropHandle::Apply, ImageView::tr("Apply"), true);
 
+    // Crop size in image pixels (same coordinate space as the draft rect).
+    const int cropW = qMax(1, qRound(m_cropRect.width()));
+    const int cropH = qMax(1, qRound(m_cropRect.height()));
+    const QString sizeLabel = QStringLiteral("%1×%2").arg(cropW).arg(cropH);
+    {
+        QFont f = painter.font();
+        f.setPointSize(qMax(9, f.pointSize()));
+        f.setBold(true);
+        painter.setFont(f);
+        const QFontMetrics fm(f);
+        const int padX = 8;
+        const int padY = 4;
+        const int tw = fm.horizontalAdvance(sizeLabel);
+        const int th = fm.height();
+        // Prefer above the crop frame; fall back inside top edge if off-screen.
+        int lx = cropView.center().x() - (tw + 2 * padX) / 2;
+        int ly = cropView.top() - th - 2 * padY - 6;
+        if (ly < 4) {
+            ly = cropView.top() + 6;
+        }
+        const QRect labelBg(lx, ly, tw + 2 * padX, th + 2 * padY);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(0, 0, 0, 180));
+        painter.drawRoundedRect(labelBg, 4, 4);
+        painter.setPen(QColor(255, 220, 120));
+        painter.drawText(labelBg, Qt::AlignCenter, sizeLabel);
+    }
+
     Q_UNUSED(contentView);
     painter.restore();
 }
