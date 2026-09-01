@@ -768,10 +768,25 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
         if (!item) {
             continue;
         }
-        removedPaths.append(item->path());
+        const QString path = item->path();
+        removedPaths.append(path);
+        // Drop in-flight decodes so a late LoadAdd cannot create a tile or
+        // call applyLayout after this session image is gone.
+        m_pendingWorkspacePaths.remove(path);
+        m_galleryDecodeScheduled.remove(path);
+        m_galleryDecodeFailed.remove(path);
+        m_pendingScenePos.remove(path);
+        m_pendingSessionIndexByPath.remove(path);
         // destroyCanvasItem clears selection anchor / drag pointers and
         // removes from m_items and both stashes (safe if already only in one).
         destroyCanvasItem(item);
+    }
+    // Pending binds for this session id.
+    for (int i = m_pendingSessionBinds.size() - 1; i >= 0; --i) {
+        if (m_pendingSessionBinds.at(i).id == sessionId
+            || removedPaths.contains(m_pendingSessionBinds.at(i).path)) {
+            m_pendingSessionBinds.removeAt(i);
+        }
     }
 
     for (int i = m_savedWorkspace.size() - 1; i >= 0; --i) {

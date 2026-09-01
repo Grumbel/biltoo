@@ -496,12 +496,12 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         // Prefer session-id appearance; path map is last-writer only for unbound.
         applyStoredAppearance(existing);
         if (isGalleryMode()) {
-            // Probe size can differ from decoded size — reflow so scale/pos stay valid.
-            if (before != existing->imageSize()) {
-                scheduleApplyLayout();
-            } else {
-                existing->update();
-            }
+            // Keep pack positions stable: decoded size may differ from the probe
+            // used at layout time, but a full reflow here is what made Gallery
+            // "jump" on delete when a pending decode finished. Explicit layout
+            // (toolbar / F5) is the only intentional repack.
+            Q_UNUSED(before);
+            existing->update();
         } else if (m_layoutMode != LayoutMode::FreeForm) {
             applyLayout();
         }

@@ -636,8 +636,14 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     }
     applyThumbnailVisibility();
     if (m_imageView && isGalleryMode()) {
-        // Process deferred resize after strip update under suppress, then release.
-        m_imageView->setGalleryRelayoutSuppressed(false);
+        // Thumb setFiles queues a resize on the gallery view. That resize must
+        // still see suppress=true, otherwise scheduleApplyLayout runs after we
+        // return and repacks. Release on the next event-loop tick.
+        QTimer::singleShot(0, m_imageView, [v = m_imageView]() {
+            if (v) {
+                v->setGalleryRelayoutSuppressed(false);
+            }
+        });
     }
 
     if (m_files.isEmpty()) {
