@@ -88,6 +88,7 @@ void MainWindow::createActions()
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
 
     m_fitPageGuideAct = new QAction(tr("Fit Page Guide to &Content"), this);
+    m_fitPageGuideAct->setIcon(resourceIcon(QStringLiteral("fit-page-guide-content")));
     m_fitPageGuideAct->setStatusTip(
         tr("Size the page guide to the current Workspace images (for PNG export framing)"));
     connect(m_fitPageGuideAct, &QAction::triggered, this, &MainWindow::fitPageGuideToContent);
