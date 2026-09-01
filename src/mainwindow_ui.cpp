@@ -17,6 +17,21 @@ void MainWindow::createActions()
     m_newAct->setStatusTip(tr("Start a new empty session"));
     connect(m_newAct, &QAction::triggered, this, &MainWindow::newSession);
 
+    m_openProjectAct = new QAction(tr("Open &Project…"), this);
+    m_openProjectAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_O);
+    m_openProjectAct->setStatusTip(tr("Open a .qimgview project (session + Workspace poses)"));
+    connect(m_openProjectAct, &QAction::triggered, this, &MainWindow::openProject);
+
+    m_saveProjectAct = new QAction(tr("&Save Project"), this);
+    m_saveProjectAct->setShortcuts(QKeySequence::Save);
+    m_saveProjectAct->setStatusTip(tr("Save session and Workspace layout to a .qimgview project"));
+    connect(m_saveProjectAct, &QAction::triggered, this, &MainWindow::saveProject);
+
+    m_saveProjectAsAct = new QAction(tr("Save Project &As…"), this);
+    m_saveProjectAsAct->setShortcuts(QKeySequence::SaveAs);
+    m_saveProjectAsAct->setStatusTip(tr("Save project under a new name"));
+    connect(m_saveProjectAsAct, &QAction::triggered, this, &MainWindow::saveProjectAs);
+
     m_addAct = new QAction(tr("&Add Images..."), this);
     m_addAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_A);
     m_addAct->setIcon(themeIcon(QStringLiteral("list-add"), QStyle::SP_FileDialogNewFolder));
@@ -525,6 +540,10 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
     m_fileMenu->addAction(m_reloadAct);
+    m_fileMenu->addSeparator();
+    m_fileMenu->addAction(m_openProjectAct);
+    m_fileMenu->addAction(m_saveProjectAct);
+    m_fileMenu->addAction(m_saveProjectAsAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_printAct);
     m_fileMenu->addAction(m_printPreviewAct);

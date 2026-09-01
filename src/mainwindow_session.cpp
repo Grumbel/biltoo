@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include "projectfile.h"
+#include "imageitem.h"
 #include <QVector>
 
 namespace {
@@ -1432,3 +1434,283 @@ int MainWindow::sessionIndexOfId(SessionImageId id) const
 {
     return m_session.indexOfId(id);
 }
+
+
+void MainWindow::saveProject()
+{
+    if (m_projectPath.isEmpty()) {
+        saveProjectAs();
+        return;
+    }
+    QString err;
+    if (!writeProjectToPath(m_projectPath, &err)) {
+        if (statusBar()) {
+            statusBar()->showMessage(err, 8000);
+        }
+    } else if (statusBar()) {
+        statusBar()->showMessage(tr("Project saved."), 3000);
+    }
+}
+
+void MainWindow::saveProjectAs()
+{
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Save Project"),
+        m_projectPath.isEmpty() ? QDir::homePath() : m_projectPath,
+        tr("QImgView Project (*.qimgview);;All Files (*)"));
+    if (path.isEmpty()) {
+        return;
+    }
+    QString out = path;
+    if (!out.endsWith(QLatin1String(".qimgview"), Qt::CaseInsensitive)) {
+        out += QStringLiteral(".qimgview");
+    }
+    QString err;
+    if (!writeProjectToPath(out, &err)) {
+        if (statusBar()) {
+            statusBar()->showMessage(err, 8000);
+        }
+        return;
+    }
+    m_projectPath = out;
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Project saved."), 3000);
+    }
+}
+
+void MainWindow::openProject()
+{
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Open Project"),
+        m_projectPath.isEmpty() ? QDir::homePath() : m_projectPath,
+        tr("QImgView Project (*.qimgview);;All Files (*)"));
+    if (path.isEmpty()) {
+        return;
+    }
+    QString err;
+    if (!loadProjectFromPath(path, &err)) {
+        if (statusBar()) {
+            statusBar()->showMessage(err, 8000);
+        }
+        return;
+    }
+    m_projectPath = path;
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Project loaded."), 3000);
+    }
+}
+
+bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
+{
+    ProjectDocument doc;
+    doc.version = 1;
+    if (isWorkspaceMode()) {
+        doc.mode = QStringLiteral("workspace");
+    } else if (isGalleryMode()) {
+        doc.mode = QStringLiteral("gallery");
+    } else {
+        doc.mode = QStringLiteral("image");
+    }
+
+    QHash<QString, QString> pathToSha; // absolute path → sha256
+    const QFileInfo projInfo(projectPath);
+    const QDir projDir = projInfo.absoluteDir();
+
+    auto ensureAsset = [&](const QString &absPath) -> QString {
+        if (absPath.isEmpty()) {
+            return {};
+        }
+        if (pathToSha.contains(absPath)) {
+            return pathToSha.value(absPath);
+        }
+        const QString sha = ProjectFile::fileSha256(absPath);
+        if (sha.isEmpty()) {
+            return {};
+        }
+        pathToSha.insert(absPath, sha);
+        ProjectAsset a;
+        a.sha256 = sha;
+        a.path = absPath;
+        const QString rel = projDir.relativeFilePath(absPath);
+        if (!rel.startsWith(QLatin1String(".."))) {
+            a.pathRelative = rel;
+        }
+        doc.assets.append(a);
+        return sha;
+    };
+
+    // Workspace poses from live tiles (session-id keyed).
+    QHash<SessionImageId, WorkspaceItemState> poses;
+    if (m_imageView) {
+        for (ImageItem *item : m_imageView->liveItems()) {
+            if (!item || item->sessionId() == kInvalidSessionImageId) {
+                continue;
+            }
+            poses.insert(item->sessionId(), m_imageView->captureState(item));
+        }
+    }
+
+    for (int i = 0; i < m_session.size(); ++i) {
+        const QString path = m_session.pathAt(i);
+        const SessionImageId id = m_session.idAt(i);
+        const QString sha = ensureAsset(path);
+        if (sha.isEmpty()) {
+            if (error) {
+                *error = tr("Cannot hash image: %1").arg(path);
+            }
+            return false;
+        }
+        ProjectImage im;
+        im.id = id;
+        im.assetSha256 = sha;
+        if (m_imageView && m_imageView->hasSessionAppearance(id)) {
+            im.appearance = m_imageView->sessionAppearanceValue(id);
+            im.hasAppearance = true;
+        }
+        if (poses.contains(id)) {
+            const WorkspaceItemState &p = poses.value(id);
+            im.appearance.pos = p.pos;
+            im.appearance.scale = p.scale;
+            im.appearance.scaleY = p.scaleY;
+            im.appearance.rotation = p.rotation;
+            im.appearance.opacity = p.opacity;
+            im.appearance.z = p.z;
+            im.appearance.hFlip = p.hFlip;
+            im.appearance.vFlip = p.vFlip;
+            im.hasWorkspacePose = true;
+            im.hasAppearance = true;
+        }
+        im.appearance.path = path;
+        im.appearance.sessionId = id;
+        doc.images.append(im);
+    }
+
+    return ProjectFile::save(projectPath, doc, error);
+}
+
+bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
+{
+    ProjectDocument doc;
+    if (!ProjectFile::load(projectPath, &doc, error)) {
+        return false;
+    }
+    if (doc.images.isEmpty()) {
+        if (error) {
+            *error = tr("Project has no images.");
+        }
+        return false;
+    }
+
+    QHash<QString, ProjectAsset> assetsBySha;
+    for (const ProjectAsset &a : doc.assets) {
+        assetsBySha.insert(a.sha256.toLower(), a);
+    }
+
+    QStringList paths;
+    QVector<SessionImageId> ids;
+    QList<QPair<SessionImageId, WorkspaceItemState>> appearances;
+    QList<QPair<SessionImageId, WorkspaceItemState>> poses;
+    QStringList missing;
+
+    for (const ProjectImage &im : doc.images) {
+        ProjectAsset asset = assetsBySha.value(im.assetSha256.toLower());
+        if (asset.sha256.isEmpty()) {
+            // Asset row missing — synthesize from image only (path unknown).
+            asset.sha256 = im.assetSha256;
+        }
+        QString resolveErr;
+        QString resolved = ProjectFile::resolveAssetPath(asset, projectPath, &resolveErr);
+        if (resolved.isEmpty()) {
+            missing.append(resolveErr.isEmpty() ? im.assetSha256.left(12) : resolveErr);
+            continue;
+        }
+        paths.append(resolved);
+        const SessionImageId id =
+            im.id != kInvalidSessionImageId ? im.id : kInvalidSessionImageId;
+        ids.append(id);
+        if (im.hasAppearance) {
+            WorkspaceItemState st = im.appearance;
+            st.path = resolved;
+            st.sessionId = id;
+            appearances.append({id, st});
+        }
+        if (im.hasWorkspacePose) {
+            WorkspaceItemState st = im.appearance;
+            st.path = resolved;
+            st.sessionId = id;
+            poses.append({id, st});
+        }
+    }
+
+    if (paths.isEmpty()) {
+        if (error) {
+            *error = tr("No images could be resolved from the project.");
+        }
+        return false;
+    }
+
+    stopSlideshow();
+    // Replace session with preserved ids where possible.
+    QVector<SessionImageId> finalIds = ids;
+    for (int i = 0; i < finalIds.size(); ++i) {
+        if (finalIds.at(i) == kInvalidSessionImageId) {
+            finalIds[i] = m_session.allocId();
+        }
+    }
+    m_session.clear();
+    m_session.replaceAll(paths, finalIds);
+    m_currentIndex = 0;
+
+    if (m_imageView) {
+        m_imageView->discardStashedGallery();
+        for (const auto &pair : appearances) {
+            if (pair.first != kInvalidSessionImageId) {
+                m_imageView->setSessionAppearance(pair.first, pair.second);
+            }
+        }
+    }
+
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setFiles(m_session.paths());
+        m_thumbnailBar->setSessionIds(m_session.ids());
+    }
+    applyThumbnailVisibility();
+
+    const bool wantWorkspace = (doc.mode == QLatin1String("workspace")) || !poses.isEmpty();
+    if (wantWorkspace) {
+        if (!isWorkspaceMode()) {
+            enterWorkspaceMode();
+        }
+        if (m_imageView) {
+            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+            // Apply free-form poses onto live tiles (placeholders or decoded).
+            for (ImageItem *item : m_imageView->liveItems()) {
+                if (!item) {
+                    continue;
+                }
+                for (const auto &pair : poses) {
+                    if (item->sessionId() == pair.first) {
+                        m_imageView->applyState(item, pair.second);
+                        break;
+                    }
+                }
+            }
+            m_imageView->updateWorkspaceSceneRect();
+        }
+    } else if (isGalleryMode() || isWorkspaceMode()) {
+        if (m_imageView) {
+            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+        }
+    } else if (m_imageView && !m_session.paths().isEmpty()) {
+        m_imageView->loadImage(m_session.paths().at(0));
+    }
+
+    updateWindowTitle();
+    updateWorkspaceActionVisibility();
+    if (!missing.isEmpty() && statusBar()) {
+        statusBar()->showMessage(
+            tr("Project loaded with %n missing image(s).", "", missing.size()), 8000);
+    }
+    return true;
+}
+

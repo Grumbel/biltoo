@@ -69,6 +69,8 @@ public:
     /** Canvas + session duplicate; returns new SessionImageIds (for undo). */
     QVector<SessionImageId> applyDuplicate(const QStringList &sourcePaths);
     int sessionIndexOfId(SessionImageId id) const;
+    bool writeProjectToPath(const QString &projectPath, QString *error = nullptr);
+    bool loadProjectFromPath(const QString &projectPath, QString *error = nullptr);
 
     /** Clear session, canvas, and thumbnails (File → New). */
     void newSession();
@@ -149,6 +151,9 @@ private slots:
     void resetItemScale();
     void resetItemRotation();
     void duplicateSelected();
+    void saveProject();
+    void saveProjectAs();
+    void openProject();
     /** Open selected canvas paths in a new MainWindow (WA_DeleteOnClose). */
     void openSelectionInNewWindow();
     void opacityDown();
@@ -336,6 +341,9 @@ private:
     QAction *m_resetScaleAct = nullptr;
     QAction *m_resetRotationAct = nullptr;
     QAction *m_duplicateAct = nullptr;
+    QAction *m_saveProjectAct = nullptr;
+    QAction *m_saveProjectAsAct = nullptr;
+    QAction *m_openProjectAct = nullptr;
     QAction *m_openSelectionNewWindowAct = nullptr;
     QAction *m_opacityDownAct = nullptr;
     QAction *m_opacityUpAct = nullptr;
@@ -363,6 +371,7 @@ private:
 
     /** Working set: ordered paths + stable session-image ids (Phase 4). */
     SessionDocument m_session;
+    QString m_projectPath;
     /** Past sessions (full path lists), newest first. */
     QList<QStringList> m_sessionHistory;
     static constexpr int kMaxSessionHistory = 20;

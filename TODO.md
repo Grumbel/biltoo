@@ -209,6 +209,50 @@ editor; QImgView stays a **viewer with quick fixes**.
 - [x] flake `apps.default` `meta.description`
 - [x] `.desktop` uses `%F` for multiple images
 
+
+
+## Workspace project files (`.qimgview`)
+
+Workspace is an **ad-hoc** “put pictures next to each other” canvas — not a
+print-paper document. The page guide is optional chrome for print/PDF, not the
+default frame of meaning.
+
+### Goals
+
+- [x] **Load / Save project** (File → Open/Save Project) — `.qimgview` JSON
+- [x] **Non-destructive** — project stores session appearance + optional free-form
+  poses; never writes into source image files or source directories by default
+- [x] **Content addressing** — each referenced file records **SHA-256**; load
+  verifies the path or searches near the project file for a matching hash
+- [x] **Identity** — session rows keep `SessionImageId`; duplicates stay independent
+- [ ] Export PNG (page guide or content bounds + resolution) — separate from project
+- [ ] Fit page guide to content — export helper only, not a print default
+
+### Format sketch (version 1)
+
+```json
+{
+  "format": "qimgview-project",
+  "version": 1,
+  "mode": "workspace",
+  "assets": [
+    { "sha256": "<hex>", "path": "/abs/…", "pathRelative": "optional/rel" }
+  ],
+  "images": [
+    {
+      "id": 1,
+      "asset": "<sha256>",
+      "workspace": true,
+      "appearance": { "contentHFlip": false, "x": 0, "y": 0, "scaleX": 1, "…" }
+    }
+  ],
+  "pageGuide": { "visible": false, "widthMm": 210, "heightMm": 297 }
+}
+```
+
+Relink UI when an asset is missing and hash search fails is future work.
+
+
 ## Interaction summary (current)
 
 | Input | Behaviour |
