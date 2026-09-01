@@ -704,6 +704,15 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     if (!item) {
         return;
     }
+    // Re-entrancy / double-destroy: after the first call the pointer is gone from
+    // live and stash lists. A second call must not touch a deleted QGraphicsItem
+    // (seen as SIGSEGV in QObject::blockSignals on a garbage scene pointer).
+    const bool inLive = m_items.contains(item);
+    const bool inGalleryStash = m_gallery.stashedItems().contains(item);
+    const bool inWorkspaceStash = m_workspace.stashedItems().contains(item);
+    if (!inLive && !inGalleryStash && !inWorkspaceStash) {
+        return;
+    }
     // AUDIT H8/H9: clear every view-owned pointer before delete so paint /
     // input cannot touch a dangling ImageItem (BSP crashes in scene paint).
     if (item == m_dragItem) {

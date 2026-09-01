@@ -8,6 +8,7 @@
 #include <QScrollBar>
 #include <QUndoStack>
 #include <QTimer>
+#include <QSet>
 
 
 void ImageView::stopDeferredPacking()
@@ -126,9 +127,20 @@ void ImageView::clearLiveCanvas()
     if (m_undoStack) {
         m_undoStack->clear();
     }
-    while (!m_items.isEmpty()) {
-        destroyCanvasItem(m_items.last());
+    // Snapshot unique pointers — m_items must never hold duplicates, but if it
+    // does, destroying by index while mutating the list is unsafe.
+    QList<ImageItem *> doomed;
+    QSet<ImageItem *> seen;
+    for (ImageItem *item : m_items) {
+        if (item && !seen.contains(item)) {
+            seen.insert(item);
+            doomed.append(item);
+        }
     }
+    for (ImageItem *item : doomed) {
+        destroyCanvasItem(item);
+    }
+    m_items.clear();
     // Do not m_scene->clear() — that would delete stashed items if any were
     // still parented (they are not). Scene may hold no items; that is fine.
     m_mouseInfo = {};

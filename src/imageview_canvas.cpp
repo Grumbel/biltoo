@@ -20,13 +20,20 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     }
 
     QSet<QString> wanted(paths.begin(), paths.end());
-    for (int i = m_items.size() - 1; i >= 0; --i) {
-        ImageItem *item = m_items.at(i);
-        if (!wanted.contains(item->path())) {
-            m_galleryDecodeScheduled.remove(item->path());
-            m_galleryDecodeFailed.remove(item->path());
-            destroyCanvasItem(item);
+    // Collect first — destroy mutates m_items; never walk a list while deleting.
+    QList<ImageItem *> doomed;
+    QSet<ImageItem *> doomedSeen;
+    for (ImageItem *item : m_items) {
+        if (!item || !wanted.contains(item->path()) || doomedSeen.contains(item)) {
+            continue;
         }
+        doomedSeen.insert(item);
+        doomed.append(item);
+    }
+    for (ImageItem *item : doomed) {
+        m_galleryDecodeScheduled.remove(item->path());
+        m_galleryDecodeFailed.remove(item->path());
+        destroyCanvasItem(item);
     }
 
     m_pathOrder = paths;
@@ -134,21 +141,31 @@ void ImageView::reorderItemsByPaths(const QStringList &paths)
     QList<ImageItem *> ordered;
     ordered.reserve(m_items.size());
     QSet<ImageItem *> seen;
+    // One path-order slot → one distinct live item. findItemByPath alone would
+    // re-pick the same pointer for duplicate paths and leave m_items with
+    // duplicate entries (double-free / UAF on destroy).
     for (const QString &path : paths) {
-        if (ImageItem *item = findItemByPath(path)) {
+        for (ImageItem *item : m_items) {
+            if (!item || item->path() != path || seen.contains(item)) {
+                continue;
+            }
             ordered.append(item);
             seen.insert(item);
+            break;
         }
     }
     for (ImageItem *item : m_items) {
-        if (!seen.contains(item)) {
+        if (item && !seen.contains(item)) {
             ordered.append(item);
+            seen.insert(item);
         }
     }
     if (ordered != m_items) {
         m_items = ordered;
         for (int i = 0; i < m_items.size(); ++i) {
-            m_items.at(i)->setStackZ(i);
+            if (m_items.at(i)) {
+                m_items.at(i)->setStackZ(i);
+            }
         }
     }
 }
