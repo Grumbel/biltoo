@@ -69,6 +69,25 @@ public:
         GalleryReturn
     };
 
+    /**
+     * Arrangement of items. FreeForm is used only in Workspace mode.
+     * Other values are Gallery layouts.
+     * Declared early so transition APIs (returnToGalleryFromImage, enterGallery)
+     * can take LayoutMode before the layout methods section.
+     */
+    enum class LayoutMode {
+        FreeForm,
+        SideBySide, // horizontal strip (UI: "Horizontal")
+        Vertical,   // vertical strip
+        Grid,
+        /** Square cells; image scaled to cover and centre-cropped (like thumb crop). */
+        GridCrop,
+        /** Column masonry: N columns spanning the view width; variable row heights. */
+        Masonry,
+        /** Row masonry: N rows spanning the view height; variable column widths. */
+        MasonryRows
+    };
+
     explicit ImageView(QWidget *parent = nullptr);
     ~ImageView() override;
 
@@ -322,23 +341,6 @@ public:
     void resetItemRotation();
     /** Workspace: clone selection (same path, independent transforms). */
     void duplicateSelected();
-
-    /**
-     * Arrangement of items. FreeForm is used only in Workspace mode.
-     * Other values are Gallery layouts.
-     */
-    enum class LayoutMode {
-        FreeForm,
-        SideBySide, // horizontal strip (UI: "Horizontal")
-        Vertical,   // vertical strip
-        Grid,
-        /** Square cells; image scaled to cover and centre-cropped (like thumb crop). */
-        GridCrop,
-        /** Column masonry: N columns spanning the view width; variable row heights. */
-        Masonry,
-        /** Row masonry: N rows spanning the view height; variable column widths. */
-        MasonryRows
-    };
 
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layoutMode; }
