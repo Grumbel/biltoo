@@ -1240,6 +1240,15 @@ void MainWindow::readSettings()
     }
     settings.endArray();
     rebuildHistoryMenu();
+
+    m_recentProjects.clear();
+    const QStringList recent = settings.value(QStringLiteral("recentProjects")).toStringList();
+    for (const QString &p : recent) {
+        if (!p.isEmpty() && m_recentProjects.size() < kMaxRecentProjects) {
+            m_recentProjects.append(p);
+        }
+    }
+    rebuildRecentProjectsMenu();
 }
 
 void MainWindow::writeSettings()
@@ -1252,6 +1261,7 @@ void MainWindow::writeSettings()
         settings.setValue(QStringLiteral("paths"), m_sessionHistory.at(i));
     }
     settings.endArray();
+    settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
     settings.setValue(QStringLiteral("windowState"), saveState());
     settings.setValue(QStringLiteral("toolBarVisible"),
                       isFullScreen() ? m_toolBarVisibleBeforeFullscreen

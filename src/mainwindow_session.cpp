@@ -1447,8 +1447,11 @@ void MainWindow::saveProject()
         if (statusBar()) {
             statusBar()->showMessage(err, 8000);
         }
-    } else if (statusBar()) {
-        statusBar()->showMessage(tr("Project saved."), 3000);
+    } else {
+        rememberRecentProject(m_projectPath);
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Project saved."), 3000);
+        }
     }
 }
 
@@ -1473,6 +1476,7 @@ void MainWindow::saveProjectAs()
         return;
     }
     m_projectPath = out;
+    rememberRecentProject(out);
     if (statusBar()) {
         statusBar()->showMessage(tr("Project saved."), 3000);
     }
@@ -1761,3 +1765,97 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     return true;
 }
 
+
+
+void MainWindow::rememberRecentProject(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    const QString abs = QFileInfo(path).absoluteFilePath();
+    if (abs.isEmpty()) {
+        return;
+    }
+    m_recentProjects.removeAll(abs);
+    m_recentProjects.prepend(abs);
+    while (m_recentProjects.size() > kMaxRecentProjects) {
+        m_recentProjects.removeLast();
+    }
+    rebuildRecentProjectsMenu();
+}
+
+void MainWindow::rebuildRecentProjectsMenu()
+{
+    if (!m_recentProjectsMenu) {
+        return;
+    }
+    m_recentProjectsMenu->clear();
+    if (m_recentProjects.isEmpty()) {
+        auto *empty = m_recentProjectsMenu->addAction(tr("(No recent projects)"));
+        empty->setEnabled(false);
+        m_recentProjectsMenu->addSeparator();
+        if (m_clearRecentProjectsAct) {
+            m_recentProjectsMenu->addAction(m_clearRecentProjectsAct);
+            m_clearRecentProjectsAct->setEnabled(false);
+        }
+        return;
+    }
+
+    for (int i = 0; i < m_recentProjects.size(); ++i) {
+        const QString &p = m_recentProjects.at(i);
+        const QFileInfo fi(p);
+        // Show filename; full path in status tip. Missing files stay listed but open will fail gracefully.
+        QAction *act = m_recentProjectsMenu->addAction(
+            QStringLiteral("%1. %2").arg(i + 1).arg(fi.fileName()));
+        act->setData(p);
+        act->setStatusTip(p);
+        if (!fi.isFile()) {
+            act->setEnabled(false);
+            act->setText(act->text() + tr(" (missing)"));
+        }
+        connect(act, &QAction::triggered, this, &MainWindow::openRecentProject);
+    }
+    m_recentProjectsMenu->addSeparator();
+    if (m_clearRecentProjectsAct) {
+        m_recentProjectsMenu->addAction(m_clearRecentProjectsAct);
+        m_clearRecentProjectsAct->setEnabled(true);
+    }
+}
+
+void MainWindow::openRecentProject()
+{
+    auto *act = qobject_cast<QAction *>(sender());
+    if (!act) {
+        return;
+    }
+    const QString path = act->data().toString();
+    if (path.isEmpty()) {
+        return;
+    }
+    if (!QFileInfo::exists(path)) {
+        m_recentProjects.removeAll(path);
+        rebuildRecentProjectsMenu();
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Project no longer exists: %1").arg(path), 5000);
+        }
+        return;
+    }
+    QString err;
+    if (!loadProjectFromPath(path, &err)) {
+        if (statusBar()) {
+            statusBar()->showMessage(err, 8000);
+        }
+        return;
+    }
+    m_projectPath = path;
+    rememberRecentProject(path);
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Project loaded."), 3000);
+    }
+}
+
+void MainWindow::clearRecentProjects()
+{
+    m_recentProjects.clear();
+    rebuildRecentProjectsMenu();
+}

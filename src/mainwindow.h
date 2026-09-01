@@ -244,6 +244,10 @@ private:
     void rebuildHistoryMenu();
     void openHistoryEntry();
     void clearSessionHistory();
+    void rememberRecentProject(const QString &path);
+    void rebuildRecentProjectsMenu();
+    void openRecentProject();
+    void clearRecentProjects();
     QString historyEntryLabel(const QStringList &paths) const;
     void syncThumbnailWorkspaceSelection();
     void syncThumbnailCanvasMembership();
@@ -277,6 +281,8 @@ private:
     QMenu *m_fileMenu = nullptr;
     QMenu *m_historyMenu = nullptr;
     QAction *m_clearHistoryAct = nullptr;
+    QMenu *m_recentProjectsMenu = nullptr;
+    QAction *m_clearRecentProjectsAct = nullptr;
     QMenu *m_editMenu = nullptr;
     QMenu *m_viewMenu = nullptr;
     QMenu *m_goMenu = nullptr;
@@ -379,6 +385,8 @@ private:
     /** Past sessions (full path lists), newest first. */
     QList<QStringList> m_sessionHistory;
     static constexpr int kMaxSessionHistory = 20;
+    QStringList m_recentProjects;
+    static constexpr int kMaxRecentProjects = 12;
     int m_currentIndex = -1;
     bool m_recursive = false;
     ThumbnailEdge m_thumbnailEdge = ThumbnailEdge::Bottom;

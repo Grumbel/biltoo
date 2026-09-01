@@ -556,6 +556,11 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_openProjectAct);
     m_fileMenu->addAction(m_saveProjectAct);
     m_fileMenu->addAction(m_saveProjectAsAct);
+    m_recentProjectsMenu = m_fileMenu->addMenu(tr("Recent Pro&jects"));
+    m_recentProjectsMenu->setStatusTip(tr("Reopen a recently saved or opened .qimgview project"));
+    m_clearRecentProjectsAct = new QAction(tr("&Clear Recent Projects"), this);
+    m_clearRecentProjectsAct->setStatusTip(tr("Remove all remembered project paths"));
+    connect(m_clearRecentProjectsAct, &QAction::triggered, this, &MainWindow::clearRecentProjects);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_printAct);
     m_fileMenu->addAction(m_printPreviewAct);
