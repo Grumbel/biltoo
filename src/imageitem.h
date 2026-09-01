@@ -92,6 +92,15 @@ public:
     void setStackZ(qreal z);
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }
+    /**
+     * Net content (baked) flips relative to the on-disk pixels after crop.
+     * Used by Workspace chrome so flip toggle buttons show the current state
+     * after bakeFlip clears the transient display flags.
+     */
+    bool contentHFlip() const { return m_contentHFlip; }
+    bool contentVFlip() const { return m_contentVFlip; }
+    void setContentHFlip(bool on) { m_contentHFlip = on; }
+    void setContentVFlip(bool on) { m_contentVFlip = on; }
 
     /** Set both axes to the same factor (gallery layouts, zoom-by). */
     void setItemScale(qreal scale);
@@ -245,6 +254,9 @@ private:
     qreal m_stackZ = 0.0;
     bool m_hFlip = false;
     bool m_vFlip = false;
+    /** Net baked content flips (chrome indicator); independent of m_hFlip/m_vFlip. */
+    bool m_contentHFlip = false;
+    bool m_contentVFlip = false;
     bool m_interactive = false;
     bool m_scaleHandlesEnabled = false;
     /** Scene-space crop cell for Grid-Crop gallery; empty = no crop. */

@@ -1289,8 +1289,8 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
                               Qt::AlignCenter, glyph);
         };
 
-        drawFlipToggle(Handle::FlipH, 0, m_hFlip, QStringLiteral("↔"));
-        drawFlipToggle(Handle::FlipV, 1, m_vFlip, QStringLiteral("↕"));
+        drawFlipToggle(Handle::FlipH, 0, m_contentHFlip, QStringLiteral("↔"));
+        drawFlipToggle(Handle::FlipV, 1, m_contentVFlip, QStringLiteral("↕"));
         drawBtn(Handle::Rotate90CCW, 2, QStringLiteral("↺"));
         drawBtn(Handle::Rotate90CW, 3, QStringLiteral("↻"));
         drawBtn(Handle::Raise, 4, QStringLiteral("↑"));

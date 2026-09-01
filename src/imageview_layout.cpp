@@ -177,6 +177,9 @@ void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &sta
     if (state.contentQuarterTurns != 0) {
         item->bakeRotate90(state.contentQuarterTurns);
     }
+    // Keep chrome indicators in sync with session state (bakeFlip clears display flags).
+    item->setContentHFlip(state.contentHFlip);
+    item->setContentVFlip(state.contentVFlip);
 }
 
 void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
@@ -224,6 +227,8 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     }
     s.hFlip = false;
     s.vFlip = false;
+    item->setContentHFlip(s.contentHFlip);
+    item->setContentVFlip(s.contentVFlip);
     m_itemStates.insert(item->path(), s);
     commitItemSessionEdit(item);
 }
@@ -249,6 +254,8 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     const QImage src = item->sourceImage();
     const bool hFlip = item->itemHFlip();
     const bool vFlip = item->itemVFlip();
+    const bool contentH = item->contentHFlip();
+    const bool contentV = item->contentVFlip();
 
     // Duplicates share a path but are independent instances. Only sync the same
     // session slot (and never clobber other Workspace copies of the path).
@@ -269,6 +276,8 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         }
         other->setItemHFlip(hFlip);
         other->setItemVFlip(vFlip);
+        other->setContentHFlip(contentH);
+        other->setContentVFlip(contentV);
     };
     for (ImageItem *other : m_items) {
         syncOne(other);
