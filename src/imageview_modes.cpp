@@ -120,11 +120,7 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     if (mode == ViewMode::Image) {
-        if (previous == ViewMode::Gallery) {
-            // Keep tiles + decoded pixels for a fast return to Gallery.
-            stashGalleryItems();
-        }
-        // Workspace → Image: snapshot + stash already done in onLeave.
+        // Gallery/Workspace → Image: stash already done in the matching onLeave.
         m_viewMode = ViewMode::Image;
         m_layoutMode = LayoutMode::FreeForm;
         viewport()->update();

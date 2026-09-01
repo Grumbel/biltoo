@@ -33,7 +33,7 @@ public:
     void applyPendingRestore();
     void reassertViewport();
 
-    /** Gallery → other mode: clear hover/anchor, stop pack, optional snapshot drop. */
+    /** Gallery → other mode: clear hover/anchor, stop pack; stash tiles when next is Image. */
     void onLeave(int nextMode);
     void leaveForImageMode();
     void returnFromImage(int layoutMode, const QString &focusPath = QString());

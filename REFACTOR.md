@@ -191,3 +191,5 @@ by id (new model work — not part of early-phase exit criteria).
   (MainWindow already uses enterGallery only).
 - Phase 5m: Workspace leave → `WorkspaceController::onLeave` (durable
   snapshot; live stash when next mode is Image).
+- Phase 5n: Gallery→Image tile stash moved into `GalleryController::onLeave`
+  (symmetric with Workspace leave).

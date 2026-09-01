@@ -194,6 +194,9 @@ void GalleryController::onLeave(int nextMode)
     if (next != ImageView::ViewMode::Image) {
         m_haveScroll = false;
         m_haveViewCenter = false;
+    } else {
+        // Keep tiles + decoded pixels for a fast return to Gallery.
+        stashItems();
     }
 }
 
