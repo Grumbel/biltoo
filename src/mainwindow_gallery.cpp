@@ -397,12 +397,21 @@ void MainWindow::updateWorkspaceActionVisibility()
     // (Hiding them made the Workspace menu appear to grow/shrink with mode.)
     for (QAction *act : {m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
-                         m_resetScaleAct, m_resetRotationAct, m_duplicateAct,
+                         m_resetScaleAct, m_resetRotationAct,
                          m_selectToolAct, m_panToolAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(workspace);
         }
+    }
+    // Duplicate: Workspace selection or Gallery selection (new session rows).
+    if (m_duplicateAct) {
+        m_duplicateAct->setVisible(true);
+        const bool canDup = m_imageView
+            && ((workspace && m_imageView->hasTransformTargets())
+                || (m_imageView->isGalleryMode()
+                    && !m_imageView->selectedPaths().isEmpty()));
+        m_duplicateAct->setEnabled(canDup);
     }
     if (m_undoAct) {
         m_undoAct->setVisible(true);

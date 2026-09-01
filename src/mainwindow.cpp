@@ -147,6 +147,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::canvasSelectionChanged, this, [this]() {
         // Crop and other selection-sensitive actions depend on target count.
         updateNavigationActions();
+        updateWorkspaceActionVisibility();
         if (m_syncingSelection || !isWorkspaceMode() || !m_thumbnailBar || !m_imageView) {
             return;
         }
@@ -510,13 +511,16 @@ void MainWindow::duplicateSelected()
     if (!m_imageView) {
         return;
     }
+    if (!isWorkspaceMode() && !isGalleryMode()) {
+        return;
+    }
     // Capture paths before canvas clears selection / creates copies.
     const QStringList sourcePaths = m_imageView->selectedPaths();
     m_imageView->duplicateSelected();
     if (sourcePaths.isEmpty()) {
         return;
     }
-    // Each Workspace copy is a distinct session entry (same path allowed twice).
+    // Each copy is a distinct session entry (same path allowed twice).
     // Do not go through appendFiles() — that deduplicates and rebuilds selection.
     const int firstNew = m_files.size();
     QList<SessionImageId> newIds;
@@ -551,6 +555,10 @@ void MainWindow::duplicateSelected()
         }
     }
     applyThumbnailVisibility();
+    if (isGalleryMode() && m_imageView) {
+        // Explicit duplicate: pack so the new session tiles appear in the layout.
+        m_imageView->applyLayout();
+    }
     updateWorkspaceActionVisibility();
     if (statusBar()) {
         statusBar()->showMessage(
@@ -1517,25 +1525,26 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         return;
     }
 
-    // Gallery mode: always append and relayout. Ignore drops that only re-state
-    // paths already in the session (e.g. drag from the thumbnail bar) so tiles
-    // are not duplicated.
+    // Gallery mode: each dropped path becomes a new session row (allows the
+    // same file more than once). Thumbnail-bar drags therefore duplicate;
+    // external files are appended as usual.
     if (isGalleryMode()) {
         const QStringList expanded = expandPaths(paths);
         if (expanded.isEmpty()) {
             return;
         }
-        QStringList novel;
         for (const QString &p : expanded) {
-            if (!m_files.contains(p)) {
-                novel.append(p);
+            if (p.isEmpty()) {
+                continue;
             }
+            m_files.append(p);
+            m_sessionIds.append(allocSessionId());
         }
-        if (novel.isEmpty()) {
-            return;
+        if (m_thumbnailBar) {
+            m_thumbnailBar->setFiles(m_files);
+            m_thumbnailBar->setSessionIds(m_sessionIds);
         }
-        appendFiles(novel);
-        // appendFiles updates the session list; rebuild the packed canvas.
+        applyThumbnailVisibility();
         const ImageView::LayoutMode layout = m_imageView
             ? m_imageView->layoutMode()
             : ImageView::LayoutMode::Masonry;
@@ -1543,6 +1552,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         if (m_imageView) {
             m_imageView->enterGallery(layout);
         }
+        updateStatus();
         return;
     }
 

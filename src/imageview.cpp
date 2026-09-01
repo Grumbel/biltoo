@@ -2278,7 +2278,7 @@ void ImageView::resetItemRotation()
 
 void ImageView::duplicateSelected()
 {
-    if (!isWorkspaceMode()) {
+    if (!isWorkspaceMode() && !isGalleryMode()) {
         return;
     }
     QList<ImageItem *> sources;
@@ -2305,17 +2305,26 @@ void ImageView::duplicateSelected()
         if (!copy) {
             continue;
         }
-        copy->setItemScale(src->itemScaleX(), src->itemScaleY());
-        copy->setItemRotation(src->itemRotation());
-        copy->setItemHFlip(src->itemHFlip());
-        copy->setItemVFlip(src->itemVFlip());
         copy->setContentHFlip(src->contentHFlip());
         copy->setContentVFlip(src->contentVFlip());
         copy->setSessionCrop(src->sessionHasCrop(), src->sessionCropRect());
-        copy->setItemOpacity(src->itemOpacity());
-        copy->setStackZ(src->stackZ() + 0.01);
-        // Offset so the duplicate is visible beside the original
-        copy->setPos(src->pos() + QPointF(40.0, 40.0));
+        if (isWorkspaceMode()) {
+            copy->setItemScale(src->itemScaleX(), src->itemScaleY());
+            copy->setItemRotation(src->itemRotation());
+            copy->setItemHFlip(src->itemHFlip());
+            copy->setItemVFlip(src->itemVFlip());
+            copy->setItemOpacity(src->itemOpacity());
+            copy->setStackZ(src->stackZ() + 0.01);
+            // Offset so the duplicate is visible beside the original
+            copy->setPos(src->pos() + QPointF(40.0, 40.0));
+        } else {
+            // Gallery: upright tile; MainWindow packs after binding session ids.
+            copy->setItemRotation(0.0);
+            copy->setItemHFlip(false);
+            copy->setItemVFlip(false);
+            copy->setItemOpacity(1.0);
+            copy->setPos(src->pos());
+        }
         copy->setSelected(true);
     }
     emit statusChanged();

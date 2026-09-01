@@ -365,7 +365,7 @@ void MainWindow::createActions()
 
     m_duplicateAct = new QAction(tr("&Duplicate"), this);
     m_duplicateAct->setShortcut(Qt::CTRL | Qt::Key_D);
-    m_duplicateAct->setStatusTip(tr("Duplicate selected workspace image(s) for side-by-side comparison"));
+    m_duplicateAct->setStatusTip(tr("Duplicate selected image(s) into the session (Gallery or Workspace)"));
     connect(m_duplicateAct, &QAction::triggered, this, &MainWindow::duplicateSelected);
 
     m_openSelectionNewWindowAct = new QAction(tr("Open Selection in &New Window"), this);
@@ -585,6 +585,8 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutGridCropAct);
     galleryMenu->addAction(m_layoutMasonryAct);
     galleryMenu->addAction(m_layoutMasonryRowsAct);
+    galleryMenu->addSeparator();
+    galleryMenu->addAction(m_duplicateAct);
 
     auto *workspaceMenu = menuBar()->addMenu(tr("&Workspace"));
     workspaceMenu->addAction(m_workspaceModeAct);
