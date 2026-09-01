@@ -1526,9 +1526,14 @@ void ImageView::setViewMode(ViewMode mode)
             m_layoutDebounceTimer->stop();
         }
         m_pendingGalleryRestore = false;
-        m_haveGalleryScroll = false;
-        m_haveGalleryViewCenter = false;
         m_applyingLayout = false;
+        // Gallery → Image: keep scroll/centre snapshot from snapshotGalleryViewport()
+        // (called just before setViewMode) so return-to-Gallery can restore it.
+        // Any other leave path drops the snapshot.
+        if (mode != ViewMode::Image) {
+            m_haveGalleryScroll = false;
+            m_haveGalleryViewCenter = false;
+        }
     }
 
     if (previous == ViewMode::Workspace && mode != ViewMode::Workspace) {
