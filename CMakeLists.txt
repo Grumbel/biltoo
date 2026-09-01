@@ -64,6 +64,44 @@ target_compile_definitions(qimgview PRIVATE
   QIMGVIEW_VERSION="${PROJECT_VERSION_FULL}"
 )
 
+# Stricter diagnostics (do not promote to errors by default).
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(qimgview PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Wshadow
+    -Wnon-virtual-dtor
+    -Wold-style-cast
+    -Wcast-align
+    -Wunused
+    -Woverloaded-virtual
+    -Wformat=2
+    -Wundef
+    -Wnull-dereference
+    -Wdouble-promotion
+    -Wmisleading-indentation
+  )
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(qimgview PRIVATE
+      -Wduplicated-cond
+      -Wduplicated-branches
+      -Wlogical-op
+    )
+  endif()
+elseif(MSVC)
+  target_compile_options(qimgview PRIVATE /W4)
+endif()
+
+option(QIMGVIEW_WERROR "Treat compiler warnings as errors" OFF)
+if(QIMGVIEW_WERROR)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+    target_compile_options(qimgview PRIVATE -Werror)
+  elseif(MSVC)
+    target_compile_options(qimgview PRIVATE /WX)
+  endif()
+endif()
+
 target_link_libraries(qimgview PRIVATE
   Qt6::Core
   Qt6::Gui
