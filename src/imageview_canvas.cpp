@@ -446,6 +446,33 @@ void ImageView::selectBySessionIndices(const QList<int> &indices)
     }
 }
 
+void ImageView::selectPathsByOccurrence(const QStringList &paths)
+{
+    if (!m_scene) {
+        return;
+    }
+    m_scene->clearSelection();
+    QHash<QString, int> nextOccurrence;
+    for (const QString &path : paths) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        const int want = nextOccurrence.value(path, 0);
+        int seen = 0;
+        for (ImageItem *item : m_items) {
+            if (!item || item->path() != path) {
+                continue;
+            }
+            if (seen == want) {
+                item->setSelected(true);
+                nextOccurrence[path] = want + 1;
+                break;
+            }
+            ++seen;
+        }
+    }
+}
+
 void ImageView::rebindWorkspaceSessionIndices(const QStringList &sessionFiles)
 {
     // Legacy path-only rebind (no stable ids available).

@@ -15,6 +15,47 @@ QString imageFileDialogFilter()
     return QObject::tr("Images (%1);;All Files (*)").arg(patterns.join(QLatin1Char(' ')));
 }
 
+/** Undoable session duplicate (Ctrl+D). */
+class SessionDuplicateCommand : public QUndoCommand {
+public:
+    SessionDuplicateCommand(MainWindow *mw, const QStringList &sourcePaths)
+        : QUndoCommand(QObject::tr("Duplicate"))
+        , m_mw(mw)
+        , m_sourcePaths(sourcePaths)
+    {
+    }
+
+    void undo() override
+    {
+        if (!m_mw || m_newIds.isEmpty()) {
+            return;
+        }
+        QList<int> indices;
+        for (SessionImageId id : m_newIds) {
+            const int idx = m_mw->sessionIndexOfId(id);
+            if (idx >= 0) {
+                indices.append(idx);
+            }
+        }
+        if (!indices.isEmpty()) {
+            m_mw->applySessionRemoveIndices(indices);
+        }
+    }
+
+    void redo() override
+    {
+        if (!m_mw || m_sourcePaths.isEmpty()) {
+            return;
+        }
+        m_newIds = m_mw->applyDuplicate(m_sourcePaths);
+    }
+
+private:
+    MainWindow *m_mw = nullptr;
+    QStringList m_sourcePaths;
+    QVector<SessionImageId> m_newIds;
+};
+
 /** Undoable session removal (Gallery delete / thumb remove). */
 class SessionRemoveCommand : public QUndoCommand {
 public:
@@ -1313,4 +1354,81 @@ void MainWindow::clearSessionHistory()
 {
     m_sessionHistory.clear();
     rebuildHistoryMenu();
+}
+
+void MainWindow::duplicateSelected()
+{
+    if (!m_imageView) {
+        return;
+    }
+    if (!isWorkspaceMode() && !isGalleryMode()) {
+        return;
+    }
+    const QStringList sourcePaths = m_imageView->selectedPaths();
+    if (sourcePaths.isEmpty()) {
+        return;
+    }
+    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
+        m_imageView->undoStack()->push(new SessionDuplicateCommand(this, sourcePaths));
+        return;
+    }
+    applyDuplicate(sourcePaths);
+}
+
+QVector<SessionImageId> MainWindow::applyDuplicate(const QStringList &sourcePaths)
+{
+    QVector<SessionImageId> newIds;
+    if (!m_imageView || sourcePaths.isEmpty()) {
+        return newIds;
+    }
+    if (!isWorkspaceMode() && !isGalleryMode()) {
+        return newIds;
+    }
+
+    // Reselect sources so redo after undo still copies the right tiles.
+    m_imageView->selectPathsByOccurrence(sourcePaths);
+    m_imageView->duplicateSelected();
+
+    const int firstNew = m_session.paths().size();
+    for (const QString &path : sourcePaths) {
+        if (!path.isEmpty()) {
+            const SessionImageId id = allocSessionId();
+            m_session.append(path, id);
+            newIds.append(id);
+        }
+    }
+    if (m_session.paths().size() == firstNew) {
+        return {};
+    }
+    m_imageView->bindSelectedSessionIndices(firstNew);
+    m_imageView->bindSelectedSessionIds(newIds);
+    m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
+    syncThumbnailCanvasMembership();
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setFiles(m_session.paths());
+        m_thumbnailBar->setSessionIds(m_session.ids());
+        if (isWorkspaceMode()) {
+            m_thumbnailBar->setMultiSelectEnabled(true);
+            QList<int> indices;
+            for (int i = firstNew; i < m_session.paths().size(); ++i) {
+                indices.append(i);
+            }
+            m_thumbnailBar->setSelectedIndices(indices);
+        }
+    }
+    applyThumbnailVisibility();
+    if (isGalleryMode()) {
+        m_imageView->applyLayout(GalleryPackReason::SessionMutate);
+    }
+    updateWorkspaceActionVisibility();
+    if (statusBar()) {
+        statusBar()->showMessage(
+            tr("Duplicated %n image(s) into the session", "", sourcePaths.size()), 3000);
+    }
+    return newIds;
+}
+
+int MainWindow::sessionIndexOfId(SessionImageId id) const
+{
+    return m_session.indexOfId(id);
 }

@@ -113,6 +113,8 @@ public:
     QSet<int> workspaceSessionIndices() const;
     QList<int> selectedSessionIndices() const;
     void selectBySessionIndices(const QList<int> &indices);
+    /** Select live tiles matching @p paths by occurrence order (duplicate-safe). */
+    void selectPathsByOccurrence(const QStringList &paths);
     /**
      * Assign sessionIndex from @p sessionFiles order (legacy). Prefer
      * rebindWorkspaceSession with stable ids.

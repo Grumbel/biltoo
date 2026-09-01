@@ -471,65 +471,6 @@ void MainWindow::resetItemRotation()
     m_imageView->resetItemRotation();
 }
 
-void MainWindow::duplicateSelected()
-{
-    if (!m_imageView) {
-        return;
-    }
-    if (!isWorkspaceMode() && !isGalleryMode()) {
-        return;
-    }
-    // Capture paths before canvas clears selection / creates copies.
-    const QStringList sourcePaths = m_imageView->selectedPaths();
-    m_imageView->duplicateSelected();
-    if (sourcePaths.isEmpty()) {
-        return;
-    }
-    // Each copy is a distinct session entry (same path allowed twice).
-    // Do not go through appendFiles() — that deduplicates and rebuilds selection.
-    const int firstNew = m_session.paths().size();
-    QList<SessionImageId> newIds;
-    for (const QString &path : sourcePaths) {
-        if (!path.isEmpty()) {
-            const SessionImageId id = allocSessionId();
-            m_session.append(path, id);
-            newIds.append(id);
-        }
-    }
-    if (m_session.paths().size() == firstNew) {
-        return;
-    }
-    // Bind new canvas copies (still selected) to the new session images.
-    m_imageView->bindSelectedSessionIndices(firstNew);
-    m_imageView->bindSelectedSessionIds(newIds);
-    // Ensure every canvas tile has a stable id (originals included).
-    m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
-    syncThumbnailCanvasMembership();
-    if (m_thumbnailBar) {
-        m_thumbnailBar->setFiles(m_session.paths());
-        m_thumbnailBar->setSessionIds(m_session.ids());
-        if (isWorkspaceMode()) {
-            m_thumbnailBar->setMultiSelectEnabled(true);
-            // Select the newly appended session slots.
-            QList<int> indices;
-            for (int i = firstNew; i < m_session.paths().size(); ++i) {
-                indices.append(i);
-            }
-            m_thumbnailBar->setSelectedIndices(indices);
-        }
-    }
-    applyThumbnailVisibility();
-    if (isGalleryMode() && m_imageView) {
-        // Explicit duplicate: pack so the new session tiles appear in the layout.
-        m_imageView->applyLayout(GalleryPackReason::SessionMutate);
-    }
-    updateWorkspaceActionVisibility();
-    if (statusBar()) {
-        statusBar()->showMessage(
-            tr("Duplicated %n image(s) into the session", "", sourcePaths.size()), 3000);
-    }
-}
-
 void MainWindow::openSelectionInNewWindow()
 {
     if (!m_imageView) {
