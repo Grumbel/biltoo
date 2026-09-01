@@ -363,3 +363,21 @@ void MainWindow::exportPng()
         statusBar()->showMessage(tr("Exported PNG: %1 (%2×%3)").arg(out).arg(w).arg(h), 5000);
     }
 }
+
+
+void MainWindow::fitPageGuideToContent()
+{
+    if (!m_imageView) {
+        return;
+    }
+    if (!isWorkspaceMode()) {
+        enterWorkspaceMode();
+    }
+    m_imageView->fitPageGuideToContent(16.0);
+    if (m_pageGuideAct) {
+        m_pageGuideAct->setChecked(true);
+    }
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Page guide fitted to content."), 3000);
+    }
+}

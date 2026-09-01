@@ -199,7 +199,9 @@ public:
     bool pageGuideVisible() const { return m_pageGuideVisible; }
     /** Update guide size from a printer page layout (millimetres → scene px). */
     void setPageGuideFromPrinter(const QPrinter &printer);
-    /** Scene rectangle of the page guide (centred on the origin). */
+    /** Size page guide to live content bounds (+ margin); shows the guide. */
+    void fitPageGuideToContent(qreal marginPx = 16.0);
+    /** Scene rectangle of the page guide (printer: centred; fit-content: content AABB). */
     QRectF pageGuideSceneRect() const;
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
@@ -721,6 +723,8 @@ private:
 
     bool m_pageGuideVisible = false;
     QSizeF m_pageGuideSize; // scene px from printer page; empty → A4 at kPageGuideDpi
+    /** When valid, overrides centred-at-origin placement (fit-to-content). */
+    QRectF m_pageGuideRect;
     bool m_fitMode = true;
     bool m_fillMode = false;
     ViewMode m_viewMode = ViewMode::Image;

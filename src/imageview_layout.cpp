@@ -874,6 +874,7 @@ void ImageView::setPageGuideFromPrinter(const QPrinter &printer)
     }
     const qreal pxPerMm = pageGuidePxPerMm();
     m_pageGuideSize = QSizeF(mm.width() * pxPerMm, mm.height() * pxPerMm);
+    m_pageGuideRect = QRectF(); // printer pages stay centred on the origin
     if (m_pageGuideVisible) {
         if (isWorkspaceMode()) {
             updateWorkspaceSceneRect();
@@ -937,12 +938,35 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
 
 QRectF ImageView::pageGuideSceneRect() const
 {
+    if (m_pageGuideRect.isValid() && m_pageGuideRect.width() > 0 && m_pageGuideRect.height() > 0) {
+        return m_pageGuideRect;
+    }
     QSizeF sz = m_pageGuideSize;
     if (!sz.isValid() || sz.width() <= 0 || sz.height() <= 0) {
         const qreal pxPerMm = pageGuidePxPerMm();
         sz = QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm);
     }
     return QRectF(-sz.width() / 2.0, -sz.height() / 2.0, sz.width(), sz.height());
+}
+
+void ImageView::fitPageGuideToContent(qreal marginPx)
+{
+    QRectF bounds = contentExportBounds();
+    if (!bounds.isValid() || bounds.isEmpty()) {
+        return;
+    }
+    if (marginPx > 0.0) {
+        // contentExportBounds already pads 4px; add the requested extra margin.
+        bounds.adjust(-marginPx, -marginPx, marginPx, marginPx);
+    }
+    m_pageGuideRect = bounds;
+    m_pageGuideSize = bounds.size();
+    m_pageGuideVisible = true;
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    viewport()->update();
+    emit statusChanged();
 }
 
 

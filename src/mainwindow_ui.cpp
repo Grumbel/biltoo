@@ -87,6 +87,11 @@ void MainWindow::createActions()
         tr("Workspace: show a paper-sized frame to arrange images for printing"));
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
 
+    m_fitPageGuideAct = new QAction(tr("Fit Page Guide to &Content"), this);
+    m_fitPageGuideAct->setStatusTip(
+        tr("Size the page guide to the current Workspace images (for PNG export framing)"));
+    connect(m_fitPageGuideAct, &QAction::triggered, this, &MainWindow::fitPageGuideToContent);
+
     m_quitAct = new QAction(tr("&Quit"), this);
     m_quitAct->setShortcut(QKeySequence::Quit);
     m_quitAct->setIcon(themeIcon(QStringLiteral("application-exit"), QStyle::SP_DialogCloseButton));
@@ -594,6 +599,7 @@ void MainWindow::createMenus()
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
     m_viewMenu->addAction(m_pageGuideAct);
+    m_viewMenu->addAction(m_fitPageGuideAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
@@ -785,6 +791,7 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_pageGuideAct);
+    m_workspaceToolBar->addAction(m_fitPageGuideAct);
     m_workspaceToolBar->addAction(m_pageSetupAct);
     m_workspaceToolBar->addAction(m_printPreviewAct);
     m_workspaceToolBar->addAction(m_exportPngAct);

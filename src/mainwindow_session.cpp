@@ -1611,6 +1611,7 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     QList<QPair<SessionImageId, WorkspaceItemState>> appearances;
     QList<QPair<SessionImageId, WorkspaceItemState>> poses;
     QStringList missing;
+    bool skipAllMissing = false;
 
     for (const ProjectImage &im : doc.images) {
         ProjectAsset asset = assetsBySha.value(im.assetSha256.toLower());
@@ -1620,6 +1621,52 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
         }
         QString resolveErr;
         QString resolved = ProjectFile::resolveAssetPath(asset, projectPath, &resolveErr);
+        if (resolved.isEmpty() && !skipAllMissing) {
+            const QString hint = asset.path.isEmpty()
+                ? (asset.pathRelative.isEmpty()
+                       ? im.assetSha256.left(16)
+                       : asset.pathRelative)
+                : asset.path;
+            const QMessageBox::StandardButton choice = QMessageBox::question(
+                this,
+                tr("Locate missing image"),
+                tr("Could not find:\n%1\n\nSHA-256: %2\n\nLocate the file manually?")
+                    .arg(hint, im.assetSha256),
+                QMessageBox::Yes | QMessageBox::No | QMessageBox::NoToAll,
+                QMessageBox::Yes);
+            if (choice == QMessageBox::NoToAll) {
+                skipAllMissing = true;
+            } else if (choice == QMessageBox::Yes) {
+                const QString picked = QFileDialog::getOpenFileName(
+                    this,
+                    tr("Locate image"),
+                    QFileInfo(hint).absolutePath().isEmpty()
+                        ? QFileInfo(projectPath).absolutePath()
+                        : QFileInfo(hint).absolutePath(),
+                    tr("Images (*.png *.jpg *.jpeg *.webp *.tif *.tiff *.bmp *.gif);;All Files (*)"));
+                if (!picked.isEmpty()) {
+                    bool acceptPicked = true;
+                    if (!asset.sha256.isEmpty()) {
+                        const QString got = ProjectFile::fileSha256(picked);
+                        if (!got.isEmpty()
+                            && got.compare(asset.sha256, Qt::CaseInsensitive) != 0) {
+                            const auto useAnyway = QMessageBox::warning(
+                                this,
+                                tr("Hash mismatch"),
+                                tr("The selected file does not match the stored SHA-256.\n"
+                                   "Expected %1\nGot %2\n\nUse it anyway?")
+                                    .arg(asset.sha256.left(16), got.left(16)),
+                                QMessageBox::Yes | QMessageBox::No,
+                                QMessageBox::No);
+                            acceptPicked = (useAnyway == QMessageBox::Yes);
+                        }
+                    }
+                    if (acceptPicked) {
+                        resolved = picked;
+                    }
+                }
+            }
+        }
         if (resolved.isEmpty()) {
             missing.append(resolveErr.isEmpty() ? im.assetSha256.left(12) : resolveErr);
             continue;

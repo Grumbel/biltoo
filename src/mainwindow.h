@@ -99,6 +99,7 @@ public:
     void exportPdf();
     void exportPng();
     void togglePageGuide();
+    void fitPageGuideToContent();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -294,6 +295,7 @@ private:
     QAction *m_exportPdfAct = nullptr;
     QAction *m_exportPngAct = nullptr;
     QAction *m_pageGuideAct = nullptr;
+    QAction *m_fitPageGuideAct = nullptr;
     QAction *m_zoomInAct = nullptr;
     QAction *m_zoomOutAct = nullptr;
     QAction *m_zoom1to1Act = nullptr;

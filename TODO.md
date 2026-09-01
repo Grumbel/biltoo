@@ -226,7 +226,7 @@ default frame of meaning.
   verifies the path or searches near the project file for a matching hash
 - [x] **Identity** — session rows keep `SessionImageId`; duplicates stay independent
 - [x] Export PNG (page guide or content bounds + resolution) — separate from project
-- [ ] Fit page guide to content — export helper only, not a print default
+- [x] Fit page guide to content — export helper only, not a print default
 
 ### Format sketch (version 1)
 
@@ -250,7 +250,7 @@ default frame of meaning.
 }
 ```
 
-Relink UI when an asset is missing and hash search fails is future work.
+Relink UI: prompt to locate missing assets on load; warn on SHA-256 mismatch.
 
 
 ## Interaction summary (current)
