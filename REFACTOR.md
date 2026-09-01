@@ -193,3 +193,5 @@ by id (new model work — not part of early-phase exit criteria).
   snapshot; live stash when next mode is Image).
 - Phase 5n: Gallery→Image tile stash moved into `GalleryController::onLeave`
   (symmetric with Workspace leave).
+- Phase 5o: `ImageController` collaborator owns Image-mode enter
+  (prepare canvas, clear live items, reload classic path).

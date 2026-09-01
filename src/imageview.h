@@ -8,6 +8,7 @@
 #include "sessionappearance.h"
 #include "gallerycontroller.h"
 #include "workspacecontroller.h"
+#include "imagecontroller.h"
 
 #include <QColor>
 #include <QElapsedTimer>
@@ -47,6 +48,7 @@ class ImageView : public QGraphicsView
 
     friend class GalleryController;
     friend class WorkspaceController;
+    friend class ImageController;
 
 public:
     enum class Tool {
@@ -625,6 +627,8 @@ private:
     GalleryController m_gallery;
     /** Workspace-mode collaborator (stash, free-form snapshot, transitions). */
     WorkspaceController m_workspace;
+    /** Image-mode collaborator (enter transition). */
+    ImageController m_image;
     QList<ImageItem *> m_items;
     /**
      * Path-keyed placement / legacy unbound appearance.

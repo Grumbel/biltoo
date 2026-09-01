@@ -120,42 +120,7 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     if (mode == ViewMode::Image) {
-        // Gallery/Workspace → Image: stash already done in the matching onLeave.
-        m_viewMode = ViewMode::Image;
-        m_layoutMode = LayoutMode::FreeForm;
-        viewport()->update();
-        if (m_layoutDebounceTimer) {
-            m_layoutDebounceTimer->stop();
-        }
-        m_applyingLayout = false;
-        prepareImageModeCanvas();
-        // Prefer explicit classic path. Do not pick m_items.first() when leaving
-        // Gallery — that re-decodes a random tile before setCurrentIndex loads
-        // the real target (double clear + decode spike).
-        const QString path = m_classicPath;
-        // Clear live canvas only — do not discard stashes.
-        clearInteractionState();
-        if (m_undoStack) {
-            m_undoStack->clear();
-        }
-        while (!m_items.isEmpty()) {
-            destroyCanvasItem(m_items.last());
-        }
-        m_pendingScenePos.clear();
-        m_pendingWorkspacePaths.clear();
-        m_pendingRestoreStates.clear();
-        m_classicPath.clear();
-        if (m_scene) {
-            m_scene->blockSignals(true);
-            m_scene->clear();
-            m_scene->blockSignals(false);
-        }
-        m_mouseInfo = {};
-        emit mouseInfoChanged(m_mouseInfo);
-        if (!path.isEmpty()) {
-            scheduleImageLoad(path, LoadReplace);
-        }
-        emit statusChanged();
+        m_image.enter();
         return;
     }
 
