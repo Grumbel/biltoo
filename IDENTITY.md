@@ -1,18 +1,52 @@
 # Image identity, duplication, and editing
 
-This document describes **how the code actually works** as of the current tip
-(including accumulated session-slot experiments). It is not a wish-list. Where
-implementation contradicts DOMAIN.md or itself, that is stated explicitly.
-
-Related: DOMAIN.md (intended product model), AUDIT.md H2p / M16 / M27
-(persistence vs duplicates), HANDLES.md (chrome).
+Related: DOMAIN.md, AUDIT.md (H2p / M16 / M27), HANDLES.md.
 
 ---
 
-## 1. Three layers of identity
+## 0. Intended mental model (product)
 
-Anything that goes wrong with crop/flip/rotate almost always confuses these
-three layers.
+This is the model to implement against. Everything below §1 is how the *code*
+behaves today and where it diverges.
+
+1. **Session** contains an **ordered list of images**.
+   - Each entry is a first-class **session image** (slot index `0 … n-1`).
+   - A session image always names a **file on disk** (path), but identity is
+     the **slot**, not the path string.
+   - **The same file on disk may appear in the session multiple times**
+     (multiple slots, same path). Those are independent images in the session.
+
+2. **Gallery** modes show the session images under various **layouts**
+   (grid, masonry, …). The gallery is a view of the session list, not a
+   separate object store.
+
+3. **Image mode** focuses on **one session image** (the session cursor) and is
+   where **editing** of that image’s appearance happens (crop, flip, content
+   rotate, etc.).
+
+4. **Workspace** is a **free-form layout** that may place session images on a
+   canvas.
+   - Placing an image on the Workspace is **optional**.
+   - Every object on the Workspace is **associated with exactly one session
+     image** (that slot). It is a presentation of that session image, plus
+     Workspace-only placement (position, scale, free tilt, opacity, z).
+   - Removing a tile from the Workspace does not remove the session image;
+     removing a session image removes the association.
+
+5. **Disk file** is only the decode source. Two session images that share a
+   path still have independent crop / flip / content rotation. Editing one
+   must not change the other.
+
+**Corollary:** APIs keyed only by path cannot be the source of truth for
+appearance once path duplicates exist. Session index (or an equivalent stable
+id per session image) must be.
+
+---
+
+## 1. Three layers in the current code
+
+The code uses these three layers. Crop/flip/rotate bugs almost always come
+from treating **path** as identity when **session slot** should be.
 
 ### 1.1 Filesystem path (`QString`)
 

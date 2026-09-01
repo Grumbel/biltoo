@@ -7,11 +7,18 @@ contradictions here are logic faults, not UI noise.
 ## Domain
 
 **Session**  
-An ordered list of image **paths**. This is the user’s working set.
+An ordered list of **session images**. This is the user’s working set.
+Each session image has an index and names a file on disk (path). The same
+path may appear more than once; those entries are independent images.
 
-**Image**  
-One path, once decoded: pixels plus optional orientation the user applies
-(rotation, flips). An image does not know about zoom; presentation does.
+**Session image**  
+One entry in the session: decode source (path) plus user-applied **content**
+appearance (crop, flips, content 90° turns). Identity is the session index,
+not the path string.
+
+**Image (decoded)**  
+Pixels derived from a session image’s path and content appearance. Does not
+know about view zoom; presentation does.
 
 **Canvas**  
 What is shown in the main area. The canvas always has a **mode**. What may sit
@@ -34,7 +41,8 @@ diverge from it.
 
 ### Image mode — “look at one picture”
 
-- Canvas holds **at most one** image: the session’s current path.
+- Canvas holds **at most one** image: the session’s **current session image**
+  (cursor index). Editing here changes that session image’s content appearance.
 - The **view** frames that image (fit, fill, 1:1, zoom, pan).
 - The **image** may still carry rotation and flips; framing must not erase them
   unless the user asks to reset.
@@ -46,7 +54,7 @@ diverge from it.
 
 ### Gallery mode — “see the whole session laid out”
 
-- Canvas holds **one object per session path**, arranged by a **layout**
+- Canvas holds **one object per session image**, arranged by a **layout**
   (horizontal, vertical, grid, grid-crop, masonry columns, masonry rows).
 - Layout is pure arrangement: positions and cell scales. Objects are not
   free-moved by the user.
@@ -62,10 +70,14 @@ diverge from it.
 
 - Canvas holds **zero or more** images, each a free object: position, scale
   (uniform or non-uniform), rotation, flips, opacity, stacking order.
-- Session still exists; the canvas may show a **subset** of session paths.
+- Session still exists; the canvas may show a **subset** of session images.
+  Placement on the Workspace is optional. Each canvas object is associated
+  with exactly one session image (slot); Workspace adds free placement
+  (position, scale, free tilt, opacity, stacking).
 - User may select one or more objects and transform them.
 - User may raise / lower stacking order.
-- User may duplicate a selection (same path, independent transforms).
+- User may duplicate a selection: new session image (same path allowed) and
+  a new canvas object with independent content appearance and placement.
 - Leaving Workspace **keeps** object transforms (snapshot) for when the user returns.
 - Slideshow and edge-next are off: this is not a linear viewer.
 
