@@ -385,15 +385,14 @@ void ImageItem::drawCornerBracket(QPainter *painter, const QPointF &c,
 
 void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    // Corner handles: default scales about the opposite corner (drawing-program
-    // usual); Ctrl or Shift scales about the item centre.
-    // Edge handles: default anisotropic about centre; Ctrl/Shift about opposite edge.
+    // Corner and edge (H/V) handles share modifier semantics (drawing-program usual):
+    // default scales about the opposite corner/edge; Ctrl or Shift about centre.
     //
     // Edge stretch uses scene-space projections onto the *press-time* image axes
     // so the ratio stays stable when scale approaches the clamp (HANDLES.md).
     // Local ratios after each setItemScale amplify noise near zero.
     const bool modifier = mods & (Qt::ControlModifier | Qt::ShiftModifier);
-    const bool fromCenter = isCornerScaleHandle(m_activeHandle) ? modifier : !modifier;
+    const bool fromCenter = modifier;
     const QPointF itemCentre = this->scenePos();
     constexpr qreal kMinDist = 1.0; // scene px; below this ignore the sample
 

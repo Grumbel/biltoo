@@ -98,7 +98,7 @@ Scale handles stay at the mapped corners / edge mids (no extra offset).
 | Handle | Default (no modifier) | Ctrl or Shift |
 |--------|------------------------|---------------|
 | Corner | Uniform scale about opposite corner (anchor fixed in scene) | Uniform scale about item centre (distance ratio) |
-| Edge   | Anisotropic scale about centre (stretch one axis) | Anisotropic scale about opposite edge (anchor fixed) |
+| Edge   | Anisotropic scale about opposite edge (anchor fixed) | Anisotropic scale about centre (stretch one axis) |
 
 Axes for edge stretch are the item’s local X/Y (image axes), not screen axes,
 so a rotated image still stretches “width” and “height” of the picture.
@@ -129,7 +129,7 @@ opacity track.
    infinity, vanish, or produce NaN; edge drag remains controllable; clamp at
    min scale.
 4. Scale up large: handles stay the same pixel size; no thickening.
-5. Anisotropic scale (edge drag): opposite edge/centre stays put when modifier
+5. Anisotropic scale (edge drag): opposite edge stays put by default; centre when modifier
    held; no jump when releasing.
 6. Near-zero edge drag: no oscillation, no sudden jumps to huge scale.
 7. HiDPI: sizes still match design px (devicePixelRatio handled by Qt painter /
