@@ -17,6 +17,7 @@
 #include <QMetaObject>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPaintEvent>
 #include <QAbstractScrollArea>
 #include <QScrollBar>
@@ -600,27 +601,29 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         const QPointF d1 = unit(alongA);
         const QPointF d2 = unit(alongB);
         const qreal hs = hot ? 12.0 : 10.0;
-        const qreal arm = hs * 1.15;
-        const qreal rad = hs * 0.4;
+        const qreal arm = hs * 1.35;
+        const qreal thick = hs * (hot ? 0.48 : 0.36);
+        QPainterPath path;
+        path.moveTo(c + d1 * arm);
+        path.lineTo(c);
+        path.lineTo(c + d2 * arm);
         QPen hp(hot ? QColor(255, 255, 255) : handleEdge, 0);
         hp.setCosmetic(true);
-        hp.setWidthF(hot ? 2.4 : 1.8);
+        hp.setWidthF(thick);
         hp.setCapStyle(Qt::RoundCap);
+        hp.setJoinStyle(Qt::RoundJoin);
         painter->setPen(hp);
         painter->setBrush(Qt::NoBrush);
-        const QPointF p1 = c + d1 * rad;
-        const QPointF p2 = c + d2 * rad;
-        painter->drawLine(p1, c + d1 * arm);
-        painter->drawLine(p2, c + d2 * arm);
-        const QPointF inward = unit(-(d1 + d2));
-        const QPointF arcC = c - inward * rad;
-        const qreal a1 = qAtan2(p1.y() - arcC.y(), p1.x() - arcC.x());
-        const qreal a2 = qAtan2(p2.y() - arcC.y(), p2.x() - arcC.x());
-        qreal span = qRadiansToDegrees(a2 - a1);
-        while (span > 180.0) span -= 360.0;
-        while (span < -180.0) span += 360.0;
-        painter->drawArc(QRectF(arcC.x() - rad, arcC.y() - rad, rad * 2.0, rad * 2.0),
-                         qRound(qRadiansToDegrees(-a1) * 16), qRound(-span * 16));
+        painter->drawPath(path);
+        if (hot) {
+            QPen glow(handleFill, 0);
+            glow.setCosmetic(true);
+            glow.setWidthF(thick * 0.55);
+            glow.setCapStyle(Qt::RoundCap);
+            glow.setJoinStyle(Qt::RoundJoin);
+            painter->setPen(glow);
+            painter->drawPath(path);
+        }
     };
     auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, int id) {
         const bool hot = (m_groupHoverHandle == id || m_groupHandle == id);
@@ -1319,6 +1322,19 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+    // Middle-button (or Alt) pan must work in crop mode — handle before crop hover.
+    if (m_panning) {
+        const QPoint delta = event->pos() - m_lastMousePos;
+        m_lastMousePos = event->pos();
+        if (isWorkspaceMode()) {
+            updateWorkspaceSceneRect();
+        }
+        horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
+        verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
+        event->accept();
+        return;
+    }
+
     if (m_cropMode) {
         const CropHandle h = cropHandleAt(event->pos());
         if (h != m_cropHoverHandle) {
