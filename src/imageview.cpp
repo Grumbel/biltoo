@@ -332,7 +332,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             // Suppress paints between removing the old item and fitting the new one
             // so we never present a native-scale (or empty) intermediate frame.
             setUpdatesEnabled(false);
-            clearWorkspace();
+            // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
+            clearLiveCanvas();
             ImageItem *item = createItemFromImage(path, image);
             if (!item) {
                 setUpdatesEnabled(true);
@@ -413,12 +414,32 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (!item) {
             return;
         }
-        if (state.hasCrop) {
-            applySessionCrop(item, state);
+        // Prefer live session-image appearance over the leave-mode snapshot when
+        // Image-mode edits updated m_sessionAppearance while Workspace was stashed.
+        WorkspaceItemState app = state;
+        if (state.sessionId != kInvalidSessionImageId) {
+            item->setSessionId(state.sessionId);
+            const auto it = m_sessionAppearance.constFind(state.sessionId);
+            if (it != m_sessionAppearance.cend()) {
+                app = *it;
+                // Keep placement from the snapshot.
+                app.pos = state.pos;
+                app.scale = state.scale;
+                app.scaleY = state.scaleY;
+                app.rotation = state.rotation;
+                app.opacity = state.opacity;
+                app.z = state.z;
+            }
         }
-        applyContentBakes(item, state);
-        item->setSessionCrop(state.hasCrop, state.cropRect);
-        applyState(item, state);
+        if (state.sessionIndex >= 0) {
+            item->setSessionIndex(state.sessionIndex);
+        }
+        if (app.hasCrop) {
+            applySessionCrop(item, app);
+        }
+        applyContentBakes(item, app);
+        item->setSessionCrop(app.hasCrop, app.cropRect);
+        applyState(item, app);
         if (m_layoutMode != LayoutMode::FreeForm) {
             applyLayout();
         }

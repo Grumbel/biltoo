@@ -96,6 +96,8 @@ public:
     void rebindWorkspaceSession(const QStringList &sessionFiles,
                                 const QVector<SessionImageId> &sessionIds);
     void clearWorkspace();
+    /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
+    void clearLiveCanvas();
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
     void setPageGuideVisible(bool on);

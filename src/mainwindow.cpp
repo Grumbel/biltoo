@@ -529,6 +529,8 @@ void MainWindow::duplicateSelected()
     // Bind new canvas copies (still selected) to the new session images.
     m_imageView->bindSelectedSessionIndices(firstNew);
     m_imageView->bindSelectedSessionIds(newIds);
+    // Ensure every canvas tile has a stable id (originals included).
+    m_imageView->rebindWorkspaceSession(m_files, m_sessionIds);
     syncThumbnailCanvasMembership();
     if (m_thumbnailBar) {
         m_thumbnailBar->setFiles(m_files);

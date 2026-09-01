@@ -348,22 +348,12 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         syncOne(other);
     }
 
-    // Durable snapshot: only slots matching path + sessionIndex (or path-only
-    // when session is unbound).
-    // Only propagate path-keyed appearance into durable slots that share the
-    // same bound session index. Unbound edits stay on the live item pixels.
-    if (sessionIndex >= 0) {
-        const auto st = m_itemStates.constFind(path);
-        if (st != m_itemStates.cend()) {
+    // Durable snapshot: update the entry for this session image id.
+    if (sessionId != kInvalidSessionImageId) {
+        const auto st = m_sessionAppearance.constFind(sessionId);
+        if (st != m_sessionAppearance.cend()) {
             for (WorkspaceItemState &slot : m_savedWorkspace) {
-                if (slot.path != path) {
-                    continue;
-                }
-                if (slot.sessionIndex >= 0 && slot.sessionIndex != sessionIndex) {
-                    continue;
-                }
-                // Do not push bound appearance onto unbound duplicate slots.
-                if (slot.sessionIndex < 0) {
+                if (slot.sessionId != sessionId) {
                     continue;
                 }
                 slot.hasCrop = st->hasCrop;
@@ -374,7 +364,8 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
                 slot.contentHFlip = st->contentHFlip;
                 slot.contentVFlip = st->contentVFlip;
                 slot.orientation = 0.0;
-                slot.sessionIndex = sessionIndex;
+                slot.sessionId = sessionId;
+                slot.path = path;
             }
         }
     }
@@ -390,6 +381,9 @@ void ImageView::snapshotWorkspace()
         m_savedWorkspace.append(s);
         // Path map is session/Image appearance only; unbound duplicates stay
         // in the list and must not collapse into a single path entry.
+        if (s.sessionId != kInvalidSessionImageId) {
+            m_sessionAppearance.insert(s.sessionId, s);
+        }
         if (s.sessionIndex >= 0) {
             m_itemStates.insert(s.path, s);
         }
@@ -664,10 +658,10 @@ void ImageView::restoreStashedGalleryItems()
     reorderItemsByPaths(m_pathOrder);
 }
 
-void ImageView::clearWorkspace()
+void ImageView::clearLiveCanvas()
 {
-    // AUDIT H8/H9: drop live pointers and undo commands that reference items
-    // about to be destroyed.
+    // Destroy only the live scene items. Mode stashes (Workspace/Gallery tiles
+    // kept while in Image mode) must survive Image-mode LoadReplace / Next.
     m_handleDragItem = nullptr;
     m_groupScaleDrag = false;
     m_groupRotateDrag = false;
@@ -682,27 +676,34 @@ void ImageView::clearWorkspace()
     if (m_undoStack) {
         m_undoStack->clear();
     }
-    // Destroy live canvas items via removeItem+delete (never leave BSP dangling).
     while (!m_items.isEmpty()) {
         destroyCanvasItem(m_items.last());
     }
-    // Session wipe / explicit clear — drop mode stashes too.
+    // Do not m_scene->clear() — that would delete stashed items if any were
+    // still parented (they are not). Scene may hold no items; that is fine.
+    m_mouseInfo = {};
+    emit mouseInfoChanged(m_mouseInfo);
+}
+
+void ImageView::clearWorkspace()
+{
+    // Full session/canvas wipe including mode stashes.
+    clearLiveCanvas();
     discardStashedWorkspace();
     discardStashedGallery();
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
     m_pendingRestoreStates.clear();
+    m_pendingSessionBinds.clear();
+    m_pendingSessionIndexByPath.clear();
     m_galleryDecodeScheduled.clear();
     m_galleryDecodeFailed.clear();
     m_classicPath.clear();
-    // Any stragglers not tracked in m_items (should be none).
     if (m_scene) {
         m_scene->blockSignals(true);
         m_scene->clear();
         m_scene->blockSignals(false);
     }
-    m_mouseInfo = {};
-    emit mouseInfoChanged(m_mouseInfo);
 }
 
 
