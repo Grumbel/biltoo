@@ -598,6 +598,11 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     // Remove highest indices first so remaining indices stay valid
     if (m_imageView) {
         m_imageView->setPreserveUndoOnDestroy(true);
+        // Thumb-strip setFiles can resize the splitter → ImageView::resizeEvent
+        // would otherwise schedule applyLayout and jump scroll.
+        if (isGalleryMode()) {
+            m_imageView->setGalleryRelayoutSuppressed(true);
+        }
     }
     for (int i = sorted.size() - 1; i >= 0; --i) {
         const int idx = sorted.at(i);
@@ -627,6 +632,10 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         syncThumbnailWorkspaceSelection();
     }
     applyThumbnailVisibility();
+    if (m_imageView && isGalleryMode()) {
+        // Process deferred resize after strip update under suppress, then release.
+        m_imageView->setGalleryRelayoutSuppressed(false);
+    }
 
     if (m_files.isEmpty()) {
         m_currentIndex = -1;
@@ -856,6 +865,19 @@ void MainWindow::openDirectory()
     if (!dir.isEmpty()) {
         loadFiles({dir});
     }
+}
+
+
+void MainWindow::reloadFromDisk()
+{
+    if (!m_imageView) {
+        return;
+    }
+    // Gallery F5: re-decode + explicit pack (same as pressing a layout action).
+    // Image mode: only the focused file. Workspace: tiles in place, no pack.
+    const bool relayout = m_imageView->isGalleryMode();
+    m_imageView->reloadFromDisk(relayout);
+    updateStatus();
 }
 
 void MainWindow::goPrevious()

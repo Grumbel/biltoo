@@ -155,6 +155,20 @@ public:
                            const QVector<SessionImageId> &sessionIds);
     /** Reorder canvas items to match @p paths (session / sort order). */
     void reorderItemsByPaths(const QStringList &paths);
+
+    /**
+     * While true, Gallery ignores resize/debounce-driven applyLayout (used
+     * during session delete so the pack and scroll stay put).
+     */
+    void setGalleryRelayoutSuppressed(bool on);
+    bool galleryRelayoutSuppressed() const { return m_galleryRelayoutSuppressCount > 0; }
+
+    /**
+     * Reload from disk: Image mode — current session image only;
+     * Gallery — re-decode all tiles (keeps positions unless @p relayout);
+     * Workspace — re-decode on-canvas items in place.
+     */
+    void reloadFromDisk(bool relayoutGallery = true);
     /** When true, destroyCanvasItem does not clear the undo stack (session remove). */
     void setPreserveUndoOnDestroy(bool on) { m_preserveUndoOnDestroy = on; }
     /**
@@ -716,6 +730,8 @@ private:
     /** Anchor for Shift+click range selection in Gallery (session order). */
     ImageItem *m_gallerySelectionAnchor = nullptr;
     bool m_applyingLayout = false;
+    /** Nested suppress: Gallery delete must not repack via resizeEvent. */
+    int m_galleryRelayoutSuppressCount = 0;
     QTimer *m_layoutDebounceTimer = nullptr;
     int m_galleryScrollH = 0;
     int m_galleryScrollV = 0;

@@ -772,6 +772,7 @@ void MainWindow::showKeyboardShortcuts()
         "<p><b>View</b><br/>"
         "F / F11 — fullscreen<br/>"
         "H — toggle HUD<br/>"
+        "F5 — reload from disk (current image / all gallery tiles)<br/>"
         "Ctrl+0 — zoom 1:1 · Ctrl++ / Ctrl+- — zoom<br/>"
         "Ctrl+F — fill · Fit — fit to window · Z — zoom to region<br/>"
         "Ctrl+T — toolbar · Ctrl+E — metadata</p>"
@@ -1070,7 +1071,7 @@ void MainWindow::updateFullscreenUi()
     const bool fs = isFullScreen();
     m_fullscreenAct->setChecked(fs);
 
-    // Leaving fullscreen stops an active slideshow (Space/F5 start; Esc stops)
+    // Leaving fullscreen stops an active slideshow (Space starts; Esc stops)
     if (!fs && m_slideshowTimer && m_slideshowTimer->isActive()) {
         stopSlideshow();
     }

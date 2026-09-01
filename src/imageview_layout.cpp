@@ -746,6 +746,10 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     }
     m_sessionAppearance.remove(sessionId);
 
+    const QRectF keptSceneRect = (m_scene && isGalleryMode()) ? m_scene->sceneRect() : QRectF();
+    const int scrollH = horizontalScrollBar() ? horizontalScrollBar()->value() : 0;
+    const int scrollV = verticalScrollBar() ? verticalScrollBar()->value() : 0;
+
     // Collect first — destroyCanvasItem mutates m_items / stashes.
     QList<ImageItem *> doomed;
     auto collect = [&](const QList<ImageItem *> &list) {
@@ -798,8 +802,17 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     }
 
     // Gallery: leave packed positions as-is (empty gap until explicit re-layout).
-    // Workspace: scene rect still needs a refresh after destroyCanvasItem.
-    if (isWorkspaceMode()) {
+    // Keep sceneRect so scrollbars/viewport size do not change (avoids resizeEvent
+    // → applyLayout and scroll jumps).
+    if (isGalleryMode() && m_scene && keptSceneRect.isValid()) {
+        m_scene->setSceneRect(keptSceneRect);
+        if (horizontalScrollBar()) {
+            horizontalScrollBar()->setValue(scrollH);
+        }
+        if (verticalScrollBar()) {
+            verticalScrollBar()->setValue(scrollV);
+        }
+    } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
     viewport()->update();
@@ -2242,13 +2255,72 @@ void ImageView::setMasonryRows(int rows)
     }
 }
 
+void ImageView::setGalleryRelayoutSuppressed(bool on)
+{
+    if (on) {
+        ++m_galleryRelayoutSuppressCount;
+        if (m_layoutDebounceTimer) {
+            m_layoutDebounceTimer->stop();
+        }
+    } else if (m_galleryRelayoutSuppressCount > 0) {
+        --m_galleryRelayoutSuppressCount;
+    }
+}
+
 void ImageView::scheduleApplyLayout()
 {
+    if (m_galleryRelayoutSuppressCount > 0) {
+        return;
+    }
     if (!m_layoutDebounceTimer) {
         applyLayout();
         return;
     }
     m_layoutDebounceTimer->start();
+}
+
+void ImageView::reloadFromDisk(bool relayoutGallery)
+{
+    if (isImageMode()) {
+        if (m_classicPath.isEmpty()) {
+            return;
+        }
+        // Force a fresh decode of the focused session image only.
+        scheduleImageLoad(m_classicPath, LoadReplace);
+        flashHud(tr("Reload"), QFileInfo(m_classicPath).fileName());
+        return;
+    }
+
+    // Gallery / Workspace: re-decode every on-canvas item in place.
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        if (path.isEmpty()) {
+            continue;
+        }
+        m_galleryDecodeFailed.remove(path);
+        m_galleryDecodeScheduled.remove(path);
+        m_pendingWorkspacePaths.remove(path);
+        item->clearDecodedPixels();
+        PendingSessionBind b;
+        b.path = path;
+        b.id = item->sessionId();
+        b.index = item->sessionIndex();
+        m_pendingSessionBinds.append(b);
+        if (isGalleryMode()) {
+            scheduleGalleryDecode(path);
+        } else {
+            scheduleImageLoad(path, LoadAdd);
+        }
+    }
+    if (isGalleryMode() && relayoutGallery) {
+        applyLayout();
+    }
+    flashHud(tr("Reload"),
+             isGalleryMode() ? tr("Gallery") : tr("Workspace"));
+    emit statusChanged();
 }
 
 void ImageView::applyLayout()

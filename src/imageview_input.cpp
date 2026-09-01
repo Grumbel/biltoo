@@ -1050,11 +1050,13 @@ void ImageView::wheelEvent(QWheelEvent *event)
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
-    if (m_applyingLayout) {
+    if (m_applyingLayout || m_galleryRelayoutSuppressCount > 0) {
         return;
     }
     if (isGalleryMode() && !m_items.isEmpty()) {
         // Defer so scrollbar/geometry changes from setSceneRect settle first.
+        // Suppressed during session delete so thumb-strip geometry changes do not
+        // repack the gallery or jump scroll.
         scheduleApplyLayout();
         return;
     }

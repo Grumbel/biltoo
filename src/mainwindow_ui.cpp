@@ -29,6 +29,13 @@ void MainWindow::createActions()
     m_openDirAct->setStatusTip(tr("Open all images in a directory"));
     connect(m_openDirAct, &QAction::triggered, this, &MainWindow::openDirectory);
 
+    m_reloadAct = new QAction(tr("&Reload"), this);
+    m_reloadAct->setShortcut(Qt::Key_F5);
+    m_reloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
+    m_reloadAct->setStatusTip(
+        tr("Reload from disk (F5): current image in Image mode, all tiles in Gallery/Workspace"));
+    connect(m_reloadAct, &QAction::triggered, this, &MainWindow::reloadFromDisk);
+
     m_printAct = new QAction(tr("&Print..."), this);
     m_printAct->setShortcut(QKeySequence::Print);
     m_printAct->setIcon(themeIcon(QStringLiteral("document-print"), QStyle::SP_FileDialogDetailedView));
@@ -510,6 +517,7 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_openAct);
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
+    m_fileMenu->addAction(m_reloadAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_printAct);
     m_fileMenu->addAction(m_printPreviewAct);

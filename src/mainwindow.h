@@ -92,6 +92,8 @@ private slots:
     void openFiles();
     void addFiles();
     void openDirectory();
+    /** F5: reload current image (Image) or re-decode gallery/workspace tiles. */
+    void reloadFromDisk();
     void zoomIn();
     void zoomOut();
     void zoomReset();
@@ -250,6 +252,7 @@ private:
     QAction *m_newAct = nullptr;
     QAction *m_addAct = nullptr;
     QAction *m_openDirAct = nullptr;
+    QAction *m_reloadAct = nullptr;
     QAction *m_quitAct = nullptr;
     QAction *m_printAct = nullptr;
     QAction *m_printPreviewAct = nullptr;
