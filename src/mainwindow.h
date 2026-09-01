@@ -97,6 +97,7 @@ public:
     void printPreview();
     void pageSetup();
     void exportPdf();
+    void exportPng();
     void togglePageGuide();
 
 protected:
@@ -291,6 +292,7 @@ private:
     QAction *m_printPreviewAct = nullptr;
     QAction *m_pageSetupAct = nullptr;
     QAction *m_exportPdfAct = nullptr;
+    QAction *m_exportPngAct = nullptr;
     QAction *m_pageGuideAct = nullptr;
     QAction *m_zoomInAct = nullptr;
     QAction *m_zoomOutAct = nullptr;

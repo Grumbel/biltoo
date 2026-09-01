@@ -5,6 +5,14 @@
 #include "imageview.h"
 
 #include <QFileDialog>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QSpinBox>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QVBoxLayout>
+#include <QLabel>
 #include <QGuiApplication>
 #include <QPainter>
 #include <QPageSetupDialog>
@@ -247,4 +255,111 @@ void MainWindow::togglePageGuide()
         syncPageGuide(m_imageView, &printer);
     }
     m_imageView->setPageGuideVisible(on);
+}
+
+
+void MainWindow::exportPng()
+{
+    if (!m_imageView) {
+        return;
+    }
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Export PNG"));
+    auto *layout = new QFormLayout(&dlg);
+
+    auto *boundsCombo = new QComboBox(&dlg);
+    boundsCombo->addItem(tr("Content (tight)"), 0);
+    boundsCombo->addItem(tr("Page guide"), 1);
+    // Default: content for ad-hoc Workspace; page guide if user turned it on.
+    if (m_imageView->isWorkspaceMode() && m_imageView->pageGuideVisible()) {
+        boundsCombo->setCurrentIndex(1);
+    }
+    layout->addRow(tr("Region:"), boundsCombo);
+
+    auto *widthSpin = new QSpinBox(&dlg);
+    widthSpin->setRange(16, 16384);
+    widthSpin->setSingleStep(64);
+    widthSpin->setValue(2048);
+    widthSpin->setSuffix(tr(" px"));
+    layout->addRow(tr("Width:"), widthSpin);
+
+    auto *heightLabel = new QLabel(&dlg);
+    layout->addRow(tr("Height:"), heightLabel);
+
+    auto *transparentCheck = new QCheckBox(tr("Transparent background"), &dlg);
+    transparentCheck->setChecked(true);
+    layout->addRow(QString(), transparentCheck);
+
+    auto updateHeight = [&]() {
+        QRectF source;
+        if (boundsCombo->currentData().toInt() == 1) {
+            source = m_imageView->pageGuideSceneRect();
+        } else {
+            source = m_imageView->contentExportBounds();
+        }
+        if (!source.isValid() || source.height() < 1e-3 || source.width() < 1e-3) {
+            heightLabel->setText(tr("—"));
+            return;
+        }
+        const int w = widthSpin->value();
+        const int h = qMax(1, qRound(w * (source.height() / source.width())));
+        heightLabel->setText(tr("%1 px").arg(h));
+    };
+    QObject::connect(widthSpin, QOverload<int>::of(&QSpinBox::valueChanged), &dlg, updateHeight);
+    QObject::connect(boundsCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), &dlg,
+                     updateHeight);
+    updateHeight();
+
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    layout->addRow(buttons);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    QRectF source;
+    if (boundsCombo->currentData().toInt() == 1) {
+        source = m_imageView->pageGuideSceneRect();
+    } else {
+        source = m_imageView->contentExportBounds();
+    }
+    if (!source.isValid() || source.isEmpty()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Nothing to export."), 4000);
+        }
+        return;
+    }
+
+    const int w = widthSpin->value();
+    const int h = qMax(1, qRound(w * (source.height() / source.width())));
+    const QImage img = m_imageView->renderExportImage(QSize(w, h), source,
+                                                      transparentCheck->isChecked());
+    if (img.isNull()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Export failed."), 4000);
+        }
+        return;
+    }
+
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Export PNG"), QString(), tr("PNG images (*.png)"));
+    if (path.isEmpty()) {
+        return;
+    }
+    QString out = path;
+    if (!out.endsWith(QLatin1String(".png"), Qt::CaseInsensitive)) {
+        out += QStringLiteral(".png");
+    }
+    if (!img.save(out, "PNG")) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Could not write %1").arg(out), 5000);
+        }
+        return;
+    }
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Exported PNG: %1 (%2×%3)").arg(out).arg(w).arg(h), 5000);
+    }
 }

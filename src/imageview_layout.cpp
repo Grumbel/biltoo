@@ -8,6 +8,7 @@
 #include "sessionappearance.h"
 
 #include <QHash>
+#include <QImage>
 #include <QPrinter>
 #include <QPageLayout>
 #include <QPageSize>
@@ -1038,3 +1039,50 @@ QSizeF ImageView::nativeSize(const ImageItem *item)
 
 
 
+
+
+QRectF ImageView::contentExportBounds() const
+{
+    QRectF bounds;
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        const QRectF r = item->contentSceneRect();
+        if (!r.isValid() || r.isEmpty()) {
+            continue;
+        }
+        bounds = bounds.isValid() ? bounds.united(r) : r;
+    }
+    if (!bounds.isValid() || bounds.isEmpty()) {
+        if (m_scene) {
+            bounds = m_scene->itemsBoundingRect();
+        }
+    }
+    if (bounds.isValid() && !bounds.isEmpty()) {
+        bounds.adjust(-4, -4, 4, 4);
+    }
+    return bounds;
+}
+
+QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &sourceSceneRect,
+                                    bool transparentBackground) const
+{
+    if (!m_scene || !pixelSize.isValid() || pixelSize.width() < 1 || pixelSize.height() < 1
+        || !sourceSceneRect.isValid() || sourceSceneRect.isEmpty()) {
+        return {};
+    }
+    QImage img(pixelSize, QImage::Format_ARGB32_Premultiplied);
+    if (transparentBackground) {
+        img.fill(Qt::transparent);
+    } else {
+        img.fill(m_backgroundColor.isValid() ? m_backgroundColor : QColor(Qt::black));
+    }
+    QPainter painter(&img);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    // Keep aspect: letterbox inside pixelSize if source aspect differs.
+    m_scene->render(&painter, QRectF(QPointF(0, 0), QSizeF(pixelSize)), sourceSceneRect,
+                    Qt::KeepAspectRatio);
+    return img;
+}

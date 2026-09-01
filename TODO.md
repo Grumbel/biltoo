@@ -225,7 +225,7 @@ default frame of meaning.
 - [x] **Content addressing** — each referenced file records **SHA-256**; load
   verifies the path or searches near the project file for a matching hash
 - [x] **Identity** — session rows keep `SessionImageId`; duplicates stay independent
-- [ ] Export PNG (page guide or content bounds + resolution) — separate from project
+- [x] Export PNG (page guide or content bounds + resolution) — separate from project
 - [ ] Fit page guide to content — export helper only, not a print default
 
 ### Format sketch (version 1)

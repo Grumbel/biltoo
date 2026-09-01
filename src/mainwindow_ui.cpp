@@ -68,6 +68,12 @@ void MainWindow::createActions()
         tr("Paper size and orientation for the page guide, preview, and PDF export"));
     connect(m_pageSetupAct, &QAction::triggered, this, &MainWindow::pageSetup);
 
+    m_exportPngAct = new QAction(tr("Export PN&G…"), this);
+    m_exportPngAct->setIcon(themeIcon(QStringLiteral("image-x-generic"), QStyle::SP_FileDialogContentsView));
+    m_exportPngAct->setStatusTip(
+        tr("Export the Workspace (or current view) as a PNG at a chosen resolution"));
+    connect(m_exportPngAct, &QAction::triggered, this, &MainWindow::exportPng);
+
     m_exportPdfAct = new QAction(tr("Export &PDF..."), this);
     m_exportPdfAct->setIcon(themeIcon(QStringLiteral("application-pdf"), QStyle::SP_FileDialogContentsView));
     m_exportPdfAct->setStatusTip(
@@ -548,6 +554,7 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_printAct);
     m_fileMenu->addAction(m_printPreviewAct);
     m_fileMenu->addAction(m_pageSetupAct);
+    m_fileMenu->addAction(m_exportPngAct);
     m_fileMenu->addAction(m_exportPdfAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
@@ -780,6 +787,7 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_pageGuideAct);
     m_workspaceToolBar->addAction(m_pageSetupAct);
     m_workspaceToolBar->addAction(m_printPreviewAct);
+    m_workspaceToolBar->addAction(m_exportPngAct);
     m_workspaceToolBar->addAction(m_exportPdfAct);
     m_workspaceToolBar->hide();
 }

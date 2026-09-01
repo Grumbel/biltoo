@@ -205,6 +205,11 @@ public:
     static qreal pageGuidePxPerMm();
     /** Paint current mode content into @p pageRect on @p painter (print/preview). */
     void renderForPrint(QPainter *painter, const QRectF &pageRect) const;
+    /** Scene bounds of live image tiles (no chrome), with a small margin. */
+    QRectF contentExportBounds() const;
+    /** Rasterize @p sourceSceneRect into an image of @p pixelSize. */
+    QImage renderExportImage(const QSize &pixelSize, const QRectF &sourceSceneRect,
+                             bool transparentBackground = true) const;
     /** Drop cached Gallery tiles (e.g. after loading a new session). */
     void discardStashedGallery();
 
