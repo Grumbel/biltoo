@@ -98,11 +98,9 @@ void MainWindow::createActions()
     m_quitAct->setShortcuts({QKeySequence(Qt::Key_Q), QKeySequence::Quit});
     m_quitAct->setIcon(themeIcon(QStringLiteral("application-exit"), QStyle::SP_DialogCloseButton));
     m_quitAct->setStatusTip(tr("Quit QImgView (prompts if the Workspace has unsaved images)"));
-    connect(m_quitAct, &QAction::triggered, this, [this]() {
-        if (confirmQuitOrClose()) {
-            close();
-        }
-    });
+    // Only closeEvent confirms unsaved Workspace — calling confirm here and
+    // then close() would show the dialog twice (Discard leaves dirty true).
+    connect(m_quitAct, &QAction::triggered, this, &QWidget::close);
 
     m_zoomInAct = new QAction(tr("Zoom &In"), this);
     m_zoomInAct->setShortcut(QKeySequence::ZoomIn);
