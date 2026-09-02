@@ -1292,9 +1292,12 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         if (m_cropAllowExpand) {
             return rect;
         }
-        return constrainCropToContent(rect, ang, cr, minSide);
+        // Move must never shrink the draft (axis-aligned intersect used to clip
+        // size at the image edge). Only slide so corners stay inside — same as
+        // the rotated-frame path via translateCropInside.
+        rect = rect.normalized();
+        return translateCropInside(rect, ang, cr);
     };
-
 
     if (m_cropActiveHandle == CropHandle::Move) {
         const QPointF delta = local - m_cropDragStartLocal;
