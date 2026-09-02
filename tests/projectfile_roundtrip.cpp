@@ -10,9 +10,8 @@
 
 #include <cmath>
 
-using ProjectFile::ProjectAsset;
-using ProjectFile::ProjectDocument;
-using ProjectFile::ProjectImage;
+// ProjectAsset / ProjectDocument / ProjectImage are global types in projectfile.h;
+// only the free functions live in namespace ProjectFile.
 
 static bool nearlyEqual(qreal a, qreal b, qreal eps = 1e-9)
 {
