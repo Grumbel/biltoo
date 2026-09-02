@@ -218,13 +218,17 @@ move / scale / opacity / raise / lower / duplicate:
 
 layoutWorkspaceSelection(packagedLayout, params):
   require Mode = Workspace and non-empty canvas selection
-  // Packaged algorithms (grid, masonry, …) on selection only; Mode stays Workspace.
+  // Packaged algorithms (grid, masonry, masonry-fill, …) on selection only.
+  // Masonry Fill / Rows Fill equalize column heights or row widths (rectangle).
   // Does not enter Gallery. Undoable.
 
 crop draft (Image or single Workspace target):
   default: draft clamped to image bounds
-  Expand on: draft may extend outside; commit pads with view background
+  Expand on: draft may extend outside; Close pads with view background
   Move = drag interior; Ctrl = resize from centre; Shift = square
+  Rotate knob = free angle about centre; Close bakes axis-aligned pixels
+  Close commits; Cancel / Esc discards; toolbar crop-off commits
+  cropRotation persisted in session appearance and project file
 
 next / previous / slideshow:
   require Mode = Image and Session.size > 1

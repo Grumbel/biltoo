@@ -70,14 +70,14 @@ LayoutPanel::LayoutPanel(QWidget *parent)
     m_columnsSpin = new QSpinBox(this);
     m_columnsSpin->setRange(1, 32);
     m_columnsSpin->setValue(3);
-    m_columnsSpin->setToolTip(tr("Column count for Grid, Grid Crop, and Masonry"));
+    m_columnsSpin->setToolTip(tr("Column count for Grid and Masonry layouts"));
     paramsForm->addRow(m_columnsLabel, m_columnsSpin);
 
     m_rowsLabel = new QLabel(tr("Rows:"), this);
     m_rowsSpin = new QSpinBox(this);
     m_rowsSpin->setRange(1, 32);
     m_rowsSpin->setValue(3);
-    m_rowsSpin->setToolTip(tr("Row count for Masonry Rows"));
+    m_rowsSpin->setToolTip(tr("Row count for Masonry Rows / Rows Fill"));
     paramsForm->addRow(m_rowsLabel, m_rowsSpin);
     root->addLayout(paramsForm);
 

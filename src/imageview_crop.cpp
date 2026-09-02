@@ -16,7 +16,7 @@
 #include <QUndoStack>
 
 namespace {
-// Shared layout for Reset + Apply: prefer outside below the crop rect; only
+// Shared layout for crop chrome buttons: prefer outside below the crop rect; only
 // pull inside when the outside placement would leave the viewport.
 struct CropButtonLayout {
     int x0 = 0;
@@ -178,7 +178,7 @@ void ImageView::setCropMode(bool on)
             return;
         }
         cancelZoomRegion();
-        // Snapshot appearance before full-image reload so Apply can be undone.
+        // Snapshot appearance before full-image reload so Close can be undone.
         m_cropEnterSource = item->sourceImage().copy();
         m_cropEnterState = captureState(item);
         m_cropEnterState.hasCrop = item->sessionHasCrop();
@@ -1056,6 +1056,10 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         while (m_cropRotation <= -180.0) {
             m_cropRotation += 360.0;
         }
+        // Shift: snap to 15° increments (square constraint is for resize only).
+        if (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) {
+            m_cropRotation = qRound(m_cropRotation / 15.0) * 15.0;
+        }
         viewport()->update();
         return;
     }
@@ -1198,6 +1202,7 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
     m_cropRubberBanding = true;
     m_cropRubberOriginLocal = local;
     m_cropRect = QRectF(local, QSizeF(0, 0));
+    m_cropRotation = 0.0; // new rubber-band is axis-aligned
     viewport()->update();
 }
 
