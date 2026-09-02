@@ -530,9 +530,14 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         return;
     }
     if (index == m_currentIndex) {
-        // Still refresh Image canvas if empty (e.g. after mode switch)
-        if (isImageMode() && m_imageView && m_imageView->itemCount() == 0) {
-            m_imageView->loadImage(m_session.paths().at(m_currentIndex));
+        // Still refresh Image canvas after a mode switch that cleared the live
+        // item, or if classicPath was left pointing at a different file.
+        if (isImageMode() && m_imageView) {
+            const QString path = m_session.paths().at(m_currentIndex);
+            if (m_imageView->itemCount() == 0
+                || m_imageView->classicPath() != path) {
+                m_imageView->loadImage(path);
+            }
         }
         return;
     }

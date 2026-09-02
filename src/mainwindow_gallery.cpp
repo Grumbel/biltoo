@@ -135,6 +135,9 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
     if (sessionIndex < 0 || sessionIndex >= m_session.size()) {
         return;
     }
+    const QString path = m_session.paths().at(sessionIndex);
+    const SessionImageId sid = sessionIdAt(sessionIndex);
+
     // Remember where Image was opened from so Up can restore that mode.
     if (m_imageView && m_imageView->isGalleryLayout()) {
         m_galleryReturnLayout = m_imageView->layoutMode();
@@ -147,8 +150,13 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
     if (m_workspaceModeAct) {
         m_workspaceModeAct->setChecked(false);
     }
-    // Phase 3: snapshot + stash + mode switch in one transition.
+    // Pin the target *before* leaveForImageMode. ImageController::enter loads
+    // classicPath; without this, a stale session-cursor path races the real
+    // target and double-click on a Workspace tile can open the wrong image.
     if (m_imageView) {
+        m_imageView->setClassicPath(path);
+        m_imageView->setCurrentSessionId(sid);
+        m_imageView->setSessionPosition(sessionIndex, m_session.size(), false);
         m_imageView->leaveForImageMode();
     }
     if (m_thumbnailBar) {

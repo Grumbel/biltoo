@@ -22,8 +22,9 @@ void ImageController::enter()
     m_view->setActiveMode(ImageView::ViewMode::Image, ImageView::LayoutMode::FreeForm);
     m_view->stopDeferredPacking();
     m_view->prepareImageModeCanvas();
-    // Prefer explicit classic path. Do not pick live items when leaving Gallery —
-    // that re-decodes a random tile before setCurrentIndex loads the real target.
+    // Prefer explicit classic path (MainWindow pins the open target before
+    // leaveForImageMode). Do not pick live Workspace/Gallery items — that
+    // re-decodes a random tile before setCurrentIndex runs.
     const QString path = takeClassicPath();
     // Clear live canvas only — do not discard stashes.
     m_view->clearLiveCanvas();
