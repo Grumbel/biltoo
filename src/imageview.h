@@ -819,6 +819,8 @@ private:
         int index = -1;
     };
     QList<PendingSessionBind> m_pendingSessionBinds;
+    /** Content appearance staged by Duplicate until bindSelectedSessionIds. */
+    QHash<ImageItem *, WorkspaceItemState> m_pendingItemAppearance;
     ImageMouseInfo m_mouseInfo;
 
     QPoint m_lastMousePos;

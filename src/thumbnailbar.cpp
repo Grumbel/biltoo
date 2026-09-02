@@ -511,6 +511,32 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
 void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
 {
     m_sessionIds = ids;
+    // Drop overrides for session images that are no longer in the strip.
+    if (!m_sessionIdImageOverrides.isEmpty()) {
+        QHash<SessionImageId, QImage> kept;
+        for (SessionImageId id : ids) {
+            auto it = m_sessionIdImageOverrides.constFind(id);
+            if (it != m_sessionIdImageOverrides.cend()) {
+                kept.insert(id, it.value());
+            }
+        }
+        m_sessionIdImageOverrides.swap(kept);
+    }
+    // Re-apply icons now that row ↔ id alignment is known.
+    for (int row = 0; row < m_sessionIds.size() && row < m_files.size(); ++row) {
+        const SessionImageId sid = m_sessionIds.at(row);
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        auto it = m_sessionIdImageOverrides.constFind(sid);
+        if (it == m_sessionIdImageOverrides.cend()) {
+            continue;
+        }
+        const QImage thumb = prepareThumbnailFromImage(it.value(), m_thumbSize);
+        if (!thumb.isNull()) {
+            setThumbnailIcon(row, thumb);
+        }
+    }
 }
 
 void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QString &path,
@@ -591,6 +617,13 @@ void ThumbnailBar::scheduleThumbnailLoads()
             if (bar->m_sessionImageOverrides.contains(path)) {
                 return;
             }
+            if (i < bar->m_sessionIds.size()) {
+                const SessionImageId sid = bar->m_sessionIds.at(i);
+                if (sid != kInvalidSessionImageId
+                    && bar->m_sessionIdImageOverrides.contains(sid)) {
+                    return;
+                }
+            }
             QMetaObject::invokeMethod(bar, "setThumbnailIcon", Qt::QueuedConnection,
                                       Q_ARG(int, i),
                                       Q_ARG(QImage, image));
@@ -607,8 +640,9 @@ void ThumbnailBar::clearPressState()
 
 void ThumbnailBar::setFiles(const QStringList &files)
 {
-    m_sessionIdImageOverrides.clear();
-    // m_sessionIds updated separately via setSessionIds when available.
+    // Keep per-session-id appearance overrides across list rebuilds. setSessionIds
+    // prunes ids that left the session; clearing here made Duplicate show the
+    // raw on-disk file for cropped/rotated slots.
     cancelPendingLoads();
     clearPressState();
     clear();

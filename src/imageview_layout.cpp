@@ -754,12 +754,36 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
             break;
         }
         const SessionImageId id = ids.at(i++);
+        WorkspaceItemState slot;
+        if (m_pendingItemAppearance.contains(item)) {
+            slot = m_pendingItemAppearance.take(item);
+        } else {
+            slot = captureState(item);
+        }
         item->setSessionId(id);
-        WorkspaceItemState slot = captureState(item);
+        // Live placement from the canvas item (Duplicate offsets, scales, …).
+        slot.pos = item->pos();
+        slot.scale = item->itemScaleX();
+        slot.scaleY = item->itemScaleY();
+        slot.rotation = item->itemRotation();
+        slot.opacity = item->itemOpacity();
+        slot.z = item->stackZ();
+        slot.hFlip = item->itemHFlip();
+        slot.vFlip = item->itemVFlip();
+        slot.hasCrop = item->sessionHasCrop();
+        slot.cropRect = item->sessionCropRect();
+        slot.contentHFlip = item->contentHFlip();
+        slot.contentVFlip = item->contentVFlip();
         slot.sessionId = id;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
         m_appearance.set(id, slot);
+        // Drive ThumbnailBar per-id override (cropped/rotated pixels on the item).
+        const QImage appearance = sessionAppearanceImage(item);
+        if (!appearance.isNull()) {
+            emit sessionAppearanceChanged(id, item->path(), appearance);
+            emit sessionCropApplied(id, item->path(), appearance);
+        }
     }
 }
 

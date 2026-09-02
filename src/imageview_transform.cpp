@@ -475,6 +475,21 @@ void ImageView::duplicateSelected()
         copy->setContentHFlip(src->contentHFlip());
         copy->setContentVFlip(src->contentVFlip());
         copy->setSessionCrop(src->sessionHasCrop(), src->sessionCropRect());
+        // Stage full content appearance (incl. cropRotation) for the new session id.
+        {
+            WorkspaceItemState content;
+            if (src->sessionId() != kInvalidSessionImageId) {
+                if (const WorkspaceItemState *app = m_appearance.get(src->sessionId())) {
+                    content = *app;
+                }
+            }
+            content.path = src->path();
+            content.hasCrop = src->sessionHasCrop();
+            content.cropRect = src->sessionCropRect();
+            content.contentHFlip = src->contentHFlip();
+            content.contentVFlip = src->contentVFlip();
+            m_pendingItemAppearance.insert(copy, content);
+        }
         if (isWorkspaceMode()) {
             copy->setItemScale(src->itemScaleX(), src->itemScaleY());
             copy->setItemRotation(src->itemRotation());

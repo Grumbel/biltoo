@@ -1418,6 +1418,8 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QStringList &sourcePath
     m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
     syncThumbnailCanvasMembership();
     if (m_thumbnailBar) {
+        // Ids first so per-id appearance overrides land on the correct rows.
+        m_thumbnailBar->setSessionIds(m_session.ids());
         m_thumbnailBar->setFiles(m_session.paths());
         m_thumbnailBar->setSessionIds(m_session.ids());
         if (isWorkspaceMode()) {
