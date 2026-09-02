@@ -209,6 +209,8 @@ public:
     void fitPageGuideToContent(qreal marginPx = 16.0);
     /** Scene rectangle of the page guide (printer: centred; fit-content: content AABB). */
     QRectF pageGuideSceneRect() const;
+    bool pageGuideSelected() const { return m_pageGuideSelected; }
+    void setPageGuideSelected(bool on);
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
     /** Paint current mode content into @p pageRect on @p painter (print/preview). */
@@ -759,10 +761,20 @@ private:
     QUndoStack *m_undoStack = nullptr;
     bool m_preserveUndoOnDestroy = false;
 
+    int pageGuideHandleAt(const QPoint &viewPos) const;
+    void paintPageGuideHandles(QPainter *painter) const;
+    bool beginPageGuideResize(int handle);
+    void updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    void endPageGuideResize();
+
     bool m_pageGuideVisible = false;
     QSizeF m_pageGuideSize; // scene px from printer page; empty → A4 at kPageGuideDpi
     /** When valid, overrides centred-at-origin placement (fit-to-content). */
     QRectF m_pageGuideRect;
+    bool m_pageGuideSelected = false;
+    int m_pageGuideHoverHandle = -1;
+    int m_pageGuideDragHandle = -1;
+    QRectF m_pageGuideDragStartRect;
     bool m_fitMode = true;
     bool m_fillMode = false;
     ViewMode m_viewMode = ViewMode::Image;

@@ -394,6 +394,15 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 m_handleDragItem = item;
                 m_dragItem = item;
                 m_dragStartState = captureState(item);
+                setPageGuideSelected(false);
+                event->accept();
+                return;
+            }
+        }
+        // Page guide scale grips when the guide is selected.
+        if (m_pageGuideVisible && m_pageGuideSelected) {
+            const int ph = pageGuideHandleAt(event->pos());
+            if (ph >= 0 && beginPageGuideResize(ph)) {
                 event->accept();
                 return;
             }
@@ -589,10 +598,32 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    // Workspace Select tool: let QGraphicsView handle selection / move
+    // Workspace Select tool: item move/select, or click the page guide sheet.
     if (isWorkspaceMode() && event->button() == Qt::LeftButton) {
+        const QPointF scenePos = mapToScene(event->pos());
+        ImageItem *itemHit = nullptr;
+        if (m_scene) {
+            for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    if (ii->isInteractive() && m_items.contains(ii)) {
+                        itemHit = ii;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!itemHit && m_pageGuideVisible
+            && pageGuideSceneRect().contains(scenePos)) {
+            if (m_scene) {
+                m_scene->clearSelection();
+            }
+            setPageGuideSelected(true);
+            event->accept();
+            emit statusChanged();
+            return;
+        }
+        setPageGuideSelected(false);
         QGraphicsView::mousePressEvent(event);
-        // Capture drag start for undo when an item is selected under the cursor
         if (ImageItem *hit = targetItem()) {
             m_dragItem = hit;
             m_dragStartState = captureState(hit);
@@ -680,6 +711,41 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     }
 
     updateMouseInfo(event->pos());
+
+    if (m_pageGuideDragHandle >= 0) {
+        updatePageGuideResize(mapToScene(event->pos()), event->modifiers());
+        event->accept();
+        return;
+    }
+
+    if (isWorkspaceMode() && m_pageGuideVisible && m_pageGuideSelected
+        && !(event->buttons() & Qt::LeftButton)) {
+        const int ph = pageGuideHandleAt(event->pos());
+        if (ph != m_pageGuideHoverHandle) {
+            m_pageGuideHoverHandle = ph;
+            viewport()->update();
+        }
+        if (ph >= 0) {
+            switch (ph) {
+            case 0: case 4:
+                viewport()->setCursor(Qt::SizeFDiagCursor);
+                break;
+            case 2: case 6:
+                viewport()->setCursor(Qt::SizeBDiagCursor);
+                break;
+            case 1: case 5:
+                viewport()->setCursor(Qt::SizeVerCursor);
+                break;
+            case 3: case 7:
+                viewport()->setCursor(Qt::SizeHorCursor);
+                break;
+            default:
+                break;
+            }
+            event->accept();
+            return;
+        }
+    }
 
     if (m_groupScaleDrag) {
         updateGroupScale(mapToScene(event->pos()), event->modifiers());
@@ -892,6 +958,11 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
             }
         }
         cancelZoomRegion();
+        event->accept();
+        return;
+    }
+    if (m_pageGuideDragHandle >= 0 && event->button() == Qt::LeftButton) {
+        endPageGuideResize();
         event->accept();
         return;
     }

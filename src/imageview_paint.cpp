@@ -5,6 +5,7 @@
 #include "imageitem.h"
 
 #include <QPainter>
+#include <QPainterPath>
 #include <QPaintEvent>
 #include <QStyleOptionGraphicsItem>
 
@@ -114,6 +115,9 @@ void ImageView::paintEvent(QPaintEvent *event)
                 item->paintSelectionFrame(&painter);
             }
             paintGroupSelectionChrome(&painter, selected);
+        }
+        if (m_pageGuideVisible && m_pageGuideSelected) {
+            paintPageGuideHandles(&painter);
         }
     }
     if (!m_cropMode && m_hoverEdge != EdgeZone::None && isImageMode()
@@ -577,5 +581,82 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         painter->drawEllipse(rot[i], rad, rad);
     }
 
+    painter->restore();
+}
+
+
+void ImageView::paintPageGuideHandles(QPainter *painter) const
+{
+    if (!painter || !m_pageGuideVisible || !m_pageGuideSelected) {
+        return;
+    }
+    const QRectF page = pageGuideSceneRect();
+    if (!page.isValid() || page.isEmpty()) {
+        return;
+    }
+    const QRect viewRect = mapFromScene(page).boundingRect();
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    // Same language as group scale grips, in the page-guide blue family.
+    const QColor handleEdge(20, 60, 120);
+    const QColor handleHot(255, 255, 255);
+
+    const QPointF pts[8] = {
+        viewRect.topLeft(),
+        QPointF(viewRect.center().x(), viewRect.top()),
+        viewRect.topRight(),
+        QPointF(viewRect.right(), viewRect.center().y()),
+        viewRect.bottomRight(),
+        QPointF(viewRect.center().x(), viewRect.bottom()),
+        viewRect.bottomLeft(),
+        QPointF(viewRect.left(), viewRect.center().y()),
+    };
+    auto unit = [](QPointF v) {
+        const qreal len = qHypot(v.x(), v.y());
+        return len > 1e-6 ? v / len : QPointF(1, 0);
+    };
+    auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB, int id) {
+        const bool hot = (m_pageGuideHoverHandle == id || m_pageGuideDragHandle == id);
+        const QPointF d1 = unit(alongA);
+        const QPointF d2 = unit(alongB);
+        const qreal hs = hot ? 12.0 : 10.0;
+        const qreal arm = hs * 1.35;
+        const qreal thick = hs * (hot ? 0.48 : 0.36);
+        QPainterPath path;
+        path.moveTo(c + d1 * arm);
+        path.lineTo(c);
+        path.lineTo(c + d2 * arm);
+        QPen hp(hot ? handleHot : handleEdge, 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(thick);
+        hp.setCapStyle(Qt::RoundCap);
+        hp.setJoinStyle(Qt::RoundJoin);
+        painter->setPen(hp);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawPath(path);
+    };
+    auto drawEdge = [&](const QPointF &c, const QPointF &along, int id) {
+        const bool hot = (m_pageGuideHoverHandle == id || m_pageGuideDragHandle == id);
+        const QPointF d = unit(along);
+        const qreal hs = hot ? 11.0 : 9.0;
+        const qreal half = hs * 1.1;
+        QPen hp(hot ? handleHot : handleEdge, 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(hs * (hot ? 0.42 : 0.32));
+        hp.setCapStyle(Qt::RoundCap);
+        painter->setPen(hp);
+        painter->drawLine(c - d * half, c + d * half);
+    };
+    // Corners: 0 TL, 2 TR, 4 BR, 6 BL
+    drawCorner(pts[0], pts[1] - pts[0], pts[7] - pts[0], 0);
+    drawCorner(pts[2], pts[1] - pts[2], pts[3] - pts[2], 2);
+    drawCorner(pts[4], pts[5] - pts[4], pts[3] - pts[4], 4);
+    drawCorner(pts[6], pts[5] - pts[6], pts[7] - pts[6], 6);
+    // Edges: 1 T, 3 R, 5 B, 7 L
+    drawEdge(pts[1], pts[2] - pts[0], 1);
+    drawEdge(pts[3], pts[4] - pts[2], 3);
+    drawEdge(pts[5], pts[4] - pts[6], 5);
+    drawEdge(pts[7], pts[6] - pts[0], 7);
     painter->restore();
 }

@@ -1010,6 +1010,11 @@ void ImageView::setPageGuideVisible(bool on)
         return;
     }
     m_pageGuideVisible = on;
+    if (!m_pageGuideVisible) {
+        m_pageGuideSelected = false;
+        m_pageGuideHoverHandle = -1;
+        m_pageGuideDragHandle = -1;
+    }
     if (m_pageGuideVisible && !m_pageGuideSize.isValid()) {
         const qreal pxPerMm = pageGuidePxPerMm();
         m_pageGuideSize = QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm);
@@ -1129,12 +1134,174 @@ void ImageView::fitPageGuideToContent(qreal marginPx)
     m_pageGuideRect = bounds;
     m_pageGuideSize = bounds.size();
     m_pageGuideVisible = true;
+    m_pageGuideSelected = true;
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
     viewport()->update();
     emit statusChanged();
 }
+
+void ImageView::setPageGuideSelected(bool on)
+{
+    if (!m_pageGuideVisible) {
+        on = false;
+    }
+    if (m_pageGuideSelected == on) {
+        return;
+    }
+    m_pageGuideSelected = on;
+    if (!on) {
+        m_pageGuideHoverHandle = -1;
+        m_pageGuideDragHandle = -1;
+    }
+    viewport()->update();
+}
+
+int ImageView::pageGuideHandleAt(const QPoint &viewPos) const
+{
+    if (!m_pageGuideVisible || !m_pageGuideSelected || !isWorkspaceMode()) {
+        return -1;
+    }
+    const QRectF page = pageGuideSceneRect();
+    if (!page.isValid() || page.isEmpty()) {
+        return -1;
+    }
+    const QRect viewRect = mapFromScene(page).boundingRect();
+    constexpr qreal kScaleHit = 12.0;
+    const QPointF corners[8] = {
+        viewRect.topLeft(),
+        QPointF(viewRect.center().x(), viewRect.top()),
+        viewRect.topRight(),
+        QPointF(viewRect.right(), viewRect.center().y()),
+        viewRect.bottomRight(),
+        QPointF(viewRect.center().x(), viewRect.bottom()),
+        viewRect.bottomLeft(),
+        QPointF(viewRect.left(), viewRect.center().y()),
+    };
+    for (int i = 0; i < 8; ++i) {
+        if (QLineF(QPointF(viewPos), corners[i]).length() <= kScaleHit) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool ImageView::beginPageGuideResize(int handle)
+{
+    if (handle < 0 || handle > 7 || !m_pageGuideVisible) {
+        return false;
+    }
+    const QRectF page = pageGuideSceneRect();
+    if (!page.isValid() || page.width() < 1.0 || page.height() < 1.0) {
+        return false;
+    }
+    m_pageGuideSelected = true;
+    m_pageGuideDragHandle = handle;
+    m_pageGuideDragStartRect = page;
+    return true;
+}
+
+void ImageView::updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods)
+{
+    if (m_pageGuideDragHandle < 0) {
+        return;
+    }
+    QRectF r = m_pageGuideDragStartRect;
+    const int h = m_pageGuideDragHandle;
+    // 0=TL 1=T 2=TR 3=R 4=BR 5=B 6=BL 7=L
+    qreal left = r.left();
+    qreal top = r.top();
+    qreal right = r.right();
+    qreal bottom = r.bottom();
+    switch (h) {
+    case 0: // TL
+        left = scenePos.x();
+        top = scenePos.y();
+        break;
+    case 1: // T
+        top = scenePos.y();
+        break;
+    case 2: // TR
+        right = scenePos.x();
+        top = scenePos.y();
+        break;
+    case 3: // R
+        right = scenePos.x();
+        break;
+    case 4: // BR
+        right = scenePos.x();
+        bottom = scenePos.y();
+        break;
+    case 5: // B
+        bottom = scenePos.y();
+        break;
+    case 6: // BL
+        left = scenePos.x();
+        bottom = scenePos.y();
+        break;
+    case 7: // L
+        left = scenePos.x();
+        break;
+    default:
+        break;
+    }
+    // Shift: keep starting aspect ratio (from fixed opposite edge/corner).
+    if (mods & Qt::ShiftModifier) {
+        const qreal aspect = m_pageGuideDragStartRect.width()
+            / qMax(1e-6, m_pageGuideDragStartRect.height());
+        const bool corner = (h == 0 || h == 2 || h == 4 || h == 6);
+        if (corner) {
+            qreal w = right - left;
+            qreal hh = bottom - top;
+            if (qAbs(w) / qMax(1e-6, qAbs(hh)) > aspect) {
+                // width dominates → adjust height
+                const qreal newH = qAbs(w) / aspect;
+                if (h == 0 || h == 2) {
+                    top = bottom - std::copysign(newH, bottom - top);
+                } else {
+                    bottom = top + std::copysign(newH, bottom - top);
+                }
+            } else {
+                const qreal newW = qAbs(hh) * aspect;
+                if (h == 0 || h == 6) {
+                    left = right - std::copysign(newW, right - left);
+                } else {
+                    right = left + std::copysign(newW, right - left);
+                }
+            }
+        }
+    }
+    QRectF next(QPointF(left, top), QPointF(right, bottom));
+    next = next.normalized();
+    constexpr qreal kMin = 32.0;
+    if (next.width() < kMin) {
+        if (h == 0 || h == 6 || h == 7) {
+            next.setLeft(next.right() - kMin);
+        } else {
+            next.setWidth(kMin);
+        }
+    }
+    if (next.height() < kMin) {
+        if (h == 0 || h == 1 || h == 2) {
+            next.setTop(next.bottom() - kMin);
+        } else {
+            next.setHeight(kMin);
+        }
+    }
+    m_pageGuideRect = next;
+    m_pageGuideSize = next.size();
+    updateWorkspaceSceneRect();
+    viewport()->update();
+    emit statusChanged();
+}
+
+void ImageView::endPageGuideResize()
+{
+    m_pageGuideDragHandle = -1;
+    viewport()->update();
+}
+
 
 
 
