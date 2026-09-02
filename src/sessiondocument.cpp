@@ -177,8 +177,9 @@ bool SessionDocument::validateUniqueIds(const char *context) const
         }
     }
     if (m_ids.size() != m_paths.size()) {
-        qCritical("SessionDocument: ids/paths size mismatch %d vs %d (%s)",
-                  m_ids.size(), m_paths.size(),
+        qCritical("SessionDocument: ids/paths size mismatch %lld vs %lld (%s)",
+                  static_cast<long long>(m_ids.size()),
+                  static_cast<long long>(m_paths.size()),
                   context ? context : "validateUniqueIds");
         ok = false;
     }

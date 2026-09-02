@@ -620,12 +620,14 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
                 continue;
             }
             if (seen.contains(sid)) {
+                const QString pathA = seen.value(sid)->path();
+                const QString pathB = item->path();
                 qCritical("ImageView: duplicate SessionImageId %lld within %s (%s) path=%s vs %s",
                           static_cast<long long>(sid),
                           where,
                           context ? context : "validate",
-                          qPrintable(seen.value(sid)->path()),
-                          qPrintable(item->path()));
+                          qPrintable(pathA),
+                          qPrintable(pathB));
                 ok = false;
             } else {
                 seen.insert(sid, item);
