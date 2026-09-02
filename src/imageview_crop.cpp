@@ -30,7 +30,7 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     if (!cropView.isValid() || !viewportRect.isValid()) {
         return L;
     }
-    constexpr int kW = 60;
+    constexpr int kW = 72;
     constexpr int kH = 22;
     constexpr int kGap = 6;
     constexpr int kOutsideGap = 8;

@@ -135,6 +135,25 @@ opacity track.
 7. HiDPI: sizes still match design px (devicePixelRatio handled by Qt painter /
    mapFromScene).
 
+
+## Crop mode (draft rectangle)
+
+Crop chrome is viewport-painted on the crop target (Image mode, or a single
+Workspace selection). Session crop remains an axis-aligned source rectangle.
+
+| Interaction | Behaviour |
+|-------------|-----------|
+| Drag **inside** the frame | **Move** the region (size unchanged) |
+| Edge / corner handles | Resize (opposite side fixed) |
+| **Ctrl** + resize | Resize about the **centre** |
+| **Shift** + resize / rubber-band | Constrain to a **square** |
+| **Ctrl+Shift** | Square about centre / press point |
+| Drag **outside** the frame on the image | New rubber-band crop |
+| **Expand** toggle | When on, draft may leave the image; **Apply** pads with the view background colour. When off, draft is clamped to the image. |
+| Reset / Apply | Full-image draft / commit |
+
+Free rotation of the crop frame is intentionally unsupported for now (see TODO).
+
 ## Implementation notes (current code map)
 
 - Centres: `ImageItem::handleCenter` (local) — **candidate for rewrite** of

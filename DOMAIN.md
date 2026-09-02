@@ -79,6 +79,8 @@ diverge from it.
 - User may duplicate a selection: new session image (same path allowed) and
   a new canvas object with independent content appearance and placement.
 - Leaving Workspace **keeps** object transforms (snapshot) for when the user returns.
+- **Layout panel** (dock): apply a packaged arrangement (grid, masonry, …) to the
+  **current selection** only; does not switch to Gallery mode.
 - Slideshow and edge-next are off: this is not a linear viewer.
 
 **Law:** Gallery is not a kind of Workspace. Workspace is not a kind of Gallery.
@@ -199,7 +201,8 @@ enter Workspace():
   Mode := Workspace
   Canvas := restore(WorkspaceSnapshot) if present, else empty
   // Do not adopt Gallery packing or session list as free-form content.
-  // Seeding is explicit (drop, thumbnail membership, project load, future Layout).
+  // Seeding is explicit (drop, thumbnail membership, project load,
+  // Layout panel Apply on selection).
 
 leave Workspace():
   WorkspaceSnapshot := Canvas.objects
@@ -212,6 +215,16 @@ rotate / flip / resetOrientation:
 move / scale / opacity / raise / lower / duplicate:
   require Mode = Workspace
   apply to Canvas.selection
+
+layoutWorkspaceSelection(packagedLayout, params):
+  require Mode = Workspace and non-empty canvas selection
+  // Packaged algorithms (grid, masonry, …) on selection only; Mode stays Workspace.
+  // Does not enter Gallery. Undoable.
+
+crop draft (Image or single Workspace target):
+  default: draft clamped to image bounds
+  Expand on: draft may extend outside; commit pads with view background
+  Move = drag interior; Ctrl = resize from centre; Shift = square
 
 next / previous / slideshow:
   require Mode = Image and Session.size > 1
