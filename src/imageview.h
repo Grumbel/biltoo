@@ -824,6 +824,8 @@ private:
     ImageItem *m_handleDragItem = nullptr;
 
     bool m_cropMode = false;
+    /** Draft may extend outside the image; apply pads with background. */
+    bool m_cropAllowExpand = false;
     /** True while crop mode shows the full on-disk image (not the cropped pixmap). */
     bool m_cropShowingFullImage = false;
     /** Workspace free-rotate stashed while crop runs axis-aligned. */
