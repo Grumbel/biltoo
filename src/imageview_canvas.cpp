@@ -352,43 +352,26 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     if (path.isEmpty() || isImageMode()) {
         return false;
     }
-    // Workspace free-form: re-dropping a path that is already on the canvas
-    // creates another instance at the drop point (does not move the original).
-    if (ImageItem *donor = findItemByPath(path)) {
-        if (donor->hasDecodedPixels() || !donor->sourceImage().isNull()) {
-            ImageItem *copy = createItemFromImage(path, donor->sourceImage(),
-                                                  /*applyStoredSessionCrop=*/false);
-            if (copy) {
-                copy->setItemScale(donor->itemScaleX(), donor->itemScaleY());
-                copy->setItemRotation(donor->itemRotation());
-                copy->setItemHFlip(donor->itemHFlip());
-                copy->setItemVFlip(donor->itemVFlip());
-                copy->setContentHFlip(donor->contentHFlip());
-                copy->setContentVFlip(donor->contentVFlip());
-                copy->setSessionCrop(donor->sessionHasCrop(), donor->sessionCropRect());
-                copy->setItemOpacity(donor->itemOpacity());
-                copy->setStackZ(donor->stackZ() + 0.01);
-                copy->setPos(scenePos);
-                copy->setSessionId(sessionId);
-                copy->setSessionIndex(sessionIndex);
+    // Same session id already on the canvas: move that tile (do not spawn a twin).
+    if (sessionId != kInvalidSessionImageId) {
+        if (ImageItem *existing = findItemBySessionId(sessionId)) {
+            if (existing->scene() == m_scene) {
+                existing->setPos(scenePos);
                 if (m_scene) {
                     m_scene->clearSelection();
                 }
-                copy->setSelected(true);
-                if (sessionId != kInvalidSessionImageId) {
-                    WorkspaceItemState slot = captureState(copy);
-                    slot.sessionId = sessionId;
-                    slot.sessionIndex = sessionIndex;
-                    m_appearance.set(sessionId, slot);
-                }
+                existing->setSelected(true);
                 updateWorkspaceSceneRect();
-                ensureVisibleItem(copy);
+                ensureVisibleItem(existing);
                 emit statusChanged();
-                emit workspacePathsChanged();
                 return true;
             }
         }
     }
+    // Always decode from disk for a new canvas instance. Never clone another
+    // tile's baked pixels by path — that copied crop/flip from the first
+    // occurrence and showed the wrong image under a correct filename
+    // (IDENTITY: SessionImageId is independent of path).
     m_pendingScenePos.insert(path, scenePos);
     if (sessionId != kInvalidSessionImageId || sessionIndex >= 0) {
         PendingSessionBind b;
