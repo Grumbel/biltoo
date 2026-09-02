@@ -150,6 +150,30 @@ void ImageView::paintEvent(QPaintEvent *event)
         painter.drawText(QRect(0, cy + titleFm.height() + gap, viewport()->width(),
                                hintFm.height()),
                          Qt::AlignHCenter | Qt::AlignVCenter, hint);
+
+        // Edge-zone captions (Image mode uses these corners once a session is open).
+        if (isImageMode() || (!isWorkspaceMode() && !isGalleryMode())) {
+            QFont edgeFont = font();
+            edgeFont.setPointSize(qBound(9, edgeFont.pointSize(), 16));
+            painter.setFont(edgeFont);
+            painter.setPen(QColor(160, 160, 160, 180));
+            const QFontMetrics efm(edgeFont);
+            const int em = 16;
+            const int vw = viewport()->width();
+            const int vh = viewport()->height();
+            const QString prevLabel = tr("← Previous");
+            const QString nextLabel = tr("Next →");
+            const QString backLabel = tr("↑ Back to Gallery / Workspace");
+            painter.drawText(QRect(em, vh / 2 - efm.height() / 2, efm.horizontalAdvance(prevLabel) + 8,
+                                   efm.height()),
+                             Qt::AlignLeft | Qt::AlignVCenter, prevLabel);
+            const int nextW = efm.horizontalAdvance(nextLabel) + 8;
+            painter.drawText(QRect(vw - em - nextW, vh / 2 - efm.height() / 2, nextW, efm.height()),
+                             Qt::AlignRight | Qt::AlignVCenter, nextLabel);
+            const int backW = efm.horizontalAdvance(backLabel) + 8;
+            painter.drawText(QRect((vw - backW) / 2, em, backW, efm.height()),
+                             Qt::AlignHCenter | Qt::AlignTop, backLabel);
+        }
         painter.restore();
     }
     // HUD layout:

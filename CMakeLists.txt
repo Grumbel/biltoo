@@ -198,6 +198,6 @@ if(Qt6Test_FOUND)
     src/projectfile.cpp
   )
   target_include_directories(qimgview-projectfile-test PRIVATE src)
-  target_link_libraries(qimgview-projectfile-test PRIVATE Qt6::Core Qt6::Test)
+  target_link_libraries(qimgview-projectfile-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME projectfile-roundtrip COMMAND qimgview-projectfile-test)
 endif()
