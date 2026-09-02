@@ -35,6 +35,7 @@ Focus:
 - [x] Crop: rotatable draft frame (bakes to axis-aligned output; cropRotation in session/project)
 - [x] Crop: centre move grip; interior rubber-band; resize under rotation
 - [x] Crop: Expand beyond image (pad); Close/Cancel chrome; modifiers (Ctrl/Shift)
+- [x] Crop: re-enter with rotated draft keeps frame position (no flip remap / no constrain shift)
 - [x] Workspace Layout panel (selection pack + Apply); durable Workspace vs Gallery
 - [x] Masonry Fill / Masonry Rows Fill (rectangular pack)
 - [x] Page Guide under Workspace menu; Exit Fullscreen label; FS Slideshow context

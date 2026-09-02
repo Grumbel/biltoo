@@ -369,8 +369,6 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
 
     const QRect priorCrop = (haveApp && app.hasCrop) ? app.cropRect : QRect();
     const bool hadCrop = haveApp && app.hasCrop && !priorCrop.isEmpty();
-    const bool hFlip = haveApp && (app.contentHFlip || app.hFlip);
-    const bool vFlip = haveApp && (app.contentVFlip || app.vFlip);
 
     item->setSourceImage(full);
     // Always axis-aligned while cropping (placement was stashed in setCropMode).
@@ -387,35 +385,43 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     }
     m_cropShowingFullImage = true;
 
+    // Start each crop session without Expand; re-enable below if the stored
+    // draft (AABB or rotated corners) extends outside the source.
+    m_cropAllowExpand = false;
+
     const QRectF cr = item->contentRect();
     if (hadCrop) {
         const QSize sz = item->imageSize();
         const QRect bounds(0, 0, sz.width(), sz.height());
-        const QRect prior = priorCrop.normalized();
-        // Expand crops are stored outside the source bounds; restore Expand mode
-        // so ensureCropRectValid does not clamp them back into the image.
-        const bool extendsOutside =
-            prior.left() < bounds.left() || prior.top() < bounds.top()
-            || prior.right() > bounds.right() || prior.bottom() > bounds.bottom();
-        if (extendsOutside) {
-            m_cropAllowExpand = true;
-        }
+        // cropRect is stored in the same space as the post-content-bake image
+        // (recordSessionCrop runs with item flips cleared). Scale if the live
+        // size differs from the size at record time — same rule as applyCrop.
+        const QRect prior = SessionAppearance::scaleCropRect(
+            priorCrop.normalized(), app.cropSourceSize, sz);
         m_cropRotation = haveApp ? app.cropRotation : 0.0;
         if (prior.width() >= 1 && prior.height() >= 1) {
             const QPointF off = item->offset();
-            int dx = prior.x();
-            int dy = prior.y();
-            int dw = prior.width();
-            int dh = prior.height();
-            if (hFlip) {
-                dx = sz.width() - dx - dw;
+            // Do not mirror for contentHFlip/VFlip: applyContentBakes already
+            // put pixels in content-oriented space and the stored rect is in
+            // that space. Re-mirroring shifted the frame on re-entry.
+            m_cropRect = QRectF(prior.x() + off.x(), prior.y() + off.y(),
+                                prior.width(), prior.height());
+            // Expand is not persisted. Detect both axis-aligned overflow and
+            // rotated-corner overflow so ensureCropRectValid does not translate
+            // a previously applied rotated draft to a new centre.
+            const bool aabbOutside =
+                prior.left() < bounds.left() || prior.top() < bounds.top()
+                || prior.right() > bounds.right()
+                || prior.bottom() > bounds.bottom();
+            const bool rotatedOutside =
+                qAbs(m_cropRotation) > 0.05
+                && !cropCornersInside(m_cropRect, m_cropRotation, cr);
+            if (aabbOutside || rotatedOutside) {
+                m_cropAllowExpand = true;
             }
-            if (vFlip) {
-                dy = sz.height() - dy - dh;
-            }
-            m_cropRect = QRectF(dx + off.x(), dy + off.y(), dw, dh);
         } else {
             m_cropRect = cr;
+            m_cropRotation = 0.0;
         }
     } else {
         m_cropRect = cr;
