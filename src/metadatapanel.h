@@ -56,6 +56,9 @@ private:
  * Side panel listing file info, image structure, histogram, palette, and
  * embedded metadata (Exif/IPTC/XMP via libexiv2 when available).
  */
+/** Quiet or enable verbose logs from libexiv2 (call once from main). */
+void configureMetadataLibraryLogging(bool verbose);
+
 class MetadataPanel : public QWidget
 {
     Q_OBJECT

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow.h"
+#include "metadatapanel.h"
 #include "imageloader.h"
 
 #include <QApplication>
@@ -122,7 +123,16 @@ int main(int argc, char *argv[])
         QCoreApplication::translate("main", "Force hide the thumbnail bar"));
     parser.addOption(noThumbnailsOption);
 
+    QCommandLineOption debugOption(
+        QStringList() << QStringLiteral("debug"),
+        QCoreApplication::translate("main",
+            "Verbose diagnostics (e.g. libexiv2 metadata warnings with file path)"));
+    parser.addOption(debugOption);
+
     parser.process(app);
+
+    // Quiet Exiv2 IFD noise by default; --debug shows warnings with file path.
+    configureMetadataLibraryLogging(parser.isSet(debugOption));
 
     const QStringList files = parser.positionalArguments();
 

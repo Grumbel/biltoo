@@ -21,7 +21,68 @@
 #ifdef QIMGVIEW_HAVE_EXIV2
 #  include <exiv2/exiv2.hpp>
 #  include <string>
+#  include <atomic>
+#  include <cstdio>
+#  include <mutex>
 #endif
+
+#ifdef QIMGVIEW_HAVE_EXIV2
+namespace qimgview_exivlog {
+std::atomic<bool> g_exivVerbose{false};
+thread_local const char *g_exivCurrentPath = nullptr;
+
+void exiv2LogHandler(int level, const char *msg)
+{
+    // Exiv2 levels: mute=0, error=1, warn=2, info=3, debug=4.
+    // Default: only real errors. --debug also shows warnings (IFD oddities, etc.).
+    if (!g_exivVerbose.load(std::memory_order_relaxed)
+        && level > static_cast<int>(Exiv2::LogMsg::error)) {
+        return;
+    }
+    if (!msg) {
+        return;
+    }
+    if (g_exivCurrentPath && g_exivCurrentPath[0] != '\0') {
+        std::fprintf(stderr, "qimgview:exiv2: %s: %s\n", g_exivCurrentPath, msg);
+    } else {
+        std::fprintf(stderr, "qimgview:exiv2: %s\n", msg);
+    }
+}
+
+void ensureExiv2LogHandler()
+{
+    static std::once_flag once;
+    std::call_once(once, [] {
+        Exiv2::LogMsg::setHandler(exiv2LogHandler);
+        // Deliver warn/debug to the handler; it filters when not verbose.
+        Exiv2::LogMsg::setLevel(Exiv2::LogMsg::debug);
+    });
+}
+
+struct Exiv2PathScope {
+    explicit Exiv2PathScope(const QString &path)
+        : m_utf8(path.toUtf8())
+    {
+        g_exivCurrentPath = m_utf8.constData();
+    }
+    ~Exiv2PathScope()
+    {
+        g_exivCurrentPath = nullptr;
+    }
+    QByteArray m_utf8;
+};
+} // namespace qimgview_exivlog
+#endif
+
+void configureMetadataLibraryLogging(bool verbose)
+{
+#ifdef QIMGVIEW_HAVE_EXIV2
+    qimgview_exivlog::g_exivVerbose.store(verbose, std::memory_order_relaxed);
+    qimgview_exivlog::ensureExiv2LogHandler();
+#else
+    Q_UNUSED(verbose);
+#endif
+}
 
 namespace {
 
@@ -92,6 +153,8 @@ QString friendlyExifLabel(const QString &key)
 bool loadExiv2Metadata(QTreeWidget *tree, const QString &path)
 {
     try {
+        qimgview_exivlog::ensureExiv2LogHandler();
+        qimgview_exivlog::Exiv2PathScope pathScope(path);
         auto image = Exiv2::ImageFactory::open(path.toStdString());
         if (!image.get()) {
             return false;
