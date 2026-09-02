@@ -481,7 +481,10 @@ void MainWindow::toggleCropMode()
                     || !m_imageView->isImageMode()) {
                     return;
                 }
-                ImageItem *primary = m_imageView->primaryItem();
+                ImageItem *primary = m_imageView->targetItem();
+                if (!primary && !m_imageView->liveItems().isEmpty()) {
+                    primary = m_imageView->liveItems().first();
+                }
                 if (!primary || !primary->hasDecodedPixels()) {
                     return;
                 }
