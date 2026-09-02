@@ -983,6 +983,10 @@ void MainWindow::showContextMenu(const QPoint &pos)
     }
     // Workspace mode toggle stays on the main toolbar / Workspace menu only.
     menu.addSeparator();
+    // Menu bar is hidden in fullscreen; surface slideshow control here.
+    if (isFullScreen()) {
+        menu.addAction(m_slideshowAct);
+    }
     menu.addAction(m_fullscreenAct);
     menu.addAction(m_preferencesAct);
     menu.exec(m_imageView->mapToGlobal(pos));
