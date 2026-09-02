@@ -6,6 +6,7 @@
 
 #include "imageview_types.h"
 #include <QGraphicsPixmapItem>
+#include <QColor>
 #include <QImage>
 #include <QString>
 #include <QPolygonF>
@@ -151,7 +152,8 @@ public:
      * Bakes current H/V flips into the new source pixels and clears flip flags.
      * Returns false if the rect is empty or outside the image.
      */
-    bool cropToLocalRect(const QRectF &localRect);
+    bool cropToLocalRect(const QRectF &localRect,
+                         const QColor &padColor = QColor(0, 0, 0, 0));
 
     /** When false, the item cannot be selected or dragged (classic viewer). */
     void setInteractive(bool on);

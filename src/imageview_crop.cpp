@@ -30,14 +30,14 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     if (!cropView.isValid() || !viewportRect.isValid()) {
         return L;
     }
-    constexpr int kW = 56;
+    constexpr int kW = 60;
     constexpr int kH = 22;
     constexpr int kGap = 6;
     constexpr int kOutsideGap = 8;
     constexpr int kInsideInset = 8;
     constexpr int kMargin = 6;
 
-    const int totalW = kW * 2 + kGap;
+    const int totalW = kW * 3 + kGap * 2;
     int x0 = qRound(cropView.center().x() - totalW / 2.0);
     // Prefer outside, centred under the crop bottom edge.
     int yOutside = qRound(cropView.bottom()) + kOutsideGap;
@@ -114,7 +114,6 @@ void ImageView::ensureCropRectValid()
 {
     ImageItem *item = cropTargetItem();
     if (!item) {
-        m_cropRect = QRectF();
         return;
     }
     const QRectF cr = item->contentRect();
@@ -122,7 +121,18 @@ void ImageView::ensureCropRectValid()
         m_cropRect = cr;
         return;
     }
-    m_cropRect = m_cropRect.normalized().intersected(cr);
+    m_cropRect = m_cropRect.normalized();
+    if (m_cropRect.width() < 1.0) {
+        m_cropRect.setWidth(1.0);
+    }
+    if (m_cropRect.height() < 1.0) {
+        m_cropRect.setHeight(1.0);
+    }
+    if (m_cropAllowExpand) {
+        // Outside the image is intentional (pad on apply); only keep min size.
+        return;
+    }
+    m_cropRect = m_cropRect.intersected(cr);
     if (m_cropRect.width() < 1.0) {
         m_cropRect.setWidth(1.0);
     }
@@ -143,6 +153,7 @@ void ImageView::ensureCropRectValid()
         m_cropRect.moveTop(cr.top());
     }
 }
+
 
 void ImageView::setCropMode(bool on)
 {
@@ -438,7 +449,10 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         return;
     }
     const QRectF cr = item->contentRect();
-    const QRectF local = localCrop.normalized().intersected(cr);
+    QRectF local = localCrop.normalized();
+    if (!m_cropAllowExpand) {
+        local = local.intersected(cr);
+    }
     if (local.width() < 1.0 || local.height() < 1.0) {
         return;
     }
@@ -517,7 +531,7 @@ void ImageView::leaveCropModeInternal(bool apply)
         // Record absolute crop (or clear it) while the full image is still loaded.
         recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
         if (!fullFrame) {
-            if (item->cropToLocalRect(m_cropRect)) {
+            if (item->cropToLocalRect(m_cropRect, backgroundColor())) {
                 // Keep stashed Gallery tiles: commitItemSessionEdit peer-syncs
                 // cropped pixels. Invalidating forced a full-size probe + pack
                 // then a crop decode without repack → tiny tiles on return.
@@ -648,6 +662,7 @@ void ImageView::leaveCropModeInternal(bool apply)
     m_cropRect = QRectF();
     m_cropActiveHandle = CropHandle::None;
     m_cropHoverHandle = CropHandle::None;
+    m_cropAllowExpand = false;
     m_cropRubberBanding = false;
     emit cropModeChanged(false);
     emit statusChanged();
@@ -668,29 +683,42 @@ QRectF ImageView::cropRectView() const
     return QRectF(tl, br).normalized();
 }
 
-QRect ImageView::cropResetButtonView() const
+QRect ImageView::cropExpandButtonView() const
 {
-    if (!m_cropMode || !m_cropRect.isValid() || !viewport()) {
-        return QRect();
+    if (!m_cropMode) {
+        return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
     if (!L.valid) {
-        return QRect();
+        return {};
     }
     return QRect(L.x0, L.y, L.w, L.h);
 }
 
-QRect ImageView::cropApplyButtonView() const
+QRect ImageView::cropResetButtonView() const
 {
-    if (!m_cropMode || !m_cropRect.isValid() || !viewport()) {
-        return QRect();
+    if (!m_cropMode) {
+        return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
     if (!L.valid) {
-        return QRect();
+        return {};
     }
     return QRect(L.x0 + L.w + L.gap, L.y, L.w, L.h);
 }
+
+QRect ImageView::cropApplyButtonView() const
+{
+    if (!m_cropMode) {
+        return {};
+    }
+    const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
+    if (!L.valid) {
+        return {};
+    }
+    return QRect(L.x0 + 2 * (L.w + L.gap), L.y, L.w, L.h);
+}
+
 
 void ImageView::paintCropOverlay(QPainter &painter)
 {
@@ -831,6 +859,10 @@ void ImageView::paintCropOverlay(QPainter &painter)
         painter.drawText(btn, Qt::AlignCenter, label);
     };
     // Local QPoint names must not hide QObject::tr — use ImageView::tr.
+    drawTextButton(cropExpandButtonView(), CropHandle::ExpandToggle,
+                   m_cropAllowExpand ? ImageView::tr("Expand: On")
+                                     : ImageView::tr("Expand"),
+                   m_cropAllowExpand);
     drawTextButton(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"), false);
     drawTextButton(cropApplyButtonView(), CropHandle::Apply, ImageView::tr("Apply"), true);
 
@@ -869,7 +901,8 @@ void ImageView::paintCropOverlay(QPainter &painter)
 void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || h == CropHandle::None || h == CropHandle::Reset || h == CropHandle::Apply) {
+    if (!item || h == CropHandle::None || h == CropHandle::Reset || h == CropHandle::Apply
+        || h == CropHandle::ExpandToggle) {
         return;
     }
     m_cropActiveHandle = h;
@@ -885,6 +918,10 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
+    // When expand is off, edges stay inside the image; when on, use a large pad.
+    const QRectF limits = m_cropAllowExpand
+        ? cr.adjusted(-cr.width() * 4, -cr.height() * 4, cr.width() * 4, cr.height() * 4)
+        : cr;
     QRectF r = m_cropDragStartRect;
     const qreal minSide = 4.0;
     const bool fromCenter =
@@ -894,6 +931,9 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
     const QPointF startCenter = m_cropDragStartRect.center();
 
     auto clampMove = [&](QRectF rect) {
+        if (m_cropAllowExpand) {
+            return rect; // free translate; pad fills the outside on apply
+        }
         // Keep size; slide within content bounds.
         const qreal w = rect.width();
         const qreal h = rect.height();
@@ -947,16 +987,16 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         }
     } else {
         if (left) {
-            r.setLeft(qBound(cr.left(), local.x(), r.right() - minSide));
+            r.setLeft(qBound(limits.left(), local.x(), r.right() - minSide));
         }
         if (right) {
-            r.setRight(qBound(r.left() + minSide, local.x(), cr.right()));
+            r.setRight(qBound(r.left() + minSide, local.x(), limits.right()));
         }
         if (top) {
-            r.setTop(qBound(cr.top(), local.y(), r.bottom() - minSide));
+            r.setTop(qBound(limits.top(), local.y(), r.bottom() - minSide));
         }
         if (bottom) {
-            r.setBottom(qBound(r.top() + minSide, local.y(), cr.bottom()));
+            r.setBottom(qBound(r.top() + minSide, local.y(), limits.bottom()));
         }
     }
 
@@ -1001,8 +1041,8 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         }
     }
 
-    // Clamp into content; prefer keeping the resize intent when possible.
-    r = r.intersected(cr);
+    // Clamp into allowed limits; prefer keeping the resize intent when possible.
+    r = r.intersected(limits);
     if (r.width() < minSide) {
         if (left && !fromCenter) {
             r.setLeft(r.right() - minSide);
@@ -1024,7 +1064,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         r = r.intersected(cr);
     }
 
-    m_cropRect = r.normalized().intersected(cr);
+    m_cropRect = r.normalized().intersected(limits);
     viewport()->update();
 }
 
@@ -1079,14 +1119,16 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
             r = QRectF(c - QPointF(halfW, halfH), QSizeF(2 * halfW, 2 * halfH));
         }
     }
-    r = r.intersected(cr);
+    if (!m_cropAllowExpand) {
+        r = r.intersected(cr);
+    }
     if (r.width() < 1.0) {
         r.setWidth(1.0);
     }
     if (r.height() < 1.0) {
         r.setHeight(1.0);
     }
-    m_cropRect = r.intersected(cr);
+    m_cropRect = m_cropAllowExpand ? r : r.intersected(cr);
     viewport()->update();
 }
 
@@ -1106,7 +1148,11 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (!item || !m_cropRect.isValid()) {
         return CropHandle::None;
     }
-    // Controls sit above the crop frame (checked before edge handles).
+    // Controls sit near the crop frame (checked before edge handles).
+    const QRect expandBtn = cropExpandButtonView();
+    if (expandBtn.contains(viewPos)) {
+        return CropHandle::ExpandToggle;
+    }
     const QRect applyBtn = cropApplyButtonView();
     if (applyBtn.contains(viewPos)) {
         return CropHandle::Apply;

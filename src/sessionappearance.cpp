@@ -44,13 +44,13 @@ void applyCrop(ImageItem *item, const WorkspaceItemState &state)
             crop = scaleCropRect(state.cropRect, swapped, sz);
         }
     }
-    const QRect bounds(0, 0, sz.width(), sz.height());
-    const QRect src = crop.intersected(bounds);
-    if (src.width() < 1 || src.height() < 1) {
+    if (crop.width() < 1 || crop.height() < 1) {
         return;
     }
     const QPointF off = item->offset();
-    const QRectF local(src.x() + off.x(), src.y() + off.y(), src.width(), src.height());
+    // May extend outside the source; cropToLocalRect pads as needed.
+    const QRectF local(crop.x() + off.x(), crop.y() + off.y(),
+                       crop.width(), crop.height());
     item->cropToLocalRect(local);
 }
 

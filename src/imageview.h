@@ -634,6 +634,11 @@ private:
         TopRight,
         BottomLeft,
         BottomRight,
+        /**
+         * Toggle: when on, the draft may extend outside the image (pad on apply).
+         * When off, the draft is clamped to the image bounds.
+         */
+        ExpandToggle,
         /** Clears the draft rect to the full image (reset session crop on apply). */
         Reset,
         /** Commits the draft crop (same as Enter). */
@@ -644,8 +649,10 @@ private:
     QRectF cropRectItemLocal() const { return m_cropRect; }
     QRectF cropRectView() const;
     /** Viewport rects of Reset / Apply controls above the crop frame. */
+    QRect cropExpandButtonView() const;
     QRect cropResetButtonView() const;
     QRect cropApplyButtonView() const;
+    bool cropAllowExpand() const { return m_cropAllowExpand; }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);

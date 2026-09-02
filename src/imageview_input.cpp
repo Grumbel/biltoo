@@ -294,6 +294,15 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     // Crop mode: handles adjust the draft rect; drag on image starts rubber-band.
     if (m_cropMode && event->button() == Qt::LeftButton) {
         const CropHandle h = cropHandleAt(event->pos());
+        if (h == CropHandle::ExpandToggle) {
+            m_cropAllowExpand = !m_cropAllowExpand;
+            if (!m_cropAllowExpand) {
+                ensureCropRectValid(); // clamp back into the image
+            }
+            viewport()->update();
+            event->accept();
+            return;
+        }
         if (h == CropHandle::Reset) {
             // Expand draft to the full image; Enter/Apply commits a cleared session crop.
             if (ImageItem *item = cropTargetItem()) {
@@ -629,6 +638,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         case CropHandle::BottomLeft:
             viewport()->setCursor(Qt::SizeBDiagCursor);
             break;
+        case CropHandle::ExpandToggle:
         case CropHandle::Reset:
         case CropHandle::Apply:
             viewport()->setCursor(Qt::PointingHandCursor);

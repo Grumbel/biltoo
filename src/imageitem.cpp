@@ -386,33 +386,54 @@ void ImageItem::updateDisplayedPixmap()
     setPixmap(QPixmap::fromImage(m_source.flipped(axes)));
 }
 
-bool ImageItem::cropToLocalRect(const QRectF &localRect)
+bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor)
 {
-    if (m_source.isNull() && pixmap().isNull()) {
-        return false;
-    }
-    const QRectF cr = contentRect();
-    const QRectF local = localRect.normalized().intersected(cr);
-    if (local.width() < 1.0 || local.height() < 1.0) {
-        return false;
-    }
-    // Always crop m_source — the display pixmap may include itemHFlip/VFlip
-    // bake for painting and must not redefine the crop coordinate space.
     if (m_source.isNull()) {
         return false;
     }
-    const QRect bounds(0, 0, m_source.width(), m_source.height());
-    // contentRect is centred via setOffset(-w/2, -h/2); map local → source pixels.
-    const QPointF off = offset();
-    const QRect srcRect = QRect(qRound(local.left() - off.x()),
-                                qRound(local.top() - off.y()),
-                                qMax(1, qRound(local.width())),
-                                qMax(1, qRound(local.height())))
-                              .intersected(bounds);
-    if (srcRect.width() < 1 || srcRect.height() < 1) {
+    const QRectF local = localRect.normalized();
+    if (local.width() < 1.0 || local.height() < 1.0) {
         return false;
     }
-    QImage cropped = m_source.copy(srcRect);
+    // contentRect is centred via setOffset(-w/2, -h/2); map local → source pixels.
+    const QPointF off = offset();
+    const int dx = qRound(local.left() - off.x());
+    const int dy = qRound(local.top() - off.y());
+    const int dw = qMax(1, qRound(local.width()));
+    const int dh = qMax(1, qRound(local.height()));
+    const QRect bounds(0, 0, m_source.width(), m_source.height());
+    const QRect destBounds(dx, dy, dw, dh);
+    const QRect srcRect = destBounds.intersected(bounds);
+
+    QImage cropped;
+    if (srcRect == destBounds && srcRect.width() > 0 && srcRect.height() > 0) {
+        // Fully inside the source — simple copy.
+        cropped = m_source.copy(srcRect);
+    } else {
+        // Expand / partial: pad then blit the overlapping source region.
+        QImage::Format fmt = m_source.format();
+        if (fmt == QImage::Format_Invalid) {
+            fmt = QImage::Format_ARGB32_Premultiplied;
+        }
+        // Prefer a format that can hold the pad colour's alpha.
+        if (padColor.alpha() < 255 && fmt != QImage::Format_ARGB32
+            && fmt != QImage::Format_ARGB32_Premultiplied) {
+            fmt = QImage::Format_ARGB32_Premultiplied;
+        }
+        cropped = QImage(dw, dh, fmt);
+        if (cropped.isNull()) {
+            return false;
+        }
+        cropped.fill(padColor);
+        if (srcRect.width() > 0 && srcRect.height() > 0) {
+            const int destX = srcRect.x() - dx;
+            const int destY = srcRect.y() - dy;
+            QPainter painter(&cropped);
+            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            painter.drawImage(QPoint(destX, destY), m_source, srcRect);
+            painter.end();
+        }
+    }
     if (cropped.isNull()) {
         return false;
     }
