@@ -322,20 +322,17 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         return;
     }
 
-    int wanted = 0;
+    int pathOrderCount = 0;
     for (const QString &p : m_pathOrder) {
         if (p == path) {
-            ++wanted;
+            ++pathOrderCount;
         }
     }
-    // Ad-hoc add (not yet reflected in pathOrder): at least one more than current.
-    if (wanted <= 0) {
-        for (ImageItem *it : m_items) {
-            if (it && it->path() == path) {
-                ++wanted;
-            }
+    int pendingBinds = 0;
+    for (const PendingSessionBind &b : m_pendingSessionBinds) {
+        if (b.path == path) {
+            ++pendingBinds;
         }
-        ++wanted;
     }
 
     bool sizeChanged = false;
@@ -363,6 +360,14 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             cand->setSourceImage(image);
             applyStoredAppearance(cand);
         }
+    }
+
+    // pathOrder alone is not enough: filmstrip drop-duplicate appends a session
+    // row and a PendingSessionBind, but Workspace pathOrder may still list the
+    // path only once — so wanted == have and no tile was created.
+    int wanted = qMax(pathOrderCount, have + pendingBinds);
+    if (wanted <= 0) {
+        wanted = have + 1;
     }
 
     // Create missing occurrences (each duplicate is a normal separate tile).
