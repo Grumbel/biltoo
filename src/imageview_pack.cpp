@@ -282,3 +282,116 @@ void ImageView::applyLayout(GalleryPackReason reason)
     applyPendingGalleryRestore();
     updateGalleryDecodeWindow();
 }
+
+bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,
+                                     const QList<ImageItem *> &itemsIn)
+{
+    if (!isWorkspaceMode() || !m_scene) {
+        return false;
+    }
+    QList<ImageItem *> items = itemsIn;
+    if (items.isEmpty()) {
+        items = transformTargets();
+    }
+    // Require an explicit multi-item or single selection on the canvas —
+    // do not fall back to “sole item” when nothing is selected in Workspace.
+    if (items.isEmpty()) {
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                items.append(ii);
+            }
+        }
+    }
+    if (items.isEmpty()) {
+        return false;
+    }
+
+    // Preserve selection centroid so the group does not jump to the origin.
+    QRectF beforeBounds;
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        beforeBounds = beforeBounds.isNull() ? item->sceneBoundingRect()
+                                             : beforeBounds.united(item->sceneBoundingRect());
+    }
+    const QPointF beforeCenter = beforeBounds.isNull()
+        ? mapToScene(viewport()->rect().center())
+        : beforeBounds.center();
+
+    QVector<WorkspaceItemState> befores;
+    befores.reserve(items.size());
+    for (ImageItem *item : items) {
+        befores.append(captureState(item));
+    }
+
+    GalleryLayout::Params params = userParams;
+    const qreal margin = params.margin > 0 ? params.margin : 16.0;
+    params.margin = margin;
+    if (params.gap <= 0) {
+        params.gap = 12.0;
+    }
+    params.availW = qMax(32.0, static_cast<qreal>(viewport()->width()) - 2.0 * margin);
+    params.availH = qMax(32.0, static_cast<qreal>(viewport()->height()) - 2.0 * margin);
+
+    // Workspace layout is axis-aligned placement; clear free-form tilt/flips
+    // on the targets only (content bakes stay in pixels).
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        item->setItemRotation(0.0);
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+    }
+
+    GalleryLayout::pack(items, params);
+
+    // Translate packed group so its centre matches the previous selection centre.
+    QRectF afterBounds;
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        afterBounds = afterBounds.isNull() ? item->sceneBoundingRect()
+                                           : afterBounds.united(item->sceneBoundingRect());
+    }
+    if (!afterBounds.isNull()) {
+        const QPointF delta = beforeCenter - afterBounds.center();
+        if (!delta.isNull()) {
+            for (ImageItem *item : items) {
+                if (item) {
+                    item->setPos(item->pos() + delta);
+                }
+            }
+        }
+    }
+
+    if (m_undoStack) {
+        m_undoStack->beginMacro(tr("Layout selection"));
+        for (int i = 0; i < items.size(); ++i) {
+            ImageItem *item = items.at(i);
+            if (!item) {
+                continue;
+            }
+            pushItemGeometryCommand(tr("Layout selection"), item, befores.at(i),
+                                    captureState(item));
+        }
+        m_undoStack->endMacro();
+    }
+
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        if (item->sessionId() != kInvalidSessionImageId) {
+            m_appearance.set(item->sessionId(), captureState(item));
+        }
+        m_itemStates.insert(item->path(), captureState(item));
+    }
+
+    updateWorkspaceSceneRect();
+    viewport()->update();
+    emit statusChanged();
+    return true;
+}

@@ -78,6 +78,8 @@ add_executable(qimgview
   src/preferencesdialog.h
   src/metadatapanel.cpp
   src/metadatapanel.h
+  src/layoutpanel.cpp
+  src/layoutpanel.h
   src/defaultapps.cpp
   src/defaultapps.h
   src/icons.qrc

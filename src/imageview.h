@@ -9,6 +9,7 @@
 #include "gallerycontroller.h"
 #include "workspacecontroller.h"
 #include "imagecontroller.h"
+#include "gallerylayout.h"
 
 #include <QColor>
 #include <QElapsedTimer>
@@ -434,6 +435,13 @@ public:
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);
+    /**
+     * Workspace only: pack @p items (or current selection) with a packaged
+     * layout without leaving FreeForm / Workspace mode. Returns false if
+     * there is nothing to arrange.
+     */
+    bool layoutWorkspaceItems(const GalleryLayout::Params &params,
+                              const QList<ImageItem *> &items = {});
     void applyPendingGalleryRestore();
     /** Gallery mode with a packaged layout. */
     bool isGalleryLayout() const { return isGalleryMode(); }
