@@ -406,6 +406,33 @@ void ImageView::selectBySessionIndices(const QList<int> &indices)
     }
 }
 
+QList<SessionImageId> ImageView::selectedSessionIds() const
+{
+    QList<SessionImageId> out;
+    for (ImageItem *item : m_items) {
+        if (item && item->isSelected() && item->sessionId() != kInvalidSessionImageId) {
+            out.append(item->sessionId());
+        }
+    }
+    return out;
+}
+
+void ImageView::selectBySessionIds(const QList<SessionImageId> &ids)
+{
+    if (!m_scene) {
+        return;
+    }
+    m_scene->clearSelection();
+    for (SessionImageId id : ids) {
+        if (id == kInvalidSessionImageId) {
+            continue;
+        }
+        if (ImageItem *item = findItemBySessionId(id)) {
+            item->setSelected(true);
+        }
+    }
+}
+
 void ImageView::selectPathsByOccurrence(const QStringList &paths)
 {
     if (!m_scene) {

@@ -68,7 +68,8 @@ public:
     void applySessionRemoveIndices(const QList<int> &indices);
     void restoreSessionEntries(const QList<SessionEntrySnapshot> &entries);
     /** Canvas + session duplicate; returns new SessionImageIds (for undo). */
-    QVector<SessionImageId> applyDuplicate(const QStringList &sourcePaths);
+    QVector<SessionImageId> applyDuplicate(const QList<SessionImageId> &sourceIds,
+                                 const QStringList &fallbackPaths = {});
     int sessionIndexOfId(SessionImageId id) const;
     bool writeProjectToPath(const QString &projectPath, QString *error = nullptr);
     bool loadProjectFromPath(const QString &projectPath, QString *error = nullptr);

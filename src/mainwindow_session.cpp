@@ -17,13 +17,15 @@ QString imageFileDialogFilter()
     return QObject::tr("Images (%1);;All Files (*)").arg(patterns.join(QLatin1Char(' ')));
 }
 
-/** Undoable session duplicate (Ctrl+D). */
+/** Undoable session duplicate (Ctrl+D). Identity is SessionImageId, not path. */
 class SessionDuplicateCommand : public QUndoCommand {
 public:
-    SessionDuplicateCommand(MainWindow *mw, const QStringList &sourcePaths)
+    SessionDuplicateCommand(MainWindow *mw, const QList<SessionImageId> &sourceIds,
+                            const QStringList &fallbackPaths)
         : QUndoCommand(QObject::tr("Duplicate"))
         , m_mw(mw)
-        , m_sourcePaths(sourcePaths)
+        , m_sourceIds(sourceIds)
+        , m_fallbackPaths(fallbackPaths)
     {
     }
 
@@ -46,15 +48,16 @@ public:
 
     void redo() override
     {
-        if (!m_mw || m_sourcePaths.isEmpty()) {
+        if (!m_mw) {
             return;
         }
-        m_newIds = m_mw->applyDuplicate(m_sourcePaths);
+        m_newIds = m_mw->applyDuplicate(m_sourceIds, m_fallbackPaths);
     }
 
 private:
     MainWindow *m_mw = nullptr;
-    QStringList m_sourcePaths;
+    QList<SessionImageId> m_sourceIds;
+    QStringList m_fallbackPaths;
     QVector<SessionImageId> m_newIds;
 };
 
@@ -1380,29 +1383,45 @@ void MainWindow::duplicateSelected()
     if (!isWorkspaceMode() && !isGalleryMode()) {
         return;
     }
-    const QStringList sourcePaths = m_imageView->selectedPaths();
-    if (sourcePaths.isEmpty()) {
+    // Prefer SessionImageId — path occurrence always hits the first tile and
+    // broke selection + source identity on the 2nd+ Duplicate of the same path.
+    const QList<SessionImageId> sourceIds = m_imageView->selectedSessionIds();
+    const QStringList fallbackPaths = m_imageView->selectedPaths();
+    if (sourceIds.isEmpty() && fallbackPaths.isEmpty()) {
         return;
     }
     if (m_imageView->undoStack() && !m_sessionUndoGuard) {
-        m_imageView->undoStack()->push(new SessionDuplicateCommand(this, sourcePaths));
+        m_imageView->undoStack()->push(
+            new SessionDuplicateCommand(this, sourceIds, fallbackPaths));
         return;
     }
-    applyDuplicate(sourcePaths);
+    applyDuplicate(sourceIds, fallbackPaths);
 }
 
-QVector<SessionImageId> MainWindow::applyDuplicate(const QStringList &sourcePaths)
+QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &sourceIds,
+                                                   const QStringList &fallbackPaths)
 {
     QVector<SessionImageId> newIds;
-    if (!m_imageView || sourcePaths.isEmpty()) {
+    if (!m_imageView) {
         return newIds;
     }
     if (!isWorkspaceMode() && !isGalleryMode()) {
         return newIds;
     }
 
-    // Reselect sources so redo after undo still copies the right tiles.
-    m_imageView->selectPathsByOccurrence(sourcePaths);
+    // Reselect the exact source tiles by id (redo-safe with path duplicates).
+    if (!sourceIds.isEmpty()) {
+        m_imageView->selectBySessionIds(sourceIds);
+    } else if (!fallbackPaths.isEmpty()) {
+        // Unbound tiles only — last resort.
+        m_imageView->selectPathsByOccurrence(fallbackPaths);
+    }
+    if (m_imageView->selectedPaths().isEmpty()) {
+        return newIds;
+    }
+
+    // Paths of the tiles we are about to copy (after id-based reselect).
+    const QStringList sourcePaths = m_imageView->selectedPaths();
     m_imageView->duplicateSelected();
 
     const int firstNew = m_session.paths().size();
@@ -1413,15 +1432,19 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QStringList &sourcePath
             newIds.append(id);
         }
     }
-    if (m_session.paths().size() == firstNew) {
+    if (m_session.paths().size() == firstNew || newIds.isEmpty()) {
         return {};
     }
+    // Copies are the only selected items (duplicateSelected cleared + selected them).
     m_imageView->bindSelectedSessionIndices(firstNew);
-    m_imageView->bindSelectedSessionIds(newIds);
+    m_imageView->bindSelectedSessionIds(newIds.toList());
     m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
     syncThumbnailCanvasMembership();
 
-    // New session rows become the selection (canvas + filmstrip) after Duplicate.
+    // Select the new tiles by stable id — not path occurrence or stale index.
+    QList<SessionImageId> newIdList = newIds.toList();
+    m_imageView->selectBySessionIds(newIdList);
+
     QList<int> newIndices;
     for (int i = firstNew; i < m_session.paths().size(); ++i) {
         newIndices.append(i);
@@ -1435,9 +1458,6 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QStringList &sourcePath
         if (!newIndices.isEmpty()) {
             m_thumbnailBar->setCurrentIndex(newIndices.first());
         }
-    }
-    if (!newIndices.isEmpty()) {
-        m_imageView->selectBySessionIndices(newIndices);
     }
     applyThumbnailVisibility();
     if (isGalleryMode()) {

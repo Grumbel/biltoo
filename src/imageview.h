@@ -119,6 +119,9 @@ public:
     QSet<int> workspaceSessionIndices() const;
     QList<int> selectedSessionIndices() const;
     void selectBySessionIndices(const QList<int> &indices);
+    /** SessionImageIds of selected canvas items (skips unbound). */
+    QList<SessionImageId> selectedSessionIds() const;
+    void selectBySessionIds(const QList<SessionImageId> &ids);
     /** Select live tiles matching @p paths by occurrence order (duplicate-safe). */
     void selectPathsByOccurrence(const QStringList &paths);
     /**

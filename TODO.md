@@ -316,3 +316,7 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   rows with stale ids; path-level overrides also painted crops onto every
   path-matching row (including bound duplicates). Fixed with atomic
   ThumbnailBar::setSession(paths, ids) and path-override only for unbound rows.
+
+- [x] **Duplicate 2nd+ selection / wrong source**  
+  Path-occurrence reselect always copied the first tile with that path. Now
+  sources and post-duplicate selection use SessionImageId.
