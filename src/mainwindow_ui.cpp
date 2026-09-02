@@ -488,6 +488,18 @@ void MainWindow::createActions()
         }
     });
 
+    m_toggleLayoutPanelAct = m_layoutDock->toggleViewAction();
+    m_toggleLayoutPanelAct->setText(tr("Show &Layout Panel"));
+    m_toggleLayoutPanelAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
+    m_toggleLayoutPanelAct->setStatusTip(
+        tr("Show or hide the Workspace layout panel (arrange selected images)"));
+    connect(m_layoutDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (m_toggleLayoutPanelAct && m_toggleLayoutPanelAct->isChecked() != visible) {
+            QSignalBlocker blocker(m_toggleLayoutPanelAct);
+            m_toggleLayoutPanelAct->setChecked(visible);
+        }
+    });
+
     m_thumbnailsBottomAct = new QAction(tr("Thumbnails on &Bottom"), this);
     m_thumbnailsBottomAct->setCheckable(true);
     m_thumbnailsBottomAct->setStatusTip(tr("Place the thumbnail strip along the bottom edge"));
@@ -611,6 +623,7 @@ void MainWindow::createMenus()
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
+    m_viewMenu->addAction(m_toggleLayoutPanelAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);
     auto *thumbsMenu = m_viewMenu->addMenu(tr("&Thumbnails"));
     thumbsMenu->addAction(m_toggleThumbnailBarAct);
@@ -637,6 +650,7 @@ void MainWindow::createMenus()
 
     auto *workspaceMenu = menuBar()->addMenu(tr("&Workspace"));
     workspaceMenu->addAction(m_workspaceModeAct);
+    workspaceMenu->addAction(m_toggleLayoutPanelAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_pageGuideAct);
     workspaceMenu->addAction(m_fitPageGuideAct);
@@ -729,6 +743,7 @@ void MainWindow::createToolBar()
     // Workspace mode sits with the gallery layout group (mode switchers together).
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_workspaceModeAct);
+    m_toolBar->addAction(m_toggleLayoutPanelAct);
 
     // Masonry column/row count — shown while a masonry layout is active
     auto *masonryCountHost = new QWidget(m_toolBar);

@@ -17,6 +17,7 @@
 
 class ThumbnailBar;
 class MetadataPanel;
+class LayoutPanel;
 class QDockWidget;
 class QSplitter;
 class QToolBar;
@@ -204,6 +205,8 @@ private slots:
     void updateStatus();
     /** Refresh metadata dock from selection / session focus (deduped by path). */
     void updateMetadataPanel();
+    void updateLayoutPanel();
+    void applyWorkspaceLayoutFromPanel();
     void updateWindowTitle();
     void selectAllThumbnails();
     void onMouseInfoChanged(const ImageMouseInfo &info);
@@ -273,6 +276,8 @@ private:
     MetadataPanel *m_metadataPanel = nullptr;
     QString m_metadataPath;
     QDockWidget *m_metadataDock = nullptr;
+    LayoutPanel *m_layoutPanel = nullptr;
+    QDockWidget *m_layoutDock = nullptr;
     QToolBar *m_toolBar = nullptr;
     QToolBar *m_workspaceToolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
@@ -376,6 +381,7 @@ private:
     QAction *m_thumbnailsLeftAct = nullptr;
     QAction *m_thumbnailsRightAct = nullptr;
     QAction *m_toggleMetadataAct = nullptr;
+    QAction *m_toggleLayoutPanelAct = nullptr;
     QAction *m_toggleScrollBarsAct = nullptr;
     QAction *m_preferencesAct = nullptr;
     QAction *m_aboutAct = nullptr;
@@ -408,6 +414,7 @@ private:
     bool m_toolBarVisibleBeforeFullscreen = true;
     bool m_thumbnailBarVisibleBeforeFullscreen = true;
     bool m_metadataVisibleBeforeFullscreen = false;
+    bool m_layoutVisibleBeforeFullscreen = false;
 };
 
 #endif // MAINWINDOW_H

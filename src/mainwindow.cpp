@@ -106,6 +106,7 @@ MainWindow::MainWindow(QWidget *parent)
         // Crop and other selection-sensitive actions depend on target count.
         updateNavigationActions();
         updateWorkspaceActionVisibility();
+        updateLayoutPanel();
         if (m_syncingSelection || !isWorkspaceMode() || !m_thumbnailBar || !m_imageView) {
             return;
         }
@@ -131,6 +132,19 @@ MainWindow::MainWindow(QWidget *parent)
                                 | QDockWidget::DockWidgetFloatable);
     addDockWidget(Qt::RightDockWidgetArea, m_metadataDock);
     m_metadataDock->hide();
+
+    m_layoutPanel = new LayoutPanel(this);
+    m_layoutDock = new QDockWidget(tr("Layout"), this);
+    m_layoutDock->setObjectName(QStringLiteral("LayoutDock"));
+    m_layoutDock->setWidget(m_layoutPanel);
+    m_layoutDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_layoutDock->setFeatures(QDockWidget::DockWidgetClosable
+                              | QDockWidget::DockWidgetMovable
+                              | QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::LeftDockWidgetArea, m_layoutDock);
+    m_layoutDock->hide();
+    connect(m_layoutPanel, &LayoutPanel::applyRequested,
+            this, &MainWindow::applyWorkspaceLayoutFromPanel);
 
     createActions();
     createMenus();
@@ -876,6 +890,37 @@ void MainWindow::updateMetadataPanel()
     }
 }
 
+void MainWindow::updateLayoutPanel()
+{
+    if (!m_layoutPanel || !m_imageView) {
+        return;
+    }
+    const bool workspace = m_imageView->isWorkspaceMode();
+    m_layoutPanel->setWorkspaceActive(workspace);
+    int count = 0;
+    if (workspace && m_imageView->canvasScene()) {
+        for (QGraphicsItem *gi : m_imageView->canvasScene()->selectedItems()) {
+            if (qgraphicsitem_cast<ImageItem *>(gi)) {
+                ++count;
+            }
+        }
+    }
+    m_layoutPanel->setSelectionCount(count);
+}
+
+void MainWindow::applyWorkspaceLayoutFromPanel()
+{
+    if (!m_layoutPanel || !m_imageView || !m_imageView->isWorkspaceMode()) {
+        return;
+    }
+    if (m_imageView->layoutWorkspaceItems(m_layoutPanel->params())) {
+        markWorkspaceDirty();
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Layout applied to selection."), 2500);
+        }
+    }
+}
+
 void MainWindow::updateStatus()
 {
     updateNavigationActions();
@@ -1016,15 +1061,23 @@ void MainWindow::updateFullscreenUi()
         m_thumbnailBarVisibleBeforeFullscreen = m_thumbnailBar->isVisible();
         m_metadataVisibleBeforeFullscreen =
             m_metadataDock && m_metadataDock->isVisible();
+        m_layoutVisibleBeforeFullscreen =
+            m_layoutDock && m_layoutDock->isVisible();
         m_toolBar->setVisible(false);
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
         }
         m_thumbnailBar->setVisible(false);
         m_metadataDock->setVisible(false);
+        if (m_layoutDock) {
+            m_layoutDock->setVisible(false);
+        }
         m_toggleToolBarAct->setChecked(false);
         m_toggleThumbnailBarAct->setChecked(false);
         m_toggleMetadataAct->setChecked(false);
+        if (m_toggleLayoutPanelAct) {
+            m_toggleLayoutPanelAct->setChecked(false);
+        }
         menuBar()->setVisible(false);
         statusBar()->setVisible(false);
         // Ensure arrow keys reach ImageView (navigation), not a hidden chrome widget.
@@ -1041,6 +1094,12 @@ void MainWindow::updateFullscreenUi()
         }
         if (m_toggleMetadataAct) {
             m_toggleMetadataAct->setChecked(m_metadataVisibleBeforeFullscreen);
+        }
+        if (m_layoutDock) {
+            m_layoutDock->setVisible(m_layoutVisibleBeforeFullscreen);
+        }
+        if (m_toggleLayoutPanelAct) {
+            m_toggleLayoutPanelAct->setChecked(m_layoutVisibleBeforeFullscreen);
         }
         if (isWorkspaceMode() && m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(true);
