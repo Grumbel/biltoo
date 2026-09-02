@@ -265,8 +265,7 @@ void MainWindow::setSortMode(SortMode mode)
                                 ? m_session.paths().at(m_currentIndex)
                                 : QString();
     sortFileList();
-    m_thumbnailBar->setFiles(m_session.paths());
-        m_thumbnailBar->setSessionIds(m_session.ids());
+    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -370,16 +369,17 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     sortFileList();
     m_currentIndex = -1;
 
-    m_thumbnailBar->setFiles(m_session.paths());
-        m_thumbnailBar->setSessionIds(m_session.ids());
+    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     applyThumbnailVisibility();
 
-    // New session paths: drop any Gallery tile cache from the previous session.
+    // Full session replace: rebuild canvas for Gallery and Workspace.
+    // setPaths() allocated fresh SessionImageIds, so any previous tiles are
+    // unbound. Leaving them produced orphan Workspace objects with no filmstrip
+    // row (IDENTITY.md). setWorkspacePaths prunes id-mismatched tiles and
+    // creates/schedules tiles for the new session rows.
     if (m_imageView) {
         m_imageView->discardStashedGallery();
-        if (isGalleryMode()) {
-            // Gallery mirrors the full session list. Workspace is permanent and
-            // is not replaced when opening a new session.
+        if (isGalleryMode() || isWorkspaceMode()) {
             m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
         }
     }
@@ -462,8 +462,7 @@ void MainWindow::appendFiles(const QStringList &paths)
     const QStringList workspacePaths = isWorkspaceMode() ? m_imageView->itemPaths() : QStringList();
 
     sortFileList();
-    m_thumbnailBar->setFiles(m_session.paths());
-        m_thumbnailBar->setSessionIds(m_session.ids());
+    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         // setFiles rebuilds items; re-apply multi-select mode and canvas selection
         m_thumbnailBar->setMultiSelectEnabled(true);
@@ -674,8 +673,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         m_imageView->setPreserveUndoOnDestroy(false);
     }
 
-    m_thumbnailBar->setFiles(m_session.paths());
-        m_thumbnailBar->setSessionIds(m_session.ids());
+    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -771,8 +769,7 @@ void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entrie
             m_imageView->setSessionAppearance(e.id, e.appearance);
         }
     }
-    m_thumbnailBar->setFiles(m_session.paths());
-    m_thumbnailBar->setSessionIds(m_session.ids());
+    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -1423,19 +1420,24 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QStringList &sourcePath
     m_imageView->bindSelectedSessionIds(newIds);
     m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
     syncThumbnailCanvasMembership();
+
+    // New session rows become the selection (canvas + filmstrip) after Duplicate.
+    QList<int> newIndices;
+    for (int i = firstNew; i < m_session.paths().size(); ++i) {
+        newIndices.append(i);
+    }
     if (m_thumbnailBar) {
-        // Ids first so per-id appearance overrides land on the correct rows.
-        m_thumbnailBar->setSessionIds(m_session.ids());
-        m_thumbnailBar->setFiles(m_session.paths());
-        m_thumbnailBar->setSessionIds(m_session.ids());
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
         if (isWorkspaceMode()) {
             m_thumbnailBar->setMultiSelectEnabled(true);
-            QList<int> indices;
-            for (int i = firstNew; i < m_session.paths().size(); ++i) {
-                indices.append(i);
-            }
-            m_thumbnailBar->setSelectedIndices(indices);
         }
+        m_thumbnailBar->setSelectedIndices(newIndices);
+        if (!newIndices.isEmpty()) {
+            m_thumbnailBar->setCurrentIndex(newIndices.first());
+        }
+    }
+    if (!newIndices.isEmpty()) {
+        m_imageView->selectBySessionIndices(newIndices);
     }
     applyThumbnailVisibility();
     if (isGalleryMode()) {
@@ -1743,8 +1745,7 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     }
 
     if (m_thumbnailBar) {
-        m_thumbnailBar->setFiles(m_session.paths());
-        m_thumbnailBar->setSessionIds(m_session.ids());
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     }
     applyThumbnailVisibility();
 

@@ -299,3 +299,20 @@ Relink UI: prompt to locate missing assets on load; warn on SHA-256 mismatch.
 | `[` / `]` | Slideshow interval slower / faster |
 
 See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md).
+
+
+## Active bugs (2026-09-02)
+
+- [x] **History / loadFiles leaves orphan Workspace tiles**  
+  loadFiles now calls setWorkspacePaths for Gallery **and** Workspace so
+  id-mismatched tiles are pruned after a full session replace.
+
+- [x] **Duplicate does not move selection to the new item(s)**  
+  applyDuplicate selects the new session indices on filmstrip + canvas and
+  scrolls the filmstrip to the first new row.
+
+- [x] **Thumbnail bar shows wrong image after drag&drop**  
+  Root cause: setFiles then setSessionIds left scheduleThumbnailLoads pairing
+  rows with stale ids; path-level overrides also painted crops onto every
+  path-matching row (including bound duplicates). Fixed with atomic
+  ThumbnailBar::setSession(paths, ids) and path-override only for unbound rows.

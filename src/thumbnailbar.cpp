@@ -584,9 +584,12 @@ void ThumbnailBar::scheduleThumbnailLoads()
 
     for (int i = 0; i < m_files.size(); ++i) {
         const QString path = m_files.at(i);
-        // Prefer per-session-image override (stable id), then path legacy.
+        // Prefer per-session-image override (stable id). Path-level override is
+        // legacy only for unbound rows — never paint a path crop onto a bound
+        // duplicate (drag-drop / Duplicate produced the wrong thumbnail).
+        SessionImageId sid = kInvalidSessionImageId;
         if (i < m_sessionIds.size()) {
-            const SessionImageId sid = m_sessionIds.at(i);
+            sid = m_sessionIds.at(i);
             if (sid != kInvalidSessionImageId
                 && m_sessionIdImageOverrides.contains(sid)) {
                 const QImage thumb = prepareThumbnailFromImage(
@@ -597,7 +600,7 @@ void ThumbnailBar::scheduleThumbnailLoads()
                 continue;
             }
         }
-        if (m_sessionImageOverrides.contains(path)) {
+        if (sid == kInvalidSessionImageId && m_sessionImageOverrides.contains(path)) {
             const QImage thumb = prepareThumbnailFromImage(m_sessionImageOverrides.value(path),
                                                           decodeSize);
             if (!thumb.isNull()) {
@@ -618,15 +621,18 @@ void ThumbnailBar::scheduleThumbnailLoads()
                 return;
             }
             // A crop may have landed while this job ran — do not clobber it.
-            if (bar->m_sessionImageOverrides.contains(path)) {
-                return;
-            }
+            // Path override only protects unbound rows; bound rows use id map.
             if (i < bar->m_sessionIds.size()) {
                 const SessionImageId sid = bar->m_sessionIds.at(i);
-                if (sid != kInvalidSessionImageId
-                    && bar->m_sessionIdImageOverrides.contains(sid)) {
+                if (sid != kInvalidSessionImageId) {
+                    if (bar->m_sessionIdImageOverrides.contains(sid)) {
+                        return;
+                    }
+                } else if (bar->m_sessionImageOverrides.contains(path)) {
                     return;
                 }
+            } else if (bar->m_sessionImageOverrides.contains(path)) {
+                return;
             }
             QMetaObject::invokeMethod(bar, "setThumbnailIcon", Qt::QueuedConnection,
                                       Q_ARG(int, i),
@@ -640,6 +646,26 @@ void ThumbnailBar::clearPressState()
     m_pressActive = false;
     m_pressItem = nullptr;
     m_dragStarted = false;
+}
+
+void ThumbnailBar::setSession(const QStringList &files, const QVector<SessionImageId> &ids)
+{
+    // Install ids first so scheduleThumbnailLoads (from setFiles) sees the
+    // correct row ↔ SessionImageId alignment. Callers that did setFiles then
+    // setSessionIds painted path overrides / stale id overrides onto the wrong
+    // cells after drag-drop and Duplicate.
+    m_sessionIds = ids;
+    if (!m_sessionIdImageOverrides.isEmpty()) {
+        QHash<SessionImageId, QImage> kept;
+        for (SessionImageId id : ids) {
+            auto it = m_sessionIdImageOverrides.constFind(id);
+            if (it != m_sessionIdImageOverrides.cend()) {
+                kept.insert(id, it.value());
+            }
+        }
+        m_sessionIdImageOverrides.swap(kept);
+    }
+    setFiles(files);
 }
 
 void ThumbnailBar::setFiles(const QStringList &files)

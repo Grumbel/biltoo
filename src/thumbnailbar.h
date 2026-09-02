@@ -62,6 +62,12 @@ public:
     ~ThumbnailBar() override;
 
     void setFiles(const QStringList &files);
+    /**
+     * Atomic session list update: install ids before rebuilding rows so
+     * scheduleThumbnailLoads never pairs a row with a stale session id
+     * (wrong crop/appearance on drag-drop / Duplicate / History).
+     */
+    void setSession(const QStringList &files, const QVector<SessionImageId> &ids);
     void setCurrentIndex(int index);
     int currentIndex() const;
 

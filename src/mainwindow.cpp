@@ -1574,8 +1574,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             if (alreadyOnCanvas && (slot < 0 || m_imageView->findItemBySessionId(sid))) {
                 m_session.append(img);
                 if (m_thumbnailBar) {
-                    m_thumbnailBar->setFiles(m_session.paths());
-                    m_thumbnailBar->setSessionIds(m_session.ids());
+                    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
                     m_thumbnailBar->setMultiSelectEnabled(true);
                 }
                 slot = m_session.lastIndexOfPath(img);
@@ -1622,8 +1621,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             m_session.append(p);
         }
         if (m_thumbnailBar) {
-            m_thumbnailBar->setFiles(m_session.paths());
-            m_thumbnailBar->setSessionIds(m_session.ids());
+            m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
         }
         applyThumbnailVisibility();
         const ImageView::LayoutMode layout = m_imageView
