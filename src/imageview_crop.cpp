@@ -96,9 +96,6 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
 
 ImageItem *ImageView::cropTargetItem() const
 {
-    if (isGalleryMode()) {
-        return nullptr;
-    }
     // Crop session is bound to one subject for its entire lifetime. Never
     // re-resolve via selection or primaryItem() — that applied the draft to
     // unrelated tiles when selection changed mid-crop (IDENTITY.md).
@@ -118,8 +115,8 @@ ImageItem *ImageView::cropTargetItem() const
             return t;
         }
     }
-    // Image mode only: sole canvas item. Workspace never falls back to
-    // primaryItem() (first tile) — that is not identity.
+    // Image mode only: sole canvas item. Gallery/Workspace need an explicit
+    // single selection (hasSingleCropTarget) — never primaryItem() fan-out.
     if (isImageMode()) {
         return primaryItem();
     }
@@ -311,10 +308,7 @@ void ImageView::setCropMode(bool on)
         return;
     }
     if (on) {
-        if (isGalleryMode()) {
-            return;
-        }
-        // Crop edits one image only; multi-select must not silently pick the first.
+        // Image, Workspace, or Gallery: one explicit subject only.
         if (!hasSingleCropTarget()) {
             flashHud(tr("Crop"), tr("Select a single image"));
             return;

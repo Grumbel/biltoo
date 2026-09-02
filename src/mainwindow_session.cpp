@@ -874,10 +874,9 @@ void MainWindow::updateNavigationActions()
             act->setEnabled(canTransform);
         }
     }
-    // Crop: Image mode or exactly one Workspace target (not multi-select).
+    // Crop: Image mode, or exactly one Gallery/Workspace selection.
     if (m_cropAct) {
-        const bool canCrop = m_imageView && !m_imageView->isGalleryMode()
-                             && m_imageView->hasSingleCropTarget();
+        const bool canCrop = m_imageView && m_imageView->hasSingleCropTarget();
         m_cropAct->setEnabled(canCrop);
         if (!canCrop && m_imageView && m_imageView->isCropMode()) {
             m_imageView->cancelCrop();

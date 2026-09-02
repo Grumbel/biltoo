@@ -335,3 +335,7 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   selection (original tile) while LoadAdd also bound the new tile to sid.
   Fixed: drop no longer bulk-binds selection; bindSelectedSessionIds and
   LoadAdd refuse an id already owned; rebind demotes the second claim.
+
+- [x] **Gallery Crop (C / toolbar)**  
+  Crop mode enabled in Gallery when a single tile is selected; removed
+  Gallery hard-blocks in setCropMode / cropTargetItem.
