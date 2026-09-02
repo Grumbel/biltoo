@@ -313,7 +313,12 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             event->accept();
             return;
         }
-        if (h == CropHandle::Apply) {
+        if (h == CropHandle::Cancel) {
+            cancelCrop();
+            event->accept();
+            return;
+        }
+        if (h == CropHandle::Close) {
             applyCrop();
             event->accept();
             return;
@@ -640,7 +645,8 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             break;
         case CropHandle::ExpandToggle:
         case CropHandle::Reset:
-        case CropHandle::Apply:
+        case CropHandle::Cancel:
+        case CropHandle::Close:
             viewport()->setCursor(Qt::PointingHandCursor);
             break;
         case CropHandle::None:

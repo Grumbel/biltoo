@@ -90,7 +90,11 @@ public:
         /** Column masonry: N columns spanning the view width; variable row heights. */
         Masonry,
         /** Row masonry: N rows spanning the view height; variable column widths. */
-        MasonryRows
+        MasonryRows,
+        /** Column masonry scaled per-column to a shared bottom edge (no dangling). */
+        MasonryFill,
+        /** Row masonry scaled per-row to a shared right edge (no dangling). */
+        MasonryRowsFill
     };
 
     explicit ImageView(QWidget *parent = nullptr);
@@ -641,8 +645,10 @@ private:
         ExpandToggle,
         /** Clears the draft rect to the full image (reset session crop on apply). */
         Reset,
-        /** Commits the draft crop (same as Enter). */
-        Apply
+        /** Leave crop mode and discard the draft. */
+        Cancel,
+        /** Leave crop mode and commit the draft (same as Enter). */
+        Close
     };
     ImageItem *cropTargetItem() const;
     void ensureCropRectValid();
@@ -651,7 +657,8 @@ private:
     /** Viewport rects of Reset / Apply controls above the crop frame. */
     QRect cropExpandButtonView() const;
     QRect cropResetButtonView() const;
-    QRect cropApplyButtonView() const;
+    QRect cropCancelButtonView() const;
+    QRect cropCloseButtonView() const;
     bool cropAllowExpand() const { return m_cropAllowExpand; }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);

@@ -30,14 +30,14 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     if (!cropView.isValid() || !viewportRect.isValid()) {
         return L;
     }
-    constexpr int kW = 64;
+    constexpr int kW = 56;
     constexpr int kH = 22;
-    constexpr int kGap = 6;
+    constexpr int kGap = 5;
     constexpr int kOutsideGap = 8;
     constexpr int kInsideInset = 8;
     constexpr int kMargin = 6;
 
-    const int totalW = kW * 3 + kGap * 2;
+    const int totalW = kW * 4 + kGap * 3;
     int x0 = qRound(cropView.center().x() - totalW / 2.0);
     // Prefer outside, centred under the crop bottom edge.
     int yOutside = qRound(cropView.bottom()) + kOutsideGap;
@@ -205,14 +205,15 @@ void ImageView::setCropMode(bool on)
         m_cropRubberBanding = false;
         flashHud(tr("Crop mode"),
                  m_cropHadStashedPlacement
-                     ? tr("Unrotated for crop · Handles · Apply · Esc")
-                     : tr("Handles · Reset · Apply · Esc"));
+                     ? tr("Unrotated for crop · Close commits · Esc cancels")
+                     : tr("Close commits · Cancel / Esc discards"));
         emit cropModeChanged(true);
         emit statusChanged();
         viewport()->update();
         return;
     }
-    leaveCropModeInternal(false);
+    // Turning crop off from the toolbar commits the draft (auto-apply).
+    leaveCropModeInternal(true);
 }
 
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
@@ -715,7 +716,7 @@ QRect ImageView::cropResetButtonView() const
     return QRect(L.x0 + L.w + L.gap, L.y, L.w, L.h);
 }
 
-QRect ImageView::cropApplyButtonView() const
+QRect ImageView::cropCancelButtonView() const
 {
     if (!m_cropMode) {
         return {};
@@ -726,6 +727,19 @@ QRect ImageView::cropApplyButtonView() const
     }
     return QRect(L.x0 + 2 * (L.w + L.gap), L.y, L.w, L.h);
 }
+
+QRect ImageView::cropCloseButtonView() const
+{
+    if (!m_cropMode) {
+        return {};
+    }
+    const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
+    if (!L.valid) {
+        return {};
+    }
+    return QRect(L.x0 + 3 * (L.w + L.gap), L.y, L.w, L.h);
+}
+
 
 
 void ImageView::paintCropOverlay(QPainter &painter)
@@ -871,7 +885,8 @@ void ImageView::paintCropOverlay(QPainter &painter)
     drawTextButton(cropExpandButtonView(), CropHandle::ExpandToggle,
                    ImageView::tr("Expand"), m_cropAllowExpand);
     drawTextButton(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"), false);
-    drawTextButton(cropApplyButtonView(), CropHandle::Apply, ImageView::tr("Apply"), true);
+    drawTextButton(cropCancelButtonView(), CropHandle::Cancel, ImageView::tr("Cancel"), false);
+    drawTextButton(cropCloseButtonView(), CropHandle::Close, ImageView::tr("Close"), true);
 
     // Crop size in image pixels (same coordinate space as the draft rect).
     const int cropW = qMax(1, qRound(m_cropRect.width()));
@@ -908,8 +923,8 @@ void ImageView::paintCropOverlay(QPainter &painter)
 void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || h == CropHandle::None || h == CropHandle::Reset || h == CropHandle::Apply
-        || h == CropHandle::ExpandToggle) {
+    if (!item || h == CropHandle::None || h == CropHandle::Reset || h == CropHandle::Close
+        || h == CropHandle::Cancel || h == CropHandle::ExpandToggle) {
         return;
     }
     m_cropActiveHandle = h;
@@ -1160,13 +1175,17 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (expandBtn.contains(viewPos)) {
         return CropHandle::ExpandToggle;
     }
-    const QRect applyBtn = cropApplyButtonView();
-    if (applyBtn.contains(viewPos)) {
-        return CropHandle::Apply;
-    }
     const QRect resetBtn = cropResetButtonView();
     if (resetBtn.contains(viewPos)) {
         return CropHandle::Reset;
+    }
+    const QRect cancelBtn = cropCancelButtonView();
+    if (cancelBtn.contains(viewPos)) {
+        return CropHandle::Cancel;
+    }
+    const QRect closeBtn = cropCloseButtonView();
+    if (closeBtn.contains(viewPos)) {
+        return CropHandle::Close;
     }
     // Map crop rect corners through item → scene → view (handles stay screen-sized).
     const QRectF r = m_cropRect;
