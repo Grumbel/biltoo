@@ -1757,7 +1757,10 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     m_currentIndex = 0;
 
     if (m_imageView) {
-        m_imageView->discardStashedGallery();
+        // Drop prior session tiles, stashes, and durable Workspace snapshot so
+        // enterWorkspaceMode does not restore the previous arrangement.
+        m_imageView->clearWorkspace();
+        m_imageView->appearance().clear();
         for (const auto &pair : appearances) {
             if (pair.first != kInvalidSessionImageId) {
                 m_imageView->setSessionAppearance(pair.first, pair.second);
@@ -1770,26 +1773,32 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     }
     applyThumbnailVisibility();
 
+    // Workspace canvas is a subset of the session: only images with a saved
+    // pose (hasWorkspacePose) belong on the canvas. Gallery still shows all.
     const bool wantWorkspace = (doc.mode == QLatin1String("workspace")) || !poses.isEmpty();
     if (wantWorkspace) {
         if (!isWorkspaceMode()) {
             enterWorkspaceMode();
         }
         if (m_imageView) {
-            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
-            // Apply free-form poses onto live tiles (placeholders or decoded).
-            for (ImageItem *item : m_imageView->liveItems()) {
-                if (!item) {
+            // Pose (pos/scale/rotation/opacity/z) is already in m_appearance from
+            // the appearances pass. addImageForSession schedules LoadAdd; on
+            // decode, LoadAdd applies placement via applyState from the store.
+            for (const auto &pair : poses) {
+                const SessionImageId sid = pair.first;
+                if (sid == kInvalidSessionImageId) {
                     continue;
                 }
-                for (const auto &pair : poses) {
-                    if (item->sessionId() == pair.first) {
-                        m_imageView->applyState(item, pair.second);
-                        break;
-                    }
+                const int idx = m_session.indexOfId(sid);
+                if (idx < 0) {
+                    continue;
                 }
+                // Ensure pose fields are present even if hasAppearance was false.
+                m_imageView->setSessionAppearance(sid, pair.second);
+                m_imageView->addImageForSession(m_session.pathAt(idx), sid, idx);
             }
             m_imageView->updateWorkspaceSceneRect();
+            syncThumbnailCanvasMembership();
         }
     } else if (isGalleryMode()) {
         if (m_imageView) {

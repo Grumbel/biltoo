@@ -355,3 +355,11 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   4. WorkspaceController restore always re-syncs grade from the session store
      (and again after pixel rebuild). Project save/load already serialized the
      five grade fields in WorkspaceItemState.
+
+- [x] **Project load drops every session image onto Workspace**  
+  Root cause: `loadProjectFromPath` called `setWorkspacePaths(full session)` so
+  every session row became a live tile. Workspace canvas is a membership subset
+  (double-click / drag); only images with `hasWorkspacePose` should be placed.
+  Fixed: clear prior workspace (incl. durable snapshot + appearance store), enter
+  Workspace, `addImageForSession` only for pose entries; LoadAdd applies placement
+  from the appearance store. Gallery path unchanged (full session).

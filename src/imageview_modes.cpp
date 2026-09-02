@@ -162,10 +162,13 @@ void ImageView::clearLiveCanvas()
 
 void ImageView::clearWorkspace()
 {
-    // Full session/canvas wipe including mode stashes.
+    // Full session/canvas wipe including mode stashes and the durable
+    // Workspace snapshot so a subsequent enter() does not resurrect the
+    // previous arrangement (project load, session replace).
     clearLiveCanvas();
     discardStashedWorkspace();
     discardStashedGallery();
+    m_workspace.savedItems().clear();
     m_pendingScenePos.clear();
     m_pendingWorkspacePaths.clear();
     m_pendingRestoreStates.clear();
@@ -173,6 +176,8 @@ void ImageView::clearWorkspace()
     m_pendingSessionIndexByPath.clear();
     m_galleryDecodeScheduled.clear();
     m_galleryDecodeFailed.clear();
+    m_pathOrder.clear();
+    m_sessionIdOrder.clear();
     clearClassicPath();
     if (m_scene) {
         m_scene->blockSignals(true);
