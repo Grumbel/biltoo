@@ -449,10 +449,10 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
             // rememberItemState / snapshot only.
             const QImage appearance = sessionAppearanceImage(item);
             if (!appearance.isNull()) {
+                // Id-keyed only — path signals paint every filmstrip row with
+                // the same file (IDENTITY.md).
                 emit sessionAppearanceChanged(sid, item->path(), appearance);
                 emit sessionCropApplied(sid, item->path(), appearance);
-                emit sessionAppearanceChanged(item->path(), appearance);
-                emit sessionCropApplied(item->path(), appearance);
             }
         }
     }

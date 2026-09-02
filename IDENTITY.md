@@ -427,3 +427,53 @@ Path-keyed `m_itemStates` remains a legacy last-writer cache only.
 
 Full residual list and bundle index: [SESSION.md](SESSION.md) (including
 continuation for project/export/controllers).
+
+
+---
+
+## 13. Crop identity (must not leak)
+
+**Symptom (fixed):** applying crop changed unrelated Workspace tiles / filmstrip
+rows that shared a path or happened to be `m_items.first()`.
+
+**Rules:**
+
+1. Entering crop locks **`m_cropTargetItem` + `m_cropTargetId`** for the whole
+   session. `cropTargetItem()` must return that lock while `m_cropMode` is true.
+2. **Never** re-resolve the crop subject via `targetItem()` / selection or
+   `primaryItem()` (`m_items.first()`) during crop mode.
+3. Workspace **never** falls back to `primaryItem()` for crop when selection is
+   empty — require a single selected target.
+4. `recordSessionCrop` / `commitItemSessionEdit` write appearance **only** under
+   `SessionImageId`. Do not use `m_currentSessionId` as a stand-in on a multi-tile
+   Workspace canvas.
+5. Peer sync in `commitItemSessionEdit` matches **`other->sessionId() == sessionId`**
+   only (never path).
+6. Filmstrip / HUD: emit and handle **`sessionCropApplied(SessionImageId, …)`**
+   only. Path-keyed overloads must not repaint every row with the same file.
+
+**Acceptance:** two tiles, same path, different `SessionImageId` — crop tile A;
+tile B pixels and filmstrip row B stay unchanged.
+
+---
+
+## 14. SessionImageId allocation (uniqueness)
+
+Implemented in `SessionDocument`:
+
+| Property | Behaviour |
+|----------|-----------|
+| Type | `qint64`; `0` is **invalid** (`kInvalidSessionImageId`) |
+| First id | `m_nextId` starts at **1** |
+| Alloc | `allocId()` → `m_nextId++` (monotonic) |
+| Remove | drops the id from the list; **does not** return it to the pool |
+| Clear session | clears paths/ids; **keeps** `m_nextId` (no recycle after clear) |
+| Restore / load | `replaceAll` / `append(..., id)` advance `m_nextId` past any retained id |
+| Duplicate | new row gets a **fresh** `allocId()` (never copies the source id) |
+
+Ids are unique **within a process lifetime** of the `SessionDocument`. They are
+not recycled on delete, clear, or duplicate. Project load must preserve stored
+ids and advance `m_nextId` (already done in `replaceAll`).
+
+**Do not** reset `m_nextId` to 1 on `clear()` without also wiping every
+appearance map / canvas bind that could still hold old ids.

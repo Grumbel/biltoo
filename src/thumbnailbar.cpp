@@ -542,8 +542,11 @@ void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
 void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QString &path,
                                            const QImage &image)
 {
-    if (sessionId == kInvalidSessionImageId || image.isNull()) {
-        // Fall back to path-wide update.
+    if (image.isNull()) {
+        return;
+    }
+    if (sessionId == kInvalidSessionImageId) {
+        // Unbound tiles only. Path-wide update is last resort (IDENTITY.md).
         setSessionImageOverride(path, image);
         return;
     }
@@ -558,8 +561,9 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
             return;
         }
     }
-    // Id not in strip yet — keep path fallback for visibility.
-    setSessionImageOverride(path, image);
+    // Id not in the strip yet — keep override for when the row appears.
+    // Do not paint every path-matching row (leaks crops across duplicates).
+    Q_UNUSED(path);
 }
 
 void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)

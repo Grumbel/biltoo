@@ -51,6 +51,7 @@ void SessionDocument::clear()
 {
     m_paths.clear();
     m_ids.clear();
+    // Do not reset m_nextId — removed ids must never be recycled (IDENTITY.md).
 }
 
 void SessionDocument::setPaths(const QStringList &paths)
@@ -79,7 +80,14 @@ void SessionDocument::replaceAll(const QStringList &paths, const QVector<Session
 void SessionDocument::append(const QString &path, SessionImageId id)
 {
     m_paths.append(path);
-    m_ids.append(id != kInvalidSessionImageId ? id : allocId());
+    if (id != kInvalidSessionImageId) {
+        m_ids.append(id);
+        if (id >= m_nextId) {
+            m_nextId = id + 1;
+        }
+    } else {
+        m_ids.append(allocId());
+    }
 }
 
 void SessionDocument::insert(int index, const QString &path, SessionImageId id)
@@ -89,7 +97,14 @@ void SessionDocument::insert(int index, const QString &path, SessionImageId id)
         return;
     }
     m_paths.insert(index, path);
-    m_ids.insert(index, id != kInvalidSessionImageId ? id : allocId());
+    if (id != kInvalidSessionImageId) {
+        m_ids.insert(index, id);
+        if (id >= m_nextId) {
+            m_nextId = id + 1;
+        }
+    } else {
+        m_ids.insert(index, allocId());
+    }
 }
 
 void SessionDocument::removeAt(int index)

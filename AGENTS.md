@@ -11,6 +11,10 @@ in packed layouts, or arrange several images freely for comparison. It is
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
 
+**Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
+only appearance/crop key. Path is decode source only. Before any crop, flip,
+drop, or filmstrip change, read §0, §13 (crop lock), and §14 (id allocation).
+
 **Handoff:** [SESSION.md](SESSION.md) — SessionImageId model, what shipped
 in the chrome/identity series, residual risks, and how to continue.
 

@@ -99,12 +99,31 @@ ImageItem *ImageView::cropTargetItem() const
     if (isGalleryMode()) {
         return nullptr;
     }
+    // Crop session is bound to one subject for its entire lifetime. Never
+    // re-resolve via selection or primaryItem() — that applied the draft to
+    // unrelated tiles when selection changed mid-crop (IDENTITY.md).
+    if (m_cropMode) {
+        if (m_cropTargetItem) {
+            return m_cropTargetItem.data();
+        }
+        if (m_cropTargetId != kInvalidSessionImageId) {
+            if (ImageItem *byId = findItemBySessionId(m_cropTargetId)) {
+                return byId;
+            }
+        }
+        return nullptr;
+    }
     if (ImageItem *t = targetItem()) {
         if (t->hasDecodedPixels() || !t->pixmap().isNull()) {
             return t;
         }
     }
-    return primaryItem();
+    // Image mode only: sole canvas item. Workspace never falls back to
+    // primaryItem() (first tile) — that is not identity.
+    if (isImageMode()) {
+        return primaryItem();
+    }
+    return nullptr;
 }
 
 
@@ -306,6 +325,9 @@ void ImageView::setCropMode(bool on)
             return;
         }
         cancelZoomRegion();
+        // Lock identity for the whole crop session (IDENTITY.md).
+        m_cropTargetItem = item;
+        m_cropTargetId = item->sessionId();
         // Snapshot appearance before full-image reload so Close can be undone.
         m_cropEnterSource = item->sourceImage().copy();
         m_cropEnterState = captureState(item);
@@ -331,6 +353,8 @@ void ImageView::setCropMode(bool on)
                 item->setItemRotation(m_cropStashedPlacementRotation);
             }
             m_cropHadStashedPlacement = false;
+            m_cropTargetItem = nullptr;
+            m_cropTargetId = kInvalidSessionImageId;
             flashHud(tr("Crop"), tr("Could not load full image"));
             return;
         }
@@ -659,9 +683,15 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     const QRect disp(dx, dy, dw, dh);
 
     WorkspaceItemState s = captureState(item);
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : m_currentSessionId;
+    // Appearance is keyed by SessionImageId only. Prefer the locked crop target
+    // id; never invent one from the navigation cursor while other tiles exist.
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && m_cropTargetId != kInvalidSessionImageId) {
+        sid = m_cropTargetId;
+    }
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_currentSessionId;
+    }
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             // Keep content transforms from the session-image store.
@@ -879,6 +909,8 @@ void ImageView::leaveCropModeInternal(bool apply)
     m_cropShowingFullImage = false;
     m_cropEnterValid = false;
     m_cropEnterSource = QImage();
+    m_cropTargetItem = nullptr;
+    m_cropTargetId = kInvalidSessionImageId;
     m_cropRect = QRectF();
     m_cropActiveHandle = CropHandle::None;
     m_cropHoverHandle = CropHandle::None;
