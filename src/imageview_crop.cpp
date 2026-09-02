@@ -1198,8 +1198,12 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         while (m_cropRotation <= -180.0) {
             m_cropRotation += 360.0;
         }
-        if (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) {
+        // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
+        const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
+        if (mods & Qt::ShiftModifier) {
             m_cropRotation = qRound(m_cropRotation / 15.0) * 15.0;
+        } else if (mods & Qt::ControlModifier) {
+            m_cropRotation = qRound(m_cropRotation / 45.0) * 45.0;
         }
         if (!m_cropAllowExpand) {
             m_cropRect = constrainCropToContent(m_cropDragStartRect, m_cropRotation, cr,

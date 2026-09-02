@@ -1363,10 +1363,10 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
         const qreal a1 = qAtan2(v1.y(), v1.x());
         const qreal deltaDeg = qRadiansToDegrees(a1 - a0);
         qreal angle = m_pressRotation + deltaDeg;
-        if (mods & Qt::ControlModifier) {
-            // Snap placement to 90° — still placement only, not content.
-            angle = qRound(angle / 90.0) * 90.0;
-        } else if (mods & Qt::ShiftModifier) {
+        // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
+        if (mods & Qt::ShiftModifier) {
+            angle = qRound(angle / 15.0) * 15.0;
+        } else if (mods & Qt::ControlModifier) {
             angle = qRound(angle / 45.0) * 45.0;
         }
         setItemRotation(angle);

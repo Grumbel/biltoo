@@ -220,9 +220,10 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
         return;
     }
     qreal delta = qRadiansToDegrees(qAtan2(v1.y(), v1.x()) - qAtan2(v0.y(), v0.x()));
-    if (mods & Qt::ControlModifier) {
-        delta = qRound(delta / 90.0) * 90.0;
-    } else if (mods & Qt::ShiftModifier) {
+    // Match single-item / crop rotate: Shift → 15°, Ctrl → 45° (incl. 90°).
+    if (mods & Qt::ShiftModifier) {
+        delta = qRound(delta / 15.0) * 15.0;
+    } else if (mods & Qt::ControlModifier) {
         delta = qRound(delta / 45.0) * 45.0;
     }
     const qreal rad = qDegreesToRadians(delta);

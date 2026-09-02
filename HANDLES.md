@@ -103,6 +103,20 @@ Scale handles stay at the mapped corners / edge mids (no extra offset).
 Axes for edge stretch are the item’s local X/Y (image axes), not screen axes,
 so a rotated image still stretches “width” and “height” of the picture.
 
+## Free-rotate handle modifiers
+
+Applies to Workspace item rotate knobs, multi-select group rotate, and the crop
+draft rotate knob:
+
+| Modifier | Snap |
+|----------|------|
+| none | free angle |
+| **Ctrl** | multiples of **45°** (includes 0° / 90° / 180°) |
+| **Shift** (alone or with Ctrl) | multiples of **15°** |
+
+Absolute placement angle is snapped for a single item and for crop rotation;
+group rotate snaps the shared delta so the selection keeps formation.
+
 ## Paint order and stacking
 
 Chrome for selected items is painted in ImageView::paintEvent after the scene,
@@ -153,7 +167,7 @@ axis-aligned output image. Session appearance stores `cropRect`,
 | **Ctrl+Shift** | Square about centre / press point |
 | Drag on the image outside grips | New rubber-band crop |
 | **Expand** toggle | Draft may leave the image; Apply pads with the view background |
-| **Rotate** knob (stem above top edge) | Free rotation about centre; **Shift** snaps to 15° |
+| **Rotate** knob (stem above top edge) | Free rotation about centre; **Ctrl** snaps to 45° (incl. 90°); **Shift** snaps to 15° |
 | Reset | Full-image draft, rotation cleared |
 | Cancel / Esc | Discard draft |
 | Apply / Enter / toolbar crop-off | Commit draft |

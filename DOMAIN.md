@@ -237,8 +237,8 @@ crop draft (Image or single Workspace target):
   default: draft clamped to image bounds
   Expand on: draft may extend outside; Apply pads with view background
   Move = centre grip only (frame interior starts a new rubber-band)
-  Ctrl = resize from centre; Shift = square (resize) or 15° snap (rotate)
-  Rotate knob = free angle about centre; Close bakes axis-aligned pixels
+  Ctrl = resize from centre; Shift = square (resize)
+  Rotate knob = free angle about centre; Ctrl → 45° snap; Shift → 15° snap; Close bakes axis-aligned pixels
   Resize under rotation uses crop-local axes; centre mapped back through θ
   Apply commits; Cancel / Esc discards; toolbar crop-off commits (same as Apply)
   cropRotation + cropSourceSize in session appearance and project file
