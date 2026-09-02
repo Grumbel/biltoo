@@ -335,6 +335,36 @@ void MainWindow::syncThumbnailCanvasMembership()
     }
     // Ensure every on-canvas item is tied to a session row (badges + shared selection).
     m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
+
+    // After rebind demotes duplicate SessionImageIds, allocate a fresh session
+    // image for each still-unbound live tile so two Workspace tiles never share
+    // one filmstrip row / one appearance slot.
+    bool grew = false;
+    for (ImageItem *item : m_imageView->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        if (item->sessionId() != kInvalidSessionImageId
+            && m_session.indexOfId(item->sessionId()) >= 0) {
+            continue;
+        }
+        const QString path = item->path();
+        if (path.isEmpty()) {
+            continue;
+        }
+        const SessionImageId id = allocSessionId();
+        m_session.append(path, id);
+        item->setSessionId(id);
+        item->setSessionIndex(m_session.size() - 1);
+        // Preserve current pixels as the new session image's appearance.
+        m_imageView->commitItemSessionEdit(item);
+        grew = true;
+    }
+    if (grew) {
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+        m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
+    }
+
     // Badge by stable id → session row, not path (duplicate-safe).
     QSet<int> onCanvas;
     for (ImageItem *item : m_imageView->liveItems()) {
@@ -1596,15 +1626,12 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             }
             if (!scenePos.isNull()) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
+                // placeOrMoveImageAt owns identity via PendingSessionBind / move-by-id.
+                // Do NOT bindSelectedSessionIds here — that stamped sid onto every
+                // currently selected tile and created duplicate SessionImageIds.
                 m_imageView->placeOrMoveImageAt(img, pos, sid, slot);
             } else {
                 m_imageView->addImageForSession(img, sid, slot);
-            }
-            if (slot >= 0) {
-                m_imageView->bindSelectedSessionIndices(slot);
-                if (sid != kInvalidSessionImageId) {
-                    m_imageView->bindSelectedSessionIds({sid});
-                }
             }
             ++i;
         }

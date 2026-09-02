@@ -329,3 +329,9 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   SessionDocument refuses/reallocates duplicate ids; ImageView logs if two
   live/stashed items share an id; peer crop sync refuses mismatched paths;
   ThumbnailBar logs duplicate ids in setSessionIds.
+
+- [x] **Two Workspace tiles, one SessionImageId**  
+  Root cause: drop called bindSelectedSessionIds({sid}) on the current
+  selection (original tile) while LoadAdd also bound the new tile to sid.
+  Fixed: drop no longer bulk-binds selection; bindSelectedSessionIds and
+  LoadAdd refuse an id already owned; rebind demotes the second claim.

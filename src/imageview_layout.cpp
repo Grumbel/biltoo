@@ -832,6 +832,18 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
             break;
         }
         const SessionImageId id = ids.at(i++);
+        if (id == kInvalidSessionImageId) {
+            continue;
+        }
+        // Never give the same SessionImageId to two live tiles (drop path used
+        // to stamp {sid} onto every selected item while LoadAdd also bound it).
+        if (ImageItem *owner = findItemBySessionId(id)) {
+            if (owner != item) {
+                qCritical("bindSelectedSessionIds: SessionImageId %lld already on another tile — skip",
+                          static_cast<long long>(id));
+                continue;
+            }
+        }
         WorkspaceItemState slot;
         if (m_pendingItemAppearance.contains(item)) {
             slot = m_pendingItemAppearance.take(item);

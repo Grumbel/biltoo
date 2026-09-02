@@ -497,6 +497,16 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
                 }
             }
             if (found >= 0 && sessionFiles.at(found) == item->path()) {
+                // One SessionImageId → at most one live tile. A second claim is
+                // corruption (drop bindSelectedSessionIds fan-out); unbind so a
+                // new session row can be allocated instead of sharing crop/state.
+                if (usedId.contains(sid)) {
+                    qCritical("rebindWorkspaceSession: demoting duplicate live SessionImageId %lld path=%s",
+                              static_cast<long long>(sid), qPrintable(item->path()));
+                    item->setSessionId(kInvalidSessionImageId);
+                    item->setSessionIndex(-1);
+                    continue;
+                }
                 item->setSessionIndex(found);
                 usedIndex.insert(found);
                 usedId.insert(sid);

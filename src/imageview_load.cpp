@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+
+#include <QDebug>
 #include "imageitem.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
@@ -379,9 +381,19 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 bound = m_pendingSessionBinds.takeAt(bi);
                 haveBound = true;
                 if (bound.id != kInvalidSessionImageId) {
-                    item->setSessionId(bound.id);
+                    if (ImageItem *owner = findItemBySessionId(bound.id)) {
+                        if (owner != item) {
+                            qCritical("LoadAdd: SessionImageId %lld already live — leaving new tile unbound",
+                                      static_cast<long long>(bound.id));
+                            bound.id = kInvalidSessionImageId;
+                        } else {
+                            item->setSessionId(bound.id);
+                        }
+                    } else {
+                        item->setSessionId(bound.id);
+                    }
                 }
-                if (bound.index >= 0) {
+                if (bound.index >= 0 && bound.id != kInvalidSessionImageId) {
                     item->setSessionIndex(bound.index);
                 }
                 break;
