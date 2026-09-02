@@ -839,6 +839,10 @@ private:
     bool m_cropMode = false;
     /** Draft may extend outside the image; apply pads with background. */
     bool m_cropAllowExpand = false;
+    /** Draft crop rotation (degrees, about m_cropRect centre). */
+    qreal m_cropRotation = 0.0;
+    qreal m_cropRotateStartAngle = 0.0;
+    qreal m_cropRotateStartRotation = 0.0;
     /** True while crop mode shows the full on-disk image (not the cropped pixmap). */
     bool m_cropShowingFullImage = false;
     /** Workspace free-rotate stashed while crop runs axis-aligned. */
