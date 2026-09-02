@@ -623,9 +623,9 @@ void ThumbnailBar::scheduleThumbnailLoads()
             // A crop may have landed while this job ran — do not clobber it.
             // Path override only protects unbound rows; bound rows use id map.
             if (i < bar->m_sessionIds.size()) {
-                const SessionImageId sid = bar->m_sessionIds.at(i);
-                if (sid != kInvalidSessionImageId) {
-                    if (bar->m_sessionIdImageOverrides.contains(sid)) {
+                const SessionImageId rowId = bar->m_sessionIds.at(i);
+                if (rowId != kInvalidSessionImageId) {
+                    if (bar->m_sessionIdImageOverrides.contains(rowId)) {
                         return;
                     }
                 } else if (bar->m_sessionImageOverrides.contains(path)) {
