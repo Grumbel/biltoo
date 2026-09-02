@@ -269,10 +269,17 @@ void WorkspaceController::enter(int previousMode)
     if (previous == ImageView::ViewMode::Image && !m_stashedItems.isEmpty()) {
         // Fast path: reattach live items (no re-decode).
         restoreStashedItems();
-    } else if (!m_savedItems.isEmpty() && previous == ImageView::ViewMode::Image) {
-        // Fallback: rebuild from snapshot (e.g. stash was discarded).
+    } else if (!m_savedItems.isEmpty()) {
+        // Durable snapshot — permanent Workspace across Gallery↔Workspace and
+        // when the Image-mode stash was discarded. Never adopt Gallery packing
+        // as the free-form canvas (that silently overwrote user arrangement).
         restore();
     } else {
+        // Empty permanent Workspace. Drop residual Gallery tiles so mode switch
+        // does not import a packaged layout by accident.
+        if (previous == ImageView::ViewMode::Gallery) {
+            m_view->clearLiveCanvas();
+        }
         m_view->applyModeFlagsToLiveItems();
         m_view->ensurePrimarySelection();
     }
