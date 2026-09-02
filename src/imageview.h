@@ -502,6 +502,8 @@ public:
     QString currentPath() const;
     QSize imageSize() const;
     int itemCount() const;
+    /** Live tiles, stashed tiles, or durable snapshot — Workspace is non-empty. */
+    bool hasWorkspaceContent() const;
     QStringList itemPaths() const;
     /** Paths of selected canvas items (Gallery/Workspace). Image mode: current path. */
     QStringList selectedPaths() const;

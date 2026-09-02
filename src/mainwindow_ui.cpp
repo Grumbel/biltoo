@@ -94,10 +94,15 @@ void MainWindow::createActions()
     connect(m_fitPageGuideAct, &QAction::triggered, this, &MainWindow::fitPageGuideToContent);
 
     m_quitAct = new QAction(tr("&Quit"), this);
-    m_quitAct->setShortcut(QKeySequence::Quit);
+    // Plain Q (GNOME2-style); Ctrl+Q remains available via standard Quit on some platforms.
+    m_quitAct->setShortcuts({QKeySequence(Qt::Key_Q), QKeySequence::Quit});
     m_quitAct->setIcon(themeIcon(QStringLiteral("application-exit"), QStyle::SP_DialogCloseButton));
-    m_quitAct->setStatusTip(tr("Quit QImgView"));
-    connect(m_quitAct, &QAction::triggered, this, &QWidget::close);
+    m_quitAct->setStatusTip(tr("Quit QImgView (prompts if the Workspace has unsaved images)"));
+    connect(m_quitAct, &QAction::triggered, this, [this]() {
+        if (confirmQuitOrClose()) {
+            close();
+        }
+    });
 
     m_zoomInAct = new QAction(tr("Zoom &In"), this);
     m_zoomInAct->setShortcut(QKeySequence::ZoomIn);

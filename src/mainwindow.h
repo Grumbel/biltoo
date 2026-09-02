@@ -103,6 +103,10 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    /** GNOME2-style Close without Saving / Cancel / Save when Workspace is dirty. */
+    bool confirmQuitOrClose();
+    bool workspaceHasUnsavedWork() const;
+    void markWorkspaceDirty();
     void keyPressEvent(QKeyEvent *event) override;
     void changeEvent(QEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -382,6 +386,8 @@ private:
     /** Working set: ordered paths + stable session-image ids (Phase 4). */
     SessionDocument m_session;
     QString m_projectPath;
+    /** True after Workspace canvas changes until successful project save/load. */
+    bool m_workspaceDirty = false;
     /** Past sessions (full path lists), newest first. */
     QList<QStringList> m_sessionHistory;
     static constexpr int kMaxSessionHistory = 20;

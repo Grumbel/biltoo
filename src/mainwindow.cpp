@@ -229,6 +229,7 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
         return;
     }
     m_imageView->addImageForSession(m_session.paths().at(index), sessionIdAt(index), index);
+    markWorkspaceDirty();
     syncThumbnailCanvasMembership();
 }
 
@@ -279,6 +280,7 @@ void MainWindow::onThumbnailCanvasMembershipToggled(int index)
     } else {
         m_imageView->addImageForSession(path, sid, index);
     }
+    markWorkspaceDirty();
     syncThumbnailCanvasMembership();
     updateStatus();
 }
@@ -288,6 +290,7 @@ void MainWindow::onWorkspacePathsChanged()
     if (!isWorkspaceMode()) {
         return;
     }
+    markWorkspaceDirty();
     syncThumbnailCanvasMembership();
     updateStatus();
 }
@@ -514,10 +517,8 @@ void MainWindow::toggleWorkspaceMode()
         }
         m_thumbnailBar->setMultiSelectEnabled(true);
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
-        if (m_imageView->itemCount() == 0
-            && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-            m_imageView->addImageForSession(m_session.paths().at(m_currentIndex), currentSessionId(), m_currentIndex);
-        }
+        // Workspace starts/stays empty unless the user (or a project) places tiles.
+        // Do not seed from the session list — arrangement is permanent across modes.
         syncThumbnailCanvasMembership();
         if (m_session.paths().size() > 1 && !m_thumbnailBar->isVisible()) {
             m_toggleThumbnailBarAct->setChecked(true);
@@ -1369,8 +1370,57 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    if (!confirmQuitOrClose()) {
+        event->ignore();
+        return;
+    }
     writeSettings();
     QMainWindow::closeEvent(event);
+}
+
+bool MainWindow::workspaceHasUnsavedWork() const
+{
+    if (!m_workspaceDirty) {
+        return false;
+    }
+    return m_imageView && m_imageView->hasWorkspaceContent();
+}
+
+void MainWindow::markWorkspaceDirty()
+{
+    m_workspaceDirty = true;
+}
+
+bool MainWindow::confirmQuitOrClose()
+{
+    if (!workspaceHasUnsavedWork()) {
+        return true;
+    }
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle(tr("Save Workspace before closing?"));
+    box.setText(tr("The Workspace has images that have not been saved to a project."));
+    box.setInformativeText(
+        tr("If you close without saving, your arrangement will be lost."));
+    QPushButton *discardBtn = box.addButton(tr("Close without Saving"),
+                                            QMessageBox::DestructiveRole);
+    QPushButton *cancelBtn = box.addButton(QMessageBox::Cancel);
+    QPushButton *saveBtn = box.addButton(tr("Save"), QMessageBox::AcceptRole);
+    box.setDefaultButton(saveBtn);
+    box.exec();
+    if (box.clickedButton() == cancelBtn) {
+        return false;
+    }
+    if (box.clickedButton() == saveBtn) {
+        saveProject();
+        // User cancelled Save As or save failed — keep the window open.
+        if (workspaceHasUnsavedWork()) {
+            return false;
+        }
+        return true;
+    }
+    Q_UNUSED(discardBtn);
+    return true;
 }
 
 QStringList MainWindow::extractLocalImagePaths(const QMimeData *mime) const

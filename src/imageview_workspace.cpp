@@ -12,6 +12,17 @@ void ImageView::snapshotWorkspace()
     m_workspace.snapshot();
 }
 
+bool ImageView::hasWorkspaceContent() const
+{
+    if (!m_items.isEmpty()) {
+        return true;
+    }
+    if (!m_workspace.stashedItems().isEmpty()) {
+        return true;
+    }
+    return !m_workspace.savedItems().isEmpty();
+}
+
 void ImageView::restoreWorkspace()
 {
     m_workspace.restore();

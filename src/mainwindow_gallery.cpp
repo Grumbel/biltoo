@@ -325,10 +325,8 @@ void MainWindow::applyCliViewMode(const QString &mode)
         return;
     }
     if (m == QLatin1String("workspace") || m == QLatin1String("work")) {
+        // Empty Workspace by default; user places tiles or opens a project.
         enterWorkspaceMode();
-        if (m_imageView && !m_session.paths().isEmpty()) {
-            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
-        }
         updateWorkspaceActionVisibility();
         return;
     }

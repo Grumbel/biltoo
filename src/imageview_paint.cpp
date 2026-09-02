@@ -130,8 +130,12 @@ void ImageView::paintEvent(QPaintEvent *event)
         titleFont.setBold(true);
         QFont hintFont = font();
         hintFont.setPointSize(qBound(10, hintFont.pointSize() + 1, 20));
-        const QString title = tr("Drop images here or open a file");
-        const QString hint = tr("File → Open…  ·  Ctrl+O  ·  drag and drop");
+        const QString title = isWorkspaceMode()
+            ? tr("Drop images here")
+            : tr("Drop images here or open a file");
+        const QString hint = isWorkspaceMode()
+            ? tr("Drag files onto the canvas  ·  double-click a thumbnail to place")
+            : tr("File → Open…  ·  Ctrl+O  ·  drag and drop");
         const QFontMetrics titleFm(titleFont);
         const QFontMetrics hintFm(hintFont);
         const int gap = 8;

@@ -371,8 +371,9 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     // New session paths: drop any Gallery tile cache from the previous session.
     if (m_imageView) {
         m_imageView->discardStashedGallery();
-        if (isGalleryMode() || isWorkspaceMode()) {
-            // Rebuild multi-item canvas to match m_session.paths() (History / Open / CLI).
+        if (isGalleryMode()) {
+            // Gallery mirrors the full session list. Workspace is permanent and
+            // is not replaced when opening a new session.
             m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
         }
     }
@@ -770,7 +771,12 @@ void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entrie
     if (isGalleryMode() && m_imageView) {
         m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
     } else if (isWorkspaceMode() && m_imageView) {
-        m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+        // Re-add only the restored session rows; do not replace the whole canvas.
+        for (const auto &e : sorted) {
+            const int idx = m_session.indexOfId(e.id);
+            m_imageView->addImageForSession(e.path, e.id, idx >= 0 ? idx : e.index);
+        }
+        markWorkspaceDirty();
     } else if (!m_session.paths().isEmpty()) {
         m_currentIndex = -1;
         setCurrentIndex(qMin(m_currentIndex < 0 ? 0 : m_currentIndex, m_session.paths().size() - 1));
@@ -1449,6 +1455,7 @@ void MainWindow::saveProject()
         }
     } else {
         rememberRecentProject(m_projectPath);
+        m_workspaceDirty = false;
         if (statusBar()) {
             statusBar()->showMessage(tr("Project saved."), 3000);
         }
@@ -1477,6 +1484,7 @@ void MainWindow::saveProjectAs()
     }
     m_projectPath = out;
     rememberRecentProject(out);
+    m_workspaceDirty = false;
     if (statusBar()) {
         statusBar()->showMessage(tr("Project saved."), 3000);
     }
@@ -1748,7 +1756,7 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
             }
             m_imageView->updateWorkspaceSceneRect();
         }
-    } else if (isGalleryMode() || isWorkspaceMode()) {
+    } else if (isGalleryMode()) {
         if (m_imageView) {
             m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
         }
@@ -1762,6 +1770,7 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
         statusBar()->showMessage(
             tr("Project loaded with %n missing image(s).", "", missing.size()), 8000);
     }
+    m_workspaceDirty = false;
     return true;
 }
 
@@ -1849,6 +1858,7 @@ void MainWindow::openRecentProject()
     }
     m_projectPath = path;
     rememberRecentProject(path);
+    m_workspaceDirty = false;
     if (statusBar()) {
         statusBar()->showMessage(tr("Project loaded."), 3000);
     }
