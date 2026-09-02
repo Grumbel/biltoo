@@ -42,6 +42,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QMimeData>
 #include <QScreen>
 #include <QSettings>
