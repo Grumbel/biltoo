@@ -534,10 +534,8 @@ void MainWindow::toggleWorkspaceMode()
         // Workspace starts/stays empty unless the user (or a project) places tiles.
         // Do not seed from the session list — arrangement is permanent across modes.
         syncThumbnailCanvasMembership();
-        if (m_session.paths().size() > 1 && !m_thumbnailBar->isVisible()) {
-            m_toggleThumbnailBarAct->setChecked(true);
-            m_thumbnailBar->setVisible(true);
-        }
+        // Thumbnail visibility for Workspace is applied in updateWorkspaceActionVisibility
+        // via updateThumbnailBarForMode (default preferred on).
         // Uncheck gallery layout actions
         for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
                              m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
@@ -594,8 +592,21 @@ void MainWindow::toggleThumbnailBar()
 {
     const bool visible = m_toggleThumbnailBarAct->isChecked();
     m_thumbnailBar->setVisible(visible);
-    m_forceNoThumbnails = !visible;
-    m_forceThumbnails = visible;
+    // Remember preference for the mode the user is currently in so Gallery and
+    // Workspace stay independent. Image mode still uses the force flags so
+    // applyThumbnailVisibility keeps working after load/sort.
+    if (m_imageView && m_imageView->isGalleryMode()) {
+        m_thumbnailsPreferredGallery = visible;
+        m_forceThumbnails = false;
+        m_forceNoThumbnails = false;
+    } else if (m_imageView && m_imageView->isWorkspaceMode()) {
+        m_thumbnailsPreferredWorkspace = visible;
+        m_forceThumbnails = false;
+        m_forceNoThumbnails = false;
+    } else {
+        m_forceNoThumbnails = !visible;
+        m_forceThumbnails = visible;
+    }
     if (!isFullScreen()) {
         m_thumbnailBarVisibleBeforeFullscreen = visible;
     }
@@ -1086,21 +1097,17 @@ void MainWindow::updateFullscreenUi()
         }
     } else {
         m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
-        m_thumbnailBar->setVisible(m_thumbnailBarVisibleBeforeFullscreen);
         m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
-        m_toggleThumbnailBarAct->setChecked(m_thumbnailBarVisibleBeforeFullscreen);
         if (m_metadataDock) {
             m_metadataDock->setVisible(m_metadataVisibleBeforeFullscreen);
         }
         if (m_toggleMetadataAct) {
             m_toggleMetadataAct->setChecked(m_metadataVisibleBeforeFullscreen);
         }
-        if (m_layoutDock) {
-            m_layoutDock->setVisible(m_layoutVisibleBeforeFullscreen);
-        }
-        if (m_toggleLayoutPanelAct) {
-            m_toggleLayoutPanelAct->setChecked(m_layoutVisibleBeforeFullscreen);
-        }
+        // Thumbnails and Layout panel follow per-mode rules, not a single
+        // pre-fullscreen snapshot (Gallery must not regain a Workspace layout dock).
+        updateThumbnailBarForMode();
+        updateLayoutPanelForMode();
         if (isWorkspaceMode() && m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(true);
         }
@@ -1120,6 +1127,15 @@ void MainWindow::readSettings()
     if (!state.isEmpty()) {
         restoreState(state);
     }
+    // Per-mode chrome preferences (defaults: Workspace thumbs on, Gallery off,
+    // Layout panel off). restoreState may have re-shown docks — Layout is forced
+    // through updateLayoutPanelForMode after mode is applied below.
+    m_thumbnailsPreferredWorkspace =
+        settings.value(QStringLiteral("thumbnailsPreferredWorkspace"), true).toBool();
+    m_thumbnailsPreferredGallery =
+        settings.value(QStringLiteral("thumbnailsPreferredGallery"), false).toBool();
+    m_layoutPreferredInWorkspace =
+        settings.value(QStringLiteral("layoutPreferredInWorkspace"), false).toBool();
     m_toolBarVisibleBeforeFullscreen =
         settings.value(QStringLiteral("toolBarVisible"), true).toBool();
     m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
@@ -1363,6 +1379,12 @@ void MainWindow::writeSettings()
     }
     // Persist startup preference only — not the live session toggle
     settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);
+    settings.setValue(QStringLiteral("thumbnailsPreferredWorkspace"),
+                      m_thumbnailsPreferredWorkspace);
+    settings.setValue(QStringLiteral("thumbnailsPreferredGallery"),
+                      m_thumbnailsPreferredGallery);
+    settings.setValue(QStringLiteral("layoutPreferredInWorkspace"),
+                      m_layoutPreferredInWorkspace);
     if (m_imageView) {
         settings.setValue(QStringLiteral("gridColumns"), m_imageView->gridColumns());
         settings.setValue(QStringLiteral("masonryColumns"), m_imageView->masonryColumns());

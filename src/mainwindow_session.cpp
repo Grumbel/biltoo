@@ -334,6 +334,12 @@ void MainWindow::sortByPixelCount()
 
 void MainWindow::applyThumbnailVisibility()
 {
+    // Gallery and Workspace use independent preferred flags (updateThumbnailBarForMode).
+    // Image mode keeps the multi-file auto rule plus CLI force overrides.
+    if (m_imageView && (m_imageView->isGalleryMode() || m_imageView->isWorkspaceMode())) {
+        updateThumbnailBarForMode();
+        return;
+    }
     bool show = m_session.paths().size() > 1;
     if (m_forceNoThumbnails) {
         show = false;

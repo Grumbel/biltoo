@@ -431,29 +431,74 @@ void MainWindow::updateThumbnailBarForMode()
     if (!m_thumbnailBar) {
         return;
     }
-    const bool gallery = m_imageView && m_imageView->isGalleryMode();
-    if (gallery) {
-        if (!m_thumbsHiddenForGallery) {
-            m_thumbsVisibleBeforeGallery = m_thumbnailBar->isVisible();
-            m_thumbsHiddenForGallery = true;
-        }
-        if (m_thumbnailBar->isVisible()) {
-            m_thumbnailBar->setVisible(false);
-        }
+    // Fullscreen chrome is owned by updateFullscreenUi; do not fight it here.
+    if (isFullScreen()) {
+        return;
+    }
+    // CLI force flags override per-mode preferences for the strip.
+    if (m_forceNoThumbnails) {
+        m_thumbnailBar->setVisible(false);
         if (m_toggleThumbnailBarAct) {
             m_toggleThumbnailBarAct->setChecked(false);
         }
         return;
     }
-
-    if (m_thumbsHiddenForGallery) {
-        m_thumbsHiddenForGallery = false;
-        if (m_thumbsVisibleBeforeGallery) {
-            m_thumbnailBar->setVisible(true);
-            if (m_toggleThumbnailBarAct) {
-                m_toggleThumbnailBarAct->setChecked(true);
-            }
+    if (m_forceThumbnails) {
+        const bool show = !m_session.paths().isEmpty();
+        m_thumbnailBar->setVisible(show);
+        if (m_toggleThumbnailBarAct) {
+            m_toggleThumbnailBarAct->setChecked(show);
         }
+        m_thumbnailBarVisibleBeforeFullscreen = show;
+        return;
+    }
+
+    bool show = false;
+    if (m_imageView && m_imageView->isGalleryMode()) {
+        show = m_thumbnailsPreferredGallery && !m_session.paths().isEmpty();
+    } else if (m_imageView && m_imageView->isWorkspaceMode()) {
+        // Workspace default on: show strip whenever the session has images.
+        show = m_thumbnailsPreferredWorkspace && !m_session.paths().isEmpty();
+    } else {
+        // Image mode: auto when multi-file session (legacy applyThumbnailVisibility).
+        show = m_session.paths().size() > 1;
+    }
+    m_thumbnailBar->setVisible(show);
+    if (m_toggleThumbnailBarAct) {
+        m_toggleThumbnailBarAct->setChecked(show);
+    }
+    m_thumbnailBarVisibleBeforeFullscreen = show;
+}
+
+void MainWindow::updateLayoutPanelForMode()
+{
+    if (!m_layoutDock || !m_toggleLayoutPanelAct) {
+        return;
+    }
+    const bool workspace = m_imageView && m_imageView->isWorkspaceMode();
+    // Layout panel is Workspace-only: disable the toggle outside Workspace and
+    // never leave the dock visible in Gallery or Image.
+    m_toggleLayoutPanelAct->setEnabled(workspace);
+    if (!workspace) {
+        if (m_layoutDock->isVisible()) {
+            m_layoutDock->setVisible(false);
+        }
+        if (m_toggleLayoutPanelAct->isChecked()) {
+            QSignalBlocker blocker(m_toggleLayoutPanelAct);
+            m_toggleLayoutPanelAct->setChecked(false);
+        }
+        return;
+    }
+    if (isFullScreen()) {
+        return;
+    }
+    const bool show = m_layoutPreferredInWorkspace;
+    if (m_layoutDock->isVisible() != show) {
+        m_layoutDock->setVisible(show);
+    }
+    if (m_toggleLayoutPanelAct->isChecked() != show) {
+        QSignalBlocker blocker(m_toggleLayoutPanelAct);
+        m_toggleLayoutPanelAct->setChecked(show);
     }
 }
 
@@ -527,6 +572,7 @@ void MainWindow::updateWorkspaceActionVisibility()
         m_workspaceToolBar->setVisible(workspace && !isFullScreen());
     }
     updateThumbnailBarForMode();
+    updateLayoutPanelForMode();
     updateScrollBarPolicyForMode();
     updateMasonryCountControl();
     updateNavigationActions();

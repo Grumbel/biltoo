@@ -199,6 +199,8 @@ private slots:
     void updateWorkspaceActionVisibility();
     void updateUpToGalleryAction();
     void updateThumbnailBarForMode();
+    /** Apply Layout dock visibility/enablement for the current view mode. */
+    void updateLayoutPanelForMode();
     void updateScrollBarPolicyForMode();
     void updateMasonryCountControl();
     void ensureMultiImageMode();
@@ -357,8 +359,12 @@ private:
     bool m_galleryReturnActive = false;
     /** Image was opened from Workspace (double-click); Up restores Workspace. */
     bool m_workspaceReturnActive = false;
-    bool m_thumbsHiddenForGallery = false;
-    bool m_thumbsVisibleBeforeGallery = false;
+    /** Preferred thumbnail-bar visibility when in Workspace (default on). */
+    bool m_thumbnailsPreferredWorkspace = true;
+    /** Preferred thumbnail-bar visibility when in Gallery (default off). */
+    bool m_thumbnailsPreferredGallery = false;
+    /** Preferred Layout dock visibility when in Workspace (default off). */
+    bool m_layoutPreferredInWorkspace = false;
     ImageView::LayoutMode m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
     QAction *m_opacityResetAct = nullptr;
     QAction *m_resetScaleAct = nullptr;

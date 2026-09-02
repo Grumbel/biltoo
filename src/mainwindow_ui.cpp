@@ -513,10 +513,17 @@ void MainWindow::createActions()
     m_toggleLayoutPanelAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
     m_toggleLayoutPanelAct->setStatusTip(
         tr("Show or hide the Workspace layout panel (arrange selected images)"));
+    // Start disabled: panel is Workspace-only (enabled in updateLayoutPanelForMode).
+    m_toggleLayoutPanelAct->setEnabled(false);
     connect(m_layoutDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
         if (m_toggleLayoutPanelAct && m_toggleLayoutPanelAct->isChecked() != visible) {
             QSignalBlocker blocker(m_toggleLayoutPanelAct);
             m_toggleLayoutPanelAct->setChecked(visible);
+        }
+        // Persist preference only while in Workspace; hide/disable is handled
+        // when leaving Workspace so Gallery never keeps the dock open.
+        if (m_imageView && m_imageView->isWorkspaceMode() && !isFullScreen()) {
+            m_layoutPreferredInWorkspace = visible;
         }
     });
 
