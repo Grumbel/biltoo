@@ -236,7 +236,7 @@ layoutWorkspaceSelection(packagedLayout, params):
 crop draft (Image or single Workspace target):
   default: draft clamped to image bounds
   Expand on: draft may extend outside; Apply pads with view background
-  Move = centre grip or frame interior; outside crop on image starts rubber-band
+  Move = centre grip only; frame interior starts a new rubber-band
   Workspace: enter/apply keeps crop region fixed on canvas (item pose shifts around it);
   placement rotation follows the crop-frame angle on Apply (cancel restores prior pose)
   Ctrl = resize from centre; Shift = square (resize)

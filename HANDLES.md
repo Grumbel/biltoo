@@ -180,7 +180,7 @@ axis-aligned output image. Session appearance stores `cropRect`,
 | Interaction | Behaviour |
 |-------------|-----------|
 | **Move** grip (centre square + crosshair) | Translate the region; size unchanged |
-| Frame **interior** | Translate the region (same as Move grip); drag **outside** the crop on the image starts a new rubber-band |
+| Frame **interior** | Starts a **new rubber-band** crop; **Move** is the centre grip only |
 | Edge / corner handles | Resize; under rotation, math is in crop-local axes then centre mapped by θ |
 | **Ctrl** + resize | Resize about the **centre** |
 | **Shift** + resize / rubber-band | Constrain to a **square** |

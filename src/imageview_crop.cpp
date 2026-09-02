@@ -1110,7 +1110,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
         drawRotateKnob((bl + tl) / 2.0, tl - bl);
     }
 
-    // Move grip at centre (interior of the crop also starts a Move drag).
+    // Move grip at centre (interior of the crop starts a rubber-band, not Move).
     {
         const QPointF centre = (tl + tr + br + bl) * 0.25;
         const bool hot = (m_cropHoverHandle == CropHandle::Move
@@ -1589,18 +1589,11 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (near(rm)) {
         return CropHandle::Right;
     }
-    // Move: centre grip (larger hit) or anywhere inside the crop polygon.
-    // Outside the crop (but on the image) still starts a rubber-band via None.
+    // Move: only the centre grip (hit ~matches painted size). Frame interior
+    // stays free so a rubber-band crop can start there (None → mouse path).
     const QPoint moveGrip = centre.toPoint();
-    if (QLineF(viewPos, moveGrip).length() <= 22.0) {
+    if (QLineF(viewPos, moveGrip).length() <= 12.0) {
         return CropHandle::Move;
-    }
-    {
-        QPolygonF cropViewPoly;
-        cropViewPoly << QPointF(tl) << QPointF(tr) << QPointF(br) << QPointF(bl);
-        if (cropViewPoly.containsPoint(QPointF(viewPos), Qt::OddEvenFill)) {
-            return CropHandle::Move;
-        }
     }
     return CropHandle::None;
 }
