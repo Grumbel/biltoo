@@ -477,3 +477,23 @@ ids and advance `m_nextId` (already done in `replaceAll`).
 
 **Do not** reset `m_nextId` to 1 on `clear()` without also wiping every
 appearance map / canvas bind that could still hold old ids.
+
+
+---
+
+## Migration status (SessionImageId)
+
+**Done (do not regress):**
+- Appearance store `m_appearance` keyed by SessionImageId for bound tiles
+- Filmstrip `RoleSessionId` + mime `application/x-qimgview-session-ids`
+- Drop / place prefer session id; drop-duplicate allocates a new id
+- Peer crop sync by SessionImageId only (never path)
+- Uniqueness checks within live / stash lists
+- `m_sessionIdOrder` parallel to `m_pathOrder`; placeOrMove appends both
+
+**Path is still used only for:**
+- Decoding bytes from disk
+- External DnD URI lists
+- Legacy `m_itemStates` for *unbound* tiles (no SessionImageId yet)
+
+**Do not add** new path-keyed identity, appearance, or selection APIs.

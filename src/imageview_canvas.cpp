@@ -105,6 +105,14 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     }
 
     m_pathOrder = paths;
+    m_sessionIdOrder = sessionIds;
+    // Align lengths: missing ids stay invalid (unbound rows).
+    while (m_sessionIdOrder.size() < m_pathOrder.size()) {
+        m_sessionIdOrder.append(kInvalidSessionImageId);
+    }
+    while (m_sessionIdOrder.size() > m_pathOrder.size()) {
+        m_sessionIdOrder.removeLast();
+    }
 
     const bool virtualize = isGalleryMode() && paths.size() >= kGalleryVirtualThreshold;
 
@@ -382,6 +390,25 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     b.hasScenePos = true;
     if (sessionId != kInvalidSessionImageId || sessionIndex >= 0 || b.hasScenePos) {
         m_pendingSessionBinds.append(b);
+    }
+    // Membership order is id-aware: each place of a session image is a row.
+    // Path alone cannot express "two tiles, same file".
+    if (sessionId != kInvalidSessionImageId) {
+        bool alreadyOrdered = false;
+        for (SessionImageId id : m_sessionIdOrder) {
+            if (id == sessionId) {
+                alreadyOrdered = true;
+                break;
+            }
+        }
+        if (!alreadyOrdered) {
+            m_pathOrder.append(path);
+            m_sessionIdOrder.append(sessionId);
+        }
+    } else {
+        // Unbound place: still need a decode slot beyond existing path matches.
+        m_pathOrder.append(path);
+        m_sessionIdOrder.append(kInvalidSessionImageId);
     }
     // Legacy path-keyed pos kept as fallback when a bind is missing.
     m_pendingScenePos.insert(path, scenePos);

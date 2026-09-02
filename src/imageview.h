@@ -171,6 +171,8 @@ public:
     /** Controller host: session path order used for Gallery packing. */
     QStringList &pathOrder() { return m_pathOrder; }
     const QStringList &pathOrder() const { return m_pathOrder; }
+    QVector<SessionImageId> &sessionIdOrder() { return m_sessionIdOrder; }
+    const QVector<SessionImageId> &sessionIdOrder() const { return m_sessionIdOrder; }
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */
     void clearFitFillModes();
     /** Controller host: Image/Gallery soft reset to fit, not fill. */
@@ -191,6 +193,7 @@ public:
     // --- Controller host operations (mode controllers; prefer these over friend) ---
     /** Apply interactive/gallery/static flags for the current ViewMode. */
     void applyItemModeFlags(ImageItem *item);
+    /** @deprecated Path is not identity; prefer findItemBySessionId. */
     ImageItem *findItemByPath(const QString &path) const;
     ImageItem *targetItem() const;
     void applySessionCrop(ImageItem *item, const WorkspaceItemState &state);
@@ -763,6 +766,8 @@ private:
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */
     QStringList m_pathOrder;
+    /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */
+    QVector<SessionImageId> m_sessionIdOrder;
 
     QUndoStack *m_undoStack = nullptr;
     bool m_preserveUndoOnDestroy = false;

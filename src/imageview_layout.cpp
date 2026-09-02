@@ -664,37 +664,46 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
         }
     }
 
-    // Keep path order aligned with remaining tiles (one path-order slot per
-    // live item, including duplicate paths). A set-based prune left extra
-    // path-order entries for the same path and later packs could look sparse.
+    // Keep path/session-id order aligned with remaining tiles (IDENTITY: id first).
     if (!removedPaths.isEmpty()) {
-        QHash<QString, int> remaining;
-        for (ImageItem *item : m_items) {
-            if (item) {
-                remaining[item->path()] += 1;
-            }
-        }
-        QStringList pruned;
-        pruned.reserve(m_items.size());
-        for (const QString &path : m_pathOrder) {
-            const auto it = remaining.find(path);
-            if (it != remaining.end() && it.value() > 0) {
-                pruned.append(path);
-                it.value() -= 1;
-            }
-        }
-        // Live tiles not represented in the prior order (should be rare).
+        QStringList prunedPaths;
+        QVector<SessionImageId> prunedIds;
+        prunedPaths.reserve(m_items.size());
+        prunedIds.reserve(m_items.size());
+        QSet<SessionImageId> seenIds;
+        QHash<QString, int> unboundBudget;
         for (ImageItem *item : m_items) {
             if (!item) {
                 continue;
             }
-            const auto it = remaining.find(item->path());
-            if (it != remaining.end() && it.value() > 0) {
-                pruned.append(item->path());
-                it.value() -= 1;
+            const SessionImageId sid = item->sessionId();
+            if (sid != kInvalidSessionImageId) {
+                if (seenIds.contains(sid)) {
+                    continue;
+                }
+                seenIds.insert(sid);
+                prunedPaths.append(item->path());
+                prunedIds.append(sid);
+            } else {
+                unboundBudget[item->path()] += 1;
             }
         }
-        m_pathOrder = pruned;
+        // Preserve prior order for unbound path slots still live.
+        for (int i = 0; i < m_pathOrder.size(); ++i) {
+            const QString &path = m_pathOrder.at(i);
+            const SessionImageId sid = (i < m_sessionIdOrder.size())
+                ? m_sessionIdOrder.at(i) : kInvalidSessionImageId;
+            if (sid != kInvalidSessionImageId) {
+                continue; // already taken from live bound tiles
+            }
+            if (unboundBudget.value(path) > 0) {
+                prunedPaths.append(path);
+                prunedIds.append(kInvalidSessionImageId);
+                unboundBudget[path] -= 1;
+            }
+        }
+        m_pathOrder = prunedPaths;
+        m_sessionIdOrder = prunedIds;
     }
 
     // Gallery: repack so deleted tiles do not leave empty holes. Preserve the

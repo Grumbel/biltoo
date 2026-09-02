@@ -339,3 +339,7 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
 - [x] **Gallery Crop (C / toolbar)**  
   Crop mode enabled in Gallery when a single tile is selected; removed
   Gallery hard-blocks in setCropMode / cropTargetItem.
+
+- [x] **SessionImageId order on canvas**  
+  `m_sessionIdOrder` parallel to `m_pathOrder`; placeOrMoveImageAt records
+  membership by id so LoadAdd/drop-duplicate is not path-occurrence based.

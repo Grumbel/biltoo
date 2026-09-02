@@ -362,9 +362,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
     }
 
-    // pathOrder alone is not enough: filmstrip drop-duplicate appends a session
-    // row and a PendingSessionBind, but Workspace pathOrder may still list the
-    // path only once — so wanted == have and no tile was created.
+    // Identity is SessionImageId. pathOrder/sessionIdOrder list canvas/session
+    // membership; pending binds are explicit places not yet reflected in have.
     int wanted = qMax(pathOrderCount, have + pendingBinds);
     if (wanted <= 0) {
         wanted = have + 1;
