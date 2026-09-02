@@ -187,7 +187,7 @@ void MainWindow::createActions()
                                : bundled);
     }
     m_cropAct->setStatusTip(
-        tr("Crop mode: drag a rectangle, adjust handles; Enter applies, Esc cancels"));
+        tr("Crop mode: handles, Expand, rotate; Close commits, Cancel/Esc discards"));
     m_cropAct->setToolTip(tr("Crop mode"));
     connect(m_cropAct, &QAction::triggered, this, &MainWindow::toggleCropMode);
 

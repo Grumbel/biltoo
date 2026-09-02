@@ -1166,7 +1166,7 @@ void MainWindow::readSettings()
     {
         const int layoutInt = settings.value(QStringLiteral("lastGalleryLayout"), -1).toInt();
         if (layoutInt >= int(ImageView::LayoutMode::SideBySide)
-            && layoutInt <= int(ImageView::LayoutMode::MasonryRows)) {
+            && layoutInt <= int(ImageView::LayoutMode::MasonryRowsFill)) {
             m_galleryReturnLayout = static_cast<ImageView::LayoutMode>(layoutInt);
         }
     }

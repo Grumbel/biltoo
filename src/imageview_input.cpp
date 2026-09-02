@@ -234,7 +234,8 @@ void ImageView::wheelEvent(QWheelEvent *event)
         // Horizontal strip layouts: vertical wheel pans sideways.
         const bool preferHorizontalScroll =
             m_layoutMode == LayoutMode::SideBySide
-            || m_layoutMode == LayoutMode::MasonryRows;
+            || m_layoutMode == LayoutMode::MasonryRows
+            || m_layoutMode == LayoutMode::MasonryRowsFill;
 
         if (preferHorizontalScroll && dx == 0 && dy != 0) {
             dx = dy;
