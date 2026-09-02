@@ -57,6 +57,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
             applySessionCrop(item, *app);
             applyContentBakes(item, *app);
             item->setSessionCrop(app->hasCrop, app->cropRect);
+            item->setColorAdjustments(app->colorAdjust);
         }
     }
     m_scene->addItem(item);

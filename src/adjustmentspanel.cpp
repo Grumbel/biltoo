@@ -55,13 +55,23 @@ void VectorScopeWidget::paintEvent(QPaintEvent *)
 {
     QPainter p(this);
     p.fillRect(rect(), QColor(20, 20, 24));
+    // Keep a square plot so the scope stays circular.
+    const int side = qMin(width(), height());
+    const QRect square((width() - side) / 2, (height() - side) / 2, side, side);
     if (m_plot.isNull()) {
         p.setPen(QColor(140, 140, 150));
-        p.drawText(rect(), Qt::AlignCenter, tr("No scope"));
+        p.drawText(square, Qt::AlignCenter, tr("No scope"));
         return;
     }
     p.setRenderHint(QPainter::SmoothPixmapTransform, true);
-    p.drawImage(rect(), m_plot);
+    p.setRenderHint(QPainter::Antialiasing, true);
+    QPainterPath clip;
+    clip.addEllipse(square.adjusted(1, 1, -1, -1));
+    p.setClipPath(clip);
+    p.drawImage(square, m_plot);
+    p.setClipping(false);
+    p.setPen(QPen(QColor(80, 80, 90), 1));
+    p.drawEllipse(square.adjusted(1, 1, -1, -1));
 }
 
 AdjustmentsPanel::AdjustmentsPanel(QWidget *parent) : QWidget(parent) { buildUi(); }

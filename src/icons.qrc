@@ -46,5 +46,6 @@
     <file alias="actions/fit-page-guide-content.svg">../data/icons/actions/fit-page-guide-content.svg</file>
     <file alias="actions/show-thumbnails.svg">../data/icons/actions/show-thumbnails.svg</file>
     <file alias="actions/transform-crop.svg">../data/icons/actions/transform-crop.svg</file>
+    <file alias="actions/color-adjustments.svg">../data/icons/actions/color-adjustments.svg</file>
   </qresource>
 </RCC>

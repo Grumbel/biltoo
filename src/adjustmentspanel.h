@@ -48,7 +48,9 @@ public:
 protected:
     void paintEvent(QPaintEvent *event) override;
     QSize sizeHint() const override { return QSize(200, 200); }
-    QSize minimumSizeHint() const override { return QSize(120, 120); }
+    QSize minimumSizeHint() const override { return QSize(140, 140); }
+    bool hasHeightForWidth() const override { return true; }
+    int heightForWidth(int w) const override { return w; }
 private:
     QImage m_plot;
 };

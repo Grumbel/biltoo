@@ -639,6 +639,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     if (!app->hasCrop && !app->contentHFlip && !app->contentVFlip
         && app->contentQuarterTurns == 0) {
         item->setSessionCrop(false, QRect());
+        item->setColorAdjustments(app->colorAdjust);
         return;
     }
     applySessionCrop(item, *app);

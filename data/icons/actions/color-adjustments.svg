@@ -1,0 +1,14 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+     stroke="#2e3436" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Slider tracks with knobs (colour grade control) -->
+  <line x1="4" y1="7" x2="20" y2="7"/>
+  <circle cx="10" cy="7" r="2.5" fill="#2e3436"/>
+  <line x1="4" y1="12" x2="20" y2="12"/>
+  <circle cx="14" cy="12" r="2.5" fill="#2e3436"/>
+  <line x1="4" y1="17" x2="20" y2="17"/>
+  <circle cx="8" cy="17" r="2.5" fill="#2e3436"/>
+</svg>

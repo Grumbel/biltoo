@@ -505,6 +505,7 @@ void MainWindow::createActions()
         m_toggleAdjustmentsAct = m_adjustmentsDock->toggleViewAction();
         m_toggleAdjustmentsAct->setText(tr("Show &Adjustments"));
         m_toggleAdjustmentsAct->setShortcut(Qt::CTRL | Qt::Key_U);
+        m_toggleAdjustmentsAct->setIcon(resourceIcon(QStringLiteral("color-adjustments")));
         m_toggleAdjustmentsAct->setStatusTip(tr("Colour grade, histogram, and vectorscope"));
     }
     // Ensure closing via the dock title-bar [x] updates the action; showing again works
