@@ -44,6 +44,8 @@ private:
     QToolButton *m_gridCropBtn = nullptr;
     QToolButton *m_masonryBtn = nullptr;
     QToolButton *m_masonryRowsBtn = nullptr;
+    QToolButton *m_masonryFillBtn = nullptr;
+    QToolButton *m_masonryRowsFillBtn = nullptr;
     QLabel *m_columnsLabel = nullptr;
     QSpinBox *m_columnsSpin = nullptr;
     QLabel *m_rowsLabel = nullptr;

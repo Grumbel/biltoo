@@ -52,12 +52,16 @@ LayoutPanel::LayoutPanel(QWidget *parent)
             GalleryLayout::Mode::Vertical);
     addMode(m_gridBtn, tr("Grid"), QStringLiteral("gallery-grid"),
             GalleryLayout::Mode::Grid, true);
-    addMode(m_gridCropBtn, tr("Grid Crop"), QStringLiteral("gallery-grid-crop"),
-            GalleryLayout::Mode::GridCrop);
+    // Grid Crop disabled for now (session crop interaction is unreliable).
+    m_gridCropBtn = nullptr;
     addMode(m_masonryBtn, tr("Masonry"), QStringLiteral("gallery-masonry"),
             GalleryLayout::Mode::Masonry);
     addMode(m_masonryRowsBtn, tr("Masonry Rows"), QStringLiteral("gallery-masonry-rows"),
             GalleryLayout::Mode::MasonryRows);
+    addMode(m_masonryFillBtn, tr("Masonry Fill"), QStringLiteral("gallery-masonry"),
+            GalleryLayout::Mode::MasonryFill);
+    addMode(m_masonryRowsFillBtn, tr("Masonry Rows Fill"), QStringLiteral("gallery-masonry-rows"),
+            GalleryLayout::Mode::MasonryRowsFill);
 
     root->addWidget(modeBox);
 
@@ -139,15 +143,19 @@ void LayoutPanel::updateControlsEnabled()
     const GalleryLayout::Mode mode = selectedMode();
     const bool cols = (mode == GalleryLayout::Mode::Grid
                        || mode == GalleryLayout::Mode::GridCrop
-                       || mode == GalleryLayout::Mode::Masonry);
-    const bool rows = (mode == GalleryLayout::Mode::MasonryRows);
+                       || mode == GalleryLayout::Mode::Masonry
+                       || mode == GalleryLayout::Mode::MasonryFill);
+    const bool rows = (mode == GalleryLayout::Mode::MasonryRows
+                       || mode == GalleryLayout::Mode::MasonryRowsFill);
     m_columnsLabel->setEnabled(m_workspaceActive && cols);
     m_columnsSpin->setEnabled(m_workspaceActive && cols);
     m_rowsLabel->setEnabled(m_workspaceActive && rows);
     m_rowsSpin->setEnabled(m_workspaceActive && rows);
 
     for (QAbstractButton *btn : m_modeGroup->buttons()) {
-        btn->setEnabled(m_workspaceActive);
+        if (btn) {
+            btn->setEnabled(m_workspaceActive);
+        }
     }
 
     const bool canApply = m_workspaceActive && m_selectionCount > 0;

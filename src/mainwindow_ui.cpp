@@ -328,6 +328,10 @@ void MainWindow::createActions()
     m_layoutGridCropAct->setStatusTip(
         tr("Gallery: square grid, images centre-cropped to fill each cell"));
     connect(m_layoutGridCropAct, &QAction::triggered, this, &MainWindow::setLayoutGridCrop);
+    m_layoutGridCropAct->setEnabled(false);
+    m_layoutGridCropAct->setVisible(false);
+    m_layoutGridCropAct->setStatusTip(
+        tr("Grid Crop is temporarily disabled (conflicts with manual crop)"));
 
 
     m_layoutMasonryAct = new QAction(tr("Layout &Masonry"), this);
@@ -344,6 +348,20 @@ void MainWindow::createActions()
         tr("Gallery: pack into N rows that fill the window height"));
     connect(m_layoutMasonryRowsAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryRows);
 
+    m_layoutMasonryFillAct = new QAction(tr("Layout Masonry &Fill"), this);
+    m_layoutMasonryFillAct->setCheckable(true);
+    m_layoutMasonryFillAct->setIcon(resourceIcon(QStringLiteral("gallery-masonry")));
+    m_layoutMasonryFillAct->setStatusTip(
+        tr("Column masonry scaled to a shared bottom edge (rectangular)"));
+    connect(m_layoutMasonryFillAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryFill);
+
+    m_layoutMasonryRowsFillAct = new QAction(tr("Layout Masonry Rows F&ill"), this);
+    m_layoutMasonryRowsFillAct->setCheckable(true);
+    m_layoutMasonryRowsFillAct->setIcon(resourceIcon(QStringLiteral("gallery-masonry-rows")));
+    m_layoutMasonryRowsFillAct->setStatusTip(
+        tr("Row masonry scaled to a shared right edge (rectangular)"));
+    connect(m_layoutMasonryRowsFillAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryRowsFill);
+
     m_backToGalleryAct = new QAction(tr("&Up"), this);
     m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-up"), QStyle::SP_ArrowUp));
     m_backToGalleryAct->setStatusTip(tr("Up to gallery"));
@@ -359,6 +377,8 @@ void MainWindow::createActions()
     layoutGroup->addAction(m_layoutGridCropAct);
     layoutGroup->addAction(m_layoutMasonryAct);
     layoutGroup->addAction(m_layoutMasonryRowsAct);
+    layoutGroup->addAction(m_layoutMasonryFillAct);
+    layoutGroup->addAction(m_layoutMasonryRowsFillAct);
     layoutGroup->setExclusive(true);
     // No default checked gallery layout until the user chooses one.
     for (QAction *act : layoutGroup->actions()) {
@@ -645,6 +665,8 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutGridCropAct);
     galleryMenu->addAction(m_layoutMasonryAct);
     galleryMenu->addAction(m_layoutMasonryRowsAct);
+    galleryMenu->addAction(m_layoutMasonryFillAct);
+    galleryMenu->addAction(m_layoutMasonryRowsFillAct);
     galleryMenu->addSeparator();
     galleryMenu->addAction(m_duplicateAct);
 
@@ -740,6 +762,8 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_layoutMasonryAct);
 
     m_toolBar->addAction(m_layoutMasonryRowsAct);
+    m_toolBar->addAction(m_layoutMasonryFillAct);
+    m_toolBar->addAction(m_layoutMasonryRowsFillAct);
     // Workspace mode sits with the gallery layout group (mode switchers together).
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_workspaceModeAct);
@@ -767,7 +791,8 @@ void MainWindow::createToolBar()
                     return;
                 }
                 const auto mode = m_imageView->layoutMode();
-                if (mode == ImageView::LayoutMode::MasonryRows) {
+                if (mode == ImageView::LayoutMode::MasonryRows
+                    || mode == ImageView::LayoutMode::MasonryRowsFill) {
                     m_imageView->setMasonryRows(count);
                 } else if (mode == ImageView::LayoutMode::Grid
                            || mode == ImageView::LayoutMode::GridCrop) {
