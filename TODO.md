@@ -20,6 +20,10 @@ Focus:
 - [ ] Stabilize Image / Gallery / Workspace interactions and mode transitions
   - [x] Gallery → Workspace must restore durable Workspace snapshot (or empty), never import Gallery packing
   - [x] Explicit Workspace **Layout** panel (selected tiles → packaged arrangement, Apply, columns/rows); Gallery mode switches stay Gallery-only
+  - [x] Thumbnail bar visibility is **per mode**: Workspace default **on**, Gallery default **off**;
+        toggling in one mode must not force the other. First enter of Workspace shows the strip.
+  - [x] Layout panel: **hidden by default**; never visible in Gallery/Image; toggle action
+        enabled only in Workspace (greyed out otherwise). Remember Workspace preference only.
 - [ ] Session-image identity acceptance (see SESSION.md §4–§5):
   - [x] Duplicate / drop-duplicate: flip/crop one tile does not affect the other
   - [ ] Image-mode crop of slot B updates only Workspace tile B after return

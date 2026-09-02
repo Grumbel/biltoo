@@ -208,6 +208,15 @@ unbound and edits will not propagate correctly in Workspace).
 | Project + export | 035–037 | `.qimgview` JSON + SHA-256; Export PNG; fit page guide; relink |
 | Membership / flip id | 038 | Thumbnail toggle by SessionImageId; bound tiles skip path map |
 
+### Chrome visibility (bundle 039)
+
+- Thumbnail strip preference is **per mode**: Workspace default on, Gallery default off
+  (`thumbnailsPreferredWorkspace` / `thumbnailsPreferredGallery` in QSettings).
+- Layout dock is Workspace-only: hidden by default, toggle disabled outside Workspace,
+  preference `layoutPreferredInWorkspace` (default off). Gallery/Image never show it.
+- Fullscreen leave re-applies mode helpers instead of a single pre-FS snapshot for
+  thumbs/layout.
+
 ### Remaining residuals (updated)
 
 1. **Runtime QA** still needed for duplicate × membership × flip × project round-trip.
