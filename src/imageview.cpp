@@ -17,7 +17,6 @@
 #include <QFontMetrics>
 #include <QKeyEvent>
 #include <QMetaObject>
-#include <QPointer>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>

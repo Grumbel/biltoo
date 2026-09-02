@@ -15,7 +15,6 @@
 #include <QElapsedTimer>
 #include <QGraphicsView>
 #include <QHash>
-#include <QPointer>
 #include <QVector>
 #include <QList>
 #include <QImage>
@@ -860,7 +859,8 @@ private:
     bool m_cropMode = false;
     /** Locked crop subject for the whole crop session (IDENTITY.md). */
     SessionImageId m_cropTargetId = kInvalidSessionImageId;
-    QPointer<ImageItem> m_cropTargetItem;
+    /** Non-owning; ImageItem is not a QObject so QPointer is unavailable. */
+    ImageItem *m_cropTargetItem = nullptr;
     /** Draft may extend outside the image; apply pads with background. */
     bool m_cropAllowExpand = false;
     /** Draft crop rotation (degrees, about m_cropRect centre). */

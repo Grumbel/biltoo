@@ -30,6 +30,7 @@ Focus:
   - [x] Gallery open of a duplicated path uses session id (not first path match)
   - [x] Session remove undo restores stable ids / Workspace association
   - [x] No unbound Workspace tiles after normal add/dup/drop paths
+- [x] Build fix: m_cropTargetItem is ImageItem* (not QPointer); ImageItem is not QObject
 - [ ] Fix remaining crashes, layout edge cases, and selection/context-menu bugs
 - [ ] Re-enable Gallery Grid Crop once it coexists cleanly with session/manual crop
 - [x] Crop: rotatable draft frame (bakes to axis-aligned output; cropRotation in session/project)

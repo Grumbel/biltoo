@@ -104,7 +104,7 @@ ImageItem *ImageView::cropTargetItem() const
     // unrelated tiles when selection changed mid-crop (IDENTITY.md).
     if (m_cropMode) {
         if (m_cropTargetItem) {
-            return m_cropTargetItem.data();
+            return m_cropTargetItem;
         }
         if (m_cropTargetId != kInvalidSessionImageId) {
             if (ImageItem *byId = findItemBySessionId(m_cropTargetId)) {
