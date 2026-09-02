@@ -18,6 +18,8 @@ line beyond bugfixes, polish, and docs.
 Focus:
 
 - [ ] Stabilize Image / Gallery / Workspace interactions and mode transitions
+  - [ ] Gallery → Workspace must restore durable Workspace snapshot (or empty), never import Gallery packing
+  - [ ] Explicit Workspace **Layout** action (selected tiles → packaged arrangement) with adjustable parameters; do not overload Gallery mode switches for this
 - [ ] Session-image identity acceptance (see SESSION.md §4–§5):
   - [x] Duplicate / drop-duplicate: flip/crop one tile does not affect the other
   - [ ] Image-mode crop of slot B updates only Workspace tile B after return
