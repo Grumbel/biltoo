@@ -237,6 +237,7 @@ crop draft (Image or single Workspace target):
   default: draft clamped to image bounds
   Expand on: draft may extend outside; Apply pads with view background
   Move = centre grip or frame interior; outside crop on image starts rubber-band
+  Workspace: enter/apply keeps crop region fixed on canvas (item pose shifts around it)
   Ctrl = resize from centre; Shift = square (resize)
   Rotate knob = free angle about centre; Ctrl → 45° snap; Shift → 15° snap; Close bakes axis-aligned pixels
   Resize under rotation uses crop-local axes; centre mapped back through θ

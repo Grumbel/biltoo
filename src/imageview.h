@@ -685,6 +685,10 @@ private:
      * so the region can grow. Returns false if the image cannot be prepared.
      */
     bool prepareCropModeFullImage(ImageItem *item);
+    /** Workspace: shift item so crop-frame centre maps to @p sceneAnchor. */
+    void alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
+    /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
+    void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Cancel path: put the session crop (if any) back on the live item. */
     void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);

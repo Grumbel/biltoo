@@ -259,6 +259,33 @@ void ImageView::ensureCropRectValid()
     m_cropRect = constrainCropToContent(m_cropRect, m_cropRotation, cr, 1.0);
 }
 
+void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
+{
+    if (!item || !m_cropRect.isValid()) {
+        return;
+    }
+    const QPointF current = item->mapToScene(m_cropRect.center());
+    if (!qIsFinite(current.x()) || !qIsFinite(current.y())
+        || !qIsFinite(sceneAnchor.x()) || !qIsFinite(sceneAnchor.y())) {
+        return;
+    }
+    item->setPos(item->pos() + (sceneAnchor - current));
+}
+
+void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
+{
+    if (!item) {
+        return;
+    }
+    // Pixmap is centred on the item origin (offset -w/2,-h/2).
+    const QPointF current = item->mapToScene(QPointF(0.0, 0.0));
+    if (!qIsFinite(current.x()) || !qIsFinite(current.y())
+        || !qIsFinite(sceneAnchor.x()) || !qIsFinite(sceneAnchor.y())) {
+        return;
+    }
+    item->setPos(item->pos() + (sceneAnchor - current));
+}
+
 void ImageView::setCropMode(bool on)
 {
     if (on == m_cropMode) {
@@ -289,6 +316,9 @@ void ImageView::setCropMode(bool on)
         // Crop handles are axis-aligned in item space; free Workspace placement
         // rotation makes rubber-band and edge grips unusable. Unrotate for the
         // crop session and restore on exit.
+        // Workspace: remember where the *displayed* image centre sits so the
+        // restored crop frame can stay fixed while the full image grows around it.
+        const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
         m_cropStashedPlacementRotation = item->itemRotation();
         m_cropHadStashedPlacement = qAbs(m_cropStashedPlacementRotation) > 0.05;
         if (m_cropHadStashedPlacement) {
@@ -303,6 +333,10 @@ void ImageView::setCropMode(bool on)
             m_cropHadStashedPlacement = false;
             flashHud(tr("Crop"), tr("Could not load full image"));
             return;
+        }
+        if (isWorkspaceMode()) {
+            alignCropFrameCenterToScene(item, workspaceAnchorScene);
+            updateWorkspaceSceneRect();
         }
         m_cropMode = true;
         m_cropActiveHandle = CropHandle::None;
@@ -671,6 +705,8 @@ void ImageView::leaveCropModeInternal(bool apply)
         // Record absolute crop (or clear it) while the full image is still loaded.
         recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
         if (!fullFrame) {
+            // Scene position of the crop-frame centre — new pixels stay here.
+            const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
             if (item->cropToLocalRect(m_cropRect, backgroundColor(), m_cropRotation)) {
                 // Keep stashed Gallery tiles: commitItemSessionEdit peer-syncs
                 // cropped pixels. Invalidating forced a full-size probe + pack
@@ -679,6 +715,9 @@ void ImageView::leaveCropModeInternal(bool apply)
                     m_fitMode = true;
                     fitItem(item, currentFitAspectMode());
                 } else if (isWorkspaceMode()) {
+                    // New image is centred on the item origin; pin that to the
+                    // former crop-frame centre so the region does not jump.
+                    alignItemCenterToScene(item, cropSceneCenter);
                     updateWorkspaceSceneRect();
                 } else if (isGalleryMode()) {
                     applyLayout(GalleryPackReason::ContentChange);
@@ -738,6 +777,14 @@ void ImageView::leaveCropModeInternal(bool apply)
                 m_fitMode = true;
                 fitItem(item, currentFitAspectMode());
             } else if (isWorkspaceMode()) {
+                // Drop the enter-time crop-frame offset; restore pre-crop pose.
+                if (m_cropEnterValid) {
+                    item->setPos(m_cropEnterState.pos);
+                    item->setItemScale(m_cropEnterState.scale,
+                                       m_cropEnterState.scaleY > 0.0
+                                           ? m_cropEnterState.scaleY
+                                           : m_cropEnterState.scale);
+                }
                 updateWorkspaceSceneRect();
             } else if (isGalleryMode()) {
                 applyLayout(GalleryPackReason::ContentChange);
@@ -792,6 +839,13 @@ void ImageView::leaveCropModeInternal(bool apply)
     } else if (item && m_cropShowingFullImage) {
         // Esc / toggle off: put the previous session crop back on the canvas.
         restoreSessionCropAppearance(item);
+        if (isWorkspaceMode() && m_cropEnterValid) {
+            item->setPos(m_cropEnterState.pos);
+            item->setItemScale(m_cropEnterState.scale,
+                               m_cropEnterState.scaleY > 0.0
+                                   ? m_cropEnterState.scaleY
+                                   : m_cropEnterState.scale);
+        }
     }
     // Restore Workspace free placement rotation after crop UI.
     if (item && m_cropHadStashedPlacement) {
