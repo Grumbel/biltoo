@@ -103,6 +103,26 @@ Scale handles stay at the mapped corners / edge mids (no extra offset).
 Axes for edge stretch are the item’s local X/Y (image axes), not screen axes,
 so a rotated image still stretches “width” and “height” of the picture.
 
+## Chrome design language
+
+Three visual families on the selection / crop frame:
+
+| Family | Shape | Meaning | Examples |
+|--------|--------|---------|----------|
+| **Geometry grips** | Open strokes on the frame (L-brackets, edge bars, stem + knob) | Drag to change geometry | Scale, free-rotate, crop resize |
+| **Actions** | **Circle** (dark fill, accent ring) | Momentary — click once | ↺ ↻ ↑ ↓ 1:1 0°, crop Reset |
+| **Toggles** | **Rounded square** (squircle) | Latches on/off | Flip H/V, crop Expand |
+
+Accent colour is **mode-only** (not per-button):
+
+- Workspace selection / tools: blue `rgb(0,160,255)`
+- Crop frame and crop chrome: amber `rgb(255,190,40)`
+- Opacity track: violet (continuous value)
+
+Commit vs dismiss on crop: **Apply** = filled amber (commit); **Cancel** = neutral grey ring (no strong accent).
+
+Hover/press: modest size grow (~8%) and stronger ring — same for all chrome buttons.
+
 ## Free-rotate handle modifiers
 
 Applies to Workspace item rotate knobs, multi-select group rotate, and the crop

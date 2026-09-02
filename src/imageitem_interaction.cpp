@@ -732,14 +732,26 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         Handle best = Handle::None;
         qreal bestDist = 1e300;
         for (int i = 0; i < kChromeCount; ++i) {
-            const qreal d = QLineF(p, centers[i]).length();
-            const qreal limit = (chromeHandles[i] == Handle::FlipH
-                                 || chromeHandles[i] == Handle::FlipV)
-                                    ? (kChromeBtnScreenPx * 0.62 + 4.0)
-                                    : kChromeHitScreenPx;
-            if (d <= limit && d <= bestDist) {
-                bestDist = d;
-                best = chromeHandles[i];
+            const bool isToggle = (chromeHandles[i] == Handle::FlipH
+                                   || chromeHandles[i] == Handle::FlipV);
+            if (isToggle) {
+                // Rounded-square toggles: axis-aligned hit box (viewport px).
+                const qreal half = kChromeBtnScreenPx * 0.55 + 3.0;
+                const qreal dx = qAbs(p.x() - centers[i].x());
+                const qreal dy = qAbs(p.y() - centers[i].y());
+                if (dx <= half && dy <= half) {
+                    const qreal d = qMax(dx, dy);
+                    if (d <= bestDist) {
+                        bestDist = d;
+                        best = chromeHandles[i];
+                    }
+                }
+            } else {
+                const qreal d = QLineF(p, centers[i]).length();
+                if (d <= kChromeHitScreenPx && d <= bestDist) {
+                    bestDist = d;
+                    best = chromeHandles[i];
+                }
             }
         }
         if (best != Handle::None) {
@@ -1211,13 +1223,19 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         QPointF centers[kChromeCount];
         chromeCentersView(fg, centers);
 
+        // Design language (HANDLES.md):
+        //   circle  = momentary action (click once)
+        //   rounded square = latching toggle
+        //   open strokes on the frame = geometry grips (elsewhere)
         const qreal btnR = kChromeBtnScreenPx / 2.0;
-        const qreal flipR = kChromeBtnScreenPx * 0.62;
+        const qreal toggleHalf = kChromeBtnScreenPx * 0.52; // half-side of toggle square
 
         auto drawFlipToggle = [&](Handle h, int index, bool on, const QString &glyph) {
             const QPointF c = centers[index];
             const bool hovered = (m_hoverHandle == h);
-            const qreal rad = flipR * (hovered ? 1.08 : 1.0);
+            const qreal half = toggleHalf * (hovered ? 1.08 : 1.0);
+            const qreal corner = half * 0.28; // squircle-ish
+            const QRectF box(c.x() - half, c.y() - half, half * 2.0, half * 2.0);
             QColor fill = on ? QColor(0, 160, 255, 245)
                              : QColor(40, 40, 40, 220);
             if (hovered && !on) {
@@ -1228,22 +1246,24 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             border.setCosmetic(true);
             painter->setPen(border);
             painter->setBrush(fill);
-            painter->drawEllipse(c, rad, rad);
+            painter->drawRoundedRect(box, corner, corner);
             if (on) {
-                QPen ring(QColor(255, 255, 255, 200));
-                ring.setWidthF(1.25);
+                // Inner inset mark so "latched" reads differently from hover.
+                QPen ring(QColor(255, 255, 255, 210));
+                ring.setWidthF(1.2);
                 ring.setCosmetic(true);
                 painter->setPen(ring);
                 painter->setBrush(Qt::NoBrush);
-                painter->drawEllipse(c, rad * 0.72, rad * 0.72);
+                const qreal inset = half * 0.28;
+                painter->drawRoundedRect(box.adjusted(inset, inset, -inset, -inset),
+                                         corner * 0.7, corner * 0.7);
             }
             painter->setPen(on ? QColor(255, 255, 255) : QColor(230, 230, 230));
             QFont f = painter->font();
-            f.setPointSizeF(qMax(8.0, rad * 0.58));
+            f.setPointSizeF(qMax(8.0, half * 0.72));
             f.setBold(true);
             painter->setFont(f);
-            painter->drawText(QRectF(c.x() - rad, c.y() - rad, rad * 2, rad * 2),
-                              Qt::AlignCenter, glyph);
+            painter->drawText(box, Qt::AlignCenter, glyph);
         };
 
         auto drawBtn = [&](Handle h, int index, const QString &glyph) {
