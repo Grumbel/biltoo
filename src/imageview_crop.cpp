@@ -30,7 +30,7 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     if (!cropView.isValid() || !viewportRect.isValid()) {
         return L;
     }
-    constexpr int kW = 72;
+    constexpr int kW = 64;
     constexpr int kH = 22;
     constexpr int kGap = 6;
     constexpr int kOutsideGap = 8;
@@ -279,13 +279,21 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     if (hadCrop) {
         const QSize sz = item->imageSize();
         const QRect bounds(0, 0, sz.width(), sz.height());
-        const QRect src = priorCrop.intersected(bounds);
-        if (src.width() >= 1 && src.height() >= 1) {
+        const QRect prior = priorCrop.normalized();
+        // Expand crops are stored outside the source bounds; restore Expand mode
+        // so ensureCropRectValid does not clamp them back into the image.
+        const bool extendsOutside =
+            prior.left() < bounds.left() || prior.top() < bounds.top()
+            || prior.right() > bounds.right() || prior.bottom() > bounds.bottom();
+        if (extendsOutside) {
+            m_cropAllowExpand = true;
+        }
+        if (prior.width() >= 1 && prior.height() >= 1) {
             const QPointF off = item->offset();
-            int dx = src.x();
-            int dy = src.y();
-            int dw = src.width();
-            int dh = src.height();
+            int dx = prior.x();
+            int dy = prior.y();
+            int dw = prior.width();
+            int dh = prior.height();
             if (hFlip) {
                 dx = sz.width() - dx - dw;
             }
@@ -859,10 +867,9 @@ void ImageView::paintCropOverlay(QPainter &painter)
         painter.drawText(btn, Qt::AlignCenter, label);
     };
     // Local QPoint names must not hide QObject::tr — use ImageView::tr.
+    // Label stays short so it fits the chrome button; On state uses primary fill.
     drawTextButton(cropExpandButtonView(), CropHandle::ExpandToggle,
-                   m_cropAllowExpand ? ImageView::tr("Expand: On")
-                                     : ImageView::tr("Expand"),
-                   m_cropAllowExpand);
+                   ImageView::tr("Expand"), m_cropAllowExpand);
     drawTextButton(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"), false);
     drawTextButton(cropApplyButtonView(), CropHandle::Apply, ImageView::tr("Apply"), true);
 
