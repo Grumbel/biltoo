@@ -6,6 +6,7 @@
 #include "imageloader.h"
 
 #include <QSet>
+#include <QDebug>
 #include <QHash>
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
@@ -214,6 +215,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         updateGalleryDecodeWindow();
     }
 
+    validateUniqueLiveSessionIds("setWorkspacePaths");
     emit statusChanged();
     emit workspacePathsChanged();
 }
@@ -539,14 +541,20 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
                 && item->sessionId() != sid) {
                 continue;
             }
+            // Do not assign an id already owned by another live item.
+            if (sid != kInvalidSessionImageId && usedId.contains(sid)) {
+                continue;
+            }
             item->setSessionIndex(i);
             if (sid != kInvalidSessionImageId) {
                 item->setSessionId(sid);
+                usedId.insert(sid);
             }
             usedIndex.insert(i);
             break;
         }
     }
+    validateUniqueLiveSessionIds("rebindWorkspaceSession");
 }
 
 ImageItem *ImageView::primaryItem() const
@@ -583,4 +591,36 @@ bool ImageView::hasTransformTargets() const
 bool ImageView::hasSingleCropTarget() const
 {
     return transformTargets().size() == 1;
+}
+
+bool ImageView::validateUniqueLiveSessionIds(const char *context) const
+{
+    QHash<SessionImageId, const ImageItem *> seen;
+    bool ok = true;
+    auto checkList = [&](const QList<ImageItem *> &list, const char *where) {
+        for (const ImageItem *item : list) {
+            if (!item) {
+                continue;
+            }
+            const SessionImageId sid = item->sessionId();
+            if (sid == kInvalidSessionImageId) {
+                continue;
+            }
+            if (seen.contains(sid)) {
+                qCritical("ImageView: duplicate SessionImageId %lld on canvas (%s / %s) path=%s vs %s",
+                          static_cast<long long>(sid),
+                          context ? context : "validate",
+                          where,
+                          qPrintable(seen.value(sid)->path()),
+                          qPrintable(item->path()));
+                ok = false;
+            } else {
+                seen.insert(sid, item);
+            }
+        }
+    };
+    checkList(m_items, "live");
+    checkList(m_workspace.stashedItems(), "workspace-stash");
+    checkList(m_gallery.stashedItems(), "gallery-stash");
+    return ok;
 }

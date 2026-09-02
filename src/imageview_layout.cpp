@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+
+#include <QDebug>
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
@@ -456,6 +458,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
             }
         }
     }
+    validateUniqueLiveSessionIds("commitItemSessionEdit");
 
     // Propagate pixel / flip / orientation session edits to matching canvas and
     // stashed instances. Placement (pos, scale, free tilt) is preserved.
@@ -487,8 +490,16 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         }
         // Same stable session-image id only. Path / list-index must never merge
         // independent duplicates on the Workspace.
-        return sessionId != kInvalidSessionImageId
-            && other->sessionId() == sessionId;
+        if (sessionId == kInvalidSessionImageId || other->sessionId() != sessionId) {
+            return false;
+        }
+        if (other->path() != path) {
+            qCritical("commitItemSessionEdit: SessionImageId %lld bound to different paths (%s vs %s) — refusing peer sync",
+                      static_cast<long long>(sessionId),
+                      qPrintable(path), qPrintable(other->path()));
+            return false;
+        }
+        return true;
     };
 
     auto syncOne = [&](ImageItem *other) {

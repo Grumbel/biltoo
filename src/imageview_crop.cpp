@@ -625,6 +625,8 @@ void ImageView::applyStoredAppearance(ImageItem *item)
             app = &(*it);
         }
         // Bound session image with no appearance entry = full frame.
+        // NEVER fall back to the path map — that leaks crop/flip across
+        // independent session images that share a file path.
     } else {
         // Path map only when unbound (no session image id).
         const auto it = m_itemStates.constFind(item->path());

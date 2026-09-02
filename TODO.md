@@ -324,3 +324,8 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
 - [x] **Filmstrip drag identity + drop-duplicate crop**  
   Store SessionImageId on each QListWidgetItem (RoleSessionId). mimeData reads
   item data. Drop-duplicate copies content appearance to the new session id.
+
+- [x] **SessionImageId uniqueness guards**  
+  SessionDocument refuses/reallocates duplicate ids; ImageView logs if two
+  live/stashed items share an id; peer crop sync refuses mismatched paths;
+  ThumbnailBar logs duplicate ids in setSessionIds.

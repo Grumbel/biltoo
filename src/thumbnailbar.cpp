@@ -9,6 +9,8 @@
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QDrag>
+#include <QDebug>
+#include <QSet>
 #include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
@@ -496,12 +498,25 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
     if (path.isEmpty() || image.isNull()) {
         return;
     }
+    // With a session-id list, path-wide paint is forbidden — it crops every
+    // filmstrip row that shares the file path (IDENTITY.md).
+    bool anyBound = false;
+    for (SessionImageId id : m_sessionIds) {
+        if (id != kInvalidSessionImageId) {
+            anyBound = true;
+            break;
+        }
+    }
+    if (anyBound) {
+        qCritical("ThumbnailBar: ignoring path-only override for %s (session has ids — use id overload)",
+                  qPrintable(path));
+        return;
+    }
     m_sessionImageOverrides.insert(path, image);
     const QImage thumb = prepareThumbnailFromImage(image, m_thumbSize);
     if (thumb.isNull()) {
         return;
     }
-    // Path-only: update every matching row (legacy). Prefer id overload.
     for (int row = 0; row < m_files.size(); ++row) {
         if (m_files.at(row) == path) {
             setThumbnailIcon(row, thumb);
@@ -512,6 +527,21 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
 void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
 {
     m_sessionIds = ids;
+    {
+        QSet<SessionImageId> seen;
+        for (int i = 0; i < m_sessionIds.size(); ++i) {
+            const SessionImageId id = m_sessionIds.at(i);
+            if (id == kInvalidSessionImageId) {
+                continue;
+            }
+            if (seen.contains(id)) {
+                qCritical("ThumbnailBar::setSessionIds: duplicate SessionImageId %lld at row %d",
+                          static_cast<long long>(id), i);
+            } else {
+                seen.insert(id);
+            }
+        }
+    }
     // Stamp identity on each row so drag/mime never depends on array index alone.
     for (int row = 0; row < count(); ++row) {
         if (QListWidgetItem *it = item(row)) {

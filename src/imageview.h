@@ -133,6 +133,8 @@ public:
     void rebindWorkspaceSession(const QStringList &sessionFiles,
                                 const QVector<SessionImageId> &sessionIds);
     void clearWorkspace();
+    /** qCritical if two live/stashed items share one SessionImageId. */
+    bool validateUniqueLiveSessionIds(const char *context = nullptr) const;
     // =====================================================================
     // Mode-controller host API
     // Used by ImageController / GalleryController / WorkspaceController.

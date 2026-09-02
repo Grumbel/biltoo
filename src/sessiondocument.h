@@ -52,6 +52,8 @@ public:
     void removeAt(int index);
     /** Pad or trim ids to match paths (legacy recovery only). */
     void ensureIdsAligned();
+    /** Return false and log if any SessionImageId appears more than once. */
+    bool validateUniqueIds(const char *context = nullptr) const;
 
 private:
     QStringList m_paths;

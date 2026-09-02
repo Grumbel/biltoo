@@ -369,6 +369,7 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     }
 
     m_session.setPaths(images);
+    m_session.validateUniqueIds("loadFiles");
     sortFileList();
     m_currentIndex = -1;
 
@@ -1436,6 +1437,7 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
         return {};
     }
     // Copies are the only selected items (duplicateSelected cleared + selected them).
+    m_session.validateUniqueIds("applyDuplicate");
     m_imageView->bindSelectedSessionIndices(firstNew);
     m_imageView->bindSelectedSessionIds(newIds.toList());
     m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
