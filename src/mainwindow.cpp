@@ -133,6 +133,32 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::RightDockWidgetArea, m_metadataDock);
     m_metadataDock->hide();
 
+    m_adjustmentsPanel = new AdjustmentsPanel(this);
+    m_adjustmentsDock = new QDockWidget(tr("Adjustments"), this);
+    m_adjustmentsDock->setObjectName(QStringLiteral("AdjustmentsDock"));
+    m_adjustmentsDock->setWidget(m_adjustmentsPanel);
+    m_adjustmentsDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_adjustmentsDock->setFeatures(QDockWidget::DockWidgetClosable
+                                   | QDockWidget::DockWidgetMovable
+                                   | QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::RightDockWidgetArea, m_adjustmentsDock);
+    m_adjustmentsDock->hide();
+    connect(m_adjustmentsPanel, &AdjustmentsPanel::adjustmentsChanged,
+            this, [this](const ColorAdjustments &adj) {
+                if (m_imageView) {
+                    m_imageView->setTargetColorAdjustments(adj);
+                    if (m_adjustmentsPanel) {
+                        ImageItem *item = m_imageView->targetItem();
+                        if (!item && !m_imageView->liveItems().isEmpty() && m_imageView->isImageMode()) {
+                            item = m_imageView->liveItems().first();
+                        }
+                        if (item) {
+                            m_adjustmentsPanel->setPreviewImage(item->pixmap().toImage());
+                        }
+                    }
+                }
+            });
+
     m_layoutPanel = new LayoutPanel(this);
     m_layoutDock = new QDockWidget(tr("Layout"), this);
     m_layoutDock->setObjectName(QStringLiteral("LayoutDock"));
@@ -986,6 +1012,29 @@ void MainWindow::updateMetadataPanel()
     }
 }
 
+void MainWindow::updateAdjustmentsPanel()
+{
+    if (!m_adjustmentsPanel || !m_imageView) {
+        return;
+    }
+    ImageItem *item = m_imageView->targetItem();
+    if (!item && !m_imageView->liveItems().isEmpty() && m_imageView->isImageMode()) {
+        item = m_imageView->liveItems().first();
+    }
+    if (!item || !item->hasDecodedPixels()) {
+        m_adjustmentsPanel->clearPreview();
+        m_adjustmentsPanel->setEnabledControls(false);
+        return;
+    }
+    m_adjustmentsPanel->setEnabledControls(true);
+    {
+        QSignalBlocker b(m_adjustmentsPanel);
+        m_adjustmentsPanel->setAdjustments(item->colorAdjustments());
+    }
+    m_adjustmentsPanel->setPreviewImage(item->pixmap().toImage());
+}
+
+
 void MainWindow::updateLayoutPanel()
 {
     if (!m_layoutPanel || !m_imageView) {
@@ -1021,6 +1070,7 @@ void MainWindow::updateStatus()
 {
     updateNavigationActions();
     updateMetadataPanel();
+    updateAdjustmentsPanel();
     // Session index on ImageView so status bar and on-image HUD share n/N.
     if (m_imageView) {
         // Silent while the slideshow timer advances; user Next/Prev still pulse.

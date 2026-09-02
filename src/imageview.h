@@ -5,6 +5,7 @@
 #define IMAGEVIEW_H
 
 #include "imageview_types.h"
+#include "coloradjust.h"
 #include "sessionappearance.h"
 #include "gallerycontroller.h"
 #include "workspacecontroller.h"
@@ -499,6 +500,8 @@ public:
     /** Restore appearance after session undo (store only; no canvas mutate). */
     void setSessionAppearance(SessionImageId id, const WorkspaceItemState &state);
     void copySessionAppearance(SessionImageId fromId, SessionImageId toId);
+    void setTargetColorAdjustments(const ColorAdjustments &adj);
+    ColorAdjustments targetColorAdjustments() const;
     /** Bake ±90° content into pixels and session state (not placement). */
     void bakeItemRotate90(ImageItem *item, int quarterTurns);
     /** Bake flip into pixels and session state. */

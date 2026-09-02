@@ -17,6 +17,7 @@
 
 class ThumbnailBar;
 class MetadataPanel;
+class AdjustmentsPanel;
 class LayoutPanel;
 class QDockWidget;
 class QSplitter;
@@ -210,6 +211,7 @@ private slots:
     void updateStatus();
     /** Refresh metadata dock from selection / session focus (deduped by path). */
     void updateMetadataPanel();
+    void updateAdjustmentsPanel();
     void updateLayoutPanel();
     void applyWorkspaceLayoutFromPanel();
     void updateWindowTitle();
@@ -280,6 +282,9 @@ private:
     bool m_syncingSelection = false;
     QSplitter *m_centralSplitter = nullptr;
     MetadataPanel *m_metadataPanel = nullptr;
+    AdjustmentsPanel *m_adjustmentsPanel = nullptr;
+    QDockWidget *m_adjustmentsDock = nullptr;
+    QAction *m_toggleAdjustmentsAct = nullptr;
     QString m_metadataPath;
     QDockWidget *m_metadataDock = nullptr;
     LayoutPanel *m_layoutPanel = nullptr;

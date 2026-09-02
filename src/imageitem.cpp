@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "coloradjust.h"
 
 #include <QCursor>
 #include <QGraphicsScene>
@@ -371,20 +372,30 @@ void ImageItem::applyLocalTransform()
     setTransform(t);
 }
 
+void ImageItem::setColorAdjustments(const ColorAdjustments &adj)
+{
+    m_colorAdjust = adj;
+    updateDisplayedPixmap();
+    update();
+}
+
 void ImageItem::updateDisplayedPixmap()
 {
-    if (!m_hFlip && !m_vFlip) {
-        setPixmap(QPixmap::fromImage(m_source));
+    if (m_source.isNull()) {
+        setPixmap(QPixmap());
         return;
     }
-    Qt::Orientations axes;
-    if (m_hFlip) {
-        axes |= Qt::Horizontal;
+    QImage img = m_source;
+    if (m_hFlip || m_vFlip) {
+        Qt::Orientations axes;
+        if (m_hFlip) axes |= Qt::Horizontal;
+        if (m_vFlip) axes |= Qt::Vertical;
+        img = img.flipped(axes);
     }
-    if (m_vFlip) {
-        axes |= Qt::Vertical;
+    if (!m_colorAdjust.isIdentity()) {
+        img = applyColorAdjustments(img, m_colorAdjust);
     }
-    setPixmap(QPixmap::fromImage(m_source.flipped(axes)));
+    setPixmap(QPixmap::fromImage(img));
 }
 
 bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,

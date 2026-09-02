@@ -644,6 +644,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     applySessionCrop(item, *app);
     applyContentBakes(item, *app);
     item->setSessionCrop(app->hasCrop, app->cropRect);
+    item->setColorAdjustments(app->colorAdjust);
 }
 
 void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &state)

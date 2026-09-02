@@ -123,6 +123,13 @@ QJsonObject appearanceToJson(const WorkspaceItemState &s, bool includePose)
     if (s.contentQuarterTurns != 0) {
         o.insert(QStringLiteral("contentQuarterTurns"), s.contentQuarterTurns);
     }
+    if (!s.colorAdjust.isIdentity()) {
+        o.insert(QStringLiteral("colorBrightness"), s.colorAdjust.brightness);
+        o.insert(QStringLiteral("colorContrast"), s.colorAdjust.contrast);
+        o.insert(QStringLiteral("colorSaturation"), s.colorAdjust.saturation);
+        o.insert(QStringLiteral("colorHue"), s.colorAdjust.hue);
+        o.insert(QStringLiteral("colorGamma"), s.colorAdjust.gamma);
+    }
     if (includePose) {
         o.insert(QStringLiteral("x"), s.pos.x());
         o.insert(QStringLiteral("y"), s.pos.y());
@@ -162,6 +169,11 @@ WorkspaceItemState appearanceFromJson(const QJsonObject &o)
     s.contentHFlip = o.value(QStringLiteral("contentHFlip")).toBool(false);
     s.contentVFlip = o.value(QStringLiteral("contentVFlip")).toBool(false);
     s.contentQuarterTurns = o.value(QStringLiteral("contentQuarterTurns")).toInt(0);
+    s.colorAdjust.brightness = o.value(QStringLiteral("colorBrightness")).toInt(0);
+    s.colorAdjust.contrast = o.value(QStringLiteral("colorContrast")).toInt(100);
+    s.colorAdjust.saturation = o.value(QStringLiteral("colorSaturation")).toInt(100);
+    s.colorAdjust.hue = o.value(QStringLiteral("colorHue")).toInt(0);
+    s.colorAdjust.gamma = o.value(QStringLiteral("colorGamma")).toDouble(1.0);
     if (o.contains(QStringLiteral("x")) || o.contains(QStringLiteral("y"))) {
         s.pos = QPointF(o.value(QStringLiteral("x")).toDouble(),
                         o.value(QStringLiteral("y")).toDouble());

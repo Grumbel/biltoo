@@ -500,6 +500,13 @@ void MainWindow::createActions()
     m_toggleMetadataAct->setShortcut(Qt::CTRL | Qt::Key_E);
     m_toggleMetadataAct->setIcon(themeIcon(QStringLiteral("dialog-information"), QStyle::SP_FileDialogInfoView));
     m_toggleMetadataAct->setStatusTip(tr("Show or hide the metadata side panel"));
+
+    if (m_adjustmentsDock) {
+        m_toggleAdjustmentsAct = m_adjustmentsDock->toggleViewAction();
+        m_toggleAdjustmentsAct->setText(tr("Show &Adjustments"));
+        m_toggleAdjustmentsAct->setShortcut(Qt::CTRL | Qt::Key_U);
+        m_toggleAdjustmentsAct->setStatusTip(tr("Colour grade, histogram, and vectorscope"));
+    }
     // Ensure closing via the dock title-bar [x] updates the action; showing again works
     connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
         if (m_toggleMetadataAct->isChecked() != visible) {
@@ -650,6 +657,9 @@ void MainWindow::createMenus()
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
+    if (m_toggleAdjustmentsAct) {
+        m_viewMenu->addAction(m_toggleAdjustmentsAct);
+    }
     m_viewMenu->addAction(m_toggleLayoutPanelAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);
     auto *thumbsMenu = m_viewMenu->addMenu(tr("&Thumbnails"));
@@ -832,6 +842,9 @@ void MainWindow::createToolBar()
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_toggleThumbnailBarAct);
     m_toolBar->addAction(m_toggleMetadataAct);
+    if (m_toggleAdjustmentsAct) {
+        m_toolBar->addAction(m_toggleAdjustmentsAct);
+    }
     m_toolBar->addAction(m_fullscreenAct);
 
     // Left vertical toolbar for workspace tools (hidden until workspace mode)

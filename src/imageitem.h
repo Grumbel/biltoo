@@ -5,6 +5,7 @@
 #define IMAGEITEM_H
 
 #include "imageview_types.h"
+#include "coloradjust.h"
 #include <QGraphicsPixmapItem>
 #include <QColor>
 #include <QImage>
@@ -113,6 +114,8 @@ public:
     bool contentVFlip() const { return m_contentVFlip; }
     void setContentHFlip(bool on) { m_contentHFlip = on; }
     void setContentVFlip(bool on) { m_contentVFlip = on; }
+    void setColorAdjustments(const ColorAdjustments &adj);
+    ColorAdjustments colorAdjustments() const { return m_colorAdjust; }
     /**
      * Per-instance session crop in on-disk pixel coordinates (top-left origin).
      * Independent of path-keyed ImageView state so Workspace duplicates do not
@@ -268,6 +271,7 @@ private:
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only
     QImage m_source;
+    ColorAdjustments m_colorAdjust;
     /** Valid when m_source is null (placeholder) or as size cache. */
     QSize m_intrinsicSize;
     qreal m_scaleX = 1.0;

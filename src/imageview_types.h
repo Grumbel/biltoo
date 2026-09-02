@@ -10,6 +10,7 @@
 #include <QRect>
 #include <QSize>
 #include <QString>
+#include "coloradjust.h"
 #include <QtGlobal>
 
 /**
@@ -73,6 +74,7 @@ struct WorkspaceItemState {
      * axis-aligned. 0 = axis-aligned crop (default).
      */
     qreal cropRotation = 0.0;
+    ColorAdjustments colorAdjust;
 };
 
 #endif // IMAGEVIEW_TYPES_H

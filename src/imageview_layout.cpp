@@ -87,6 +87,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.cropRect = item->sessionCropRect();
     s.contentHFlip = item->contentHFlip();
     s.contentVFlip = item->contentVFlip();
+    s.colorAdjust = item->colorAdjustments();
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
@@ -163,6 +164,7 @@ void ImageView::rememberItemState(ImageItem *item)
         s.cropRect = item->sessionCropRect();
         s.contentHFlip = item->contentHFlip();
         s.contentVFlip = item->contentVFlip();
+    s.colorAdjust = item->colorAdjustments();
         if (it != m_itemStates.cend()) {
             s.contentQuarterTurns = it->contentQuarterTurns;
             s.cropRotation = it->cropRotation;
@@ -301,6 +303,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.cropSourceSize = cropMap.cropSourceSize;
         s.contentHFlip = item->contentHFlip();
         s.contentVFlip = item->contentVFlip();
+    s.colorAdjust = item->colorAdjustments();
         m_appearance.set(sid, s);
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);
@@ -1519,4 +1522,47 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
     m_scene->render(&painter, QRectF(QPointF(0, 0), QSizeF(pixelSize)), sourceSceneRect,
                     Qt::KeepAspectRatio);
     return img;
+}
+
+
+void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
+{
+    ImageItem *item = targetItem();
+    if (!item && isImageMode() && !m_items.isEmpty()) {
+        item = m_items.first();
+    }
+    if (!item) {
+        return;
+    }
+    item->setColorAdjustments(adj);
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_currentSessionId;
+    }
+    if (sid != kInvalidSessionImageId) {
+        WorkspaceItemState slot = m_appearance.contains(sid)
+            ? m_appearance.value(sid)
+            : captureState(item);
+        slot.sessionId = sid;
+        slot.path = item->path();
+        slot.colorAdjust = adj;
+        m_appearance.set(sid, slot);
+        const QImage appearance = sessionAppearanceImage(item);
+        if (!appearance.isNull()) {
+            emit sessionAppearanceChanged(sid, item->path(), appearance);
+        }
+    }
+    emit statusChanged();
+}
+
+ColorAdjustments ImageView::targetColorAdjustments() const
+{
+    ImageItem *item = targetItem();
+    if (!item && isImageMode() && !m_items.isEmpty()) {
+        item = m_items.first();
+    }
+    if (!item) {
+        return {};
+    }
+    return item->colorAdjustments();
 }
