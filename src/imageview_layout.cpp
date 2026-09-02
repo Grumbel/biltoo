@@ -78,17 +78,35 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.z = item->stackZ();
     s.hFlip = item->itemHFlip();
     s.vFlip = item->itemVFlip();
-    // Live item is authoritative for per-instance appearance (crop + content
-    // flips). Do not overwrite from the path map — that was clearing content
-    // flags for unbound Workspace items after bakeFlip/bakeRotate90.
+    // Live item is authoritative for per-instance crop rect + content flips.
+    // cropRotation / cropSourceSize are not stored on ImageItem — load them
+    // from the session-image appearance store (or path map for unbound).
     s.hasCrop = item->sessionHasCrop();
     s.cropRect = item->sessionCropRect();
     s.contentHFlip = item->contentHFlip();
     s.contentVFlip = item->contentVFlip();
-    // Quarter turns live only on the path map (not stored on ImageItem).
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+            s.cropRotation = app->cropRotation;
+            s.cropSourceSize = app->cropSourceSize;
+            if (s.contentQuarterTurns == 0 && app->contentQuarterTurns != 0) {
+                s.contentQuarterTurns = app->contentQuarterTurns;
+            }
+        }
+    }
+    // Quarter turns / crop meta also on the path map for unbound tiles.
     const auto prev = m_itemStates.constFind(item->path());
     if (prev != m_itemStates.cend()) {
-        s.contentQuarterTurns = prev->contentQuarterTurns;
+        if (s.contentQuarterTurns == 0) {
+            s.contentQuarterTurns = prev->contentQuarterTurns;
+        }
+        if (sid == kInvalidSessionImageId) {
+            s.cropRotation = prev->cropRotation;
+            s.cropSourceSize = prev->cropSourceSize;
+        }
         if (s.sessionIndex < 0 && prev->sessionIndex >= 0) {
             // Keep a path-level session index hint when the item is unbound.
             s.sessionIndex = prev->sessionIndex;
@@ -145,6 +163,8 @@ void ImageView::rememberItemState(ImageItem *item)
         s.contentVFlip = item->contentVFlip();
         if (it != m_itemStates.cend()) {
             s.contentQuarterTurns = it->contentQuarterTurns;
+            s.cropRotation = it->cropRotation;
+            s.cropSourceSize = it->cropSourceSize;
         }
         m_itemStates.insert(item->path(), s);
         return;

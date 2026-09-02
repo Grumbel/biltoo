@@ -183,6 +183,7 @@ void ImageView::setCropMode(bool on)
         m_cropEnterState = captureState(item);
         m_cropEnterState.hasCrop = item->sessionHasCrop();
         m_cropEnterState.cropRect = item->sessionCropRect();
+        // cropRotation / cropSourceSize come from captureState → appearance.
         m_cropEnterValid = !m_cropEnterSource.isNull();
         // Crop handles are axis-aligned in item space; free Workspace placement
         // rotation makes rubber-band and edge grips unusable. Unrotate for the
@@ -395,6 +396,22 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     item->setContentHFlip(state.contentHFlip);
     item->setContentVFlip(state.contentVFlip);
     applyState(item, state);
+    // Seed appearance with the full state (including cropRotation) before
+    // commitItemSessionEdit, which rebuilds the slot via captureState.
+    {
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId && isImageMode()) {
+            sid = m_currentSessionId;
+        }
+        if (sid != kInvalidSessionImageId) {
+            WorkspaceItemState slot = state;
+            slot.sessionId = sid;
+            slot.path = item->path();
+            m_appearance.set(sid, slot);
+        } else {
+            m_itemStates.insert(item->path(), state);
+        }
+    }
     // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
     // Do not write crop state into the path map for bound tiles.
     commitItemSessionEdit(item);
@@ -597,6 +614,8 @@ void ImageView::leaveCropModeInternal(bool apply)
                     WorkspaceItemState afterSt = captureState(item);
                     afterSt.hasCrop = item->sessionHasCrop();
                     afterSt.cropRect = item->sessionCropRect();
+                    // captureState pulls cropRotation from appearance
+                    // (recordSessionCrop + commitItemSessionEdit).
                     m_undoStack->push(new CropCommand(
                         this, item, m_cropEnterSource, item->sourceImage().copy(),
                         m_cropEnterState, afterSt));
@@ -655,6 +674,8 @@ void ImageView::leaveCropModeInternal(bool apply)
                 WorkspaceItemState afterSt = captureState(item);
                 afterSt.hasCrop = item->sessionHasCrop();
                 afterSt.cropRect = item->sessionCropRect();
+                    // captureState pulls cropRotation from appearance
+                    // (recordSessionCrop + commitItemSessionEdit).
                 m_undoStack->push(new CropCommand(
                     this, item, m_cropEnterSource, item->sourceImage().copy(),
                     m_cropEnterState, afterSt));
