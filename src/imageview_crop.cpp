@@ -335,6 +335,20 @@ void ImageView::setCropMode(bool on)
             return;
         }
         if (isWorkspaceMode()) {
+            // If there was no stored crop angle but the tile was free-rotated,
+            // seed the draft rotation so the frame matches the prior pose while
+            // the item stays axis-aligned for editing.
+            if (qAbs(m_cropRotation) < 0.05
+                && qAbs(m_cropStashedPlacementRotation) > 0.05) {
+                m_cropRotation = m_cropStashedPlacementRotation;
+                while (m_cropRotation > 180.0) {
+                    m_cropRotation -= 360.0;
+                }
+                while (m_cropRotation <= -180.0) {
+                    m_cropRotation += 360.0;
+                }
+                ensureCropRectValid();
+            }
             alignCropFrameCenterToScene(item, workspaceAnchorScene);
             updateWorkspaceSceneRect();
         }
@@ -343,9 +357,7 @@ void ImageView::setCropMode(bool on)
         m_cropHoverHandle = CropHandle::None;
         m_cropRubberBanding = false;
         flashHud(tr("Crop mode"),
-                 m_cropHadStashedPlacement
-                     ? tr("Unrotated for crop · Apply commits · Esc cancels")
-                     : tr("Apply commits · Cancel / Esc discards"));
+                 tr("Apply commits · Esc cancels"));
         emit cropModeChanged(true);
         emit statusChanged();
         viewport()->update();
@@ -693,6 +705,10 @@ void ImageView::leaveCropModeInternal(bool apply)
         return;
     }
     ImageItem *item = cropTargetItem();
+    // When a Workspace crop is committed, placement rotation follows the crop
+    // frame angle (straightened pixels + matching pose). Cancel / full-frame
+    // restore the pre-crop placement instead.
+    bool preserveCropFrameRotation = false;
     if (apply && item) {
         ensureCropRectValid();
         const QRectF full = item->contentRect();
@@ -718,6 +734,11 @@ void ImageView::leaveCropModeInternal(bool apply)
                     // New image is centred on the item origin; pin that to the
                     // former crop-frame centre so the region does not jump.
                     alignItemCenterToScene(item, cropSceneCenter);
+                    // Straightened crop pixels: place at the crop-frame angle so
+                    // the region keeps the same orientation it had while editing
+                    // (crop painter samples with -θ; frame was drawn at +θ).
+                    item->setItemRotation(m_cropRotation);
+                    preserveCropFrameRotation = true;
                     updateWorkspaceSceneRect();
                 } else if (isGalleryMode()) {
                     applyLayout(GalleryPackReason::ContentChange);
@@ -847,8 +868,9 @@ void ImageView::leaveCropModeInternal(bool apply)
                                    : m_cropEnterState.scale);
         }
     }
-    // Restore Workspace free placement rotation after crop UI.
-    if (item && m_cropHadStashedPlacement) {
+    // Restore pre-crop placement rotation unless Apply already set it from the
+    // crop frame (Workspace non-full-frame commit).
+    if (item && m_cropHadStashedPlacement && !preserveCropFrameRotation) {
         item->setItemRotation(m_cropStashedPlacementRotation);
     }
     m_cropHadStashedPlacement = false;
