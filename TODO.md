@@ -320,3 +320,7 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
 - [x] **Duplicate 2nd+ selection / wrong source**  
   Path-occurrence reselect always copied the first tile with that path. Now
   sources and post-duplicate selection use SessionImageId.
+
+- [x] **Filmstrip drag identity + drop-duplicate crop**  
+  Store SessionImageId on each QListWidgetItem (RoleSessionId). mimeData reads
+  item data. Drop-duplicate copies content appearance to the new session id.

@@ -27,6 +27,7 @@
 #include <QStyle>
 #include <QThreadPool>
 #include <QUrl>
+#include <QVariant>
 #include <algorithm>
 
 // ---------------------------------------------------------------------------
@@ -511,6 +512,14 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
 void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
 {
     m_sessionIds = ids;
+    // Stamp identity on each row so drag/mime never depends on array index alone.
+    for (int row = 0; row < count(); ++row) {
+        if (QListWidgetItem *it = item(row)) {
+            const SessionImageId sid = (row < m_sessionIds.size()) ? m_sessionIds.at(row)
+                                                                  : kInvalidSessionImageId;
+            it->setData(RoleSessionId, QVariant::fromValue(static_cast<qint64>(sid)));
+        }
+    }
     // Drop overrides for session images that are no longer in the strip.
     if (!m_sessionIdImageOverrides.isEmpty()) {
         QHash<SessionImageId, QImage> kept;
@@ -691,11 +700,15 @@ void ThumbnailBar::setFiles(const QStringList &files)
 
     const QSize cell = m_delegate ? m_delegate->cellSize(font())
                                   : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight());
-    for (const QString &path : files) {
+    for (int i = 0; i < files.size(); ++i) {
+        const QString &path = files.at(i);
         auto *item = new QListWidgetItem(this);
         item->setText(QFileInfo(path).fileName());
         item->setToolTip(path);
-        item->setData(Qt::UserRole, path);
+        item->setData(RolePath, path);
+        const SessionImageId sid = (i < m_sessionIds.size()) ? m_sessionIds.at(i)
+                                                            : kInvalidSessionImageId;
+        item->setData(RoleSessionId, QVariant::fromValue(static_cast<qint64>(sid)));
         item->setSizeHint(cell);
         item->setIcon(QIcon::fromTheme(QStringLiteral("image-x-generic")));
     }
@@ -976,11 +989,11 @@ void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
         if (selectedCount > 0) {
             for (int idx : indices) {
                 if (QListWidgetItem *it = item(idx)) {
-                    paths.append(it->data(Qt::UserRole).toString());
+                    paths.append(it->data(RolePath).toString());
                 }
             }
         } else if (hit) {
-            paths.append(hit->data(Qt::UserRole).toString());
+            paths.append(hit->data(RolePath).toString());
         }
         if (!paths.isEmpty()) {
             QGuiApplication::clipboard()->setText(paths.join(QLatin1Char('\n')));
@@ -1004,17 +1017,21 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
         if (!it) {
             continue;
         }
-        const QString path = it->data(Qt::UserRole).toString();
+        const QString path = it->data(RolePath).toString();
         if (path.isEmpty()) {
             continue;
         }
         urls.append(QUrl::fromLocalFile(path));
-        // Parallel session-id list so Workspace drops bind the dragged row,
-        // not lastIndexOfPath (duplicate paths would otherwise steal identity).
+        // Prefer SessionImageId stamped on the item (setFiles / setSessionIds).
         SessionImageId sid = kInvalidSessionImageId;
-        const int r = row(it);
-        if (r >= 0 && r < m_sessionIds.size()) {
-            sid = m_sessionIds.at(r);
+        const QVariant idVar = it->data(RoleSessionId);
+        if (idVar.isValid()) {
+            sid = static_cast<SessionImageId>(idVar.toLongLong());
+        } else {
+            const int r = row(it);
+            if (r >= 0 && r < m_sessionIds.size()) {
+                sid = m_sessionIds.at(r);
+            }
         }
         if (!idPayload.isEmpty()) {
             idPayload.append(',');

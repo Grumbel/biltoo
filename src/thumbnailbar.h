@@ -58,6 +58,12 @@ class ThumbnailBar : public QListWidget
     Q_OBJECT
 
 public:
+    /** Qt::UserRole / RolePath = path (QString). RoleSessionId = SessionImageId. */
+    enum ItemDataRole {
+        RolePath = Qt::UserRole,
+        RoleSessionId = Qt::UserRole + 1
+    };
+
     explicit ThumbnailBar(QWidget *parent = nullptr);
     ~ThumbnailBar() override;
 

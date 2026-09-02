@@ -1568,17 +1568,28 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
                 sid = static_cast<SessionImageId>(sessionIds.at(i));
                 slot = m_session.indexOfId(sid);
             }
-            const bool alreadyOnCanvas = m_imageView->workspacePathOccurrenceCount(img) > 0;
-            // Path already on canvas and this drop is not addressing a known
-            // session row still off-canvas: allocate a new session image.
+            const SessionImageId sourceSid = sid;
+            // Prefer session-id membership over path counts (duplicates share a path).
+            const bool alreadyOnCanvas = (sourceSid != kInvalidSessionImageId)
+                ? (m_imageView->findItemBySessionId(sourceSid) != nullptr)
+                : (m_imageView->workspacePathOccurrenceCount(img) > 0);
+            // Session image already on the canvas: allocate a new session image
+            // (drop-duplicate) and copy content appearance so a cropped filmstrip
+            // drag does not place a full-frame / wrong-looking twin.
             if (alreadyOnCanvas && (slot < 0 || m_imageView->findItemBySessionId(sid))) {
                 m_session.append(img);
+                const SessionImageId newSid = m_session.ids().isEmpty()
+                    ? kInvalidSessionImageId
+                    : m_session.ids().last();
+                if (sourceSid != kInvalidSessionImageId && newSid != kInvalidSessionImageId) {
+                    m_imageView->copySessionAppearance(sourceSid, newSid);
+                }
                 if (m_thumbnailBar) {
                     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
                     m_thumbnailBar->setMultiSelectEnabled(true);
                 }
-                slot = m_session.lastIndexOfPath(img);
-                sid = sessionIdAt(slot);
+                slot = m_session.size() - 1;
+                sid = newSid;
             } else if (slot < 0) {
                 slot = m_session.lastIndexOfPath(img);
                 sid = sessionIdAt(slot);

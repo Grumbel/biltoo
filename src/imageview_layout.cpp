@@ -854,6 +854,45 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
     }
 }
 
+
+void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId)
+{
+    if (fromId == kInvalidSessionImageId || toId == kInvalidSessionImageId
+        || fromId == toId) {
+        return;
+    }
+    const WorkspaceItemState *src = m_appearance.get(fromId);
+    if (!src) {
+        return;
+    }
+    WorkspaceItemState dst = *src;
+    dst.sessionId = toId;
+    dst.pos = QPointF();
+    dst.scale = 1.0;
+    dst.scaleY = 1.0;
+    dst.rotation = 0.0;
+    dst.opacity = 1.0;
+    dst.z = 0.0;
+    m_appearance.set(toId, dst);
+
+    ImageItem *donor = findItemBySessionId(fromId);
+    if (!donor && isImageMode()) {
+        donor = primaryItem();
+        if (donor && donor->sessionId() != fromId) {
+            donor = nullptr;
+        }
+    }
+    if (donor) {
+        const QImage appearance = sessionAppearanceImage(donor);
+        if (!appearance.isNull()) {
+            emit sessionAppearanceChanged(toId, dst.path, appearance);
+            if (dst.hasCrop) {
+                emit sessionCropApplied(toId, dst.path, appearance);
+            }
+        }
+    }
+}
+
 int ImageView::workspacePathOccurrenceCount(const QString &path) const
 {
     int n = 0;
