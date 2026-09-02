@@ -121,7 +121,8 @@ void ImageView::setMasonryColumns(int columns)
         return;
     }
     m_masonryColumns = clamped;
-    if (m_layoutMode == LayoutMode::Masonry && !m_items.isEmpty()) {
+    if ((m_layoutMode == LayoutMode::Masonry || m_layoutMode == LayoutMode::MasonryFill)
+        && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
@@ -133,7 +134,8 @@ void ImageView::setMasonryRows(int rows)
         return;
     }
     m_masonryRows = clamped;
-    if (m_layoutMode == LayoutMode::MasonryRows && !m_items.isEmpty()) {
+    if ((m_layoutMode == LayoutMode::MasonryRows || m_layoutMode == LayoutMode::MasonryRowsFill)
+        && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
@@ -259,6 +261,12 @@ void ImageView::applyLayout(GalleryPackReason reason)
         break;
     case LayoutMode::MasonryRows:
         params.mode = GalleryLayout::Mode::MasonryRows;
+        break;
+    case LayoutMode::MasonryFill:
+        params.mode = GalleryLayout::Mode::MasonryFill;
+        break;
+    case LayoutMode::MasonryRowsFill:
+        params.mode = GalleryLayout::Mode::MasonryRowsFill;
         break;
     default:
         params.mode = GalleryLayout::Mode::Masonry;

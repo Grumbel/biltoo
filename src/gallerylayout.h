@@ -19,9 +19,13 @@ enum class Mode {
     SideBySide,
     Vertical,
     Grid,
-    GridCrop,
+    GridCrop, // disabled in UI; kept for load compatibility
     Masonry,
-    MasonryRows
+    MasonryRows,
+    /** Column masonry then per-column scale so all columns share one bottom edge. */
+    MasonryFill,
+    /** Row masonry then per-row scale so all rows share one right edge. */
+    MasonryRowsFill
 };
 
 struct Params {

@@ -48,7 +48,8 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
     populateGalleryCanvas();
 
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
-                         m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct}) {
+                         m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
+                         m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct}) {
         if (act) {
             act->setChecked(false);
         }
@@ -72,6 +73,12 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
         break;
     case ImageView::LayoutMode::MasonryRows:
         check = m_layoutMasonryRowsAct;
+        break;
+    case ImageView::LayoutMode::MasonryFill:
+        check = m_layoutMasonryFillAct;
+        break;
+    case ImageView::LayoutMode::MasonryRowsFill:
+        check = m_layoutMasonryRowsFillAct;
         break;
     default:
         break;
@@ -111,6 +118,16 @@ void MainWindow::setLayoutMasonry()
 void MainWindow::setLayoutMasonryRows()
 {
     enterGalleryMode(ImageView::LayoutMode::MasonryRows);
+}
+
+void MainWindow::setLayoutMasonryFill()
+{
+    enterGalleryMode(ImageView::LayoutMode::MasonryFill);
+}
+
+void MainWindow::setLayoutMasonryRowsFill()
+{
+    enterGalleryMode(ImageView::LayoutMode::MasonryRowsFill);
 }
 
 void MainWindow::openSessionIndexInImageMode(int sessionIndex)
@@ -224,7 +241,8 @@ void MainWindow::returnToGallery()
 
     m_galleryReturnLayout = layout;
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
-                         m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct}) {
+                         m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
+                         m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct}) {
         if (act) {
             act->setChecked(false);
         }
@@ -248,6 +266,12 @@ void MainWindow::returnToGallery()
         break;
     case ImageView::LayoutMode::MasonryRows:
         check = m_layoutMasonryRowsAct;
+        break;
+    case ImageView::LayoutMode::MasonryFill:
+        check = m_layoutMasonryFillAct;
+        break;
+    case ImageView::LayoutMode::MasonryRowsFill:
+        check = m_layoutMasonryRowsFillAct;
         break;
     default:
         break;
@@ -341,8 +365,12 @@ void MainWindow::updateMasonryCountControl()
     }
     const auto mode = m_imageView->layoutMode();
     const bool gallery = m_imageView->isGalleryMode();
-    const bool masonryCols = gallery && mode == ImageView::LayoutMode::Masonry;
-    const bool masonryRows = gallery && mode == ImageView::LayoutMode::MasonryRows;
+    const bool masonryCols = gallery
+        && (mode == ImageView::LayoutMode::Masonry
+            || mode == ImageView::LayoutMode::MasonryFill);
+    const bool masonryRows = gallery
+        && (mode == ImageView::LayoutMode::MasonryRows
+            || mode == ImageView::LayoutMode::MasonryRowsFill);
     const bool gridCols = gallery
                           && (mode == ImageView::LayoutMode::Grid
                               || mode == ImageView::LayoutMode::GridCrop);
@@ -451,7 +479,8 @@ void MainWindow::updateWorkspaceActionVisibility()
     //  loadFiles never refreshed visibility.)
     const bool canGallery = !m_session.paths().isEmpty();
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
-                         m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct}) {
+                         m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
+                         m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(canGallery);

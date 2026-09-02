@@ -146,6 +146,8 @@ private slots:
     void setLayoutGridCrop();
     void setLayoutMasonry();
     void setLayoutMasonryRows();
+    void setLayoutMasonryFill();
+    void setLayoutMasonryRowsFill();
     void openGalleryItemInImageMode(const QString &path);
     /** Enter Image mode on a session row (preferred; duplicate-safe). */
     void openSessionIndexInImageMode(int sessionIndex);
@@ -346,6 +348,8 @@ private:
     QAction *m_layoutGridCropAct = nullptr;
     QAction *m_layoutMasonryAct = nullptr;
     QAction *m_layoutMasonryRowsAct = nullptr;
+    QAction *m_layoutMasonryFillAct = nullptr;
+    QAction *m_layoutMasonryRowsFillAct = nullptr;
     QAction *m_backToGalleryAct = nullptr;
     QAction *m_masonryCountAction = nullptr;
     QSpinBox *m_masonryCountSpin = nullptr;

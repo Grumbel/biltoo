@@ -178,6 +178,112 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             rowWidths[best] += w + gap;
             finish(item, afterEach);
         }
+    } else if (params.mode == Mode::MasonryFill) {
+        // Column masonry, then scale each column so heights match (clean rectangle).
+        const int cols = qBound(1, params.masonryColumns, n);
+        const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
+        struct Entry {
+            ImageItem *item = nullptr;
+            QSizeF ns;
+            qreal scale = 1.0;
+            qreal h = 0.0;
+        };
+        QVector<QVector<Entry>> columns(cols);
+        QVector<qreal> colHeights(cols, 0.0);
+        for (ImageItem *item : items) {
+            const QSizeF ns = layoutSize(item);
+            const qreal scale = colW / qMax(1.0, ns.width());
+            const qreal h = ns.height() * scale;
+            int best = 0;
+            for (int c = 1; c < cols; ++c) {
+                if (colHeights.at(c) < colHeights.at(best)) {
+                    best = c;
+                }
+            }
+            columns[best].append(Entry{item, ns, scale, h});
+            colHeights[best] += h + gap;
+        }
+        qreal maxH = 0.0;
+        for (int c = 0; c < cols; ++c) {
+            if (columns.at(c).isEmpty()) {
+                continue;
+            }
+            // Strip trailing gap from height sum.
+            const qreal h = colHeights.at(c) - gap;
+            maxH = qMax(maxH, h);
+        }
+        qreal x = margin;
+        for (int c = 0; c < cols; ++c) {
+            if (columns.at(c).isEmpty()) {
+                continue;
+            }
+            const qreal colH = colHeights.at(c) - gap;
+            const qreal s = (colH > 1e-6) ? (maxH / colH) : 1.0;
+            const qreal colWidth = colW * s;
+            qreal y = margin;
+            for (Entry &e : columns[c]) {
+                const qreal scale = e.scale * s;
+                e.item->setItemScale(scale);
+                const qreal w = e.ns.width() * scale;
+                const qreal h = e.ns.height() * scale;
+                e.item->setPos(x + w / 2.0, y + h / 2.0);
+                y += h + gap * s;
+                finish(e.item, afterEach);
+            }
+            x += colWidth + gap;
+        }
+    } else if (params.mode == Mode::MasonryRowsFill) {
+        // Row masonry, then scale each row so widths match (clean rectangle).
+        const int rows = qBound(1, params.masonryRows, n);
+        const qreal rowH = (availH - gap * qMax(0, rows - 1)) / rows;
+        struct Entry {
+            ImageItem *item = nullptr;
+            QSizeF ns;
+            qreal scale = 1.0;
+            qreal w = 0.0;
+        };
+        QVector<QVector<Entry>> rowItems(rows);
+        QVector<qreal> rowWidths(rows, 0.0);
+        for (ImageItem *item : items) {
+            const QSizeF ns = layoutSize(item);
+            const qreal scale = rowH / qMax(1.0, ns.height());
+            const qreal w = ns.width() * scale;
+            int best = 0;
+            for (int r = 1; r < rows; ++r) {
+                if (rowWidths.at(r) < rowWidths.at(best)) {
+                    best = r;
+                }
+            }
+            rowItems[best].append(Entry{item, ns, scale, w});
+            rowWidths[best] += w + gap;
+        }
+        qreal maxW = 0.0;
+        for (int r = 0; r < rows; ++r) {
+            if (rowItems.at(r).isEmpty()) {
+                continue;
+            }
+            maxW = qMax(maxW, rowWidths.at(r) - gap);
+        }
+        qreal y = margin;
+        for (int r = 0; r < rows; ++r) {
+            if (rowItems.at(r).isEmpty()) {
+                continue;
+            }
+            const qreal rowW = rowWidths.at(r) - gap;
+            const qreal s = (rowW > 1e-6) ? (maxW / rowW) : 1.0;
+            const qreal rowHeight = rowH * s;
+            qreal x = margin;
+            for (Entry &e : rowItems[r]) {
+                const qreal scale = e.scale * s;
+                e.item->setItemScale(scale);
+                const qreal w = e.ns.width() * scale;
+                const qreal h = e.ns.height() * scale;
+                e.item->setPos(x + w / 2.0, y + h / 2.0);
+                x += w + gap * s;
+                finish(e.item, afterEach);
+            }
+            y += rowHeight + gap;
+        }
     }
 }
 
