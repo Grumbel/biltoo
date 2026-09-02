@@ -193,6 +193,8 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
         return {};
     }
     // Content 90°/flip/crop are baked into source pixels. Placement rotation is not.
+    // Colour grade is non-destructive (applied on display) — include it so
+    // ThumbnailBar overrides and drop-duplicate thumbs match the live tile.
     QImage img = item->sourceImage();
     if (img.isNull()) {
         return {};
@@ -203,6 +205,10 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     }
     if (item->itemVFlip()) {
         img = img.flipped(Qt::Vertical);
+    }
+    const ColorAdjustments adj = item->colorAdjustments();
+    if (!adj.isIdentity()) {
+        img = applyColorAdjustments(img, adj);
     }
     return img;
 }
@@ -859,6 +865,9 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         WorkspaceItemState slot;
         if (m_pendingItemAppearance.contains(item)) {
             slot = m_pendingItemAppearance.take(item);
+            // Pending may carry colour grade from Duplicate before the live item
+            // was fully synced — apply it so the tile and sessionAppearanceImage match.
+            item->setColorAdjustments(slot.colorAdjust);
         } else {
             slot = captureState(item);
         }
@@ -876,11 +885,12 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         slot.cropRect = item->sessionCropRect();
         slot.contentHFlip = item->contentHFlip();
         slot.contentVFlip = item->contentVFlip();
+        slot.colorAdjust = item->colorAdjustments();
         slot.sessionId = id;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
         m_appearance.set(id, slot);
-        // Drive ThumbnailBar per-id override (cropped/rotated pixels on the item).
+        // Drive ThumbnailBar per-id override (cropped/rotated/graded pixels).
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
             emit sessionAppearanceChanged(id, item->path(), appearance);

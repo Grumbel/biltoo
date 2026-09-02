@@ -345,3 +345,13 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   membership by id so LoadAdd/drop-duplicate is not path-occurrence based.
 
 - [x] **Adjustments panel** — brightness/contrast/sat/hue/gamma + histogram + vectorscope (SessionImageId).
+
+- [x] **Colour grade survives Duplicate / thumbnail / reloads**  
+  1. `duplicateSelected` applies `setColorAdjustments` on the copy and stores
+     grade in pending appearance; bind-from-pending reapplies grade to the item.
+  2. `sessionAppearanceImage` applies colour grade so ThumbnailBar overrides
+     and drop-duplicate thumbs match the live tile; slider changes refresh thumbs.
+  3. LoadRestore path sets `colorAdjustments` after content bakes.
+  4. WorkspaceController restore always re-syncs grade from the session store
+     (and again after pixel rebuild). Project save/load already serialized the
+     five grade fields in WorkspaceItemState.

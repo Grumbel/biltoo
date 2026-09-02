@@ -184,6 +184,9 @@ void WorkspaceController::restoreStashedItems()
         if (!app) {
             continue;
         }
+        // Colour grade is non-destructive on the item; always re-sync from the
+        // session-image store (may have been edited in Image mode while stashed).
+        item->setColorAdjustments(app->colorAdjust);
         // Pixels are usually already updated by commitItemSessionEdit while
         // stashed. Rebuild only when size/metadata disagree with slot state.
         const QSize want = app->hasCrop ? app->cropRect.size() : QSize();
@@ -206,6 +209,7 @@ void WorkspaceController::restoreStashedItems()
             m_view->applySessionCrop(item, *app);
             m_view->applyContentBakes(item, *app);
             item->setSessionCrop(app->hasCrop, app->cropRect);
+            item->setColorAdjustments(app->colorAdjust);
         }
     }
     m_view->clearFitFillModes();

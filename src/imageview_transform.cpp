@@ -475,7 +475,10 @@ void ImageView::duplicateSelected()
         copy->setContentHFlip(src->contentHFlip());
         copy->setContentVFlip(src->contentVFlip());
         copy->setSessionCrop(src->sessionHasCrop(), src->sessionCropRect());
-        // Stage full content appearance (incl. cropRotation) for the new session id.
+        // Non-destructive colour grade must be on the live item immediately so
+        // the duplicate tile matches the source before session-id bind.
+        copy->setColorAdjustments(src->colorAdjustments());
+        // Stage full content appearance (incl. cropRotation + colorAdjust) for the new session id.
         {
             WorkspaceItemState content;
             if (src->sessionId() != kInvalidSessionImageId) {
@@ -488,6 +491,7 @@ void ImageView::duplicateSelected()
             content.cropRect = src->sessionCropRect();
             content.contentHFlip = src->contentHFlip();
             content.contentVFlip = src->contentVFlip();
+            content.colorAdjust = src->colorAdjustments();
             m_pendingItemAppearance.insert(copy, content);
         }
         if (isWorkspaceMode()) {

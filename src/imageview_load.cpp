@@ -278,6 +278,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         applyContentBakes(item, app);
         item->setSessionCrop(app.hasCrop, app.cropRect);
+        item->setColorAdjustments(app.colorAdjust);
         applyState(item, app);
         if (m_layoutMode != LayoutMode::FreeForm
             && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
