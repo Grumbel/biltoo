@@ -189,3 +189,15 @@ add_test(NAME qimgview-help
   COMMAND $<TARGET_FILE:qimgview> --help)
 set_tests_properties(qimgview-help PROPERTIES
   PASS_REGULAR_EXPRESSION "Usage:|Options:|qimgview")
+
+# Project file load/save round-trip (no GUI)
+find_package(Qt6 COMPONENTS Test QUIET)
+if(Qt6Test_FOUND)
+  add_executable(qimgview-projectfile-test
+    tests/projectfile_roundtrip.cpp
+    src/projectfile.cpp
+  )
+  target_include_directories(qimgview-projectfile-test PRIVATE src)
+  target_link_libraries(qimgview-projectfile-test PRIVATE Qt6::Core Qt6::Test)
+  add_test(NAME projectfile-roundtrip COMMAND qimgview-projectfile-test)
+endif()

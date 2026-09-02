@@ -37,6 +37,7 @@ Focus:
 - [x] Quit confirm once (closeEvent only)
 - [ ] Keyboard shortcuts, HUD, slideshow, and desktop integration as documented
 - [ ] Packaging (Nix/CMake), AppStream, `.desktop`, i18n scaffolding
+- [x] ProjectFile save/load round-trip unit tests (Qt Test)
 - [ ] Regression smoke tests (`--help`, basic open/session paths)
 - [ ] Drop the `-dev` suffix on `VERSION` when ready to tag
 
