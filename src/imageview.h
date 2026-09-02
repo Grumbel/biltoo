@@ -821,6 +821,8 @@ private:
         QString path;
         SessionImageId id = kInvalidSessionImageId;
         int index = -1;
+        QPointF scenePos;
+        bool hasScenePos = false;
     };
     QList<PendingSessionBind> m_pendingSessionBinds;
     /** Content appearance staged by Duplicate until bindSelectedSessionIds. */
