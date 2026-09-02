@@ -394,13 +394,18 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             item->setItemVFlip(false);
             item->setItemOpacity(1.0);
         } else if (haveBound && bound.hasScenePos) {
+            // Explicit drop: place at the drop point (new placement).
             item->setPos(bound.scenePos);
             item->setItemScale(1.0);
             item->setItemRotation(0.0);
             item->setItemOpacity(1.0);
             item->setStackZ(m_items.size() - 1);
-            // Drop one legacy path-keyed pos if present so the hash does not grow.
             m_pendingScenePos.remove(path);
+        } else if (haveBound && bound.id != kInvalidSessionImageId
+                   && m_appearance.get(bound.id)) {
+            // Thumbnail membership toggle: restore last Workspace pose for this
+            // session image (detach saved it via rememberItemState).
+            applyState(item, *m_appearance.get(bound.id));
         } else if (m_pendingScenePos.contains(path)) {
             const QPointF pos = m_pendingScenePos.take(path);
             item->setPos(pos);

@@ -170,9 +170,14 @@ void ImageView::rememberItemState(ImageItem *item)
         return;
     }
     // Workspace / Gallery: path map is legacy placement for *unbound* tiles only.
-    // Bound session images must not last-write content or pose by path — duplicates
-    // share a path and would steal each other's flips / crops.
+    // Bound session images: placement + content live in m_appearance (by id).
+    // Never write pose by path — duplicates would steal each other's layout.
     if (item->sessionId() != kInvalidSessionImageId) {
+        WorkspaceItemState slot = captureState(item);
+        slot.sessionId = item->sessionId();
+        slot.sessionIndex = item->sessionIndex();
+        slot.path = item->path();
+        m_appearance.set(item->sessionId(), slot);
         return;
     }
     m_itemStates.insert(item->path(), captureState(item));
