@@ -44,7 +44,7 @@ A classic desktop image viewer with three ways to look at a session on one canva
 **Crop** (Image or single Workspace selection)
 
 - Draft rectangle with edge/corner grips, **centre move grip**, rotate knob, Expand
-- Close commits (axis-aligned bake; optional pad); Cancel/Esc discards
+- Apply commits (axis-aligned bake; optional pad); Cancel/Esc discards
 - Ctrl resize from centre; Shift square or 15° rotate snap
 - Session/project store crop rect and rotation (non-destructive until export)
 

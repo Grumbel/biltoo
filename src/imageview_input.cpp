@@ -305,7 +305,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             return;
         }
         if (h == CropHandle::Reset) {
-            // Expand draft to the full image; Close commits a cleared session crop.
+            // Expand draft to the full image; Apply commits a cleared session crop.
             if (ImageItem *item = cropTargetItem()) {
                 m_cropRect = item->contentRect();
                 m_cropRotation = 0.0;

@@ -235,12 +235,12 @@ layoutWorkspaceSelection(packagedLayout, params):
 
 crop draft (Image or single Workspace target):
   default: draft clamped to image bounds
-  Expand on: draft may extend outside; Close pads with view background
+  Expand on: draft may extend outside; Apply pads with view background
   Move = centre grip only (frame interior starts a new rubber-band)
   Ctrl = resize from centre; Shift = square (resize) or 15° snap (rotate)
   Rotate knob = free angle about centre; Close bakes axis-aligned pixels
   Resize under rotation uses crop-local axes; centre mapped back through θ
-  Close commits; Cancel / Esc discards; toolbar crop-off commits
+  Apply commits; Cancel / Esc discards; toolbar crop-off commits (same as Apply)
   cropRotation + cropSourceSize in session appearance and project file
   captureState / commit / undo-redo must preserve cropRotation
 

@@ -209,8 +209,8 @@ void ImageView::setCropMode(bool on)
         m_cropRubberBanding = false;
         flashHud(tr("Crop mode"),
                  m_cropHadStashedPlacement
-                     ? tr("Unrotated for crop · Close commits · Esc cancels")
-                     : tr("Close commits · Cancel / Esc discards"));
+                     ? tr("Unrotated for crop · Apply commits · Esc cancels")
+                     : tr("Apply commits · Cancel / Esc discards"));
         emit cropModeChanged(true);
         emit statusChanged();
         viewport()->update();
@@ -908,31 +908,34 @@ void ImageView::paintCropOverlay(QPainter &painter)
     drawEdgeBar((tl + bl) / 2.0, bl - tl, CropHandle::Left);
     drawEdgeBar((tr + br) / 2.0, br - tr, CropHandle::Right);
 
-    // Rotate knob: outward from top edge midpoint along the rotated normal.
+    // Rotate knobs on each side (outward from edge midpoints).
     {
-        const QPointF tm((tl.x() + tr.x()) / 2.0, (tl.y() + tr.y()) / 2.0);
-        QPointF along = tr - tl;
-        const qreal alen = qHypot(along.x(), along.y());
-        if (alen > 1e-6) {
-            along /= alen;
-        }
-        QPointF outward(-along.y(), along.x()); // left normal of top edge (screen)
-        // Prefer outward away from centre.
         const QPointF centre = (tl + tr + br + bl) * 0.25;
-        if (QPointF::dotProduct(outward, tm - centre) < 0) {
-            outward = -outward;
-        }
-        const QPointF knob = tm + outward * 22.0;
         const bool hot = (m_cropHoverHandle == CropHandle::Rotate
                           || m_cropActiveHandle == CropHandle::Rotate);
-        QPen stem(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
-        stem.setCosmetic(true);
-        stem.setWidthF(hot ? 1.8 : 1.3);
-        painter.setPen(stem);
-        painter.drawLine(tm, knob);
-        painter.setBrush(hot ? QColor(255, 220, 80) : QColor(255, 190, 40));
-        painter.drawEllipse(knob, hot ? 6.0 : 5.0, hot ? 6.0 : 5.0);
-        painter.setBrush(Qt::NoBrush);
+        auto drawRotateKnob = [&](QPointF mid, QPointF edgeAlong) {
+            qreal alen = qHypot(edgeAlong.x(), edgeAlong.y());
+            if (alen > 1e-6) {
+                edgeAlong /= alen;
+            }
+            QPointF outward(-edgeAlong.y(), edgeAlong.x());
+            if (QPointF::dotProduct(outward, mid - centre) < 0) {
+                outward = -outward;
+            }
+            const QPointF knob = mid + outward * 22.0;
+            QPen stem(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
+            stem.setCosmetic(true);
+            stem.setWidthF(hot ? 1.8 : 1.3);
+            painter.setPen(stem);
+            painter.drawLine(mid, knob);
+            painter.setBrush(hot ? QColor(255, 220, 80) : QColor(255, 190, 40));
+            painter.drawEllipse(knob, hot ? 6.0 : 5.0, hot ? 6.0 : 5.0);
+            painter.setBrush(Qt::NoBrush);
+        };
+        drawRotateKnob((tl + tr) / 2.0, tr - tl);
+        drawRotateKnob((tr + br) / 2.0, br - tr);
+        drawRotateKnob((br + bl) / 2.0, bl - br);
+        drawRotateKnob((bl + tl) / 2.0, tl - bl);
     }
 
     // Move grip at centre — distinct from frame interior (rubber-band target).
@@ -981,7 +984,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
                    ImageView::tr("Expand"), m_cropAllowExpand);
     drawTextButton(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"), false);
     drawTextButton(cropCancelButtonView(), CropHandle::Cancel, ImageView::tr("Cancel"), false);
-    drawTextButton(cropCloseButtonView(), CropHandle::Close, ImageView::tr("Close"), true);
+    drawTextButton(cropCloseButtonView(), CropHandle::Close, ImageView::tr("Apply"), true);
 
     // Crop size in image pixels (same coordinate space as the draft rect).
     const int cropW = qMax(1, qRound(m_cropRect.width()));
@@ -998,10 +1001,12 @@ void ImageView::paintCropOverlay(QPainter &painter)
         const int tw = fm.horizontalAdvance(sizeLabel);
         const int th = fm.height();
         // Prefer above the crop frame; fall back inside top edge if off-screen.
+        // Always inside the crop frame so the label does not sit on the top
+        // rotate knob (outside the top edge).
         int lx = cropView.center().x() - (tw + 2 * padX) / 2;
-        int ly = cropView.top() - th - 2 * padY - 6;
-        if (ly < 4) {
-            ly = cropView.top() + 6;
+        int ly = cropView.top() + 8;
+        if (ly + th + 2 * padY > cropView.bottom() - 8) {
+            ly = cropView.center().y() - (th + 2 * padY) / 2;
         }
         const QRect labelBg(lx, ly, tw + 2 * padX, th + 2 * padY);
         painter.setPen(Qt::NoPen);
@@ -1314,25 +1319,29 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     const QPoint bm((bl.x() + br.x()) / 2, (bl.y() + br.y()) / 2);
     const QPoint lm((tl.x() + bl.x()) / 2, (tl.y() + bl.y()) / 2);
     const QPoint rm((tr.x() + br.x()) / 2, (tr.y() + br.y()) / 2);
-    // Rotate knob (same geometry as paint).
-    QPointF along(tr.x() - tl.x(), tr.y() - tl.y());
-    const qreal alen = qHypot(along.x(), along.y());
-    if (alen > 1e-6) {
-        along /= alen;
-    }
-    QPointF outward(-along.y(), along.x());
     const QPointF centre((tl.x() + tr.x() + br.x() + bl.x()) * 0.25,
                          (tl.y() + tr.y() + br.y() + bl.y()) * 0.25);
-    if (QPointF::dotProduct(outward, QPointF(tm) - centre) < 0) {
-        outward = -outward;
-    }
-    const QPoint rotKnob = (QPointF(tm) + outward * 22.0).toPoint();
+    auto rotateKnobAt = [&](QPointF mid, QPointF edgeAlong) -> QPoint {
+        qreal alen = qHypot(edgeAlong.x(), edgeAlong.y());
+        if (alen > 1e-6) {
+            edgeAlong /= alen;
+        }
+        QPointF outward(-edgeAlong.y(), edgeAlong.x());
+        if (QPointF::dotProduct(outward, mid - centre) < 0) {
+            outward = -outward;
+        }
+        return (mid + outward * 22.0).toPoint();
+    };
+    const QPoint rotTop = rotateKnobAt(QPointF(tm), QPointF(tr - tl));
+    const QPoint rotRight = rotateKnobAt(QPointF(rm), QPointF(br - tr));
+    const QPoint rotBottom = rotateKnobAt(QPointF(bm), QPointF(bl - br));
+    const QPoint rotLeft = rotateKnobAt(QPointF(lm), QPointF(tl - bl));
 
     constexpr qreal kHit = 16.0;
     auto near = [&](const QPoint &p) {
         return QLineF(viewPos, p).length() <= kHit;
     };
-    if (near(rotKnob)) {
+    if (near(rotTop) || near(rotRight) || near(rotBottom) || near(rotLeft)) {
         return CropHandle::Rotate;
     }
     if (near(tl)) {

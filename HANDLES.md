@@ -152,11 +152,11 @@ axis-aligned output image. Session appearance stores `cropRect`,
 | **Shift** + resize / rubber-band | Constrain to a **square** |
 | **Ctrl+Shift** | Square about centre / press point |
 | Drag on the image outside grips | New rubber-band crop |
-| **Expand** toggle | Draft may leave the image; Close pads with the view background |
+| **Expand** toggle | Draft may leave the image; Apply pads with the view background |
 | **Rotate** knob (stem above top edge) | Free rotation about centre; **Shift** snaps to 15° |
 | Reset | Full-image draft, rotation cleared |
 | Cancel / Esc | Discard draft |
-| Close / Enter / toolbar crop-off | Commit draft |
+| Apply / Enter / toolbar crop-off | Commit draft |
 
 Implementation map: `imageview_crop.cpp` (paint, hit, drag), `ImageItem::cropToLocalRect`
 (rotation + pad), `SessionAppearance::applyCrop`, `captureState` / `applyCropAppearance`
