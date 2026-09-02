@@ -1306,10 +1306,10 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     auto toView = [this, item](const QPointF &local) {
         return mapFromScene(item->mapToScene(local));
     };
-    const QPoint tl = toView(localPoly.at(0)).toPoint();
-    const QPoint tr = toView(localPoly.at(1)).toPoint();
-    const QPoint br = toView(localPoly.at(2)).toPoint();
-    const QPoint bl = toView(localPoly.at(3)).toPoint();
+    const QPoint tl = toView(localPoly.at(0));
+    const QPoint tr = toView(localPoly.at(1));
+    const QPoint br = toView(localPoly.at(2));
+    const QPoint bl = toView(localPoly.at(3));
     const QPoint tm((tl.x() + tr.x()) / 2, (tl.y() + tr.y()) / 2);
     const QPoint bm((bl.x() + br.x()) / 2, (bl.y() + br.y()) / 2);
     const QPoint lm((tl.x() + bl.x()) / 2, (tl.y() + bl.y()) / 2);
