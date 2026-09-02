@@ -610,6 +610,9 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             viewport()->update();
         }
         switch (h) {
+        case CropHandle::Move:
+            viewport()->setCursor(Qt::SizeAllCursor);
+            break;
         case CropHandle::Left:
         case CropHandle::Right:
             viewport()->setCursor(Qt::SizeHorCursor);

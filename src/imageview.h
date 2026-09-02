@@ -624,6 +624,8 @@ private:
     /** Crop-mode interaction (viewport chrome; item-local draft rect). */
     enum class CropHandle {
         None,
+        /** Translate the draft rect without changing size. */
+        Move,
         Left,
         Right,
         Top,
