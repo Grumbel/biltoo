@@ -16,14 +16,14 @@
 #include <QUndoStack>
 
 namespace {
-// Shared layout for crop chrome buttons: prefer outside below the crop rect; only
-// pull inside when the outside placement would leave the viewport.
+// Crop chrome under the frame: Expand alone on the left; Reset/Cancel/Apply
+// right-aligned to the crop edges (same idea as edge resize handles). Larger
+// buttons so labels fit rounded corners; y clears the bottom rotate knobs.
 struct CropButtonLayout {
-    int x0 = 0;
-    int y = 0;
-    int w = 56;
-    int h = 22;
-    int gap = 6;
+    QRect expand;
+    QRect reset;
+    QRect cancel;
+    QRect apply;
     bool valid = false;
 };
 
@@ -33,67 +33,61 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     if (!cropView.isValid() || !viewportRect.isValid()) {
         return L;
     }
-    constexpr int kW = 56;
-    constexpr int kH = 22;
-    constexpr int kGap = 5;
-    constexpr int kOutsideGap = 8;
-    constexpr int kInsideInset = 8;
+    constexpr int kW = 70;
+    constexpr int kH = 28;
+    constexpr int kGap = 6;
+    // Bottom rotate knobs sit ~22px outside the edge; clear them plus air.
+    constexpr int kOutsideGap = 32;
+    constexpr int kInsideInset = 10;
     constexpr int kMargin = 6;
+    constexpr int kGroupGapMin = 18; // min air between Expand and the right group
 
-    const int totalW = kW * 4 + kGap * 3;
-    int x0 = qRound(cropView.center().x() - totalW / 2.0);
-    // Prefer outside, centred under the crop bottom edge.
-    int yOutside = qRound(cropView.bottom()) + kOutsideGap;
-    // Fallback: inside the crop, bottom-centred.
-    int yInside = qRound(cropView.bottom()) - kH - kInsideInset;
+    const int rightGroupW = kW * 3 + kGap * 2;
 
-    // Clamp horizontally into the viewport so labels stay reachable.
-    const int minX = viewportRect.left() + kMargin;
-    const int maxX = viewportRect.right() - kMargin - totalW;
-    if (maxX >= minX) {
-        x0 = qBound(minX, x0, maxX);
-    } else {
-        x0 = minX;
-    }
-
-    auto fullyVisible = [&](int y) {
-        const QRect row(x0, y, totalW, kH);
-        return viewportRect.contains(row);
+    auto pickY = [&](int spanLeft, int spanW) -> int {
+        const int yOutside = qRound(cropView.bottom()) + kOutsideGap;
+        const int yInside = qRound(cropView.bottom()) - kH - kInsideInset;
+        auto fullyVisible = [&](int y) {
+            return viewportRect.contains(QRect(spanLeft, y, spanW, kH));
+        };
+        if (fullyVisible(yOutside)) {
+            return yOutside;
+        }
+        if (fullyVisible(yInside)) {
+            return yInside;
+        }
+        return qBound(viewportRect.top() + kMargin,
+                      yOutside,
+                      viewportRect.bottom() - kMargin - kH);
     };
 
-    int y = yOutside;
-    if (!fullyVisible(yOutside)) {
-        // Outside would clip — try inside the crop frame.
-        if (fullyVisible(yInside)) {
-            y = yInside;
-        } else {
-            // Still not fully visible: clamp the row into the viewport.
-            y = qBound(viewportRect.top() + kMargin,
-                       yOutside,
-                       viewportRect.bottom() - kMargin - kH);
-            // Prefer inside if that clamp is closer to the crop bottom interior.
-            if (cropView.height() > kH + 2 * kInsideInset
-                && viewportRect.intersects(QRect(x0, yInside, totalW, kH))) {
-                const int yClampedInside = qBound(viewportRect.top() + kMargin,
-                                                  yInside,
-                                                  viewportRect.bottom() - kMargin - kH);
-                // Use the placement that keeps the row fully on-screen.
-                if (fullyVisible(yClampedInside)) {
-                    y = yClampedInside;
-                } else if (fullyVisible(y)) {
-                    // keep clamped outside
-                } else {
-                    y = yClampedInside;
-                }
-            }
-        }
-    }
+    // Right group: align Apply to crop right edge.
+    int right = qRound(cropView.right()) - kW;
+    right = qBound(viewportRect.left() + kMargin + rightGroupW - kW,
+                   right,
+                   viewportRect.right() - kMargin - kW);
+    const int cancelX = right - kGap - kW;
+    const int resetX = cancelX - kGap - kW;
+    const int yRight = pickY(resetX, rightGroupW);
 
-    L.x0 = x0;
-    L.y = y;
-    L.w = kW;
-    L.h = kH;
-    L.gap = kGap;
+    // Left: Expand alone, aligned to crop left edge.
+    int expandX = qRound(cropView.left());
+    expandX = qBound(viewportRect.left() + kMargin,
+                     expandX,
+                     viewportRect.right() - kMargin - kW);
+    if (expandX + kW + kGroupGapMin > resetX) {
+        expandX = qMax(viewportRect.left() + kMargin,
+                       resetX - kGroupGapMin - kW);
+    }
+    const int yLeft = pickY(expandX, kW);
+    // Prefer a shared baseline when both bands land near the same y.
+    const int yExpand = (qAbs(yLeft - yRight) <= 2) ? yRight : yLeft;
+    const int yGroup = yRight;
+
+    L.expand = QRect(expandX, yExpand, kW, kH);
+    L.reset = QRect(resetX, yGroup, kW, kH);
+    L.cancel = QRect(cancelX, yGroup, kW, kH);
+    L.apply = QRect(right, yGroup, kW, kH);
     L.valid = true;
     return L;
 }
@@ -857,10 +851,7 @@ QRect ImageView::cropExpandButtonView() const
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
-    if (!L.valid) {
-        return {};
-    }
-    return QRect(L.x0, L.y, L.w, L.h);
+    return L.valid ? L.expand : QRect();
 }
 
 QRect ImageView::cropResetButtonView() const
@@ -869,10 +860,7 @@ QRect ImageView::cropResetButtonView() const
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
-    if (!L.valid) {
-        return {};
-    }
-    return QRect(L.x0 + L.w + L.gap, L.y, L.w, L.h);
+    return L.valid ? L.reset : QRect();
 }
 
 QRect ImageView::cropCancelButtonView() const
@@ -881,10 +869,7 @@ QRect ImageView::cropCancelButtonView() const
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
-    if (!L.valid) {
-        return {};
-    }
-    return QRect(L.x0 + 2 * (L.w + L.gap), L.y, L.w, L.h);
+    return L.valid ? L.cancel : QRect();
 }
 
 QRect ImageView::cropCloseButtonView() const
@@ -893,10 +878,7 @@ QRect ImageView::cropCloseButtonView() const
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
-    if (!L.valid) {
-        return {};
-    }
-    return QRect(L.x0 + 3 * (L.w + L.gap), L.y, L.w, L.h);
+    return L.valid ? L.apply : QRect();
 }
 
 
@@ -1052,21 +1034,21 @@ void ImageView::paintCropOverlay(QPainter &painter)
         drawRotateKnob((bl + tl) / 2.0, tl - bl);
     }
 
-    // Move grip at centre — distinct from frame interior (rubber-band target).
+    // Move grip at centre (interior of the crop also starts a Move drag).
     {
         const QPointF centre = (tl + tr + br + bl) * 0.25;
         const bool hot = (m_cropHoverHandle == CropHandle::Move
                           || m_cropActiveHandle == CropHandle::Move);
-        const qreal s = hot ? 7.0 : 6.0;
-        painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.6 : 1.2));
+        const qreal s = hot ? 10.0 : 9.0;
+        painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.8 : 1.35));
         painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
-        painter.drawRoundedRect(QRectF(centre.x() - s, centre.y() - s, 2 * s, 2 * s), 2.0, 2.0);
+        painter.drawRoundedRect(QRectF(centre.x() - s, centre.y() - s, 2 * s, 2 * s), 3.0, 3.0);
         // Crosshair to signal "move"
-        painter.setPen(QPen(QColor(40, 30, 10), 1.2));
-        painter.drawLine(QPointF(centre.x() - s + 2, centre.y()),
-                         QPointF(centre.x() + s - 2, centre.y()));
-        painter.drawLine(QPointF(centre.x(), centre.y() - s + 2),
-                         QPointF(centre.x(), centre.y() + s - 2));
+        painter.setPen(QPen(QColor(40, 30, 10), 1.35));
+        painter.drawLine(QPointF(centre.x() - s + 3, centre.y()),
+                         QPointF(centre.x() + s - 3, centre.y()));
+        painter.drawLine(QPointF(centre.x(), centre.y() - s + 3),
+                         QPointF(centre.x(), centre.y() + s - 3));
         painter.setBrush(Qt::NoBrush);
     }
 
@@ -1090,14 +1072,15 @@ void ImageView::paintCropOverlay(QPainter &painter)
         qreal borderW = 1.15;
         switch (role) {
         case CropBtnRole::Toggle:
+            // Teal/cyan — distinct from amber Apply so Expand does not read as commit.
             if (toggled) {
-                fill = hover ? QColor(255, 210, 70, 255) : QColor(240, 175, 40, 245);
+                fill = hover ? QColor(100, 210, 230, 255) : QColor(60, 175, 200, 245);
                 border = QColor(255, 255, 255);
-                text = QColor(40, 25, 5);
+                text = QColor(10, 35, 45);
                 borderW = 2.0;
             } else {
-                fill = hover ? QColor(80, 60, 20, 230) : QColor(40, 40, 40, 220);
-                border = hover ? QColor(255, 255, 255) : QColor(255, 190, 40);
+                fill = hover ? QColor(30, 70, 85, 230) : QColor(40, 40, 40, 220);
+                border = hover ? QColor(255, 255, 255) : QColor(70, 170, 195);
                 borderW = hover ? 1.75 : 1.25;
             }
             break;
@@ -1135,7 +1118,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
         }
         painter.setPen(text);
         QFont f = painter.font();
-        f.setPointSize(qMax(8, f.pointSize()));
+        f.setPointSize(qMax(9, f.pointSize() + 1));
         f.setBold(true);
         painter.setFont(f);
         painter.drawText(btn, Qt::AlignCenter, label);
@@ -1530,10 +1513,18 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (near(rm)) {
         return CropHandle::Right;
     }
-    // Dedicated move grip at the centre (interior is rubber-band for a new crop).
+    // Move: centre grip (larger hit) or anywhere inside the crop polygon.
+    // Outside the crop (but on the image) still starts a rubber-band via None.
     const QPoint moveGrip = centre.toPoint();
-    if (near(moveGrip)) {
+    if (QLineF(viewPos, moveGrip).length() <= 22.0) {
         return CropHandle::Move;
+    }
+    {
+        QPolygonF cropViewPoly;
+        cropViewPoly << QPointF(tl) << QPointF(tr) << QPointF(br) << QPointF(bl);
+        if (cropViewPoly.containsPoint(QPointF(viewPos), Qt::OddEvenFill)) {
+            return CropHandle::Move;
+        }
     }
     return CropHandle::None;
 }
