@@ -568,7 +568,7 @@ signals:
     void sessionRemovePathsRequested(const QStringList &paths);
     /** File URLs dropped onto the view (same semantics as MainWindow). */
     void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                      const QPointF &scenePos);
+                      const QPointF &scenePos, const QList<qint64> &sessionIds = {});
 
 public slots:
     /** Deliver a finished background decode (generation must still match). */

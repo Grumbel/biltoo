@@ -968,17 +968,33 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
 {
     auto *mime = new QMimeData;
     QList<QUrl> urls;
+    QByteArray idPayload;
     urls.reserve(items.size());
     for (QListWidgetItem *it : items) {
         if (!it) {
             continue;
         }
         const QString path = it->data(Qt::UserRole).toString();
-        if (!path.isEmpty()) {
-            urls.append(QUrl::fromLocalFile(path));
+        if (path.isEmpty()) {
+            continue;
         }
+        urls.append(QUrl::fromLocalFile(path));
+        // Parallel session-id list so Workspace drops bind the dragged row,
+        // not lastIndexOfPath (duplicate paths would otherwise steal identity).
+        SessionImageId sid = kInvalidSessionImageId;
+        const int r = row(it);
+        if (r >= 0 && r < m_sessionIds.size()) {
+            sid = m_sessionIds.at(r);
+        }
+        if (!idPayload.isEmpty()) {
+            idPayload.append(',');
+        }
+        idPayload.append(QByteArray::number(static_cast<qint64>(sid)));
     }
     mime->setUrls(urls);
+    if (!idPayload.isEmpty()) {
+        mime->setData(QStringLiteral("application/x-qimgview-session-ids"), idPayload);
+    }
     return mime;
 }
 

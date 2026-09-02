@@ -372,14 +372,17 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // tile's baked pixels by path — that copied crop/flip from the first
     // occurrence and showed the wrong image under a correct filename
     // (IDENTITY: SessionImageId is independent of path).
-    m_pendingScenePos.insert(path, scenePos);
-    if (sessionId != kInvalidSessionImageId || sessionIndex >= 0) {
-        PendingSessionBind b;
-        b.path = path;
-        b.id = sessionId;
-        b.index = sessionIndex;
+    PendingSessionBind b;
+    b.path = path;
+    b.id = sessionId;
+    b.index = sessionIndex;
+    b.scenePos = scenePos;
+    b.hasScenePos = true;
+    if (sessionId != kInvalidSessionImageId || sessionIndex >= 0 || b.hasScenePos) {
         m_pendingSessionBinds.append(b);
     }
+    // Legacy path-keyed pos kept as fallback when a bind is missing.
+    m_pendingScenePos.insert(path, scenePos);
     scheduleImageLoad(path, LoadAdd);
     emit statusChanged();
     return true;

@@ -1531,7 +1531,7 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 }
 
 void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                                   const QPointF &scenePos)
+                                   const QPointF &scenePos, const QList<qint64> &sessionIds)
 {
     // Build a transient mime payload so extractLocalImagePaths stays the single filter
     QMimeData mime;
@@ -1560,18 +1560,30 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         }
         int i = 0;
         for (const QString &img : expanded) {
+            SessionImageId sid = kInvalidSessionImageId;
+            int slot = -1;
+            // Prefer identity from the filmstrip drag payload (duplicate-safe).
+            if (i < sessionIds.size() && sessionIds.at(i) != 0
+                && sessionIds.at(i) != static_cast<qint64>(kInvalidSessionImageId)) {
+                sid = static_cast<SessionImageId>(sessionIds.at(i));
+                slot = m_session.indexOfId(sid);
+            }
             const bool alreadyOnCanvas = m_imageView->workspacePathOccurrenceCount(img) > 0;
-            if (alreadyOnCanvas) {
-                // New session entry for the duplicate instance.
+            // Path already on canvas and this drop is not addressing a known
+            // session row still off-canvas: allocate a new session image.
+            if (alreadyOnCanvas && (slot < 0 || m_imageView->findItemBySessionId(sid))) {
                 m_session.append(img);
                 if (m_thumbnailBar) {
                     m_thumbnailBar->setFiles(m_session.paths());
                     m_thumbnailBar->setSessionIds(m_session.ids());
                     m_thumbnailBar->setMultiSelectEnabled(true);
                 }
+                slot = m_session.lastIndexOfPath(img);
+                sid = sessionIdAt(slot);
+            } else if (slot < 0) {
+                slot = m_session.lastIndexOfPath(img);
+                sid = sessionIdAt(slot);
             }
-            const int slot = m_session.lastIndexOfPath(img);
-            const SessionImageId sid = sessionIdAt(slot);
             if (!scenePos.isNull()) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
                 m_imageView->placeOrMoveImageAt(img, pos, sid, slot);
@@ -1651,9 +1663,9 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
 }
 
 void MainWindow::onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                                const QPointF &scenePos)
+                                const QPointF &scenePos, const QList<qint64> &sessionIds)
 {
-    handleDroppedUrls(urls, modifiers, scenePos);
+    handleDroppedUrls(urls, modifiers, scenePos, sessionIds);
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
@@ -1661,7 +1673,17 @@ void MainWindow::dropEvent(QDropEvent *event)
     if (!event->mimeData() || !event->mimeData()->hasUrls()) {
         return;
     }
+    QList<qint64> sessionIds;
+    const QByteArray idBytes =
+        event->mimeData()->data(QStringLiteral("application/x-qimgview-session-ids"));
+    if (!idBytes.isEmpty()) {
+        for (const QByteArray &tok : idBytes.split(',')) {
+            bool ok = false;
+            const qint64 v = tok.trimmed().toLongLong(&ok);
+            sessionIds.append(ok ? v : 0);
+        }
+    }
     // Window-level drop has no reliable scene position — empty-space placement
-    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), QPointF());
+    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), QPointF(), sessionIds);
     event->acceptProposedAction();
 }

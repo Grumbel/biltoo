@@ -113,7 +113,17 @@ void ImageView::dropEvent(QDropEvent *event)
         return;
     }
     const QPointF scenePos = mapToScene(event->position().toPoint());
-    emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos);
+    QList<qint64> sessionIds;
+    const QByteArray idBytes =
+        event->mimeData()->data(QStringLiteral("application/x-qimgview-session-ids"));
+    if (!idBytes.isEmpty()) {
+        for (const QByteArray &tok : idBytes.split(',')) {
+            bool ok = false;
+            const qint64 v = tok.trimmed().toLongLong(&ok);
+            sessionIds.append(ok ? v : 0);
+        }
+    }
+    emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos, sessionIds);
     event->acceptProposedAction();
 }
 
