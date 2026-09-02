@@ -1000,6 +1000,7 @@ void MainWindow::updateFullscreenUi()
 {
     const bool fs = isFullScreen();
     m_fullscreenAct->setChecked(fs);
+    m_fullscreenAct->setText(fs ? tr("Exit &Fullscreen") : tr("F&ullscreen"));
 
     // Leaving fullscreen stops an active slideshow (Space starts; Esc stops)
     if (!fs && m_slideshowTimer && m_slideshowTimer->isActive()) {
