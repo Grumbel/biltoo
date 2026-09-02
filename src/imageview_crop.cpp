@@ -935,6 +935,24 @@ void ImageView::paintCropOverlay(QPainter &painter)
         painter.setBrush(Qt::NoBrush);
     }
 
+    // Move grip at centre — distinct from frame interior (rubber-band target).
+    {
+        const QPointF centre = (tl + tr + br + bl) * 0.25;
+        const bool hot = (m_cropHoverHandle == CropHandle::Move
+                          || m_cropActiveHandle == CropHandle::Move);
+        const qreal s = hot ? 7.0 : 6.0;
+        painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.6 : 1.2));
+        painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
+        painter.drawRoundedRect(QRectF(centre.x() - s, centre.y() - s, 2 * s, 2 * s), 2.0, 2.0);
+        // Crosshair to signal "move"
+        painter.setPen(QPen(QColor(40, 30, 10), 1.2));
+        painter.drawLine(QPointF(centre.x() - s + 2, centre.y()),
+                         QPointF(centre.x() + s - 2, centre.y()));
+        painter.drawLine(QPointF(centre.x(), centre.y() - s + 2),
+                         QPointF(centre.x(), centre.y() + s - 2));
+        painter.setBrush(Qt::NoBrush);
+    }
+
     // Controls: outside below crop when possible, inside if off-screen.
     auto drawTextButton = [&](const QRect &btn, CropHandle kind, const QString &label,
                               bool primary) {
@@ -1021,25 +1039,31 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
     if (!item || m_cropActiveHandle == CropHandle::None) {
         return;
     }
-    QPointF local = item->mapFromScene(mapToScene(viewPos));
+    const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
-    // When expand is off, edges stay inside the image; when on, use a large pad.
     const QRectF limits = m_cropAllowExpand
         ? cr.adjusted(-cr.width() * 4, -cr.height() * 4, cr.width() * 4, cr.height() * 4)
         : cr;
-    QRectF r = m_cropDragStartRect;
     const qreal minSide = 4.0;
     const bool fromCenter =
         QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
     const bool forceSquare =
         QGuiApplication::keyboardModifiers() & Qt::ShiftModifier;
-    const QPointF startCenter = m_cropDragStartRect.center();
+    const QPointF c0 = m_cropDragStartRect.center();
+    const qreal w0 = m_cropDragStartRect.width();
+    const qreal h0 = m_cropDragStartRect.height();
+    const qreal ang = m_cropRotation;
+
+    auto rotateVec = [](QPointF v, qreal degrees) {
+        QTransform tr;
+        tr.rotate(degrees);
+        return tr.map(v);
+    };
 
     auto clampMove = [&](QRectF rect) {
         if (m_cropAllowExpand) {
-            return rect; // free translate; pad fills the outside on apply
+            return rect;
         }
-        // Keep size; slide within content bounds.
         const qreal w = rect.width();
         const qreal h = rect.height();
         qreal x = rect.left();
@@ -1059,25 +1083,22 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 
     if (m_cropActiveHandle == CropHandle::Move) {
         const QPointF delta = local - m_cropDragStartLocal;
-        r.translate(delta);
+        QRectF r = m_cropDragStartRect.translated(delta);
         m_cropRect = clampMove(r);
         viewport()->update();
         return;
     }
 
     if (m_cropActiveHandle == CropHandle::Rotate) {
-        const QPointF c = m_cropDragStartRect.center();
-        const QPointF v = local - c;
+        const QPointF v = local - c0;
         const qreal angle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
         m_cropRotation = m_cropRotateStartRotation + (angle - m_cropRotateStartAngle);
-        // Keep in (-180, 180]
         while (m_cropRotation > 180.0) {
             m_cropRotation -= 360.0;
         }
         while (m_cropRotation <= -180.0) {
             m_cropRotation += 360.0;
         }
-        // Shift: snap to 15° increments (square constraint is for resize only).
         if (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) {
             m_cropRotation = qRound(m_cropRotation / 15.0) * 15.0;
         }
@@ -1085,17 +1106,15 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         return;
     }
 
-    // Resize in the crop's unrotated frame (rotation stays about the centre).
-    if (qAbs(m_cropRotation) > 0.05) {
-        const QPointF c = m_cropDragStartRect.center();
-        QTransform inv;
-        inv.translate(c.x(), c.y());
-        inv.rotate(-m_cropRotation);
-        inv.translate(-c.x(), -c.y());
-        local = inv.map(local);
-    }
+    // Resize in crop-local axes (axis-aligned about start centre), then map
+    // the new centre back through the crop rotation so edges stay under the
+    // grips when the frame is rotated.
+    const QPointF pLocal = rotateVec(local - c0, -ang);
+    qreal L = -w0 / 2.0;
+    qreal R = w0 / 2.0;
+    qreal T = -h0 / 2.0;
+    qreal B = h0 / 2.0;
 
-    // Edge / corner resize (optionally from centre, optionally square).
     const bool left = (m_cropActiveHandle == CropHandle::Left
                        || m_cropActiveHandle == CropHandle::TopLeft
                        || m_cropActiveHandle == CropHandle::BottomLeft);
@@ -1111,95 +1130,76 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 
     if (fromCenter) {
         if (left || right) {
-            const qreal half = qMax(minSide / 2.0, qAbs(local.x() - startCenter.x()));
-            r.setLeft(startCenter.x() - half);
-            r.setRight(startCenter.x() + half);
+            const qreal half = qMax(minSide / 2.0, qAbs(pLocal.x()));
+            L = -half;
+            R = half;
         }
         if (top || bottom) {
-            const qreal half = qMax(minSide / 2.0, qAbs(local.y() - startCenter.y()));
-            r.setTop(startCenter.y() - half);
-            r.setBottom(startCenter.y() + half);
+            const qreal half = qMax(minSide / 2.0, qAbs(pLocal.y()));
+            T = -half;
+            B = half;
         }
     } else {
         if (left) {
-            r.setLeft(qBound(limits.left(), local.x(), r.right() - minSide));
+            L = qMin(pLocal.x(), R - minSide);
         }
         if (right) {
-            r.setRight(qBound(r.left() + minSide, local.x(), limits.right()));
+            R = qMax(pLocal.x(), L + minSide);
         }
         if (top) {
-            r.setTop(qBound(limits.top(), local.y(), r.bottom() - minSide));
+            T = qMin(pLocal.y(), B - minSide);
         }
         if (bottom) {
-            r.setBottom(qBound(r.top() + minSide, local.y(), limits.bottom()));
+            B = qMax(pLocal.y(), T + minSide);
         }
     }
-
-    r = r.normalized();
 
     if (forceSquare) {
-        // Match the larger side so the dragged edge stays under the cursor when possible.
-        qreal side = qMax(r.width(), r.height());
-        side = qMax(side, minSide);
+        qreal side = qMax(R - L, B - T);
         if (fromCenter) {
             const qreal half = side / 2.0;
-            r = QRectF(startCenter - QPointF(half, half), QSizeF(side, side));
+            L = -half;
+            R = half;
+            T = -half;
+            B = half;
         } else {
-            // Anchor opposite corner/edge of the start rect.
-            QPointF anchor = startCenter;
-            if (left && !right) {
-                anchor.setX(m_cropDragStartRect.right());
-            } else if (right && !left) {
-                anchor.setX(m_cropDragStartRect.left());
+            // Grow from the fixed corner/edge toward the dragged side.
+            if (right && !left) {
+                R = L + side;
+            } else if (left && !right) {
+                L = R - side;
+            } else {
+                const qreal cx = (L + R) / 2.0;
+                L = cx - side / 2.0;
+                R = cx + side / 2.0;
             }
-            if (top && !bottom) {
-                anchor.setY(m_cropDragStartRect.bottom());
-            } else if (bottom && !top) {
-                anchor.setY(m_cropDragStartRect.top());
-            }
-            qreal x1 = anchor.x();
-            qreal y1 = anchor.y();
-            qreal x2 = left ? anchor.x() - side : (right ? anchor.x() + side : r.right());
-            qreal y2 = top ? anchor.y() - side : (bottom ? anchor.y() + side : r.bottom());
-            if (!left && !right) {
-                x1 = r.center().x() - side / 2.0;
-                x2 = x1 + side;
-            }
-            if (!top && !bottom) {
-                y1 = r.center().y() - side / 2.0;
-                y2 = y1 + side;
-            }
-            r = QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized();
-            if (r.width() < minSide || r.height() < minSide) {
-                r.setSize(QSizeF(qMax(r.width(), minSide), qMax(r.height(), minSide)));
+            if (bottom && !top) {
+                B = T + side;
+            } else if (top && !bottom) {
+                T = B - side;
+            } else {
+                const qreal cy = (T + B) / 2.0;
+                T = cy - side / 2.0;
+                B = cy + side / 2.0;
             }
         }
     }
 
-    // Clamp into allowed limits; prefer keeping the resize intent when possible.
+    const QPointF cLocal((L + R) / 2.0, (T + B) / 2.0);
+    const qreal newW = R - L;
+    const qreal newH = B - T;
+    const QPointF c1 = c0 + rotateVec(cLocal, ang);
+    QRectF r(c1.x() - newW / 2.0, c1.y() - newH / 2.0, newW, newH);
+
+    // Soft clamp: keep axis-aligned bounds inside limits (approximate when rotated).
     r = r.intersected(limits);
     if (r.width() < minSide) {
-        if (left && !fromCenter) {
-            r.setLeft(r.right() - minSide);
-        } else if (right && !fromCenter) {
-            r.setRight(r.left() + minSide);
-        } else {
-            r.setWidth(minSide);
-        }
-        r = r.intersected(cr);
+        r.setWidth(minSide);
     }
     if (r.height() < minSide) {
-        if (top && !fromCenter) {
-            r.setTop(r.bottom() - minSide);
-        } else if (bottom && !fromCenter) {
-            r.setBottom(r.top() + minSide);
-        } else {
-            r.setHeight(minSide);
-        }
-        r = r.intersected(cr);
+        r.setHeight(minSide);
     }
-
-    m_cropRect = r.normalized().intersected(limits);
+    m_cropRect = r;
     viewport()->update();
 }
 
@@ -1359,11 +1359,9 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (near(rm)) {
         return CropHandle::Right;
     }
-    // Interior of the rotated crop: move.
-    QPainterPath interior;
-    interior.addPolygon(QPolygonF() << tl << tr << br << bl);
-    interior.closeSubpath();
-    if (interior.contains(viewPos)) {
+    // Dedicated move grip at the centre (interior is rubber-band for a new crop).
+    const QPoint moveGrip = centre.toPoint();
+    if (near(moveGrip)) {
         return CropHandle::Move;
     }
     return CropHandle::None;

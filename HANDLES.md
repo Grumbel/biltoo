@@ -143,7 +143,7 @@ Workspace selection). Session crop remains an axis-aligned source rectangle.
 
 | Interaction | Behaviour |
 |-------------|-----------|
-| Drag **inside** the frame | **Move** the region (size unchanged) |
+| **Move** grip (centre) | Translate the region (size unchanged); frame interior starts a new rubber-band |
 | Edge / corner handles | Resize (opposite side fixed) |
 | **Ctrl** + resize | Resize about the **centre** |
 | **Shift** + resize / rubber-band | Constrain to a **square** |
