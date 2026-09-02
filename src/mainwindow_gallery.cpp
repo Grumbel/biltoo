@@ -466,7 +466,8 @@ void MainWindow::updateWorkspaceActionVisibility()
     for (QAction *act : {m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
                          m_resetScaleAct, m_resetRotationAct,
-                         m_selectToolAct, m_panToolAct}) {
+                         m_selectToolAct, m_panToolAct,
+                         m_pageGuideAct, m_fitPageGuideAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(workspace);

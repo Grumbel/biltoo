@@ -609,8 +609,6 @@ void MainWindow::createMenus()
     zoomMenu->addAction(m_zoomRegionAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
-    m_viewMenu->addAction(m_pageGuideAct);
-    m_viewMenu->addAction(m_fitPageGuideAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
@@ -641,6 +639,9 @@ void MainWindow::createMenus()
 
     auto *workspaceMenu = menuBar()->addMenu(tr("&Workspace"));
     workspaceMenu->addAction(m_workspaceModeAct);
+    workspaceMenu->addSeparator();
+    workspaceMenu->addAction(m_pageGuideAct);
+    workspaceMenu->addAction(m_fitPageGuideAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_selectToolAct);
     workspaceMenu->addAction(m_panToolAct);
