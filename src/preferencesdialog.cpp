@@ -172,9 +172,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_galleryLayoutCombo->addItem(tr("Horizontal"), 1);
     m_galleryLayoutCombo->addItem(tr("Vertical"), 2);
     m_galleryLayoutCombo->addItem(tr("Grid"), 3);
-    m_galleryLayoutCombo->addItem(tr("Grid (crop)"), 4);
+    // GridCrop (4) omitted — temporarily disabled in the UI.
     m_galleryLayoutCombo->addItem(tr("Masonry"), 5);
     m_galleryLayoutCombo->addItem(tr("Masonry rows"), 6);
+    m_galleryLayoutCombo->addItem(tr("Masonry fill"), 7);
+    m_galleryLayoutCombo->addItem(tr("Masonry rows fill"), 8);
     m_galleryLayoutCombo->setToolTip(tr("Default Gallery layout for new sessions"));
 
     auto *ifaceForm = new QFormLayout;
