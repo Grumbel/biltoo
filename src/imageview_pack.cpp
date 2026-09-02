@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <QScrollBar>
 #include <QTimer>
+#include <QUndoStack>
 
 void ImageView::updateGalleryDecodeWindow()
 {
