@@ -308,7 +308,11 @@ void ImageView::setCropMode(bool on)
         return;
     }
     if (on) {
-        // Image, Workspace, or Gallery: one explicit subject only.
+        // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
+        if (isGalleryMode()) {
+            return;
+        }
+        // Image or Workspace: one explicit subject only.
         if (!hasSingleCropTarget()) {
             flashHud(tr("Crop"), tr("Select a single image"));
             return;
@@ -369,13 +373,6 @@ void ImageView::setCropMode(bool on)
             }
             alignCropFrameCenterToScene(item, workspaceAnchorScene);
             updateWorkspaceSceneRect();
-        } else if (isGalleryMode()) {
-            // Packed cells cannot pin a crop-frame centre the way Workspace does.
-            // Fit the subject for editing; exit always re-packs the grid.
-            item->setItemScale(1.0);
-            item->setItemRotation(0.0);
-            m_fitMode = true;
-            fitItem(item, currentFitAspectMode());
         }
         m_cropMode = true;
         m_cropActiveHandle = CropHandle::None;
@@ -499,11 +496,6 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
-    } else if (isGalleryMode()) {
-        // Full-frame draft replaces the packed tile size; do not keep the
-        // cell's prior scale as if it were free-form placement.
-        item->setItemScale(1.0);
-        item->setItemRotation(0.0);
     }
     return true;
 }
@@ -543,7 +535,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     if (!full.isNull()) {
         item->setSourceImage(full);
     }
-    if (isImageMode() || isGalleryMode()) {
+    if (isImageMode()) {
         item->setItemRotation(0.0);
     } else {
         item->setItemRotation(app.rotation);
@@ -558,8 +550,6 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
-    } else if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
     }
 }
 
@@ -909,9 +899,8 @@ void ImageView::leaveCropModeInternal(bool apply)
         }
     }
     // Restore pre-crop placement rotation unless Apply already set it from the
-    // crop frame (Workspace non-full-frame commit). Gallery has no free-form pose.
-    if (item && m_cropHadStashedPlacement && !preserveCropFrameRotation
-        && !isGalleryMode()) {
+    // crop frame (Workspace non-full-frame commit).
+    if (item && m_cropHadStashedPlacement && !preserveCropFrameRotation) {
         item->setItemRotation(m_cropStashedPlacementRotation);
     }
     m_cropHadStashedPlacement = false;

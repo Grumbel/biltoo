@@ -358,6 +358,7 @@ private:
     QAction *m_masonryCountAction = nullptr;
     QSpinBox *m_masonryCountSpin = nullptr;
     QLabel *m_masonryCountLabel = nullptr;
+    bool m_pendingGalleryCrop = false;
     bool m_galleryReturnActive = false;
     /** Image was opened from Workspace (double-click); Up restores Workspace. */
     bool m_workspaceReturnActive = false;

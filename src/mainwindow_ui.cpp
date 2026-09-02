@@ -187,7 +187,7 @@ void MainWindow::createActions()
                                : bundled);
     }
     m_cropAct->setStatusTip(
-        tr("Crop mode: handles, Expand, rotate; Apply commits, Cancel/Esc discards"));
+        tr("Crop mode (Image/Workspace); in Gallery opens the selection in Image mode"));
     m_cropAct->setToolTip(tr("Crop mode"));
     connect(m_cropAct, &QAction::triggered, this, &MainWindow::toggleCropMode);
 

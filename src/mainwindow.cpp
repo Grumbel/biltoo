@@ -446,8 +446,60 @@ void MainWindow::toggleCropMode()
     if (!m_imageView) {
         return;
     }
-    // Sync checkable action with ImageView (may refuse e.g. Gallery / no image).
     const bool want = m_cropAct && m_cropAct->isChecked();
+    // Gallery: crop on the packed grid is unusable — open the subject in Image
+    // mode, then enter crop once pixels are ready.
+    if (want && m_imageView->isGalleryMode()) {
+        ImageItem *item = m_imageView->targetItem();
+        if (!item || !m_imageView->hasSingleCropTarget()) {
+            if (m_cropAct) {
+                m_cropAct->setChecked(false);
+            }
+            return;
+        }
+        int idx = -1;
+        if (item->sessionId() != kInvalidSessionImageId) {
+            idx = indexOfSessionId(item->sessionId());
+        }
+        if (idx < 0) {
+            idx = item->sessionIndex();
+        }
+        if (idx < 0) {
+            if (m_cropAct) {
+                m_cropAct->setChecked(false);
+            }
+            return;
+        }
+        m_pendingGalleryCrop = true;
+        openSessionIndexInImageMode(idx);
+        // LoadReplace is async; one-shot when Image mode has decoded pixels.
+        auto *conn = new QMetaObject::Connection;
+        *conn = QObject::connect(
+            m_imageView, &ImageView::statusChanged, this,
+            [this, conn]() {
+                if (!m_pendingGalleryCrop || !m_imageView
+                    || !m_imageView->isImageMode()) {
+                    return;
+                }
+                ImageItem *primary = m_imageView->primaryItem();
+                if (!primary || !primary->hasDecodedPixels()) {
+                    return;
+                }
+                m_pendingGalleryCrop = false;
+                QObject::disconnect(*conn);
+                delete conn;
+                m_imageView->setCropMode(true);
+                if (m_cropAct) {
+                    m_cropAct->setChecked(m_imageView->isCropMode());
+                }
+            });
+        if (m_cropAct) {
+            // Stay unchecked until crop actually opens.
+            m_cropAct->setChecked(false);
+        }
+        return;
+    }
+    m_pendingGalleryCrop = false;
     m_imageView->setCropMode(want);
     if (m_cropAct) {
         m_cropAct->setChecked(m_imageView->isCropMode());
