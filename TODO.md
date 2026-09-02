@@ -29,6 +29,12 @@ Focus:
 - [ ] Fix remaining crashes, layout edge cases, and selection/context-menu bugs
 - [ ] Re-enable Gallery Grid Crop once it coexists cleanly with session/manual crop
 - [x] Crop: rotatable draft frame (bakes to axis-aligned output; cropRotation in session/project)
+- [x] Crop: centre move grip; interior rubber-band; resize under rotation
+- [x] Crop: Expand beyond image (pad); Close/Cancel chrome; modifiers (Ctrl/Shift)
+- [x] Workspace Layout panel (selection pack + Apply); durable Workspace vs Gallery
+- [x] Masonry Fill / Masonry Rows Fill (rectangular pack)
+- [x] Page Guide under Workspace menu; Exit Fullscreen label; FS Slideshow context
+- [x] Quit confirm once (closeEvent only)
 - [ ] Keyboard shortcuts, HUD, slideshow, and desktop integration as documented
 - [ ] Packaging (Nix/CMake), AppStream, `.desktop`, i18n scaffolding
 - [ ] Regression smoke tests (`--help`, basic open/session paths)

@@ -55,14 +55,19 @@ diverge from it.
 ### Gallery mode — “see the whole session laid out”
 
 - Canvas holds **one object per session image**, arranged by a **layout**
-  (horizontal, vertical, grid, grid-crop, masonry columns, masonry rows).
+  (horizontal, vertical, grid, masonry columns/rows, masonry fill variants).
 - Layout is pure arrangement: positions and cell scales. Objects are not
   free-moved by the user.
+- **Grid Crop** (square cells with cover-crop) is temporarily **disabled** in the
+  UI; it conflicts with session/manual crop. Code paths remain for compatibility.
+- **Masonry Fill** / **Masonry Rows Fill**: after packing, scale each column or
+  row so heights or widths match — outer shape is a clean rectangle (no dangling
+  last row/column).
 - User may change layout; the same set of paths is re-packed.
 - User may activate one object → leave Gallery, enter **Image** on that path,
   remembering enough to **return** (layout, scroll, which cell was current).
 - Arrow keys move the session cursor among tiles by **scene position** (spatial neighbour); Home/End first/last; Enter opens.
-- Grid / Grid-Crop column count is user-configurable (toolbar spin; 0 = automatic).
+- Grid / Masonry column or row count is user-configurable (toolbar spin; 0 = automatic for grid).
 - User may rotate (±90°) and flip selected tiles; scale/opacity/stack remain Workspace-only.
 - Linear viewer navigation (slideshow, prev/next) is not the primary job here.
 
@@ -79,8 +84,13 @@ diverge from it.
 - User may duplicate a selection: new session image (same path allowed) and
   a new canvas object with independent content appearance and placement.
 - Leaving Workspace **keeps** object transforms (snapshot) for when the user returns.
-- **Layout panel** (dock): apply a packaged arrangement (grid, masonry, …) to the
-  **current selection** only; does not switch to Gallery mode.
+- **Layout panel** (dock, toolbar toggle): apply a packaged arrangement
+  (horizontal, vertical, grid, masonry, masonry fill, …) to the **current
+  selection** only; does not switch to Gallery mode. Columns/rows + Apply.
+- **Page Guide** menu actions live under **Workspace** and are disabled outside
+  Workspace mode.
+- Entering Workspace from Gallery **restores** the durable Workspace snapshot;
+  Gallery packing is not adopted as free-form content.
 - Slideshow and edge-next are off: this is not a linear viewer.
 
 **Law:** Gallery is not a kind of Workspace. Workspace is not a kind of Gallery.
@@ -88,7 +98,8 @@ diverge from it.
 ### Persistence and export (non-destructive)
 
 - **Project file** (`.qimgview`): ordered session images (stable ids), content
-  appearance, optional Workspace free-form poses, asset list with SHA-256.
+  appearance (including session crop rect, **cropRotation**, content flips /
+  quarter turns), optional Workspace free-form poses, asset list with SHA-256.
   Does not write into source image files.
 - **Export PNG / PDF**: render canvas region (content bounds or page guide) to a
   new file. Page guide is optional framing for print/export, not the definition
@@ -225,10 +236,13 @@ layoutWorkspaceSelection(packagedLayout, params):
 crop draft (Image or single Workspace target):
   default: draft clamped to image bounds
   Expand on: draft may extend outside; Close pads with view background
-  Move = drag interior; Ctrl = resize from centre; Shift = square
+  Move = centre grip only (frame interior starts a new rubber-band)
+  Ctrl = resize from centre; Shift = square (resize) or 15° snap (rotate)
   Rotate knob = free angle about centre; Close bakes axis-aligned pixels
+  Resize under rotation uses crop-local axes; centre mapped back through θ
   Close commits; Cancel / Esc discards; toolbar crop-off commits
-  cropRotation persisted in session appearance and project file
+  cropRotation + cropSourceSize in session appearance and project file
+  captureState / commit / undo-redo must preserve cropRotation
 
 next / previous / slideshow:
   require Mode = Image and Session.size > 1
@@ -239,7 +253,7 @@ next / previous / slideshow:
 | Mode | Position | Scale | Rotation / flip | View matrix |
 |------|----------|-------|-----------------|-------------|
 | Image | Fixed origin | Object scale typically 1; **view** zooms | Object owns | View owns fit/zoom/pan |
-| Gallery | Layout | Layout (cell) | Neutral (layout may ignore user orient) | View scroll |
+| Gallery | Layout (incl. Masonry Fill) | Layout (cell) | Neutral (layout may ignore user orient) | View scroll |
 | Workspace | Object | Object (possibly non-uniform) | Object | View pan/zoom of whole scene |
 
 ## Thumbnail strip

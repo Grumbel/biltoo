@@ -27,16 +27,26 @@ A classic desktop image viewer with three ways to look at a session on one canva
 
 **Gallery**
 
-- Layouts: side-by-side, vertical strip, grid, grid-crop, masonry (columns or rows)
+- Layouts: side-by-side, vertical strip, grid, masonry (columns or rows), masonry fill (rectangular)
+- Grid-crop layout is temporarily disabled (session crop conflict)
 - Multi-select; double-click (or Enter) opens Image mode
 - Return to Gallery with viewport restored
 
 **Workspace**
 
 - Free placement: move, scale, rotate, opacity, raise/lower
+- Durable canvas: switching to Gallery and back restores the Workspace snapshot
+- Layout panel: pack the current selection (same algorithms as Gallery) without leaving Workspace
 - Rubber-band multi-select; transform handles on the selection
 - Open the current selection in a new window
 - Delete removes from the canvas only (session membership stays)
+
+**Crop** (Image or single Workspace selection)
+
+- Draft rectangle with edge/corner grips, **centre move grip**, rotate knob, Expand
+- Close commits (axis-aligned bake; optional pad); Cancel/Esc discards
+- Ctrl resize from centre; Shift square or 15° rotate snap
+- Session/project store crop rect and rotation (non-destructive until export)
 
 **General**
 

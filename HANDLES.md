@@ -139,21 +139,28 @@ opacity track.
 ## Crop mode (draft rectangle)
 
 Crop chrome is viewport-painted on the crop target (Image mode, or a single
-Workspace selection). Session crop remains an axis-aligned source rectangle.
+Workspace selection). The **draft** may be rotated; **Close** samples into an
+axis-aligned output image. Session appearance stores `cropRect`,
+`cropSourceSize`, and `cropRotation` (project JSON too).
 
 | Interaction | Behaviour |
 |-------------|-----------|
-| **Move** grip (centre) | Translate the region (size unchanged); frame interior starts a new rubber-band |
-| Edge / corner handles | Resize (opposite side fixed) |
+| **Move** grip (centre square + crosshair) | Translate the region; size unchanged |
+| Frame **interior** (not the grip) | Starts a **new rubber-band** crop (whole-image start stays usable) |
+| Edge / corner handles | Resize; under rotation, math is in crop-local axes then centre mapped by θ |
 | **Ctrl** + resize | Resize about the **centre** |
 | **Shift** + resize / rubber-band | Constrain to a **square** |
 | **Ctrl+Shift** | Square about centre / press point |
-| Drag **outside** the frame on the image | New rubber-band crop |
-| **Expand** toggle | When on, draft may leave the image; Close pads with the view background. When off, draft is clamped to the image. |
-| **Rotate** knob | Free rotation about the crop centre; **Shift** snaps to 15°; Close bakes axis-aligned |
-| Reset / Cancel / Close | Full-image draft / discard / commit |
+| Drag on the image outside grips | New rubber-band crop |
+| **Expand** toggle | Draft may leave the image; Close pads with the view background |
+| **Rotate** knob (stem above top edge) | Free rotation about centre; **Shift** snaps to 15° |
+| Reset | Full-image draft, rotation cleared |
+| Cancel / Esc | Discard draft |
+| Close / Enter / toolbar crop-off | Commit draft |
 
-Free rotation of the crop frame is intentionally unsupported for now (see TODO).
+Implementation map: `imageview_crop.cpp` (paint, hit, drag), `ImageItem::cropToLocalRect`
+(rotation + pad), `SessionAppearance::applyCrop`, `captureState` / `applyCropAppearance`
+for undo and persistence.
 
 ## Implementation notes (current code map)
 
