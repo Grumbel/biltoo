@@ -271,22 +271,45 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     if (turns < 0) {
         turns += 4;
     }
+    // Keep full-source crop geometry in sync with content orientation so
+    // re-entering crop mode still frames the same region.
+    WorkspaceItemState cropMap = beforeSt;
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+            cropMap = *it;
+        }
+    }
+    SessionAppearance::mapCropThroughContentRotate90(cropMap, quarterTurns);
+    if (cropMap.hasCrop) {
+        item->setSessionCrop(true, cropMap.cropRect);
+    }
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState s = captureState(item);
         s.sessionId = sid;
         s.contentQuarterTurns = turns;
         s.orientation = 0.0;
-        s.hasCrop = item->sessionHasCrop();
-        s.cropRect = item->sessionCropRect();
+        s.hasCrop = cropMap.hasCrop;
+        s.cropRect = cropMap.cropRect;
+        s.cropRotation = cropMap.cropRotation;
+        s.cropSourceSize = cropMap.cropSourceSize;
         s.contentHFlip = item->contentHFlip();
         s.contentVFlip = item->contentVFlip();
         m_appearance.set(sid, s);
+    } else if (cropMap.hasCrop) {
+        WorkspaceItemState s = captureState(item);
+        s.hasCrop = true;
+        s.cropRect = cropMap.cropRect;
+        s.cropRotation = cropMap.cropRotation;
+        s.cropSourceSize = cropMap.cropSourceSize;
+        m_itemStates.insert(item->path(), s);
     }
     commitItemSessionEdit(item);
 
     WorkspaceItemState afterSt = captureState(item);
     afterSt.hasCrop = item->sessionHasCrop();
     afterSt.cropRect = item->sessionCropRect();
+    afterSt.cropRotation = cropMap.cropRotation;
+    afterSt.cropSourceSize = cropMap.cropSourceSize;
     afterSt.contentHFlip = item->contentHFlip();
     afterSt.contentVFlip = item->contentVFlip();
     afterSt.contentQuarterTurns = turns;
@@ -331,11 +354,50 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     }
     item->setContentHFlip(h);
     item->setContentVFlip(v);
+
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_currentSessionId;
+    }
+    WorkspaceItemState cropMap = beforeSt;
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+            cropMap = *it;
+        }
+    }
+    SessionAppearance::mapCropThroughContentFlip(cropMap, horizontal, vertical);
+    if (cropMap.hasCrop) {
+        item->setSessionCrop(true, cropMap.cropRect);
+    }
+    if (sid != kInvalidSessionImageId) {
+        WorkspaceItemState s = captureState(item);
+        s.sessionId = sid;
+        s.hasCrop = cropMap.hasCrop;
+        s.cropRect = cropMap.cropRect;
+        s.cropRotation = cropMap.cropRotation;
+        s.cropSourceSize = cropMap.cropSourceSize;
+        s.contentHFlip = h;
+        s.contentVFlip = v;
+        s.contentQuarterTurns = cropMap.contentQuarterTurns;
+        m_appearance.set(sid, s);
+    } else if (cropMap.hasCrop) {
+        WorkspaceItemState s = captureState(item);
+        s.hasCrop = true;
+        s.cropRect = cropMap.cropRect;
+        s.cropRotation = cropMap.cropRotation;
+        s.cropSourceSize = cropMap.cropSourceSize;
+        s.contentHFlip = h;
+        s.contentVFlip = v;
+        m_itemStates.insert(item->path(), s);
+    }
+
     commitItemSessionEdit(item);
 
     WorkspaceItemState afterSt = captureState(item);
     afterSt.hasCrop = item->sessionHasCrop();
     afterSt.cropRect = item->sessionCropRect();
+    afterSt.cropRotation = cropMap.cropRotation;
+    afterSt.cropSourceSize = cropMap.cropSourceSize;
     afterSt.contentHFlip = h;
     afterSt.contentVFlip = v;
     afterSt.contentQuarterTurns = beforeSt.contentQuarterTurns;

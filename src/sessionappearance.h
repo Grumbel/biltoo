@@ -37,6 +37,18 @@ namespace SessionAppearance {
 QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live);
 
 /**
+ * Map stored crop geometry through a content flip of the full source.
+ * @p cropSourceSize is the space cropRect lives in; rotation sign flips.
+ */
+void mapCropThroughContentFlip(WorkspaceItemState &state, bool horizontal, bool vertical);
+
+/**
+ * Map stored crop geometry through content 90° steps (same sign as bakeRotate90).
+ * Updates cropRect, cropSourceSize, and cropRotation.
+ */
+void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns);
+
+/**
  * Apply state.hasCrop / cropRect onto @p item's full source pixels.
  * Does not apply content flips or quarter turns.
  */

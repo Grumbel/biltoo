@@ -24,6 +24,69 @@ QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live)
         qMax(1, qRound(crop.height() * double(live.height()) / double(recorded.height()))));
 }
 
+static void normalizeCropRotation(qreal &degrees)
+{
+    while (degrees > 180.0) {
+        degrees -= 360.0;
+    }
+    while (degrees <= -180.0) {
+        degrees += 360.0;
+    }
+}
+
+void mapCropThroughContentFlip(WorkspaceItemState &state, bool horizontal, bool vertical)
+{
+    if (!state.hasCrop || state.cropRect.isEmpty() || (!horizontal && !vertical)) {
+        return;
+    }
+    QSize sz = state.cropSourceSize;
+    if (!sz.isValid() || sz.width() < 1 || sz.height() < 1) {
+        // Last resort: treat the crop AABB as living in a canvas that just fits it.
+        sz = QSize(state.cropRect.x() + state.cropRect.width(),
+                   state.cropRect.y() + state.cropRect.height());
+    }
+    QRect r = state.cropRect.normalized();
+    if (horizontal) {
+        r = QRect(sz.width() - r.x() - r.width(), r.y(), r.width(), r.height());
+        state.cropRotation = -state.cropRotation;
+    }
+    if (vertical) {
+        r = QRect(r.x(), sz.height() - r.y() - r.height(), r.width(), r.height());
+        state.cropRotation = -state.cropRotation;
+    }
+    normalizeCropRotation(state.cropRotation);
+    state.cropRect = r;
+}
+
+void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns)
+{
+    if (!state.hasCrop || state.cropRect.isEmpty() || quarterTurns == 0) {
+        return;
+    }
+    quarterTurns %= 4;
+    if (quarterTurns < 0) {
+        quarterTurns += 4;
+    }
+    if (quarterTurns == 0) {
+        return;
+    }
+    QSize sz = state.cropSourceSize;
+    if (!sz.isValid() || sz.width() < 1 || sz.height() < 1) {
+        sz = QSize(state.cropRect.x() + state.cropRect.width(),
+                   state.cropRect.y() + state.cropRect.height());
+    }
+    QRect r = state.cropRect.normalized();
+    for (int i = 0; i < quarterTurns; ++i) {
+        // 90° CW in top-left image coordinates (matches QImage bakeRotate90).
+        r = QRect(sz.height() - r.y() - r.height(), r.x(), r.height(), r.width());
+        sz = QSize(sz.height(), sz.width());
+        state.cropRotation -= 90.0;
+    }
+    normalizeCropRotation(state.cropRotation);
+    state.cropRect = r;
+    state.cropSourceSize = sz;
+}
+
 void applyCrop(ImageItem *item, const WorkspaceItemState &state)
 {
     if (!item || !state.hasCrop || state.cropRect.isEmpty()) {
