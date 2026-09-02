@@ -610,7 +610,9 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
     // Gallery keeps the packed tile in the stash while Image edits that id).
     bool ok = true;
     auto checkList = [&](const QList<ImageItem *> &list, const char *where) {
-        QHash<SessionImageId, const ImageItem *> seen;
+        // Store paths (not item pointers) so the diagnostic never dereferences
+        // a hash miss under -Wnull-dereference.
+        QHash<SessionImageId, QString> seenPath;
         for (const ImageItem *item : list) {
             if (!item) {
                 continue;
@@ -619,18 +621,18 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
             if (sid == kInvalidSessionImageId) {
                 continue;
             }
-            if (seen.contains(sid)) {
-                const QString pathA = seen.value(sid)->path();
+            const auto it = seenPath.constFind(sid);
+            if (it != seenPath.cend()) {
                 const QString pathB = item->path();
                 qCritical("ImageView: duplicate SessionImageId %lld within %s (%s) path=%s vs %s",
                           static_cast<long long>(sid),
                           where,
                           context ? context : "validate",
-                          qPrintable(pathA),
+                          qPrintable(it.value()),
                           qPrintable(pathB));
                 ok = false;
             } else {
-                seen.insert(sid, item);
+                seenPath.insert(sid, item->path());
             }
         }
     };
