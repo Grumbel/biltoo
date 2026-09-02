@@ -89,8 +89,10 @@ void AdjustmentsPanel::buildUi()
         hl->addWidget(*slider, 1);
         hl->addWidget(*val);
         form->addRow(name, row);
-        connect(*slider, &QSlider::valueChanged, this, [this, val](int v) {
-            if (val) val->setText(QString::number(v));
+        connect(*slider, &QSlider::valueChanged, this, [this, valueLabel = *val](int v) {
+            if (valueLabel) {
+                valueLabel->setText(QString::number(v));
+            }
             emitIfChanged();
         });
     };
