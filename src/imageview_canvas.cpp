@@ -605,9 +605,12 @@ bool ImageView::hasSingleCropTarget() const
 
 bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 {
-    QHash<SessionImageId, const ImageItem *> seen;
+    // Uniqueness is per list. The same SessionImageId on a *live* Image-mode
+    // item and a *stashed* Gallery/Workspace tile is intentional (open-from-
+    // Gallery keeps the packed tile in the stash while Image edits that id).
     bool ok = true;
     auto checkList = [&](const QList<ImageItem *> &list, const char *where) {
+        QHash<SessionImageId, const ImageItem *> seen;
         for (const ImageItem *item : list) {
             if (!item) {
                 continue;
@@ -617,10 +620,10 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
                 continue;
             }
             if (seen.contains(sid)) {
-                qCritical("ImageView: duplicate SessionImageId %lld on canvas (%s / %s) path=%s vs %s",
+                qCritical("ImageView: duplicate SessionImageId %lld within %s (%s) path=%s vs %s",
                           static_cast<long long>(sid),
-                          context ? context : "validate",
                           where,
+                          context ? context : "validate",
                           qPrintable(seen.value(sid)->path()),
                           qPrintable(item->path()));
                 ok = false;
