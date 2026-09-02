@@ -9,6 +9,9 @@
 #include "sessionappearance.h"
 
 #include <QPainter>
+#include <QPainterPath>
+#include <QtMath>
+#include <QTransform>
 #include <QUndoCommand>
 #include <QUndoStack>
 
@@ -289,6 +292,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         if (extendsOutside) {
             m_cropAllowExpand = true;
         }
+        m_cropRotation = haveApp ? app.cropRotation : 0.0;
         if (prior.width() >= 1 && prior.height() >= 1) {
             const QPointF off = item->offset();
             int dx = prior.x();
@@ -307,6 +311,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         }
     } else {
         m_cropRect = cr;
+        m_cropRotation = 0.0;
     }
     ensureCropRectValid();
 
@@ -503,14 +508,16 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         && qAbs(local.top() - cr.top()) < 0.5
         && qAbs(local.width() - cr.width()) < 0.5
         && qAbs(local.height() - cr.height()) < 0.5;
-    if (fullFrame) {
+    if (fullFrame && qAbs(m_cropRotation) < 0.05) {
         s.hasCrop = false;
         s.cropRect = QRect();
         s.cropSourceSize = QSize();
+        s.cropRotation = 0.0;
     } else {
         s.hasCrop = true;
         s.cropRect = disp;
         s.cropSourceSize = QSize(iw, ih);
+        s.cropRotation = m_cropRotation;
     }
     s.path = item->path();
     item->setSessionCrop(s.hasCrop, s.cropRect);
@@ -540,7 +547,7 @@ void ImageView::leaveCropModeInternal(bool apply)
         // Record absolute crop (or clear it) while the full image is still loaded.
         recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
         if (!fullFrame) {
-            if (item->cropToLocalRect(m_cropRect, backgroundColor())) {
+            if (item->cropToLocalRect(m_cropRect, backgroundColor(), m_cropRotation)) {
                 // Keep stashed Gallery tiles: commitItemSessionEdit peer-syncs
                 // cropped pixels. Invalidating forced a full-size probe + pack
                 // then a crop decode without repack → tiny tiles on return.
@@ -672,11 +679,28 @@ void ImageView::leaveCropModeInternal(bool apply)
     m_cropActiveHandle = CropHandle::None;
     m_cropHoverHandle = CropHandle::None;
     m_cropAllowExpand = false;
+    m_cropRotation = 0.0;
     m_cropRubberBanding = false;
     emit cropModeChanged(false);
     emit statusChanged();
     viewport()->unsetCursor();
     viewport()->update();
+}
+
+QPolygonF ImageView::cropPolygonItemLocal() const
+{
+    const QRectF r = m_cropRect.normalized();
+    QPolygonF poly;
+    poly << r.topLeft() << r.topRight() << r.bottomRight() << r.bottomLeft();
+    if (qAbs(m_cropRotation) < 0.05) {
+        return poly;
+    }
+    const QPointF c = r.center();
+    QTransform tr;
+    tr.translate(c.x(), c.y());
+    tr.rotate(m_cropRotation);
+    tr.translate(-c.x(), -c.y());
+    return tr.map(poly);
 }
 
 QRectF ImageView::cropRectView() const
@@ -685,7 +709,8 @@ QRectF ImageView::cropRectView() const
     if (!item || !m_cropRect.isValid()) {
         return QRectF();
     }
-    const QPolygonF poly = item->mapToScene(m_cropRect);
+    const QPolygonF local = cropPolygonItemLocal();
+    const QPolygonF poly = item->mapToScene(local);
     QRectF sceneBounds = poly.boundingRect();
     const QPoint tl = mapFromScene(sceneBounds.topLeft());
     const QPoint br = mapFromScene(sceneBounds.bottomRight());
@@ -753,21 +778,25 @@ void ImageView::paintCropOverlay(QPainter &painter)
     }
     ensureCropRectValid();
     const QRectF contentScene = item->mapToScene(item->contentRect()).boundingRect();
-    const QRectF cropScene = item->mapToScene(m_cropRect).boundingRect();
+    const QPolygonF cropLocal = cropPolygonItemLocal();
+    const QPolygonF cropScenePoly = item->mapToScene(cropLocal);
+    QPolygonF cropViewPoly;
+    for (const QPointF &sp : cropScenePoly) {
+        cropViewPoly << QPointF(mapFromScene(sp));
+    }
     const QRect contentView = QRect(mapFromScene(contentScene.topLeft()),
                                     mapFromScene(contentScene.bottomRight()))
                                   .normalized();
-    const QRect cropView = QRect(mapFromScene(cropScene.topLeft()),
-                                 mapFromScene(cropScene.bottomRight()))
-                               .normalized();
+    const QRect cropView = cropViewPoly.boundingRect().toRect().normalized();
 
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    // Dim everything outside the crop (viewport-space; covers outside content too).
+    // Dim everything outside the (possibly rotated) crop.
     QPainterPath outer;
     outer.addRect(QRectF(viewport()->rect()));
     QPainterPath hole;
-    hole.addRect(QRectF(cropView));
+    hole.addPolygon(cropViewPoly);
+    hole.closeSubpath();
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(0, 0, 0, 140));
     painter.drawPath(outer.subtracted(hole));
@@ -778,18 +807,18 @@ void ImageView::paintCropOverlay(QPainter &painter)
     frame.setCosmetic(true);
     frame.setWidthF(1.75);
     painter.setPen(frame);
-    painter.drawRect(cropView);
+    painter.drawPolygon(cropViewPoly);
     QPen dash(QColor(40, 30, 10, 180), 0, Qt::DashLine);
     dash.setCosmetic(true);
     dash.setWidthF(1.0);
     painter.setPen(dash);
-    painter.drawRect(cropView.adjusted(1, 1, -1, -1));
+    painter.drawPolygon(cropViewPoly);
 
-    // Bold corner (line-arc-line) + edge bars — same language as Workspace chrome.
-    const QPoint tl = cropView.topLeft();
-    const QPoint tr = cropView.topRight();
-    const QPoint bl = cropView.bottomLeft();
-    const QPoint br = cropView.bottomRight();
+    // Bold corner + edge bars at rotated corners (poly order: TL, TR, BR, BL).
+    const QPointF tl = cropViewPoly.at(0);
+    const QPointF tr = cropViewPoly.at(1);
+    const QPointF br = cropViewPoly.at(2);
+    const QPointF bl = cropViewPoly.at(3);
     const qreal hs = 14.0;
     auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB,
                           CropHandle h) {
@@ -824,11 +853,11 @@ void ImageView::paintCropOverlay(QPainter &painter)
             painter.drawPath(path);
         }
     };
-    // along directions point along the crop edges away from the corner.
-    drawCorner(tl, QPointF(1, 0), QPointF(0, 1), CropHandle::TopLeft);
-    drawCorner(tr, QPointF(-1, 0), QPointF(0, 1), CropHandle::TopRight);
-    drawCorner(bl, QPointF(1, 0), QPointF(0, -1), CropHandle::BottomLeft);
-    drawCorner(br, QPointF(-1, 0), QPointF(0, -1), CropHandle::BottomRight);
+    // along directions follow rotated edges away from the corner.
+    drawCorner(tl, tr - tl, bl - tl, CropHandle::TopLeft);
+    drawCorner(tr, tl - tr, br - tr, CropHandle::TopRight);
+    drawCorner(bl, br - bl, tl - bl, CropHandle::BottomLeft);
+    drawCorner(br, bl - br, tr - br, CropHandle::BottomRight);
 
     auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, CropHandle h) {
         const bool hot = (m_cropHoverHandle == h || m_cropActiveHandle == h);
@@ -853,12 +882,39 @@ void ImageView::paintCropOverlay(QPainter &painter)
         painter.drawPolygon(bar);
         painter.setBrush(Qt::NoBrush);
     };
-    drawEdgeBar(QPointF((tl.x() + tr.x()) / 2.0, tl.y()), QPointF(1, 0), CropHandle::Top);
-    drawEdgeBar(QPointF((bl.x() + br.x()) / 2.0, bl.y()), QPointF(1, 0), CropHandle::Bottom);
-    drawEdgeBar(QPointF(tl.x(), (tl.y() + bl.y()) / 2.0), QPointF(0, 1), CropHandle::Left);
-    drawEdgeBar(QPointF(tr.x(), (tr.y() + br.y()) / 2.0), QPointF(0, 1), CropHandle::Right);
+    drawEdgeBar((tl + tr) / 2.0, tr - tl, CropHandle::Top);
+    drawEdgeBar((bl + br) / 2.0, br - bl, CropHandle::Bottom);
+    drawEdgeBar((tl + bl) / 2.0, bl - tl, CropHandle::Left);
+    drawEdgeBar((tr + br) / 2.0, br - tr, CropHandle::Right);
 
-    // Reset / Apply: outside below crop when possible, inside if off-screen.
+    // Rotate knob: outward from top edge midpoint along the rotated normal.
+    {
+        const QPointF tm((tl.x() + tr.x()) / 2.0, (tl.y() + tr.y()) / 2.0);
+        QPointF along = tr - tl;
+        const qreal alen = qHypot(along.x(), along.y());
+        if (alen > 1e-6) {
+            along /= alen;
+        }
+        QPointF outward(-along.y(), along.x()); // left normal of top edge (screen)
+        // Prefer outward away from centre.
+        const QPointF centre = (tl + tr + br + bl) * 0.25;
+        if (QPointF::dotProduct(outward, tm - centre) < 0) {
+            outward = -outward;
+        }
+        const QPointF knob = tm + outward * 22.0;
+        const bool hot = (m_cropHoverHandle == CropHandle::Rotate
+                          || m_cropActiveHandle == CropHandle::Rotate);
+        QPen stem(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
+        stem.setCosmetic(true);
+        stem.setWidthF(hot ? 1.8 : 1.3);
+        painter.setPen(stem);
+        painter.drawLine(tm, knob);
+        painter.setBrush(hot ? QColor(255, 220, 80) : QColor(255, 190, 40));
+        painter.drawEllipse(knob, hot ? 6.0 : 5.0, hot ? 6.0 : 5.0);
+        painter.setBrush(Qt::NoBrush);
+    }
+
+    // Controls: outside below crop when possible, inside if off-screen.
     auto drawTextButton = [&](const QRect &btn, CropHandle kind, const QString &label,
                               bool primary) {
         if (!btn.isValid()) {
@@ -930,6 +986,12 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
     m_cropActiveHandle = h;
     m_cropDragStartRect = m_cropRect;
     m_cropDragStartLocal = item->mapFromScene(mapToScene(viewPos));
+    if (h == CropHandle::Rotate) {
+        m_cropRotateStartRotation = m_cropRotation;
+        const QPointF c = m_cropRect.center();
+        const QPointF v = m_cropDragStartLocal - c;
+        m_cropRotateStartAngle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
+    }
 }
 
 void ImageView::updateCropHandleDrag(const QPoint &viewPos)
@@ -938,7 +1000,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
     if (!item || m_cropActiveHandle == CropHandle::None) {
         return;
     }
-    const QPointF local = item->mapFromScene(mapToScene(viewPos));
+    QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
     // When expand is off, edges stay inside the image; when on, use a large pad.
     const QRectF limits = m_cropAllowExpand
@@ -980,6 +1042,32 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         m_cropRect = clampMove(r);
         viewport()->update();
         return;
+    }
+
+    if (m_cropActiveHandle == CropHandle::Rotate) {
+        const QPointF c = m_cropDragStartRect.center();
+        const QPointF v = local - c;
+        const qreal angle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
+        m_cropRotation = m_cropRotateStartRotation + (angle - m_cropRotateStartAngle);
+        // Keep in (-180, 180]
+        while (m_cropRotation > 180.0) {
+            m_cropRotation -= 360.0;
+        }
+        while (m_cropRotation <= -180.0) {
+            m_cropRotation += 360.0;
+        }
+        viewport()->update();
+        return;
+    }
+
+    // Resize in the crop's unrotated frame (rotation stays about the centre).
+    if (qAbs(m_cropRotation) > 0.05) {
+        const QPointF c = m_cropDragStartRect.center();
+        QTransform inv;
+        inv.translate(c.x(), c.y());
+        inv.rotate(-m_cropRotation);
+        inv.translate(-c.x(), -c.y());
+        local = inv.map(local);
     }
 
     // Edge / corner resize (optionally from centre, optionally square).
@@ -1187,24 +1275,40 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (closeBtn.contains(viewPos)) {
         return CropHandle::Close;
     }
-    // Map crop rect corners through item → scene → view (handles stay screen-sized).
-    const QRectF r = m_cropRect;
+    // Map rotated crop corners through item → scene → view.
+    const QPolygonF localPoly = cropPolygonItemLocal();
     auto toView = [this, item](const QPointF &local) {
         return mapFromScene(item->mapToScene(local));
     };
-    const QPoint tl = toView(r.topLeft());
-    const QPoint tr = toView(r.topRight());
-    const QPoint bl = toView(r.bottomLeft());
-    const QPoint br = toView(r.bottomRight());
+    const QPoint tl = toView(localPoly.at(0)).toPoint();
+    const QPoint tr = toView(localPoly.at(1)).toPoint();
+    const QPoint br = toView(localPoly.at(2)).toPoint();
+    const QPoint bl = toView(localPoly.at(3)).toPoint();
     const QPoint tm((tl.x() + tr.x()) / 2, (tl.y() + tr.y()) / 2);
     const QPoint bm((bl.x() + br.x()) / 2, (bl.y() + br.y()) / 2);
     const QPoint lm((tl.x() + bl.x()) / 2, (tl.y() + bl.y()) / 2);
     const QPoint rm((tr.x() + br.x()) / 2, (tr.y() + br.y()) / 2);
+    // Rotate knob (same geometry as paint).
+    QPointF along(tr.x() - tl.x(), tr.y() - tl.y());
+    const qreal alen = qHypot(along.x(), along.y());
+    if (alen > 1e-6) {
+        along /= alen;
+    }
+    QPointF outward(-along.y(), along.x());
+    const QPointF centre((tl.x() + tr.x() + br.x() + bl.x()) * 0.25,
+                         (tl.y() + tr.y() + br.y() + bl.y()) * 0.25);
+    if (QPointF::dotProduct(outward, QPointF(tm) - centre) < 0) {
+        outward = -outward;
+    }
+    const QPoint rotKnob = (QPointF(tm) + outward * 22.0).toPoint();
 
     constexpr qreal kHit = 16.0;
     auto near = [&](const QPoint &p) {
         return QLineF(viewPos, p).length() <= kHit;
     };
+    if (near(rotKnob)) {
+        return CropHandle::Rotate;
+    }
     if (near(tl)) {
         return CropHandle::TopLeft;
     }
@@ -1229,10 +1333,11 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (near(rm)) {
         return CropHandle::Right;
     }
-    // Interior of the crop frame: move (not resize). Outside → rubber-band.
-    const QRectF viewCrop = QRectF(tl, br).normalized();
-    // Inflate slightly negative so edge hit zones stay exclusive.
-    if (viewCrop.adjusted(6, 6, -6, -6).contains(viewPos)) {
+    // Interior of the rotated crop: move.
+    QPainterPath interior;
+    interior.addPolygon(QPolygonF() << tl << tr << br << bl);
+    interior.closeSubpath();
+    if (interior.contains(viewPos)) {
         return CropHandle::Move;
     }
     return CropHandle::None;

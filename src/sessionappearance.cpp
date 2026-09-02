@@ -51,7 +51,7 @@ void applyCrop(ImageItem *item, const WorkspaceItemState &state)
     // May extend outside the source; cropToLocalRect pads as needed.
     const QRectF local(crop.x() + off.x(), crop.y() + off.y(),
                        crop.width(), crop.height());
-    item->cropToLocalRect(local);
+    item->cropToLocalRect(local, QColor(0, 0, 0, 0), state.cropRotation);
 }
 
 } // namespace SessionAppearance

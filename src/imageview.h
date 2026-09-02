@@ -22,6 +22,7 @@
 #include <QSizeF>
 #include <QString>
 #include <QStringList>
+#include <QPolygonF>
 #include <QUrl>
 
 #include <atomic>
@@ -630,6 +631,8 @@ private:
         None,
         /** Translate the draft rect without changing size. */
         Move,
+        /** Rotate the draft about its centre. */
+        Rotate,
         Left,
         Right,
         Top,
@@ -653,6 +656,9 @@ private:
     ImageItem *cropTargetItem() const;
     void ensureCropRectValid();
     QRectF cropRectItemLocal() const { return m_cropRect; }
+    qreal cropRotation() const { return m_cropRotation; }
+    /** Crop corners in item-local space (rotation about rect centre). */
+    QPolygonF cropPolygonItemLocal() const;
     QRectF cropRectView() const;
     /** Viewport rects of Reset / Apply controls above the crop frame. */
     QRect cropExpandButtonView() const;

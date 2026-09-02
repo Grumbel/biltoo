@@ -149,8 +149,9 @@ Workspace selection). Session crop remains an axis-aligned source rectangle.
 | **Shift** + resize / rubber-band | Constrain to a **square** |
 | **Ctrl+Shift** | Square about centre / press point |
 | Drag **outside** the frame on the image | New rubber-band crop |
-| **Expand** toggle | When on, draft may leave the image; **Apply** pads with the view background colour. When off, draft is clamped to the image. |
-| Reset / Apply | Full-image draft / commit |
+| **Expand** toggle | When on, draft may leave the image; Close pads with the view background. When off, draft is clamped to the image. |
+| **Rotate** knob | Free rotation about the crop centre; Close bakes an axis-aligned result |
+| Reset / Cancel / Close | Full-image draft / discard / commit |
 
 Free rotation of the crop frame is intentionally unsupported for now (see TODO).
 

@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
+#include <QtMath>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -109,6 +110,9 @@ QJsonObject appearanceToJson(const WorkspaceItemState &s, bool includePose)
             o.insert(QStringLiteral("cropSource"),
                      QJsonArray{s.cropSourceSize.width(), s.cropSourceSize.height()});
         }
+        if (!qFuzzyIsNull(s.cropRotation)) {
+            o.insert(QStringLiteral("cropRotation"), s.cropRotation);
+        }
     }
     if (s.contentHFlip) {
         o.insert(QStringLiteral("contentHFlip"), true);
@@ -148,6 +152,7 @@ WorkspaceItemState appearanceFromJson(const QJsonObject &o)
                                a.at(3).toInt());
         }
     }
+    s.cropRotation = o.value(QStringLiteral("cropRotation")).toDouble(0.0);
     if (o.contains(QStringLiteral("cropSource"))) {
         const QJsonArray a = o.value(QStringLiteral("cropSource")).toArray();
         if (a.size() >= 2) {

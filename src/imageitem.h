@@ -153,7 +153,8 @@ public:
      * Returns false if the rect is empty or outside the image.
      */
     bool cropToLocalRect(const QRectF &localRect,
-                         const QColor &padColor = QColor(0, 0, 0, 0));
+                         const QColor &padColor = QColor(0, 0, 0, 0),
+                         qreal rotationDegrees = 0.0);
 
     /** When false, the item cannot be selected or dragged (classic viewer). */
     void setInteractive(bool on);

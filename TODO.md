@@ -28,7 +28,7 @@ Focus:
   - [x] No unbound Workspace tiles after normal add/dup/drop paths
 - [ ] Fix remaining crashes, layout edge cases, and selection/context-menu bugs
 - [ ] Re-enable Gallery Grid Crop once it coexists cleanly with session/manual crop
-- [ ] Crop: optional free rotation of the crop frame (axis-aligned session crop + unrotate-during-crop make this non-trivial)
+- [x] Crop: rotatable draft frame (bakes to axis-aligned output; cropRotation in session/project)
 - [ ] Keyboard shortcuts, HUD, slideshow, and desktop integration as documented
 - [ ] Packaging (Nix/CMake), AppStream, `.desktop`, i18n scaffolding
 - [ ] Regression smoke tests (`--help`, basic open/session paths)

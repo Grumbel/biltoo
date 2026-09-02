@@ -67,6 +67,12 @@ struct WorkspaceItemState {
     QRect cropRect;
     /** Image size when cropRect was recorded; empty = assume live size. */
     QSize cropSourceSize;
+    /**
+     * Rotation of the crop rectangle about its centre, in degrees (counter-clockwise
+     * in image / item-local space). Applied when extracting; output pixels are
+     * axis-aligned. 0 = axis-aligned crop (default).
+     */
+    qreal cropRotation = 0.0;
 };
 
 #endif // IMAGEVIEW_TYPES_H
