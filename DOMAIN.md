@@ -197,10 +197,13 @@ returnToGallery():
 
 enter Workspace():
   Mode := Workspace
-  Canvas := restore(WorkspaceSnapshot) or seed from current
+  Canvas := restore(WorkspaceSnapshot) if present, else empty
+  // Do not adopt Gallery packing or session list as free-form content.
+  // Seeding is explicit (drop, thumbnail membership, project load, future Layout).
 
 leave Workspace():
   WorkspaceSnapshot := Canvas.objects
+  // Snapshot must survive Gallery; only explicit clear / new project wipes it.
 
 rotate / flip / resetOrientation:
   require Mode in {Image, Workspace}
