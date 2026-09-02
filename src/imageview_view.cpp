@@ -396,6 +396,11 @@ QString ImageView::hudFileName() const
     if (!m_gallery.hoverPath().isEmpty()) {
         return QFileInfo(m_gallery.hoverPath()).fileName();
     }
+    // Empty Gallery/Workspace canvas: only the drop invite is shown — never a
+    // stale classicPath, load error, or leftover session subject filename.
+    if (m_items.isEmpty() && isMultiItemMode()) {
+        return {};
+    }
     if (!m_lastLoadError.isEmpty()) {
         return QFileInfo(m_lastLoadError).fileName();
     }
@@ -406,7 +411,7 @@ QString ImageView::hudFileName() const
     if (item) {
         return QFileInfo(item->path()).fileName();
     }
-    if (hasClassicPath()) {
+    if (hasClassicPath() && isImageMode()) {
         return QFileInfo(classicPath()).fileName();
     }
     return {};
