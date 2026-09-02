@@ -13,6 +13,7 @@
 #include <QSlider>
 #include <QVBoxLayout>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPaintEvent>
 #include <QFrame>
 #include <QtMath>
