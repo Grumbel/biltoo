@@ -327,6 +327,7 @@ private:
     QMenu *m_recentProjectsMenu = nullptr;
     QAction *m_clearRecentProjectsAct = nullptr;
     QMenu *m_editMenu = nullptr;
+    QMenu *m_imageMenu = nullptr;
     QMenu *m_viewMenu = nullptr;
     QMenu *m_goMenu = nullptr;
     QMenu *m_helpMenu = nullptr;

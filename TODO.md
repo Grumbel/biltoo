@@ -840,10 +840,14 @@ and sheared tiles follow the selection AABB.
 - Main toolbar: single **Layout** InstantPopup tool button (replaces eight
   gallery layout icons); Workspace mode remains a separate adjacent action
 
+### Fixed in `qimgview-092`
+- Top-level **Image** menu for rotate / flip / crop; Edit keeps undo,
+  clipboard, Sort Session, Preferences
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
-- [ ] Edit menu mixes transforms (rotate/flip/crop) with Sort and Preferences.
+- [x] Edit menu mixes transforms (rotate/flip/crop) with Sort and Preferences.
   Consider **Image** menu for transforms; keep Edit for undo/clipboard/prefs.
 - [ ] Workspace vertical toolbar also has Print/Export — consider File only or
   a "Page" submenu so tools stay select/pan/guides/background.
@@ -933,4 +937,46 @@ Sort tool-button pattern.
 
 **Next bundle:** `qimgview-092-…` — remaining UI organisation (Edit/Image menu
 split, Workspace toolbar Print/Export), shortcuts polish, or identity residual
+(Image-mode crop of duplicate slot B).
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-092-image-menu`
+
+**Goal:** Organise the menu bar. Move content transforms out of Edit into a
+dedicated top-level **Image** menu, per the UI audit.
+
+### Scope
+
+1. **New top-level Image menu** (between Edit and View):
+   - Rotate Left, Rotate Right
+   - Flip Horizontal, Flip Vertical
+   - Crop
+2. **Edit menu** retains:
+   - Undo / Redo
+   - Select All
+   - Copy / Cut / Paste (Workspace)
+   - Sort Session submenu
+   - Preferences
+3. **Unchanged**
+   - Toolbar transform buttons
+   - Workspace menu (reset scale/rotation/shear stay placement tools)
+   - Context menus
+   - Gallery / File / View / Go / History / Help
+
+### Out of scope
+
+- Workspace vertical toolbar Print/Export relocation
+- Shortcut changes (bare Q, Ctrl+Y)
+- Grid Crop re-enable
+- Identity residual (duplicate Image-mode crop sync)
+
+### Done criteria
+
+- [x] Image menu exists with rotate / flip / crop
+- [x] Edit no longer lists those transforms
+- [x] Document completion; next bundle **093**
+
+**Next bundle:** `qimgview-093-…` — Workspace vertical toolbar Print/Export
+relocation, shortcut polish (bare Q, Ctrl+Y), or identity residual
 (Image-mode crop of duplicate slot B).

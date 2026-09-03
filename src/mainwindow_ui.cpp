@@ -670,13 +670,6 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_cutWorkspaceAct);
     m_editMenu->addAction(m_pasteWorkspaceAct);
     m_editMenu->addSeparator();
-    // Content transforms (not View — they edit the image / session appearance).
-    m_editMenu->addAction(m_rotateLeftAct);
-    m_editMenu->addAction(m_rotateRightAct);
-    m_editMenu->addAction(m_flipHAct);
-    m_editMenu->addAction(m_flipVAct);
-    m_editMenu->addAction(m_cropAct);
-    m_editMenu->addSeparator();
     // Session order applies across modes; keep with other document edits.
     auto *sortMenu = m_editMenu->addMenu(tr("&Sort Session"));
     sortMenu->addAction(m_sortNameAct);
@@ -687,6 +680,16 @@ void MainWindow::createMenus()
     sortMenu->addAction(m_sortPixelCountAct);
     m_editMenu->addSeparator();
     m_editMenu->addAction(m_preferencesAct);
+
+    // Content transforms: dedicated Image menu (not Edit, not View).
+    m_imageMenu = menuBar()->addMenu(tr("&Image"));
+    m_imageMenu->addAction(m_rotateLeftAct);
+    m_imageMenu->addAction(m_rotateRightAct);
+    m_imageMenu->addSeparator();
+    m_imageMenu->addAction(m_flipHAct);
+    m_imageMenu->addAction(m_flipVAct);
+    m_imageMenu->addSeparator();
+    m_imageMenu->addAction(m_cropAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));
