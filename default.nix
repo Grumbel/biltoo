@@ -10,6 +10,7 @@
 , libsysprof-capture
 , fftw
 , cfitsio
+, libimagequant
 , libarchive
 , kimageformats
 , version ? "0.1.0-dev"
@@ -41,6 +42,9 @@ stdenv.mkDerivation (finalAttrs: {
     fftw
     # vips Requires.private: cfitsio — same pkg-config spam without the .pc.
     cfitsio
+    # vips Requires.private: imagequant — same pkg-config spam without the .pc
+    # (nixpkgs package name is libimagequant; module name is imagequant).
+    libimagequant
     libarchive
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats

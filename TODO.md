@@ -1442,3 +1442,23 @@ same pattern as `fftw` / `libsysprof-capture`. We do not link cfitsio ourselves.
 
 - [x] cfitsio on buildInputs
 - [x] next **107**
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-107-imagequant-pkgconfig`
+
+**Noise:** CMake `pkg_check_modules(vips)` prints repeated
+`Package 'imagequant', required by 'vips', not found` even when vips is found
+(same class of Requires.private spam as cfitsio / fftw / sysprof-capture).
+
+**Fix:** Add `libimagequant` to `default.nix` `buildInputs` so the
+`imagequant.pc` is on `PKG_CONFIG_PATH`. We do not link libimagequant into
+qimgview.
+
+### Done criteria
+
+- [x] libimagequant on buildInputs
+- [x] next **108**
+
+**Next bundle:** `qimgview-108-…` — further packaging / build polish if needed
+(e.g. remaining unused-CMake-var noise from KDE/ECM flags if still present).
