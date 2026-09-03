@@ -197,6 +197,12 @@ public:
     void applyItemModeFlags(ImageItem *item);
     /** @deprecated Path is not identity; prefer findItemBySessionId. */
     ImageItem *findItemByPath(const QString &path) const;
+    /**
+     * Resolve a path to a live item without always taking the first match.
+     * Prefer a selected item with that path, else the sole live match.
+     * Returns nullptr when ambiguous (multiple unselected matches) or none.
+     */
+    ImageItem *findPreferredItemForPath(const QString &path) const;
     ImageItem *targetItem() const;
     void applySessionCrop(ImageItem *item, const WorkspaceItemState &state);
     void destroyCanvasItem(ImageItem *item);

@@ -80,9 +80,23 @@ MainWindow::MainWindow(QWidget *parent)
             });
     connect(m_imageView, &ImageView::galleryItemFocused,
             this, [this](const QString &path) {
+                // Prefer selected/sole live tile so duplicate paths focus the
+                // correct session row (not paths().indexOf first match).
+                if (ImageItem *pref = m_imageView->findPreferredItemForPath(path)) {
+                    if (pref->sessionId() != kInvalidSessionImageId) {
+                        const int idx = indexOfSessionId(pref->sessionId());
+                        if (idx >= 0) {
+                            setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
+                            return;
+                        }
+                    }
+                    if (pref->sessionIndex() >= 0) {
+                        setCurrentIndex(pref->sessionIndex(), /*ensureGalleryVisible=*/false);
+                        return;
+                    }
+                }
                 const int idx = m_session.paths().indexOf(path);
                 if (idx >= 0) {
-                    // Path fallback for unbound tiles.
                     setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
                 }
             });

@@ -576,6 +576,44 @@ ImageItem *ImageView::findItemByPath(const QString &path) const
     return nullptr;
 }
 
+ImageItem *ImageView::findPreferredItemForPath(const QString &path) const
+{
+    if (path.isEmpty() || !m_scene) {
+        return nullptr;
+    }
+    // Selected tiles with this path win (duplicate open / crop must hit B not A).
+    ImageItem *selectedMatch = nullptr;
+    int selectedMatches = 0;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!item || item->path() != path) {
+            continue;
+        }
+        ++selectedMatches;
+        if (!selectedMatch) {
+            selectedMatch = item;
+        }
+    }
+    if (selectedMatches == 1) {
+        return selectedMatch;
+    }
+    // Sole live instance of this path.
+    ImageItem *only = nullptr;
+    int liveMatches = 0;
+    for (ImageItem *item : m_items) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        ++liveMatches;
+        only = item;
+    }
+    if (liveMatches == 1) {
+        return only;
+    }
+    // Ambiguous multi-match with no exclusive selection — caller falls back.
+    return nullptr;
+}
+
 ImageItem *ImageView::findItemBySessionIndex(int sessionIndex) const
 {
     if (sessionIndex < 0) {

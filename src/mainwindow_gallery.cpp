@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include "imageitem.h"
 
 void MainWindow::setLayoutFreeForm()
 {
@@ -179,10 +180,22 @@ void MainWindow::openSessionImageInImageMode(SessionImageId sessionId)
 
 void MainWindow::showPathInImageMode(const QString &path)
 {
-    // Path-only fallback (first match). Prefer openSessionImageInImageMode when
-    // the session image id is known — duplicates share a path.
+    // Path fallback for unbound tiles. Prefer a live selected/sole item so
+    // duplicate paths open the correct SessionImageId (not paths().indexOf).
     if (path.isEmpty() || m_session.isEmpty()) {
         return;
+    }
+    if (m_imageView) {
+        if (ImageItem *pref = m_imageView->findPreferredItemForPath(path)) {
+            if (pref->sessionId() != kInvalidSessionImageId) {
+                openSessionImageInImageMode(pref->sessionId());
+                return;
+            }
+            if (pref->sessionIndex() >= 0) {
+                openSessionIndexInImageMode(pref->sessionIndex());
+                return;
+            }
+        }
     }
     const int idx = m_session.paths().indexOf(path);
     if (idx < 0) {

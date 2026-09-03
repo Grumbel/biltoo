@@ -26,7 +26,9 @@ Focus:
         enabled only in Workspace (greyed out otherwise). Remember Workspace preference only.
 - [ ] Session-image identity acceptance (see SESSION.md §4–§5):
   - [x] Duplicate / drop-duplicate: flip/crop one tile does not affect the other
-  - [ ] Image-mode crop of slot B updates only Workspace tile B after return
+  - [x] Image-mode crop of slot B updates only Workspace tile B after return
+        (path-open now prefers selected/sole live tile’s SessionImageId;
+        peer sync already id-only — GUI smoke still welcome)
   - [x] Gallery open of a duplicated path uses session id (not first path match)
   - [x] Session remove undo restores stable ids / Workspace association
   - [x] No unbound Workspace tiles after normal add/dup/drop paths
@@ -867,6 +869,10 @@ and sheared tiles follow the selection AABB.
 - Gallery **C**: confirmed — single selection opens Image + crop; otherwise
   action disabled (`hasSingleCropTarget`)
 
+### Fixed in `qimgview-098`
+- Path→Image open prefers selected/sole live tile SessionImageId (not
+  `paths().indexOf` first match); gallery focus path fallback same rule
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -1191,3 +1197,34 @@ duplicate slot B), Gallery crop shortcut **C** behaviour, or thumb drag tips.
 
 **Next bundle:** `qimgview-098-…` — identity residual (Image-mode crop of
 duplicate slot B), or remaining product polish (Recent naming, long-session thumbs).
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-098-path-open-identity`
+
+**Bug residual:** Image-mode open via path (`showPathInImageMode` /
+`galleryItemOpenRequested`) uses `paths().indexOf(path)` → always the **first**
+session row. Cropping “slot B” after opening the wrong row writes appearance
+to the wrong `SessionImageId` and can leave the other Workspace tile wrong.
+
+**Fix:** When resolving a path to a session index for Image mode, prefer:
+
+1. Selected live canvas item with that path (and a valid SessionImageId)
+2. Else sole live item with that path
+3. Else first session row (legacy unbound / no canvas)
+
+Also improve `galleryItemFocused` path fallback similarly when a selected
+tile carries the id.
+
+### Out of scope
+
+- Removing path map entirely
+- Full GUI test harness for duplicate crop
+
+### Done criteria
+
+- [x] Path open prefers selected/live tile’s SessionImageId
+- [x] Document; next **099**
+
+**Next bundle:** `qimgview-099-…` — remaining product polish (Recent naming,
+long-session thumbs) or further identity GUI smoke notes.
