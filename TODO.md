@@ -771,3 +771,13 @@ Edge stretch projects onto press-time scene images of local X/Y from the full
 linear map `R·H·S` (local +Y is skewed when `k ≠ 0`). Scale drags re-assert
 press shear so only `sx`/`sy` change.
 
+
+---
+
+## Bundle `qimgview-078` — free-axis group scale via S·L decompose
+
+Shift+group-scale applies scene stretch \(S=\mathrm{diag}(f_x,f_y)\) about the
+selection AABB anchor to each item as \(L'=S\cdot L\), then decomposes \(L'\)
+back to \(R\cdot H\cdot S\) (scaleX/Y, shear, rotation). Uniform (no Shift)
+still only multiplies scales and keeps press shear/rotation.
+

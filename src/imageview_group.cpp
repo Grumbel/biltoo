@@ -4,8 +4,61 @@
 #include "imageview.h"
 #include "imageitem.h"
 
+#include <QTransform>
 #include <QtMath>
 #include <cmath>
+
+namespace {
+
+/** Linear pose R(θ)·H(k)·S(sx,sy) as QTransform (same order as ImageItem). */
+QTransform placementLinear(qreal scaleX, qreal scaleY, qreal shear, qreal rotationDeg)
+{
+    QTransform t;
+    t.rotate(rotationDeg);
+    t.shear(shear, 0.0);
+    t.scale(scaleX, scaleY);
+    return t;
+}
+
+/**
+ * Decompose a linear QTransform back to R·H·S parameters.
+ * First column → rotation + scaleX; second → shear + scaleY.
+ */
+bool decomposePlacementLinear(const QTransform &lin,
+                              qreal *scaleX, qreal *scaleY,
+                              qreal *shear, qreal *rotationDeg)
+{
+    const qreal a = lin.m11();
+    const qreal b = lin.m12();
+    const qreal c = lin.m21();
+    const qreal d = lin.m22();
+    const qreal sx = qHypot(a, c);
+    if (sx < 1e-9 || !qIsFinite(sx)) {
+        return false;
+    }
+    const qreal cosT = a / sx;
+    const qreal sinT = c / sx;
+    const qreal rot = qRadiansToDegrees(qAtan2(sinT, cosT));
+    // R^T * col2 = (sy*k, sy)
+    const qreal rtx = cosT * b + sinT * d;
+    const qreal rty = -sinT * b + cosT * d;
+    if (!qIsFinite(rtx) || !qIsFinite(rty) || qAbs(rty) < 1e-9) {
+        return false;
+    }
+    const qreal sy = rty;
+    const qreal k = rtx / sy;
+    if (!qIsFinite(sy) || !qIsFinite(k)) {
+        return false;
+    }
+    // Reflections: keep positive scales (Workspace does not use negative scale).
+    *scaleX = qAbs(sx);
+    *scaleY = qAbs(sy);
+    *shear = qBound(-5.0, k, 5.0);
+    *rotationDeg = rot;
+    return true;
+}
+
+} // namespace
 
 int ImageView::groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const
 {
@@ -141,9 +194,8 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     default:
         break;
     }
-    // Default: uniform group scale so each item's R·H·S aspect and shear stay
-    // coherent when frames are rotated. Shift → free AABB axes (positions and
-    // scales stretch independently in scene X/Y — approximate for rotated tiles).
+    // Default: uniform group scale. Shift → free scene axes via conjugating
+    // S_scene · L and re-decomposing to R·H·S (exact for parallelogram frames).
     const bool freeAxes = mods & Qt::ShiftModifier;
     if (!freeAxes) {
         const qreal s = (qAbs(sx) + qAbs(sy)) * 0.5;
@@ -158,6 +210,10 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     if (!qIsFinite(sx) || !qIsFinite(sy) || !qIsFinite(anchor.x()) || !qIsFinite(anchor.y())) {
         return;
     }
+
+    QTransform sceneScale;
+    sceneScale.scale(sx, sy);
+
     for (int i = 0; i < m_groupDragItems.size(); ++i) {
         ImageItem *item = m_groupDragItems.at(i);
         const WorkspaceItemState &st = m_groupDragStartStates.at(i);
@@ -170,17 +226,33 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
             continue;
         }
         item->setPos(newPos);
-        // Preserve shear; scale axes only.
+
         const qreal baseX = st.scale > 0 ? st.scale : 1.0;
         const qreal baseY = st.scaleY > 0 ? st.scaleY : baseX;
-        const qreal nx = baseX * sx;
-        const qreal ny = baseY * sy;
-        if (!qIsFinite(nx) || !qIsFinite(ny)) {
+        if (!freeAxes) {
+            // Uniform: only scales change; rotation and shear stay from press.
+            item->setItemScale(baseX * sx, baseY * sy);
+            item->setItemShear(st.shear);
+            item->setItemRotation(st.rotation);
             continue;
         }
-        item->setItemScale(nx, ny);
-        item->setItemShear(st.shear);
-        item->setItemRotation(st.rotation);
+        // Free axes: L' = S_scene · L (scene stretch about anchor), then
+        // re-decompose so each parallelogram tracks the AABB stretch.
+        const QTransform L = placementLinear(baseX, baseY, st.shear, st.rotation);
+        const QTransform Lp = sceneScale * L;
+        qreal nx = baseX;
+        qreal ny = baseY;
+        qreal nk = st.shear;
+        qreal nrot = st.rotation;
+        if (decomposePlacementLinear(Lp, &nx, &ny, &nk, &nrot)) {
+            item->setItemScale(qBound(0.01, nx, 50.0), qBound(0.01, ny, 50.0));
+            item->setItemShear(nk);
+            item->setItemRotation(nrot);
+        } else {
+            item->setItemScale(baseX * sx, baseY * sy);
+            item->setItemShear(st.shear);
+            item->setItemRotation(st.rotation);
+        }
     }
     m_fitMode = false;
     emit statusChanged();
