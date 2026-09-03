@@ -43,7 +43,8 @@
         };
       };
 
-      # `nix flake check` builds the package (and thus compiles sources).
+      # `nix flake check` builds the package and runs CMake tests
+      # (projectfile-roundtrip + qimgview --help; see default.nix doCheck).
       checks.${system} = {
         qimgview = qimgview;
       };

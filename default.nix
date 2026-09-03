@@ -48,6 +48,13 @@ stdenv.mkDerivation (finalAttrs: {
     "-DPROJECT_VERSION_FULL=${finalAttrs.version}"
   ];
 
+  # `nix flake check` / `nix build` with checks: run CMake tests
+  # (projectfile-roundtrip unit tests + qimgview --help smoke).
+  doCheck = true;
+  preCheck = ''
+    export QT_QPA_PLATFORM=offscreen
+  '';
+
   meta = with lib; {
     description = "Classic Qt image viewer with workspace semantics";
     homepage = "https://github.com/Grumbel/qimgview";
