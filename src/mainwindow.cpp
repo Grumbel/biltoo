@@ -613,6 +613,13 @@ void MainWindow::resetItemRotation()
     m_imageView->resetItemRotation();
 }
 
+void MainWindow::resetItemShear()
+{
+    if (m_imageView) {
+        m_imageView->resetItemShear();
+    }
+}
+
 void MainWindow::openSelectionInNewWindow()
 {
     if (!m_imageView) {
@@ -842,18 +849,25 @@ void MainWindow::showKeyboardShortcuts()
         "F5 — reload from disk (current image / all gallery tiles)<br/>"
         "Ctrl+0 — zoom 1:1 · Ctrl++ / Ctrl+- — zoom<br/>"
         "Ctrl+F — fill · Fit — fit to window · Z — zoom to region<br/>"
-        "Ctrl+T — toolbar · Ctrl+E — metadata</p>"
+        "Ctrl+T — toolbar · Ctrl+M — thumbnails · Ctrl+E — metadata<br/>"
+        "Ctrl+U — colour adjustments · F1 — this list</p>"
         "<p><b>Image</b><br/>"
         "R / Ctrl+R — rotate right · Ctrl+L — rotate left<br/>"
-        "Ctrl+H / Ctrl+Shift+H — flip horizontal / vertical</p>"
+        "Ctrl+H / Ctrl+Shift+H — flip horizontal / vertical<br/>"
+        "C — crop mode</p>"
         "<p><b>Workspace</b><br/>"
         "Ctrl+C / Ctrl+X / Ctrl+V — copy / cut / paste tiles<br/>"
         "Ctrl+D — duplicate · Delete — remove from canvas<br/>"
         "Ctrl+Shift+↑/↓ — raise / lower<br/>"
-        "Ctrl+Shift+=/− — opacity up / down</p>"
+        "Ctrl+Shift+=/− — opacity up / down<br/>"
+        "Alt+[ / Alt+] — nudge shear · Alt+0 — reset shear<br/>"
+        "Group scale: edges H/V · corners uniform · Shift frees axes</p>"
         "<p><b>Gallery</b><br/>"
         "Click — select · Ctrl/Shift — multi-select · Double-click / Enter — open<br/>"
-        "Arrow keys — spatial focus among tiles</p>"));
+        "Arrow keys — spatial focus among tiles</p>"
+        "<p><b>Files</b><br/>"
+        "Ctrl+O — open · Ctrl+Shift+A — add · Ctrl+Shift+O — open project<br/>"
+        "Ctrl+S / Ctrl+Shift+S — save / save project as</p>"));
     box.setStandardButtons(QMessageBox::Close);
     box.button(QMessageBox::Close)->setText(tr("&Close"));
     box.setDefaultButton(QMessageBox::Close);
@@ -1181,6 +1195,9 @@ void MainWindow::showContextMenu(const QPoint &pos)
     menu.addAction(m_flipVAct);
     if (isWorkspaceMode()) {
         menu.addAction(m_resetScaleAct);
+        if (m_resetShearAct) {
+            menu.addAction(m_resetShearAct);
+        }
         menu.addAction(m_resetRotationAct);
         menu.addAction(m_copyWorkspaceAct);
         menu.addAction(m_cutWorkspaceAct);

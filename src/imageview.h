@@ -454,6 +454,7 @@ public:
     void opacityReset();
     void resetItemScale();
     void resetItemRotation();
+    void resetItemShear();
     /** Workspace: clone selection (same path, independent transforms). */
     void duplicateSelected();
 

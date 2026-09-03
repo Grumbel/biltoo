@@ -175,6 +175,7 @@ private slots:
     void opacityReset();
     void resetItemScale();
     void resetItemRotation();
+    void resetItemShear();
     void duplicateSelected();
     /** Workspace: copy/cut selected tiles; paste creates new session images. */
     void copyWorkspaceItems();
@@ -399,6 +400,7 @@ private:
     QAction *m_opacityResetAct = nullptr;
     QAction *m_resetScaleAct = nullptr;
     QAction *m_resetRotationAct = nullptr;
+    QAction *m_resetShearAct = nullptr;
     QAction *m_duplicateAct = nullptr;
     QAction *m_copyWorkspaceAct = nullptr;
     QAction *m_cutWorkspaceAct = nullptr;

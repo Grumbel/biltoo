@@ -444,6 +444,43 @@ void ImageView::resetItemRotation()
     viewport()->update();
 }
 
+void ImageView::resetItemShear()
+{
+    QList<ImageItem *> targets;
+    if (isWorkspaceMode()) {
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                targets.append(item);
+            }
+        }
+    }
+    if (targets.isEmpty()) {
+        if (ImageItem *tgt = targetItem()) {
+            targets.append(tgt);
+        } else if (ImageItem *p = primaryItem()) {
+            targets.append(p);
+        }
+    }
+    if (targets.isEmpty()) {
+        return;
+    }
+    const bool macro = m_undoStack && targets.size() > 1;
+    if (macro) {
+        m_undoStack->beginMacro(tr("Reset shear"));
+    }
+    for (ImageItem *item : targets) {
+        const WorkspaceItemState before = captureState(item);
+        item->setItemShear(0.0);
+        pushItemGeometryCommand(tr("Reset shear"), item, before, captureState(item));
+    }
+    if (macro) {
+        m_undoStack->endMacro();
+    }
+    emit statusChanged();
+    viewport()->update();
+}
+
+
 void ImageView::duplicateSelected()
 {
     if (!isWorkspaceMode() && !isGalleryMode()) {

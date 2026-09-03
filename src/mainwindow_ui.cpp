@@ -434,6 +434,10 @@ void MainWindow::createActions()
     m_resetRotationAct->setStatusTip(tr("Reset rotation of the selected image(s) to 0°"));
     connect(m_resetRotationAct, &QAction::triggered, this, &MainWindow::resetItemRotation);
 
+    m_resetShearAct = new QAction(tr("Reset Item S&hear"), this);
+    m_resetShearAct->setStatusTip(tr("Reset shear of the selected image(s) to 0"));
+    connect(m_resetShearAct, &QAction::triggered, this, &MainWindow::resetItemShear);
+
     m_duplicateAct = new QAction(tr("&Duplicate"), this);
     m_duplicateAct->setShortcut(Qt::CTRL | Qt::Key_D);
     m_duplicateAct->setStatusTip(tr("Duplicate selected image(s) into the session (Gallery or Workspace)"));
@@ -634,6 +638,9 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_openAct);
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
+    if (m_openSelectionNewWindowAct) {
+        m_fileMenu->addAction(m_openSelectionNewWindowAct);
+    }
     m_fileMenu->addAction(m_reloadAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_openProjectAct);
@@ -723,6 +730,14 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutMasonryFillAct);
     galleryMenu->addAction(m_layoutMasonryRowsFillAct);
     galleryMenu->addSeparator();
+    auto *gallerySortMenu = galleryMenu->addMenu(tr("&Sort Session"));
+    gallerySortMenu->addAction(m_sortNameAct);
+    gallerySortMenu->addAction(m_sortMTimeAct);
+    gallerySortMenu->addAction(m_sortFileSizeAct);
+    gallerySortMenu->addAction(m_sortWidthAct);
+    gallerySortMenu->addAction(m_sortHeightAct);
+    gallerySortMenu->addAction(m_sortPixelCountAct);
+    galleryMenu->addSeparator();
     galleryMenu->addAction(m_duplicateAct);
 
     auto *workspaceMenu = menuBar()->addMenu(tr("&Workspace"));
@@ -746,6 +761,7 @@ void MainWindow::createMenus()
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_resetScaleAct);
     workspaceMenu->addAction(m_resetRotationAct);
+    workspaceMenu->addAction(m_resetShearAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_copyWorkspaceAct);
     workspaceMenu->addAction(m_cutWorkspaceAct);

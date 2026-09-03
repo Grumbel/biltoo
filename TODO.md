@@ -825,3 +825,52 @@ uniform, so left/right/top/bottom group grips never did pure H or V stretch.
 Anisotropic paths use `S_scene · L` + `PlacementLinear::decompose` so rotated
 and sheared tiles follow the selection AABB.
 
+
+---
+
+## UI audit (2026-09-03) — polish backlog
+
+### Fixed in `qimgview-090`
+- Workspace **Reset Item Shear** (menu + context + ImageView API)
+- Keyboard shortcuts help: crop, panels, shear, projects, group scale
+- File → Open Selection in New Window
+- Gallery → Sort Session (was only under Edit)
+
+### Organisation / density
+- [ ] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
+  Prefer a single **Layout** tool button with menu (like Sort).
+- [ ] Edit menu mixes transforms (rotate/flip/crop) with Sort and Preferences.
+  Consider **Image** menu for transforms; keep Edit for undo/clipboard/prefs.
+- [ ] Workspace vertical toolbar also has Print/Export — consider File only or
+  a "Page" submenu so tools stay select/pan/guides/background.
+- [ ] `m_layoutFreeFormAct` exists but is not in Gallery menu (layouts exclusive
+  group starts unchecked until user picks one — OK, but Free Form is Workspace-only).
+
+### Shortcuts / discoverability
+- [ ] Bare **Q** quits (no Ctrl) — easy mis-press; prefer Ctrl+Q only.
+- [ ] Bare **R** rotates — fine for a viewer; document that Reload is F5.
+- [ ] **Ctrl+Y** = Layout Horizontal (on Windows Ctrl+Y is often Redo) — consider
+  dropping or using a non-conflicting chord.
+- [ ] Alt+[ / ] shear vs [ / ] slideshow — OK (modifiers differ); ensure focus is
+  not in a spinbox when testing.
+- [ ] No menu entry for **shear** except Reset; handles are primary (OK) but
+  F1 should stay in sync when shortcuts change.
+
+### Thumbnail bar
+- [ ] Labels on/off and crop-thumbnails live under View → Thumbnails — good.
+- [ ] Drag from thumb strip to Workspace: verify status tip / cursor affordance.
+- [ ] Very long sessions: virtualization exists for Gallery canvas; strip still
+  loads many thumbs — optional windowed decode already partially present.
+
+### Mode enablement
+- [ ] Audit that Gallery-only actions disable in pure Image mode and vice versa
+  (layout actions, workspace tools) so the toolbar does not look "dead click".
+- [ ] Crop shortcut **C** in Gallery: should no-op or enter image crop for
+  selection — confirm behaviour.
+
+### Missing features (product)
+- [ ] Recent *files* (session paths) vs only Recent Projects — History menu covers
+  sessions; naming is easy to confuse with Recent Projects.
+- [ ] Explicit "Remove from session" in thumbnail context menu (if not present).
+- [ ] Toolbar/customize — out of scope unless requested.
+
