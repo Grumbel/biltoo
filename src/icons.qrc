@@ -33,6 +33,7 @@
     <file alias="actions/view-split-top-bottom.svg">../data/icons/actions/view-split-top-bottom.svg</file>
     <file alias="actions/view-stack.svg">../data/icons/actions/view-stack.svg</file>
     <file alias="actions/zoom-fit-best.svg">../data/icons/actions/zoom-fit-best.svg</file>
+    <file alias="actions/zoom-tool.svg">../data/icons/actions/zoom-tool.svg</file>
     <file alias="actions/zoom-in.svg">../data/icons/actions/zoom-in.svg</file>
     <file alias="actions/zoom-original.svg">../data/icons/actions/zoom-original.svg</file>
     <file alias="actions/zoom-out.svg">../data/icons/actions/zoom-out.svg</file>

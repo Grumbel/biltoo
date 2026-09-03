@@ -1721,3 +1721,24 @@ SP_BrowserReload)` in PreferencesDialog and LayoutPanel reset buttons.
 - [x] Document; next **118**
 
 **Next bundle:** `qimgview-118-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-118-workspace-zoom-tool`
+
+**Request:** Workspace toolbar needs a **Zoom** tool button and icon (alongside
+Select / Pan).
+
+**Implementation:**
+- `ImageView::Tool::Zoom` — rubber-band zoom to region (same gesture as Z
+  one-shot, but stays active as a tool).
+- Cross cursor; NoDrag (gesture handled in mouse press/move/release).
+- `zoom-tool.svg` magnifier; action on Workspace menu + left workspace toolbar.
+
+### Done criteria
+
+- [x] Zoom tool on Workspace toolbar with icon
+- [x] Document; next **119**
+
+**Next bundle:** `qimgview-119-…` — further polish as needed.

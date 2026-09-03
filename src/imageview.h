@@ -54,7 +54,8 @@ class ImageView : public QGraphicsView
 public:
     enum class Tool {
         Select,
-        Pan
+        Pan,
+        Zoom /**< Workspace: rubber-band zoom to region */
     };
 
     enum class BackgroundPattern {

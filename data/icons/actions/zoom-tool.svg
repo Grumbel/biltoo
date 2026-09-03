@@ -1,0 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+     stroke="#2e3436" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Magnifier for Zoom tool -->
+  <circle cx="10" cy="10" r="6.5"/>
+  <line x1="15" y1="15" x2="21" y2="21"/>
+</svg>

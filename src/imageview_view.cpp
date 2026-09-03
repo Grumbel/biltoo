@@ -19,11 +19,13 @@ void ImageView::setTool(Tool tool)
     m_tool = tool;
     if (m_tool == Tool::Pan) {
         setCursor(Qt::OpenHandCursor);
+    } else if (m_tool == Tool::Zoom) {
+        setCursor(Qt::CrossCursor);
     } else {
         setCursor(Qt::ArrowCursor);
     }
     // Workspace Select: rubber-band multi-select on empty drag (same as Gallery).
-    // Pan tool keeps NoDrag so middle/Alt pan stays the only view pan path.
+    // Pan / Zoom keep NoDrag (view gestures are handled in mouse handlers).
     if (isWorkspaceMode()) {
         setDragMode(m_tool == Tool::Select ? QGraphicsView::RubberBandDrag
                                            : QGraphicsView::NoDrag);
@@ -297,7 +299,13 @@ void ImageView::cancelZoomRegion()
         m_zoomRubberBand->hide();
     }
     if (!m_panning && !m_rotating) {
-        setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+        if (m_tool == Tool::Pan) {
+            setCursor(Qt::OpenHandCursor);
+        } else if (m_tool == Tool::Zoom) {
+            setCursor(Qt::CrossCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
     }
     emit statusChanged();
 }

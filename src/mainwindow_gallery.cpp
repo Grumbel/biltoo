@@ -553,7 +553,7 @@ void MainWindow::updateWorkspaceActionVisibility()
     for (QAction *act : {m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
                          m_resetScaleAct, m_resetRotationAct, m_resetShearAct,
-                         m_selectToolAct, m_panToolAct,
+                         m_selectToolAct, m_panToolAct, m_zoomToolAct,
                          m_pageGuideAct, m_fitPageGuideAct,
                          m_workspaceBackgroundAct, m_workspaceBgDefaultAct}) {
         if (act) {

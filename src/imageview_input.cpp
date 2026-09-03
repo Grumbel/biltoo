@@ -81,7 +81,13 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
         || m_hoverEdge == EdgeZone::GalleryReturn) {
         setCursor(Qt::PointingHandCursor);
     } else if (!m_panning && !m_rotating) {
-        setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+        if (m_tool == Tool::Pan) {
+            setCursor(Qt::OpenHandCursor);
+        } else if (m_tool == Tool::Zoom) {
+            setCursor(Qt::CrossCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
     }
     viewport()->update();
 }
@@ -367,8 +373,9 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    // One-shot rubber-band zoom (Z): capture the region before other tools.
-    if (m_zoomRegionArmed && event->button() == Qt::LeftButton) {
+    // Rubber-band zoom: one-shot (Z) or continuous Workspace Zoom tool.
+    if ((m_zoomRegionArmed || (isWorkspaceMode() && m_tool == Tool::Zoom))
+        && event->button() == Qt::LeftButton) {
         m_zoomRegionDragging = true;
         m_zoomRegionOrigin = event->pos();
         if (!m_zoomRubberBand) {
@@ -1107,14 +1114,26 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         }
         m_rotating = false;
         m_rotateItem = nullptr;
-        setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+        if (m_tool == Tool::Pan) {
+            setCursor(Qt::OpenHandCursor);
+        } else if (m_tool == Tool::Zoom) {
+            setCursor(Qt::CrossCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
         event->accept();
         return;
     }
     if (m_panning
         && (event->button() == Qt::MiddleButton || event->button() == Qt::LeftButton)) {
         m_panning = false;
-        setCursor(m_tool == Tool::Pan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+        if (m_tool == Tool::Pan) {
+            setCursor(Qt::OpenHandCursor);
+        } else if (m_tool == Tool::Zoom) {
+            setCursor(Qt::CrossCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
         event->accept();
         return;
     }

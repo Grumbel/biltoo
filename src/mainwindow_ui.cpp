@@ -293,9 +293,17 @@ void MainWindow::createActions()
     m_panToolAct->setStatusTip(tr("Pan the workspace view"));
     connect(m_panToolAct, &QAction::triggered, this, &MainWindow::setPanTool);
 
+    m_zoomToolAct = new QAction(tr("&Zoom"), this);
+    m_zoomToolAct->setCheckable(true);
+    m_zoomToolAct->setIcon(resourceIcon(QStringLiteral("zoom-tool")));
+    m_zoomToolAct->setStatusTip(
+        tr("Drag a rectangle on the Workspace to zoom the view to that region"));
+    connect(m_zoomToolAct, &QAction::triggered, this, &MainWindow::setZoomTool);
+
     auto *toolGroup = new QActionGroup(this);
     toolGroup->addAction(m_selectToolAct);
     toolGroup->addAction(m_panToolAct);
+    toolGroup->addAction(m_zoomToolAct);
     toolGroup->setExclusive(true);
 
     m_undoAct = m_imageView->undoStack()->createUndoAction(this, tr("&Undo"));
@@ -766,6 +774,7 @@ void MainWindow::createMenus()
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_selectToolAct);
     workspaceMenu->addAction(m_panToolAct);
+    workspaceMenu->addAction(m_zoomToolAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_raiseAct);
     workspaceMenu->addAction(m_lowerAct);
@@ -942,6 +951,7 @@ void MainWindow::createToolBar()
     // Select / Pan, then Workspace-centric guides and layout (print/export stay under File).
     m_workspaceToolBar->addAction(m_selectToolAct);
     m_workspaceToolBar->addAction(m_panToolAct);
+    m_workspaceToolBar->addAction(m_zoomToolAct);
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_pageGuideAct);
     m_workspaceToolBar->addAction(m_workspaceBackgroundAct);

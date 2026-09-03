@@ -713,6 +713,14 @@ void MainWindow::setPanTool()
     m_panToolAct->setChecked(true);
 }
 
+void MainWindow::setZoomTool()
+{
+    m_imageView->setTool(ImageView::Tool::Zoom);
+    if (m_zoomToolAct) {
+        m_zoomToolAct->setChecked(true);
+    }
+}
+
 
 void MainWindow::onSlideshowTick()
 {

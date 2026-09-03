@@ -224,6 +224,7 @@ private slots:
     bool isImageMode() const;
     void setSelectTool();
     void setPanTool();
+    void setZoomTool();
     void updateWorkspaceActionVisibility();
     void updateUpToGalleryAction();
     void updateThumbnailBarForMode();
@@ -377,6 +378,7 @@ private:
     QAction *m_workspaceModeAct = nullptr;
     QAction *m_selectToolAct = nullptr;
     QAction *m_panToolAct = nullptr;
+    QAction *m_zoomToolAct = nullptr;
     QAction *m_selectAllAct = nullptr;
     QAction *m_undoAct = nullptr;
     QAction *m_redoAct = nullptr;

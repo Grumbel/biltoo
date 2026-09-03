@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-117-ws-bg-default-toggle”**
-(Background Default is temporary; dialog resets). Next bundle number: **118**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-118-workspace-zoom-tool”**
+(Workspace Zoom tool + icon). Next bundle number: **119**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
