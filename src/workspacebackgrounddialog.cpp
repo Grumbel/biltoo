@@ -190,6 +190,7 @@ WorkspaceBackgroundDialog::WorkspaceBackgroundDialog(QWidget *parent)
 
 void WorkspaceBackgroundDialog::setBackground(const WorkspaceBackground &bg)
 {
+    m_blockPreviewEmit = true;
     const int idx = m_modeCombo->findData(int(bg.mode));
     if (idx >= 0) {
         m_modeCombo->setCurrentIndex(idx);
@@ -205,6 +206,7 @@ void WorkspaceBackgroundDialog::setBackground(const WorkspaceBackground &bg)
     styleColorButton(m_colorAltBtn, m_colorAlt);
     updateControlsEnabled();
     updatePreview();
+    m_blockPreviewEmit = false;
 }
 
 WorkspaceBackground WorkspaceBackgroundDialog::background() const
@@ -247,7 +249,9 @@ void WorkspaceBackgroundDialog::updatePreview()
         m_preview->setAppDefaultColors(m_appColor, m_appColorAlt, m_appChecker);
         m_preview->setBackground(bg);
     }
-    emit backgroundChanged(bg);
+    if (!m_blockPreviewEmit) {
+        emit backgroundChanged(bg);
+    }
 }
 
 void WorkspaceBackgroundDialog::chooseColor()

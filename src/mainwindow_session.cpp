@@ -2034,7 +2034,40 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
         }
     }
 
-    return ProjectFile::save(projectPath, doc, error);
+    if (!ProjectFile::save(projectPath, doc, error)) {
+        return false;
+    }
+
+    // Drop unused embedded background tiles (bg-<sha>.*) left from earlier saves.
+    if (doc.hasWorkspaceBackground
+        || QFileInfo(projectPath).exists()) {
+        const QString stem = QFileInfo(projectPath).completeBaseName();
+        const QDir projDir = QFileInfo(projectPath).absoluteDir();
+        const QString assetsName = stem + QStringLiteral(".assets");
+        QDir assetsDir(projDir.filePath(assetsName));
+        if (assetsDir.exists()) {
+            QString keepPrefix;
+            if (doc.hasWorkspaceBackground
+                && doc.workspaceBackground.mode == WorkspaceBackgroundMode::ImageTile
+                && !doc.workspaceBackground.imageSha256.isEmpty()) {
+                keepPrefix = QStringLiteral("bg-%1")
+                    .arg(doc.workspaceBackground.imageSha256.left(12));
+            }
+            const QFileInfoList files = assetsDir.entryInfoList(
+                QStringList{QStringLiteral("bg-*")},
+                QDir::Files | QDir::NoDotAndDotDot);
+            for (const QFileInfo &fi : files) {
+                if (keepPrefix.isEmpty() || !fi.fileName().startsWith(keepPrefix)) {
+                    QFile::remove(fi.absoluteFilePath());
+                }
+            }
+            // Remove empty assets directory.
+            if (assetsDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot).isEmpty()) {
+                projDir.rmdir(assetsName);
+            }
+        }
+    }
+    return true;
 }
 
 bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)

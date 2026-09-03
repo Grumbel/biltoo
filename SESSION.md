@@ -238,3 +238,33 @@ unbound and edits will not propagate correctly in Workspace).
 - Author: `Ingo Ruhnke <grumbel@gmail.com>`
 - Trailer: `Co-authored-by: Grok <grok@x.ai>`
 - Bundles: `qimgview-NNN-short-name.bundle`, ref `HEAD`, stack cleanly.
+
+---
+
+## Continuation handoff (040–049 — grade, clipboard, background)
+
+**Tip:** apply `qimgview-040` … `qimgview-049` in order onto the prior tip.
+
+| Bundle | Topic |
+|--------|--------|
+| 040 | Colour grade survives Duplicate / thumbs / restore |
+| 041 | Project load places only pose tiles (not full session) |
+| 042 | `SessionAppearance::applyContentToItem` central content path |
+| 043–044 | Workspace Copy/Cut/Paste + paste stack / selection polish |
+| 045–047 | Per-project Workspace background + dialog + portable paths |
+| 048 | Paste MIME gating, Edit menu, cut/paste undo, apply harden, bg SHA |
+| 049 | Background undo, live preview, tile LOD, embed into `.assets/` |
+
+### Model reminders
+
+- Content appearance (crop, content flips/turns, colour grade) is keyed by **SessionImageId**.
+- Workspace canvas membership is a **subset** of the session (pose present ⇒ on canvas).
+- Workspace background **AppDefault** = Preferences; custom modes are project state.
+- Background image tiles outside the project dir are copied to `<stem>.assets/` on save; unused `bg-*` files are pruned on later saves.
+
+### Residual risks
+
+- `applyContentToItem` still assumes full-source pixels for geometry ops (callers reload).
+- Background assets are not referenced from the main `assets[]` array (side folder only).
+- No compile verification in the agent sandbox (no Qt6 dev packages).
+

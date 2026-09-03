@@ -77,6 +77,7 @@ private:
     QColor m_appColor{42, 42, 42};
     QColor m_appColorAlt{48, 48, 48};
     bool m_appChecker = true;
+    bool m_blockPreviewEmit = false;
 };
 
 #endif // WORKSPACEBACKGROUNDDIALOG_H
