@@ -33,6 +33,11 @@ void ImageView::discardStashedWorkspace()
     m_workspace.discardStash();
 }
 
+void ImageView::clearDurableWorkspaceSnapshot()
+{
+    m_workspace.clearDurableSnapshot();
+}
+
 void ImageView::stashWorkspaceItems()
 {
     m_workspace.stashItems();

@@ -107,6 +107,14 @@ void WorkspaceController::discardStash()
     m_hasStashedView = false;
 }
 
+void WorkspaceController::clearDurableSnapshot()
+{
+    m_savedItems.clear();
+    m_hasSavedView = false;
+    m_freeFormStates.clear();
+    m_hasFreeFormViewTransform = false;
+}
+
 void WorkspaceController::stashItems()
 {
     // Replace any previous workspace stash (e.g. nested mode switches).

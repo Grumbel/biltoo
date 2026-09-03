@@ -889,6 +889,11 @@ and sheared tiles follow the selection AABB.
 - Edit menu is sole menu-bar home for Copy/Cut/Paste/Duplicate; removed from
   Workspace and Gallery menus (context menu unchanged)
 
+### Fixed in `qimgview-103`
+- Multi-file session open (Open / Recent Sessions / CLI) starts in Gallery
+- Session open clears Workspace live/stash/durable snapshot (only .qimgview
+  projects restore Workspace arrangement)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -1343,3 +1348,33 @@ alignment) that does not drag/drop correctly.
 - [x] Document; next **103**
 
 **Next bundle:** `qimgview-103-…` — further UI polish as needed.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-103-session-opens-gallery`
+
+**Product rules:**
+1. Workspace is empty unless the user places tiles or opens a **.qimgview** project.
+2. Opening a session (Open, Recent Sessions, multi-file CLI) must not seed Workspace.
+3. Multi-file session open starts in **Gallery**; single file stays **Image**.
+
+### Implementation
+
+1. `loadFiles`: clear Workspace live/stash/durable snapshot; never
+   `setWorkspacePaths` for Workspace mode.
+2. `loadFiles`: if `paths.size() > 1` → `enterGalleryMode(Masonry)`; else ensure
+   Image mode and show the file.
+3. Document in TODO.
+
+### Out of scope
+
+- Changing project open (still restores Workspace from file)
+- Removing startInWorkspace preference entirely (CLI/prefs can still force Workspace empty)
+
+### Done criteria
+
+- [x] Multi-file → Gallery
+- [x] Session open does not populate Workspace
+- [x] next **104**
+
+**Next bundle:** `qimgview-104-…` — further mode/open polish if needed.

@@ -513,23 +513,41 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     applyThumbnailVisibility();
 
-    // Full session replace: rebuild canvas for Gallery and Workspace.
-    // setPaths() allocated fresh SessionImageIds, so any previous tiles are
-    // unbound. Leaving them produced orphan Workspace objects with no filmstrip
-    // row (IDENTITY.md). setWorkspacePaths prunes id-mismatched tiles and
-    // creates/schedules tiles for the new session rows.
+    // Session open is not a Workspace document. Drop any free-form arrangement
+    // so Image↔Workspace does not resurrect previous tiles; only .qimgview
+    // projects restore Workspace content.
     if (m_imageView) {
         m_imageView->discardStashedGallery();
-        if (isGalleryMode() || isWorkspaceMode()) {
-            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+        m_imageView->discardStashedWorkspace();
+        m_imageView->clearDurableWorkspaceSnapshot();
+        if (isWorkspaceMode()) {
+            m_imageView->clearWorkspace();
         }
+    }
+    m_workspaceReturnActive = false;
+    if (m_workspaceModeAct) {
+        m_workspaceModeAct->setChecked(false);
     }
 
     int idx = startAt;
     if (idx < 0 || idx >= m_session.paths().size()) {
         idx = 0;
     }
-    setCurrentIndex(idx);
+
+    // Multi-file sessions open in Gallery (browse the set). A single file
+    // stays in Image mode. Workspace is never auto-seeded from the session.
+    if (m_session.paths().size() > 1) {
+        enterGalleryMode(ImageView::LayoutMode::Masonry);
+        setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
+    } else {
+        if (m_imageView && !isImageMode()) {
+            m_imageView->setViewMode(ImageView::ViewMode::Image);
+        }
+        if (m_thumbnailBar) {
+            m_thumbnailBar->setMultiSelectEnabled(false);
+        }
+        setCurrentIndex(idx);
+    }
     updateNavigationActions();
     updateWorkspaceActionVisibility();
     rememberSessionHistory(m_session.paths());

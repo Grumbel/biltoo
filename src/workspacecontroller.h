@@ -30,6 +30,8 @@ public:
     void snapshot();
     void restore();
     void discardStash();
+    /** Drop durable free-form arrangement (session open is not a project). */
+    void clearDurableSnapshot();
     void stashItems();
     void restoreStashedItems();
 
