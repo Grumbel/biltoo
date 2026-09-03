@@ -127,7 +127,7 @@ for all orientation-preserving parallelogram frames (4 DOF linear part).
 
 Project JSON field `shear` is omitted when ~0 (old files load as 0).
 
-Edge scale uses the same linear map: local +Y in scene is
+Edge scale axes come from `PlacementLinear::make` (Qt rotate convention), not a hand-rolled CCW matrix. Edge scale uses the same linear map: local +Y in scene is
 `R · (k·sy, sy)`, so projections stay correct when the frame is a
 parallelogram. Free-axis group scale conjugates `S_scene · L` and
 re-decomposes via `PlacementLinear::decompose`.

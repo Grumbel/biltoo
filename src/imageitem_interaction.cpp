@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "placementlinear.h"
 #include "imageview.h"
 
 #include <QCursor>
@@ -436,17 +437,12 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     }
 
     if (isEdgeScaleHandle(m_activeHandle)) {
-        // Image axes in *scene* at press (scale/rotation/shear fixed during drag).
-        // Linear map is R·H·S with H = [[1,k],[0,1]]:
-        //   local +X → R (sx, 0)
-        //   local +Y → R (k·sy, sy)   (not orthogonal when k ≠ 0)
-        const qreal rot = qDegreesToRadians(m_pressRotation);
-        const qreal c = qCos(rot);
-        const qreal s = qSin(rot);
-        const qreal k = m_pressShear;
-        QPointF axisX(c * m_pressScaleX, s * m_pressScaleX);
-        QPointF axisY(c * k * m_pressScaleY - s * m_pressScaleY,
-                      s * k * m_pressScaleY + c * m_pressScaleY);
+        // Image axes in *scene* at press — must match PlacementLinear/Qt (not a
+        // textbook CCW formula; Qt rotate is clockwise with Y-down).
+        const QTransform Lpress = PlacementLinear::make(
+            m_pressScaleX, m_pressScaleY, m_pressShear, m_pressRotation);
+        const QPointF axisX = Lpress.map(QPointF(1.0, 0.0));
+        const QPointF axisY = Lpress.map(QPointF(0.0, 1.0));
 
         qreal sx = m_pressScaleX;
         qreal sy = m_pressScaleY;
@@ -504,16 +500,16 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
 void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
 {
     // Horizontal shear k in local space: H = [[1,k],[0,1]] inside R·H·S.
-    // After S then H: x' = sx*x + k*(sy*y). Changing k slides rows along local X.
-    // All four edge grips project pointer motion onto rotated local +X; the
-    // opposite edge is held fixed in scene. Denominator uses the half-extent
-    // along local Y (image height) so k is dimensionless and matches make().
+    // Drag projects onto scene image of local +X (Qt rotation convention).
+    // Opposite edge fixed; denom uses half-height so k matches make().
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal halfH = qMax(1e-6, r.height() * 0.5);
-    const qreal rot = qDegreesToRadians(m_pressRotation);
-    const qreal c = qCos(rot);
-    const qreal s = qSin(rot);
-    const QPointF dirX(c, s);
+    const QTransform Ldir = PlacementLinear::make(1.0, 1.0, 0.0, m_pressRotation);
+    QPointF dirX = Ldir.map(QPointF(1.0, 0.0));
+    const qreal dirLen = qHypot(dirX.x(), dirX.y());
+    if (dirLen > 1e-9) {
+        dirX /= dirLen;
+    }
     const QPointF anchor = m_pressAnchorScene;
     const QPointF v0 = m_pressScenePos - anchor;
     const QPointF v1 = scenePos - anchor;
