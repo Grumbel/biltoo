@@ -885,6 +885,10 @@ and sheared tiles follow the selection AABB.
 - Paste/drop: do not allocate phantom session rows while PendingSessionBind
   is outstanding (broken filmstrip drag entries)
 
+### Fixed in `qimgview-102`
+- Edit menu is sole menu-bar home for Copy/Cut/Paste/Duplicate; removed from
+  Workspace and Gallery menus (context menu unchanged)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -1319,3 +1323,23 @@ alignment) that does not drag/drop correctly.
 - [x] Document; next **102**
 
 **Next bundle:** `qimgview-102-…` — further paste/drag polish if needed.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-102-edit-clipboard-menu`
+
+**Goal:** End redundant clipboard actions across menus.
+
+### Scope
+
+1. **Edit menu:** keep Copy / Cut / Paste; add **Duplicate** after Paste.
+2. **Workspace menu:** remove Copy / Cut / Paste / Duplicate (tools & layout only).
+3. **Gallery menu:** remove Duplicate (layouts / sort remain).
+4. **Context menu:** keep all four (right-click affordance, not menu-bar noise).
+
+### Done criteria
+
+- [x] Clipboard + Duplicate only under Edit (menu bar)
+- [x] Document; next **103**
+
+**Next bundle:** `qimgview-103-…` — further UI polish as needed.

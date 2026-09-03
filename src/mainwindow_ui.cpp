@@ -669,6 +669,7 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_copyWorkspaceAct);
     m_editMenu->addAction(m_cutWorkspaceAct);
     m_editMenu->addAction(m_pasteWorkspaceAct);
+    m_editMenu->addAction(m_duplicateAct);
     m_editMenu->addSeparator();
     // Session order applies across modes; keep with other document edits.
     auto *sortMenu = m_editMenu->addMenu(tr("&Sort Session"));
@@ -740,8 +741,7 @@ void MainWindow::createMenus()
     gallerySortMenu->addAction(m_sortWidthAct);
     gallerySortMenu->addAction(m_sortHeightAct);
     gallerySortMenu->addAction(m_sortPixelCountAct);
-    galleryMenu->addSeparator();
-    galleryMenu->addAction(m_duplicateAct);
+    // Duplicate lives under Edit (with Copy/Cut/Paste).
 
     auto *workspaceMenu = menuBar()->addMenu(tr("&Workspace"));
     workspaceMenu->addAction(m_workspaceModeAct);
@@ -765,11 +765,7 @@ void MainWindow::createMenus()
     workspaceMenu->addAction(m_resetScaleAct);
     workspaceMenu->addAction(m_resetRotationAct);
     workspaceMenu->addAction(m_resetShearAct);
-    workspaceMenu->addSeparator();
-    workspaceMenu->addAction(m_copyWorkspaceAct);
-    workspaceMenu->addAction(m_cutWorkspaceAct);
-    workspaceMenu->addAction(m_pasteWorkspaceAct);
-    workspaceMenu->addAction(m_duplicateAct);
+    // Copy / Cut / Paste / Duplicate are under Edit only (menu bar).
 
     m_goMenu = menuBar()->addMenu(tr("&Go"));
     m_goMenu->addAction(m_firstAct);
