@@ -8,6 +8,7 @@
 , exiv2
 , glib
 , libsysprof-capture
+, fftw
 , libarchive
 , kimageformats
 , version ? "0.1.0-dev"
@@ -34,6 +35,9 @@ stdenv.mkDerivation (finalAttrs: {
     # glib Requires.private: sysprof-capture-4 — needed so pkg-config probes of
     # vips / gio-unix-2.0 do not spam "Package sysprof-capture-4 was not found".
     libsysprof-capture
+    # vips Requires.private: fftw3 — same class of pkg-config noise without
+    # the .pc on PKG_CONFIG_PATH (we do not link fftw ourselves).
+    fftw
     libarchive
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats

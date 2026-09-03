@@ -639,3 +639,13 @@ missing assets without dialogs in pure headless mode.
 - [x] CLI opens `.qimgview` via project load
 - [x] Explicit error when file missing / load fails (stderr + status bar)
 - [x] Refactor Open Project / Recent to `openProjectFile`
+
+---
+
+## Bundle `qimgview-068` — silence vips/fftw3 pkg-config noise
+
+pkg-config prints “Package fftw3 was not found” several times while probing
+`vips` because fftw3 is in vips’ Requires.private. Same class of issue as
+sysprof-capture-4 for glib. Fix: add `fftw` to `default.nix` buildInputs so
+`fftw3.pc` is visible (we do not link FFTW ourselves). Do **not** hide the
+messages with env hacks — supply the missing private dep.
