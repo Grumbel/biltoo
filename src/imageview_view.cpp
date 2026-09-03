@@ -462,14 +462,19 @@ void ImageView::startSlideshowTransitionAnimation()
         return;
     }
     m_slideshowTransitionPending = false;
-    m_slideshowTransitionActive = true;
-    m_slideshowTransitionProgress = 0.0;
 
-    // Slide needs both frames: the next image is already fitted on the canvas.
+    // Slide needs both frames. Grab the *new* view while the transition overlay
+    // is still inactive — otherwise paintEvent draws the old snapshot on top and
+    // grab() captures the outgoing frame twice.
     m_slideshowTransitionToPixmap = QPixmap();
     if (m_slideshowTransition == SlideshowTransition::Slide && viewport()) {
+        m_slideshowTransitionActive = false;
+        m_slideshowTransitionProgress = 1.0;
         m_slideshowTransitionToPixmap = viewport()->grab();
     }
+
+    m_slideshowTransitionActive = true;
+    m_slideshowTransitionProgress = 0.0;
 
     if (!m_slideshowTransitionAnim) {
         m_slideshowTransitionAnim = new QVariantAnimation(this);

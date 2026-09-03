@@ -1850,3 +1850,22 @@ new frame enters from the right (both frames are viewport snapshots).
 - [x] Document; next **124**
 
 **Next bundle:** `qimgview-124-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-124-slide-grab-fix`
+
+**Bug:** Slide transition grabbed the “to” frame while the transition overlay
+was already active at progress 0, so paintEvent stamped the *old* snapshot
+over the new image and both sides of the slide were the outgoing frame.
+
+**Fix:** Grab the destination viewport with the overlay disabled, then start
+the animation.
+
+### Done criteria
+
+- [x] Slide shows distinct old → new frames
+- [x] Document; next **125**
+
+**Next bundle:** `qimgview-125-…` — further polish as needed.
