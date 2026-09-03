@@ -6,18 +6,32 @@
 <component type="desktop-application">
   <id>qimgview.desktop</id>
   <name>QImgView</name>
-  <summary>Classic image viewer with a workspace for comparing images</summary>
+  <summary>Classic image viewer with Gallery and free-form Workspace</summary>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <developer_name>Ingo Ruhnke</developer_name>
+  <developer id="grumbel.github.io">
+    <name>Ingo Ruhnke</name>
+  </developer>
   <description>
     <p>
-      QImgView is a Qt image viewer with three modes: a classic single-image
-      view, a gallery of packaged layouts, and a free-form workspace for
-      comparing and transforming multiple images.
+      QImgView is a Qt 6 image viewer built around one canvas and three modes:
+      classic single-image browsing, a session Gallery with packaged layouts,
+      and a free-form Workspace for comparing and arranging multiple images.
+    </p>
+    <p>
+      Open files, folders, or common archives (zip, tar, 7z, rar). Sessions can
+      be sorted, navigated with a thumbnail strip, and saved as portable
+      project files. Workspace supports transform handles, crop, colour
+      adjustments, a print page guide, and PNG/PDF export without overwriting
+      sources.
+    </p>
+    <p>
+      Slideshow supports optional transitions (crossfade, fade through black,
+      slide projector). Fullscreen hides chrome and restores it on exit.
     </p>
   </description>
   <url type="homepage">https://github.com/Grumbel/qimgview</url>
+  <url type="bugtracker">https://github.com/Grumbel/qimgview/issues</url>
   <launchable type="desktop-id">qimgview.desktop</launchable>
   <provides>
     <binary>qimgview</binary>
@@ -25,6 +39,33 @@
   <categories>
     <category>Graphics</category>
     <category>Viewer</category>
+    <category>2DGraphics</category>
+    <category>RasterGraphics</category>
   </categories>
+  <keywords>
+    <keyword>image</keyword>
+    <keyword>viewer</keyword>
+    <keyword>gallery</keyword>
+    <keyword>workspace</keyword>
+    <keyword>slideshow</keyword>
+    <keyword>photo</keyword>
+  </keywords>
+  <screenshots>
+    <screenshot type="default">
+      <caption>QImgView main window</caption>
+      <image>https://raw.githubusercontent.com/Grumbel/qimgview/master/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="0.1.0" date="2026-09-03">
+      <description>
+        <p>Initial 0.1.0 feature set: Image / Gallery / Workspace, projects, export, slideshow transitions, archives.</p>
+      </description>
+    </release>
+  </releases>
   <content_rating type="oars-1.1" />
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </recommends>
 </component>

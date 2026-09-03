@@ -108,7 +108,7 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   meta = with lib; {
-    description = "Classic Qt image viewer with workspace semantics";
+    description = "Classic Qt image viewer with Image, Gallery, and Workspace modes";
     homepage = "https://github.com/Grumbel/qimgview";
     license = licenses.gpl3Plus;
     maintainers = [ ];

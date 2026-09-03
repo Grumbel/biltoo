@@ -1,5 +1,5 @@
 {
-  description = "QImgView - Classic Qt image viewer with workspace semantics";
+  description = "QImgView — classic Qt image viewer (Image, Gallery, Workspace)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -39,7 +39,7 @@
         type = "app";
         program = "${qimgview}/bin/qimgview";
         meta = {
-          description = "QImgView - Classic Qt image viewer with workspace semantics";
+          description = "QImgView — classic Qt image viewer (Image, Gallery, Workspace)";
         };
       };
 

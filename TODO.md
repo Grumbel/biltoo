@@ -43,8 +43,9 @@ Focus:
 - [x] Masonry Fill / Masonry Rows Fill (rectangular pack)
 - [x] Page Guide under Workspace menu; Exit Fullscreen label; FS Slideshow context
 - [x] Quit confirm once (closeEvent only)
-- [ ] Keyboard shortcuts, HUD, slideshow, and desktop integration as documented
-- [ ] Packaging (Nix/CMake), AppStream, `.desktop`, i18n scaffolding
+- [x] Keyboard shortcuts, HUD, slideshow, and desktop integration as documented
+  (F1 help + README; transitions; .desktop MIME; AppStream metainfo)
+- [x] Packaging (Nix/CMake), AppStream, `.desktop` (i18n remains optional `.qm` install)
 - [x] ProjectFile save/load round-trip unit tests (Qt Test)
 - [ ] Regression smoke tests (`--help`, basic open/session paths)
 - [ ] Drop the `-dev` suffix on `VERSION` when ready to tag
@@ -1869,3 +1870,22 @@ the animation.
 - [x] Document; next **125**
 
 **Next bundle:** `qimgview-125-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-125-docs-desktop`
+
+**Tasks:**
+1. Keyboard shortcuts / HUD / slideshow / desktop integration documentation
+2. Packaging / desktop metadata polish
+3. Restructure **README.md** with current features
+
+**Done:**
+- F1 help: slideshow transitions, Workspace tools, fullscreen/HUD notes
+- `qimgview.desktop`: clearer comment, archives in MimeType, StartupWMClass
+- `qimgview.metainfo.xml`: richer description, keywords, screenshot, release
+- README: modes table, features by area, shortcuts table, CLI, desktop install paths
+- TODO 0.1.0 checkboxes for shortcuts/desktop/packaging marked done
+
+**Next bundle:** `qimgview-126-…`
