@@ -68,7 +68,9 @@ public:
     enum class SlideshowTransition {
         None = 0,
         Crossfade = 1,
-        FadeBlack = 2
+        FadeBlack = 2,
+        /** Old frame exits left; new frame enters from the right (slide projector). */
+        Slide = 3
     };
 
     enum class ViewMode {
@@ -903,7 +905,8 @@ private:
     QTimer *m_slideshowProgressTimer = nullptr;
     SlideshowTransition m_slideshowTransition = SlideshowTransition::Crossfade;
     int m_slideshowTransitionDurationMs = 400;
-    QPixmap m_slideshowTransitionPixmap;
+    QPixmap m_slideshowTransitionPixmap; /**< From-frame snapshot */
+    QPixmap m_slideshowTransitionToPixmap; /**< To-frame snapshot (Slide) */
     qreal m_slideshowTransitionProgress = 1.0; /**< 0 = old frame, 1 = done */
     bool m_slideshowTransitionPending = false;
     bool m_slideshowTransitionActive = false;

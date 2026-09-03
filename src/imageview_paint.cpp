@@ -152,6 +152,18 @@ void ImageView::paintEvent(QPaintEvent *event)
                 painter.fillRect(vr, Qt::black);
                 painter.setOpacity(1.0);
             }
+        } else if (m_slideshowTransition == SlideshowTransition::Slide) {
+            // Slide projector: old exits left, new enters from the right.
+            const int w = vr.width();
+            const int h = vr.height();
+            const int xOld = int(-qRound(t * w));
+            const int xNew = int(qRound((1.0 - t) * w));
+            painter.setOpacity(1.0);
+            painter.fillRect(vr, Qt::black);
+            if (!m_slideshowTransitionToPixmap.isNull()) {
+                painter.drawPixmap(xNew, 0, w, h, m_slideshowTransitionToPixmap);
+            }
+            painter.drawPixmap(xOld, 0, w, h, m_slideshowTransitionPixmap);
         }
     }
 

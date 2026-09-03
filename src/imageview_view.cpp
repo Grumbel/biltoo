@@ -446,6 +446,7 @@ void ImageView::cancelSlideshowTransition()
     m_slideshowTransitionActive = false;
     m_slideshowTransitionProgress = 1.0;
     m_slideshowTransitionPixmap = QPixmap();
+    m_slideshowTransitionToPixmap = QPixmap();
     if (m_slideshowTransitionAnim) {
         m_slideshowTransitionAnim->stop();
     }
@@ -464,6 +465,12 @@ void ImageView::startSlideshowTransitionAnimation()
     m_slideshowTransitionActive = true;
     m_slideshowTransitionProgress = 0.0;
 
+    // Slide needs both frames: the next image is already fitted on the canvas.
+    m_slideshowTransitionToPixmap = QPixmap();
+    if (m_slideshowTransition == SlideshowTransition::Slide && viewport()) {
+        m_slideshowTransitionToPixmap = viewport()->grab();
+    }
+
     if (!m_slideshowTransitionAnim) {
         m_slideshowTransitionAnim = new QVariantAnimation(this);
         m_slideshowTransitionAnim->setEasingCurve(QEasingCurve::InOutQuad);
@@ -478,6 +485,7 @@ void ImageView::startSlideshowTransitionAnimation()
             m_slideshowTransitionActive = false;
             m_slideshowTransitionProgress = 1.0;
             m_slideshowTransitionPixmap = QPixmap();
+            m_slideshowTransitionToPixmap = QPixmap();
             if (viewport()) {
                 viewport()->update();
             }

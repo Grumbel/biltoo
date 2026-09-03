@@ -1835,3 +1835,18 @@ overlay; phase 2 fades that black away over the new frame.
 - [x] Document; next **123**
 
 **Next bundle:** `qimgview-123-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-123-slideshow-slide`
+
+**Feature:** Slideshow transition **Slide (projector)** — old frame exits left,
+new frame enters from the right (both frames are viewport snapshots).
+
+### Done criteria
+
+- [x] Slide mode in Preferences + paint
+- [x] Document; next **124**
+
+**Next bundle:** `qimgview-124-…` — further polish as needed.

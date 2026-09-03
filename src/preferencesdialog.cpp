@@ -91,6 +91,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_slideshowTransitionCombo->addItem(tr("None"), 0);
     m_slideshowTransitionCombo->addItem(tr("Crossfade"), 1);
     m_slideshowTransitionCombo->addItem(tr("Fade through black"), 2);
+    m_slideshowTransitionCombo->addItem(tr("Slide (projector)"), 3);
     m_slideshowTransitionCombo->setToolTip(tr("Effect used when the slideshow advances to the next image"));
     slideshowForm->addRow(tr("Transition:"),
                           wrapWithReset(m_slideshowTransitionCombo, &m_resetSlideshowTransitionBtn, [this]() {

@@ -1419,7 +1419,7 @@ void MainWindow::readSettings()
     if (m_imageView) {
         const int tr = settings.value(QStringLiteral("slideshowTransition"), 1).toInt();
         m_imageView->setSlideshowTransition(
-            static_cast<ImageView::SlideshowTransition>(qBound(0, tr, 2)));
+            static_cast<ImageView::SlideshowTransition>(qBound(0, tr, 3)));
         m_imageView->setSlideshowTransitionDurationMs(
             settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt());
     }
