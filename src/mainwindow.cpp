@@ -1,3 +1,4 @@
+#include "archivepath.h"
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -981,7 +982,7 @@ void MainWindow::selectAllThumbnails()
 void MainWindow::updateWindowTitle()
 {
     if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-        const QString name = QFileInfo(m_session.paths().at(m_currentIndex)).fileName();
+        const QString name = ArchivePath::displayName(m_session.paths().at(m_currentIndex));
         // GNOME-style: document name first, then app
         setWindowTitle(tr("%1 — QImgView").arg(name));
     } else {
@@ -1081,7 +1082,7 @@ void MainWindow::updateStatus()
         const QString err = m_imageView->lastLoadError();
         if (!err.isEmpty() && statusBar()) {
             statusBar()->showMessage(
-                tr("Could not load “%1”").arg(QFileInfo(err).fileName()), 5000);
+                tr("Could not load “%1”").arg(ArchivePath::displayName(err)), 5000);
         }
         // Drag/open decode progress (also covers Gallery virtualization window).
         const int pending = m_imageView->pendingDecodeCount();

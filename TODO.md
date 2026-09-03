@@ -427,3 +427,9 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   Decode via libarchive → QByteArray → QImageReader; no disk extraction.  
   Requires libarchive at build time (`QIMGVIEW_HAVE_ARCHIVE`).
 
+- [x] **Archive follow-ups**  
+  HUD/title/thumbnail labels use `ArchivePath::displayName`.  
+  Open dialog includes an Archives filter.  
+  Project save hashes the archive container; member path is stored in appearance
+  and rebuilt on load after the container is resolved.
+

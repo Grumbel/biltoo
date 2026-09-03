@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "archivepath.h"
 #include <QPixmap>
 #include "imageitem.h"
 
@@ -430,7 +431,7 @@ QString ImageView::sessionBadgeText() const
 QString ImageView::hudFileName() const
 {
     if (!m_gallery.hoverPath().isEmpty()) {
-        return QFileInfo(m_gallery.hoverPath()).fileName();
+        return ArchivePath::displayName(m_gallery.hoverPath());
     }
     // Empty Gallery/Workspace canvas: only the drop invite is shown — never a
     // stale classicPath, load error, or leftover session subject filename.
@@ -438,17 +439,17 @@ QString ImageView::hudFileName() const
         return {};
     }
     if (!m_lastLoadError.isEmpty()) {
-        return QFileInfo(m_lastLoadError).fileName();
+        return ArchivePath::displayName(m_lastLoadError);
     }
     ImageItem *item = targetItem();
     if (!item) {
         item = primaryItem();
     }
     if (item) {
-        return QFileInfo(item->path()).fileName();
+        return ArchivePath::displayName(item->path());
     }
     if (hasClassicPath() && isImageMode()) {
-        return QFileInfo(classicPath()).fileName();
+        return ArchivePath::displayName(classicPath());
     }
     return {};
 }
@@ -467,7 +468,7 @@ QString ImageView::statusText() const
 
     if (!item) {
         if (!m_lastLoadError.isEmpty()) {
-            return tr("Failed to load “%1”").arg(QFileInfo(m_lastLoadError).fileName());
+            return tr("Failed to load “%1”").arg(ArchivePath::displayName(m_lastLoadError));
         }
         if (hasClassicPath() && isImageMode()) {
             return tr("Loading…");

@@ -22,7 +22,14 @@ QString imageFileDialogFilter()
     for (const QString &suffix : ImageLoader::imageSuffixes()) {
         patterns.append(QStringLiteral("*.%1").arg(suffix));
     }
-    return QObject::tr("Images (%1);;All Files (*)").arg(patterns.join(QLatin1Char(' ')));
+    QStringList archivePatterns;
+    for (const QString &suffix : ArchivePath::archiveSuffixes()) {
+        // Compound suffixes like tar.gz → *.tar.gz
+        archivePatterns.append(QStringLiteral("*.%1").arg(suffix));
+    }
+    return QObject::tr("Images (%1);;Archives (%2);;All Files (*)")
+        .arg(patterns.join(QLatin1Char(' ')),
+             archivePatterns.join(QLatin1Char(' ')));
 }
 
 /** Undoable session duplicate (Ctrl+D). Identity is SessionImageId, not path. */
@@ -280,7 +287,7 @@ void MainWindow::sortFileList()
         QCollator collator;
         collator.setNumericMode(true);
         collator.setCaseSensitivity(Qt::CaseInsensitive);
-        return collator.compare(QFileInfo(a).fileName(), QFileInfo(b).fileName()) < 0;
+        return collator.compare(ArchivePath::displayName(a), ArchivePath::displayName(b)) < 0;
     };
 
     auto imageSize = [](const QString &path) {
@@ -1927,22 +1934,30 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
     const QFileInfo projInfo(projectPath);
     const QDir projDir = projInfo.absoluteDir();
 
-    auto ensureAsset = [&](const QString &absPath) -> QString {
-        if (absPath.isEmpty()) {
+    auto ensureAsset = [&](const QString &sessionPath) -> QString {
+        if (sessionPath.isEmpty()) {
             return {};
         }
-        if (pathToSha.contains(absPath)) {
-            return pathToSha.value(absPath);
+        // Archive members: hash the container file, not the virtual member path.
+        QString hashPath = sessionPath;
+        if (ArchivePath::isArchiveRef(sessionPath)) {
+            hashPath = ArchivePath::archiveFilePath(sessionPath);
         }
-        const QString sha = ProjectFile::fileSha256(absPath);
+        if (hashPath.isEmpty()) {
+            return {};
+        }
+        if (pathToSha.contains(hashPath)) {
+            return pathToSha.value(hashPath);
+        }
+        const QString sha = ProjectFile::fileSha256(hashPath);
         if (sha.isEmpty()) {
             return {};
         }
-        pathToSha.insert(absPath, sha);
+        pathToSha.insert(hashPath, sha);
         ProjectAsset a;
         a.sha256 = sha;
-        a.path = absPath;
-        const QString rel = projDir.relativeFilePath(absPath);
+        a.path = hashPath;
+        const QString rel = projDir.relativeFilePath(hashPath);
         if (!rel.startsWith(QLatin1String(".."))) {
             a.pathRelative = rel;
         }
@@ -1976,6 +1991,10 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
         im.assetSha256 = sha;
         if (m_imageView && m_imageView->hasSessionAppearance(id)) {
             im.appearance = m_imageView->sessionAppearanceValue(id);
+            im.hasAppearance = true;
+        }
+        // Archive members need the full ref stored; asset is only the container.
+        if (ArchivePath::isArchiveRef(path)) {
             im.hasAppearance = true;
         }
         if (poses.contains(id)) {
@@ -2108,19 +2127,28 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
             missing.append(resolveErr.isEmpty() ? im.assetSha256.left(12) : resolveErr);
             continue;
         }
-        paths.append(resolved);
+        // Asset resolves to a filesystem file (image or archive container).
+        // Archive members keep their member path from the stored appearance ref.
+        QString sessionPath = resolved;
+        if (im.hasAppearance && ArchivePath::isArchiveRef(im.appearance.path)) {
+            const ArchivePath::Ref ref = ArchivePath::parse(im.appearance.path);
+            if (ref.valid) {
+                sessionPath = ArchivePath::makeRef(resolved, ref.memberPath);
+            }
+        }
+        paths.append(sessionPath);
         const SessionImageId id =
             im.id != kInvalidSessionImageId ? im.id : kInvalidSessionImageId;
         ids.append(id);
         if (im.hasAppearance) {
             WorkspaceItemState st = im.appearance;
-            st.path = resolved;
+            st.path = sessionPath;
             st.sessionId = id;
             appearances.append({id, st});
         }
         if (im.hasWorkspacePose) {
             WorkspaceItemState st = im.appearance;
-            st.path = resolved;
+            st.path = sessionPath;
             st.sessionId = id;
             poses.append({id, st});
         }
