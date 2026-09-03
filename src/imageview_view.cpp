@@ -505,6 +505,9 @@ QString ImageView::statusText() const
                             .arg(qRound(item->itemScaleY() * 100))
                             .arg(qRound(item->itemRotation()));
             }
+            if (qAbs(item->itemShear()) > 1e-3) {
+                text += tr("  |  Shear: %1").arg(item->itemShear(), 0, 'f', 2);
+            }
         }
         if (item->itemOpacity() < 0.999) {
             text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));

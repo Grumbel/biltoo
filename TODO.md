@@ -781,3 +781,12 @@ selection AABB anchor to each item as \(L'=S\cdot L\), then decomposes \(L'\)
 back to \(R\cdot H\cdot S\) (scaleX/Y, shear, rotation). Uniform (no Shift)
 still only multiplies scales and keeps press shear/rotation.
 
+
+---
+
+## Bundle `qimgview-079` — PlacementLinear shared + unit test
+
+Extracted `PlacementLinear::{make,decompose}` used by `ImageItem` and group
+scale. `tests/placementlinear_test.cpp` covers round-trip and scene conjugate.
+Status bar shows Shear when |k| > 0.001 on the selected Workspace item.
+

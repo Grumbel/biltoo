@@ -3,6 +3,7 @@
 
 #include "imageitem.h"
 #include "coloradjust.h"
+#include "placementlinear.h"
 
 #include <QCursor>
 #include <QGraphicsScene>
@@ -374,12 +375,7 @@ void ImageItem::applyLocalTransform()
 {
     // Linear pose: R(θ)·H(k)·S(sx,sy). Flips are baked into the pixmap so
     // handles stay on the geometric top/left/right of the item frame.
-    // QTransform multiplies on the right → call order rotate, shear, scale.
-    QTransform t;
-    t.rotate(m_rotation);
-    t.shear(m_shear, 0.0);
-    t.scale(m_scaleX, m_scaleY);
-    setTransform(t);
+    setTransform(PlacementLinear::make(m_scaleX, m_scaleY, m_shear, m_rotation));
 }
 
 void ImageItem::setColorAdjustments(const ColorAdjustments &adj)

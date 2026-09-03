@@ -67,6 +67,8 @@ add_executable(qimgview
   src/sessiondocument.h
   src/projectfile.cpp
   src/projectfile.h
+  src/placementlinear.cpp
+  src/placementlinear.h
   src/imageitem.cpp
   src/imageitem_interaction.cpp
   src/imageitem.h
@@ -219,4 +221,12 @@ if(Qt6Test_FOUND)
   target_include_directories(qimgview-projectfile-test PRIVATE src)
   target_link_libraries(qimgview-projectfile-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME projectfile-roundtrip COMMAND qimgview-projectfile-test)
+
+  add_executable(qimgview-placementlinear-test
+    tests/placementlinear_test.cpp
+    src/placementlinear.cpp
+  )
+  target_include_directories(qimgview-placementlinear-test PRIVATE src)
+  target_link_libraries(qimgview-placementlinear-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME placementlinear-roundtrip COMMAND qimgview-placementlinear-test)
 endif()
