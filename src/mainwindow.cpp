@@ -199,8 +199,8 @@ MainWindow::MainWindow(QWidget *parent)
             showNormal();
             return;
         }
-        if ((m_galleryReturnActive || m_workspaceReturnActive)
-            && m_imageView && m_imageView->isImageMode()) {
+        // Image mode with a session always has Up (Workspace or implicit Gallery).
+        if (m_imageView && m_imageView->isImageMode() && !m_session.paths().isEmpty()) {
             returnFromImageMode();
         }
     });
@@ -1632,8 +1632,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
-        if ((m_galleryReturnActive || m_workspaceReturnActive)
-            && m_imageView && m_imageView->isImageMode()) {
+        if (m_imageView && m_imageView->isImageMode() && !m_session.paths().isEmpty()) {
             returnFromImageMode();
             event->accept();
             return;

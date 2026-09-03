@@ -202,16 +202,13 @@ void MainWindow::returnFromImageMode()
         returnToWorkspace();
         return;
     }
-    if (m_galleryReturnActive) {
-        returnToGallery();
-    }
+    // Implicit default Gallery when not returning to Workspace (direct open,
+    // CLI, History, or Workspace mode toggled off still have a Gallery to go up to).
+    returnToGallery();
 }
 
 void MainWindow::returnToGallery()
 {
-    if (!m_galleryReturnActive) {
-        return;
-    }
     m_galleryReturnActive = false;
     m_workspaceReturnActive = false;
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
@@ -507,8 +504,11 @@ void MainWindow::updateUpToGalleryAction()
     if (!m_backToGalleryAct) {
         return;
     }
-    // Always shown; enabled when Image mode was entered from Gallery or Workspace.
-    const bool canReturn = m_galleryReturnActive || m_workspaceReturnActive;
+    // Image mode with a session always has somewhere to go Up:
+    // Workspace if that was the source, otherwise implicit default Gallery.
+    const bool inImage = m_imageView && m_imageView->isImageMode();
+    const bool hasSession = !m_session.paths().isEmpty();
+    const bool canReturn = inImage && hasSession;
     m_backToGalleryAct->setVisible(true);
     m_backToGalleryAct->setEnabled(canReturn);
     if (m_workspaceReturnActive) {

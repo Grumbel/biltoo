@@ -852,6 +852,10 @@ and sheared tiles follow the selection AABB.
 - Quit: Ctrl+Q only (bare Q removed); Layout Horizontal no longer uses Ctrl+Y
   (avoids Windows Redo clash); F1 lists Ctrl+Q
 
+### Fixed in `qimgview-095`
+- Image mode always has **Up** to implicit default Gallery when not returning
+  to Workspace (direct open / CLI / History no longer leave Up disabled)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -1062,4 +1066,53 @@ identity residual (Image-mode crop of duplicate slot B).
 - [x] Document completion; next bundle **095**
 
 **Next bundle:** `qimgview-095-…` — identity residual (Image-mode crop of
+duplicate slot B), mode enablement audit, or remaining polish.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-095-implicit-gallery-up`
+
+**Bug:** In Image mode opened without going through Gallery (File Open, CLI,
+History, Workspace mode toggled off, project image mode), the **Up** button is
+disabled. There is no way to reach Gallery except picking a layout from the
+menu.
+
+**Product rule:** There is always an implicit default Gallery to go up to when
+the return target is not Workspace. `m_galleryReturnLayout` (default Masonry,
+or last Gallery layout) is the destination.
+
+### Scope
+
+1. **`updateUpToGalleryAction`**
+   - Enable when `isImageMode()` and session non-empty.
+   - Tip: "Up to workspace" if `m_workspaceReturnActive`, else "Up to gallery".
+   - Drive `setGalleryReturnAvailable` from the same condition (edge zone).
+
+2. **`returnFromImageMode` / `returnToGallery`**
+   - Workspace return still wins when that flag is set.
+   - Otherwise always run gallery restore with `m_galleryReturnLayout`
+     (drop the `m_galleryReturnActive` early-return gate).
+
+3. **Esc / keyPressEvent**
+   - Same enablement: Image mode + non-empty session → returnFromImageMode.
+
+4. **Unchanged**
+   - Explicit Gallery → Image still records the current packaged layout.
+   - Workspace → Image still prefers Up to Workspace.
+   - Empty session: Up stays disabled.
+
+### Out of scope
+
+- Changing default layout away from Masonry
+- Auto-entering Gallery on multi-file open (separate product choice)
+- Identity residual crop sync
+
+### Done criteria
+
+- [x] Image mode with files always shows enabled Up (except empty session)
+- [x] Up from direct-open Image enters Gallery with last/default layout
+- [x] Workspace return path unchanged
+- [x] Document; next bundle **096**
+
+**Next bundle:** `qimgview-096-…` — identity residual (Image-mode crop of
 duplicate slot B), mode enablement audit, or remaining polish.
