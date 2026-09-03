@@ -609,3 +609,33 @@ related project state; strengthen unit tests; hook tests into `nix flake check`.
 
 **Next bundle:** `qimgview-066-…` — remaining known gaps (duplicate Image-mode crop
 sync, Grid Crop, archive regression pass, etc.).
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-066-…`
+
+**Bug:** `nix run . -- /tmp/test.qimgview` (or any CLI path ending in `.qimgview`)
+did not load the project and showed no useful feedback.
+
+**Root cause:** `main` always called `MainWindow::loadFiles`, which runs
+`expandPaths` → only image/archive/dir entries. A project file is skipped →
+empty session. Status bar may show “No readable images found” briefly (easy to
+miss); no project-specific path.
+
+**Fix:**
+
+1. `MainWindow::openProjectFile(path)` — shared load + set `m_projectPath` +
+   recent list + status (used by Open Project, Recent, CLI).
+2. CLI: split positional args into `.qimgview` vs other; open first project via
+   `openProjectFile`; `qWarning` + status bar on failure; warn if multiple
+   projects or mixed image args.
+3. Help text mentions projects.
+
+**Out of scope:** desktop MIME for `application/x-qimgview`; auto-reload of
+missing assets without dialogs in pure headless mode.
+
+### Done
+
+- [x] CLI opens `.qimgview` via project load
+- [x] Explicit error when file missing / load fails (stderr + status bar)
+- [x] Refactor Open Project / Recent to `openProjectFile`
