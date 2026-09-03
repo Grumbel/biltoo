@@ -412,6 +412,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             if (d0 > kMinDist) {
                 const qreal f = d1 / d0;
                 setItemScale(m_pressScaleX * f, m_pressScaleY * f);
+                setItemShear(m_pressShear);
             }
         } else {
             const QPointF anchor = m_pressAnchorScene;
@@ -420,6 +421,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             if (d0 > kMinDist) {
                 const qreal f = d1 / d0;
                 setItemScale(m_pressScaleX * f, m_pressScaleY * f);
+                setItemShear(m_pressShear);
                 const QPointF now = mapToScene(m_pressAnchorLocal);
                 setPos(pos() + (anchor - now));
             }
@@ -428,17 +430,17 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     }
 
     if (isEdgeScaleHandle(m_activeHandle)) {
-        // Unit image axes in *scene* at press (rotation fixed during this drag).
-        // Built from press scale + rotation so they do not change as we update scale.
+        // Image axes in *scene* at press (scale/rotation/shear fixed during drag).
+        // Linear map is R·H·S with H = [[1,k],[0,1]]:
+        //   local +X → R (sx, 0)
+        //   local +Y → R (k·sy, sy)   (not orthogonal when k ≠ 0)
         const qreal rot = qDegreesToRadians(m_pressRotation);
         const qreal c = qCos(rot);
         const qreal s = qSin(rot);
-        // Local +X maps to scene direction (c, s) * scaleX; +Y to (-s, c) * scaleY
-        // after the usual Qt transform order (scale then rotate around centre).
-        // Transform is rotate then scale only; flips are baked into the pixmap
-        // so the geometric frame axes are unaffected.
+        const qreal k = m_pressShear;
         QPointF axisX(c * m_pressScaleX, s * m_pressScaleX);
-        QPointF axisY(-s * m_pressScaleY, c * m_pressScaleY);
+        QPointF axisY(c * k * m_pressScaleY - s * m_pressScaleY,
+                      s * k * m_pressScaleY + c * m_pressScaleY);
 
         qreal sx = m_pressScaleX;
         qreal sy = m_pressScaleY;
@@ -484,6 +486,8 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             }
         }
         setItemScale(sx, sy);
+        // Scale-only drag must not disturb shear.
+        setItemShear(m_pressShear);
         if (!fromCenter) {
             const QPointF now = mapToScene(m_pressAnchorLocal);
             setPos(pos() + (m_pressAnchorScene - now));

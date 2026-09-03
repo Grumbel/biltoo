@@ -698,7 +698,7 @@ pending SessionImageId or applies `m_appearance` — defaults only.
 
 ---
 
-## Placement shear (full linear pose) — in progress
+## Placement shear (full linear pose) — done (074–077)
 
 **Goal:** Represent general parallelogram frames. Current pose is only
 `R(θ)·S(sx,sy)` (3 DOF). Add shear so linear part is 4 DOF:
@@ -723,10 +723,10 @@ H(k) = | 1  k |
 2. **Capture / apply / project JSON** — round-trip `shear`; omit when ~0.
 3. **Handles** — `ShearTop` / `ShearBottom` (diamond grips on top/bottom edges);
    drag along local X changes `k`; opposite edge stays fixed in scene.
-4. **Group scale** — still AABB-based (known wrong when rotated); shear is
-   single-item first. Later: local-axis group scale + group shear.
+4. **Group scale** — uniform by default (075); free AABB with Shift.
 5. **Tests** — projectfile appearance JSON includes shear.
-6. **Docs** — HANDLES.md scale/shear semantics; AGENTS if needed.
+6. **Docs** — HANDLES.md scale/shear semantics.
+7. **Edge scale under shear** — axes from R·H·S (077).
 
 ### Not in this pass
 
@@ -760,4 +760,14 @@ No local Qt6 for full compile here; static review found missing shear writes:
 
 **Still deferred:** anisotropic group scale under rotation; shear feel tuning;
 nix check in this environment.
+
+
+
+---
+
+## Bundle `qimgview-077` — edge scale axes include shear
+
+Edge stretch projects onto press-time scene images of local X/Y from the full
+linear map `R·H·S` (local +Y is skewed when `k ≠ 0`). Scale drags re-assert
+press shear so only `sx`/`sy` change.
 

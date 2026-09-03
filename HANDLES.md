@@ -123,6 +123,10 @@ Diamond grips sit on the top/bottom frame edges, offset from the mid-edge
 scale bars. Reset Scale (1:1) also clears shear. Project JSON field `shear`
 is omitted when ~0 for backward-compatible files.
 
+Edge scale uses the same linear map: local +Y in scene is
+`R · (k·sy, sy)`, so projections stay correct when the frame is a
+parallelogram.
+
 ## Chrome design language
 
 Three visual families on the selection / crop frame:
