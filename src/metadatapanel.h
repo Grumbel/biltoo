@@ -67,11 +67,19 @@ public:
     explicit MetadataPanel(QWidget *parent = nullptr);
 
     void clear();
-    void setImagePath(const QString &path);
+    /**
+     * Schedule metadata refresh for @p path.
+     * Heavy work (decode, histogram, Exiv2) is debounced; rapid path changes
+     * cancel the previous pending update. Pass @p decodedHint when the
+     * canvas already holds pixels for this path so structure/histogram need
+     * not decode again.
+     */
+    void setImagePath(const QString &path, const QImage &decodedHint = QImage());
 
 private:
     void addRow(const QString &key, const QString &value);
-    void fillImageAnalysis(const QString &path);
+    void fillImageAnalysis(const QString &path, const QImage &decodedHint);
+    void applyPendingPath();
 
     QLabel *m_header = nullptr;
     ImageHistogramWidget *m_histogram = nullptr;
@@ -79,6 +87,10 @@ private:
     ImagePaletteWidget *m_palette = nullptr;
     QLabel *m_paletteLabel = nullptr;
     QTreeWidget *m_tree = nullptr;
+
+    QString m_pendingPath;
+    QImage m_pendingDecoded;
+    class QTimer *m_applyTimer = nullptr;
 };
 
 #endif // METADATAPANEL_H

@@ -655,9 +655,8 @@ void MainWindow::appendFiles(const QStringList &paths)
 
     if (isWorkspaceMode()) {
         m_currentIndex = newIndex;
-        if (m_metadataPanel && newIndex >= 0 && newIndex < m_session.paths().size()) {
-            m_metadataPath = m_session.paths().at(newIndex);
-            m_metadataPanel->setImagePath(m_metadataPath);
+        if (m_metadataPanel) {
+            m_metadataPath.clear();
         }
         updateStatus();
         updateNavigationActions();
@@ -737,9 +736,11 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     }
 
     m_thumbnailBar->setCurrentIndex(m_currentIndex);
+    // Metadata refresh is gated on dock visibility inside updateMetadataPanel
+    // (called from updateStatus). Force a path invalidation so a later dock
+    // open still reloads for this selection.
     if (m_metadataPanel) {
-        m_metadataPath = path;
-        m_metadataPanel->setImagePath(m_metadataPath);
+        m_metadataPath.clear();
     }
     updateWindowTitle();
     updateStatus();
@@ -869,8 +870,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     if (isWorkspaceMode()) {
         m_currentIndex = newIndex;
         if (m_metadataPanel) {
-            m_metadataPath = m_session.paths().at(newIndex);
-            m_metadataPanel->setImagePath(m_metadataPath);
+            m_metadataPath.clear();
         }
         m_thumbnailBar->setCurrentIndex(newIndex);
         updateStatus();
@@ -879,8 +879,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         m_currentIndex = newIndex;
         m_thumbnailBar->setCurrentIndex(newIndex);
         if (m_metadataPanel) {
-            m_metadataPath = m_session.paths().at(newIndex);
-            m_metadataPanel->setImagePath(m_metadataPath);
+            m_metadataPath.clear();
         }
         updateWindowTitle();
         updateStatus();

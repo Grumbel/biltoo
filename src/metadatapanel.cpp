@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "metadatapanel.h"
+#include "archivepath.h"
 #include "imageloader.h"
 
 #include <QDateTime>
@@ -14,6 +15,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QSet>
+#include <QTimer>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
@@ -493,12 +495,22 @@ MetadataPanel::MetadataPanel(QWidget *parent)
     layout->addWidget(m_palette);
     layout->addWidget(m_tree, 1);
 
+    m_applyTimer = new QTimer(this);
+    m_applyTimer->setSingleShot(true);
+    m_applyTimer->setInterval(40);
+    connect(m_applyTimer, &QTimer::timeout, this, &MetadataPanel::applyPendingPath);
+
     setMinimumWidth(240);
     setWhatsThis(tr("File and image metadata."));
 }
 
 void MetadataPanel::clear()
 {
+    if (m_applyTimer) {
+        m_applyTimer->stop();
+    }
+    m_pendingPath.clear();
+    m_pendingDecoded = QImage();
     m_header->setText(tr("No image"));
     m_tree->clear();
     if (m_histogram) {
@@ -527,22 +539,34 @@ void MetadataPanel::addRow(const QString &key, const QString &value)
     item->setToolTip(1, value);
 }
 
-void MetadataPanel::fillImageAnalysis(const QString &path)
+void MetadataPanel::fillImageAnalysis(const QString &path, const QImage &decodedHint)
 {
-    QImageReader reader(path);
-    reader.setAutoTransform(true);
-
     QTreeWidgetItem *structGroup = ensureGroup(m_tree, tr("Image"));
 
-    const int frameCount = reader.imageCount();
-    if (frameCount > 1) {
-        addChildRow(structGroup, tr("Frames / pages"), QString::number(frameCount));
+    QImage image = decodedHint;
+    if (image.isNull()) {
+        QImageReader reader(path);
+        reader.setAutoTransform(true);
+        const int frameCount = reader.imageCount();
+        if (frameCount > 1) {
+            addChildRow(structGroup, tr("Frames / pages"), QString::number(frameCount));
+        }
+        image = reader.read();
+        if (image.isNull()) {
+            image = ImageLoader::load(path);
+        }
+    } else {
+        // Hint path: still try frame count without forcing a full re-read when possible.
+        QImageReader reader(path);
+        reader.setAutoTransform(true);
+        if (reader.canRead()) {
+            const int frameCount = reader.imageCount();
+            if (frameCount > 1) {
+                addChildRow(structGroup, tr("Frames / pages"), QString::number(frameCount));
+            }
+        }
     }
 
-    QImage image = reader.read();
-    if (image.isNull()) {
-        image = ImageLoader::load(path);
-    }
     if (image.isNull()) {
         addChildRow(structGroup, tr("Pixels"), tr("(could not decode)"));
         return;
@@ -592,8 +616,34 @@ void MetadataPanel::fillImageAnalysis(const QString &path)
     }
 }
 
-void MetadataPanel::setImagePath(const QString &path)
+void MetadataPanel::setImagePath(const QString &path, const QImage &decodedHint)
 {
+    if (path.isEmpty()) {
+        clear();
+        return;
+    }
+    // Debounce: rapid Gallery selection must not stack synchronous decodes.
+    m_pendingPath = path;
+    m_pendingDecoded = decodedHint;
+    if (m_applyTimer) {
+        m_applyTimer->start();
+    } else {
+        applyPendingPath();
+    }
+}
+
+void MetadataPanel::applyPendingPath()
+{
+    const QString path = m_pendingPath;
+    const QImage decodedHint = m_pendingDecoded;
+    m_pendingPath.clear();
+    m_pendingDecoded = QImage();
+
+    if (path.isEmpty()) {
+        clear();
+        return;
+    }
+
     m_tree->clear();
     if (m_histogram) {
         m_histogram->clear();
@@ -609,46 +659,78 @@ void MetadataPanel::setImagePath(const QString &path)
         m_paletteLabel->setVisible(false);
     }
 
-    if (path.isEmpty()) {
-        clear();
-        return;
-    }
-
-    const QFileInfo info(path);
-    m_header->setText(info.fileName());
+    const bool isArchive = ArchivePath::isArchiveRef(path);
+    const QString displayName = ArchivePath::displayName(path);
+    m_header->setText(displayName.isEmpty() ? path : displayName);
     m_header->setToolTip(path);
 
     QTreeWidgetItem *fileGroup = ensureGroup(m_tree, tr("File"));
-    addChildRow(fileGroup, tr("Path"), info.absoluteFilePath());
-    addChildRow(fileGroup, tr("Size"),
-                QLocale().formattedDataSize(info.size()));
-    addChildRow(fileGroup, tr("Modified"),
-                QLocale().toString(info.lastModified(), QLocale::ShortFormat));
+    addChildRow(fileGroup, tr("Path"), path);
+
+    if (isArchive) {
+        const ArchivePath::Ref ref = ArchivePath::parse(path);
+        if (ref.valid) {
+            addChildRow(fileGroup, tr("Archive"), ref.archivePath);
+            addChildRow(fileGroup, tr("Member"), ref.memberPath);
+            const QFileInfo archiveInfo(ref.archivePath);
+            if (archiveInfo.exists()) {
+                addChildRow(fileGroup, tr("Archive size"),
+                            QLocale().formattedDataSize(archiveInfo.size()));
+                addChildRow(fileGroup, tr("Archive modified"),
+                            QLocale().toString(archiveInfo.lastModified(),
+                                               QLocale::ShortFormat));
+            }
+        }
+    } else {
+        const QFileInfo info(path);
+        if (info.exists()) {
+            addChildRow(fileGroup, tr("Size"),
+                        QLocale().formattedDataSize(info.size()));
+            addChildRow(fileGroup, tr("Modified"),
+                        QLocale().toString(info.lastModified(), QLocale::ShortFormat));
+        }
+    }
+
+    // Prefer already-decoded pixels for dimensions; otherwise try QImageReader
+    // (cheap size query when the plugin supports it) before a full load.
+    if (!decodedHint.isNull()) {
+        addChildRow(fileGroup, tr("Dimensions"),
+                    tr("%1 × %2").arg(decodedHint.width()).arg(decodedHint.height()));
+    }
 
     QImageReader reader(path);
     reader.setAutoTransform(true);
-
     if (reader.canRead()) {
-        const QSize size = reader.size();
-        if (size.isValid()) {
-            addChildRow(fileGroup, tr("Dimensions"),
-                        tr("%1 × %2").arg(size.width()).arg(size.height()));
+        if (decodedHint.isNull()) {
+            const QSize size = reader.size();
+            if (size.isValid()) {
+                addChildRow(fileGroup, tr("Dimensions"),
+                            tr("%1 × %2").arg(size.width()).arg(size.height()));
+            }
         }
         addChildRow(fileGroup, tr("Format"),
                     QString::fromLatin1(reader.format()).toUpper());
-    } else {
+    } else if (decodedHint.isNull()) {
+        // Last resort only when we have neither hint nor plugin size.
         const QImage decoded = ImageLoader::load(path);
         if (!decoded.isNull()) {
             addChildRow(fileGroup, tr("Dimensions"),
                         tr("%1 × %2").arg(decoded.width()).arg(decoded.height()));
             addChildRow(fileGroup, tr("Format"), tr("fallback loader"));
-        } else {
-            addChildRow(fileGroup, tr("Error"), reader.errorString());
+            // Reuse for analysis below.
+            fillImageAnalysis(path, decoded);
+#ifdef QIMGVIEW_HAVE_EXIV2
+            if (loadExiv2Metadata(m_tree, path)) {
+                return;
+            }
+#endif
+            return;
         }
+        addChildRow(fileGroup, tr("Error"), reader.errorString());
     }
 
-    // Structure, histogram, palette (always — even when Exiv data follows).
-    fillImageAnalysis(path);
+    // Structure, histogram, palette — reuse hint when present.
+    fillImageAnalysis(path, decodedHint);
 
 #ifdef QIMGVIEW_HAVE_EXIV2
     if (loadExiv2Metadata(m_tree, path)) {

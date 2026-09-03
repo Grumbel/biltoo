@@ -1532,3 +1532,56 @@ alias), `openexr`, `libraw`, `openjpeg`, `libhwy`.
 - [x] next **111**
 
 **Next bundle:** `qimgview-111-…` — further packaging / UI polish as needed.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-111-gallery-select-perf`
+
+**Bug:** Selecting a file in the Gallery can take ~1 second. Noticeable on
+archive members, but the path is too slow in general — tile pixels and basic
+session info are already in memory.
+
+**Root cause:** Every Gallery click ends in
+`selectionChanged` → `statusChanged` → `MainWindow::updateStatus` →
+`updateMetadataPanel` → `MetadataPanel::setImagePath`, which **synchronously**:
+
+1. `QFileInfo` (meaningless for `//archive:` virtual paths)
+2. Full decode via `QImageReader::read()` or `ImageLoader::load`
+3. Histogram + palette from decoded pixels
+4. Exiv2 metadata read
+
+The metadata dock is **hidden by default**, yet this work still runs on every
+selection. Archives amplify the cost (member extract + decode).
+
+**Fix (proper, no hacks):**
+
+1. **Visibility gate:** `updateMetadataPanel` only calls `setImagePath` when
+   `m_metadataDock` is visible. When the dock becomes visible, refresh for the
+   current path.
+2. **Reuse in-memory pixels:** Prefer `ImageItem::sourceImage()` (already
+   decoded for visible Gallery tiles) for structure/histogram/palette instead
+   of decoding again. Add an optional decoded hint to the panel API.
+3. **Debounce:** Short single-shot timer inside `MetadataPanel` so rapid
+   selection changes cancel previous pending work and only the last path runs.
+4. **Archive-aware file rows:** Use `ArchivePath::displayName` / parse for the
+   header and path row; do not report bogus `QFileInfo` size for virtual refs
+   unless member size is available cheaply.
+5. Keep `setCurrentIndex`’s direct `setImagePath` path consistent with the
+   same visibility + hint rules (or route through `updateMetadataPanel`).
+
+### Out of scope
+
+- Full metadata cache across the session
+- Async Exiv2 worker thread (debounce + skip-when-hidden is enough for the
+  reported lag)
+- Changing histogram UI
+
+### Done criteria
+
+- [x] Gallery select stays responsive with metadata dock hidden
+- [x] Opening the metadata dock still shows correct info for the current item
+- [x] Visible Gallery tile reuses decoded pixels (no second full decode)
+- [x] Archive paths do not use meaningless QFileInfo size
+- [x] Document; next **112**
+
+**Next bundle:** `qimgview-112-…` — further polish as needed.

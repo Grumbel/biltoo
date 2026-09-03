@@ -147,6 +147,14 @@ MainWindow::MainWindow(QWidget *parent)
                                 | QDockWidget::DockWidgetFloatable);
     addDockWidget(Qt::RightDockWidgetArea, m_metadataDock);
     m_metadataDock->hide();
+    // When the user opens the panel, load metadata for the current selection
+    // (selection itself skips decode while the dock is hidden).
+    connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (visible && m_metadataPanel) {
+            m_metadataPath.clear();
+            updateMetadataPanel();
+        }
+    });
 
     m_adjustmentsPanel = new AdjustmentsPanel(this);
     m_adjustmentsDock = new QDockWidget(tr("Adjustments"), this);
@@ -298,9 +306,9 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
         const int idx = sel.last();
         if (idx != m_currentIndex && idx >= 0 && idx < m_session.paths().size()) {
             m_currentIndex = idx;
+            // Invalidate so updateStatus → updateMetadataPanel refreshes when visible.
             if (m_metadataPanel) {
-                m_metadataPath = m_session.paths().at(m_currentIndex);
-                m_metadataPanel->setImagePath(m_metadataPath);
+                m_metadataPath.clear();
             }
         }
     }
@@ -1045,6 +1053,11 @@ void MainWindow::updateMetadataPanel()
     if (!m_metadataPanel || !m_imageView) {
         return;
     }
+    // Hidden dock: do not decode on every Gallery/Workspace selection.
+    // VisibilityChanged reconnect refreshes when the user opens the panel.
+    if (m_metadataDock && !m_metadataDock->isVisible()) {
+        return;
+    }
     QString path;
     // Prefer canvas selection (Workspace / Gallery); else session index.
     const QStringList selected = m_imageView->selectedPaths();
@@ -1053,15 +1066,22 @@ void MainWindow::updateMetadataPanel()
     } else if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
         path = m_session.paths().at(m_currentIndex);
     }
-    if (path == m_metadataPath) {
+    if (path == m_metadataPath && !path.isEmpty()) {
         return;
     }
     m_metadataPath = path;
     if (path.isEmpty()) {
         m_metadataPanel->clear();
-    } else {
-        m_metadataPanel->setImagePath(path);
+        return;
     }
+    // Reuse already-decoded Gallery/Workspace tile pixels when present.
+    QImage hint;
+    if (ImageItem *item = m_imageView->findPreferredItemForPath(path)) {
+        if (item->hasDecodedPixels()) {
+            hint = item->sourceImage();
+        }
+    }
+    m_metadataPanel->setImagePath(path, hint);
 }
 
 void MainWindow::updateAdjustmentsPanel()

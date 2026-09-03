@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-110-vips-pc-deps”**
-(more vips Requires.private on Nix buildInputs). Next bundle number: **111**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-111-gallery-select-perf”**
+(Gallery selection no longer sync-decodes for hidden metadata dock). Next bundle number: **112**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
