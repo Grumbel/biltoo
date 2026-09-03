@@ -3,6 +3,7 @@
 
 #include "mainwindow_includes.h"
 #include "projectfile.h"
+#include "workspacebackgrounddialog.h"
 #include "imageitem.h"
 
 #include <QClipboard>
@@ -139,6 +140,39 @@ private:
     MainWindow *m_mw = nullptr;
     QList<WorkspaceItemState> m_items;
     QVector<SessionImageId> m_newIds;
+};
+
+/** Undoable Workspace background change. */
+class WorkspaceBackgroundCommand : public QUndoCommand {
+public:
+    WorkspaceBackgroundCommand(MainWindow *mw,
+                               const WorkspaceBackground &before,
+                               const WorkspaceBackground &after)
+        : QUndoCommand(QObject::tr("Workspace background"))
+        , m_mw(mw)
+        , m_before(before)
+        , m_after(after)
+    {
+    }
+
+    void undo() override
+    {
+        if (m_mw) {
+            m_mw->applyWorkspaceBackground(m_before);
+        }
+    }
+
+    void redo() override
+    {
+        if (m_mw) {
+            m_mw->applyWorkspaceBackground(m_after);
+        }
+    }
+
+private:
+    MainWindow *m_mw = nullptr;
+    WorkspaceBackground m_before;
+    WorkspaceBackground m_after;
 };
 
 /** Undoable Workspace cut (canvas only; session rows kept). */
@@ -1952,18 +1986,48 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
             if (wb.mode == WorkspaceBackgroundMode::ImageTile
                 && !wb.imagePath.isEmpty()) {
                 const QFileInfo fi(wb.imagePath);
-                const QString abs = fi.canonicalFilePath().isEmpty()
+                QString abs = fi.canonicalFilePath().isEmpty()
                     ? fi.absoluteFilePath()
                     : fi.canonicalFilePath();
-                wb.imagePath = abs;
                 const QDir projDir = QFileInfo(projectPath).absoluteDir();
-                const QString rel = projDir.relativeFilePath(abs);
+                QString rel = projDir.relativeFilePath(abs);
+                // Embed a copy under <projectstem>.assets/ when the tile is outside
+                // the project directory so the project stays self-contained.
+                if (rel.startsWith(QLatin1String("..")) || QFileInfo(rel).isAbsolute()) {
+                    const QString sha = ProjectFile::fileSha256(abs);
+                    const QString stem = QFileInfo(projectPath).completeBaseName();
+                    const QString assetsName = stem + QStringLiteral(".assets");
+                    QDir assetsDir(projDir.filePath(assetsName));
+                    if (!assetsDir.exists()) {
+                        projDir.mkpath(assetsName);
+                    }
+                    QString ext = QFileInfo(abs).suffix().toLower();
+                    if (ext.isEmpty()) {
+                        ext = QStringLiteral("png");
+                    }
+                    const QString shortSha = sha.left(12);
+                    const QString destName =
+                        QStringLiteral("bg-%1.%2").arg(shortSha, ext);
+                    const QString destAbs = assetsDir.filePath(destName);
+                    if (!QFileInfo::exists(destAbs)) {
+                        QFile::copy(abs, destAbs);
+                    }
+                    if (QFileInfo::exists(destAbs)) {
+                        abs = QFileInfo(destAbs).canonicalFilePath().isEmpty()
+                            ? destAbs
+                            : QFileInfo(destAbs).canonicalFilePath();
+                        rel = projDir.relativeFilePath(abs);
+                    }
+                    wb.imageSha256 = sha.isEmpty() ? ProjectFile::fileSha256(abs) : sha;
+                } else {
+                    wb.imageSha256 = ProjectFile::fileSha256(abs);
+                }
+                wb.imagePath = abs;
                 if (!rel.startsWith(QLatin1String(".."))) {
                     wb.imagePathRelative = rel;
                 } else {
                     wb.imagePathRelative.clear();
                 }
-                wb.imageSha256 = ProjectFile::fileSha256(abs);
             }
             doc.hasWorkspaceBackground = true;
             doc.workspaceBackground = wb;
@@ -2262,4 +2326,93 @@ void MainWindow::clearRecentProjects()
 {
     m_recentProjects.clear();
     rebuildRecentProjectsMenu();
+}
+
+
+void MainWindow::applyWorkspaceBackground(const WorkspaceBackground &bg)
+{
+    if (!m_imageView) {
+        return;
+    }
+    m_imageView->setWorkspaceBackground(bg);
+    syncWorkspaceBackgroundActions();
+    markWorkspaceDirty();
+}
+
+void MainWindow::editWorkspaceBackground()
+{
+    if (!m_imageView) {
+        return;
+    }
+    if (!isWorkspaceMode()) {
+        enterWorkspaceMode();
+    }
+    const WorkspaceBackground before = m_imageView->workspaceBackground();
+    WorkspaceBackgroundDialog dlg(this);
+    dlg.setAppDefaultColors(
+        m_imageView->backgroundColor(),
+        m_imageView->backgroundColorAlt(),
+        m_imageView->backgroundPattern() == ImageView::BackgroundPattern::Checkerboard);
+    dlg.setBackground(before);
+    // Live canvas preview while the dialog is open; restore on cancel.
+    connect(&dlg, &WorkspaceBackgroundDialog::backgroundChanged, this,
+            [this](const WorkspaceBackground &bg) {
+                if (m_imageView) {
+                    m_imageView->setWorkspaceBackground(bg);
+                }
+            });
+    if (dlg.exec() != QDialog::Accepted) {
+        m_imageView->setWorkspaceBackground(before);
+        syncWorkspaceBackgroundActions();
+        return;
+    }
+    const WorkspaceBackground after = dlg.background();
+    // Reset to before so redo applies the accepted state once.
+    m_imageView->setWorkspaceBackground(before);
+    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
+        m_imageView->undoStack()->push(
+            new WorkspaceBackgroundCommand(this, before, after));
+    } else {
+        applyWorkspaceBackground(after);
+    }
+    if (statusBar()) {
+        QString msg;
+        switch (after.mode) {
+        case WorkspaceBackgroundMode::Solid:
+            msg = tr("Workspace background: solid");
+            break;
+        case WorkspaceBackgroundMode::Checkerboard:
+            msg = tr("Workspace background: checkerboard");
+            break;
+        case WorkspaceBackgroundMode::ImageTile:
+            msg = tr("Workspace background: image pattern");
+            break;
+        case WorkspaceBackgroundMode::AppDefault:
+        default:
+            msg = tr("Workspace background: application default");
+            break;
+        }
+        statusBar()->showMessage(msg, 2500);
+    }
+}
+
+void MainWindow::workspaceBackgroundDefault()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const WorkspaceBackground before = m_imageView->workspaceBackground();
+    WorkspaceBackground after; // AppDefault
+    if (before.isAppDefault()) {
+        return;
+    }
+    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
+        m_imageView->undoStack()->push(
+            new WorkspaceBackgroundCommand(this, before, after));
+    } else {
+        applyWorkspaceBackground(after);
+    }
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Workspace background: application default"), 2500);
+    }
 }

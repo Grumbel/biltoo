@@ -53,6 +53,10 @@ public:
     /** Colours used when mode is AppDefault (from Preferences). */
     void setAppDefaultColors(const QColor &color, const QColor &colorAlt, bool checker);
 
+signals:
+    /** Emitted when the user changes any control (live preview on canvas). */
+    void backgroundChanged(const WorkspaceBackground &bg);
+
 private:
     void updateControlsEnabled();
     void updatePreview();

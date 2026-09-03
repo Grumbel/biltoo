@@ -413,16 +413,26 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
                 }
             }
             if (!m_workspaceBgTile.isNull()) {
-                // Explicit scene-space tiling so the pattern pans/zooms with the view.
-                const qreal tw = qMax(1.0, qreal(m_workspaceBgTile.width()));
-                const qreal th = qMax(1.0, qreal(m_workspaceBgTile.height()));
-                const qreal x0 = std::floor(rect.left() / tw) * tw;
-                const qreal y0 = std::floor(rect.top() / th) * th;
-                const qreal x1 = std::ceil(rect.right() / tw) * tw;
-                const qreal y1 = std::ceil(rect.bottom() / th) * th;
-                for (qreal y = y0; y < y1; y += th) {
-                    for (qreal x = x0; x < x1; x += tw) {
-                        painter->drawPixmap(QPointF(x, y), m_workspaceBgTile);
+                // Scene-space tiling. When zoomed out, scale the tile up (LOD)
+                // so we do not stamp thousands of tiny copies.
+                const qreal viewScale = qMax(1e-6, transform().m11());
+                qreal tw = qMax(1.0, qreal(m_workspaceBgTile.width()));
+                qreal th = qMax(1.0, qreal(m_workspaceBgTile.height()));
+                constexpr qreal kMinScreenPx = 24.0;
+                qreal lod = 1.0;
+                while (tw * lod * viewScale < kMinScreenPx && lod < 64.0) {
+                    lod *= 2.0;
+                }
+                const qreal cellW = tw * lod;
+                const qreal cellH = th * lod;
+                const qreal x0 = std::floor(rect.left() / cellW) * cellW;
+                const qreal y0 = std::floor(rect.top() / cellH) * cellH;
+                const qreal x1 = std::ceil(rect.right() / cellW) * cellW;
+                const qreal y1 = std::ceil(rect.bottom() / cellH) * cellH;
+                for (qreal y = y0; y < y1; y += cellH) {
+                    for (qreal x = x0; x < x1; x += cellW) {
+                        painter->drawPixmap(QRectF(x, y, cellW, cellH), m_workspaceBgTile,
+                                            QRectF(0, 0, tw, th));
                     }
                 }
             } else {

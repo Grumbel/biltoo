@@ -408,5 +408,11 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   - Copy/Cut/Paste also on Edit menu  
   - Undo for Workspace Cut (canvas restore) and Paste (remove new session rows)  
   - `applyStoredAppearance` reloads full source before geometry content ops  
-  - Background image `imageSha256` stored and checked on resolve  
+  - Background image `imageSha256` stored and checked on resolve
+
+- [x] **Background polish (undo, embed, LOD, live preview)**  
+  - Undoable background changes (`WorkspaceBackgroundCommand`)  
+  - Live canvas preview while the dialog is open (restore on Cancel)  
+  - Image-tile LOD when zoomed out  
+  - On save, copy external background tiles into `<project>.assets/`  
 

@@ -242,10 +242,12 @@ void WorkspaceBackgroundDialog::updateControlsEnabled()
 
 void WorkspaceBackgroundDialog::updatePreview()
 {
+    const WorkspaceBackground bg = background();
     if (m_preview) {
         m_preview->setAppDefaultColors(m_appColor, m_appColorAlt, m_appChecker);
-        m_preview->setBackground(background());
+        m_preview->setBackground(bg);
     }
+    emit backgroundChanged(bg);
 }
 
 void WorkspaceBackgroundDialog::chooseColor()

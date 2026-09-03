@@ -1,4 +1,3 @@
-#include "workspacebackgrounddialog.h"
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -608,60 +607,7 @@ void MainWindow::syncWorkspaceBackgroundActions()
     }
 }
 
-void MainWindow::editWorkspaceBackground()
-{
-    if (!m_imageView) {
-        return;
-    }
-    if (!isWorkspaceMode()) {
-        enterWorkspaceMode();
-    }
-    WorkspaceBackgroundDialog dlg(this);
-    dlg.setAppDefaultColors(
-        m_imageView->backgroundColor(),
-        m_imageView->backgroundColorAlt(),
-        m_imageView->backgroundPattern() == ImageView::BackgroundPattern::Checkerboard);
-    dlg.setBackground(m_imageView->workspaceBackground());
-    if (dlg.exec() != QDialog::Accepted) {
-        return;
-    }
-    m_imageView->setWorkspaceBackground(dlg.background());
-    syncWorkspaceBackgroundActions();
-    markWorkspaceDirty();
-    if (statusBar()) {
-        const WorkspaceBackground wb = dlg.background();
-        QString msg;
-        switch (wb.mode) {
-        case WorkspaceBackgroundMode::Solid:
-            msg = tr("Workspace background: solid");
-            break;
-        case WorkspaceBackgroundMode::Checkerboard:
-            msg = tr("Workspace background: checkerboard");
-            break;
-        case WorkspaceBackgroundMode::ImageTile:
-            msg = tr("Workspace background: image pattern");
-            break;
-        case WorkspaceBackgroundMode::AppDefault:
-        default:
-            msg = tr("Workspace background: application default");
-            break;
-        }
-        statusBar()->showMessage(msg, 2500);
-    }
-}
 
-void MainWindow::workspaceBackgroundDefault()
-{
-    if (!m_imageView) {
-        return;
-    }
-    m_imageView->clearWorkspaceBackground();
-    syncWorkspaceBackgroundActions();
-    markWorkspaceDirty();
-    if (statusBar()) {
-        statusBar()->showMessage(tr("Workspace background: application default"), 2500);
-    }
-}
 
 
 

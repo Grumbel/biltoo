@@ -75,6 +75,7 @@ public:
     QVector<SessionImageId> applyWorkspacePaste(const QList<WorkspaceItemState> &items);
     void applyWorkspaceCut(const QList<WorkspaceItemState> &items);
     void applyWorkspaceUncut(const QList<WorkspaceItemState> &items);
+    void applyWorkspaceBackground(const WorkspaceBackground &bg);
     bool clipboardHasWorkspaceItems() const;
     int sessionIndexOfId(SessionImageId id) const;
     bool writeProjectToPath(const QString &projectPath, QString *error = nullptr);
