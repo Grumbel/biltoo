@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-115-thumb-drag-selection”**
-(Thumbnail drag drops selection only, not whole archive). Next bundle number: **116**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-116-pref-reset-icon”**
+(Pref reset uses view-refresh, not edit-clear). Next bundle number: **117**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

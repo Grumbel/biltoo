@@ -79,7 +79,7 @@ LayoutPanel::LayoutPanel(QWidget *parent)
         lay->addWidget(m_columnsSpin, 1);
         auto *reset = new QToolButton(row);
         reset->setAutoRaise(true);
-        reset->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
+        reset->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
         reset->setToolTip(tr("Reset to default"));
         reset->setFixedSize(24, 24);
         connect(reset, &QToolButton::clicked, this, [this]() { m_columnsSpin->setValue(3); });
@@ -100,7 +100,7 @@ LayoutPanel::LayoutPanel(QWidget *parent)
         lay->addWidget(m_rowsSpin, 1);
         auto *reset = new QToolButton(row);
         reset->setAutoRaise(true);
-        reset->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
+        reset->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
         reset->setToolTip(tr("Reset to default"));
         reset->setFixedSize(24, 24);
         connect(reset, &QToolButton::clicked, this, [this]() { m_rowsSpin->setValue(3); });

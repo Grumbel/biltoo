@@ -28,6 +28,7 @@
     <file alias="actions/view-grid.svg">../data/icons/actions/view-grid.svg</file>
     <file alias="actions/view-list-icons.svg">../data/icons/actions/view-list-icons.svg</file>
     <file alias="actions/view-paged.svg">../data/icons/actions/view-paged.svg</file>
+    <file alias="actions/view-refresh.svg">../data/icons/actions/view-refresh.svg</file>
     <file alias="actions/view-split-left-right.svg">../data/icons/actions/view-split-left-right.svg</file>
     <file alias="actions/view-split-top-bottom.svg">../data/icons/actions/view-split-top-bottom.svg</file>
     <file alias="actions/view-stack.svg">../data/icons/actions/view-stack.svg</file>

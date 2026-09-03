@@ -1676,3 +1676,21 @@ path list was not.
 - [x] Document; next **116**
 
 **Next bundle:** `qimgview-116-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-116-pref-reset-icon`
+
+**Request:** Preference / Layout reset affordance should use a **reload**
+icon, not the delete/clear glyph.
+
+**Change:** Add `view-refresh.svg`; use `themeIcon("view-refresh",
+SP_BrowserReload)` in PreferencesDialog and LayoutPanel reset buttons.
+
+### Done criteria
+
+- [x] Reload icon for reset controls
+- [x] Document; next **117**
+
+**Next bundle:** `qimgview-117-…` — further polish as needed.

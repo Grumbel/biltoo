@@ -899,7 +899,7 @@ QWidget *PreferencesDialog::wrapWithReset(QWidget *field, QToolButton **resetBtn
 
     auto *btn = new QToolButton(row);
     btn->setAutoRaise(true);
-    btn->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
+    btn->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
     btn->setToolTip(tr("Reset to default"));
     btn->setAccessibleName(tr("Reset to default"));
     btn->setFocusPolicy(Qt::TabFocus);
