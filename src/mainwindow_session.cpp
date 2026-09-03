@@ -1485,7 +1485,7 @@ void MainWindow::rebuildHistoryMenu()
     }
     m_historyMenu->clear();
     if (m_sessionHistory.isEmpty()) {
-        auto *empty = m_historyMenu->addAction(tr("(No history yet)"));
+        auto *empty = m_historyMenu->addAction(tr("(No recent sessions)"));
         empty->setEnabled(false);
         m_historyMenu->addSeparator();
         if (m_clearHistoryAct) {

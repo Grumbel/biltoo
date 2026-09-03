@@ -14,7 +14,7 @@ A classic desktop image viewer with three ways to look at a session on one canva
 
 - Open files or directories; append more via File → Add, drag-and-drop, or the command line
 - File → Open replaces the session; File → New clears it
-- History menu to reopen recent sessions
+- Recent Sessions menu to reopen previous image sessions (distinct from Recent Projects)
 - Sort by name, date, file size, width, height, or pixel count
 - Thumbnail bar (show/hide, edge placement, optional labels)
 

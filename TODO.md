@@ -873,6 +873,10 @@ and sheared tiles follow the selection AABB.
 - Path→Image open prefers selected/sole live tile SessionImageId (not
   `paths().indexOf` first match); gallery focus path fallback same rule
 
+### Fixed in `qimgview-099`
+- History menu renamed **Recent Sessions** (Clear / empty / status tips /
+  README); distinct from File → Recent Projects
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -906,8 +910,9 @@ and sheared tiles follow the selection AABB.
   selection — confirm behaviour.
 
 ### Missing features (product)
-- [ ] Recent *files* (session paths) vs only Recent Projects — History menu covers
+- [x] Recent *files* (session paths) vs only Recent Projects — History menu covers
   sessions; naming is easy to confuse with Recent Projects.
+  (Renamed to **Recent Sessions**; single-file Recent list not added.)
 - [x] Explicit "Remove from session" in thumbnail context menu (if not present).
 - [ ] Toolbar/customize — out of scope unless requested.
 
@@ -1228,3 +1233,30 @@ tile carries the id.
 
 **Next bundle:** `qimgview-099-…` — remaining product polish (Recent naming,
 long-session thumbs) or further identity GUI smoke notes.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-099-recent-sessions-naming`
+
+**Goal:** Disambiguate session reopen vs project reopen in the menu bar.
+
+### Scope
+
+1. Rename **History** menu → **Recent Sessions** (user-visible strings only).
+2. Clear action / empty placeholder / status tips match the new name.
+3. **Recent Projects** (File menu) unchanged — still `.qimgview` projects.
+4. Internal symbols (`m_historyMenu`, `sessionHistory` settings key) stay as-is
+   so settings continue to load.
+
+### Out of scope
+
+- Thumb strip virtualization
+- New “recent files” (single path) list
+
+### Done criteria
+
+- [x] Menu bar says Recent Sessions
+- [x] Document; next **100**
+
+**Next bundle:** `qimgview-100-…` — long-session thumb virtualization, or other
+product work from TODO 0.1.0.

@@ -782,10 +782,13 @@ void MainWindow::createMenus()
     m_goMenu->addAction(m_slideshowSlowerAct);
 
     // Past sessions (full path lists) — after navigation, before Help.
-    m_historyMenu = menuBar()->addMenu(tr("&History"));
-    m_historyMenu->setStatusTip(tr("Reopen a previous session (all images from that open)"));
-    m_clearHistoryAct = new QAction(tr("&Clear History"), this);
-    m_clearHistoryAct->setStatusTip(tr("Remove all remembered sessions"));
+    // Named "Recent Sessions" so it is not confused with File → Recent Projects.
+    m_historyMenu = menuBar()->addMenu(tr("Recent &Sessions"));
+    m_historyMenu->setStatusTip(
+        tr("Reopen a previous image session (all files from that open); "
+           "not the same as Recent Projects"));
+    m_clearHistoryAct = new QAction(tr("&Clear Recent Sessions"), this);
+    m_clearHistoryAct->setStatusTip(tr("Remove all remembered image sessions"));
     connect(m_clearHistoryAct, &QAction::triggered, this, &MainWindow::clearSessionHistory);
 
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
