@@ -32,29 +32,95 @@ QImage scaleToMaxEdge(QImage image, int maxEdge)
     return image.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 
+QStringList formatCandidates(const QString &hint)
+{
+    QStringList out;
+    const QString h = hint.toLower();
+    if (!h.isEmpty()) {
+        out.append(h);
+    }
+    // Common aliases / plugin names Qt may register under.
+    if (h == QLatin1String("jpg") || h == QLatin1String("jpe")) {
+        out.append(QStringLiteral("jpeg"));
+    } else if (h == QLatin1String("jpeg")) {
+        out.append(QStringLiteral("jpg"));
+    } else if (h == QLatin1String("tif")) {
+        out.append(QStringLiteral("tiff"));
+    } else if (h == QLatin1String("tiff")) {
+        out.append(QStringLiteral("tif"));
+    }
+    // Sniff magic when suffix is missing or plugins ignore auto-detect.
+    return out;
+}
+
+QImage decodeWithQtReader(const QByteArray &bytes, const QByteArray &format, int maxEdge)
+{
+    QByteArray data = bytes;
+    QBuffer buffer(&data);
+    if (!buffer.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    QImageReader reader(&buffer);
+    reader.setAutoTransform(true);
+    if (!format.isEmpty()) {
+        reader.setFormat(format);
+    } else {
+        reader.setDecideFormatFromContent(true);
+    }
+    if (maxEdge > 0) {
+        const QSize size = reader.size();
+        if (size.isValid()) {
+            QSize scaled = size;
+            scaled.scale(maxEdge, maxEdge, Qt::KeepAspectRatio);
+            if (scaled != size) {
+                reader.setScaledSize(scaled);
+            }
+        }
+    }
+    return reader.read();
+}
+
+#ifdef QIMGVIEW_HAVE_VIPS
+// Forward-declared: defined with other vips helpers below.
+QImage loadWithVipsBuffer(const QByteArray &bytes, int maxEdge);
+#endif
+
 QImage decodeFromBytes(const QByteArray &bytes, const QString &formatHint, int maxEdge)
 {
     if (bytes.isEmpty()) {
         return {};
     }
-    // Prefer content sniffing — format hints are often wrong for archive members.
-    QImage image = QImage::fromData(bytes);
-    if (image.isNull()) {
-        QByteArray data = bytes;
-        QBuffer buffer(&data);
-        if (!buffer.open(QIODevice::ReadOnly)) {
-            return {};
+
+    // 1) Explicit format hints first — WebP/JPEG plugins often need this for buffers.
+    for (const QString &fmt : formatCandidates(formatHint)) {
+        QImage image = QImage::fromData(bytes, fmt.toLatin1().constData());
+        if (!image.isNull()) {
+            return scaleToMaxEdge(image, maxEdge);
         }
-        QImageReader reader(&buffer);
-        reader.setAutoTransform(true);
-        reader.setDecideFormatFromContent(true);
-        if (!formatHint.isEmpty()) {
-            // Only as a soft hint after content detection failed once.
-            reader.setFormat(formatHint.toLatin1());
+        image = decodeWithQtReader(bytes, fmt.toLatin1(), maxEdge);
+        if (!image.isNull()) {
+            return image;
         }
-        image = reader.read();
     }
-    return scaleToMaxEdge(image, maxEdge);
+
+    // 2) Content sniff / no format.
+    QImage image = QImage::fromData(bytes);
+    if (!image.isNull()) {
+        return scaleToMaxEdge(image, maxEdge);
+    }
+    image = decodeWithQtReader(bytes, QByteArray(), maxEdge);
+    if (!image.isNull()) {
+        return image;
+    }
+
+#ifdef QIMGVIEW_HAVE_VIPS
+    // 3) libvips buffer path (WebP/HEIF/etc. when Qt plugins miss buffer loads).
+    image = loadWithVipsBuffer(bytes, maxEdge);
+    if (!image.isNull()) {
+        return image;
+    }
+#endif
+    return {};
 }
 
 QImage loadArchiveRef(const QString &path, int maxEdge)
@@ -78,8 +144,9 @@ QImage loadArchiveRef(const QString &path, int maxEdge)
     const QString suffix = QFileInfo(ref.memberPath).suffix().toLower();
     QImage image = decodeFromBytes(bytes, suffix, maxEdge);
     if (image.isNull()) {
-        qWarning("ImageLoader: decode failed for %s (%d bytes, suffix=%s)",
-                 qPrintable(path), bytes.size(), qPrintable(suffix));
+        const QByteArray head = bytes.left(12).toHex(' ');
+        qWarning("ImageLoader: decode failed for %s (%d bytes, suffix=%s, head=%s)",
+                 qPrintable(path), bytes.size(), qPrintable(suffix), head.constData());
     }
     return image;
 }
@@ -244,6 +311,46 @@ QImage loadWithVips(const QString &path, int maxEdge)
     return result;
 }
 
+QImage loadWithVipsBuffer(const QByteArray &bytes, int maxEdge)
+{
+    if (bytes.isEmpty()) {
+        return {};
+    }
+
+    VipsImage *in = nullptr;
+    if (maxEdge > 0) {
+        if (vips_thumbnail_buffer(const_cast<void *>(static_cast<const void *>(bytes.constData())),
+                                  size_t(bytes.size()), &in, maxEdge,
+                                  "size", VIPS_SIZE_DOWN,
+                                  nullptr) != 0) {
+            in = nullptr;
+        }
+    }
+    if (!in) {
+        in = vips_image_new_from_buffer(bytes.constData(), size_t(bytes.size()), "",
+                                        nullptr);
+        if (!in) {
+            return {};
+        }
+    }
+
+    VipsImage *rotated = nullptr;
+    if (vips_autorot(in, &rotated, nullptr) == 0 && rotated) {
+        g_object_unref(in);
+        in = rotated;
+    }
+
+    QImage result = vipsToQImage(in);
+    g_object_unref(in);
+    // maxEdge already applied via thumbnail_buffer when possible; otherwise scale.
+    if (maxEdge > 0 && !result.isNull()
+        && (result.width() > maxEdge || result.height() > maxEdge)) {
+        result = result.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
+                               Qt::SmoothTransformation);
+    }
+    return result;
+}
+
 #endif // QIMGVIEW_HAVE_VIPS
 
 QSize probeSizeWithQt(const QString &path)
@@ -309,19 +416,35 @@ QSize probeSize(const QString &path)
         if (bytes.isEmpty()) {
             return {};
         }
-        QByteArray data = bytes;
-        QBuffer buffer(&data);
-        if (!buffer.open(QIODevice::ReadOnly)) {
-            return {};
-        }
-        QImageReader reader(&buffer);
-        reader.setAutoTransform(true);
         const QString suffix = QFileInfo(ref.memberPath).suffix().toLower();
-        if (!suffix.isEmpty()) {
-            reader.setFormat(suffix.toLatin1());
+        for (const QString &fmt : formatCandidates(suffix)) {
+            QByteArray data = bytes;
+            QBuffer buffer(&data);
+            if (!buffer.open(QIODevice::ReadOnly)) {
+                continue;
+            }
+            QImageReader reader(&buffer);
+            reader.setAutoTransform(true);
+            reader.setFormat(fmt.toLatin1());
+            const QSize sz = reader.size();
+            if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
+                return sz;
+            }
         }
-        const QSize sz = reader.size();
-        return sz.isValid() ? sz : QSize();
+#ifdef QIMGVIEW_HAVE_VIPS
+        {
+            VipsImage *in = vips_image_new_from_buffer(bytes.constData(), size_t(bytes.size()),
+                                                       "", nullptr);
+            if (in) {
+                const QSize sz(vips_image_get_width(in), vips_image_get_height(in));
+                g_object_unref(in);
+                if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
+                    return sz;
+                }
+            }
+        }
+#endif
+        return {};
     }
     if (path.isEmpty() || !QFile::exists(path)) {
         return {};
