@@ -113,19 +113,24 @@ H(k) = | 1  k |
 ```
 
 in item-local space (before placement rotation). `k = 0` is a pure scaled
-rectangle; non-zero `k` yields a parallelogram.
+rectangle; non-zero `k` yields a parallelogram. One shear parameter is enough
+for all orientation-preserving parallelogram frames (4 DOF linear part).
 
-| Handle | Behaviour |
-|--------|-----------|
-| ShearTop / ShearBottom | Drag along local X; opposite edge fixed in scene; updates `k` |
+| Handle / action | Behaviour |
+|-----------------|-----------|
+| ShearTop / Bottom / Left / Right | Purple diamonds offset from mid-edge; drag along local X; opposite edge fixed; updates `k` |
+| Chrome `//` (ResetShear) | Sets `k = 0` |
+| Chrome `1:1` (ResetScale) | Uniform scale 1 and `k = 0` |
+| Chrome `0°` (ResetRotation) | Placement angle only (shear kept) |
+| Alt+[ / Alt+] | Nudge shear by 0.05 (Shift: 0.1) on selected tiles |
+| Alt+0 | Reset shear on selected tiles |
 
-Diamond grips sit on the top/bottom frame edges, offset from the mid-edge
-scale bars. Reset Scale (1:1) also clears shear. Project JSON field `shear`
-is omitted when ~0 for backward-compatible files.
+Project JSON field `shear` is omitted when ~0 (old files load as 0).
 
 Edge scale uses the same linear map: local +Y in scene is
 `R · (k·sy, sy)`, so projections stay correct when the frame is a
-parallelogram.
+parallelogram. Free-axis group scale conjugates `S_scene · L` and
+re-decomposes via `PlacementLinear::decompose`.
 
 ## Chrome design language
 

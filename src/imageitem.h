@@ -39,9 +39,11 @@ public:
         ScaleRight,
         ScaleBottom,
         ScaleLeft,
-        /** Shear along local X (top/bottom edge); H(k) in R·H·S. */
+        /** Shear along local X (parallelogram); H(k) in R·H·S. */
         ShearTop,
         ShearBottom,
+        ShearLeft,
+        ShearRight,
         RotateTop,
         RotateRight,
         RotateBottom,
@@ -55,6 +57,7 @@ public:
         Lower,
         ResetScale,
         ResetRotation,
+        ResetShear,
         OpacitySlider
     };
 

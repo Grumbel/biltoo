@@ -790,3 +790,21 @@ Extracted `PlacementLinear::{make,decompose}` used by `ImageItem` and group
 scale. `tests/placementlinear_test.cpp` covers round-trip and scene conjugate.
 Status bar shows Shear when |k| > 0.001 on the selected Workspace item.
 
+
+---
+
+## Bundle `qimgview-080` — full shear support (complete)
+
+**Critical fix:** project save now writes `appearance.shear` from live pose
+(previously dropped on save — load could never restore shear from projects).
+
+**Complete surface:**
+- Four edge shear diamonds (Top/Bottom/Left/Right)
+- Chrome `//` ResetShear; `1:1` still clears shear; `0°` keeps shear
+- Alt+[ / Alt+] nudge; Alt+0 reset (Shift steps 0.1)
+- Gallery pack zeros shear; gallery enter zeros shear
+- Edge scale axes R·H·S; group free-axis S·L decompose
+- PlacementLinear shared + unit tests
+- Status shows Shear; projectfile tests include shear
+- HANDLES.md documents full contract
+

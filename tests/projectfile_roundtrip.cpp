@@ -339,6 +339,7 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
     im.appearance.pos = QPointF(50.5, -10.25);
     im.appearance.scale = 1.1;
     im.appearance.scaleY = 0.95;
+    im.appearance.shear = 0.42;
     im.appearance.rotation = 22.0;
     im.appearance.opacity = 0.75;
     im.appearance.z = 4.0;
@@ -383,6 +384,7 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
     QVERIFY(nearlyEqual(loaded.images[0].appearance.cropRotation, -12.5));
     QVERIFY(nearlyEqual(loaded.images[0].appearance.pos.x(), 50.5));
     QVERIFY(nearlyEqual(loaded.images[0].appearance.scaleY, 0.95));
+    QVERIFY(nearlyEqual(loaded.images[0].appearance.shear, 0.42));
     QCOMPARE(loaded.images[0].appearance.contentHFlip, true);
     QCOMPARE(loaded.images[0].appearance.contentQuarterTurns, 3);
 

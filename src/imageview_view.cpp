@@ -529,6 +529,9 @@ QString ImageView::statusText() const
                        .arg(item->imageSize().height())
                        .arg(qRound(viewScale() * 100))
                        .arg(qRound(item->itemRotation()));
+    if (qAbs(item->itemShear()) > 1e-3) {
+        text += tr("  |  Shear: %1").arg(item->itemShear(), 0, 'f', 2);
+    }
     if (item->itemHFlip() || item->itemVFlip()) {
         QStringList flips;
         if (item->itemHFlip()) {

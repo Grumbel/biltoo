@@ -2053,6 +2053,7 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
             im.appearance.pos = p.pos;
             im.appearance.scale = p.scale;
             im.appearance.scaleY = p.scaleY;
+            im.appearance.shear = p.shear;
             im.appearance.rotation = p.rotation;
             im.appearance.opacity = p.opacity;
             im.appearance.z = p.z;
@@ -2273,7 +2274,7 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
             enterWorkspaceMode();
         }
         if (m_imageView) {
-            // Pose (pos/scale/rotation/opacity/z) is already in m_appearance.
+            // Pose (pos/scale/shear/rotation/opacity/z) is already in m_appearance.
             // addImageForSession schedules LoadAdd; on decode, LoadAdd applies
             // placement via applyState from the store.
             //

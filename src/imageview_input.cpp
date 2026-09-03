@@ -912,6 +912,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                     viewport()->setCursor(Qt::SizeHorCursor);
                     break;
                 case H::ShearTop: case H::ShearBottom:
+                case H::ShearLeft: case H::ShearRight:
                     viewport()->setCursor(Qt::SizeHorCursor);
                     break;
                 case H::OpacitySlider:
@@ -1281,6 +1282,40 @@ void ImageView::keyPressEvent(QKeyEvent *event)
             } else if (!best->path().isEmpty()) {
                 emit galleryItemFocused(best->path());
             }
+                event->accept();
+                return;
+            }
+        }
+    }
+
+    // Workspace: Alt+[ / Alt+] nudge horizontal shear; Alt+0 resets shear.
+    if (isWorkspaceMode()
+        && (event->modifiers() & Qt::AltModifier)
+        && !(event->modifiers() & Qt::ControlModifier)) {
+        const int key = event->key();
+        if (key == Qt::Key_BracketLeft || key == Qt::Key_BracketRight
+            || key == Qt::Key_0) {
+            const QList<QGraphicsItem *> selected = m_scene ? m_scene->selectedItems() : QList<QGraphicsItem *>();
+            QList<ImageItem *> targets;
+            for (QGraphicsItem *gi : selected) {
+                if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    if (m_items.contains(item)) {
+                        targets.append(item);
+                    }
+                }
+            }
+            if (!targets.isEmpty()) {
+                const qreal step = (event->modifiers() & Qt::ShiftModifier) ? 0.1 : 0.05;
+                for (ImageItem *item : targets) {
+                    if (key == Qt::Key_0) {
+                        item->setItemShear(0.0);
+                    } else {
+                        const qreal delta = (key == Qt::Key_BracketRight) ? step : -step;
+                        item->setItemShear(item->itemShear() + delta);
+                    }
+                    commitItemSessionEdit(item);
+                }
+                emit statusChanged();
                 event->accept();
                 return;
             }

@@ -30,7 +30,7 @@ constexpr qreal kChromeBtnGapPx = 14.0;      // gap within a chrome button group
 constexpr qreal kChromeClearPx = 16.0;       // min air from group edge to rotate knob
 constexpr qreal kChromeGroupGapPx = 22.0;    // extra gap between upper/lower groups (rotate lives here)
 constexpr int kChromeUpperCount = 4;         // flip / flip / 90°CCW / 90°CW
-constexpr int kChromeLowerCount = 4;         // raise / lower / 1:1 / 0°
+constexpr int kChromeLowerCount = 5;         // raise / lower / 1:1 / 0° / shear
 constexpr int kChromeCount = kChromeUpperCount + kChromeLowerCount;
 // Opacity track length (along the left edge) and thickness (perpendicular).
 constexpr qreal kSliderWidthPx = 100.0;   // track length in viewport px
@@ -92,7 +92,7 @@ FrameViewGeom makeFrameViewGeom(const QPointF &tl, const QPointF &tr,
 // Two chrome groups outside the *rotated* right edge, split around the free-
 // rotate knob (along-edge layout — tracks the content frame).
 //   upper: FlipH, FlipV, Rotate90CCW, Rotate90CW  — prefer top of edge
-//   lower: Raise, Lower, ResetScale, ResetRotation — prefer bottom of edge
+//   lower: Raise, Lower, ResetScale, ResetRotation, ResetShear — prefer bottom of edge
 void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
 {
     const qreal btn = kChromeBtnScreenPx;
@@ -316,6 +316,7 @@ bool ImageItem::isChromeHandle(Handle h) const
         || h == Handle::Rotate90CCW || h == Handle::Rotate90CW
         || h == Handle::Raise || h == Handle::Lower
         || h == Handle::ResetScale || h == Handle::ResetRotation
+        || h == Handle::ResetShear
         || h == Handle::OpacitySlider;
 }
 
@@ -344,7 +345,8 @@ bool ImageItem::isScaleHandle(Handle h) const
 
 bool ImageItem::isShearHandle(Handle h) const
 {
-    return h == Handle::ShearTop || h == Handle::ShearBottom;
+    return h == Handle::ShearTop || h == Handle::ShearBottom
+        || h == Handle::ShearLeft || h == Handle::ShearRight;
 }
 
 QPointF ImageItem::scaleAnchorLocal(Handle h) const
@@ -372,6 +374,10 @@ QPointF ImageItem::scaleAnchorLocal(Handle h) const
         return QPointF(r.center().x(), r.bottom());
     case Handle::ShearBottom:
         return QPointF(r.center().x(), r.top());
+    case Handle::ShearLeft:
+        return QPointF(r.right(), r.center().y());
+    case Handle::ShearRight:
+        return QPointF(r.left(), r.center().y());
     default:
         return r.center();
     }
@@ -498,8 +504,10 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
 void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
 {
     // Horizontal shear k in local space: H = [[1,k],[0,1]] inside R·H·S.
-    // After S then H: x' = sx*x + k*(sy*y). Top/bottom (y=±h/2) move along
-    // local +X by ±k*sy*(h/2). Drag along rotated local X; opposite edge fixed.
+    // After S then H: x' = sx*x + k*(sy*y). Changing k slides rows along local X.
+    // All four edge grips project pointer motion onto rotated local +X; the
+    // opposite edge is held fixed in scene. Denominator uses the half-extent
+    // along local Y (image height) so k is dimensionless and matches make().
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal halfH = qMax(1e-6, r.height() * 0.5);
     const qreal rot = qDegreesToRadians(m_pressRotation);
@@ -512,12 +520,26 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
     const qreal len0 = QPointF::dotProduct(v0, dirX);
     const qreal len1 = QPointF::dotProduct(v1, dirX);
     const qreal denom = qMax(1e-6, m_pressScaleY * halfH);
+    const qreal delta = (len1 - len0) / denom;
     qreal k = m_pressShear;
-    if (m_activeHandle == Handle::ShearTop) {
+    switch (m_activeHandle) {
+    case Handle::ShearTop:
         // y_top < 0: increasing k moves top toward -localX.
-        k = m_pressShear + (len0 - len1) / denom;
-    } else {
-        k = m_pressShear + (len1 - len0) / denom;
+        k = m_pressShear - delta;
+        break;
+    case Handle::ShearBottom:
+        k = m_pressShear + delta;
+        break;
+    case Handle::ShearLeft:
+        // Same horizontal shear; left grip uses opposite sign of top for a
+        // consistent "drag with the edge" feel.
+        k = m_pressShear - delta;
+        break;
+    case Handle::ShearRight:
+        k = m_pressShear + delta;
+        break;
+    default:
+        break;
     }
     setItemShear(k);
     const QPointF now = mapToScene(m_pressAnchorLocal);
@@ -583,14 +605,15 @@ QList<ImageItem::Handle> ImageItem::activeHandles() const
                 << Handle::ScaleBottomLeft << Handle::ScaleBottomRight
                 << Handle::ScaleTop << Handle::ScaleRight
                 << Handle::ScaleBottom << Handle::ScaleLeft
-                << Handle::ShearTop << Handle::ShearBottom;
+                << Handle::ShearTop << Handle::ShearBottom
+                << Handle::ShearLeft << Handle::ShearRight;
     }
     handles << Handle::RotateTop << Handle::RotateRight
             << Handle::RotateBottom << Handle::RotateLeft
             << Handle::FlipH << Handle::FlipV
             << Handle::Rotate90CCW << Handle::Rotate90CW
             << Handle::Raise << Handle::Lower
-            << Handle::ResetScale << Handle::ResetRotation
+            << Handle::ResetScale << Handle::ResetRotation << Handle::ResetShear
             << Handle::OpacitySlider;
     return handles;
 }
@@ -660,10 +683,14 @@ QPointF ImageItem::handleCenter(Handle h) const
     case Handle::ScaleLeft:
         return QPointF(r.left(), cy);
     case Handle::ShearTop:
-        // Offset along top edge so scale mid-handle and shear grip do not coincide.
+        // Offset along edge so scale mid-handle and shear grip do not coincide.
         return QPointF(cx - r.width() * 0.22, r.top());
     case Handle::ShearBottom:
         return QPointF(cx + r.width() * 0.22, r.bottom());
+    case Handle::ShearLeft:
+        return QPointF(r.left(), cy - r.height() * 0.22);
+    case Handle::ShearRight:
+        return QPointF(r.right(), cy + r.height() * 0.22);
     case Handle::RotateTop:
         return QPointF(cx, r.top() - rotOffY);
     case Handle::RotateRight:
@@ -688,6 +715,8 @@ QPointF ImageItem::handleCenter(Handle h) const
         return chromeBtnCenter(6);
     case Handle::ResetRotation:
         return chromeBtnCenter(7);
+    case Handle::ResetShear:
+        return chromeBtnCenter(8);
     case Handle::OpacitySlider:
         return opacitySliderRect().center();
     default:
@@ -775,7 +804,8 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         chromeCentersView(fg, centers);
         const Handle chromeHandles[] = {
             Handle::FlipH, Handle::FlipV, Handle::Rotate90CCW, Handle::Rotate90CW,
-            Handle::Raise, Handle::Lower, Handle::ResetScale, Handle::ResetRotation
+            Handle::Raise, Handle::Lower, Handle::ResetScale, Handle::ResetRotation,
+            Handle::ResetShear
         };
         Handle best = Handle::None;
         qreal bestDist = 1e300;
@@ -863,14 +893,19 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
                 best = ed.h;
             }
         }
-        // Shear diamonds: offset along top/bottom edges from mid (view space).
+        // Shear diamonds: offset along each edge from mid (view space).
         const qreal shearAlong = kHandleScreenPx * 2.2;
         const QPointF shearPts[] = {
             midTop - dirTop * shearAlong,
             midBottom + dirBottom * shearAlong,
+            midLeft - dirLeft * shearAlong,
+            midRight + dirRight * shearAlong,
         };
-        const Handle shearHs[] = {Handle::ShearTop, Handle::ShearBottom};
-        for (int i = 0; i < 2; ++i) {
+        const Handle shearHs[] = {
+            Handle::ShearTop, Handle::ShearBottom,
+            Handle::ShearLeft, Handle::ShearRight,
+        };
+        for (int i = 0; i < 4; ++i) {
             const qreal d = QLineF(p, shearPts[i]).length();
             if (d <= kHandleScreenPx * 1.1 && d <= bestDist) {
                 bestDist = d;
@@ -960,6 +995,9 @@ void ImageItem::activateChromeHandle(Handle h)
         break;
     case Handle::ResetRotation:
         setItemRotation(0.0);
+        break;
+    case Handle::ResetShear:
+        setItemShear(0.0);
         break;
     default:
         break;
@@ -1278,7 +1316,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             painter->setBrush(Qt::NoBrush);
         }
 
-        // Shear grips: small diamonds on top/bottom edges (offset from mid).
+        // Shear grips: small diamonds on all four edges (offset from mid).
         const qreal shearAlong = hs * 2.2;
         struct ShearD {
             Handle h;
@@ -1287,6 +1325,8 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         const ShearD shears[] = {
             {Handle::ShearTop, midTop - dirTop * shearAlong},
             {Handle::ShearBottom, midBottom + dirBottom * shearAlong},
+            {Handle::ShearLeft, midLeft - dirLeft * shearAlong},
+            {Handle::ShearRight, midRight + dirRight * shearAlong},
         };
         for (const ShearD &sh : shears) {
             const bool hot = (m_hoverHandle == sh.h || m_activeHandle == sh.h);
@@ -1385,6 +1425,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         drawBtn(Handle::Lower, 5, QStringLiteral("↓"));
         drawBtn(Handle::ResetScale, 6, QStringLiteral("1:1"));
         drawBtn(Handle::ResetRotation, 7, QStringLiteral("0°"));
+        drawBtn(Handle::ResetShear, 8, QStringLiteral("//"));
     }
 
     // Opacity: left *outside*, vertical. Bottom end = 5%, top end = 100%.
@@ -1439,7 +1480,8 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
     if (h == Handle::FlipH || h == Handle::FlipV
         || h == Handle::Rotate90CCW || h == Handle::Rotate90CW
         || h == Handle::Raise || h == Handle::Lower
-        || h == Handle::ResetScale || h == Handle::ResetRotation) {
+        || h == Handle::ResetScale || h == Handle::ResetRotation
+        || h == Handle::ResetShear) {
         activateChromeHandle(h);
         return true;
     }
