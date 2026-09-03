@@ -368,14 +368,15 @@ void ImageView::paintEvent(QPaintEvent *event)
     }
 }
 
-void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
+void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
+                                           qreal viewScale)
 {
-    // Workspace may override the application background (project state).
-    const bool wsOverride = isWorkspaceMode()
-        && !m_workspaceBackground.isAppDefault();
+    if (!painter) {
+        return;
+    }
+    viewScale = qMax(1e-6, viewScale);
 
     auto fillChecker = [&](const QColor &a, const QColor &b) {
-        const qreal viewScale = qMax(1e-6, transform().m11());
         constexpr qreal kBaseCell = 16.0;
         constexpr qreal kMinScreenPx = 16.0;
         qreal cell = kBaseCell;
@@ -396,6 +397,9 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
         }
     };
 
+    const bool wsOverride = isWorkspaceMode()
+        && !m_workspaceBackground.isAppDefault();
+
     if (wsOverride) {
         const WorkspaceBackground &wb = m_workspaceBackground;
         if (wb.mode == WorkspaceBackgroundMode::Solid) {
@@ -413,11 +417,9 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
                 }
             }
             if (!m_workspaceBgTile.isNull()) {
-                // Scene-space tiling. When zoomed out, scale the tile up (LOD)
-                // so we do not stamp thousands of tiny copies.
-                const qreal viewScale = qMax(1e-6, transform().m11());
-                qreal tw = qMax(1.0, qreal(m_workspaceBgTile.width()));
-                qreal th = qMax(1.0, qreal(m_workspaceBgTile.height()));
+                const QPixmap &tile = m_workspaceBgTile;
+                qreal tw = qMax(1.0, qreal(tile.width()));
+                qreal th = qMax(1.0, qreal(tile.height()));
                 constexpr qreal kMinScreenPx = 24.0;
                 qreal lod = 1.0;
                 while (tw * lod * viewScale < kMinScreenPx && lod < 64.0) {
@@ -431,7 +433,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
                 const qreal y1 = std::ceil(rect.bottom() / cellH) * cellH;
                 for (qreal y = y0; y < y1; y += cellH) {
                     for (qreal x = x0; x < x1; x += cellW) {
-                        painter->drawPixmap(QRectF(x, y, cellW, cellH), m_workspaceBgTile,
+                        painter->drawPixmap(QRectF(x, y, cellW, cellH), tile,
                                             QRectF(0, 0, tw, th));
                     }
                 }
@@ -449,13 +451,16 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
         if (!useChecker) {
             painter->fillRect(rect, m_bgColor);
         } else {
-            // Checkerboard in scene coordinates so it pans with the view. Cell size is
-            // LOD-snapped so on-screen square size stays in a comfortable range.
             const QColor a = m_bgColor;
             const QColor b = m_bgColorAlt.isValid() ? m_bgColorAlt : m_bgColor.lighter(120);
             fillChecker(a, b);
         }
     }
+}
+
+void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
+{
+    paintCanvasBackground(painter, rect, transform().m11());
 
     // Page guide paper (under images): plain white sheet in scene units.
     if (m_pageGuideVisible && isWorkspaceMode()) {
@@ -469,6 +474,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
         }
     }
 }
+
 
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {

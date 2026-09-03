@@ -1533,17 +1533,46 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
         return {};
     }
     QImage img(pixelSize, QImage::Format_ARGB32_Premultiplied);
-    if (transparentBackground) {
-        img.fill(Qt::transparent);
-    } else {
-        img.fill(backgroundColor());
-    }
+    img.fill(Qt::transparent);
+
     QPainter painter(&img);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-    // Keep aspect: letterbox inside pixelSize if source aspect differs.
-    m_scene->render(&painter, QRectF(QPointF(0, 0), QSizeF(pixelSize)), sourceSceneRect,
-                    Qt::KeepAspectRatio);
+
+    // Target rect with aspect preserved (same as QGraphicsScene::render KeepAspectRatio).
+    const QRectF target(QPointF(0, 0), QSizeF(pixelSize));
+    QRectF fitted = target;
+    {
+        const qreal sx = target.width() / sourceSceneRect.width();
+        const qreal sy = target.height() / sourceSceneRect.height();
+        const qreal s = qMin(sx, sy);
+        const qreal tw = sourceSceneRect.width() * s;
+        const qreal th = sourceSceneRect.height() * s;
+        fitted = QRectF(target.center().x() - tw / 2.0,
+                        target.center().y() - th / 2.0, tw, th);
+    }
+
+    if (!transparentBackground) {
+        // Paint Workspace / app canvas background in scene space, then map to pixels.
+        painter.save();
+        QTransform xform;
+        xform.translate(fitted.left(), fitted.top());
+        xform.scale(fitted.width() / sourceSceneRect.width(),
+                    fitted.height() / sourceSceneRect.height());
+        xform.translate(-sourceSceneRect.left(), -sourceSceneRect.top());
+        painter.setTransform(xform);
+        const qreal exportScale = fitted.width() / sourceSceneRect.width();
+        // paintCanvasBackground is non-const (tile cache); export is const — cast.
+        const_cast<ImageView *>(this)->paintCanvasBackground(
+            &painter, sourceSceneRect, exportScale);
+        painter.restore();
+    }
+
+    // Scene items only (no scene background brush).
+    const QBrush oldBrush = m_scene->backgroundBrush();
+    m_scene->setBackgroundBrush(Qt::NoBrush);
+    m_scene->render(&painter, fitted, sourceSceneRect, Qt::IgnoreAspectRatio);
+    m_scene->setBackgroundBrush(oldBrush);
     return img;
 }
 

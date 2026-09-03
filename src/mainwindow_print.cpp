@@ -288,7 +288,15 @@ void MainWindow::exportPng()
     layout->addRow(tr("Height:"), heightLabel);
 
     auto *transparentCheck = new QCheckBox(tr("Transparent background"), &dlg);
-    transparentCheck->setChecked(true);
+    // Prefer the visible Workspace/canvas background unless the user opts out.
+    bool defaultTransparent = true;
+    if (m_imageView->isWorkspaceMode()
+        && !m_imageView->workspaceBackground().isAppDefault()) {
+        defaultTransparent = false;
+    }
+    transparentCheck->setChecked(defaultTransparent);
+    transparentCheck->setToolTip(
+        tr("When unchecked, the Workspace (or app) canvas background is included"));
     layout->addRow(QString(), transparentCheck);
 
     auto updateHeight = [&]() {

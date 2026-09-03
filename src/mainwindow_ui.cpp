@@ -87,26 +87,19 @@ void MainWindow::createActions()
         tr("Workspace: show a paper-sized frame to arrange images for printing"));
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
 
-    m_workspaceBgDefaultAct = new QAction(tr("&Application default"), this);
+    m_workspaceBackgroundAct = new QAction(tr("Workspace &Background…"), this);
+    m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
+    m_workspaceBackgroundAct->setStatusTip(
+        tr("Choose a custom Workspace canvas background"));
+    connect(m_workspaceBackgroundAct, &QAction::triggered, this,
+            &MainWindow::editWorkspaceBackground);
+
+    m_workspaceBgDefaultAct = new QAction(tr("Background &Default"), this);
+    m_workspaceBgDefaultAct->setIcon(resourceIcon(QStringLiteral("edit-clear")));
     m_workspaceBgDefaultAct->setStatusTip(
         tr("Use the technical / Preferences background (not stored in the project)"));
-    connect(m_workspaceBgDefaultAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundDefault);
-    auto *bgEditAct = new QAction(tr("&Edit…"), this);
-    bgEditAct->setStatusTip(
-        tr("Choose a custom Workspace canvas background, or use the application default"));
-    connect(bgEditAct, &QAction::triggered, this, &MainWindow::editWorkspaceBackground);
-    m_workspaceBackgroundAct = new QAction(tr("Workspace &Background"), this);
-    m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
-    m_workspaceBackgroundAct->setStatusTip(bgEditAct->statusTip());
-    {
-        auto *bgMenu = new QMenu(this);
-        bgMenu->addAction(bgEditAct);
-        bgMenu->addSeparator();
-        bgMenu->addAction(m_workspaceBgDefaultAct);
-        m_workspaceBackgroundAct->setMenu(bgMenu);
-    }
-    // Double-click / activate without menu: open the dialog.
-    connect(m_workspaceBackgroundAct, &QAction::triggered, this, &MainWindow::editWorkspaceBackground);
+    connect(m_workspaceBgDefaultAct, &QAction::triggered, this,
+            &MainWindow::workspaceBackgroundDefault);
 
     m_fitPageGuideAct = new QAction(tr("Fit Page Guide to &Content"), this);
     m_fitPageGuideAct->setIcon(resourceIcon(QStringLiteral("fit-page-guide-content")));
@@ -738,6 +731,7 @@ void MainWindow::createMenus()
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_pageGuideAct);
     workspaceMenu->addAction(m_workspaceBackgroundAct);
+    workspaceMenu->addAction(m_workspaceBgDefaultAct);
     workspaceMenu->addAction(m_fitPageGuideAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_selectToolAct);
@@ -909,13 +903,8 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_pageGuideAct);
-    {
-        auto *bgBtn = new QToolButton(m_workspaceToolBar);
-        bgBtn->setDefaultAction(m_workspaceBackgroundAct);
-        bgBtn->setPopupMode(QToolButton::InstantPopup);
-        bgBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
-        m_workspaceToolBar->addWidget(bgBtn);
-    }
+    m_workspaceToolBar->addAction(m_workspaceBackgroundAct);
+    m_workspaceToolBar->addAction(m_workspaceBgDefaultAct);
     m_workspaceToolBar->addAction(m_fitPageGuideAct);
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     m_workspaceToolBar->addAction(m_pageSetupAct);

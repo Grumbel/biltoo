@@ -627,6 +627,8 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void drawBackground(QPainter *painter, const QRectF &rect) override;
+    /** Scene-space canvas background (AppDefault or Workspace override). */
+    void paintCanvasBackground(QPainter *painter, const QRectF &rect, qreal viewScale) const;
     void drawForeground(QPainter *painter, const QRectF &rect) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
