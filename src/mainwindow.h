@@ -76,6 +76,8 @@ public:
     void applyWorkspaceCut(const QList<WorkspaceItemState> &items);
     void applyWorkspaceUncut(const QList<WorkspaceItemState> &items);
     void applyWorkspaceBackground(const WorkspaceBackground &bg);
+    /** Called from Workspace paste/cut/background undo commands. */
+    void markWorkspaceDirty();
     bool clipboardHasWorkspaceItems() const;
     int sessionIndexOfId(SessionImageId id) const;
     bool writeProjectToPath(const QString &projectPath, QString *error = nullptr);
@@ -115,7 +117,6 @@ protected:
     /** GNOME2-style Close without Saving / Cancel / Save when Workspace is dirty. */
     bool confirmQuitOrClose();
     bool workspaceHasUnsavedWork() const;
-    void markWorkspaceDirty();
     void keyPressEvent(QKeyEvent *event) override;
     void changeEvent(QEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
