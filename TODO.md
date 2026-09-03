@@ -1624,3 +1624,26 @@ No layout/API change.
 - [x] Document; next **114**
 
 **Next bundle:** `qimgview-114-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-114-pref-reset-buttons`
+
+**Request:** Preferences (and similar option rows) need a small **reset to
+default** control next to each setting.
+
+**Implementation:**
+- `PreferencesDialog`: every General-tab field is wrapped with an auto-raise
+  tool button (`edit-clear` / dialog-reset icon). Click restores the same
+  default used by `MainWindow::readSettings`. Button is enabled only while the
+  value differs from the default.
+- `LayoutPanel`: Columns / Rows spins get the same reset affordance (default 3).
+
+### Done criteria
+
+- [x] Per-option reset on Preferences General tab
+- [x] Layout panel Columns/Rows reset
+- [x] Document; next **115**
+
+**Next bundle:** `qimgview-115-…` — further polish as needed.

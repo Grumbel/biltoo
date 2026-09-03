@@ -71,14 +71,42 @@ LayoutPanel::LayoutPanel(QWidget *parent)
     m_columnsSpin->setRange(1, 32);
     m_columnsSpin->setValue(3);
     m_columnsSpin->setToolTip(tr("Column count for Grid and Masonry layouts"));
-    paramsForm->addRow(m_columnsLabel, m_columnsSpin);
+    {
+        auto *row = new QWidget(this);
+        auto *lay = new QHBoxLayout(row);
+        lay->setContentsMargins(0, 0, 0, 0);
+        lay->setSpacing(4);
+        lay->addWidget(m_columnsSpin, 1);
+        auto *reset = new QToolButton(row);
+        reset->setAutoRaise(true);
+        reset->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
+        reset->setToolTip(tr("Reset to default"));
+        reset->setFixedSize(24, 24);
+        connect(reset, &QToolButton::clicked, this, [this]() { m_columnsSpin->setValue(3); });
+        lay->addWidget(reset);
+        paramsForm->addRow(m_columnsLabel, row);
+    }
 
     m_rowsLabel = new QLabel(tr("Rows:"), this);
     m_rowsSpin = new QSpinBox(this);
     m_rowsSpin->setRange(1, 32);
     m_rowsSpin->setValue(3);
     m_rowsSpin->setToolTip(tr("Row count for Masonry Rows / Rows Fill"));
-    paramsForm->addRow(m_rowsLabel, m_rowsSpin);
+    {
+        auto *row = new QWidget(this);
+        auto *lay = new QHBoxLayout(row);
+        lay->setContentsMargins(0, 0, 0, 0);
+        lay->setSpacing(4);
+        lay->addWidget(m_rowsSpin, 1);
+        auto *reset = new QToolButton(row);
+        reset->setAutoRaise(true);
+        reset->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
+        reset->setToolTip(tr("Reset to default"));
+        reset->setFixedSize(24, 24);
+        connect(reset, &QToolButton::clicked, this, [this]() { m_rowsSpin->setValue(3); });
+        lay->addWidget(reset);
+        paramsForm->addRow(m_rowsLabel, row);
+    }
     root->addLayout(paramsForm);
 
     m_applyBtn = new QPushButton(tr("Apply"), this);

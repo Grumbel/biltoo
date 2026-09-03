@@ -3,6 +3,7 @@
 
 #include "preferencesdialog.h"
 #include "defaultapps.h"
+#include "icons.h"
 
 #include <QCheckBox>
 #include <QColorDialog>
@@ -16,10 +17,38 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QStyle>
 #include <QTabWidget>
+#include <QToolButton>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
+
+namespace {
+
+// Defaults must match MainWindow::readSettings fallbacks.
+constexpr int kDefaultIntervalMs = 3000;
+constexpr bool kDefaultSlideshowFullscreen = true;
+constexpr int kDefaultSortIndex = 0; // Name
+constexpr bool kDefaultStartInWorkspace = false;
+constexpr bool kDefaultImageModePan = true;
+constexpr int kDefaultBgPatternIndex = 1; // checkerboard
+const QColor kDefaultBgColor(0x2a, 0x2a, 0x2a);
+const QColor kDefaultBgColorAlt(0x30, 0x30, 0x30);
+constexpr bool kDefaultCheckerWorkspaceOnly = true;
+constexpr int kDefaultHudFontPt = 11;
+const QColor kDefaultHudTextColor(255, 255, 255);
+const QColor kDefaultHudPanelColor(0, 0, 0, 160);
+constexpr bool kDefaultScrollBars = false;
+constexpr bool kDefaultThumbLabels = true;
+constexpr bool kDefaultAdjustmentsPanel = false;
+constexpr bool kDefaultLayoutPanel = false;
+constexpr bool kDefaultThumbsWorkspace = true;
+constexpr bool kDefaultThumbsGallery = false;
+constexpr int kDefaultThumbPosIndex = 0; // bottom
+constexpr int kDefaultGalleryLayoutMode = 5; // Masonry
+
+} // namespace
 
 PreferencesDialog::PreferencesDialog(QWidget *parent)
     : QDialog(parent)
@@ -45,8 +74,16 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     slideshowForm->setContentsMargins(0, 0, 0, 0);
     slideshowForm->setHorizontalSpacing(12);
     slideshowForm->setVerticalSpacing(8);
-    slideshowForm->addRow(tr("Interval:"), m_intervalSpin);
-    slideshowForm->addRow(QString(), m_slideshowFullscreenCheck);
+    slideshowForm->addRow(tr("Interval:"),
+                          wrapWithReset(m_intervalSpin, &m_resetIntervalBtn, [this]() {
+                              setSlideshowIntervalMs(kDefaultIntervalMs);
+                              updateResetButtons();
+                          }));
+    slideshowForm->addRow(QString(),
+                          wrapWithReset(m_slideshowFullscreenCheck, &m_resetSlideshowFsBtn, [this]() {
+                              setSlideshowFullscreen(kDefaultSlideshowFullscreen);
+                              updateResetButtons();
+                          }));
 
     auto *slideshowGroup = new QGroupBox(tr("Slideshow"), this);
     slideshowGroup->setLayout(slideshowForm);
@@ -69,8 +106,16 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     sessionForm->setContentsMargins(0, 0, 0, 0);
     sessionForm->setHorizontalSpacing(12);
     sessionForm->setVerticalSpacing(8);
-    sessionForm->addRow(tr("Sort images by:"), m_sortCombo);
-    sessionForm->addRow(QString(), m_workspaceCheck);
+    sessionForm->addRow(tr("Sort images by:"),
+                        wrapWithReset(m_sortCombo, &m_resetSortBtn, [this]() {
+                            setSortModeIndex(kDefaultSortIndex);
+                            updateResetButtons();
+                        }));
+    sessionForm->addRow(QString(),
+                        wrapWithReset(m_workspaceCheck, &m_resetWorkspaceBtn, [this]() {
+                            setStartInWorkspaceMode(kDefaultStartInWorkspace);
+                            updateResetButtons();
+                        }));
 
     auto *sessionGroup = new QGroupBox(tr("Session"), this);
     sessionGroup->setLayout(sessionForm);
@@ -112,11 +157,31 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     viewForm->setContentsMargins(0, 0, 0, 0);
     viewForm->setHorizontalSpacing(12);
     viewForm->setVerticalSpacing(8);
-    viewForm->addRow(QString(), m_imageModePanCheck);
-    viewForm->addRow(tr("Background pattern:"), m_bgPatternCombo);
-    viewForm->addRow(tr("Background colour:"), m_bgColorBtn);
-    viewForm->addRow(tr("Checker colour:"), m_bgColorAltBtn);
-    viewForm->addRow(QString(), m_bgCheckerWorkspaceOnlyCheck);
+    viewForm->addRow(QString(),
+                      wrapWithReset(m_imageModePanCheck, &m_resetImagePanBtn, [this]() {
+                          setImageModeLeftDragPan(kDefaultImageModePan);
+                          updateResetButtons();
+                      }));
+    viewForm->addRow(tr("Background pattern:"),
+                      wrapWithReset(m_bgPatternCombo, &m_resetBgPatternBtn, [this]() {
+                          setBackgroundPatternIndex(kDefaultBgPatternIndex);
+                          updateResetButtons();
+                      }));
+    viewForm->addRow(tr("Background colour:"),
+                      wrapWithReset(m_bgColorBtn, &m_resetBgColorBtn, [this]() {
+                          setBackgroundColor(kDefaultBgColor);
+                          updateResetButtons();
+                      }));
+    viewForm->addRow(tr("Checker colour:"),
+                      wrapWithReset(m_bgColorAltBtn, &m_resetBgColorAltBtn, [this]() {
+                          setBackgroundColorAlt(kDefaultBgColorAlt);
+                          updateResetButtons();
+                      }));
+    viewForm->addRow(QString(),
+                      wrapWithReset(m_bgCheckerWorkspaceOnlyCheck, &m_resetCheckerWsBtn, [this]() {
+                          setCheckerboardWorkspaceOnly(kDefaultCheckerWorkspaceOnly);
+                          updateResetButtons();
+                      }));
 
     auto *viewGroup = new QGroupBox(tr("View"), this);
     viewGroup->setLayout(viewForm);
@@ -145,9 +210,21 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     hudForm->setContentsMargins(0, 0, 0, 0);
     hudForm->setHorizontalSpacing(12);
     hudForm->setVerticalSpacing(8);
-    hudForm->addRow(tr("Font size:"), m_hudFontSpin);
-    hudForm->addRow(tr("Text colour:"), m_hudTextColorBtn);
-    hudForm->addRow(tr("Panel colour:"), m_hudPanelColorBtn);
+    hudForm->addRow(tr("Font size:"),
+                     wrapWithReset(m_hudFontSpin, &m_resetHudFontBtn, [this]() {
+                         setHudFontPointSize(kDefaultHudFontPt);
+                         updateResetButtons();
+                     }));
+    hudForm->addRow(tr("Text colour:"),
+                     wrapWithReset(m_hudTextColorBtn, &m_resetHudTextBtn, [this]() {
+                         setHudTextColor(kDefaultHudTextColor);
+                         updateResetButtons();
+                     }));
+    hudForm->addRow(tr("Panel colour:"),
+                     wrapWithReset(m_hudPanelColorBtn, &m_resetHudPanelBtn, [this]() {
+                         setHudPanelColor(kDefaultHudPanelColor);
+                         updateResetButtons();
+                     }));
 
     auto *hudGroup = new QGroupBox(tr("HUD overlay"), this);
     hudGroup->setLayout(hudForm);
@@ -198,14 +275,46 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     ifaceForm->setContentsMargins(0, 0, 0, 0);
     ifaceForm->setHorizontalSpacing(12);
     ifaceForm->setVerticalSpacing(8);
-    ifaceForm->addRow(QString(), m_scrollBarsCheck);
-    ifaceForm->addRow(QString(), m_thumbLabelsCheck);
-    ifaceForm->addRow(QString(), m_adjustmentsPanelCheck);
-    ifaceForm->addRow(QString(), m_layoutPanelCheck);
-    ifaceForm->addRow(QString(), m_thumbsWorkspaceCheck);
-    ifaceForm->addRow(QString(), m_thumbsGalleryCheck);
-    ifaceForm->addRow(tr("Thumbnail position:"), m_thumbPosCombo);
-    ifaceForm->addRow(tr("Gallery layout:"), m_galleryLayoutCombo);
+    ifaceForm->addRow(QString(),
+                       wrapWithReset(m_scrollBarsCheck, &m_resetScrollBarsBtn, [this]() {
+                           setScrollBarsVisible(kDefaultScrollBars);
+                           updateResetButtons();
+                       }));
+    ifaceForm->addRow(QString(),
+                       wrapWithReset(m_thumbLabelsCheck, &m_resetThumbLabelsBtn, [this]() {
+                           setThumbnailLabelsVisible(kDefaultThumbLabels);
+                           updateResetButtons();
+                       }));
+    ifaceForm->addRow(QString(),
+                       wrapWithReset(m_adjustmentsPanelCheck, &m_resetAdjPanelBtn, [this]() {
+                           setAdjustmentsPanelVisible(kDefaultAdjustmentsPanel);
+                           updateResetButtons();
+                       }));
+    ifaceForm->addRow(QString(),
+                       wrapWithReset(m_layoutPanelCheck, &m_resetLayoutPanelBtn, [this]() {
+                           setLayoutPanelPreferredInWorkspace(kDefaultLayoutPanel);
+                           updateResetButtons();
+                       }));
+    ifaceForm->addRow(QString(),
+                       wrapWithReset(m_thumbsWorkspaceCheck, &m_resetThumbsWsBtn, [this]() {
+                           setThumbnailsPreferredWorkspace(kDefaultThumbsWorkspace);
+                           updateResetButtons();
+                       }));
+    ifaceForm->addRow(QString(),
+                       wrapWithReset(m_thumbsGalleryCheck, &m_resetThumbsGalBtn, [this]() {
+                           setThumbnailsPreferredGallery(kDefaultThumbsGallery);
+                           updateResetButtons();
+                       }));
+    ifaceForm->addRow(tr("Thumbnail position:"),
+                       wrapWithReset(m_thumbPosCombo, &m_resetThumbPosBtn, [this]() {
+                           setThumbnailPositionIndex(kDefaultThumbPosIndex);
+                           updateResetButtons();
+                       }));
+    ifaceForm->addRow(tr("Gallery layout:"),
+                       wrapWithReset(m_galleryLayoutCombo, &m_resetGalleryLayoutBtn, [this]() {
+                           setDefaultGalleryLayoutMode(kDefaultGalleryLayoutMode);
+                           updateResetButtons();
+                       }));
 
     auto *ifaceGroup = new QGroupBox(tr("Interface"), this);
     ifaceGroup->setLayout(ifaceForm);
@@ -287,6 +396,42 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     layout->setSpacing(12);
     layout->addWidget(tabs, 1);
     layout->addLayout(buttonRow);
+
+    // Keep reset buttons enabled only when the value differs from the default.
+    connect(m_intervalSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double) { updateResetButtons(); });
+    connect(m_slideshowFullscreenCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_sortCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateResetButtons(); });
+    connect(m_workspaceCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_imageModePanCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_bgPatternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateResetButtons(); });
+    connect(m_bgCheckerWorkspaceOnlyCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_hudFontSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int) { updateResetButtons(); });
+    connect(m_scrollBarsCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_thumbLabelsCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_adjustmentsPanelCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_layoutPanelCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_thumbsWorkspaceCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_thumbsGalleryCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
+    connect(m_thumbPosCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateResetButtons(); });
+    connect(m_galleryLayoutCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateResetButtons(); });
+
+    updateResetButtons();
 
     setMinimumWidth(520);
     resize(560, 520);
@@ -596,6 +741,7 @@ void PreferencesDialog::chooseHudTextColor()
     const QColor c = QColorDialog::getColor(m_hudTextColor, this, tr("HUD text colour"));
     if (c.isValid()) {
         setHudTextColor(c);
+        updateResetButtons();
     }
 }
 
@@ -605,6 +751,7 @@ void PreferencesDialog::chooseHudPanelColor()
                                             QColorDialog::ShowAlphaChannel);
     if (c.isValid()) {
         setHudPanelColor(c);
+        updateResetButtons();
     }
 }
 
@@ -613,6 +760,7 @@ void PreferencesDialog::chooseBackgroundColor()
     const QColor c = QColorDialog::getColor(m_bgColor, this, tr("Background colour"));
     if (c.isValid()) {
         setBackgroundColor(c);
+        updateResetButtons();
     }
 }
 
@@ -621,6 +769,7 @@ void PreferencesDialog::chooseBackgroundColorAlt()
     const QColor c = QColorDialog::getColor(m_bgColorAlt, this, tr("Checker colour"));
     if (c.isValid()) {
         setBackgroundColorAlt(c);
+        updateResetButtons();
     }
 }
 
@@ -736,4 +885,59 @@ void PreferencesDialog::setDefaultGalleryLayoutMode(int layoutMode)
     if (idx >= 0) {
         m_galleryLayoutCombo->setCurrentIndex(idx);
     }
+}
+
+QWidget *PreferencesDialog::wrapWithReset(QWidget *field, QToolButton **resetBtnOut,
+                                          const std::function<void()> &resetFn)
+{
+    auto *row = new QWidget(this);
+    auto *lay = new QHBoxLayout(row);
+    lay->setContentsMargins(0, 0, 0, 0);
+    lay->setSpacing(4);
+    field->setParent(row);
+    lay->addWidget(field, 1);
+
+    auto *btn = new QToolButton(row);
+    btn->setAutoRaise(true);
+    btn->setIcon(themeIcon(QStringLiteral("edit-clear"), QStyle::SP_DialogResetButton));
+    btn->setToolTip(tr("Reset to default"));
+    btn->setAccessibleName(tr("Reset to default"));
+    btn->setFocusPolicy(Qt::TabFocus);
+    const int side = qMax(20, field->sizeHint().height());
+    btn->setFixedSize(side, side);
+    connect(btn, &QToolButton::clicked, this, [resetFn]() { resetFn(); });
+    lay->addWidget(btn, 0, Qt::AlignVCenter);
+    if (resetBtnOut) {
+        *resetBtnOut = btn;
+    }
+    return row;
+}
+
+void PreferencesDialog::updateResetButtons()
+{
+    auto setOn = [](QToolButton *btn, bool differs) {
+        if (btn) {
+            btn->setEnabled(differs);
+        }
+    };
+    setOn(m_resetIntervalBtn, slideshowIntervalMs() != kDefaultIntervalMs);
+    setOn(m_resetSlideshowFsBtn, slideshowFullscreen() != kDefaultSlideshowFullscreen);
+    setOn(m_resetSortBtn, sortModeIndex() != kDefaultSortIndex);
+    setOn(m_resetWorkspaceBtn, startInWorkspaceMode() != kDefaultStartInWorkspace);
+    setOn(m_resetImagePanBtn, imageModeLeftDragPan() != kDefaultImageModePan);
+    setOn(m_resetBgPatternBtn, backgroundPatternIndex() != kDefaultBgPatternIndex);
+    setOn(m_resetBgColorBtn, backgroundColor() != kDefaultBgColor);
+    setOn(m_resetBgColorAltBtn, backgroundColorAlt() != kDefaultBgColorAlt);
+    setOn(m_resetCheckerWsBtn, checkerboardWorkspaceOnly() != kDefaultCheckerWorkspaceOnly);
+    setOn(m_resetHudFontBtn, hudFontPointSize() != kDefaultHudFontPt);
+    setOn(m_resetHudTextBtn, hudTextColor() != kDefaultHudTextColor);
+    setOn(m_resetHudPanelBtn, hudPanelColor() != kDefaultHudPanelColor);
+    setOn(m_resetScrollBarsBtn, scrollBarsVisible() != kDefaultScrollBars);
+    setOn(m_resetThumbLabelsBtn, thumbnailLabelsVisible() != kDefaultThumbLabels);
+    setOn(m_resetAdjPanelBtn, adjustmentsPanelVisible() != kDefaultAdjustmentsPanel);
+    setOn(m_resetLayoutPanelBtn, layoutPanelPreferredInWorkspace() != kDefaultLayoutPanel);
+    setOn(m_resetThumbsWsBtn, thumbnailsPreferredWorkspace() != kDefaultThumbsWorkspace);
+    setOn(m_resetThumbsGalBtn, thumbnailsPreferredGallery() != kDefaultThumbsGallery);
+    setOn(m_resetThumbPosBtn, thumbnailPositionIndex() != kDefaultThumbPosIndex);
+    setOn(m_resetGalleryLayoutBtn, defaultGalleryLayoutMode() != kDefaultGalleryLayoutMode);
 }

@@ -6,6 +6,7 @@
 
 #include <QColor>
 #include <QDialog>
+#include <functional>
 
 class QDoubleSpinBox;
 class QSpinBox;
@@ -15,6 +16,7 @@ class QTreeWidget;
 class QTreeWidgetItem;
 class QLabel;
 class QPushButton;
+class QToolButton;
 
 class PreferencesDialog : public QDialog
 {
@@ -98,6 +100,11 @@ private:
     void chooseHudTextColor();
     void chooseHudPanelColor();
     void updateBackgroundControlsEnabled();
+    /** Enable/disable per-row reset buttons from current control values. */
+    void updateResetButtons();
+    /** Field + small “reset to default” tool button. */
+    QWidget *wrapWithReset(QWidget *field, QToolButton **resetBtnOut,
+                           const std::function<void()> &resetFn);
 
     bool m_mimeTreeUpdating = false;
 
@@ -128,6 +135,27 @@ private:
     QCheckBox *m_thumbsGalleryCheck = nullptr;
     QComboBox *m_thumbPosCombo = nullptr;
     QComboBox *m_galleryLayoutCombo = nullptr;
+
+    QToolButton *m_resetIntervalBtn = nullptr;
+    QToolButton *m_resetSlideshowFsBtn = nullptr;
+    QToolButton *m_resetSortBtn = nullptr;
+    QToolButton *m_resetWorkspaceBtn = nullptr;
+    QToolButton *m_resetImagePanBtn = nullptr;
+    QToolButton *m_resetBgPatternBtn = nullptr;
+    QToolButton *m_resetBgColorBtn = nullptr;
+    QToolButton *m_resetBgColorAltBtn = nullptr;
+    QToolButton *m_resetCheckerWsBtn = nullptr;
+    QToolButton *m_resetHudFontBtn = nullptr;
+    QToolButton *m_resetHudTextBtn = nullptr;
+    QToolButton *m_resetHudPanelBtn = nullptr;
+    QToolButton *m_resetScrollBarsBtn = nullptr;
+    QToolButton *m_resetThumbLabelsBtn = nullptr;
+    QToolButton *m_resetAdjPanelBtn = nullptr;
+    QToolButton *m_resetLayoutPanelBtn = nullptr;
+    QToolButton *m_resetThumbsWsBtn = nullptr;
+    QToolButton *m_resetThumbsGalBtn = nullptr;
+    QToolButton *m_resetThumbPosBtn = nullptr;
+    QToolButton *m_resetGalleryLayoutBtn = nullptr;
 
     QTreeWidget *m_mimeTree = nullptr;
     QLabel *m_mimeStatusLabel = nullptr;
