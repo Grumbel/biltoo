@@ -1486,3 +1486,26 @@ exclusive checks + toolbar icon/tooltip (used from enter/return Gallery paths).
 - [x] next **109**
 
 **Next bundle:** `qimgview-109-…` — further UI polish as needed.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-109-cmake-unused-cli`
+
+**Noise:** CMake ends configure with a long
+`Manually-specified variables were not used by the project` list
+(`KDE_INSTALL_*`, `CMAKE_C_COMPILER`, `CMAKE_EXPORT_NO_PACKAGE_REGISTRY`, …).
+
+**Cause:** nixpkgs Qt/KDE setup hooks inject ECM-style `-DKDE_INSTALL_*=…`
+flags into every `qt6Packages.callPackage` build. QImgView is plain CMake +
+Qt (no Extra CMake Modules / KDEInstallDirs), so none of those vars are read.
+Harmless but very verbose.
+
+**Fix:** Pass CMake’s `--no-warn-unused-cli` via `cmakeFlags` in `default.nix`.
+Do not fake-consume the KDE vars and do not fight the setup hooks.
+
+### Done criteria
+
+- [x] `--no-warn-unused-cli` on cmakeFlags
+- [x] next **110**
+
+**Next bundle:** `qimgview-110-…` — further packaging / UI polish as needed.

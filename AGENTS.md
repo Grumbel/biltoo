@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-108-gallery-layout-combo”**
-(Gallery layout toolbar MenuButtonPopup). Next bundle number: **109**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-109-cmake-unused-cli”**
+(suppress unused KDE_INSTALL_* cmake CLI noise). Next bundle number: **110**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

@@ -55,7 +55,13 @@ stdenv.mkDerivation (finalAttrs: {
   cmakeBuildType = "RelWithDebInfo";
   separateDebugInfo = true;
 
+  # Nixpkgs Qt/KDE setup hooks inject many -DKDE_INSTALL_* and related cmake
+  # cache vars (ECM-style install dirs). This project is plain CMake + Qt, not
+  # KDEInstallDirs, so CMake would spam "Manually-specified variables were not
+  # used". --no-warn-unused-cli silences that without pretending to consume them.
+  # CMAKE_C_COMPILER is similarly unused (C++-only) but comes from stdenv.
   cmakeFlags = [
+    "--no-warn-unused-cli"
     "-DPROJECT_VERSION_FULL=${finalAttrs.version}"
   ];
 
