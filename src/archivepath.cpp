@@ -64,8 +64,9 @@ QString makeRef(const QString &archivePath, const QString &memberPath)
         member = member.mid(1);
     }
     const QString abs = QFileInfo(archivePath).absoluteFilePath();
-    const QString left = QUrl::fromLocalFile(abs).toString(QUrl::FullyEncoded);
-    return left + QLatin1String(kMarker) + member;
+    // Prefer absolute filesystem path for session storage (stable, no percent-encoding
+    // surprises). parse() still accepts file:// form for future/URL compatibility.
+    return abs + QLatin1String(kMarker) + member;
 }
 
 QString archiveFilePath(const QString &path)

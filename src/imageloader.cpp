@@ -20,32 +20,40 @@
 namespace ImageLoader {
 namespace {
 
+QImage scaleToMaxEdge(QImage image, int maxEdge)
+{
+    if (image.isNull() || maxEdge <= 0) {
+        return image;
+    }
+    if (image.width() <= maxEdge && image.height() <= maxEdge) {
+        return image;
+    }
+    return image.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+}
+
 QImage decodeFromBytes(const QByteArray &bytes, const QString &formatHint, int maxEdge)
 {
     if (bytes.isEmpty()) {
         return {};
     }
-    QByteArray data = bytes;
-    QBuffer buffer(&data);
-    if (!buffer.open(QIODevice::ReadOnly)) {
-        return {};
-    }
-    QImageReader reader(&buffer);
-    reader.setAutoTransform(true);
-    if (!formatHint.isEmpty()) {
-        reader.setFormat(formatHint.toLatin1());
-    }
-    if (maxEdge > 0) {
-        const QSize size = reader.size();
-        if (size.isValid()) {
-            QSize scaled = size;
-            scaled.scale(maxEdge, maxEdge, Qt::KeepAspectRatio);
-            if (scaled != size) {
-                reader.setScaledSize(scaled);
-            }
+    // Prefer content sniffing — format hints are often wrong for archive members.
+    QImage image = QImage::fromData(bytes);
+    if (image.isNull()) {
+        QByteArray data = bytes;
+        QBuffer buffer(&data);
+        if (!buffer.open(QIODevice::ReadOnly)) {
+            return {};
         }
+        QImageReader reader(&buffer);
+        reader.setAutoTransform(true);
+        reader.setDecideFormatFromContent(true);
+        if (!formatHint.isEmpty()) {
+            // Only as a soft hint after content detection failed once.
+            reader.setFormat(formatHint.toLatin1());
+        }
+        image = reader.read();
     }
-    return reader.read();
+    return scaleToMaxEdge(image, maxEdge);
 }
 
 QImage loadArchiveRef(const QString &path, int maxEdge)
@@ -55,6 +63,9 @@ QImage loadArchiveRef(const QString &path, int maxEdge)
         return {};
     }
     const QByteArray bytes = ArchiveReader::readMember(ref.archivePath, ref.memberPath);
+    if (bytes.isEmpty()) {
+        return {};
+    }
     const QString suffix = QFileInfo(ref.memberPath).suffix().toLower();
     return decodeFromBytes(bytes, suffix, maxEdge);
 }
