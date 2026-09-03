@@ -831,17 +831,26 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addAction(m_cropAct);
     m_toolBar->addSeparator();
-    m_toolBar->addAction(m_layoutSideBySideAct);
-    m_toolBar->addAction(m_layoutVerticalAct);
-    m_toolBar->addAction(m_layoutGridAct);
-    m_toolBar->addAction(m_layoutGridCropAct);
-    m_toolBar->addAction(m_layoutMasonryAct);
-
-    m_toolBar->addAction(m_layoutMasonryRowsAct);
-    m_toolBar->addAction(m_layoutMasonryFillAct);
-    m_toolBar->addAction(m_layoutMasonryRowsFillAct);
-    // Workspace mode sits with the gallery layout group (mode switchers together).
-    m_toolBar->addSeparator();
+    // Single Layout popup (like Sort) instead of eight individual layout icons.
+    {
+        auto *layoutBtn = new QToolButton(m_toolBar);
+        layoutBtn->setObjectName(QStringLiteral("LayoutToolButton"));
+        layoutBtn->setIcon(themeIcon(QStringLiteral("view-grid"), QStyle::SP_FileDialogListView));
+        layoutBtn->setToolTip(tr("Gallery layout"));
+        layoutBtn->setPopupMode(QToolButton::InstantPopup);
+        auto *layoutPopup = new QMenu(layoutBtn);
+        layoutPopup->addAction(m_layoutSideBySideAct);
+        layoutPopup->addAction(m_layoutVerticalAct);
+        layoutPopup->addAction(m_layoutGridAct);
+        layoutPopup->addAction(m_layoutGridCropAct);
+        layoutPopup->addAction(m_layoutMasonryAct);
+        layoutPopup->addAction(m_layoutMasonryRowsAct);
+        layoutPopup->addAction(m_layoutMasonryFillAct);
+        layoutPopup->addAction(m_layoutMasonryRowsFillAct);
+        layoutBtn->setMenu(layoutPopup);
+        m_toolBar->addWidget(layoutBtn);
+    }
+    // Workspace mode sits next to the layout group (mode switcher, not a pack).
     m_toolBar->addAction(m_workspaceModeAct);
 
     // Masonry column/row count — shown while a masonry layout is active

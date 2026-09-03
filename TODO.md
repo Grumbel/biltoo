@@ -836,8 +836,12 @@ and sheared tiles follow the selection AABB.
 - File → Open Selection in New Window
 - Gallery → Sort Session (was only under Edit)
 
+### Fixed in `qimgview-091`
+- Main toolbar: single **Layout** InstantPopup tool button (replaces eight
+  gallery layout icons); Workspace mode remains a separate adjacent action
+
 ### Organisation / density
-- [ ] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
+- [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
 - [ ] Edit menu mixes transforms (rotate/flip/crop) with Sort and Preferences.
   Consider **Image** menu for transforms; keep Edit for undo/clipboard/prefs.
@@ -874,3 +878,59 @@ and sheared tiles follow the selection AABB.
 - [ ] Explicit "Remove from session" in thumbnail context menu (if not present).
 - [ ] Toolbar/customize — out of scope unless requested.
 
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-091-layout-toolbar-menu`
+
+**Goal:** Reduce main toolbar density. Replace the eight individual Gallery
+layout tool-button icons + the adjacent Workspace mode button cluster with a
+single **Layout** `QToolButton` (InstantPopup menu), matching the existing
+Sort tool-button pattern.
+
+### Scope
+
+1. **Toolbar**
+   - Remove direct `m_toolBar->addAction` for:
+     `m_layoutSideBySideAct`, `m_layoutVerticalAct`, `m_layoutGridAct`,
+     `m_layoutGridCropAct`, `m_layoutMasonryAct`, `m_layoutMasonryRowsAct`,
+     `m_layoutMasonryFillAct`, `m_layoutMasonryRowsFillAct`.
+   - Insert one `QToolButton` with `InstantPopup` menu containing those
+     actions (same order as Gallery menu).
+   - Keep `m_workspaceModeAct` as a separate toolbar action immediately after
+     the Layout button (mode switch is not a packaged layout).
+   - Masonry/Grid column-count spin remains as today (visibility driven by
+     active layout).
+
+2. **Menus**
+   - Gallery menu layout entries unchanged.
+   - No change to Workspace Layout panel.
+
+3. **Icon / status**
+   - Button uses a stable generic icon (`view-grid` / theme fallback or
+     existing `layout-panel` resource). Optional later: sync icon to current
+     layout (out of scope for this bundle).
+
+4. **Visibility / enable**
+   - Existing `updateWorkspaceActionVisibility` still drives per-action
+     `setEnabled` / `setVisible` (menu items inherit that). Grid Crop stays
+     hidden/disabled until the separate re-enable task.
+
+### Out of scope
+
+- Edit → Image menu split for transforms.
+- Workspace vertical toolbar Print/Export move.
+- Bare Q / Ctrl+Y shortcut changes.
+- Grid Crop re-enable.
+- Identity residual (Image-mode crop of duplicate slot B).
+
+### Done criteria
+
+- [x] Toolbar shows one Layout popup + Workspace mode (not eight layout icons).
+- [x] All packaged layouts still reachable from toolbar popup and Gallery menu.
+- [x] Sort-style InstantPopup behaviour (click opens menu).
+- [x] Document completion; next bundle number **092**.
+
+**Next bundle:** `qimgview-092-…` — remaining UI organisation (Edit/Image menu
+split, Workspace toolbar Print/Export), shortcuts polish, or identity residual
+(Image-mode crop of duplicate slot B).
