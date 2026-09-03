@@ -9,6 +9,7 @@
 , glib
 , libsysprof-capture
 , fftw
+, cfitsio
 , libarchive
 , kimageformats
 , version ? "0.1.0-dev"
@@ -38,6 +39,8 @@ stdenv.mkDerivation (finalAttrs: {
     # vips Requires.private: fftw3 — same class of pkg-config noise without
     # the .pc on PKG_CONFIG_PATH (we do not link fftw ourselves).
     fftw
+    # vips Requires.private: cfitsio — same pkg-config spam without the .pc.
+    cfitsio
     libarchive
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats

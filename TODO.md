@@ -898,6 +898,10 @@ and sheared tiles follow the selection AABB.
 - Paste registers pathOrder/sessionIdOrder in addImageForSession so LoadAdd
   creates Workspace tiles (not filmstrip-only rows with stale thumbs)
 
+### Fixed in `qimgview-106`
+- Nix: `cfitsio` on buildInputs so vips pkg-config stops spam about missing
+  Requires.private (same pattern as fftw / libsysprof-capture)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -1423,3 +1427,18 @@ hanging.
 - [x] next **106**
 
 **Next bundle:** `qimgview-106-…` — layout button / Workspace→Gallery if still open.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-106-cfitsio-pkgconfig`
+
+**Noise:** CMake `pkg_check_modules(vips)` prints repeated
+`Package 'cfitsio', required by 'vips', not found` even when vips is found.
+
+**Fix:** Add `cfitsio` to `default.nix` `buildInputs` (Requires.private of vips),
+same pattern as `fftw` / `libsysprof-capture`. We do not link cfitsio ourselves.
+
+### Done criteria
+
+- [x] cfitsio on buildInputs
+- [x] next **107**
