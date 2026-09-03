@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-103-session-opens-gallery”**
-(multi-file → Gallery; session open does not seed Workspace). Next bundle number: **104**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-104-portability-doc”**
+([PORTABILITY.md](PORTABILITY.md) Linux→Windows notes). Next bundle number: **105**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -19,6 +19,9 @@ drop, or filmstrip change, read §0, §13 (crop lock), and §14 (id allocation).
 
 **Handoff:** [SESSION.md](SESSION.md) — SessionImageId model, what shipped
 in the chrome/identity series, residual risks, and how to continue.
+
+**Portability:** [PORTABILITY.md](PORTABILITY.md) — Linuxisms vs portable Qt core;
+Windows / cross-compile feasibility (not a scheduled port).
 
 ## Build & run
 

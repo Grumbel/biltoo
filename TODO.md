@@ -1378,3 +1378,19 @@ alignment) that does not drag/drop correctly.
 - [x] next **104**
 
 **Next bundle:** `qimgview-104-…` — further mode/open polish if needed.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-104-portability-doc`
+
+**Goal:** Capture Linux vs portable notes for a future Windows build.
+
+### Scope
+
+- Add [PORTABILITY.md](PORTABILITY.md) (no code changes).
+- Link from AGENTS.md.
+
+### Done criteria
+
+- [x] PORTABILITY.md present
+- [x] next **105**
