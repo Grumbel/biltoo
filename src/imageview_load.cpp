@@ -324,6 +324,19 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             ++pathOrderCount;
         }
     }
+
+    // Pending binds whose SessionImageId is already on a live tile are satisfied
+    // (placeholders / prior LoadAdd). Drop them so we do not create extras.
+    for (int bi = m_pendingSessionBinds.size() - 1; bi >= 0; --bi) {
+        const PendingSessionBind &b = m_pendingSessionBinds.at(bi);
+        if (b.path != path || b.id == kInvalidSessionImageId) {
+            continue;
+        }
+        if (findItemBySessionId(b.id)) {
+            m_pendingSessionBinds.removeAt(bi);
+        }
+    }
+
     int pendingBinds = 0;
     for (const PendingSessionBind &b : m_pendingSessionBinds) {
         if (b.path == path) {
@@ -358,11 +371,12 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
     }
 
-    // Identity is SessionImageId. pathOrder/sessionIdOrder list canvas/session
-    // membership; pending binds are explicit places not yet reflected in have.
-    int wanted = qMax(pathOrderCount, have + pendingBinds);
+    // Session pathOrder is the multiplicity source of truth. Do not create more
+    // tiles than session rows for this path (pending binds only fill gaps).
+    int wanted = pathOrderCount;
     if (wanted <= 0) {
-        wanted = have + 1;
+        // Not in session pathOrder (ad-hoc workspace place): one tile per bind.
+        wanted = qMax(have, pendingBinds > 0 ? pendingBinds : 1);
     }
 
     // Create missing occurrences (each duplicate is a normal separate tile).
@@ -374,30 +388,32 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         ++have;
         // Bind pending session row if any remain for this path (FIFO).
+        // Skip binds already owned by another live item (should be rare after purge).
         PendingSessionBind bound;
         bool haveBound = false;
         for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
-            if (m_pendingSessionBinds.at(bi).path == path) {
-                bound = m_pendingSessionBinds.takeAt(bi);
-                haveBound = true;
-                if (bound.id != kInvalidSessionImageId) {
-                    if (ImageItem *owner = findItemBySessionId(bound.id)) {
-                        if (owner != item) {
-                            qCritical("LoadAdd: SessionImageId %lld already live — leaving new tile unbound",
-                                      static_cast<long long>(bound.id));
-                            bound.id = kInvalidSessionImageId;
-                        } else {
-                            item->setSessionId(bound.id);
-                        }
-                    } else {
-                        item->setSessionId(bound.id);
+            if (m_pendingSessionBinds.at(bi).path != path) {
+                continue;
+            }
+            const PendingSessionBind candidate = m_pendingSessionBinds.at(bi);
+            if (candidate.id != kInvalidSessionImageId) {
+                if (ImageItem *owner = findItemBySessionId(candidate.id)) {
+                    if (owner != item) {
+                        m_pendingSessionBinds.removeAt(bi);
+                        --bi;
+                        continue;
                     }
                 }
-                if (bound.index >= 0 && bound.id != kInvalidSessionImageId) {
-                    item->setSessionIndex(bound.index);
-                }
-                break;
             }
+            bound = m_pendingSessionBinds.takeAt(bi);
+            haveBound = true;
+            if (bound.id != kInvalidSessionImageId) {
+                item->setSessionId(bound.id);
+            }
+            if (bound.index >= 0 && bound.id != kInvalidSessionImageId) {
+                item->setSessionIndex(bound.index);
+            }
+            break;
         }
         applyStoredAppearance(item);
         // Keep filmstrip overrides in sync (crop / grade) after drop or add.
