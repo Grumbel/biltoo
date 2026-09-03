@@ -734,3 +734,14 @@ H(k) = | 1  k |
 - Group shear
 - Perspective
 
+
+
+---
+
+## Bundle `qimgview-075` — group scale preserves R·H·S
+
+**Change:** Group scale defaults to **uniform** factors so rotated / sheared
+tiles keep aspect and shear. Shift enables free AABB axes (approximate).
+Group undo compares `shear`. Positions still scale about the selection AABB
+anchor; each item keeps rotation and shear from the press snapshot.
+

@@ -88,7 +88,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         return;
     }
     const QRectF b = m_groupBoundsStart;
-    // Fixed opposite corner / edge as anchor
+    // Fixed opposite corner / edge as anchor (selection AABB at press).
     QPointF anchor = m_groupCenterStart;
     switch (m_groupHandle) {
     case 0: anchor = b.bottomRight(); break; // TL
@@ -112,7 +112,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         break;
     case 1: // T
         sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
-        sx = (mods & Qt::ShiftModifier) ? sy : 1.0;
+        sx = sy;
         break;
     case 2: // TR
         sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
@@ -120,7 +120,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         break;
     case 3: // R
         sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
-        sy = (mods & Qt::ShiftModifier) ? sx : 1.0;
+        sy = sx;
         break;
     case 4: // BR
         sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
@@ -128,7 +128,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         break;
     case 5: // B
         sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
-        sx = (mods & Qt::ShiftModifier) ? sy : 1.0;
+        sx = sy;
         break;
     case 6: // BL
         sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
@@ -136,24 +136,24 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         break;
     case 7: // L
         sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
-        sy = (mods & Qt::ShiftModifier) ? sx : 1.0;
+        sy = sx;
         break;
     default:
         break;
     }
-    // Corners: uniform scale unless Shift (free axes).
-    if (m_groupHandle == 0 || m_groupHandle == 2 || m_groupHandle == 4 || m_groupHandle == 6) {
-        if (!(mods & Qt::ShiftModifier)) {
-            const qreal s = (qAbs(sx) + qAbs(sy)) * 0.5;
-            sx = (sx < 0 ? -1 : 1) * s;
-            sy = (sy < 0 ? -1 : 1) * s;
+    // Default: uniform group scale so each item's R·H·S aspect and shear stay
+    // coherent when frames are rotated. Shift → free AABB axes (positions and
+    // scales stretch independently in scene X/Y — approximate for rotated tiles).
+    const bool freeAxes = mods & Qt::ShiftModifier;
+    if (!freeAxes) {
+        const qreal s = (qAbs(sx) + qAbs(sy)) * 0.5;
+        if (s > 1e-9) {
+            sx = s;
+            sy = s;
         }
     }
-    sx = qBound(0.05, qAbs(sx), 20.0) * (sx < 0 ? -1.0 : 1.0);
-    sy = qBound(0.05, qAbs(sy), 20.0) * (sy < 0 ? -1.0 : 1.0);
-    // Disallow negative scale (mirrors) for group — keep positive.
-    sx = qAbs(sx);
-    sy = qAbs(sy);
+    sx = qBound(0.05, qAbs(sx), 20.0);
+    sy = qBound(0.05, qAbs(sy), 20.0);
 
     if (!qIsFinite(sx) || !qIsFinite(sy) || !qIsFinite(anchor.x()) || !qIsFinite(anchor.y())) {
         return;
@@ -170,6 +170,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
             continue;
         }
         item->setPos(newPos);
+        // Preserve shear; scale axes only.
         const qreal baseX = st.scale > 0 ? st.scale : 1.0;
         const qreal baseY = st.scaleY > 0 ? st.scaleY : baseX;
         const qreal nx = baseX * sx;
@@ -178,6 +179,8 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
             continue;
         }
         item->setItemScale(nx, ny);
+        item->setItemShear(st.shear);
+        item->setItemRotation(st.rotation);
     }
     m_fitMode = false;
     emit statusChanged();

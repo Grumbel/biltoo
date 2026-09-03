@@ -494,26 +494,23 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
 void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
 {
     // Horizontal shear k in local space: H = [[1,k],[0,1]] inside R·H·S.
-    // Drag top/bottom along local X; keep opposite edge fixed in scene.
+    // After S then H: x' = sx*x + k*(sy*y). Top/bottom (y=±h/2) move along
+    // local +X by ±k*sy*(h/2). Drag along rotated local X; opposite edge fixed.
     const QRectF r = QGraphicsPixmapItem::boundingRect();
     const qreal halfH = qMax(1e-6, r.height() * 0.5);
     const qreal rot = qDegreesToRadians(m_pressRotation);
     const qreal c = qCos(rot);
     const qreal s = qSin(rot);
-    // Unit local +X in scene (direction of shear displacement of a point).
     const QPointF dirX(c, s);
     const QPointF anchor = m_pressAnchorScene;
     const QPointF v0 = m_pressScenePos - anchor;
     const QPointF v1 = scenePos - anchor;
     const qreal len0 = QPointF::dotProduct(v0, dirX);
     const qreal len1 = QPointF::dotProduct(v1, dirX);
-    // At local y = ±halfH (after scale), shear shifts by k * (sy * y).
-    // Approximate: Δscene along X ≈ Δk * scaleY * halfH  (sign depends on edge).
     const qreal denom = qMax(1e-6, m_pressScaleY * halfH);
     qreal k = m_pressShear;
     if (m_activeHandle == Handle::ShearTop) {
-        // Top is local y < 0; increasing k moves top in -localX for Qt y-down? 
-        // map: x' = x + k*y with y_top negative → k increase moves top toward -X.
+        // y_top < 0: increasing k moves top toward -localX.
         k = m_pressShear + (len0 - len1) / denom;
     } else {
         k = m_pressShear + (len1 - len0) / denom;

@@ -984,6 +984,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
                     && qFuzzyCompare(after.scale, before.scale)
                     && qFuzzyCompare(after.scaleY > 0 ? after.scaleY : 1.0,
                                      before.scaleY > 0 ? before.scaleY : 1.0)
+                    && qFuzzyCompare(after.shear + 1.0, before.shear + 1.0)
                     && qFuzzyCompare(after.rotation, before.rotation)) {
                     continue;
                 }
