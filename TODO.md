@@ -389,19 +389,19 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
 - [x] **Workspace background as project state + toolbar**  
   Per-Workspace override (`WorkspaceBackground`: AppDefault / Solid /
   Checkerboard / ImageTile). AppDefault uses Preferences (technical default)
-  and is not written to the project. Toolbar + Workspace menu: Background
-  menu with default / solid / checker / image pattern. Saved as
+  and is not written to the project. Workspace tools bar: two buttons
+  (**Background…** dialog, **Background Default**). Saved as
   `workspaceBackground` in the project file; restored on load; cleared on New.
 
 - [x] **Workspace background image portability**  
-  Project stores `image` + `imageRelative` (when under project dir). Load resolves
-  absolute then relative via `resolveWorkspaceBackgroundImage`. Toolbar uses
-  InstantPopup for the Background menu button.
+  Project stores `image` / `imageRelative` / `imageSha256` (when under project dir).
+  Load resolves absolute then relative via `resolveWorkspaceBackgroundImage`.
+  No `.assets/` embedding — JSON path + checksum only.
 
 - [x] **Workspace background editor dialog**  
   Unified `WorkspaceBackgroundDialog` with live preview (solid / checker /
-  image / app default). Toolbar and Workspace menu open Edit…; quick
-  "Application default" remains in the submenu.
+  image / app default). Toolbar: **Background…** opens dialog;
+  **Background Default** resets to AppDefault (undoable).
 
 - [x] **Audit follow-ups (clipboard / apply / background)**  
   - Paste enabled only when clipboard has Workspace MIME (`dataChanged`)  
@@ -410,11 +410,11 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   - `applyStoredAppearance` reloads full source before geometry content ops  
   - Background image `imageSha256` stored and checked on resolve
 
-- [x] **Background polish (undo, embed, LOD, live preview)**  
+- [x] **Background polish (undo, LOD, live preview)**  
   - Undoable background changes (`WorkspaceBackgroundCommand`)  
   - Live canvas preview while the dialog is open (restore on Cancel)  
   - Image-tile LOD when zoomed out  
-  - On save, copy external background tiles into `<project>.assets/`
+  - Path/checksum only in project JSON (no `.assets/` copy)
 
 - [x] **Background references are JSON-only**  
   Suppress dialog `backgroundChanged` during programmatic `setBackground`.  
@@ -429,7 +429,121 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
 
 - [x] **Archive follow-ups**  
   HUD/title/thumbnail labels use `ArchivePath::displayName`.  
-  Open dialog includes an Archives filter.  
+  Open dialog default filter is **Images and archives**.  
   Project save hashes the archive container; member path is stored in appearance
-  and rebuilt on load after the container is resolved.
+  and rebuilt on load after the container is resolved.  
+  WebP/etc. from archives: format-hint + libvips buffer fallback.  
+  Session history must use `ArchivePath::canonicalSessionPath` (never
+  `QFileInfo::absoluteFilePath` — collapses `//archive:`).
+
+
+---
+
+## Handoff (2026-09-03) — continue from tip / next bundle `qimgview-064-…`
+
+**Git tip after stacks:** `85ac5d0` — *Fix LoadAdd creating extra tiles for already-bound session ids*  
+**Requires previous tip:** `ffb84b6` (export background + dual toolbar buttons)
+
+### Bundle stack (this workstream)
+
+Apply in order under `/home/workdir/artifacts/` (each is `git pull <bundle> HEAD`):
+
+| Bundle | Tip (approx) | Topic |
+|--------|--------------|--------|
+| `qimgview-040-colour-grade-persist` … `051-bg-json-refs-only` | | Grade persist, central appearance, clipboard, background JSON |
+| `qimgview-052-archive-images` | | libarchive in-memory + `//archive:` syntax |
+| `qimgview-053-archive-followups` | | displayName, dialog filter, project container hash |
+| `qimgview-054-fix-build-session` | | qualify `ProjectFile::appearanceFromJson` |
+| `qimgview-055-mark-dirty-public` | | `markWorkspaceDirty` public for undo cmds |
+| `qimgview-056-fix-archive-decode` | | full `archive_read_data` loop + content sniff |
+| `qimgview-057-archive-dialog-and-load-logs` | | default Open filter includes archives; qWarning on failures |
+| `qimgview-058-fix-history-archive-paths` | | history must not `cleanPath` archive refs |
+| `qimgview-059-archive-webp-decode` | | format hints + `vips_image_new_from_buffer` |
+| `qimgview-060-adjustments-opt-in` | | Adjustments dock default hidden |
+| `qimgview-061-icons-layout-prefs` | | coloured icons; layout on workspace bar; prefs chrome |
+| `qimgview-062-export-bg-two-buttons` | | PNG export paints workspace bg; two bg buttons |
+| `qimgview-063-fix-loadadd-bind` | | LoadAdd: no extra tiles for live session ids |
+
+Author on all commits: `Ingo Ruhnke <grumbel@gmail.com>` with  
+`Co-authored-by: Grok <grok@x.ai>`. Bundles use **HEAD** as ref and stack cleanly.
+
+### Architecture notes (do not regress)
+
+**Identity**
+
+- Session identity is `SessionImageId`, never the path string alone.
+- Paths may repeat; duplicates are separate session rows.
+
+**Content appearance (central)**
+
+- Content ops (crop, content flip/quarter-turn, colour grade) live on
+  `WorkspaceItemState` / `SessionAppearanceStore`, keyed by `SessionImageId`.
+- Apply via `SessionAppearance::applyContentToItem` (and helpers). Prefer this
+  over ad-hoc `setColorAdjustments` / crop / bake calls at call sites.
+- Placement (pos, scale, free rotation, opacity, z) is separate from content.
+
+**Archive paths**
+
+- Syntax: `/abs/path/archive.zip//archive:member/inside.jpg`  
+  (optional `file://` prefix on the archive side is parsed; stored form is usually
+  absolute path + `//archive:` + member).
+- **Never** pass an archive ref through `QFileInfo::absoluteFilePath` /
+  `QDir::cleanPath` — collapses `//` and breaks the marker.
+  Use `ArchivePath::canonicalSessionPath` / `parse` / `makeRef`.
+- One nesting level only. Expand archive → list of member refs in session.
+- Decode: libarchive full read → `ImageLoader::decodeFromBytes` (Qt format
+  candidates → sniff → libvips buffer). Build needs `QIMGVIEW_HAVE_ARCHIVE`
+  (pkg-config `libarchive`). Runtime logs if missing.
+
+**Workspace background**
+
+- Project-owned `WorkspaceBackground` (AppDefault / Solid / Checkerboard / ImageTile).
+- JSON fields: mode, colors, image path, relative path, sha256 — **no** `.assets/`.
+- View + export share `ImageView::paintCanvasBackground`.
+- Export PNG: transparent checkbox; when off, canvas background is painted first.
+
+**LoadAdd / binds**
+
+- Placeholders often already have `SessionImageId`. Pending binds for live ids
+  must be dropped; tile count capped by `pathOrder` multiplicity
+  (`imageview_load.cpp` LoadAdd). Do not reintroduce `wanted = have + pendingBinds`
+  without that purge.
+
+**Chrome defaults**
+
+- Adjustments dock: opt-in (`adjustmentsPanelVisible`, default false); force after
+  `restoreState`.
+- Layout panel: Workspace-only preference `layoutPreferredInWorkspace`.
+- Preferences → Interface exposes adjustments / layout / per-mode thumbnail defaults.
+
+### Known gaps / next candidates
+
+- [ ] Nested archives (out of scope by design for now)
+- [ ] Cache decoded archive members (memory / LRU) if large zips feel slow
+- [ ] Status bar / HUD when libarchive was not compiled in
+- [ ] Image-mode crop of duplicate slot B → only tile B after return (see §0.1.0)
+- [ ] Grid Crop re-enable
+- [ ] Permanent rotate/flip / sidecar story (0.2.0)
+- [ ] Verify Export PNG letterboxing vs page-guide white sheet interaction
+- [ ] Regression pass: open zip with WebP, history reopen, project save/load with
+      archive members + workspace background image
+
+### Files to read first
+
+| Area | Files |
+|------|--------|
+| Appearance | `src/sessionappearance.{h,cpp}`, `src/imageview_types.h` |
+| Load / binds | `src/imageview_load.cpp` |
+| Archives | `src/archivepath.*`, `src/archivereader.*`, `src/imageloader.cpp` |
+| Background | `src/imageview_paint.cpp` (`paintCanvasBackground`), `src/workspacebackgrounddialog.*`, `src/projectfile.*` |
+| Session / history | `src/mainwindow_session.cpp` (`rememberSessionHistory`, expandPaths) |
+| Export | `src/mainwindow_print.cpp`, `ImageView::renderExportImage` |
+| Rules | `AGENTS.md`, this file |
+
+### Agent workflow reminders
+
+- Document plans and progress in **TODO.md** (or linked notes) continuously.
+- Small task-focused commits; next bundle number is **064** (`qimgview-064-…`).
+- Prefer shallow checkout + rsync into artifacts; writing artifacts is slow.
+- No feature rollback without discussion; no quick hacks — fix the model.
 
