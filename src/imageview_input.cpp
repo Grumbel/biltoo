@@ -912,8 +912,12 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                     viewport()->setCursor(Qt::SizeHorCursor);
                     break;
                 case H::ShearTop: case H::ShearBottom:
-                case H::ShearLeft: case H::ShearRight:
+                    // Horizontal shear: drag along local X (↔ when upright).
                     viewport()->setCursor(Qt::SizeHorCursor);
+                    break;
+                case H::ShearLeft: case H::ShearRight:
+                    // Vertical local shear: drag along local Y (↕ when upright).
+                    viewport()->setCursor(Qt::SizeVerCursor);
                     break;
                 case H::OpacitySlider:
                     viewport()->setCursor(Qt::SizeVerCursor);
