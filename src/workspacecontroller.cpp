@@ -184,23 +184,18 @@ void WorkspaceController::restoreStashedItems()
         if (!app) {
             continue;
         }
-        // Pixels are usually already updated by commitItemSessionEdit while
-        // stashed. Rebuild when size/metadata disagree; always re-apply content
-        // appearance (crop / bakes / colour grade) from the session store.
-        const QSize want = app->hasCrop ? app->cropRect.size() : QSize();
-        const bool sizeMismatch = app->hasCrop && item->imageSize() != want;
-        const bool missing = item->sourceImage().isNull();
-        const bool flagsMismatch =
-            item->contentHFlip() != app->contentHFlip
-            || item->contentVFlip() != app->contentVFlip
-            || item->sessionHasCrop() != app->hasCrop;
-        if (sizeMismatch || missing || flagsMismatch) {
-            if (app->hasCrop || app->contentQuarterTurns != 0
-                || app->contentHFlip || app->contentVFlip || missing) {
-                const QImage full = ImageLoader::load(item->path());
-                if (!full.isNull()) {
-                    item->setSourceImage(full);
-                }
+        // applyContentToItem requires full on-disk pixels for crop / content
+        // flips / quarter-turns. Stashed tiles often already hold baked crop
+        // pixels (peer sync while in Image mode). Reloading only on size
+        // mismatch alternated wrong/correct every Workspace↔Image cycle:
+        // match → skip reload → double-crop → mismatch → reload → OK → …
+        const bool needsFullSource = app->hasCrop || app->contentQuarterTurns != 0
+            || app->contentHFlip || app->contentVFlip
+            || item->sourceImage().isNull();
+        if (needsFullSource) {
+            const QImage full = ImageLoader::load(item->path());
+            if (!full.isNull()) {
+                item->setSourceImage(full);
             }
         }
         SessionAppearance::applyContentToItem(item, *app);

@@ -877,6 +877,10 @@ and sheared tiles follow the selection AABB.
 - History menu renamed **Recent Sessions** (Clear / empty / status tips /
   README); distinct from File → Recent Projects
 
+### Fixed in `qimgview-100`
+- Workspace stash restore always reloads full pixels before geometry content
+  apply (fixes alternating wrong size/crop on Workspace↔Image cycles)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -1260,3 +1264,27 @@ long-session thumbs) or further identity GUI smoke notes.
 
 **Next bundle:** `qimgview-100-…` — long-session thumb virtualization, or other
 product work from TODO 0.1.0.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-100-workspace-stash-reapply`
+
+**Bug:** Workspace tiles show correct position but wrong size/crop after
+Workspace ↔ Image cycles. Alternates fix/break on each leave/return.
+
+**Root cause:** `SessionAppearance::applyContentToItem` requires full on-disk
+pixels before crop/content bakes. `restoreStashedItems` only reloaded when
+`imageSize != cropRect.size` (or flags mismatch). After a correct apply, sizes
+match → next restore skips reload → crop runs on already-cropped pixels →
+wrong size. Next cycle sizes mismatch → reload → correct again.
+
+**Fix:** Before `applyContentToItem` on stash restore, always reload full
+source when the appearance has geometry content ops (crop / content flip /
+quarter-turns). Colour-grade-only can skip reload.
+
+### Done criteria
+
+- [x] Stash restore always reloads full before geometry content apply
+- [x] Document; next **101**
+
+**Next bundle:** `qimgview-101-…` — further polish or regressions from this fix.
