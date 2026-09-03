@@ -926,7 +926,7 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_workspaceToolBar->setOrientation(Qt::Vertical);
     addToolBar(Qt::LeftToolBarArea, m_workspaceToolBar);
-    // Select / Pan, then print layout (page guide is Workspace-centric).
+    // Select / Pan, then Workspace-centric guides and layout (print/export stay under File).
     m_workspaceToolBar->addAction(m_selectToolAct);
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addSeparator();
@@ -935,10 +935,6 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_workspaceBgDefaultAct);
     m_workspaceToolBar->addAction(m_fitPageGuideAct);
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
-    m_workspaceToolBar->addAction(m_pageSetupAct);
-    m_workspaceToolBar->addAction(m_printPreviewAct);
-    m_workspaceToolBar->addAction(m_exportPngAct);
-    m_workspaceToolBar->addAction(m_exportPdfAct);
     m_workspaceToolBar->hide();
 }
 

@@ -844,12 +844,16 @@ and sheared tiles follow the selection AABB.
 - Top-level **Image** menu for rotate / flip / crop; Edit keeps undo,
   clipboard, Sort Session, Preferences
 
+### Fixed in `qimgview-093`
+- Workspace vertical toolbar: drop Page Setup / Print Preview / Export PNG /
+  Export PDF (remain under File); strip stays select/pan/guides/background/layout
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
 - [x] Edit menu mixes transforms (rotate/flip/crop) with Sort and Preferences.
   Consider **Image** menu for transforms; keep Edit for undo/clipboard/prefs.
-- [ ] Workspace vertical toolbar also has Print/Export — consider File only or
+- [x] Workspace vertical toolbar also has Print/Export — consider File only or
   a "Page" submenu so tools stay select/pan/guides/background.
 - [ ] `m_layoutFreeFormAct` exists but is not in Gallery menu (layouts exclusive
   group starts unchecked until user picks one — OK, but Free Form is Workspace-only).
@@ -980,3 +984,47 @@ dedicated top-level **Image** menu, per the UI audit.
 **Next bundle:** `qimgview-093-…` — Workspace vertical toolbar Print/Export
 relocation, shortcut polish (bare Q, Ctrl+Y), or identity residual
 (Image-mode crop of duplicate slot B).
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-093-workspace-toolbar-tools`
+
+**Goal:** Keep the Workspace vertical toolbar focused on canvas tools.
+Remove File-oriented print/export actions from it (they remain under File).
+
+### Scope
+
+1. **Remove from `m_workspaceToolBar`:**
+   - `m_pageSetupAct`
+   - `m_printPreviewAct`
+   - `m_exportPngAct`
+   - `m_exportPdfAct`
+2. **Keep on toolbar:**
+   - Select / Pan
+   - Page Guide, Workspace Background, Background Default, Fit Page Guide
+   - Toggle Layout Panel
+3. **Unchanged:** File menu still has Print, Print Preview, Page Setup,
+   Export PNG, Export PDF. Workspace menu entries for page guide / background
+   stay as they are.
+
+### Rationale
+
+Toolbar was mixing interaction tools with output commands. File is the
+natural home for print/export; the left strip should stay select/pan/guides/
+background/layout.
+
+### Out of scope
+
+- Shortcut polish (bare Q, Ctrl+Y)
+- Grid Crop re-enable
+- Identity residual (duplicate Image-mode crop sync)
+- New "Page" submenu under Workspace (unnecessary while File already lists them)
+
+### Done criteria
+
+- [x] Workspace toolbar has no print/export/page-setup actions
+- [x] File menu still provides those actions
+- [x] Document completion; next bundle **094**
+
+**Next bundle:** `qimgview-094-…` — shortcut polish (bare Q, Ctrl+Y), or
+identity residual (Image-mode crop of duplicate slot B).

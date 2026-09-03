@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-092-image-menu”**
-(top-level Image menu for rotate/flip/crop). Next bundle number: **093**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-093-workspace-toolbar-tools”**
+(Workspace toolbar tools-only; print/export File-only). Next bundle number: **094**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
