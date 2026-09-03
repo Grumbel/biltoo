@@ -579,7 +579,7 @@ void MainWindow::updateWorkspaceActionVisibility()
     }
     if (m_pasteWorkspaceAct) {
         m_pasteWorkspaceAct->setVisible(true);
-        m_pasteWorkspaceAct->setEnabled(true);
+        updatePasteActionEnabled();
     }
     if (m_undoAct) {
         m_undoAct->setVisible(true);

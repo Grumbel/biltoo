@@ -473,6 +473,14 @@ public:
                                       const QVector<SessionImageId> &newIds,
                                       const QList<int> &sessionIndices);
 
+    /** Remove canvas tiles for @p ids (pose remembered). Session rows stay. */
+    void removeCanvasSessionIds(const QList<SessionImageId> &ids);
+    /** Place tiles for existing session ids using appearance store + path. */
+    void placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
+                                 const QStringList &paths,
+                                 const QList<int> &sessionIndices);
+
+
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);

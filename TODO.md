@@ -403,3 +403,10 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   image / app default). Toolbar and Workspace menu open Edit…; quick
   "Application default" remains in the submenu.
 
+- [x] **Audit follow-ups (clipboard / apply / background)**  
+  - Paste enabled only when clipboard has Workspace MIME (`dataChanged`)  
+  - Copy/Cut/Paste also on Edit menu  
+  - Undo for Workspace Cut (canvas restore) and Paste (remove new session rows)  
+  - `applyStoredAppearance` reloads full source before geometry content ops  
+  - Background image `imageSha256` stored and checked on resolve  
+

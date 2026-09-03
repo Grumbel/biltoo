@@ -621,3 +621,69 @@ qreal ImageView::cardinalRotationOrZero(qreal degrees)
     }
     return snapped;
 }
+
+void ImageView::removeCanvasSessionIds(const QList<SessionImageId> &ids)
+{
+    if (!isWorkspaceMode() || ids.isEmpty()) {
+        return;
+    }
+    QList<ImageItem *> toRemove;
+    for (SessionImageId id : ids) {
+        if (id == kInvalidSessionImageId) {
+            continue;
+        }
+        if (ImageItem *item = findItemBySessionId(id)) {
+            toRemove.append(item);
+        }
+    }
+    if (toRemove.isEmpty()) {
+        return;
+    }
+    setUpdatesEnabled(false);
+    if (m_scene) {
+        m_scene->blockSignals(true);
+    }
+    for (ImageItem *item : toRemove) {
+        rememberItemState(item);
+        destroyCanvasItem(item);
+    }
+    if (m_scene) {
+        m_scene->blockSignals(false);
+    }
+    setUpdatesEnabled(true);
+    viewport()->update();
+    emit statusChanged();
+    emit workspacePathsChanged();
+}
+
+void ImageView::placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
+                                        const QStringList &paths,
+                                        const QList<int> &sessionIndices)
+{
+    if (!isWorkspaceMode() || ids.isEmpty()) {
+        return;
+    }
+    if (m_scene) {
+        m_scene->clearSelection();
+    }
+    m_pendingSelectSessionIds.clear();
+    for (int i = 0; i < ids.size(); ++i) {
+        const SessionImageId sid = ids.at(i);
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        const QString path = (i < paths.size()) ? paths.at(i) : QString();
+        if (path.isEmpty()) {
+            continue;
+        }
+        if (findItemBySessionId(sid)) {
+            continue; // already on canvas
+        }
+        const int idx = (i < sessionIndices.size()) ? sessionIndices.at(i) : -1;
+        m_pendingSelectSessionIds.insert(sid);
+        addImageForSession(path, sid, idx);
+    }
+    emit statusChanged();
+    emit workspacePathsChanged();
+    viewport()->update();
+}

@@ -99,6 +99,77 @@ private:
     QList<SessionEntrySnapshot> m_entries;
 };
 
+/** Undoable Workspace paste (new session rows + canvas tiles). */
+class WorkspacePasteCommand : public QUndoCommand {
+public:
+    WorkspacePasteCommand(MainWindow *mw, const QList<WorkspaceItemState> &items)
+        : QUndoCommand(QObject::tr("Paste Workspace tiles"))
+        , m_mw(mw)
+        , m_items(items)
+    {
+    }
+
+    void undo() override
+    {
+        if (!m_mw || m_newIds.isEmpty()) {
+            return;
+        }
+        QList<int> indices;
+        for (SessionImageId id : m_newIds) {
+            const int idx = m_mw->sessionIndexOfId(id);
+            if (idx >= 0) {
+                indices.append(idx);
+            }
+        }
+        if (!indices.isEmpty()) {
+            m_mw->applySessionRemoveIndices(indices);
+        }
+        m_mw->markWorkspaceDirty();
+    }
+
+    void redo() override
+    {
+        if (!m_mw) {
+            return;
+        }
+        m_newIds = m_mw->applyWorkspacePaste(m_items);
+    }
+
+private:
+    MainWindow *m_mw = nullptr;
+    QList<WorkspaceItemState> m_items;
+    QVector<SessionImageId> m_newIds;
+};
+
+/** Undoable Workspace cut (canvas only; session rows kept). */
+class WorkspaceCutCommand : public QUndoCommand {
+public:
+    WorkspaceCutCommand(MainWindow *mw, const QList<WorkspaceItemState> &items)
+        : QUndoCommand(QObject::tr("Cut Workspace tiles"))
+        , m_mw(mw)
+        , m_items(items)
+    {
+    }
+
+    void undo() override
+    {
+        if (m_mw) {
+            m_mw->applyWorkspaceUncut(m_items);
+        }
+    }
+
+    void redo() override
+    {
+        if (m_mw) {
+            m_mw->applyWorkspaceCut(m_items);
+        }
+    }
+
+private:
+    MainWindow *m_mw = nullptr;
+    QList<WorkspaceItemState> m_items;
+};
+
 } // namespace
 
 bool MainWindow::isImageFile(const QString &path)
@@ -1548,6 +1619,20 @@ static void writeWorkspaceMime(const QList<WorkspaceItemState> &items)
     QApplication::clipboard()->setMimeData(mime);
 }
 
+bool MainWindow::clipboardHasWorkspaceItems() const
+{
+    const QMimeData *mime = QApplication::clipboard()->mimeData();
+    return mime && mime->hasFormat(QString::fromLatin1(kWorkspaceClipMime));
+}
+
+void MainWindow::updatePasteActionEnabled()
+{
+    if (!m_pasteWorkspaceAct) {
+        return;
+    }
+    m_pasteWorkspaceAct->setEnabled(clipboardHasWorkspaceItems());
+}
+
 void MainWindow::copyWorkspaceItems()
 {
     if (!m_imageView || !isWorkspaceMode()) {
@@ -1559,6 +1644,7 @@ void MainWindow::copyWorkspaceItems()
     }
     writeWorkspaceMime(items);
     m_workspacePasteGeneration = 0;
+    updatePasteActionEnabled();
     if (statusBar()) {
         statusBar()->showMessage(tr("Copied %n Workspace tile(s)", "", items.size()), 2500);
     }
@@ -1575,7 +1661,27 @@ void MainWindow::cutWorkspaceItems()
     }
     writeWorkspaceMime(items);
     m_workspacePasteGeneration = 0;
-    m_imageView->removeSelectedCanvasItems();
+    updatePasteActionEnabled();
+    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
+        m_imageView->undoStack()->push(new WorkspaceCutCommand(this, items));
+        return;
+    }
+    applyWorkspaceCut(items);
+}
+
+void MainWindow::applyWorkspaceCut(const QList<WorkspaceItemState> &items)
+{
+    if (!m_imageView || items.isEmpty()) {
+        return;
+    }
+    QList<SessionImageId> ids;
+    ids.reserve(items.size());
+    for (const WorkspaceItemState &s : items) {
+        if (s.sessionId != kInvalidSessionImageId) {
+            ids.append(s.sessionId);
+        }
+    }
+    m_imageView->removeCanvasSessionIds(ids);
     syncThumbnailCanvasMembership();
     markWorkspaceDirty();
     updateWorkspaceActionVisibility();
@@ -1584,32 +1690,70 @@ void MainWindow::cutWorkspaceItems()
     }
 }
 
+void MainWindow::applyWorkspaceUncut(const QList<WorkspaceItemState> &items)
+{
+    if (!m_imageView || items.isEmpty()) {
+        return;
+    }
+    if (!isWorkspaceMode()) {
+        enterWorkspaceMode();
+    }
+    QList<SessionImageId> ids;
+    QStringList paths;
+    QList<int> indices;
+    for (const WorkspaceItemState &s : items) {
+        if (s.sessionId == kInvalidSessionImageId || s.path.isEmpty()) {
+            continue;
+        }
+        // Ensure appearance (pose) is in the store for restore.
+        m_imageView->setSessionAppearance(s.sessionId, s);
+        ids.append(s.sessionId);
+        paths.append(s.path);
+        indices.append(m_session.indexOfId(s.sessionId));
+    }
+    m_imageView->placeSessionIdsOnCanvas(ids, paths, indices);
+    syncThumbnailCanvasMembership();
+    markWorkspaceDirty();
+    updateWorkspaceActionVisibility();
+}
+
 void MainWindow::pasteWorkspaceItems()
 {
     if (!m_imageView) {
         return;
     }
-    const QMimeData *mime = QApplication::clipboard()->mimeData();
-    if (!mime || !mime->hasFormat(QString::fromLatin1(kWorkspaceClipMime))) {
+    if (!clipboardHasWorkspaceItems()) {
         if (statusBar()) {
             statusBar()->showMessage(tr("Clipboard has no Workspace tiles."), 2500);
         }
         return;
     }
+    const QMimeData *mime = QApplication::clipboard()->mimeData();
     QList<WorkspaceItemState> items =
         decodeWorkspaceClipboard(mime->data(QString::fromLatin1(kWorkspaceClipMime)));
     if (items.isEmpty()) {
         return;
     }
+    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
+        m_imageView->undoStack()->push(new WorkspacePasteCommand(this, items));
+        return;
+    }
+    applyWorkspacePaste(items);
+}
 
+QVector<SessionImageId> MainWindow::applyWorkspacePaste(const QList<WorkspaceItemState> &clipItems)
+{
+    QVector<SessionImageId> newIds;
+    if (!m_imageView || clipItems.isEmpty()) {
+        return newIds;
+    }
     if (!isWorkspaceMode()) {
         enterWorkspaceMode();
     }
 
-    // Stack successive pastes of the same clipboard away from each other.
     ++m_workspacePasteGeneration;
     const qreal off = 40.0 * static_cast<qreal>(m_workspacePasteGeneration);
-    QVector<SessionImageId> newIds;
+    QList<WorkspaceItemState> items = clipItems;
     QList<int> indices;
     QList<SessionImageId> selectIds;
     newIds.reserve(items.size());
@@ -1632,7 +1776,6 @@ void MainWindow::pasteWorkspaceItems()
         m_thumbnailBar->setMultiSelectEnabled(true);
     }
     m_imageView->placeWorkspaceClipboardItems(items, newIds, indices);
-    // Select as soon as tiles exist (may be empty until LoadAdd finishes).
     m_imageView->selectBySessionIds(selectIds);
     if (m_thumbnailBar && !indices.isEmpty()) {
         m_thumbnailBar->setSelectedIndices(indices);
@@ -1644,6 +1787,7 @@ void MainWindow::pasteWorkspaceItems()
     if (statusBar()) {
         statusBar()->showMessage(tr("Pasted %n Workspace tile(s)", "", items.size()), 2500);
     }
+    return newIds;
 }
 
 void MainWindow::saveProject()
@@ -1819,6 +1963,7 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
                 } else {
                     wb.imagePathRelative.clear();
                 }
+                wb.imageSha256 = ProjectFile::fileSha256(abs);
             }
             doc.hasWorkspaceBackground = true;
             doc.workspaceBackground = wb;

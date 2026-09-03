@@ -128,7 +128,11 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     if (!item) {
         return;
     }
-    // 1) Crop from current source (full on-disk decode or prior source).
+    // Contract: for crop / content flip / quarter-turns, @p item must hold the
+    // full on-disk pixels (not a previously baked result). Callers that may
+    // re-apply (applyStoredAppearance, workspace restore) reload first.
+    // Colour grade alone is non-destructive and safe on any current source.
+    // 1) Crop from current source.
     applyCrop(item, state);
     // 2) Content bakes — order matches live bakeFlip / bakeRotate90.
     if (state.contentHFlip || state.contentVFlip) {

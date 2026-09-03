@@ -266,6 +266,9 @@ bool save(const QString &projectPath, const ProjectDocument &doc, QString *error
         if (!b.imagePathRelative.isEmpty()) {
             wb.insert(QStringLiteral("imageRelative"), b.imagePathRelative);
         }
+        if (!b.imageSha256.isEmpty()) {
+            wb.insert(QStringLiteral("imageSha256"), b.imageSha256);
+        }
         root.insert(QStringLiteral("workspaceBackground"), wb);
     }
 
@@ -369,6 +372,7 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error)
         }
         b.imagePath = wb.value(QStringLiteral("image")).toString();
         b.imagePathRelative = wb.value(QStringLiteral("imageRelative")).toString();
+        b.imageSha256 = wb.value(QStringLiteral("imageSha256")).toString();
         doc->workspaceBackground = b;
         doc->hasWorkspaceBackground = !b.isAppDefault();
     }
@@ -378,7 +382,7 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error)
 QString resolveWorkspaceBackgroundImage(const WorkspaceBackground &bg,
                                         const QString &projectFilePath)
 {
-    auto tryFile = [](const QString &candidate) -> QString {
+    auto tryFile = [&](const QString &candidate) -> QString {
         if (candidate.isEmpty()) {
             return {};
         }
@@ -388,6 +392,13 @@ QString resolveWorkspaceBackgroundImage(const WorkspaceBackground &bg,
         }
         const QString abs = fi.canonicalFilePath().isEmpty() ? fi.absoluteFilePath()
                                                              : fi.canonicalFilePath();
+        if (!bg.imageSha256.isEmpty()) {
+            const QString actual = fileSha256(abs);
+            if (actual.isEmpty()
+                || actual.compare(bg.imageSha256, Qt::CaseInsensitive) != 0) {
+                return {};
+            }
+        }
         return abs;
     };
     if (QString r = tryFile(bg.imagePath); !r.isEmpty()) {
@@ -397,6 +408,25 @@ QString resolveWorkspaceBackgroundImage(const WorkspaceBackground &bg,
         const QDir projDir(QFileInfo(projectFilePath).absoluteDir());
         if (QString r = tryFile(projDir.absoluteFilePath(bg.imagePathRelative)); !r.isEmpty()) {
             return r;
+        }
+    }
+    // Fall back without hash if the preferred path exists (legacy projects).
+    if (!bg.imageSha256.isEmpty()) {
+        auto tryNoHash = [](const QString &candidate) -> QString {
+            if (candidate.isEmpty()) return {};
+            const QFileInfo fi(candidate);
+            if (!fi.isFile()) return {};
+            return fi.canonicalFilePath().isEmpty() ? fi.absoluteFilePath()
+                                                    : fi.canonicalFilePath();
+        };
+        if (QString r = tryNoHash(bg.imagePath); !r.isEmpty()) {
+            return r;
+        }
+        if (!bg.imagePathRelative.isEmpty() && !projectFilePath.isEmpty()) {
+            const QDir projDir(QFileInfo(projectFilePath).absoluteDir());
+            if (QString r = tryNoHash(projDir.absoluteFilePath(bg.imagePathRelative)); !r.isEmpty()) {
+                return r;
+            }
         }
     }
     return {};

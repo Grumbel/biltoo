@@ -462,6 +462,8 @@ void MainWindow::createActions()
     m_pasteWorkspaceAct->setStatusTip(
         tr("Paste Workspace tiles as new session images (offset placement)"));
     connect(m_pasteWorkspaceAct, &QAction::triggered, this, &MainWindow::pasteWorkspaceItems);
+    connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &MainWindow::updatePasteActionEnabled);
+    updatePasteActionEnabled();
 
     m_openSelectionNewWindowAct = new QAction(tr("Open Selection in &New Window"), this);
     m_openSelectionNewWindowAct->setStatusTip(
@@ -663,6 +665,10 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_redoAct);
     m_editMenu->addSeparator();
     m_editMenu->addAction(m_selectAllAct);
+    m_editMenu->addSeparator();
+    m_editMenu->addAction(m_copyWorkspaceAct);
+    m_editMenu->addAction(m_cutWorkspaceAct);
+    m_editMenu->addAction(m_pasteWorkspaceAct);
     m_editMenu->addSeparator();
     // Content transforms (not View — they edit the image / session appearance).
     m_editMenu->addAction(m_rotateLeftAct);

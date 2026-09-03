@@ -22,6 +22,7 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QClipboard>
 #include <QColor>
 #include <QColorDialog>
 #include <QCollator>

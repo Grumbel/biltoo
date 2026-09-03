@@ -71,6 +71,11 @@ public:
     /** Canvas + session duplicate; returns new SessionImageIds (for undo). */
     QVector<SessionImageId> applyDuplicate(const QList<SessionImageId> &sourceIds,
                                  const QStringList &fallbackPaths = {});
+    /** Workspace paste/cut helpers for QUndoCommand. */
+    QVector<SessionImageId> applyWorkspacePaste(const QList<WorkspaceItemState> &items);
+    void applyWorkspaceCut(const QList<WorkspaceItemState> &items);
+    void applyWorkspaceUncut(const QList<WorkspaceItemState> &items);
+    bool clipboardHasWorkspaceItems() const;
     int sessionIndexOfId(SessionImageId id) const;
     bool writeProjectToPath(const QString &projectPath, QString *error = nullptr);
     bool loadProjectFromPath(const QString &projectPath, QString *error = nullptr);
@@ -169,6 +174,7 @@ private slots:
     void editWorkspaceBackground();
     void workspaceBackgroundDefault();
     void syncWorkspaceBackgroundActions();
+    void updatePasteActionEnabled();
     void saveProject();
     void saveProjectAs();
     void openProject();

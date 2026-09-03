@@ -49,6 +49,8 @@ struct WorkspaceBackground {
     QString imagePath;
     /** Optional path relative to the project file (portable projects). */
     QString imagePathRelative;
+    /** Optional content hash for the tile image (project verification). */
+    QString imageSha256;
 
     bool isAppDefault() const { return mode == WorkspaceBackgroundMode::AppDefault; }
 };

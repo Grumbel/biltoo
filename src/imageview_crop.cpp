@@ -634,6 +634,16 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     if (!app) {
         return;
     }
+    // Geometry content ops bake pixels. Reload full on-disk source when those
+    // ops are present so applyContentToItem is safe to call more than once.
+    const bool needsFullSource = app->hasCrop || app->contentHFlip || app->contentVFlip
+        || app->contentQuarterTurns != 0;
+    if (needsFullSource) {
+        const QImage full = ImageLoader::load(item->path());
+        if (!full.isNull()) {
+            item->setSourceImage(full);
+        }
+    }
     // Single content path: crop → content bakes → chrome flags → colour grade.
     SessionAppearance::applyContentToItem(item, *app);
 }
