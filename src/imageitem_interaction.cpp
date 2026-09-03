@@ -499,35 +499,79 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
 
 void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
 {
-    // Only horizontal shear exists: H=[[1,k],[0,1]]. All four edge grips change
-    // the same k; motion that updates k is along local +X in scene (Qt pose).
-    // Opposite edge fixed via press anchor. Lever arm is local Y of the grip
-    // (k moves a point by k·sy·y along local X).
-    const QRectF r = QGraphicsPixmapItem::boundingRect();
+    // Canonical pose is R·H(kx)·S with only horizontal shear. Top/Bottom grips
+    // edit kx directly. Left/Right grips apply a *vertical* local shear V(m)
+    // (tilt top/bottom edges), then re-decompose L·V into R·H·S so the same
+    // 4-DOF model holds.
+    //
+    // Horizontal: H(kx) maps (x,y)→(x+kx·y, y); e2' = e2 + kx·e1 (via L·H).
+    // Vertical:   V(m)  maps (x,y)→(x, y+m·x); e1' = e1 + m·e2  (via L·V).
     const QPointF gripLocal = handleCenter(m_activeHandle);
-    const qreal yLever = gripLocal.y(); // item space, centre origin
-    const qreal lever = qMax(1e-3, qAbs(yLever));
-
-    QPointF dirX = PlacementLinear::make(1.0, 1.0, 0.0, m_pressRotation).map(QPointF(1.0, 0.0));
-    const qreal dirLen = qHypot(dirX.x(), dirX.y());
-    if (dirLen > 1e-9) {
-        dirX /= dirLen;
-    }
-
     const QPointF anchor = m_pressAnchorScene;
-    const qreal len0 = QPointF::dotProduct(m_pressScenePos - anchor, dirX);
-    const qreal len1 = QPointF::dotProduct(scenePos - anchor, dirX);
-    // Δ(scene along local X) = Δk * sy * y_local  (and y_top < 0 flips sign).
-    const qreal denom = qMax(1e-6, m_pressScaleY * lever);
-    const qreal delta = (len1 - len0) / denom;
-    // yLever sign: top negative → increasing k moves top toward -localX.
-    qreal k = m_pressShear;
-    if (yLever < 0.0) {
-        k = m_pressShear - delta;
+
+    QPointF e1, e2;
+    PlacementLinear::unitAxes(m_pressScaleX, m_pressScaleY, m_pressShear,
+                              m_pressRotation, &e1, &e2);
+
+    const bool verticalEdge = (m_activeHandle == Handle::ShearLeft
+                               || m_activeHandle == Handle::ShearRight);
+
+    if (!verticalEdge) {
+        // Top / Bottom: edit horizontal shear kx. Motion along local +X.
+        QPointF dirX = e1;
+        const qreal lenX = qHypot(dirX.x(), dirX.y());
+        if (lenX > 1e-9) {
+            dirX /= lenX;
+        }
+        const qreal yLever = gripLocal.y();
+        const qreal lever = qMax(1e-3, qAbs(yLever));
+        const qreal len0 = QPointF::dotProduct(m_pressScenePos - anchor, dirX);
+        const qreal len1 = QPointF::dotProduct(scenePos - anchor, dirX);
+        // L·H(kx): e2_new = e2 + kx·e1 ⇒ scene move of a point with local y
+        // along e1 is proportional to kx · |e1| · y (≈ sx·kx·y).
+        const qreal denom = qMax(1e-6, m_pressScaleX * lever);
+        const qreal delta = (len1 - len0) / denom;
+        qreal kx = m_pressShear;
+        if (yLever < 0.0) {
+            kx = m_pressShear - delta;
+        } else {
+            kx = m_pressShear + delta;
+        }
+        setItemShear(kx);
     } else {
-        k = m_pressShear + delta;
+        // Left / Right: vertical local shear m via L·V(m), then decompose.
+        QPointF dirY = e2;
+        const qreal lenY = qHypot(dirY.x(), dirY.y());
+        if (lenY > 1e-9) {
+            dirY /= lenY;
+        }
+        const qreal xLever = gripLocal.x();
+        const qreal lever = qMax(1e-3, qAbs(xLever));
+        const qreal len0 = QPointF::dotProduct(m_pressScenePos - anchor, dirY);
+        const qreal len1 = QPointF::dotProduct(scenePos - anchor, dirY);
+        // L·V(m): e1_new = e1 + m·e2 ⇒ move along e2 ∝ m · |e2| · x (≈ sy·m·x).
+        const qreal denom = qMax(1e-6, m_pressScaleY * lever);
+        const qreal delta = (len1 - len0) / denom;
+        qreal m = 0.0;
+        if (xLever < 0.0) {
+            m = -delta; // left edge (x<0)
+        } else {
+            m = delta;
+        }
+        // Compose vertical shear onto press axes: e1' = e1 + m·e2, e2' = e2.
+        const QPointF e1n = e1 + m * e2;
+        const QPointF e2n = e2;
+        qreal sx = m_pressScaleX;
+        qreal sy = m_pressScaleY;
+        qreal kx = m_pressShear;
+        qreal rot = m_pressRotation;
+        if (PlacementLinear::decomposeAxes(e1n, e2n, &sx, &sy, &kx, &rot)) {
+            setItemScale(qBound(0.01, sx, 50.0), qBound(0.01, sy, 50.0));
+            setItemShear(kx);
+            setItemRotation(rot);
+        }
     }
-    setItemShear(k);
+
     const QPointF now = mapToScene(m_pressAnchorLocal);
     setPos(pos() + (anchor - now));
 }

@@ -118,7 +118,8 @@ for all orientation-preserving parallelogram frames (4 DOF linear part).
 
 | Handle / action | Behaviour |
 |-----------------|-----------|
-| ShearTop / Bottom / Left / Right | Purple diamonds offset from mid-edge; drag along local X; opposite edge fixed; updates `k` |
+| ShearTop / Bottom | Horizontal shear `kx` (tilts left/right edges); drag along local X |
+| ShearLeft / Right | Vertical local shear, re-decomposed to `R·H·S`; drag along local Y |
 | Chrome `//` (ResetShear) | Sets `k = 0` |
 | Chrome `1:1` (ResetScale) | Uniform scale 1 and `k = 0` |
 | Chrome `0°` (ResetRotation) | Placement angle only (shear kept) |
