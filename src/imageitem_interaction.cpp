@@ -499,43 +499,33 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
 
 void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
 {
-    // Horizontal shear k in local space: H = [[1,k],[0,1]] inside R·H·S.
-    // Drag projects onto scene image of local +X (Qt rotation convention).
-    // Opposite edge fixed; denom uses half-height so k matches make().
+    // Only horizontal shear exists: H=[[1,k],[0,1]]. All four edge grips change
+    // the same k; motion that updates k is along local +X in scene (Qt pose).
+    // Opposite edge fixed via press anchor. Lever arm is local Y of the grip
+    // (k moves a point by k·sy·y along local X).
     const QRectF r = QGraphicsPixmapItem::boundingRect();
-    const qreal halfH = qMax(1e-6, r.height() * 0.5);
-    const QTransform Ldir = PlacementLinear::make(1.0, 1.0, 0.0, m_pressRotation);
-    QPointF dirX = Ldir.map(QPointF(1.0, 0.0));
+    const QPointF gripLocal = handleCenter(m_activeHandle);
+    const qreal yLever = gripLocal.y(); // item space, centre origin
+    const qreal lever = qMax(1e-3, qAbs(yLever));
+
+    QPointF dirX = PlacementLinear::make(1.0, 1.0, 0.0, m_pressRotation).map(QPointF(1.0, 0.0));
     const qreal dirLen = qHypot(dirX.x(), dirX.y());
     if (dirLen > 1e-9) {
         dirX /= dirLen;
     }
+
     const QPointF anchor = m_pressAnchorScene;
-    const QPointF v0 = m_pressScenePos - anchor;
-    const QPointF v1 = scenePos - anchor;
-    const qreal len0 = QPointF::dotProduct(v0, dirX);
-    const qreal len1 = QPointF::dotProduct(v1, dirX);
-    const qreal denom = qMax(1e-6, m_pressScaleY * halfH);
+    const qreal len0 = QPointF::dotProduct(m_pressScenePos - anchor, dirX);
+    const qreal len1 = QPointF::dotProduct(scenePos - anchor, dirX);
+    // Δ(scene along local X) = Δk * sy * y_local  (and y_top < 0 flips sign).
+    const qreal denom = qMax(1e-6, m_pressScaleY * lever);
     const qreal delta = (len1 - len0) / denom;
+    // yLever sign: top negative → increasing k moves top toward -localX.
     qreal k = m_pressShear;
-    switch (m_activeHandle) {
-    case Handle::ShearTop:
-        // y_top < 0: increasing k moves top toward -localX.
+    if (yLever < 0.0) {
         k = m_pressShear - delta;
-        break;
-    case Handle::ShearBottom:
+    } else {
         k = m_pressShear + delta;
-        break;
-    case Handle::ShearLeft:
-        // Same horizontal shear; left grip uses opposite sign of top for a
-        // consistent "drag with the edge" feel.
-        k = m_pressShear - delta;
-        break;
-    case Handle::ShearRight:
-        k = m_pressShear + delta;
-        break;
-    default:
-        break;
     }
     setItemShear(k);
     const QPointF now = mapToScene(m_pressAnchorLocal);

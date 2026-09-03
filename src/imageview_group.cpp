@@ -171,8 +171,6 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     }
 
     const bool anisotropic = qAbs(sx - sy) > 1e-6;
-    QTransform sceneScale;
-    sceneScale.scale(sx, sy);
 
     for (int i = 0; i < m_groupDragItems.size(); ++i) {
         ImageItem *item = m_groupDragItems.at(i);
@@ -196,23 +194,24 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
             item->setItemRotation(st.rotation);
             continue;
         }
-        // Anisotropic (edge stretch or Shift+corner): L' = S_scene · L, then
-        // re-decompose so rotated/sheared tiles track the AABB stretch.
-        const QTransform L = PlacementLinear::make(baseX, baseY, st.shear, st.rotation);
-        const QTransform Lp = sceneScale * L;
+        // Anisotropic: scale the *scene* images of local axes (e.x *= sx, e.y *= sy),
+        // then re-decompose. Avoids QTransform multiply-order ambiguity and the
+        // broken fallthrough that applied scene sx/sy as local scales (axis mix-up
+        // on rotated tiles).
+        QPointF e1, e2;
+        PlacementLinear::unitAxes(baseX, baseY, st.shear, st.rotation, &e1, &e2);
+        e1 = QPointF(e1.x() * sx, e1.y() * sy);
+        e2 = QPointF(e2.x() * sx, e2.y() * sy);
         qreal nx = baseX;
         qreal ny = baseY;
         qreal nk = st.shear;
         qreal nrot = st.rotation;
-        if (PlacementLinear::decompose(Lp, &nx, &ny, &nk, &nrot)) {
+        if (PlacementLinear::decomposeAxes(e1, e2, &nx, &ny, &nk, &nrot)) {
             item->setItemScale(qBound(0.01, nx, 50.0), qBound(0.01, ny, 50.0));
             item->setItemShear(nk);
             item->setItemRotation(nrot);
-        } else {
-            item->setItemScale(baseX * sx, baseY * sy);
-            item->setItemShear(st.shear);
-            item->setItemRotation(st.rotation);
         }
+        // If decompose fails, leave linear pose from last good frame (pos already updated).
     }
     m_fitMode = false;
     emit statusChanged();

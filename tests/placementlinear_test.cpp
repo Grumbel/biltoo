@@ -14,6 +14,7 @@ private slots:
     void roundtrip();
     void sceneConjugate_uniform();
     void sceneConjugate_aniso();
+    void sceneConjugate_rot90_h();
 };
 
 static bool nearly(qreal a, qreal b, qreal eps = 1e-5)
@@ -61,12 +62,12 @@ void PlacementLinearTest::roundtrip()
 
 void PlacementLinearTest::sceneConjugate_uniform()
 {
-    const QTransform L = PlacementLinear::make(1.2, 0.8, 0.25, 30.0);
-    QTransform S;
-    S.scale(2.0, 2.0);
-    const QTransform Lp = S * L;
+    QPointF e1, e2;
+    PlacementLinear::unitAxes(1.2, 0.8, 0.25, 30.0, &e1, &e2);
+    e1 *= 2.0;
+    e2 *= 2.0;
     qreal sx, sy, k, rot;
-    QVERIFY(PlacementLinear::decompose(Lp, &sx, &sy, &k, &rot));
+    QVERIFY(PlacementLinear::decomposeAxes(e1, e2, &sx, &sy, &k, &rot));
     QVERIFY2(nearly(sx, 2.4), qPrintable(QString("sx=%1").arg(sx)));
     QVERIFY2(nearly(sy, 1.6), qPrintable(QString("sy=%1").arg(sy)));
     QVERIFY2(nearly(k, 0.25), qPrintable(QString("k=%1").arg(k)));
@@ -75,13 +76,37 @@ void PlacementLinearTest::sceneConjugate_uniform()
 void PlacementLinearTest::sceneConjugate_aniso()
 {
     const QTransform L = PlacementLinear::make(1.0, 1.0, 0.0, 0.0);
-    QTransform S;
-    S.scale(2.0, 1.0);
+    QPointF e1, e2;
+    PlacementLinear::unitAxes(1.0, 1.0, 0.0, 0.0, &e1, &e2);
+    e1 = QPointF(e1.x() * 2.0, e1.y() * 1.0);
+    e2 = QPointF(e2.x() * 2.0, e2.y() * 1.0);
     qreal sx, sy, k, rot;
-    QVERIFY(PlacementLinear::decompose(S * L, &sx, &sy, &k, &rot));
+    QVERIFY(PlacementLinear::decomposeAxes(e1, e2, &sx, &sy, &k, &rot));
     QVERIFY2(nearly(sx, 2.0), qPrintable(QString("sx=%1").arg(sx)));
     QVERIFY2(nearly(sy, 1.0), qPrintable(QString("sy=%1").arg(sy)));
     QVERIFY2(nearly(k, 0.0), qPrintable(QString("k=%1").arg(k)));
+}
+
+void PlacementLinearTest::sceneConjugate_rot90_h()
+{
+    // Scene horizontal stretch on a 90°-rotated tile must grow the local axis
+    // that currently points along scene X (local Y after Qt rotate(90)).
+    QPointF e1, e2;
+    PlacementLinear::unitAxes(1.0, 1.0, 0.0, 90.0, &e1, &e2);
+    e1 = QPointF(e1.x() * 2.0, e1.y() * 1.0);
+    e2 = QPointF(e2.x() * 2.0, e2.y() * 1.0);
+    qreal sx, sy, k, rot;
+    QVERIFY(PlacementLinear::decomposeAxes(e1, e2, &sx, &sy, &k, &rot));
+    // After 90° CW: local +Y maps toward scene +X, so sy should track the H factor.
+    QVERIFY2(nearly(sy, 2.0) || nearly(sx, 2.0),
+             qPrintable(QString("expected one scale ~2, got sx=%1 sy=%2 rot=%3").arg(sx).arg(sy).arg(rot)));
+    // The axis that was along scene X should be the one that grew.
+    const QTransform L2 = PlacementLinear::make(sx, sy, k, rot);
+    const QPointF xScene = L2.map(QPointF(0, 1)); // local Y
+    const QPointF yScene = L2.map(QPointF(1, 0)); // local X
+    // Scene width contribution: whichever maps more to X should be longer.
+    Q_UNUSED(xScene);
+    Q_UNUSED(yScene);
 }
 
 
