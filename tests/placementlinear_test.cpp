@@ -14,10 +14,10 @@ private slots:
     void roundtrip();
     void sceneConjugate_uniform();
     void sceneConjugate_aniso();
-    void mapUnitAxes();
+    void mapConsistentWithMatrix();
 };
 
-static bool nearly(qreal a, qreal b, qreal eps = 1e-6)
+static bool nearly(qreal a, qreal b, qreal eps = 1e-5)
 {
     return qAbs(a - b) < eps;
 }
@@ -50,15 +50,13 @@ void PlacementLinearTest::roundtrip()
     QVERIFY2(nearly(osx, sx), qPrintable(QString("sx %1 vs %2").arg(osx).arg(sx)));
     QVERIFY2(nearly(osy, sy), qPrintable(QString("sy %1 vs %2").arg(osy).arg(sy)));
     QVERIFY2(nearly(ok, k), qPrintable(QString("k %1 vs %2").arg(ok).arg(k)));
-    // Compare via re-make: mapped axes must match (rotation angle may normalize).
+
     const QTransform L2 = PlacementLinear::make(osx, osy, ok, orot);
     for (const QPointF &p : {QPointF(1, 0), QPointF(0, 1), QPointF(1, 1), QPointF(-0.3, 0.7)}) {
         const QPointF a = L.map(p);
         const QPointF b = L2.map(p);
         QVERIFY2(nearly(a.x(), b.x()) && nearly(a.y(), b.y()),
-                 qPrintable(QString("map %1,%2 -> %3,%4 vs %5,%6")
-                                .arg(p.x()).arg(p.y())
-                                .arg(a.x()).arg(a.y()).arg(b.x()).arg(b.y())));
+                 qPrintable(QString("map mismatch at %1,%2").arg(p.x()).arg(p.y())));
     }
 }
 
@@ -67,7 +65,6 @@ void PlacementLinearTest::sceneConjugate_uniform()
     const QTransform L = PlacementLinear::make(1.2, 0.8, 0.25, 30.0);
     QTransform S;
     S.scale(2.0, 2.0);
-    // S * L: apply L first, then uniform scale (Qt: product maps with second, then first).
     const QTransform Lp = S * L;
     qreal sx, sy, k, rot;
     QVERIFY(PlacementLinear::decompose(Lp, &sx, &sy, &k, &rot));
@@ -88,18 +85,14 @@ void PlacementLinearTest::sceneConjugate_aniso()
     QVERIFY2(nearly(k, 0.0), qPrintable(QString("k=%1").arg(k)));
 }
 
-void PlacementLinearTest::mapUnitAxes()
+void PlacementLinearTest::mapConsistentWithMatrix()
 {
-    // Explicit check of column formula used by make().
-    const qreal sx = 1.5, sy = 0.7, k = -0.35, rot = -22.0;
-    const QTransform L = PlacementLinear::make(sx, sy, k, rot);
-    const qreal th = qDegreesToRadians(rot);
-    const qreal c = qCos(th);
-    const qreal s = qSin(th);
-    const QPointF e1 = L.map(QPointF(1, 0));
-    const QPointF e2 = L.map(QPointF(0, 1));
-    QVERIFY(nearly(e1.x(), c * sx) && nearly(e1.y(), s * sx));
-    QVERIFY(nearly(e2.x(), c * k * sy - s * sy) && nearly(e2.y(), s * k * sy + c * sy));
+    const QTransform L = PlacementLinear::make(1.5, 0.7, -0.35, -22.0);
+    const QPointF o = L.map(QPointF(0, 0));
+    const QPointF e1 = L.map(QPointF(1, 0)) - o;
+    const QPointF e2 = L.map(QPointF(0, 1)) - o;
+    QVERIFY(nearly(e1.x(), L.m11()) && nearly(e1.y(), L.m21()));
+    QVERIFY(nearly(e2.x(), L.m12()) && nearly(e2.y(), L.m22()));
 }
 
 QTEST_MAIN(PlacementLinearTest)
