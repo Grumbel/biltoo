@@ -1694,3 +1694,30 @@ SP_BrowserReload)` in PreferencesDialog and LayoutPanel reset buttons.
 - [x] Document; next **117**
 
 **Next bundle:** `qimgview-117-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-117-ws-bg-default-toggle`
+
+**Bugs / polish:**
+1. **Background Default** was a permanent clear to AppDefault (undoable). It
+   should be a **temporary** toggle that shows the Preferences background
+   without discarding the project override.
+2. Workspace Background dialog: per-field **reset** buttons; colour / image
+   controls must stay disabled when the mode does not use them.
+
+**Fix:**
+- `ImageView::setWorkspaceBackgroundShowDefault` — paint treats custom bg as
+  AppDefault while the flag is on; project state untouched.
+- Action uses `toggled(bool)`; permanent AppDefault keeps it checked.
+- Dialog: `wrapWithReset` on mode/colours/image; enable whole control rows by
+  mode (Solid → colour; Checker → both; Image → path only; AppDefault → none).
+
+### Done criteria
+
+- [x] Default toggle is temporary
+- [x] Dialog resets + mode-gated controls
+- [x] Document; next **118**
+
+**Next bundle:** `qimgview-118-…` — further polish as needed.

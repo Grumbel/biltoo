@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspacebackgrounddialog.h"
+#include "icons.h"
 
 #include <QColorDialog>
 #include <QComboBox>
@@ -14,7 +15,14 @@
 #include <QLineEdit>
 #include <QPainter>
 #include <QPushButton>
+#include <QStyle>
+#include <QToolButton>
 #include <QVBoxLayout>
+
+namespace {
+const QColor kDefaultColor(0x2a, 0x2a, 0x2a);
+const QColor kDefaultColorAlt(0x30, 0x30, 0x30);
+} // namespace
 
 // ---------------------------------------------------------------------------
 // Preview
@@ -138,19 +146,34 @@ WorkspaceBackgroundDialog::WorkspaceBackgroundDialog(QWidget *parent)
     m_modeCombo->addItem(tr("Image pattern"), int(WorkspaceBackgroundMode::ImageTile));
     m_modeCombo->setToolTip(
         tr("Application default uses Preferences and is not stored in the project."));
-    form->addRow(tr("Mode:"), m_modeCombo);
+    form->addRow(tr("Mode:"),
+                 wrapWithReset(m_modeCombo, [this]() {
+                     const int idx = m_modeCombo->findData(int(WorkspaceBackgroundMode::AppDefault));
+                     if (idx >= 0) {
+                         m_modeCombo->setCurrentIndex(idx);
+                     }
+                 }));
 
     m_colorBtn = new QPushButton(this);
     m_colorBtn->setMinimumWidth(100);
     connect(m_colorBtn, &QPushButton::clicked, this, &WorkspaceBackgroundDialog::chooseColor);
-    form->addRow(tr("Colour:"), m_colorBtn);
+    m_colorRow = wrapWithReset(m_colorBtn, [this]() {
+        m_color = kDefaultColor;
+        styleColorButton(m_colorBtn, m_color);
+        updatePreview();
+    });
+    form->addRow(tr("Colour:"), m_colorRow);
 
     m_colorAltBtn = new QPushButton(this);
     m_colorAltBtn->setMinimumWidth(100);
     connect(m_colorAltBtn, &QPushButton::clicked, this, &WorkspaceBackgroundDialog::chooseColorAlt);
-    form->addRow(tr("Checker colour:"), m_colorAltBtn);
+    m_colorAltRow = wrapWithReset(m_colorAltBtn, [this]() {
+        m_colorAlt = kDefaultColorAlt;
+        styleColorButton(m_colorAltBtn, m_colorAlt);
+        updatePreview();
+    });
+    form->addRow(tr("Checker colour:"), m_colorAltRow);
 
-    auto *imageRow = new QHBoxLayout;
     m_imageEdit = new QLineEdit(this);
     m_imageEdit->setPlaceholderText(tr("Path to tile image…"));
     m_browseBtn = new QPushButton(tr("Browse…"), this);
@@ -158,9 +181,17 @@ WorkspaceBackgroundDialog::WorkspaceBackgroundDialog(QWidget *parent)
     connect(m_imageEdit, &QLineEdit::textChanged, this, [this](const QString &) {
         updatePreview();
     });
-    imageRow->addWidget(m_imageEdit, 1);
-    imageRow->addWidget(m_browseBtn);
-    form->addRow(tr("Image:"), imageRow);
+    auto *imageInner = new QWidget(this);
+    auto *imageLay = new QHBoxLayout(imageInner);
+    imageLay->setContentsMargins(0, 0, 0, 0);
+    imageLay->setSpacing(4);
+    imageLay->addWidget(m_imageEdit, 1);
+    imageLay->addWidget(m_browseBtn);
+    m_imageRowWidget = wrapWithReset(imageInner, [this]() {
+        m_imageEdit->clear();
+        updatePreview();
+    });
+    form->addRow(tr("Image:"), m_imageRowWidget);
 
     layout->addLayout(form);
 
@@ -236,10 +267,23 @@ void WorkspaceBackgroundDialog::updateControlsEnabled()
     const bool solid = (mode == WorkspaceBackgroundMode::Solid);
     const bool checker = (mode == WorkspaceBackgroundMode::Checkerboard);
     const bool image = (mode == WorkspaceBackgroundMode::ImageTile);
-    m_colorBtn->setEnabled(solid || checker);
-    m_colorAltBtn->setEnabled(checker);
-    m_imageEdit->setEnabled(image);
-    m_browseBtn->setEnabled(image);
+    // Lock fields that the current mode does not use.
+    if (m_colorRow) {
+        m_colorRow->setEnabled(solid || checker);
+    } else {
+        m_colorBtn->setEnabled(solid || checker);
+    }
+    if (m_colorAltRow) {
+        m_colorAltRow->setEnabled(checker);
+    } else {
+        m_colorAltBtn->setEnabled(checker);
+    }
+    if (m_imageRowWidget) {
+        m_imageRowWidget->setEnabled(image);
+    } else {
+        m_imageEdit->setEnabled(image);
+        m_browseBtn->setEnabled(image);
+    }
 }
 
 void WorkspaceBackgroundDialog::updatePreview()
@@ -300,5 +344,25 @@ void WorkspaceBackgroundDialog::styleColorButton(QPushButton *btn, const QColor 
     btn->setStyleSheet(
         QStringLiteral("QPushButton { background-color: %1; color: %2; }")
             .arg(color.name(QColor::HexRgb), fg.name(QColor::HexRgb)));
+}
+
+QWidget *WorkspaceBackgroundDialog::wrapWithReset(QWidget *field, const std::function<void()> &resetFn)
+{
+    auto *row = new QWidget(this);
+    auto *lay = new QHBoxLayout(row);
+    lay->setContentsMargins(0, 0, 0, 0);
+    lay->setSpacing(4);
+    field->setParent(row);
+    lay->addWidget(field, 1);
+    auto *btn = new QToolButton(row);
+    btn->setAutoRaise(true);
+    btn->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
+    btn->setToolTip(tr("Reset to default"));
+    btn->setAccessibleName(tr("Reset to default"));
+    const int side = qMax(20, field->sizeHint().height());
+    btn->setFixedSize(side, side);
+    connect(btn, &QToolButton::clicked, this, [resetFn]() { resetFn(); });
+    lay->addWidget(btn, 0, Qt::AlignVCenter);
+    return row;
 }
 

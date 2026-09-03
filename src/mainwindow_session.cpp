@@ -2443,6 +2443,7 @@ void MainWindow::applyWorkspaceBackground(const WorkspaceBackground &bg)
     if (!m_imageView) {
         return;
     }
+    m_imageView->setWorkspaceBackgroundShowDefault(false);
     m_imageView->setWorkspaceBackground(bg);
     syncWorkspaceBackgroundActions();
     markWorkspaceDirty();
@@ -2505,23 +2506,27 @@ void MainWindow::editWorkspaceBackground()
     }
 }
 
-void MainWindow::workspaceBackgroundDefault()
+void MainWindow::workspaceBackgroundDefault(bool checked)
 {
     if (!m_imageView) {
         return;
     }
-    const WorkspaceBackground before = m_imageView->workspaceBackground();
-    WorkspaceBackground after; // AppDefault
-    if (before.isAppDefault()) {
+    // Permanent AppDefault: keep the control checked; there is nothing to preview.
+    if (m_imageView->workspaceBackground().isAppDefault()) {
+        if (m_workspaceBgDefaultAct && !m_workspaceBgDefaultAct->isChecked()) {
+            const QSignalBlocker blocker(m_workspaceBgDefaultAct);
+            m_workspaceBgDefaultAct->setChecked(true);
+        }
+        m_imageView->setWorkspaceBackgroundShowDefault(false);
         return;
     }
-    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
-        m_imageView->undoStack()->push(
-            new WorkspaceBackgroundCommand(this, before, after));
-    } else {
-        applyWorkspaceBackground(after);
-    }
+    // Temporary view of the Preferences background — does not change project
+    // state, undo stack, or dirty flag.
+    m_imageView->setWorkspaceBackgroundShowDefault(checked);
     if (statusBar()) {
-        statusBar()->showMessage(tr("Workspace background: application default"), 2500);
+        statusBar()->showMessage(
+            checked ? tr("Showing application default background (temporary)")
+                    : tr("Restored project Workspace background"),
+            2000);
     }
 }

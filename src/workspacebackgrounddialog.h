@@ -7,12 +7,15 @@
 #include "imageview_types.h"
 
 #include <QDialog>
+#include <functional>
 #include <QWidget>
 
 class QComboBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
+class QToolButton;
+class QWidget;
 
 /** Live-preview swatch for WorkspaceBackground. */
 class WorkspaceBackgroundPreview : public QWidget
@@ -64,12 +67,16 @@ private:
     void chooseColorAlt();
     void browseImage();
     static void styleColorButton(QPushButton *btn, const QColor &color);
+    QWidget *wrapWithReset(QWidget *field, const std::function<void()> &resetFn);
 
     QComboBox *m_modeCombo = nullptr;
     QPushButton *m_colorBtn = nullptr;
     QPushButton *m_colorAltBtn = nullptr;
     QLineEdit *m_imageEdit = nullptr;
     QPushButton *m_browseBtn = nullptr;
+    QWidget *m_colorRow = nullptr;
+    QWidget *m_colorAltRow = nullptr;
+    QWidget *m_imageRowWidget = nullptr;
     WorkspaceBackgroundPreview *m_preview = nullptr;
 
     QColor m_color{42, 42, 42};

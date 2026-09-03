@@ -398,7 +398,8 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
     };
 
     const bool wsOverride = isWorkspaceMode()
-        && !m_workspaceBackground.isAppDefault();
+        && !m_workspaceBackground.isAppDefault()
+        && !m_workspaceBackgroundShowDefault;
 
     if (wsOverride) {
         const WorkspaceBackground &wb = m_workspaceBackground;

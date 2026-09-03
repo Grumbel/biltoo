@@ -184,7 +184,7 @@ private slots:
     void cutWorkspaceItems();
     void pasteWorkspaceItems();
     void editWorkspaceBackground();
-    void workspaceBackgroundDefault();
+    void workspaceBackgroundDefault(bool checked);
     void syncWorkspaceBackgroundActions();
     void updatePasteActionEnabled();
     void saveProject();

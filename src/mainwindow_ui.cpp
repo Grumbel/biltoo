@@ -95,10 +95,13 @@ void MainWindow::createActions()
             &MainWindow::editWorkspaceBackground);
 
     m_workspaceBgDefaultAct = new QAction(tr("Background &Default"), this);
-    m_workspaceBgDefaultAct->setIcon(resourceIcon(QStringLiteral("edit-clear")));
+    m_workspaceBgDefaultAct->setIcon(themeIcon(QStringLiteral("view-refresh"),
+                                                 QStyle::SP_BrowserReload));
+    m_workspaceBgDefaultAct->setCheckable(true);
     m_workspaceBgDefaultAct->setStatusTip(
-        tr("Use the technical / Preferences background (not stored in the project)"));
-    connect(m_workspaceBgDefaultAct, &QAction::triggered, this,
+        tr("Temporarily show the Preferences / technical background "
+           "(does not clear a custom project background)"));
+    connect(m_workspaceBgDefaultAct, &QAction::toggled, this,
             &MainWindow::workspaceBackgroundDefault);
 
     m_fitPageGuideAct = new QAction(tr("Fit Page Guide to &Content"), this);

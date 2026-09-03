@@ -412,6 +412,13 @@ public:
     void setWorkspaceBackground(const WorkspaceBackground &bg);
     WorkspaceBackground workspaceBackground() const { return m_workspaceBackground; }
     void clearWorkspaceBackground(); /**< AppDefault */
+    /**
+     * Temporary view of the Preferences / technical background without changing
+     * the project WorkspaceBackground override. Used by the Background Default
+     * toolbar toggle.
+     */
+    void setWorkspaceBackgroundShowDefault(bool on);
+    bool workspaceBackgroundShowDefault() const { return m_workspaceBackgroundShowDefault; }
 
     /**
      * Session position for status line and HUD (index/total, 1-based display).
@@ -850,6 +857,8 @@ private:
     BackgroundPattern m_bgPattern = BackgroundPattern::Checkerboard;
     bool m_bgCheckerWorkspaceOnly = true;
     WorkspaceBackground m_workspaceBackground;
+    /** When true, paint AppDefault even if m_workspaceBackground is custom. */
+    bool m_workspaceBackgroundShowDefault = false;
     QPixmap m_workspaceBgTile; /**< Cached tile for ImageTile mode */
     QString m_workspaceBgTilePath; /**< Path loaded into m_workspaceBgTile */
     bool m_hudVisible = false;

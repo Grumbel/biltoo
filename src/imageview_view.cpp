@@ -98,8 +98,17 @@ void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
         && m_workspaceBackground.colorAlt == bg.colorAlt
         && m_workspaceBackground.imagePath == bg.imagePath
         && m_workspaceBackground.imagePathRelative == bg.imagePathRelative) {
+        // Still clear a temporary default preview when the permanent state is
+        // re-asserted (e.g. dialog cancel restore).
+        if (m_workspaceBackgroundShowDefault) {
+            m_workspaceBackgroundShowDefault = false;
+            if (viewport()) {
+                viewport()->update();
+            }
+        }
         return;
     }
+    m_workspaceBackgroundShowDefault = false;
     m_workspaceBackground = bg;
     if (bg.mode != WorkspaceBackgroundMode::ImageTile
         || bg.imagePath != m_workspaceBgTilePath) {
@@ -124,6 +133,17 @@ void ImageView::clearWorkspaceBackground()
 {
     WorkspaceBackground def;
     setWorkspaceBackground(def);
+}
+
+void ImageView::setWorkspaceBackgroundShowDefault(bool on)
+{
+    if (m_workspaceBackgroundShowDefault == on) {
+        return;
+    }
+    m_workspaceBackgroundShowDefault = on;
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 qreal ImageView::viewScale() const
