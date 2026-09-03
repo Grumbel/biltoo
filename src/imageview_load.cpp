@@ -372,12 +372,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (bound.index >= 0 && bound.id != kInvalidSessionImageId) {
             existing->setSessionIndex(bound.index);
         }
-        if (!existing->hasDecodedPixels()) {
-            existing->setSourceImage(image);
-        } else {
-            // Re-decode content from full source when applying crop/bakes.
-            existing->setSourceImage(image);
-        }
+        // Full source pixels so applyStoredAppearance can crop/bake safely
+        // (seed tiles may already have decoded defaults without content ops).
+        existing->setSourceImage(image);
         applyStoredAppearance(existing);
         if (bound.id != kInvalidSessionImageId && m_appearance.get(bound.id)) {
             applyState(existing, *m_appearance.get(bound.id));
