@@ -1382,6 +1382,9 @@ void MainWindow::stopSlideshow()
     if (m_cursorHideTimer) {
         m_cursorHideTimer->stop();
     }
+    if (m_imageView) {
+        m_imageView->cancelSlideshowTransition();
+    }
     showSlideshowCursor();
     qApp->removeEventFilter(this);
     if (m_slideshowAct) {

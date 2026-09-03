@@ -211,7 +211,11 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             fitItem(item, currentFitAspectMode());
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
             setUpdatesEnabled(true);
-            viewport()->update();
+            if (m_slideshowTransitionPending) {
+                startSlideshowTransitionAnimation();
+            } else {
+                viewport()->update();
+            }
             emit statusChanged();
             return;
         }

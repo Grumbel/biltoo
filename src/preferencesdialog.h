@@ -38,6 +38,13 @@ public:
     bool slideshowFullscreen() const;
     void setSlideshowFullscreen(bool on);
 
+    /** 0 = none, 1 = crossfade, 2 = fade through black */
+    int slideshowTransitionIndex() const;
+    void setSlideshowTransitionIndex(int index);
+
+    int slideshowTransitionDurationMs() const;
+    void setSlideshowTransitionDurationMs(int ms);
+
     bool imageModeLeftDragPan() const;
     void setImageModeLeftDragPan(bool on);
 
@@ -112,6 +119,10 @@ private:
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
+    QComboBox *m_slideshowTransitionCombo = nullptr;
+    QSpinBox *m_slideshowTransitionMsSpin = nullptr;
+    QToolButton *m_resetSlideshowTransitionBtn = nullptr;
+    QToolButton *m_resetSlideshowTransitionMsBtn = nullptr;
     QCheckBox *m_imageModePanCheck = nullptr;
 
     QPushButton *m_bgColorBtn = nullptr;

@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <QScrollBar>
 #include <QTimer>
+#include <QVariantAnimation>
 #include <QRubberBand>
 
 void ImageView::setTool(Tool tool)
@@ -401,6 +402,95 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_slideshowProgressTimer->stop();
     }
     viewport()->update();
+}
+
+
+void ImageView::setSlideshowTransition(SlideshowTransition kind)
+{
+    if (m_slideshowTransition == kind) {
+        return;
+    }
+    m_slideshowTransition = kind;
+    if (kind == SlideshowTransition::None) {
+        cancelSlideshowTransition();
+    }
+}
+
+void ImageView::setSlideshowTransitionDurationMs(int ms)
+{
+    m_slideshowTransitionDurationMs = qBound(0, ms, 5000);
+}
+
+void ImageView::prepareSlideshowTransition()
+{
+    cancelSlideshowTransition();
+    if (m_slideshowTransition == SlideshowTransition::None
+        || m_slideshowTransitionDurationMs <= 0
+        || !isImageMode()
+        || !viewport()) {
+        return;
+    }
+    const QPixmap shot = viewport()->grab();
+    if (shot.isNull()) {
+        return;
+    }
+    m_slideshowTransitionPixmap = shot;
+    m_slideshowTransitionProgress = 0.0;
+    m_slideshowTransitionPending = true;
+    m_slideshowTransitionActive = false;
+}
+
+void ImageView::cancelSlideshowTransition()
+{
+    m_slideshowTransitionPending = false;
+    m_slideshowTransitionActive = false;
+    m_slideshowTransitionProgress = 1.0;
+    m_slideshowTransitionPixmap = QPixmap();
+    if (m_slideshowTransitionAnim) {
+        m_slideshowTransitionAnim->stop();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::startSlideshowTransitionAnimation()
+{
+    if (!m_slideshowTransitionPending || m_slideshowTransitionPixmap.isNull()) {
+        m_slideshowTransitionPending = false;
+        return;
+    }
+    m_slideshowTransitionPending = false;
+    m_slideshowTransitionActive = true;
+    m_slideshowTransitionProgress = 0.0;
+
+    if (!m_slideshowTransitionAnim) {
+        m_slideshowTransitionAnim = new QVariantAnimation(this);
+        m_slideshowTransitionAnim->setEasingCurve(QEasingCurve::InOutQuad);
+        connect(m_slideshowTransitionAnim, &QVariantAnimation::valueChanged, this,
+                [this](const QVariant &v) {
+                    m_slideshowTransitionProgress = v.toReal();
+                    if (viewport()) {
+                        viewport()->update();
+                    }
+                });
+        connect(m_slideshowTransitionAnim, &QVariantAnimation::finished, this, [this]() {
+            m_slideshowTransitionActive = false;
+            m_slideshowTransitionProgress = 1.0;
+            m_slideshowTransitionPixmap = QPixmap();
+            if (viewport()) {
+                viewport()->update();
+            }
+        });
+    }
+    m_slideshowTransitionAnim->stop();
+    m_slideshowTransitionAnim->setStartValue(0.0);
+    m_slideshowTransitionAnim->setEndValue(1.0);
+    m_slideshowTransitionAnim->setDuration(m_slideshowTransitionDurationMs);
+    m_slideshowTransitionAnim->start();
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)

@@ -725,6 +725,9 @@ void MainWindow::setZoomTool()
 void MainWindow::onSlideshowTick()
 {
     m_slideshowAdvancing = true;
+    if (m_imageView && m_imageView->isImageMode()) {
+        m_imageView->prepareSlideshowTransition();
+    }
     goNext();
     m_slideshowAdvancing = false;
     // New dwell begins after advance — reset the pinned-HUD progress line.
@@ -933,6 +936,10 @@ void MainWindow::showPreferences()
     PreferencesDialog dlg(this);
     dlg.setSlideshowIntervalMs(m_slideshowIntervalMs);
     dlg.setSlideshowFullscreen(m_slideshowFullscreen);
+    if (m_imageView) {
+        dlg.setSlideshowTransitionIndex(static_cast<int>(m_imageView->slideshowTransition()));
+        dlg.setSlideshowTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
+    }
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
     dlg.setImageModeLeftDragPan(m_imageView->imageModeLeftDragPan());
@@ -974,6 +981,11 @@ void MainWindow::showPreferences()
     }
     setSlideshowIntervalMs(dlg.slideshowIntervalMs());
     m_slideshowFullscreen = dlg.slideshowFullscreen();
+    if (m_imageView) {
+        m_imageView->setSlideshowTransition(
+            static_cast<ImageView::SlideshowTransition>(dlg.slideshowTransitionIndex()));
+        m_imageView->setSlideshowTransitionDurationMs(dlg.slideshowTransitionDurationMs());
+    }
     {
         const int si = dlg.sortModeIndex();
         SortMode mode = SortMode::Name;
@@ -1404,6 +1416,13 @@ void MainWindow::readSettings()
 
     setSlideshowIntervalMs(
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt());
+    if (m_imageView) {
+        const int tr = settings.value(QStringLiteral("slideshowTransition"), 1).toInt();
+        m_imageView->setSlideshowTransition(
+            static_cast<ImageView::SlideshowTransition>(qBound(0, tr, 2)));
+        m_imageView->setSlideshowTransitionDurationMs(
+            settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt());
+    }
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
     const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
     const int masonryRows = settings.value(QStringLiteral("masonryRows"), 3).toInt();
@@ -1608,6 +1627,12 @@ void MainWindow::writeSettings()
     }
     settings.setValue(QStringLiteral("sortMode"), sortKey);
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
+    if (m_imageView) {
+        settings.setValue(QStringLiteral("slideshowTransition"),
+                          static_cast<int>(m_imageView->slideshowTransition()));
+        settings.setValue(QStringLiteral("slideshowTransitionDurationMs"),
+                          m_imageView->slideshowTransitionDurationMs());
+    }
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     if (m_imageView) {
         settings.setValue(QStringLiteral("masonryColumns"),

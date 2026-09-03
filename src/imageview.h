@@ -32,6 +32,7 @@
 class ImageItem;
 class QGraphicsScene;
 class QTimer;
+class QVariantAnimation;
 class QUndoStack;
 class QPrinter;
 class QPainter;
@@ -61,6 +62,13 @@ public:
     enum class BackgroundPattern {
         Solid,
         Checkerboard
+    };
+
+    /** Slideshow advance transition (Image mode only). */
+    enum class SlideshowTransition {
+        None = 0,
+        Crossfade = 1,
+        FadeBlack = 2
     };
 
     enum class ViewMode {
@@ -171,6 +179,7 @@ public:
     void ensurePrimarySelection();
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
+    void startSlideshowTransitionAnimation();
     /** Controller host: session path order used for Gallery packing. */
     QStringList &pathOrder() { return m_pathOrder; }
     const QStringList &pathOrder() const { return m_pathOrder; }
@@ -458,6 +467,17 @@ public:
      * slideshow stops. The line is drawn only while the full HUD is pinned.
      */
     void setSlideshowProgress(bool active, int intervalMs = 0);
+
+    void setSlideshowTransition(SlideshowTransition kind);
+    SlideshowTransition slideshowTransition() const { return m_slideshowTransition; }
+    void setSlideshowTransitionDurationMs(int ms);
+    int slideshowTransitionDurationMs() const { return m_slideshowTransitionDurationMs; }
+    /**
+     * Capture the current viewport for a slideshow advance transition.
+     * Call before navigating to the next image while a slideshow is running.
+     */
+    void prepareSlideshowTransition();
+    void cancelSlideshowTransition();
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -881,6 +901,13 @@ private:
     int m_slideshowProgressIntervalMs = 0;
     QElapsedTimer m_slideshowProgressElapsed;
     QTimer *m_slideshowProgressTimer = nullptr;
+    SlideshowTransition m_slideshowTransition = SlideshowTransition::Crossfade;
+    int m_slideshowTransitionDurationMs = 400;
+    QPixmap m_slideshowTransitionPixmap;
+    qreal m_slideshowTransitionProgress = 1.0; /**< 0 = old frame, 1 = done */
+    bool m_slideshowTransitionPending = false;
+    bool m_slideshowTransitionActive = false;
+    QVariantAnimation *m_slideshowTransitionAnim = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;

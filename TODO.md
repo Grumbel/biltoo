@@ -1790,3 +1790,30 @@ restore both on leave.
 - [x] Document; next **121**
 
 **Next bundle:** `qimgview-121-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-121-slideshow-transitions`
+
+**Feature:** Slideshow transition effects between slides.
+
+**Modes (Preferences → Slideshow):**
+- **None** — instant swap (previous behaviour)
+- **Crossfade** — previous viewport fades over the new image (default)
+- **Fade through black** — out to black, then in
+
+**Duration:** 0–5000 ms (default 400).
+
+**Pipeline:** `prepareSlideshowTransition()` grabs the viewport before
+`goNext()` on a timer tick; when `LoadReplace` finishes in Image mode,
+`startSlideshowTransitionAnimation()` runs a `QVariantAnimation` and
+`paintEvent` composites the snapshot.
+
+### Done criteria
+
+- [x] Crossfade + fade-black + none
+- [x] Preferences + QSettings
+- [x] Document; next **122**
+
+**Next bundle:** `qimgview-122-…` — further polish as needed.

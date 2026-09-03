@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-120-fs-hide-adjustments”**
-(Hide Adjustments dock in fullscreen). Next bundle number: **121**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-121-slideshow-transitions”**
+(Slideshow crossfade / fade-black transitions). Next bundle number: **122**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

@@ -126,6 +126,34 @@ void ImageView::paintEvent(QPaintEvent *event)
         drawEdgeAffordances(painter);
     }
 
+    // Slideshow transition: previous frame over the newly fitted image.
+    if (m_slideshowTransitionActive && !m_slideshowTransitionPixmap.isNull()
+        && m_slideshowTransitionProgress < 1.0) {
+        const QRect vr = viewport()->rect();
+        const qreal t = m_slideshowTransitionProgress;
+        if (m_slideshowTransition == SlideshowTransition::Crossfade) {
+            painter.setOpacity(1.0 - t);
+            painter.drawPixmap(vr, m_slideshowTransitionPixmap);
+            painter.setOpacity(1.0);
+        } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
+            if (t < 0.5) {
+                // Fade previous frame out under rising black.
+                const qreal u = t * 2.0;
+                painter.setOpacity(1.0 - u);
+                painter.drawPixmap(vr, m_slideshowTransitionPixmap);
+                painter.setOpacity(u);
+                painter.fillRect(vr, Qt::black);
+                painter.setOpacity(1.0);
+            } else {
+                // Fade black out to reveal the new frame.
+                const qreal u = (t - 0.5) * 2.0;
+                painter.setOpacity(1.0 - u);
+                painter.fillRect(vr, Qt::black);
+                painter.setOpacity(1.0);
+            }
+        }
+    }
+
     // Empty session: invite the user to open or drop images.
     if (m_items.isEmpty() && !hasClassicPath() && !m_cropMode) {
         painter.save();

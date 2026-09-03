@@ -29,6 +29,8 @@ namespace {
 // Defaults must match MainWindow::readSettings fallbacks.
 constexpr int kDefaultIntervalMs = 3000;
 constexpr bool kDefaultSlideshowFullscreen = true;
+constexpr int kDefaultSlideshowTransition = 1; // Crossfade
+constexpr int kDefaultSlideshowTransitionMs = 400;
 constexpr int kDefaultSortIndex = 0; // Name
 constexpr bool kDefaultStartInWorkspace = false;
 constexpr bool kDefaultImageModePan = true;
@@ -82,6 +84,29 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     slideshowForm->addRow(QString(),
                           wrapWithReset(m_slideshowFullscreenCheck, &m_resetSlideshowFsBtn, [this]() {
                               setSlideshowFullscreen(kDefaultSlideshowFullscreen);
+                              updateResetButtons();
+                          }));
+
+    m_slideshowTransitionCombo = new QComboBox(this);
+    m_slideshowTransitionCombo->addItem(tr("None"), 0);
+    m_slideshowTransitionCombo->addItem(tr("Crossfade"), 1);
+    m_slideshowTransitionCombo->addItem(tr("Fade through black"), 2);
+    m_slideshowTransitionCombo->setToolTip(tr("Effect used when the slideshow advances to the next image"));
+    slideshowForm->addRow(tr("Transition:"),
+                          wrapWithReset(m_slideshowTransitionCombo, &m_resetSlideshowTransitionBtn, [this]() {
+                              setSlideshowTransitionIndex(kDefaultSlideshowTransition);
+                              updateResetButtons();
+                          }));
+
+    m_slideshowTransitionMsSpin = new QSpinBox(this);
+    m_slideshowTransitionMsSpin->setRange(0, 5000);
+    m_slideshowTransitionMsSpin->setSingleStep(50);
+    m_slideshowTransitionMsSpin->setSuffix(tr(" ms"));
+    m_slideshowTransitionMsSpin->setValue(kDefaultSlideshowTransitionMs);
+    m_slideshowTransitionMsSpin->setToolTip(tr("Duration of the slideshow transition (0 = instant)"));
+    slideshowForm->addRow(tr("Transition duration:"),
+                          wrapWithReset(m_slideshowTransitionMsSpin, &m_resetSlideshowTransitionMsBtn, [this]() {
+                              setSlideshowTransitionDurationMs(kDefaultSlideshowTransitionMs);
                               updateResetButtons();
                           }));
 
@@ -400,6 +425,10 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     // Keep reset buttons enabled only when the value differs from the default.
     connect(m_intervalSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) { updateResetButtons(); });
+    connect(m_slideshowTransitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateResetButtons(); });
+    connect(m_slideshowTransitionMsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int) { updateResetButtons(); });
     connect(m_slideshowFullscreenCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
     connect(m_sortCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -887,6 +916,35 @@ void PreferencesDialog::setDefaultGalleryLayoutMode(int layoutMode)
     }
 }
 
+
+int PreferencesDialog::slideshowTransitionIndex() const
+{
+    return m_slideshowTransitionCombo ? m_slideshowTransitionCombo->currentData().toInt() : 1;
+}
+
+void PreferencesDialog::setSlideshowTransitionIndex(int index)
+{
+    if (!m_slideshowTransitionCombo) {
+        return;
+    }
+    const int idx = m_slideshowTransitionCombo->findData(index);
+    if (idx >= 0) {
+        m_slideshowTransitionCombo->setCurrentIndex(idx);
+    }
+}
+
+int PreferencesDialog::slideshowTransitionDurationMs() const
+{
+    return m_slideshowTransitionMsSpin ? m_slideshowTransitionMsSpin->value() : 400;
+}
+
+void PreferencesDialog::setSlideshowTransitionDurationMs(int ms)
+{
+    if (m_slideshowTransitionMsSpin) {
+        m_slideshowTransitionMsSpin->setValue(qBound(0, ms, 5000));
+    }
+}
+
 QWidget *PreferencesDialog::wrapWithReset(QWidget *field, QToolButton **resetBtnOut,
                                           const std::function<void()> &resetFn)
 {
@@ -922,6 +980,9 @@ void PreferencesDialog::updateResetButtons()
     };
     setOn(m_resetIntervalBtn, slideshowIntervalMs() != kDefaultIntervalMs);
     setOn(m_resetSlideshowFsBtn, slideshowFullscreen() != kDefaultSlideshowFullscreen);
+    setOn(m_resetSlideshowTransitionBtn, slideshowTransitionIndex() != kDefaultSlideshowTransition);
+    setOn(m_resetSlideshowTransitionMsBtn,
+         slideshowTransitionDurationMs() != kDefaultSlideshowTransitionMs);
     setOn(m_resetSortBtn, sortModeIndex() != kDefaultSortIndex);
     setOn(m_resetWorkspaceBtn, startInWorkspaceMode() != kDefaultStartInWorkspace);
     setOn(m_resetImagePanBtn, imageModeLeftDragPan() != kDefaultImageModePan);
