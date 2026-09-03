@@ -558,7 +558,7 @@ void MainWindow::createActions()
 
     m_toggleLayoutPanelAct = m_layoutDock->toggleViewAction();
     m_toggleLayoutPanelAct->setText(tr("Show &Layout Panel"));
-    m_toggleLayoutPanelAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
+    m_toggleLayoutPanelAct->setIcon(resourceIcon(QStringLiteral("layout-panel")));
     m_toggleLayoutPanelAct->setStatusTip(
         tr("Show or hide the Workspace layout panel (arrange selected images)"));
     // Start disabled: panel is Workspace-only (enabled in updateLayoutPanelForMode).
@@ -833,7 +833,6 @@ void MainWindow::createToolBar()
     // Workspace mode sits with the gallery layout group (mode switchers together).
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_workspaceModeAct);
-    m_toolBar->addAction(m_toggleLayoutPanelAct);
 
     // Masonry column/row count — shown while a masonry layout is active
     auto *masonryCountHost = new QWidget(m_toolBar);
@@ -918,6 +917,7 @@ void MainWindow::createToolBar()
         m_workspaceToolBar->addWidget(bgBtn);
     }
     m_workspaceToolBar->addAction(m_fitPageGuideAct);
+    m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     m_workspaceToolBar->addAction(m_pageSetupAct);
     m_workspaceToolBar->addAction(m_printPreviewAct);
     m_workspaceToolBar->addAction(m_exportPngAct);

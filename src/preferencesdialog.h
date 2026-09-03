@@ -67,6 +67,18 @@ public:
     bool thumbnailLabelsVisible() const;
     void setThumbnailLabelsVisible(bool on);
 
+    bool adjustmentsPanelVisible() const;
+    void setAdjustmentsPanelVisible(bool on);
+
+    bool layoutPanelPreferredInWorkspace() const;
+    void setLayoutPanelPreferredInWorkspace(bool on);
+
+    bool thumbnailsPreferredWorkspace() const;
+    void setThumbnailsPreferredWorkspace(bool on);
+
+    bool thumbnailsPreferredGallery() const;
+    void setThumbnailsPreferredGallery(bool on);
+
     /** 0 = bottom, 1 = top, 2 = left, 3 = right */
     int thumbnailPositionIndex() const;
     void setThumbnailPositionIndex(int index);
@@ -110,6 +122,10 @@ private:
 
     QCheckBox *m_scrollBarsCheck = nullptr;
     QCheckBox *m_thumbLabelsCheck = nullptr;
+    QCheckBox *m_adjustmentsPanelCheck = nullptr;
+    QCheckBox *m_layoutPanelCheck = nullptr;
+    QCheckBox *m_thumbsWorkspaceCheck = nullptr;
+    QCheckBox *m_thumbsGalleryCheck = nullptr;
     QComboBox *m_thumbPosCombo = nullptr;
     QComboBox *m_galleryLayoutCombo = nullptr;
 

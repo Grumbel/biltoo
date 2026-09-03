@@ -896,6 +896,10 @@ void MainWindow::showPreferences()
     dlg.setHudPanelColor(m_imageView->hudPanelColor());
     dlg.setScrollBarsVisible(m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
     dlg.setThumbnailLabelsVisible(m_hideThumbLabelsAct && !m_hideThumbLabelsAct->isChecked());
+    dlg.setAdjustmentsPanelVisible(m_adjustmentsDock && m_adjustmentsDock->isVisible());
+    dlg.setLayoutPanelPreferredInWorkspace(m_layoutPreferredInWorkspace);
+    dlg.setThumbnailsPreferredWorkspace(m_thumbnailsPreferredWorkspace);
+    dlg.setThumbnailsPreferredGallery(m_thumbnailsPreferredGallery);
     {
         int pos = 0;
         if (m_thumbnailEdge == ThumbnailEdge::Top) pos = 1;
@@ -950,6 +954,18 @@ void MainWindow::showPreferences()
             m_thumbnailBar->setLabelsVisible(dlg.thumbnailLabelsVisible());
         }
     }
+    if (m_adjustmentsDock) {
+        const bool showAdj = dlg.adjustmentsPanelVisible();
+        m_adjustmentsDock->setVisible(showAdj);
+        if (m_toggleAdjustmentsAct) {
+            m_toggleAdjustmentsAct->setChecked(showAdj);
+        }
+    }
+    m_layoutPreferredInWorkspace = dlg.layoutPanelPreferredInWorkspace();
+    m_thumbnailsPreferredWorkspace = dlg.thumbnailsPreferredWorkspace();
+    m_thumbnailsPreferredGallery = dlg.thumbnailsPreferredGallery();
+    updateLayoutPanelForMode();
+    updateThumbnailBarForMode();
     {
         const int pos = dlg.thumbnailPositionIndex();
         ThumbnailEdge edge = ThumbnailEdge::Bottom;

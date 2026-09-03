@@ -160,6 +160,21 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_thumbLabelsCheck->setChecked(true);
     m_thumbLabelsCheck->setToolTip(tr("Show file names under thumbnails"));
 
+    m_adjustmentsPanelCheck = new QCheckBox(tr("Show Adjustments panel"), this);
+    m_adjustmentsPanelCheck->setToolTip(
+        tr("Open the colour grade / histogram panel (also View → Show Adjustments)"));
+
+    m_layoutPanelCheck = new QCheckBox(tr("Show Layout panel in Workspace"), this);
+    m_layoutPanelCheck->setToolTip(
+        tr("Prefer the Layout dock visible when entering Workspace mode"));
+
+    m_thumbsWorkspaceCheck = new QCheckBox(tr("Show thumbnails in Workspace"), this);
+    m_thumbsWorkspaceCheck->setChecked(true);
+    m_thumbsWorkspaceCheck->setToolTip(tr("Default thumbnail strip visibility in Workspace mode"));
+
+    m_thumbsGalleryCheck = new QCheckBox(tr("Show thumbnails in Gallery"), this);
+    m_thumbsGalleryCheck->setToolTip(tr("Default thumbnail strip visibility in Gallery mode"));
+
     m_thumbPosCombo = new QComboBox(this);
     m_thumbPosCombo->addItem(tr("Bottom"), 0);
     m_thumbPosCombo->addItem(tr("Top"), 1);
@@ -185,6 +200,10 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     ifaceForm->setVerticalSpacing(8);
     ifaceForm->addRow(QString(), m_scrollBarsCheck);
     ifaceForm->addRow(QString(), m_thumbLabelsCheck);
+    ifaceForm->addRow(QString(), m_adjustmentsPanelCheck);
+    ifaceForm->addRow(QString(), m_layoutPanelCheck);
+    ifaceForm->addRow(QString(), m_thumbsWorkspaceCheck);
+    ifaceForm->addRow(QString(), m_thumbsGalleryCheck);
     ifaceForm->addRow(tr("Thumbnail position:"), m_thumbPosCombo);
     ifaceForm->addRow(tr("Gallery layout:"), m_galleryLayoutCombo);
 
@@ -637,6 +656,54 @@ void PreferencesDialog::setThumbnailLabelsVisible(bool on)
 {
     if (m_thumbLabelsCheck) {
         m_thumbLabelsCheck->setChecked(on);
+    }
+}
+
+bool PreferencesDialog::adjustmentsPanelVisible() const
+{
+    return m_adjustmentsPanelCheck && m_adjustmentsPanelCheck->isChecked();
+}
+
+void PreferencesDialog::setAdjustmentsPanelVisible(bool on)
+{
+    if (m_adjustmentsPanelCheck) {
+        m_adjustmentsPanelCheck->setChecked(on);
+    }
+}
+
+bool PreferencesDialog::layoutPanelPreferredInWorkspace() const
+{
+    return m_layoutPanelCheck && m_layoutPanelCheck->isChecked();
+}
+
+void PreferencesDialog::setLayoutPanelPreferredInWorkspace(bool on)
+{
+    if (m_layoutPanelCheck) {
+        m_layoutPanelCheck->setChecked(on);
+    }
+}
+
+bool PreferencesDialog::thumbnailsPreferredWorkspace() const
+{
+    return m_thumbsWorkspaceCheck && m_thumbsWorkspaceCheck->isChecked();
+}
+
+void PreferencesDialog::setThumbnailsPreferredWorkspace(bool on)
+{
+    if (m_thumbsWorkspaceCheck) {
+        m_thumbsWorkspaceCheck->setChecked(on);
+    }
+}
+
+bool PreferencesDialog::thumbnailsPreferredGallery() const
+{
+    return m_thumbsGalleryCheck && m_thumbsGalleryCheck->isChecked();
+}
+
+void PreferencesDialog::setThumbnailsPreferredGallery(bool on)
+{
+    if (m_thumbsGalleryCheck) {
+        m_thumbsGalleryCheck->setChecked(on);
     }
 }
 

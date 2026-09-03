@@ -1,0 +1,11 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- Workspace layout panel: sidebar + arranged tiles -->
+  <rect x="2.5" y="3" width="6" height="18" rx="1.2" fill="#f6d32d" stroke="#e5a50a" stroke-width="1.2"/>
+  <rect x="11" y="3" width="10.5" height="7" rx="1.2" fill="#62a0ea" stroke="#3584e4" stroke-width="1.2"/>
+  <rect x="11" y="12.5" width="5" height="8.5" rx="1.2" fill="#8ff0a4" stroke="#2ec27e" stroke-width="1.2"/>
+  <rect x="17.5" y="12.5" width="4" height="8.5" rx="1.2" fill="#ffbe6f" stroke="#ff7800" stroke-width="1.2"/>
+</svg>
