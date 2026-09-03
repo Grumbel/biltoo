@@ -878,6 +878,7 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         slot.pos = item->pos();
         slot.scale = item->itemScaleX();
         slot.scaleY = item->itemScaleY();
+        slot.shear = item->itemShear();
         slot.rotation = item->itemRotation();
         slot.opacity = item->itemOpacity();
         slot.z = item->stackZ();
@@ -930,6 +931,7 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
     dst.pos = QPointF();
     dst.scale = 1.0;
     dst.scaleY = 1.0;
+    dst.shear = 0.0;
     dst.rotation = 0.0;
     dst.opacity = 1.0;
     dst.z = 0.0;

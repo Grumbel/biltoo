@@ -286,6 +286,7 @@ void GalleryController::enter(int packagedLayoutInt)
         // layout inside Gallery keeps user content transforms on the tiles.
         if (!layoutSwitch) {
             item->setItemRotation(0.0);
+            item->setItemShear(0.0);
             item->setItemHFlip(false);
             item->setItemVFlip(false);
         }

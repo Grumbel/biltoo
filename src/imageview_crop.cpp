@@ -340,15 +340,19 @@ void ImageView::setCropMode(bool on)
         // restored crop frame can stay fixed while the full image grows around it.
         const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
         m_cropStashedPlacementRotation = item->itemRotation();
-        m_cropHadStashedPlacement = qAbs(m_cropStashedPlacementRotation) > 0.05;
+        m_cropStashedPlacementShear = item->itemShear();
+        m_cropHadStashedPlacement = qAbs(m_cropStashedPlacementRotation) > 0.05
+            || qAbs(m_cropStashedPlacementShear) > 1e-4;
         if (m_cropHadStashedPlacement) {
             item->setItemRotation(0.0);
+            item->setItemShear(0.0);
         }
         if (!prepareCropModeFullImage(item)) {
             m_cropEnterValid = false;
             m_cropEnterSource = QImage();
             if (m_cropHadStashedPlacement) {
                 item->setItemRotation(m_cropStashedPlacementRotation);
+                item->setItemShear(m_cropStashedPlacementShear);
             }
             m_cropHadStashedPlacement = false;
             m_cropTargetItem = nullptr;
@@ -435,6 +439,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     item->setSourceImage(full);
     // Always axis-aligned while cropping (placement was stashed in setCropMode).
     item->setItemRotation(0.0);
+    item->setItemShear(0.0);
     item->setItemHFlip(false);
     item->setItemVFlip(false);
     // Re-apply content flips/quarter turns for this session image on the full frame
@@ -537,8 +542,10 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     }
     if (isImageMode()) {
         item->setItemRotation(0.0);
+        item->setItemShear(0.0);
     } else {
         item->setItemRotation(app.rotation);
+        item->setItemShear(app.shear);
     }
     item->setItemHFlip(false);
     item->setItemVFlip(false);
@@ -904,9 +911,11 @@ void ImageView::leaveCropModeInternal(bool apply)
     // crop frame (Workspace non-full-frame commit).
     if (item && m_cropHadStashedPlacement && !preserveCropFrameRotation) {
         item->setItemRotation(m_cropStashedPlacementRotation);
+        item->setItemShear(m_cropStashedPlacementShear);
     }
     m_cropHadStashedPlacement = false;
     m_cropStashedPlacementRotation = 0.0;
+    m_cropStashedPlacementShear = 0.0;
     m_cropMode = false;
     m_cropShowingFullImage = false;
     m_cropEnterValid = false;

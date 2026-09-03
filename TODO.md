@@ -745,3 +745,19 @@ tiles keep aspect and shear. Shift enables free AABB axes (approximate).
 Group undo compares `shear`. Positions still scale about the selection AABB
 anchor; each item keeps rotation and shear from the press snapshot.
 
+
+---
+
+## Bundle `qimgview-076` — shear coverage gaps (validation)
+
+**Validated:** Core R·H·S path is complete for capture/apply/project/handles.
+No local Qt6 for full compile here; static review found missing shear writes:
+
+1. `bindSelectedSessionIds` — now records `item->itemShear()` into the slot
+2. `copySessionAppearance` — resets shear with scale/rotation (content-only copy)
+3. Crop mode — stash/zero/restore shear with placement rotation (axis-aligned crop)
+4. Gallery controller — zero shear when zeroing rotation
+
+**Still deferred:** anisotropic group scale under rotation; shear feel tuning;
+nix check in this environment.
+

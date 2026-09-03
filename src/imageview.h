@@ -925,6 +925,7 @@ private:
     bool m_cropShowingFullImage = false;
     /** Workspace free-rotate stashed while crop runs axis-aligned. */
     qreal m_cropStashedPlacementRotation = 0.0;
+    qreal m_cropStashedPlacementShear = 0.0;
     bool m_cropHadStashedPlacement = false;
     /** Appearance + session state when crop mode was entered (for Apply undo). */
     QImage m_cropEnterSource;
