@@ -174,11 +174,18 @@ void ImageView::clearWorkspace()
     m_pendingRestoreStates.clear();
     m_pendingSessionBinds.clear();
     m_pendingSessionIndexByPath.clear();
+    m_pendingSelectSessionIds.clear();
     m_galleryDecodeScheduled.clear();
     m_galleryDecodeFailed.clear();
     m_pathOrder.clear();
     m_sessionIdOrder.clear();
+    // Path-keyed placement is legacy for unbound tiles only; drop it so a
+    // project load cannot inherit stale poses from a previous session.
+    m_itemStates.clear();
     clearClassicPath();
+    // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot
+    // seed the empty Workspace after this wipe (first-path unbound tile).
+    ++m_loadGeneration;
     if (m_scene) {
         m_scene->blockSignals(true);
         m_scene->clear();

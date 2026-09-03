@@ -215,8 +215,13 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             emit statusChanged();
             return;
         }
-        // Workspace with empty canvas: seed with navigated image
-        if (m_items.isEmpty()) {
+        // Workspace with empty canvas: seed with navigated image — only for
+        // genuine session navigation. Project load / membership adds schedule
+        // LoadAdd with pending binds; seeding first would leave an unbound tile
+        // (default placement, no flip/grade) and steal the first path's LoadAdd.
+        if (m_items.isEmpty()
+            && m_pendingSessionBinds.isEmpty()
+            && !m_pendingWorkspacePaths.contains(path)) {
             ImageItem *item = createItemFromImage(path, image);
             if (item) {
                 item->setSelected(true);
@@ -334,6 +339,57 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         if (findItemBySessionId(b.id)) {
             m_pendingSessionBinds.removeAt(bi);
+        }
+    }
+
+    // Claim existing *unbound* tiles of this path for pending session binds
+    // (e.g. empty-Workspace LoadReplace seeded the first path before LoadAdd).
+    // Without this, have==wanted and the bind is never applied — placement,
+    // content flips, and colour grade stay at defaults on that tile.
+    for (ImageItem *existing : m_items) {
+        if (!existing || existing->path() != path) {
+            continue;
+        }
+        if (existing->sessionId() != kInvalidSessionImageId) {
+            continue;
+        }
+        PendingSessionBind bound;
+        bool haveBound = false;
+        for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
+            if (m_pendingSessionBinds.at(bi).path != path) {
+                continue;
+            }
+            bound = m_pendingSessionBinds.takeAt(bi);
+            haveBound = true;
+            break;
+        }
+        if (!haveBound) {
+            break;
+        }
+        if (bound.id != kInvalidSessionImageId) {
+            existing->setSessionId(bound.id);
+        }
+        if (bound.index >= 0 && bound.id != kInvalidSessionImageId) {
+            existing->setSessionIndex(bound.index);
+        }
+        if (!existing->hasDecodedPixels()) {
+            existing->setSourceImage(image);
+        } else {
+            // Re-decode content from full source when applying crop/bakes.
+            existing->setSourceImage(image);
+        }
+        applyStoredAppearance(existing);
+        if (bound.id != kInvalidSessionImageId && m_appearance.get(bound.id)) {
+            applyState(existing, *m_appearance.get(bound.id));
+        }
+        if (bound.id != kInvalidSessionImageId) {
+            const QImage appearance = sessionAppearanceImage(existing);
+            if (!appearance.isNull()) {
+                emit sessionAppearanceChanged(bound.id, existing->path(), appearance);
+            }
+            if (m_pendingSelectSessionIds.remove(bound.id)) {
+                existing->setSelected(true);
+            }
         }
     }
 

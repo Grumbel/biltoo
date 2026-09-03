@@ -675,3 +675,23 @@ finalization so images with missing/invalid stored ids still get a pose after
 **Fix:** Enter the project’s target mode first; place only `hasWorkspacePose`
 rows via `addImageForSession`; never call `loadImage` while still in
 Workspace/Gallery during project load.
+
+---
+
+## Bundle `qimgview-071` — first Workspace tile loses pose/appearance on load
+
+**Symptom:** After project load, the first image appears but placement, flip,
+rotation, and colour grade are lost; other tiles restore correctly.
+
+**Cause:** Race between empty-Workspace `LoadReplace` seed (“navigated image on
+empty canvas”) and `LoadAdd` for the first session path. If the seed wins,
+LoadAdd sees `have == wanted` with a decoded unbound tile and never binds the
+pending SessionImageId or applies `m_appearance` — defaults only.
+
+**Fix:**
+1. `clearWorkspace` clears path `m_itemStates` and bumps `m_loadGeneration`
+   (invalidate in-flight LoadReplace).
+2. LoadReplace seed only when there are no pending session binds / pending path.
+3. LoadAdd claims existing unbound tiles for pending binds and applies
+   content + pose from the appearance store.
+4. `addImageForSession` early-return re-applies store appearance.

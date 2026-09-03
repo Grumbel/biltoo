@@ -312,6 +312,12 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
     if (sessionId != kInvalidSessionImageId) {
         if (ImageItem *existing = findItemBySessionId(sessionId)) {
             if (existing->scene() == m_scene) {
+                // Re-apply store so an early-return does not leave a bare tile
+                // (seed / prior decode without pose or content appearance).
+                if (const WorkspaceItemState *app = m_appearance.get(sessionId)) {
+                    applyStoredAppearance(existing);
+                    applyState(existing, *app);
+                }
                 m_scene->clearSelection();
                 existing->setSelected(true);
                 ensureVisibleItem(existing);
@@ -322,6 +328,15 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
     }
     if (sessionIndex >= 0) {
         if (ImageItem *existing = findItemBySessionIndex(sessionIndex)) {
+            if (sessionId != kInvalidSessionImageId) {
+                existing->setSessionId(sessionId);
+            }
+            if (sessionId != kInvalidSessionImageId) {
+                if (const WorkspaceItemState *app = m_appearance.get(sessionId)) {
+                    applyStoredAppearance(existing);
+                    applyState(existing, *app);
+                }
+            }
             m_scene->clearSelection();
             existing->setSelected(true);
             ensureVisibleItem(existing);
