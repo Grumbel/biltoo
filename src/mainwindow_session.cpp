@@ -18,18 +18,21 @@ namespace {
 
 QString imageFileDialogFilter()
 {
-    QStringList patterns;
+    QStringList imagePatterns;
     for (const QString &suffix : ImageLoader::imageSuffixes()) {
-        patterns.append(QStringLiteral("*.%1").arg(suffix));
+        imagePatterns.append(QStringLiteral("*.%1").arg(suffix));
     }
     QStringList archivePatterns;
     for (const QString &suffix : ArchivePath::archiveSuffixes()) {
         // Compound suffixes like tar.gz → *.tar.gz
         archivePatterns.append(QStringLiteral("*.%1").arg(suffix));
     }
-    return QObject::tr("Images (%1);;Archives (%2);;All Files (*)")
-        .arg(patterns.join(QLatin1Char(' ')),
-             archivePatterns.join(QLatin1Char(' ')));
+    const QString images = imagePatterns.join(QLatin1Char(' '));
+    const QString archives = archivePatterns.join(QLatin1Char(' '));
+    // First filter is the dialog default — include archives so .zip/.tar are visible.
+    return QObject::tr(
+               "Images and archives (%1 %2);;Images only (%1);;Archives only (%2);;All Files (*)")
+        .arg(images, archives);
 }
 
 /** Undoable session duplicate (Ctrl+D). Identity is SessionImageId, not path. */

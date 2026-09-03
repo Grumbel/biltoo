@@ -12,6 +12,7 @@
 #include "archivereader.h"
 
 #include <QBuffer>
+#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
 #include <QSize>
@@ -58,16 +59,29 @@ QImage decodeFromBytes(const QByteArray &bytes, const QString &formatHint, int m
 
 QImage loadArchiveRef(const QString &path, int maxEdge)
 {
+    if (!ArchiveReader::isAvailable()) {
+        qWarning("ImageLoader: archive path but libarchive not built in: %s",
+                 qPrintable(path));
+        return {};
+    }
     const ArchivePath::Ref ref = ArchivePath::parse(path);
-    if (!ref.valid || !ArchiveReader::isAvailable()) {
+    if (!ref.valid) {
+        qWarning("ImageLoader: invalid archive ref: %s", qPrintable(path));
         return {};
     }
     const QByteArray bytes = ArchiveReader::readMember(ref.archivePath, ref.memberPath);
     if (bytes.isEmpty()) {
+        qWarning("ImageLoader: empty archive member %s from %s",
+                 qPrintable(ref.memberPath), qPrintable(ref.archivePath));
         return {};
     }
     const QString suffix = QFileInfo(ref.memberPath).suffix().toLower();
-    return decodeFromBytes(bytes, suffix, maxEdge);
+    QImage image = decodeFromBytes(bytes, suffix, maxEdge);
+    if (image.isNull()) {
+        qWarning("ImageLoader: decode failed for %s (%d bytes, suffix=%s)",
+                 qPrintable(path), bytes.size(), qPrintable(suffix));
+    }
+    return image;
 }
 
 QImage loadWithQt(const QString &path, int maxEdge)

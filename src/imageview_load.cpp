@@ -296,7 +296,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     takePendingWorkspacePath(path);
 
     if (image.isNull()) {
+        qWarning("ImageView: decode failed for %s", qPrintable(path));
         m_galleryDecodeFailed.insert(path);
+        m_lastLoadError = path;
         emit statusChanged();
         if (isGalleryMode()) {
             updateGalleryDecodeWindow();

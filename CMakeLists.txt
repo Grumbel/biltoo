@@ -170,7 +170,7 @@ if(PkgConfig_FOUND)
     target_compile_definitions(qimgview PRIVATE QIMGVIEW_HAVE_ARCHIVE=1)
     message(STATUS "libarchive found — in-memory archive image loading enabled")
   else()
-    message(STATUS "libarchive not found — archive paths disabled")
+    message(WARNING "libarchive not found — archive image loading will be disabled")
   endif()
 
   # gio-unix provides GDesktopAppInfo (gdesktopappinfo.h); pulls in gio-2.0

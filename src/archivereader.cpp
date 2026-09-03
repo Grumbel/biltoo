@@ -5,6 +5,7 @@
 #include "archivepath.h"
 #include "imageloader.h"
 
+#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
 
@@ -39,23 +40,6 @@ struct ArchiveCloser {
     }
 };
 
-struct archive *openArchive(const QString &archivePath)
-{
-    struct archive *a = archive_read_new();
-    if (!a) {
-        return nullptr;
-    }
-    archive_read_support_filter_all(a);
-    archive_read_support_format_all(a);
-    const QByteArray pathUtf8 = QFile::encodeName(archivePath);
-    if (archive_read_open_filename(a, pathUtf8.constData(), 10240) != ARCHIVE_OK) {
-        archive_read_free(a);
-        return nullptr;
-    }
-    return a;
-}
-
-
 QString normalizeMemberName(const QString &raw)
 {
     QString name = raw;
@@ -85,6 +69,41 @@ QString entryPathString(struct archive_entry *entry)
     return QString::fromUtf8(name);
 }
 
+struct archive *openArchive(const QString &archivePath)
+{
+    struct archive *a = archive_read_new();
+    if (!a) {
+        qWarning("ArchiveReader: archive_read_new failed");
+        return nullptr;
+    }
+    archive_read_support_filter_all(a);
+    archive_read_support_format_all(a);
+
+    const QByteArray utf8 = archivePath.toUtf8();
+    int rc = archive_read_open_filename(a, utf8.constData(), 10240);
+    if (rc != ARCHIVE_OK) {
+        const QByteArray local = QFile::encodeName(archivePath);
+        if (local != utf8) {
+            archive_read_free(a);
+            a = archive_read_new();
+            if (!a) {
+                return nullptr;
+            }
+            archive_read_support_filter_all(a);
+            archive_read_support_format_all(a);
+            rc = archive_read_open_filename(a, local.constData(), 10240);
+        }
+    }
+    if (rc != ARCHIVE_OK) {
+        qWarning("ArchiveReader: cannot open %s: %s",
+                 qPrintable(archivePath),
+                 archive_error_string(a) ? archive_error_string(a) : "unknown error");
+        archive_read_free(a);
+        return nullptr;
+    }
+    return a;
+}
+
 QByteArray readEntryBytes(struct archive *a, la_int64_t sz)
 {
     QByteArray data;
@@ -96,6 +115,8 @@ QByteArray readEntryBytes(struct archive *a, la_int64_t sz)
             const la_ssize_t n = archive_read_data(a, data.data() + total,
                                                    size_t(sz - total));
             if (n < 0) {
+                qWarning("ArchiveReader: read error: %s",
+                         archive_error_string(a) ? archive_error_string(a) : "unknown");
                 data.clear();
                 return data;
             }
@@ -107,13 +128,14 @@ QByteArray readEntryBytes(struct archive *a, la_int64_t sz)
         data.resize(int(total));
         return data;
     }
-    // Unknown or huge size — stream in chunks (cap at kMax).
     constexpr int kChunk = 256 * 1024;
     QByteArray chunk;
     chunk.resize(kChunk);
     for (;;) {
         const la_ssize_t n = archive_read_data(a, chunk.data(), size_t(kChunk));
         if (n < 0) {
+            qWarning("ArchiveReader: stream read error: %s",
+                     archive_error_string(a) ? archive_error_string(a) : "unknown");
             data.clear();
             break;
         }
@@ -122,21 +144,13 @@ QByteArray readEntryBytes(struct archive *a, la_int64_t sz)
         }
         data.append(chunk.constData(), int(n));
         if (data.size() > int(kMax)) {
+            qWarning("ArchiveReader: member exceeds size limit");
             data.clear();
             break;
         }
     }
     return data;
 }
-
-bool memberMatches(const QString &want, const QString &entryName)
-{
-    if (want.isEmpty() || entryName.isEmpty()) {
-        return false;
-    }
-    return normalizeMemberName(want) == normalizeMemberName(entryName);
-}
-
 
 bool entryIsImage(const QString &name)
 {
@@ -154,6 +168,16 @@ bool entryIsImage(const QString &name)
     return ImageLoader::isImageFile(base);
 }
 
+int nextHeader(struct archive *a, struct archive_entry **entry)
+{
+    for (;;) {
+        const int rc = archive_read_next_header(a, entry);
+        if (rc == ARCHIVE_RETRY) {
+            continue;
+        }
+        return rc;
+    }
+}
 
 } // namespace
 
@@ -161,6 +185,7 @@ QStringList listImageMembers(const QString &archivePath)
 {
     QStringList out;
     if (archivePath.isEmpty() || !QFileInfo::exists(archivePath)) {
+        qWarning("ArchiveReader: list: missing file %s", qPrintable(archivePath));
         return out;
     }
     ArchiveCloser guard;
@@ -169,7 +194,17 @@ QStringList listImageMembers(const QString &archivePath)
         return out;
     }
     struct archive_entry *entry = nullptr;
-    while (archive_read_next_header(guard.a, &entry) == ARCHIVE_OK) {
+    for (;;) {
+        const int rc = nextHeader(guard.a, &entry);
+        if (rc == ARCHIVE_EOF) {
+            break;
+        }
+        if (rc != ARCHIVE_OK && rc != ARCHIVE_WARN) {
+            qWarning("ArchiveReader: list header error in %s: %s",
+                     qPrintable(archivePath),
+                     archive_error_string(guard.a) ? archive_error_string(guard.a) : "unknown");
+            break;
+        }
         const QString name = entryPathString(entry);
         if (entryIsImage(name)) {
             const QString member = normalizeMemberName(name);
@@ -186,7 +221,11 @@ QStringList listImageMembers(const QString &archivePath)
 QByteArray readMember(const QString &archivePath, const QString &memberPath)
 {
     QByteArray data;
-    if (archivePath.isEmpty() || memberPath.isEmpty() || !QFileInfo::exists(archivePath)) {
+    if (archivePath.isEmpty() || memberPath.isEmpty()) {
+        return data;
+    }
+    if (!QFileInfo::exists(archivePath)) {
+        qWarning("ArchiveReader: read: missing archive %s", qPrintable(archivePath));
         return data;
     }
     const QString want = normalizeMemberName(memberPath);
@@ -196,19 +235,33 @@ QByteArray readMember(const QString &archivePath, const QString &memberPath)
     if (!guard.a) {
         return data;
     }
+
     struct archive_entry *entry = nullptr;
-    while (archive_read_next_header(guard.a, &entry) == ARCHIVE_OK) {
-        const QString name = entryPathString(entry);
-        if (!memberMatches(want, name)) {
-            archive_read_data_skip(guard.a);
-            continue;
+    for (;;) {
+        const int rc = nextHeader(guard.a, &entry);
+        if (rc == ARCHIVE_EOF) {
+            break;
         }
-        data = readEntryBytes(guard.a, archive_entry_size(entry));
-        break;
+        if (rc != ARCHIVE_OK && rc != ARCHIVE_WARN) {
+            qWarning("ArchiveReader: read header error in %s: %s",
+                     qPrintable(archivePath),
+                     archive_error_string(guard.a) ? archive_error_string(guard.a) : "unknown");
+            break;
+        }
+        const QString name = normalizeMemberName(entryPathString(entry));
+        if (name == want) {
+            data = readEntryBytes(guard.a, archive_entry_size(entry));
+            break;
+        }
+        archive_read_data_skip(guard.a);
+    }
+
+    if (data.isEmpty()) {
+        qWarning("ArchiveReader: member not found or empty: \"%s\" in %s",
+                 qPrintable(want), qPrintable(archivePath));
     }
     return data;
 }
-
 
 #else // !QIMGVIEW_HAVE_ARCHIVE
 
@@ -227,11 +280,21 @@ QByteArray readMember(const QString & /*archivePath*/, const QString & /*memberP
 QStringList expandArchiveToImageRefs(const QString &archivePath)
 {
     QStringList refs;
-    if (!isAvailable() || !ArchivePath::isArchiveFile(archivePath)) {
+    if (!isAvailable()) {
+        qWarning("ArchiveReader: libarchive was not enabled at build time "
+                 "(QIMGVIEW_HAVE_ARCHIVE); cannot open %s",
+                 qPrintable(archivePath));
+        return refs;
+    }
+    if (!ArchivePath::isArchiveFile(archivePath)) {
         return refs;
     }
     const QString abs = QFileInfo(archivePath).absoluteFilePath();
     const QStringList members = listImageMembers(abs);
+    if (members.isEmpty()) {
+        qWarning("ArchiveReader: no image members in %s", qPrintable(abs));
+        return refs;
+    }
     refs.reserve(members.size());
     for (const QString &m : members) {
         const QString ref = ArchivePath::makeRef(abs, m);
