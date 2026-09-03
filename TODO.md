@@ -439,10 +439,11 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
 
 ---
 
-## Handoff (2026-09-03) — continue from tip / next bundle `qimgview-064-…`
+## Handoff (2026-09-03) — continue from tip / next bundle `qimgview-065-…`
 
-**Git tip after stacks:** `85ac5d0` — *Fix LoadAdd creating extra tiles for already-bound session ids*  
-**Requires previous tip:** `ffb84b6` (export background + dual toolbar buttons)
+**Git tip after stacks:** `e40b67c` — *Document handoff…* (docs only)  
+**Code tip:** `85ac5d0` — *Fix LoadAdd creating extra tiles for already-bound session ids*  
+**Requires previous tip:** `85ac5d0` before this docs commit; full feature stack ends at 063.
 
 ### Bundle stack (this workstream)
 
@@ -462,7 +463,8 @@ Apply in order under `/home/workdir/artifacts/` (each is `git pull <bundle> HEAD
 | `qimgview-060-adjustments-opt-in` | | Adjustments dock default hidden |
 | `qimgview-061-icons-layout-prefs` | | coloured icons; layout on workspace bar; prefs chrome |
 | `qimgview-062-export-bg-two-buttons` | | PNG export paints workspace bg; two bg buttons |
-| `qimgview-063-fix-loadadd-bind` | | LoadAdd: no extra tiles for live session ids |
+| `qimgview-063-fix-loadadd-bind` | `85ac5d0` | LoadAdd: no extra tiles for live session ids |
+| `qimgview-064-handoff-docs` | `e40b67c` | This handoff documentation |
 
 Author on all commits: `Ingo Ruhnke <grumbel@gmail.com>` with  
 `Co-authored-by: Grok <grok@x.ai>`. Bundles use **HEAD** as ref and stack cleanly.
@@ -543,7 +545,7 @@ Author on all commits: `Ingo Ruhnke <grumbel@gmail.com>` with
 ### Agent workflow reminders
 
 - Document plans and progress in **TODO.md** (or linked notes) continuously.
-- Small task-focused commits; next bundle number is **064** (`qimgview-064-…`).
+- Small task-focused commits; next bundle number is **065** (`qimgview-065-…`).
 - Prefer shallow checkout + rsync into artifacts; writing artifacts is slow.
 - No feature rollback without discussion; no quick hacks — fix the model.
 
