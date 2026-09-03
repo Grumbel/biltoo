@@ -12,6 +12,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QIcon>
+#include <QStatusBar>
 #include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
