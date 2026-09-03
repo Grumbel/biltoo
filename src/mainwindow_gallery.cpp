@@ -527,17 +527,21 @@ void MainWindow::updateWorkspaceActionVisibility()
 {
     updateUpToGalleryAction();
     const bool workspace = m_imageView && m_imageView->isWorkspaceMode();
-    // Gallery layout actions: always visible; enabled once a session exists.
-    // (Previously they stayed hidden until Workspace Mode was toggled because
-    //  loadFiles never refreshed visibility.)
+    // Gallery layout actions: visible once a session exists. Enabled in Image
+    // mode on purpose — activating one enters Gallery with that pack. Grid Crop
+    // stays hidden until the separate re-enable task (conflicts with manual crop).
     const bool canGallery = !m_session.paths().isEmpty();
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
-                         m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
+                         m_layoutGridAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
                          m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(canGallery);
         }
+    }
+    if (m_layoutGridCropAct) {
+        m_layoutGridCropAct->setVisible(false);
+        m_layoutGridCropAct->setEnabled(false);
     }
     if (m_layoutFreeFormAct) {
         m_layoutFreeFormAct->setVisible(false);
@@ -547,10 +551,10 @@ void MainWindow::updateWorkspaceActionVisibility()
     // (Hiding them made the Workspace menu appear to grow/shrink with mode.)
     for (QAction *act : {m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
-                         m_resetScaleAct, m_resetRotationAct,
+                         m_resetScaleAct, m_resetRotationAct, m_resetShearAct,
                          m_selectToolAct, m_panToolAct,
                          m_pageGuideAct, m_fitPageGuideAct,
-                         m_workspaceBackgroundAct}) {
+                         m_workspaceBackgroundAct, m_workspaceBgDefaultAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(workspace);

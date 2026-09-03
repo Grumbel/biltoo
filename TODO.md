@@ -856,6 +856,12 @@ and sheared tiles follow the selection AABB.
 - Image mode always has **Up** to implicit default Gallery when not returning
   to Workspace (direct open / CLI / History no longer leave Up disabled)
 
+### Fixed in `qimgview-096`
+- Grid Crop no longer re-shown by visibility updates
+- Reset shear + Background Default greyed outside Workspace
+- Placement resets (scale/rotation/shear) require Workspace + selection
+- Layout actions stay enabled in Image mode intentionally (enter Gallery)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -863,27 +869,27 @@ and sheared tiles follow the selection AABB.
   Consider **Image** menu for transforms; keep Edit for undo/clipboard/prefs.
 - [x] Workspace vertical toolbar also has Print/Export — consider File only or
   a "Page" submenu so tools stay select/pan/guides/background.
-- [ ] `m_layoutFreeFormAct` exists but is not in Gallery menu (layouts exclusive
+- [x] `m_layoutFreeFormAct` exists but is not in Gallery menu (layouts exclusive
   group starts unchecked until user picks one — OK, but Free Form is Workspace-only).
 
 ### Shortcuts / discoverability
 - [x] Bare **Q** quits (no Ctrl) — easy mis-press; prefer Ctrl+Q only.
-- [ ] Bare **R** rotates — fine for a viewer; document that Reload is F5.
+- [x] Bare **R** rotates — fine for a viewer; document that Reload is F5.
 - [x] **Ctrl+Y** = Layout Horizontal (on Windows Ctrl+Y is often Redo) — consider
   dropping or using a non-conflicting chord.
 - [ ] Alt+[ / ] shear vs [ / ] slideshow — OK (modifiers differ); ensure focus is
   not in a spinbox when testing.
-- [ ] No menu entry for **shear** except Reset; handles are primary (OK) but
+- [x] No menu entry for **shear** except Reset; handles are primary (OK) but
   F1 should stay in sync when shortcuts change.
 
 ### Thumbnail bar
-- [ ] Labels on/off and crop-thumbnails live under View → Thumbnails — good.
+- [x] Labels on/off and crop-thumbnails live under View → Thumbnails — good.
 - [ ] Drag from thumb strip to Workspace: verify status tip / cursor affordance.
 - [ ] Very long sessions: virtualization exists for Gallery canvas; strip still
   loads many thumbs — optional windowed decode already partially present.
 
 ### Mode enablement
-- [ ] Audit that Gallery-only actions disable in pure Image mode and vice versa
+- [x] Audit that Gallery-only actions disable in pure Image mode and vice versa
   (layout actions, workspace tools) so the toolbar does not look "dead click".
 - [ ] Crop shortcut **C** in Gallery: should no-op or enter image crop for
   selection — confirm behaviour.
@@ -891,7 +897,7 @@ and sheared tiles follow the selection AABB.
 ### Missing features (product)
 - [ ] Recent *files* (session paths) vs only Recent Projects — History menu covers
   sessions; naming is easy to confuse with Recent Projects.
-- [ ] Explicit "Remove from session" in thumbnail context menu (if not present).
+- [x] Explicit "Remove from session" in thumbnail context menu (if not present).
 - [ ] Toolbar/customize — out of scope unless requested.
 
 
@@ -1116,3 +1122,36 @@ or last Gallery layout) is the destination.
 
 **Next bundle:** `qimgview-096-…` — identity residual (Image-mode crop of
 duplicate slot B), mode enablement audit, or remaining polish.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-096-mode-enablement-polish`
+
+**Goal:** Tighten mode-sensitive enablement and small discoverability polish.
+
+### Scope
+
+1. **Grid Crop** must stay hidden/disabled (creation site already does this, but
+   `updateWorkspaceActionVisibility` was re-showing/enabling it). Exclude it
+   from the bulk layout enable loop.
+2. **Workspace-only actions:** include `m_resetShearAct` and
+   `m_workspaceBgDefaultAct` in the grey-out-outside-Workspace list.
+3. **F1 shortcuts:** document bare **R** = rotate right, **F5** = reload.
+4. **TODO audit:** mark thumbnail "Remove from Session" as already present;
+   note layout actions stay enabled in Image mode on purpose (they enter Gallery).
+
+### Out of scope
+
+- Re-enable Grid Crop product work
+- Identity residual crop sync
+- Thumb strip virtualization
+
+### Done criteria
+
+- [x] Grid Crop not visible/enabled from visibility updates
+- [x] Reset shear / bg default disabled outside Workspace
+- [x] F1 lists R and F5 (already documented; confirmed)
+- [x] Document; next **097**
+
+**Next bundle:** `qimgview-097-…` — identity residual (Image-mode crop of
+duplicate slot B), Gallery crop shortcut **C** behaviour, or thumb drag tips.

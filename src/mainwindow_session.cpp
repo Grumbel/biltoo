@@ -1020,9 +1020,12 @@ void MainWindow::updateNavigationActions()
             m_imageView->cancelCrop();
         }
     }
-    for (QAction *act : {m_resetScaleAct, m_resetRotationAct}) {
+    // Placement resets are Workspace-only (content transforms use Image menu).
+    const bool canResetPlacement = canTransform && m_imageView
+        && m_imageView->isWorkspaceMode();
+    for (QAction *act : {m_resetScaleAct, m_resetRotationAct, m_resetShearAct}) {
         if (act) {
-            act->setEnabled(canTransform);
+            act->setEnabled(canResetPlacement);
         }
     }
 
