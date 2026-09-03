@@ -90,7 +90,9 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
 
 void ImageView::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
+    if (event->mimeData()
+        && (event->mimeData()->hasUrls()
+            || event->mimeData()->hasFormat(QStringLiteral("application/x-qimgview-paths")))) {
         event->acceptProposedAction();
     } else {
         event->ignore();
@@ -99,7 +101,9 @@ void ImageView::dragEnterEvent(QDragEnterEvent *event)
 
 void ImageView::dragMoveEvent(QDragMoveEvent *event)
 {
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
+    if (event->mimeData()
+        && (event->mimeData()->hasUrls()
+            || event->mimeData()->hasFormat(QStringLiteral("application/x-qimgview-paths")))) {
         event->acceptProposedAction();
     } else {
         event->ignore();
@@ -108,7 +112,14 @@ void ImageView::dragMoveEvent(QDragMoveEvent *event)
 
 void ImageView::dropEvent(QDropEvent *event)
 {
-    if (!event->mimeData() || !event->mimeData()->hasUrls()) {
+    if (!event->mimeData()) {
+        event->ignore();
+        return;
+    }
+    const QByteArray pathBytes =
+        event->mimeData()->data(QStringLiteral("application/x-qimgview-paths"));
+    const bool hasInternal = !pathBytes.isEmpty();
+    if (!event->mimeData()->hasUrls() && !hasInternal) {
         event->ignore();
         return;
     }
@@ -123,7 +134,12 @@ void ImageView::dropEvent(QDropEvent *event)
             sessionIds.append(ok ? v : 0);
         }
     }
-    emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos, sessionIds);
+    QStringList internalPaths;
+    if (hasInternal) {
+        internalPaths = QString::fromUtf8(pathBytes).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    }
+    emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos, sessionIds,
+                      internalPaths);
     event->acceptProposedAction();
 }
 

@@ -1751,18 +1751,30 @@ QStringList MainWindow::extractLocalImagePaths(const QMimeData *mime) const
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (!extractLocalImagePaths(event->mimeData()).isEmpty()) {
+    if (!event->mimeData()) {
+        return;
+    }
+    if (event->mimeData()->hasFormat(QStringLiteral("application/x-qimgview-paths"))
+        || !extractLocalImagePaths(event->mimeData()).isEmpty()) {
         event->acceptProposedAction();
     }
 }
 
 void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                                   const QPointF &scenePos, const QList<qint64> &sessionIds)
+                                   const QPointF &scenePos, const QList<qint64> &sessionIds,
+                                   const QStringList &internalPaths)
 {
-    // Build a transient mime payload so extractLocalImagePaths stays the single filter
-    QMimeData mime;
-    mime.setUrls(urls);
-    const QStringList paths = extractLocalImagePaths(&mime);
+    // Prefer explicit internal paths from the filmstrip (exact selection,
+    // including //archive: members). URL-only drops still go through
+    // extractLocalImagePaths + expandPaths (directories / archive files).
+    QStringList paths = internalPaths;
+    paths.removeAll(QString());
+    bool fromInternalSelection = !paths.isEmpty();
+    if (!fromInternalSelection) {
+        QMimeData mime;
+        mime.setUrls(urls);
+        paths = extractLocalImagePaths(&mime);
+    }
     if (paths.isEmpty()) {
         return;
     }
@@ -1771,7 +1783,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     // Paths already on the canvas are *duplicated* (not moved); a new session
     // slot is appended so the filmstrip can address the copy independently.
     if (isWorkspaceMode()) {
-        const QStringList expanded = expandPaths(paths);
+        const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
         if (expanded.isEmpty()) {
             return;
         }
@@ -1844,7 +1856,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     // same file more than once). Thumbnail-bar drags therefore duplicate;
     // external files are appended as usual.
     if (isGalleryMode()) {
-        const QStringList expanded = expandPaths(paths);
+        const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
         if (expanded.isEmpty()) {
             return;
         }
@@ -1872,7 +1884,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     // Image mode: always append to the session (Open still replaces).
     // Drops from the thumbnail bar are already in the session — just navigate
     // to the first path instead of wiping the session down to one file.
-    const QStringList expanded = expandPaths(paths);
+    const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
     if (expanded.isEmpty()) {
         return;
     }
@@ -1895,14 +1907,21 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
 }
 
 void MainWindow::onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                                const QPointF &scenePos, const QList<qint64> &sessionIds)
+                                const QPointF &scenePos, const QList<qint64> &sessionIds,
+                                const QStringList &internalPaths)
 {
-    handleDroppedUrls(urls, modifiers, scenePos, sessionIds);
+    handleDroppedUrls(urls, modifiers, scenePos, sessionIds, internalPaths);
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
 {
-    if (!event->mimeData() || !event->mimeData()->hasUrls()) {
+    if (!event->mimeData()) {
+        return;
+    }
+    const QByteArray pathBytes =
+        event->mimeData()->data(QStringLiteral("application/x-qimgview-paths"));
+    const bool hasInternal = !pathBytes.isEmpty();
+    if (!event->mimeData()->hasUrls() && !hasInternal) {
         return;
     }
     QList<qint64> sessionIds;
@@ -1915,7 +1934,12 @@ void MainWindow::dropEvent(QDropEvent *event)
             sessionIds.append(ok ? v : 0);
         }
     }
+    QStringList internalPaths;
+    if (hasInternal) {
+        internalPaths = QString::fromUtf8(pathBytes).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    }
     // Window-level drop has no reliable scene position — empty-space placement
-    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), QPointF(), sessionIds);
+    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), QPointF(), sessionIds,
+                      internalPaths);
     event->acceptProposedAction();
 }

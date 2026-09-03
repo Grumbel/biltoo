@@ -1647,3 +1647,32 @@ default** control next to each setting.
 - [x] Document; next **115**
 
 **Next bundle:** `qimgview-115-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-115-thumb-drag-selection`
+
+**Bug:** ThumbnailBar drag could drop **every** image (especially from
+archives) instead of only the selected thumbs.
+
+**Cause:** `mimeData` wrote the **archive container** file URL for
+`//archive:` members. On drop, `expandPaths` unpacked the whole archive.
+Session-id payload was parallel only to the selection, but the expanded
+path list was not.
+
+**Fix:**
+- Emit `application/x-qimgview-paths` with the exact selected session paths
+  (archive refs included as-is).
+- Do not put container-only file URLs for archive members.
+- `handleDroppedUrls` prefers the internal path list and skips
+  `expandPaths` for that payload.
+- Drag builds the item list from the current selection (or the pressed
+  thumb), never the full filmstrip.
+
+### Done criteria
+
+- [x] Selected thumbs only on drop (including archive members)
+- [x] Document; next **116**
+
+**Next bundle:** `qimgview-116-…` — further polish as needed.

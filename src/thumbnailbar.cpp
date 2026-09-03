@@ -1040,7 +1040,9 @@ void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
 
 QStringList ThumbnailBar::mimeTypes() const
 {
-    return {QStringLiteral("text/uri-list")};
+    return {QStringLiteral("text/uri-list"),
+            QStringLiteral("application/x-qimgview-paths"),
+            QStringLiteral("application/x-qimgview-session-ids")};
 }
 
 QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
@@ -1048,7 +1050,9 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
     auto *mime = new QMimeData;
     QList<QUrl> urls;
     QByteArray idPayload;
+    QStringList fullPaths;
     urls.reserve(items.size());
+    fullPaths.reserve(items.size());
     for (QListWidgetItem *it : items) {
         if (!it) {
             continue;
@@ -1057,14 +1061,12 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
         if (path.isEmpty()) {
             continue;
         }
-        // Local files: normal file URL. Archive refs: container path only in the
-        // URL list (expandPaths understands the full ref via session-id path).
-        if (ArchivePath::isArchiveRef(path)) {
-            const QString container = ArchivePath::archiveFilePath(path);
-            if (!container.isEmpty()) {
-                urls.append(QUrl::fromLocalFile(container));
-            }
-        } else {
+        fullPaths.append(path);
+        // Local filesystem files: standard file URLs for external targets.
+        // Archive member refs must NOT use the container file URL — expandPaths
+        // would then unpack every member and the drop would place the whole
+        // archive instead of the selected thumbs only.
+        if (!ArchivePath::isArchiveRef(path)) {
             urls.append(QUrl::fromLocalFile(path));
         }
         // Prefer SessionImageId stamped on the item (setFiles / setSessionIds).
@@ -1083,7 +1085,23 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
         }
         idPayload.append(QByteArray::number(static_cast<qint64>(sid)));
     }
-    mime->setUrls(urls);
+    // Internal path list (newline-separated UTF-8). Preferred on drop so
+    // selection size is exact — including //archive: members.
+    if (!fullPaths.isEmpty()) {
+        mime->setData(QStringLiteral("application/x-qimgview-paths"),
+                      fullPaths.join(QLatin1Char('\n')).toUtf8());
+    }
+    if (!urls.isEmpty()) {
+        mime->setUrls(urls);
+    } else if (!fullPaths.isEmpty()) {
+        // Keep hasUrls() true for generic acceptors: opaque about: URLs are
+        // ignored by extractLocalImagePaths / expandPaths.
+        QList<QUrl> placeholders;
+        for (int i = 0; i < fullPaths.size(); ++i) {
+            placeholders.append(QUrl(QStringLiteral("about:qimgview-session/%1").arg(i)));
+        }
+        mime->setUrls(placeholders);
+    }
     if (!idPayload.isEmpty()) {
         mime->setData(QStringLiteral("application/x-qimgview-session-ids"), idPayload);
     }
@@ -1101,7 +1119,9 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
         return;
     }
     QMimeData *mime = mimeData(items);
-    if (!mime || mime->urls().isEmpty()) {
+    if (!mime
+        || (mime->urls().isEmpty()
+            && mime->data(QStringLiteral("application/x-qimgview-paths")).isEmpty())) {
         delete mime;
         return;
     }
@@ -1177,14 +1197,13 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
         if (dist >= QApplication::startDragDistance()) {
             // AUDIT M19: drag selected thumbs as files in every mode (no dead gesture).
             m_dragStarted = true;
+            // Only the explicit selection (or the pressed thumb). Never the
+            // whole filmstrip — that used to happen when archive container
+            // URLs were expanded on drop, and must not recur via select-all
+            // style accidental payloads either.
             QList<QListWidgetItem *> items;
-            if (m_multiSelect) {
+            if (m_pressItem->isSelected()) {
                 items = selectedItems();
-                if (!m_pressItem->isSelected()) {
-                    items = {m_pressItem};
-                }
-            } else {
-                items = {m_pressItem};
             }
             if (items.isEmpty()) {
                 items = {m_pressItem};

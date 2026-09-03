@@ -209,7 +209,8 @@ private slots:
     void showKeyboardShortcuts();
     void showPreferences();
     void onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                        const QPointF &scenePos, const QList<qint64> &sessionIds = {});
+                        const QPointF &scenePos, const QList<qint64> &sessionIds = {},
+                        const QStringList &internalPaths = {});
     void toggleScrollBars();
     void toggleWorkspaceMode();
     /** DOMAIN: enter Workspace (snapshot-aware via ImageView::setViewMode). */
@@ -301,7 +302,8 @@ private:
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
     void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                            const QPointF &scenePos = QPointF(),
-                           const QList<qint64> &sessionIds = {});
+                           const QList<qint64> &sessionIds = {},
+                           const QStringList &internalPaths = {});
     static bool isImageFile(const QString &path);
 
     ImageView *m_imageView = nullptr;
