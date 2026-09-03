@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include <QPixmap>
 #include "imageitem.h"
 
 #include <QPainter>
@@ -369,18 +370,11 @@ void ImageView::paintEvent(QPaintEvent *event)
 
 void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 {
-    const bool useChecker =
-        m_bgPattern == BackgroundPattern::Checkerboard
-        && (!m_bgCheckerWorkspaceOnly || isWorkspaceMode());
+    // Workspace may override the application background (project state).
+    const bool wsOverride = isWorkspaceMode()
+        && !m_workspaceBackground.isAppDefault();
 
-    if (!useChecker) {
-        painter->fillRect(rect, m_bgColor);
-    } else {
-        // Checkerboard in scene coordinates so it pans with the view. Cell size is
-        // LOD-snapped so on-screen square size stays in a comfortable range: when
-        // a 16-scene-unit cell would shrink below ~16 device px, double the scene
-        // cell (and again) until squares are large enough — never draw a dense
-        // field of sub-pixel checkers.
+    auto fillChecker = [&](const QColor &a, const QColor &b) {
         const qreal viewScale = qMax(1e-6, transform().m11());
         constexpr qreal kBaseCell = 16.0;
         constexpr qreal kMinScreenPx = 16.0;
@@ -388,15 +382,10 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
         while (cell * viewScale < kMinScreenPx && cell < 4096.0) {
             cell *= 2.0;
         }
-
-        const QColor a = m_bgColor;
-        const QColor b = m_bgColorAlt.isValid() ? m_bgColorAlt : m_bgColor.lighter(120);
-
         const qreal x0 = std::floor(rect.left() / cell) * cell;
         const qreal y0 = std::floor(rect.top() / cell) * cell;
         const qreal x1 = std::ceil(rect.right() / cell) * cell;
         const qreal y1 = std::ceil(rect.bottom() / cell) * cell;
-
         for (qreal y = y0; y < y1; y += cell) {
             for (qreal x = x0; x < x1; x += cell) {
                 const int ix = static_cast<int>(std::floor(x / cell));
@@ -404,6 +393,57 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
                 const bool dark = ((ix + iy) & 1) != 0;
                 painter->fillRect(QRectF(x, y, cell, cell), dark ? a : b);
             }
+        }
+    };
+
+    if (wsOverride) {
+        const WorkspaceBackground &wb = m_workspaceBackground;
+        if (wb.mode == WorkspaceBackgroundMode::Solid) {
+            painter->fillRect(rect, wb.color.isValid() ? wb.color : m_bgColor);
+        } else if (wb.mode == WorkspaceBackgroundMode::Checkerboard) {
+            const QColor a = wb.color.isValid() ? wb.color : m_bgColor;
+            const QColor b = wb.colorAlt.isValid() ? wb.colorAlt : a.lighter(120);
+            fillChecker(a, b);
+        } else if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
+            if (m_workspaceBgTile.isNull() && !wb.imagePath.isEmpty()) {
+                QPixmap px(wb.imagePath);
+                if (!px.isNull()) {
+                    m_workspaceBgTile = px;
+                    m_workspaceBgTilePath = wb.imagePath;
+                }
+            }
+            if (!m_workspaceBgTile.isNull()) {
+                // Explicit scene-space tiling so the pattern pans/zooms with the view.
+                const qreal tw = qMax(1.0, qreal(m_workspaceBgTile.width()));
+                const qreal th = qMax(1.0, qreal(m_workspaceBgTile.height()));
+                const qreal x0 = std::floor(rect.left() / tw) * tw;
+                const qreal y0 = std::floor(rect.top() / th) * th;
+                const qreal x1 = std::ceil(rect.right() / tw) * tw;
+                const qreal y1 = std::ceil(rect.bottom() / th) * th;
+                for (qreal y = y0; y < y1; y += th) {
+                    for (qreal x = x0; x < x1; x += tw) {
+                        painter->drawPixmap(QPointF(x, y), m_workspaceBgTile);
+                    }
+                }
+            } else {
+                painter->fillRect(rect, m_bgColor);
+            }
+        } else {
+            painter->fillRect(rect, m_bgColor);
+        }
+    } else {
+        const bool useChecker =
+            m_bgPattern == BackgroundPattern::Checkerboard
+            && (!m_bgCheckerWorkspaceOnly || isWorkspaceMode());
+
+        if (!useChecker) {
+            painter->fillRect(rect, m_bgColor);
+        } else {
+            // Checkerboard in scene coordinates so it pans with the view. Cell size is
+            // LOD-snapped so on-screen square size stays in a comfortable range.
+            const QColor a = m_bgColor;
+            const QColor b = m_bgColorAlt.isValid() ? m_bgColorAlt : m_bgColor.lighter(120);
+            fillChecker(a, b);
         }
     }
 

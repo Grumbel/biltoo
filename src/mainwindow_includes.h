@@ -23,6 +23,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QColor>
+#include <QColorDialog>
 #include <QCollator>
 #include <QCursor>
 #include <QDir>

@@ -31,6 +31,27 @@ struct ImageMouseInfo {
 };
 
 /**
+ * Per-Workspace canvas background (project state). When mode is AppDefault,
+ * ImageView draws using application preferences (technical default).
+ */
+enum class WorkspaceBackgroundMode {
+    AppDefault = 0, /**< Preferences / built-in default — not stored as override */
+    Solid = 1,
+    Checkerboard = 2,
+    ImageTile = 3 /**< Tiled image pattern */
+};
+
+struct WorkspaceBackground {
+    WorkspaceBackgroundMode mode = WorkspaceBackgroundMode::AppDefault;
+    QColor color{42, 42, 42};
+    QColor colorAlt{48, 48, 48};
+    /** Absolute path to tile image when mode == ImageTile. */
+    QString imagePath;
+
+    bool isAppDefault() const { return mode == WorkspaceBackgroundMode::AppDefault; }
+};
+
+/**
  * Placement + content appearance for one session image / canvas object.
  * Identity is @a sessionId (not path). Path is the decode source only.
  */

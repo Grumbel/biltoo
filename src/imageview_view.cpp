@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include <QPixmap>
 #include "imageitem.h"
 
 #include <QFileInfo>
@@ -87,6 +88,40 @@ void ImageView::setCheckerboardWorkspaceOnly(bool on)
     }
     m_bgCheckerWorkspaceOnly = on;
     viewport()->update();
+}
+
+void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
+{
+    if (m_workspaceBackground.mode == bg.mode
+        && m_workspaceBackground.color == bg.color
+        && m_workspaceBackground.colorAlt == bg.colorAlt
+        && m_workspaceBackground.imagePath == bg.imagePath) {
+        return;
+    }
+    m_workspaceBackground = bg;
+    if (bg.mode != WorkspaceBackgroundMode::ImageTile
+        || bg.imagePath != m_workspaceBgTilePath) {
+        m_workspaceBgTile = QPixmap();
+        m_workspaceBgTilePath.clear();
+    }
+    if (bg.mode == WorkspaceBackgroundMode::ImageTile && !bg.imagePath.isEmpty()) {
+        if (m_workspaceBgTilePath != bg.imagePath) {
+            QPixmap px(bg.imagePath);
+            if (!px.isNull()) {
+                m_workspaceBgTile = px;
+                m_workspaceBgTilePath = bg.imagePath;
+            }
+        }
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::clearWorkspaceBackground()
+{
+    WorkspaceBackground def;
+    setWorkspaceBackground(def);
 }
 
 qreal ImageView::viewScale() const

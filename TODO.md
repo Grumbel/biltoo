@@ -385,3 +385,11 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   Copy captures path + content + pose; Cut = copy + canvas-only remove (session
   kept, same as Delete); Paste allocates new SessionImageIds, offsets pose by
   (40,40), sets appearance store, places via `addImageForSession` / LoadAdd.
+
+- [x] **Workspace background as project state + toolbar**  
+  Per-Workspace override (`WorkspaceBackground`: AppDefault / Solid /
+  Checkerboard / ImageTile). AppDefault uses Preferences (technical default)
+  and is not written to the project. Toolbar + Workspace menu: Background
+  menu with default / solid / checker / image pattern. Saved as
+  `workspaceBackground` in the project file; restored on load; cleared on New.
+

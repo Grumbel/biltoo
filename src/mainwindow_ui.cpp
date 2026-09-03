@@ -87,6 +87,34 @@ void MainWindow::createActions()
         tr("Workspace: show a paper-sized frame to arrange images for printing"));
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
 
+    m_workspaceBackgroundAct = new QAction(tr("Workspace &Background"), this);
+    m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
+    m_workspaceBackgroundAct->setStatusTip(
+        tr("Choose a custom Workspace canvas background, or use the application default"));
+    m_workspaceBgDefaultAct = new QAction(tr("&Application default"), this);
+    m_workspaceBgDefaultAct->setCheckable(true);
+    m_workspaceBgDefaultAct->setStatusTip(
+        tr("Use the technical / Preferences background (not stored in the project)"));
+    connect(m_workspaceBgDefaultAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundDefault);
+    m_workspaceBgSolidAct = new QAction(tr("&Solid colour…"), this);
+    m_workspaceBgSolidAct->setCheckable(true);
+    connect(m_workspaceBgSolidAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundSolid);
+    m_workspaceBgCheckerAct = new QAction(tr("&Checkerboard…"), this);
+    m_workspaceBgCheckerAct->setCheckable(true);
+    connect(m_workspaceBgCheckerAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundChecker);
+    m_workspaceBgImageAct = new QAction(tr("&Image pattern…"), this);
+    m_workspaceBgImageAct->setCheckable(true);
+    connect(m_workspaceBgImageAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundImage);
+    {
+        auto *bgMenu = new QMenu(this);
+        bgMenu->addAction(m_workspaceBgDefaultAct);
+        bgMenu->addSeparator();
+        bgMenu->addAction(m_workspaceBgSolidAct);
+        bgMenu->addAction(m_workspaceBgCheckerAct);
+        bgMenu->addAction(m_workspaceBgImageAct);
+        m_workspaceBackgroundAct->setMenu(bgMenu);
+    }
+
     m_fitPageGuideAct = new QAction(tr("Fit Page Guide to &Content"), this);
     m_fitPageGuideAct->setIcon(resourceIcon(QStringLiteral("fit-page-guide-content")));
     m_fitPageGuideAct->setStatusTip(
@@ -710,6 +738,7 @@ void MainWindow::createMenus()
     workspaceMenu->addAction(m_toggleLayoutPanelAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_pageGuideAct);
+    workspaceMenu->addAction(m_workspaceBackgroundAct);
     workspaceMenu->addAction(m_fitPageGuideAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_selectToolAct);
@@ -882,6 +911,7 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_pageGuideAct);
+    m_workspaceToolBar->addAction(m_workspaceBackgroundAct);
     m_workspaceToolBar->addAction(m_fitPageGuideAct);
     m_workspaceToolBar->addAction(m_pageSetupAct);
     m_workspaceToolBar->addAction(m_printPreviewAct);

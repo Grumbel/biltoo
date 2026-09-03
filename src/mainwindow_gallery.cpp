@@ -549,7 +549,8 @@ void MainWindow::updateWorkspaceActionVisibility()
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
                          m_resetScaleAct, m_resetRotationAct,
                          m_selectToolAct, m_panToolAct,
-                         m_pageGuideAct, m_fitPageGuideAct}) {
+                         m_pageGuideAct, m_fitPageGuideAct,
+                         m_workspaceBackgroundAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(workspace);
@@ -593,3 +594,107 @@ void MainWindow::updateWorkspaceActionVisibility()
     updateNavigationActions();
 }
 
+
+void MainWindow::syncWorkspaceBackgroundActions()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const WorkspaceBackground wb = m_imageView->workspaceBackground();
+    const auto mode = wb.mode;
+    if (m_workspaceBgDefaultAct) {
+        m_workspaceBgDefaultAct->setChecked(mode == WorkspaceBackgroundMode::AppDefault);
+    }
+    if (m_workspaceBgSolidAct) {
+        m_workspaceBgSolidAct->setChecked(mode == WorkspaceBackgroundMode::Solid);
+    }
+    if (m_workspaceBgCheckerAct) {
+        m_workspaceBgCheckerAct->setChecked(mode == WorkspaceBackgroundMode::Checkerboard);
+    }
+    if (m_workspaceBgImageAct) {
+        m_workspaceBgImageAct->setChecked(mode == WorkspaceBackgroundMode::ImageTile);
+    }
+}
+
+void MainWindow::workspaceBackgroundDefault()
+{
+    if (!m_imageView) {
+        return;
+    }
+    m_imageView->clearWorkspaceBackground();
+    syncWorkspaceBackgroundActions();
+    markWorkspaceDirty();
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Workspace background: application default"), 2500);
+    }
+}
+
+void MainWindow::workspaceBackgroundSolid()
+{
+    if (!m_imageView) {
+        return;
+    }
+    WorkspaceBackground wb = m_imageView->workspaceBackground();
+    QColor start = wb.color.isValid() ? wb.color : m_imageView->backgroundColor();
+    const QColor c = QColorDialog::getColor(start, this, tr("Workspace solid background"));
+    if (!c.isValid()) {
+        syncWorkspaceBackgroundActions();
+        return;
+    }
+    wb.mode = WorkspaceBackgroundMode::Solid;
+    wb.color = c;
+    m_imageView->setWorkspaceBackground(wb);
+    syncWorkspaceBackgroundActions();
+    markWorkspaceDirty();
+}
+
+void MainWindow::workspaceBackgroundChecker()
+{
+    if (!m_imageView) {
+        return;
+    }
+    WorkspaceBackground wb = m_imageView->workspaceBackground();
+    QColor a = wb.color.isValid() ? wb.color : m_imageView->backgroundColor();
+    QColor b = wb.colorAlt.isValid() ? wb.colorAlt : m_imageView->backgroundColorAlt();
+    a = QColorDialog::getColor(a, this, tr("Checkerboard colour A"));
+    if (!a.isValid()) {
+        syncWorkspaceBackgroundActions();
+        return;
+    }
+    b = QColorDialog::getColor(b, this, tr("Checkerboard colour B"));
+    if (!b.isValid()) {
+        syncWorkspaceBackgroundActions();
+        return;
+    }
+    wb.mode = WorkspaceBackgroundMode::Checkerboard;
+    wb.color = a;
+    wb.colorAlt = b;
+    m_imageView->setWorkspaceBackground(wb);
+    syncWorkspaceBackgroundActions();
+    markWorkspaceDirty();
+}
+
+void MainWindow::workspaceBackgroundImage()
+{
+    if (!m_imageView) {
+        return;
+    }
+    WorkspaceBackground wb = m_imageView->workspaceBackground();
+    const QString start = wb.imagePath.isEmpty() ? QDir::homePath() : wb.imagePath;
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Workspace background image"),
+        start,
+        tr("Images (*.png *.jpg *.jpeg *.webp *.bmp *.gif);;All Files (*)"));
+    if (path.isEmpty()) {
+        syncWorkspaceBackgroundActions();
+        return;
+    }
+    wb.mode = WorkspaceBackgroundMode::ImageTile;
+    wb.imagePath = path;
+    m_imageView->setWorkspaceBackground(wb);
+    syncWorkspaceBackgroundActions();
+    markWorkspaceDirty();
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Workspace background: tiled image"), 2500);
+    }
+}

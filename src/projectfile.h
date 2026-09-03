@@ -40,6 +40,9 @@ struct ProjectDocument {
     QVector<ProjectImage> images;
     bool pageGuideVisible = false;
     QSizeF pageGuideSizeMm;
+    /** When hasWorkspaceBackground, workspaceBackground is project-owned. */
+    bool hasWorkspaceBackground = false;
+    WorkspaceBackground workspaceBackground;
 };
 
 namespace ProjectFile {

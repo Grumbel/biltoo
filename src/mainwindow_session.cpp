@@ -414,6 +414,7 @@ void MainWindow::newSession()
         // Drop all canvas objects and classic path so Image mode does not
         // reload the previous file after the mode switch.
         m_imageView->clearWorkspace();
+        m_imageView->clearWorkspaceBackground();
         if (!m_imageView->isImageMode()) {
             m_imageView->setViewMode(ImageView::ViewMode::Image);
         }
@@ -1798,6 +1799,14 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
         im.appearance.path = path;
         im.appearance.sessionId = id;
         doc.images.append(im);
+    }
+
+    if (m_imageView) {
+        const WorkspaceBackground wb = m_imageView->workspaceBackground();
+        if (!wb.isAppDefault()) {
+            doc.hasWorkspaceBackground = true;
+            doc.workspaceBackground = wb;
+        }
     }
 
     return ProjectFile::save(projectPath, doc, error);

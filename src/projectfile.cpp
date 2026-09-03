@@ -235,6 +235,37 @@ bool save(const QString &projectPath, const ProjectDocument &doc, QString *error
         root.insert(QStringLiteral("pageGuide"), pg);
     }
 
+    if (doc.hasWorkspaceBackground && !doc.workspaceBackground.isAppDefault()) {
+        QJsonObject wb;
+        const WorkspaceBackground &b = doc.workspaceBackground;
+        QString modeStr = QStringLiteral("solid");
+        switch (b.mode) {
+        case WorkspaceBackgroundMode::AppDefault:
+            modeStr = QStringLiteral("default");
+            break;
+        case WorkspaceBackgroundMode::Checkerboard:
+            modeStr = QStringLiteral("checkerboard");
+            break;
+        case WorkspaceBackgroundMode::ImageTile:
+            modeStr = QStringLiteral("image");
+            break;
+        case WorkspaceBackgroundMode::Solid:
+            modeStr = QStringLiteral("solid");
+            break;
+        }
+        wb.insert(QStringLiteral("mode"), modeStr);
+        if (b.color.isValid()) {
+            wb.insert(QStringLiteral("color"), b.color.name(QColor::HexRgb));
+        }
+        if (b.colorAlt.isValid()) {
+            wb.insert(QStringLiteral("colorAlt"), b.colorAlt.name(QColor::HexRgb));
+        }
+        if (!b.imagePath.isEmpty()) {
+            wb.insert(QStringLiteral("image"), b.imagePath);
+        }
+        root.insert(QStringLiteral("workspaceBackground"), wb);
+    }
+
     const QJsonDocument jd(root);
     QFile f(projectPath);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
@@ -311,6 +342,31 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error)
             doc->pageGuideSizeMm = QSizeF(pg.value(QStringLiteral("widthMm")).toDouble(),
                                           pg.value(QStringLiteral("heightMm")).toDouble());
         }
+    }
+    doc->hasWorkspaceBackground = false;
+    doc->workspaceBackground = WorkspaceBackground{};
+    if (root.contains(QStringLiteral("workspaceBackground"))) {
+        const QJsonObject wb = root.value(QStringLiteral("workspaceBackground")).toObject();
+        WorkspaceBackground b;
+        const QString modeStr = wb.value(QStringLiteral("mode")).toString(QStringLiteral("default"));
+        if (modeStr == QLatin1String("solid")) {
+            b.mode = WorkspaceBackgroundMode::Solid;
+        } else if (modeStr == QLatin1String("checkerboard")) {
+            b.mode = WorkspaceBackgroundMode::Checkerboard;
+        } else if (modeStr == QLatin1String("image")) {
+            b.mode = WorkspaceBackgroundMode::ImageTile;
+        } else {
+            b.mode = WorkspaceBackgroundMode::AppDefault;
+        }
+        if (wb.contains(QStringLiteral("color"))) {
+            b.color = QColor(wb.value(QStringLiteral("color")).toString());
+        }
+        if (wb.contains(QStringLiteral("colorAlt"))) {
+            b.colorAlt = QColor(wb.value(QStringLiteral("colorAlt")).toString());
+        }
+        b.imagePath = wb.value(QStringLiteral("image")).toString();
+        doc->workspaceBackground = b;
+        doc->hasWorkspaceBackground = !b.isAppDefault();
     }
     return true;
 }

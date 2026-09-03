@@ -13,6 +13,7 @@
 #include "gallerylayout.h"
 
 #include <QColor>
+#include <QPixmap>
 #include <QElapsedTimer>
 #include <QGraphicsView>
 #include <QHash>
@@ -393,6 +394,14 @@ public:
     /** When true, checkerboard is used only in Workspace; other modes stay solid. */
     void setCheckerboardWorkspaceOnly(bool on);
     bool checkerboardWorkspaceOnly() const { return m_bgCheckerWorkspaceOnly; }
+
+    /**
+     * Per-Workspace background override (project state). AppDefault uses the
+     * preference colours/pattern (technical default) instead of a custom look.
+     */
+    void setWorkspaceBackground(const WorkspaceBackground &bg);
+    WorkspaceBackground workspaceBackground() const { return m_workspaceBackground; }
+    void clearWorkspaceBackground(); /**< AppDefault */
 
     /**
      * Session position for status line and HUD (index/total, 1-based display).
@@ -818,6 +827,9 @@ private:
     QColor m_bgColorAlt{48, 48, 48};
     BackgroundPattern m_bgPattern = BackgroundPattern::Checkerboard;
     bool m_bgCheckerWorkspaceOnly = true;
+    WorkspaceBackground m_workspaceBackground;
+    QPixmap m_workspaceBgTile; /**< Cached tile for ImageTile mode */
+    QString m_workspaceBgTilePath; /**< Path loaded into m_workspaceBgTile */
     bool m_hudVisible = false;
     int m_hudFontPointSize = 11;
     QColor m_hudTextColor{255, 255, 255};
