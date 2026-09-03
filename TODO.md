@@ -894,6 +894,10 @@ and sheared tiles follow the selection AABB.
 - Session open clears Workspace live/stash/durable snapshot (only .qimgview
   projects restore Workspace arrangement)
 
+### Fixed in `qimgview-105`
+- Paste registers pathOrder/sessionIdOrder in addImageForSession so LoadAdd
+  creates Workspace tiles (not filmstrip-only rows with stale thumbs)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -1394,3 +1398,28 @@ alignment) that does not drag/drop correctly.
 
 - [x] PORTABILITY.md present
 - [x] next **105**
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-105-paste-pathorder`
+
+**Bug:** Paste always appends filmstrip rows but often creates no Workspace tile
+(every other time / path already on canvas). Thumbs stay full-frame because
+`sessionAppearanceChanged` never fires without a tile. Drag works (session id
+is valid).
+
+**Cause:** `addImageForSession(path, id, index)` (paste path) schedules LoadAdd
+but does **not** append `m_pathOrder` / `m_sessionIdOrder`. LoadAdd sets
+`wanted = pathOrderCount`; when the path is already represented, `have ==
+wanted` and no new item is created while the PendingSessionBind is left
+hanging.
+
+**Fix:** Register pathOrder + sessionIdOrder in session-bound `addImageForSession`
+(same as `placeOrMoveImageAt`).
+
+### Done criteria
+
+- [x] Paste always places a canvas tile for each new session id
+- [x] next **106**
+
+**Next bundle:** `qimgview-106-…` — layout button / Workspace→Gallery if still open.

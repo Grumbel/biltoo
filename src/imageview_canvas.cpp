@@ -355,6 +355,26 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
         if (sessionIndex >= 0) {
             m_pendingSessionIndexByPath.insert(path, sessionIndex);
         }
+        // Paste / membership must grow pathOrder so LoadAdd's wanted count
+        // includes this session image. Without this, a path already on the
+        // canvas left have==pathOrderCount and never created the new tile
+        // (filmstrip row only, wrong thumb until appearance emit).
+        if (sessionId != kInvalidSessionImageId) {
+            bool alreadyOrdered = false;
+            for (SessionImageId id : m_sessionIdOrder) {
+                if (id == sessionId) {
+                    alreadyOrdered = true;
+                    break;
+                }
+            }
+            if (!alreadyOrdered) {
+                m_pathOrder.append(path);
+                m_sessionIdOrder.append(sessionId);
+            }
+        } else {
+            m_pathOrder.append(path);
+            m_sessionIdOrder.append(kInvalidSessionImageId);
+        }
     }
     scheduleImageLoad(path, LoadAdd);
     emit statusChanged();

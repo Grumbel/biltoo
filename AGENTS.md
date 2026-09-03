@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-104-portability-doc”**
-([PORTABILITY.md](PORTABILITY.md) Linux→Windows notes). Next bundle number: **105**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-105-paste-pathorder”**
+(paste pathOrder so Workspace tiles are created). Next bundle number: **106**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
