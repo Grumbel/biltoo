@@ -1817,3 +1817,21 @@ restore both on leave.
 - [x] Document; next **122**
 
 **Next bundle:** `qimgview-122-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-122-fade-black-fix`
+
+**Bug:** Fade through black faded the *old* pixmap opacity during phase 1, so
+the already-loaded next image showed through before the screen was black.
+
+**Fix:** Phase 1 keeps the old frame at full opacity and only raises a black
+overlay; phase 2 fades that black away over the new frame.
+
+### Done criteria
+
+- [x] No premature image swap during fade-to-black
+- [x] Document; next **123**
+
+**Next bundle:** `qimgview-123-…` — further polish as needed.

@@ -136,17 +136,18 @@ void ImageView::paintEvent(QPaintEvent *event)
             painter.drawPixmap(vr, m_slideshowTransitionPixmap);
             painter.setOpacity(1.0);
         } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
+            // Two-phase: hold the old frame until fully black, then reveal the
+            // new frame. Fading the old pixmap itself would show the already-
+            // loaded next image underneath (looks like a premature switch).
             if (t < 0.5) {
-                // Fade previous frame out under rising black.
-                const qreal u = t * 2.0;
-                painter.setOpacity(1.0 - u);
+                const qreal u = t * 2.0; // 0 → 1 black coverage
+                painter.setOpacity(1.0);
                 painter.drawPixmap(vr, m_slideshowTransitionPixmap);
                 painter.setOpacity(u);
                 painter.fillRect(vr, Qt::black);
                 painter.setOpacity(1.0);
             } else {
-                // Fade black out to reveal the new frame.
-                const qreal u = (t - 0.5) * 2.0;
+                const qreal u = (t - 0.5) * 2.0; // 1 → 0 black coverage
                 painter.setOpacity(1.0 - u);
                 painter.fillRect(vr, Qt::black);
                 painter.setOpacity(1.0);
