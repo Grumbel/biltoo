@@ -1915,6 +1915,42 @@ void MainWindow::saveProjectAs()
     }
 }
 
+bool MainWindow::openProjectFile(const QString &path, QString *error)
+{
+    if (path.isEmpty()) {
+        if (error) {
+            *error = tr("No project path given.");
+        }
+        return false;
+    }
+    if (!QFileInfo::exists(path)) {
+        if (error) {
+            *error = tr("Project file does not exist: %1").arg(path);
+        }
+        return false;
+    }
+    if (!QFileInfo(path).isFile()) {
+        if (error) {
+            *error = tr("Not a project file: %1").arg(path);
+        }
+        return false;
+    }
+    QString err;
+    if (!loadProjectFromPath(path, &err)) {
+        if (error) {
+            *error = err.isEmpty() ? tr("Failed to load project: %1").arg(path) : err;
+        }
+        return false;
+    }
+    m_projectPath = QFileInfo(path).absoluteFilePath();
+    rememberRecentProject(m_projectPath);
+    m_workspaceDirty = false;
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Project loaded."), 3000);
+    }
+    return true;
+}
+
 void MainWindow::openProject()
 {
     const QString path = QFileDialog::getOpenFileName(
@@ -1925,15 +1961,11 @@ void MainWindow::openProject()
         return;
     }
     QString err;
-    if (!loadProjectFromPath(path, &err)) {
+    if (!openProjectFile(path, &err)) {
         if (statusBar()) {
             statusBar()->showMessage(err, 8000);
         }
         return;
-    }
-    m_projectPath = path;
-    if (statusBar()) {
-        statusBar()->showMessage(tr("Project loaded."), 3000);
     }
 }
 
@@ -2333,26 +2365,16 @@ void MainWindow::openRecentProject()
     if (path.isEmpty()) {
         return;
     }
-    if (!QFileInfo::exists(path)) {
-        m_recentProjects.removeAll(path);
-        rebuildRecentProjectsMenu();
-        if (statusBar()) {
-            statusBar()->showMessage(tr("Project no longer exists: %1").arg(path), 5000);
-        }
-        return;
-    }
     QString err;
-    if (!loadProjectFromPath(path, &err)) {
+    if (!openProjectFile(path, &err)) {
+        if (!QFileInfo::exists(path)) {
+            m_recentProjects.removeAll(path);
+            rebuildRecentProjectsMenu();
+        }
         if (statusBar()) {
             statusBar()->showMessage(err, 8000);
         }
         return;
-    }
-    m_projectPath = path;
-    rememberRecentProject(path);
-    m_workspaceDirty = false;
-    if (statusBar()) {
-        statusBar()->showMessage(tr("Project loaded."), 3000);
     }
 }
 

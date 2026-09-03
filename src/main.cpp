@@ -9,6 +9,8 @@
 #include <QGuiApplication>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
+#include <QDebug>
+#include <QFileInfo>
 #include <QIcon>
 #include <QLibraryInfo>
 #include <QLocale>
@@ -64,8 +66,9 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     parser.addPositionalArgument(
         QStringLiteral("files"),
-        QCoreApplication::translate("main", "Image files or directories to open"),
-        QStringLiteral("[file|dir...]"));
+        QCoreApplication::translate("main",
+            "Image files, directories, or a .qimgview project to open"),
+        QStringLiteral("[file|dir|project...]"));
 
     // --- Input / session ---
     QCommandLineOption recursiveOption(
@@ -194,16 +197,55 @@ int main(int argc, char *argv[])
     }
 
     if (!files.isEmpty()) {
-        window.loadFiles(files, startAt);
-        if (cliMode.compare(QLatin1String("gallery"), Qt::CaseInsensitive) == 0) {
-            window.applyCliViewMode(QStringLiteral("gallery"));
-        } else if (cliMode.compare(QLatin1String("workspace"), Qt::CaseInsensitive) == 0
-                   || cliMode.compare(QLatin1String("work"), Qt::CaseInsensitive) == 0) {
-            // Ensure full session on canvas if load raced preference/mode.
-            window.applyCliViewMode(QStringLiteral("workspace"));
+        // .qimgview projects are not images — open via project load, not expandPaths.
+        QStringList projectArgs;
+        QStringList otherArgs;
+        for (const QString &arg : files) {
+            const QFileInfo fi(arg);
+            if (fi.suffix().compare(QLatin1String("qimgview"), Qt::CaseInsensitive) == 0) {
+                projectArgs.append(arg);
+            } else {
+                otherArgs.append(arg);
+            }
         }
-        if (parser.isSet(slideshowOption)) {
-            window.startSlideshow();
+
+        if (!projectArgs.isEmpty()) {
+            if (projectArgs.size() > 1) {
+                qWarning().noquote()
+                    << QCoreApplication::translate(
+                           "main",
+                           "Multiple project files given; only the first will be opened: %1")
+                           .arg(projectArgs.first());
+            }
+            if (!otherArgs.isEmpty()) {
+                qWarning().noquote()
+                    << QCoreApplication::translate(
+                           "main",
+                           "Ignoring non-project arguments when opening a project.");
+            }
+            QString err;
+            if (!window.openProjectFile(projectArgs.first(), &err)) {
+                qWarning().noquote() << err;
+                if (window.statusBar()) {
+                    window.statusBar()->showMessage(err, 10000);
+                }
+            }
+            // Project file already restores its stored mode; CLI --mode still applies after.
+            if (!cliMode.isEmpty()) {
+                window.applyCliViewMode(cliMode);
+            }
+        } else {
+            window.loadFiles(files, startAt);
+            if (cliMode.compare(QLatin1String("gallery"), Qt::CaseInsensitive) == 0) {
+                window.applyCliViewMode(QStringLiteral("gallery"));
+            } else if (cliMode.compare(QLatin1String("workspace"), Qt::CaseInsensitive) == 0
+                       || cliMode.compare(QLatin1String("work"), Qt::CaseInsensitive) == 0) {
+                // Ensure full session on canvas if load raced preference/mode.
+                window.applyCliViewMode(QStringLiteral("workspace"));
+            }
+            if (parser.isSet(slideshowOption)) {
+                window.startSlideshow();
+            }
         }
     } else if (!cliMode.isEmpty()) {
         window.applyCliViewMode(cliMode);
