@@ -1604,3 +1604,23 @@ crop-frame pen). No code changes.
 - [x] Document; next **113**
 
 **Next bundle:** `qimgview-113-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-113-thumb-letterbox-bg`
+
+**Bug:** With **Crop Thumbnails to Square** unchecked, filmstrip thumbs keep
+their aspect ratio but sit on a solid dark square (`QColor(40,40,40)` in
+`prepareThumbnailFromImage`). That plate should not appear — letterbox areas
+must be transparent so the ThumbnailBar / list background shows through.
+
+**Fix:** Fill the intermediate cell with `Qt::transparent` instead of grey.
+No layout/API change.
+
+### Done criteria
+
+- [x] Non-square thumbs have transparent letterbox
+- [x] Document; next **114**
+
+**Next bundle:** `qimgview-114-…` — further polish as needed.

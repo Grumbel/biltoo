@@ -462,13 +462,15 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         return square;
     }
     // Fit full image into the square cell (letterbox) so aspect ratio is visible.
+    // Letterbox must be transparent — a solid plate looked like a forced square
+    // frame and did not match the ThumbnailBar background.
     QImage fitted = image.scaled(maxSize, maxSize, Qt::KeepAspectRatio,
                                  Qt::SmoothTransformation);
     if (fitted.isNull()) {
         return QImage();
     }
     QImage cell(maxSize, maxSize, QImage::Format_ARGB32_Premultiplied);
-    cell.fill(QColor(40, 40, 40));
+    cell.fill(Qt::transparent);
     QPainter painter(&cell);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     const int ox = (maxSize - fitted.width()) / 2;
