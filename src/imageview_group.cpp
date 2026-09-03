@@ -107,46 +107,56 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     qreal sx = 1.0;
     qreal sy = 1.0;
     const qreal eps = 1.0;
+    const bool edgeHandle = (m_groupHandle == 1 || m_groupHandle == 3
+                             || m_groupHandle == 5 || m_groupHandle == 7);
+    const bool cornerHandle = (m_groupHandle == 0 || m_groupHandle == 2
+                               || m_groupHandle == 4 || m_groupHandle == 6);
     switch (m_groupHandle) {
     case 0: // TL
         sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
         sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
         break;
-    case 1: // T
+    case 1: // T — vertical stretch of the selection AABB
         sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
-        sx = sy;
+        sx = 1.0;
         break;
     case 2: // TR
         sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
         sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
         break;
-    case 3: // R
+    case 3: // R — horizontal stretch
         sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
-        sy = sx;
+        sy = 1.0;
         break;
     case 4: // BR
         sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
         sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
         break;
-    case 5: // B
+    case 5: // B — vertical stretch
         sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
-        sx = sy;
+        sx = 1.0;
         break;
     case 6: // BL
         sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
         sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
         break;
-    case 7: // L
+    case 7: // L — horizontal stretch
         sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
-        sy = sx;
+        sy = 1.0;
         break;
     default:
         break;
     }
-    // Default: uniform group scale. Shift → free scene axes via conjugating
-    // S_scene · L and re-decomposing to R·H·S (exact for parallelogram frames).
-    const bool freeAxes = mods & Qt::ShiftModifier;
-    if (!freeAxes) {
+
+    // Modifier semantics (match drawing-app usual, inverse of prior uniform default):
+    //   Edge handles:   default = axis stretch (H or V); Shift = lock aspect (uniform)
+    //   Corner handles: default = uniform;               Shift = free H/V axes
+    const bool shift = mods & Qt::ShiftModifier;
+    if (edgeHandle && shift) {
+        const qreal s = (m_groupHandle == 1 || m_groupHandle == 5) ? sy : sx;
+        sx = s;
+        sy = s;
+    } else if (cornerHandle && !shift) {
         const qreal s = (qAbs(sx) + qAbs(sy)) * 0.5;
         if (s > 1e-9) {
             sx = s;
@@ -160,6 +170,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         return;
     }
 
+    const bool anisotropic = qAbs(sx - sy) > 1e-6;
     QTransform sceneScale;
     sceneScale.scale(sx, sy);
 
@@ -178,15 +189,15 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
 
         const qreal baseX = st.scale > 0 ? st.scale : 1.0;
         const qreal baseY = st.scaleY > 0 ? st.scaleY : baseX;
-        if (!freeAxes) {
-            // Uniform: only scales change; rotation and shear stay from press.
+        if (!anisotropic) {
+            // Uniform scene scale: scales only; rotation and shear stay from press.
             item->setItemScale(baseX * sx, baseY * sy);
             item->setItemShear(st.shear);
             item->setItemRotation(st.rotation);
             continue;
         }
-        // Free axes: L' = S_scene · L (scene stretch about anchor), then
-        // re-decompose so each parallelogram tracks the AABB stretch.
+        // Anisotropic (edge stretch or Shift+corner): L' = S_scene · L, then
+        // re-decompose so rotated/sheared tiles track the AABB stretch.
         const QTransform L = PlacementLinear::make(baseX, baseY, st.shear, st.rotation);
         const QTransform Lp = sceneScale * L;
         qreal nx = baseX;

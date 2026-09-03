@@ -808,3 +808,20 @@ Status bar shows Shear when |k| > 0.001 on the selected Workspace item.
 - Status shows Shear; projectfile tests include shear
 - HANDLES.md documents full contract
 
+
+---
+
+## Bundle `qimgview-085` — group edge scale is H/V anisotropic
+
+**Before:** edge handles forced `sx = sy` and non-Shift averaged everything to
+uniform, so left/right/top/bottom group grips never did pure H or V stretch.
+
+**After:**
+| Handle | Default | Shift |
+|--------|---------|-------|
+| Edge T/B/L/R | Axis stretch (sy or sx only) | Uniform (lock aspect) |
+| Corner | Uniform | Free H/V axes |
+
+Anisotropic paths use `S_scene · L` + `PlacementLinear::decompose` so rotated
+and sheared tiles follow the selection AABB.
+
