@@ -260,11 +260,11 @@ unbound and edits will not propagate correctly in Workspace).
 - Content appearance (crop, content flips/turns, colour grade) is keyed by **SessionImageId**.
 - Workspace canvas membership is a **subset** of the session (pose present ⇒ on canvas).
 - Workspace background **AppDefault** = Preferences; custom modes are project state.
-- Background image tiles outside the project dir are copied to `<stem>.assets/` on save; unused `bg-*` files are pruned on later saves.
+- Background image tiles are referenced only in the project JSON (path, optional pathRelative, imageSha256) — no side `.assets/` folder.
 
 ### Residual risks
 
 - `applyContentToItem` still assumes full-source pixels for geometry ops (callers reload).
-- Background assets are not referenced from the main `assets[]` array (side folder only).
+- Background image is path+checksum in `workspaceBackground` JSON (not copied).
 - No compile verification in the agent sandbox (no Qt6 dev packages).
 

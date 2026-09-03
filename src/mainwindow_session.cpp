@@ -1982,92 +1982,30 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
     if (m_imageView) {
         WorkspaceBackground wb = m_imageView->workspaceBackground();
         if (!wb.isAppDefault()) {
-            // Prefer portable path next to the project when possible.
+            // JSON only: absolute path, optional path relative to the project
+            // file, and SHA-256 checksum. Never copy tile bytes into a side folder.
             if (wb.mode == WorkspaceBackgroundMode::ImageTile
                 && !wb.imagePath.isEmpty()) {
                 const QFileInfo fi(wb.imagePath);
-                QString abs = fi.canonicalFilePath().isEmpty()
+                const QString abs = fi.canonicalFilePath().isEmpty()
                     ? fi.absoluteFilePath()
                     : fi.canonicalFilePath();
-                const QDir projDir = QFileInfo(projectPath).absoluteDir();
-                QString rel = projDir.relativeFilePath(abs);
-                // Embed a copy under <projectstem>.assets/ when the tile is outside
-                // the project directory so the project stays self-contained.
-                if (rel.startsWith(QLatin1String("..")) || QFileInfo(rel).isAbsolute()) {
-                    const QString sha = ProjectFile::fileSha256(abs);
-                    const QString stem = QFileInfo(projectPath).completeBaseName();
-                    const QString assetsName = stem + QStringLiteral(".assets");
-                    QDir assetsDir(projDir.filePath(assetsName));
-                    if (!assetsDir.exists()) {
-                        projDir.mkpath(assetsName);
-                    }
-                    QString ext = QFileInfo(abs).suffix().toLower();
-                    if (ext.isEmpty()) {
-                        ext = QStringLiteral("png");
-                    }
-                    const QString shortSha = sha.left(12);
-                    const QString destName =
-                        QStringLiteral("bg-%1.%2").arg(shortSha, ext);
-                    const QString destAbs = assetsDir.filePath(destName);
-                    if (!QFileInfo::exists(destAbs)) {
-                        QFile::copy(abs, destAbs);
-                    }
-                    if (QFileInfo::exists(destAbs)) {
-                        abs = QFileInfo(destAbs).canonicalFilePath().isEmpty()
-                            ? destAbs
-                            : QFileInfo(destAbs).canonicalFilePath();
-                        rel = projDir.relativeFilePath(abs);
-                    }
-                    wb.imageSha256 = sha.isEmpty() ? ProjectFile::fileSha256(abs) : sha;
-                } else {
-                    wb.imageSha256 = ProjectFile::fileSha256(abs);
-                }
                 wb.imagePath = abs;
-                if (!rel.startsWith(QLatin1String(".."))) {
+                const QDir projDir = QFileInfo(projectPath).absoluteDir();
+                const QString rel = projDir.relativeFilePath(abs);
+                if (!rel.startsWith(QLatin1String("..")) && !QFileInfo(rel).isAbsolute()) {
                     wb.imagePathRelative = rel;
                 } else {
                     wb.imagePathRelative.clear();
                 }
+                wb.imageSha256 = ProjectFile::fileSha256(abs);
             }
             doc.hasWorkspaceBackground = true;
             doc.workspaceBackground = wb;
         }
     }
 
-    if (!ProjectFile::save(projectPath, doc, error)) {
-        return false;
-    }
-
-    // Drop unused embedded background tiles (bg-<sha>.*) left from earlier saves.
-    if (doc.hasWorkspaceBackground
-        || QFileInfo(projectPath).exists()) {
-        const QString stem = QFileInfo(projectPath).completeBaseName();
-        const QDir projDir = QFileInfo(projectPath).absoluteDir();
-        const QString assetsName = stem + QStringLiteral(".assets");
-        QDir assetsDir(projDir.filePath(assetsName));
-        if (assetsDir.exists()) {
-            QString keepPrefix;
-            if (doc.hasWorkspaceBackground
-                && doc.workspaceBackground.mode == WorkspaceBackgroundMode::ImageTile
-                && !doc.workspaceBackground.imageSha256.isEmpty()) {
-                keepPrefix = QStringLiteral("bg-%1")
-                    .arg(doc.workspaceBackground.imageSha256.left(12));
-            }
-            const QFileInfoList files = assetsDir.entryInfoList(
-                QStringList{QStringLiteral("bg-*")},
-                QDir::Files | QDir::NoDotAndDotDot);
-            for (const QFileInfo &fi : files) {
-                if (keepPrefix.isEmpty() || !fi.fileName().startsWith(keepPrefix)) {
-                    QFile::remove(fi.absoluteFilePath());
-                }
-            }
-            // Remove empty assets directory.
-            if (assetsDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot).isEmpty()) {
-                projDir.rmdir(assetsName);
-            }
-        }
-    }
-    return true;
+    return ProjectFile::save(projectPath, doc, error);
 }
 
 bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)

@@ -416,8 +416,8 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   - Image-tile LOD when zoomed out  
   - On save, copy external background tiles into `<project>.assets/`
 
-- [x] **Background assets hygiene**  
+- [x] **Background references are JSON-only**  
   Suppress dialog `backgroundChanged` during programmatic `setBackground`.  
-  After project save, prune unused `bg-*` files under `<stem>.assets/` and remove
-  the directory when empty.
+  Workspace background images are stored as path / pathRelative / imageSha256 in
+  the project file — no `.assets/` copy or prune.
 
