@@ -184,11 +184,9 @@ void WorkspaceController::restoreStashedItems()
         if (!app) {
             continue;
         }
-        // Colour grade is non-destructive on the item; always re-sync from the
-        // session-image store (may have been edited in Image mode while stashed).
-        item->setColorAdjustments(app->colorAdjust);
         // Pixels are usually already updated by commitItemSessionEdit while
-        // stashed. Rebuild only when size/metadata disagree with slot state.
+        // stashed. Rebuild when size/metadata disagree; always re-apply content
+        // appearance (crop / bakes / colour grade) from the session store.
         const QSize want = app->hasCrop ? app->cropRect.size() : QSize();
         const bool sizeMismatch = app->hasCrop && item->imageSize() != want;
         const bool missing = item->sourceImage().isNull();
@@ -196,21 +194,16 @@ void WorkspaceController::restoreStashedItems()
             item->contentHFlip() != app->contentHFlip
             || item->contentVFlip() != app->contentVFlip
             || item->sessionHasCrop() != app->hasCrop;
-        if (!(sizeMismatch || missing || flagsMismatch)) {
-            continue;
+        if (sizeMismatch || missing || flagsMismatch) {
+            if (app->hasCrop || app->contentQuarterTurns != 0
+                || app->contentHFlip || app->contentVFlip || missing) {
+                const QImage full = ImageLoader::load(item->path());
+                if (!full.isNull()) {
+                    item->setSourceImage(full);
+                }
+            }
         }
-        if (!app->hasCrop && app->contentQuarterTurns == 0
-            && !app->contentHFlip && !app->contentVFlip) {
-            continue;
-        }
-        const QImage full = ImageLoader::load(item->path());
-        if (!full.isNull()) {
-            item->setSourceImage(full);
-            m_view->applySessionCrop(item, *app);
-            m_view->applyContentBakes(item, *app);
-            item->setSessionCrop(app->hasCrop, app->cropRect);
-            item->setColorAdjustments(app->colorAdjust);
-        }
+        SessionAppearance::applyContentToItem(item, *app);
     }
     m_view->clearFitFillModes();
     // Order: zoom → expand sceneRect for the new scale → pan to saved centre.

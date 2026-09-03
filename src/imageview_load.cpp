@@ -54,10 +54,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
             }
         }
         if (app) {
-            applySessionCrop(item, *app);
-            applyContentBakes(item, *app);
-            item->setSessionCrop(app->hasCrop, app->cropRect);
-            item->setColorAdjustments(app->colorAdjust);
+            SessionAppearance::applyContentToItem(item, *app);
         }
     }
     m_scene->addItem(item);
@@ -273,12 +270,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (state.sessionIndex >= 0) {
             item->setSessionIndex(state.sessionIndex);
         }
-        if (app.hasCrop) {
-            applySessionCrop(item, app);
-        }
-        applyContentBakes(item, app);
-        item->setSessionCrop(app.hasCrop, app.cropRect);
-        item->setColorAdjustments(app.colorAdjust);
+        SessionAppearance::applyContentToItem(item, app);
         applyState(item, app);
         if (m_layoutMode != LayoutMode::FreeForm
             && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
@@ -406,6 +398,13 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             }
         }
         applyStoredAppearance(item);
+        // Keep filmstrip overrides in sync (crop / grade) after drop or add.
+        if (haveBound && bound.id != kInvalidSessionImageId) {
+            const QImage appearance = sessionAppearanceImage(item);
+            if (!appearance.isNull()) {
+                emit sessionAppearanceChanged(bound.id, item->path(), appearance);
+            }
+        }
         if (isGalleryMode()) {
             item->setItemRotation(0.0);
             item->setItemHFlip(false);

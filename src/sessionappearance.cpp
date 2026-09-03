@@ -117,6 +117,34 @@ void applyCrop(ImageItem *item, const WorkspaceItemState &state)
     item->cropToLocalRect(local, QColor(0, 0, 0, 0), state.cropRotation);
 }
 
+bool hasContentAppearance(const WorkspaceItemState &state)
+{
+    return state.hasCrop || state.contentHFlip || state.contentVFlip
+           || state.contentQuarterTurns != 0 || !state.colorAdjust.isIdentity();
+}
+
+void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    // 1) Crop from current source (full on-disk decode or prior source).
+    applyCrop(item, state);
+    // 2) Content bakes — order matches live bakeFlip / bakeRotate90.
+    if (state.contentHFlip || state.contentVFlip) {
+        item->bakeFlip(state.contentHFlip, state.contentVFlip);
+    }
+    if (state.contentQuarterTurns != 0) {
+        item->bakeRotate90(state.contentQuarterTurns);
+    }
+    // 3) Chrome / session meta for crop + content orientation.
+    item->setContentHFlip(state.contentHFlip);
+    item->setContentVFlip(state.contentVFlip);
+    item->setSessionCrop(state.hasCrop, state.cropRect);
+    // 4) Non-destructive colour grade (display path in ImageItem).
+    item->setColorAdjustments(state.colorAdjust);
+}
+
 } // namespace SessionAppearance
 
 const WorkspaceItemState *SessionAppearanceStore::get(SessionImageId id) const

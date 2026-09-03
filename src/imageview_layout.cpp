@@ -906,11 +906,24 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
         || fromId == toId) {
         return;
     }
-    const WorkspaceItemState *src = m_appearance.get(fromId);
-    if (!src) {
-        return;
+    // Prefer the session store; fall back to a live donor tile so drop-duplicate
+    // from a graded filmstrip row still carries crop / bakes / colour grade.
+    WorkspaceItemState dst;
+    if (const WorkspaceItemState *src = m_appearance.get(fromId)) {
+        dst = *src;
+    } else {
+        ImageItem *donor = findItemBySessionId(fromId);
+        if (!donor && isImageMode()) {
+            donor = primaryItem();
+            if (donor && donor->sessionId() != fromId) {
+                donor = nullptr;
+            }
+        }
+        if (!donor) {
+            return;
+        }
+        dst = captureState(donor);
     }
-    WorkspaceItemState dst = *src;
     dst.sessionId = toId;
     dst.pos = QPointF();
     dst.scale = 1.0;

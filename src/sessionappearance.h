@@ -54,11 +54,32 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns);
  */
 void applyCrop(ImageItem *item, const WorkspaceItemState &state);
 
+/**
+ * Single entry point for session-image *content* appearance on a decoded item.
+ *
+ * Order (must stay consistent everywhere):
+ *   1. Crop (from full on-disk / current source pixels)
+ *   2. Content flips + quarter turns (baked into source pixels)
+ *   3. Session crop / content-flip chrome flags
+ *   4. Non-destructive colour grade (display only)
+ *
+ * Does **not** touch placement (pos / scale / free tilt / opacity / z / item flips).
+ * Callers must have already set full (or post-decode) source pixels on @p item.
+ */
+void applyContentToItem(ImageItem *item, const WorkspaceItemState &state);
+
+/** True when any content field differs from identity (crop / bake / grade). */
+bool hasContentAppearance(const WorkspaceItemState &state);
+
 } // namespace SessionAppearance
 
 /**
- * Per–session-image content appearance (crop, content flips, quarter turns).
- * Identity is SessionImageId — never path (IDENTITY.md).
+ * Per–session-image content appearance (crop, content flips, quarter turns,
+ * colour grade). Identity is SessionImageId — never path (IDENTITY.md).
+ *
+ * Apply content onto a decoded ImageItem only via
+ * SessionAppearance::applyContentToItem — do not fork crop/bake/grade order
+ * at call sites.
  *
  * Path-keyed maps on ImageView remain legacy fallbacks for unbound tiles only.
  */

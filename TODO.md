@@ -363,3 +363,11 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   Fixed: clear prior workspace (incl. durable snapshot + appearance store), enter
   Workspace, `addImageForSession` only for pose entries; LoadAdd applies placement
   from the appearance store. Gallery path unchanged (full session).
+
+- [x] **Central content appearance apply (drop/thumb grade + less fragility)**  
+  Added `SessionAppearance::applyContentToItem` — single order for crop → content
+  bakes → chrome flags → colour grade. `applyStoredAppearance`, createItemFromImage
+  (Image mode), LoadRestore, content reset, and Workspace restore all call it.
+  `copySessionAppearance` falls back to a live donor when the store has no entry
+  (filmstrip drop-duplicate). LoadAdd emits `sessionAppearanceChanged` after apply
+  so thumbs stay graded. Grade-only rebind on already-decoded tiles applies in place.

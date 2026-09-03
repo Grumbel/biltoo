@@ -160,6 +160,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     continue;
                 }
                 const WorkspaceItemState &app = *appPtr;
+                // Crop / content bakes need a full-source redecode; colour grade
+                // alone can be applied in place via the central content path.
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
                     existing->clearDecodedPixels();
@@ -176,6 +178,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     } else {
                         scheduleImageLoad(path, LoadAdd);
                     }
+                } else if (SessionAppearance::hasContentAppearance(app)) {
+                    SessionAppearance::applyContentToItem(existing, app);
                 }
             }
             continue;

@@ -542,9 +542,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     }
     item->setItemHFlip(false);
     item->setItemVFlip(false);
-    applySessionCrop(item, app);
-    applyContentBakes(item, app);
-    item->setSessionCrop(app.hasCrop, app.cropRect);
+    SessionAppearance::applyContentToItem(item, app);
     if (isImageMode()) {
         m_fitMode = true;
         fitItem(item, currentFitAspectMode());
@@ -636,16 +634,8 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     if (!app) {
         return;
     }
-    if (!app->hasCrop && !app->contentHFlip && !app->contentVFlip
-        && app->contentQuarterTurns == 0) {
-        item->setSessionCrop(false, QRect());
-        item->setColorAdjustments(app->colorAdjust);
-        return;
-    }
-    applySessionCrop(item, *app);
-    applyContentBakes(item, *app);
-    item->setSessionCrop(app->hasCrop, app->cropRect);
-    item->setColorAdjustments(app->colorAdjust);
+    // Single content path: crop → content bakes → chrome flags → colour grade.
+    SessionAppearance::applyContentToItem(item, *app);
 }
 
 void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &state)
