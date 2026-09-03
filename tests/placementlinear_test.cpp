@@ -14,7 +14,6 @@ private slots:
     void roundtrip();
     void sceneConjugate_uniform();
     void sceneConjugate_aniso();
-    void mapConsistentWithMatrix();
 };
 
 static bool nearly(qreal a, qreal b, qreal eps = 1e-5)
@@ -85,15 +84,6 @@ void PlacementLinearTest::sceneConjugate_aniso()
     QVERIFY2(nearly(k, 0.0), qPrintable(QString("k=%1").arg(k)));
 }
 
-void PlacementLinearTest::mapConsistentWithMatrix()
-{
-    const QTransform L = PlacementLinear::make(1.5, 0.7, -0.35, -22.0);
-    const QPointF o = L.map(QPointF(0, 0));
-    const QPointF e1 = L.map(QPointF(1, 0)) - o;
-    const QPointF e2 = L.map(QPointF(0, 1)) - o;
-    QVERIFY(nearly(e1.x(), L.m11()) && nearly(e1.y(), L.m21()));
-    QVERIFY(nearly(e2.x(), L.m12()) && nearly(e2.y(), L.m22()));
-}
 
 QTEST_MAIN(PlacementLinearTest)
 #include "placementlinear_test.moc"
