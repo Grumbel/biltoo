@@ -47,6 +47,8 @@ struct WorkspaceBackground {
     QColor colorAlt{48, 48, 48};
     /** Absolute path to tile image when mode == ImageTile. */
     QString imagePath;
+    /** Optional path relative to the project file (portable projects). */
+    QString imagePathRelative;
 
     bool isAppDefault() const { return mode == WorkspaceBackgroundMode::AppDefault; }
 };

@@ -95,7 +95,8 @@ void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
     if (m_workspaceBackground.mode == bg.mode
         && m_workspaceBackground.color == bg.color
         && m_workspaceBackground.colorAlt == bg.colorAlt
-        && m_workspaceBackground.imagePath == bg.imagePath) {
+        && m_workspaceBackground.imagePath == bg.imagePath
+        && m_workspaceBackground.imagePathRelative == bg.imagePathRelative) {
         return;
     }
     m_workspaceBackground = bg;

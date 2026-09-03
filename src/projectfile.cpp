@@ -263,6 +263,9 @@ bool save(const QString &projectPath, const ProjectDocument &doc, QString *error
         if (!b.imagePath.isEmpty()) {
             wb.insert(QStringLiteral("image"), b.imagePath);
         }
+        if (!b.imagePathRelative.isEmpty()) {
+            wb.insert(QStringLiteral("imageRelative"), b.imagePathRelative);
+        }
         root.insert(QStringLiteral("workspaceBackground"), wb);
     }
 
@@ -365,10 +368,38 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error)
             b.colorAlt = QColor(wb.value(QStringLiteral("colorAlt")).toString());
         }
         b.imagePath = wb.value(QStringLiteral("image")).toString();
+        b.imagePathRelative = wb.value(QStringLiteral("imageRelative")).toString();
         doc->workspaceBackground = b;
         doc->hasWorkspaceBackground = !b.isAppDefault();
     }
     return true;
+}
+
+QString resolveWorkspaceBackgroundImage(const WorkspaceBackground &bg,
+                                        const QString &projectFilePath)
+{
+    auto tryFile = [](const QString &candidate) -> QString {
+        if (candidate.isEmpty()) {
+            return {};
+        }
+        const QFileInfo fi(candidate);
+        if (!fi.isFile()) {
+            return {};
+        }
+        const QString abs = fi.canonicalFilePath().isEmpty() ? fi.absoluteFilePath()
+                                                             : fi.canonicalFilePath();
+        return abs;
+    };
+    if (QString r = tryFile(bg.imagePath); !r.isEmpty()) {
+        return r;
+    }
+    if (!bg.imagePathRelative.isEmpty() && !projectFilePath.isEmpty()) {
+        const QDir projDir(QFileInfo(projectFilePath).absoluteDir());
+        if (QString r = tryFile(projDir.absoluteFilePath(bg.imagePathRelative)); !r.isEmpty()) {
+            return r;
+        }
+    }
+    return {};
 }
 
 } // namespace ProjectFile

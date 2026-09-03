@@ -1802,8 +1802,24 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
     }
 
     if (m_imageView) {
-        const WorkspaceBackground wb = m_imageView->workspaceBackground();
+        WorkspaceBackground wb = m_imageView->workspaceBackground();
         if (!wb.isAppDefault()) {
+            // Prefer portable path next to the project when possible.
+            if (wb.mode == WorkspaceBackgroundMode::ImageTile
+                && !wb.imagePath.isEmpty()) {
+                const QFileInfo fi(wb.imagePath);
+                const QString abs = fi.canonicalFilePath().isEmpty()
+                    ? fi.absoluteFilePath()
+                    : fi.canonicalFilePath();
+                wb.imagePath = abs;
+                const QDir projDir = QFileInfo(projectPath).absoluteDir();
+                const QString rel = projDir.relativeFilePath(abs);
+                if (!rel.startsWith(QLatin1String(".."))) {
+                    wb.imagePathRelative = rel;
+                } else {
+                    wb.imagePathRelative.clear();
+                }
+            }
             doc.hasWorkspaceBackground = true;
             doc.workspaceBackground = wb;
         }
@@ -1941,6 +1957,19 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
             if (pair.first != kInvalidSessionImageId) {
                 m_imageView->setSessionAppearance(pair.first, pair.second);
             }
+        }
+        if (doc.hasWorkspaceBackground) {
+            WorkspaceBackground wb = doc.workspaceBackground;
+            if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
+                const QString resolved = ProjectFile::resolveWorkspaceBackgroundImage(
+                    wb, projectPath);
+                if (!resolved.isEmpty()) {
+                    wb.imagePath = resolved;
+                }
+            }
+            m_imageView->setWorkspaceBackground(wb);
+        } else {
+            m_imageView->clearWorkspaceBackground();
         }
     }
 

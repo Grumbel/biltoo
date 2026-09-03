@@ -393,3 +393,8 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   menu with default / solid / checker / image pattern. Saved as
   `workspaceBackground` in the project file; restored on load; cleared on New.
 
+- [x] **Workspace background image portability**  
+  Project stores `image` + `imageRelative` (when under project dir). Load resolves
+  absolute then relative via `resolveWorkspaceBackgroundImage`. Toolbar uses
+  InstantPopup for the Background menu button.
+

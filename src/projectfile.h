@@ -58,6 +58,10 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error = nul
 WorkspaceItemState appearanceFromJson(const QJsonObject &o);
 QJsonObject appearanceToJson(const WorkspaceItemState &s, bool includePose);
 
+/** Resolve background image path (absolute, then relative to project). */
+QString resolveWorkspaceBackgroundImage(const WorkspaceBackground &bg,
+                                       const QString &projectFilePath);
+
 } // namespace ProjectFile
 
 #endif // PROJECTFILE_H

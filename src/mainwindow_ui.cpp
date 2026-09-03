@@ -911,7 +911,13 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_pageGuideAct);
-    m_workspaceToolBar->addAction(m_workspaceBackgroundAct);
+    {
+        auto *bgBtn = new QToolButton(m_workspaceToolBar);
+        bgBtn->setDefaultAction(m_workspaceBackgroundAct);
+        bgBtn->setPopupMode(QToolButton::InstantPopup);
+        bgBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        m_workspaceToolBar->addWidget(bgBtn);
+    }
     m_workspaceToolBar->addAction(m_fitPageGuideAct);
     m_workspaceToolBar->addAction(m_pageSetupAct);
     m_workspaceToolBar->addAction(m_printPreviewAct);
