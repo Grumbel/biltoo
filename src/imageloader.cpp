@@ -145,8 +145,9 @@ QImage loadArchiveRef(const QString &path, int maxEdge)
     QImage image = decodeFromBytes(bytes, suffix, maxEdge);
     if (image.isNull()) {
         const QByteArray head = bytes.left(12).toHex(' ');
-        qWarning("ImageLoader: decode failed for %s (%d bytes, suffix=%s, head=%s)",
-                 qPrintable(path), bytes.size(), qPrintable(suffix), head.constData());
+        qWarning("ImageLoader: decode failed for %s (%lld bytes, suffix=%s, head=%s)",
+                 qPrintable(path), static_cast<qlonglong>(bytes.size()),
+                 qPrintable(suffix), head.constData());
     }
     return image;
 }
