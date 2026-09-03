@@ -1267,6 +1267,16 @@ void MainWindow::readSettings()
     if (!state.isEmpty()) {
         restoreState(state);
     }
+    // Adjustments is opt-in: restoreState may re-show it from an old windowState.
+    // Prefer an explicit setting (default: hidden).
+    if (m_adjustmentsDock) {
+        const bool showAdj =
+            settings.value(QStringLiteral("adjustmentsPanelVisible"), false).toBool();
+        m_adjustmentsDock->setVisible(showAdj);
+        if (m_toggleAdjustmentsAct) {
+            m_toggleAdjustmentsAct->setChecked(showAdj);
+        }
+    }
     // Per-mode chrome preferences (defaults: Workspace thumbs on, Gallery off,
     // Layout panel off). restoreState may have re-shown docks — Layout is forced
     // through updateLayoutPanelForMode after mode is applied below.
@@ -1484,6 +1494,10 @@ void MainWindow::writeSettings()
     settings.endArray();
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
     settings.setValue(QStringLiteral("windowState"), saveState());
+    if (m_adjustmentsDock) {
+        settings.setValue(QStringLiteral("adjustmentsPanelVisible"),
+                          m_adjustmentsDock->isVisible());
+    }
     settings.setValue(QStringLiteral("toolBarVisible"),
                       isFullScreen() ? m_toolBarVisibleBeforeFullscreen
                                      : m_toolBar->isVisible());
