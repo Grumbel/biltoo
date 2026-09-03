@@ -649,3 +649,29 @@ pkg-config prints “Package fftw3 was not found” several times while probing
 sysprof-capture-4 for glib. Fix: add `fftw` to `default.nix` buildInputs so
 `fftw3.pc` is visible (we do not link FFTW ourselves). Do **not** hide the
 messages with env hacks — supply the missing private dep.
+
+---
+
+## Bundle `qimgview-069` — project load: intermittent first-image placement
+
+**Symptom:** Loading a `.qimgview` project sometimes places the first session
+image on the Workspace canvas and sometimes does not.
+
+**Root cause (leftover path):**
+`ImageView::loadImage` in multi-item mode with an empty canvas schedules
+`LoadReplace`, and `onImageLoaded` **seeds** that path as a live tile
+(“Workspace with empty canvas: seed with navigated image”). That path is
+meant for session navigation in an empty Workspace, not project restore.
+
+`loadProjectFromPath` for Image-mode projects called `loadImage(paths[0])`
+without ensuring Image mode first. With Preferences “Start in workspace mode”
+(or any prior Workspace mode), that seeded an unbound first tile. Without it,
+Image mode showed the classic single image — intermittent by preference/mode.
+
+**Also fixed:** pose/appearance rows are keyed by index through id
+finalization so images with missing/invalid stored ids still get a pose after
+`allocId()`. Gallery-mode projects enter Gallery explicitly.
+
+**Fix:** Enter the project’s target mode first; place only `hasWorkspacePose`
+rows via `addImageForSession`; never call `loadImage` while still in
+Workspace/Gallery during project load.
