@@ -1620,7 +1620,7 @@ QByteArray encodeWorkspaceClipboard(const QList<WorkspaceItemState> &items)
 {
     QJsonArray arr;
     for (const WorkspaceItemState &s : items) {
-        QJsonObject o = appearanceToJson(s, /*includePose=*/true);
+        QJsonObject o = ProjectFile::appearanceToJson(s, /*includePose=*/true);
         o.insert(QStringLiteral("path"), s.path);
         arr.append(o);
     }
@@ -1649,7 +1649,7 @@ QList<WorkspaceItemState> decodeWorkspaceClipboard(const QByteArray &bytes)
             continue;
         }
         const QJsonObject o = v.toObject();
-        WorkspaceItemState s = appearanceFromJson(o);
+        WorkspaceItemState s = ProjectFile::appearanceFromJson(o);
         s.path = o.value(QStringLiteral("path")).toString();
         if (!s.path.isEmpty()) {
             out.append(s);
@@ -2027,7 +2027,6 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
                     ? fi.absoluteFilePath()
                     : fi.canonicalFilePath();
                 wb.imagePath = abs;
-                const QDir projDir = QFileInfo(projectPath).absoluteDir();
                 const QString rel = projDir.relativeFilePath(abs);
                 if (!rel.startsWith(QLatin1String("..")) && !QFileInfo(rel).isAbsolute()) {
                     wb.imagePathRelative = rel;
