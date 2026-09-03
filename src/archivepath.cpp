@@ -132,4 +132,22 @@ bool isArchiveFile(const QString &path)
     return false;
 }
 
+QString canonicalSessionPath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    if (isArchiveRef(path)) {
+        const Ref r = parse(path);
+        if (!r.valid) {
+            return path;
+        }
+        // makeRef re-absolutizes the archive file path without cleanPath on the marker.
+        return makeRef(r.archivePath, r.memberPath);
+    }
+    const QFileInfo info(path);
+    const QString resolved = info.canonicalFilePath();
+    return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
+}
+
 } // namespace ArchivePath

@@ -49,6 +49,13 @@ QString memberPath(const QString &path);
 /** Display name for UI (member basename, or full path if not a ref). */
 QString displayName(const QString &path);
 
+/**
+ * Absolute form suitable for session/history storage.
+ * Archive refs keep the //archive: marker (never pass them through
+ * QFileInfo/QDir::cleanPath — that collapses // and breaks the ref).
+ */
+QString canonicalSessionPath(const QString &path);
+
 /** True if the path looks like a supported archive container (by suffix). */
 bool isArchiveFile(const QString &path);
 

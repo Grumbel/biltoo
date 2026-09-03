@@ -1410,24 +1410,38 @@ QString MainWindow::historyEntryLabel(const QStringList &paths) const
     if (paths.isEmpty()) {
         return tr("(empty)");
     }
-    const QFileInfo first(paths.first());
-    const QString dir = first.absolutePath();
-    bool sameDir = true;
+    auto containerDir = [](const QString &p) -> QString {
+        if (ArchivePath::isArchiveRef(p)) {
+            const ArchivePath::Ref r = ArchivePath::parse(p);
+            return r.valid ? QFileInfo(r.archivePath).absolutePath() : QString();
+        }
+        return QFileInfo(p).absolutePath();
+    };
+    const QString dir = containerDir(paths.first());
+    bool sameDir = !dir.isEmpty();
     for (const QString &p : paths) {
-        if (QFileInfo(p).absolutePath() != dir) {
+        if (containerDir(p) != dir) {
             sameDir = false;
             break;
         }
     }
     if (paths.size() == 1) {
-        return first.fileName();
+        return ArchivePath::displayName(paths.first());
     }
     if (sameDir) {
+        // Prefer archive filename when all members share one container.
+        if (ArchivePath::isArchiveRef(paths.first())) {
+            const ArchivePath::Ref r = ArchivePath::parse(paths.first());
+            if (r.valid) {
+                return tr("%1 — %n image(s)", "history entry", paths.size())
+                    .arg(QFileInfo(r.archivePath).fileName());
+            }
+        }
         const QString folder = QFileInfo(dir).fileName();
         return tr("%1 — %n image(s)", "history entry", paths.size()).arg(folder);
     }
     return tr("%1 (+%n more)", "history entry", paths.size() - 1)
-        .arg(first.fileName());
+        .arg(ArchivePath::displayName(paths.first()));
 }
 
 void MainWindow::rememberSessionHistory(const QStringList &paths)
@@ -1438,7 +1452,9 @@ void MainWindow::rememberSessionHistory(const QStringList &paths)
     QStringList normalized;
     normalized.reserve(paths.size());
     for (const QString &p : paths) {
-        const QString abs = QFileInfo(p).absoluteFilePath();
+        // Never run archive refs through QFileInfo::absoluteFilePath — QDir::cleanPath
+        // collapses "//archive:" into "/archive:" and breaks the member path.
+        const QString abs = ArchivePath::canonicalSessionPath(p);
         if (!abs.isEmpty()) {
             normalized.append(abs);
         }
