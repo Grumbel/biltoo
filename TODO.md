@@ -549,3 +549,63 @@ Author on all commits: `Ingo Ruhnke <grumbel@gmail.com>` with
 - Prefer shallow checkout + rsync into artifacts; writing artifacts is slow.
 - No feature rollback without discussion; no quick hacks — fix the model.
 
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-065-…`
+
+**Task:** Verify Load/Save of cropping, workspace positions, colour grade, and
+related project state; strengthen unit tests; hook tests into `nix flake check`.
+
+### Findings (current tip `d394337`)
+
+- `tests/projectfile_roundtrip.cpp` already round-trips crop rect/source/rotation,
+  content flips/quarter-turns, and workspace pose (x/y/scale/rotation/opacity/z/flips).
+- **Gaps:**
+  1. `appearanceEqual` does **not** compare `ColorAdjustments` (brightness/contrast/
+     saturation/hue/gamma). Colour grade can drift through save/load without failing
+     the semantic test.
+  2. `documentsEqual` does **not** compare `hasWorkspaceBackground` /
+     `workspaceBackground` (mode, colors, image path/relative/sha256).
+  3. No dedicated slot that forces non-identity colour grade + non-default
+     workspace background through full save → load → equality.
+  4. `nix flake check` only builds the package (`checks.qimgview = qimgview`);
+     the Qt Test executable is built only when `Qt6Test` is found at configure
+     time and is **not** run as a flake check.
+
+### Plan
+
+1. Extend `appearanceEqual` to require colour-grade field equality (ints +
+   near-equal gamma).
+2. Extend `documentsEqual` to require workspace-background equality (mode,
+   colors, paths, sha256) when either side claims a project-owned background.
+3. Add test slots:
+   - `appearanceJson_colorGrade` — non-identity grade through
+     `appearanceToJson` / `appearanceFromJson`.
+   - `project_saveLoad_colorAndBackground` — full document with crop + pose +
+     colour grade + solid/checkerboard/image-tile background fields.
+4. Wire CMake/Nix so `nix flake check` runs `projectfile-roundtrip` (and keep
+   the existing `--help` smoke test). Prefer a dedicated `checks.projectfile-test`
+   derivation (or package `doCheck` + `ctest`) that depends on Qt6 Test without
+   requiring a full GUI runtime.
+5. Document completion in this section and bump handoff tip / next bundle to 066.
+
+### Out of scope for this bundle
+
+- Full GUI integration tests for Image-mode crop of duplicate slot B.
+- Archive member + background-image file resolution on disk (unit test stays
+  path/JSON only unless a tiny fixture is added later).
+
+### Done in this bundle (`qimgview-065-…`)
+
+- [x] `appearanceEqual` compares `ColorAdjustments` (brightness/contrast/sat/hue/gamma)
+- [x] `documentsEqual` compares project-owned `WorkspaceBackground`
+- [x] New slots: `appearanceJson_colorGrade`, `project_saveLoad_colorAndBackground`
+      (crop + pose + grade + checkerboard/solid/AppDefault backgrounds; JSON stable
+      with grade + solid bg)
+- [x] `default.nix`: `doCheck = true` + `QT_QPA_PLATFORM=offscreen` so
+      `nix flake check` / package check runs `ctest` (projectfile-roundtrip + help)
+- [x] Local verification: all 8 Qt Test cases PASS under Qt 6.4.2
+
+**Next bundle:** `qimgview-066-…` — remaining known gaps (duplicate Image-mode crop
+sync, Grid Crop, archive regression pass, etc.).

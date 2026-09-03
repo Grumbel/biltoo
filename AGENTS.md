@@ -10,7 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff (archives, appearance, export, LoadAdd): **TODO.md → “Handoff (2026-09-03)”**. Next bundle number: **065**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-065”**
+(project load/save tests + flake check). Next bundle number: **066**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -24,7 +25,7 @@ in the chrome/identity series, residual risks, and how to continue.
 - Primary build system: **Nix flake** + CMake + Qt6.
   - `nix develop` – development shell
   - `nix build` / `nix run` – package and run
-  - `nix flake check` – builds the package (compile gate)
+  - `nix flake check` – builds the package and runs CMake tests (compile + unit gate)
 - Manual: standard out-of-source CMake against Qt6 Widgets.
 - **Sandbox / agent host without Nix:** see [AGENT-ENV.md](AGENT-ENV.md)
   (Ubuntu 24.04 packages, Qt 6.4.2, bootstrap commands, Qt 6.9 `flipped` caveat).
