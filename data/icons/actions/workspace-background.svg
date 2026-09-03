@@ -1,0 +1,18 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Workspace background: canvas frame, checkerboard, colour chips -->
+  <rect x="2" y="2" width="20" height="20" rx="2.2" fill="#3d3846"/>
+  <!-- 2×2 checker (reads at 16–24px) -->
+  <rect x="4" y="4" width="7" height="7" rx="0.6" fill="#c0bfbc"/>
+  <rect x="13" y="4" width="7" height="7" rx="0.6" fill="#77767b"/>
+  <rect x="4" y="13" width="7" height="7" rx="0.6" fill="#77767b"/>
+  <rect x="13" y="13" width="7" height="7" rx="0.6" fill="#c0bfbc"/>
+  <!-- Colour mode chips -->
+  <circle cx="7.5" cy="7.5" r="2.4" fill="#e01b24"/>
+  <circle cx="16.5" cy="7.5" r="2.4" fill="#f6d32d"/>
+  <circle cx="7.5" cy="16.5" r="2.4" fill="#2ec27e"/>
+  <circle cx="16.5" cy="16.5" r="2.4" fill="#3584e4"/>
+</svg>

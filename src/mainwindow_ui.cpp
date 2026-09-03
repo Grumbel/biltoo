@@ -88,7 +88,7 @@ void MainWindow::createActions()
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
 
     m_workspaceBackgroundAct = new QAction(tr("Workspace &Background…"), this);
-    m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
+    m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("workspace-background")));
     m_workspaceBackgroundAct->setStatusTip(
         tr("Choose a custom Workspace canvas background"));
     connect(m_workspaceBackgroundAct, &QAction::triggered, this,
