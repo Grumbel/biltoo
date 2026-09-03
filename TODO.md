@@ -421,3 +421,9 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   Workspace background images are stored as path / pathRelative / imageSha256 in
   the project file — no `.assets/` copy or prune.
 
+- [x] **Load images from archives (libarchive, in-memory)**  
+  Path syntax: `file:///path/to/archive.tar//archive:member/path.jpg`  
+  (one level only). Opening a `.zip`/`.tar*`/etc expands to member refs.  
+  Decode via libarchive → QByteArray → QImageReader; no disk extraction.  
+  Requires libarchive at build time (`QIMGVIEW_HAVE_ARCHIVE`).
+

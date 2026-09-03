@@ -8,7 +8,10 @@
 #endif
 
 #include "imageloader.h"
+#include "archivepath.h"
+#include "archivereader.h"
 
+#include <QBuffer>
 #include <QFile>
 #include <QFileInfo>
 #include <QSize>
@@ -16,6 +19,45 @@
 
 namespace ImageLoader {
 namespace {
+
+QImage decodeFromBytes(const QByteArray &bytes, const QString &formatHint, int maxEdge)
+{
+    if (bytes.isEmpty()) {
+        return {};
+    }
+    QByteArray data = bytes;
+    QBuffer buffer(&data);
+    if (!buffer.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    QImageReader reader(&buffer);
+    reader.setAutoTransform(true);
+    if (!formatHint.isEmpty()) {
+        reader.setFormat(formatHint.toLatin1());
+    }
+    if (maxEdge > 0) {
+        const QSize size = reader.size();
+        if (size.isValid()) {
+            QSize scaled = size;
+            scaled.scale(maxEdge, maxEdge, Qt::KeepAspectRatio);
+            if (scaled != size) {
+                reader.setScaledSize(scaled);
+            }
+        }
+    }
+    return reader.read();
+}
+
+QImage loadArchiveRef(const QString &path, int maxEdge)
+{
+    const ArchivePath::Ref ref = ArchivePath::parse(path);
+    if (!ref.valid || !ArchiveReader::isAvailable()) {
+        return {};
+    }
+    const QByteArray bytes = ArchiveReader::readMember(ref.archivePath, ref.memberPath);
+    const QString suffix = QFileInfo(ref.memberPath).suffix().toLower();
+    return decodeFromBytes(bytes, suffix, maxEdge);
+}
 
 QImage loadWithQt(const QString &path, int maxEdge)
 {
@@ -233,6 +275,29 @@ QSize probeSizeWithVips(const QString &path)
 
 QSize probeSize(const QString &path)
 {
+    if (ArchivePath::isArchiveRef(path)) {
+        const ArchivePath::Ref ref = ArchivePath::parse(path);
+        if (!ref.valid || !ArchiveReader::isAvailable()) {
+            return {};
+        }
+        const QByteArray bytes = ArchiveReader::readMember(ref.archivePath, ref.memberPath);
+        if (bytes.isEmpty()) {
+            return {};
+        }
+        QByteArray data = bytes;
+        QBuffer buffer(&data);
+        if (!buffer.open(QIODevice::ReadOnly)) {
+            return {};
+        }
+        QImageReader reader(&buffer);
+        reader.setAutoTransform(true);
+        const QString suffix = QFileInfo(ref.memberPath).suffix().toLower();
+        if (!suffix.isEmpty()) {
+            reader.setFormat(suffix.toLatin1());
+        }
+        const QSize sz = reader.size();
+        return sz.isValid() ? sz : QSize();
+    }
     if (path.isEmpty() || !QFile::exists(path)) {
         return {};
     }
@@ -270,6 +335,9 @@ bool hasVips()
 
 QImage load(const QString &path)
 {
+    if (ArchivePath::isArchiveRef(path)) {
+        return loadArchiveRef(path, 0);
+    }
     QImage image = loadWithQt(path, 0);
     if (!image.isNull()) {
         return image;
@@ -285,6 +353,9 @@ QImage loadThumbnail(const QString &path, int maxEdge)
 {
     if (maxEdge <= 0) {
         return load(path);
+    }
+    if (ArchivePath::isArchiveRef(path)) {
+        return loadArchiveRef(path, maxEdge);
     }
 
     QImage image = loadWithQt(path, maxEdge);
@@ -333,6 +404,17 @@ QStringList imageSuffixes()
 
 bool isImageFile(const QString &path)
 {
+    if (ArchivePath::isArchiveRef(path)) {
+        const ArchivePath::Ref ref = ArchivePath::parse(path);
+        if (!ref.valid) {
+            return false;
+        }
+        const QString suffix = QFileInfo(ref.memberPath).suffix().toLower();
+        if (suffix.isEmpty()) {
+            return false;
+        }
+        return imageSuffixes().contains(suffix);
+    }
     const QString suffix = QFileInfo(path).suffix().toLower();
     if (suffix.isEmpty()) {
         return false;

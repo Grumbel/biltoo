@@ -3,6 +3,8 @@
 
 #include "mainwindow_includes.h"
 #include "projectfile.h"
+#include "archivepath.h"
+#include "archivereader.h"
 #include "workspacebackgrounddialog.h"
 #include "imageitem.h"
 
@@ -225,6 +227,16 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
 
     QStringList images;
     for (const QString &path : paths) {
+        // Already an archive member reference — keep as-is when valid.
+        if (ArchivePath::isArchiveRef(path)) {
+            if (isImageFile(path)) {
+                const ArchivePath::Ref ref = ArchivePath::parse(path);
+                if (ref.valid) {
+                    images.append(ArchivePath::makeRef(ref.archivePath, ref.memberPath));
+                }
+            }
+            continue;
+        }
         const QFileInfo info(path);
         if (info.isDir()) {
             QDir::Filters filters = QDir::Files | QDir::Readable | QDir::NoDotAndDotDot;
@@ -234,13 +246,18 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             QDirIterator it(path, filters, flags);
             while (it.hasNext()) {
                 const QString full = it.next();
-                if (isImageFile(full)) {
+                if (ArchivePath::isArchiveFile(full) && ArchiveReader::isAvailable()) {
+                    images.append(ArchiveReader::expandArchiveToImageRefs(full));
+                } else if (isImageFile(full)) {
                     const QString c = canonicalImage(full);
                     if (!c.isEmpty()) {
                         images.append(c);
                     }
                 }
             }
+        } else if (info.isFile() && ArchivePath::isArchiveFile(path)
+                   && ArchiveReader::isAvailable()) {
+            images.append(ArchiveReader::expandArchiveToImageRefs(path));
         } else if (info.isFile() && isImageFile(path)) {
             const QString c = canonicalImage(path);
             if (!c.isEmpty()) {

@@ -72,6 +72,10 @@ add_executable(qimgview
   src/imageitem.h
   src/imageloader.cpp
   src/imageloader.h
+  src/archivepath.cpp
+  src/archivepath.h
+  src/archivereader.cpp
+  src/archivereader.h
   src/thumbnailbar.cpp
   src/thumbnailbar.h
   src/preferencesdialog.cpp
@@ -158,6 +162,15 @@ if(PkgConfig_FOUND)
     message(STATUS "libexiv2 found — full Exif/IPTC/XMP metadata enabled")
   else()
     message(STATUS "libexiv2 not found — using Qt image plugin metadata only")
+  endif()
+
+  pkg_check_modules(LIBARCHIVE IMPORTED_TARGET libarchive)
+  if(LIBARCHIVE_FOUND)
+    target_link_libraries(qimgview PRIVATE PkgConfig::LIBARCHIVE)
+    target_compile_definitions(qimgview PRIVATE QIMGVIEW_HAVE_ARCHIVE=1)
+    message(STATUS "libarchive found — in-memory archive image loading enabled")
+  else()
+    message(STATUS "libarchive not found — archive paths disabled")
   endif()
 
   # gio-unix provides GDesktopAppInfo (gdesktopappinfo.h); pulls in gio-2.0

@@ -8,6 +8,7 @@
 , exiv2
 , glib
 , libsysprof-capture
+, libarchive
 , kimageformats
 , version ? "0.1.0-dev"
 }:
@@ -33,6 +34,7 @@ stdenv.mkDerivation (finalAttrs: {
     # glib Requires.private: sysprof-capture-4 — needed so pkg-config probes of
     # vips / gio-unix-2.0 do not spam "Package sysprof-capture-4 was not found".
     libsysprof-capture
+    libarchive
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats
   ];
