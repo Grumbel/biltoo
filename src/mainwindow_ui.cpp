@@ -108,10 +108,10 @@ void MainWindow::createActions()
     connect(m_fitPageGuideAct, &QAction::triggered, this, &MainWindow::fitPageGuideToContent);
 
     m_quitAct = new QAction(tr("&Quit"), this);
-    // Plain Q (GNOME2-style); Ctrl+Q remains available via standard Quit on some platforms.
-    m_quitAct->setShortcuts({QKeySequence(Qt::Key_Q), QKeySequence::Quit});
+    // Standard Quit only (Ctrl+Q / platform); bare Q was too easy to hit by accident.
+    m_quitAct->setShortcuts(QKeySequence::Quit);
     m_quitAct->setIcon(themeIcon(QStringLiteral("application-exit"), QStyle::SP_DialogCloseButton));
-    m_quitAct->setStatusTip(tr("Quit QImgView (prompts if the Workspace has unsaved images)"));
+    m_quitAct->setStatusTip(tr("Quit QImgView (Ctrl+Q; prompts if the Workspace has unsaved images)"));
     // Only closeEvent confirms unsaved Workspace — calling confirm here and
     // then close() would show the dialog twice (Discard leaves dirty true).
     connect(m_quitAct, &QAction::triggered, this, &QWidget::close);
@@ -318,7 +318,7 @@ void MainWindow::createActions()
 
     m_layoutSideBySideAct = new QAction(tr("Layout &Horizontal"), this);
     m_layoutSideBySideAct->setCheckable(true);
-    m_layoutSideBySideAct->setShortcut(Qt::CTRL | Qt::Key_Y);
+    // No Ctrl+Y: that chord is Redo on Windows; use Layout toolbar / Gallery menu.
     m_layoutSideBySideAct->setIcon(resourceIcon(QStringLiteral("gallery-side-by-side")));
     m_layoutSideBySideAct->setStatusTip(
         tr("Gallery: horizontal strip (fit height, scroll sideways)"));

@@ -867,7 +867,8 @@ void MainWindow::showKeyboardShortcuts()
         "Arrow keys — spatial focus among tiles</p>"
         "<p><b>Files</b><br/>"
         "Ctrl+O — open · Ctrl+Shift+A — add · Ctrl+Shift+O — open project<br/>"
-        "Ctrl+S / Ctrl+Shift+S — save / save project as</p>"));
+        "Ctrl+S / Ctrl+Shift+S — save / save project as<br/>"
+        "Ctrl+Q — quit</p>"));
     box.setStandardButtons(QMessageBox::Close);
     box.button(QMessageBox::Close)->setText(tr("&Close"));
     box.setDefaultButton(QMessageBox::Close);

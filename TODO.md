@@ -848,6 +848,10 @@ and sheared tiles follow the selection AABB.
 - Workspace vertical toolbar: drop Page Setup / Print Preview / Export PNG /
   Export PDF (remain under File); strip stays select/pan/guides/background/layout
 
+### Fixed in `qimgview-094`
+- Quit: Ctrl+Q only (bare Q removed); Layout Horizontal no longer uses Ctrl+Y
+  (avoids Windows Redo clash); F1 lists Ctrl+Q
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -859,9 +863,9 @@ and sheared tiles follow the selection AABB.
   group starts unchecked until user picks one — OK, but Free Form is Workspace-only).
 
 ### Shortcuts / discoverability
-- [ ] Bare **Q** quits (no Ctrl) — easy mis-press; prefer Ctrl+Q only.
+- [x] Bare **Q** quits (no Ctrl) — easy mis-press; prefer Ctrl+Q only.
 - [ ] Bare **R** rotates — fine for a viewer; document that Reload is F5.
-- [ ] **Ctrl+Y** = Layout Horizontal (on Windows Ctrl+Y is often Redo) — consider
+- [x] **Ctrl+Y** = Layout Horizontal (on Windows Ctrl+Y is often Redo) — consider
   dropping or using a non-conflicting chord.
 - [ ] Alt+[ / ] shear vs [ / ] slideshow — OK (modifiers differ); ensure focus is
   not in a spinbox when testing.
@@ -1028,3 +1032,34 @@ background/layout.
 
 **Next bundle:** `qimgview-094-…` — shortcut polish (bare Q, Ctrl+Y), or
 identity residual (Image-mode crop of duplicate slot B).
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-094-shortcut-polish`
+
+**Goal:** Reduce accidental quit and platform Redo conflict.
+
+### Scope
+
+1. **Quit:** drop bare **Q**; keep only `QKeySequence::Quit` (Ctrl+Q / platform
+   standard). Update the comment and status tip if needed.
+2. **Layout Horizontal:** remove **Ctrl+Y** so it does not fight Windows-style
+   Redo (`QKeySequence::Redo` often includes Ctrl+Y). Layout remains available
+   from the Layout toolbar popup and Gallery / Image menus.
+3. **F1 help:** mention Ctrl+Q under Files if not already present.
+
+### Out of scope
+
+- Bare **R** (rotate) — intentional for a viewer; Reload stays F5
+- Shear shortcuts
+- Identity residual (duplicate Image-mode crop sync)
+- Grid Crop re-enable
+
+### Done criteria
+
+- [x] Bare Q no longer quits
+- [x] Ctrl+Y no longer switches Layout Horizontal
+- [x] Document completion; next bundle **095**
+
+**Next bundle:** `qimgview-095-…` — identity residual (Image-mode crop of
+duplicate slot B), mode enablement audit, or remaining polish.
