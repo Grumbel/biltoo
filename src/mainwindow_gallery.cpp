@@ -48,6 +48,18 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
     m_imageView->enterGallery(layout);
     populateGalleryCanvas();
 
+    syncGalleryLayoutUi(layout);
+    updateMasonryCountControl();
+    updateWorkspaceActionVisibility();
+}
+
+void MainWindow::goToGalleryCurrentLayout()
+{
+    enterGalleryMode(m_galleryReturnLayout);
+}
+
+void MainWindow::syncGalleryLayoutUi(ImageView::LayoutMode layout)
+{
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
                          m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
                          m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct}) {
@@ -87,8 +99,22 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
     if (check) {
         check->setChecked(true);
     }
-    updateMasonryCountControl();
-    updateWorkspaceActionVisibility();
+
+    if (!m_galleryLayoutToolbarAct) {
+        return;
+    }
+    // Combo face: current layout icon; primary click is still "Go to Gallery".
+    if (check && !check->icon().isNull()) {
+        m_galleryLayoutToolbarAct->setIcon(check->icon());
+    } else {
+        m_galleryLayoutToolbarAct->setIcon(resourceIcon(QStringLiteral("gallery-masonry")));
+    }
+    QString layoutName = check ? check->text() : tr("Masonry");
+    layoutName.remove(QLatin1Char('&'));
+    m_galleryLayoutToolbarAct->setToolTip(
+        tr("Go to Gallery (%1) — arrow chooses layout").arg(layoutName));
+    m_galleryLayoutToolbarAct->setStatusTip(
+        tr("Enter Gallery with %1 layout (menu arrow picks another)").arg(layoutName));
 }
 
 void MainWindow::setLayoutSideBySide()
@@ -258,45 +284,7 @@ void MainWindow::returnToGallery()
     }
 
     m_galleryReturnLayout = layout;
-    for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
-                         m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
-                         m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct}) {
-        if (act) {
-            act->setChecked(false);
-        }
-    }
-    QAction *check = nullptr;
-    switch (layout) {
-    case ImageView::LayoutMode::SideBySide:
-        check = m_layoutSideBySideAct;
-        break;
-    case ImageView::LayoutMode::Vertical:
-        check = m_layoutVerticalAct;
-        break;
-    case ImageView::LayoutMode::Grid:
-        check = m_layoutGridAct;
-        break;
-    case ImageView::LayoutMode::GridCrop:
-        check = m_layoutGridCropAct;
-        break;
-    case ImageView::LayoutMode::Masonry:
-        check = m_layoutMasonryAct;
-        break;
-    case ImageView::LayoutMode::MasonryRows:
-        check = m_layoutMasonryRowsAct;
-        break;
-    case ImageView::LayoutMode::MasonryFill:
-        check = m_layoutMasonryFillAct;
-        break;
-    case ImageView::LayoutMode::MasonryRowsFill:
-        check = m_layoutMasonryRowsFillAct;
-        break;
-    default:
-        break;
-    }
-    if (check) {
-        check->setChecked(true);
-    }
+    syncGalleryLayoutUi(layout);
     updateUpToGalleryAction();
     updateWorkspaceActionVisibility();
 }

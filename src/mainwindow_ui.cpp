@@ -399,6 +399,15 @@ void MainWindow::createActions()
         act->setChecked(false);
     }
 
+    // Toolbar combo: primary click = Go to Gallery; menu arrow = layout choice.
+    m_galleryLayoutToolbarAct = new QAction(tr("Go to Gallery"), this);
+    m_galleryLayoutToolbarAct->setIcon(resourceIcon(QStringLiteral("gallery-masonry")));
+    m_galleryLayoutToolbarAct->setToolTip(tr("Go to Gallery"));
+    m_galleryLayoutToolbarAct->setStatusTip(
+        tr("Enter Gallery mode with the current layout (arrow opens layout menu)"));
+    connect(m_galleryLayoutToolbarAct, &QAction::triggered,
+            this, &MainWindow::goToGalleryCurrentLayout);
+
     m_raiseAct = new QAction(tr("&Raise"), this);
     m_raiseAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Up);
     m_raiseAct->setIcon(themeIcon(QStringLiteral("go-up"), QStyle::SP_ArrowUp));
@@ -833,13 +842,12 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addAction(m_cropAct);
     m_toolBar->addSeparator();
-    // Single Layout popup (like Sort) instead of eight individual layout icons.
+    // Gallery layout combo: main button = Go to Gallery (current layout icon);
+    // small menu button = pick a different layout (QToolButton::MenuButtonPopup).
     {
         auto *layoutBtn = new QToolButton(m_toolBar);
         layoutBtn->setObjectName(QStringLiteral("LayoutToolButton"));
-        layoutBtn->setIcon(themeIcon(QStringLiteral("view-grid"), QStyle::SP_FileDialogListView));
-        layoutBtn->setToolTip(tr("Gallery layout"));
-        layoutBtn->setPopupMode(QToolButton::InstantPopup);
+        layoutBtn->setPopupMode(QToolButton::MenuButtonPopup);
         auto *layoutPopup = new QMenu(layoutBtn);
         layoutPopup->addAction(m_layoutSideBySideAct);
         layoutPopup->addAction(m_layoutVerticalAct);
@@ -850,7 +858,10 @@ void MainWindow::createToolBar()
         layoutPopup->addAction(m_layoutMasonryFillAct);
         layoutPopup->addAction(m_layoutMasonryRowsFillAct);
         layoutBtn->setMenu(layoutPopup);
+        layoutBtn->setDefaultAction(m_galleryLayoutToolbarAct);
         m_toolBar->addWidget(layoutBtn);
+        // Seed icon/tooltip from the preferred return layout (Masonry by default).
+        syncGalleryLayoutUi(m_galleryReturnLayout);
     }
     // Workspace mode sits next to the layout group (mode switcher, not a pack).
     m_toolBar->addAction(m_workspaceModeAct);

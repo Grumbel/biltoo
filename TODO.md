@@ -1462,3 +1462,27 @@ qimgview.
 
 **Next bundle:** `qimgview-108-…` — further packaging / build polish if needed
 (e.g. remaining unused-CMake-var noise from KDE/ECM flags if still present).
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-108-gallery-layout-combo`
+
+**Request:** Gallery Layout toolbar control should not be a pure InstantPopup
+menu. Primary click must act as **Go to Gallery**; a small adjacent menu
+button chooses layout. Button face shows the **current layout icon**
+(combo-style).
+
+**Approach:** `QToolButton::MenuButtonPopup` with
+`setDefaultAction(m_galleryLayoutToolbarAct)`. Default action calls
+`goToGalleryCurrentLayout()` → `enterGalleryMode(m_galleryReturnLayout)`.
+Menu still holds the eight layout actions. `syncGalleryLayoutUi()` centralizes
+exclusive checks + toolbar icon/tooltip (used from enter/return Gallery paths).
+
+### Done criteria
+
+- [x] MenuButtonPopup (not InstantPopup)
+- [x] Primary click enters Gallery with last/current layout
+- [x] Toolbar icon tracks selected layout
+- [x] next **109**
+
+**Next bundle:** `qimgview-109-…` — further UI polish as needed.

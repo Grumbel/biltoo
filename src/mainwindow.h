@@ -164,6 +164,8 @@ private slots:
     void setLayoutMasonryRows();
     void setLayoutMasonryFill();
     void setLayoutMasonryRowsFill();
+    /** Toolbar primary click: enter Gallery with the last/current layout. */
+    void goToGalleryCurrentLayout();
     void openGalleryItemInImageMode(const QString &path);
     /** Enter Image mode on a session row (preferred; duplicate-safe). */
     void openSessionIndexInImageMode(int sessionIndex);
@@ -228,6 +230,8 @@ private slots:
     void updateLayoutPanelForMode();
     void updateScrollBarPolicyForMode();
     void updateMasonryCountControl();
+    /** Sync exclusive layout action checks + toolbar combo icon/tooltip. */
+    void syncGalleryLayoutUi(ImageView::LayoutMode layout);
     void ensureMultiImageMode();
     /** Put every session image on the multi-image canvas (gallery). */
     void populateGalleryCanvas();
@@ -383,6 +387,8 @@ private:
     QAction *m_layoutMasonryRowsAct = nullptr;
     QAction *m_layoutMasonryFillAct = nullptr;
     QAction *m_layoutMasonryRowsFillAct = nullptr;
+    /** Toolbar MenuButtonPopup default action: Go to Gallery (icon tracks layout). */
+    QAction *m_galleryLayoutToolbarAct = nullptr;
     QAction *m_backToGalleryAct = nullptr;
     QAction *m_masonryCountAction = nullptr;
     QSpinBox *m_masonryCountSpin = nullptr;
