@@ -39,6 +39,9 @@ public:
         ScaleRight,
         ScaleBottom,
         ScaleLeft,
+        /** Shear along local X (top/bottom edge); H(k) in R·H·S. */
+        ShearTop,
+        ShearBottom,
         RotateTop,
         RotateRight,
         RotateBottom,
@@ -85,6 +88,8 @@ public:
     qreal itemScale() const;
     qreal itemScaleX() const { return m_scaleX; }
     qreal itemScaleY() const { return m_scaleY; }
+    /** Horizontal shear factor k in R·H·S (0 = no shear). */
+    qreal itemShear() const { return m_shear; }
     /**
      * Workspace *placement* rotation only (free-rotate handle).
      * Content 90° turns are baked into pixels — not stored here.
@@ -132,6 +137,8 @@ public:
     /** Set both axes to the same factor (gallery layouts, zoom-by). */
     void setItemScale(qreal scale);
     void setItemScale(qreal scaleX, qreal scaleY);
+    /** Horizontal shear k; clamped. Does not touch pixels. */
+    void setItemShear(qreal shear);
     /** Workspace placement angle (free rotate). Does not touch pixels. */
     void setItemRotation(qreal degrees);
     /** Bake ±90° into source pixels; placement angle unchanged. */
@@ -276,6 +283,7 @@ private:
     QSize m_intrinsicSize;
     qreal m_scaleX = 1.0;
     qreal m_scaleY = 1.0;
+    qreal m_shear = 0.0;
     qreal m_rotation = 0.0;
     /** Cardinal base (multiples of 90). */
     qreal m_orientation = 0.0;
@@ -302,6 +310,7 @@ private:
     QPointF m_pressScenePos;
     qreal m_pressScaleX = 1.0;
     qreal m_pressScaleY = 1.0;
+    qreal m_pressShear = 0.0;
     qreal m_pressRotation = 0.0;
     QPointF m_pressItemPos;
     /** Scene position of the fixed anchor (opposite corner/edge) at press. */
@@ -309,10 +318,12 @@ private:
     /** Local-space anchor point kept fixed when not scaling from centre. */
     QPointF m_pressAnchorLocal;
     bool isScaleHandle(Handle h) const;
+    bool isShearHandle(Handle h) const;
     bool isCornerScaleHandle(Handle h) const;
     bool isEdgeScaleHandle(Handle h) const;
     QPointF scaleAnchorLocal(Handle h) const;
     void applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    void applyShearHandleDrag(const QPointF &scenePos);
 };
 
 #endif // IMAGEITEM_H

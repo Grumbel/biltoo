@@ -62,6 +62,9 @@ static bool appearanceEqual(const WorkspaceItemState &a, const WorkspaceItemStat
                         b.scaleY > 0 ? b.scaleY : b.scale)) {
         return false;
     }
+    if (!nearlyEqual(a.shear, b.shear)) {
+        return false;
+    }
     if (!nearlyEqual(a.rotation, b.rotation) || !nearlyEqual(a.opacity, b.opacity)
         || !nearlyEqual(a.z, b.z)) {
         return false;
@@ -170,6 +173,7 @@ void ProjectFileRoundTripTest::appearanceJson_cropRotation()
     s.pos = QPointF(12.5, 40.0);
     s.scale = 1.25;
     s.scaleY = 1.5;
+    s.shear = 0.35;
     s.rotation = 15.0;
     s.opacity = 0.8;
     s.z = 3.0;
@@ -187,6 +191,7 @@ void ProjectFileRoundTripTest::appearanceJson_cropRotation()
     QCOMPARE(back.contentQuarterTurns, s.contentQuarterTurns);
     QVERIFY(nearlyEqual(back.pos.x(), s.pos.x()));
     QVERIFY(nearlyEqual(back.scaleY, s.scaleY));
+    QVERIFY(nearlyEqual(back.shear, s.shear));
     QVERIFY(nearlyEqual(back.rotation, s.rotation));
     QCOMPARE(back.vFlip, s.vFlip);
     QVERIFY(colorAdjustEqual(back.colorAdjust, ColorAdjustments{}));

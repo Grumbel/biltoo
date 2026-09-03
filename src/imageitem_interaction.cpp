@@ -342,6 +342,11 @@ bool ImageItem::isScaleHandle(Handle h) const
     return isCornerScaleHandle(h) || isEdgeScaleHandle(h);
 }
 
+bool ImageItem::isShearHandle(Handle h) const
+{
+    return h == Handle::ShearTop || h == Handle::ShearBottom;
+}
+
 QPointF ImageItem::scaleAnchorLocal(Handle h) const
 {
     // Opposite corner/edge — kept fixed when not scaling from the centre.
@@ -363,6 +368,10 @@ QPointF ImageItem::scaleAnchorLocal(Handle h) const
         return QPointF(r.right(), r.center().y());
     case Handle::ScaleRight:
         return QPointF(r.left(), r.center().y());
+    case Handle::ShearTop:
+        return QPointF(r.center().x(), r.bottom());
+    case Handle::ShearBottom:
+        return QPointF(r.center().x(), r.top());
     default:
         return r.center();
     }
@@ -482,6 +491,38 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     }
 }
 
+void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
+{
+    // Horizontal shear k in local space: H = [[1,k],[0,1]] inside R·H·S.
+    // Drag top/bottom along local X; keep opposite edge fixed in scene.
+    const QRectF r = QGraphicsPixmapItem::boundingRect();
+    const qreal halfH = qMax(1e-6, r.height() * 0.5);
+    const qreal rot = qDegreesToRadians(m_pressRotation);
+    const qreal c = qCos(rot);
+    const qreal s = qSin(rot);
+    // Unit local +X in scene (direction of shear displacement of a point).
+    const QPointF dirX(c, s);
+    const QPointF anchor = m_pressAnchorScene;
+    const QPointF v0 = m_pressScenePos - anchor;
+    const QPointF v1 = scenePos - anchor;
+    const qreal len0 = QPointF::dotProduct(v0, dirX);
+    const qreal len1 = QPointF::dotProduct(v1, dirX);
+    // At local y = ±halfH (after scale), shear shifts by k * (sy * y).
+    // Approximate: Δscene along X ≈ Δk * scaleY * halfH  (sign depends on edge).
+    const qreal denom = qMax(1e-6, m_pressScaleY * halfH);
+    qreal k = m_pressShear;
+    if (m_activeHandle == Handle::ShearTop) {
+        // Top is local y < 0; increasing k moves top in -localX for Qt y-down? 
+        // map: x' = x + k*y with y_top negative → k increase moves top toward -X.
+        k = m_pressShear + (len0 - len1) / denom;
+    } else {
+        k = m_pressShear + (len1 - len0) / denom;
+    }
+    setItemShear(k);
+    const QPointF now = mapToScene(m_pressAnchorLocal);
+    setPos(pos() + (anchor - now));
+}
+
 qreal ImageItem::chromeButtonSize() const
 {
     return kChromeBtnScreenPx / screenScale();
@@ -540,7 +581,8 @@ QList<ImageItem::Handle> ImageItem::activeHandles() const
         handles << Handle::ScaleTopLeft << Handle::ScaleTopRight
                 << Handle::ScaleBottomLeft << Handle::ScaleBottomRight
                 << Handle::ScaleTop << Handle::ScaleRight
-                << Handle::ScaleBottom << Handle::ScaleLeft;
+                << Handle::ScaleBottom << Handle::ScaleLeft
+                << Handle::ShearTop << Handle::ShearBottom;
     }
     handles << Handle::RotateTop << Handle::RotateRight
             << Handle::RotateBottom << Handle::RotateLeft
@@ -616,6 +658,11 @@ QPointF ImageItem::handleCenter(Handle h) const
         return QPointF(cx, r.bottom());
     case Handle::ScaleLeft:
         return QPointF(r.left(), cy);
+    case Handle::ShearTop:
+        // Offset along top edge so scale mid-handle and shear grip do not coincide.
+        return QPointF(cx - r.width() * 0.22, r.top());
+    case Handle::ShearBottom:
+        return QPointF(cx + r.width() * 0.22, r.bottom());
     case Handle::RotateTop:
         return QPointF(cx, r.top() - rotOffY);
     case Handle::RotateRight:
@@ -815,6 +862,20 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
                 best = ed.h;
             }
         }
+        // Shear diamonds: offset along top/bottom edges from mid (view space).
+        const qreal shearAlong = kHandleScreenPx * 2.2;
+        const QPointF shearPts[] = {
+            midTop - dirTop * shearAlong,
+            midBottom + dirBottom * shearAlong,
+        };
+        const Handle shearHs[] = {Handle::ShearTop, Handle::ShearBottom};
+        for (int i = 0; i < 2; ++i) {
+            const qreal d = QLineF(p, shearPts[i]).length();
+            if (d <= kHandleScreenPx * 1.1 && d <= bestDist) {
+                bestDist = d;
+                best = shearHs[i];
+            }
+        }
     }
     return best;
 }
@@ -894,6 +955,7 @@ void ImageItem::activateChromeHandle(Handle h)
     }
     case Handle::ResetScale:
         setItemScale(1.0, 1.0);
+        setItemShear(0.0);
         break;
     case Handle::ResetRotation:
         setItemRotation(0.0);
@@ -1214,6 +1276,33 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             painter->drawPolygon(bar);
             painter->setBrush(Qt::NoBrush);
         }
+
+        // Shear grips: small diamonds on top/bottom edges (offset from mid).
+        const qreal shearAlong = hs * 2.2;
+        struct ShearD {
+            Handle h;
+            QPointF c;
+        };
+        const ShearD shears[] = {
+            {Handle::ShearTop, midTop - dirTop * shearAlong},
+            {Handle::ShearBottom, midBottom + dirBottom * shearAlong},
+        };
+        for (const ShearD &sh : shears) {
+            const bool hot = (m_hoverHandle == sh.h || m_activeHandle == sh.h);
+            const qreal rad = hs * (hot ? 0.55 : 0.40);
+            QPolygonF dia;
+            dia << sh.c + QPointF(0, -rad)
+                << sh.c + QPointF(rad, 0)
+                << sh.c + QPointF(0, rad)
+                << sh.c + QPointF(-rad, 0);
+            painter->setBrush(hot ? QColor(255, 200, 60) : QColor(180, 120, 255));
+            QPen hp(hot ? QColor(255, 255, 255) : QColor(60, 40, 100), 0);
+            hp.setCosmetic(true);
+            hp.setWidthF(hot ? 1.6 : 1.1);
+            painter->setPen(hp);
+            painter->drawPolygon(dia);
+            painter->setBrush(Qt::NoBrush);
+        }
     }
 
     // Chrome buttons: top-right *outside*. Adaptive — stack shifts upward when
@@ -1357,6 +1446,7 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
     m_pressScenePos = scenePos;
     m_pressScaleX = m_scaleX;
     m_pressScaleY = m_scaleY;
+    m_pressShear = m_shear;
     m_pressRotation = m_rotation;
     m_pressItemPos = mapFromScene(scenePos);
     m_pressAnchorLocal = scaleAnchorLocal(h);
@@ -1392,6 +1482,8 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
         setItemRotation(angle);
     } else if (isScaleHandle(m_activeHandle)) {
         applyScaleHandleDrag(scenePos, mods);
+    } else if (isShearHandle(m_activeHandle)) {
+        applyShearHandleDrag(scenePos);
     }
     notifyViewStatus();
 }

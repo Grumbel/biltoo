@@ -911,6 +911,9 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                 case H::ScaleLeft: case H::ScaleRight:
                     viewport()->setCursor(Qt::SizeHorCursor);
                     break;
+                case H::ShearTop: case H::ShearBottom:
+                    viewport()->setCursor(Qt::SizeHorCursor);
+                    break;
                 case H::OpacitySlider:
                     viewport()->setCursor(Qt::SizeVerCursor);
                     break;
@@ -1019,6 +1022,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         if (after.pos != m_dragStartState.pos
             || after.scale != m_dragStartState.scale
             || after.scaleY != m_dragStartState.scaleY
+            || after.shear != m_dragStartState.shear
             || after.rotation != m_dragStartState.rotation
             || after.opacity != m_dragStartState.opacity) {
             class TransformCommand : public QUndoCommand {
@@ -1097,6 +1101,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         if (after.pos != m_dragStartState.pos
             || after.scale != m_dragStartState.scale
             || after.scaleY != m_dragStartState.scaleY
+            || after.shear != m_dragStartState.shear
             || after.rotation != m_dragStartState.rotation) {
             class TransformCommand : public QUndoCommand {
             public:

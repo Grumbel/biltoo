@@ -114,6 +114,14 @@ void ImageItem::setItemScale(qreal scaleX, qreal scaleY)
     prepareGeometryChange();
 }
 
+void ImageItem::setItemShear(qreal shear)
+{
+    // Keep parallelograms editable; extreme k collapses chrome.
+    m_shear = qBound(-5.0, shear, 5.0);
+    applyLocalTransform();
+    prepareGeometryChange();
+}
+
 static qreal normalizeDegrees(qreal degrees)
 {
     while (degrees >= 360.0) {
@@ -364,10 +372,12 @@ void ImageItem::setScaleHandlesEnabled(bool on)
 
 void ImageItem::applyLocalTransform()
 {
-    // Scale and rotate only — flips are applied to the pixmap so handles
-    // stay on the geometric top/left/right of the item frame.
+    // Linear pose: R(θ)·H(k)·S(sx,sy). Flips are baked into the pixmap so
+    // handles stay on the geometric top/left/right of the item frame.
+    // QTransform multiplies on the right → call order rotate, shear, scale.
     QTransform t;
     t.rotate(m_rotation);
+    t.shear(m_shear, 0.0);
     t.scale(m_scaleX, m_scaleY);
     setTransform(t);
 }

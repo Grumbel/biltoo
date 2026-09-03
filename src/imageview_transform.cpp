@@ -398,6 +398,7 @@ void ImageView::resetItemScale()
     for (ImageItem *item : targets) {
         const WorkspaceItemState before = captureState(item);
         item->setItemScale(1.0, 1.0);
+        item->setItemShear(0.0);
         pushItemGeometryCommand(tr("Reset scale"), item, before, captureState(item));
     }
     if (macro) {
@@ -496,6 +497,7 @@ void ImageView::duplicateSelected()
         }
         if (isWorkspaceMode()) {
             copy->setItemScale(src->itemScaleX(), src->itemScaleY());
+            copy->setItemShear(src->itemShear());
             copy->setItemRotation(src->itemRotation());
             copy->setItemHFlip(src->itemHFlip());
             copy->setItemVFlip(src->itemVFlip());

@@ -135,6 +135,9 @@ QJsonObject appearanceToJson(const WorkspaceItemState &s, bool includePose)
         o.insert(QStringLiteral("y"), s.pos.y());
         o.insert(QStringLiteral("scaleX"), s.scale);
         o.insert(QStringLiteral("scaleY"), s.scaleY > 0.0 ? s.scaleY : s.scale);
+        if (qAbs(s.shear) > 1e-9) {
+            o.insert(QStringLiteral("shear"), s.shear);
+        }
         o.insert(QStringLiteral("rotation"), s.rotation);
         o.insert(QStringLiteral("opacity"), s.opacity);
         o.insert(QStringLiteral("z"), s.z);
@@ -180,6 +183,7 @@ WorkspaceItemState appearanceFromJson(const QJsonObject &o)
     }
     s.scale = o.value(QStringLiteral("scaleX")).toDouble(1.0);
     s.scaleY = o.value(QStringLiteral("scaleY")).toDouble(s.scale);
+    s.shear = o.value(QStringLiteral("shear")).toDouble(0.0);
     s.rotation = o.value(QStringLiteral("rotation")).toDouble(0.0);
     s.opacity = o.value(QStringLiteral("opacity")).toDouble(1.0);
     s.z = o.value(QStringLiteral("z")).toDouble(0.0);

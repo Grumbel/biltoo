@@ -74,6 +74,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.pos = item->pos();
     s.scale = item->itemScaleX();
     s.scaleY = item->itemScaleY();
+    s.shear = item->itemShear();
     s.rotation = item->itemRotation(); // placement only
     s.orientation = 0.0;
     s.opacity = item->itemOpacity();
@@ -122,6 +123,7 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
 {
     item->setPos(state.pos);
     item->setItemScale(state.scale, state.scaleY > 0.0 ? state.scaleY : state.scale);
+    item->setItemShear(state.shear);
     item->setItemRotation(state.rotation);
     item->setItemOpacity(state.opacity);
     item->setStackZ(state.z);

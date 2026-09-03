@@ -103,6 +103,26 @@ Scale handles stay at the mapped corners / edge mids (no extra offset).
 Axes for edge stretch are the item’s local X/Y (image axes), not screen axes,
 so a rotated image still stretches “width” and “height” of the picture.
 
+## Shear (parallelogram pose)
+
+Linear pose is `R(θ)·H(k)·S(sx,sy)` with horizontal shear
+
+```
+H(k) = | 1  k |
+       | 0  1 |
+```
+
+in item-local space (before placement rotation). `k = 0` is a pure scaled
+rectangle; non-zero `k` yields a parallelogram.
+
+| Handle | Behaviour |
+|--------|-----------|
+| ShearTop / ShearBottom | Drag along local X; opposite edge fixed in scene; updates `k` |
+
+Diamond grips sit on the top/bottom frame edges, offset from the mid-edge
+scale bars. Reset Scale (1:1) also clears shear. Project JSON field `shear`
+is omitted when ~0 for backward-compatible files.
+
 ## Chrome design language
 
 Three visual families on the selection / crop frame:

@@ -695,3 +695,42 @@ pending SessionImageId or applies `m_appearance` — defaults only.
 3. LoadAdd claims existing unbound tiles for pending binds and applies
    content + pose from the appearance store.
 4. `addImageForSession` early-return re-applies store appearance.
+
+---
+
+## Placement shear (full linear pose) — in progress
+
+**Goal:** Represent general parallelogram frames. Current pose is only
+`R(θ)·S(sx,sy)` (3 DOF). Add shear so linear part is 4 DOF:
+
+```
+M = T · R(θ) · H(k) · S(sx, sy)
+```
+
+with horizontal shear in local space:
+
+```
+H(k) = | 1  k |
+       | 0  1 |
+```
+
+(`k = 0` = old behaviour; project files without `shear` load as 0.)
+
+### Plan
+
+1. **State / item** — `WorkspaceItemState::shear`, `ImageItem::{itemShear,setItemShear}`,
+   `applyLocalTransform` builds `R·H·S`. Clamp `k` to a sane range (e.g. ±5).
+2. **Capture / apply / project JSON** — round-trip `shear`; omit when ~0.
+3. **Handles** — `ShearTop` / `ShearBottom` (diamond grips on top/bottom edges);
+   drag along local X changes `k`; opposite edge stays fixed in scene.
+4. **Group scale** — still AABB-based (known wrong when rotated); shear is
+   single-item first. Later: local-axis group scale + group shear.
+5. **Tests** — projectfile appearance JSON includes shear.
+6. **Docs** — HANDLES.md scale/shear semantics; AGENTS if needed.
+
+### Not in this pass
+
+- Second shear parameter / raw 2×2 matrix
+- Group shear
+- Perspective
+

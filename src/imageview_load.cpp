@@ -482,6 +482,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         if (isGalleryMode()) {
             item->setItemRotation(0.0);
+            item->setItemShear(0.0);
             item->setItemHFlip(false);
             item->setItemVFlip(false);
             item->setItemOpacity(1.0);

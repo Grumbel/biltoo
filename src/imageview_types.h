@@ -71,6 +71,11 @@ struct WorkspaceItemState {
     QPointF pos;
     qreal scale = 1.0;   // scaleX
     qreal scaleY = 1.0;
+    /**
+     * Horizontal shear in item-local space (before placement rotation).
+     * Linear pose is R(θ)·H(k)·S(sx,sy) with H = [[1,k],[0,1]]. 0 = none.
+     */
+    qreal shear = 0.0;
     /** Workspace placement angle only (free rotate). Never content. */
     qreal rotation = 0.0;
     /** @deprecated kept for older session merges; prefer contentQuarterTurns. */
