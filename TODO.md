@@ -1585,3 +1585,22 @@ selection. Archives amplify the cost (member extract + decode).
 - [x] Document; next **112**
 
 **Next bundle:** `qimgview-112-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-112-crop-icon-amber`
+
+**Request:** Colour the crop toolbar icon with the same yellow/amber family
+used by the on-canvas crop tool chrome (`#ffbe28` / icon amber `#e5a50a`).
+
+**Change:** `data/icons/actions/transform-crop.svg` — interlocking L-shapes
+in `#e5a50a` / `#f8e45c` with a light inner frame in `#ffbe28` (matches
+crop-frame pen). No code changes.
+
+### Done criteria
+
+- [x] transform-crop.svg uses crop amber palette
+- [x] Document; next **113**
+
+**Next bundle:** `qimgview-113-…` — further polish as needed.

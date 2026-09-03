@@ -3,8 +3,10 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-     stroke="#2e3436" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Classic crop tool: two interlocking L-shapes -->
-  <path d="M6 2v14h14"/>
-  <path d="M18 22V8H4"/>
+     stroke-linecap="round" stroke-linejoin="round">
+  <!-- Classic crop tool: two interlocking L-shapes in crop-chrome amber -->
+  <path d="M6 2v14h14" stroke="#e5a50a" stroke-width="2.25"/>
+  <path d="M18 22V8H4" stroke="#f8e45c" stroke-width="2.25"/>
+  <!-- Inner frame accent matching on-canvas crop handles -->
+  <rect x="8" y="8" width="8" height="8" fill="none" stroke="#ffbe28" stroke-width="1.25" opacity="0.95"/>
 </svg>
