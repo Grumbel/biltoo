@@ -51,5 +51,6 @@
     <file alias="actions/color-adjustments.svg">../data/icons/actions/color-adjustments.svg</file>
     <file alias="actions/layout-panel.svg">../data/icons/actions/layout-panel.svg</file>
     <file alias="actions/workspace-background.svg">../data/icons/actions/workspace-background.svg</file>
+    <file alias="actions/workspace-background-default.svg">../data/icons/actions/workspace-background-default.svg</file>
   </qresource>
 </RCC>

@@ -2511,18 +2511,17 @@ void MainWindow::workspaceBackgroundDefault(bool checked)
     if (!m_imageView) {
         return;
     }
-    // Permanent AppDefault: keep the control checked; there is nothing to preview.
+    // Permanent AppDefault: nothing to preview. Keep the control checked and
+    // disabled via syncWorkspaceBackgroundActions (avoids a stuck toggle).
     if (m_imageView->workspaceBackground().isAppDefault()) {
-        if (m_workspaceBgDefaultAct && !m_workspaceBgDefaultAct->isChecked()) {
-            const QSignalBlocker blocker(m_workspaceBgDefaultAct);
-            m_workspaceBgDefaultAct->setChecked(true);
-        }
         m_imageView->setWorkspaceBackgroundShowDefault(false);
+        syncWorkspaceBackgroundActions();
         return;
     }
     // Temporary view of the Preferences background — does not change project
     // state, undo stack, or dirty flag.
     m_imageView->setWorkspaceBackgroundShowDefault(checked);
+    syncWorkspaceBackgroundActions();
     if (statusBar()) {
         statusBar()->showMessage(
             checked ? tr("Showing application default background (temporary)")

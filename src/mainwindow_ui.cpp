@@ -95,8 +95,7 @@ void MainWindow::createActions()
             &MainWindow::editWorkspaceBackground);
 
     m_workspaceBgDefaultAct = new QAction(tr("Background &Default"), this);
-    m_workspaceBgDefaultAct->setIcon(themeIcon(QStringLiteral("view-refresh"),
-                                                 QStyle::SP_BrowserReload));
+    m_workspaceBgDefaultAct->setIcon(resourceIcon(QStringLiteral("workspace-background-default")));
     m_workspaceBgDefaultAct->setCheckable(true);
     m_workspaceBgDefaultAct->setStatusTip(
         tr("Temporarily show the Preferences / technical background "
@@ -768,9 +767,10 @@ void MainWindow::createMenus()
     workspaceMenu->addAction(m_toggleLayoutPanelAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_pageGuideAct);
+    workspaceMenu->addAction(m_fitPageGuideAct);
+    workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_workspaceBackgroundAct);
     workspaceMenu->addAction(m_workspaceBgDefaultAct);
-    workspaceMenu->addAction(m_fitPageGuideAct);
     workspaceMenu->addSeparator();
     workspaceMenu->addAction(m_selectToolAct);
     workspaceMenu->addAction(m_panToolAct);
@@ -953,10 +953,13 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addAction(m_zoomToolAct);
     m_workspaceToolBar->addSeparator();
+    // Page guide pair, then background pair, then layout.
     m_workspaceToolBar->addAction(m_pageGuideAct);
+    m_workspaceToolBar->addAction(m_fitPageGuideAct);
+    m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_workspaceBackgroundAct);
     m_workspaceToolBar->addAction(m_workspaceBgDefaultAct);
-    m_workspaceToolBar->addAction(m_fitPageGuideAct);
+    m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     m_workspaceToolBar->hide();
 }

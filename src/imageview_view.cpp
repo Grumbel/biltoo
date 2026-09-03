@@ -100,16 +100,11 @@ void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
         && m_workspaceBackground.colorAlt == bg.colorAlt
         && m_workspaceBackground.imagePath == bg.imagePath
         && m_workspaceBackground.imagePathRelative == bg.imagePathRelative) {
-        // Still clear a temporary default preview when the permanent state is
-        // re-asserted (e.g. dialog cancel restore).
-        if (m_workspaceBackgroundShowDefault) {
-            m_workspaceBackgroundShowDefault = false;
-            if (viewport()) {
-                viewport()->update();
-            }
-        }
+        // No-op: leave a temporary "show default" preview alone so the
+        // toolbar toggle does not desync from paint.
         return;
     }
+    // Permanent override changed — drop temporary preview.
     m_workspaceBackgroundShowDefault = false;
     m_workspaceBackground = bg;
     if (bg.mode != WorkspaceBackgroundMode::ImageTile

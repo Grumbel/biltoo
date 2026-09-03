@@ -1742,3 +1742,33 @@ Select / Pan).
 - [x] Document; next **119**
 
 **Next bundle:** `qimgview-119-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-119-bg-default-fix`
+
+**Bugs:**
+1. **Background Default** could stick checked / desync from paint: no-op
+   `setWorkspaceBackground` cleared the temporary preview flag while the
+   action stayed checked; permanent AppDefault forced a non-interactive
+   checked state that felt stuck.
+2. Needed a **custom icon** (not view-refresh).
+3. **Page Guide** actions were split on the Workspace toolbar by the
+   background buttons.
+
+**Fix:**
+- Only clear `showDefault` when the permanent WorkspaceBackground changes.
+- Disable Default when already permanent AppDefault; enable + toggle preview
+  only when a custom override exists; always re-sync the action after toggle.
+- `workspace-background-default.svg` (plain canvas + amber corner).
+- Toolbar order: Page Guide + Fit Page Guide, then Background + Default.
+
+### Done criteria
+
+- [x] Default toggle reliable
+- [x] Custom icon
+- [x] Page Guide buttons adjacent
+- [x] Document; next **120**
+
+**Next bundle:** `qimgview-120-…` — further polish as needed.
