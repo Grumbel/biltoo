@@ -166,10 +166,8 @@ private slots:
     void copyWorkspaceItems();
     void cutWorkspaceItems();
     void pasteWorkspaceItems();
+    void editWorkspaceBackground();
     void workspaceBackgroundDefault();
-    void workspaceBackgroundSolid();
-    void workspaceBackgroundChecker();
-    void workspaceBackgroundImage();
     void syncWorkspaceBackgroundActions();
     void saveProject();
     void saveProjectAs();
@@ -392,9 +390,6 @@ private:
     QAction *m_pasteWorkspaceAct = nullptr;
     QAction *m_workspaceBackgroundAct = nullptr;
     QAction *m_workspaceBgDefaultAct = nullptr;
-    QAction *m_workspaceBgSolidAct = nullptr;
-    QAction *m_workspaceBgCheckerAct = nullptr;
-    QAction *m_workspaceBgImageAct = nullptr;
     QAction *m_saveProjectAct = nullptr;
     QAction *m_saveProjectAsAct = nullptr;
     QAction *m_openProjectAct = nullptr;

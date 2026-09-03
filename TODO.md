@@ -398,3 +398,8 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   absolute then relative via `resolveWorkspaceBackgroundImage`. Toolbar uses
   InstantPopup for the Background menu button.
 
+- [x] **Workspace background editor dialog**  
+  Unified `WorkspaceBackgroundDialog` with live preview (solid / checker /
+  image / app default). Toolbar and Workspace menu open Edit…; quick
+  "Application default" remains in the submenu.
+

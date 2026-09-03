@@ -87,33 +87,26 @@ void MainWindow::createActions()
         tr("Workspace: show a paper-sized frame to arrange images for printing"));
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
 
-    m_workspaceBackgroundAct = new QAction(tr("Workspace &Background"), this);
-    m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
-    m_workspaceBackgroundAct->setStatusTip(
-        tr("Choose a custom Workspace canvas background, or use the application default"));
     m_workspaceBgDefaultAct = new QAction(tr("&Application default"), this);
-    m_workspaceBgDefaultAct->setCheckable(true);
     m_workspaceBgDefaultAct->setStatusTip(
         tr("Use the technical / Preferences background (not stored in the project)"));
     connect(m_workspaceBgDefaultAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundDefault);
-    m_workspaceBgSolidAct = new QAction(tr("&Solid colour…"), this);
-    m_workspaceBgSolidAct->setCheckable(true);
-    connect(m_workspaceBgSolidAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundSolid);
-    m_workspaceBgCheckerAct = new QAction(tr("&Checkerboard…"), this);
-    m_workspaceBgCheckerAct->setCheckable(true);
-    connect(m_workspaceBgCheckerAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundChecker);
-    m_workspaceBgImageAct = new QAction(tr("&Image pattern…"), this);
-    m_workspaceBgImageAct->setCheckable(true);
-    connect(m_workspaceBgImageAct, &QAction::triggered, this, &MainWindow::workspaceBackgroundImage);
+    auto *bgEditAct = new QAction(tr("&Edit…"), this);
+    bgEditAct->setStatusTip(
+        tr("Choose a custom Workspace canvas background, or use the application default"));
+    connect(bgEditAct, &QAction::triggered, this, &MainWindow::editWorkspaceBackground);
+    m_workspaceBackgroundAct = new QAction(tr("Workspace &Background"), this);
+    m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
+    m_workspaceBackgroundAct->setStatusTip(bgEditAct->statusTip());
     {
         auto *bgMenu = new QMenu(this);
-        bgMenu->addAction(m_workspaceBgDefaultAct);
+        bgMenu->addAction(bgEditAct);
         bgMenu->addSeparator();
-        bgMenu->addAction(m_workspaceBgSolidAct);
-        bgMenu->addAction(m_workspaceBgCheckerAct);
-        bgMenu->addAction(m_workspaceBgImageAct);
+        bgMenu->addAction(m_workspaceBgDefaultAct);
         m_workspaceBackgroundAct->setMenu(bgMenu);
     }
+    // Double-click / activate without menu: open the dialog.
+    connect(m_workspaceBackgroundAct, &QAction::triggered, this, &MainWindow::editWorkspaceBackground);
 
     m_fitPageGuideAct = new QAction(tr("Fit Page Guide to &Content"), this);
     m_fitPageGuideAct->setIcon(resourceIcon(QStringLiteral("fit-page-guide-content")));

@@ -1,3 +1,4 @@
+#include "workspacebackgrounddialog.h"
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -601,18 +602,51 @@ void MainWindow::syncWorkspaceBackgroundActions()
         return;
     }
     const WorkspaceBackground wb = m_imageView->workspaceBackground();
-    const auto mode = wb.mode;
     if (m_workspaceBgDefaultAct) {
-        m_workspaceBgDefaultAct->setChecked(mode == WorkspaceBackgroundMode::AppDefault);
+        m_workspaceBgDefaultAct->setCheckable(true);
+        m_workspaceBgDefaultAct->setChecked(wb.isAppDefault());
     }
-    if (m_workspaceBgSolidAct) {
-        m_workspaceBgSolidAct->setChecked(mode == WorkspaceBackgroundMode::Solid);
+}
+
+void MainWindow::editWorkspaceBackground()
+{
+    if (!m_imageView) {
+        return;
     }
-    if (m_workspaceBgCheckerAct) {
-        m_workspaceBgCheckerAct->setChecked(mode == WorkspaceBackgroundMode::Checkerboard);
+    if (!isWorkspaceMode()) {
+        enterWorkspaceMode();
     }
-    if (m_workspaceBgImageAct) {
-        m_workspaceBgImageAct->setChecked(mode == WorkspaceBackgroundMode::ImageTile);
+    WorkspaceBackgroundDialog dlg(this);
+    dlg.setAppDefaultColors(
+        m_imageView->backgroundColor(),
+        m_imageView->backgroundColorAlt(),
+        m_imageView->backgroundPattern() == ImageView::BackgroundPattern::Checkerboard);
+    dlg.setBackground(m_imageView->workspaceBackground());
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+    m_imageView->setWorkspaceBackground(dlg.background());
+    syncWorkspaceBackgroundActions();
+    markWorkspaceDirty();
+    if (statusBar()) {
+        const WorkspaceBackground wb = dlg.background();
+        QString msg;
+        switch (wb.mode) {
+        case WorkspaceBackgroundMode::Solid:
+            msg = tr("Workspace background: solid");
+            break;
+        case WorkspaceBackgroundMode::Checkerboard:
+            msg = tr("Workspace background: checkerboard");
+            break;
+        case WorkspaceBackgroundMode::ImageTile:
+            msg = tr("Workspace background: image pattern");
+            break;
+        case WorkspaceBackgroundMode::AppDefault:
+        default:
+            msg = tr("Workspace background: application default");
+            break;
+        }
+        statusBar()->showMessage(msg, 2500);
     }
 }
 
@@ -629,72 +663,5 @@ void MainWindow::workspaceBackgroundDefault()
     }
 }
 
-void MainWindow::workspaceBackgroundSolid()
-{
-    if (!m_imageView) {
-        return;
-    }
-    WorkspaceBackground wb = m_imageView->workspaceBackground();
-    QColor start = wb.color.isValid() ? wb.color : m_imageView->backgroundColor();
-    const QColor c = QColorDialog::getColor(start, this, tr("Workspace solid background"));
-    if (!c.isValid()) {
-        syncWorkspaceBackgroundActions();
-        return;
-    }
-    wb.mode = WorkspaceBackgroundMode::Solid;
-    wb.color = c;
-    m_imageView->setWorkspaceBackground(wb);
-    syncWorkspaceBackgroundActions();
-    markWorkspaceDirty();
-}
 
-void MainWindow::workspaceBackgroundChecker()
-{
-    if (!m_imageView) {
-        return;
-    }
-    WorkspaceBackground wb = m_imageView->workspaceBackground();
-    QColor a = wb.color.isValid() ? wb.color : m_imageView->backgroundColor();
-    QColor b = wb.colorAlt.isValid() ? wb.colorAlt : m_imageView->backgroundColorAlt();
-    a = QColorDialog::getColor(a, this, tr("Checkerboard colour A"));
-    if (!a.isValid()) {
-        syncWorkspaceBackgroundActions();
-        return;
-    }
-    b = QColorDialog::getColor(b, this, tr("Checkerboard colour B"));
-    if (!b.isValid()) {
-        syncWorkspaceBackgroundActions();
-        return;
-    }
-    wb.mode = WorkspaceBackgroundMode::Checkerboard;
-    wb.color = a;
-    wb.colorAlt = b;
-    m_imageView->setWorkspaceBackground(wb);
-    syncWorkspaceBackgroundActions();
-    markWorkspaceDirty();
-}
 
-void MainWindow::workspaceBackgroundImage()
-{
-    if (!m_imageView) {
-        return;
-    }
-    WorkspaceBackground wb = m_imageView->workspaceBackground();
-    const QString start = wb.imagePath.isEmpty() ? QDir::homePath() : wb.imagePath;
-    const QString path = QFileDialog::getOpenFileName(
-        this, tr("Workspace background image"),
-        start,
-        tr("Images (*.png *.jpg *.jpeg *.webp *.bmp *.gif);;All Files (*)"));
-    if (path.isEmpty()) {
-        syncWorkspaceBackgroundActions();
-        return;
-    }
-    wb.mode = WorkspaceBackgroundMode::ImageTile;
-    wb.imagePath = path;
-    m_imageView->setWorkspaceBackground(wb);
-    syncWorkspaceBackgroundActions();
-    markWorkspaceDirty();
-    if (statusBar()) {
-        statusBar()->showMessage(tr("Workspace background: tiled image"), 2500);
-    }
-}
