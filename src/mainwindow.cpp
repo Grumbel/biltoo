@@ -846,6 +846,7 @@ void MainWindow::showKeyboardShortcuts()
         "R / Ctrl+R — rotate right · Ctrl+L — rotate left<br/>"
         "Ctrl+H / Ctrl+Shift+H — flip horizontal / vertical</p>"
         "<p><b>Workspace</b><br/>"
+        "Ctrl+C / Ctrl+X / Ctrl+V — copy / cut / paste tiles<br/>"
         "Ctrl+D — duplicate · Delete — remove from canvas<br/>"
         "Ctrl+Shift+↑/↓ — raise / lower<br/>"
         "Ctrl+Shift+=/− — opacity up / down</p>"

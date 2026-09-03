@@ -404,6 +404,10 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             if (!appearance.isNull()) {
                 emit sessionAppearanceChanged(bound.id, item->path(), appearance);
             }
+            // Paste: select tiles as they finish decoding.
+            if (m_pendingSelectSessionIds.remove(bound.id)) {
+                item->setSelected(true);
+            }
         }
         if (isGalleryMode()) {
             item->setItemRotation(0.0);

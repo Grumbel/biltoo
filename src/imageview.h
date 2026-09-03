@@ -867,6 +867,8 @@ private:
         bool hasScenePos = false;
     };
     QList<PendingSessionBind> m_pendingSessionBinds;
+    /** Select these session ids when LoadAdd creates their tiles (paste). */
+    QSet<SessionImageId> m_pendingSelectSessionIds;
     /** Content appearance staged by Duplicate until bindSelectedSessionIds. */
     QHash<ImageItem *, WorkspaceItemState> m_pendingItemAppearance;
     ImageMouseInfo m_mouseInfo;

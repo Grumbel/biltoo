@@ -1530,15 +1530,8 @@ QList<WorkspaceItemState> decodeWorkspaceClipboard(const QByteArray &bytes)
 
 } // namespace
 
-void MainWindow::copyWorkspaceItems()
+static void writeWorkspaceMime(const QList<WorkspaceItemState> &items)
 {
-    if (!m_imageView || !isWorkspaceMode()) {
-        return;
-    }
-    const QList<WorkspaceItemState> items = m_imageView->captureSelectedWorkspaceClipboard();
-    if (items.isEmpty()) {
-        return;
-    }
     auto *mime = new QMimeData;
     mime->setData(QString::fromLatin1(kWorkspaceClipMime), encodeWorkspaceClipboard(items));
     QList<QUrl> urls;
@@ -1552,6 +1545,19 @@ void MainWindow::copyWorkspaceItems()
         mime->setUrls(urls);
     }
     QApplication::clipboard()->setMimeData(mime);
+}
+
+void MainWindow::copyWorkspaceItems()
+{
+    if (!m_imageView || !isWorkspaceMode()) {
+        return;
+    }
+    const QList<WorkspaceItemState> items = m_imageView->captureSelectedWorkspaceClipboard();
+    if (items.isEmpty()) {
+        return;
+    }
+    writeWorkspaceMime(items);
+    m_workspacePasteGeneration = 0;
     if (statusBar()) {
         statusBar()->showMessage(tr("Copied %n Workspace tile(s)", "", items.size()), 2500);
     }
@@ -1566,7 +1572,8 @@ void MainWindow::cutWorkspaceItems()
     if (items.isEmpty()) {
         return;
     }
-    copyWorkspaceItems();
+    writeWorkspaceMime(items);
+    m_workspacePasteGeneration = 0;
     m_imageView->removeSelectedCanvasItems();
     syncThumbnailCanvasMembership();
     markWorkspaceDirty();
@@ -1598,19 +1605,23 @@ void MainWindow::pasteWorkspaceItems()
         enterWorkspaceMode();
     }
 
-    // Offset the group so paste is visible next to the originals.
-    constexpr qreal kPasteOffset = 40.0;
+    // Stack successive pastes of the same clipboard away from each other.
+    ++m_workspacePasteGeneration;
+    const qreal off = 40.0 * static_cast<qreal>(m_workspacePasteGeneration);
     QVector<SessionImageId> newIds;
     QList<int> indices;
+    QList<SessionImageId> selectIds;
     newIds.reserve(items.size());
     indices.reserve(items.size());
+    selectIds.reserve(items.size());
     for (WorkspaceItemState &s : items) {
-        s.pos += QPointF(kPasteOffset, kPasteOffset);
+        s.pos += QPointF(off, off);
         const SessionImageId id = allocSessionId();
         m_session.append(s.path, id);
         s.sessionId = id;
         m_imageView->setSessionAppearance(id, s);
         newIds.append(id);
+        selectIds.append(id);
         indices.append(m_session.size() - 1);
     }
 
@@ -1620,7 +1631,8 @@ void MainWindow::pasteWorkspaceItems()
         m_thumbnailBar->setMultiSelectEnabled(true);
     }
     m_imageView->placeWorkspaceClipboardItems(items, newIds, indices);
-    // Select the new session rows in the filmstrip.
+    // Select as soon as tiles exist (may be empty until LoadAdd finishes).
+    m_imageView->selectBySessionIds(selectIds);
     if (m_thumbnailBar && !indices.isEmpty()) {
         m_thumbnailBar->setSelectedIndices(indices);
         m_thumbnailBar->setCurrentIndex(indices.first());

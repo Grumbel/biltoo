@@ -587,6 +587,7 @@ void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &it
     if (m_scene) {
         m_scene->clearSelection();
     }
+    m_pendingSelectSessionIds.clear();
     for (int i = 0; i < items.size(); ++i) {
         const WorkspaceItemState &st = items.at(i);
         const SessionImageId sid = newIds.at(i);
@@ -594,6 +595,7 @@ void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &it
         if (st.path.isEmpty() || sid == kInvalidSessionImageId) {
             continue;
         }
+        m_pendingSelectSessionIds.insert(sid);
         // Appearance (content + pose) must already be in the store under sid.
         addImageForSession(st.path, sid, idx);
     }

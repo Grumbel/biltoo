@@ -419,6 +419,8 @@ private:
     QString m_projectPath;
     /** True after Workspace canvas changes until successful project save/load. */
     bool m_workspaceDirty = false;
+    /** Stacked paste offset (reset on Copy/Cut); each Paste steps by 40px. */
+    int m_workspacePasteGeneration = 0;
     /** Past sessions (full path lists), newest first. */
     QList<QStringList> m_sessionHistory;
     static constexpr int kMaxSessionHistory = 20;
