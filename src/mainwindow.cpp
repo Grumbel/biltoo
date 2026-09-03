@@ -1295,6 +1295,8 @@ void MainWindow::updateFullscreenUi()
             m_metadataDock && m_metadataDock->isVisible();
         m_layoutVisibleBeforeFullscreen =
             m_layoutDock && m_layoutDock->isVisible();
+        m_adjustmentsVisibleBeforeFullscreen =
+            m_adjustmentsDock && m_adjustmentsDock->isVisible();
         m_toolBar->setVisible(false);
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
@@ -1304,11 +1306,17 @@ void MainWindow::updateFullscreenUi()
         if (m_layoutDock) {
             m_layoutDock->setVisible(false);
         }
+        if (m_adjustmentsDock) {
+            m_adjustmentsDock->setVisible(false);
+        }
         m_toggleToolBarAct->setChecked(false);
         m_toggleThumbnailBarAct->setChecked(false);
         m_toggleMetadataAct->setChecked(false);
         if (m_toggleLayoutPanelAct) {
             m_toggleLayoutPanelAct->setChecked(false);
+        }
+        if (m_toggleAdjustmentsAct) {
+            m_toggleAdjustmentsAct->setChecked(false);
         }
         menuBar()->setVisible(false);
         statusBar()->setVisible(false);
@@ -1324,6 +1332,12 @@ void MainWindow::updateFullscreenUi()
         }
         if (m_toggleMetadataAct) {
             m_toggleMetadataAct->setChecked(m_metadataVisibleBeforeFullscreen);
+        }
+        if (m_adjustmentsDock) {
+            m_adjustmentsDock->setVisible(m_adjustmentsVisibleBeforeFullscreen);
+        }
+        if (m_toggleAdjustmentsAct) {
+            m_toggleAdjustmentsAct->setChecked(m_adjustmentsVisibleBeforeFullscreen);
         }
         // Thumbnails and Layout panel follow per-mode rules, not a single
         // pre-fullscreen snapshot (Gallery must not regain a Workspace layout dock).

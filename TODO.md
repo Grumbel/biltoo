@@ -1772,3 +1772,21 @@ Select / Pan).
 - [x] Document; next **120**
 
 **Next bundle:** `qimgview-120-…` — further polish as needed.
+
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-120-fs-hide-adjustments`
+
+**Request:** Hide the Adjustments panel in fullscreen, like metadata / layout /
+toolbars.
+
+**Fix:** Snapshot visibility on enter fullscreen, hide dock + uncheck action;
+restore both on leave.
+
+### Done criteria
+
+- [x] Adjustments hidden in fullscreen and restored on exit
+- [x] Document; next **121**
+
+**Next bundle:** `qimgview-121-…` — further polish as needed.
