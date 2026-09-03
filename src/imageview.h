@@ -448,6 +448,22 @@ public:
     /** Workspace: clone selection (same path, independent transforms). */
     void duplicateSelected();
 
+    /**
+     * Workspace clipboard: capture selected tiles (path + content + pose).
+     * Empty when not Workspace or nothing selected.
+     */
+    QList<WorkspaceItemState> captureSelectedWorkspaceClipboard() const;
+    /** Workspace: remove selected tiles from the canvas only (session kept). */
+    void removeSelectedCanvasItems();
+    /**
+     * Place clipboard tiles. @p items already include paste pose offset;
+     * @p newIds / sessionIndices are parallel. Caller must setSessionAppearance
+     * before this so LoadAdd applies content + pose from the store.
+     */
+    void placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &items,
+                                      const QVector<SessionImageId> &newIds,
+                                      const QList<int> &sessionIndices);
+
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);

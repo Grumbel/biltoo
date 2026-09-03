@@ -371,3 +371,17 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   `copySessionAppearance` falls back to a live donor when the store has no entry
   (filmstrip drop-duplicate). LoadAdd emits `sessionAppearanceChanged` after apply
   so thumbs stay graded. Grade-only rebind on already-decoded tiles applies in place.
+
+- [x] **Content-appearance path audit (post-centralise)**  
+  All decode/restore/rebind full-content sites use `applyContentToItem` or
+  `applyStoredAppearance` (which delegates). Remaining intentional special cases:
+  crop-mode enter (`applyContentBakes` without crop so the draft is full-frame);
+  live chrome bakeFlip/bakeRotate90 then commit; `setTargetColorAdjustments`
+  (interactive grade); `applyCropAppearance` (undo reconstruct from source image).
+
+- [x] **Workspace Copy / Cut / Paste**  
+  Ctrl+C/X/V and Workspace menu + context menu. Clipboard MIME
+  `application/x-qimgview-workspace-items` (JSON via project appearance serde + path).
+  Copy captures path + content + pose; Cut = copy + canvas-only remove (session
+  kept, same as Delete); Paste allocates new SessionImageIds, offsets pose by
+  (40,40), sets appearance store, places via `addImageForSession` / LoadAdd.

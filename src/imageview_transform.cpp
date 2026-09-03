@@ -518,6 +518,90 @@ void ImageView::duplicateSelected()
     viewport()->update();
 }
 
+QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
+{
+    QList<WorkspaceItemState> out;
+    if (!isWorkspaceMode()) {
+        return out;
+    }
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!item || !m_items.contains(item)) {
+            continue;
+        }
+        WorkspaceItemState s = captureState(item);
+        s.path = item->path();
+        s.sessionId = item->sessionId();
+        // Prefer store for content meta not fully on the item (cropRotation, …).
+        if (item->sessionId() != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *app = m_appearance.get(item->sessionId())) {
+                s.cropRotation = app->cropRotation;
+                s.cropSourceSize = app->cropSourceSize;
+                s.contentQuarterTurns = app->contentQuarterTurns;
+                if (s.colorAdjust.isIdentity() && !app->colorAdjust.isIdentity()) {
+                    s.colorAdjust = app->colorAdjust;
+                }
+            }
+        }
+        out.append(s);
+    }
+    return out;
+}
+
+void ImageView::removeSelectedCanvasItems()
+{
+    if (!isWorkspaceMode() || !m_scene) {
+        return;
+    }
+    QList<ImageItem *> toRemove;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (item && m_items.contains(item)) {
+            toRemove.append(item);
+        }
+    }
+    if (toRemove.isEmpty()) {
+        return;
+    }
+    setUpdatesEnabled(false);
+    m_scene->blockSignals(true);
+    for (ImageItem *item : toRemove) {
+        // Persist pose + content so filmstrip membership toggle can restore pose.
+        rememberItemState(item);
+        destroyCanvasItem(item);
+    }
+    m_scene->blockSignals(false);
+    setUpdatesEnabled(true);
+    viewport()->update();
+    emit statusChanged();
+    emit workspacePathsChanged();
+}
+
+void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &items,
+                                             const QVector<SessionImageId> &newIds,
+                                             const QList<int> &sessionIndices)
+{
+    if (!isWorkspaceMode() || items.isEmpty() || newIds.size() != items.size()) {
+        return;
+    }
+    if (m_scene) {
+        m_scene->clearSelection();
+    }
+    for (int i = 0; i < items.size(); ++i) {
+        const WorkspaceItemState &st = items.at(i);
+        const SessionImageId sid = newIds.at(i);
+        const int idx = (i < sessionIndices.size()) ? sessionIndices.at(i) : -1;
+        if (st.path.isEmpty() || sid == kInvalidSessionImageId) {
+            continue;
+        }
+        // Appearance (content + pose) must already be in the store under sid.
+        addImageForSession(st.path, sid, idx);
+    }
+    emit statusChanged();
+    emit workspacePathsChanged();
+    viewport()->update();
+}
+
 qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
 {
     const QPointF c = item->scenePos();

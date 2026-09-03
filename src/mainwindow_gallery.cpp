@@ -564,6 +564,21 @@ void MainWindow::updateWorkspaceActionVisibility()
                     && !m_imageView->selectedPaths().isEmpty()));
         m_duplicateAct->setEnabled(canDup);
     }
+    // Copy/Cut: Workspace selection only. Paste stays available (enters Workspace).
+    const bool canEditTiles = workspace && m_imageView
+        && m_imageView->hasTransformTargets();
+    if (m_copyWorkspaceAct) {
+        m_copyWorkspaceAct->setVisible(true);
+        m_copyWorkspaceAct->setEnabled(canEditTiles);
+    }
+    if (m_cutWorkspaceAct) {
+        m_cutWorkspaceAct->setVisible(true);
+        m_cutWorkspaceAct->setEnabled(canEditTiles);
+    }
+    if (m_pasteWorkspaceAct) {
+        m_pasteWorkspaceAct->setVisible(true);
+        m_pasteWorkspaceAct->setEnabled(true);
+    }
     if (m_undoAct) {
         m_undoAct->setVisible(true);
         m_redoAct->setVisible(true);

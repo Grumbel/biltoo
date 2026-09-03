@@ -425,6 +425,23 @@ void MainWindow::createActions()
     m_duplicateAct->setStatusTip(tr("Duplicate selected image(s) into the session (Gallery or Workspace)"));
     connect(m_duplicateAct, &QAction::triggered, this, &MainWindow::duplicateSelected);
 
+    m_copyWorkspaceAct = new QAction(tr("&Copy"), this);
+    m_copyWorkspaceAct->setShortcuts(QKeySequence::Copy);
+    m_copyWorkspaceAct->setStatusTip(tr("Copy selected Workspace tiles (appearance and placement)"));
+    connect(m_copyWorkspaceAct, &QAction::triggered, this, &MainWindow::copyWorkspaceItems);
+
+    m_cutWorkspaceAct = new QAction(tr("Cu&t"), this);
+    m_cutWorkspaceAct->setShortcuts(QKeySequence::Cut);
+    m_cutWorkspaceAct->setStatusTip(
+        tr("Cut selected Workspace tiles from the canvas (session membership kept)"));
+    connect(m_cutWorkspaceAct, &QAction::triggered, this, &MainWindow::cutWorkspaceItems);
+
+    m_pasteWorkspaceAct = new QAction(tr("&Paste"), this);
+    m_pasteWorkspaceAct->setShortcuts(QKeySequence::Paste);
+    m_pasteWorkspaceAct->setStatusTip(
+        tr("Paste Workspace tiles as new session images (offset placement)"));
+    connect(m_pasteWorkspaceAct, &QAction::triggered, this, &MainWindow::pasteWorkspaceItems);
+
     m_openSelectionNewWindowAct = new QAction(tr("Open Selection in &New Window"), this);
     m_openSelectionNewWindowAct->setStatusTip(
         tr("Open the selected images in a new QImgView window"));
@@ -708,6 +725,9 @@ void MainWindow::createMenus()
     workspaceMenu->addAction(m_resetScaleAct);
     workspaceMenu->addAction(m_resetRotationAct);
     workspaceMenu->addSeparator();
+    workspaceMenu->addAction(m_copyWorkspaceAct);
+    workspaceMenu->addAction(m_cutWorkspaceAct);
+    workspaceMenu->addAction(m_pasteWorkspaceAct);
     workspaceMenu->addAction(m_duplicateAct);
 
     m_goMenu = menuBar()->addMenu(tr("&Go"));

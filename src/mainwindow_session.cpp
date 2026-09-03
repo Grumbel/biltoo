@@ -4,6 +4,11 @@
 #include "mainwindow_includes.h"
 #include "projectfile.h"
 #include "imageitem.h"
+
+#include <QClipboard>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QVector>
 
 namespace {
@@ -1477,6 +1482,156 @@ int MainWindow::sessionIndexOfId(SessionImageId id) const
     return m_session.indexOfId(id);
 }
 
+namespace {
+
+const char kWorkspaceClipMime[] = "application/x-qimgview-workspace-items";
+
+QByteArray encodeWorkspaceClipboard(const QList<WorkspaceItemState> &items)
+{
+    QJsonArray arr;
+    for (const WorkspaceItemState &s : items) {
+        QJsonObject o = appearanceToJson(s, /*includePose=*/true);
+        o.insert(QStringLiteral("path"), s.path);
+        arr.append(o);
+    }
+    QJsonObject root;
+    root.insert(QStringLiteral("format"), QStringLiteral("qimgview-workspace-clipboard"));
+    root.insert(QStringLiteral("version"), 1);
+    root.insert(QStringLiteral("items"), arr);
+    return QJsonDocument(root).toJson(QJsonDocument::Compact);
+}
+
+QList<WorkspaceItemState> decodeWorkspaceClipboard(const QByteArray &bytes)
+{
+    QList<WorkspaceItemState> out;
+    const QJsonDocument doc = QJsonDocument::fromJson(bytes);
+    if (!doc.isObject()) {
+        return out;
+    }
+    const QJsonObject root = doc.object();
+    if (root.value(QStringLiteral("format")).toString()
+        != QLatin1String("qimgview-workspace-clipboard")) {
+        return out;
+    }
+    const QJsonArray arr = root.value(QStringLiteral("items")).toArray();
+    for (const QJsonValue &v : arr) {
+        if (!v.isObject()) {
+            continue;
+        }
+        const QJsonObject o = v.toObject();
+        WorkspaceItemState s = appearanceFromJson(o);
+        s.path = o.value(QStringLiteral("path")).toString();
+        if (!s.path.isEmpty()) {
+            out.append(s);
+        }
+    }
+    return out;
+}
+
+} // namespace
+
+void MainWindow::copyWorkspaceItems()
+{
+    if (!m_imageView || !isWorkspaceMode()) {
+        return;
+    }
+    const QList<WorkspaceItemState> items = m_imageView->captureSelectedWorkspaceClipboard();
+    if (items.isEmpty()) {
+        return;
+    }
+    auto *mime = new QMimeData;
+    mime->setData(QString::fromLatin1(kWorkspaceClipMime), encodeWorkspaceClipboard(items));
+    QList<QUrl> urls;
+    for (const WorkspaceItemState &s : items) {
+        const QUrl u = QUrl::fromLocalFile(s.path);
+        if (u.isValid() && !urls.contains(u)) {
+            urls.append(u);
+        }
+    }
+    if (!urls.isEmpty()) {
+        mime->setUrls(urls);
+    }
+    QApplication::clipboard()->setMimeData(mime);
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Copied %n Workspace tile(s)", "", items.size()), 2500);
+    }
+}
+
+void MainWindow::cutWorkspaceItems()
+{
+    if (!m_imageView || !isWorkspaceMode()) {
+        return;
+    }
+    const QList<WorkspaceItemState> items = m_imageView->captureSelectedWorkspaceClipboard();
+    if (items.isEmpty()) {
+        return;
+    }
+    copyWorkspaceItems();
+    m_imageView->removeSelectedCanvasItems();
+    syncThumbnailCanvasMembership();
+    markWorkspaceDirty();
+    updateWorkspaceActionVisibility();
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Cut %n Workspace tile(s)", "", items.size()), 2500);
+    }
+}
+
+void MainWindow::pasteWorkspaceItems()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const QMimeData *mime = QApplication::clipboard()->mimeData();
+    if (!mime || !mime->hasFormat(QString::fromLatin1(kWorkspaceClipMime))) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Clipboard has no Workspace tiles."), 2500);
+        }
+        return;
+    }
+    QList<WorkspaceItemState> items =
+        decodeWorkspaceClipboard(mime->data(QString::fromLatin1(kWorkspaceClipMime)));
+    if (items.isEmpty()) {
+        return;
+    }
+
+    if (!isWorkspaceMode()) {
+        enterWorkspaceMode();
+    }
+
+    // Offset the group so paste is visible next to the originals.
+    constexpr qreal kPasteOffset = 40.0;
+    QVector<SessionImageId> newIds;
+    QList<int> indices;
+    newIds.reserve(items.size());
+    indices.reserve(items.size());
+    for (WorkspaceItemState &s : items) {
+        s.pos += QPointF(kPasteOffset, kPasteOffset);
+        const SessionImageId id = allocSessionId();
+        m_session.append(s.path, id);
+        s.sessionId = id;
+        m_imageView->setSessionAppearance(id, s);
+        newIds.append(id);
+        indices.append(m_session.size() - 1);
+    }
+
+    m_session.validateUniqueIds("pasteWorkspaceItems");
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+        m_thumbnailBar->setMultiSelectEnabled(true);
+    }
+    m_imageView->placeWorkspaceClipboardItems(items, newIds, indices);
+    // Select the new session rows in the filmstrip.
+    if (m_thumbnailBar && !indices.isEmpty()) {
+        m_thumbnailBar->setSelectedIndices(indices);
+        m_thumbnailBar->setCurrentIndex(indices.first());
+    }
+    syncThumbnailCanvasMembership();
+    markWorkspaceDirty();
+    updateWorkspaceActionVisibility();
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Pasted %n Workspace tile(s)", "", items.size()), 2500);
+    }
+}
 
 void MainWindow::saveProject()
 {

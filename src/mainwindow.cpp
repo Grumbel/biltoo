@@ -1164,6 +1164,9 @@ void MainWindow::showContextMenu(const QPoint &pos)
     if (isWorkspaceMode()) {
         menu.addAction(m_resetScaleAct);
         menu.addAction(m_resetRotationAct);
+        menu.addAction(m_copyWorkspaceAct);
+        menu.addAction(m_cutWorkspaceAct);
+        menu.addAction(m_pasteWorkspaceAct);
         menu.addAction(m_duplicateAct);
         menu.addAction(m_raiseAct);
         menu.addAction(m_lowerAct);
