@@ -862,6 +862,11 @@ and sheared tiles follow the selection AABB.
 - Placement resets (scale/rotation/shear) require Workspace + selection
 - Layout actions stay enabled in Image mode intentionally (enter Gallery)
 
+### Fixed in `qimgview-097`
+- Thumbnail bar status tip / tooltip for drag-to-Workspace
+- Gallery **C**: confirmed — single selection opens Image + crop; otherwise
+  action disabled (`hasSingleCropTarget`)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -884,14 +889,14 @@ and sheared tiles follow the selection AABB.
 
 ### Thumbnail bar
 - [x] Labels on/off and crop-thumbnails live under View → Thumbnails — good.
-- [ ] Drag from thumb strip to Workspace: verify status tip / cursor affordance.
+- [x] Drag from thumb strip to Workspace: verify status tip / cursor affordance.
 - [ ] Very long sessions: virtualization exists for Gallery canvas; strip still
   loads many thumbs — optional windowed decode already partially present.
 
 ### Mode enablement
 - [x] Audit that Gallery-only actions disable in pure Image mode and vice versa
   (layout actions, workspace tools) so the toolbar does not look "dead click".
-- [ ] Crop shortcut **C** in Gallery: should no-op or enter image crop for
+- [x] Crop shortcut **C** in Gallery: should no-op or enter image crop for
   selection — confirm behaviour.
 
 ### Missing features (product)
@@ -1155,3 +1160,34 @@ duplicate slot B), mode enablement audit, or remaining polish.
 
 **Next bundle:** `qimgview-097-…` — identity residual (Image-mode crop of
 duplicate slot B), Gallery crop shortcut **C** behaviour, or thumb drag tips.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-097-thumb-drag-crop-c`
+
+**Goal:** Small remaining polish from the UI audit.
+
+### Scope
+
+1. **Thumbnail bar drag affordance**
+   - Status tip / tooltip explaining drag-to-Workspace (and open on activate).
+2. **Gallery crop shortcut C**
+   - Confirm existing behaviour: single selection → open Image mode + crop;
+     no / multi selection → no-op (action disabled via `hasSingleCropTarget`).
+   - Optional: status bar message if triggered while disabled is unnecessary
+     (action stays disabled).
+3. **TODO audit** mark both items.
+
+### Out of scope
+
+- Identity residual (duplicate Image-mode crop → Workspace tile B)
+- Thumb strip virtualization for long sessions
+
+### Done criteria
+
+- [x] Thumb strip communicates drag-to-Workspace
+- [x] Gallery C behaviour documented/confirmed
+- [x] next **098**
+
+**Next bundle:** `qimgview-098-…` — identity residual (Image-mode crop of
+duplicate slot B), or remaining product polish (Recent naming, long-session thumbs).

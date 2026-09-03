@@ -199,6 +199,9 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setDragEnabled(true);
     setDragDropMode(QAbstractItemView::DragOnly);
     setDefaultDropAction(Qt::CopyAction);
+    setStatusTip(tr("Drag thumbnails onto the Workspace canvas to place them; "
+                    "double-click or Enter opens the image"));
+    setToolTip(tr("Drag to Workspace · double-click to open"));
 
     QFont captionFont = font();
     if (captionFont.pointSizeF() > 0) {

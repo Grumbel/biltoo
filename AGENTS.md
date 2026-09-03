@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-096-mode-enablement-polish”**
-(Grid Crop stay hidden; Workspace placement resets gated). Next bundle number: **097**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-03) — bundle qimgview-097-thumb-drag-crop-c”**
+(thumb drag tip; Gallery C confirmed). Next bundle number: **098**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
