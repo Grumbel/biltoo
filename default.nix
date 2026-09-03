@@ -13,6 +13,23 @@
 , libimagequant
 , libarchive
 , kimageformats
+  # Further vips Requires.private (and their .pc deps) — pkg-config noise only.
+, cgif
+, libexif
+, libultrahdr
+, libwebp
+, pango
+, fribidi
+, libtiff
+, librsvg
+, dav1d
+, matio
+, hdf5
+, lcms2
+, openexr
+, libraw
+, openjpeg
+, libhwy
 , version ? "0.1.0-dev"
 }:
 
@@ -48,6 +65,24 @@ stdenv.mkDerivation (finalAttrs: {
     libarchive
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats
+    # More vips Requires.private (and transitive .pc names) so pkg_check_modules(vips)
+    # does not spam "Package '…' was not found". We do not link these into qimgview.
+    cgif
+    libexif
+    libultrahdr
+    libwebp
+    pango
+    fribidi
+    libtiff
+    librsvg
+    dav1d
+    matio
+    hdf5
+    lcms2
+    openexr
+    libraw
+    openjpeg
+    libhwy
   ];
 
   # Keep symbols, strip into a separate "debug" output for gdb/coredumpctl.

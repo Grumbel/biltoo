@@ -1509,3 +1509,26 @@ Do not fake-consume the KDE vars and do not fight the setup hooks.
 - [x] next **110**
 
 **Next bundle:** `qimgview-110-…` — further packaging / UI polish as needed.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-110-vips-pc-deps`
+
+**Noise:** Further `Package '…', required by 'vips', not found` (and transitive
+`.pc` names) after cfitsio / imagequant were fixed.
+
+**Fix:** Add the remaining common vips Requires.private providers to
+`default.nix` `buildInputs` so their `.pc` files sit on `PKG_CONFIG_PATH`.
+Same pattern as fftw / cfitsio / libimagequant — we do not link them into
+qimgview.
+
+Packages: `cgif`, `libexif`, `libultrahdr`, `libwebp`, `pango`, `fribidi`,
+`libtiff`, `librsvg`, `dav1d`, `matio`, `hdf5`, `lcms2` (not the `lcms`
+alias), `openexr`, `libraw`, `openjpeg`, `libhwy`.
+
+### Done criteria
+
+- [x] Extra vips .pc deps on buildInputs
+- [x] next **111**
+
+**Next bundle:** `qimgview-111-…` — further packaging / UI polish as needed.
