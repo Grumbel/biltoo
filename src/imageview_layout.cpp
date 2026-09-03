@@ -645,6 +645,19 @@ ImageItem *ImageView::findItemBySessionId(SessionImageId sessionId) const
     return nullptr;
 }
 
+bool ImageView::hasPendingSessionBindForPath(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return false;
+    }
+    for (const PendingSessionBind &b : m_pendingSessionBinds) {
+        if (b.path == path) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
 {
     if (sessionId == kInvalidSessionImageId) {

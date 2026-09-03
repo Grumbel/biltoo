@@ -1055,12 +1055,21 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
         if (path.isEmpty()) {
             continue;
         }
-        urls.append(QUrl::fromLocalFile(path));
+        // Local files: normal file URL. Archive refs: container path only in the
+        // URL list (expandPaths understands the full ref via session-id path).
+        if (ArchivePath::isArchiveRef(path)) {
+            const QString container = ArchivePath::archiveFilePath(path);
+            if (!container.isEmpty()) {
+                urls.append(QUrl::fromLocalFile(container));
+            }
+        } else {
+            urls.append(QUrl::fromLocalFile(path));
+        }
         // Prefer SessionImageId stamped on the item (setFiles / setSessionIds).
         SessionImageId sid = kInvalidSessionImageId;
-        const QVariant idVar = it->data(RoleSessionId);
-        if (idVar.isValid()) {
-            sid = static_cast<SessionImageId>(idVar.toLongLong());
+        const QVariant sidVar = it->data(RoleSessionId);
+        if (sidVar.isValid()) {
+            sid = static_cast<SessionImageId>(sidVar.toLongLong());
         } else {
             const int r = row(it);
             if (r >= 0 && r < m_sessionIds.size()) {

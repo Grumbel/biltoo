@@ -881,6 +881,10 @@ and sheared tiles follow the selection AABB.
 - Workspace stash restore always reloads full pixels before geometry content
   apply (fixes alternating wrong size/crop on Workspace↔Image cycles)
 
+### Fixed in `qimgview-101`
+- Paste/drop: do not allocate phantom session rows while PendingSessionBind
+  is outstanding (broken filmstrip drag entries)
+
 ### Organisation / density
 - [x] Main toolbar is crowded: 8 gallery layout icons + workspace mode.
   Prefer a single **Layout** tool button with menu (like Sort).
@@ -1288,3 +1292,30 @@ quarter-turns). Colour-grade-only can skip reload.
 - [x] Document; next **101**
 
 **Next bundle:** `qimgview-101-…` — further polish or regressions from this fix.
+
+---
+
+## Plan / work (2026-09-03) — bundle `qimgview-101-paste-thumb-bind`
+
+**Bug:** Copy/Paste creates invalid filmstrip entries that cannot be
+drag-and-dropped onto the Workspace.
+
+**Likely cause:** After paste, `placeWorkspaceClipboardItems` schedules async
+LoadAdd and emits `workspacePathsChanged` → `syncThumbnailCanvasMembership`.
+If a live tile exists (or is briefly unbound) before the pending session bind
+is applied, the grow path allocates a **second** session row for the same tile
+with a new SessionImageId. Filmstrip then has a phantom row (wrong/missing id
+alignment) that does not drag/drop correctly.
+
+**Fix:**
+1. Do not auto-append session rows in `syncThumbnailCanvasMembership` while a
+   pending session bind still exists for that path.
+2. Harden thumbnail drag mime: skip empty paths; for archive refs use a valid
+   container file URL plus session-id payload (already present).
+
+### Done criteria
+
+- [x] Pending binds block phantom session growth
+- [x] Document; next **102**
+
+**Next bundle:** `qimgview-102-…` — further paste/drag polish if needed.

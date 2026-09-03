@@ -330,6 +330,8 @@ public:
     bool hasWorkspaceSessionIndex(int sessionIndex) const;
     ImageItem *findItemBySessionIndex(int sessionIndex) const;
     ImageItem *findItemBySessionId(SessionImageId sessionId) const;
+    /** True while LoadAdd still has an unbound PendingSessionBind for @p path. */
+    bool hasPendingSessionBindForPath(const QString &path) const;
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
     void detachCanvasSessionId(SessionImageId sessionId);
