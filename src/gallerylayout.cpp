@@ -231,7 +231,6 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 const qreal scale = e.scale * s;
                 e.item->setItemScale(scale);
                 e.item->setItemShear(0.0);
-            item->setItemShear(0.0);
                 const qreal w = e.ns.width() * scale;
                 const qreal h = e.ns.height() * scale;
                 e.item->setPos(x + w / 2.0, y + h / 2.0);
@@ -285,7 +284,6 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 const qreal scale = e.scale * s;
                 e.item->setItemScale(scale);
                 e.item->setItemShear(0.0);
-            item->setItemShear(0.0);
                 const qreal w = e.ns.width() * scale;
                 const qreal h = e.ns.height() * scale;
                 e.item->setPos(x + w / 2.0, y + h / 2.0);
