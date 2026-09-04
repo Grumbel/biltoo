@@ -976,7 +976,9 @@ private:
     int m_slideshowTransitionDurationMs = 400;
     QPixmap m_slideshowTransitionPixmap; /**< From-frame snapshot */
     QPixmap m_slideshowTransitionToPixmap; /**< To-frame (live blit / Slide) */
-    QPixmap m_slideshowTransitionFromPixmap; /**< Static from-frame (opacity crossfade) */
+    QPixmap m_slideshowTransitionFromPixmap; /**< From-frame during dual-image fade */
+    QPixmap m_dwellCoverPixmap; /**< Single-image Ken Burns blit during dwell */
+    QImage m_dwellSourceImage; /**< Source pixels for dwell blit */
     qreal m_slideshowTransitionProgress = 1.0; /**< 0 = old frame, 1 = done */
     bool m_slideshowTransitionPending = false;
     bool m_slideshowTransitionActive = false;

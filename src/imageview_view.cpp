@@ -703,14 +703,12 @@ void ImageView::reapplySlideshowFraming()
 
 void ImageView::cancelSlideshowMotion()
 {
-    if (m_slideshowMotionActive) {
-        }
     m_slideshowMotionActive = false;
     m_motionElapsedOffsetMs = 0;
     if (m_motionTimer) {
         m_motionTimer->stop();
     }
-    // Camera mode is owned by start/stop of dwell motion only.
+    m_dwellCoverPixmap = QPixmap();
 }
 
 void ImageView::enterSlideshowCameraMode()
@@ -802,7 +800,6 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 
     // Stop scene camera — painting is dual blit only for the transition.
     cancelSlideshowMotion();
-    enterSlideshowCameraMode();
 
     if (!m_liveFromSourceImage.isNull()) {
         const QPointF saveA = m_motionBiasA;
@@ -1172,11 +1169,12 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         return;
     }
 
-    enterSlideshowCameraMode();
+    // Ken Burns moves the *image* via blit, not the QGraphicsView camera.
+    m_dwellSourceImage = item->sourceImage();
+    if (m_dwellSourceImage.isNull()) {
+        return;
+    }
 
-    // Identity item pose — camera is entirely the view matrix. Residual
-    // Workspace shear/rotation would look like stretch under the view scale.
-    // m_fitMode must stay false so resizeEvent cannot fitItem over the camera.
     m_fitMode = false;
     m_fillMode = (m_slideshowZoom == SlideshowZoom::Fill);
     item->setItemShear(0.0);
@@ -1186,138 +1184,11 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         item->setPos(0, 0);
     }
 
-    // Content size (source aspect), not scene AABB which can inflate under
-    // a non-identity local transform.
-    const QRectF content = item->contentRect();
-    if (content.width() < 1.0 || content.height() < 1.0) {
-        return;
+    const QString path = item->path();
+    if (!(m_liveTransitionHold || m_liveTransitionActive)) {
+        pickInterestingMotionBiases(qHash(path));
     }
-    const qreal iw = content.width();
-    const qreal ih = content.height();
-    const QPointF mid = item->mapToScene(content.center());
-    const qreal vw = qreal(qMax(1, viewport()->width()));
-    const qreal vh = qreal(qMax(1, viewport()->height()));
-
-    // Room for the camera to pan without scrollbar clamping.
-    if (m_scene) {
-        const qreal pad = qMax(vw, vh) * 2.0;
-        m_scene->setSceneRect(QRectF(mid.x() - iw * 0.5 - pad, mid.y() - ih * 0.5 - pad,
-                                     iw + 2.0 * pad, ih + 2.0 * pad));
-    }
-
-    const qreal coverScale = qMax(vw / iw, vh / ih);
-    const qreal fitScale = qMin(vw / iw, vh / ih);
-    qreal baseScale = coverScale;
-    switch (m_slideshowZoom) {
-    case SlideshowZoom::Fill:
-        baseScale = coverScale;
-        break;
-    case SlideshowZoom::Actual:
-        baseScale = 1.0;
-        break;
-    case SlideshowZoom::Fit:
-    default:
-        baseScale = fitScale;
-        break;
-    }
-    if (baseScale <= 0.0 || !qIsFinite(baseScale)) {
-        return;
-    }
-
-    // Half the room the camera may move at a given scale (scene units).
-    // When scale is below cover the view is larger than the image → no overflow
-    // (letterbox / padding); clamp keeps the image centred.
-    auto halfOverflow = [&](qreal scale) -> QPointF {
-        if (scale <= 0.0) {
-            return QPointF(0, 0);
-        }
-        const qreal viewW = vw / scale;
-        const qreal viewH = vh / scale;
-        return QPointF(qMax(0.0, (iw - viewW) * 0.5),
-                       qMax(0.0, (ih - viewH) * 0.5));
-    };
-    auto clampCenter = [&](QPointF c, qreal scale) -> QPointF {
-        const QPointF half = halfOverflow(scale);
-        return QPointF(qBound(mid.x() - half.x(), c.x(), mid.x() + half.x()),
-                       qBound(mid.y() - half.y(), c.y(), mid.y() + half.y()));
-    };
-
-    if (m_slideshowMotion == SlideshowMotion::PanScan) {
-        // Constant scale at the zoom base. Overscan only when that base leaves
-        // almost no overflow (e.g. Fit, or Fill on near-matching aspect).
-        qreal scale = baseScale;
-        QPointF half = halfOverflow(scale);
-        const bool preferX = iw * vh >= ih * vw; // wider than view
-        qreal travel = preferX ? half.x() : half.y();
-        constexpr qreal kMinTravelScene = 8.0; // px of motion at least
-        if (travel < kMinTravelScene) {
-            // Target ~20% of the long image side as total travel (10% each side).
-            const qreal longSide = preferX ? iw : ih;
-            const qreal wantHalf = qMax(kMinTravelScene, longSide * 0.10);
-            if (preferX) {
-                const qreal viewW = qMax(vw * 0.5, iw - 2.0 * wantHalf);
-                scale = vw / viewW;
-            } else {
-                const qreal viewH = qMax(vh * 0.5, ih - 2.0 * wantHalf);
-                scale = vh / viewH;
-            }
-            scale = qMax(scale, baseScale);
-            half = halfOverflow(scale);
-            travel = preferX ? half.x() : half.y();
-        }
-        m_motionStartScale = scale;
-        m_motionEndScale = scale;
-        if (preferX && half.x() > 0.5) {
-            m_motionStartCenter = QPointF(mid.x() - half.x(), mid.y());
-            m_motionEndCenter = QPointF(mid.x() + half.x(), mid.y());
-        } else if (!preferX && half.y() > 0.5) {
-            m_motionStartCenter = QPointF(mid.x(), mid.y() - half.y());
-            m_motionEndCenter = QPointF(mid.x(), mid.y() + half.y());
-        } else if (half.x() >= half.y() && half.x() > 0.5) {
-            m_motionStartCenter = QPointF(mid.x() - half.x(), mid.y());
-            m_motionEndCenter = QPointF(mid.x() + half.x(), mid.y());
-        } else if (half.y() > 0.5) {
-            m_motionStartCenter = QPointF(mid.x(), mid.y() - half.y());
-            m_motionEndCenter = QPointF(mid.x(), mid.y() + half.y());
-        } else {
-            m_motionStartCenter = mid;
-            m_motionEndCenter = mid;
-        }
-        m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
-        m_motionEndCenter = clampCenter(m_motionEndCenter, m_motionEndScale);
-    } else {
-        // Ken Burns needs pan room. Fit often has ~0 overflow at base (path
-        // stuck on centre). Raise motion base until there is usable travel.
-        qreal motionBase = baseScale;
-        {
-            constexpr qreal kMinHalf = 32.0;
-            for (int i = 0; i < 10; ++i) {
-                const QPointF h = halfOverflow(motionBase);
-                if (h.x() >= kMinHalf || h.y() >= kMinHalf) {
-                    break;
-                }
-                motionBase *= 1.15;
-            }
-            motionBase = qMax(motionBase, baseScale);
-        }
-        m_motionStartScale = motionBase;
-        m_motionEndScale = motionBase * qBound(1.02, m_panZoomFactor, 1.40);
-        const QPointF halfStart = halfOverflow(m_motionStartScale);
-        const QPointF halfEnd = halfOverflow(m_motionEndScale);
-
-        const QString path = item->path();
-        if (!(m_liveTransitionHold || m_liveTransitionActive)) {
-            pickInterestingMotionBiases(qHash(path));
-        }
-
-        m_motionStartCenter = QPointF(mid.x() + m_motionBiasA.x() * halfStart.x(),
-                                      mid.y() + m_motionBiasA.y() * halfStart.y());
-        m_motionEndCenter = QPointF(mid.x() + m_motionBiasB.x() * halfEnd.x(),
-                                    mid.y() + m_motionBiasB.y() * halfEnd.y());
-        m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
-        m_motionEndCenter = clampCenter(m_motionEndCenter, m_motionEndScale);
-        m_motionTravelDir = m_motionEndCenter - m_motionStartCenter;
-    }
+    // Biases + slideshow zoom are read by renderMotionCoverPixmap.
 
     if (!m_motionTimer) {
         m_motionTimer = new QTimer(this);
@@ -1328,18 +1199,16 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     m_slideshowMotionActive = true;
     m_motionDurationMs = durationMs;
     initialProgress = qBound(0.0, initialProgress, 1.0);
-    // Pretend the clock already advanced so the first frame matches the
-    // live-transition overlay (avoids path-end → path-start jump).
     m_motionClock.start();
-    if (initialProgress > 0.0 && durationMs > 0) {
-        const qint64 already = qint64(initialProgress * qreal(durationMs));
-        // QElapsedTimer cannot be set backward; offset via restart + stored base.
-        m_motionElapsedOffsetMs = already;
-    } else {
-        m_motionElapsedOffsetMs = 0;
-    }
-    applySlideshowMotionProgress(initialProgress);
+    m_motionElapsedOffsetMs = (initialProgress > 0.0 && durationMs > 0)
+        ? qint64(initialProgress * qreal(durationMs))
+        : 0;
+    m_dwellCoverPixmap = renderMotionCoverPixmap(
+        m_dwellSourceImage, initialProgress, 0);
     m_motionTimer->start();
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 void ImageView::tickSlideshowMotion()
@@ -1350,27 +1219,34 @@ void ImageView::tickSlideshowMotion()
         }
         return;
     }
+    // Skip dwell blit while dual-image transition owns the viewport.
+    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
+        return;
+    }
     const qreal t = m_motionDurationMs > 0
         ? qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
               / qreal(m_motionDurationMs)
         : 1.0;
     if (t >= 1.0) {
-        applySlideshowMotionProgress(1.0);
-        // Still under a live crossfade/hold: start another outgoing leg instead
-        // of freezing at the path end.
-        if (m_liveTransitionActive || m_liveTransitionHold) {
-    return;
+        // Hold final frame until the next transition/advance.
+        if (!m_dwellSourceImage.isNull()) {
+            m_dwellCoverPixmap = renderMotionCoverPixmap(
+                m_dwellSourceImage, 1.0, 0);
         }
-        m_slideshowMotionActive = false;
-        if (m_motionTimer) {
-            m_motionTimer->stop();
-        }
-        if (!m_liveTransitionActive && !m_liveTransitionHold) {
-            leaveSlideshowCameraMode();
+        if (viewport()) {
+            viewport()->update();
         }
         return;
     }
-    applySlideshowMotionProgress(t);
+    if (!m_dwellSourceImage.isNull()) {
+        const QPixmap frame = renderMotionCoverPixmap(m_dwellSourceImage, t, 0);
+        if (!frame.isNull()) {
+            m_dwellCoverPixmap = frame;
+        }
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 void ImageView::applySlideshowMotionProgress(qreal t)

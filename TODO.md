@@ -2744,14 +2744,18 @@ Removed: dual-blit motion ticks, extendOutgoing, mid-path handoff progress.
 
 ## SLIDESHOW CONTRACT (do not break)
 
-**During dwell (one image):** Ken Burns — linear pan+zoom on that image.
+**Ken Burns moves the images (blit), never the QGraphicsView camera.**
+
+**During dwell (one image):**
+- One pixmap, re-sampled each tick along a linear Ken Burns path
+- Scene is covered; no setTransform camera
 
 **During crossfade with dwell motion (TWO images):**
 1. BOTH images keep moving on their own Ken Burns paths every frame
 2. Crossfade = opacity blend only (1−t from, t to)
 3. Never freeze either image for the transition
-4. Never use the scene camera as underlay during the fade (dual pixmap blit)
-5. After load, camera continues the **to** path at the same progress the blit showed
+4. Dual pixmap blit only (no scene underlay)
+5. After load, dwell blit continues the **to** path at the progress already shown
 
 From path: continues from progress at transition start.
 To path: starts at 0, advances with wall time / interval.
@@ -2764,3 +2768,9 @@ Session pan direction (Y sign) is fixed so consecutive paths do not reverse.
 Restored continuous dual Ken Burns during crossfade (was wrongly frozen in 157).
 
 See **SLIDESHOW CONTRACT** above. Never freeze either image during the fade again.
+
+
+## Plan / work (2026-09-04) — bundle `qimgview-159-image-blit`
+
+Ken Burns is **image blit**, not view-camera motion. Dwell paints one moving
+frame; crossfade paints two. `setTransform` is not used for slideshow motion.

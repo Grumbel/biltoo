@@ -168,9 +168,21 @@ void ImageView::paintEvent(QPaintEvent *event)
         }
     }
 
-    // Live transition: outgoing dwell motion keeps painting underneath; only the
-    // incoming frame / veil is composited here (no frozen grab of the old view).
-    // Hold keeps the final composite until LoadReplace has fitted the next item.
+    // Slideshow Ken Burns: move the *images* via blit (not the view camera).
+    // Dwell = one moving frame; crossfade = two moving frames + opacity.
+    if (m_slideshowMotionActive && !m_liveTransitionActive && !m_liveTransitionHold
+        && !m_liveTransitionAwaitingLoad && !m_dwellCoverPixmap.isNull()) {
+        const QRect vr = viewport()->rect();
+        QColor pad(36, 36, 36);
+        const QBrush b = backgroundBrush();
+        if (b.style() != Qt::NoBrush && b.color().isValid()) {
+            pad = b.color();
+        }
+        painter.fillRect(vr, pad);
+        painter.drawPixmap(vr, m_dwellCoverPixmap);
+    }
+
+    // Live transition: two moving frames, opacity blend.
     if ((m_liveTransitionActive || m_liveTransitionHold)
         && (m_liveTransitionProgress < 1.0 || m_liveTransitionHold
             || m_liveTransitionAwaitingLoad)) {
