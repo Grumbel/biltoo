@@ -2373,3 +2373,30 @@ viewport, so `MouseMove` only arrived while a button was held.
 - [x] Cursor appears on free mouse move during slideshow
 - [x] Cursor hides ~1 s after last input
 - [x] Next **140**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-140-transition-stretch`
+
+**Issues:**
+1. Crossfade + pan&zoom: incoming transition frame stretched to the screen.
+2. Slide: sliding-in image fullscreen-stretched; dwell motion incompatible with
+   projector slide.
+
+### Root cause (stretch)
+`renderMotionCoverPixmap` force-scaled undersized crops with
+`Qt::IgnoreAspectRatio` when only one axis overflowed. Paint also used
+`drawPixmap(x,y,w,h,pm)` which re-stretched letterboxed frames.
+
+### Fix
+1. Compose covers onto a viewport-sized canvas by **drawing** the uniformly
+   scaled image (negative dest = crop, positive = pad). Never non-uniform scale.
+2. Slide paint: `drawPixmap(x, y, pm)` at native size.
+3. Slide never uses the live-motion transition path (`beginLive…` returns false).
+4. Snapshot Slide freezes dwell camera for the swap; resumes on animation end.
+
+### Done criteria
+- [x] Crossfade to-frames keep aspect under pan&zoom
+- [x] Slide frames keep aspect; motion frozen during projector swap
+- [x] Next **141**

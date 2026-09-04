@@ -160,10 +160,12 @@ void ImageView::paintEvent(QPaintEvent *event)
             const int xNew = int(qRound((1.0 - t) * w));
             painter.setOpacity(1.0);
             painter.fillRect(vr, Qt::black);
+            // Draw at native pixmap size (already viewport-sized). Forced w×h
+            // scaling stretched frames that were letterboxed or DPR-mismatched.
             if (!m_slideshowTransitionToPixmap.isNull()) {
-                painter.drawPixmap(xNew, 0, w, h, m_slideshowTransitionToPixmap);
+                painter.drawPixmap(xNew, 0, m_slideshowTransitionToPixmap);
             }
-            painter.drawPixmap(xOld, 0, w, h, m_slideshowTransitionPixmap);
+            painter.drawPixmap(xOld, 0, m_slideshowTransitionPixmap);
         }
     }
 
@@ -197,7 +199,7 @@ void ImageView::paintEvent(QPaintEvent *event)
             const int h = vr.height();
             const int xNew = m_liveTransitionHold ? 0 : int(qRound((1.0 - t) * w));
             if (!m_slideshowTransitionToPixmap.isNull()) {
-                painter.drawPixmap(xNew, 0, w, h, m_slideshowTransitionToPixmap);
+                painter.drawPixmap(xNew, 0, m_slideshowTransitionToPixmap);
             }
         }
     }

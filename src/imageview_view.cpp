@@ -526,6 +526,8 @@ void ImageView::startSlideshowTransitionAnimation()
         m_slideshowTransitionActive = false;
         m_slideshowTransitionProgress = 1.0;
         m_slideshowTransitionToPixmap = viewport()->grab();
+        // Projector slide is two static frames; freeze dwell camera for the swap.
+        cancelSlideshowMotion();
     }
 
     m_slideshowTransitionActive = true;
@@ -546,6 +548,8 @@ void ImageView::startSlideshowTransitionAnimation()
             m_slideshowTransitionProgress = 1.0;
             m_slideshowTransitionPixmap = QPixmap();
             m_slideshowTransitionToPixmap = QPixmap();
+            // Resume dwell camera after a static Slide swap.
+            maybeStartSlideshowMotion();
             if (viewport()) {
                 viewport()->update();
             }
@@ -692,8 +696,11 @@ void ImageView::cancelSlideshowMotion()
 
 bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 {
+    // Slide (projector) is a hard cut of two full frames — incompatible with a
+    // live moving underlay. Use the snapshot transition path instead.
     if (m_slideshowMotion == SlideshowMotion::Off
         || m_slideshowTransition == SlideshowTransition::None
+        || m_slideshowTransition == SlideshowTransition::Slide
         || m_slideshowTransitionDurationMs <= 0
         || !isImageMode()
         || !viewport()
@@ -823,40 +830,25 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     const int dw = qMax(1, int(qRound(iw * scale)));
     const int dh = qMax(1, int(qRound(ih * scale)));
 
+    // Uniform scale only — never IgnoreAspectRatio-stretch into the viewport.
     QImage scaled = image.scaled(dw, dh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     if (scaled.isNull()) {
         return {};
     }
 
-    // Letterbox / pad when the drawn image is smaller than the viewport
-    // (Fit or 1:1 on a small image).
-    if (dw <= vw && dh <= vh) {
-        QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
-        out.fill(Qt::transparent);
-        const int ox = (vw - dw) / 2;
-        const int oy = (vh - dh) / 2;
-        // Optional drift within padding when bias is non-zero and there is room.
-        const int maxOx = qMax(0, vw - dw);
-        const int maxOy = qMax(0, vh - dh);
-        const int x = qBound(0, int(qRound(ox + biasX * (maxOx * 0.5))), maxOx);
-        const int y = qBound(0, int(qRound(oy + biasY * (maxOy * 0.5))), maxOy);
-        QPainter painter(&out);
-        painter.setCompositionMode(QPainter::CompositionMode_Source);
-        painter.drawImage(x, y, scaled);
-        painter.end();
-        return QPixmap::fromImage(out);
-    }
-
-    // Overflow crop (cover-or-larger).
-    const qreal halfOx = qMax(0.0, (qreal(dw) - qreal(vw)) * 0.5);
-    const qreal halfOy = qMax(0.0, (qreal(dh) - qreal(vh)) * 0.5);
-    const int srcX = qBound(0, int(qRound(halfOx + biasX * halfOx)), qMax(0, dw - vw));
-    const int srcY = qBound(0, int(qRound(halfOy + biasY * halfOy)), qMax(0, dh - vh));
-    QImage crop = scaled.copy(srcX, srcY, qMin(vw, scaled.width()), qMin(vh, scaled.height()));
-    if (crop.size() != QSize(vw, vh)) {
-        crop = crop.scaled(vw, vh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    }
-    return QPixmap::fromImage(crop);
+    // Compose onto an exact viewport-sized canvas. Overflow → negative dest
+    // (clips); undersize → padding. Bias shifts the image for pan samples.
+    QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
+    out.fill(Qt::transparent);
+    const qreal overflowX = qMax(0.0, (qreal(dw) - qreal(vw)) * 0.5);
+    const qreal overflowY = qMax(0.0, (qreal(dh) - qreal(vh)) * 0.5);
+    const int destX = int(qRound((qreal(vw) - qreal(dw)) * 0.5 - biasX * overflowX));
+    const int destY = int(qRound((qreal(vh) - qreal(dh)) * 0.5 - biasY * overflowY));
+    QPainter painter(&out);
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.drawImage(destX, destY, scaled);
+    painter.end();
+    return QPixmap::fromImage(out);
 }
 
 void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
