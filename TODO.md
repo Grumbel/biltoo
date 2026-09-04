@@ -3079,3 +3079,13 @@ Dev shell builds out of tree under `/tmp/biltoo-build` by default
 ### Done criteria
 - [x] No in-tree `./build` required for nix develop workflow
 - [x] Next **175**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-175-no-exec-run`
+
+`biltoo-run` no longer `exec`s the binary (that replaced the interactive
+shell). Runs `"$BILTOO_BUILD_DIR/biltoo"` as a normal child process.
+
+### Done criteria
+- [x] Shell survives after biltoo exits
+- [x] Next **176**

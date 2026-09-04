@@ -85,7 +85,8 @@
             fi
             # Do not use qtWrapperArgs here — those are makeWrapper flags.
             # inputsFrom already put Qt plugins on QT_PLUGIN_PATH.
-            exec "$BILTOO_BUILD_DIR/biltoo" "$@"
+            # No exec: keep the interactive shell after biltoo exits.
+            "$BILTOO_BUILD_DIR/biltoo" "$@"
           }
 
           echo "biltoo dev shell (CMAKE_BUILD_TYPE=''${CMAKE_BUILD_TYPE:-Debug})"
