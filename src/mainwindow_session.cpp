@@ -1365,7 +1365,10 @@ void MainWindow::startSlideshow()
     armSlideshowCursorHide();
     if (m_imageView) {
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-        m_imageView->maybeStartSlideshowMotion();
+        // Frame the current (already loaded) slide: zoom mode when motion is
+        // off, cover + camera when motion is on. maybeStart alone skipped
+        // zoom mode and left slide 0 on ordinary Image-mode fit.
+        m_imageView->reapplySlideshowFraming();
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }

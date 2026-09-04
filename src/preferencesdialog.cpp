@@ -392,17 +392,31 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     auto *ifaceGroup = new QGroupBox(tr("Interface"), this);
     ifaceGroup->setLayout(ifaceForm);
 
-    // --- General tab ---
+    // --- General tab (session / startup) ---
     auto *generalPage = new QWidget(this);
     auto *generalLayout = new QVBoxLayout(generalPage);
     generalLayout->setContentsMargins(8, 8, 8, 8);
     generalLayout->setSpacing(12);
-    generalLayout->addWidget(slideshowGroup);
     generalLayout->addWidget(sessionGroup);
-    generalLayout->addWidget(viewGroup);
-    generalLayout->addWidget(hudGroup);
-    generalLayout->addWidget(ifaceGroup);
     generalLayout->addStretch(1);
+
+    // --- Slideshow tab ---
+    auto *slideshowPage = new QWidget(this);
+    auto *slideshowLayout = new QVBoxLayout(slideshowPage);
+    slideshowLayout->setContentsMargins(8, 8, 8, 8);
+    slideshowLayout->setSpacing(12);
+    slideshowLayout->addWidget(slideshowGroup);
+    slideshowLayout->addStretch(1);
+
+    // --- Interface tab (view, HUD, panels) ---
+    auto *interfacePage = new QWidget(this);
+    auto *interfaceLayout = new QVBoxLayout(interfacePage);
+    interfaceLayout->setContentsMargins(8, 8, 8, 8);
+    interfaceLayout->setSpacing(12);
+    interfaceLayout->addWidget(viewGroup);
+    interfaceLayout->addWidget(hudGroup);
+    interfaceLayout->addWidget(ifaceGroup);
+    interfaceLayout->addStretch(1);
 
     // --- Default application tab (GIO) ---
     auto *defaultsPage = new QWidget(this);
@@ -444,6 +458,8 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 
     auto *tabs = new QTabWidget(this);
     tabs->addTab(generalPage, tr("&General"));
+    tabs->addTab(slideshowPage, tr("&Slideshow"));
+    tabs->addTab(interfacePage, tr("&Interface"));
     tabs->addTab(defaultsPage, tr("&Default application"));
 
     // GNOME 2 HIG dialog buttons: Cancel on the left, affirmative (OK) on the

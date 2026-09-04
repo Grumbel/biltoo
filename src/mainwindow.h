@@ -208,6 +208,7 @@ private slots:
     void about();
     void showKeyboardShortcuts();
     void showPreferences();
+    void showSlideshowSettings();
     void onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                         const QPointF &scenePos, const QList<qint64> &sessionIds = {},
                         const QStringList &internalPaths = {});
@@ -373,6 +374,7 @@ private:
     QAction *m_firstAct = nullptr;
     QAction *m_lastAct = nullptr;
     QAction *m_slideshowAct = nullptr;
+    QAction *m_slideshowSettingsAct = nullptr;
     QAction *m_slideshowFasterAct = nullptr;
     QAction *m_slideshowSlowerAct = nullptr;
     QAction *m_workspaceModeAct = nullptr;

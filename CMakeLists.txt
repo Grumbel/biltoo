@@ -82,6 +82,8 @@ add_executable(qimgview
   src/thumbnailbar.h
   src/preferencesdialog.cpp
   src/preferencesdialog.h
+  src/slideshowsettingsdialog.cpp
+  src/slideshowsettingsdialog.h
   src/workspacebackgrounddialog.cpp
   src/workspacebackgrounddialog.h
   src/metadatapanel.cpp

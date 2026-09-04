@@ -513,6 +513,12 @@ public:
     /** Start dwell camera motion if enabled and slideshow is active. */
     void maybeStartSlideshowMotion();
     /**
+     * Re-frame the current Image-mode item for an active slideshow:
+     * motion on → cover + restart camera; motion off → Fit / Fill / 1:1.
+     * No-op when slideshow progress is inactive.
+     */
+    void reapplySlideshowFraming();
+    /**
      * Start a transition while the current image keeps its dwell motion.
      * @p nextPath is decoded off-thread into the incoming frame. Emits
      * slideshowLiveTransitionFinished when the host should call goNext().

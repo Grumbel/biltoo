@@ -258,6 +258,11 @@ void MainWindow::createActions()
         tr("Start or stop the slideshow (Space). Unavailable in workspace mode."));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
+    m_slideshowSettingsAct = new QAction(tr("Slideshow &Settings…"), this);
+    m_slideshowSettingsAct->setStatusTip(
+        tr("Interval, transition, dwell motion, and slideshow zoom"));
+    connect(m_slideshowSettingsAct, &QAction::triggered, this, &MainWindow::showSlideshowSettings);
+
     m_slideshowFasterAct = new QAction(tr("Slideshow &Faster"), this);
     m_slideshowFasterAct->setShortcut(Qt::Key_BracketRight);
     m_slideshowFasterAct->setShortcutContext(Qt::ApplicationShortcut);
@@ -795,6 +800,9 @@ void MainWindow::createMenus()
     m_goMenu->addAction(m_lastAct);
     m_goMenu->addSeparator();
     m_goMenu->addAction(m_slideshowAct);
+    if (m_slideshowSettingsAct) {
+        m_goMenu->addAction(m_slideshowSettingsAct);
+    }
     m_goMenu->addAction(m_slideshowFasterAct);
     m_goMenu->addAction(m_slideshowSlowerAct);
 

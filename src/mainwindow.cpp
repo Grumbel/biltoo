@@ -732,6 +732,41 @@ void MainWindow::setZoomTool()
 }
 
 
+void MainWindow::showSlideshowSettings()
+{
+    SlideshowSettingsDialog dlg(this);
+    dlg.setIntervalMs(m_slideshowIntervalMs);
+    dlg.setStartFullscreen(m_slideshowFullscreen);
+    if (m_imageView) {
+        dlg.setTransitionIndex(static_cast<int>(m_imageView->slideshowTransition()));
+        dlg.setTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
+        dlg.setMotionIndex(static_cast<int>(m_imageView->slideshowMotion()));
+        dlg.setPanZoomFactor(m_imageView->panZoomFactor());
+        dlg.setZoomIndex(static_cast<int>(m_imageView->slideshowZoom()));
+    }
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+    setSlideshowIntervalMs(dlg.intervalMs());
+    m_slideshowFullscreen = dlg.startFullscreen();
+    if (m_imageView) {
+        m_imageView->setSlideshowTransition(
+            static_cast<ImageView::SlideshowTransition>(dlg.transitionIndex()));
+        m_imageView->setSlideshowTransitionDurationMs(dlg.transitionDurationMs());
+        m_imageView->setSlideshowMotion(
+            static_cast<ImageView::SlideshowMotion>(dlg.motionIndex()));
+        m_imageView->setPanZoomFactor(dlg.panZoomFactor());
+        m_imageView->setSlideshowZoom(
+            static_cast<ImageView::SlideshowZoom>(qBound(0, dlg.zoomIndex(), 2)));
+        if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+            m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+            m_imageView->reapplySlideshowFraming();
+            m_imageView->flashHud(tr("Slideshow settings updated"));
+        }
+    }
+    writeSettings();
+}
+
 void MainWindow::onSlideshowTick()
 {
     // With dwell camera motion, run a *live* transition (outgoing keeps panning)
@@ -1023,6 +1058,11 @@ void MainWindow::showPreferences()
         m_imageView->setSlideshowZoom(
             static_cast<ImageView::SlideshowZoom>(
                 qBound(0, dlg.slideshowZoomIndex(), 2)));
+        // If a slideshow is running, re-frame the current slide for zoom/motion.
+        if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+            m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+            m_imageView->reapplySlideshowFraming();
+        }
     }
     {
         const int si = dlg.sortModeIndex();
@@ -1310,9 +1350,12 @@ void MainWindow::showContextMenu(const QPoint &pos)
     }
     // Workspace mode toggle stays on the main toolbar / Workspace menu only.
     menu.addSeparator();
-    // Menu bar is hidden in fullscreen; surface slideshow control here.
-    if (isFullScreen()) {
+    // Menu bar is hidden in fullscreen; surface slideshow controls here.
+    if (isFullScreen() && m_slideshowAct) {
         menu.addAction(m_slideshowAct);
+    }
+    if (m_slideshowSettingsAct) {
+        menu.addAction(m_slideshowSettingsAct);
     }
     menu.addAction(m_fullscreenAct);
     menu.addAction(m_preferencesAct);

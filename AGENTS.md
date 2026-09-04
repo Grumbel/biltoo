@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-132-slideshow-polish”**
-(Slideshow flash fix, Ken Burns pan/zoom, full pan&scan, zoom Fit/Fill/1:1).
-Next bundle number: **133**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-133-slideshow-settings-ui”**
+(Slideshow Settings dialog, Preferences tabs, zoom framing fix).
+Next bundle number: **134**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

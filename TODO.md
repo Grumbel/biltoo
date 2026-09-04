@@ -2055,3 +2055,74 @@ view has not yet stabilised can still hitch.
 - [x] TODO / AGENTS handoff; next bundle **133**
 
 **Next bundle:** `qimgview-133-…`
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-133-slideshow-settings-ui`
+
+**Request (interpreted, not followed blindly):**
+1. Easy mid-session control of slideshow options (many transitions / motion /
+   zoom values — per-option shortcuts would be noisy).
+2. Slideshow zoom Fit/Fill/1:1 appears to do nothing.
+3. Preferences General tab is overfilled — split into more tabs.
+
+### Design
+
+**Shortcuts for every transition/motion:** rejected. Too many combinations;
+muscle memory would fight `[`/`]` interval and Space start/stop.
+
+**Context menu radio submenus only:** possible for Transition (4) and Motion (3),
+but still leaves interval, duration, zoom factor, zoom mode, fullscreen start
+elsewhere. Incomplete.
+
+**Chosen approach — Slideshow Settings dialog:**
+- Small modal focused on slideshow only (same fields as the Preferences
+  Slideshow group).
+- Reachable from the view context menu (Image mode / fullscreen):
+  “Slideshow settings…”.
+- Also from the View menu next to Play Slideshow (optional, same action).
+- Apply on OK; while a slideshow is running, re-arm progress / framing so
+  changes take effect on the current dwell without a full prefs trip.
+- Preferences keeps a dedicated **Slideshow** tab (not removed) so the options
+  remain discoverable when not mid-show. Same QSettings keys — one source of
+  truth on MainWindow / ImageView.
+
+**Preferences tabs:**
+| Tab | Contents |
+|-----|----------|
+| General | Session (sort, start workspace), residual global bits |
+| Slideshow | All slideshow options (moved out of General) |
+| Interface | View background, HUD, scrollbars / panels / thumbs |
+| Default application | MIME defaults (unchanged) |
+
+**Slideshow zoom bug (why it looked inert):**
+1. Framing only ran on `LoadReplace`. Starting the slideshow left the *current*
+   image on normal Image-mode fit — zoom mode never applied to slide 0.
+2. With dwell motion ≠ Off, the camera always uses Fill (by design); zoom mode
+   is ignored until motion is Off — easy to miss in testing.
+3. Default zoom is Fit, which matches ordinary Image-mode fit — no visible
+   change until the user picks Fill or 1:1.
+
+**Fix:**
+- Public `ImageView::reapplySlideshowFraming()` — if slideshow progress active:
+  motion on → cover + restart motion; motion off → `applySlideshowZoomFraming`.
+- Call after `setSlideshowProgress(true)` in `startSlideshow`.
+- Call when slideshow zoom / motion changes while a slideshow is active.
+- `applySlideshowZoomFraming` Actual path matches `zoomReset` (identity +
+  centreOn) for consistent 1:1 behaviour.
+
+### Commits
+1. Fix slideshow zoom framing on start / live preference changes
+2. Preferences: split General → General + Slideshow + Interface tabs
+3. Slideshow Settings dialog + context (and menu) entry
+
+### Done criteria
+- [x] Fit/Fill/1:1 visibly changes framing when motion is Off (incl. first slide)
+  via `reapplySlideshowFraming()` on start and on option changes
+- [x] Preferences: General / Slideshow / Interface / Default application tabs
+- [x] Context menu + Go menu → Slideshow Settings… (focused dialog)
+- [x] No per-transition keyboard shortcuts (rejected as too noisy)
+- [x] TODO / AGENTS; next **134**
+
+**Next bundle:** `qimgview-134-…`

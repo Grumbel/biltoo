@@ -563,6 +563,11 @@ void ImageView::setSlideshowMotion(SlideshowMotion mode)
     m_slideshowMotion = mode;
     if (mode == SlideshowMotion::Off) {
         cancelSlideshowMotion();
+        if (m_slideshowProgressActive) {
+            reapplySlideshowFraming();
+        }
+    } else if (m_slideshowProgressActive) {
+        reapplySlideshowFraming();
     }
 }
 
@@ -573,7 +578,15 @@ void ImageView::setPanZoomFactor(qreal factor)
 
 void ImageView::setSlideshowZoom(SlideshowZoom mode)
 {
+    if (m_slideshowZoom == mode) {
+        return;
+    }
     m_slideshowZoom = mode;
+    // Live update while a slideshow is running (motion off only; motion
+    // forces cover and is restarted via setSlideshowMotion / reapply).
+    if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
+        reapplySlideshowFraming();
+    }
 }
 
 void ImageView::applySlideshowZoomFraming(ImageItem *item)
@@ -586,9 +599,11 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     case SlideshowZoom::Fill:
         m_fitMode = false;
         m_fillMode = true;
+        item->setItemScale(1.0);
         fitItem(item, Qt::KeepAspectRatioByExpanding);
         break;
-    case SlideshowZoom::Actual: {
+    case SlideshowZoom::Actual:
+        // Match zoomReset: native item scale, identity view, centred.
         m_fitMode = false;
         m_fillMode = false;
         item->setItemScale(1.0);
@@ -596,24 +611,41 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
             item->setPos(0, 0);
         }
         resetTransform();
-        // 1:1 in view coordinates: scene unit == device pixel at scale 1.
-        // Centre the item in the viewport.
-        const QRectF br = item->sceneBoundingRect();
-        const qreal vcX = qreal(viewport()->width()) * 0.5;
-        const qreal vcY = qreal(viewport()->height()) * 0.5;
-        QTransform xform;
-        xform.translate(vcX, vcY);
-        xform.scale(1.0, 1.0);
-        xform.translate(-br.center().x(), -br.center().y());
-        setTransform(xform);
+        centerOn(item);
         break;
-    }
     case SlideshowZoom::Fit:
     default:
         m_fitMode = true;
         m_fillMode = false;
+        item->setItemScale(1.0);
         fitItem(item, Qt::KeepAspectRatio);
         break;
+    }
+}
+
+void ImageView::reapplySlideshowFraming()
+{
+    if (!m_slideshowProgressActive || !isImageMode()) {
+        return;
+    }
+    ImageItem *item = targetItem();
+    if (!item || item->boundingRect().isEmpty()) {
+        return;
+    }
+    if (m_slideshowMotion != SlideshowMotion::Off) {
+        // Cover + restart the dwell camera from the current interval.
+        int duration = m_slideshowProgressIntervalMs;
+        if (duration < 250) {
+            duration = 3000;
+        }
+        startSlideshowMotion(duration);
+    } else {
+        cancelSlideshowMotion();
+        applySlideshowZoomFraming(item);
+        if (viewport()) {
+            viewport()->update();
+        }
+        emit statusChanged();
     }
 }
 
