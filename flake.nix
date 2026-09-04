@@ -64,30 +64,35 @@
           # Theme icons from the source tree (data/icons/hicolor/...).
           export XDG_DATA_DIRS="$PWD/data''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
 
+          # Out-of-tree build dir (override with BILTOO_BUILD_DIR=...).
+          export BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"
+
           biltoo-configure() {
-            cmake -B build -G Ninja -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}"
+            cmake -S "$PWD" -B "$BILTOO_BUILD_DIR" -G Ninja \
+              -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}"
           }
           biltoo-build() {
-            if [ ! -f build/build.ninja ] && [ ! -f build/Makefile ]; then
+            if [ ! -f "$BILTOO_BUILD_DIR/build.ninja" ] && [ ! -f "$BILTOO_BUILD_DIR/Makefile" ]; then
               biltoo-configure || return 1
             fi
-            cmake --build build "$@"
+            cmake --build "$BILTOO_BUILD_DIR" "$@"
           }
           biltoo-run() {
             biltoo-build || return 1
-            if [ ! -x ./build/biltoo ]; then
-              echo "biltoo-run: ./build/biltoo missing after build" >&2
+            if [ ! -x "$BILTOO_BUILD_DIR/biltoo" ]; then
+              echo "biltoo-run: $BILTOO_BUILD_DIR/biltoo missing after build" >&2
               return 1
             fi
             # Do not use qtWrapperArgs here — those are makeWrapper flags.
             # inputsFrom already put Qt plugins on QT_PLUGIN_PATH.
-            exec ./build/biltoo "$@"
+            exec "$BILTOO_BUILD_DIR/biltoo" "$@"
           }
 
           echo "biltoo dev shell (CMAKE_BUILD_TYPE=''${CMAKE_BUILD_TYPE:-Debug})"
-          echo "  biltoo-configure   # cmake -B build -G Ninja"
-          echo "  biltoo-build       # incremental cmake --build build"
-          echo "  biltoo-run [args]  # build + ./build/biltoo"
+          echo "  build dir: $BILTOO_BUILD_DIR"
+          echo "  biltoo-configure   # cmake -S . -B \$BILTOO_BUILD_DIR -G Ninja"
+          echo "  biltoo-build       # incremental cmake --build"
+          echo "  biltoo-run [args]  # build + run out-of-tree binary"
           echo "  nix build          # RelWithDebInfo package (wrapped)"
           echo "  nix build .#debug  # matching debug symbols"
         '';

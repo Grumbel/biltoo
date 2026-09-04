@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-173-devshell-icons**
-(dev shell run helpers + SVG icon fix).
-Next bundle number: **174**.
+Latest agent handoff: **TODO.md → biltoo-174-build-in-tmp**
+(Out-of-tree build dir /tmp/biltoo-build).
+Next bundle number: **175**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -28,8 +28,9 @@ Windows / cross-compile feasibility (not a scheduled port).
 
 - Primary build system: **Nix flake** + CMake + Qt6.
   - `nix develop` – deps only (compiler, Qt, vips, …). Not a mini install.
-  - In the shell: `biltoo-configure`, `biltoo-build`, `biltoo-run` → `./build/biltoo`
-  - First time: `biltoo-configure` then `biltoo-run` (or `biltoo-build && ./build/biltoo`)
+  - In the shell: `biltoo-configure`, `biltoo-build`, `biltoo-run`
+    (out-of-tree default: `/tmp/biltoo-build`, override with `BILTOO_BUILD_DIR`)
+  - First time: `biltoo-configure` then `biltoo-run`
   - `nix build` / `nix run` – packaged, `wrapQtAppsHook`-wrapped binary
   - `nix flake check` – package + CMake tests
 

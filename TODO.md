@@ -3069,3 +3069,13 @@ OpenGL viewport can be revisited later (format/context at app start, fallback).
 - [x] Incremental `./build/biltoo` from `nix develop`
 - [x] Window icon visible without install
 - [x] Next **174**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-174-build-in-tmp`
+
+Dev shell builds out of tree under `/tmp/biltoo-build` by default
+(`BILTOO_BUILD_DIR` override). `cmake -S $PWD -B $BILTOO_BUILD_DIR`.
+
+### Done criteria
+- [x] No in-tree `./build` required for nix develop workflow
+- [x] Next **175**
