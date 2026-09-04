@@ -1469,6 +1469,17 @@ void MainWindow::readSettings()
     if (!geometry.isEmpty()) {
         restoreGeometry(geometry);
     }
+    // Fullscreen is not a persistent preference — only --fullscreen / -f starts
+    // that way. QWidget::saveGeometry() encodes WindowFullScreen and would
+    // reopen full-screen after a prior session left that way.
+    if (isFullScreen()) {
+        setWindowState(windowState() & ~Qt::WindowFullScreen);
+        showNormal();
+        const QRect normal = settings.value(QStringLiteral("normalGeometry")).toRect();
+        if (normal.isValid()) {
+            setGeometry(normal);
+        }
+    }
     const QByteArray state = settings.value(QStringLiteral("windowState")).toByteArray();
     if (!state.isEmpty()) {
         restoreState(state);
@@ -1710,7 +1721,16 @@ void MainWindow::readSettings()
 void MainWindow::writeSettings()
 {
     QSettings settings;
-    settings.setValue(QStringLiteral("geometry"), saveGeometry());
+    // Persist the normal frame geometry, not a fullscreen state bit.
+    if (isFullScreen()) {
+        settings.setValue(QStringLiteral("geometry"),
+                          saveGeometry()); // still has FS bit — stripped on read
+        // Also store normalGeometry for a cleaner reopen size.
+        settings.setValue(QStringLiteral("normalGeometry"), normalGeometry());
+    } else {
+        settings.setValue(QStringLiteral("geometry"), saveGeometry());
+        settings.setValue(QStringLiteral("normalGeometry"), geometry());
+    }
     settings.beginWriteArray(QStringLiteral("sessionHistory"), m_sessionHistory.size());
     for (int i = 0; i < m_sessionHistory.size(); ++i) {
         settings.setArrayIndex(i);
