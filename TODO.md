@@ -2785,3 +2785,36 @@ Removed dead camera-era code after blit-only Ken Burns:
 - Stale "camera" comments
 
 Slideshow motion is image blit only (see SLIDESHOW CONTRACT).
+
+
+## Plan / work (2026-09-04) — bundle `qimgview-163-fade-black-position`
+
+**Bug:** Slideshow **Fade through black** jumped the image position as soon as
+the transition started (with Ken Burns on). It should only fade out to black
+and fade back in.
+
+### Root cause
+Live FadeBlack paint drew **only** the black veil. `beginLive` cancels the
+dwell blit, so the semi-transparent veil revealed the QGraphicsItem underlay
+(Fit/Fill framing without the Ken Burns crop). That pose differs from the
+dwell cover pixmap → visible jump.
+
+Also: FadeBlack emitted `slideshowLiveTransitionFinished` again at the end of
+phase 2 (after already advancing at mid-black), which would `goNext` twice.
+Dwell was started at LoadReplace during the mid-black await while ticks were
+suppressed, so the motion clock ran under the veil and jumped on release.
+
+### Fix
+1. **Paint:** phase 1 draws from-blit + rising black; phase 2 draws to-blit +
+   falling black; pad fill so the scene never shows through.
+2. **Tick:** on FadeBlack phase-2 completion, release the overlay only — do
+   **not** emit finished again (mid-black already advanced).
+3. **Motion:** skip `maybeStartSlideshowMotion` while FadeBlack is awaiting
+   load; start dwell from `releaseLiveTransitionHold` at the last to-path
+   progress so the pose matches the frame under the lifting veil.
+
+### Done criteria
+- [x] Fade through black does not change image position — only opacity/black
+- [x] No double-advance at end of FadeBlack
+- [x] Dwell continues from the to-frame progress after the veil lifts
+- [x] Next **164**
