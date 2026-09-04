@@ -206,11 +206,31 @@ void ImageView::paintEvent(QPaintEvent *event)
             }
             painter.setOpacity(1.0);
         } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
+            // Cover the scene completely: paint the motion blit under the black
+            // veil. Painting only the veil left the graphics-item underlay
+            // visible (different framing than the Ken Burns blit) and jumped
+            // the image as soon as the dwell cover stopped.
+            QColor pad(36, 36, 36);
+            const QBrush b = backgroundBrush();
+            if (b.style() != Qt::NoBrush && b.color().isValid()) {
+                pad = b.color();
+            }
+            painter.fillRect(vr, pad);
             if (t < 0.5 || m_liveTransitionAwaitingLoad) {
+                // Phase 1 / mid-black hold: outgoing frame + rising black.
+                if (!m_slideshowTransitionFromPixmap.isNull()) {
+                    painter.setOpacity(1.0);
+                    painter.drawPixmap(vr, m_slideshowTransitionFromPixmap);
+                }
                 painter.setOpacity(m_liveTransitionAwaitingLoad ? 1.0 : (t * 2.0));
                 painter.fillRect(vr, Qt::black);
                 painter.setOpacity(1.0);
             } else {
+                // Phase 2: incoming frame + falling black.
+                if (!m_slideshowTransitionToPixmap.isNull()) {
+                    painter.setOpacity(1.0);
+                    painter.drawPixmap(vr, m_slideshowTransitionToPixmap);
+                }
                 painter.setOpacity((1.0 - t) * 2.0);
                 painter.fillRect(vr, Qt::black);
                 painter.setOpacity(1.0);
