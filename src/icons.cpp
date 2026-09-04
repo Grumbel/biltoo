@@ -9,16 +9,19 @@
 
 QIcon themeIcon(const QString &name, QStyle::StandardPixmap fallback)
 {
-    QIcon icon = QIcon::fromTheme(name);
-    if (!icon.isNull()) {
-        return icon;
-    }
+    // Prefer embedded biltoo icons (works from out-of-tree ./build without
+    // install). System theme names like "document-open" would otherwise hide
+    // our custom SVGs forever.
     const QString resource = QStringLiteral(":/icons/actions/%1.svg").arg(name);
     if (QFile::exists(resource)) {
-        icon = QIcon(resource);
+        const QIcon icon(resource);
         if (!icon.isNull()) {
             return icon;
         }
+    }
+    const QIcon theme = QIcon::fromTheme(name);
+    if (!theme.isNull() && !theme.availableSizes().isEmpty()) {
+        return theme;
     }
     return QApplication::style()->standardIcon(fallback);
 }

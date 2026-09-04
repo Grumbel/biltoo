@@ -61,14 +61,18 @@
         ];
         CMAKE_BUILD_TYPE = "Debug";
         shellHook = ''
-          # Theme icons from the source tree (data/icons/hicolor/...).
-          export XDG_DATA_DIRS="$PWD/data''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
+          # Source tree (stable even if someone cds away before biltoo-run).
+          export BILTOO_SOURCE="$PWD"
+
+          # Theme search: FreeDesktop wants <datadir>/icons/hicolor/...
+          # Our layout is data/icons/hicolor/... so datadir = $BILTOO_SOURCE/data.
+          export XDG_DATA_DIRS="$BILTOO_SOURCE/data''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
 
           # Out-of-tree build dir (override with BILTOO_BUILD_DIR=...).
           export BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"
 
           biltoo-configure() {
-            cmake -S "$PWD" -B "$BILTOO_BUILD_DIR" -G Ninja \
+            cmake -S "$BILTOO_SOURCE" -B "$BILTOO_BUILD_DIR" -G Ninja \
               -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}"
           }
           biltoo-build() {

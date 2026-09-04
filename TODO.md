@@ -3089,3 +3089,16 @@ shell). Runs `"$BILTOO_BUILD_DIR/biltoo"` as a normal child process.
 ### Done criteria
 - [x] Shell survives after biltoo exits
 - [x] Next **176**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-176-resource-icons-first`
+
+`themeIcon()` preferred `QIcon::fromTheme`, so FreeDesktop names (document-open,
+…) never used biltoo’s embedded `:/icons/actions/*.svg` under `nix develop`.
+
+Now: resource first, then theme (only if it has sizes), then style fallback.
+Shell keeps `XDG_DATA_DIRS=$BILTOO_SOURCE/data` for hicolor app icon.
+
+### Done criteria
+- [x] Custom toolbar icons from qrc without install
+- [x] Next **177**
