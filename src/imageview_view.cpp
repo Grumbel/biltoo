@@ -744,21 +744,31 @@ void ImageView::leaveSlideshowCameraMode()
 
 void ImageView::pickInterestingMotionBiases(uint seed)
 {
-    // Session-fixed primary direction (Y): consecutive slides never reverse
-    // pan sense mid-show. Mild X variation keeps paths interesting.
+    // Path-hash corners/edges: each dwell gets a distinct pan/zoom axis pair.
+    // Do NOT force a session-wide Y sign — that made every slide pan the same way.
+    static const QPointF kBias[8] = {
+        QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
+        QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
+        QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
+        QPointF(0.0, -1.0), QPointF(0.0, 1.0),
+    };
     if (seed == 0) {
         seed = 1;
     }
-    if (!m_motionBiasValid) {
-        m_motionSign = (seed & 1u) ? 1.0 : -1.0;
-        m_motionBiasValid = true;
+    m_motionBiasA = kBias[seed % 8];
+    m_motionBiasB = kBias[(seed / 8 + 3) % 8];
+    if (qFuzzyCompare(m_motionBiasA.x(), m_motionBiasB.x())
+        && qFuzzyCompare(m_motionBiasA.y(), m_motionBiasB.y())) {
+        m_motionBiasB = kBias[(seed + 5) % 8];
     }
-    static const qreal kX[3] = { -0.75, 0.0, 0.75 };
-    const qreal xA = kX[seed % 3];
-    const qreal xB = kX[(seed / 5) % 3];
-    m_motionBiasA = QPointF(xA, -m_motionSign);
-    m_motionBiasB = QPointF(xB, m_motionSign);
+    // Prefer a path with real travel (not A≈B).
+    if (qAbs(m_motionBiasA.x() - m_motionBiasB.x()) < 0.1
+        && qAbs(m_motionBiasA.y() - m_motionBiasB.y()) < 0.1) {
+        m_motionBiasB = kBias[(seed + 7) % 8];
+    }
+    m_motionBiasValid = true;
     m_motionTravelDir = m_motionBiasB - m_motionBiasA;
+    m_motionSign = (m_motionTravelDir.y() >= 0.0) ? 1.0 : -1.0;
 }
 
 bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
