@@ -177,8 +177,7 @@ void ImageView::paintEvent(QPaintEvent *event)
         const QRect vr = viewport()->rect();
         const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {
-            // Pure dual-blit: cover the scene completely, then composite from+to.
-            // No QGraphicsView camera underlay — two images means two pixmaps.
+            // Opacity-only crossfade of two static frames (no position animation).
             QColor pad(36, 36, 36);
             const QBrush b = backgroundBrush();
             if (b.style() != Qt::NoBrush && b.color().isValid()) {

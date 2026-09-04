@@ -2715,3 +2715,26 @@ increases, half grows, so pan **accelerates** (curved path).
 - [x] Preload off GUI thread
 - [x] Varied corner Ken Burns with pan room
 - [x] Next **154**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-157-opacity-crossfade`
+
+### Clean model (no dual motion during transition)
+
+| Phase | What moves | How shown |
+|-------|------------|-----------|
+| **Dwell** | Ken Burns (linear pan+zoom) | Scene camera on one image |
+| **Crossfade** | **Nothing** (opacity only) | Static from-grab + static to@t=0 |
+| **Handoff** | Dwell starts at t=0 | Matches the to-frame already shown |
+
+Direction changes during crossfade were from sampling **two different Ken Burns
+paths** while fading. That is not a crossfade; a crossfade is opacity.
+
+Removed: dual-blit motion ticks, extendOutgoing, mid-path handoff progress.
+
+### Done criteria
+- [x] Crossfade = opacity of two static frames
+- [x] Ken Burns only during dwell
+- [x] Next **158**

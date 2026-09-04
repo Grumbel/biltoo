@@ -184,7 +184,6 @@ public:
     void startSlideshowTransitionAnimation();
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
     /** Continue outgoing camera from the current pose through a live transition. */
-    void extendOutgoingMotionThroughTransition();
     void pickInterestingMotionBiases(uint seed);
     /** Decode path off the GUI thread into m_preload* for the next live transition. */
     void preloadSlideshowImage(const QString &path);
@@ -977,7 +976,7 @@ private:
     int m_slideshowTransitionDurationMs = 400;
     QPixmap m_slideshowTransitionPixmap; /**< From-frame snapshot */
     QPixmap m_slideshowTransitionToPixmap; /**< To-frame (live blit / Slide) */
-    QPixmap m_slideshowTransitionFromPixmap; /**< From-frame for dual-blit crossfade */
+    QPixmap m_slideshowTransitionFromPixmap; /**< Static from-frame (opacity crossfade) */
     qreal m_slideshowTransitionProgress = 1.0; /**< 0 = old frame, 1 = done */
     bool m_slideshowTransitionPending = false;
     bool m_slideshowTransitionActive = false;
@@ -1032,7 +1031,7 @@ private:
     QString m_preloadPath;
     QImage m_preloadImage;
     quint64 m_preloadGeneration = 0;
-    /** Pixels kept after dual-blit so LoadReplace need not re-decode. */
+    /** Pixels kept after transition decode so LoadReplace need not re-decode. */
     QString m_handoffPath;
     QImage m_handoffImage;
     uint m_liveTransitionPathHash = 0;
