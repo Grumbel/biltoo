@@ -344,7 +344,15 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
             m_hudFlashTimer->start(1000);
         }
     }
-    if (changed || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse) {
+    if (!(changed || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse)) {
+        return;
+    }
+    // Gallery selection already invalidates the tile; a full viewport()->update()
+    // here forced every image through the GL path and felt like lag on click.
+    if (isGalleryMode() && !m_hudVisible && !m_hudIdentityPulse) {
+        return;
+    }
+    if (viewport()) {
         viewport()->update();
     }
 }

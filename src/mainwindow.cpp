@@ -74,31 +74,48 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::sessionImageFocused,
             this, [this](SessionImageId id) {
                 const int idx = indexOfSessionId(id);
-                if (idx >= 0) {
+                if (idx < 0) {
+                    return;
+                }
+                // Gallery: paint selection first; session cursor / filmstrip next tick.
+                if (isGalleryMode()) {
+                    QTimer::singleShot(0, this, [this, idx]() {
+                        setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
+                    });
+                } else {
                     setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
                 }
             });
     connect(m_imageView, &ImageView::galleryItemFocused,
             this, [this](const QString &path) {
+                auto apply = [this](int idx) {
+                    if (idx < 0) {
+                        return;
+                    }
+                    if (isGalleryMode()) {
+                        QTimer::singleShot(0, this, [this, idx]() {
+                            setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
+                        });
+                    } else {
+                        setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
+                    }
+                };
                 // Prefer selected/sole live tile so duplicate paths focus the
                 // correct session row (not paths().indexOf first match).
                 if (ImageItem *pref = m_imageView->findPreferredItemForPath(path)) {
                     if (pref->sessionId() != kInvalidSessionImageId) {
                         const int idx = indexOfSessionId(pref->sessionId());
                         if (idx >= 0) {
-                            setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
+                            apply(idx);
                             return;
                         }
                     }
                     if (pref->sessionIndex() >= 0) {
-                        setCurrentIndex(pref->sessionIndex(), /*ensureGalleryVisible=*/false);
+                        apply(pref->sessionIndex());
                         return;
                     }
                 }
-                const int idx = m_session.paths().indexOf(path);
-                if (idx >= 0) {
-                    setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
-                }
+                apply(m_session.paths().indexOf(path));
             });
     connect(m_imageView, &ImageView::filesDropped,
             this, &MainWindow::onFilesDropped);
@@ -120,8 +137,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::canvasSelectionChanged, this, [this]() {
         // Crop and other selection-sensitive actions depend on target count.
         updateNavigationActions();
-        updateWorkspaceActionVisibility();
-        updateLayoutPanel();
+        if (isWorkspaceMode()) {
+            updateWorkspaceActionVisibility();
+            updateLayoutPanel();
+        }
         if (m_syncingSelection || !isWorkspaceMode() || !m_thumbnailBar || !m_imageView) {
             return;
         }

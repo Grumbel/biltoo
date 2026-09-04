@@ -24,7 +24,16 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 {
     m_viewMode = mode;
     m_layoutMode = layout;
-    viewport()->update();
+    // Gallery packs many tiles: only repaint dirty item bounds on selection.
+    // Image/Workspace keep FullViewportUpdate so HUD/chrome do not trail.
+    if (mode == ViewMode::Gallery) {
+        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    } else {
+        setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 void ImageView::clearPendingLoads()

@@ -581,17 +581,22 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             if (i0 > i1) {
                 std::swap(i0, i1);
             }
+            m_scene->blockSignals(true);
             m_scene->clearSelection();
             for (int i = i0; i <= i1 && i < m_items.size(); ++i) {
                 m_items.at(i)->setSelected(true);
             }
+            m_scene->blockSignals(false);
+            emit canvasSelectionChanged();
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
             } else if (!hit->path().isEmpty()) {
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            emit statusChanged();
+            if (m_hudVisible || m_hudFlashVisible) {
+                emit statusChanged();
+            }
             return;
         }
 
@@ -611,8 +616,17 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
 
         if (hit) {
-            m_scene->clearSelection();
-            hit->setSelected(true);
+            // One selectionChanged: clear+select under blocked signals so
+            // MainWindow does not run navigation/layout work twice per click.
+            const bool already = hit->isSelected()
+                && m_scene->selectedItems().size() == 1;
+            if (!already) {
+                m_scene->blockSignals(true);
+                m_scene->clearSelection();
+                hit->setSelected(true);
+                m_scene->blockSignals(false);
+                emit canvasSelectionChanged();
+            }
             m_gallery.setSelectionAnchor(hit);
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
@@ -620,7 +634,11 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            emit statusChanged();
+            // Item update() from setSelected is enough; avoid forcing a second
+            // full-scene pass via statusChanged → viewport()->update().
+            if (m_hudVisible || m_hudFlashVisible) {
+                emit statusChanged();
+            }
             return;
         }
 

@@ -327,9 +327,13 @@ void ImageItem::setGallerySelectable(bool on)
     }
     if (on) {
         setAcceptHoverEvents(true);
+        // Gallery packs many tiles: FastTransformation keeps selection/scroll
+        // responsive (Smooth on every FullViewportUpdate was multi-hundred ms).
+        setTransformationMode(Qt::FastTransformation);
         setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
     } else {
         setSelected(false);
+        setTransformationMode(Qt::SmoothTransformation);
         setFlags(ItemSendsGeometryChanges);
     }
     prepareGeometryChange();

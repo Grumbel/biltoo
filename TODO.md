@@ -3169,3 +3169,21 @@ Motion atlas path unchanged. Tick rate unchanged.
 - [x] OpenGL viewport restored
 - [x] White-screen cause fixed properly
 - [x] Next **180**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-180-gallery-select-latency`
+
+Gallery click→selection lag: FullViewportUpdate + SmoothTransformation on every
+tile, plus double selectionChanged and synchronous setCurrentIndex work.
+
+### Fixes
+- Gallery tiles: `FastTransformation`
+- Gallery viewport: `BoundingRectViewportUpdate` (Full stays for Image/Workspace)
+- clear+select under `blockSignals` (one `canvasSelectionChanged`)
+- Defer `setCurrentIndex` one event-loop tick in Gallery so tile selection paints first
+- Skip layout-panel work on selection outside Workspace
+- `setSessionPosition` does not force full viewport update in bare Gallery
+
+### Done criteria
+- [x] Selection feedback feels immediate
+- [x] Next **181**
