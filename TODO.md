@@ -2742,6 +2742,54 @@ Removed: dual-blit motion ticks, extendOutgoing, mid-path handoff progress.
 
 ---
 
+
+
+## SLIDESHOW TRANSITION MODEL (authoritative — do not violate)
+
+Dwell **moves** images. Transitions **only change colour/opacity** (or slide cards).
+Motion never stops because a transition runs.
+
+```
+TIME ──────────────────────────────────────────────────────────────────►
+
+Image A:  [======== DWELL motion A→A' ========][from-path continues]
+Image B:                                      [to-path from 0 ════════ DWELL B═══►]
+
+Composite:
+  None:        cut to B
+  Crossfade:   opacity A = 1−t , opacity B = t          (both still moving)
+  FadeBlack:   t∈[0,½] black rises over A
+               t=½     solid black (advance/load under veil)
+               t∈[½,1] black falls over B               (both still moving)
+  Slide:       static cards only (exception: freezes poses by design)
+```
+
+### Rules
+
+| Phase | What moves | What the transition does |
+|-------|------------|--------------------------|
+| Dwell | One image, Ken Burns/Pan&scan blit | — |
+| Crossfade | **Both** images on their own paths | Opacity blend only |
+| FadeBlack | **Both** images on their own paths | Black veil only |
+| Slide | Neither (static grabs) | Position of two cards |
+| Handoff | Continue **to** path at progress already shown | Drop overlay |
+
+### Never
+
+1. Cancel or pause dwell/motion because a transition started
+2. Overwrite the outgoing image's motion biases when the transition begins
+   (that snaps Pan&Zoom and looks like a freeze)
+3. Wait for the transition to end before starting B's motion
+4. Reveal the QGraphicsItem underlay during a live transition (always full-viewport blits)
+5. Emit advance twice (FadeBlack advances once at mid-black only)
+
+### Bias ownership
+
+- `m_motionBiasA/B` — **current dwell only**
+- `m_liveFromBiasA/B` — outgoing path for the from-blit (captured at beginLive)
+- `m_liveToBiasA/B` — incoming path for the to-blit (chosen at startLive, not before)
+
+
 ## SLIDESHOW CONTRACT (do not break)
 
 **Ken Burns moves the images (blit), never the QGraphicsView camera.**
@@ -2847,3 +2895,26 @@ change colour/opacity. Motion never stops for a transition.
 - [x] Fade through black does not stop motion
 - [x] Crossfade / FadeBlack are opacity/colour only
 - [x] Next **165**
+
+
+## Plan / work (2026-09-04) — bundle `qimgview-165-transition-in-motion`
+
+**Bug:** Pan&Zoom still appeared to stop at transition start.
+
+**Cause:** `beginLive` called `pickInterestingMotionBiases(nextPath)` which
+**overwrote** `m_motionBiasA/B` while dwell was still painting the outgoing
+image. The crop path snapped to the next slide's Ken Burns pair — looks like
+motion died. From-progress was also frozen at beginLive time for the whole
+async decode gap.
+
+### Fix
+- Never touch dwell biases in `beginLive`
+- Choose incoming biases into `m_liveToBiasA/B` only at `startLive`
+- Refresh from-progress when live paint actually starts
+- All to-frame samples use `m_liveToBias*`; handoff installs them as dwell biases
+- Authoritative transition model written above
+
+### Done criteria
+- [x] Transition runs *in* motion (no stop/snap at start)
+- [x] Written model for None / Crossfade / FadeBlack / Slide
+- [x] Next **166**
