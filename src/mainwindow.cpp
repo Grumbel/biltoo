@@ -1507,13 +1507,14 @@ void MainWindow::readSettings()
     setSlideshowIntervalMs(
         settings.value(QStringLiteral("slideshowIntervalMs"), 3000).toInt());
     if (m_imageView) {
-        const int tr = settings.value(QStringLiteral("slideshowTransition"), 1).toInt();
+        const int transitionKind = settings.value(QStringLiteral("slideshowTransition"), 1).toInt();
         m_imageView->setSlideshowTransition(
-            static_cast<ImageView::SlideshowTransition>(qBound(0, tr, 3)));
+            static_cast<ImageView::SlideshowTransition>(qBound(0, transitionKind, 3)));
         {
             const int half = m_slideshowIntervalMs / 2;
-            const int tr = settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt();
-            m_imageView->setSlideshowTransitionDurationMs(qMin(tr, qMax(0, half)));
+            const int transitionMs =
+                settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt();
+            m_imageView->setSlideshowTransitionDurationMs(qMin(transitionMs, qMax(0, half)));
         }
         m_imageView->setSlideshowMotion(
             static_cast<ImageView::SlideshowMotion>(
