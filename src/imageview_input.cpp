@@ -296,7 +296,7 @@ void ImageView::wheelEvent(QWheelEvent *event)
     // Image mode and free-form Workspace: zoom the view about the cursor.
     // Do not touch selected-item geometry here — prepareGeometryChange on
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
-    cancelKenBurns();
+    cancelSlideshowMotion();
     m_fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
@@ -456,12 +456,13 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     }
 
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.
-    if (event->button() == Qt::MiddleButton
+    if (!m_slideshowMotionActive
+        && (event->button() == Qt::MiddleButton
         || (event->button() == Qt::LeftButton
             && ((isImageMode() && m_imageModeLeftDragPan)
                 || (isWorkspaceMode() && m_tool == Tool::Pan)
                 || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
-                || (event->modifiers() & Qt::AltModifier)))) {
+                || (event->modifiers() & Qt::AltModifier))))) {
         if (!(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)
               && event->button() == Qt::LeftButton)) {
             m_panning = true;
@@ -472,7 +473,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    if (event->button() == Qt::MiddleButton) {
+    if (event->button() == Qt::MiddleButton && !m_slideshowMotionActive) {
         m_panning = true;
         m_lastMousePos = event->pos();
         setCursor(Qt::ClosedHandCursor);
@@ -673,6 +674,12 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     }
     // Middle-button (or Alt) pan must work in crop mode — handle before crop hover.
     if (m_panning) {
+        // Dwell camera owns the view transform — do not fight it with hand pan.
+        if (m_slideshowMotionActive) {
+            m_panning = false;
+            event->accept();
+            return;
+        }
         const QPoint delta = event->pos() - m_lastMousePos;
         m_lastMousePos = event->pos();
         if (isWorkspaceMode()) {

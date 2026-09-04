@@ -1935,3 +1935,18 @@ icon rect, snap near-square sources to fill.
   transition end; do not stop camera merely because a transition grab ran)
 
 **Next:** `qimgview-129-…`
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-129-pan-zoom-scan`
+
+**Changes:**
+- Settings keys: `slideshowMotion` (0/1/2), `slideshowPanZoomFactor` (no KenBurns keys)
+- Modes: **Off** / **Pan & zoom** / **Pan & scan** (full-axis reveal, no zoom)
+- Mouse pan disabled while dwell motion runs; transform anchor fixed to view centre
+- Motion driven by PreciseTimer + elapsed qreal (less judder than stepped animation)
+- With dwell motion on: advance via **live black exit veil** (camera keeps moving),
+  then load next — no frozen snapshot of the outgoing frame
+
+**Next:** `qimgview-130-…`

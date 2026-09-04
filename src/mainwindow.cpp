@@ -247,6 +247,16 @@ MainWindow::MainWindow(QWidget *parent)
     m_slideshowTimer = new QTimer(this);
     m_slideshowTimer->setTimerType(Qt::PreciseTimer);
     connect(m_slideshowTimer, &QTimer::timeout, this, &MainWindow::onSlideshowTick);
+    if (m_imageView) {
+        connect(m_imageView, &ImageView::slideshowExitVeilFinished, this, [this]() {
+            m_slideshowAdvancing = true;
+            goNext();
+            m_slideshowAdvancing = false;
+            if (m_imageView && m_slideshowTimer && m_slideshowTimer->isActive()) {
+                m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+            }
+        });
+    }
 
     m_cursorHideTimer = new QTimer(this);
     m_cursorHideTimer->setSingleShot(true);
@@ -724,13 +734,23 @@ void MainWindow::setZoomTool()
 
 void MainWindow::onSlideshowTick()
 {
+    // With dwell camera motion, fade a live black veil first so the outgoing
+    // pan never freezes in a snapshot; advance when the veil finishes.
+    if (m_imageView && m_imageView->isImageMode()
+        && m_imageView->slideshowMotion() != ImageView::SlideshowMotion::Off) {
+        const int veilMs = m_imageView->slideshowTransitionDurationMs() > 0
+            ? m_imageView->slideshowTransitionDurationMs()
+            : 400;
+        if (m_imageView->beginSlideshowExitVeil(veilMs)) {
+            return;
+        }
+    }
     m_slideshowAdvancing = true;
     if (m_imageView && m_imageView->isImageMode()) {
         m_imageView->prepareSlideshowTransition();
     }
     goNext();
     m_slideshowAdvancing = false;
-    // New dwell begins after advance — reset the pinned-HUD progress line.
     if (m_imageView && m_slideshowTimer && m_slideshowTimer->isActive()) {
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
     }
@@ -883,7 +903,7 @@ void MainWindow::showKeyboardShortcuts()
         "Esc — leave fullscreen (or return to Gallery)</p>"
         "<p><b>Slideshow</b><br/>"
         "Preferences: transition (none, crossfade, fade to black, slide), "
-        "duration, and optional pan&scan during each dwell. "
+        "duration, and optional pan&zoom or pan&scan during each dwell. "
         "Transitions apply on automatic advances only.</p>"
         "<p><b>View</b><br/>"
         "F / F11 — fullscreen (chrome and docks hide; restored on exit)<br/>"
@@ -945,8 +965,8 @@ void MainWindow::showPreferences()
     if (m_imageView) {
         dlg.setSlideshowTransitionIndex(static_cast<int>(m_imageView->slideshowTransition()));
         dlg.setSlideshowTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
-        dlg.setSlideshowKenBurns(m_imageView->kenBurnsEnabled());
-        dlg.setSlideshowKenBurnsZoom(m_imageView->kenBurnsZoomFactor());
+        dlg.setSlideshowMotionIndex(static_cast<int>(m_imageView->slideshowMotion()));
+        dlg.setPanZoomFactor(m_imageView->panZoomFactor());
     }
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
@@ -993,8 +1013,9 @@ void MainWindow::showPreferences()
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(dlg.slideshowTransitionIndex()));
         m_imageView->setSlideshowTransitionDurationMs(dlg.slideshowTransitionDurationMs());
-        m_imageView->setKenBurnsEnabled(dlg.slideshowKenBurns());
-        m_imageView->setKenBurnsZoomFactor(dlg.slideshowKenBurnsZoom());
+        m_imageView->setSlideshowMotion(
+            static_cast<ImageView::SlideshowMotion>(dlg.slideshowMotionIndex()));
+        m_imageView->setPanZoomFactor(dlg.panZoomFactor());
     }
     {
         const int si = dlg.sortModeIndex();
@@ -1432,10 +1453,11 @@ void MainWindow::readSettings()
             static_cast<ImageView::SlideshowTransition>(qBound(0, tr, 3)));
         m_imageView->setSlideshowTransitionDurationMs(
             settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt());
-        m_imageView->setKenBurnsEnabled(
-            settings.value(QStringLiteral("slideshowKenBurns"), false).toBool());
-        m_imageView->setKenBurnsZoomFactor(
-            settings.value(QStringLiteral("slideshowKenBurnsZoom"), 1.12).toDouble());
+        m_imageView->setSlideshowMotion(
+            static_cast<ImageView::SlideshowMotion>(
+                qBound(0, settings.value(QStringLiteral("slideshowMotion"), 0).toInt(), 2)));
+        m_imageView->setPanZoomFactor(
+            settings.value(QStringLiteral("slideshowPanZoomFactor"), 1.12).toDouble());
     }
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
     const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
@@ -1646,10 +1668,10 @@ void MainWindow::writeSettings()
                           static_cast<int>(m_imageView->slideshowTransition()));
         settings.setValue(QStringLiteral("slideshowTransitionDurationMs"),
                           m_imageView->slideshowTransitionDurationMs());
-        settings.setValue(QStringLiteral("slideshowKenBurns"),
-                          m_imageView->kenBurnsEnabled());
-        settings.setValue(QStringLiteral("slideshowKenBurnsZoom"),
-                          m_imageView->kenBurnsZoomFactor());
+        settings.setValue(QStringLiteral("slideshowMotion"),
+                          static_cast<int>(m_imageView->slideshowMotion()));
+        settings.setValue(QStringLiteral("slideshowPanZoomFactor"),
+                          m_imageView->panZoomFactor());
     }
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     if (m_imageView) {

@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <QScrollBar>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QVariantAnimation>
 #include <QRubberBand>
 
@@ -402,7 +403,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_slideshowProgressTimer->stop();
     }
     if (!active) {
-        cancelKenBurns();
+        cancelSlideshowMotion();
     }
     viewport()->update();
 }
@@ -427,15 +428,18 @@ void ImageView::setSlideshowTransitionDurationMs(int ms)
 void ImageView::prepareSlideshowTransition()
 {
     cancelSlideshowTransition();
+    // Snapshot transitions freeze the outgoing frame. When dwell camera motion
+    // is active we skip the grab path — MainWindow uses beginSlideshowExitVeil
+    // so the live pan continues under a black veil instead.
+    if (m_slideshowMotion != SlideshowMotion::Off) {
+        return;
+    }
     if (m_slideshowTransition == SlideshowTransition::None
         || m_slideshowTransitionDurationMs <= 0
         || !isImageMode()
         || !viewport()) {
-        // Pan&scan keeps running until the next image replaces this one.
         return;
     }
-    // Grab the current pan&scan frame; do not stop the camera — the underlay
-    // may still move until LoadReplace, and the next slide starts its own move.
     const QPixmap shot = viewport()->grab();
     if (shot.isNull()) {
         return;
@@ -469,9 +473,6 @@ void ImageView::startSlideshowTransitionAnimation()
     }
     m_slideshowTransitionPending = false;
 
-    // Slide needs both frames. Grab the *new* view while the transition overlay
-    // is still inactive — otherwise paintEvent draws the old snapshot on top and
-    // grab() captures the outgoing frame twice.
     m_slideshowTransitionToPixmap = QPixmap();
     if (m_slideshowTransition == SlideshowTransition::Slide && viewport()) {
         m_slideshowTransitionActive = false;
@@ -512,46 +513,97 @@ void ImageView::startSlideshowTransitionAnimation()
     }
 }
 
-
-void ImageView::setKenBurnsEnabled(bool on)
+void ImageView::setSlideshowMotion(SlideshowMotion mode)
 {
-    m_kenBurnsEnabled = on;
-    if (!on) {
-        cancelKenBurns();
-    }
-}
-
-void ImageView::setKenBurnsZoomFactor(qreal factor)
-{
-    m_kenBurnsZoomFactor = qBound(1.02, factor, 1.5);
-}
-
-void ImageView::cancelKenBurns()
-{
-    m_kenBurnsActive = false;
-    if (m_kenBurnsAnim) {
-        m_kenBurnsAnim->stop();
-    }
-}
-
-void ImageView::maybeStartKenBurns()
-{
-    if (!m_kenBurnsEnabled || !m_slideshowProgressActive || !isImageMode()) {
+    if (m_slideshowMotion == mode) {
         return;
     }
-    // Start immediately — including under an in-progress inter-slide transition
-    // — so the new image is already covering and moving as it is revealed.
+    m_slideshowMotion = mode;
+    if (mode == SlideshowMotion::Off) {
+        cancelSlideshowMotion();
+    }
+}
+
+void ImageView::setPanZoomFactor(qreal factor)
+{
+    m_panZoomFactor = qBound(1.02, factor, 1.5);
+}
+
+void ImageView::cancelSlideshowMotion()
+{
+    m_slideshowMotionActive = false;
+    if (m_motionTimer) {
+        m_motionTimer->stop();
+    }
+}
+
+bool ImageView::beginSlideshowExitVeil(int durationMs)
+{
+    if (!isImageMode() || !viewport() || durationMs < 1) {
+        return false;
+    }
+    if (!m_exitVeilTimer) {
+        m_exitVeilTimer = new QTimer(this);
+        m_exitVeilTimer->setTimerType(Qt::PreciseTimer);
+        m_exitVeilTimer->setInterval(16);
+        connect(m_exitVeilTimer, &QTimer::timeout, this, &ImageView::tickExitVeil);
+    }
+    m_exitVeilActive = true;
+    m_exitVeilProgress = 0.0;
+    m_exitVeilDurationMs = durationMs;
+    m_exitVeilClock.start();
+    m_exitVeilTimer->start();
+    viewport()->update();
+    return true;
+}
+
+void ImageView::tickExitVeil()
+{
+    if (!m_exitVeilActive) {
+        if (m_exitVeilTimer) {
+            m_exitVeilTimer->stop();
+        }
+        return;
+    }
+    const qreal t = m_exitVeilDurationMs > 0
+        ? qreal(m_exitVeilClock.elapsed()) / qreal(m_exitVeilDurationMs)
+        : 1.0;
+    if (t >= 1.0) {
+        m_exitVeilProgress = 1.0;
+        m_exitVeilActive = false;
+        if (m_exitVeilTimer) {
+            m_exitVeilTimer->stop();
+        }
+        if (viewport()) {
+            viewport()->update();
+        }
+        emit slideshowExitVeilFinished();
+        return;
+    }
+    m_exitVeilProgress = t;
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::maybeStartSlideshowMotion()
+{
+    if (m_slideshowMotion == SlideshowMotion::Off || !m_slideshowProgressActive
+        || !isImageMode()) {
+        return;
+    }
     int duration = m_slideshowProgressIntervalMs;
     if (duration < 250) {
         return;
     }
-    startKenBurns(duration);
+    startSlideshowMotion(duration);
 }
 
-void ImageView::startKenBurns(int durationMs)
+void ImageView::startSlideshowMotion(int durationMs)
 {
-    cancelKenBurns();
-    if (!m_kenBurnsEnabled || !isImageMode() || durationMs < 250 || !viewport()) {
+    cancelSlideshowMotion();
+    if (m_slideshowMotion == SlideshowMotion::Off || !isImageMode()
+        || durationMs < 250 || !viewport()) {
         return;
     }
     ImageItem *item = targetItem();
@@ -559,79 +611,107 @@ void ImageView::startKenBurns(int durationMs)
         return;
     }
 
-    // Cover framing from the first frame (no letterboxed “small” flash).
+    // Cover framing from the first frame.
     m_fitMode = false;
     m_fillMode = true;
+    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     fitItem(item, Qt::KeepAspectRatioByExpanding);
 
-    m_kenBurnsStartScale = viewScale();
-    if (m_kenBurnsStartScale <= 0.0) {
+    m_motionStartScale = viewScale();
+    if (m_motionStartScale <= 0.0) {
         return;
     }
-    m_kenBurnsEndScale = m_kenBurnsStartScale * m_kenBurnsZoomFactor;
 
-    // Deterministic pan&scan: landscape pans left→right, portrait top→bottom.
-    // No random corners (that read as wobble).
+    if (m_slideshowMotion == SlideshowMotion::PanZoom) {
+        m_motionEndScale = m_motionStartScale * m_panZoomFactor;
+    } else {
+        // PanScan: constant scale, travel the full overflow of the cover frame.
+        m_motionEndScale = m_motionStartScale;
+    }
+
     const QRectF br = item->sceneBoundingRect();
-    const QPointF mid = br.center();
-    // How far we can shift the view centre while staying mostly on the image
-    // at the *end* scale (more zoomed ⇒ less travel).
-    const qreal viewW = viewport()->width() / m_kenBurnsEndScale;
-    const qreal viewH = viewport()->height() / m_kenBurnsEndScale;
+    const qreal endS = m_motionEndScale;
+    const qreal viewW = qreal(viewport()->width()) / endS;
+    const qreal viewH = qreal(viewport()->height()) / endS;
     const qreal maxDx = qMax(0.0, (br.width() - viewW) * 0.5);
     const qreal maxDy = qMax(0.0, (br.height() - viewH) * 0.5);
-    const qreal travel = 0.85; // use most of the available room, not a random fraction
-    if (br.width() >= br.height()) {
-        m_kenBurnsStartCenter = QPointF(mid.x() - maxDx * travel, mid.y());
-        m_kenBurnsEndCenter = QPointF(mid.x() + maxDx * travel, mid.y());
+    const QPointF mid = br.center();
+
+    if (m_slideshowMotion == SlideshowMotion::PanScan) {
+        // Show as much of the long axis as the dwell allows: full overflow.
+        if (br.width() >= br.height()) {
+            m_motionStartCenter = QPointF(mid.x() - maxDx, mid.y());
+            m_motionEndCenter = QPointF(mid.x() + maxDx, mid.y());
+        } else {
+            m_motionStartCenter = QPointF(mid.x(), mid.y() - maxDy);
+            m_motionEndCenter = QPointF(mid.x(), mid.y() + maxDy);
+        }
     } else {
-        m_kenBurnsStartCenter = QPointF(mid.x(), mid.y() - maxDy * travel);
-        m_kenBurnsEndCenter = QPointF(mid.x(), mid.y() + maxDy * travel);
+        // PanZoom: shorter travel so the zoom stays comfortable.
+        constexpr qreal travel = 0.85;
+        if (br.width() >= br.height()) {
+            m_motionStartCenter = QPointF(mid.x() - maxDx * travel, mid.y());
+            m_motionEndCenter = QPointF(mid.x() + maxDx * travel, mid.y());
+        } else {
+            m_motionStartCenter = QPointF(mid.x(), mid.y() - maxDy * travel);
+            m_motionEndCenter = QPointF(mid.x(), mid.y() + maxDy * travel);
+        }
     }
 
-    if (!m_kenBurnsAnim) {
-        m_kenBurnsAnim = new QVariantAnimation(this);
-        // Linear = constant pan speed (InOutSine felt like a wobble).
-        m_kenBurnsAnim->setEasingCurve(QEasingCurve::Linear);
-        connect(m_kenBurnsAnim, &QVariantAnimation::valueChanged, this,
-                [this](const QVariant &v) {
-                    applyKenBurnsProgress(v.toReal());
-                });
-        connect(m_kenBurnsAnim, &QVariantAnimation::finished, this, [this]() {
-            m_kenBurnsActive = false;
-        });
-    } else {
-        m_kenBurnsAnim->setEasingCurve(QEasingCurve::Linear);
+    if (!m_motionTimer) {
+        m_motionTimer = new QTimer(this);
+        m_motionTimer->setTimerType(Qt::PreciseTimer);
+        m_motionTimer->setInterval(16);
+        connect(m_motionTimer, &QTimer::timeout, this, &ImageView::tickSlideshowMotion);
     }
-    m_kenBurnsActive = true;
-    m_kenBurnsAnim->stop();
-    m_kenBurnsAnim->setStartValue(0.0);
-    m_kenBurnsAnim->setEndValue(1.0);
-    m_kenBurnsAnim->setDuration(durationMs);
-    applyKenBurnsProgress(0.0);
-    m_kenBurnsAnim->start();
+    m_slideshowMotionActive = true;
+    m_motionDurationMs = durationMs;
+    m_motionClock.start();
+    applySlideshowMotionProgress(0.0);
+    m_motionTimer->start();
 }
 
-void ImageView::applyKenBurnsProgress(qreal t)
+void ImageView::tickSlideshowMotion()
+{
+    if (!m_slideshowMotionActive) {
+        if (m_motionTimer) {
+            m_motionTimer->stop();
+        }
+        return;
+    }
+    const qreal t = m_motionDurationMs > 0
+        ? qreal(m_motionClock.elapsed()) / qreal(m_motionDurationMs)
+        : 1.0;
+    if (t >= 1.0) {
+        applySlideshowMotionProgress(1.0);
+        m_slideshowMotionActive = false;
+        if (m_motionTimer) {
+            m_motionTimer->stop();
+        }
+        return;
+    }
+    applySlideshowMotionProgress(t);
+}
+
+void ImageView::applySlideshowMotionProgress(qreal t)
 {
     t = qBound(0.0, t, 1.0);
-    const qreal s = m_kenBurnsStartScale + (m_kenBurnsEndScale - m_kenBurnsStartScale) * t;
-    const QPointF c = m_kenBurnsStartCenter
-        + (m_kenBurnsEndCenter - m_kenBurnsStartCenter) * t;
+    const qreal s = m_motionStartScale + (m_motionEndScale - m_motionStartScale) * t;
+    const QPointF c(
+        m_motionStartCenter.x() + (m_motionEndCenter.x() - m_motionStartCenter.x()) * t,
+        m_motionStartCenter.y() + (m_motionEndCenter.y() - m_motionStartCenter.y()) * t);
     if (s <= 0.0 || !viewport()) {
         return;
     }
-    // Build a view transform that places scene point c at the viewport centre
-    // with uniform scale s (same convention as fitInView / viewScale).
-    const QPointF vc = QPointF(viewport()->width() * 0.5, viewport()->height() * 0.5);
+    // Keep anchor centred so mouse position cannot bias setTransform.
+    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+    const qreal vcX = qreal(viewport()->width()) * 0.5;
+    const qreal vcY = qreal(viewport()->height()) * 0.5;
     QTransform xform;
-    xform.translate(vc.x(), vc.y());
+    xform.translate(vcX, vcY);
     xform.scale(s, s);
     xform.translate(-c.x(), -c.y());
     setTransform(xform);
-    if (viewport()) {
-        viewport()->update();
-    }
 }
 
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)

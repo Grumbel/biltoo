@@ -167,6 +167,13 @@ void ImageView::paintEvent(QPaintEvent *event)
         }
     }
 
+    // Live exit veil: black rises over the still-moving pan (no frozen grab).
+    if (m_exitVeilActive && m_exitVeilProgress > 0.0) {
+        painter.setOpacity(m_exitVeilProgress);
+        painter.fillRect(viewport()->rect(), Qt::black);
+        painter.setOpacity(1.0);
+    }
+
     // Empty session: invite the user to open or drop images.
     if (m_items.isEmpty() && !hasClassicPath() && !m_cropMode) {
         painter.save();

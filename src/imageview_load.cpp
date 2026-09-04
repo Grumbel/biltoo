@@ -210,7 +210,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             prepareImageModeCanvas();
             // Pan&scan: cover the viewport immediately so the first painted frame
             // is not a letterboxed “small” image waiting for the camera start.
-            if (m_kenBurnsEnabled && m_slideshowProgressActive) {
+            if (m_slideshowMotion != SlideshowMotion::Off && m_slideshowProgressActive) {
                 m_fitMode = false;
                 m_fillMode = true;
                 fitItem(item, Qt::KeepAspectRatioByExpanding);
@@ -219,8 +219,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             }
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
             setUpdatesEnabled(true);
-            // Start pan&scan right away (also under an active transition).
-            maybeStartKenBurns();
+            // Start dwell camera immediately (also under an active transition).
+            maybeStartSlideshowMotion();
             if (m_slideshowTransitionPending) {
                 startSlideshowTransitionAnimation();
             } else {

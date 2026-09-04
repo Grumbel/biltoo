@@ -1365,7 +1365,7 @@ void MainWindow::startSlideshow()
     armSlideshowCursorHide();
     if (m_imageView) {
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-        m_imageView->maybeStartKenBurns();
+        m_imageView->maybeStartSlideshowMotion();
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }

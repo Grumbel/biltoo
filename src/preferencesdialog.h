@@ -45,12 +45,12 @@ public:
     int slideshowTransitionDurationMs() const;
     void setSlideshowTransitionDurationMs(int ms);
 
-    bool slideshowKenBurns() const;
-    void setSlideshowKenBurns(bool on);
+    /** 0 = off, 1 = pan&zoom, 2 = pan&scan */
+    int slideshowMotionIndex() const;
+    void setSlideshowMotionIndex(int index);
 
-    /** Zoom end/start ratio, e.g. 1.12 for +12%. */
-    double slideshowKenBurnsZoom() const;
-    void setSlideshowKenBurnsZoom(double factor);
+    double panZoomFactor() const;
+    void setPanZoomFactor(double factor);
 
     bool imageModeLeftDragPan() const;
     void setImageModeLeftDragPan(bool on);
@@ -130,10 +130,10 @@ private:
     QSpinBox *m_slideshowTransitionMsSpin = nullptr;
     QToolButton *m_resetSlideshowTransitionBtn = nullptr;
     QToolButton *m_resetSlideshowTransitionMsBtn = nullptr;
-    QCheckBox *m_slideshowKenBurnsCheck = nullptr;
-    QDoubleSpinBox *m_slideshowKenBurnsZoomSpin = nullptr;
-    QToolButton *m_resetSlideshowKenBurnsBtn = nullptr;
-    QToolButton *m_resetSlideshowKenBurnsZoomBtn = nullptr;
+    QComboBox *m_slideshowMotionCombo = nullptr;
+    QDoubleSpinBox *m_panZoomFactorSpin = nullptr;
+    QToolButton *m_resetSlideshowMotionBtn = nullptr;
+    QToolButton *m_resetPanZoomFactorBtn = nullptr;
     QCheckBox *m_imageModePanCheck = nullptr;
 
     QPushButton *m_bgColorBtn = nullptr;

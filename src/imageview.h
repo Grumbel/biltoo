@@ -182,8 +182,10 @@ public:
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
     void startSlideshowTransitionAnimation();
-    void startKenBurns(int durationMs);
-    void applyKenBurnsProgress(qreal t);
+    void startSlideshowMotion(int durationMs);
+    void applySlideshowMotionProgress(qreal t);
+    void tickSlideshowMotion();
+    void tickExitVeil();
     /** Controller host: session path order used for Gallery packing. */
     QStringList &pathOrder() { return m_pathOrder; }
     const QStringList &pathOrder() const { return m_pathOrder; }
@@ -483,14 +485,27 @@ public:
     void prepareSlideshowTransition();
     void cancelSlideshowTransition();
 
-    /** Slow pan/zoom during a slideshow dwell (pan && scan). */
-    void setKenBurnsEnabled(bool on);
-    bool kenBurnsEnabled() const { return m_kenBurnsEnabled; }
-    void setKenBurnsZoomFactor(qreal factor);
-    qreal kenBurnsZoomFactor() const { return m_kenBurnsZoomFactor; }
-    void cancelKenBurns();
-    /** Start pan&&scan if enabled and a slideshow dwell is active. */
-    void maybeStartKenBurns();
+    /** Camera motion during a slideshow dwell. */
+    enum class SlideshowMotion {
+        Off = 0,
+        PanZoom = 1, /**< Cover frame, slowly zoom in while panning */
+        PanScan = 2  /**< Cover frame, pan across full width/height (no zoom) */
+    };
+
+    void setSlideshowMotion(SlideshowMotion mode);
+    SlideshowMotion slideshowMotion() const { return m_slideshowMotion; }
+    void setPanZoomFactor(qreal factor);
+    qreal panZoomFactor() const { return m_panZoomFactor; }
+    void cancelSlideshowMotion();
+    /** Start dwell camera motion if enabled and slideshow is active. */
+    void maybeStartSlideshowMotion();
+    /**
+     * Fade a black veil over the *live* view (camera keeps moving). Used to
+     * advance slides without freezing a snapshot. Emits slideshowExitVeilFinished
+     * when fully black so the host can load the next image.
+     * @return true if a veil was started (caller should defer goNext).
+     */
+    bool beginSlideshowExitVeil(int durationMs);
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -637,6 +652,8 @@ signals:
     void galleryReturnRequested();
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
+    /** Black exit veil finished — host should advance the slideshow. */
+    void slideshowExitVeilFinished();
     /** Crop mode toggled on/off (toolbar checkable state). */
     void cropModeChanged(bool active);
     /** Session crop committed; @p image is the new displayed pixels for @p path. */
@@ -922,14 +939,21 @@ private:
     bool m_slideshowTransitionPending = false;
     bool m_slideshowTransitionActive = false;
     QVariantAnimation *m_slideshowTransitionAnim = nullptr;
-    bool m_kenBurnsEnabled = false;
-    qreal m_kenBurnsZoomFactor = 1.12; /**< End scale / start scale (e.g. 1.12 = +12%) */
-    bool m_kenBurnsActive = false;
-    qreal m_kenBurnsStartScale = 1.0;
-    qreal m_kenBurnsEndScale = 1.0;
-    QPointF m_kenBurnsStartCenter;
-    QPointF m_kenBurnsEndCenter;
-    QVariantAnimation *m_kenBurnsAnim = nullptr;
+    SlideshowMotion m_slideshowMotion = SlideshowMotion::Off;
+    qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
+    bool m_slideshowMotionActive = false;
+    qreal m_motionStartScale = 1.0;
+    qreal m_motionEndScale = 1.0;
+    QPointF m_motionStartCenter;
+    QPointF m_motionEndCenter;
+    int m_motionDurationMs = 0;
+    QElapsedTimer m_motionClock;
+    QTimer *m_motionTimer = nullptr;
+    bool m_exitVeilActive = false;
+    qreal m_exitVeilProgress = 0.0;
+    int m_exitVeilDurationMs = 0;
+    QElapsedTimer m_exitVeilClock;
+    QTimer *m_exitVeilTimer = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;

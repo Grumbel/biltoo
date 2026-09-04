@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-128-pan-scan”**
-(Pan&scan polish: no random, continuous, cover frame). Next bundle number: **129**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-129-pan-zoom-scan”**
+(Pan&zoom vs pan&scan; live exit veil). Next bundle number: **130**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

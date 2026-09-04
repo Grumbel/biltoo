@@ -31,8 +31,8 @@ constexpr int kDefaultIntervalMs = 3000;
 constexpr bool kDefaultSlideshowFullscreen = true;
 constexpr int kDefaultSlideshowTransition = 1; // Crossfade
 constexpr int kDefaultSlideshowTransitionMs = 400;
-constexpr bool kDefaultSlideshowKenBurns = false;
-constexpr double kDefaultSlideshowKenBurnsZoom = 1.12;
+constexpr int kDefaultSlideshowMotion = 0; // Off
+constexpr double kDefaultPanZoomFactor = 1.12;
 constexpr int kDefaultSortIndex = 0; // Name
 constexpr bool kDefaultStartInWorkspace = false;
 constexpr bool kDefaultImageModePan = true;
@@ -113,25 +113,30 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                               updateResetButtons();
                           }));
 
-    m_slideshowKenBurnsCheck = new QCheckBox(tr("Pan && scan during slides"), this);
-    m_slideshowKenBurnsCheck->setToolTip(
-        tr("Fill the screen and slowly pan across each image during the dwell (landscape: left to right; portrait: top to bottom)"));
-    slideshowForm->addRow(QString(),
-                          wrapWithReset(m_slideshowKenBurnsCheck, &m_resetSlideshowKenBurnsBtn, [this]() {
-                              setSlideshowKenBurns(kDefaultSlideshowKenBurns);
+    m_slideshowMotionCombo = new QComboBox(this);
+    m_slideshowMotionCombo->addItem(tr("Off"), 0);
+    m_slideshowMotionCombo->addItem(tr("Pan && zoom"), 1);
+    m_slideshowMotionCombo->addItem(tr("Pan && scan"), 2);
+    m_slideshowMotionCombo->setToolTip(
+        tr("Pan && zoom: slowly zoom in while panning.\n"
+           "Pan && scan: pan across the full width or height so the whole "
+           "image is revealed during the dwell (no zoom)."));
+    slideshowForm->addRow(tr("Dwell motion:"),
+                          wrapWithReset(m_slideshowMotionCombo, &m_resetSlideshowMotionBtn, [this]() {
+                              setSlideshowMotionIndex(kDefaultSlideshowMotion);
                               updateResetButtons();
                           }));
 
-    m_slideshowKenBurnsZoomSpin = new QDoubleSpinBox(this);
-    m_slideshowKenBurnsZoomSpin->setRange(1.02, 1.40);
-    m_slideshowKenBurnsZoomSpin->setSingleStep(0.01);
-    m_slideshowKenBurnsZoomSpin->setDecimals(2);
-    m_slideshowKenBurnsZoomSpin->setValue(kDefaultSlideshowKenBurnsZoom);
-    m_slideshowKenBurnsZoomSpin->setToolTip(
-        tr("End zoom relative to the starting cover framing (1.12 = 12% closer)"));
-    slideshowForm->addRow(tr("Pan && scan zoom:"),
-                          wrapWithReset(m_slideshowKenBurnsZoomSpin, &m_resetSlideshowKenBurnsZoomBtn, [this]() {
-                              setSlideshowKenBurnsZoom(kDefaultSlideshowKenBurnsZoom);
+    m_panZoomFactorSpin = new QDoubleSpinBox(this);
+    m_panZoomFactorSpin->setRange(1.02, 1.40);
+    m_panZoomFactorSpin->setSingleStep(0.01);
+    m_panZoomFactorSpin->setDecimals(2);
+    m_panZoomFactorSpin->setValue(kDefaultPanZoomFactor);
+    m_panZoomFactorSpin->setToolTip(
+        tr("Pan && zoom only: end scale relative to cover framing (1.12 = 12% closer)"));
+    slideshowForm->addRow(tr("Pan && zoom factor:"),
+                          wrapWithReset(m_panZoomFactorSpin, &m_resetPanZoomFactorBtn, [this]() {
+                              setPanZoomFactor(kDefaultPanZoomFactor);
                               updateResetButtons();
                           }));
 
@@ -454,9 +459,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
             this, [this](int) { updateResetButtons(); });
     connect(m_slideshowTransitionMsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, [this](int) { updateResetButtons(); });
-    connect(m_slideshowKenBurnsCheck, &QCheckBox::toggled,
-            this, [this](bool) { updateResetButtons(); });
-    connect(m_slideshowKenBurnsZoomSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_slideshowMotionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateResetButtons(); });
+    connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) { updateResetButtons(); });
     connect(m_slideshowFullscreenCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
@@ -975,27 +980,31 @@ void PreferencesDialog::setSlideshowTransitionDurationMs(int ms)
 }
 
 
-bool PreferencesDialog::slideshowKenBurns() const
+int PreferencesDialog::slideshowMotionIndex() const
 {
-    return m_slideshowKenBurnsCheck && m_slideshowKenBurnsCheck->isChecked();
+    return m_slideshowMotionCombo ? m_slideshowMotionCombo->currentData().toInt() : 0;
 }
 
-void PreferencesDialog::setSlideshowKenBurns(bool on)
+void PreferencesDialog::setSlideshowMotionIndex(int index)
 {
-    if (m_slideshowKenBurnsCheck) {
-        m_slideshowKenBurnsCheck->setChecked(on);
+    if (!m_slideshowMotionCombo) {
+        return;
+    }
+    const int idx = m_slideshowMotionCombo->findData(index);
+    if (idx >= 0) {
+        m_slideshowMotionCombo->setCurrentIndex(idx);
     }
 }
 
-double PreferencesDialog::slideshowKenBurnsZoom() const
+double PreferencesDialog::panZoomFactor() const
 {
-    return m_slideshowKenBurnsZoomSpin ? m_slideshowKenBurnsZoomSpin->value() : 1.12;
+    return m_panZoomFactorSpin ? m_panZoomFactorSpin->value() : 1.12;
 }
 
-void PreferencesDialog::setSlideshowKenBurnsZoom(double factor)
+void PreferencesDialog::setPanZoomFactor(double factor)
 {
-    if (m_slideshowKenBurnsZoomSpin) {
-        m_slideshowKenBurnsZoomSpin->setValue(qBound(1.02, factor, 1.40));
+    if (m_panZoomFactorSpin) {
+        m_panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
     }
 }
 
@@ -1037,9 +1046,9 @@ void PreferencesDialog::updateResetButtons()
     setOn(m_resetSlideshowTransitionBtn, slideshowTransitionIndex() != kDefaultSlideshowTransition);
     setOn(m_resetSlideshowTransitionMsBtn,
          slideshowTransitionDurationMs() != kDefaultSlideshowTransitionMs);
-    setOn(m_resetSlideshowKenBurnsBtn, slideshowKenBurns() != kDefaultSlideshowKenBurns);
-    setOn(m_resetSlideshowKenBurnsZoomBtn,
-         !qFuzzyCompare(slideshowKenBurnsZoom(), kDefaultSlideshowKenBurnsZoom));
+    setOn(m_resetSlideshowMotionBtn, slideshowMotionIndex() != kDefaultSlideshowMotion);
+    setOn(m_resetPanZoomFactorBtn,
+         !qFuzzyCompare(panZoomFactor(), kDefaultPanZoomFactor));
     setOn(m_resetSortBtn, sortModeIndex() != kDefaultSortIndex);
     setOn(m_resetWorkspaceBtn, startInWorkspaceMode() != kDefaultStartInWorkspace);
     setOn(m_resetImagePanBtn, imageModeLeftDragPan() != kDefaultImageModePan);
