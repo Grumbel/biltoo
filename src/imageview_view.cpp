@@ -457,6 +457,8 @@ void ImageView::cancelSlideshowTransition()
     m_slideshowTransitionProgress = 1.0;
     m_slideshowTransitionPixmap = QPixmap();
     m_slideshowTransitionToPixmap = QPixmap();
+    m_liveTransitionSourceImage = QImage();
+    m_liveTransitionPathHash = 0;
     if (m_slideshowTransitionAnim) {
         m_slideshowTransitionAnim->stop();
     }
@@ -501,6 +503,8 @@ void ImageView::releaseLiveTransitionHold()
     m_liveTransitionActive = false;
     m_liveTransitionProgress = 1.0;
     m_slideshowTransitionToPixmap = QPixmap();
+    m_liveTransitionSourceImage = QImage();
+    m_liveTransitionPathHash = 0;
     m_liveTransitionNextPath.clear();
     if (viewport()) {
         viewport()->update();
@@ -594,33 +598,49 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     if (!item || !viewport()) {
         return;
     }
-    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+    // Explicit scale + centerOn (same approach as the dwell camera). fitInView
+    // is scrollbar-sensitive and often yields nearly identical Fit vs Fill
+    // framing when the image aspect is close to the viewport.
+    const QRectF br = item->sceneBoundingRect();
+    if (br.width() < 1.0 || br.height() < 1.0) {
+        return;
+    }
+    const qreal vw = qreal(qMax(1, viewport()->width()));
+    const qreal vh = qreal(qMax(1, viewport()->height()));
+    const QPointF mid = br.center();
+
+    item->setItemScale(1.0);
+    if (isImageMode()) {
+        item->setPos(0, 0);
+    }
+
+    qreal scale = 1.0;
     switch (m_slideshowZoom) {
     case SlideshowZoom::Fill:
         m_fitMode = false;
         m_fillMode = true;
-        item->setItemScale(1.0);
-        fitItem(item, Qt::KeepAspectRatioByExpanding);
+        scale = qMax(vw / br.width(), vh / br.height());
         break;
     case SlideshowZoom::Actual:
-        // Match zoomReset: native item scale, identity view, centred.
         m_fitMode = false;
         m_fillMode = false;
-        item->setItemScale(1.0);
-        if (isImageMode()) {
-            item->setPos(0, 0);
-        }
-        resetTransform();
-        centerOn(item);
+        scale = 1.0;
         break;
     case SlideshowZoom::Fit:
     default:
         m_fitMode = true;
         m_fillMode = false;
-        item->setItemScale(1.0);
-        fitItem(item, Qt::KeepAspectRatio);
+        scale = qMin(vw / br.width(), vh / br.height());
         break;
     }
+    if (scale <= 0.0 || !qIsFinite(scale)) {
+        return;
+    }
+    setTransformationAnchor(QGraphicsView::NoAnchor);
+    QTransform xform;
+    xform.scale(scale, scale);
+    setTransform(xform);
+    centerOn(mid);
 }
 
 void ImageView::reapplySlideshowFraming()
@@ -694,24 +714,108 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 
 QPixmap ImageView::renderCoverPixmap(const QImage &image) const
 {
+    // Static centre cover — used when motion is Off or as a fallback.
+    return renderMotionCoverPixmap(image, 0.0, 0);
+}
+
+QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
+                                           uint pathHash) const
+{
     if (image.isNull() || !viewport()) {
         return {};
     }
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
-    QImage scaled = image.scaled(vw, vh, Qt::KeepAspectRatioByExpanding,
-                                 Qt::SmoothTransformation);
+    const qreal iw = qreal(image.width());
+    const qreal ih = qreal(image.height());
+    if (iw < 1.0 || ih < 1.0) {
+        return {};
+    }
+
+    motionT = qBound(0.0, motionT, 1.0);
+
+    // Cover scale in "image pixels per viewport pixel" inverted: how large the
+    // image must be drawn so the shorter side fills the viewport.
+    const qreal cover = qMax(qreal(vw) / iw, qreal(vh) / ih);
+    if (cover <= 0.0 || !qIsFinite(cover)) {
+        return {};
+    }
+
+    qreal scale = cover; // image → screen scale
+    qreal biasX = 0.0;
+    qreal biasY = 0.0;
+
+    if (m_slideshowMotion == SlideshowMotion::PanScan) {
+        // Constant cover (with light overscan when aspect matches) + edge travel.
+        qreal s = cover;
+        const bool preferX = iw * qreal(vh) >= ih * qreal(vw);
+        {
+            const qreal viewW = qreal(vw) / s;
+            const qreal viewH = qreal(vh) / s;
+            const qreal halfX = qMax(0.0, (iw - viewW) * 0.5);
+            const qreal halfY = qMax(0.0, (ih - viewH) * 0.5);
+            const qreal travel = preferX ? halfX : halfY;
+            constexpr qreal kMinTravel = 8.0;
+            if (travel < kMinTravel) {
+                const qreal longSide = preferX ? iw : ih;
+                const qreal targetHalf = qMax(kMinTravel, longSide * 0.10);
+                const qreal neededView = preferX ? (iw - 2.0 * targetHalf)
+                                                 : (ih - 2.0 * targetHalf);
+                if (neededView > 1.0) {
+                    s = preferX ? (qreal(vw) / neededView) : (qreal(vh) / neededView);
+                    s = qMax(s, cover);
+                }
+            }
+        }
+        scale = s;
+        // Alternate direction from path hash; travel edge → edge over motionT.
+        const bool flip = (pathHash & 1u) != 0;
+        if (preferX) {
+            biasX = flip ? (1.0 - 2.0 * motionT) : (-1.0 + 2.0 * motionT);
+            biasY = 0.0;
+        } else {
+            biasX = 0.0;
+            biasY = flip ? (1.0 - 2.0 * motionT) : (-1.0 + 2.0 * motionT);
+        }
+    } else if (m_slideshowMotion == SlideshowMotion::PanZoom) {
+        const qreal factor = qBound(1.02, m_panZoomFactor, 1.40);
+        scale = cover * (1.0 + (factor - 1.0) * motionT);
+        static const QPointF kBias[8] = {
+            QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
+            QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
+            QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
+            QPointF(0.0, -1.0), QPointF(0.0, 1.0),
+        };
+        uint seed = pathHash ? pathHash : 1u;
+        const QPointF biasA = kBias[seed % 8];
+        const QPointF biasB = kBias[(seed / 8 + 3) % 8];
+        biasX = biasA.x() + (biasB.x() - biasA.x()) * motionT;
+        biasY = biasA.y() + (biasB.y() - biasA.y()) * motionT;
+    } else {
+        // Off / unknown: pure centre cover.
+        scale = cover;
+        biasX = 0.0;
+        biasY = 0.0;
+    }
+
+    // Drawn size of the full image at this scale.
+    const int dw = qMax(1, int(qRound(iw * scale)));
+    const int dh = qMax(1, int(qRound(ih * scale)));
+    // Overflow in drawn pixels.
+    const qreal halfOx = qMax(0.0, (qreal(dw) - qreal(vw)) * 0.5);
+    const qreal halfOy = qMax(0.0, (qreal(dh) - qreal(vh)) * 0.5);
+    const int srcX = qBound(0, int(qRound(halfOx + biasX * halfOx)), qMax(0, dw - vw));
+    const int srcY = qBound(0, int(qRound(halfOy + biasY * halfOy)), qMax(0, dh - vh));
+
+    QImage scaled = image.scaled(dw, dh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     if (scaled.isNull()) {
         return {};
     }
-    // Centre-crop to exact viewport size.
-    const int x = qMax(0, (scaled.width() - vw) / 2);
-    const int y = qMax(0, (scaled.height() - vh) / 2);
-    scaled = scaled.copy(x, y, qMin(vw, scaled.width()), qMin(vh, scaled.height()));
-    if (scaled.size() != QSize(vw, vh)) {
-        scaled = scaled.scaled(vw, vh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    QImage crop = scaled.copy(srcX, srcY, qMin(vw, scaled.width()), qMin(vh, scaled.height()));
+    if (crop.size() != QSize(vw, vh)) {
+        crop = crop.scaled(vw, vh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     }
-    return QPixmap::fromImage(scaled);
+    return QPixmap::fromImage(crop);
 }
 
 void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
@@ -724,8 +828,13 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         emit slideshowLiveTransitionFinished();
         return;
     }
-    m_slideshowTransitionToPixmap = renderCoverPixmap(nextImage);
+    m_liveTransitionSourceImage = nextImage;
+    m_liveTransitionPathHash = qHash(m_liveTransitionNextPath);
+    // First frame at motion t=0; subsequent ticks re-render along the path.
+    m_slideshowTransitionToPixmap = renderMotionCoverPixmap(
+        m_liveTransitionSourceImage, 0.0, m_liveTransitionPathHash);
     if (m_slideshowTransitionToPixmap.isNull()) {
+        m_liveTransitionSourceImage = QImage();
         emit slideshowLiveTransitionFinished();
         return;
     }
@@ -792,6 +901,8 @@ void ImageView::tickLiveTransition()
         if (!m_liveTransitionMidAdvanced) {
             m_liveTransitionHold = true;
             m_liveTransitionActive = false;
+            // Keep final to-pixmap for the hold; drop the source to free memory.
+            m_liveTransitionSourceImage = QImage();
             if (viewport()) {
                 viewport()->update();
             }
@@ -800,6 +911,8 @@ void ImageView::tickLiveTransition()
             m_liveTransitionActive = false;
             m_liveTransitionHold = false;
             m_slideshowTransitionToPixmap = QPixmap();
+            m_liveTransitionSourceImage = QImage();
+            m_liveTransitionPathHash = 0;
             if (viewport()) {
                 viewport()->update();
             }
@@ -807,6 +920,22 @@ void ImageView::tickLiveTransition()
         return;
     }
     m_liveTransitionProgress = t;
+    // Animate the incoming cover along the dwell motion path so the faded-to
+    // (or slid-in) image is not frozen while the outgoing dwell keeps moving.
+    if ((m_slideshowTransition == SlideshowTransition::Crossfade
+         || m_slideshowTransition == SlideshowTransition::Slide)
+        && !m_liveTransitionSourceImage.isNull()
+        && m_slideshowMotion != SlideshowMotion::Off) {
+        // Compress a visible slice of the dwell path into the short transition
+        // window so the incoming frame clearly moves (real-time mapping onto
+        // interval would be almost static for a 400 ms fade on a 3 s dwell).
+        const qreal motionT = t;
+        const QPixmap frame = renderMotionCoverPixmap(
+            m_liveTransitionSourceImage, motionT, m_liveTransitionPathHash);
+        if (!frame.isNull()) {
+            m_slideshowTransitionToPixmap = frame;
+        }
+    }
     if (viewport()) {
         viewport()->update();
     }

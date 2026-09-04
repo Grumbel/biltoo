@@ -187,7 +187,16 @@ public:
     void tickSlideshowMotion();
     void tickLiveTransition();
     void startLiveTransitionWithImage(const QImage &nextImage);
+    /** Static centre-crop cover of @p image to the current viewport size. */
     QPixmap renderCoverPixmap(const QImage &image) const;
+    /**
+     * Cover (or Ken Burns / pan-scan sample) of @p image at motion progress
+     * @p motionT in [0, 1], using the current SlideshowMotion / panZoomFactor
+     * and a path-stable seed from @p pathHash. Used for live transition overlays
+     * so the incoming frame is not frozen.
+     */
+    QPixmap renderMotionCoverPixmap(const QImage &image, qreal motionT,
+                                    uint pathHash) const;
     /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
     void applySlideshowZoomFraming(ImageItem *item);
     /** Controller host: session path order used for Gallery packing. */
@@ -992,6 +1001,9 @@ private:
     QElapsedTimer m_liveTransitionClock;
     QTimer *m_liveTransitionTimer = nullptr;
     QString m_liveTransitionNextPath;
+    /** Decoded next slide kept for re-rendering animated live-transition covers. */
+    QImage m_liveTransitionSourceImage;
+    uint m_liveTransitionPathHash = 0;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;
