@@ -188,6 +188,8 @@ public:
     void tickLiveTransition();
     void startLiveTransitionWithImage(const QImage &nextImage);
     QPixmap renderCoverPixmap(const QImage &image) const;
+    /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
+    void applySlideshowZoomFraming(ImageItem *item);
     /** Controller host: session path order used for Gallery packing. */
     QStringList &pathOrder() { return m_pathOrder; }
     const QStringList &pathOrder() const { return m_pathOrder; }
@@ -498,6 +500,15 @@ public:
     SlideshowMotion slideshowMotion() const { return m_slideshowMotion; }
     void setPanZoomFactor(qreal factor);
     qreal panZoomFactor() const { return m_panZoomFactor; }
+
+    /** Base framing for each slide while a slideshow is running (motion off). */
+    enum class SlideshowZoom {
+        Fit = 0,    /**< Letterbox — whole image visible */
+        Fill = 1,   /**< Cover — may crop */
+        Actual = 2  /**< 1:1 pixels, centred */
+    };
+    void setSlideshowZoom(SlideshowZoom mode);
+    SlideshowZoom slideshowZoom() const { return m_slideshowZoom; }
     void cancelSlideshowMotion();
     /** Start dwell camera motion if enabled and slideshow is active. */
     void maybeStartSlideshowMotion();
@@ -508,6 +519,12 @@ public:
      * @return false if a normal snapshot transition should be used instead.
      */
     bool beginLiveSlideshowTransition(const QString &nextPath);
+    /**
+     * Drop any held live-transition overlay once the next slide is fitted.
+     * Called from the LoadReplace path so the incoming frame is not cleared
+     * before the new item is on screen (avoids a one-frame flash of the old image).
+     */
+    void releaseLiveTransitionHold();
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -943,6 +960,7 @@ private:
     QVariantAnimation *m_slideshowTransitionAnim = nullptr;
     SlideshowMotion m_slideshowMotion = SlideshowMotion::Off;
     qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
+    SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
     bool m_slideshowMotionActive = false;
     qreal m_motionStartScale = 1.0;
     qreal m_motionEndScale = 1.0;
@@ -953,8 +971,18 @@ private:
     QTimer *m_motionTimer = nullptr;
     bool m_liveTransitionActive = false;
     bool m_liveTransitionMidAdvanced = false; /**< FadeBlack swapped at midpoint */
+    /**
+     * After the animated portion of a live transition finishes (or at full
+     * black for FadeBlack), keep painting the final composite until the next
+     * LoadReplace has fitted. Prevents a flash of the outgoing image.
+     */
+    bool m_liveTransitionHold = false;
+    /** FadeBlack: freeze at mid-black until goNext load completes. */
+    bool m_liveTransitionAwaitingLoad = false;
     qreal m_liveTransitionProgress = 0.0;
     int m_liveTransitionDurationMs = 0;
+    /** Elapsed ms already consumed when resuming after a mid-black load wait. */
+    int m_liveTransitionElapsedBaseMs = 0;
     QElapsedTimer m_liveTransitionClock;
     QTimer *m_liveTransitionTimer = nullptr;
     QString m_liveTransitionNextPath;

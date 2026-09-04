@@ -208,12 +208,15 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 }
             }
             prepareImageModeCanvas();
-            // Pan&scan: cover the viewport immediately so the first painted frame
-            // is not a letterboxed “small” image waiting for the camera start.
-            if (m_slideshowMotion != SlideshowMotion::Off && m_slideshowProgressActive) {
+            // Slideshow framing: dwell motion always starts from cover so the
+            // camera never letterboxes. Without motion, honour slideshow zoom.
+            if (m_slideshowProgressActive
+                && m_slideshowMotion != SlideshowMotion::Off) {
                 m_fitMode = false;
                 m_fillMode = true;
                 fitItem(item, Qt::KeepAspectRatioByExpanding);
+            } else if (m_slideshowProgressActive) {
+                applySlideshowZoomFraming(item);
             } else {
                 fitItem(item, currentFitAspectMode());
             }
@@ -221,6 +224,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             setUpdatesEnabled(true);
             // Start dwell camera immediately (also under an active transition).
             maybeStartSlideshowMotion();
+            // Drop held live-transition overlay only after the new item is fitted
+            // (and motion frame 0 applied) so the old underlay never flashes.
+            releaseLiveTransitionHold();
             if (m_slideshowTransitionPending) {
                 startSlideshowTransitionAnimation();
             } else {

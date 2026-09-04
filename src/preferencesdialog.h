@@ -52,6 +52,10 @@ public:
     double panZoomFactor() const;
     void setPanZoomFactor(double factor);
 
+    /** 0 = fit, 1 = fill, 2 = 1:1 */
+    int slideshowZoomIndex() const;
+    void setSlideshowZoomIndex(int index);
+
     bool imageModeLeftDragPan() const;
     void setImageModeLeftDragPan(bool on);
 
@@ -134,6 +138,8 @@ private:
     QDoubleSpinBox *m_panZoomFactorSpin = nullptr;
     QToolButton *m_resetSlideshowMotionBtn = nullptr;
     QToolButton *m_resetPanZoomFactorBtn = nullptr;
+    QComboBox *m_slideshowZoomCombo = nullptr;
+    QToolButton *m_resetSlideshowZoomBtn = nullptr;
     QCheckBox *m_imageModePanCheck = nullptr;
 
     QPushButton *m_bgColorBtn = nullptr;

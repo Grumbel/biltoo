@@ -970,6 +970,7 @@ void MainWindow::showPreferences()
         dlg.setSlideshowTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
         dlg.setSlideshowMotionIndex(static_cast<int>(m_imageView->slideshowMotion()));
         dlg.setPanZoomFactor(m_imageView->panZoomFactor());
+        dlg.setSlideshowZoomIndex(static_cast<int>(m_imageView->slideshowZoom()));
     }
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
@@ -1019,6 +1020,9 @@ void MainWindow::showPreferences()
         m_imageView->setSlideshowMotion(
             static_cast<ImageView::SlideshowMotion>(dlg.slideshowMotionIndex()));
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
+        m_imageView->setSlideshowZoom(
+            static_cast<ImageView::SlideshowZoom>(
+                qBound(0, dlg.slideshowZoomIndex(), 2)));
     }
     {
         const int si = dlg.sortModeIndex();
@@ -1461,6 +1465,9 @@ void MainWindow::readSettings()
                 qBound(0, settings.value(QStringLiteral("slideshowMotion"), 0).toInt(), 2)));
         m_imageView->setPanZoomFactor(
             settings.value(QStringLiteral("slideshowPanZoomFactor"), 1.12).toDouble());
+        m_imageView->setSlideshowZoom(
+            static_cast<ImageView::SlideshowZoom>(
+                qBound(0, settings.value(QStringLiteral("slideshowZoomMode"), 0).toInt(), 2)));
     }
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
     const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
@@ -1675,6 +1682,8 @@ void MainWindow::writeSettings()
                           static_cast<int>(m_imageView->slideshowMotion()));
         settings.setValue(QStringLiteral("slideshowPanZoomFactor"),
                           m_imageView->panZoomFactor());
+        settings.setValue(QStringLiteral("slideshowZoomMode"),
+                          static_cast<int>(m_imageView->slideshowZoom()));
     }
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     if (m_imageView) {

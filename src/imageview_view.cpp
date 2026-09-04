@@ -463,9 +463,45 @@ void ImageView::cancelSlideshowTransition()
     m_liveTransitionActive = false;
     m_liveTransitionProgress = 0.0;
     m_liveTransitionMidAdvanced = false;
+    m_liveTransitionHold = false;
+    m_liveTransitionAwaitingLoad = false;
+    m_liveTransitionElapsedBaseMs = 0;
     if (m_liveTransitionTimer) {
         m_liveTransitionTimer->stop();
     }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::releaseLiveTransitionHold()
+{
+    if (!m_liveTransitionHold && !m_liveTransitionAwaitingLoad) {
+        return;
+    }
+    // Fade-through-black: load finished under solid black — resume the second
+    // half so the veil lifts over the already-fitted next slide.
+    if (m_liveTransitionAwaitingLoad
+        && m_slideshowTransition == SlideshowTransition::FadeBlack
+        && m_liveTransitionActive) {
+        m_liveTransitionAwaitingLoad = false;
+        m_liveTransitionElapsedBaseMs = m_liveTransitionDurationMs / 2;
+        m_liveTransitionClock.restart();
+        m_liveTransitionProgress = 0.5;
+        if (m_liveTransitionTimer && !m_liveTransitionTimer->isActive()) {
+            m_liveTransitionTimer->start();
+        }
+        if (viewport()) {
+            viewport()->update();
+        }
+        return;
+    }
+    m_liveTransitionHold = false;
+    m_liveTransitionAwaitingLoad = false;
+    m_liveTransitionActive = false;
+    m_liveTransitionProgress = 1.0;
+    m_slideshowTransitionToPixmap = QPixmap();
+    m_liveTransitionNextPath.clear();
     if (viewport()) {
         viewport()->update();
     }
@@ -533,6 +569,52 @@ void ImageView::setSlideshowMotion(SlideshowMotion mode)
 void ImageView::setPanZoomFactor(qreal factor)
 {
     m_panZoomFactor = qBound(1.02, factor, 1.5);
+}
+
+void ImageView::setSlideshowZoom(SlideshowZoom mode)
+{
+    m_slideshowZoom = mode;
+}
+
+void ImageView::applySlideshowZoomFraming(ImageItem *item)
+{
+    if (!item || !viewport()) {
+        return;
+    }
+    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+    switch (m_slideshowZoom) {
+    case SlideshowZoom::Fill:
+        m_fitMode = false;
+        m_fillMode = true;
+        fitItem(item, Qt::KeepAspectRatioByExpanding);
+        break;
+    case SlideshowZoom::Actual: {
+        m_fitMode = false;
+        m_fillMode = false;
+        item->setItemScale(1.0);
+        if (isImageMode()) {
+            item->setPos(0, 0);
+        }
+        resetTransform();
+        // 1:1 in view coordinates: scene unit == device pixel at scale 1.
+        // Centre the item in the viewport.
+        const QRectF br = item->sceneBoundingRect();
+        const qreal vcX = qreal(viewport()->width()) * 0.5;
+        const qreal vcY = qreal(viewport()->height()) * 0.5;
+        QTransform xform;
+        xform.translate(vcX, vcY);
+        xform.scale(1.0, 1.0);
+        xform.translate(-br.center().x(), -br.center().y());
+        setTransform(xform);
+        break;
+    }
+    case SlideshowZoom::Fit:
+    default:
+        m_fitMode = true;
+        m_fillMode = false;
+        fitItem(item, Qt::KeepAspectRatio);
+        break;
+    }
 }
 
 void ImageView::cancelSlideshowMotion()
@@ -622,6 +704,9 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         connect(m_liveTransitionTimer, &QTimer::timeout, this, &ImageView::tickLiveTransition);
     }
     m_liveTransitionActive = true;
+    m_liveTransitionHold = false;
+    m_liveTransitionAwaitingLoad = false;
+    m_liveTransitionElapsedBaseMs = 0;
     m_liveTransitionProgress = 0.0;
     m_liveTransitionDurationMs = m_slideshowTransitionDurationMs;
     m_liveTransitionClock.start();
@@ -637,32 +722,55 @@ void ImageView::tickLiveTransition()
         }
         return;
     }
+    // Frozen at mid-black until LoadReplace has fitted the next slide.
+    if (m_liveTransitionAwaitingLoad) {
+        m_liveTransitionProgress = 0.5;
+        if (viewport()) {
+            viewport()->update();
+        }
+        return;
+    }
+    const qreal elapsed = qreal(m_liveTransitionElapsedBaseMs + m_liveTransitionClock.elapsed());
     const qreal t = m_liveTransitionDurationMs > 0
-        ? qreal(m_liveTransitionClock.elapsed()) / qreal(m_liveTransitionDurationMs)
+        ? elapsed / qreal(m_liveTransitionDurationMs)
         : 1.0;
 
-    // Fade-through-black: swap the underlying image at full black so the
-    // second half reveals the next slide under the lifting veil.
+    // Fade-through-black: advance (goNext) at full black, then freeze the veil
+    // until the next image is fitted so the lift never reveals the old frame.
     if (m_slideshowTransition == SlideshowTransition::FadeBlack
         && !m_liveTransitionMidAdvanced && t >= 0.5) {
         m_liveTransitionMidAdvanced = true;
+        m_liveTransitionAwaitingLoad = true;
+        m_liveTransitionProgress = 0.5;
+        if (viewport()) {
+            viewport()->update();
+        }
         emit slideshowLiveTransitionFinished();
-        // Keep the veil running; host goNext() loads the next image under black.
+        return;
     }
 
     if (t >= 1.0) {
         m_liveTransitionProgress = 1.0;
-        m_liveTransitionActive = false;
         if (m_liveTransitionTimer) {
             m_liveTransitionTimer->stop();
         }
-        m_slideshowTransitionToPixmap = QPixmap();
-        if (viewport()) {
-            viewport()->update();
-        }
-        // Crossfade / Slide / None-path: advance at the end (FadeBlack already did).
+        // Crossfade / Slide: hold the final composite until LoadReplace fits.
+        // FadeBlack already advanced at mid-black; the next slide is fitted, so
+        // clear the veil immediately (no hold needed).
         if (!m_liveTransitionMidAdvanced) {
+            m_liveTransitionHold = true;
+            m_liveTransitionActive = false;
+            if (viewport()) {
+                viewport()->update();
+            }
             emit slideshowLiveTransitionFinished();
+        } else {
+            m_liveTransitionActive = false;
+            m_liveTransitionHold = false;
+            m_slideshowTransitionToPixmap = QPixmap();
+            if (viewport()) {
+                viewport()->update();
+            }
         }
         return;
     }
@@ -697,7 +805,8 @@ void ImageView::startSlideshowMotion(int durationMs)
         return;
     }
 
-    // Cover framing from the first frame.
+    // Cover framing from the first frame (motion always uses fill so the
+    // camera never letterboxes during the dwell).
     m_fitMode = false;
     m_fillMode = true;
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
@@ -716,32 +825,81 @@ void ImageView::startSlideshowMotion(int durationMs)
     }
 
     const QRectF br = item->sceneBoundingRect();
-    const qreal endS = m_motionEndScale;
-    const qreal viewW = qreal(viewport()->width()) / endS;
-    const qreal viewH = qreal(viewport()->height()) / endS;
-    const qreal maxDx = qMax(0.0, (br.width() - viewW) * 0.5);
-    const qreal maxDy = qMax(0.0, (br.height() - viewH) * 0.5);
     const QPointF mid = br.center();
+    const qreal vw = qreal(viewport()->width());
+    const qreal vh = qreal(viewport()->height());
+
+    // Visible scene size at a given scale; clamp centres so the view never
+    // shows empty margin outside the item bounds.
+    auto halfOverflow = [&](qreal scale) -> QPointF {
+        if (scale <= 0.0) {
+            return QPointF(0, 0);
+        }
+        const qreal viewW = vw / scale;
+        const qreal viewH = vh / scale;
+        return QPointF(qMax(0.0, (br.width() - viewW) * 0.5),
+                       qMax(0.0, (br.height() - viewH) * 0.5));
+    };
+    auto clampCenter = [&](QPointF c, qreal scale) -> QPointF {
+        const QPointF half = halfOverflow(scale);
+        return QPointF(qBound(mid.x() - half.x(), c.x(), mid.x() + half.x()),
+                       qBound(mid.y() - half.y(), c.y(), mid.y() + half.y()));
+    };
 
     if (m_slideshowMotion == SlideshowMotion::PanScan) {
-        // Show as much of the long axis as the dwell allows: full overflow.
-        if (br.width() >= br.height()) {
-            m_motionStartCenter = QPointF(mid.x() - maxDx, mid.y());
-            m_motionEndCenter = QPointF(mid.x() + maxDx, mid.y());
+        // Full long-axis travel at cover scale: edge → opposite edge.
+        const QPointF half = halfOverflow(m_motionStartScale);
+        const bool landscape = br.width() >= br.height();
+        if (landscape && half.x() > 0.5) {
+            m_motionStartCenter = QPointF(mid.x() - half.x(), mid.y());
+            m_motionEndCenter = QPointF(mid.x() + half.x(), mid.y());
+        } else if (!landscape && half.y() > 0.5) {
+            m_motionStartCenter = QPointF(mid.x(), mid.y() - half.y());
+            m_motionEndCenter = QPointF(mid.x(), mid.y() + half.y());
+        } else if (half.x() >= half.y() && half.x() > 0.5) {
+            m_motionStartCenter = QPointF(mid.x() - half.x(), mid.y());
+            m_motionEndCenter = QPointF(mid.x() + half.x(), mid.y());
+        } else if (half.y() > 0.5) {
+            m_motionStartCenter = QPointF(mid.x(), mid.y() - half.y());
+            m_motionEndCenter = QPointF(mid.x(), mid.y() + half.y());
         } else {
-            m_motionStartCenter = QPointF(mid.x(), mid.y() - maxDy);
-            m_motionEndCenter = QPointF(mid.x(), mid.y() + maxDy);
+            // Nearly fills the view — no meaningful pan.
+            m_motionStartCenter = mid;
+            m_motionEndCenter = mid;
         }
+        m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
+        m_motionEndCenter = clampCenter(m_motionEndCenter, m_motionEndScale);
     } else {
-        // PanZoom: shorter travel so the zoom stays comfortable.
-        constexpr qreal travel = 0.85;
-        if (br.width() >= br.height()) {
-            m_motionStartCenter = QPointF(mid.x() - maxDx * travel, mid.y());
-            m_motionEndCenter = QPointF(mid.x() + maxDx * travel, mid.y());
-        } else {
-            m_motionStartCenter = QPointF(mid.x(), mid.y() - maxDy * travel);
-            m_motionEndCenter = QPointF(mid.x(), mid.y() + maxDy * travel);
+        // Ken Burns–style pan & zoom: start and end centres are chosen at their
+        // respective scales so both ends are valid cover frames, biased toward
+        // rule-of-thirds / corner “points of interest” for variety.
+        const QPointF halfStart = halfOverflow(m_motionStartScale);
+        const QPointF halfEnd = halfOverflow(m_motionEndScale);
+
+        // Deterministic variety from path so the same image repeats the same move.
+        const QString path = item->path();
+        uint seed = qHash(path);
+        if (seed == 0) {
+            seed = 1;
         }
+        // Eight thirds/corner biases in normalised [-1, 1]².
+        static const QPointF kBias[8] = {
+            QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
+            QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
+            QPointF(-0.6, 0.0), QPointF(0.6, 0.0),
+            QPointF(0.0, -0.6), QPointF(0.0, 0.6),
+        };
+        const QPointF biasA = kBias[seed % 8];
+        const QPointF biasB = kBias[(seed / 8) % 8];
+        // Prefer a different end bias when possible.
+        const QPointF endBias = (biasA == biasB) ? kBias[(seed / 8 + 3) % 8] : biasB;
+
+        m_motionStartCenter = QPointF(mid.x() + biasA.x() * halfStart.x(),
+                                      mid.y() + biasA.y() * halfStart.y());
+        m_motionEndCenter = QPointF(mid.x() + endBias.x() * halfEnd.x(),
+                                    mid.y() + endBias.y() * halfEnd.y());
+        m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
+        m_motionEndCenter = clampCenter(m_motionEndCenter, m_motionEndScale);
     }
 
     if (!m_motionTimer) {

@@ -33,6 +33,7 @@ constexpr int kDefaultSlideshowTransition = 1; // Crossfade
 constexpr int kDefaultSlideshowTransitionMs = 400;
 constexpr int kDefaultSlideshowMotion = 0; // Off
 constexpr double kDefaultPanZoomFactor = 1.12;
+constexpr int kDefaultSlideshowZoom = 0; // Fit
 constexpr int kDefaultSortIndex = 0; // Name
 constexpr bool kDefaultStartInWorkspace = false;
 constexpr bool kDefaultImageModePan = true;
@@ -137,6 +138,23 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     slideshowForm->addRow(tr("Pan and zoom factor:"),
                           wrapWithReset(m_panZoomFactorSpin, &m_resetPanZoomFactorBtn, [this]() {
                               setPanZoomFactor(kDefaultPanZoomFactor);
+                              updateResetButtons();
+                          }));
+
+    m_slideshowZoomCombo = new QComboBox(this);
+    m_slideshowZoomCombo->addItem(tr("Fit"), 0);
+    m_slideshowZoomCombo->addItem(tr("Fill"), 1);
+    m_slideshowZoomCombo->addItem(tr("1:1"), 2);
+    m_slideshowZoomCombo->setToolTip(
+        tr("How each slide is framed while the slideshow runs.\n"
+           "Fit: whole image visible (letterbox).\n"
+           "Fill: cover the window (may crop).\n"
+           "1:1: native pixels, centred.\n"
+           "Dwell motion (pan and zoom / pan and scan) always uses Fill "
+           "for the camera path."));
+    slideshowForm->addRow(tr("Slideshow zoom:"),
+                          wrapWithReset(m_slideshowZoomCombo, &m_resetSlideshowZoomBtn, [this]() {
+                              setSlideshowZoomIndex(kDefaultSlideshowZoom);
                               updateResetButtons();
                           }));
 
@@ -463,6 +481,8 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
             this, [this](int) { updateResetButtons(); });
     connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) { updateResetButtons(); });
+    connect(m_slideshowZoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { updateResetButtons(); });
     connect(m_slideshowFullscreenCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
     connect(m_sortCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -1008,6 +1028,22 @@ void PreferencesDialog::setPanZoomFactor(double factor)
     }
 }
 
+int PreferencesDialog::slideshowZoomIndex() const
+{
+    return m_slideshowZoomCombo ? m_slideshowZoomCombo->currentData().toInt() : 0;
+}
+
+void PreferencesDialog::setSlideshowZoomIndex(int index)
+{
+    if (!m_slideshowZoomCombo) {
+        return;
+    }
+    const int idx = m_slideshowZoomCombo->findData(index);
+    if (idx >= 0) {
+        m_slideshowZoomCombo->setCurrentIndex(idx);
+    }
+}
+
 QWidget *PreferencesDialog::wrapWithReset(QWidget *field, QToolButton **resetBtnOut,
                                           const std::function<void()> &resetFn)
 {
@@ -1049,6 +1085,7 @@ void PreferencesDialog::updateResetButtons()
     setOn(m_resetSlideshowMotionBtn, slideshowMotionIndex() != kDefaultSlideshowMotion);
     setOn(m_resetPanZoomFactorBtn,
          !qFuzzyCompare(panZoomFactor(), kDefaultPanZoomFactor));
+    setOn(m_resetSlideshowZoomBtn, slideshowZoomIndex() != kDefaultSlideshowZoom);
     setOn(m_resetSortBtn, sortModeIndex() != kDefaultSortIndex);
     setOn(m_resetWorkspaceBtn, startInWorkspaceMode() != kDefaultStartInWorkspace);
     setOn(m_resetImagePanBtn, imageModeLeftDragPan() != kDefaultImageModePan);

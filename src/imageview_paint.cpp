@@ -169,9 +169,12 @@ void ImageView::paintEvent(QPaintEvent *event)
 
     // Live transition: outgoing dwell motion keeps painting underneath; only the
     // incoming frame / veil is composited here (no frozen grab of the old view).
-    if (m_liveTransitionActive && m_liveTransitionProgress < 1.0) {
+    // Hold keeps the final composite until LoadReplace has fitted the next item.
+    if ((m_liveTransitionActive || m_liveTransitionHold)
+        && (m_liveTransitionProgress < 1.0 || m_liveTransitionHold
+            || m_liveTransitionAwaitingLoad)) {
         const QRect vr = viewport()->rect();
-        const qreal t = m_liveTransitionProgress;
+        const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {
             if (!m_slideshowTransitionToPixmap.isNull()) {
                 painter.setOpacity(t);
@@ -179,8 +182,8 @@ void ImageView::paintEvent(QPaintEvent *event)
                 painter.setOpacity(1.0);
             }
         } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
-            if (t < 0.5) {
-                painter.setOpacity(t * 2.0);
+            if (t < 0.5 || m_liveTransitionAwaitingLoad) {
+                painter.setOpacity(m_liveTransitionAwaitingLoad ? 1.0 : (t * 2.0));
                 painter.fillRect(vr, Qt::black);
                 painter.setOpacity(1.0);
             } else {
@@ -192,11 +195,10 @@ void ImageView::paintEvent(QPaintEvent *event)
             // Live old view is the underlay; slide the incoming frame in from the right.
             const int w = vr.width();
             const int h = vr.height();
-            const int xNew = int(qRound((1.0 - t) * w));
+            const int xNew = m_liveTransitionHold ? 0 : int(qRound((1.0 - t) * w));
             if (!m_slideshowTransitionToPixmap.isNull()) {
                 painter.drawPixmap(xNew, 0, w, h, m_slideshowTransitionToPixmap);
             }
-            // Darken the strip still showing the old image slightly for separation.
         }
     }
 

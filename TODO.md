@@ -1973,3 +1973,85 @@ off-thread and composited (crossfade opacity / fade-black veil / slide-in).
 Advance (`goNext`) runs at the end (or at mid-black for fade-through-black).
 
 **Next:** `qimgview-132-…`
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-132-slideshow-polish`
+
+**Request:**
+1. Fix glitches in slideshow: at the end of a transition the view briefly flashes
+   the wrong image.
+2. Pan & zoom should be Ken Burns–style (not only zoom toward the centre) —
+   prefer points of interest / varied start–end framing.
+3. Pan & scan should travel the whole image (full overflow on the long axis).
+4. Slideshow zoom setting: **Fit** / **Fill** / **1:1** base framing per slide.
+
+### Root cause (transition flash)
+
+Live path (`beginLiveSlideshowTransition`): at `t >= 1.0` the code clears
+`m_slideshowTransitionToPixmap` and emits `slideshowLiveTransitionFinished` →
+`goNext()` starts an async `LoadReplace`. Until that decode finishes, paint falls
+back to the *old* live canvas underlay → one or more frames of the previous
+image after the incoming frame was already fully visible. That is the end-of-
+transition flash.
+
+Fade-through-black advances at mid-black, so the swap is masked if load is fast;
+slow loads can still flash when the veil lifts before the new item is fitted.
+
+Snapshot path is less affected, but clearing the overlay while the underlying
+view has not yet stabilised can still hitch.
+
+### Fixes
+
+**A. Hold incoming frame until replace is fitted**
+- On live transition completion (crossfade / slide): keep drawing the final
+  to-pixmap (opacity 1 / fully slid in) until `onImageLoaded(LoadReplace)` has
+  fitted the new item and (if motion on) applied the first motion frame.
+- Introduce `m_liveTransitionHold` (or reuse active flag + progress ≥ 1) cleared
+  only from the load path after the new slide is ready.
+- Fade-black: same hold of black (or to-frame) until load completes if mid-
+  advance already ran.
+
+**B. Pan & scan — full travel**
+- Compute overflow at the *cover* scale; start centre = one extreme edge of the
+  overflow axis, end = opposite extreme (clamped so the viewport never shows
+  empty margin).
+- Prefer the longer scene axis; if nearly square, still traverse the larger
+  overflow (or both if both non-trivial — long axis primary).
+
+**C. Pan & zoom — Ken Burns**
+- Build start/end camera centres at start-scale and end-scale independently so
+  both ends are valid cover frames (no letterbox).
+- Bias centres toward rule-of-thirds / corner candidates derived from image
+  aspect (deterministic from path hash or session index for variety).
+- Linear interpolate centre and scale over the dwell (easing optional later).
+
+**D. Slideshow zoom mode (Fit / Fill / 1:1)**
+- New enum + Preferences row + QSettings key `slideshowZoomMode` (0 Fit, 1 Fill,
+  2 Actual).
+- Applied on Image-mode LoadReplace while slideshow progress is active when
+  dwell motion is Off.
+- With dwell motion on: camera still uses cover (Fill) as today so pan/zoom
+  stay meaningful; Actual may be used as the *start* scale when the image is
+  larger than the view (optional refinement). Tooltip documents that motion
+  uses Fill framing.
+
+### Commits (task-focused)
+
+1. Hold live transition frame until next slide is fitted (flash fix)
+2. Pan & scan full-axis travel + Ken Burns pan & zoom centres
+3. Slideshow zoom mode Fit / Fill / 1:1 (prefs + settings + load framing)
+
+### Done criteria
+
+- [x] No wrong-image flash at end of crossfade / slide / fade-black under motion
+  (hold final live composite until LoadReplace fits; FadeBlack freezes at mid-
+  black until load completes, then lifts the veil)
+- [x] Pan & zoom: Ken Burns start/end centres at respective scales, biased to
+  rule-of-thirds / corners (deterministic from path hash)
+- [x] Pan & scan: full long-axis overflow, centres clamped to item bounds
+- [x] Preferences: Slideshow zoom Fit / Fill / 1:1 (`slideshowZoomMode`); motion
+  still uses Fill for the camera path
+- [x] TODO / AGENTS handoff; next bundle **133**
+
+**Next bundle:** `qimgview-133-…`
