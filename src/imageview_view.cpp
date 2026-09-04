@@ -506,6 +506,7 @@ void ImageView::releaseLiveTransitionHold()
         }
         return;
     }
+    const qreal handoffProgress = m_liveTransitionMotionProgress;
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionActive = false;
@@ -520,7 +521,14 @@ void ImageView::releaseLiveTransitionHold()
     if (m_liveTransitionTimer) {
         m_liveTransitionTimer->stop();
     }
-    if (!m_slideshowMotionActive) {
+    // FadeBlack phase 2 ends here: start dwell at the to-path progress last
+    // shown under the veil so the image pose does not jump.
+    if (!m_slideshowMotionActive && m_slideshowProgressActive
+        && m_slideshowMotion != SlideshowMotion::Off) {
+        const int duration = m_slideshowProgressIntervalMs;
+        if (duration >= 250) {
+            startSlideshowMotion(duration, handoffProgress);
+        }
     }
     if (viewport()) {
         viewport()->update();
@@ -1135,8 +1143,17 @@ void ImageView::tickLiveTransition()
         m_liveTransitionProgress = t;
     }
 
-    if (justEnteredHold) {
+    // FadeBlack already advanced at mid-black; do not emit again at the end
+    // (that would goNext a second time and skip a slide). Crossfade/Slide emit
+    // once when the animated portion finishes so the host can LoadReplace.
+    if (justEnteredHold
+        && m_slideshowTransition != SlideshowTransition::FadeBlack) {
         emit slideshowLiveTransitionFinished();
+    } else if (justEnteredHold
+               && m_slideshowTransition == SlideshowTransition::FadeBlack) {
+        // Phase 2 finished over the already-loaded slide — drop the overlay
+        // and continue dwell blit from the to-path progress already shown.
+        releaseLiveTransitionHold();
     }
 
     if (viewport()) {
@@ -1148,6 +1165,14 @@ void ImageView::maybeStartSlideshowMotion()
 {
     if (m_slideshowMotion == SlideshowMotion::Off || !m_slideshowProgressActive
         || !isImageMode()) {
+        return;
+    }
+    // FadeBlack mid-black: load is finishing under a solid veil. Do not start
+    // dwell yet — phase 2 still owns the viewport with the to-blit; starting
+    // motion here would let the dwell clock run while ticks are suppressed and
+    // jump the pose when the veil lifts.
+    if (m_liveTransitionAwaitingLoad
+        && m_slideshowTransition == SlideshowTransition::FadeBlack) {
         return;
     }
     int duration = m_slideshowProgressIntervalMs;
