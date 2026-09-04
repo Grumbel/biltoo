@@ -974,7 +974,8 @@ private:
     SlideshowTransition m_slideshowTransition = SlideshowTransition::Crossfade;
     int m_slideshowTransitionDurationMs = 400;
     QPixmap m_slideshowTransitionPixmap; /**< From-frame snapshot */
-    QPixmap m_slideshowTransitionToPixmap; /**< To-frame snapshot (Slide) */
+    QPixmap m_slideshowTransitionToPixmap; /**< To-frame (live blit / Slide) */
+    QPixmap m_slideshowTransitionFromPixmap; /**< From-frame for dual-blit crossfade */
     qreal m_slideshowTransitionProgress = 1.0; /**< 0 = old frame, 1 = done */
     bool m_slideshowTransitionPending = false;
     bool m_slideshowTransitionActive = false;
@@ -1021,7 +1022,9 @@ private:
     QTimer *m_liveTransitionTimer = nullptr;
     QString m_liveTransitionNextPath;
     /** Decoded next slide kept for re-rendering animated live-transition covers. */
-    QImage m_liveTransitionSourceImage;
+    QImage m_liveTransitionSourceImage; /**< Incoming image for to-frame blit */
+    QImage m_liveFromSourceImage; /**< Outgoing image for from-frame blit */
+    qreal m_liveFromMotionProgress0 = 0.0; /**< Outgoing progress at transition start */
     uint m_liveTransitionPathHash = 0;
     /** Real-time dwell progress sampled for the live to-frame (handoff to camera). */
     qreal m_liveTransitionMotionProgress = 0.0;

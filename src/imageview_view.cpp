@@ -463,7 +463,9 @@ void ImageView::cancelSlideshowTransition()
     m_slideshowTransitionProgress = 1.0;
     m_slideshowTransitionPixmap = QPixmap();
     m_slideshowTransitionToPixmap = QPixmap();
+    m_slideshowTransitionFromPixmap = QPixmap();
     m_liveTransitionSourceImage = QImage();
+    m_liveFromSourceImage = QImage();
     m_liveTransitionPathHash = 0;
     m_liveTransitionMotionProgress = 0.0;
     if (m_slideshowTransitionAnim) {
@@ -514,7 +516,9 @@ void ImageView::releaseLiveTransitionHold()
     m_liveTransitionActive = false;
     m_liveTransitionProgress = 1.0;
     m_slideshowTransitionToPixmap = QPixmap();
+    m_slideshowTransitionFromPixmap = QPixmap();
     m_liveTransitionSourceImage = QImage();
+    m_liveFromSourceImage = QImage();
     m_liveTransitionPathHash = 0;
     m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionNextPath.clear();
@@ -890,15 +894,33 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     cancelSlideshowTransition(); // no frozen snapshot path
     m_liveTransitionNextPath = nextPath;
     m_liveTransitionMidAdvanced = false;
-    // 1) Extend outgoing along the *current* path (no reverse).
-    // 2) Then advance shared biases for the *incoming* overlay + handoff camera
-    //    so both sides of the fade share one continuous travel direction.
-    enterSlideshowCameraMode();
-    extendOutgoingMotionThroughTransition();
+
+    // Dual-blit model: both frames are pixmaps. Capture the outgoing pixels and
+    // its motion progress; the scene is fully covered during the fade (no camera
+    // underlay). LoadReplace runs only after the fade under a full to-frame hold.
+    m_liveFromSourceImage = QImage();
+    m_liveFromMotionProgress0 = 0.0;
+    if (ImageItem *item = targetItem()) {
+        m_liveFromSourceImage = item->sourceImage();
+    }
+    if (m_slideshowMotionActive && m_motionDurationMs > 0) {
+        m_liveFromMotionProgress0 = qBound(
+            0.0,
+            qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
+                / qreal(m_motionDurationMs),
+            1.0);
+    }
     chooseContinuingMotionBiases(qHash(nextPath));
-    qWarning("[qimgview-slideshow] beginLive next=%s motionActive=%d transition=%d",
-             qPrintable(nextPath), int(m_slideshowMotionActive),
-             int(m_slideshowTransition));
+    // Stop the scene camera — painting is pure blit for the transition.
+    cancelSlideshowMotion();
+    enterSlideshowCameraMode();
+    if (!m_liveFromSourceImage.isNull()) {
+        m_slideshowTransitionFromPixmap = renderMotionCoverPixmap(
+            m_liveFromSourceImage, m_liveFromMotionProgress0, 0);
+    }
+    qWarning("[qimgview-slideshow] beginLive dual-blit next=%s fromProg0=%.3f from=%dx%d",
+             qPrintable(nextPath), m_liveFromMotionProgress0,
+             m_liveFromSourceImage.width(), m_liveFromSourceImage.height());
     const QString path = nextPath;
     const int maxEdge = qMax(viewport()->width(), viewport()->height());
     const QPointer<ImageView> guard(this);
@@ -1159,21 +1181,31 @@ void ImageView::tickLiveTransition()
         m_liveTransitionProgress = t;
     }
 
-    // Sample the next slide's dwell path in real time (fade + hold + load gap).
+    // Dual-blit: sample both images on the shared direction each tick.
     if ((m_slideshowTransition == SlideshowTransition::Crossfade
          || m_slideshowTransition == SlideshowTransition::Slide)
-        && !m_liveTransitionSourceImage.isNull()
         && m_slideshowMotion != SlideshowMotion::Off) {
-        qreal motionT = 0.0;
-        if (m_slideshowProgressIntervalMs > 0) {
-            motionT = qBound(0.0,
-                elapsed / qreal(m_slideshowProgressIntervalMs), 1.0);
+        const qreal dt = (m_slideshowProgressIntervalMs > 0)
+            ? (elapsed / qreal(m_slideshowProgressIntervalMs))
+            : 0.0;
+        // Outgoing continues from where the dwell left off.
+        const qreal fromT = qBound(0.0, m_liveFromMotionProgress0 + dt, 1.0);
+        if (!m_liveFromSourceImage.isNull()) {
+            const QPixmap fromFrame = renderMotionCoverPixmap(
+                m_liveFromSourceImage, fromT, 0);
+            if (!fromFrame.isNull()) {
+                m_slideshowTransitionFromPixmap = fromFrame;
+            }
         }
-        m_liveTransitionMotionProgress = motionT;
-        const QPixmap frame = renderMotionCoverPixmap(
-            m_liveTransitionSourceImage, motionT, m_liveTransitionPathHash);
-        if (!frame.isNull()) {
-            m_slideshowTransitionToPixmap = frame;
+        // Incoming starts its dwell path at the beginning of the transition.
+        const qreal toT = qBound(0.0, dt, 1.0);
+        m_liveTransitionMotionProgress = toT;
+        if (!m_liveTransitionSourceImage.isNull()) {
+            const QPixmap toFrame = renderMotionCoverPixmap(
+                m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
+            if (!toFrame.isNull()) {
+                m_slideshowTransitionToPixmap = toFrame;
+            }
         }
     }
 

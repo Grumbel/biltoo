@@ -177,22 +177,23 @@ void ImageView::paintEvent(QPaintEvent *event)
         const QRect vr = viewport()->rect();
         const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {
-            if (!m_slideshowTransitionToPixmap.isNull()) {
-                // At full hold, paint an opaque pad under the to-frame so the
-                // underlay (old path / new identity flash) cannot show through
-                // and produce a scale/direction jump on release.
-                if (m_liveTransitionHold || t >= 0.999) {
-                    QColor pad(36, 36, 36);
-                    const QBrush b = backgroundBrush();
-                    if (b.style() != Qt::NoBrush && b.color().isValid()) {
-                        pad = b.color();
-                    }
-                    painter.fillRect(vr, pad);
-                }
-                painter.setOpacity(t);
-                painter.drawPixmap(vr, m_slideshowTransitionToPixmap);
-                painter.setOpacity(1.0);
+            // Pure dual-blit: cover the scene completely, then composite from+to.
+            // No QGraphicsView camera underlay — two images means two pixmaps.
+            QColor pad(36, 36, 36);
+            const QBrush b = backgroundBrush();
+            if (b.style() != Qt::NoBrush && b.color().isValid()) {
+                pad = b.color();
             }
+            painter.fillRect(vr, pad);
+            if (!m_slideshowTransitionFromPixmap.isNull()) {
+                painter.setOpacity(m_liveTransitionHold ? 0.0 : (1.0 - t));
+                painter.drawPixmap(vr, m_slideshowTransitionFromPixmap);
+            }
+            if (!m_slideshowTransitionToPixmap.isNull()) {
+                painter.setOpacity(m_liveTransitionHold ? 1.0 : t);
+                painter.drawPixmap(vr, m_slideshowTransitionToPixmap);
+            }
+            painter.setOpacity(1.0);
         } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
             if (t < 0.5 || m_liveTransitionAwaitingLoad) {
                 painter.setOpacity(m_liveTransitionAwaitingLoad ? 1.0 : (t * 2.0));

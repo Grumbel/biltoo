@@ -2635,3 +2635,25 @@ Enter on motion start and live begin; leave when motion and live transition end.
 ### Done criteria
 - [x] Camera mode disables AlignCenter during motion/transition
 - [x] Next **150**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-150-dual-blit`
+
+**Model correction:** A QGraphicsView “camera” only holds one item. Crossfade
+with two moving images is **two blits**, not a scene camera + overlay.
+
+### Implementation
+1. Capture outgoing `sourceImage` + motion progress at `beginLive`.
+2. Stop scene motion for the transition.
+3. Each tick: `renderMotionCoverPixmap` for **from** and **to** on the shared
+   direction.
+4. Paint: fill background, draw from at \(1-t\), to at \(t\) — scene fully covered.
+5. Hold shows only the to-frame; LoadReplace + startMotion at the same progress;
+   then drop the blit layers.
+
+### Done criteria
+- [x] Crossfade does not use scene underlay
+- [x] Both images are motion-sampled pixmaps
+- [x] Next **151**
