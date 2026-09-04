@@ -963,26 +963,27 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (path.isEmpty() || path == m_preloadPath) {
         return;
     }
-    // Invalidate any in-flight result for a different path.
+    // Bump generation so in-flight workers cannot overwrite a newer request.
+    const quint64 gen = ++m_preloadGeneration;
     m_preloadPath.clear();
     m_preloadImage = QImage();
     const QString loadPath = path;
     const QPointer<ImageView> guard(this);
-    QThreadPool::globalInstance()->start([guard, loadPath]() {
-        QImage img = ImageLoader::load(loadPath);
-        if (!guard) {
+    QThreadPool::globalInstance()->start([guard, loadPath, gen]() {
+        const QImage img = ImageLoader::load(loadPath);
+        if (!guard || img.isNull()) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, loadPath, img]() {
-            if (!guard || img.isNull()) {
+        QMetaObject::invokeMethod(guard.data(), [guard, loadPath, img, gen]() {
+            ImageView *view = guard.data();
+            if (!view || img.isNull()) {
                 return;
             }
-            // Ignore if a newer preload was requested.
-            if (!guard->m_preloadPath.isEmpty() && guard->m_preloadPath != loadPath) {
+            if (gen != view->m_preloadGeneration) {
                 return;
             }
-            guard->m_preloadPath = loadPath;
-            guard->m_preloadImage = img;
+            view->m_preloadPath = loadPath;
+            view->m_preloadImage = img;
         }, Qt::QueuedConnection);
     });
 }

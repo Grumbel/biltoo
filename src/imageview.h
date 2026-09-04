@@ -1031,6 +1031,7 @@ private:
     QPointF m_liveFromBiasB{1.0, 1.0};
     QString m_preloadPath;
     QImage m_preloadImage;
+    quint64 m_preloadGeneration = 0;
     /** Pixels kept after dual-blit so LoadReplace need not re-decode. */
     QString m_handoffPath;
     QImage m_handoffImage;
