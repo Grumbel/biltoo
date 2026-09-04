@@ -510,7 +510,7 @@ public:
     void setPanZoomFactor(qreal factor);
     qreal panZoomFactor() const { return m_panZoomFactor; }
 
-    /** Base framing for each slide while a slideshow is running (motion off). */
+    /** Base framing for each slide (static when motion off; camera start when on). */
     enum class SlideshowZoom {
         Fit = 0,    /**< Letterbox — whole image visible */
         Fill = 1,   /**< Cover — may crop */
@@ -523,8 +523,8 @@ public:
     void maybeStartSlideshowMotion();
     /**
      * Re-frame the current Image-mode item for an active slideshow:
-     * motion on → cover + restart camera; motion off → Fit / Fill / 1:1.
-     * No-op when slideshow progress is inactive.
+     * motion on → restart camera from slideshow zoom base; motion off →
+     * Fit / Fill / 1:1 framing only. No-op when slideshow progress is inactive.
      */
     void reapplySlideshowFraming();
     /**

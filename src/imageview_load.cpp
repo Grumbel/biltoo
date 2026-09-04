@@ -208,14 +208,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 }
             }
             prepareImageModeCanvas();
-            // Slideshow framing: dwell motion always starts from cover so the
-            // camera never letterboxes. Without motion, honour slideshow zoom.
-            if (m_slideshowProgressActive
-                && m_slideshowMotion != SlideshowMotion::Off) {
-                m_fitMode = false;
-                m_fillMode = true;
-                fitItem(item, Qt::KeepAspectRatioByExpanding);
-            } else if (m_slideshowProgressActive) {
+            // Slideshow framing: zoom mode is the base scale even when dwell
+            // motion is on (camera restarts from that base in maybeStart).
+            if (m_slideshowProgressActive) {
                 applySlideshowZoomFraming(item);
             } else {
                 fitItem(item, currentFitAspectMode());

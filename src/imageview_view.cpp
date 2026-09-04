@@ -586,9 +586,8 @@ void ImageView::setSlideshowZoom(SlideshowZoom mode)
         return;
     }
     m_slideshowZoom = mode;
-    // Live update while a slideshow is running (motion off only; motion
-    // forces cover and is restarted via setSlideshowMotion / reapply).
-    if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
+    // Zoom is the base scale for the dwell camera as well as static framing.
+    if (m_slideshowProgressActive) {
         reapplySlideshowFraming();
     }
 }
@@ -653,7 +652,7 @@ void ImageView::reapplySlideshowFraming()
         return;
     }
     if (m_slideshowMotion != SlideshowMotion::Off) {
-        // Cover + restart the dwell camera from the current interval.
+        // Restart the dwell camera from the zoom base + current interval.
         int duration = m_slideshowProgressIntervalMs;
         if (duration < 250) {
             duration = 3000;
@@ -734,20 +733,31 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
 
     motionT = qBound(0.0, motionT, 1.0);
 
-    // Cover scale in "image pixels per viewport pixel" inverted: how large the
-    // image must be drawn so the shorter side fills the viewport.
     const qreal cover = qMax(qreal(vw) / iw, qreal(vh) / ih);
-    if (cover <= 0.0 || !qIsFinite(cover)) {
+    const qreal fit = qMin(qreal(vw) / iw, qreal(vh) / ih);
+    qreal base = cover;
+    switch (m_slideshowZoom) {
+    case SlideshowZoom::Fill:
+        base = cover;
+        break;
+    case SlideshowZoom::Actual:
+        base = 1.0;
+        break;
+    case SlideshowZoom::Fit:
+    default:
+        base = fit;
+        break;
+    }
+    if (base <= 0.0 || !qIsFinite(base)) {
         return {};
     }
 
-    qreal scale = cover; // image → screen scale
+    qreal scale = base;
     qreal biasX = 0.0;
     qreal biasY = 0.0;
 
     if (m_slideshowMotion == SlideshowMotion::PanScan) {
-        // Constant cover (with light overscan when aspect matches) + edge travel.
-        qreal s = cover;
+        qreal s = base;
         const bool preferX = iw * qreal(vh) >= ih * qreal(vw);
         {
             const qreal viewW = qreal(vw) / s;
@@ -763,12 +773,11 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
                                                  : (ih - 2.0 * targetHalf);
                 if (neededView > 1.0) {
                     s = preferX ? (qreal(vw) / neededView) : (qreal(vh) / neededView);
-                    s = qMax(s, cover);
+                    s = qMax(s, base);
                 }
             }
         }
         scale = s;
-        // Alternate direction from path hash; travel edge → edge over motionT.
         const bool flip = (pathHash & 1u) != 0;
         if (preferX) {
             biasX = flip ? (1.0 - 2.0 * motionT) : (-1.0 + 2.0 * motionT);
@@ -779,7 +788,7 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
         }
     } else if (m_slideshowMotion == SlideshowMotion::PanZoom) {
         const qreal factor = qBound(1.02, m_panZoomFactor, 1.40);
-        scale = cover * (1.0 + (factor - 1.0) * motionT);
+        scale = base * (1.0 + (factor - 1.0) * motionT);
         static const QPointF kBias[8] = {
             QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
             QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
@@ -792,25 +801,43 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
         biasX = biasA.x() + (biasB.x() - biasA.x()) * motionT;
         biasY = biasA.y() + (biasB.y() - biasA.y()) * motionT;
     } else {
-        // Off / unknown: pure centre cover.
-        scale = cover;
+        scale = base;
         biasX = 0.0;
         biasY = 0.0;
     }
 
-    // Drawn size of the full image at this scale.
     const int dw = qMax(1, int(qRound(iw * scale)));
     const int dh = qMax(1, int(qRound(ih * scale)));
-    // Overflow in drawn pixels.
-    const qreal halfOx = qMax(0.0, (qreal(dw) - qreal(vw)) * 0.5);
-    const qreal halfOy = qMax(0.0, (qreal(dh) - qreal(vh)) * 0.5);
-    const int srcX = qBound(0, int(qRound(halfOx + biasX * halfOx)), qMax(0, dw - vw));
-    const int srcY = qBound(0, int(qRound(halfOy + biasY * halfOy)), qMax(0, dh - vh));
 
     QImage scaled = image.scaled(dw, dh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     if (scaled.isNull()) {
         return {};
     }
+
+    // Letterbox / pad when the drawn image is smaller than the viewport
+    // (Fit or 1:1 on a small image).
+    if (dw <= vw && dh <= vh) {
+        QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
+        out.fill(Qt::transparent);
+        const int ox = (vw - dw) / 2;
+        const int oy = (vh - dh) / 2;
+        // Optional drift within padding when bias is non-zero and there is room.
+        const int maxOx = qMax(0, vw - dw);
+        const int maxOy = qMax(0, vh - dh);
+        const int x = qBound(0, int(qRound(ox + biasX * (maxOx * 0.5))), maxOx);
+        const int y = qBound(0, int(qRound(oy + biasY * (maxOy * 0.5))), maxOy);
+        QPainter painter(&out);
+        painter.setCompositionMode(QPainter::CompositionMode_Source);
+        painter.drawImage(x, y, scaled);
+        painter.end();
+        return QPixmap::fromImage(out);
+    }
+
+    // Overflow crop (cover-or-larger).
+    const qreal halfOx = qMax(0.0, (qreal(dw) - qreal(vw)) * 0.5);
+    const qreal halfOy = qMax(0.0, (qreal(dh) - qreal(vh)) * 0.5);
+    const int srcX = qBound(0, int(qRound(halfOx + biasX * halfOx)), qMax(0, dw - vw));
+    const int srcY = qBound(0, int(qRound(halfOy + biasY * halfOy)), qMax(0, dh - vh));
     QImage crop = scaled.copy(srcX, srcY, qMin(vw, scaled.width()), qMin(vh, scaled.height()));
     if (crop.size() != QSize(vw, vh)) {
         crop = crop.scaled(vw, vh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
@@ -967,8 +994,7 @@ void ImageView::startSlideshowMotion(int durationMs)
     }
 
     // Normalise item pose; camera is entirely in the view matrix.
-    m_fitMode = false;
-    m_fillMode = true;
+    // Slideshow zoom sets the base scale; motion pans/zooms relative to it.
     item->setItemScale(1.0);
     if (isImageMode()) {
         item->setPos(0, 0);
@@ -983,14 +1009,34 @@ void ImageView::startSlideshowMotion(int durationMs)
     const qreal vw = qreal(qMax(1, viewport()->width()));
     const qreal vh = qreal(qMax(1, viewport()->height()));
 
-    // Explicit cover scale (do not rely on fitInView — aspect-matched images
-    // otherwise yield ~0 overflow and a stationary camera).
     const qreal coverScale = qMax(vw / br.width(), vh / br.height());
-    if (coverScale <= 0.0 || !qIsFinite(coverScale)) {
+    const qreal fitScale = qMin(vw / br.width(), vh / br.height());
+    qreal baseScale = coverScale;
+    switch (m_slideshowZoom) {
+    case SlideshowZoom::Fill:
+        m_fitMode = false;
+        m_fillMode = true;
+        baseScale = coverScale;
+        break;
+    case SlideshowZoom::Actual:
+        m_fitMode = false;
+        m_fillMode = false;
+        baseScale = 1.0;
+        break;
+    case SlideshowZoom::Fit:
+    default:
+        m_fitMode = true;
+        m_fillMode = false;
+        baseScale = fitScale;
+        break;
+    }
+    if (baseScale <= 0.0 || !qIsFinite(baseScale)) {
         return;
     }
 
     // Half the room the camera may move at a given scale (scene units).
+    // When scale is below cover the view is larger than the image → no overflow
+    // (letterbox / padding); clamp keeps the image centred.
     auto halfOverflow = [&](qreal scale) -> QPointF {
         if (scale <= 0.0) {
             return QPointF(0, 0);
@@ -1007,9 +1053,9 @@ void ImageView::startSlideshowMotion(int durationMs)
     };
 
     if (m_slideshowMotion == SlideshowMotion::PanScan) {
-        // Constant scale. If natural cover leaves almost no overflow (image
-        // aspect ≈ viewport), overscan so edge→edge travel is still visible.
-        qreal scale = coverScale;
+        // Constant scale at the zoom base. Overscan only when that base leaves
+        // almost no overflow (e.g. Fit, or Fill on near-matching aspect).
+        qreal scale = baseScale;
         QPointF half = halfOverflow(scale);
         const bool preferX = br.width() * vh >= br.height() * vw; // wider than view
         qreal travel = preferX ? half.x() : half.y();
@@ -1019,14 +1065,13 @@ void ImageView::startSlideshowMotion(int durationMs)
             const qreal longSide = preferX ? br.width() : br.height();
             const qreal wantHalf = qMax(kMinTravelScene, longSide * 0.10);
             if (preferX) {
-                // viewW = br.w - 2*wantHalf  →  scale = vw / viewW
                 const qreal viewW = qMax(vw * 0.5, br.width() - 2.0 * wantHalf);
                 scale = vw / viewW;
             } else {
                 const qreal viewH = qMax(vh * 0.5, br.height() - 2.0 * wantHalf);
                 scale = vh / viewH;
             }
-            scale = qMax(scale, coverScale);
+            scale = qMax(scale, baseScale);
             half = halfOverflow(scale);
             travel = preferX ? half.x() : half.y();
         }
@@ -1051,10 +1096,10 @@ void ImageView::startSlideshowMotion(int durationMs)
         m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
         m_motionEndCenter = clampCenter(m_motionEndCenter, m_motionEndScale);
     } else {
-        // Ken Burns: zoom from cover toward cover*factor while panning between
-        // two distinct cover-valid centres (rule-of-thirds / corners).
-        m_motionStartScale = coverScale;
-        m_motionEndScale = coverScale * m_panZoomFactor;
+        // Ken Burns: zoom from the slideshow-zoom base toward base*factor while
+        // panning between two distinct centres (rule-of-thirds / corners).
+        m_motionStartScale = baseScale;
+        m_motionEndScale = baseScale * m_panZoomFactor;
         const QPointF halfStart = halfOverflow(m_motionStartScale);
         const QPointF halfEnd = halfOverflow(m_motionEndScale);
 
