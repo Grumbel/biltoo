@@ -514,7 +514,7 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     applyThumbnailVisibility();
 
     // Session open is not a Workspace document. Drop any free-form arrangement
-    // so Image↔Workspace does not resurrect previous tiles; only .qimgview
+    // so Image↔Workspace does not resurrect previous tiles; only .biltoo
     // projects restore Workspace content.
     if (m_imageView) {
         m_imageView->discardStashedGallery();
@@ -1688,7 +1688,7 @@ int MainWindow::sessionIndexOfId(SessionImageId id) const
 
 namespace {
 
-const char kWorkspaceClipMime[] = "application/x-qimgview-workspace-items";
+const char kWorkspaceClipMime[] = "application/x-biltoo-workspace-items";
 
 QByteArray encodeWorkspaceClipboard(const QList<WorkspaceItemState> &items)
 {
@@ -1699,7 +1699,7 @@ QByteArray encodeWorkspaceClipboard(const QList<WorkspaceItemState> &items)
         arr.append(o);
     }
     QJsonObject root;
-    root.insert(QStringLiteral("format"), QStringLiteral("qimgview-workspace-clipboard"));
+    root.insert(QStringLiteral("format"), QStringLiteral("biltoo-workspace-clipboard"));
     root.insert(QStringLiteral("version"), 1);
     root.insert(QStringLiteral("items"), arr);
     return QJsonDocument(root).toJson(QJsonDocument::Compact);
@@ -1714,7 +1714,7 @@ QList<WorkspaceItemState> decodeWorkspaceClipboard(const QByteArray &bytes)
     }
     const QJsonObject root = doc.object();
     if (root.value(QStringLiteral("format")).toString()
-        != QLatin1String("qimgview-workspace-clipboard")) {
+        != QLatin1String("biltoo-workspace-clipboard")) {
         return out;
     }
     const QJsonArray arr = root.value(QStringLiteral("items")).toArray();
@@ -1947,13 +1947,13 @@ void MainWindow::saveProjectAs()
     const QString path = QFileDialog::getSaveFileName(
         this, tr("Save Project"),
         m_projectPath.isEmpty() ? QDir::homePath() : m_projectPath,
-        tr("QImgView Project (*.qimgview);;All Files (*)"));
+        tr("Biltoo Project (*.biltoo);;All Files (*)"));
     if (path.isEmpty()) {
         return;
     }
     QString out = path;
-    if (!out.endsWith(QLatin1String(".qimgview"), Qt::CaseInsensitive)) {
-        out += QStringLiteral(".qimgview");
+    if (!out.endsWith(QLatin1String(".biltoo"), Qt::CaseInsensitive)) {
+        out += QStringLiteral(".biltoo");
     }
     QString err;
     if (!writeProjectToPath(out, &err)) {
@@ -2011,7 +2011,7 @@ void MainWindow::openProject()
     const QString path = QFileDialog::getOpenFileName(
         this, tr("Open Project"),
         m_projectPath.isEmpty() ? QDir::homePath() : m_projectPath,
-        tr("QImgView Project (*.qimgview);;All Files (*)"));
+        tr("Biltoo Project (*.biltoo);;All Files (*)"));
     if (path.isEmpty()) {
         return;
     }

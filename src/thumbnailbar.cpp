@@ -1089,8 +1089,8 @@ void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
 QStringList ThumbnailBar::mimeTypes() const
 {
     return {QStringLiteral("text/uri-list"),
-            QStringLiteral("application/x-qimgview-paths"),
-            QStringLiteral("application/x-qimgview-session-ids")};
+            QStringLiteral("application/x-biltoo-paths"),
+            QStringLiteral("application/x-biltoo-session-ids")};
 }
 
 QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
@@ -1136,7 +1136,7 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
     // Internal path list (newline-separated UTF-8). Preferred on drop so
     // selection size is exact — including //archive: members.
     if (!fullPaths.isEmpty()) {
-        mime->setData(QStringLiteral("application/x-qimgview-paths"),
+        mime->setData(QStringLiteral("application/x-biltoo-paths"),
                       fullPaths.join(QLatin1Char('\n')).toUtf8());
     }
     if (!urls.isEmpty()) {
@@ -1146,12 +1146,12 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
         // ignored by extractLocalImagePaths / expandPaths.
         QList<QUrl> placeholders;
         for (int i = 0; i < fullPaths.size(); ++i) {
-            placeholders.append(QUrl(QStringLiteral("about:qimgview-session/%1").arg(i)));
+            placeholders.append(QUrl(QStringLiteral("about:biltoo-session/%1").arg(i)));
         }
         mime->setUrls(placeholders);
     }
     if (!idPayload.isEmpty()) {
-        mime->setData(QStringLiteral("application/x-qimgview-session-ids"), idPayload);
+        mime->setData(QStringLiteral("application/x-biltoo-session-ids"), idPayload);
     }
     return mime;
 }
@@ -1169,7 +1169,7 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
     QMimeData *mime = mimeData(items);
     if (!mime
         || (mime->urls().isEmpty()
-            && mime->data(QStringLiteral("application/x-qimgview-paths")).isEmpty())) {
+            && mime->data(QStringLiteral("application/x-biltoo-paths")).isEmpty())) {
         delete mime;
         return;
     }

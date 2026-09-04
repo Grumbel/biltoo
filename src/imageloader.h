@@ -12,7 +12,7 @@
 /**
  * Central image decode path: try QImageReader first (including system Qt
  * imageformat plugins such as KDE KImageFormats for XCF/KRA/ORA), then libvips
- * when built with QIMGVIEW_HAVE_VIPS. Used by the main view, thumbnails and
+ * when built with BILTOO_HAVE_VIPS. Used by the main view, thumbnails and
  * file filters.
  */
 namespace ImageLoader {

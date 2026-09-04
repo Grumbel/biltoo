@@ -172,7 +172,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 
     m_workspaceCheck = new QCheckBox(tr("Start in workspace mode"), this);
     m_workspaceCheck->setToolTip(
-        tr("When enabled, QImgView starts with the multi-image workspace active"));
+        tr("When enabled, Biltoo starts with the multi-image workspace active"));
 
     auto *sessionForm = new QFormLayout;
     sessionForm->setContentsMargins(0, 0, 0, 0);
@@ -439,9 +439,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     auto *btnRow = new QHBoxLayout;
     m_setAllBtn = new QPushButton(tr("&Set all as default"), defaultsPage);
     m_removeAllBtn = new QPushButton(tr("&Remove all as default"), defaultsPage);
-    m_setAllBtn->setToolTip(tr("Make QImgView the default handler for every listed type"));
+    m_setAllBtn->setToolTip(tr("Make Biltoo the default handler for every listed type"));
     m_removeAllBtn->setToolTip(
-        tr("Stop using QImgView as the default for these types"));
+        tr("Stop using Biltoo as the default for these types"));
     btnRow->addWidget(m_setAllBtn);
     btnRow->addWidget(m_removeAllBtn);
     btnRow->addStretch(1);
@@ -551,9 +551,9 @@ void PreferencesDialog::refreshDefaultAppsList()
     }
 
     m_mimeStatusLabel->setText(
-        tr("Checked types are handled by QImgView as the system default. "
+        tr("Checked types are handled by Biltoo as the system default. "
            "Toggle a checkbox to set or clear the association immediately. "
-           "Uses the FreeDesktop GIO API (qimgview.desktop must be installed)."));
+           "Uses the FreeDesktop GIO API (biltoo.desktop must be installed)."));
     m_mimeTree->setEnabled(true);
     m_setAllBtn->setEnabled(true);
     m_removeAllBtn->setEnabled(true);
@@ -563,13 +563,13 @@ void PreferencesDialog::refreshDefaultAppsList()
         item->setText(0, s.label);
         item->setText(1, s.mimeType);
         item->setText(2, s.isUs
-                              ? tr("QImgView")
+                              ? tr("Biltoo")
                               : (s.currentAppName.isEmpty()
                                      ? tr("(none)")
                                      : s.currentAppName));
         item->setToolTip(2, s.currentAppId.isEmpty() ? s.currentAppName : s.currentAppId);
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        // Checked means QImgView is currently the default.
+        // Checked means Biltoo is currently the default.
         item->setCheckState(0, s.isUs ? Qt::Checked : Qt::Unchecked);
         item->setData(0, Qt::UserRole, s.mimeType);
         if (s.isUs) {
@@ -635,7 +635,7 @@ void PreferencesDialog::onRemoveAllAsDefault()
     QStringList types;
     for (int i = 0; i < m_mimeTree->topLevelItemCount(); ++i) {
         QTreeWidgetItem *item = m_mimeTree->topLevelItem(i);
-        // Checked rows are those where QImgView is currently the default.
+        // Checked rows are those where Biltoo is currently the default.
         if (item && item->checkState(0) == Qt::Checked) {
             types.append(item->data(0, Qt::UserRole).toString());
         }

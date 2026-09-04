@@ -9,7 +9,7 @@
 #include <QFile>
 #include <QFileInfo>
 
-#ifdef QIMGVIEW_HAVE_ARCHIVE
+#ifdef BILTOO_HAVE_ARCHIVE
 #include <archive.h>
 #include <archive_entry.h>
 #endif
@@ -18,14 +18,14 @@ namespace ArchiveReader {
 
 bool isAvailable()
 {
-#ifdef QIMGVIEW_HAVE_ARCHIVE
+#ifdef BILTOO_HAVE_ARCHIVE
     return true;
 #else
     return false;
 #endif
 }
 
-#ifdef QIMGVIEW_HAVE_ARCHIVE
+#ifdef BILTOO_HAVE_ARCHIVE
 
 namespace {
 
@@ -263,7 +263,7 @@ QByteArray readMember(const QString &archivePath, const QString &memberPath)
     return data;
 }
 
-#else // !QIMGVIEW_HAVE_ARCHIVE
+#else // !BILTOO_HAVE_ARCHIVE
 
 QStringList listImageMembers(const QString & /*archivePath*/)
 {
@@ -282,7 +282,7 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
     QStringList refs;
     if (!isAvailable()) {
         qWarning("ArchiveReader: libarchive was not enabled at build time "
-                 "(QIMGVIEW_HAVE_ARCHIVE); cannot open %s",
+                 "(BILTOO_HAVE_ARCHIVE); cannot open %s",
                  qPrintable(archivePath));
         return refs;
     }

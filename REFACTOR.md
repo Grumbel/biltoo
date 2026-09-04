@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# QImgView structural refactor
+# Biltoo structural refactor
 
 This document is the plan of record. It follows DOMAIN.md / IDENTITY.md / SESSION.md.
 Implementation must not invent a second domain model.
@@ -227,7 +227,7 @@ part of early-phase exit criteria).
   session remove, Duplicate (SessionDuplicateCommand).
 - Menus: content transforms and session sort under Edit; View is display/chrome.
 - Edge H/V scale handles match corner Ctrl semantics (default opposite edge).
-- Project files (`.qimgview` JSON + SHA-256 assets), Export PNG, fit page guide
+- Project files (`.biltoo` JSON + SHA-256 assets), Export PNG, fit page guide
   to content, missing-asset relink on load.
 - Workspace thumbnail membership and path-map appearance use SessionImageId
   only (no path-occurrence hide / cross-duplicate flip leakage).

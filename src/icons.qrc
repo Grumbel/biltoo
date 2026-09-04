@@ -5,7 +5,7 @@
   SPDX-License-Identifier: GPL-3.0-or-later
   -->
   <qresource prefix="/icons">
-    <file alias="qimgview.svg">../data/icons/hicolor/scalable/apps/qimgview.svg</file>
+    <file alias="biltoo.svg">../data/icons/hicolor/scalable/apps/biltoo.svg</file>
     <file alias="actions/dialog-information.svg">../data/icons/actions/dialog-information.svg</file>
     <file alias="actions/document-open.svg">../data/icons/actions/document-open.svg</file>
     <file alias="actions/edit-clear.svg">../data/icons/actions/edit-clear.svg</file>

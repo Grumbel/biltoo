@@ -20,7 +20,7 @@
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
-#ifdef QIMGVIEW_HAVE_EXIV2
+#ifdef BILTOO_HAVE_EXIV2
 #  include <exiv2/exiv2.hpp>
 #  include <string>
 #  include <atomic>
@@ -28,8 +28,8 @@
 #  include <mutex>
 #endif
 
-#ifdef QIMGVIEW_HAVE_EXIV2
-namespace qimgview_exivlog {
+#ifdef BILTOO_HAVE_EXIV2
+namespace biltoo_exivlog {
 std::atomic<bool> g_exivVerbose{false};
 thread_local const char *g_exivCurrentPath = nullptr;
 
@@ -45,9 +45,9 @@ void exiv2LogHandler(int level, const char *msg)
         return;
     }
     if (g_exivCurrentPath && g_exivCurrentPath[0] != '\0') {
-        std::fprintf(stderr, "qimgview:exiv2: %s: %s\n", g_exivCurrentPath, msg);
+        std::fprintf(stderr, "biltoo:exiv2: %s: %s\n", g_exivCurrentPath, msg);
     } else {
-        std::fprintf(stderr, "qimgview:exiv2: %s\n", msg);
+        std::fprintf(stderr, "biltoo:exiv2: %s\n", msg);
     }
 }
 
@@ -73,14 +73,14 @@ struct Exiv2PathScope {
     }
     QByteArray m_utf8;
 };
-} // namespace qimgview_exivlog
+} // namespace biltoo_exivlog
 #endif
 
 void configureMetadataLibraryLogging(bool verbose)
 {
-#ifdef QIMGVIEW_HAVE_EXIV2
-    qimgview_exivlog::g_exivVerbose.store(verbose, std::memory_order_relaxed);
-    qimgview_exivlog::ensureExiv2LogHandler();
+#ifdef BILTOO_HAVE_EXIV2
+    biltoo_exivlog::g_exivVerbose.store(verbose, std::memory_order_relaxed);
+    biltoo_exivlog::ensureExiv2LogHandler();
 #else
     Q_UNUSED(verbose);
 #endif
@@ -151,12 +151,12 @@ QString friendlyExifLabel(const QString &key)
     return labels.value(key);
 }
 
-#ifdef QIMGVIEW_HAVE_EXIV2
+#ifdef BILTOO_HAVE_EXIV2
 bool loadExiv2Metadata(QTreeWidget *tree, const QString &path)
 {
     try {
-        qimgview_exivlog::ensureExiv2LogHandler();
-        qimgview_exivlog::Exiv2PathScope pathScope(path);
+        biltoo_exivlog::ensureExiv2LogHandler();
+        biltoo_exivlog::Exiv2PathScope pathScope(path);
         auto image = Exiv2::ImageFactory::open(path.toStdString());
         if (!image.get()) {
             return false;
@@ -719,7 +719,7 @@ void MetadataPanel::applyPendingPath()
             addChildRow(fileGroup, tr("Format"), tr("fallback loader"));
             // Reuse for analysis below.
             fillImageAnalysis(path, decoded);
-#ifdef QIMGVIEW_HAVE_EXIV2
+#ifdef BILTOO_HAVE_EXIV2
             if (loadExiv2Metadata(m_tree, path)) {
                 return;
             }
@@ -732,7 +732,7 @@ void MetadataPanel::applyPendingPath()
     // Structure, histogram, palette — reuse hint when present.
     fillImageAnalysis(path, decodedHint);
 
-#ifdef QIMGVIEW_HAVE_EXIV2
+#ifdef BILTOO_HAVE_EXIV2
     if (loadExiv2Metadata(m_tree, path)) {
         return;
     }
@@ -742,7 +742,7 @@ void MetadataPanel::applyPendingPath()
         const QStringList keys = reader.textKeys();
         if (keys.isEmpty()) {
             addChildRow(fileGroup, tr("Metadata"),
-#ifdef QIMGVIEW_HAVE_EXIV2
+#ifdef BILTOO_HAVE_EXIV2
                         tr("(no Exif/IPTC/XMP found)")
 #else
                         tr("(none from image plugin)")

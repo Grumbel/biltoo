@@ -1,18 +1,18 @@
-# Agent notes for QImgView
+# Agent notes for Biltoo
 
 Guidance for humans and automated agents working on this codebase.
 
 ## Project intent
 
-QImgView is a classic Qt (C++) image viewer with three presentation modes
+Biltoo is a classic Qt (C++) image viewer with three presentation modes
 (Image, Gallery, Workspace) on one canvas. Users browse a session, overview it
 in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → qimgview-167-progress-not-stuck**
-(Motion path outlasts interval so crossfade is mid-lerp).
-Next bundle number: **168**.
+Latest agent handoff: **TODO.md → biltoo-168-rename**
+(Application renamed QImgView → Biltoo).
+Next bundle number: **169**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -74,7 +74,7 @@ Do not introduce qmake `.pro` files or Qt5-only APIs.
   ```
   Co-authored-by: Grok <grok@x.ai>
   ```
-- Deliverables are sequential git bundles (`qimgview-001-…`, `qimgview-002-…`, …)
+- Deliverables are sequential git bundles (`biltoo-001-…`, `biltoo-002-…`, …)
   that stack cleanly on the previous tip and use `HEAD` as the ref.
   Bundle numbers never repeat.
 
@@ -244,7 +244,7 @@ and Select/Pan live on the vertical workspace tool strip.
   screen-pixel radii so chrome stays clickable under rotation/zoom.
   Scrollbars are hidden by default (View → Show Scrollbars).
   Preferences: General tab (slideshow / session / view) and Default application tab.
-  Default application checkboxes reflect the current association (checked = QImgView
+  Default application checkboxes reflect the current association (checked = Biltoo
   is default); toggling applies immediately. “Set all as default” / “Remove all as
   default” cover the full list. Dialog buttons follow GNOME 2 HIG (Cancel left, OK right).
 

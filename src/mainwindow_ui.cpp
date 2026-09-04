@@ -19,12 +19,12 @@ void MainWindow::createActions()
 
     m_openProjectAct = new QAction(tr("Open &Project…"), this);
     m_openProjectAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_O);
-    m_openProjectAct->setStatusTip(tr("Open a .qimgview project (session + Workspace poses)"));
+    m_openProjectAct->setStatusTip(tr("Open a .biltoo project (session + Workspace poses)"));
     connect(m_openProjectAct, &QAction::triggered, this, &MainWindow::openProject);
 
     m_saveProjectAct = new QAction(tr("&Save Project"), this);
     m_saveProjectAct->setShortcuts(QKeySequence::Save);
-    m_saveProjectAct->setStatusTip(tr("Save session and Workspace layout to a .qimgview project"));
+    m_saveProjectAct->setStatusTip(tr("Save session and Workspace layout to a .biltoo project"));
     connect(m_saveProjectAct, &QAction::triggered, this, &MainWindow::saveProject);
 
     m_saveProjectAsAct = new QAction(tr("Save Project &As…"), this);
@@ -113,7 +113,7 @@ void MainWindow::createActions()
     // Standard Quit only (Ctrl+Q / platform); bare Q was too easy to hit by accident.
     m_quitAct->setShortcuts(QKeySequence::Quit);
     m_quitAct->setIcon(themeIcon(QStringLiteral("application-exit"), QStyle::SP_DialogCloseButton));
-    m_quitAct->setStatusTip(tr("Quit QImgView (Ctrl+Q; prompts if the Workspace has unsaved images)"));
+    m_quitAct->setStatusTip(tr("Quit Biltoo (Ctrl+Q; prompts if the Workspace has unsaved images)"));
     // Only closeEvent confirms unsaved Workspace — calling confirm here and
     // then close() would show the dialog twice (Discard leaves dirty true).
     connect(m_quitAct, &QAction::triggered, this, &QWidget::close);
@@ -488,7 +488,7 @@ void MainWindow::createActions()
 
     m_openSelectionNewWindowAct = new QAction(tr("Open Selection in &New Window"), this);
     m_openSelectionNewWindowAct->setStatusTip(
-        tr("Open the selected images in a new QImgView window"));
+        tr("Open the selected images in a new Biltoo window"));
     connect(m_openSelectionNewWindowAct, &QAction::triggered,
             this, &MainWindow::openSelectionInNewWindow);
 
@@ -649,7 +649,7 @@ void MainWindow::createActions()
     m_keyboardShortcutsAct->setStatusTip(tr("List of keyboard shortcuts"));
     connect(m_keyboardShortcutsAct, &QAction::triggered, this, &MainWindow::showKeyboardShortcuts);
 
-    m_aboutAct = new QAction(tr("&About QImgView"), this);
+    m_aboutAct = new QAction(tr("&About Biltoo"), this);
     m_aboutAct->setIcon(themeIcon(QStringLiteral("help-about"), QStyle::SP_MessageBoxInformation));
     m_aboutAct->setStatusTip(tr("About this application"));
     connect(m_aboutAct, &QAction::triggered, this, &MainWindow::about);
@@ -671,7 +671,7 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_saveProjectAct);
     m_fileMenu->addAction(m_saveProjectAsAct);
     m_recentProjectsMenu = m_fileMenu->addMenu(tr("Recent Pro&jects"));
-    m_recentProjectsMenu->setStatusTip(tr("Reopen a recently saved or opened .qimgview project"));
+    m_recentProjectsMenu->setStatusTip(tr("Reopen a recently saved or opened .biltoo project"));
     m_clearRecentProjectsAct = new QAction(tr("&Clear Recent Projects"), this);
     m_clearRecentProjectsAct->setStatusTip(tr("Remove all remembered project paths"));
     connect(m_clearRecentProjectsAct, &QAction::triggered, this, &MainWindow::clearRecentProjects);

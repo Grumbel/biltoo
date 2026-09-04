@@ -3,7 +3,7 @@
 
 // libvips pulls in GLib, which has struct fields named "signals". Qt defines
 // signals as a macro — include vips before any Qt headers.
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
 #include <vips/vips.h>
 #endif
 
@@ -80,7 +80,7 @@ QImage decodeWithQtReader(const QByteArray &bytes, const QByteArray &format, int
     return reader.read();
 }
 
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
 // Forward-declared: defined with other vips helpers below.
 QImage loadWithVipsBuffer(const QByteArray &bytes, int maxEdge);
 #endif
@@ -113,7 +113,7 @@ QImage decodeFromBytes(const QByteArray &bytes, const QString &formatHint, int m
         return image;
     }
 
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
     // 3) libvips buffer path (WebP/HEIF/etc. when Qt plugins miss buffer loads).
     image = loadWithVipsBuffer(bytes, maxEdge);
     if (!image.isNull()) {
@@ -169,7 +169,7 @@ QImage loadWithQt(const QString &path, int maxEdge)
     return reader.read();
 }
 
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
 
 QImage vipsToQImage(VipsImage *inImage)
 {
@@ -352,7 +352,7 @@ QImage loadWithVipsBuffer(const QByteArray &bytes, int maxEdge)
     return result;
 }
 
-#endif // QIMGVIEW_HAVE_VIPS
+#endif // BILTOO_HAVE_VIPS
 
 QSize probeSizeWithQt(const QString &path)
 {
@@ -365,7 +365,7 @@ QSize probeSizeWithQt(const QString &path)
     return {};
 }
 
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
 
 QSize probeSizeWithVips(const QString &path)
 {
@@ -402,7 +402,7 @@ QSize probeSizeWithVips(const QString &path)
     return QSize(w, h);
 }
 
-#endif // QIMGVIEW_HAVE_VIPS
+#endif // BILTOO_HAVE_VIPS
 
 } // namespace
 
@@ -432,7 +432,7 @@ QSize probeSize(const QString &path)
                 return sz;
             }
         }
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
         {
             VipsImage *in = vips_image_new_from_buffer(bytes.constData(), size_t(bytes.size()),
                                                        "", nullptr);
@@ -454,7 +454,7 @@ QSize probeSize(const QString &path)
     if (qt.isValid()) {
         return qt;
     }
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
     return probeSizeWithVips(path);
 #else
     return {};
@@ -463,7 +463,7 @@ QSize probeSize(const QString &path)
 
 void init(const char *argv0)
 {
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
     if (VIPS_INIT(argv0)) {
         // Non-fatal: Qt-only decode still works
         g_warning("VIPS_INIT failed; continuing without libvips");
@@ -475,7 +475,7 @@ void init(const char *argv0)
 
 bool hasVips()
 {
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
     return true;
 #else
     return false;
@@ -491,7 +491,7 @@ QImage load(const QString &path)
     if (!image.isNull()) {
         return image;
     }
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
     return loadWithVips(path, 0);
 #else
     return {};
@@ -511,7 +511,7 @@ QImage loadThumbnail(const QString &path, int maxEdge)
     if (!image.isNull()) {
         return image;
     }
-#ifdef QIMGVIEW_HAVE_VIPS
+#ifdef BILTOO_HAVE_VIPS
     return loadWithVips(path, maxEdge);
 #else
     return {};

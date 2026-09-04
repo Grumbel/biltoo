@@ -34,7 +34,7 @@
 }:
 
 stdenv.mkDerivation (finalAttrs: {
-  pname = "qimgview";
+  pname = "biltoo";
   inherit version;
 
   src = ./.;
@@ -66,7 +66,7 @@ stdenv.mkDerivation (finalAttrs: {
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats
     # More vips Requires.private (and transitive .pc names) so pkg_check_modules(vips)
-    # does not spam "Package '…' was not found". We do not link these into qimgview.
+    # does not spam "Package '…' was not found". We do not link these into biltoo.
     cgif
     libexif
     libultrahdr
@@ -101,7 +101,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   # `nix flake check` / `nix build` with checks: run CMake tests
-  # (projectfile-roundtrip unit tests + qimgview --help smoke).
+  # (projectfile-roundtrip unit tests + biltoo --help smoke).
   doCheck = true;
   preCheck = ''
     export QT_QPA_PLATFORM=offscreen
@@ -109,10 +109,10 @@ stdenv.mkDerivation (finalAttrs: {
 
   meta = with lib; {
     description = "Classic Qt image viewer with Image, Gallery, and Workspace modes";
-    homepage = "https://github.com/Grumbel/qimgview";
+    homepage = "https://github.com/Grumbel/biltoo";
     license = licenses.gpl3Plus;
     maintainers = [ ];
     platforms = platforms.linux;
-    mainProgram = "qimgview";
+    mainProgram = "biltoo";
   };
 })

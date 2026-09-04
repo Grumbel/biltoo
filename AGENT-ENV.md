@@ -53,9 +53,9 @@ which rsync cmake g++
 
 ```bash
 cd /tmp
-git clone --depth 50 https://github.com/Grumbel/qimgview.git qimgview-src
+git clone --depth 50 https://github.com/Grumbel/biltoo.git biltoo-src
 # or: git pull previous bundle(s) onto a shallow clone
-cd qimgview-src
+cd biltoo-src
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Debug
 make -j$(nproc)
@@ -80,13 +80,13 @@ The LayoutMode declaration-order fix is independent of that API and is the compi
 - Work in `/tmp`, then:
 
   ```bash
-  rsync -a /tmp/qimgview-00N-….bundle /home/workdir/artifacts/
+  rsync -a /tmp/biltoo-00N-….bundle /home/workdir/artifacts/
   ```
 
 - Prefer thin stacking bundles:
 
   ```bash
-  git bundle create qimgview-00N-description.bundle <previous-tip>..HEAD
+  git bundle create biltoo-00N-description.bundle <previous-tip>..HEAD
   ```
 
   First bundle after upstream tip `a194a10` was `a194a10..HEAD`.

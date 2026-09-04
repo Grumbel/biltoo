@@ -1,8 +1,8 @@
 # Session handoff — identity, chrome, crop (bundles 001–024)
 
 **Tip ref (identity series):** `ae3043f` — see **Continuation handoff** below for later tip `b1fde01`  
-**Apply order:** `qimgview-001-…` through `qimgview-024-…` from artifacts, each
-`git pull <bundle> HEAD` in sequence. Base is upstream `Grumbel/qimgview` tip
+**Apply order:** `biltoo-001-…` through `biltoo-024-…` from artifacts, each
+`git pull <bundle> HEAD` in sequence. Base is upstream `Grumbel/biltoo` tip
 at the time the series started.
 
 Related docs: [DOMAIN.md](DOMAIN.md), [IDENTITY.md](IDENTITY.md), [HANDLES.md](HANDLES.md),
@@ -61,7 +61,7 @@ List **index** is order only (navigation, filmstrip row) and may shift.
 ### Build / packaging
 
 - CMake: stricter warnings (`-Wall -Wextra -Wpedantic` + more); optional
-  `QIMGVIEW_WERROR`.
+  `BILTOO_WERROR`.
 - Warning cleanups (shadow, unused, double-promotion, QWidget::data shadow).
 - Nix: `libsysprof-capture` in `buildInputs` to silence pkg-config noise from
   glib’s `Requires.private: sysprof-capture-4`.
@@ -193,7 +193,7 @@ unbound and edits will not propagate correctly in Workspace).
 ## Continuation handoff (controllers → project, bundles ~016–038)
 
 **Tip ref:** `b1fde01` (session-id membership / no path-map flip leakage)  
-**Stack:** upstream + `qimgview-016-…` through `qimgview-038-…` (see artifacts).
+**Stack:** upstream + `biltoo-016-…` through `biltoo-038-…` (see artifacts).
 
 ### What landed after the identity series
 
@@ -205,7 +205,7 @@ unbound and edits will not propagate correctly in Workspace).
 | Undo | 031–032 | Flip/rotate/raise/opacity/reset; Duplicate = session + canvas |
 | Menus | 033 | Content ops + sort under Edit; View = display |
 | Edge scale Ctrl | 034 | Mid-edge matches corner (default opposite edge) |
-| Project + export | 035–037 | `.qimgview` JSON + SHA-256; Export PNG; fit page guide; relink |
+| Project + export | 035–037 | `.biltoo` JSON + SHA-256; Export PNG; fit page guide; relink |
 | Membership / flip id | 038 | Thumbnail toggle by SessionImageId; bound tiles skip path map |
 
 ### Chrome visibility (bundle 039)
@@ -237,13 +237,13 @@ unbound and edits will not propagate correctly in Workspace).
 
 - Author: `Ingo Ruhnke <grumbel@gmail.com>`
 - Trailer: `Co-authored-by: Grok <grok@x.ai>`
-- Bundles: `qimgview-NNN-short-name.bundle`, ref `HEAD`, stack cleanly.
+- Bundles: `biltoo-NNN-short-name.bundle`, ref `HEAD`, stack cleanly.
 
 ---
 
 ## Continuation handoff (040–049 — grade, clipboard, background)
 
-**Tip:** apply `qimgview-040` … `qimgview-049` in order onto the prior tip.
+**Tip:** apply `biltoo-040` … `biltoo-049` in order onto the prior tip.
 
 | Bundle | Topic |
 |--------|--------|

@@ -3,7 +3,7 @@
 
 // GIO before Qt: GLib structs use a field named "signals", which collides
 // with Qt's signals macro if Qt headers are included first.
-#ifdef QIMGVIEW_HAVE_GIO
+#ifdef BILTOO_HAVE_GIO
 #  include <gio/gio.h>
 #  include <gio/gdesktopappinfo.h>
 #endif
@@ -17,12 +17,12 @@ namespace DefaultApps {
 
 QString desktopFileId()
 {
-    return QStringLiteral("qimgview.desktop");
+    return QStringLiteral("biltoo.desktop");
 }
 
 QStringList supportedMimeTypes()
 {
-    // Keep in sync with data/qimgview.desktop MimeType=
+    // Keep in sync with data/biltoo.desktop MimeType=
     return {
         QStringLiteral("image/jpeg"),
         QStringLiteral("image/png"),
@@ -70,7 +70,7 @@ static QString labelForMime(const QString &mime)
 
 bool isAvailable()
 {
-#ifdef QIMGVIEW_HAVE_GIO
+#ifdef BILTOO_HAVE_GIO
     return true;
 #else
     return false;
@@ -84,7 +84,7 @@ MimeStatus statusForType(const QString &mimeType)
     s.label = labelForMime(mimeType);
     s.isUs = false;
 
-#ifdef QIMGVIEW_HAVE_GIO
+#ifdef BILTOO_HAVE_GIO
     GAppInfo *info = g_app_info_get_default_for_type(mimeType.toUtf8().constData(), FALSE);
     if (info) {
         const char *id = g_app_info_get_id(info);
@@ -119,13 +119,13 @@ QVector<MimeStatus> statusForSupportedTypes()
 
 bool setDefaultForType(const QString &mimeType, QString *errorMessage)
 {
-#ifdef QIMGVIEW_HAVE_GIO
+#ifdef BILTOO_HAVE_GIO
     GDesktopAppInfo *desk = g_desktop_app_info_new(desktopFileId().toUtf8().constData());
     if (!desk) {
         if (errorMessage) {
             *errorMessage = QCoreApplication::translate(
                 "DefaultApps",
-                "Could not find %1. Is QImgView installed system-wide?")
+                "Could not find %1. Is Biltoo installed system-wide?")
                 .arg(desktopFileId());
         }
         return false;
@@ -178,8 +178,8 @@ int setDefaultForTypes(const QStringList &mimeTypes, QStringList *errors)
 
 bool clearDefaultForType(const QString &mimeType, QString *errorMessage)
 {
-#ifdef QIMGVIEW_HAVE_GIO
-    // Only reset when QImgView is the current default. Resetting while another
+#ifdef BILTOO_HAVE_GIO
+    // Only reset when Biltoo is the current default. Resetting while another
     // app is default would wipe that user choice with no benefit to us.
     // g_app_info_reset_type_associations removes all user overrides for the type;
     // GIO has no API to demote a single app while keeping other overrides.

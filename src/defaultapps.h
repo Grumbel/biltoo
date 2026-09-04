@@ -10,7 +10,7 @@
 
 /**
  * Linux default-application helpers via GLib GIO (optional at build time).
- * Without QIMGVIEW_HAVE_GIO, queries return empty and setDefaultForType fails.
+ * Without BILTOO_HAVE_GIO, queries return empty and setDefaultForType fails.
  */
 namespace DefaultApps {
 
@@ -19,10 +19,10 @@ struct MimeStatus {
     QString label;           // short UI label
     QString currentAppId;    // desktop id of current default, if any
     QString currentAppName;  // display name
-    bool isUs = false;     // true when current default is qimgview.desktop
+    bool isUs = false;     // true when current default is biltoo.desktop
 };
 
-/** MIME types we advertise in qimgview.desktop and offer in Preferences. */
+/** MIME types we advertise in biltoo.desktop and offer in Preferences. */
 QStringList supportedMimeTypes();
 
 /** Desktop file id used for associations (must match installed .desktop). */
@@ -35,7 +35,7 @@ MimeStatus statusForType(const QString &mimeType);
 QVector<MimeStatus> statusForSupportedTypes();
 
 /**
- * Set qimgview as the default handler for @p mimeType.
+ * Set biltoo as the default handler for @p mimeType.
  * Returns true on success; @p errorMessage receives a translated reason on failure.
  */
 bool setDefaultForType(const QString &mimeType, QString *errorMessage = nullptr);
@@ -44,7 +44,7 @@ bool setDefaultForType(const QString &mimeType, QString *errorMessage = nullptr)
 int setDefaultForTypes(const QStringList &mimeTypes, QStringList *errors = nullptr);
 
 /**
- * Clear user default association for @p mimeType when QImgView is the default
+ * Clear user default association for @p mimeType when Biltoo is the default
  * (GIO reset_type_associations). No-op if another app is already default.
  * After a clear, the system default (or next recommended app) applies.
  * Returns true on success; @p errorMessage receives a translated reason on failure.

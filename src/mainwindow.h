@@ -83,7 +83,7 @@ public:
     bool writeProjectToPath(const QString &projectPath, QString *error = nullptr);
     bool loadProjectFromPath(const QString &projectPath, QString *error = nullptr);
     /**
-     * Load a .qimgview project from @a path, set the current project path,
+     * Load a .biltoo project from @a path, set the current project path,
      * and remember it in Recent Projects. On failure fills @a error (and
      * returns false) without changing the current project path.
      * Used by File → Open Project, Recent Projects, and the CLI.

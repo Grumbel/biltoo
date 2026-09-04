@@ -23,11 +23,11 @@ current Nix flake is not.
 
 | Area | Severity | Notes |
 |------|----------|--------|
-| **GIO / “default application”** (`src/defaultapps.cpp`) | Real Linuxism | Uses `gio-unix-2.0` / `GDesktopAppInfo`. Already gated with `QIMGVIEW_HAVE_GIO`. On Windows the feature simply is not built; no need to port unless someone wants a native “set default app” UI later. |
-| **Desktop integration** (`data/qimgview.desktop`, AppStream metainfo) | Packaging only | FreeDesktop / Linux store metadata. Irrelevant on Windows (use a different installer story). |
+| **GIO / “default application”** (`src/defaultapps.cpp`) | Real Linuxism | Uses `gio-unix-2.0` / `GDesktopAppInfo`. Already gated with `BILTOO_HAVE_GIO`. On Windows the feature simply is not built; no need to port unless someone wants a native “set default app” UI later. |
+| **Desktop integration** (`data/biltoo.desktop`, AppStream metainfo) | Packaging only | FreeDesktop / Linux store metadata. Irrelevant on Windows (use a different installer story). |
 | **Nix** (`flake.nix`, `default.nix`, `wrapQtAppsHook`) | Dev / packaging | Primary development environment on Linux. Not required to build the app; **CMake** is the portable entry point. |
 | **Icon theme names** (`QIcon::fromTheme`, names like `document-open`) | Soft | Common on Linux. On Windows, code already falls back to `QStyle::SP_*` and bundled icons (`src/icons.cpp`). UI may look plainer without a FreeDesktop icon theme unless icons are shipped. |
-| **Optional native libraries via pkg-config** (libvips, exiv2, libarchive) | Soft | CMake enables them when found (`QIMGVIEW_HAVE_VIPS`, `QIMGVIEW_HAVE_EXIV2`, `QIMGVIEW_HAVE_ARCHIVE`). Without them, Qt image codecs still work; archive-in-session and extra formats/metadata degrade gracefully. On Windows use vcpkg, MSYS2, or ship without the optionals. |
+| **Optional native libraries via pkg-config** (libvips, exiv2, libarchive) | Soft | CMake enables them when found (`BILTOO_HAVE_VIPS`, `BILTOO_HAVE_EXIV2`, `BILTOO_HAVE_ARCHIVE`). Without them, Qt image codecs still work; archive-in-session and extra formats/metadata degrade gracefully. On Windows use vcpkg, MSYS2, or ship without the optionals. |
 | **Path examples / tests** | Cosmetic | Docs and some tests use Unix-style paths (`/tmp/...`). Runtime I/O goes through Qt (`QFile`, `QUrl::fromLocalFile`). Archive member refs use a `//archive:` marker with forward slashes — keep that convention on Windows rather than mixing backslashes into the ref syntax. |
 
 ## Portable core
@@ -43,7 +43,7 @@ current Nix flake is not.
 
 - MSVC or MinGW + Qt 6 + CMake.
 - Optional deps via vcpkg or MSYS2 if desired.
-- GIO remains off (`QIMGVIEW_HAVE_GIO` unset).
+- GIO remains off (`BILTOO_HAVE_GIO` unset).
 
 ### 2. Linux → Windows cross-compile
 

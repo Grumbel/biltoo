@@ -1,7 +1,7 @@
-# QImgView full audit
+# Biltoo full audit
 
 **Date:** 2026-08-30  
-**Tree tip:** `1f264d1` (HUD index bold) + stacked bundles through `qimgview-015`  
+**Tree tip:** `1f264d1` (HUD index bold) + stacked bundles through `biltoo-015`  
 **Scope:** All project sources, headers, build, packaging, DOMAIN/TODO/AGENTS, desktop entry. **No code changes in this pass** — findings only.
 
 ---
@@ -24,7 +24,7 @@
 | P11 | Docs consistency (TODO, DOMAIN, AGENTS, README) | [x] |
 | P12 | Consolidate findings by severity | [x] |
 
-**Method:** Read every `.cpp`/`.h` under `src/`, project markdown, `CMakeLists.txt`, `default.nix`/`flake.nix`, `data/qimgview.desktop`. No runtime/Qt build in this environment — crash/race notes are static analysis.
+**Method:** Read every `.cpp`/`.h` under `src/`, project markdown, `CMakeLists.txt`, `default.nix`/`flake.nix`, `data/biltoo.desktop`. No runtime/Qt build in this environment — crash/race notes are static analysis.
 
 ---
 
@@ -36,7 +36,7 @@
 | Largest units | `imageview_input.cpp` (~1173), `imageitem_interaction.cpp` (~1118), `mainwindow.cpp` (~1116), `imageview.cpp` (~1090), `thumbnailbar.cpp` (~914) |
 | License | GPL-3.0-or-later; SPDX headers on sources; REUSE + `.reuse/dep5` |
 | Build | CMake + optional VIPS/GIO; Nix flake + `default.nix` |
-| Resources | `src/icons.qrc`, `data/icons/`, `data/qimgview.desktop` |
+| Resources | `src/icons.qrc`, `data/icons/`, `data/biltoo.desktop` |
 
 ---
 
@@ -80,7 +80,7 @@
 | L3 | GNOME 2 HIG — feedback | Destructive session replace on drop has **no confirmation**. Delete from session/thumbs should confirm or be undoable (session remove stops slideshow but undo?). |
 | L4 | Accessibility | `accessibleName`/`Description` on image view and thumbs — good start. **Chrome handles are painted, not accessible widgets** — no AT-API roles for scale/rotate. Keyboard path for raise/lower exists (shortcuts); handle-level keyboard missing. |
 | L5 | Focus | Gallery spatial arrows and Image edge zones — **focus must remain on ImageView** after mode change; verify after `showPathInImageMode`. |
-| L6 | Desktop file | `qimgview.desktop` present; MIME list must stay in sync with `DefaultApps::supportedMimeTypes()` (comment says so). **Suffix list in ImageLoader is wider than desktop MIME** (psd, exr, …) — files openable in-app but not registered as handler. |
+| L6 | Desktop file | `biltoo.desktop` present; MIME list must stay in sync with `DefaultApps::supportedMimeTypes()` (comment says so). **Suffix list in ImageLoader is wider than desktop MIME** (psd, exr, …) — files openable in-app but not registered as handler. |
 | L7 | Icons | Theme icons with style fallbacks in `icons.cpp` — good. Embedded SVG fallback for app icon. |
 | L8 | i18n | User-visible strings generally wrapped in `tr()`. **CLI help strings in `main.cpp` are not translated** (QStringLiteral). |
 | L9 | Error paths | Failed decode: HUD/error string path exists (`m_lastLoadError`). **User-facing dialog on unreadable file** may be weak (status only). |
@@ -131,7 +131,7 @@
 | `src/icons.cpp` / `.h` | [x] | Theme fallbacks |
 | `CMakeLists.txt` | [x] | Qt6, optional VIPS/GIO |
 | `default.nix` / `flake.nix` | [x] | RelWithDebInfo + separateDebugInfo |
-| `data/qimgview.desktop` | [x] | MIME vs loader gap (L6) |
+| `data/biltoo.desktop` | [x] | MIME vs loader gap (L6) |
 | `DOMAIN.md` | [x] | Slideshow/Gallery drift (H1) |
 | `TODO.md` | [x] | Stale interaction rows (M14) |
 | `AGENTS.md` | [x] | Chrome rules — still valid |
@@ -475,7 +475,7 @@ Combined with **H6** (user rotation wiped on navigate): camera orientation is ap
 
 ### E6 — MIME / defaults
 
-- `DefaultApps::supportedMimeTypes()` and `qimgview.desktop` kept in sync by comment discipline.
+- `DefaultApps::supportedMimeTypes()` and `biltoo.desktop` kept in sync by comment discipline.
 - `ImageLoader::imageSuffixes()` is **strictly wider** (psd, exr, fits, …).
 
 | ID | Severity | Issue |
@@ -489,12 +489,12 @@ Combined with **H6** (user rotation wiped on navigate): camera orientation is ap
 
 | Topic | Notes |
 |-------|--------|
-| CMake | Optional VIPS/GIO/Exiv2; defines `QIMGVIEW_HAVE_*` |
+| CMake | Optional VIPS/GIO/Exiv2; defines `BILTOO_HAVE_*` |
 | Nix | RelWithDebInfo + `separateDebugInfo` — good for field debug |
 | Version | `VERSION` + flake dirty/rev composition |
-| Desktop | `StartupWMClass` / icon name should match binary — verify against installed name `qimgview` |
+| Desktop | `StartupWMClass` / icon name should match binary — verify against installed name `biltoo` |
 
-No packaging blocker found in static read; install path of `qimgview.desktop` and icon sizes not fully traced file-by-file in this pass.
+No packaging blocker found in static read; install path of `biltoo.desktop` and icon sizes not fully traced file-by-file in this pass.
 
 ---
 
@@ -683,7 +683,7 @@ Lifetime/UAF and undo safety reviewed. Highest new issues: **H8** dangling `m_ha
 CMake installs:
 
 - binary → `bin`
-- `qimgview.desktop` → `applications`
+- `biltoo.desktop` → `applications`
 - scalable app SVG → `icons/hicolor/scalable/apps`
 
 | ID | Severity | Issue |
@@ -734,7 +734,7 @@ Present: File, Edit (incl. Preferences), View, Go, Help (About only).
 
 - Rich set of action SVGs in `data/icons/actions` + qrc.
 - `themeIcon()` with style pixmap fallbacks.
-- App icon theme name `qimgview` + embedded SVG.
+- App icon theme name `biltoo` + embedded SVG.
 
 | ID | Severity | Issue |
 |----|----------|--------|
@@ -958,11 +958,11 @@ Gallery pack and workspace identity reviewed. Master priority list unchanged. St
 
 | M26 | Fixed | statusBar message on empty open/add and failed decode |
 | M27 | Fixed | LoadRestore uses pending state queue — duplicate paths restore |
-| M23 | Fixed | data/qimgview.metainfo.xml + CMake install to metainfo |
+| M23 | Fixed | data/biltoo.metainfo.xml + CMake install to metainfo |
 
 | M19 | Fixed | Thumbnail bar always starts file-drag after drag distance |
 | L27 | Fixed | Help → Keyboard Shortcuts (F1) |
-| M24 | Partial | CMake ctest smoke: qimgview --help |
+| M24 | Partial | CMake ctest smoke: biltoo --help |
 
 | M25 | Scaffolded | QTranslator load paths; CLI translate("main"); translations/README |
 | L22 | Fixed | Colour readout shows alpha when < 255 |

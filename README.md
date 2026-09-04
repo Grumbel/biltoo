@@ -1,6 +1,6 @@
-# QImgView
+# Biltoo
 
-**QImgView** is a classic Qt 6 desktop image viewer with three modes on one canvas:
+**Biltoo** is a classic Qt 6 desktop image viewer with three modes on one canvas:
 
 | Mode | Purpose |
 |------|---------|
@@ -8,7 +8,7 @@
 | **Gallery** | See the whole session in packaged layouts (strip, grid, masonry, …) |
 | **Workspace** | Arrange several images freely for comparison, markup framing, and export |
 
-![QImgView main window](screenshot.png)
+![Biltoo main window](screenshot.png)
 
 ## Features
 
@@ -61,7 +61,7 @@
 
 ### Projects
 
-- **Open/Save Project** (`.qimgview`): session ids, appearance, Workspace poses, SHA-256 content addressing for external files
+- **Open/Save Project** (`.biltoo`): session ids, appearance, Workspace poses, SHA-256 content addressing for external files
 
 ## Keyboard shortcuts
 
@@ -84,7 +84,7 @@ Press **F1** in the app for the full list. Highlights:
 ## Command line
 
 ```bash
-qimgview [options] [files-or-directories…]
+biltoo [options] [files-or-directories…]
 ```
 
 | Option | Description |
@@ -110,18 +110,18 @@ Installed files (CMake / Nix):
 
 | File | Location |
 |------|----------|
-| `qimgview.desktop` | `$prefix/share/applications/` |
-| `qimgview.metainfo.xml` | `$prefix/share/metainfo/` (AppStream) |
-| `qimgview.svg` | `$prefix/share/icons/hicolor/scalable/apps/` |
+| `biltoo.desktop` | `$prefix/share/applications/` |
+| `biltoo.metainfo.xml` | `$prefix/share/metainfo/` (AppStream) |
+| `biltoo.svg` | `$prefix/share/icons/hicolor/scalable/apps/` |
 
-The `.desktop` entry registers common image MIME types and popular archive types so file managers can open them with QImgView.
+The `.desktop` entry registers common image MIME types and popular archive types so file managers can open them with Biltoo.
 
 ## Build / install
 
 ### Nix
 
 ```bash
-nix run github:Grumbel/qimgview
+nix run github:Grumbel/biltoo
 # from a checkout:
 nix develop    # shell
 nix build      # package
@@ -135,10 +135,10 @@ mkdir build && cd build
 cmake ..
 cmake --build .
 cmake --install .   # optional; installs binary, desktop, metainfo, icon
-./qimgview
+./biltoo
 ```
 
-Optional libraries (vips, exiv2, libarchive, …) are detected when present. CMake tests include `qimgview --help` and project-file round-trip unit tests.
+Optional libraries (vips, exiv2, libarchive, …) are detected when present. CMake tests include `biltoo --help` and project-file round-trip unit tests.
 
 ## License
 
@@ -146,7 +146,7 @@ GPL-3.0-or-later. See [LICENSES](LICENSES) and [REUSE.md](REUSE.md).
 
 ## Links
 
-- GitHub: <https://github.com/Grumbel/qimgview>
+- GitHub: <https://github.com/Grumbel/biltoo>
 - Radicle: [`rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a`](https://radicle.network/nodes/rosa.radicle.network/rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a)
 
 ## Developer docs

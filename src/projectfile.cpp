@@ -195,7 +195,7 @@ WorkspaceItemState appearanceFromJson(const QJsonObject &o)
 bool save(const QString &projectPath, const ProjectDocument &doc, QString *error)
 {
     QJsonObject root;
-    root.insert(QStringLiteral("format"), QStringLiteral("qimgview-project"));
+    root.insert(QStringLiteral("format"), QStringLiteral("biltoo-project"));
     root.insert(QStringLiteral("version"), doc.version > 0 ? doc.version : 1);
     if (!doc.mode.isEmpty()) {
         root.insert(QStringLiteral("mode"), doc.mode);
@@ -309,9 +309,9 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error)
         return false;
     }
     const QJsonObject root = jd.object();
-    if (root.value(QStringLiteral("format")).toString() != QLatin1String("qimgview-project")) {
+    if (root.value(QStringLiteral("format")).toString() != QLatin1String("biltoo-project")) {
         if (error) {
-            *error = QObject::tr("Not a qimgview project file.");
+            *error = QObject::tr("Not a biltoo project file.");
         }
         return false;
     }

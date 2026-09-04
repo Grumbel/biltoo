@@ -1,4 +1,4 @@
-# QImgView domain model
+# Biltoo domain model
 
 A language-level description of the program: entities, modes, and operations.
 Independent of Qt, widgets, and file I/O. Implementation must serve this model;
@@ -97,7 +97,7 @@ diverge from it.
 
 ### Persistence and export (non-destructive)
 
-- **Project file** (`.qimgview`): ordered session images (stable ids), content
+- **Project file** (`.biltoo`): ordered session images (stable ids), content
   appearance (including session crop rect, **cropRotation**, content flips /
   quarter turns), optional Workspace free-form poses, asset list with SHA-256.
   Does not write into source image files.

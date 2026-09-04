@@ -1,5 +1,5 @@
 {
-  description = "QImgView — classic Qt image viewer (Image, Gallery, Workspace)";
+  description = "Biltoo — classic Qt image viewer (Image, Gallery, Workspace)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -19,40 +19,40 @@
         else
           versionBase;
 
-      qimgview = pkgs.qt6Packages.callPackage ./default.nix {
+      biltoo = pkgs.qt6Packages.callPackage ./default.nix {
         inherit version;
         kimageformats = pkgs.kdePackages.kimageformats;
       };
     in
     {
       packages.${system} = {
-        default = qimgview;
-        qimgview = qimgview;
+        default = biltoo;
+        biltoo = biltoo;
         # Separate debug output from the package (ELF debuginfo under lib/debug).
         #   nix build .#debug
         #   gdb -ex "set debug-file-directory $(nix build --no-link --print-out-paths .#debug)/lib/debug" \
-        #       $(nix build --no-link --print-out-paths)/bin/qimgview
-        debug = qimgview.debug;
+        #       $(nix build --no-link --print-out-paths)/bin/biltoo
+        debug = biltoo.debug;
       };
 
       apps.${system}.default = {
         type = "app";
-        program = "${qimgview}/bin/qimgview";
+        program = "${biltoo}/bin/biltoo";
         meta = {
-          description = "QImgView — classic Qt image viewer (Image, Gallery, Workspace)";
+          description = "Biltoo — classic Qt image viewer (Image, Gallery, Workspace)";
         };
       };
 
       # `nix flake check` builds the package and runs CMake tests
-      # (projectfile-roundtrip + qimgview --help; see default.nix doCheck).
+      # (projectfile-roundtrip + biltoo --help; see default.nix doCheck).
       checks.${system} = {
-        qimgview = qimgview;
+        biltoo = biltoo;
       };
 
       # Local cmake builds default to Debug. nix build still uses RelWithDebInfo
       # with separateDebugInfo (see default.nix).
       devShells.${system}.default = pkgs.mkShell {
-        inputsFrom = [ qimgview ];
+        inputsFrom = [ biltoo ];
         packages = with pkgs; [
           cmake
           gdb
@@ -60,7 +60,7 @@
         ];
         CMAKE_BUILD_TYPE = "Debug";
         shellHook = ''
-          echo "qimgview: CMAKE_BUILD_TYPE=Debug for in-tree cmake builds."
+          echo "biltoo: CMAKE_BUILD_TYPE=Debug for in-tree cmake builds."
           echo "  nix build            → RelWithDebInfo binary (stripped)"
           echo "  nix build .#debug    → matching debug symbols"
         '';

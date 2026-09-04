@@ -12,7 +12,7 @@
 #include <QVector>
 
 /**
- * On-disk project (.qimgview): JSON session + non-destructive appearance and
+ * On-disk project (.biltoo): JSON session + non-destructive appearance and
  * optional Workspace free-form poses. External images are referenced by path
  * and SHA-256 content address so relocated files can be recovered.
  *

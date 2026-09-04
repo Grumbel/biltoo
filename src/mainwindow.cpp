@@ -8,7 +8,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle(tr("QImgView"));
+    setWindowTitle(tr("Biltoo"));
     setWindowIcon(QApplication::windowIcon());
     resize(1024, 768);
     setAcceptDrops(true);
@@ -994,9 +994,9 @@ void MainWindow::showKeyboardShortcuts()
 void MainWindow::about()
 {
     QMessageBox box(this);
-    box.setWindowTitle(tr("About QImgView"));
+    box.setWindowTitle(tr("About Biltoo"));
     box.setIconPixmap(QApplication::windowIcon().pixmap(64, 64));
-    box.setText(tr("<h3>QImgView %1</h3>").arg(QApplication::applicationVersion()));
+    box.setText(tr("<h3>Biltoo %1</h3>").arg(QApplication::applicationVersion()));
     box.setInformativeText(
         tr("<p>A classic image viewer with Gallery overview and a free-form "
            "Workspace for comparing images.</p>"
@@ -1158,9 +1158,9 @@ void MainWindow::updateWindowTitle()
     if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
         const QString name = ArchivePath::displayName(m_session.paths().at(m_currentIndex));
         // GNOME-style: document name first, then app
-        setWindowTitle(tr("%1 — QImgView").arg(name));
+        setWindowTitle(tr("%1 — Biltoo").arg(name));
     } else {
-        setWindowTitle(tr("QImgView"));
+        setWindowTitle(tr("Biltoo"));
     }
 }
 
@@ -1938,7 +1938,7 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
     if (!event->mimeData()) {
         return;
     }
-    if (event->mimeData()->hasFormat(QStringLiteral("application/x-qimgview-paths"))
+    if (event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-paths"))
         || !extractLocalImagePaths(event->mimeData()).isEmpty()) {
         event->acceptProposedAction();
     }
@@ -2103,14 +2103,14 @@ void MainWindow::dropEvent(QDropEvent *event)
         return;
     }
     const QByteArray pathBytes =
-        event->mimeData()->data(QStringLiteral("application/x-qimgview-paths"));
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-paths"));
     const bool hasInternal = !pathBytes.isEmpty();
     if (!event->mimeData()->hasUrls() && !hasInternal) {
         return;
     }
     QList<qint64> sessionIds;
     const QByteArray idBytes =
-        event->mimeData()->data(QStringLiteral("application/x-qimgview-session-ids"));
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-session-ids"));
     if (!idBytes.isEmpty()) {
         for (const QByteArray &tok : idBytes.split(',')) {
             bool ok = false;

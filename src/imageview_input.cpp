@@ -98,7 +98,7 @@ void ImageView::dragEnterEvent(QDragEnterEvent *event)
 {
     if (event->mimeData()
         && (event->mimeData()->hasUrls()
-            || event->mimeData()->hasFormat(QStringLiteral("application/x-qimgview-paths")))) {
+            || event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-paths")))) {
         event->acceptProposedAction();
     } else {
         event->ignore();
@@ -109,7 +109,7 @@ void ImageView::dragMoveEvent(QDragMoveEvent *event)
 {
     if (event->mimeData()
         && (event->mimeData()->hasUrls()
-            || event->mimeData()->hasFormat(QStringLiteral("application/x-qimgview-paths")))) {
+            || event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-paths")))) {
         event->acceptProposedAction();
     } else {
         event->ignore();
@@ -123,7 +123,7 @@ void ImageView::dropEvent(QDropEvent *event)
         return;
     }
     const QByteArray pathBytes =
-        event->mimeData()->data(QStringLiteral("application/x-qimgview-paths"));
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-paths"));
     const bool hasInternal = !pathBytes.isEmpty();
     if (!event->mimeData()->hasUrls() && !hasInternal) {
         event->ignore();
@@ -132,7 +132,7 @@ void ImageView::dropEvent(QDropEvent *event)
     const QPointF scenePos = mapToScene(event->position().toPoint());
     QList<qint64> sessionIds;
     const QByteArray idBytes =
-        event->mimeData()->data(QStringLiteral("application/x-qimgview-session-ids"));
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-session-ids"));
     if (!idBytes.isEmpty()) {
         for (const QByteArray &tok : idBytes.split(',')) {
             bool ok = false;

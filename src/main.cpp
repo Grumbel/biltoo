@@ -22,20 +22,20 @@ int main(int argc, char *argv[])
     ImageLoader::init(argv[0]);
 
     QApplication app(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("qimgview"));
-    QApplication::setApplicationDisplayName(QStringLiteral("QImgView"));
-#ifndef QIMGVIEW_VERSION
-#  define QIMGVIEW_VERSION "0.0.0"
+    QApplication::setApplicationName(QStringLiteral("biltoo"));
+    QApplication::setApplicationDisplayName(QStringLiteral("Biltoo"));
+#ifndef BILTOO_VERSION
+#  define BILTOO_VERSION "0.0.0"
 #endif
-    QApplication::setApplicationVersion(QStringLiteral(QIMGVIEW_VERSION));
-    QApplication::setOrganizationName(QStringLiteral("QImgView"));
-    QApplication::setOrganizationDomain(QStringLiteral("qimgview.local"));
-    QGuiApplication::setDesktopFileName(QStringLiteral("qimgview"));
+    QApplication::setApplicationVersion(QStringLiteral(BILTOO_VERSION));
+    QApplication::setOrganizationName(QStringLiteral("Biltoo"));
+    QApplication::setOrganizationDomain(QStringLiteral("biltoo.local"));
+    QGuiApplication::setDesktopFileName(QStringLiteral("biltoo"));
 
     // Prefer the installed theme icon; fall back to the embedded SVG.
-    QIcon appIcon = QIcon::fromTheme(QStringLiteral("qimgview"));
+    QIcon appIcon = QIcon::fromTheme(QStringLiteral("biltoo"));
     if (appIcon.isNull()) {
-        appIcon = QIcon(QStringLiteral(":/icons/qimgview.svg"));
+        appIcon = QIcon(QStringLiteral(":/icons/biltoo.svg"));
     }
     QApplication::setWindowIcon(appIcon);
 
@@ -49,11 +49,11 @@ int main(int argc, char *argv[])
     const QStringList appTrPaths = {
         QStringLiteral(":/i18n"),
         QCoreApplication::applicationDirPath() + QStringLiteral("/translations"),
-        QStringLiteral("%1/qimgview/translations")
+        QStringLiteral("%1/biltoo/translations")
             .arg(QLibraryInfo::path(QLibraryInfo::PrefixPath) + QStringLiteral("/share")),
     };
     for (const QString &dir : appTrPaths) {
-        if (appTranslator.load(QLocale(), QStringLiteral("qimgview"), QStringLiteral("_"), dir)) {
+        if (appTranslator.load(QLocale(), QStringLiteral("biltoo"), QStringLiteral("_"), dir)) {
             app.installTranslator(&appTranslator);
             break;
         }
@@ -62,13 +62,13 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
     parser.setApplicationDescription(
         QCoreApplication::translate("main",
-            "QImgView — Image, Gallery, and Workspace image viewer"));
+            "Biltoo — Image, Gallery, and Workspace image viewer"));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addPositionalArgument(
         QStringLiteral("files"),
         QCoreApplication::translate("main",
-            "Image files, directories, or a .qimgview project to open"),
+            "Image files, directories, or a .biltoo project to open"),
         QStringLiteral("[file|dir|project...]"));
 
     // --- Input / session ---
@@ -198,12 +198,12 @@ int main(int argc, char *argv[])
     }
 
     if (!files.isEmpty()) {
-        // .qimgview projects are not images — open via project load, not expandPaths.
+        // .biltoo projects are not images — open via project load, not expandPaths.
         QStringList projectArgs;
         QStringList otherArgs;
         for (const QString &arg : files) {
             const QFileInfo fi(arg);
-            if (fi.suffix().compare(QLatin1String("qimgview"), Qt::CaseInsensitive) == 0) {
+            if (fi.suffix().compare(QLatin1String("biltoo"), Qt::CaseInsensitive) == 0) {
                 projectArgs.append(arg);
             } else {
                 otherArgs.append(arg);

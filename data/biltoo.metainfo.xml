@@ -4,8 +4,8 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <component type="desktop-application">
-  <id>qimgview.desktop</id>
-  <name>QImgView</name>
+  <id>biltoo.desktop</id>
+  <name>Biltoo</name>
   <summary>Classic image viewer with Gallery and free-form Workspace</summary>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
@@ -14,7 +14,7 @@
   </developer>
   <description>
     <p>
-      QImgView is a Qt 6 image viewer built around one canvas and three modes:
+      Biltoo is a Qt 6 image viewer built around one canvas and three modes:
       classic single-image browsing, a session Gallery with packaged layouts,
       and a free-form Workspace for comparing and arranging multiple images.
     </p>
@@ -30,11 +30,11 @@
       slide projector). Fullscreen hides chrome and restores it on exit.
     </p>
   </description>
-  <url type="homepage">https://github.com/Grumbel/qimgview</url>
-  <url type="bugtracker">https://github.com/Grumbel/qimgview/issues</url>
-  <launchable type="desktop-id">qimgview.desktop</launchable>
+  <url type="homepage">https://github.com/Grumbel/biltoo</url>
+  <url type="bugtracker">https://github.com/Grumbel/biltoo/issues</url>
+  <launchable type="desktop-id">biltoo.desktop</launchable>
   <provides>
-    <binary>qimgview</binary>
+    <binary>biltoo</binary>
   </provides>
   <categories>
     <category>Graphics</category>
@@ -52,8 +52,8 @@
   </keywords>
   <screenshots>
     <screenshot type="default">
-      <caption>QImgView main window</caption>
-      <image>https://raw.githubusercontent.com/Grumbel/qimgview/master/screenshot.png</image>
+      <caption>Biltoo main window</caption>
+      <image>https://raw.githubusercontent.com/Grumbel/biltoo/master/screenshot.png</image>
     </screenshot>
   </screenshots>
   <releases>

@@ -485,7 +485,7 @@ appearance map / canvas bind that could still hold old ids.
 
 **Done (do not regress):**
 - Appearance store `m_appearance` keyed by SessionImageId for bound tiles
-- Filmstrip `RoleSessionId` + mime `application/x-qimgview-session-ids`
+- Filmstrip `RoleSessionId` + mime `application/x-biltoo-session-ids`
 - Drop / place prefer session id; drop-duplicate allocates a new id
 - Peer crop sync by SessionImageId only (never path)
 - Uniqueness checks within live / stash lists

@@ -1,6 +1,6 @@
 # Licensing (REUSE)
 
-QImgView follows the [REUSE specification](https://reuse.software/).
+Biltoo follows the [REUSE specification](https://reuse.software/).
 
 ## Project license
 

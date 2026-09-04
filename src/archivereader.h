@@ -10,7 +10,7 @@
 
 /**
  * In-memory archive access via libarchive (no extraction to disk).
- * Available only when built with QIMGVIEW_HAVE_ARCHIVE.
+ * Available only when built with BILTOO_HAVE_ARCHIVE.
  */
 namespace ArchiveReader {
 

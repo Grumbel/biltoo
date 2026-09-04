@@ -259,7 +259,7 @@ void ProjectFileRoundTripTest::project_saveLoad_semantic()
 
     ProjectAsset asset;
     asset.sha256 = QStringLiteral("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
-    asset.path = QStringLiteral("/tmp/qimgview-test/photo.jpg");
+    asset.path = QStringLiteral("/tmp/biltoo-test/photo.jpg");
     asset.pathRelative = QStringLiteral("photo.jpg");
     doc.assets.append(asset);
 
@@ -292,7 +292,7 @@ void ProjectFileRoundTripTest::project_saveLoad_semantic()
 
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
-    const QString path = dir.filePath(QStringLiteral("roundtrip.qimgview"));
+    const QString path = dir.filePath(QStringLiteral("roundtrip.biltoo"));
 
     QString err;
     QVERIFY2(ProjectFile::save(path, doc, &err), qPrintable(err));
@@ -316,7 +316,7 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
 
     ProjectAsset asset;
     asset.sha256 = QStringLiteral("fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210");
-    asset.path = QStringLiteral("/tmp/qimgview-test/graded.png");
+    asset.path = QStringLiteral("/tmp/biltoo-test/graded.png");
     asset.pathRelative = QStringLiteral("graded.png");
     doc.assets.append(asset);
 
@@ -361,14 +361,14 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
     doc.workspaceBackground.mode = WorkspaceBackgroundMode::Checkerboard;
     doc.workspaceBackground.color = QColor(30, 40, 50);
     doc.workspaceBackground.colorAlt = QColor(60, 70, 80);
-    doc.workspaceBackground.imagePath = QStringLiteral("/tmp/qimgview-test/tile.png");
+    doc.workspaceBackground.imagePath = QStringLiteral("/tmp/biltoo-test/tile.png");
     doc.workspaceBackground.imagePathRelative = QStringLiteral("tile.png");
     doc.workspaceBackground.imageSha256 =
         QStringLiteral("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
 
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
-    const QString path = dir.filePath(QStringLiteral("color-bg.qimgview"));
+    const QString path = dir.filePath(QStringLiteral("color-bg.biltoo"));
 
     QString err;
     QVERIFY2(ProjectFile::save(path, doc, &err), qPrintable(err));
@@ -392,7 +392,7 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
     QCOMPARE(loaded.workspaceBackground.mode, WorkspaceBackgroundMode::Checkerboard);
     QCOMPARE(loaded.workspaceBackground.color, QColor(30, 40, 50));
     QCOMPARE(loaded.workspaceBackground.colorAlt, QColor(60, 70, 80));
-    QCOMPARE(loaded.workspaceBackground.imagePath, QStringLiteral("/tmp/qimgview-test/tile.png"));
+    QCOMPARE(loaded.workspaceBackground.imagePath, QStringLiteral("/tmp/biltoo-test/tile.png"));
     QCOMPARE(loaded.workspaceBackground.imagePathRelative, QStringLiteral("tile.png"));
     QCOMPARE(loaded.workspaceBackground.imageSha256,
              QStringLiteral("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
@@ -404,7 +404,7 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
     solidDoc.workspaceBackground.imagePath.clear();
     solidDoc.workspaceBackground.imagePathRelative.clear();
     solidDoc.workspaceBackground.imageSha256.clear();
-    const QString solidPath = dir.filePath(QStringLiteral("solid-bg.qimgview"));
+    const QString solidPath = dir.filePath(QStringLiteral("solid-bg.biltoo"));
     QVERIFY2(ProjectFile::save(solidPath, solidDoc, &err), qPrintable(err));
     ProjectDocument solidLoaded;
     QVERIFY2(ProjectFile::load(solidPath, &solidLoaded, &err), qPrintable(err));
@@ -418,7 +418,7 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
     defaultDoc.mode = QStringLiteral("workspace");
     defaultDoc.hasWorkspaceBackground = false;
     defaultDoc.workspaceBackground = WorkspaceBackground{};
-    const QString defaultPath = dir.filePath(QStringLiteral("default-bg.qimgview"));
+    const QString defaultPath = dir.filePath(QStringLiteral("default-bg.biltoo"));
     QVERIFY2(ProjectFile::save(defaultPath, defaultDoc, &err), qPrintable(err));
     ProjectDocument defaultLoaded;
     QVERIFY2(ProjectFile::load(defaultPath, &defaultLoaded, &err), qPrintable(err));
@@ -452,8 +452,8 @@ void ProjectFileRoundTripTest::project_saveLoadSave_jsonStable()
 
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
-    const QString p1 = dir.filePath(QStringLiteral("a.qimgview"));
-    const QString p2 = dir.filePath(QStringLiteral("b.qimgview"));
+    const QString p1 = dir.filePath(QStringLiteral("a.biltoo"));
+    const QString p2 = dir.filePath(QStringLiteral("b.biltoo"));
 
     QString err;
     QVERIFY(ProjectFile::save(p1, doc, &err));
@@ -476,7 +476,7 @@ void ProjectFileRoundTripTest::project_emptyMinimal()
     doc.version = 1;
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
-    const QString path = dir.filePath(QStringLiteral("empty.qimgview"));
+    const QString path = dir.filePath(QStringLiteral("empty.biltoo"));
     QString err;
     QVERIFY(ProjectFile::save(path, doc, &err));
     ProjectDocument loaded;

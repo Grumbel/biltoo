@@ -1,8 +1,8 @@
-# QImgView TODO
+# Biltoo TODO
 
 ## Core Vision
 
-QImgView is a classic Qt image viewer with three presentation modes on one canvas:
+Biltoo is a classic Qt image viewer with three presentation modes on one canvas:
 
 - **Image** — single-image browsing (zoom, pan, edge nav, slideshow)
 - **Gallery** — session overview with packaged layouts (not free-form editing)
@@ -65,7 +65,7 @@ and/or a derived image). Prefer lossless paths where the format allows
 
 - [ ] Edit stack per path (ordered ops); undo/redo within the stack
 - [ ] Sidecar or XMP-style persistence so originals stay intact until export
-- [x] Project **Save** / **Open** (`.qimgview`) — session + appearance + poses
+- [x] Project **Save** / **Open** (`.biltoo`) — session + appearance + poses
 - [x] **Export PNG** (content or page guide, chosen width)
 - [ ] Explicit per-file Save / Export overwrite vs derived file vs sidecar-only
 - [ ] Preview in Image mode; optional badges in Gallery for “has edits”
@@ -117,7 +117,7 @@ and/or a derived image). Prefer lossless paths where the format allows
 
 Layers, masks, healing/clone, perspective warp, curves/levels full UI, raw
 develop, plugins marketplace, multi-page PDF editing. Those belong in a real
-editor; QImgView stays a **viewer with quick fixes**.
+editor; Biltoo stays a **viewer with quick fixes**.
 
 ## Done (recent)
 
@@ -155,7 +155,7 @@ editor; QImgView stays a **viewer with quick fixes**.
 - [x] M23 AppStream metainfo
 - [x] M19 Thumbnail file-drag in Workspace (no Alt required)
 - [x] L27 Help → Keyboard Shortcuts (F1)
-- [x] M24 CMake smoke test (`qimgview --help`)
+- [x] M24 CMake smoke test (`biltoo --help`)
 - [x] M25 i18n scaffolding (translator load + CLI tr + translations/README)
 - [x] L22 Status colour shows alpha when present
 
@@ -234,7 +234,7 @@ editor; QImgView stays a **viewer with quick fixes**.
 
 
 
-## Workspace project files (`.qimgview`)
+## Workspace project files (`.biltoo`)
 
 Workspace is an **ad-hoc** “put pictures next to each other” canvas — not a
 print-paper document. The page guide is optional chrome for print/PDF, not the
@@ -242,7 +242,7 @@ default frame of meaning.
 
 ### Goals
 
-- [x] **Load / Save project** (File → Open/Save Project) — `.qimgview` JSON
+- [x] **Load / Save project** (File → Open/Save Project) — `.biltoo` JSON
 - [x] **Non-destructive** — project stores session appearance + optional free-form
   poses; never writes into source image files or source directories by default
 - [x] **Content addressing** — each referenced file records **SHA-256**; load
@@ -255,7 +255,7 @@ default frame of meaning.
 
 ```json
 {
-  "format": "qimgview-project",
+  "format": "biltoo-project",
   "version": 1,
   "mode": "workspace",
   "assets": [
@@ -384,7 +384,7 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
 
 - [x] **Workspace Copy / Cut / Paste**  
   Ctrl+C/X/V and Workspace menu + context menu. Clipboard MIME
-  `application/x-qimgview-workspace-items` (JSON via project appearance serde + path).
+  `application/x-biltoo-workspace-items` (JSON via project appearance serde + path).
   Copy captures path + content + pose; Cut = copy + canvas-only remove (session
   kept, same as Delete); Paste allocates new SessionImageIds, offsets pose by
   (40,40), sets appearance store, places via `addImageForSession` / LoadAdd.
@@ -428,7 +428,7 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
   Path syntax: `file:///path/to/archive.tar//archive:member/path.jpg`  
   (one level only). Opening a `.zip`/`.tar*`/etc expands to member refs.  
   Decode via libarchive → QByteArray → QImageReader; no disk extraction.  
-  Requires libarchive at build time (`QIMGVIEW_HAVE_ARCHIVE`).
+  Requires libarchive at build time (`BILTOO_HAVE_ARCHIVE`).
 
 - [x] **Archive follow-ups**  
   HUD/title/thumbnail labels use `ArchivePath::displayName`.  
@@ -442,7 +442,7 @@ See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md
 
 ---
 
-## Handoff (2026-09-03) — continue from tip / next bundle `qimgview-065-…`
+## Handoff (2026-09-03) — continue from tip / next bundle `biltoo-065-…`
 
 **Git tip after stacks:** `e40b67c` — *Document handoff…* (docs only)  
 **Code tip:** `85ac5d0` — *Fix LoadAdd creating extra tiles for already-bound session ids*  
@@ -454,20 +454,20 @@ Apply in order under `/home/workdir/artifacts/` (each is `git pull <bundle> HEAD
 
 | Bundle | Tip (approx) | Topic |
 |--------|--------------|--------|
-| `qimgview-040-colour-grade-persist` … `051-bg-json-refs-only` | | Grade persist, central appearance, clipboard, background JSON |
-| `qimgview-052-archive-images` | | libarchive in-memory + `//archive:` syntax |
-| `qimgview-053-archive-followups` | | displayName, dialog filter, project container hash |
-| `qimgview-054-fix-build-session` | | qualify `ProjectFile::appearanceFromJson` |
-| `qimgview-055-mark-dirty-public` | | `markWorkspaceDirty` public for undo cmds |
-| `qimgview-056-fix-archive-decode` | | full `archive_read_data` loop + content sniff |
-| `qimgview-057-archive-dialog-and-load-logs` | | default Open filter includes archives; qWarning on failures |
-| `qimgview-058-fix-history-archive-paths` | | history must not `cleanPath` archive refs |
-| `qimgview-059-archive-webp-decode` | | format hints + `vips_image_new_from_buffer` |
-| `qimgview-060-adjustments-opt-in` | | Adjustments dock default hidden |
-| `qimgview-061-icons-layout-prefs` | | coloured icons; layout on workspace bar; prefs chrome |
-| `qimgview-062-export-bg-two-buttons` | | PNG export paints workspace bg; two bg buttons |
-| `qimgview-063-fix-loadadd-bind` | `85ac5d0` | LoadAdd: no extra tiles for live session ids |
-| `qimgview-064-handoff-docs` | `e40b67c` | This handoff documentation |
+| `biltoo-040-colour-grade-persist` … `051-bg-json-refs-only` | | Grade persist, central appearance, clipboard, background JSON |
+| `biltoo-052-archive-images` | | libarchive in-memory + `//archive:` syntax |
+| `biltoo-053-archive-followups` | | displayName, dialog filter, project container hash |
+| `biltoo-054-fix-build-session` | | qualify `ProjectFile::appearanceFromJson` |
+| `biltoo-055-mark-dirty-public` | | `markWorkspaceDirty` public for undo cmds |
+| `biltoo-056-fix-archive-decode` | | full `archive_read_data` loop + content sniff |
+| `biltoo-057-archive-dialog-and-load-logs` | | default Open filter includes archives; qWarning on failures |
+| `biltoo-058-fix-history-archive-paths` | | history must not `cleanPath` archive refs |
+| `biltoo-059-archive-webp-decode` | | format hints + `vips_image_new_from_buffer` |
+| `biltoo-060-adjustments-opt-in` | | Adjustments dock default hidden |
+| `biltoo-061-icons-layout-prefs` | | coloured icons; layout on workspace bar; prefs chrome |
+| `biltoo-062-export-bg-two-buttons` | | PNG export paints workspace bg; two bg buttons |
+| `biltoo-063-fix-loadadd-bind` | `85ac5d0` | LoadAdd: no extra tiles for live session ids |
+| `biltoo-064-handoff-docs` | `e40b67c` | This handoff documentation |
 
 Author on all commits: `Ingo Ruhnke <grumbel@gmail.com>` with  
 `Co-authored-by: Grok <grok@x.ai>`. Bundles use **HEAD** as ref and stack cleanly.
@@ -497,7 +497,7 @@ Author on all commits: `Ingo Ruhnke <grumbel@gmail.com>` with
   Use `ArchivePath::canonicalSessionPath` / `parse` / `makeRef`.
 - One nesting level only. Expand archive → list of member refs in session.
 - Decode: libarchive full read → `ImageLoader::decodeFromBytes` (Qt format
-  candidates → sniff → libvips buffer). Build needs `QIMGVIEW_HAVE_ARCHIVE`
+  candidates → sniff → libvips buffer). Build needs `BILTOO_HAVE_ARCHIVE`
   (pkg-config `libarchive`). Runtime logs if missing.
 
 **Workspace background**
@@ -548,14 +548,14 @@ Author on all commits: `Ingo Ruhnke <grumbel@gmail.com>` with
 ### Agent workflow reminders
 
 - Document plans and progress in **TODO.md** (or linked notes) continuously.
-- Small task-focused commits; next bundle number is **065** (`qimgview-065-…`).
+- Small task-focused commits; next bundle number is **065** (`biltoo-065-…`).
 - Prefer shallow checkout + rsync into artifacts; writing artifacts is slow.
 - No feature rollback without discussion; no quick hacks — fix the model.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-065-…`
+## Plan / work (2026-09-03) — bundle `biltoo-065-…`
 
 **Task:** Verify Load/Save of cropping, workspace positions, colour grade, and
 related project state; strengthen unit tests; hook tests into `nix flake check`.
@@ -572,7 +572,7 @@ related project state; strengthen unit tests; hook tests into `nix flake check`.
      `workspaceBackground` (mode, colors, image path/relative/sha256).
   3. No dedicated slot that forces non-identity colour grade + non-default
      workspace background through full save → load → equality.
-  4. `nix flake check` only builds the package (`checks.qimgview = qimgview`);
+  4. `nix flake check` only builds the package (`checks.biltoo = biltoo`);
      the Qt Test executable is built only when `Qt6Test` is found at configure
      time and is **not** run as a flake check.
 
@@ -599,7 +599,7 @@ related project state; strengthen unit tests; hook tests into `nix flake check`.
 - Archive member + background-image file resolution on disk (unit test stays
   path/JSON only unless a tiny fixture is added later).
 
-### Done in this bundle (`qimgview-065-…`)
+### Done in this bundle (`biltoo-065-…`)
 
 - [x] `appearanceEqual` compares `ColorAdjustments` (brightness/contrast/sat/hue/gamma)
 - [x] `documentsEqual` compares project-owned `WorkspaceBackground`
@@ -610,14 +610,14 @@ related project state; strengthen unit tests; hook tests into `nix flake check`.
       `nix flake check` / package check runs `ctest` (projectfile-roundtrip + help)
 - [x] Local verification: all 8 Qt Test cases PASS under Qt 6.4.2
 
-**Next bundle:** `qimgview-066-…` — remaining known gaps (duplicate Image-mode crop
+**Next bundle:** `biltoo-066-…` — remaining known gaps (duplicate Image-mode crop
 sync, Grid Crop, archive regression pass, etc.).
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-066-…`
+## Plan / work (2026-09-03) — bundle `biltoo-066-…`
 
-**Bug:** `nix run . -- /tmp/test.qimgview` (or any CLI path ending in `.qimgview`)
+**Bug:** `nix run . -- /tmp/test.biltoo` (or any CLI path ending in `.biltoo`)
 did not load the project and showed no useful feedback.
 
 **Root cause:** `main` always called `MainWindow::loadFiles`, which runs
@@ -629,23 +629,23 @@ miss); no project-specific path.
 
 1. `MainWindow::openProjectFile(path)` — shared load + set `m_projectPath` +
    recent list + status (used by Open Project, Recent, CLI).
-2. CLI: split positional args into `.qimgview` vs other; open first project via
+2. CLI: split positional args into `.biltoo` vs other; open first project via
    `openProjectFile`; `qWarning` + status bar on failure; warn if multiple
    projects or mixed image args.
 3. Help text mentions projects.
 
-**Out of scope:** desktop MIME for `application/x-qimgview`; auto-reload of
+**Out of scope:** desktop MIME for `application/x-biltoo`; auto-reload of
 missing assets without dialogs in pure headless mode.
 
 ### Done
 
-- [x] CLI opens `.qimgview` via project load
+- [x] CLI opens `.biltoo` via project load
 - [x] Explicit error when file missing / load fails (stderr + status bar)
 - [x] Refactor Open Project / Recent to `openProjectFile`
 
 ---
 
-## Bundle `qimgview-068` — silence vips/fftw3 pkg-config noise
+## Bundle `biltoo-068` — silence vips/fftw3 pkg-config noise
 
 pkg-config prints “Package fftw3 was not found” several times while probing
 `vips` because fftw3 is in vips’ Requires.private. Same class of issue as
@@ -655,9 +655,9 @@ messages with env hacks — supply the missing private dep.
 
 ---
 
-## Bundle `qimgview-069` — project load: intermittent first-image placement
+## Bundle `biltoo-069` — project load: intermittent first-image placement
 
-**Symptom:** Loading a `.qimgview` project sometimes places the first session
+**Symptom:** Loading a `.biltoo` project sometimes places the first session
 image on the Workspace canvas and sometimes does not.
 
 **Root cause (leftover path):**
@@ -681,7 +681,7 @@ Workspace/Gallery during project load.
 
 ---
 
-## Bundle `qimgview-071` — first Workspace tile loses pose/appearance on load
+## Bundle `biltoo-071` — first Workspace tile loses pose/appearance on load
 
 **Symptom:** After project load, the first image appears but placement, flip,
 rotation, and colour grade are lost; other tiles restore correctly.
@@ -741,7 +741,7 @@ H(k) = | 1  k |
 
 ---
 
-## Bundle `qimgview-075` — group scale preserves R·H·S
+## Bundle `biltoo-075` — group scale preserves R·H·S
 
 **Change:** Group scale defaults to **uniform** factors so rotated / sheared
 tiles keep aspect and shear. Shift enables free AABB axes (approximate).
@@ -751,7 +751,7 @@ anchor; each item keeps rotation and shear from the press snapshot.
 
 ---
 
-## Bundle `qimgview-076` — shear coverage gaps (validation)
+## Bundle `biltoo-076` — shear coverage gaps (validation)
 
 **Validated:** Core R·H·S path is complete for capture/apply/project/handles.
 No local Qt6 for full compile here; static review found missing shear writes:
@@ -768,7 +768,7 @@ nix check in this environment.
 
 ---
 
-## Bundle `qimgview-077` — edge scale axes include shear
+## Bundle `biltoo-077` — edge scale axes include shear
 
 Edge stretch projects onto press-time scene images of local X/Y from the full
 linear map `R·H·S` (local +Y is skewed when `k ≠ 0`). Scale drags re-assert
@@ -777,7 +777,7 @@ press shear so only `sx`/`sy` change.
 
 ---
 
-## Bundle `qimgview-078` — free-axis group scale via S·L decompose
+## Bundle `biltoo-078` — free-axis group scale via S·L decompose
 
 Shift+group-scale applies scene stretch \(S=\mathrm{diag}(f_x,f_y)\) about the
 selection AABB anchor to each item as \(L'=S\cdot L\), then decomposes \(L'\)
@@ -787,7 +787,7 @@ still only multiplies scales and keeps press shear/rotation.
 
 ---
 
-## Bundle `qimgview-079` — PlacementLinear shared + unit test
+## Bundle `biltoo-079` — PlacementLinear shared + unit test
 
 Extracted `PlacementLinear::{make,decompose}` used by `ImageItem` and group
 scale. `tests/placementlinear_test.cpp` covers round-trip and scene conjugate.
@@ -796,7 +796,7 @@ Status bar shows Shear when |k| > 0.001 on the selected Workspace item.
 
 ---
 
-## Bundle `qimgview-080` — full shear support (complete)
+## Bundle `biltoo-080` — full shear support (complete)
 
 **Critical fix:** project save now writes `appearance.shear` from live pose
 (previously dropped on save — load could never restore shear from projects).
@@ -814,7 +814,7 @@ Status bar shows Shear when |k| > 0.001 on the selected Workspace item.
 
 ---
 
-## Bundle `qimgview-085` — group edge scale is H/V anisotropic
+## Bundle `biltoo-085` — group edge scale is H/V anisotropic
 
 **Before:** edge handles forced `sx = sy` and non-Shift averaged everything to
 uniform, so left/right/top/bottom group grips never did pure H or V stretch.
@@ -833,73 +833,73 @@ and sheared tiles follow the selection AABB.
 
 ## UI audit (2026-09-03) — polish backlog
 
-### Fixed in `qimgview-090`
+### Fixed in `biltoo-090`
 - Workspace **Reset Item Shear** (menu + context + ImageView API)
 - Keyboard shortcuts help: crop, panels, shear, projects, group scale
 - File → Open Selection in New Window
 - Gallery → Sort Session (was only under Edit)
 
-### Fixed in `qimgview-091`
+### Fixed in `biltoo-091`
 - Main toolbar: single **Layout** InstantPopup tool button (replaces eight
   gallery layout icons); Workspace mode remains a separate adjacent action
 
-### Fixed in `qimgview-092`
+### Fixed in `biltoo-092`
 - Top-level **Image** menu for rotate / flip / crop; Edit keeps undo,
   clipboard, Sort Session, Preferences
 
-### Fixed in `qimgview-093`
+### Fixed in `biltoo-093`
 - Workspace vertical toolbar: drop Page Setup / Print Preview / Export PNG /
   Export PDF (remain under File); strip stays select/pan/guides/background/layout
 
-### Fixed in `qimgview-094`
+### Fixed in `biltoo-094`
 - Quit: Ctrl+Q only (bare Q removed); Layout Horizontal no longer uses Ctrl+Y
   (avoids Windows Redo clash); F1 lists Ctrl+Q
 
-### Fixed in `qimgview-095`
+### Fixed in `biltoo-095`
 - Image mode always has **Up** to implicit default Gallery when not returning
   to Workspace (direct open / CLI / History no longer leave Up disabled)
 
-### Fixed in `qimgview-096`
+### Fixed in `biltoo-096`
 - Grid Crop no longer re-shown by visibility updates
 - Reset shear + Background Default greyed outside Workspace
 - Placement resets (scale/rotation/shear) require Workspace + selection
 - Layout actions stay enabled in Image mode intentionally (enter Gallery)
 
-### Fixed in `qimgview-097`
+### Fixed in `biltoo-097`
 - Thumbnail bar status tip / tooltip for drag-to-Workspace
 - Gallery **C**: confirmed — single selection opens Image + crop; otherwise
   action disabled (`hasSingleCropTarget`)
 
-### Fixed in `qimgview-098`
+### Fixed in `biltoo-098`
 - Path→Image open prefers selected/sole live tile SessionImageId (not
   `paths().indexOf` first match); gallery focus path fallback same rule
 
-### Fixed in `qimgview-099`
+### Fixed in `biltoo-099`
 - History menu renamed **Recent Sessions** (Clear / empty / status tips /
   README); distinct from File → Recent Projects
 
-### Fixed in `qimgview-100`
+### Fixed in `biltoo-100`
 - Workspace stash restore always reloads full pixels before geometry content
   apply (fixes alternating wrong size/crop on Workspace↔Image cycles)
 
-### Fixed in `qimgview-101`
+### Fixed in `biltoo-101`
 - Paste/drop: do not allocate phantom session rows while PendingSessionBind
   is outstanding (broken filmstrip drag entries)
 
-### Fixed in `qimgview-102`
+### Fixed in `biltoo-102`
 - Edit menu is sole menu-bar home for Copy/Cut/Paste/Duplicate; removed from
   Workspace and Gallery menus (context menu unchanged)
 
-### Fixed in `qimgview-103`
+### Fixed in `biltoo-103`
 - Multi-file session open (Open / Recent Sessions / CLI) starts in Gallery
-- Session open clears Workspace live/stash/durable snapshot (only .qimgview
+- Session open clears Workspace live/stash/durable snapshot (only .biltoo
   projects restore Workspace arrangement)
 
-### Fixed in `qimgview-105`
+### Fixed in `biltoo-105`
 - Paste registers pathOrder/sessionIdOrder in addImageForSession so LoadAdd
   creates Workspace tiles (not filmstrip-only rows with stale thumbs)
 
-### Fixed in `qimgview-106`
+### Fixed in `biltoo-106`
 - Nix: `cfitsio` on buildInputs so vips pkg-config stops spam about missing
   Requires.private (same pattern as fftw / libsysprof-capture)
 
@@ -945,7 +945,7 @@ and sheared tiles follow the selection AABB.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-091-layout-toolbar-menu`
+## Plan / work (2026-09-03) — bundle `biltoo-091-layout-toolbar-menu`
 
 **Goal:** Reduce main toolbar density. Replace the eight individual Gallery
 layout tool-button icons + the adjacent Workspace mode button cluster with a
@@ -995,13 +995,13 @@ Sort tool-button pattern.
 - [x] Sort-style InstantPopup behaviour (click opens menu).
 - [x] Document completion; next bundle number **092**.
 
-**Next bundle:** `qimgview-092-…` — remaining UI organisation (Edit/Image menu
+**Next bundle:** `biltoo-092-…` — remaining UI organisation (Edit/Image menu
 split, Workspace toolbar Print/Export), shortcuts polish, or identity residual
 (Image-mode crop of duplicate slot B).
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-092-image-menu`
+## Plan / work (2026-09-03) — bundle `biltoo-092-image-menu`
 
 **Goal:** Organise the menu bar. Move content transforms out of Edit into a
 dedicated top-level **Image** menu, per the UI audit.
@@ -1037,13 +1037,13 @@ dedicated top-level **Image** menu, per the UI audit.
 - [x] Edit no longer lists those transforms
 - [x] Document completion; next bundle **093**
 
-**Next bundle:** `qimgview-093-…` — Workspace vertical toolbar Print/Export
+**Next bundle:** `biltoo-093-…` — Workspace vertical toolbar Print/Export
 relocation, shortcut polish (bare Q, Ctrl+Y), or identity residual
 (Image-mode crop of duplicate slot B).
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-093-workspace-toolbar-tools`
+## Plan / work (2026-09-03) — bundle `biltoo-093-workspace-toolbar-tools`
 
 **Goal:** Keep the Workspace vertical toolbar focused on canvas tools.
 Remove File-oriented print/export actions from it (they remain under File).
@@ -1082,12 +1082,12 @@ background/layout.
 - [x] File menu still provides those actions
 - [x] Document completion; next bundle **094**
 
-**Next bundle:** `qimgview-094-…` — shortcut polish (bare Q, Ctrl+Y), or
+**Next bundle:** `biltoo-094-…` — shortcut polish (bare Q, Ctrl+Y), or
 identity residual (Image-mode crop of duplicate slot B).
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-094-shortcut-polish`
+## Plan / work (2026-09-03) — bundle `biltoo-094-shortcut-polish`
 
 **Goal:** Reduce accidental quit and platform Redo conflict.
 
@@ -1113,12 +1113,12 @@ identity residual (Image-mode crop of duplicate slot B).
 - [x] Ctrl+Y no longer switches Layout Horizontal
 - [x] Document completion; next bundle **095**
 
-**Next bundle:** `qimgview-095-…` — identity residual (Image-mode crop of
+**Next bundle:** `biltoo-095-…` — identity residual (Image-mode crop of
 duplicate slot B), mode enablement audit, or remaining polish.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-095-implicit-gallery-up`
+## Plan / work (2026-09-03) — bundle `biltoo-095-implicit-gallery-up`
 
 **Bug:** In Image mode opened without going through Gallery (File Open, CLI,
 History, Workspace mode toggled off, project image mode), the **Up** button is
@@ -1162,12 +1162,12 @@ or last Gallery layout) is the destination.
 - [x] Workspace return path unchanged
 - [x] Document; next bundle **096**
 
-**Next bundle:** `qimgview-096-…` — identity residual (Image-mode crop of
+**Next bundle:** `biltoo-096-…` — identity residual (Image-mode crop of
 duplicate slot B), mode enablement audit, or remaining polish.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-096-mode-enablement-polish`
+## Plan / work (2026-09-03) — bundle `biltoo-096-mode-enablement-polish`
 
 **Goal:** Tighten mode-sensitive enablement and small discoverability polish.
 
@@ -1195,12 +1195,12 @@ duplicate slot B), mode enablement audit, or remaining polish.
 - [x] F1 lists R and F5 (already documented; confirmed)
 - [x] Document; next **097**
 
-**Next bundle:** `qimgview-097-…` — identity residual (Image-mode crop of
+**Next bundle:** `biltoo-097-…` — identity residual (Image-mode crop of
 duplicate slot B), Gallery crop shortcut **C** behaviour, or thumb drag tips.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-097-thumb-drag-crop-c`
+## Plan / work (2026-09-03) — bundle `biltoo-097-thumb-drag-crop-c`
 
 **Goal:** Small remaining polish from the UI audit.
 
@@ -1226,12 +1226,12 @@ duplicate slot B), Gallery crop shortcut **C** behaviour, or thumb drag tips.
 - [x] Gallery C behaviour documented/confirmed
 - [x] next **098**
 
-**Next bundle:** `qimgview-098-…` — identity residual (Image-mode crop of
+**Next bundle:** `biltoo-098-…` — identity residual (Image-mode crop of
 duplicate slot B), or remaining product polish (Recent naming, long-session thumbs).
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-098-path-open-identity`
+## Plan / work (2026-09-03) — bundle `biltoo-098-path-open-identity`
 
 **Bug residual:** Image-mode open via path (`showPathInImageMode` /
 `galleryItemOpenRequested`) uses `paths().indexOf(path)` → always the **first**
@@ -1257,12 +1257,12 @@ tile carries the id.
 - [x] Path open prefers selected/live tile’s SessionImageId
 - [x] Document; next **099**
 
-**Next bundle:** `qimgview-099-…` — remaining product polish (Recent naming,
+**Next bundle:** `biltoo-099-…` — remaining product polish (Recent naming,
 long-session thumbs) or further identity GUI smoke notes.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-099-recent-sessions-naming`
+## Plan / work (2026-09-03) — bundle `biltoo-099-recent-sessions-naming`
 
 **Goal:** Disambiguate session reopen vs project reopen in the menu bar.
 
@@ -1270,7 +1270,7 @@ long-session thumbs) or further identity GUI smoke notes.
 
 1. Rename **History** menu → **Recent Sessions** (user-visible strings only).
 2. Clear action / empty placeholder / status tips match the new name.
-3. **Recent Projects** (File menu) unchanged — still `.qimgview` projects.
+3. **Recent Projects** (File menu) unchanged — still `.biltoo` projects.
 4. Internal symbols (`m_historyMenu`, `sessionHistory` settings key) stay as-is
    so settings continue to load.
 
@@ -1284,12 +1284,12 @@ long-session thumbs) or further identity GUI smoke notes.
 - [x] Menu bar says Recent Sessions
 - [x] Document; next **100**
 
-**Next bundle:** `qimgview-100-…` — long-session thumb virtualization, or other
+**Next bundle:** `biltoo-100-…` — long-session thumb virtualization, or other
 product work from TODO 0.1.0.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-100-workspace-stash-reapply`
+## Plan / work (2026-09-03) — bundle `biltoo-100-workspace-stash-reapply`
 
 **Bug:** Workspace tiles show correct position but wrong size/crop after
 Workspace ↔ Image cycles. Alternates fix/break on each leave/return.
@@ -1309,11 +1309,11 @@ quarter-turns). Colour-grade-only can skip reload.
 - [x] Stash restore always reloads full before geometry content apply
 - [x] Document; next **101**
 
-**Next bundle:** `qimgview-101-…` — further polish or regressions from this fix.
+**Next bundle:** `biltoo-101-…` — further polish or regressions from this fix.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-101-paste-thumb-bind`
+## Plan / work (2026-09-03) — bundle `biltoo-101-paste-thumb-bind`
 
 **Bug:** Copy/Paste creates invalid filmstrip entries that cannot be
 drag-and-dropped onto the Workspace.
@@ -1336,11 +1336,11 @@ alignment) that does not drag/drop correctly.
 - [x] Pending binds block phantom session growth
 - [x] Document; next **102**
 
-**Next bundle:** `qimgview-102-…` — further paste/drag polish if needed.
+**Next bundle:** `biltoo-102-…` — further paste/drag polish if needed.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-102-edit-clipboard-menu`
+## Plan / work (2026-09-03) — bundle `biltoo-102-edit-clipboard-menu`
 
 **Goal:** End redundant clipboard actions across menus.
 
@@ -1356,14 +1356,14 @@ alignment) that does not drag/drop correctly.
 - [x] Clipboard + Duplicate only under Edit (menu bar)
 - [x] Document; next **103**
 
-**Next bundle:** `qimgview-103-…` — further UI polish as needed.
+**Next bundle:** `biltoo-103-…` — further UI polish as needed.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-103-session-opens-gallery`
+## Plan / work (2026-09-03) — bundle `biltoo-103-session-opens-gallery`
 
 **Product rules:**
-1. Workspace is empty unless the user places tiles or opens a **.qimgview** project.
+1. Workspace is empty unless the user places tiles or opens a **.biltoo** project.
 2. Opening a session (Open, Recent Sessions, multi-file CLI) must not seed Workspace.
 3. Multi-file session open starts in **Gallery**; single file stays **Image**.
 
@@ -1386,11 +1386,11 @@ alignment) that does not drag/drop correctly.
 - [x] Session open does not populate Workspace
 - [x] next **104**
 
-**Next bundle:** `qimgview-104-…` — further mode/open polish if needed.
+**Next bundle:** `biltoo-104-…` — further mode/open polish if needed.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-104-portability-doc`
+## Plan / work (2026-09-03) — bundle `biltoo-104-portability-doc`
 
 **Goal:** Capture Linux vs portable notes for a future Windows build.
 
@@ -1406,7 +1406,7 @@ alignment) that does not drag/drop correctly.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-105-paste-pathorder`
+## Plan / work (2026-09-03) — bundle `biltoo-105-paste-pathorder`
 
 **Bug:** Paste always appends filmstrip rows but often creates no Workspace tile
 (every other time / path already on canvas). Thumbs stay full-frame because
@@ -1427,11 +1427,11 @@ hanging.
 - [x] Paste always places a canvas tile for each new session id
 - [x] next **106**
 
-**Next bundle:** `qimgview-106-…` — layout button / Workspace→Gallery if still open.
+**Next bundle:** `biltoo-106-…` — layout button / Workspace→Gallery if still open.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-106-cfitsio-pkgconfig`
+## Plan / work (2026-09-03) — bundle `biltoo-106-cfitsio-pkgconfig`
 
 **Noise:** CMake `pkg_check_modules(vips)` prints repeated
 `Package 'cfitsio', required by 'vips', not found` even when vips is found.
@@ -1446,7 +1446,7 @@ same pattern as `fftw` / `libsysprof-capture`. We do not link cfitsio ourselves.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-107-imagequant-pkgconfig`
+## Plan / work (2026-09-03) — bundle `biltoo-107-imagequant-pkgconfig`
 
 **Noise:** CMake `pkg_check_modules(vips)` prints repeated
 `Package 'imagequant', required by 'vips', not found` even when vips is found
@@ -1454,19 +1454,19 @@ same pattern as `fftw` / `libsysprof-capture`. We do not link cfitsio ourselves.
 
 **Fix:** Add `libimagequant` to `default.nix` `buildInputs` so the
 `imagequant.pc` is on `PKG_CONFIG_PATH`. We do not link libimagequant into
-qimgview.
+biltoo.
 
 ### Done criteria
 
 - [x] libimagequant on buildInputs
 - [x] next **108**
 
-**Next bundle:** `qimgview-108-…` — further packaging / build polish if needed
+**Next bundle:** `biltoo-108-…` — further packaging / build polish if needed
 (e.g. remaining unused-CMake-var noise from KDE/ECM flags if still present).
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-108-gallery-layout-combo`
+## Plan / work (2026-09-03) — bundle `biltoo-108-gallery-layout-combo`
 
 **Request:** Gallery Layout toolbar control should not be a pure InstantPopup
 menu. Primary click must act as **Go to Gallery**; a small adjacent menu
@@ -1486,18 +1486,18 @@ exclusive checks + toolbar icon/tooltip (used from enter/return Gallery paths).
 - [x] Toolbar icon tracks selected layout
 - [x] next **109**
 
-**Next bundle:** `qimgview-109-…` — further UI polish as needed.
+**Next bundle:** `biltoo-109-…` — further UI polish as needed.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-109-cmake-unused-cli`
+## Plan / work (2026-09-03) — bundle `biltoo-109-cmake-unused-cli`
 
 **Noise:** CMake ends configure with a long
 `Manually-specified variables were not used by the project` list
 (`KDE_INSTALL_*`, `CMAKE_C_COMPILER`, `CMAKE_EXPORT_NO_PACKAGE_REGISTRY`, …).
 
 **Cause:** nixpkgs Qt/KDE setup hooks inject ECM-style `-DKDE_INSTALL_*=…`
-flags into every `qt6Packages.callPackage` build. QImgView is plain CMake +
+flags into every `qt6Packages.callPackage` build. Biltoo is plain CMake +
 Qt (no Extra CMake Modules / KDEInstallDirs), so none of those vars are read.
 Harmless but very verbose.
 
@@ -1509,11 +1509,11 @@ Do not fake-consume the KDE vars and do not fight the setup hooks.
 - [x] `--no-warn-unused-cli` on cmakeFlags
 - [x] next **110**
 
-**Next bundle:** `qimgview-110-…` — further packaging / UI polish as needed.
+**Next bundle:** `biltoo-110-…` — further packaging / UI polish as needed.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-110-vips-pc-deps`
+## Plan / work (2026-09-03) — bundle `biltoo-110-vips-pc-deps`
 
 **Noise:** Further `Package '…', required by 'vips', not found` (and transitive
 `.pc` names) after cfitsio / imagequant were fixed.
@@ -1521,7 +1521,7 @@ Do not fake-consume the KDE vars and do not fight the setup hooks.
 **Fix:** Add the remaining common vips Requires.private providers to
 `default.nix` `buildInputs` so their `.pc` files sit on `PKG_CONFIG_PATH`.
 Same pattern as fftw / cfitsio / libimagequant — we do not link them into
-qimgview.
+biltoo.
 
 Packages: `cgif`, `libexif`, `libultrahdr`, `libwebp`, `pango`, `fribidi`,
 `libtiff`, `librsvg`, `dav1d`, `matio`, `hdf5`, `lcms2` (not the `lcms`
@@ -1532,11 +1532,11 @@ alias), `openexr`, `libraw`, `openjpeg`, `libhwy`.
 - [x] Extra vips .pc deps on buildInputs
 - [x] next **111**
 
-**Next bundle:** `qimgview-111-…` — further packaging / UI polish as needed.
+**Next bundle:** `biltoo-111-…` — further packaging / UI polish as needed.
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-111-gallery-select-perf`
+## Plan / work (2026-09-03) — bundle `biltoo-111-gallery-select-perf`
 
 **Bug:** Selecting a file in the Gallery can take ~1 second. Noticeable on
 archive members, but the path is too slow in general — tile pixels and basic
@@ -1585,12 +1585,12 @@ selection. Archives amplify the cost (member extract + decode).
 - [x] Archive paths do not use meaningless QFileInfo size
 - [x] Document; next **112**
 
-**Next bundle:** `qimgview-112-…` — further polish as needed.
+**Next bundle:** `biltoo-112-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-112-crop-icon-amber`
+## Plan / work (2026-09-03) — bundle `biltoo-112-crop-icon-amber`
 
 **Request:** Colour the crop toolbar icon with the same yellow/amber family
 used by the on-canvas crop tool chrome (`#ffbe28` / icon amber `#e5a50a`).
@@ -1604,12 +1604,12 @@ crop-frame pen). No code changes.
 - [x] transform-crop.svg uses crop amber palette
 - [x] Document; next **113**
 
-**Next bundle:** `qimgview-113-…` — further polish as needed.
+**Next bundle:** `biltoo-113-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-113-thumb-letterbox-bg`
+## Plan / work (2026-09-03) — bundle `biltoo-113-thumb-letterbox-bg`
 
 **Bug:** With **Crop Thumbnails to Square** unchecked, filmstrip thumbs keep
 their aspect ratio but sit on a solid dark square (`QColor(40,40,40)` in
@@ -1624,12 +1624,12 @@ No layout/API change.
 - [x] Non-square thumbs have transparent letterbox
 - [x] Document; next **114**
 
-**Next bundle:** `qimgview-114-…` — further polish as needed.
+**Next bundle:** `biltoo-114-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-114-pref-reset-buttons`
+## Plan / work (2026-09-03) — bundle `biltoo-114-pref-reset-buttons`
 
 **Request:** Preferences (and similar option rows) need a small **reset to
 default** control next to each setting.
@@ -1647,12 +1647,12 @@ default** control next to each setting.
 - [x] Layout panel Columns/Rows reset
 - [x] Document; next **115**
 
-**Next bundle:** `qimgview-115-…` — further polish as needed.
+**Next bundle:** `biltoo-115-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-115-thumb-drag-selection`
+## Plan / work (2026-09-03) — bundle `biltoo-115-thumb-drag-selection`
 
 **Bug:** ThumbnailBar drag could drop **every** image (especially from
 archives) instead of only the selected thumbs.
@@ -1663,7 +1663,7 @@ Session-id payload was parallel only to the selection, but the expanded
 path list was not.
 
 **Fix:**
-- Emit `application/x-qimgview-paths` with the exact selected session paths
+- Emit `application/x-biltoo-paths` with the exact selected session paths
   (archive refs included as-is).
 - Do not put container-only file URLs for archive members.
 - `handleDroppedUrls` prefers the internal path list and skips
@@ -1676,12 +1676,12 @@ path list was not.
 - [x] Selected thumbs only on drop (including archive members)
 - [x] Document; next **116**
 
-**Next bundle:** `qimgview-116-…` — further polish as needed.
+**Next bundle:** `biltoo-116-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-116-pref-reset-icon`
+## Plan / work (2026-09-03) — bundle `biltoo-116-pref-reset-icon`
 
 **Request:** Preference / Layout reset affordance should use a **reload**
 icon, not the delete/clear glyph.
@@ -1694,12 +1694,12 @@ SP_BrowserReload)` in PreferencesDialog and LayoutPanel reset buttons.
 - [x] Reload icon for reset controls
 - [x] Document; next **117**
 
-**Next bundle:** `qimgview-117-…` — further polish as needed.
+**Next bundle:** `biltoo-117-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-117-ws-bg-default-toggle`
+## Plan / work (2026-09-03) — bundle `biltoo-117-ws-bg-default-toggle`
 
 **Bugs / polish:**
 1. **Background Default** was a permanent clear to AppDefault (undoable). It
@@ -1721,12 +1721,12 @@ SP_BrowserReload)` in PreferencesDialog and LayoutPanel reset buttons.
 - [x] Dialog resets + mode-gated controls
 - [x] Document; next **118**
 
-**Next bundle:** `qimgview-118-…` — further polish as needed.
+**Next bundle:** `biltoo-118-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-118-workspace-zoom-tool`
+## Plan / work (2026-09-03) — bundle `biltoo-118-workspace-zoom-tool`
 
 **Request:** Workspace toolbar needs a **Zoom** tool button and icon (alongside
 Select / Pan).
@@ -1742,12 +1742,12 @@ Select / Pan).
 - [x] Zoom tool on Workspace toolbar with icon
 - [x] Document; next **119**
 
-**Next bundle:** `qimgview-119-…` — further polish as needed.
+**Next bundle:** `biltoo-119-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-119-bg-default-fix`
+## Plan / work (2026-09-03) — bundle `biltoo-119-bg-default-fix`
 
 **Bugs:**
 1. **Background Default** could stick checked / desync from paint: no-op
@@ -1772,12 +1772,12 @@ Select / Pan).
 - [x] Page Guide buttons adjacent
 - [x] Document; next **120**
 
-**Next bundle:** `qimgview-120-…` — further polish as needed.
+**Next bundle:** `biltoo-120-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-120-fs-hide-adjustments`
+## Plan / work (2026-09-03) — bundle `biltoo-120-fs-hide-adjustments`
 
 **Request:** Hide the Adjustments panel in fullscreen, like metadata / layout /
 toolbars.
@@ -1790,12 +1790,12 @@ restore both on leave.
 - [x] Adjustments hidden in fullscreen and restored on exit
 - [x] Document; next **121**
 
-**Next bundle:** `qimgview-121-…` — further polish as needed.
+**Next bundle:** `biltoo-121-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-121-slideshow-transitions`
+## Plan / work (2026-09-03) — bundle `biltoo-121-slideshow-transitions`
 
 **Feature:** Slideshow transition effects between slides.
 
@@ -1817,12 +1817,12 @@ restore both on leave.
 - [x] Preferences + QSettings
 - [x] Document; next **122**
 
-**Next bundle:** `qimgview-122-…` — further polish as needed.
+**Next bundle:** `biltoo-122-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-122-fade-black-fix`
+## Plan / work (2026-09-03) — bundle `biltoo-122-fade-black-fix`
 
 **Bug:** Fade through black faded the *old* pixmap opacity during phase 1, so
 the already-loaded next image showed through before the screen was black.
@@ -1835,12 +1835,12 @@ overlay; phase 2 fades that black away over the new frame.
 - [x] No premature image swap during fade-to-black
 - [x] Document; next **123**
 
-**Next bundle:** `qimgview-123-…` — further polish as needed.
+**Next bundle:** `biltoo-123-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-123-slideshow-slide`
+## Plan / work (2026-09-03) — bundle `biltoo-123-slideshow-slide`
 
 **Feature:** Slideshow transition **Slide (projector)** — old frame exits left,
 new frame enters from the right (both frames are viewport snapshots).
@@ -1850,12 +1850,12 @@ new frame enters from the right (both frames are viewport snapshots).
 - [x] Slide mode in Preferences + paint
 - [x] Document; next **124**
 
-**Next bundle:** `qimgview-124-…` — further polish as needed.
+**Next bundle:** `biltoo-124-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-124-slide-grab-fix`
+## Plan / work (2026-09-03) — bundle `biltoo-124-slide-grab-fix`
 
 **Bug:** Slide transition grabbed the “to” frame while the transition overlay
 was already active at progress 0, so paintEvent stamped the *old* snapshot
@@ -1869,12 +1869,12 @@ the animation.
 - [x] Slide shows distinct old → new frames
 - [x] Document; next **125**
 
-**Next bundle:** `qimgview-125-…` — further polish as needed.
+**Next bundle:** `biltoo-125-…` — further polish as needed.
 
 
 ---
 
-## Plan / work (2026-09-03) — bundle `qimgview-125-docs-desktop`
+## Plan / work (2026-09-03) — bundle `biltoo-125-docs-desktop`
 
 **Tasks:**
 1. Keyboard shortcuts / HUD / slideshow / desktop integration documentation
@@ -1883,17 +1883,17 @@ the animation.
 
 **Done:**
 - F1 help: slideshow transitions, Workspace tools, fullscreen/HUD notes
-- `qimgview.desktop`: clearer comment, archives in MimeType, StartupWMClass
-- `qimgview.metainfo.xml`: richer description, keywords, screenshot, release
+- `biltoo.desktop`: clearer comment, archives in MimeType, StartupWMClass
+- `biltoo.metainfo.xml`: richer description, keywords, screenshot, release
 - README: modes table, features by area, shortcuts table, CLI, desktop install paths
 - TODO 0.1.0 checkboxes for shortcuts/desktop/packaging marked done
 
-**Next bundle:** `qimgview-126-…`
+**Next bundle:** `biltoo-126-…`
 
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-126-ken-burns`
+## Plan / work (2026-09-04) — bundle `biltoo-126-ken-burns`
 
 **Feature:** Ken Burns-style pan/zoom during slideshow dwells.
 
@@ -1903,12 +1903,12 @@ the animation.
 - Starts after inter-slide transition finishes (or immediately if none)
 - Cancelled on slideshow stop, user wheel-zoom, or next advance (after grab)
 
-**Next bundle:** `qimgview-127-…`
+**Next bundle:** `biltoo-127-…`
 
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-127-thumb-fill`
+## Plan / work (2026-09-04) — bundle `biltoo-127-thumb-fill`
 
 **Bug:** Square (and small) thumbnails sometimes did not fill the cell.
 
@@ -1920,12 +1920,12 @@ the animation.
 Decode/prepare at `thumbSize * dpr`, tag pixmap DPR, draw pixmap into the
 icon rect, snap near-square sources to fill.
 
-**Next:** `qimgview-128-…`
+**Next:** `biltoo-128-…`
 
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-128-pan-scan`
+## Plan / work (2026-09-04) — bundle `biltoo-128-pan-scan`
 
 **Pan & scan (was Ken Burns) polish:**
 - Rename UI to **Pan & scan**
@@ -1934,12 +1934,12 @@ icon rect, snap near-square sources to fill.
 - Start camera immediately under inter-slide transitions (do not wait for
   transition end; do not stop camera merely because a transition grab ran)
 
-**Next:** `qimgview-129-…`
+**Next:** `biltoo-129-…`
 
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-129-pan-zoom-scan`
+## Plan / work (2026-09-04) — bundle `biltoo-129-pan-zoom-scan`
 
 **Changes:**
 - Settings keys: `slideshowMotion` (0/1/2), `slideshowPanZoomFactor` (no KenBurns keys)
@@ -1949,34 +1949,34 @@ icon rect, snap near-square sources to fill.
 - With dwell motion on: advance via **live black exit veil** (camera keeps moving),
   then load next — no frozen snapshot of the outgoing frame
 
-**Next:** `qimgview-130-…`
+**Next:** `biltoo-130-…`
 
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-130-transition-labels`
+## Plan / work (2026-09-04) — bundle `biltoo-130-transition-labels`
 
 - UI labels: “Pan and zoom” / “Pan and scan” (no `&&`)
 - Live exit veil only when Transition = Fade through black **and** dwell motion ≠ Off
 - Crossfade / Slide / None use the normal transition path again (grab allowed with motion)
 
-**Next:** `qimgview-131-…`
+**Next:** `biltoo-131-…`
 
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-131-live-transition`
+## Plan / work (2026-09-04) — bundle `biltoo-131-live-transition`
 
 With dwell motion on, inter-slide transitions no longer snapshot-freeze the
 outgoing frame. The current image keeps panning; the next frame is decoded
 off-thread and composited (crossfade opacity / fade-black veil / slide-in).
 Advance (`goNext`) runs at the end (or at mid-black for fade-through-black).
 
-**Next:** `qimgview-132-…`
+**Next:** `biltoo-132-…`
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-132-slideshow-polish`
+## Plan / work (2026-09-04) — bundle `biltoo-132-slideshow-polish`
 
 **Request:**
 1. Fix glitches in slideshow: at the end of a transition the view briefly flashes
@@ -2054,12 +2054,12 @@ view has not yet stabilised can still hitch.
   still uses Fill for the camera path
 - [x] TODO / AGENTS handoff; next bundle **133**
 
-**Next bundle:** `qimgview-133-…`
+**Next bundle:** `biltoo-133-…`
 
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-133-slideshow-settings-ui`
+## Plan / work (2026-09-04) — bundle `biltoo-133-slideshow-settings-ui`
 
 **Request (interpreted, not followed blindly):**
 1. Easy mid-session control of slideshow options (many transitions / motion /
@@ -2125,12 +2125,12 @@ elsewhere. Incomplete.
 - [x] No per-transition keyboard shortcuts (rejected as too noisy)
 - [x] TODO / AGENTS; next **134**
 
-**Next bundle:** `qimgview-134-…`
+**Next bundle:** `biltoo-134-…`
 
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-134-motion-live-settings`
+## Plan / work (2026-09-04) — bundle `biltoo-134-motion-live-settings`
 
 **Issues:**
 1. Slideshow Settings should apply live (no OK required).
@@ -2166,7 +2166,7 @@ clamped to valid cover frames at their scales.
 1. Rewrite dwell camera path (explicit cover scale + guaranteed pan travel)
 2. Live Slideshow Settings + transition ≤ half interval
 
-**Next:** `qimgview-135-…`
+**Next:** `biltoo-135-…`
 
 ### Done criteria
 - [x] Pan & scan / pan & zoom use explicit cover scale + centerOn (scrollbar-safe)
@@ -2179,7 +2179,7 @@ clamped to valid cover frames at their scales.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-135-zoom-crossfade`
+## Plan / work (2026-09-04) — bundle `biltoo-135-zoom-crossfade`
 
 **Issues:**
 1. Slideshow zoom (Fit / Fill / 1:1) still has little to no visible effect when
@@ -2240,7 +2240,7 @@ outer transition-kind `tr`.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-136-zoom-with-motion`
+## Plan / work (2026-09-04) — bundle `biltoo-136-zoom-with-motion`
 
 **Issue:** Slideshow zoom (Fit / Fill / 1:1) only affects framing when dwell
 motion is Off. With motion On the camera always forced cover (Fill), so zoom
@@ -2282,7 +2282,7 @@ then moves relative to that base:
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-137-motion-jump`
+## Plan / work (2026-09-04) — bundle `biltoo-137-motion-jump`
 
 **Issue:** Dwell motion “ping-pongs”: transition looks normal, then the view
 jumps to a different camera position.
@@ -2317,7 +2317,7 @@ jumps to a different camera position.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-138-motion-aspect`
+## Plan / work (2026-09-04) — bundle `biltoo-138-motion-aspect`
 
 **Issue:** Dwell motion makes the image look stretched/distorted (transitions
 themselves are fine).
@@ -2352,7 +2352,7 @@ themselves are fine).
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-139-slideshow-cursor`
+## Plan / work (2026-09-04) — bundle `biltoo-139-slideshow-cursor`
 
 **Request:** Show mouse cursor when it moves during a slideshow; hide after
 one second of inactivity.
@@ -2377,7 +2377,7 @@ viewport, so `MouseMove` only arrived while a button was held.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-140-transition-stretch`
+## Plan / work (2026-09-04) — bundle `biltoo-140-transition-stretch`
 
 **Issues:**
 1. Crossfade + pan&zoom: incoming transition frame stretched to the screen.
@@ -2407,7 +2407,7 @@ viewport, so `MouseMove` only arrived while a button was held.
 ## Design: slideshow transitions × dwell motion (2026-09-04)
 
 Canonical behaviour. Implementation notes in *Audit* below refer to tip
-after `qimgview-140-transition-stretch`.
+after `biltoo-140-transition-stretch`.
 
 ### Shared rules
 
@@ -2493,7 +2493,7 @@ after `qimgview-140-transition-stretch`.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-142-crossfade-freeze`
+## Plan / work (2026-09-04) — bundle `biltoo-142-crossfade-freeze`
 
 **Issue:** Pan&zoom + Crossfade still jumps when the previous image disappears
 (direction/position snap); screen not cleared cleanly.
@@ -2518,7 +2518,7 @@ also let the underlay show through (“not clearing the screen”).
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-144-dual-motion-handoff`
+## Plan / work (2026-09-04) — bundle `biltoo-144-dual-motion-handoff`
 
 **Feedback:** Freezing the outgoing image during crossfade is wrong — both
 images must keep moving on their own paths. Freeze also did not fix the jump
@@ -2546,7 +2546,7 @@ images must keep moving on their own paths. Freeze also did not fix the jump
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-145-motion-extend-debug`
+## Plan / work (2026-09-04) — bundle `biltoo-145-motion-extend-debug`
 
 **Feedback:** Still jumps; both images still not moving; suspect widget recalc
 when one image is removed. Requested debug values.
@@ -2562,7 +2562,7 @@ frozen underlay even with dual-motion intent.
    mid-transition).
 2. Skip `resetTransform()` in `prepareImageModeCanvas` while a live hold/active
    covers the viewport (widget reset under the overlay).
-3. `qWarning` traces prefixed `[qimgview-slideshow]` for: beginLive, extend,
+3. `qWarning` traces prefixed `[biltoo-slideshow]` for: beginLive, extend,
    startMotion, applyMotion (throttled), enterHold, releaseHold, clearLiveCanvas,
    prepareImageModeCanvas, cancelMotion, motion stop.
 
@@ -2574,7 +2574,7 @@ frozen underlay even with dual-motion intent.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-147-continuous-bias`
+## Plan / work (2026-09-04) — bundle `biltoo-147-continuous-bias`
 
 **Logs showed:**
 - Outgoing and incoming pans often reverse direction mid-crossfade (independent
@@ -2598,7 +2598,7 @@ frozen underlay even with dual-motion intent.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-148-fixed-direction`
+## Plan / work (2026-09-04) — bundle `biltoo-148-fixed-direction`
 
 **Logs (147):** `bias continue … dot=0.00` still allowed orthogonal/reverse ends;
 extend went +Y while handoff `endC` went -Y; hold release `m11` 0.30→0.27.
@@ -2617,7 +2617,7 @@ extend went +Y while handoff `endC` went -Y; hold release `m11` 0.30→0.27.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-149-camera-mode`
+## Plan / work (2026-09-04) — bundle `biltoo-149-camera-mode`
 
 **Insight:** Jumps on image remove match QGraphicsView **AlignCenter** (and
 mouse transform anchors) recentering when the scene/item changes — not only
@@ -2639,7 +2639,7 @@ Enter on motion start and live begin; leave when motion and live transition end.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-150-dual-blit`
+## Plan / work (2026-09-04) — bundle `biltoo-150-dual-blit`
 
 **Model correction:** A QGraphicsView “camera” only holds one item. Crossfade
 with two moving images is **two blits**, not a scene camera + overlay.
@@ -2661,7 +2661,7 @@ with two moving images is **two blits**, not a scene camera + overlay.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-151-unified-pose`
+## Plan / work (2026-09-04) — bundle `biltoo-151-unified-pose`
 
 **Root cause of remaining jump:** Blit used `center = mid + lerp(A,B,t)*half(s(t))`
 while the camera used **linear** `lerp(startC, endC, t)`. Those differ when
@@ -2680,7 +2680,7 @@ snapped to the camera path.
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-152-linear-kenburns`
+## Plan / work (2026-09-04) — bundle `biltoo-152-linear-kenburns`
 
 **Issue:** Path looked like an upward curve, not smooth linear Ken Burns.
 
@@ -2698,7 +2698,7 @@ increases, half grows, so pan **accelerates** (curved path).
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-153-preload-kenburns`
+## Plan / work (2026-09-04) — bundle `biltoo-153-preload-kenburns`
 
 **Requests:** Preload next slide off GUI thread; Ken Burns was dead-centre / boring.
 
@@ -2719,7 +2719,7 @@ increases, half grows, so pan **accelerates** (curved path).
 
 ---
 
-## Plan / work (2026-09-04) — bundle `qimgview-157-opacity-crossfade`
+## Plan / work (2026-09-04) — bundle `biltoo-157-opacity-crossfade`
 
 ### Clean model (no dual motion during transition)
 
@@ -2811,20 +2811,20 @@ Session pan direction (Y sign) is fixed so consecutive paths do not reverse.
 
 
 
-## Plan / work (2026-09-04) — bundle `qimgview-158-dual-motion`
+## Plan / work (2026-09-04) — bundle `biltoo-158-dual-motion`
 
 Restored continuous dual Ken Burns during crossfade (was wrongly frozen in 157).
 
 See **SLIDESHOW CONTRACT** above. Never freeze either image during the fade again.
 
 
-## Plan / work (2026-09-04) — bundle `qimgview-159-image-blit`
+## Plan / work (2026-09-04) — bundle `biltoo-159-image-blit`
 
 Ken Burns is **image blit**, not view-camera motion. Dwell paints one moving
 frame; crossfade paints two. `setTransform` is not used for slideshow motion.
 
 
-## Plan / work (2026-09-04) — bundle `qimgview-162-slideshow-cleanup`
+## Plan / work (2026-09-04) — bundle `biltoo-162-slideshow-cleanup`
 
 Removed dead camera-era code after blit-only Ken Burns:
 - `applySlideshowMotionProgress` (view matrix path)
@@ -2835,7 +2835,7 @@ Removed dead camera-era code after blit-only Ken Burns:
 Slideshow motion is image blit only (see SLIDESHOW CONTRACT).
 
 
-## Plan / work (2026-09-04) — bundle `qimgview-163-fade-black-position`
+## Plan / work (2026-09-04) — bundle `biltoo-163-fade-black-position`
 
 **Bug:** Slideshow **Fade through black** jumped the image position as soon as
 the transition started (with Ken Burns on). It should only fade out to black
@@ -2868,7 +2868,7 @@ suppressed, so the motion clock ran under the veil and jumped on release.
 - [x] Next **164**
 
 
-## Plan / work (2026-09-04) — bundle `qimgview-164-motion-never-stops`
+## Plan / work (2026-09-04) — bundle `biltoo-164-motion-never-stops`
 
 **Bugs:**
 1. **Pan & scan** appeared to reverse direction: dwell rendered with
@@ -2897,7 +2897,7 @@ change colour/opacity. Motion never stops for a transition.
 - [x] Next **165**
 
 
-## Plan / work (2026-09-04) — bundle `qimgview-165-transition-in-motion`
+## Plan / work (2026-09-04) — bundle `biltoo-165-transition-in-motion`
 
 **Bug:** Pan&Zoom still appeared to stop at transition start.
 
@@ -2920,7 +2920,7 @@ async decode gap.
 - [x] Next **166**
 
 
-## Plan / work (2026-09-04) — bundle `qimgview-166-one-motion-clock`
+## Plan / work (2026-09-04) — bundle `biltoo-166-one-motion-clock`
 
 **Problem:** Crossfade still stopped motion. Root cause was structural: two
 timers (dwell + live), `tickSlideshowMotion` early-returned while live, and
@@ -2943,7 +2943,7 @@ It must be structurally impossible for a transition to stop the motion timer.
 - [x] Next **167**
 
 
-## Plan / work (2026-09-04) — bundle `qimgview-167-progress-not-stuck`
+## Plan / work (2026-09-04) — bundle `biltoo-167-progress-not-stuck`
 
 **Why motion still "stopped" in the crossfade:**
 
@@ -2972,3 +2972,24 @@ on its own path at the same rate.
 - [x] From-image not stuck at progress 1 during crossfade
 - [x] Linear progress only — no second motion system
 - [x] Next **168**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-168-rename`
+
+**Rename application** QImgView / `qimgview` → **Biltoo** / `biltoo`.
+
+Unreleased `-dev`; no backward compatibility:
+
+- Binary, CMake project, Nix `pname` / flake packages
+- Desktop id, AppStream metainfo, theme icon `biltoo.svg`
+- `BILTOO_VERSION`, `BILTOO_HAVE_*` defines
+- QApplication name / org / domain / desktop file
+- Project extension `.biltoo`, format id `biltoo-project`
+- MIME types `application/x-biltoo-*`
+- UI strings, docs, translations paths
+
+GitHub links updated to `Grumbel/biltoo` (rename the remote repo when ready).
+
+### Done criteria
+- [x] No remaining `qimgview` / `QImgView` product identifiers in tree
+- [x] Next **169**
