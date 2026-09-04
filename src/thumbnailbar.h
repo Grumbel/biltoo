@@ -142,6 +142,8 @@ signals:
     void removeIndicesRequested(const QList<int> &indices);
 
 protected:
+    void changeEvent(QEvent *event) override;
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -174,6 +176,8 @@ private:
     int thumbSizeFromBarExtent(int extent) const;
     QImage makeThumbnail(const QString &path, int maxSize) const;
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
+    /** Physical pixel edge for decode/prepare (logical thumb × devicePixelRatio). */
+    int thumbDecodePixels() const;
 
     std::atomic<quint64> m_generation{0};
     bool m_multiSelect = false;

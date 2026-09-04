@@ -1904,3 +1904,20 @@ the animation.
 - Cancelled on slideshow stop, user wheel-zoom, or next advance (after grab)
 
 **Next bundle:** `qimgview-127-…`
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-127-thumb-fill`
+
+**Bug:** Square (and small) thumbnails sometimes did not fill the cell.
+
+**Causes / fixes:**
+1. HiDPI: decode at logical size without `devicePixelRatio` → icon painted half-size.
+2. Paint via `QIcon::paint` could center a smaller pixmap without upscaling.
+3. Near-square integer scale left a 1px empty margin.
+
+Decode/prepare at `thumbSize * dpr`, tag pixmap DPR, draw pixmap into the
+icon rect, snap near-square sources to fill.
+
+**Next:** `qimgview-128-…`

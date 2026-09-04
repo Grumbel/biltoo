@@ -7,6 +7,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QEvent>
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QDrag>
@@ -25,6 +26,7 @@
 #include <QMetaObject>
 #include <QPointer>
 #include <QPainter>
+#include <QPaintDevice>
 #include <QPainterPath>
 #include <QResizeEvent>
 #include <QStyle>
@@ -111,9 +113,21 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
     if (!icon.isNull()) {
-        // Always Normal — QIcon::Selected is theme-dependent and can hide the pixmap
-        icon.paint(painter, QRect(iconX, iconY, iconSide, iconSide), Qt::AlignCenter,
-                   QIcon::Normal, selected ? QIcon::On : QIcon::Off);
+        // Prefer an explicit pixmap draw into the icon rect. QIcon::paint can
+        // leave a small source pixmap centered without upscaling (HiDPI / tiny
+        // files), which looked like square thumbs "not filling" the cell.
+        const qreal dpr = qMax<qreal>(
+            1.0, painter->device() ? painter->device()->devicePixelRatioF() : 1.0);
+        const int phys = qMax(1, qRound(iconSide * dpr));
+        QPixmap pm = icon.pixmap(QSize(phys, phys));
+        if (!pm.isNull()) {
+            pm.setDevicePixelRatio(dpr);
+            // Stretch into the square icon slot (source is already letterboxed).
+            painter->drawPixmap(QRect(iconX, iconY, iconSide, iconSide), pm);
+        } else {
+            icon.paint(painter, QRect(iconX, iconY, iconSide, iconSide), Qt::AlignCenter,
+                       QIcon::Normal, selected ? QIcon::On : QIcon::Off);
+        }
     }
 
     const QString text = index.data(Qt::DisplayRole).toString();
@@ -397,7 +411,7 @@ void ThumbnailBar::setThumbSize(int pixels)
     m_thumbSize = clamped;
     applyThumbMetrics();
 
-    if (m_thumbSize > m_decodedSize && !m_files.isEmpty()) {
+    if (thumbDecodePixels() > m_decodedSize && !m_files.isEmpty()) {
         scheduleThumbnailLoads();
     }
 }
@@ -431,13 +445,38 @@ void ThumbnailBar::resizeEvent(QResizeEvent *event)
     }
 }
 
+int ThumbnailBar::thumbDecodePixels() const
+{
+    // Decode at device pixels so HiDPI does not show a half-size centered icon.
+    const qreal dpr = qMax<qreal>(1.0, devicePixelRatioF());
+    return qMax(1, qRound(m_thumbSize * dpr));
+}
+
+
+void ThumbnailBar::changeEvent(QEvent *event)
+{
+    QListWidget::changeEvent(event);
+    if (event && event->type() == QEvent::DevicePixelRatioChange) {
+        if (!m_files.isEmpty()) {
+            scheduleThumbnailLoads();
+        }
+    }
+}
+
 void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
 {
     if (row < 0 || row >= count() || image.isNull()) {
         return;
     }
     if (QListWidgetItem *it = item(row)) {
-        it->setIcon(QIcon(QPixmap::fromImage(image)));
+        QPixmap pm = QPixmap::fromImage(image);
+        const qreal dpr = qMax<qreal>(1.0, devicePixelRatioF());
+        // Image is prepared at physical size; tag DPR so logical size matches
+        // setIconSize(m_thumbSize) and the delegate paint rect.
+        if (dpr > 1.0) {
+            pm.setDevicePixelRatio(dpr);
+        }
+        it->setIcon(QIcon(pm));
     }
 }
 
@@ -455,6 +494,7 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         const int x = (image.width() - side) / 2;
         const int y = (image.height() - side) / 2;
         QImage square = image.copy(x, y, side, side);
+        // Always scale (including upscale) so small sources fill the cell.
         if (square.width() != maxSize || square.height() != maxSize) {
             square = square.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio,
                                    Qt::SmoothTransformation);
@@ -464,10 +504,18 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
     // Fit full image into the square cell (letterbox) so aspect ratio is visible.
     // Letterbox must be transparent — a solid plate looked like a forced square
     // frame and did not match the ThumbnailBar background.
+    // Always scale so the longer edge is exactly maxSize (upscale small files).
     QImage fitted = image.scaled(maxSize, maxSize, Qt::KeepAspectRatio,
                                  Qt::SmoothTransformation);
     if (fitted.isNull()) {
         return QImage();
+    }
+    // Near-square sources can land 1px short from integer rounding — snap to
+    // fill so square images never sit in a visible empty margin.
+    if (fitted.width() >= maxSize - 1 && fitted.height() >= maxSize - 1
+        && (fitted.width() != maxSize || fitted.height() != maxSize)) {
+        fitted = image.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio,
+                              Qt::SmoothTransformation);
     }
     QImage cell(maxSize, maxSize, QImage::Format_ARGB32_Premultiplied);
     cell.fill(Qt::transparent);
@@ -519,7 +567,7 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
         return;
     }
     m_sessionImageOverrides.insert(path, image);
-    const QImage thumb = prepareThumbnailFromImage(image, m_thumbSize);
+    const QImage thumb = prepareThumbnailFromImage(image, thumbDecodePixels());
     if (thumb.isNull()) {
         return;
     }
@@ -577,7 +625,7 @@ void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
         if (it == m_sessionIdImageOverrides.cend()) {
             continue;
         }
-        const QImage thumb = prepareThumbnailFromImage(it.value(), m_thumbSize);
+        const QImage thumb = prepareThumbnailFromImage(it.value(), thumbDecodePixels());
         if (!thumb.isNull()) {
             setThumbnailIcon(row, thumb);
         }
@@ -596,7 +644,7 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
         return;
     }
     m_sessionIdImageOverrides.insert(sessionId, image);
-    const QImage thumb = prepareThumbnailFromImage(image, m_thumbSize);
+    const QImage thumb = prepareThumbnailFromImage(image, thumbDecodePixels());
     if (thumb.isNull()) {
         return;
     }
@@ -624,7 +672,7 @@ void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)
 void ThumbnailBar::scheduleThumbnailLoads()
 {
     const quint64 gen = m_generation.load();
-    const int decodeSize = m_thumbSize;
+    const int decodeSize = thumbDecodePixels();
     m_decodedSize = decodeSize;
 
     for (int i = 0; i < m_files.size(); ++i) {
