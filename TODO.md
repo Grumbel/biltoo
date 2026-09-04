@@ -1889,3 +1889,18 @@ the animation.
 - TODO 0.1.0 checkboxes for shortcuts/desktop/packaging marked done
 
 **Next bundle:** `qimgview-126-…`
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-126-ken-burns`
+
+**Feature:** Ken Burns-style pan/zoom during slideshow dwells.
+
+- Preferences: enable + zoom factor (default 1.12)
+- Each slide: fit with **cover** framing, then slowly zoom in while drifting
+  toward a random image corner (InOutSine)
+- Starts after inter-slide transition finishes (or immediately if none)
+- Cancelled on slideshow stop, user wheel-zoom, or next advance (after grab)
+
+**Next bundle:** `qimgview-127-…`

@@ -882,8 +882,9 @@ void MainWindow::showKeyboardShortcuts()
         "[ / ] — slower / faster slideshow (dwell interval)<br/>"
         "Esc — leave fullscreen (or return to Gallery)</p>"
         "<p><b>Slideshow</b><br/>"
-        "Preferences: transition (none, crossfade, fade to black, slide) "
-        "and transition duration. Transitions apply on automatic advances only.</p>"
+        "Preferences: transition (none, crossfade, fade to black, slide), "
+        "duration, and optional Ken Burns pan/zoom during each dwell. "
+        "Transitions apply on automatic advances only.</p>"
         "<p><b>View</b><br/>"
         "F / F11 — fullscreen (chrome and docks hide; restored on exit)<br/>"
         "H — toggle HUD (filename / session index; dwell progress while slideshow runs)<br/>"
@@ -944,6 +945,8 @@ void MainWindow::showPreferences()
     if (m_imageView) {
         dlg.setSlideshowTransitionIndex(static_cast<int>(m_imageView->slideshowTransition()));
         dlg.setSlideshowTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
+        dlg.setSlideshowKenBurns(m_imageView->kenBurnsEnabled());
+        dlg.setSlideshowKenBurnsZoom(m_imageView->kenBurnsZoomFactor());
     }
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
@@ -990,6 +993,8 @@ void MainWindow::showPreferences()
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(dlg.slideshowTransitionIndex()));
         m_imageView->setSlideshowTransitionDurationMs(dlg.slideshowTransitionDurationMs());
+        m_imageView->setKenBurnsEnabled(dlg.slideshowKenBurns());
+        m_imageView->setKenBurnsZoomFactor(dlg.slideshowKenBurnsZoom());
     }
     {
         const int si = dlg.sortModeIndex();
@@ -1427,6 +1432,10 @@ void MainWindow::readSettings()
             static_cast<ImageView::SlideshowTransition>(qBound(0, tr, 3)));
         m_imageView->setSlideshowTransitionDurationMs(
             settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt());
+        m_imageView->setKenBurnsEnabled(
+            settings.value(QStringLiteral("slideshowKenBurns"), false).toBool());
+        m_imageView->setKenBurnsZoomFactor(
+            settings.value(QStringLiteral("slideshowKenBurnsZoom"), 1.12).toDouble());
     }
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
     const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
@@ -1637,6 +1646,10 @@ void MainWindow::writeSettings()
                           static_cast<int>(m_imageView->slideshowTransition()));
         settings.setValue(QStringLiteral("slideshowTransitionDurationMs"),
                           m_imageView->slideshowTransitionDurationMs());
+        settings.setValue(QStringLiteral("slideshowKenBurns"),
+                          m_imageView->kenBurnsEnabled());
+        settings.setValue(QStringLiteral("slideshowKenBurnsZoom"),
+                          m_imageView->kenBurnsZoomFactor());
     }
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     if (m_imageView) {

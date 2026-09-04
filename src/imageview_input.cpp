@@ -296,6 +296,7 @@ void ImageView::wheelEvent(QWheelEvent *event)
     // Image mode and free-form Workspace: zoom the view about the cursor.
     // Do not touch selected-item geometry here — prepareGeometryChange on
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
+    cancelKenBurns();
     m_fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);

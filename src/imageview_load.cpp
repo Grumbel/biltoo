@@ -215,6 +215,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 startSlideshowTransitionAnimation();
             } else {
                 viewport()->update();
+                maybeStartKenBurns();
             }
             emit statusChanged();
             return;

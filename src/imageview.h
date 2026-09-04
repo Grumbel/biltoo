@@ -182,6 +182,8 @@ public:
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
     void startSlideshowTransitionAnimation();
+    void startKenBurns(int durationMs);
+    void applyKenBurnsProgress(qreal t);
     /** Controller host: session path order used for Gallery packing. */
     QStringList &pathOrder() { return m_pathOrder; }
     const QStringList &pathOrder() const { return m_pathOrder; }
@@ -480,6 +482,15 @@ public:
      */
     void prepareSlideshowTransition();
     void cancelSlideshowTransition();
+
+    /** Slow pan/zoom during a slideshow dwell (Ken Burns). */
+    void setKenBurnsEnabled(bool on);
+    bool kenBurnsEnabled() const { return m_kenBurnsEnabled; }
+    void setKenBurnsZoomFactor(qreal factor);
+    qreal kenBurnsZoomFactor() const { return m_kenBurnsZoomFactor; }
+    void cancelKenBurns();
+    /** Start Ken Burns if enabled and a slideshow dwell is active. */
+    void maybeStartKenBurns();
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -911,6 +922,14 @@ private:
     bool m_slideshowTransitionPending = false;
     bool m_slideshowTransitionActive = false;
     QVariantAnimation *m_slideshowTransitionAnim = nullptr;
+    bool m_kenBurnsEnabled = false;
+    qreal m_kenBurnsZoomFactor = 1.12; /**< End scale / start scale (e.g. 1.12 = +12%) */
+    bool m_kenBurnsActive = false;
+    qreal m_kenBurnsStartScale = 1.0;
+    qreal m_kenBurnsEndScale = 1.0;
+    QPointF m_kenBurnsStartCenter;
+    QPointF m_kenBurnsEndCenter;
+    QVariantAnimation *m_kenBurnsAnim = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;

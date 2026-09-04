@@ -26,6 +26,7 @@
 - Pan; rotate ±90°; flip H/V (session transforms until export)
 - **Slideshow**: Space to start/stop; `[` / `]` change dwell; optional fullscreen
 - Transitions (Preferences): none, crossfade, fade through black, slide projector
+- Optional **Ken Burns** pan/zoom during each dwell (cover framing + gentle drift)
 - Edge navigation; HUD with optional dwell progress line
 
 ### Gallery

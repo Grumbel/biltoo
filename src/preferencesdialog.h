@@ -45,6 +45,13 @@ public:
     int slideshowTransitionDurationMs() const;
     void setSlideshowTransitionDurationMs(int ms);
 
+    bool slideshowKenBurns() const;
+    void setSlideshowKenBurns(bool on);
+
+    /** Zoom end/start ratio, e.g. 1.12 for +12%. */
+    double slideshowKenBurnsZoom() const;
+    void setSlideshowKenBurnsZoom(double factor);
+
     bool imageModeLeftDragPan() const;
     void setImageModeLeftDragPan(bool on);
 
@@ -123,6 +130,10 @@ private:
     QSpinBox *m_slideshowTransitionMsSpin = nullptr;
     QToolButton *m_resetSlideshowTransitionBtn = nullptr;
     QToolButton *m_resetSlideshowTransitionMsBtn = nullptr;
+    QCheckBox *m_slideshowKenBurnsCheck = nullptr;
+    QDoubleSpinBox *m_slideshowKenBurnsZoomSpin = nullptr;
+    QToolButton *m_resetSlideshowKenBurnsBtn = nullptr;
+    QToolButton *m_resetSlideshowKenBurnsZoomBtn = nullptr;
     QCheckBox *m_imageModePanCheck = nullptr;
 
     QPushButton *m_bgColorBtn = nullptr;

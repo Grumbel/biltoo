@@ -401,6 +401,9 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     } else if (m_slideshowProgressTimer) {
         m_slideshowProgressTimer->stop();
     }
+    if (!active) {
+        cancelKenBurns();
+    }
     viewport()->update();
 }
 
@@ -428,9 +431,12 @@ void ImageView::prepareSlideshowTransition()
         || m_slideshowTransitionDurationMs <= 0
         || !isImageMode()
         || !viewport()) {
+        cancelKenBurns();
         return;
     }
+    // Grab first so a mid-Ken-Burns frame is preserved in the transition.
     const QPixmap shot = viewport()->grab();
+    cancelKenBurns();
     if (shot.isNull()) {
         return;
     }
@@ -494,6 +500,7 @@ void ImageView::startSlideshowTransitionAnimation()
             if (viewport()) {
                 viewport()->update();
             }
+            maybeStartKenBurns();
         });
     }
     m_slideshowTransitionAnim->stop();
@@ -501,6 +508,120 @@ void ImageView::startSlideshowTransitionAnimation()
     m_slideshowTransitionAnim->setEndValue(1.0);
     m_slideshowTransitionAnim->setDuration(m_slideshowTransitionDurationMs);
     m_slideshowTransitionAnim->start();
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+
+void ImageView::setKenBurnsEnabled(bool on)
+{
+    m_kenBurnsEnabled = on;
+    if (!on) {
+        cancelKenBurns();
+    }
+}
+
+void ImageView::setKenBurnsZoomFactor(qreal factor)
+{
+    m_kenBurnsZoomFactor = qBound(1.02, factor, 1.5);
+}
+
+void ImageView::cancelKenBurns()
+{
+    m_kenBurnsActive = false;
+    if (m_kenBurnsAnim) {
+        m_kenBurnsAnim->stop();
+    }
+}
+
+void ImageView::maybeStartKenBurns()
+{
+    if (!m_kenBurnsEnabled || !m_slideshowProgressActive || !isImageMode()) {
+        return;
+    }
+    if (m_slideshowTransitionPending || m_slideshowTransitionActive) {
+        return; // transition finished handler will call again
+    }
+    int duration = m_slideshowProgressIntervalMs;
+    if (duration < 250) {
+        return;
+    }
+    // Leave a little idle at the end of the dwell so the last frame holds.
+    duration = qMax(250, duration - 80);
+    startKenBurns(duration);
+}
+
+void ImageView::startKenBurns(int durationMs)
+{
+    cancelKenBurns();
+    if (!m_kenBurnsEnabled || !isImageMode() || durationMs < 250 || !viewport()) {
+        return;
+    }
+    ImageItem *item = targetItem();
+    if (!item || item->boundingRect().isEmpty()) {
+        return;
+    }
+
+    // Cover the viewport so pan/zoom never letterboxes mid-slide.
+    m_fitMode = false;
+    m_fillMode = true;
+    fitItem(item, Qt::KeepAspectRatioByExpanding);
+
+    m_kenBurnsStartScale = viewScale();
+    if (m_kenBurnsStartScale <= 0.0) {
+        return;
+    }
+    m_kenBurnsEndScale = m_kenBurnsStartScale * m_kenBurnsZoomFactor;
+    m_kenBurnsStartCenter = mapToScene(viewport()->rect().center());
+
+    // Drift toward a random corner of the image (classic documentary feel).
+    const QRectF br = item->sceneBoundingRect();
+    const QPointF corners[4] = {
+        br.topLeft(), br.topRight(), br.bottomLeft(), br.bottomRight()
+    };
+    const int corner = QRandomGenerator::global()->bounded(4);
+    const QPointF toward = corners[corner];
+    // Blend only part-way so the frame stays mostly on the image at end scale.
+    m_kenBurnsEndCenter = m_kenBurnsStartCenter + (toward - m_kenBurnsStartCenter) * 0.28;
+
+    if (!m_kenBurnsAnim) {
+        m_kenBurnsAnim = new QVariantAnimation(this);
+        m_kenBurnsAnim->setEasingCurve(QEasingCurve::InOutSine);
+        connect(m_kenBurnsAnim, &QVariantAnimation::valueChanged, this,
+                [this](const QVariant &v) {
+                    applyKenBurnsProgress(v.toReal());
+                });
+        connect(m_kenBurnsAnim, &QVariantAnimation::finished, this, [this]() {
+            m_kenBurnsActive = false;
+        });
+    }
+    m_kenBurnsActive = true;
+    m_kenBurnsAnim->stop();
+    m_kenBurnsAnim->setStartValue(0.0);
+    m_kenBurnsAnim->setEndValue(1.0);
+    m_kenBurnsAnim->setDuration(durationMs);
+    applyKenBurnsProgress(0.0);
+    m_kenBurnsAnim->start();
+}
+
+void ImageView::applyKenBurnsProgress(qreal t)
+{
+    t = qBound(0.0, t, 1.0);
+    const qreal s = m_kenBurnsStartScale + (m_kenBurnsEndScale - m_kenBurnsStartScale) * t;
+    const QPointF c = m_kenBurnsStartCenter
+        + (m_kenBurnsEndCenter - m_kenBurnsStartCenter) * t;
+    if (s <= 0.0 || !viewport()) {
+        return;
+    }
+    // Build a view transform that places scene point c at the viewport centre
+    // with uniform scale s (same convention as fitInView / viewScale).
+    const QPointF vc = QPointF(viewport()->width() * 0.5, viewport()->height() * 0.5);
+    QTransform xform;
+    xform.translate(vc.x(), vc.y());
+    xform.scale(s, s);
+    xform.translate(-c.x(), -c.y());
+    setTransform(xform);
     if (viewport()) {
         viewport()->update();
     }
