@@ -235,11 +235,36 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                 painter.setOpacity(1.0);
             }
         } else if (m_slideshowTransition == SlideshowTransition::Slide) {
-            // Static snapshot cards (built once); software path is fine here.
+            // Projector: outgoing exits left, incoming enters from the right.
+            // Prefer live sources (motion stays on); fall back to snapshot cards.
             const int w = vr.width();
+            const int xOld = m_liveTransitionHold ? -w : int(qRound(-t * w));
             const int xNew = m_liveTransitionHold ? 0 : int(qRound((1.0 - t) * w));
-            if (!m_slideshowTransitionToPixmap.isNull()) {
-                painter.drawPixmap(xNew, 0, m_slideshowTransitionToPixmap);
+            painter.fillRect(vr, Qt::black);
+            if (!m_liveFromSourceImage.isNull() || !m_liveTransitionSourceImage.isNull()) {
+                if (!m_liveFromSourceImage.isNull()) {
+                    painter.save();
+                    painter.translate(xOld, 0);
+                    paintMotionCover(&painter, m_liveFromSourceImage, m_dwellMotionT,
+                                     m_liveFromBiasA, m_liveFromBiasB, 0);
+                    painter.restore();
+                }
+                if (!m_liveTransitionSourceImage.isNull()) {
+                    painter.save();
+                    painter.translate(xNew, 0);
+                    paintMotionCover(&painter, m_liveTransitionSourceImage,
+                                     m_liveTransitionMotionProgress,
+                                     m_liveToBiasA, m_liveToBiasB,
+                                     m_liveTransitionPathHash);
+                    painter.restore();
+                }
+            } else {
+                if (!m_slideshowTransitionFromPixmap.isNull()) {
+                    painter.drawPixmap(xOld, 0, m_slideshowTransitionFromPixmap);
+                }
+                if (!m_slideshowTransitionToPixmap.isNull()) {
+                    painter.drawPixmap(xNew, 0, m_slideshowTransitionToPixmap);
+                }
             }
         }
     }

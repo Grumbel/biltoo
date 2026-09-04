@@ -197,6 +197,8 @@ public:
      */
     QPixmap renderMotionCoverPixmap(const QImage &image, qreal motionT,
                                     uint pathHash) const;
+    /** Software snapshot of the current slide (no QOpenGLWidget::grab). */
+    QPixmap captureSlideshowFrame() const;
     /** Draw Ken Burns / pan-scan using a pre-scaled atlas (cheap per-frame blit). */
     void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT,
                           QPointF biasA, QPointF biasB, uint pathHash) const;

@@ -454,6 +454,44 @@ void ImageView::setSlideshowTransitionDurationMs(int ms)
     m_slideshowTransitionDurationMs = qBound(0, ms, 5000);
 }
 
+QPixmap ImageView::captureSlideshowFrame() const
+{
+    // QOpenGLWidget::grab() often returns a blank/white pixmap. Paint the
+    // current slide into an offscreen pixmap instead (software, reliable).
+    if (!viewport()) {
+        return {};
+    }
+    const int vw = qMax(1, viewport()->width());
+    const int vh = qMax(1, viewport()->height());
+    const qreal dpr = viewport()->devicePixelRatioF();
+    QPixmap pm(QSize(vw, vh) * dpr);
+    pm.setDevicePixelRatio(dpr);
+    QColor pad(36, 36, 36);
+    {
+        const QBrush b = backgroundBrush();
+        if (b.style() != Qt::NoBrush && b.color().isValid()) {
+            pad = b.color();
+        }
+    }
+    pm.fill(pad);
+    QPainter painter(&pm);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+
+    if (m_slideshowMotionActive && !m_dwellSourceImage.isNull()) {
+        paintMotionCover(&painter, m_dwellSourceImage, m_dwellMotionT,
+                         m_motionBiasA, m_motionBiasB, 0);
+    } else if (ImageItem *item = targetItem()) {
+        // Still frame: draw source (or displayed pixmap) with cover/fit framing.
+        const QImage src = item->hasDecodedPixels() ? item->sourceImage()
+                                                    : item->pixmap().toImage();
+        if (!src.isNull()) {
+            paintMotionCover(&painter, src, 0.0, QPointF(0, 0), QPointF(0, 0), 0);
+        }
+    }
+    painter.end();
+    return pm;
+}
+
 void ImageView::prepareSlideshowTransition()
 {
     cancelSlideshowTransition();
@@ -465,7 +503,7 @@ void ImageView::prepareSlideshowTransition()
         || !viewport()) {
         return;
     }
-    const QPixmap shot = viewport()->grab();
+    const QPixmap shot = captureSlideshowFrame();
     if (shot.isNull()) {
         return;
     }
@@ -593,7 +631,8 @@ void ImageView::startSlideshowTransitionAnimation()
     if (m_slideshowTransition == SlideshowTransition::Slide && viewport()) {
         m_slideshowTransitionActive = false;
         m_slideshowTransitionProgress = 1.0;
-        m_slideshowTransitionToPixmap = viewport()->grab();
+        // New slide is already loaded into the scene; capture without GL grab.
+        m_slideshowTransitionToPixmap = captureSlideshowFrame();
         // Projector slide is two static frames; pause dwell blit for the swap.
         cancelSlideshowMotion();
     }

@@ -3228,3 +3228,21 @@ the full tile for every Gallery click (even with the dock closed).
 - [x] Gallery selection without lag spikes
 - [x] Themed icons where available; richer custom SVGs
 - [x] Next **183**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-183-slide-projector-fix`
+
+Slide (Projector) went full white:
+
+1. `viewport()->grab()` on **QOpenGLWidget** returns a blank/white pixmap
+2. Live Slide paint only drew `m_slideshowTransitionToPixmap` (never built after
+   atlas path) — nothing on a black fill
+
+### Fix
+- `captureSlideshowFrame()`: software-paint current slide into a QPixmap
+- Snapshot path uses capture for from/to (no GL grab)
+- Live Slide: translate + `paintMotionCover` for from/to sources
+
+### Done criteria
+- [x] Slide transition shows both frames
+- [x] Next **184**
