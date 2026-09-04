@@ -135,11 +135,6 @@ void ImageView::clearInteractionState()
 
 void ImageView::clearLiveCanvas()
 {
-    qWarning("[qimgview-slideshow] clearLiveCanvas items=%d motionActive=%d "
-             "liveHold=%d liveActive=%d m11=%.4f",
-             int(m_items.size()), int(m_slideshowMotionActive),
-             int(m_liveTransitionHold), int(m_liveTransitionActive),
-             transform().m11());
     // Destroy only the live scene items. Mode stashes (Workspace/Gallery tiles
     // kept while in Image mode) must survive Image-mode LoadReplace / Next.
     clearInteractionState();
@@ -204,10 +199,6 @@ void ImageView::prepareImageModeCanvas()
     m_undoStack->clear();
     m_scene->clearSelection();
     const bool liveCover = m_liveTransitionHold || m_liveTransitionActive;
-    qWarning("[qimgview-slideshow] prepareImageModeCanvas liveCover=%d hold=%d active=%d "
-             "items_before_reset=%d m11=%.4f",
-             int(liveCover), int(m_liveTransitionHold), int(m_liveTransitionActive),
-             int(m_items.size()), transform().m11());
     // Under a live hold the overlay covers the viewport; still avoid a bare
     // resetTransform flash if updates sneak through before the new camera runs.
     if (!liveCover) {

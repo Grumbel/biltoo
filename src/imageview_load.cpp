@@ -88,6 +88,31 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         gen = ++m_loadGeneration;
     }
     emit statusChanged(); // pending count for status bar
+
+    // Slideshow dual-blit already decoded this path (handoff) or preload did —
+    // reuse pixels so goNext does not pay a second disk decode under the hold.
+    if (role == LoadReplace) {
+        QImage ready;
+        if (path == m_handoffPath && !m_handoffImage.isNull()) {
+            ready = m_handoffImage;
+            m_handoffPath.clear();
+            m_handoffImage = QImage();
+        } else if (path == m_preloadPath && !m_preloadImage.isNull()) {
+            ready = m_preloadImage;
+            m_preloadPath.clear();
+            m_preloadImage = QImage();
+        }
+        if (!ready.isNull()) {
+            const QPointer<ImageView> guard(this);
+            QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,
+                                      Q_ARG(QString, path),
+                                      Q_ARG(QImage, ready),
+                                      Q_ARG(quint64, gen),
+                                      Q_ARG(int, static_cast<int>(role)));
+            return;
+        }
+    }
+
     // QPointer: worker must not invokeMethod on a destroyed view (secondary
     // windows with WA_DeleteOnClose, app exit). Generation only filters
     // superseding once the slot runs on the GUI thread.

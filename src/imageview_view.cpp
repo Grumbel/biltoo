@@ -507,10 +507,6 @@ void ImageView::releaseLiveTransitionHold()
         }
         return;
     }
-    qWarning("[qimgview-slideshow] releaseHold motionProg=%.4f motionActive=%d "
-             "items=%d m11=%.4f",
-             m_liveTransitionMotionProgress, int(m_slideshowMotionActive),
-             int(m_items.size()), transform().m11());
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionActive = false;
@@ -708,8 +704,7 @@ void ImageView::reapplySlideshowFraming()
 void ImageView::cancelSlideshowMotion()
 {
     if (m_slideshowMotionActive) {
-        qWarning("[qimgview-slideshow] cancelSlideshowMotion (was active)");
-    }
+        }
     m_slideshowMotionActive = false;
     m_motionElapsedOffsetMs = 0;
     if (m_motionTimer) {
@@ -734,7 +729,6 @@ void ImageView::enterSlideshowCameraMode()
     setResizeAnchor(QGraphicsView::NoAnchor);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    qWarning("[qimgview-slideshow] enterCameraMode (no AlignCenter, scrollbars off)");
 }
 
 void ImageView::leaveSlideshowCameraMode()
@@ -748,32 +742,25 @@ void ImageView::leaveSlideshowCameraMode()
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setHorizontalScrollBarPolicy(m_savedScrollBarPolicyH);
     setVerticalScrollBarPolicy(m_savedScrollBarPolicyV);
-    qWarning("[qimgview-slideshow] leaveCameraMode");
 }
 
 void ImageView::pickInterestingMotionBiases(uint seed)
 {
-    static const QPointF kBias[8] = {
-        QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
-        QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
-        QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
-        QPointF(0.0, -1.0), QPointF(0.0, 1.0),
-    };
+    // Session-fixed primary direction (Y): consecutive slides never reverse
+    // pan sense mid-show. Mild X variation keeps paths interesting.
     if (seed == 0) {
         seed = 1;
     }
-    m_motionBiasA = kBias[seed % 8];
-    m_motionBiasB = kBias[(seed / 8 + 3) % 8];
-    if (qFuzzyCompare(m_motionBiasA.x(), m_motionBiasB.x())
-        && qFuzzyCompare(m_motionBiasA.y(), m_motionBiasB.y())) {
-        m_motionBiasB = kBias[(seed + 5) % 8];
+    if (!m_motionBiasValid) {
+        m_motionSign = (seed & 1u) ? 1.0 : -1.0;
+        m_motionBiasValid = true;
     }
-    m_motionBiasValid = true;
+    static const qreal kX[3] = { -0.75, 0.0, 0.75 };
+    const qreal xA = kX[seed % 3];
+    const qreal xB = kX[(seed / 5) % 3];
+    m_motionBiasA = QPointF(xA, -m_motionSign);
+    m_motionBiasB = QPointF(xB, m_motionSign);
     m_motionTravelDir = m_motionBiasB - m_motionBiasA;
-    m_motionSign = (m_motionTravelDir.y() >= 0.0) ? 1.0 : -1.0;
-    qWarning("[qimgview-slideshow] bias interesting A=(%.0f,%.0f) B=(%.0f,%.0f)",
-             m_motionBiasA.x(), m_motionBiasA.y(),
-             m_motionBiasB.x(), m_motionBiasB.y());
 }
 
 void ImageView::extendOutgoingMotionThroughTransition()
@@ -928,17 +915,15 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         m_motionBiasA = saveA;
         m_motionBiasB = saveB;
     }
-    qWarning("[qimgview-slideshow] beginLive dual-blit next=%s fromProg0=%.3f from=%dx%d",
-             qPrintable(nextPath), m_liveFromMotionProgress0,
-             m_liveFromSourceImage.width(), m_liveFromSourceImage.height());
 
     // Prefer a preloaded full decode so the hold/load gap stays short.
     if (m_preloadPath == nextPath && !m_preloadImage.isNull()) {
         const QImage img = m_preloadImage;
         m_preloadPath.clear();
         m_preloadImage = QImage();
-        qWarning("[qimgview-slideshow] beginLive using preload %dx%d",
-                 img.width(), img.height());
+        // Keep pixels for LoadReplace after the fade (no second decode).
+        m_handoffPath = nextPath;
+        m_handoffImage = img;
         const QPointer<ImageView> guard(this);
         QMetaObject::invokeMethod(this, [guard, img]() {
             if (guard) {
@@ -959,9 +944,13 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         if (!guard) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, img]() {
+        QMetaObject::invokeMethod(guard.data(), [guard, path, img]() {
             if (!guard) {
                 return;
+            }
+            if (!img.isNull()) {
+                guard->m_handoffPath = path;
+                guard->m_handoffImage = img;
             }
             guard->startLiveTransitionWithImage(img);
         }, Qt::QueuedConnection);
@@ -994,8 +983,6 @@ void ImageView::preloadSlideshowImage(const QString &path)
             }
             guard->m_preloadPath = loadPath;
             guard->m_preloadImage = img;
-            qWarning("[qimgview-slideshow] preload ready %s %dx%d",
-                     qPrintable(loadPath), img.width(), img.height());
         }, Qt::QueuedConnection);
     });
 }
@@ -1304,8 +1291,6 @@ void ImageView::tickLiveTransition()
     }
 
     if (justEnteredHold) {
-        qWarning("[qimgview-slideshow] enterHold motionProg=%.4f fadeT=%.3f items=%d",
-                 m_liveTransitionMotionProgress, t, int(m_items.size()));
         // Do not stop the timer — keep advancing the to-frame until release.
         emit slideshowLiveTransitionFinished();
     }
@@ -1513,11 +1498,6 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     }
     applySlideshowMotionProgress(initialProgress);
     m_motionTimer->start();
-    qWarning("[qimgview-slideshow] startMotion duration=%d initial=%.4f "
-             "startS=%.4f endS=%.4f startC=(%.1f,%.1f) endC=(%.1f,%.1f) items=%d",
-             durationMs, initialProgress, m_motionStartScale, m_motionEndScale,
-             m_motionStartCenter.x(), m_motionStartCenter.y(),
-             m_motionEndCenter.x(), m_motionEndCenter.y(), int(m_items.size()));
 }
 
 void ImageView::tickSlideshowMotion()
@@ -1537,9 +1517,7 @@ void ImageView::tickSlideshowMotion()
         // Still under a live crossfade/hold: start another outgoing leg instead
         // of freezing at the path end.
         if (m_liveTransitionActive || m_liveTransitionHold) {
-            qWarning("[qimgview-slideshow] motion leg ended during live transition — re-extend");
-            extendOutgoingMotionThroughTransition();
-            return;
+    return;
         }
         m_slideshowMotionActive = false;
         if (m_motionTimer) {
@@ -1548,7 +1526,6 @@ void ImageView::tickSlideshowMotion()
         if (!m_liveTransitionActive && !m_liveTransitionHold) {
             leaveSlideshowCameraMode();
         }
-        qWarning("[qimgview-slideshow] motion stopped at path end");
         return;
     }
     applySlideshowMotionProgress(t);
@@ -1583,17 +1560,6 @@ void ImageView::applySlideshowMotionProgress(qreal t)
     }
     if (verticalScrollBar() && verticalScrollBar()->value() != 0) {
         verticalScrollBar()->setValue(0);
-    }
-    {
-        static int s_logCounter = 0;
-        if ((m_liveTransitionActive || m_liveTransitionHold) && (++s_logCounter % 20) == 0) {
-            const QTransform tr = transform();
-            qWarning("[qimgview-slideshow] applyMotion t=%.3f s=%.4f c=(%.1f,%.1f) "
-                     "m11=%.4f dx=%.1f dy=%.1f align=%d camMode=%d items=%d",
-                     t, s, c.x(), c.y(), tr.m11(), tr.dx(), tr.dy(),
-                     int(alignment()), int(m_slideshowCameraMode),
-                     int(m_items.size()));
-        }
     }
     if (viewport()) {
         viewport()->update();

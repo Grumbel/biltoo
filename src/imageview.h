@@ -1031,6 +1031,9 @@ private:
     QPointF m_liveFromBiasB{1.0, 1.0};
     QString m_preloadPath;
     QImage m_preloadImage;
+    /** Pixels kept after dual-blit so LoadReplace need not re-decode. */
+    QString m_handoffPath;
+    QImage m_handoffImage;
     uint m_liveTransitionPathHash = 0;
     /** Real-time dwell progress sampled for the live to-frame (handoff to camera). */
     qreal m_liveTransitionMotionProgress = 0.0;
