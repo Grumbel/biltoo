@@ -182,7 +182,7 @@ public:
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
     void startSlideshowTransitionAnimation();
-    void startSlideshowMotion(int durationMs);
+    void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
     void applySlideshowMotionProgress(qreal t);
     void tickSlideshowMotion();
     void tickLiveTransition();
@@ -982,6 +982,8 @@ private:
     QPointF m_motionStartCenter;
     QPointF m_motionEndCenter;
     int m_motionDurationMs = 0;
+    /** Added to m_motionClock.elapsed() so live-transition handoff can start mid-path. */
+    qint64 m_motionElapsedOffsetMs = 0;
     QElapsedTimer m_motionClock;
     QTimer *m_motionTimer = nullptr;
     bool m_liveTransitionActive = false;
@@ -1004,6 +1006,8 @@ private:
     /** Decoded next slide kept for re-rendering animated live-transition covers. */
     QImage m_liveTransitionSourceImage;
     uint m_liveTransitionPathHash = 0;
+    /** Real-time dwell progress sampled for the live to-frame (handoff to camera). */
+    qreal m_liveTransitionMotionProgress = 0.0;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;

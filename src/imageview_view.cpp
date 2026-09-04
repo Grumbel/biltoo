@@ -459,6 +459,7 @@ void ImageView::cancelSlideshowTransition()
     m_slideshowTransitionToPixmap = QPixmap();
     m_liveTransitionSourceImage = QImage();
     m_liveTransitionPathHash = 0;
+    m_liveTransitionMotionProgress = 0.0;
     if (m_slideshowTransitionAnim) {
         m_slideshowTransitionAnim->stop();
     }
@@ -505,6 +506,7 @@ void ImageView::releaseLiveTransitionHold()
     m_slideshowTransitionToPixmap = QPixmap();
     m_liveTransitionSourceImage = QImage();
     m_liveTransitionPathHash = 0;
+    m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionNextPath.clear();
     if (viewport()) {
         viewport()->update();
@@ -671,6 +673,7 @@ void ImageView::reapplySlideshowFraming()
 void ImageView::cancelSlideshowMotion()
 {
     m_slideshowMotionActive = false;
+    m_motionElapsedOffsetMs = 0;
     if (m_motionTimer) {
         m_motionTimer->stop();
     }
@@ -876,6 +879,7 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionElapsedBaseMs = 0;
     m_liveTransitionProgress = 0.0;
+    m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionDurationMs = m_slideshowTransitionDurationMs;
     m_liveTransitionClock.start();
     m_liveTransitionTimer->start();
@@ -928,7 +932,7 @@ void ImageView::tickLiveTransition()
         if (!m_liveTransitionMidAdvanced) {
             m_liveTransitionHold = true;
             m_liveTransitionActive = false;
-            // Keep final to-pixmap for the hold; drop the source to free memory.
+            // Keep final to-pixmap + motion progress for camera handoff.
             m_liveTransitionSourceImage = QImage();
             if (viewport()) {
                 viewport()->update();
@@ -940,6 +944,7 @@ void ImageView::tickLiveTransition()
             m_slideshowTransitionToPixmap = QPixmap();
             m_liveTransitionSourceImage = QImage();
             m_liveTransitionPathHash = 0;
+            m_liveTransitionMotionProgress = 0.0;
             if (viewport()) {
                 viewport()->update();
             }
@@ -947,16 +952,18 @@ void ImageView::tickLiveTransition()
         return;
     }
     m_liveTransitionProgress = t;
-    // Animate the incoming cover along the dwell motion path so the faded-to
-    // (or slid-in) image is not frozen while the outgoing dwell keeps moving.
+    // Sample the dwell path in real time so the overlay matches the camera
+    // after LoadReplace (compressed 0→1 caused a jump from path-end to start).
     if ((m_slideshowTransition == SlideshowTransition::Crossfade
          || m_slideshowTransition == SlideshowTransition::Slide)
         && !m_liveTransitionSourceImage.isNull()
         && m_slideshowMotion != SlideshowMotion::Off) {
-        // Compress a visible slice of the dwell path into the short transition
-        // window so the incoming frame clearly moves (real-time mapping onto
-        // interval would be almost static for a 400 ms fade on a 3 s dwell).
-        const qreal motionT = t;
+        qreal motionT = 0.0;
+        if (m_slideshowProgressIntervalMs > 0) {
+            motionT = qBound(0.0,
+                elapsed / qreal(m_slideshowProgressIntervalMs), 1.0);
+        }
+        m_liveTransitionMotionProgress = motionT;
         const QPixmap frame = renderMotionCoverPixmap(
             m_liveTransitionSourceImage, motionT, m_liveTransitionPathHash);
         if (!frame.isNull()) {
@@ -978,10 +985,15 @@ void ImageView::maybeStartSlideshowMotion()
     if (duration < 250) {
         return;
     }
-    startSlideshowMotion(duration);
+    // Continue from live-transition overlay sample when present.
+    qreal initial = 0.0;
+    if (m_liveTransitionHold || m_liveTransitionActive || m_liveTransitionAwaitingLoad) {
+        initial = m_liveTransitionMotionProgress;
+    }
+    startSlideshowMotion(duration, initial);
 }
 
-void ImageView::startSlideshowMotion(int durationMs)
+void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
 {
     cancelSlideshowMotion();
     if (m_slideshowMotion == SlideshowMotion::Off || !isImageMode()
@@ -1143,8 +1155,18 @@ void ImageView::startSlideshowMotion(int durationMs)
     }
     m_slideshowMotionActive = true;
     m_motionDurationMs = durationMs;
+    initialProgress = qBound(0.0, initialProgress, 1.0);
+    // Pretend the clock already advanced so the first frame matches the
+    // live-transition overlay (avoids path-end → path-start jump).
     m_motionClock.start();
-    applySlideshowMotionProgress(0.0);
+    if (initialProgress > 0.0 && durationMs > 0) {
+        const qint64 already = qint64(initialProgress * qreal(durationMs));
+        // QElapsedTimer cannot be set backward; offset via restart + stored base.
+        m_motionElapsedOffsetMs = already;
+    } else {
+        m_motionElapsedOffsetMs = 0;
+    }
+    applySlideshowMotionProgress(initialProgress);
     m_motionTimer->start();
 }
 
@@ -1157,7 +1179,8 @@ void ImageView::tickSlideshowMotion()
         return;
     }
     const qreal t = m_motionDurationMs > 0
-        ? qreal(m_motionClock.elapsed()) / qreal(m_motionDurationMs)
+        ? qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
+              / qreal(m_motionDurationMs)
         : 1.0;
     if (t >= 1.0) {
         applySlideshowMotionProgress(1.0);

@@ -208,19 +208,26 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 }
             }
             prepareImageModeCanvas();
-            // Slideshow framing: zoom mode is the base scale even when dwell
-            // motion is on (camera restarts from that base in maybeStart).
-            if (m_slideshowProgressActive) {
+            // Slideshow framing: when dwell motion is on, the camera sets the
+            // transform (including handoff from a live transition). Applying
+            // zoom framing first would centre the image then jump to motion t0.
+            if (m_slideshowProgressActive
+                && m_slideshowMotion == SlideshowMotion::Off) {
                 applySlideshowZoomFraming(item);
-            } else {
+            } else if (!m_slideshowProgressActive) {
                 fitItem(item, currentFitAspectMode());
             }
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
             setUpdatesEnabled(true);
             // Start dwell camera immediately (also under an active transition).
             maybeStartSlideshowMotion();
+            if (m_slideshowProgressActive && m_slideshowMotion != SlideshowMotion::Off
+                && !m_slideshowMotionActive) {
+                // Duration too short or no item — still frame the slide.
+                applySlideshowZoomFraming(item);
+            }
             // Drop held live-transition overlay only after the new item is fitted
-            // (and motion frame 0 applied) so the old underlay never flashes.
+            // (and motion sample applied) so the old underlay never flashes.
             releaseLiveTransitionHold();
             if (m_slideshowTransitionPending) {
                 startSlideshowTransitionAnimation();
