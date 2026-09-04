@@ -55,14 +55,41 @@
         inputsFrom = [ biltoo ];
         packages = with pkgs; [
           cmake
+          ninja
           gdb
           qt6.qttools
         ];
         CMAKE_BUILD_TYPE = "Debug";
         shellHook = ''
-          echo "biltoo: CMAKE_BUILD_TYPE=Debug for in-tree cmake builds."
-          echo "  nix build            → RelWithDebInfo binary (stripped)"
-          echo "  nix build .#debug    → matching debug symbols"
+          # Theme icons from the source tree (data/icons/hicolor/...).
+          export XDG_DATA_DIRS="$PWD/data''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
+
+          biltoo-configure() {
+            cmake -B build -G Ninja -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}"
+          }
+          biltoo-build() {
+            if [ ! -f build/build.ninja ] && [ ! -f build/Makefile ]; then
+              biltoo-configure || return 1
+            fi
+            cmake --build build "$@"
+          }
+          biltoo-run() {
+            biltoo-build || return 1
+            if [ ! -x ./build/biltoo ]; then
+              echo "biltoo-run: ./build/biltoo missing after build" >&2
+              return 1
+            fi
+            # Do not use qtWrapperArgs here — those are makeWrapper flags.
+            # inputsFrom already put Qt plugins on QT_PLUGIN_PATH.
+            exec ./build/biltoo "$@"
+          }
+
+          echo "biltoo dev shell (CMAKE_BUILD_TYPE=''${CMAKE_BUILD_TYPE:-Debug})"
+          echo "  biltoo-configure   # cmake -B build -G Ninja"
+          echo "  biltoo-build       # incremental cmake --build build"
+          echo "  biltoo-run [args]  # build + ./build/biltoo"
+          echo "  nix build          # RelWithDebInfo package (wrapped)"
+          echo "  nix build .#debug  # matching debug symbols"
         '';
       };
     };

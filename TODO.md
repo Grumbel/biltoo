@@ -3052,3 +3052,20 @@ OpenGL viewport can be revisited later (format/context at app start, fallback).
 - [x] Raster viewport restored (UI visible again)
 - [x] Slideshow still uses dest-rect paint (no per-tick smooth scale)
 - [x] Next **173**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-173-devshell-icons`
+
+### Dev shell
+- `ninja` in packages; `biltoo-configure` / `biltoo-build` / `biltoo-run`
+- `XDG_DATA_DIRS=$PWD/data:...` so theme can see `data/icons/hicolor`
+- No `qtWrapperArgs` in run path — use `./build/biltoo` with env from `inputsFrom`
+
+### Icon
+- Link **Qt6::Svg** (`qt6.qtsvg`) so embedded SVG icons load
+- App icon: resource `:/icons/biltoo.svg` first; theme only if it has sizes
+
+### Done criteria
+- [x] Incremental `./build/biltoo` from `nix develop`
+- [x] Window icon visible without install
+- [x] Next **174**

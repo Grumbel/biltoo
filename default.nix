@@ -47,6 +47,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildInputs = [
     qt6.qtbase
+    qt6.qtsvg
     qt6.qttools
     vips
     exiv2

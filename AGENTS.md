@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-172-fix-white-screen**
-(Reverted OpenGL viewport; kept dest-rect slideshow paint).
-Next bundle number: **173**.
+Latest agent handoff: **TODO.md → biltoo-173-devshell-icons**
+(dev shell run helpers + SVG icon fix).
+Next bundle number: **174**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -27,26 +27,12 @@ Windows / cross-compile feasibility (not a scheduled port).
 ## Build & run
 
 - Primary build system: **Nix flake** + CMake + Qt6.
-  - `nix develop` – development shell
-  - `nix build` / `nix run` – package and run
-  - `nix flake check` – builds the package and runs CMake tests (compile + unit gate)
-- Manual: standard out-of-source CMake against Qt6 Widgets.
-- **Sandbox / agent host without Nix:** see [AGENT-ENV.md](AGENT-ENV.md)
-  (Ubuntu 24.04 packages, Qt 6.4.2, bootstrap commands, Qt 6.9 `flipped` caveat).
-- **Extra formats (XCF, KRA, ORA, …):** install KDE **KImageFormats** so Qt loads
-  its `imageformats` plugins at runtime (Nix: `kimageformats` via the flake).
-  No link-time dependency in CMake; `QImageReader` discovers the plugins.
-  XCF support is limited to older format versions (see KImageFormats docs).
-- Debug info: `nix build` uses **RelWithDebInfo** and `separateDebugInfo`
-  (symbols via `nix build .#debug`). Dev shell sets `CMAKE_BUILD_TYPE=Debug`
-  for local cmake builds.
+  - `nix develop` – deps only (compiler, Qt, vips, …). Not a mini install.
+  - In the shell: `biltoo-configure`, `biltoo-build`, `biltoo-run` → `./build/biltoo`
+  - First time: `biltoo-configure` then `biltoo-run` (or `biltoo-build && ./build/biltoo`)
+  - `nix build` / `nix run` – packaged, `wrapQtAppsHook`-wrapped binary
+  - `nix flake check` – package + CMake tests
 
-Version is the top-level plain-text `VERSION` file only (e.g. `0.1.0-dev` in
-git). Development builds append `.{revCount}+g{shortRev}` via the flake and
-`-DPROJECT_VERSION_FULL=…`. Do not hardcode the version in CMake `project()`,
-source, or the flake base string.
-
-Do not introduce qmake `.pro` files or Qt5-only APIs.
 
 ## Coding conventions
 

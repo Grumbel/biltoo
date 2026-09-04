@@ -32,10 +32,15 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain(QStringLiteral("biltoo.local"));
     QGuiApplication::setDesktopFileName(QStringLiteral("biltoo"));
 
-    // Prefer the installed theme icon; fall back to the embedded SVG.
-    QIcon appIcon = QIcon::fromTheme(QStringLiteral("biltoo"));
-    if (appIcon.isNull()) {
-        appIcon = QIcon(QStringLiteral(":/icons/biltoo.svg"));
+    // Embedded resource first (works from ./build/biltoo without install).
+    // Theme icon only if the theme actually provides sizes (fromTheme can
+    // return a non-null empty icon when the name is missing from the theme).
+    QIcon appIcon(QStringLiteral(":/icons/biltoo.svg"));
+    {
+        const QIcon theme = QIcon::fromTheme(QStringLiteral("biltoo"));
+        if (!theme.isNull() && !theme.availableSizes().isEmpty()) {
+            appIcon = theme;
+        }
     }
     QApplication::setWindowIcon(appIcon);
 
