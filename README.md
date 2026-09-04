@@ -8,7 +8,13 @@
 | **Gallery** | See the whole session in packaged layouts (strip, grid, masonry, …) |
 | **Workspace** | Arrange several images freely for comparison, markup framing, and export |
 
-![Biltoo main window](screenshot.png)
+**Gallery** — session overview in packed layouts:
+
+![Biltoo Gallery mode](screenshots/gallery.png)
+
+**Workspace** — free-form multi-image canvas:
+
+![Biltoo Workspace mode](screenshots/workspace.png)
 
 ## Features
 

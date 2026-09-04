@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-168-rename**
-(Application renamed QImgView → Biltoo).
-Next bundle number: **169**.
+Latest agent handoff: **TODO.md → biltoo-169-readme-screenshots**
+(README Gallery + Workspace screenshots).
+Next bundle number: **170**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

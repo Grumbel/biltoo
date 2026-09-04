@@ -52,8 +52,12 @@
   </keywords>
   <screenshots>
     <screenshot type="default">
-      <caption>Biltoo main window</caption>
-      <image>https://raw.githubusercontent.com/Grumbel/biltoo/master/screenshot.png</image>
+      <caption>Gallery mode — session overview in packed layouts</caption>
+      <image>https://raw.githubusercontent.com/Grumbel/biltoo/master/screenshots/gallery.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Workspace mode — free-form multi-image canvas</caption>
+      <image>https://raw.githubusercontent.com/Grumbel/biltoo/master/screenshots/workspace.png</image>
     </screenshot>
   </screenshots>
   <releases>

@@ -2993,3 +2993,13 @@ GitHub links updated to `Grumbel/biltoo` (rename the remote repo when ready).
 ### Done criteria
 - [x] No remaining `qimgview` / `QImgView` product identifiers in tree
 - [x] Next **169**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-169-readme-screenshots`
+
+Replace single root `screenshot.png` with `screenshots/gallery.png` and
+`screenshots/workspace.png`. README and AppStream metainfo show both modes.
+
+### Done criteria
+- [x] Gallery + Workspace shots in README
+- [x] Next **170**
