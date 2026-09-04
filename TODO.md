@@ -3246,3 +3246,19 @@ Slide (Projector) went full white:
 ### Done criteria
 - [x] Slide transition shows both frames
 - [x] Next **184**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-184-slideshow-pad-color`
+
+Slideshow transitions used hardcoded pad (36,36,36) / `backgroundBrush` while
+normal Image display uses Preferences `m_bgColor` (default 42,42,42).
+
+### Fix
+- `slideshowPadColor()` → `m_bgColor`
+- Letterbox/fill in covers, capture, Slide gap use it
+- Fade-through-black veil stays pure black (the effect)
+- `setBackgroundColor` also updates `setBackgroundBrush`
+
+### Done criteria
+- [x] Transition pad matches Preferences background
+- [x] Next **185**

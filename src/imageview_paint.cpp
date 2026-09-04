@@ -161,7 +161,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             const int xOld = int(-qRound(t * w));
             const int xNew = int(qRound((1.0 - t) * w));
             painter.setOpacity(1.0);
-            painter.fillRect(vr, Qt::black);
+            painter.fillRect(vr, slideshowPadColor());
             // Draw at native pixmap size (already viewport-sized). Forced w×h
             // scaling stretched frames that were letterboxed or DPR-mismatched.
             if (!m_slideshowTransitionToPixmap.isNull()) {
@@ -174,12 +174,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     // Slideshow Ken Burns: draw source images with dest rects so scaling is
     // done by the (OpenGL) paint engine, not QImage::scaled every tick.
     auto fillPad = [&](const QRect &vr) {
-        QColor pad(36, 36, 36);
-        const QBrush b = backgroundBrush();
-        if (b.style() != Qt::NoBrush && b.color().isValid()) {
-            pad = b.color();
-        }
-        painter.fillRect(vr, pad);
+        painter.fillRect(vr, slideshowPadColor());
     };
 
     if (m_slideshowMotionActive && !m_liveTransitionActive && !m_liveTransitionHold
@@ -240,7 +235,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             const int w = vr.width();
             const int xOld = m_liveTransitionHold ? -w : int(qRound(-t * w));
             const int xNew = m_liveTransitionHold ? 0 : int(qRound((1.0 - t) * w));
-            painter.fillRect(vr, Qt::black);
+            painter.fillRect(vr, slideshowPadColor());
             if (!m_liveFromSourceImage.isNull() || !m_liveTransitionSourceImage.isNull()) {
                 if (!m_liveFromSourceImage.isNull()) {
                     painter.save();

@@ -98,7 +98,7 @@ ImageView::ImageView(QWidget *parent)
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
-    setBackgroundBrush(QBrush(QColor(36, 36, 36)));
+    setBackgroundBrush(QBrush(m_bgColor));
     setFrameShape(QFrame::NoFrame);
     setFocusPolicy(Qt::StrongFocus);
     // QGraphicsView delivers moves via the viewport — both need tracking or

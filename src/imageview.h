@@ -437,6 +437,8 @@ public:
 
     void setBackgroundColor(const QColor &color);
     QColor backgroundColor() const { return m_bgColor; }
+    /** Pad/letterbox colour for slideshow covers (Preferences background). */
+    QColor slideshowPadColor() const;
     void setBackgroundColorAlt(const QColor &color);
     QColor backgroundColorAlt() const { return m_bgColorAlt; }
     void setBackgroundPattern(BackgroundPattern pattern);

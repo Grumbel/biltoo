@@ -83,7 +83,22 @@ void ImageView::setBackgroundColor(const QColor &color)
         return;
     }
     m_bgColor = color;
-    viewport()->update();
+    setBackgroundBrush(QBrush(m_bgColor));
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+QColor ImageView::slideshowPadColor() const
+{
+    if (m_bgColor.isValid()) {
+        return m_bgColor;
+    }
+    const QBrush b = backgroundBrush();
+    if (b.style() != Qt::NoBrush && b.color().isValid()) {
+        return b.color();
+    }
+    return QColor(42, 42, 42);
 }
 
 void ImageView::setBackgroundColorAlt(const QColor &color)
@@ -466,14 +481,7 @@ QPixmap ImageView::captureSlideshowFrame() const
     const qreal dpr = viewport()->devicePixelRatioF();
     QPixmap pm(QSize(vw, vh) * dpr);
     pm.setDevicePixelRatio(dpr);
-    QColor pad(36, 36, 36);
-    {
-        const QBrush b = backgroundBrush();
-        if (b.style() != Qt::NoBrush && b.color().isValid()) {
-            pad = b.color();
-        }
-    }
-    pm.fill(pad);
+    pm.fill(slideshowPadColor());
     QPainter painter(&pm);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
@@ -1213,14 +1221,7 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
     QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
-    QColor pad(36, 36, 36);
-    {
-        const QBrush b = backgroundBrush();
-        if (b.style() != Qt::NoBrush && b.color().isValid()) {
-            pad = b.color();
-        }
-    }
-    out.fill(pad);
+    out.fill(slideshowPadColor());
     QPainter painter(&out);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     paintMotionCover(&painter, image, motionT, m_motionBiasA, m_motionBiasB, pathHash);

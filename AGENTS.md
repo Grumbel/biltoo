@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-183-slide-projector-fix**
-(Slide projector without GL grab; live paintMotionCover).
-Next bundle number: **184**.
+Latest agent handoff: **TODO.md → biltoo-184-slideshow-pad-color**
+(Slideshow pad uses Preferences background colour).
+Next bundle number: **185**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
