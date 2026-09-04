@@ -1022,6 +1022,8 @@ private:
     /** Incoming Ken Burns path for the to-frame (never overwrites dwell biases). */
     QPointF m_liveToBiasA{-1.0, -1.0};
     QPointF m_liveToBiasB{1.0, 1.0};
+    /** Motion wall-ms when the to-layer started; -1 = no to-layer. */
+    qreal m_toLayerWallMs = -1.0;
     QString m_preloadPath;
     QImage m_preloadImage;
     quint64 m_preloadGeneration = 0;

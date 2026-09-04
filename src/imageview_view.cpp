@@ -476,6 +476,7 @@ void ImageView::cancelSlideshowTransition()
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionElapsedBaseMs = 0;
+    m_toLayerWallMs = -1.0;
     if (m_liveTransitionTimer) {
         m_liveTransitionTimer->stop();
     }
@@ -495,20 +496,18 @@ void ImageView::releaseLiveTransitionHold()
         && m_slideshowTransition == SlideshowTransition::FadeBlack
         && m_liveTransitionActive) {
         m_liveTransitionAwaitingLoad = false;
-        // Veil timeline only: resume phase 2 from mid-black. Motion keeps
-        // using m_liveMotionClock (never restarted) so pan does not jump.
+        // Veil timeline only. Motion wall is untouched.
         m_liveTransitionElapsedBaseMs = m_liveTransitionDurationMs / 2;
         m_liveTransitionClock.restart();
         m_liveTransitionProgress = 0.5;
-        if (m_liveTransitionTimer && !m_liveTransitionTimer->isActive()) {
-            m_liveTransitionTimer->start();
-        }
         if (viewport()) {
             viewport()->update();
         }
         return;
     }
     const qreal handoffProgress = m_liveTransitionMotionProgress;
+    const QImage toSource = m_liveTransitionSourceImage;
+
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionActive = false;
@@ -520,17 +519,26 @@ void ImageView::releaseLiveTransitionHold()
     m_liveTransitionPathHash = 0;
     m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionNextPath.clear();
-    if (m_liveTransitionTimer) {
-        m_liveTransitionTimer->stop();
-    }
-    // Install the to-path biases as the dwell path, then resume at the
-    // progress last shown so the pose matches and motion does not restart
-    // from a different A→B pair.
+    m_toLayerWallMs = -1.0;
+
+    // Soft handoff: keep the motion timer and wall clock running. Only retarget
+    // the dwell source/biases and re-base the offset so dwellT == handoffProgress.
     m_motionBiasA = m_liveToBiasA;
     m_motionBiasB = m_liveToBiasB;
     m_motionBiasValid = true;
-    if (m_slideshowProgressActive
-        && m_slideshowMotion != SlideshowMotion::Off) {
+    if (!toSource.isNull()) {
+        m_dwellSourceImage = toSource;
+    } else if (ImageItem *item = targetItem()) {
+        m_dwellSourceImage = item->sourceImage();
+    }
+    if (m_slideshowMotionActive && m_motionDurationMs > 0) {
+        const qreal elapsed = qreal(m_motionClock.elapsed());
+        m_motionElapsedOffsetMs = qint64(handoffProgress * qreal(m_motionDurationMs) - elapsed);
+        m_dwellCoverPixmap = renderMotionCoverPixmap(
+            m_dwellSourceImage, handoffProgress, 0);
+    } else if (m_slideshowProgressActive
+               && m_slideshowMotion != SlideshowMotion::Off) {
+        // Motion was not running — start once (should be rare).
         const int duration = m_slideshowProgressIntervalMs;
         if (duration >= 250) {
             startSlideshowMotion(duration, handoffProgress);
@@ -1054,15 +1062,6 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
     m_liveTransitionSourceImage = nextImage;
     m_liveTransitionPathHash = qHash(m_liveTransitionNextPath);
 
-    // Refresh outgoing progress now (dwell may have advanced since beginLive).
-    if (m_slideshowMotionActive && m_motionDurationMs > 0) {
-        m_liveFromMotionProgress0 = qBound(
-            0.0,
-            qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
-                / qreal(m_motionDurationMs),
-            1.0);
-    }
-
     // Incoming path biases only — never overwrite dwell m_motionBiasA/B.
     {
         const QPointF saveA = m_motionBiasA;
@@ -1078,7 +1077,16 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         m_motionBiasValid = saveValid;
     }
 
-    // First frames: from at current progress, to at t=0. Both move every tick.
+    // To-layer starts at the current motion wall (progress 0 on B).
+    // From continues on the same wall clock — no reset, no second timer.
+    const qreal wallMs = (m_slideshowMotionActive && m_motionDurationMs > 0)
+        ? qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
+        : 0.0;
+    m_toLayerWallMs = wallMs;
+    m_liveFromMotionProgress0 = (m_motionDurationMs > 0)
+        ? qBound(0.0, wallMs / qreal(m_motionDurationMs), 1.0)
+        : 0.0;
+
     {
         const QPointF saveA = m_motionBiasA;
         const QPointF saveB = m_motionBiasB;
@@ -1098,161 +1106,40 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         emit slideshowLiveTransitionFinished();
         return;
     }
-    if (!m_liveTransitionTimer) {
-        m_liveTransitionTimer = new QTimer(this);
-        m_liveTransitionTimer->setTimerType(Qt::PreciseTimer);
-        m_liveTransitionTimer->setInterval(16);
-        connect(m_liveTransitionTimer, &QTimer::timeout, this, &ImageView::tickLiveTransition);
-    }
+
+    // Opacity timeline only. Motion stays on m_motionTimer.
     m_liveTransitionActive = true;
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
+    m_liveTransitionMidAdvanced = false;
     m_liveTransitionElapsedBaseMs = 0;
     m_liveTransitionProgress = 0.0;
     m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionDurationMs = m_slideshowTransitionDurationMs;
     m_liveTransitionClock.start();
-    m_liveMotionClock.start();
-    m_liveTransitionTimer->start();
+
+    // Ensure the single motion timer is running (must already be for dwell).
+    if (!m_slideshowMotionActive && m_slideshowProgressIntervalMs >= 250) {
+        // Degenerate: start motion if somehow inactive.
+        m_slideshowMotionActive = true;
+        m_motionDurationMs = m_slideshowProgressIntervalMs;
+        m_motionClock.start();
+        m_motionElapsedOffsetMs = 0;
+        if (!m_motionTimer) {
+            m_motionTimer = new QTimer(this);
+            m_motionTimer->setTimerType(Qt::PreciseTimer);
+            m_motionTimer->setInterval(16);
+            connect(m_motionTimer, &QTimer::timeout, this, &ImageView::tickSlideshowMotion);
+        }
+        m_motionTimer->start();
+    }
     viewport()->update();
 }
 
 void ImageView::tickLiveTransition()
 {
-    if (!m_liveTransitionActive) {
-        if (m_liveTransitionTimer) {
-            m_liveTransitionTimer->stop();
-        }
-        return;
-    }
-    if (m_liveTransitionAwaitingLoad) {
-        // Solid black covers the viewport, but motion must not stop: keep
-        // advancing from/to samples so phase 2 resumes on a continuous path.
-        m_liveTransitionProgress = 0.5;
-        if (m_slideshowMotion != SlideshowMotion::Off
-            && m_slideshowProgressIntervalMs > 0) {
-            const qreal motionElapsed = qreal(m_liveMotionClock.elapsed());
-            const qreal dt = motionElapsed / qreal(m_slideshowProgressIntervalMs);
-            const qreal fromT = qBound(0.0, m_liveFromMotionProgress0 + dt, 1.0);
-            if (!m_liveFromSourceImage.isNull()) {
-                const QPointF saveA = m_motionBiasA;
-                const QPointF saveB = m_motionBiasB;
-                m_motionBiasA = m_liveFromBiasA;
-                m_motionBiasB = m_liveFromBiasB;
-                const QPixmap fromFrame = renderMotionCoverPixmap(
-                    m_liveFromSourceImage, fromT, 0);
-                m_motionBiasA = saveA;
-                m_motionBiasB = saveB;
-                if (!fromFrame.isNull()) {
-                    m_slideshowTransitionFromPixmap = fromFrame;
-                }
-            }
-            const qreal toT = qBound(0.0, dt, 1.0);
-            m_liveTransitionMotionProgress = toT;
-            if (!m_liveTransitionSourceImage.isNull()) {
-                const QPointF saveA = m_motionBiasA;
-                const QPointF saveB = m_motionBiasB;
-                m_motionBiasA = m_liveToBiasA;
-                m_motionBiasB = m_liveToBiasB;
-                const QPixmap toFrame = renderMotionCoverPixmap(
-                    m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
-                m_motionBiasA = saveA;
-                m_motionBiasB = saveB;
-                if (!toFrame.isNull()) {
-                    m_slideshowTransitionToPixmap = toFrame;
-                }
-            }
-        }
-        if (viewport()) {
-            viewport()->update();
-        }
-        return;
-    }
-    const qreal elapsed = qreal(m_liveTransitionElapsedBaseMs + m_liveTransitionClock.elapsed());
-    const qreal t = m_liveTransitionDurationMs > 0
-        ? elapsed / qreal(m_liveTransitionDurationMs)
-        : 1.0;
-
-    if (m_slideshowTransition == SlideshowTransition::FadeBlack
-        && !m_liveTransitionMidAdvanced && t >= 0.5) {
-        m_liveTransitionMidAdvanced = true;
-        m_liveTransitionAwaitingLoad = true;
-        m_liveTransitionProgress = 0.5;
-        if (viewport()) {
-            viewport()->update();
-        }
-        emit slideshowLiveTransitionFinished();
-        return;
-    }
-
-    // CONTRACT: both images keep moving. Motion wall-time is independent of
-    // the veil clock (FadeBlack may restart the veil clock at mid-black).
-    const qreal motionElapsed = qreal(m_liveMotionClock.elapsed());
-    const qreal dt = (m_slideshowProgressIntervalMs > 0)
-        ? (motionElapsed / qreal(m_slideshowProgressIntervalMs))
-        : 0.0;
-    if (m_slideshowMotion != SlideshowMotion::Off) {
-        // From continues its path from the progress at transition start.
-        const qreal fromT = qBound(0.0, m_liveFromMotionProgress0 + dt, 1.0);
-        if (!m_liveFromSourceImage.isNull()) {
-            const QPointF saveA = m_motionBiasA;
-            const QPointF saveB = m_motionBiasB;
-            m_motionBiasA = m_liveFromBiasA;
-            m_motionBiasB = m_liveFromBiasB;
-            const QPixmap fromFrame = renderMotionCoverPixmap(
-                m_liveFromSourceImage, fromT, 0);
-            m_motionBiasA = saveA;
-            m_motionBiasB = saveB;
-            if (!fromFrame.isNull()) {
-                m_slideshowTransitionFromPixmap = fromFrame;
-            }
-        }
-        // To advances from 0 along its own path (m_liveToBias only).
-        const qreal toT = qBound(0.0, dt, 1.0);
-        m_liveTransitionMotionProgress = toT;
-        if (!m_liveTransitionSourceImage.isNull()) {
-            const QPointF saveA = m_motionBiasA;
-            const QPointF saveB = m_motionBiasB;
-            m_motionBiasA = m_liveToBiasA;
-            m_motionBiasB = m_liveToBiasB;
-            const QPixmap toFrame = renderMotionCoverPixmap(
-                m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
-            m_motionBiasA = saveA;
-            m_motionBiasB = saveB;
-            if (!toFrame.isNull()) {
-                m_slideshowTransitionToPixmap = toFrame;
-            }
-        }
-    }
-
-    bool justEnteredHold = false;
-    if (t >= 1.0) {
-        m_liveTransitionProgress = 1.0;
-        if (!m_liveTransitionHold) {
-            m_liveTransitionHold = true;
-            justEnteredHold = true;
-        }
-        // Hold: keep sampling to-path so motion does not freeze under full opacity.
-    } else {
-        m_liveTransitionProgress = t;
-    }
-
-    // FadeBlack already advanced at mid-black; do not emit again at the end
-    // (that would goNext a second time and skip a slide). Crossfade/Slide emit
-    // once when the animated portion finishes so the host can LoadReplace.
-    if (justEnteredHold
-        && m_slideshowTransition != SlideshowTransition::FadeBlack) {
-        emit slideshowLiveTransitionFinished();
-    } else if (justEnteredHold
-               && m_slideshowTransition == SlideshowTransition::FadeBlack) {
-        // Phase 2 finished over the already-loaded slide — drop the overlay
-        // and continue dwell blit from the to-path progress already shown.
-        releaseLiveTransitionHold();
-    }
-
-    if (viewport()) {
-        viewport()->update();
-    }
+    // Obsolete: opacity + dual-frame sampling live in tickSlideshowMotion
+    // so the motion clock can never be stopped by a transition.
 }
 
 void ImageView::maybeStartSlideshowMotion()
@@ -1261,24 +1148,17 @@ void ImageView::maybeStartSlideshowMotion()
         || !isImageMode()) {
         return;
     }
-    // FadeBlack mid-black: load is finishing under a solid veil. Do not start
-    // dwell yet — phase 2 still owns the viewport with the to-blit; starting
-    // motion here would let the dwell clock run while ticks are suppressed and
-    // jump the pose when the veil lifts.
-    if (m_liveTransitionAwaitingLoad
-        && m_slideshowTransition == SlideshowTransition::FadeBlack) {
+    // Live transition owns motion via the single motion timer + soft handoff
+    // in releaseLiveTransitionHold. startSlideshowMotion() cancels the timer —
+    // calling it here would stop motion mid-crossfade.
+    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
         return;
     }
     int duration = m_slideshowProgressIntervalMs;
     if (duration < 250) {
         return;
     }
-    // Continue the *to* path at the progress the dual-blit already showed.
-    qreal initial = 0.0;
-    if (m_liveTransitionHold || m_liveTransitionActive || m_liveTransitionAwaitingLoad) {
-        initial = m_liveTransitionMotionProgress;
-    }
-    startSlideshowMotion(duration, initial);
+    startSlideshowMotion(duration, 0.0);
 }
 
 void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
@@ -1340,40 +1220,102 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
 
 void ImageView::tickSlideshowMotion()
 {
+    // SINGLE motion clock. Transitions never stop this timer.
+    // Live/crossfade/fade-black only change which frames are composited.
     if (!m_slideshowMotionActive) {
         if (m_motionTimer) {
             m_motionTimer->stop();
         }
         return;
     }
-    // Skip dwell blit while dual-image transition owns the viewport.
-    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
+    if (m_motionDurationMs <= 0 || !viewport()) {
         return;
     }
-    const qreal t = m_motionDurationMs > 0
-        ? qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
-              / qreal(m_motionDurationMs)
-        : 1.0;
-    if (t >= 1.0) {
-        // Hold final frame until the next transition/advance.
+
+    const qreal wallMs = qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed());
+    const qreal dwellT = qBound(0.0, wallMs / qreal(m_motionDurationMs), 1.0);
+
+    const bool inLive = m_liveTransitionActive || m_liveTransitionHold
+        || m_liveTransitionAwaitingLoad;
+
+    if (inLive) {
+        // --- motion samples FIRST (ALWAYS) so handoff sees current toT ---
+        const qreal fromT = dwellT;
+        if (!m_liveFromSourceImage.isNull()) {
+            const QPointF saveA = m_motionBiasA;
+            const QPointF saveB = m_motionBiasB;
+            m_motionBiasA = m_liveFromBiasA;
+            m_motionBiasB = m_liveFromBiasB;
+            const QPixmap fromFrame = renderMotionCoverPixmap(
+                m_liveFromSourceImage, fromT, 0);
+            m_motionBiasA = saveA;
+            m_motionBiasB = saveB;
+            if (!fromFrame.isNull()) {
+                m_slideshowTransitionFromPixmap = fromFrame;
+            }
+        }
+        qreal toT = 0.0;
+        if (m_toLayerWallMs >= 0.0 && m_motionDurationMs > 0) {
+            toT = qBound(0.0, (wallMs - m_toLayerWallMs) / qreal(m_motionDurationMs), 1.0);
+        }
+        m_liveTransitionMotionProgress = toT;
+        if (!m_liveTransitionSourceImage.isNull()) {
+            const QPointF saveA = m_motionBiasA;
+            const QPointF saveB = m_motionBiasB;
+            m_motionBiasA = m_liveToBiasA;
+            m_motionBiasB = m_liveToBiasB;
+            const QPixmap toFrame = renderMotionCoverPixmap(
+                m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
+            m_motionBiasA = saveA;
+            m_motionBiasB = saveB;
+            if (!toFrame.isNull()) {
+                m_slideshowTransitionToPixmap = toFrame;
+            }
+        }
+
+        // --- opacity / veil timeline (cannot stop motion sampling above) ---
+        if (m_liveTransitionAwaitingLoad) {
+            m_liveTransitionProgress = 0.5;
+        } else if (m_liveTransitionHold) {
+            m_liveTransitionProgress = 1.0;
+        } else if (m_liveTransitionActive) {
+            const qreal elapsed = qreal(m_liveTransitionElapsedBaseMs
+                                        + m_liveTransitionClock.elapsed());
+            const qreal t = m_liveTransitionDurationMs > 0
+                ? elapsed / qreal(m_liveTransitionDurationMs)
+                : 1.0;
+            if (m_slideshowTransition == SlideshowTransition::FadeBlack
+                && !m_liveTransitionMidAdvanced && t >= 0.5) {
+                m_liveTransitionMidAdvanced = true;
+                m_liveTransitionAwaitingLoad = true;
+                m_liveTransitionProgress = 0.5;
+                emit slideshowLiveTransitionFinished();
+            } else if (t >= 1.0) {
+                m_liveTransitionProgress = 1.0;
+                if (!m_liveTransitionHold) {
+                    m_liveTransitionHold = true;
+                    if (m_slideshowTransition != SlideshowTransition::FadeBlack) {
+                        emit slideshowLiveTransitionFinished();
+                    } else {
+                        releaseLiveTransitionHold();
+                    }
+                }
+            } else {
+                m_liveTransitionProgress = t;
+            }
+        }
+    } else {
+        // Pure dwell: one moving frame.
         if (!m_dwellSourceImage.isNull()) {
-            m_dwellCoverPixmap = renderMotionCoverPixmap(
-                m_dwellSourceImage, 1.0, 0);
-        }
-        if (viewport()) {
-            viewport()->update();
-        }
-        return;
-    }
-    if (!m_dwellSourceImage.isNull()) {
-        const QPixmap frame = renderMotionCoverPixmap(m_dwellSourceImage, t, 0);
-        if (!frame.isNull()) {
-            m_dwellCoverPixmap = frame;
+            const QPixmap frame = renderMotionCoverPixmap(
+                m_dwellSourceImage, dwellT, 0);
+            if (!frame.isNull()) {
+                m_dwellCoverPixmap = frame;
+            }
         }
     }
-    if (viewport()) {
-        viewport()->update();
-    }
+
+    viewport()->update();
 }
 
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)

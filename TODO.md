@@ -2918,3 +2918,26 @@ async decode gap.
 - [x] Transition runs *in* motion (no stop/snap at start)
 - [x] Written model for None / Crossfade / FadeBlack / Slide
 - [x] Next **166**
+
+
+## Plan / work (2026-09-04) — bundle `qimgview-166-one-motion-clock`
+
+**Problem:** Crossfade still stopped motion. Root cause was structural: two
+timers (dwell + live), `tickSlideshowMotion` early-returned while live, and
+`startSlideshowMotion`/`maybeStart` called `cancelSlideshowMotion` mid-fade.
+
+**Design rule:** One motion clock. Transitions only change compositing.
+It must be structurally impossible for a transition to stop the motion timer.
+
+### Changes
+- `tickSlideshowMotion` is the only frame sampler: dwell **or** dual-blit
+- No early-return for live flags; opacity timeline runs in the same tick
+- `startLiveTransitionWithImage` does not start a second timer
+- Soft handoff in `releaseLiveTransitionHold` (rebase offset, keep clock)
+- `maybeStartSlideshowMotion` is a no-op while live (no cancel mid-fade)
+- From path continues on the same wall clock; to path starts at `m_toLayerWallMs`
+
+### Done criteria
+- [x] Single motion timer through dwell + crossfade + fade-black
+- [x] No cancelSlideshowMotion on the transition path
+- [x] Next **167**
