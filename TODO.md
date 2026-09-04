@@ -2175,3 +2175,64 @@ clamped to valid cover frames at their scales.
 - [x] Slideshow Settings applies live; Close only
 - [x] Transition duration capped to half of interval
 - [x] Next **135**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-135-zoom-crossfade`
+
+**Issues:**
+1. Slideshow zoom (Fit / Fill / 1:1) still has little to no visible effect when
+   motion is Off.
+2. Live crossfade is glitchy: the image being faded *to* is a static centre-crop
+   pixmap, so it never moves while the outgoing dwell keeps panning/zooming.
+3. Compiler warning: `tr` shadows previous local in `MainWindow::readSettings()`.
+
+### Slideshow zoom root cause
+
+`applySlideshowZoomFraming` still uses `fitItem` → `fitInView`. That path is
+scrollbar-sensitive and often yields nearly identical framing for Fit vs Fill
+(especially when aspect is close to the viewport). The dwell camera already
+abandoned `fitInView` for an explicit cover scale + `centerOn`; zoom framing
+must use the same approach.
+
+**Fix:** Compute scale explicitly from viewport and item `sceneBoundingRect`:
+
+- Fit: `min(vw/br.w, vh/br.h)`
+- Fill: `max(vw/br.w, vh/br.h)`
+- Actual (1:1): scale `1.0`
+
+Then `setTransform(scale)` + `centerOn(mid)`. No `fitInView`.
+
+### Crossfade root cause
+
+Live path composites a single `renderCoverPixmap(next)` over the live underlay.
+That pixmap is a fixed centre crop for the whole transition duration, so the
+incoming image is frozen while the outgoing one continues its camera path.
+
+**Fix:** Keep the decoded next `QImage` for the duration of the live transition.
+On each `tickLiveTransition`, re-render the "to" pixmap with a motion sample
+along the same Pan&Scan / Pan&Zoom path the next dwell would use (progress
+mapped from transition `t`). Slide transition uses the same animated frame.
+Fade-through-black does not need incoming motion (veil covers it).
+
+After LoadReplace, dwell motion still starts from progress 0 (acceptable;
+overlay motion is only for the short transition window). Continuity across the
+boundary can be a later polish if needed.
+
+### Shadow warning
+
+Rename the inner `const int tr` (transition duration) so it does not shadow the
+outer transition-kind `tr`.
+
+### Commits
+1. Slideshow zoom: explicit scale + centerOn (Fit / Fill / 1:1)
+2. Live crossfade/slide: animate incoming cover along motion path
+3. readSettings: fix `tr` shadow warning
+4. Docs: TODO / AGENTS next **136**
+
+### Done criteria
+- [x] Fit / Fill / 1:1 use explicit scale + centerOn (scrollbar-safe)
+- [x] Live crossfade/slide: incoming cover re-rendered along motion path each tick
+- [x] `tr` shadow in `readSettings` renamed
+- [x] Next **136**
