@@ -464,11 +464,6 @@ MetadataPanel::MetadataPanel(QWidget *parent)
     m_header->setWordWrap(true);
     m_header->setStyleSheet(QStringLiteral("font-weight: bold;"));
 
-    m_histogramLabel = new QLabel(tr("Histogram"), this);
-    m_histogramLabel->setVisible(false);
-    m_histogram = new ImageHistogramWidget(this);
-    m_histogram->setVisible(false);
-
     m_paletteLabel = new QLabel(tr("Palette"), this);
     m_paletteLabel->setVisible(false);
     m_palette = new ImagePaletteWidget(this);
@@ -489,8 +484,6 @@ MetadataPanel::MetadataPanel(QWidget *parent)
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(6);
     layout->addWidget(m_header);
-    layout->addWidget(m_histogramLabel);
-    layout->addWidget(m_histogram);
     layout->addWidget(m_paletteLabel);
     layout->addWidget(m_palette);
     layout->addWidget(m_tree, 1);
@@ -513,13 +506,6 @@ void MetadataPanel::clear()
     m_pendingDecoded = QImage();
     m_header->setText(tr("No image"));
     m_tree->clear();
-    if (m_histogram) {
-        m_histogram->clear();
-        m_histogram->setVisible(false);
-    }
-    if (m_histogramLabel) {
-        m_histogramLabel->setVisible(false);
-    }
     if (m_palette) {
         m_palette->clear();
     }
@@ -585,10 +571,6 @@ void MetadataPanel::fillImageAnalysis(const QString &path, const QImage &decoded
     // True layer stacks (PSD etc.) are not exposed by Qt; multi-frame is above.
     // Avoid a dead “Layers: unavailable” row — only report what we can know.
 
-    m_histogram->setFromImage(image);
-    m_histogram->setVisible(true);
-    m_histogramLabel->setVisible(true);
-
     QVector<QColor> palette;
     const QList<QRgb> table = image.colorTable();
     if (!table.isEmpty()) {
@@ -645,13 +627,6 @@ void MetadataPanel::applyPendingPath()
     }
 
     m_tree->clear();
-    if (m_histogram) {
-        m_histogram->clear();
-        m_histogram->setVisible(false);
-    }
-    if (m_histogramLabel) {
-        m_histogramLabel->setVisible(false);
-    }
     if (m_palette) {
         m_palette->clear();
     }
@@ -729,7 +704,7 @@ void MetadataPanel::applyPendingPath()
         addChildRow(fileGroup, tr("Error"), reader.errorString());
     }
 
-    // Structure, histogram, palette — reuse hint when present.
+    // Structure and palette — reuse decoded hint when present.
     fillImageAnalysis(path, decodedHint);
 
 #ifdef BILTOO_HAVE_EXIV2

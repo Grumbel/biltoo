@@ -12,7 +12,10 @@
 class QTreeWidget;
 class QLabel;
 
-/** Compact luminance / RGB histogram for the metadata side panel. */
+/**
+ * Compact luminance / RGB histogram widget.
+ * Used by the Adjustments panel (not the Metadata panel).
+ */
 class ImageHistogramWidget : public QWidget
 {
     Q_OBJECT
@@ -53,8 +56,8 @@ private:
 };
 
 /**
- * Side panel listing file info, image structure, histogram, palette, and
- * embedded metadata (Exif/IPTC/XMP via libexiv2 when available).
+ * Side panel listing file info, image structure, palette, and embedded
+ * metadata (Exif/IPTC/XMP via libexiv2 when available).
  */
 /** Quiet or enable verbose logs from libexiv2 (call once from main). */
 void configureMetadataLibraryLogging(bool verbose);
@@ -69,10 +72,9 @@ public:
     void clear();
     /**
      * Schedule metadata refresh for @p path.
-     * Heavy work (decode, histogram, Exiv2) is debounced; rapid path changes
-     * cancel the previous pending update. Pass @p decodedHint when the
-     * canvas already holds pixels for this path so structure/histogram need
-     * not decode again.
+     * Heavy work (decode, Exiv2) is debounced; rapid path changes cancel the
+     * previous pending update. Pass @p decodedHint when the canvas already
+     * holds pixels for this path so structure/palette need not decode again.
      */
     void setImagePath(const QString &path, const QImage &decodedHint = QImage());
 
@@ -82,8 +84,6 @@ private:
     void applyPendingPath();
 
     QLabel *m_header = nullptr;
-    ImageHistogramWidget *m_histogram = nullptr;
-    QLabel *m_histogramLabel = nullptr;
     ImagePaletteWidget *m_palette = nullptr;
     QLabel *m_paletteLabel = nullptr;
     QTreeWidget *m_tree = nullptr;
