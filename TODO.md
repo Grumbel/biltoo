@@ -2313,3 +2313,38 @@ jumps to a different camera position.
 - [x] Incoming cover moves gently in real time during live fade
 - [x] Camera starts at live-overlay motion sample (offset clock)
 - [x] Next **138**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-138-motion-aspect`
+
+**Issue:** Dwell motion makes the image look stretched/distorted (transitions
+themselves are fine).
+
+### Likely causes
+1. `m_fitMode` left true (Fit zoom) so resizeEvent can call `fitItem` mid-dwell
+   and fight the camera.
+2. Item residual shear/rotation not cleared before the camera runs.
+3. Scale derived from `sceneBoundingRect()` AABB (can differ from content
+   aspect if local transform is non-identity).
+4. `setTransform(scale)` + `centerOn` interacting with a tight scene rect /
+   scrollbar range so the effective view is wrong.
+
+### Fix
+1. During any dwell motion force `m_fitMode = false` (camera owns framing).
+2. At motion start: `setItemShear(0)`, `setItemRotation(0)`, `setItemScale(1)`.
+3. Base scale from `contentRect()` size (source aspect), centres via
+   `mapToScene(contentRect().center())`.
+4. Apply camera with explicit uniform matrix:
+   translate(viewCentre) · scale(s) · translate(-sceneCentre), scrollbars at 0.
+5. Expand scene rect so the pan range is not clamped.
+
+### Commits
+1. Dwell camera: preserve aspect, identity item pose, matrix framing
+2. Docs → next **139**
+
+### Done criteria
+- [x] No stretch under pan&scan / pan&zoom (Fit / Fill / 1:1 bases)
+- [x] Resize during slideshow does not refit over the camera
+- [x] Next **139**
