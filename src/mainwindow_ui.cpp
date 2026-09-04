@@ -832,8 +832,7 @@ void MainWindow::createToolBar()
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
     // Left: file + undo/redo
-    // Up to gallery (enabled only after opening an image from Gallery)
-    m_toolBar->addAction(m_backToGalleryAct);
+    // Up stays in Gallery menu / Esc — not on the main toolbar.
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_addAct);
     {
