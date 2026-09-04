@@ -734,10 +734,13 @@ void MainWindow::setZoomTool()
 
 void MainWindow::onSlideshowTick()
 {
-    // With dwell camera motion, fade a live black veil first so the outgoing
-    // pan never freezes in a snapshot; advance when the veil finishes.
+    // Live black veil only when the user chose Fade through black *and* dwell
+    // camera motion is on — keeps the outgoing pan moving. Crossfade / Slide
+    // still use their snapshot transitions so the Preference is respected.
     if (m_imageView && m_imageView->isImageMode()
-        && m_imageView->slideshowMotion() != ImageView::SlideshowMotion::Off) {
+        && m_imageView->slideshowMotion() != ImageView::SlideshowMotion::Off
+        && m_imageView->slideshowTransition()
+            == ImageView::SlideshowTransition::FadeBlack) {
         const int veilMs = m_imageView->slideshowTransitionDurationMs() > 0
             ? m_imageView->slideshowTransitionDurationMs()
             : 400;

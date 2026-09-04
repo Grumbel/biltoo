@@ -1950,3 +1950,14 @@ icon rect, snap near-square sources to fill.
   then load next — no frozen snapshot of the outgoing frame
 
 **Next:** `qimgview-130-…`
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-130-transition-labels`
+
+- UI labels: “Pan and zoom” / “Pan and scan” (no `&&`)
+- Live exit veil only when Transition = Fade through black **and** dwell motion ≠ Off
+- Crossfade / Slide / None use the normal transition path again (grab allowed with motion)
+
+**Next:** `qimgview-131-…`

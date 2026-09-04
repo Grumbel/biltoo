@@ -428,12 +428,8 @@ void ImageView::setSlideshowTransitionDurationMs(int ms)
 void ImageView::prepareSlideshowTransition()
 {
     cancelSlideshowTransition();
-    // Snapshot transitions freeze the outgoing frame. When dwell camera motion
-    // is active we skip the grab path — MainWindow uses beginSlideshowExitVeil
-    // so the live pan continues under a black veil instead.
-    if (m_slideshowMotion != SlideshowMotion::Off) {
-        return;
-    }
+    // Snapshot transitions (Crossfade / Slide / FadeBlack without dwell motion).
+    // FadeBlack *with* dwell motion uses beginSlideshowExitVeil instead (live pan).
     if (m_slideshowTransition == SlideshowTransition::None
         || m_slideshowTransitionDurationMs <= 0
         || !isImageMode()

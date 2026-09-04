@@ -115,11 +115,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 
     m_slideshowMotionCombo = new QComboBox(this);
     m_slideshowMotionCombo->addItem(tr("Off"), 0);
-    m_slideshowMotionCombo->addItem(tr("Pan && zoom"), 1);
-    m_slideshowMotionCombo->addItem(tr("Pan && scan"), 2);
+    m_slideshowMotionCombo->addItem(tr("Pan and zoom"), 1);
+    m_slideshowMotionCombo->addItem(tr("Pan and scan"), 2);
     m_slideshowMotionCombo->setToolTip(
-        tr("Pan && zoom: slowly zoom in while panning.\n"
-           "Pan && scan: pan across the full width or height so the whole "
+        tr("Pan and zoom: slowly zoom in while panning.\n"
+           "Pan and scan: pan across the full width or height so the whole "
            "image is revealed during the dwell (no zoom)."));
     slideshowForm->addRow(tr("Dwell motion:"),
                           wrapWithReset(m_slideshowMotionCombo, &m_resetSlideshowMotionBtn, [this]() {
@@ -133,8 +133,8 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_panZoomFactorSpin->setDecimals(2);
     m_panZoomFactorSpin->setValue(kDefaultPanZoomFactor);
     m_panZoomFactorSpin->setToolTip(
-        tr("Pan && zoom only: end scale relative to cover framing (1.12 = 12% closer)"));
-    slideshowForm->addRow(tr("Pan && zoom factor:"),
+        tr("Pan and zoom only: end scale relative to cover framing (1.12 = 12% closer)"));
+    slideshowForm->addRow(tr("Pan and zoom factor:"),
                           wrapWithReset(m_panZoomFactorSpin, &m_resetPanZoomFactorBtn, [this]() {
                               setPanZoomFactor(kDefaultPanZoomFactor);
                               updateResetButtons();
