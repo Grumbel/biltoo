@@ -185,6 +185,7 @@ public:
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
     /** Continue outgoing camera from the current pose through a live transition. */
     void extendOutgoingMotionThroughTransition();
+    void chooseContinuingMotionBiases(uint seed);
     void applySlideshowMotionProgress(qreal t);
     void tickSlideshowMotion();
     void tickLiveTransition();
@@ -983,6 +984,12 @@ private:
     qreal m_motionEndScale = 1.0;
     QPointF m_motionStartCenter;
     QPointF m_motionEndCenter;
+    /** Rule-of-thirds biases shared by camera + live to-frame (continuous travel). */
+    QPointF m_motionBiasA{-1.0, -1.0};
+    QPointF m_motionBiasB{1.0, 1.0};
+    bool m_motionBiasValid = false;
+    /** Last scene-space travel direction (end - start), for continuing legs. */
+    QPointF m_motionTravelDir{0.0, 1.0};
     int m_motionDurationMs = 0;
     /** Added to m_motionClock.elapsed() so live-transition handoff can start mid-path. */
     qint64 m_motionElapsedOffsetMs = 0;

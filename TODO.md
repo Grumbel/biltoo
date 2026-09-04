@@ -2570,3 +2570,27 @@ frozen underlay even with dual-motion intent.
 - [x] Outgoing keeps moving during live crossfade
 - [x] Debug lines available on stderr
 - [x] Next **146**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-147-continuous-bias`
+
+**Logs showed:**
+- Outgoing and incoming pans often reverse direction mid-crossfade (independent
+  path-hash biases).
+- Handoff: `m11≈0.31` under hold → `startMotion` at `m11≈0.27` on a new path.
+
+### Fix
+1. Shared `m_motionBiasA/B` for camera + live to-frame.
+2. `chooseContinuingMotionBiases`: first slide seeds from path hash; later slides
+   pick an end bias with positive dot product (no reverse).
+3. `beginLive`: extend outgoing on current path, **then** advance biases once for
+   the incoming overlay.
+4. Handoff `startMotion` **reuses** those biases (no second advance).
+5. `extendOutgoing` targets shared biasB / travel dir.
+
+### Done criteria
+- [x] One continuous travel direction across a crossfade
+- [x] Overlay and handoff camera share the same A→B path
+- [x] Next **148**

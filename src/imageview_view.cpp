@@ -17,6 +17,7 @@
 #include <QVariantAnimation>
 #include <QRubberBand>
 #include <QDebug>
+#include <QtMath>
 
 void ImageView::setTool(Tool tool)
 {
@@ -409,6 +410,8 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     }
     if (!active) {
         cancelSlideshowMotion();
+        m_motionBiasValid = false;
+        m_motionTravelDir = QPointF(0.0, 1.0);
     }
     viewport()->update();
 }
@@ -705,6 +708,54 @@ void ImageView::cancelSlideshowMotion()
     }
 }
 
+void ImageView::chooseContinuingMotionBiases(uint seed)
+{
+    static const QPointF kBias[8] = {
+        QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
+        QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
+        QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
+        QPointF(0.0, -1.0), QPointF(0.0, 1.0),
+    };
+    if (seed == 0) {
+        seed = 1;
+    }
+    if (!m_motionBiasValid) {
+        m_motionBiasA = kBias[seed % 8];
+        m_motionBiasB = kBias[(seed / 8 + 3) % 8];
+        if (qFuzzyCompare(m_motionBiasA.x(), m_motionBiasB.x())
+            && qFuzzyCompare(m_motionBiasA.y(), m_motionBiasB.y())) {
+            m_motionBiasB = kBias[(seed + 1) % 8];
+        }
+        m_motionBiasValid = true;
+        m_motionTravelDir = m_motionBiasB - m_motionBiasA;
+        qWarning("[qimgview-slideshow] bias init A=(%.0f,%.0f) B=(%.0f,%.0f)",
+                 m_motionBiasA.x(), m_motionBiasA.y(),
+                 m_motionBiasB.x(), m_motionBiasB.y());
+        return;
+    }
+    const QPointF prevTravel = m_motionBiasB - m_motionBiasA;
+    m_motionBiasA = m_motionBiasB;
+    QPointF best = kBias[0];
+    qreal bestDot = -1e9;
+    for (const QPointF &cand : kBias) {
+        if (qFuzzyCompare(cand.x(), m_motionBiasA.x())
+            && qFuzzyCompare(cand.y(), m_motionBiasA.y())) {
+            continue;
+        }
+        const QPointF step = cand - m_motionBiasA;
+        const qreal d = step.x() * prevTravel.x() + step.y() * prevTravel.y();
+        if (d > bestDot) {
+            bestDot = d;
+            best = cand;
+        }
+    }
+    m_motionBiasB = best;
+    m_motionTravelDir = m_motionBiasB - m_motionBiasA;
+    qWarning("[qimgview-slideshow] bias continue A=(%.0f,%.0f) B=(%.0f,%.0f) dot=%.2f",
+             m_motionBiasA.x(), m_motionBiasA.y(),
+             m_motionBiasB.x(), m_motionBiasB.y(), bestDot);
+}
+
 void ImageView::extendOutgoingMotionThroughTransition()
 {
     // Dwell motion is timed to the interval and normally stops at t=1 exactly
@@ -761,7 +812,7 @@ void ImageView::extendOutgoingMotionThroughTransition()
                        qBound(mid.y() - half.y(), c.y(), mid.y() + half.y()));
     };
 
-    // New leg starts at the current camera pose.
+    // Continue toward the shared biasB / travel dir (no mid-fade reverse).
     m_motionStartScale = qMax(0.01, curS);
     m_motionStartCenter = curC;
     if (m_slideshowMotion == SlideshowMotion::PanZoom) {
@@ -769,24 +820,24 @@ void ImageView::extendOutgoingMotionThroughTransition()
     } else {
         m_motionEndScale = m_motionStartScale;
     }
-    uint seed = qHash(item->path());
-    if (seed == 0) {
-        seed = 1;
-    }
-    static const QPointF kBias[8] = {
-        QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
-        QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
-        QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
-        QPointF(0.0, -1.0), QPointF(0.0, 1.0),
-    };
-    // Different bias slot than the primary dwell leg.
-    const QPointF bias = kBias[(seed / 8 + 5) % 8];
     const QPointF halfEnd = halfOverflow(m_motionEndScale);
-    m_motionEndCenter = clampCenter(
-        QPointF(mid.x() + bias.x() * halfEnd.x(),
-                mid.y() + bias.y() * halfEnd.y()),
-        m_motionEndScale);
+    QPointF target;
+    if (m_motionBiasValid) {
+        target = QPointF(mid.x() + m_motionBiasB.x() * halfEnd.x(),
+                         mid.y() + m_motionBiasB.y() * halfEnd.y());
+    } else {
+        QPointF dir = m_motionTravelDir;
+        if (dir.manhattanLength() < 0.01) {
+            dir = QPointF(0.0, 1.0);
+        }
+        const qreal len = qSqrt(dir.x() * dir.x() + dir.y() * dir.y());
+        dir /= len;
+        const qreal span = qMax(halfEnd.x(), halfEnd.y());
+        target = QPointF(curC.x() + dir.x() * span, curC.y() + dir.y() * span);
+    }
+    m_motionEndCenter = clampCenter(target, m_motionEndScale);
     m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
+    m_motionTravelDir = m_motionEndCenter - m_motionStartCenter;
 
     // Cover fade + typical load latency.
     const int extra = qMax(m_slideshowTransitionDurationMs, 200) + 1500;
@@ -824,9 +875,11 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     cancelSlideshowTransition(); // no frozen snapshot path
     m_liveTransitionNextPath = nextPath;
     m_liveTransitionMidAdvanced = false;
-    // Dwell motion usually reaches t=1 at the same moment as this tick — extend
-    // a fresh leg from the current pose so the outgoing frame keeps moving.
+    // 1) Extend outgoing along the *current* path (no reverse).
+    // 2) Then advance shared biases for the *incoming* overlay + handoff camera
+    //    so both sides of the fade share one continuous travel direction.
     extendOutgoingMotionThroughTransition();
+    chooseContinuingMotionBiases(qHash(nextPath));
     qWarning("[qimgview-slideshow] beginLive next=%s motionActive=%d transition=%d",
              qPrintable(nextPath), int(m_slideshowMotionActive),
              int(m_slideshowTransition));
@@ -931,15 +984,20 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     } else if (m_slideshowMotion == SlideshowMotion::PanZoom) {
         const qreal factor = qBound(1.02, m_panZoomFactor, 1.40);
         scale = base * (1.0 + (factor - 1.0) * motionT);
-        static const QPointF kBias[8] = {
-            QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
-            QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
-            QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
-            QPointF(0.0, -1.0), QPointF(0.0, 1.0),
-        };
-        uint seed = pathHash ? pathHash : 1u;
-        const QPointF biasA = kBias[seed % 8];
-        const QPointF biasB = kBias[(seed / 8 + 3) % 8];
+        // Shared continuous biases with the dwell camera.
+        QPointF biasA = m_motionBiasA;
+        QPointF biasB = m_motionBiasB;
+        if (!m_motionBiasValid) {
+            static const QPointF kBias[8] = {
+                QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
+                QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
+                QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
+                QPointF(0.0, -1.0), QPointF(0.0, 1.0),
+            };
+            uint seed = pathHash ? pathHash : 1u;
+            biasA = kBias[seed % 8];
+            biasB = kBias[(seed / 8 + 3) % 8];
+        }
         biasX = biasA.x() + (biasB.x() - biasA.x()) * motionT;
         biasY = biasA.y() + (biasB.y() - biasA.y()) * motionT;
     } else {
@@ -1265,31 +1323,24 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         const QPointF halfEnd = halfOverflow(m_motionEndScale);
 
         const QString path = item->path();
-        uint seed = qHash(path);
-        if (seed == 0) {
-            seed = 1;
+        // Biases already advanced at beginLive for the incoming path; advancing
+        // again here would desync the overlay from the handoff camera (jump).
+        if (!(m_liveTransitionHold || m_liveTransitionActive)) {
+            chooseContinuingMotionBiases(qHash(path));
         }
-        // Prefer strong corner/edge biases so the pan is obvious under zoom.
-        static const QPointF kBias[8] = {
-            QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
-            QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
-            QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
-            QPointF(0.0, -1.0), QPointF(0.0, 1.0),
-        };
-        const QPointF biasA = kBias[seed % 8];
-        const QPointF biasB = kBias[(seed / 8 + 3) % 8]; // force different slot
 
-        m_motionStartCenter = QPointF(mid.x() + biasA.x() * halfStart.x(),
-                                      mid.y() + biasA.y() * halfStart.y());
-        m_motionEndCenter = QPointF(mid.x() + biasB.x() * halfEnd.x(),
-                                    mid.y() + biasB.y() * halfEnd.y());
+        m_motionStartCenter = QPointF(mid.x() + m_motionBiasA.x() * halfStart.x(),
+                                      mid.y() + m_motionBiasA.y() * halfStart.y());
+        m_motionEndCenter = QPointF(mid.x() + m_motionBiasB.x() * halfEnd.x(),
+                                    mid.y() + m_motionBiasB.y() * halfEnd.y());
         if (halfStart.x() < 0.5 && halfStart.y() < 0.5 && (halfEnd.x() > 0.5 || halfEnd.y() > 0.5)) {
             m_motionStartCenter = mid;
-            m_motionEndCenter = QPointF(mid.x() + biasB.x() * halfEnd.x(),
-                                        mid.y() + biasB.y() * halfEnd.y());
+            m_motionEndCenter = QPointF(mid.x() + m_motionBiasB.x() * halfEnd.x(),
+                                        mid.y() + m_motionBiasB.y() * halfEnd.y());
         }
         m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
         m_motionEndCenter = clampCenter(m_motionEndCenter, m_motionEndScale);
+        m_motionTravelDir = m_motionEndCenter - m_motionStartCenter;
     }
 
     if (!m_motionTimer) {
