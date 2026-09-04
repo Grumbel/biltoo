@@ -765,11 +765,8 @@ void ImageView::pickInterestingMotionBiases(uint seed)
 
 bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 {
-    // Live crossfade/fade-black when dwell motion is on.
-    // Design: transition is OPACITY ONLY on two static frames.
-    //   from = last dwell frame (viewport grab)
-    //   to   = next image at Ken Burns t=0 (first dwell pose)
-    // Ken Burns runs only during the dwell, never during the fade.
+    // CONTRACT: two images, both moving, opacity crossfade.
+    // Scene camera is stopped; both frames are motion-sampled pixmaps each tick.
     if (m_slideshowMotion == SlideshowMotion::Off
         || m_slideshowTransition == SlideshowTransition::None
         || m_slideshowTransition == SlideshowTransition::Slide
@@ -784,14 +781,43 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     m_liveTransitionNextPath = nextPath;
     m_liveTransitionMidAdvanced = false;
 
-    // Freeze the current view — stop motion so the grab is stable.
+    // Capture outgoing image + progress + biases for continuous from-path.
+    m_liveFromSourceImage = QImage();
+    m_liveFromMotionProgress0 = 0.0;
+    m_liveFromBiasA = m_motionBiasA;
+    m_liveFromBiasB = m_motionBiasB;
+    if (ImageItem *item = targetItem()) {
+        m_liveFromSourceImage = item->sourceImage();
+    }
+    if (m_slideshowMotionActive && m_motionDurationMs > 0) {
+        m_liveFromMotionProgress0 = qBound(
+            0.0,
+            qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
+                / qreal(m_motionDurationMs),
+            1.0);
+    }
+
+    // Incoming path: same session Y direction, fresh X interest.
+    pickInterestingMotionBiases(qHash(nextPath));
+
+    // Stop scene camera — painting is dual blit only for the transition.
     cancelSlideshowMotion();
-    m_slideshowTransitionFromPixmap = viewport()->grab();
+    enterSlideshowCameraMode();
+
+    if (!m_liveFromSourceImage.isNull()) {
+        const QPointF saveA = m_motionBiasA;
+        const QPointF saveB = m_motionBiasB;
+        m_motionBiasA = m_liveFromBiasA;
+        m_motionBiasB = m_liveFromBiasB;
+        m_slideshowTransitionFromPixmap = renderMotionCoverPixmap(
+            m_liveFromSourceImage, m_liveFromMotionProgress0, 0);
+        m_motionBiasA = saveA;
+        m_motionBiasB = saveB;
+    }
     if (m_slideshowTransitionFromPixmap.isNull()) {
         return false;
     }
 
-    // Prefer preloaded pixels for the to-frame; keep as handoff for LoadReplace.
     if (m_preloadPath == nextPath && !m_preloadImage.isNull()) {
         const QImage img = m_preloadImage;
         m_preloadPath.clear();
@@ -1005,16 +1031,9 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
     }
     m_liveTransitionSourceImage = nextImage;
     m_liveTransitionPathHash = qHash(m_liveTransitionNextPath);
-    // Static to-frame: first pose of the next dwell (Ken Burns t=0).
-    // No motion sampling during the fade — opacity only.
-    if (m_slideshowMotion != SlideshowMotion::Off) {
-        // Biases for the *next* dwell so t=0 matches startMotion after load.
-        pickInterestingMotionBiases(m_liveTransitionPathHash);
-        m_slideshowTransitionToPixmap = renderMotionCoverPixmap(
-            m_liveTransitionSourceImage, 0.0, m_liveTransitionPathHash);
-    } else {
-        m_slideshowTransitionToPixmap = renderCoverPixmap(m_liveTransitionSourceImage);
-    }
+    // First to-frame at Ken Burns t=0; tick advances both paths every frame.
+    m_slideshowTransitionToPixmap = renderMotionCoverPixmap(
+        m_liveTransitionSourceImage, 0.0, m_liveTransitionPathHash);
     if (m_slideshowTransitionToPixmap.isNull()) {
         m_liveTransitionSourceImage = QImage();
         emit slideshowLiveTransitionFinished();
@@ -1031,7 +1050,7 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionElapsedBaseMs = 0;
     m_liveTransitionProgress = 0.0;
-    m_liveTransitionMotionProgress = 0.0; // dwell starts at 0 after handoff
+    m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionDurationMs = m_slideshowTransitionDurationMs;
     m_liveTransitionClock.start();
     m_liveTransitionTimer->start();
@@ -1046,7 +1065,6 @@ void ImageView::tickLiveTransition()
         }
         return;
     }
-    // Frozen at mid-black until LoadReplace has fitted the next slide.
     if (m_liveTransitionAwaitingLoad) {
         m_liveTransitionProgress = 0.5;
         if (viewport()) {
@@ -1059,8 +1077,6 @@ void ImageView::tickLiveTransition()
         ? elapsed / qreal(m_liveTransitionDurationMs)
         : 1.0;
 
-    // Fade-through-black: advance (goNext) at full black, then freeze the veil
-    // until the next image is fitted so the lift never reveals the old frame.
     if (m_slideshowTransition == SlideshowTransition::FadeBlack
         && !m_liveTransitionMidAdvanced && t >= 0.5) {
         m_liveTransitionMidAdvanced = true;
@@ -1073,6 +1089,38 @@ void ImageView::tickLiveTransition()
         return;
     }
 
+    // CONTRACT: both images keep moving. Progress is wall-time / interval.
+    const qreal dt = (m_slideshowProgressIntervalMs > 0)
+        ? (elapsed / qreal(m_slideshowProgressIntervalMs))
+        : 0.0;
+    if (m_slideshowMotion != SlideshowMotion::Off) {
+        // From continues its path from the progress at transition start.
+        const qreal fromT = qBound(0.0, m_liveFromMotionProgress0 + dt, 1.0);
+        if (!m_liveFromSourceImage.isNull()) {
+            const QPointF saveA = m_motionBiasA;
+            const QPointF saveB = m_motionBiasB;
+            m_motionBiasA = m_liveFromBiasA;
+            m_motionBiasB = m_liveFromBiasB;
+            const QPixmap fromFrame = renderMotionCoverPixmap(
+                m_liveFromSourceImage, fromT, 0);
+            m_motionBiasA = saveA;
+            m_motionBiasB = saveB;
+            if (!fromFrame.isNull()) {
+                m_slideshowTransitionFromPixmap = fromFrame;
+            }
+        }
+        // To advances from 0 along its own path (same session Y direction).
+        const qreal toT = qBound(0.0, dt, 1.0);
+        m_liveTransitionMotionProgress = toT;
+        if (!m_liveTransitionSourceImage.isNull()) {
+            const QPixmap toFrame = renderMotionCoverPixmap(
+                m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
+            if (!toFrame.isNull()) {
+                m_slideshowTransitionToPixmap = toFrame;
+            }
+        }
+    }
+
     bool justEnteredHold = false;
     if (t >= 1.0) {
         m_liveTransitionProgress = 1.0;
@@ -1080,15 +1128,12 @@ void ImageView::tickLiveTransition()
             m_liveTransitionHold = true;
             justEnteredHold = true;
         }
-        // Static frames — nothing to animate during hold.
+        // Hold: keep sampling to-path so motion does not freeze under full opacity.
     } else {
         m_liveTransitionProgress = t;
     }
 
-    // Opacity-only: do not re-render from/to motion frames.
-
     if (justEnteredHold) {
-        // goNext → LoadReplace (uses handoff pixels) → startMotion(t=0) → releaseHold
         emit slideshowLiveTransitionFinished();
     }
 
@@ -1107,9 +1152,12 @@ void ImageView::maybeStartSlideshowMotion()
     if (duration < 250) {
         return;
     }
-    // Dwell always starts at t=0. Crossfade was opacity-only on static frames;
-    // the to-frame already showed Ken Burns t=0, so the camera matches.
-    startSlideshowMotion(duration, 0.0);
+    // Continue the *to* path at the progress the dual-blit already showed.
+    qreal initial = 0.0;
+    if (m_liveTransitionHold || m_liveTransitionActive || m_liveTransitionAwaitingLoad) {
+        initial = m_liveTransitionMotionProgress;
+    }
+    startSlideshowMotion(duration, initial);
 }
 
 void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)

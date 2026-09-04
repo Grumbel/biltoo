@@ -177,7 +177,7 @@ void ImageView::paintEvent(QPaintEvent *event)
         const QRect vr = viewport()->rect();
         const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {
-            // Opacity-only crossfade of two static frames (no position animation).
+            // Two moving Ken Burns frames; crossfade is opacity only (1-t / t).
             QColor pad(36, 36, 36);
             const QBrush b = backgroundBrush();
             if (b.style() != Qt::NoBrush && b.color().isValid()) {
