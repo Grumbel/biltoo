@@ -2348,3 +2348,28 @@ themselves are fine).
 - [x] No stretch under pan&scan / pan&zoom (Fit / Fill / 1:1 bases)
 - [x] Resize during slideshow does not refit over the camera
 - [x] Next **139**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-139-slideshow-cursor`
+
+**Request:** Show mouse cursor when it moves during a slideshow; hide after
+one second of inactivity.
+
+### Status
+Logic already existed (`armSlideshowCursorHide` + 1000 ms single-shot timer +
+app event filter). It often failed because **viewport mouse tracking was off**:
+`QGraphicsView::setMouseTracking(true)` does not enable tracking on the
+viewport, so `MouseMove` only arrived while a button was held.
+
+### Fix
+1. `viewport()->setMouseTracking(true)` in ImageView ctor and on slideshow start.
+2. MainWindow mouse tracking on during slideshow.
+3. Event filter also handles double-click / tablet move.
+4. `armSlideshowCursorHide` no-ops unless the slideshow timer is active.
+
+### Done criteria
+- [x] Cursor appears on free mouse move during slideshow
+- [x] Cursor hides ~1 s after last input
+- [x] Next **140**

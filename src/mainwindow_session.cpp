@@ -1336,9 +1336,10 @@ void MainWindow::hideSlideshowCursor()
 
 void MainWindow::armSlideshowCursorHide()
 {
-    if (!m_cursorHideTimer) {
+    if (!m_cursorHideTimer || !m_slideshowTimer || !m_slideshowTimer->isActive()) {
         return;
     }
+    // Show on activity, then hide after 1 s of inactivity (timer interval).
     showSlideshowCursor();
     m_cursorHideTimer->start();
 }
@@ -1371,6 +1372,14 @@ void MainWindow::startSlideshow()
     m_slideshowAct->setText(tr("Stop &Slideshow"));
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-stop"), QStyle::SP_MediaStop));
     qApp->installEventFilter(this);
+    // Ensure free mouse moves reach the app filter during the show.
+    setMouseTracking(true);
+    if (m_imageView) {
+        m_imageView->setMouseTracking(true);
+        if (m_imageView->viewport()) {
+            m_imageView->viewport()->setMouseTracking(true);
+        }
+    }
     armSlideshowCursorHide();
     if (m_imageView) {
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
@@ -1423,7 +1432,9 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
         case QEvent::HoverMove:
         case QEvent::MouseButtonPress:
         case QEvent::MouseButtonRelease:
+        case QEvent::MouseButtonDblClick:
         case QEvent::Wheel:
+        case QEvent::TabletMove:
             armSlideshowCursorHide();
             break;
         default:

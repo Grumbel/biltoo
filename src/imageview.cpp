@@ -98,7 +98,12 @@ ImageView::ImageView(QWidget *parent)
     setBackgroundBrush(QBrush(QColor(36, 36, 36)));
     setFrameShape(QFrame::NoFrame);
     setFocusPolicy(Qt::StrongFocus);
+    // QGraphicsView delivers moves via the viewport — both need tracking or
+    // MouseMove only arrives while a button is held (breaks slideshow cursor).
     setMouseTracking(true);
+    if (viewport()) {
+        viewport()->setMouseTracking(true);
+    }
     setAlignment(Qt::AlignCenter);
     // Full updates: HUD, edge affordances and workspace chrome are painted in
     // paintEvent on top of the scene. SmartViewportUpdate scrolls/blits the
