@@ -2694,3 +2694,24 @@ increases, half grows, so pan **accelerates** (curved path).
 ### Done criteria
 - [x] Linear pan + zoom
 - [x] Next **153**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-153-preload-kenburns`
+
+**Requests:** Preload next slide off GUI thread; Ken Burns was dead-centre / boring.
+
+### Changes
+1. `preloadSlideshowImage(path)` — `ImageLoader::load` on the thread pool; cache
+   until `beginLive` consumes it (or a newer preload replaces it).
+2. MainWindow preloads the next path on slideshow start and after each advance.
+3. `pickInterestingMotionBiases` — full corner/edge pairs from path hash (not the
+   mild fixed diagonal).
+4. Motion base overscans when Fit leaves ~0 overflow so start/end centres leave
+   the image centre (min half ≥ 32 scene px).
+
+### Done criteria
+- [x] Preload off GUI thread
+- [x] Varied corner Ken Burns with pan room
+- [x] Next **154**

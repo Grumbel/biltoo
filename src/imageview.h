@@ -185,7 +185,9 @@ public:
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
     /** Continue outgoing camera from the current pose through a live transition. */
     void extendOutgoingMotionThroughTransition();
-    void chooseContinuingMotionBiases(uint seed);
+    void pickInterestingMotionBiases(uint seed);
+    /** Decode path off the GUI thread into m_preload* for the next live transition. */
+    void preloadSlideshowImage(const QString &path);
     void applySlideshowMotionProgress(qreal t);
     /** Disable AlignCenter / scrollbars / mouse-anchor that fight setTransform. */
     void enterSlideshowCameraMode();
@@ -1025,6 +1027,10 @@ private:
     QImage m_liveTransitionSourceImage; /**< Incoming image for to-frame blit */
     QImage m_liveFromSourceImage; /**< Outgoing image for from-frame blit */
     qreal m_liveFromMotionProgress0 = 0.0; /**< Outgoing progress at transition start */
+    QPointF m_liveFromBiasA{-1.0, -1.0};
+    QPointF m_liveFromBiasB{1.0, 1.0};
+    QString m_preloadPath;
+    QImage m_preloadImage;
     uint m_liveTransitionPathHash = 0;
     /** Real-time dwell progress sampled for the live to-frame (handoff to camera). */
     qreal m_liveTransitionMotionProgress = 0.0;

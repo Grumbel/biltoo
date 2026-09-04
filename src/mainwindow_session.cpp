@@ -1387,6 +1387,13 @@ void MainWindow::startSlideshow()
         // off, cover + camera when motion is on. maybeStart alone skipped
         // zoom mode and left slide 0 on ordinary Image-mode fit.
         m_imageView->reapplySlideshowFraming();
+        if (m_session.paths().size() > 1) {
+            int n = (m_currentIndex + 1) % m_session.paths().size();
+            if (n < 0) {
+                n = 0;
+            }
+            m_imageView->preloadSlideshowImage(m_session.paths().at(n));
+        }
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }

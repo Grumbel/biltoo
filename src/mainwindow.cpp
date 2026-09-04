@@ -254,6 +254,11 @@ MainWindow::MainWindow(QWidget *parent)
             m_slideshowAdvancing = false;
             if (m_imageView && m_slideshowTimer && m_slideshowTimer->isActive()) {
                 m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+                // Preload the following slide off-thread for the next transition.
+                if (m_session.paths().size() > 1) {
+                    int n = (m_currentIndex + 1) % m_session.paths().size();
+                    m_imageView->preloadSlideshowImage(m_session.paths().at(n));
+                }
             }
         });
     }
@@ -796,6 +801,10 @@ void MainWindow::onSlideshowTick()
     m_slideshowAdvancing = false;
     if (m_imageView && m_slideshowTimer && m_slideshowTimer->isActive()) {
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        if (m_session.paths().size() > 1) {
+            int n = (m_currentIndex + 1) % m_session.paths().size();
+            m_imageView->preloadSlideshowImage(m_session.paths().at(n));
+        }
     }
 }
 
