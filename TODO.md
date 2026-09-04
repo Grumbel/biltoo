@@ -2676,3 +2676,21 @@ snapped to the camera path.
 ### Done criteria
 - [x] Blit and camera share one pose model
 - [x] Next **152**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-152-linear-kenburns`
+
+**Issue:** Path looked like an upward curve, not smooth linear Ken Burns.
+
+**Cause:** Pose used `center = lerp(A,B,t) * halfOverflow(scale(t))`. As zoom
+increases, half grows, so pan **accelerates** (curved path).
+
+**Fix:** Classic linear Ken Burns for both camera and blit:
+- `scale(t) = lerp(s0, s1, t)`
+- `center/offset(t) = lerp(start, end, t)` in fixed start/end crop space
+
+### Done criteria
+- [x] Linear pan + zoom
+- [x] Next **153**

@@ -1017,9 +1017,12 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
             biasY = flip ? (1.0 - 2.0 * motionT) : (-1.0 + 2.0 * motionT);
         }
     } else if (m_slideshowMotion == SlideshowMotion::PanZoom) {
+        // Linear Ken Burns matching the camera: lerp scale; lerp crop offset
+        // between start-half and end-half (not bias×half(s(t)), which curves).
         const qreal factor = qBound(1.02, m_panZoomFactor, 1.40);
-        scale = base * (1.0 + (factor - 1.0) * motionT);
-        // Shared continuous biases with the dwell camera.
+        const qreal s0 = base;
+        const qreal s1 = base * factor;
+        scale = s0 + (s1 - s0) * motionT;
         QPointF biasA = m_motionBiasA;
         QPointF biasB = m_motionBiasB;
         if (!m_motionBiasValid) {
@@ -1033,8 +1036,24 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
             biasA = kBias[seed % 8];
             biasB = kBias[(seed / 8 + 3) % 8];
         }
-        biasX = biasA.x() + (biasB.x() - biasA.x()) * motionT;
-        biasY = biasA.y() + (biasB.y() - biasA.y()) * motionT;
+        const qreal half0x = qMax(0.0, (iw - qreal(vw) / s0) * 0.5);
+        const qreal half0y = qMax(0.0, (ih - qreal(vh) / s0) * 0.5);
+        const qreal half1x = qMax(0.0, (iw - qreal(vw) / s1) * 0.5);
+        const qreal half1y = qMax(0.0, (ih - qreal(vh) / s1) * 0.5);
+        // Normalized bias in [-1,1] → offset in image pixels, then lerp.
+        const qreal off0x = biasA.x() * half0x;
+        const qreal off0y = biasA.y() * half0y;
+        const qreal off1x = biasB.x() * half1x;
+        const qreal off1y = biasB.y() * half1y;
+        const qreal offX = off0x + (off1x - off0x) * motionT;
+        const qreal offY = off0y + (off1y - off0y) * motionT;
+        // Convert image-space offset to the bias expected by the compose step
+        // below (bias * overflow at *current* scale in view pixels).
+        const qreal halfNowX = qMax(0.0, (iw * scale - qreal(vw)) * 0.5);
+        const qreal halfNowY = qMax(0.0, (ih * scale - qreal(vh)) * 0.5);
+        // off is in image pixels; view-pixel shift is off * scale.
+        biasX = (halfNowX > 0.5) ? ((offX * scale) / halfNowX) : 0.0;
+        biasY = (halfNowY > 0.5) ? ((offY * scale) / halfNowY) : 0.0;
     } else {
         scale = base;
         biasX = 0.0;
@@ -1455,34 +1474,14 @@ void ImageView::tickSlideshowMotion()
 void ImageView::applySlideshowMotionProgress(qreal t)
 {
     t = qBound(0.0, t, 1.0);
-    // Same pose model as renderMotionCoverPixmap: scale(t), then
-    // center = mid + lerp(biasA,biasB,t) * halfOverflow(scale).
-    // Linear interpolation of startC→endC diverges from that when halfStart≠halfEnd
-    // and caused the blit→camera jump at releaseHold.
+    // Classic linear Ken Burns: lerp scale and lerp pan centre in scene space.
+    // (bias×half(scale(t)) curves the path as overflow grows with zoom.)
     const qreal s = m_motionStartScale + (m_motionEndScale - m_motionStartScale) * t;
+    const QPointF c(
+        m_motionStartCenter.x() + (m_motionEndCenter.x() - m_motionStartCenter.x()) * t,
+        m_motionStartCenter.y() + (m_motionEndCenter.y() - m_motionStartCenter.y()) * t);
     if (s <= 0.0 || !qIsFinite(s) || !viewport()) {
         return;
-    }
-
-    QPointF c = m_motionStartCenter;
-    ImageItem *item = targetItem();
-    if (item && !item->contentRect().isEmpty()) {
-        const QRectF content = item->contentRect();
-        const qreal iw = content.width();
-        const qreal ih = content.height();
-        const QPointF mid = item->mapToScene(content.center());
-        const qreal vw = qreal(qMax(1, viewport()->width()));
-        const qreal vh = qreal(qMax(1, viewport()->height()));
-        const qreal viewW = vw / s;
-        const qreal viewH = vh / s;
-        const qreal halfX = qMax(0.0, (iw - viewW) * 0.5);
-        const qreal halfY = qMax(0.0, (ih - viewH) * 0.5);
-        const QPointF bias(
-            m_motionBiasA.x() + (m_motionBiasB.x() - m_motionBiasA.x()) * t,
-            m_motionBiasA.y() + (m_motionBiasB.y() - m_motionBiasA.y()) * t);
-        c = QPointF(mid.x() + bias.x() * halfX, mid.y() + bias.y() * halfY);
-        c.setX(qBound(mid.x() - halfX, c.x(), mid.x() + halfX));
-        c.setY(qBound(mid.y() - halfY, c.y(), mid.y() + halfY));
     }
 
     const qreal vx = qreal(viewport()->width()) * 0.5;
