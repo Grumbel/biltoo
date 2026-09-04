@@ -715,10 +715,7 @@ void ImageView::cancelSlideshowMotion()
     if (m_motionTimer) {
         m_motionTimer->stop();
     }
-    // Leave camera mode only when no live transition still needs a frozen matrix.
-    if (!m_liveTransitionActive && !m_liveTransitionHold && !m_liveTransitionAwaitingLoad) {
-        leaveSlideshowCameraMode();
-    }
+    // Do not leave camera mode here — beginLive cancels scene motion before dual-blit.
 }
 
 void ImageView::enterSlideshowCameraMode()
@@ -1446,6 +1443,9 @@ void ImageView::tickSlideshowMotion()
         if (m_motionTimer) {
             m_motionTimer->stop();
         }
+        if (!m_liveTransitionActive && !m_liveTransitionHold) {
+            leaveSlideshowCameraMode();
+        }
         qWarning("[qimgview-slideshow] motion stopped at path end");
         return;
     }
@@ -1455,16 +1455,36 @@ void ImageView::tickSlideshowMotion()
 void ImageView::applySlideshowMotionProgress(qreal t)
 {
     t = qBound(0.0, t, 1.0);
+    // Same pose model as renderMotionCoverPixmap: scale(t), then
+    // center = mid + lerp(biasA,biasB,t) * halfOverflow(scale).
+    // Linear interpolation of startC→endC diverges from that when halfStart≠halfEnd
+    // and caused the blit→camera jump at releaseHold.
     const qreal s = m_motionStartScale + (m_motionEndScale - m_motionStartScale) * t;
-    const QPointF c(
-        m_motionStartCenter.x() + (m_motionEndCenter.x() - m_motionStartCenter.x()) * t,
-        m_motionStartCenter.y() + (m_motionEndCenter.y() - m_motionStartCenter.y()) * t);
     if (s <= 0.0 || !qIsFinite(s) || !viewport()) {
         return;
     }
-    // Uniform scale only. Bake the camera centre into the matrix and zero
-    // scrollbars so QGraphicsView cannot cancel the pan or introduce a
-    // non-uniform effective mapping via scrollbar ranges.
+
+    QPointF c = m_motionStartCenter;
+    ImageItem *item = targetItem();
+    if (item && !item->contentRect().isEmpty()) {
+        const QRectF content = item->contentRect();
+        const qreal iw = content.width();
+        const qreal ih = content.height();
+        const QPointF mid = item->mapToScene(content.center());
+        const qreal vw = qreal(qMax(1, viewport()->width()));
+        const qreal vh = qreal(qMax(1, viewport()->height()));
+        const qreal viewW = vw / s;
+        const qreal viewH = vh / s;
+        const qreal halfX = qMax(0.0, (iw - viewW) * 0.5);
+        const qreal halfY = qMax(0.0, (ih - viewH) * 0.5);
+        const QPointF bias(
+            m_motionBiasA.x() + (m_motionBiasB.x() - m_motionBiasA.x()) * t,
+            m_motionBiasA.y() + (m_motionBiasB.y() - m_motionBiasA.y()) * t);
+        c = QPointF(mid.x() + bias.x() * halfX, mid.y() + bias.y() * halfY);
+        c.setX(qBound(mid.x() - halfX, c.x(), mid.x() + halfX));
+        c.setY(qBound(mid.y() - halfY, c.y(), mid.y() + halfY));
+    }
+
     const qreal vx = qreal(viewport()->width()) * 0.5;
     const qreal vy = qreal(viewport()->height()) * 0.5;
     setTransformationAnchor(QGraphicsView::NoAnchor);

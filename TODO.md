@@ -2657,3 +2657,22 @@ with two moving images is **two blits**, not a scene camera + overlay.
 - [x] Crossfade does not use scene underlay
 - [x] Both images are motion-sampled pixmaps
 - [x] Next **151**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-151-unified-pose`
+
+**Root cause of remaining jump:** Blit used `center = mid + lerp(A,B,t)*half(s(t))`
+while the camera used **linear** `lerp(startC, endC, t)`. Those differ when
+`half(start) ≠ half(end)` (zoom changes overflow). At releaseHold the scene
+snapped to the camera path.
+
+### Fix
+`applySlideshowMotionProgress` evaluates the **same** bias×half(scale) pose as
+`renderMotionCoverPixmap`. `cancelSlideshowMotion` no longer leaves camera mode
+(that re-enabled AlignCenter during beginLive).
+
+### Done criteria
+- [x] Blit and camera share one pose model
+- [x] Next **152**
