@@ -2236,3 +2236,45 @@ outer transition-kind `tr`.
 - [x] Live crossfade/slide: incoming cover re-rendered along motion path each tick
 - [x] `tr` shadow in `readSettings` renamed
 - [x] Next **136**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-136-zoom-with-motion`
+
+**Issue:** Slideshow zoom (Fit / Fill / 1:1) only affects framing when dwell
+motion is Off. With motion On the camera always forced cover (Fill), so zoom
+looked inert during pan&scan / pan&zoom.
+
+**Desired model:** Zoom is the **base scale** for every slide. Dwell motion
+then moves relative to that base:
+
+| Zoom | Base scale | Motion |
+|------|------------|--------|
+| Fit | `min(vw/w, vh/h)` letterbox | Pan&zoom: zoom in from fit; Pan&scan: overscan if needed then edge pan |
+| Fill | `max(vw/w, vh/h)` cover | Same as previous default camera |
+| 1:1 | `1.0` native (padding if smaller than view) | Pan across overflow; pan&zoom from 1:1 |
+
+### Code changes
+1. `startSlideshowMotion`: base scale from `m_slideshowZoom` instead of always
+   cover; Pan&zoom `start = base`, `end = base * factor`; Pan&scan starts at
+   base with existing min-travel overscan (may raise scale above base).
+2. `setSlideshowZoom`: reapply framing / restart camera even when motion ≠ Off.
+3. LoadReplace slideshow branch: always `applySlideshowZoomFraming` first or
+   just `maybeStartSlideshowMotion` (camera sets its own transform) — drop the
+   hard-coded `KeepAspectRatioByExpanding` path.
+4. `renderMotionCoverPixmap`: same base-scale rules; letterbox/pad when the
+   drawn image is smaller than the viewport (Fit / 1:1).
+5. Tooltips in Slideshow Settings + Preferences: zoom applies with motion too.
+
+### Commits
+1. Dwell camera uses slideshow zoom as base scale
+2. Live transition cover + load path honour zoom base
+3. UI tooltips + TODO / AGENTS → next **137**
+
+### Done criteria
+- [x] Fit + Pan&zoom: starts letterboxed, zooms in
+- [x] Fill + motion: cover path (previous behaviour)
+- [x] 1:1 + motion: native scale at start (padding on small images)
+- [x] Live crossfade incoming frame matches the same base
+- [x] Next **137**
