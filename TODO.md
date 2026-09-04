@@ -3003,3 +3003,14 @@ Replace single root `screenshot.png` with `screenshots/gallery.png` and
 ### Done criteria
 - [x] Gallery + Workspace shots in README
 - [x] Next **170**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-170-config-org-lowercase`
+
+`QApplication::setOrganizationName("biltoo")` (lowercase) so Linux settings
+live under `~/.config/biltoo/` next to the binary name. Display name stays
+**Biltoo**.
+
+### Done criteria
+- [x] Config dir matches executable name
+- [x] Next **171**

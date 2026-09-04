@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 #  define BILTOO_VERSION "0.0.0"
 #endif
     QApplication::setApplicationVersion(QStringLiteral(BILTOO_VERSION));
-    QApplication::setOrganizationName(QStringLiteral("Biltoo"));
+    QApplication::setOrganizationName(QStringLiteral("biltoo"));
     QApplication::setOrganizationDomain(QStringLiteral("biltoo.local"));
     QGuiApplication::setDesktopFileName(QStringLiteral("biltoo"));
 
