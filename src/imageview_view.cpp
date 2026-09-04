@@ -546,8 +546,7 @@ void ImageView::releaseLiveTransitionHold()
     if (m_slideshowMotionActive && m_motionDurationMs > 0) {
         const qreal elapsed = qreal(m_motionClock.elapsed());
         m_motionElapsedOffsetMs = qint64(handoffProgress * qreal(m_motionDurationMs) - elapsed);
-        m_dwellCoverPixmap = renderMotionCoverPixmap(
-            m_dwellSourceImage, handoffProgress, 0);
+        m_dwellCoverPixmap = QPixmap();
     } else if (m_slideshowProgressActive
                && m_slideshowMotion != SlideshowMotion::Off) {
         // Motion was not running — start once (should be rare).
@@ -815,17 +814,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     // Do NOT cancel dwell motion. Transitions only change opacity/colour;
     // images keep moving until (and during) the composite.
 
-    if (!m_liveFromSourceImage.isNull()) {
-        const QPointF saveA = m_motionBiasA;
-        const QPointF saveB = m_motionBiasB;
-        m_motionBiasA = m_liveFromBiasA;
-        m_motionBiasB = m_liveFromBiasB;
-        m_slideshowTransitionFromPixmap = renderMotionCoverPixmap(
-            m_liveFromSourceImage, m_liveFromMotionProgress0, 0);
-        m_motionBiasA = saveA;
-        m_motionBiasB = saveB;
-    }
-    if (m_slideshowTransitionFromPixmap.isNull()) {
+    if (m_liveFromSourceImage.isNull()) {
         return false;
     }
 
@@ -900,18 +889,19 @@ QPixmap ImageView::renderCoverPixmap(const QImage &image) const
     return renderMotionCoverPixmap(image, 0.0, 0);
 }
 
-QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
-                                           uint pathHash) const
+void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
+                                 qreal motionT, QPointF biasA, QPointF biasB,
+                                 uint pathHash) const
 {
-    if (image.isNull() || !viewport()) {
-        return {};
+    if (!painter || image.isNull() || !viewport()) {
+        return;
     }
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
     const qreal iw = qreal(image.width());
     const qreal ih = qreal(image.height());
     if (iw < 1.0 || ih < 1.0) {
-        return {};
+        return;
     }
 
     motionT = qBound(0.0, motionT, 1.0);
@@ -932,7 +922,7 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
         break;
     }
     if (base <= 0.0 || !qIsFinite(base)) {
-        return {};
+        return;
     }
 
     qreal scale = base;
@@ -961,9 +951,6 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
             }
         }
         scale = s;
-        // Deterministic linear pan: always L→R on the long axis, T→B on the
-        // tall axis. pathHash must not flip direction (dwell used 0, live to-
-        // frames used the path hash → reverse at handoff).
         const qreal along = -1.0 + 2.0 * motionT;
         if (preferX) {
             biasX = along;
@@ -973,7 +960,6 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
             biasY = along;
         }
     } else if (m_slideshowMotion == SlideshowMotion::PanZoom) {
-        // Linear Ken Burns: lerp scale and lerp crop offset between start/end halves.
         const qreal factor = qBound(1.02, m_panZoomFactor, 1.40);
         qreal motionBase = base;
         {
@@ -984,16 +970,16 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
                 if (hx >= kMinHalf || hy >= kMinHalf) {
                     break;
                 }
-                motionBase *= 1.15;
+                motionBase *= 1.08;
             }
-            motionBase = qMax(motionBase, base);
         }
         const qreal s0 = motionBase;
         const qreal s1 = motionBase * factor;
         scale = s0 + (s1 - s0) * motionT;
-        QPointF biasA = m_motionBiasA;
-        QPointF biasB = m_motionBiasB;
-        if (!m_motionBiasValid) {
+
+        if (!m_motionBiasValid && biasA == QPointF(-1.0, -1.0)
+            && biasB == QPointF(1.0, 1.0)) {
+            // Fallback corners from pathHash when caller did not pass biases.
             static const QPointF kBias[8] = {
                 QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
                 QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
@@ -1008,18 +994,14 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
         const qreal half0y = qMax(0.0, (ih - qreal(vh) / s0) * 0.5);
         const qreal half1x = qMax(0.0, (iw - qreal(vw) / s1) * 0.5);
         const qreal half1y = qMax(0.0, (ih - qreal(vh) / s1) * 0.5);
-        // Normalized bias in [-1,1] → offset in image pixels, then lerp.
         const qreal off0x = biasA.x() * half0x;
         const qreal off0y = biasA.y() * half0y;
         const qreal off1x = biasB.x() * half1x;
         const qreal off1y = biasB.y() * half1y;
         const qreal offX = off0x + (off1x - off0x) * motionT;
         const qreal offY = off0y + (off1y - off0y) * motionT;
-        // Convert image-space offset to the bias expected by the compose step
-        // below (bias * overflow at *current* scale in view pixels).
         const qreal halfNowX = qMax(0.0, (iw * scale - qreal(vw)) * 0.5);
         const qreal halfNowY = qMax(0.0, (ih * scale - qreal(vh)) * 0.5);
-        // off is in image pixels; view-pixel shift is off * scale.
         biasX = (halfNowX > 0.5) ? ((offX * scale) / halfNowX) : 0.0;
         biasY = (halfNowY > 0.5) ? ((offY * scale) / halfNowY) : 0.0;
     } else {
@@ -1028,20 +1010,30 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
         biasY = 0.0;
     }
 
-    const int dw = qMax(1, int(qRound(iw * scale)));
-    const int dh = qMax(1, int(qRound(ih * scale)));
+    const qreal dw = iw * scale;
+    const qreal dh = ih * scale;
+    const qreal overflowX = qMax(0.0, (dw - qreal(vw)) * 0.5);
+    const qreal overflowY = qMax(0.0, (dh - qreal(vh)) * 0.5);
+    const qreal destX = (qreal(vw) - dw) * 0.5 - biasX * overflowX;
+    const qreal destY = (qreal(vh) - dh) * 0.5 - biasY * overflowY;
 
-    // Uniform scale only — never IgnoreAspectRatio-stretch into the viewport.
-    QImage scaled = image.scaled(dw, dh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    if (scaled.isNull()) {
+    // Draw source → dest rect; with an OpenGL viewport + SmoothPixmapTransform
+    // the scale is filtered on the GPU (no QImage::scaled every frame).
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter->drawImage(QRectF(destX, destY, dw, dh), image);
+}
+
+QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
+                                           uint pathHash) const
+{
+    // Snapshot helper (Slide transition / rare paths). Prefer paintMotionCover
+    // on the live viewport painter for the animated slideshow.
+    if (image.isNull() || !viewport()) {
         return {};
     }
-
-    // Compose onto an exact viewport-sized canvas. Overflow → negative dest
-    // (clips); undersize → padding. Bias shifts the image for pan samples.
+    const int vw = qMax(1, viewport()->width());
+    const int vh = qMax(1, viewport()->height());
     QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
-    // Opaque pad (view background) so letterboxed to-frames cannot show the
-    // outgoing underlay through empty bars during crossfade.
     QColor pad(36, 36, 36);
     {
         const QBrush b = backgroundBrush();
@@ -1050,13 +1042,9 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
         }
     }
     out.fill(pad);
-    const qreal overflowX = qMax(0.0, (qreal(dw) - qreal(vw)) * 0.5);
-    const qreal overflowY = qMax(0.0, (qreal(dh) - qreal(vh)) * 0.5);
-    const int destX = int(qRound((qreal(vw) - qreal(dw)) * 0.5 - biasX * overflowX));
-    const int destY = int(qRound((qreal(vh) - qreal(dh)) * 0.5 - biasY * overflowY));
     QPainter painter(&out);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.drawImage(destX, destY, scaled);
+    paintMotionCover(&painter, image, motionT, m_motionBiasA, m_motionBiasB, pathHash);
     painter.end();
     return QPixmap::fromImage(out);
 }
@@ -1099,25 +1087,9 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         ? motionProgress01(wallMs, qreal(m_motionDurationMs))
         : 0.0;
 
-    {
-        const QPointF saveA = m_motionBiasA;
-        const QPointF saveB = m_motionBiasB;
-        m_motionBiasA = m_liveFromBiasA;
-        m_motionBiasB = m_liveFromBiasB;
-        m_slideshowTransitionFromPixmap = renderMotionCoverPixmap(
-            m_liveFromSourceImage, m_liveFromMotionProgress0, 0);
-        m_motionBiasA = m_liveToBiasA;
-        m_motionBiasB = m_liveToBiasB;
-        m_slideshowTransitionToPixmap = renderMotionCoverPixmap(
-            m_liveTransitionSourceImage, 0.0, m_liveTransitionPathHash);
-        m_motionBiasA = saveA;
-        m_motionBiasB = saveB;
-    }
-    if (m_slideshowTransitionToPixmap.isNull()) {
-        m_liveTransitionSourceImage = QImage();
-        emit slideshowLiveTransitionFinished();
-        return;
-    }
+    // Frames are drawn in paintEvent via paintMotionCover (GL scale).
+    m_dwellMotionT = m_liveFromMotionProgress0;
+    m_liveTransitionMotionProgress = 0.0;
 
     // Opacity timeline only. Motion stays on m_motionTimer.
     m_liveTransitionActive = true;
@@ -1227,8 +1199,7 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     m_motionElapsedOffsetMs = (initialProgress > 0.0 && m_motionDurationMs > 0)
         ? qint64(initialProgress * qreal(m_motionDurationMs))
         : 0;
-    m_dwellCoverPixmap = renderMotionCoverPixmap(
-        m_dwellSourceImage, initialProgress, 0);
+    m_dwellCoverPixmap = QPixmap(); // painted live via paintMotionCover
     m_motionTimer->start();
     if (viewport()) {
         viewport()->update();
@@ -1253,46 +1224,20 @@ void ImageView::tickSlideshowMotion()
     // Never clamp-and-hold at 1: that froze the from-image for the whole fade
     // because the slideshow advances exactly when wall ≈ duration.
     const qreal dwellT = motionProgress01(wallMs, qreal(m_motionDurationMs));
+    m_dwellMotionT = dwellT;
 
     const bool inLive = m_liveTransitionActive || m_liveTransitionHold
         || m_liveTransitionAwaitingLoad;
 
     if (inLive) {
-        // --- motion samples FIRST (ALWAYS) so handoff sees current toT ---
-        const qreal fromT = dwellT;
-        if (!m_liveFromSourceImage.isNull()) {
-            const QPointF saveA = m_motionBiasA;
-            const QPointF saveB = m_motionBiasB;
-            m_motionBiasA = m_liveFromBiasA;
-            m_motionBiasB = m_liveFromBiasB;
-            const QPixmap fromFrame = renderMotionCoverPixmap(
-                m_liveFromSourceImage, fromT, 0);
-            m_motionBiasA = saveA;
-            m_motionBiasB = saveB;
-            if (!fromFrame.isNull()) {
-                m_slideshowTransitionFromPixmap = fromFrame;
-            }
-        }
+        // Progress only — paintMotionCover draws sources on the GL viewport.
         qreal toT = 0.0;
         if (m_toLayerWallMs >= 0.0 && m_motionDurationMs > 0) {
             toT = motionProgress01(wallMs - m_toLayerWallMs, qreal(m_motionDurationMs));
         }
         m_liveTransitionMotionProgress = toT;
-        if (!m_liveTransitionSourceImage.isNull()) {
-            const QPointF saveA = m_motionBiasA;
-            const QPointF saveB = m_motionBiasB;
-            m_motionBiasA = m_liveToBiasA;
-            m_motionBiasB = m_liveToBiasB;
-            const QPixmap toFrame = renderMotionCoverPixmap(
-                m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
-            m_motionBiasA = saveA;
-            m_motionBiasB = saveB;
-            if (!toFrame.isNull()) {
-                m_slideshowTransitionToPixmap = toFrame;
-            }
-        }
 
-        // --- opacity / veil timeline (cannot stop motion sampling above) ---
+        // --- opacity / veil timeline ---
         if (m_liveTransitionAwaitingLoad) {
             m_liveTransitionProgress = 0.5;
         } else if (m_liveTransitionHold) {
@@ -1324,14 +1269,7 @@ void ImageView::tickSlideshowMotion()
             }
         }
     } else {
-        // Pure dwell: one moving frame.
-        if (!m_dwellSourceImage.isNull()) {
-            const QPixmap frame = renderMotionCoverPixmap(
-                m_dwellSourceImage, dwellT, 0);
-            if (!frame.isNull()) {
-                m_dwellCoverPixmap = frame;
-            }
-        }
+        // Pure dwell: paint path samples m_dwellSourceImage at wall progress.
     }
 
     viewport()->update();

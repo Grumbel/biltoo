@@ -197,6 +197,9 @@ public:
      */
     QPixmap renderMotionCoverPixmap(const QImage &image, qreal motionT,
                                     uint pathHash) const;
+    /** Draw Ken Burns / pan-scan into an existing painter (GPU scale on GL view). */
+    void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT,
+                          QPointF biasA, QPointF biasB, uint pathHash) const;
     /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
     void applySlideshowZoomFraming(ImageItem *item);
     /** Controller host: session path order used for Gallery packing. */
@@ -972,6 +975,7 @@ private:
     QPixmap m_slideshowTransitionFromPixmap; /**< From-frame during dual-image fade */
     QPixmap m_dwellCoverPixmap; /**< Single-image Ken Burns blit during dwell */
     QImage m_dwellSourceImage; /**< Source pixels for dwell blit */
+    qreal m_dwellMotionT = 0.0; /**< Latest dwell progress [0,1] */
     qreal m_slideshowTransitionProgress = 1.0; /**< 0 = old frame, 1 = done */
     bool m_slideshowTransitionPending = false;
     bool m_slideshowTransitionActive = false;

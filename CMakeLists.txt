@@ -23,7 +23,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets PrintSupport)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGLWidgets PrintSupport)
 find_package(PkgConfig)
 
 add_executable(biltoo
@@ -145,6 +145,7 @@ target_link_libraries(biltoo PRIVATE
   Qt6::Core
   Qt6::Gui
   Qt6::Widgets
+  Qt6::OpenGLWidgets
   Qt6::PrintSupport
 )
 

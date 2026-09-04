@@ -3014,3 +3014,25 @@ live under `~/.config/biltoo/` next to the binary name. Display name stays
 ### Done criteria
 - [x] Config dir matches executable name
 - [x] Next **171**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-171-opengl-slideshow`
+
+### OpenGL viewport
+`ImageView` uses `QOpenGLWidget` as the QGraphicsView viewport so scene and
+overlays composite on the GPU (`Qt6::OpenGLWidgets`).
+
+### Slideshow scale on GPU
+Ken Burns / pan-scan no longer `QImage::scaled(..., SmoothTransformation)` every
+tick. `paintMotionCover` draws the source image into a dest rect; with
+`SmoothPixmapTransform` on the GL viewport the scale is filtered by OpenGL.
+
+Tick only advances progress and calls `update()`. Crossfade / FadeBlack paint
+the from/to sources directly.
+
+`renderMotionCoverPixmap` remains for rare snapshot paths (Slide).
+
+### Done criteria
+- [x] OpenGL viewport on ImageView
+- [x] No per-frame software smooth scale for dwell / live transitions
+- [x] Next **172**

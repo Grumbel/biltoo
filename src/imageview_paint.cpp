@@ -168,18 +168,23 @@ void ImageView::paintEvent(QPaintEvent *event)
         }
     }
 
-    // Slideshow Ken Burns: move the *images* via blit (not the view camera).
-    // Dwell = one moving frame; crossfade = two moving frames + opacity.
-    if (m_slideshowMotionActive && !m_liveTransitionActive && !m_liveTransitionHold
-        && !m_liveTransitionAwaitingLoad && !m_dwellCoverPixmap.isNull()) {
-        const QRect vr = viewport()->rect();
+    // Slideshow Ken Burns: draw source images with dest rects so scaling is
+    // done by the (OpenGL) paint engine, not QImage::scaled every tick.
+    auto fillPad = [&](const QRect &vr) {
         QColor pad(36, 36, 36);
         const QBrush b = backgroundBrush();
         if (b.style() != Qt::NoBrush && b.color().isValid()) {
             pad = b.color();
         }
         painter.fillRect(vr, pad);
-        painter.drawPixmap(vr, m_dwellCoverPixmap);
+    };
+
+    if (m_slideshowMotionActive && !m_liveTransitionActive && !m_liveTransitionHold
+        && !m_liveTransitionAwaitingLoad && !m_dwellSourceImage.isNull()) {
+        const QRect vr = viewport()->rect();
+        fillPad(vr);
+        paintMotionCover(&painter, m_dwellSourceImage, m_dwellMotionT,
+                         m_motionBiasA, m_motionBiasB, 0);
     }
 
     // Live transition: two moving frames, opacity blend.
@@ -189,54 +194,45 @@ void ImageView::paintEvent(QPaintEvent *event)
         const QRect vr = viewport()->rect();
         const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {
-            // Two moving Ken Burns frames; crossfade is opacity only (1-t / t).
-            QColor pad(36, 36, 36);
-            const QBrush b = backgroundBrush();
-            if (b.style() != Qt::NoBrush && b.color().isValid()) {
-                pad = b.color();
-            }
-            painter.fillRect(vr, pad);
-            if (!m_slideshowTransitionFromPixmap.isNull()) {
+            fillPad(vr);
+            if (!m_liveFromSourceImage.isNull()) {
                 painter.setOpacity(m_liveTransitionHold ? 0.0 : (1.0 - t));
-                painter.drawPixmap(vr, m_slideshowTransitionFromPixmap);
+                paintMotionCover(&painter, m_liveFromSourceImage, m_dwellMotionT,
+                                 m_liveFromBiasA, m_liveFromBiasB, 0);
             }
-            if (!m_slideshowTransitionToPixmap.isNull()) {
+            if (!m_liveTransitionSourceImage.isNull()) {
                 painter.setOpacity(m_liveTransitionHold ? 1.0 : t);
-                painter.drawPixmap(vr, m_slideshowTransitionToPixmap);
+                paintMotionCover(&painter, m_liveTransitionSourceImage,
+                                 m_liveTransitionMotionProgress,
+                                 m_liveToBiasA, m_liveToBiasB,
+                                 m_liveTransitionPathHash);
             }
             painter.setOpacity(1.0);
         } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
-            // Cover the scene completely: paint the motion blit under the black
-            // veil. Painting only the veil left the graphics-item underlay
-            // visible (different framing than the Ken Burns blit) and jumped
-            // the image as soon as the dwell cover stopped.
-            QColor pad(36, 36, 36);
-            const QBrush b = backgroundBrush();
-            if (b.style() != Qt::NoBrush && b.color().isValid()) {
-                pad = b.color();
-            }
-            painter.fillRect(vr, pad);
+            fillPad(vr);
             if (t < 0.5 || m_liveTransitionAwaitingLoad) {
-                // Phase 1 / mid-black hold: outgoing frame + rising black.
-                if (!m_slideshowTransitionFromPixmap.isNull()) {
+                if (!m_liveFromSourceImage.isNull()) {
                     painter.setOpacity(1.0);
-                    painter.drawPixmap(vr, m_slideshowTransitionFromPixmap);
+                    paintMotionCover(&painter, m_liveFromSourceImage, m_dwellMotionT,
+                                     m_liveFromBiasA, m_liveFromBiasB, 0);
                 }
                 painter.setOpacity(m_liveTransitionAwaitingLoad ? 1.0 : (t * 2.0));
                 painter.fillRect(vr, Qt::black);
                 painter.setOpacity(1.0);
             } else {
-                // Phase 2: incoming frame + falling black.
-                if (!m_slideshowTransitionToPixmap.isNull()) {
+                if (!m_liveTransitionSourceImage.isNull()) {
                     painter.setOpacity(1.0);
-                    painter.drawPixmap(vr, m_slideshowTransitionToPixmap);
+                    paintMotionCover(&painter, m_liveTransitionSourceImage,
+                                     m_liveTransitionMotionProgress,
+                                     m_liveToBiasA, m_liveToBiasB,
+                                     m_liveTransitionPathHash);
                 }
                 painter.setOpacity((1.0 - t) * 2.0);
                 painter.fillRect(vr, Qt::black);
                 painter.setOpacity(1.0);
             }
         } else if (m_slideshowTransition == SlideshowTransition::Slide) {
-            // Live old view is the underlay; slide the incoming frame in from the right.
+            // Static snapshot cards (built once); software path is fine here.
             const int w = vr.width();
             const int xNew = m_liveTransitionHold ? 0 : int(qRound((1.0 - t) * w));
             if (!m_slideshowTransitionToPixmap.isNull()) {
