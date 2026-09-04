@@ -13,6 +13,9 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QIcon>
+#include <QPainter>
+#include <QPixmap>
+#include <QSvgRenderer>
 #include <QStatusBar>
 #include <QLibraryInfo>
 #include <QLocale>
@@ -40,11 +43,29 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain(QStringLiteral("biltoo.local"));
     QGuiApplication::setDesktopFileName(QStringLiteral("biltoo"));
 
-    // Embedded resource first (works from ./build/biltoo without install).
-    // Theme icon only if the theme actually provides sizes (fromTheme can
-    // return a non-null empty icon when the name is missing from the theme).
-    QIcon appIcon(QStringLiteral(":/icons/biltoo.svg"));
+    // App icon from embedded SVG. QIcon(":.svg") needs the svg iconengines
+    // plugin on QT_PLUGIN_PATH; under nix develop the unwrapped binary often
+    // lacks that, so rasterize via QSvgRenderer (linked Qt6::Svg).
+    QIcon appIcon;
     {
+        const QString res = QStringLiteral(":/icons/biltoo.svg");
+        const QIcon native(res);
+        if (!native.isNull() && !native.availableSizes().isEmpty()) {
+            appIcon = native;
+        } else {
+            QSvgRenderer renderer(res);
+            if (renderer.isValid()) {
+                for (int s : {16, 32, 48, 64, 128, 256}) {
+                    QPixmap pm(s, s);
+                    pm.fill(Qt::transparent);
+                    QPainter p(&pm);
+                    p.setRenderHint(QPainter::Antialiasing, true);
+                    renderer.render(&p);
+                    p.end();
+                    appIcon.addPixmap(pm);
+                }
+            }
+        }
         const QIcon theme = QIcon::fromTheme(QStringLiteral("biltoo"));
         if (!theme.isNull() && !theme.availableSizes().isEmpty()) {
             appIcon = theme;

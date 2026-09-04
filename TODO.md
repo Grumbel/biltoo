@@ -3187,3 +3187,22 @@ tile, plus double selectionChanged and synchronous setCurrentIndex work.
 ### Done criteria
 - [x] Selection feedback feels immediate
 - [x] Next **181**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-181-svg-icons-nix-develop`
+
+Custom icons failed under `nix develop` because `QIcon(":/….svg")` needs the
+**svg iconengines plugin** on `QT_PLUGIN_PATH`. The packaged binary gets that
+via `wrapQtAppsHook`; the unwrapped `$BILTOO_BUILD_DIR/biltoo` does not.
+
+### Fix
+- Rasterize `:/icons/**.svg` with **QSvgRenderer** (linked `Qt6::Svg`) into
+  multi-size `QIcon` pixmaps — no plugin required
+- Dev shell also exports `QT_PLUGIN_PATH` for qtbase + qtsvg plugins
+
+Icons stay in `data/icons/` → `src/icons.qrc`; no special install path for
+development.
+
+### Done criteria
+- [x] Toolbar/app icons visible from biltoo-run
+- [x] Next **182**

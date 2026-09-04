@@ -68,6 +68,10 @@
           # Our layout is data/icons/hicolor/... so datadir = $BILTOO_SOURCE/data.
           export XDG_DATA_DIRS="$BILTOO_SOURCE/data''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
 
+          # Unwrapped ./build/biltoo does not get wrapQtAppsHook. Point Qt at
+          # iconengines (svg) + imageformats from the same Qt the package uses.
+          export QT_PLUGIN_PATH="${pkgs.qt6.qtbase}/${pkgs.qt6.qtbase.qtPluginPrefix}:${pkgs.qt6.qtsvg}/${pkgs.qt6.qtsvg.qtPluginPrefix}''${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+
           # Out-of-tree build dir (override with BILTOO_BUILD_DIR=...).
           export BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"
 
