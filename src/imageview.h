@@ -1008,6 +1008,9 @@ private:
     /** Elapsed ms already consumed when resuming after a mid-black load wait. */
     int m_liveTransitionElapsedBaseMs = 0;
     QElapsedTimer m_liveTransitionClock;
+    /** Wall clock for Ken Burns sampling during a live transition; never restarted
+     *  for FadeBlack mid-black waits so motion does not jump backward. */
+    QElapsedTimer m_liveMotionClock;
     QTimer *m_liveTransitionTimer = nullptr;
     QString m_liveTransitionNextPath;
     /** Decoded next slide kept for re-rendering animated live-transition covers. */

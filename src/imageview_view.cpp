@@ -495,6 +495,8 @@ void ImageView::releaseLiveTransitionHold()
         && m_slideshowTransition == SlideshowTransition::FadeBlack
         && m_liveTransitionActive) {
         m_liveTransitionAwaitingLoad = false;
+        // Veil timeline only: resume phase 2 from mid-black. Motion keeps
+        // using m_liveMotionClock (never restarted) so pan does not jump.
         m_liveTransitionElapsedBaseMs = m_liveTransitionDurationMs / 2;
         m_liveTransitionClock.restart();
         m_liveTransitionProgress = 0.5;
@@ -521,9 +523,11 @@ void ImageView::releaseLiveTransitionHold()
     if (m_liveTransitionTimer) {
         m_liveTransitionTimer->stop();
     }
-    // FadeBlack phase 2 ends here: start dwell at the to-path progress last
-    // shown under the veil so the image pose does not jump.
-    if (!m_slideshowMotionActive && m_slideshowProgressActive
+    // Resume dwell at the to-path progress last shown so the pose matches.
+    // Always restart: dwell may still be "active" from before the transition
+    // (we no longer cancel it at beginLive) but its clock advanced while
+    // ticks were suppressed — restarting at handoff keeps motion continuous.
+    if (m_slideshowProgressActive
         && m_slideshowMotion != SlideshowMotion::Off) {
         const int duration = m_slideshowProgressIntervalMs;
         if (duration >= 250) {
@@ -783,8 +787,9 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     // Incoming path: same session Y direction, fresh X interest.
     pickInterestingMotionBiases(qHash(nextPath));
 
-    // Dual image blit only for the transition (no scene underlay).
-    cancelSlideshowMotion();
+    // Do NOT cancel dwell motion here. Transitions only change opacity/colour;
+    // images keep moving. Dwell blit continues until live paint covers the
+    // viewport (avoids a frozen gap while the next decode is still in flight).
 
     if (!m_liveFromSourceImage.isNull()) {
         const QPointF saveA = m_motionBiasA;
@@ -932,13 +937,16 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
             }
         }
         scale = s;
-        const bool flip = (pathHash & 1u) != 0;
+        // Deterministic linear pan: always L→R on the long axis, T→B on the
+        // tall axis. pathHash must not flip direction (dwell used 0, live to-
+        // frames used the path hash → reverse at handoff).
+        const qreal along = -1.0 + 2.0 * motionT;
         if (preferX) {
-            biasX = flip ? (1.0 - 2.0 * motionT) : (-1.0 + 2.0 * motionT);
+            biasX = along;
             biasY = 0.0;
         } else {
             biasX = 0.0;
-            biasY = flip ? (1.0 - 2.0 * motionT) : (-1.0 + 2.0 * motionT);
+            biasY = along;
         }
     } else if (m_slideshowMotion == SlideshowMotion::PanZoom) {
         // Linear Ken Burns: lerp scale and lerp crop offset between start/end halves.
@@ -1063,6 +1071,7 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
     m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionDurationMs = m_slideshowTransitionDurationMs;
     m_liveTransitionClock.start();
+    m_liveMotionClock.start();
     m_liveTransitionTimer->start();
     viewport()->update();
 }
@@ -1076,7 +1085,37 @@ void ImageView::tickLiveTransition()
         return;
     }
     if (m_liveTransitionAwaitingLoad) {
+        // Solid black covers the viewport, but motion must not stop: keep
+        // advancing from/to samples so phase 2 resumes on a continuous path.
         m_liveTransitionProgress = 0.5;
+        if (m_slideshowMotion != SlideshowMotion::Off
+            && m_slideshowProgressIntervalMs > 0) {
+            const qreal motionElapsed = qreal(m_liveMotionClock.elapsed());
+            const qreal dt = motionElapsed / qreal(m_slideshowProgressIntervalMs);
+            const qreal fromT = qBound(0.0, m_liveFromMotionProgress0 + dt, 1.0);
+            if (!m_liveFromSourceImage.isNull()) {
+                const QPointF saveA = m_motionBiasA;
+                const QPointF saveB = m_motionBiasB;
+                m_motionBiasA = m_liveFromBiasA;
+                m_motionBiasB = m_liveFromBiasB;
+                const QPixmap fromFrame = renderMotionCoverPixmap(
+                    m_liveFromSourceImage, fromT, 0);
+                m_motionBiasA = saveA;
+                m_motionBiasB = saveB;
+                if (!fromFrame.isNull()) {
+                    m_slideshowTransitionFromPixmap = fromFrame;
+                }
+            }
+            const qreal toT = qBound(0.0, dt, 1.0);
+            m_liveTransitionMotionProgress = toT;
+            if (!m_liveTransitionSourceImage.isNull()) {
+                const QPixmap toFrame = renderMotionCoverPixmap(
+                    m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
+                if (!toFrame.isNull()) {
+                    m_slideshowTransitionToPixmap = toFrame;
+                }
+            }
+        }
         if (viewport()) {
             viewport()->update();
         }
@@ -1099,9 +1138,11 @@ void ImageView::tickLiveTransition()
         return;
     }
 
-    // CONTRACT: both images keep moving. Progress is wall-time / interval.
+    // CONTRACT: both images keep moving. Motion wall-time is independent of
+    // the veil clock (FadeBlack may restart the veil clock at mid-black).
+    const qreal motionElapsed = qreal(m_liveMotionClock.elapsed());
     const qreal dt = (m_slideshowProgressIntervalMs > 0)
-        ? (elapsed / qreal(m_slideshowProgressIntervalMs))
+        ? (motionElapsed / qreal(m_slideshowProgressIntervalMs))
         : 0.0;
     if (m_slideshowMotion != SlideshowMotion::Off) {
         // From continues its path from the progress at transition start.
