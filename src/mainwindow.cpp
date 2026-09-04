@@ -135,7 +135,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::workspacePathsChanged,
             this, &MainWindow::onWorkspacePathsChanged);
     connect(m_imageView, &ImageView::canvasSelectionChanged, this, [this]() {
-        // Crop and other selection-sensitive actions depend on target count.
+        // Let the tile selection paint first; action enablement can wait a tick.
+        if (isGalleryMode()) {
+            QTimer::singleShot(0, this, [this]() {
+                if (!isGalleryMode()) {
+                    return;
+                }
+                updateNavigationActions();
+            });
+            return;
+        }
         updateNavigationActions();
         if (isWorkspaceMode()) {
             updateWorkspaceActionVisibility();

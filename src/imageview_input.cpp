@@ -622,13 +622,28 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             // MainWindow does not run navigation/layout work twice per click.
             const bool already = hit->isSelected()
                 && m_scene->selectedItems().size() == 1;
-            if (!already) {
-                m_scene->blockSignals(true);
-                m_scene->clearSelection();
-                hit->setSelected(true);
-                m_scene->blockSignals(false);
-                emit canvasSelectionChanged();
+            if (already) {
+                m_gallery.setSelectionAnchor(hit);
+                event->accept();
+                return;
             }
+            ImageItem *prev = nullptr;
+            {
+                const QList<QGraphicsItem *> sel = m_scene->selectedItems();
+                if (sel.size() == 1) {
+                    prev = qgraphicsitem_cast<ImageItem *>(sel.first());
+                }
+            }
+            m_scene->blockSignals(true);
+            m_scene->clearSelection();
+            hit->setSelected(true);
+            m_scene->blockSignals(false);
+            // Only the two tiles need a repaint; avoid viewport()->update().
+            if (prev && prev != hit) {
+                prev->update();
+            }
+            hit->update();
+            emit canvasSelectionChanged();
             m_gallery.setSelectionAnchor(hit);
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
@@ -636,11 +651,6 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            // Item update() from setSelected is enough; avoid forcing a second
-            // full-scene pass via statusChanged → viewport()->update().
-            if (m_hudVisible || m_hudFlashVisible) {
-                emit statusChanged();
-            }
             return;
         }
 

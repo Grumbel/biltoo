@@ -652,6 +652,14 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     if (!painter) {
         return;
     }
+    // Bare Gallery: selection chrome is on the items themselves — skip overlay
+    // pass (HUD/edges/slideshow) so selection does not pay for empty work.
+    if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
+        && m_hoverEdge == EdgeZone::None && !m_cropMode
+        && !m_slideshowMotionActive && !m_liveTransitionActive
+        && !m_slideshowTransitionActive) {
+        return;
+    }
     painter->save();
     painter->resetTransform();
     if (viewport()) {

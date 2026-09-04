@@ -327,12 +327,16 @@ void ImageItem::setGallerySelectable(bool on)
     }
     if (on) {
         setAcceptHoverEvents(true);
-        // Gallery packs many tiles: FastTransformation keeps selection/scroll
-        // responsive (Smooth on every FullViewportUpdate was multi-hundred ms).
+        // Gallery packs many tiles: FastTransformation + device cache so
+        // selection only invalidates the two tiles that change, not a
+        // full re-scale of every pixmap (OpenGL still redraws the view,
+        // but cached tiles are cheap blits).
         setTransformationMode(Qt::FastTransformation);
+        setCacheMode(QGraphicsItem::DeviceCoordinateCache);
         setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
     } else {
         setSelected(false);
+        setCacheMode(QGraphicsItem::NoCache);
         setTransformationMode(Qt::SmoothTransformation);
         setFlags(ItemSendsGeometryChanges);
     }

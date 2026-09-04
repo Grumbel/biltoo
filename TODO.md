@@ -3262,3 +3262,20 @@ normal Image display uses Preferences `m_bgColor` (default 42,42,42).
 ### Done criteria
 - [x] Transition pad matches Preferences background
 - [x] Next **185**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-185-gallery-select-cache`
+
+Gallery selection still lagged under OpenGL: any update tends to redraw the
+whole view; without item caches every tile re-scales its pixmap.
+
+### Fixes
+- `DeviceCoordinateCache` + `FastTransformation` on gallery tiles
+- Skip viewport overlay pass in bare Gallery (no HUD/edges/slideshow)
+- Defer `updateNavigationActions` one tick on Gallery selection
+- Re-click same sole selection: no-op
+- Explicit `item->update()` on prev/new only (no full viewport update)
+
+### Done criteria
+- [x] Selection feels near-instant on packed galleries
+- [x] Next **186**
