@@ -12,7 +12,7 @@ in packed layouts, or arrange several images freely for comparison. It is
 See [TODO.md](TODO.md) for the roadmap and open questions.
 Latest agent handoff: **TODO.md → “Design: slideshow transitions × dwell motion”**
 (Canonical transition×motion matrix + audit vs tip 140).
-Next bundle number: **141**.
+Next bundle number: **142**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
