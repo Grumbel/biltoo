@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "imageloader.h"
 #include "archivepath.h"
 #include <QPixmap>
 #include "imageitem.h"
@@ -9,6 +10,9 @@
 #include <QFileInfo>
 #include <QScrollBar>
 #include <QTimer>
+#include <QPainter>
+#include <QThreadPool>
+#include <QPointer>
 #include <QElapsedTimer>
 #include <QVariantAnimation>
 #include <QRubberBand>
@@ -428,8 +432,8 @@ void ImageView::setSlideshowTransitionDurationMs(int ms)
 void ImageView::prepareSlideshowTransition()
 {
     cancelSlideshowTransition();
-    // Snapshot transitions (Crossfade / Slide / FadeBlack without dwell motion).
-    // FadeBlack *with* dwell motion uses beginSlideshowExitVeil instead (live pan).
+    // Snapshot transitions when dwell motion is off. With motion on, the host
+    // uses beginLiveSlideshowTransition so the outgoing pan never freezes.
     if (m_slideshowTransition == SlideshowTransition::None
         || m_slideshowTransitionDurationMs <= 0
         || !isImageMode()
@@ -455,6 +459,12 @@ void ImageView::cancelSlideshowTransition()
     m_slideshowTransitionToPixmap = QPixmap();
     if (m_slideshowTransitionAnim) {
         m_slideshowTransitionAnim->stop();
+    }
+    m_liveTransitionActive = false;
+    m_liveTransitionProgress = 0.0;
+    m_liveTransitionMidAdvanced = false;
+    if (m_liveTransitionTimer) {
+        m_liveTransitionTimer->stop();
     }
     if (viewport()) {
         viewport()->update();
@@ -533,50 +543,130 @@ void ImageView::cancelSlideshowMotion()
     }
 }
 
-bool ImageView::beginSlideshowExitVeil(int durationMs)
+bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 {
-    if (!isImageMode() || !viewport() || durationMs < 1) {
+    if (m_slideshowMotion == SlideshowMotion::Off
+        || m_slideshowTransition == SlideshowTransition::None
+        || m_slideshowTransitionDurationMs <= 0
+        || !isImageMode()
+        || !viewport()
+        || nextPath.isEmpty()) {
         return false;
     }
-    if (!m_exitVeilTimer) {
-        m_exitVeilTimer = new QTimer(this);
-        m_exitVeilTimer->setTimerType(Qt::PreciseTimer);
-        m_exitVeilTimer->setInterval(16);
-        connect(m_exitVeilTimer, &QTimer::timeout, this, &ImageView::tickExitVeil);
-    }
-    m_exitVeilActive = true;
-    m_exitVeilProgress = 0.0;
-    m_exitVeilDurationMs = durationMs;
-    m_exitVeilClock.start();
-    m_exitVeilTimer->start();
-    viewport()->update();
+    cancelSlideshowTransition(); // no frozen snapshot path
+    m_liveTransitionNextPath = nextPath;
+    m_liveTransitionMidAdvanced = false;
+    const QString path = nextPath;
+    const int maxEdge = qMax(viewport()->width(), viewport()->height());
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start([guard, path, maxEdge]() {
+        // Prefer a large decode so cover-scaling looks sharp.
+        QImage img = ImageLoader::loadThumbnail(path, qMax(maxEdge * 2, 512));
+        if (img.isNull()) {
+            img = ImageLoader::load(path);
+        }
+        if (!guard) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard.data(), [guard, img]() {
+            if (!guard) {
+                return;
+            }
+            guard->startLiveTransitionWithImage(img);
+        }, Qt::QueuedConnection);
+    });
     return true;
 }
 
-void ImageView::tickExitVeil()
+QPixmap ImageView::renderCoverPixmap(const QImage &image) const
 {
-    if (!m_exitVeilActive) {
-        if (m_exitVeilTimer) {
-            m_exitVeilTimer->stop();
+    if (image.isNull() || !viewport()) {
+        return {};
+    }
+    const int vw = qMax(1, viewport()->width());
+    const int vh = qMax(1, viewport()->height());
+    QImage scaled = image.scaled(vw, vh, Qt::KeepAspectRatioByExpanding,
+                                 Qt::SmoothTransformation);
+    if (scaled.isNull()) {
+        return {};
+    }
+    // Centre-crop to exact viewport size.
+    const int x = qMax(0, (scaled.width() - vw) / 2);
+    const int y = qMax(0, (scaled.height() - vh) / 2);
+    scaled = scaled.copy(x, y, qMin(vw, scaled.width()), qMin(vh, scaled.height()));
+    if (scaled.size() != QSize(vw, vh)) {
+        scaled = scaled.scaled(vw, vh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    }
+    return QPixmap::fromImage(scaled);
+}
+
+void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
+{
+    if (!isImageMode() || !viewport()) {
+        emit slideshowLiveTransitionFinished();
+        return;
+    }
+    if (nextImage.isNull()) {
+        emit slideshowLiveTransitionFinished();
+        return;
+    }
+    m_slideshowTransitionToPixmap = renderCoverPixmap(nextImage);
+    if (m_slideshowTransitionToPixmap.isNull()) {
+        emit slideshowLiveTransitionFinished();
+        return;
+    }
+    if (!m_liveTransitionTimer) {
+        m_liveTransitionTimer = new QTimer(this);
+        m_liveTransitionTimer->setTimerType(Qt::PreciseTimer);
+        m_liveTransitionTimer->setInterval(16);
+        connect(m_liveTransitionTimer, &QTimer::timeout, this, &ImageView::tickLiveTransition);
+    }
+    m_liveTransitionActive = true;
+    m_liveTransitionProgress = 0.0;
+    m_liveTransitionDurationMs = m_slideshowTransitionDurationMs;
+    m_liveTransitionClock.start();
+    m_liveTransitionTimer->start();
+    viewport()->update();
+}
+
+void ImageView::tickLiveTransition()
+{
+    if (!m_liveTransitionActive) {
+        if (m_liveTransitionTimer) {
+            m_liveTransitionTimer->stop();
         }
         return;
     }
-    const qreal t = m_exitVeilDurationMs > 0
-        ? qreal(m_exitVeilClock.elapsed()) / qreal(m_exitVeilDurationMs)
+    const qreal t = m_liveTransitionDurationMs > 0
+        ? qreal(m_liveTransitionClock.elapsed()) / qreal(m_liveTransitionDurationMs)
         : 1.0;
+
+    // Fade-through-black: swap the underlying image at full black so the
+    // second half reveals the next slide under the lifting veil.
+    if (m_slideshowTransition == SlideshowTransition::FadeBlack
+        && !m_liveTransitionMidAdvanced && t >= 0.5) {
+        m_liveTransitionMidAdvanced = true;
+        emit slideshowLiveTransitionFinished();
+        // Keep the veil running; host goNext() loads the next image under black.
+    }
+
     if (t >= 1.0) {
-        m_exitVeilProgress = 1.0;
-        m_exitVeilActive = false;
-        if (m_exitVeilTimer) {
-            m_exitVeilTimer->stop();
+        m_liveTransitionProgress = 1.0;
+        m_liveTransitionActive = false;
+        if (m_liveTransitionTimer) {
+            m_liveTransitionTimer->stop();
         }
+        m_slideshowTransitionToPixmap = QPixmap();
         if (viewport()) {
             viewport()->update();
         }
-        emit slideshowExitVeilFinished();
+        // Crossfade / Slide / None-path: advance at the end (FadeBlack already did).
+        if (!m_liveTransitionMidAdvanced) {
+            emit slideshowLiveTransitionFinished();
+        }
         return;
     }
-    m_exitVeilProgress = t;
+    m_liveTransitionProgress = t;
     if (viewport()) {
         viewport()->update();
     }

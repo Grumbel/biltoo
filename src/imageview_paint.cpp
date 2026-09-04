@@ -167,11 +167,37 @@ void ImageView::paintEvent(QPaintEvent *event)
         }
     }
 
-    // Live exit veil: black rises over the still-moving pan (no frozen grab).
-    if (m_exitVeilActive && m_exitVeilProgress > 0.0) {
-        painter.setOpacity(m_exitVeilProgress);
-        painter.fillRect(viewport()->rect(), Qt::black);
-        painter.setOpacity(1.0);
+    // Live transition: outgoing dwell motion keeps painting underneath; only the
+    // incoming frame / veil is composited here (no frozen grab of the old view).
+    if (m_liveTransitionActive && m_liveTransitionProgress < 1.0) {
+        const QRect vr = viewport()->rect();
+        const qreal t = m_liveTransitionProgress;
+        if (m_slideshowTransition == SlideshowTransition::Crossfade) {
+            if (!m_slideshowTransitionToPixmap.isNull()) {
+                painter.setOpacity(t);
+                painter.drawPixmap(vr, m_slideshowTransitionToPixmap);
+                painter.setOpacity(1.0);
+            }
+        } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
+            if (t < 0.5) {
+                painter.setOpacity(t * 2.0);
+                painter.fillRect(vr, Qt::black);
+                painter.setOpacity(1.0);
+            } else {
+                painter.setOpacity((1.0 - t) * 2.0);
+                painter.fillRect(vr, Qt::black);
+                painter.setOpacity(1.0);
+            }
+        } else if (m_slideshowTransition == SlideshowTransition::Slide) {
+            // Live old view is the underlay; slide the incoming frame in from the right.
+            const int w = vr.width();
+            const int h = vr.height();
+            const int xNew = int(qRound((1.0 - t) * w));
+            if (!m_slideshowTransitionToPixmap.isNull()) {
+                painter.drawPixmap(xNew, 0, w, h, m_slideshowTransitionToPixmap);
+            }
+            // Darken the strip still showing the old image slightly for separation.
+        }
     }
 
     // Empty session: invite the user to open or drop images.

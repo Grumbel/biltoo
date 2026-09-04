@@ -185,7 +185,9 @@ public:
     void startSlideshowMotion(int durationMs);
     void applySlideshowMotionProgress(qreal t);
     void tickSlideshowMotion();
-    void tickExitVeil();
+    void tickLiveTransition();
+    void startLiveTransitionWithImage(const QImage &nextImage);
+    QPixmap renderCoverPixmap(const QImage &image) const;
     /** Controller host: session path order used for Gallery packing. */
     QStringList &pathOrder() { return m_pathOrder; }
     const QStringList &pathOrder() const { return m_pathOrder; }
@@ -500,12 +502,12 @@ public:
     /** Start dwell camera motion if enabled and slideshow is active. */
     void maybeStartSlideshowMotion();
     /**
-     * Fade a black veil over the *live* view (camera keeps moving). Used to
-     * advance slides without freezing a snapshot. Emits slideshowExitVeilFinished
-     * when fully black so the host can load the next image.
-     * @return true if a veil was started (caller should defer goNext).
+     * Start a transition while the current image keeps its dwell motion.
+     * @p nextPath is decoded off-thread into the incoming frame. Emits
+     * slideshowLiveTransitionFinished when the host should call goNext().
+     * @return false if a normal snapshot transition should be used instead.
      */
-    bool beginSlideshowExitVeil(int durationMs);
+    bool beginLiveSlideshowTransition(const QString &nextPath);
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -653,7 +655,7 @@ signals:
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
     /** Black exit veil finished — host should advance the slideshow. */
-    void slideshowExitVeilFinished();
+    void slideshowLiveTransitionFinished();
     /** Crop mode toggled on/off (toolbar checkable state). */
     void cropModeChanged(bool active);
     /** Session crop committed; @p image is the new displayed pixels for @p path. */
@@ -949,11 +951,13 @@ private:
     int m_motionDurationMs = 0;
     QElapsedTimer m_motionClock;
     QTimer *m_motionTimer = nullptr;
-    bool m_exitVeilActive = false;
-    qreal m_exitVeilProgress = 0.0;
-    int m_exitVeilDurationMs = 0;
-    QElapsedTimer m_exitVeilClock;
-    QTimer *m_exitVeilTimer = nullptr;
+    bool m_liveTransitionActive = false;
+    bool m_liveTransitionMidAdvanced = false; /**< FadeBlack swapped at midpoint */
+    qreal m_liveTransitionProgress = 0.0;
+    int m_liveTransitionDurationMs = 0;
+    QElapsedTimer m_liveTransitionClock;
+    QTimer *m_liveTransitionTimer = nullptr;
+    QString m_liveTransitionNextPath;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;

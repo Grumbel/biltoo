@@ -248,7 +248,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_slideshowTimer->setTimerType(Qt::PreciseTimer);
     connect(m_slideshowTimer, &QTimer::timeout, this, &MainWindow::onSlideshowTick);
     if (m_imageView) {
-        connect(m_imageView, &ImageView::slideshowExitVeilFinished, this, [this]() {
+        connect(m_imageView, &ImageView::slideshowLiveTransitionFinished, this, [this]() {
             m_slideshowAdvancing = true;
             goNext();
             m_slideshowAdvancing = false;
@@ -734,17 +734,17 @@ void MainWindow::setZoomTool()
 
 void MainWindow::onSlideshowTick()
 {
-    // Live black veil only when the user chose Fade through black *and* dwell
-    // camera motion is on — keeps the outgoing pan moving. Crossfade / Slide
-    // still use their snapshot transitions so the Preference is respected.
+    // With dwell camera motion, run a *live* transition (outgoing keeps panning)
+    // and only then advance. Snapshot transitions freeze the outgoing frame.
     if (m_imageView && m_imageView->isImageMode()
         && m_imageView->slideshowMotion() != ImageView::SlideshowMotion::Off
-        && m_imageView->slideshowTransition()
-            == ImageView::SlideshowTransition::FadeBlack) {
-        const int veilMs = m_imageView->slideshowTransitionDurationMs() > 0
-            ? m_imageView->slideshowTransitionDurationMs()
-            : 400;
-        if (m_imageView->beginSlideshowExitVeil(veilMs)) {
+        && m_session.paths().size() > 1) {
+        int nextIdx = m_currentIndex + 1;
+        if (nextIdx >= m_session.paths().size()) {
+            nextIdx = 0;
+        }
+        if (nextIdx >= 0 && nextIdx < m_session.paths().size()
+            && m_imageView->beginLiveSlideshowTransition(m_session.paths().at(nextIdx))) {
             return;
         }
     }

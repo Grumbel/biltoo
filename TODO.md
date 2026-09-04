@@ -1961,3 +1961,15 @@ icon rect, snap near-square sources to fill.
 - Crossfade / Slide / None use the normal transition path again (grab allowed with motion)
 
 **Next:** `qimgview-131-…`
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-131-live-transition`
+
+With dwell motion on, inter-slide transitions no longer snapshot-freeze the
+outgoing frame. The current image keeps panning; the next frame is decoded
+off-thread and composited (crossfade opacity / fade-black veil / slide-in).
+Advance (`goNext`) runs at the end (or at mid-black for fade-through-black).
+
+**Next:** `qimgview-132-…`
