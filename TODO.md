@@ -2941,3 +2941,34 @@ It must be structurally impossible for a transition to stop the motion timer.
 - [x] Single motion timer through dwell + crossfade + fade-black
 - [x] No cancelSlideshowMotion on the transition path
 - [x] Next **167**
+
+
+## Plan / work (2026-09-04) — bundle `qimgview-167-progress-not-stuck`
+
+**Why motion still "stopped" in the crossfade:**
+
+Motion duration was set equal to the slideshow interval. The advance timer
+fires when wall ≈ duration, so `progress` was already **clamped to 1.0**.
+During the entire crossfade the from-image was held at the end pose — not a
+timer bug, a progress model bug.
+
+```
+progress = clamp(wall / duration, 0, 1)   // duration == interval
+advance fires when wall ≈ interval  →  progress == 1  →  frozen for the fade
+```
+
+**Fix (simple lerp model):**
+
+```
+motionDuration = interval + transitionDuration
+progress = clamp(wall / motionDuration, 0, 1)
+```
+
+Advance still fires at `interval`, but progress is then still < 1 and keeps
+lerping through the fade at the same rate as during dwell. To-image starts at 0
+on its own path at the same rate.
+
+### Done criteria
+- [x] From-image not stuck at progress 1 during crossfade
+- [x] Linear progress only — no second motion system
+- [x] Next **168**

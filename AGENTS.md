@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → qimgview-166-one-motion-clock**
-(One motion clock; transitions cannot stop motion).
-Next bundle number: **167**.
+Latest agent handoff: **TODO.md → qimgview-167-progress-not-stuck**
+(Motion path outlasts interval so crossfade is mid-lerp).
+Next bundle number: **168**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

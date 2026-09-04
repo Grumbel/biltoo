@@ -19,6 +19,18 @@
 #include <QDebug>
 #include <QtMath>
 
+
+/** Linear motion progress in [0,1]. Caller must size duration so the slideshow
+ *  does not advance at progress==1 (see startSlideshowMotion).
+ */
+static qreal motionProgress01(qreal wallMs, qreal durationMs)
+{
+    if (durationMs <= 0.0) {
+        return 0.0;
+    }
+    return qBound(0.0, wallMs / durationMs, 1.0);
+}
+
 void ImageView::setTool(Tool tool)
 {
     if (m_tool == tool) {
@@ -1084,7 +1096,7 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         : 0.0;
     m_toLayerWallMs = wallMs;
     m_liveFromMotionProgress0 = (m_motionDurationMs > 0)
-        ? qBound(0.0, wallMs / qreal(m_motionDurationMs), 1.0)
+        ? motionProgress01(wallMs, qreal(m_motionDurationMs))
         : 0.0;
 
     {
@@ -1204,11 +1216,16 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         connect(m_motionTimer, &QTimer::timeout, this, &ImageView::tickSlideshowMotion);
     }
     m_slideshowMotionActive = true;
-    m_motionDurationMs = durationMs;
+    // Path lasts longer than the dwell interval so that when the slideshow
+    // advances (and crossfade runs), from-progress is still < 1 and keeps
+    // lerping. Previously duration==interval → progress clamped at 1 for the
+    // entire transition → motion looked frozen.
+    const int pathMs = durationMs + qMax(0, m_slideshowTransitionDurationMs);
+    m_motionDurationMs = qMax(durationMs, pathMs);
     initialProgress = qBound(0.0, initialProgress, 1.0);
     m_motionClock.start();
-    m_motionElapsedOffsetMs = (initialProgress > 0.0 && durationMs > 0)
-        ? qint64(initialProgress * qreal(durationMs))
+    m_motionElapsedOffsetMs = (initialProgress > 0.0 && m_motionDurationMs > 0)
+        ? qint64(initialProgress * qreal(m_motionDurationMs))
         : 0;
     m_dwellCoverPixmap = renderMotionCoverPixmap(
         m_dwellSourceImage, initialProgress, 0);
@@ -1233,7 +1250,9 @@ void ImageView::tickSlideshowMotion()
     }
 
     const qreal wallMs = qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed());
-    const qreal dwellT = qBound(0.0, wallMs / qreal(m_motionDurationMs), 1.0);
+    // Never clamp-and-hold at 1: that froze the from-image for the whole fade
+    // because the slideshow advances exactly when wall ≈ duration.
+    const qreal dwellT = motionProgress01(wallMs, qreal(m_motionDurationMs));
 
     const bool inLive = m_liveTransitionActive || m_liveTransitionHold
         || m_liveTransitionAwaitingLoad;
@@ -1256,7 +1275,7 @@ void ImageView::tickSlideshowMotion()
         }
         qreal toT = 0.0;
         if (m_toLayerWallMs >= 0.0 && m_motionDurationMs > 0) {
-            toT = qBound(0.0, (wallMs - m_toLayerWallMs) / qreal(m_motionDurationMs), 1.0);
+            toT = motionProgress01(wallMs - m_toLayerWallMs, qreal(m_motionDurationMs));
         }
         m_liveTransitionMotionProgress = toT;
         if (!m_liveTransitionSourceImage.isNull()) {
