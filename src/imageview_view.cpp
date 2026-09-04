@@ -506,8 +506,13 @@ void ImageView::releaseLiveTransitionHold()
     m_slideshowTransitionToPixmap = QPixmap();
     m_liveTransitionSourceImage = QImage();
     m_liveTransitionPathHash = 0;
+    // Keep motion progress for maybeStart if it has not run yet; clear after
+    // a short deferral is unnecessary — load already called maybeStart first.
     m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionNextPath.clear();
+    if (m_liveTransitionTimer) {
+        m_liveTransitionTimer->stop();
+    }
     if (viewport()) {
         viewport()->update();
     }
@@ -708,20 +713,20 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return false;
     }
     cancelSlideshowTransition(); // no frozen snapshot path
-    // Freeze the outgoing dwell camera. If the old pan keeps running under the
-    // crossfade, removing that image at hold-release snaps the visible motion
-    // onto the new slide's path (direction / position jump).
-    cancelSlideshowMotion();
+    // Keep the outgoing dwell camera running — both images move on their own
+    // paths during the crossfade. Handoff continuity is handled by advancing
+    // the to-frame motion sample through the hold/load gap.
     m_liveTransitionNextPath = nextPath;
     m_liveTransitionMidAdvanced = false;
     const QString path = nextPath;
     const int maxEdge = qMax(viewport()->width(), viewport()->height());
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, maxEdge]() {
-        // Prefer a large decode so cover-scaling looks sharp.
-        QImage img = ImageLoader::loadThumbnail(path, qMax(maxEdge * 2, 512));
+        // Prefer a full decode so the to-frame aspect matches the post-load item
+        // (thumbnail size mismatch was a source of handoff jump).
+        QImage img = ImageLoader::load(path);
         if (img.isNull()) {
-            img = ImageLoader::load(path);
+            img = ImageLoader::loadThumbnail(path, qMax(maxEdge * 2, 512));
         }
         if (!guard) {
             return;
@@ -874,8 +879,6 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         emit slideshowLiveTransitionFinished();
         return;
     }
-    // Ensure outgoing camera is frozen once the overlay is about to paint.
-    cancelSlideshowMotion();
     m_liveTransitionSourceImage = nextImage;
     m_liveTransitionPathHash = qHash(m_liveTransitionNextPath);
     // First frame at motion t=0; subsequent ticks re-render along the path.
@@ -939,39 +942,38 @@ void ImageView::tickLiveTransition()
         return;
     }
 
-    if (t >= 1.0) {
+    // Crossfade: once the fade completes, keep holding the to-frame until
+    // LoadReplace finishes — but keep sampling motion so the handoff progress
+    // includes decode latency (frozen overlay + camera at stale t was a jump).
+    bool justEnteredHold = false;
+    if (t >= 1.0 && m_liveTransitionMidAdvanced) {
+        // FadeBlack second half finished — clear the veil.
         m_liveTransitionProgress = 1.0;
+        m_liveTransitionActive = false;
+        m_liveTransitionHold = false;
+        m_slideshowTransitionToPixmap = QPixmap();
+        m_liveTransitionSourceImage = QImage();
+        m_liveTransitionPathHash = 0;
+        m_liveTransitionMotionProgress = 0.0;
         if (m_liveTransitionTimer) {
             m_liveTransitionTimer->stop();
         }
-        // Crossfade / Slide: hold the final composite until LoadReplace fits.
-        // FadeBlack already advanced at mid-black; the next slide is fitted, so
-        // clear the veil immediately (no hold needed).
-        if (!m_liveTransitionMidAdvanced) {
-            m_liveTransitionHold = true;
-            m_liveTransitionActive = false;
-            // Keep final to-pixmap + motion progress for camera handoff.
-            m_liveTransitionSourceImage = QImage();
-            if (viewport()) {
-                viewport()->update();
-            }
-            emit slideshowLiveTransitionFinished();
-        } else {
-            m_liveTransitionActive = false;
-            m_liveTransitionHold = false;
-            m_slideshowTransitionToPixmap = QPixmap();
-            m_liveTransitionSourceImage = QImage();
-            m_liveTransitionPathHash = 0;
-            m_liveTransitionMotionProgress = 0.0;
-            if (viewport()) {
-                viewport()->update();
-            }
+        if (viewport()) {
+            viewport()->update();
         }
         return;
     }
-    m_liveTransitionProgress = t;
-    // Sample the dwell path in real time so the overlay matches the camera
-    // after LoadReplace (compressed 0→1 caused a jump from path-end to start).
+    if (t >= 1.0 && !m_liveTransitionMidAdvanced) {
+        m_liveTransitionProgress = 1.0;
+        if (!m_liveTransitionHold) {
+            m_liveTransitionHold = true;
+            justEnteredHold = true;
+        }
+    } else if (t < 1.0) {
+        m_liveTransitionProgress = t;
+    }
+
+    // Sample the next slide's dwell path in real time (fade + hold + load gap).
     if ((m_slideshowTransition == SlideshowTransition::Crossfade
          || m_slideshowTransition == SlideshowTransition::Slide)
         && !m_liveTransitionSourceImage.isNull()
@@ -988,6 +990,12 @@ void ImageView::tickLiveTransition()
             m_slideshowTransitionToPixmap = frame;
         }
     }
+
+    if (justEnteredHold) {
+        // Do not stop the timer — keep advancing the to-frame until release.
+        emit slideshowLiveTransitionFinished();
+    }
+
     if (viewport()) {
         viewport()->update();
     }

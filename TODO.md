@@ -2514,3 +2514,31 @@ also let the underlay show through (“not clearing the screen”).
 - [x] No direction snap at end of crossfade under pan&zoom
 - [x] Letterbox bars do not reveal the outgoing image
 - [x] Next **143**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-144-dual-motion-handoff`
+
+**Feedback:** Freezing the outgoing image during crossfade is wrong — both
+images must keep moving on their own paths. Freeze also did not fix the jump
+(likely timing/load related).
+
+### Model
+- Outgoing dwell camera keeps running under the live crossfade.
+- Incoming to-frame keeps sampling its path in real time.
+- Hold after fade: keep updating the to-frame until LoadReplace (progress
+  includes decode latency).
+- Camera starts at that progress; then hold drops.
+
+### Changes
+1. Remove `cancelSlideshowMotion` from live-transition start.
+2. Prefer full `ImageLoader::load` for the to-frame (aspect/size parity).
+3. On fade complete: enter hold but **do not** stop the timer or clear the
+   source image; keep advancing motion samples until release.
+4. FadeBlack completion path restored separately.
+
+### Done criteria
+- [x] Both images move during crossfade + pan&zoom
+- [x] Handoff progress includes load wait
+- [x] Next **145**
