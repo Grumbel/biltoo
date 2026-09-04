@@ -318,8 +318,15 @@ void ImageView::resizeEvent(QResizeEvent *event)
     if (isGalleryMode()) {
         return;
     }
-    // Dwell camera owns the view transform — never refit over it.
-    if (m_slideshowMotionActive) {
+    // Dwell cover owns framing — never refit the underlay over it.
+    // Invalidate atlas viewport keys so the next tick rebuilds at new size.
+    if (m_slideshowMotionActive || m_liveTransitionActive || m_liveTransitionHold) {
+        m_dwellAtlasVw = 0;
+        m_liveFromAtlasVw = 0;
+        m_liveToAtlasVw = 0;
+        if (viewport()) {
+            viewport()->update();
+        }
         return;
     }
     if (m_fitMode && m_items.size() == 1) {

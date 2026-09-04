@@ -520,21 +520,8 @@ void ImageView::releaseLiveTransitionHold()
     const qreal handoffProgress = m_liveTransitionMotionProgress;
     const QImage toSource = m_liveTransitionSourceImage;
 
-    m_liveTransitionHold = false;
-    m_liveTransitionAwaitingLoad = false;
-    m_liveTransitionActive = false;
-    m_liveTransitionProgress = 1.0;
-    m_slideshowTransitionToPixmap = QPixmap();
-    m_slideshowTransitionFromPixmap = QPixmap();
-    m_liveTransitionSourceImage = QImage();
-    m_liveFromSourceImage = QImage();
-    m_liveTransitionPathHash = 0;
-    m_liveTransitionMotionProgress = 0.0;
-    m_liveTransitionNextPath.clear();
-    m_toLayerWallMs = -1.0;
-
-    // Soft handoff: keep the motion timer and wall clock running. Only retarget
-    // the dwell source/biases and re-base the offset so dwellT == handoffProgress.
+    // Soft handoff FIRST: install dwell cover before dropping live flags so one
+    // frame cannot expose the fitted scene underlay (fullscreen flash).
     m_motionBiasA = m_liveToBiasA;
     m_motionBiasB = m_liveToBiasB;
     m_motionBiasValid = true;
@@ -543,6 +530,32 @@ void ImageView::releaseLiveTransitionHold()
     } else if (ImageItem *item = targetItem()) {
         m_dwellSourceImage = item->sourceImage();
     }
+    if (!m_dwellSourceImage.isNull()) {
+        // Reuse to-atlas as dwell atlas when scales match path max.
+        m_dwellAtlas = m_liveToAtlas;
+        m_dwellAtlasScale = m_liveToAtlasScale;
+        m_dwellAtlasVw = m_liveToAtlasVw;
+        m_dwellAtlasVh = m_liveToAtlasVh;
+        ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                          &m_dwellAtlasVw, &m_dwellAtlasVh);
+    }
+    m_dwellMotionT = handoffProgress;
+    setSlideshowUnderlayVisible(false);
+
+    m_liveTransitionHold = false;
+    m_liveTransitionAwaitingLoad = false;
+    m_liveTransitionActive = false;
+    m_liveTransitionProgress = 1.0;
+    m_slideshowTransitionToPixmap = QPixmap();
+    m_slideshowTransitionFromPixmap = QPixmap();
+    m_liveTransitionSourceImage = QImage();
+    m_liveFromSourceImage = QImage();
+    m_liveFromAtlas = QPixmap();
+    m_liveToAtlas = QPixmap();
+    m_liveTransitionPathHash = 0;
+    m_liveTransitionMotionProgress = 0.0;
+    m_liveTransitionNextPath.clear();
+    m_toLayerWallMs = -1.0;
     if (m_slideshowMotionActive && m_motionDurationMs > 0) {
         const qreal elapsed = qreal(m_motionClock.elapsed());
         m_motionElapsedOffsetMs = qint64(handoffProgress * qreal(m_motionDurationMs) - elapsed);
@@ -735,6 +748,9 @@ void ImageView::reapplySlideshowFraming()
 void ImageView::cancelSlideshowMotion()
 {
     m_slideshowMotionActive = false;
+    setSlideshowUnderlayVisible(true);
+    m_dwellAtlas = QPixmap();
+    m_dwellAtlasScale = 0.0;
     m_motionElapsedOffsetMs = 0;
     if (m_motionTimer) {
         m_motionTimer->stop();
@@ -889,6 +905,110 @@ QPixmap ImageView::renderCoverPixmap(const QImage &image) const
     return renderMotionCoverPixmap(image, 0.0, 0);
 }
 
+qreal ImageView::motionPathMaxScale(const QImage &image) const
+{
+    if (image.isNull() || !viewport()) {
+        return 1.0;
+    }
+    const int vw = qMax(1, viewport()->width());
+    const int vh = qMax(1, viewport()->height());
+    const qreal iw = qreal(image.width());
+    const qreal ih = qreal(image.height());
+    if (iw < 1.0 || ih < 1.0) {
+        return 1.0;
+    }
+    const qreal cover = qMax(qreal(vw) / iw, qreal(vh) / ih);
+    const qreal fit = qMin(qreal(vw) / iw, qreal(vh) / ih);
+    qreal base = cover;
+    switch (m_slideshowZoom) {
+    case SlideshowZoom::Fill:
+        base = cover;
+        break;
+    case SlideshowZoom::Actual:
+        base = 1.0;
+        break;
+    case SlideshowZoom::Fit:
+    default:
+        base = fit;
+        break;
+    }
+    if (base <= 0.0 || !qIsFinite(base)) {
+        return 1.0;
+    }
+
+    if (m_slideshowMotion == SlideshowMotion::PanScan) {
+        qreal s = base;
+        const bool preferX = iw * qreal(vh) >= ih * qreal(vw);
+        const qreal viewW = qreal(vw) / s;
+        const qreal viewH = qreal(vh) / s;
+        const qreal halfX = qMax(0.0, (iw - viewW) * 0.5);
+        const qreal halfY = qMax(0.0, (ih - viewH) * 0.5);
+        const qreal travel = preferX ? halfX : halfY;
+        constexpr qreal kMinTravel = 8.0;
+        if (travel < kMinTravel) {
+            const qreal longSide = preferX ? iw : ih;
+            const qreal targetHalf = qMax(kMinTravel, longSide * 0.10);
+            const qreal neededView = preferX ? (iw - 2.0 * targetHalf)
+                                             : (ih - 2.0 * targetHalf);
+            if (neededView > 1.0) {
+                s = preferX ? (qreal(vw) / neededView) : (qreal(vh) / neededView);
+                s = qMax(s, base);
+            }
+        }
+        return s;
+    }
+    if (m_slideshowMotion == SlideshowMotion::PanZoom) {
+        const qreal factor = qBound(1.02, m_panZoomFactor, 1.40);
+        qreal motionBase = base;
+        constexpr qreal kMinHalf = 32.0;
+        for (int i = 0; i < 10; ++i) {
+            const qreal hx = qMax(0.0, (iw - qreal(vw) / motionBase) * 0.5);
+            const qreal hy = qMax(0.0, (ih - qreal(vh) / motionBase) * 0.5);
+            if (hx >= kMinHalf || hy >= kMinHalf) {
+                break;
+            }
+            motionBase *= 1.08;
+        }
+        return motionBase * factor; // largest scale along the path
+    }
+    return base;
+}
+
+void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
+                                  qreal *atlasScale, int *atlasVw, int *atlasVh) const
+{
+    if (!atlas || !atlasScale || !atlasVw || !atlasVh || image.isNull() || !viewport()) {
+        return;
+    }
+    const int vw = qMax(1, viewport()->width());
+    const int vh = qMax(1, viewport()->height());
+    const qreal maxScale = motionPathMaxScale(image);
+    if (!atlas->isNull() && qFuzzyCompare(*atlasScale, maxScale)
+        && *atlasVw == vw && *atlasVh == vh) {
+        return;
+    }
+    const int dw = qMax(1, int(qRound(qreal(image.width()) * maxScale)));
+    const int dh = qMax(1, int(qRound(qreal(image.height()) * maxScale)));
+    // One Smooth scale per source/viewport change — not per frame.
+    QImage scaled = image.scaled(dw, dh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    if (scaled.isNull()) {
+        *atlas = QPixmap();
+        *atlasScale = 0.0;
+        return;
+    }
+    *atlas = QPixmap::fromImage(std::move(scaled));
+    *atlasScale = maxScale;
+    *atlasVw = vw;
+    *atlasVh = vh;
+}
+
+void ImageView::setSlideshowUnderlayVisible(bool visible)
+{
+    if (ImageItem *item = targetItem()) {
+        item->setVisible(visible);
+    }
+}
+
 void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
                                  qreal motionT, QPointF biasA, QPointF biasB,
                                  uint pathHash) const
@@ -979,7 +1099,6 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
 
         if (!m_motionBiasValid && biasA == QPointF(-1.0, -1.0)
             && biasB == QPointF(1.0, 1.0)) {
-            // Fallback corners from pathHash when caller did not pass biases.
             static const QPointF kBias[8] = {
                 QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
                 QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
@@ -1017,11 +1136,23 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     const qreal destX = (qreal(vw) - dw) * 0.5 - biasX * overflowX;
     const qreal destY = (qreal(vh) - dh) * 0.5 - biasY * overflowY;
 
-    // Draw source → dest rect (no QImage::scaled every frame). Scale is done
-    // by the paint engine with SmoothPixmapTransform — far cheaper than a
-    // full software SmoothTransformation resample of multi-megapixel sources.
+    // Prefer pre-scaled atlas (one Smooth scale per slide/resize). Fall back to
+    // drawImage only if no atlas matches this source (should be rare).
+    const QPixmap *atlas = nullptr;
+    if (&image == &m_dwellSourceImage && !m_dwellAtlas.isNull()) {
+        atlas = &m_dwellAtlas;
+    } else if (&image == &m_liveFromSourceImage && !m_liveFromAtlas.isNull()) {
+        atlas = &m_liveFromAtlas;
+    } else if (&image == &m_liveTransitionSourceImage && !m_liveToAtlas.isNull()) {
+        atlas = &m_liveToAtlas;
+    }
+
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-    painter->drawImage(QRectF(destX, destY, dw, dh), image);
+    if (atlas) {
+        painter->drawPixmap(QRectF(destX, destY, dw, dh), *atlas, atlas->rect());
+    } else {
+        painter->drawImage(QRectF(destX, destY, dw, dh), image);
+    }
 }
 
 QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
@@ -1088,9 +1219,14 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         ? motionProgress01(wallMs, qreal(m_motionDurationMs))
         : 0.0;
 
-    // Frames are drawn in paintEvent via paintMotionCover (GL scale).
+    // Frames are drawn in paintEvent via atlas-backed paintMotionCover.
     m_dwellMotionT = m_liveFromMotionProgress0;
     m_liveTransitionMotionProgress = 0.0;
+    ensureMotionAtlas(m_liveFromSourceImage, &m_liveFromAtlas, &m_liveFromAtlasScale,
+                      &m_liveFromAtlasVw, &m_liveFromAtlasVh);
+    ensureMotionAtlas(m_liveTransitionSourceImage, &m_liveToAtlas, &m_liveToAtlasScale,
+                      &m_liveToAtlasVw, &m_liveToAtlasVh);
+    setSlideshowUnderlayVisible(false);
 
     // Opacity timeline only. Motion stays on m_motionTimer.
     m_liveTransitionActive = true;
@@ -1163,6 +1299,9 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     if (m_dwellSourceImage.isNull()) {
         return;
     }
+    ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                      &m_dwellAtlasVw, &m_dwellAtlasVh);
+    setSlideshowUnderlayVisible(false);
 
     m_fitMode = false;
     m_fillMode = (m_slideshowZoom == SlideshowZoom::Fill);
@@ -1226,6 +1365,20 @@ void ImageView::tickSlideshowMotion()
     // because the slideshow advances exactly when wall ≈ duration.
     const qreal dwellT = motionProgress01(wallMs, qreal(m_motionDurationMs));
     m_dwellMotionT = dwellT;
+    if (!m_dwellSourceImage.isNull()) {
+        ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                          &m_dwellAtlasVw, &m_dwellAtlasVh);
+    }
+    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
+        if (!m_liveFromSourceImage.isNull()) {
+            ensureMotionAtlas(m_liveFromSourceImage, &m_liveFromAtlas,
+                              &m_liveFromAtlasScale, &m_liveFromAtlasVw, &m_liveFromAtlasVh);
+        }
+        if (!m_liveTransitionSourceImage.isNull()) {
+            ensureMotionAtlas(m_liveTransitionSourceImage, &m_liveToAtlas,
+                              &m_liveToAtlasScale, &m_liveToAtlasVw, &m_liveToAtlasVh);
+        }
+    }
 
     const bool inLive = m_liveTransitionActive || m_liveTransitionHold
         || m_liveTransitionAwaitingLoad;

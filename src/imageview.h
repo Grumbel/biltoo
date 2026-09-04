@@ -197,9 +197,15 @@ public:
      */
     QPixmap renderMotionCoverPixmap(const QImage &image, qreal motionT,
                                     uint pathHash) const;
-    /** Draw Ken Burns / pan-scan into an existing painter (GPU scale on GL view). */
+    /** Draw Ken Burns / pan-scan using a pre-scaled atlas (cheap per-frame blit). */
     void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT,
                           QPointF biasA, QPointF biasB, uint pathHash) const;
+    /** Max image→view scale used by the current motion path (for atlas size). */
+    qreal motionPathMaxScale(const QImage &image) const;
+    /** Build/refresh atlas: one Smooth scale per source/viewport change. */
+    void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
+                           int *atlasVw, int *atlasVh) const;
+    void setSlideshowUnderlayVisible(bool visible);
     /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
     void applySlideshowZoomFraming(ImageItem *item);
     /** Controller host: session path order used for Gallery packing. */
@@ -975,6 +981,10 @@ private:
     QPixmap m_slideshowTransitionFromPixmap; /**< From-frame during dual-image fade */
     QPixmap m_dwellCoverPixmap; /**< Single-image Ken Burns blit during dwell */
     QImage m_dwellSourceImage; /**< Source pixels for dwell blit */
+    QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
+    qreal m_dwellAtlasScale = 0.0;
+    int m_dwellAtlasVw = 0;
+    int m_dwellAtlasVh = 0;
     qreal m_dwellMotionT = 0.0; /**< Latest dwell progress [0,1] */
     qreal m_slideshowTransitionProgress = 1.0; /**< 0 = old frame, 1 = done */
     bool m_slideshowTransitionPending = false;
@@ -1020,6 +1030,14 @@ private:
     /** Decoded next slide kept for re-rendering animated live-transition covers. */
     QImage m_liveTransitionSourceImage; /**< Incoming image for to-frame blit */
     QImage m_liveFromSourceImage; /**< Outgoing image for from-frame blit */
+    QPixmap m_liveFromAtlas;
+    qreal m_liveFromAtlasScale = 0.0;
+    int m_liveFromAtlasVw = 0;
+    int m_liveFromAtlasVh = 0;
+    QPixmap m_liveToAtlas;
+    qreal m_liveToAtlasScale = 0.0;
+    int m_liveToAtlasVw = 0;
+    int m_liveToAtlasVh = 0;
     qreal m_liveFromMotionProgress0 = 0.0; /**< Outgoing progress at transition start */
     QPointF m_liveFromBiasA{-1.0, -1.0};
     QPointF m_liveFromBiasB{1.0, 1.0};

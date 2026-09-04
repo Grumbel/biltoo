@@ -3102,3 +3102,28 @@ Shell keeps `XDG_DATA_DIRS=$BILTOO_SOURCE/data` for hicolor app icon.
 ### Done criteria
 - [x] Custom toolbar icons from qrc without install
 - [x] Next **177**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-177-motion-atlas-opengl`
+
+### Rules
+- Tick rate stays **16 ms** (~60 Hz). No feature removal.
+- AGENTS: no silent feature removal; prefer proper design.
+
+### Drawing
+- **Motion atlas**: one `SmoothTransformation` scale per source/viewport change
+  into `m_dwellAtlas` / live from-to atlases. Per-frame work is `drawPixmap`
+  of the atlas into a dest rect (cheap blit; GPU with OpenGL viewport).
+- Hide scene underlay while motion/live covers the viewport (no double paint,
+  no fullscreen underlay flash).
+- Soft handoff installs dwell source + atlas **before** clearing live flags.
+
+### OpenGL
+- `QSurfaceFormat::setSwapInterval(1)` (+ depth/stencil) **before** `QApplication`
+- `QOpenGLWidget` viewport again + `Qt6::OpenGLWidgets`
+
+### Done criteria
+- [x] 16 ms tick unchanged
+- [x] No per-frame full-image Smooth scale
+- [x] Transition-end underlay flash addressed
+- [x] Next **178**

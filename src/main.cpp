@@ -16,10 +16,21 @@
 #include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
+#include <QSurfaceFormat>
 
 int main(int argc, char *argv[])
 {
     ImageLoader::init(argv[0]);
+
+    // Must be set before QApplication: vsync + depth/stencil for QOpenGLWidget
+    // viewports. Swap interval 1 = block on display refresh (true vsync).
+    {
+        QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
+        fmt.setSwapInterval(1);
+        fmt.setDepthBufferSize(24);
+        fmt.setStencilBufferSize(8);
+        QSurfaceFormat::setDefaultFormat(fmt);
+    }
 
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("biltoo"));
