@@ -523,10 +523,12 @@ void ImageView::releaseLiveTransitionHold()
     if (m_liveTransitionTimer) {
         m_liveTransitionTimer->stop();
     }
-    // Resume dwell at the to-path progress last shown so the pose matches.
-    // Always restart: dwell may still be "active" from before the transition
-    // (we no longer cancel it at beginLive) but its clock advanced while
-    // ticks were suppressed — restarting at handoff keeps motion continuous.
+    // Install the to-path biases as the dwell path, then resume at the
+    // progress last shown so the pose matches and motion does not restart
+    // from a different A→B pair.
+    m_motionBiasA = m_liveToBiasA;
+    m_motionBiasB = m_liveToBiasB;
+    m_motionBiasValid = true;
     if (m_slideshowProgressActive
         && m_slideshowMotion != SlideshowMotion::Off) {
         const int duration = m_slideshowProgressIntervalMs;
@@ -784,12 +786,14 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
             1.0);
     }
 
-    // Incoming path: same session Y direction, fresh X interest.
-    pickInterestingMotionBiases(qHash(nextPath));
+    // Do NOT pick incoming biases here and do NOT touch m_motionBiasA/B.
+    // Dwell is still painting the outgoing image; overwriting biases snaps
+    // Pan&Zoom to the next path and looks like motion stopped/jumped.
+    // Incoming biases are chosen in startLiveTransitionWithImage into
+    // m_liveToBiasA/B only.
 
-    // Do NOT cancel dwell motion here. Transitions only change opacity/colour;
-    // images keep moving. Dwell blit continues until live paint covers the
-    // viewport (avoids a frozen gap while the next decode is still in flight).
+    // Do NOT cancel dwell motion. Transitions only change opacity/colour;
+    // images keep moving until (and during) the composite.
 
     if (!m_liveFromSourceImage.isNull()) {
         const QPointF saveA = m_motionBiasA;
@@ -1049,9 +1053,46 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
     }
     m_liveTransitionSourceImage = nextImage;
     m_liveTransitionPathHash = qHash(m_liveTransitionNextPath);
-    // First to-frame at Ken Burns t=0; tick advances both paths every frame.
-    m_slideshowTransitionToPixmap = renderMotionCoverPixmap(
-        m_liveTransitionSourceImage, 0.0, m_liveTransitionPathHash);
+
+    // Refresh outgoing progress now (dwell may have advanced since beginLive).
+    if (m_slideshowMotionActive && m_motionDurationMs > 0) {
+        m_liveFromMotionProgress0 = qBound(
+            0.0,
+            qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
+                / qreal(m_motionDurationMs),
+            1.0);
+    }
+
+    // Incoming path biases only — never overwrite dwell m_motionBiasA/B.
+    {
+        const QPointF saveA = m_motionBiasA;
+        const QPointF saveB = m_motionBiasB;
+        const bool saveValid = m_motionBiasValid;
+        pickInterestingMotionBiases(m_liveTransitionPathHash
+                                        ? m_liveTransitionPathHash
+                                        : 1u);
+        m_liveToBiasA = m_motionBiasA;
+        m_liveToBiasB = m_motionBiasB;
+        m_motionBiasA = saveA;
+        m_motionBiasB = saveB;
+        m_motionBiasValid = saveValid;
+    }
+
+    // First frames: from at current progress, to at t=0. Both move every tick.
+    {
+        const QPointF saveA = m_motionBiasA;
+        const QPointF saveB = m_motionBiasB;
+        m_motionBiasA = m_liveFromBiasA;
+        m_motionBiasB = m_liveFromBiasB;
+        m_slideshowTransitionFromPixmap = renderMotionCoverPixmap(
+            m_liveFromSourceImage, m_liveFromMotionProgress0, 0);
+        m_motionBiasA = m_liveToBiasA;
+        m_motionBiasB = m_liveToBiasB;
+        m_slideshowTransitionToPixmap = renderMotionCoverPixmap(
+            m_liveTransitionSourceImage, 0.0, m_liveTransitionPathHash);
+        m_motionBiasA = saveA;
+        m_motionBiasB = saveB;
+    }
     if (m_slideshowTransitionToPixmap.isNull()) {
         m_liveTransitionSourceImage = QImage();
         emit slideshowLiveTransitionFinished();
@@ -1109,8 +1150,14 @@ void ImageView::tickLiveTransition()
             const qreal toT = qBound(0.0, dt, 1.0);
             m_liveTransitionMotionProgress = toT;
             if (!m_liveTransitionSourceImage.isNull()) {
+                const QPointF saveA = m_motionBiasA;
+                const QPointF saveB = m_motionBiasB;
+                m_motionBiasA = m_liveToBiasA;
+                m_motionBiasB = m_liveToBiasB;
                 const QPixmap toFrame = renderMotionCoverPixmap(
                     m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
+                m_motionBiasA = saveA;
+                m_motionBiasB = saveB;
                 if (!toFrame.isNull()) {
                     m_slideshowTransitionToPixmap = toFrame;
                 }
@@ -1160,12 +1207,18 @@ void ImageView::tickLiveTransition()
                 m_slideshowTransitionFromPixmap = fromFrame;
             }
         }
-        // To advances from 0 along its own path (same session Y direction).
+        // To advances from 0 along its own path (m_liveToBias only).
         const qreal toT = qBound(0.0, dt, 1.0);
         m_liveTransitionMotionProgress = toT;
         if (!m_liveTransitionSourceImage.isNull()) {
+            const QPointF saveA = m_motionBiasA;
+            const QPointF saveB = m_motionBiasB;
+            m_motionBiasA = m_liveToBiasA;
+            m_motionBiasB = m_liveToBiasB;
             const QPixmap toFrame = renderMotionCoverPixmap(
                 m_liveTransitionSourceImage, toT, m_liveTransitionPathHash);
+            m_motionBiasA = saveA;
+            m_motionBiasB = saveB;
             if (!toFrame.isNull()) {
                 m_slideshowTransitionToPixmap = toFrame;
             }
@@ -1256,7 +1309,10 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     }
 
     const QString path = item->path();
-    if (!(m_liveTransitionHold || m_liveTransitionActive)) {
+    // Prefer biases already installed (handoff from live to-path). Only pick
+    // a new path when starting a fresh dwell with no valid biases.
+    if (!m_motionBiasValid
+        && !(m_liveTransitionHold || m_liveTransitionActive)) {
         pickInterestingMotionBiases(qHash(path));
     }
     // Biases + slideshow zoom are read by renderMotionCoverPixmap.

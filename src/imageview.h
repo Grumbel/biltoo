@@ -1019,6 +1019,9 @@ private:
     qreal m_liveFromMotionProgress0 = 0.0; /**< Outgoing progress at transition start */
     QPointF m_liveFromBiasA{-1.0, -1.0};
     QPointF m_liveFromBiasB{1.0, 1.0};
+    /** Incoming Ken Burns path for the to-frame (never overwrites dwell biases). */
+    QPointF m_liveToBiasA{-1.0, -1.0};
+    QPointF m_liveToBiasB{1.0, 1.0};
     QString m_preloadPath;
     QImage m_preloadImage;
     quint64 m_preloadGeneration = 0;
