@@ -183,24 +183,17 @@ public:
     void applyToolDragMode();
     void startSlideshowTransitionAnimation();
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
-    /** Continue outgoing camera from the current pose through a live transition. */
     void pickInterestingMotionBiases(uint seed);
     /** Decode path off the GUI thread into m_preload* for the next live transition. */
     void preloadSlideshowImage(const QString &path);
-    void applySlideshowMotionProgress(qreal t);
-    /** Disable AlignCenter / scrollbars / mouse-anchor that fight setTransform. */
-    void enterSlideshowCameraMode();
-    void leaveSlideshowCameraMode();
     void tickSlideshowMotion();
     void tickLiveTransition();
     void startLiveTransitionWithImage(const QImage &nextImage);
     /** Static centre-crop cover of @p image to the current viewport size. */
     QPixmap renderCoverPixmap(const QImage &image) const;
     /**
-     * Cover (or Ken Burns / pan-scan sample) of @p image at motion progress
-     * @p motionT in [0, 1], using the current SlideshowMotion / panZoomFactor
-     * and a path-stable seed from @p pathHash. Used for live transition overlays
-     * so the incoming frame is not frozen.
+     * Ken Burns / pan-scan sample of @p image at motion progress @p motionT in
+     * [0, 1]. Used for dwell blit and dual-image crossfade frames.
      */
     QPixmap renderMotionCoverPixmap(const QImage &image, qreal motionT,
                                     uint pathHash) const;
@@ -505,7 +498,7 @@ public:
     void prepareSlideshowTransition();
     void cancelSlideshowTransition();
 
-    /** Camera motion during a slideshow dwell. */
+    /** Image motion (Ken Burns / pan-scan) during a slideshow dwell. */
     enum class SlideshowMotion {
         Off = 0,
         PanZoom = 1, /**< Cover frame, slowly zoom in while panning */
@@ -517,7 +510,7 @@ public:
     void setPanZoomFactor(qreal factor);
     qreal panZoomFactor() const { return m_panZoomFactor; }
 
-    /** Base framing for each slide (static when motion off; camera start when on). */
+    /** Base framing for each slide (static when motion off; Ken Burns base when on). */
     enum class SlideshowZoom {
         Fit = 0,    /**< Letterbox — whole image visible */
         Fill = 1,   /**< Cover — may crop */
@@ -526,11 +519,11 @@ public:
     void setSlideshowZoom(SlideshowZoom mode);
     SlideshowZoom slideshowZoom() const { return m_slideshowZoom; }
     void cancelSlideshowMotion();
-    /** Start dwell camera motion if enabled and slideshow is active. */
+    /** Start dwell image-blit Ken Burns if enabled and slideshow is active. */
     void maybeStartSlideshowMotion();
     /**
      * Re-frame the current Image-mode item for an active slideshow:
-     * motion on → restart camera from slideshow zoom base; motion off →
+     * motion on → restart Ken Burns blit from slideshow zoom base; motion off →
      * Fit / Fill / 1:1 framing only. No-op when slideshow progress is inactive.
      */
     void reapplySlideshowFraming();
@@ -987,11 +980,7 @@ private:
     qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
     SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
     bool m_slideshowMotionActive = false;
-    qreal m_motionStartScale = 1.0;
-    qreal m_motionEndScale = 1.0;
-    QPointF m_motionStartCenter;
-    QPointF m_motionEndCenter;
-    /** Rule-of-thirds biases shared by camera + live to-frame (continuous travel). */
+    /** Corner/edge biases for Ken Burns paths (dwell + dual-blit). */
     QPointF m_motionBiasA{-1.0, -1.0};
     QPointF m_motionBiasB{1.0, 1.0};
     bool m_motionBiasValid = false;
@@ -999,9 +988,6 @@ private:
     QPointF m_motionTravelDir{0.0, 1.0};
     /** Fixed session pan sign (+1 / -1); never reverses mid-show. */
     qreal m_motionSign = 1.0;
-    bool m_slideshowCameraMode = false;
-    Qt::ScrollBarPolicy m_savedScrollBarPolicyH = Qt::ScrollBarAsNeeded;
-    Qt::ScrollBarPolicy m_savedScrollBarPolicyV = Qt::ScrollBarAsNeeded;
     int m_motionDurationMs = 0;
     /** Added to m_motionClock.elapsed() so live-transition handoff can start mid-path. */
     qint64 m_motionElapsedOffsetMs = 0;
@@ -1037,7 +1023,7 @@ private:
     QString m_handoffPath;
     QImage m_handoffImage;
     uint m_liveTransitionPathHash = 0;
-    /** Real-time dwell progress sampled for the live to-frame (handoff to camera). */
+    /** To-path progress during dual-blit (handoff continues from here). */
     qreal m_liveTransitionMotionProgress = 0.0;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;

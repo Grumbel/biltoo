@@ -410,7 +410,6 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     }
     if (!active) {
         cancelSlideshowMotion();
-        leaveSlideshowCameraMode();
         m_motionBiasValid = false;
         m_motionTravelDir = QPointF(0.0, 1.0);
         m_motionSign = 1.0;
@@ -522,7 +521,6 @@ void ImageView::releaseLiveTransitionHold()
         m_liveTransitionTimer->stop();
     }
     if (!m_slideshowMotionActive) {
-        leaveSlideshowCameraMode();
     }
     if (viewport()) {
         viewport()->update();
@@ -542,7 +540,7 @@ void ImageView::startSlideshowTransitionAnimation()
         m_slideshowTransitionActive = false;
         m_slideshowTransitionProgress = 1.0;
         m_slideshowTransitionToPixmap = viewport()->grab();
-        // Projector slide is two static frames; freeze dwell camera for the swap.
+        // Projector slide is two static frames; pause dwell blit for the swap.
         cancelSlideshowMotion();
     }
 
@@ -564,7 +562,7 @@ void ImageView::startSlideshowTransitionAnimation()
             m_slideshowTransitionProgress = 1.0;
             m_slideshowTransitionPixmap = QPixmap();
             m_slideshowTransitionToPixmap = QPixmap();
-            // Resume dwell camera after a static Slide swap.
+            // Resume dwell blit after a static Slide swap.
             maybeStartSlideshowMotion();
             if (viewport()) {
                 viewport()->update();
@@ -608,7 +606,7 @@ void ImageView::setSlideshowZoom(SlideshowZoom mode)
         return;
     }
     m_slideshowZoom = mode;
-    // Zoom is the base scale for the dwell camera as well as static framing.
+    // Zoom is the base scale for Ken Burns as well as static framing.
     if (m_slideshowProgressActive) {
         reapplySlideshowFraming();
     }
@@ -619,7 +617,7 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     if (!item || !viewport()) {
         return;
     }
-    // Explicit uniform scale (same approach as the dwell camera).
+    // Explicit uniform scale for static slideshow framing.
     item->setItemShear(0.0);
     item->setItemRotation(0.0);
     item->setItemScale(1.0);
@@ -685,7 +683,7 @@ void ImageView::reapplySlideshowFraming()
         return;
     }
     if (m_slideshowMotion != SlideshowMotion::Off) {
-        // Restart the dwell camera from the zoom base + current interval.
+        // Restart dwell Ken Burns from the zoom base + current interval.
         int duration = m_slideshowProgressIntervalMs;
         if (duration < 250) {
             duration = 3000;
@@ -709,37 +707,6 @@ void ImageView::cancelSlideshowMotion()
         m_motionTimer->stop();
     }
     m_dwellCoverPixmap = QPixmap();
-}
-
-void ImageView::enterSlideshowCameraMode()
-{
-    if (m_slideshowCameraMode) {
-        return;
-    }
-    m_slideshowCameraMode = true;
-    // QGraphicsView::AlignCenter recenters whenever the scene/item changes.
-    // That fights setTransform on LoadReplace and is the classic "jump when the
-    // previous image is removed" behaviour. Same for AnchorUnderMouse.
-    m_savedScrollBarPolicyH = horizontalScrollBarPolicy();
-    m_savedScrollBarPolicyV = verticalScrollBarPolicy();
-    setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    setTransformationAnchor(QGraphicsView::NoAnchor);
-    setResizeAnchor(QGraphicsView::NoAnchor);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-}
-
-void ImageView::leaveSlideshowCameraMode()
-{
-    if (!m_slideshowCameraMode) {
-        return;
-    }
-    m_slideshowCameraMode = false;
-    setAlignment(Qt::AlignCenter);
-    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-    setResizeAnchor(QGraphicsView::AnchorViewCenter);
-    setHorizontalScrollBarPolicy(m_savedScrollBarPolicyH);
-    setVerticalScrollBarPolicy(m_savedScrollBarPolicyV);
 }
 
 void ImageView::pickInterestingMotionBiases(uint seed)
@@ -774,7 +741,7 @@ void ImageView::pickInterestingMotionBiases(uint seed)
 bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 {
     // CONTRACT: two images, both moving, opacity crossfade.
-    // Scene camera is stopped; both frames are motion-sampled pixmaps each tick.
+    // Both frames are motion-sampled image blits each tick.
     if (m_slideshowMotion == SlideshowMotion::Off
         || m_slideshowTransition == SlideshowTransition::None
         || m_slideshowTransition == SlideshowTransition::Slide
@@ -808,7 +775,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     // Incoming path: same session Y direction, fresh X interest.
     pickInterestingMotionBiases(qHash(nextPath));
 
-    // Stop scene camera — painting is dual blit only for the transition.
+    // Dual image blit only for the transition (no scene underlay).
     cancelSlideshowMotion();
 
     if (!m_liveFromSourceImage.isNull()) {
@@ -966,8 +933,7 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
             biasY = flip ? (1.0 - 2.0 * motionT) : (-1.0 + 2.0 * motionT);
         }
     } else if (m_slideshowMotion == SlideshowMotion::PanZoom) {
-        // Linear Ken Burns matching the camera: lerp scale; lerp crop offset
-        // between start-half and end-half (not bias×half(s(t)), which curves).
+        // Linear Ken Burns: lerp scale and lerp crop offset between start/end halves.
         const qreal factor = qBound(1.02, m_panZoomFactor, 1.40);
         qreal motionBase = base;
         {
@@ -1282,41 +1248,6 @@ void ImageView::tickSlideshowMotion()
         if (!frame.isNull()) {
             m_dwellCoverPixmap = frame;
         }
-    }
-    if (viewport()) {
-        viewport()->update();
-    }
-}
-
-void ImageView::applySlideshowMotionProgress(qreal t)
-{
-    t = qBound(0.0, t, 1.0);
-    // Classic linear Ken Burns: lerp scale and lerp pan centre in scene space.
-    // (bias×half(scale(t)) curves the path as overflow grows with zoom.)
-    const qreal s = m_motionStartScale + (m_motionEndScale - m_motionStartScale) * t;
-    const QPointF c(
-        m_motionStartCenter.x() + (m_motionEndCenter.x() - m_motionStartCenter.x()) * t,
-        m_motionStartCenter.y() + (m_motionEndCenter.y() - m_motionStartCenter.y()) * t);
-    if (s <= 0.0 || !qIsFinite(s) || !viewport()) {
-        return;
-    }
-
-    const qreal vx = qreal(viewport()->width()) * 0.5;
-    const qreal vy = qreal(viewport()->height()) * 0.5;
-    setTransformationAnchor(QGraphicsView::NoAnchor);
-    setResizeAnchor(QGraphicsView::NoAnchor);
-    QTransform xform;
-    xform.translate(vx, vy);
-    xform.scale(s, s);
-    xform.translate(-c.x(), -c.y());
-    setTransform(xform);
-    // Scrollbars are off in camera mode; never let AlignCenter-style scroll
-    // offsets accumulate under the matrix.
-    if (horizontalScrollBar() && horizontalScrollBar()->value() != 0) {
-        horizontalScrollBar()->setValue(0);
-    }
-    if (verticalScrollBar() && verticalScrollBar()->value() != 0) {
-        verticalScrollBar()->setValue(0);
     }
     if (viewport()) {
         viewport()->update();

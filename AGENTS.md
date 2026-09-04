@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → SLIDESHOW CONTRACT (blit, not camera)** + qimgview-159-image-blit
-(Ken Burns = image blit only; never QGraphicsView camera for dwell/fade).
-Next bundle number: **160**.
+Latest agent handoff: **TODO.md → qimgview-162-slideshow-cleanup**
+(Removed dead camera motion API; slideshow is blit-only).
+Next bundle number: **163**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

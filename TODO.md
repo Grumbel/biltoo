@@ -2774,3 +2774,14 @@ See **SLIDESHOW CONTRACT** above. Never freeze either image during the fade agai
 
 Ken Burns is **image blit**, not view-camera motion. Dwell paints one moving
 frame; crossfade paints two. `setTransform` is not used for slideshow motion.
+
+
+## Plan / work (2026-09-04) — bundle `qimgview-162-slideshow-cleanup`
+
+Removed dead camera-era code after blit-only Ken Burns:
+- `applySlideshowMotionProgress` (view matrix path)
+- `enterSlideshowCameraMode` / `leaveSlideshowCameraMode`
+- `m_motionStartScale/EndScale/StartCenter/EndCenter`, camera-mode members
+- Stale "camera" comments
+
+Slideshow motion is image blit only (see SLIDESHOW CONTRACT).
