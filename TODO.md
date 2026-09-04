@@ -3279,3 +3279,22 @@ whole view; without item caches every tile re-scales its pixmap.
 ### Done criteria
 - [x] Selection feels near-instant on packed galleries
 - [x] Next **186**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-186-ui-polish`
+
+Three small UI cleanups:
+
+1. **Page Guide scale from centre with Ctrl** — match Workspace image handles
+   (default = opposite edge/corner fixed; Ctrl = scale about centre; Shift =
+   aspect lock; Ctrl+Shift = centre + aspect).
+2. **Remove histogram from Metadata panel** — drop `ImageHistogramWidget` and
+   related UI/state; keep palette + tree.
+3. **Remove Up from the main toolbar** — action stays in Gallery menu and via
+   Esc / edge; toolbar entry is redundant chrome.
+
+### Done criteria
+- [x] Page Guide Ctrl scales from centre
+- [x] No histogram in Metadata
+- [x] Up not on main toolbar
+- [x] Next **187**
