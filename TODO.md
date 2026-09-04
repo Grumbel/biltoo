@@ -2818,3 +2818,32 @@ suppressed, so the motion clock ran under the veil and jumped on release.
 - [x] No double-advance at end of FadeBlack
 - [x] Dwell continues from the to-frame progress after the veil lifts
 - [x] Next **164**
+
+
+## Plan / work (2026-09-04) — bundle `qimgview-164-motion-never-stops`
+
+**Bugs:**
+1. **Pan & scan** appeared to reverse direction: dwell rendered with
+   `pathHash=0` (no flip) while live to-frames used `pathHash & 1` → reverse
+   at handoff. Not a broken lerp — inconsistent direction source.
+2. **Fade through black stopped motion** (and crossfade had a freeze gap):
+   `cancelSlideshowMotion()` at `beginLive`, early-return during mid-black
+   await with no sampling, veil clock restart rewound motion progress.
+
+**Contract (user):** Dwell moves images. Crossfade / fade-through-black only
+change colour/opacity. Motion never stops for a transition.
+
+### Fix
+- Pan & scan: pure linear `bias = -1 + 2t` on the long axis (L→R / T→B). No
+  pathHash flip.
+- Do not cancel dwell at `beginLive` (no frozen gap while next image decodes).
+- Separate `m_liveMotionClock` for Ken Burns sampling; veil clock may restart
+  at FadeBlack mid-black without rewinding pan.
+- While awaiting load under solid black, keep sampling from/to frames.
+- On release, always restart dwell at the last to-path progress.
+
+### Done criteria
+- [x] Pan & scan direction is stable (no mid-handoff reverse)
+- [x] Fade through black does not stop motion
+- [x] Crossfade / FadeBlack are opacity/colour only
+- [x] Next **165**
