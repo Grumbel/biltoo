@@ -503,7 +503,7 @@ void ImageView::releaseLiveTransitionHold()
     qWarning("[qimgview-slideshow] releaseHold motionProg=%.4f motionActive=%d "
              "items=%d m11=%.4f",
              m_liveTransitionMotionProgress, int(m_slideshowMotionActive),
-             m_items.size(), transform().m11());
+             int(m_items.size()), transform().m11());
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionActive = false;
@@ -1105,7 +1105,7 @@ void ImageView::tickLiveTransition()
 
     if (justEnteredHold) {
         qWarning("[qimgview-slideshow] enterHold motionProg=%.4f fadeT=%.3f items=%d",
-                 m_liveTransitionMotionProgress, t, m_items.size());
+                 m_liveTransitionMotionProgress, t, int(m_items.size()));
         // Do not stop the timer — keep advancing the to-frame until release.
         emit slideshowLiveTransitionFinished();
     }
@@ -1317,7 +1317,7 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
              "startS=%.4f endS=%.4f startC=(%.1f,%.1f) endC=(%.1f,%.1f) items=%d",
              durationMs, initialProgress, m_motionStartScale, m_motionEndScale,
              m_motionStartCenter.x(), m_motionStartCenter.y(),
-             m_motionEndCenter.x(), m_motionEndCenter.y(), m_items.size());
+             m_motionEndCenter.x(), m_motionEndCenter.y(), int(m_items.size()));
 }
 
 void ImageView::tickSlideshowMotion()
@@ -1387,7 +1387,7 @@ void ImageView::applySlideshowMotionProgress(qreal t)
                      "m11=%.4f dx=%.1f dy=%.1f liveA=%d hold=%d items=%d",
                      t, s, c.x(), c.y(), tr.m11(), tr.dx(), tr.dy(),
                      int(m_liveTransitionActive), int(m_liveTransitionHold),
-                     m_items.size());
+                     int(m_items.size()));
         }
     }
     if (viewport()) {

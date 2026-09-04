@@ -137,7 +137,7 @@ void ImageView::clearLiveCanvas()
 {
     qWarning("[qimgview-slideshow] clearLiveCanvas items=%d motionActive=%d "
              "liveHold=%d liveActive=%d m11=%.4f",
-             m_items.size(), int(m_slideshowMotionActive),
+             int(m_items.size()), int(m_slideshowMotionActive),
              int(m_liveTransitionHold), int(m_liveTransitionActive),
              transform().m11());
     // Destroy only the live scene items. Mode stashes (Workspace/Gallery tiles
@@ -207,7 +207,7 @@ void ImageView::prepareImageModeCanvas()
     qWarning("[qimgview-slideshow] prepareImageModeCanvas liveCover=%d hold=%d active=%d "
              "items_before_reset=%d m11=%.4f",
              int(liveCover), int(m_liveTransitionHold), int(m_liveTransitionActive),
-             m_items.size(), transform().m11());
+             int(m_items.size()), transform().m11());
     // Under a live hold the overlay covers the viewport; still avoid a bare
     // resetTransform flash if updates sneak through before the new camera runs.
     if (!liveCover) {
