@@ -1017,8 +1017,9 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     const qreal destX = (qreal(vw) - dw) * 0.5 - biasX * overflowX;
     const qreal destY = (qreal(vh) - dh) * 0.5 - biasY * overflowY;
 
-    // Draw source → dest rect; with an OpenGL viewport + SmoothPixmapTransform
-    // the scale is filtered on the GPU (no QImage::scaled every frame).
+    // Draw source → dest rect (no QImage::scaled every frame). Scale is done
+    // by the paint engine with SmoothPixmapTransform — far cheaper than a
+    // full software SmoothTransformation resample of multi-megapixel sources.
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
     painter->drawImage(QRectF(destX, destY, dw, dh), image);
 }

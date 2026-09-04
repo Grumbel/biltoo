@@ -3036,3 +3036,19 @@ the from/to sources directly.
 - [x] OpenGL viewport on ImageView
 - [x] No per-frame software smooth scale for dwell / live transitions
 - [x] Next **172**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-172-fix-white-screen`
+
+**Bug:** Entire view was a white screen after `setViewport(new QOpenGLWidget)`.
+
+**Fix:** Remove the OpenGL viewport (QGraphicsView + QOpenGLWidget was blank on
+this setup). Keep `paintMotionCover` dest-rect drawing so slideshow still avoids
+per-frame `QImage::scaled(SmoothTransformation)`.
+
+OpenGL viewport can be revisited later (format/context at app start, fallback).
+
+### Done criteria
+- [x] Raster viewport restored (UI visible again)
+- [x] Slideshow still uses dest-rect paint (no per-tick smooth scale)
+- [x] Next **173**

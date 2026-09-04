@@ -22,7 +22,6 @@
 #include <QPainterPath>
 #include <QPolygonF>
 #include <QPaintEvent>
-#include <QOpenGLWidget>
 #include <QScrollBar>
 #include <QRubberBand>
 #include <QTimer>
@@ -99,10 +98,6 @@ ImageView::ImageView(QWidget *parent)
     setBackgroundBrush(QBrush(QColor(36, 36, 36)));
     setFrameShape(QFrame::NoFrame);
     setFocusPolicy(Qt::StrongFocus);
-    // OpenGL viewport: scene + slideshow overlays composite on the GPU.
-    // Slideshow Ken Burns draws the source image with a dest rect so scaling
-    // is filtered by GL (SmoothPixmapTransform) instead of QImage::scaled.
-    setViewport(new QOpenGLWidget);
     // QGraphicsView delivers moves via the viewport — both need tracking or
     // MouseMove only arrives while a button is held (breaks slideshow cursor).
     setMouseTracking(true);
