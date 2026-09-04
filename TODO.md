@@ -3127,3 +3127,21 @@ Shell keeps `XDG_DATA_DIRS=$BILTOO_SOURCE/data` for hicolor app icon.
 - [x] No per-frame full-image Smooth scale
 - [x] Transition-end underlay flash addressed
 - [x] Next **178**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-178-no-gl-version-h`
+
+### OpenGL
+QOpenGLWidget viewport white-screens again on this setup. Reverted to the
+default raster viewport. **Motion atlas kept** (one Smooth scale per
+source/viewport; per-frame atlas blit only).
+
+### Version rebuild isolation
+`BILTOO_VERSION` global compile definition removed. CMake generates
+`version.h` from `src/version.h.in` (`BILTOO_VERSION_STRING`). Only TUs that
+include `version.h` (currently `main.cpp`) rebuild when VERSION changes.
+
+### Done criteria
+- [x] UI visible (no GL viewport)
+- [x] VERSION bump does not force full rebuild
+- [x] Next **179**

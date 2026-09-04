@@ -23,7 +23,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg PrintSupport)
 find_package(PkgConfig)
 
 add_executable(biltoo
@@ -99,8 +99,17 @@ add_executable(biltoo
   src/icons.qrc
 )
 
-target_compile_definitions(biltoo PRIVATE
-  BILTOO_VERSION="${PROJECT_VERSION_FULL}"
+# Version string lives only in generated version.h so a VERSION bump
+# recompiles translation units that include it (typically main.cpp), not the
+# whole target via a global compile definition.
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/version.h"
+  @ONLY
+)
+target_include_directories(biltoo PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 # Stricter diagnostics (do not promote to errors by default).
@@ -146,7 +155,6 @@ target_link_libraries(biltoo PRIVATE
   Qt6::Gui
   Qt6::Widgets
   Qt6::Svg
-  Qt6::OpenGLWidgets
   Qt6::PrintSupport
 )
 

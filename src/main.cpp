@@ -4,6 +4,7 @@
 #include "mainwindow.h"
 #include "metadatapanel.h"
 #include "imageloader.h"
+#include "version.h"
 
 #include <QApplication>
 #include <QGuiApplication>
@@ -16,29 +17,15 @@
 #include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
-#include <QSurfaceFormat>
 
 int main(int argc, char *argv[])
 {
     ImageLoader::init(argv[0]);
 
-    // Must be set before QApplication: vsync + depth/stencil for QOpenGLWidget
-    // viewports. Swap interval 1 = block on display refresh (true vsync).
-    {
-        QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
-        fmt.setSwapInterval(1);
-        fmt.setDepthBufferSize(24);
-        fmt.setStencilBufferSize(8);
-        QSurfaceFormat::setDefaultFormat(fmt);
-    }
-
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("biltoo"));
     QApplication::setApplicationDisplayName(QStringLiteral("Biltoo"));
-#ifndef BILTOO_VERSION
-#  define BILTOO_VERSION "0.0.0"
-#endif
-    QApplication::setApplicationVersion(QStringLiteral(BILTOO_VERSION));
+    QApplication::setApplicationVersion(QStringLiteral(BILTOO_VERSION_STRING));
     QApplication::setOrganizationName(QStringLiteral("biltoo"));
     QApplication::setOrganizationDomain(QStringLiteral("biltoo.local"));
     QGuiApplication::setDesktopFileName(QStringLiteral("biltoo"));
