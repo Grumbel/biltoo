@@ -3145,3 +3145,27 @@ include `version.h` (currently `main.cpp`) rebuild when VERSION changes.
 - [x] UI visible (no GL viewport)
 - [x] VERSION bump does not force full rebuild
 - [x] Next **179**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-179-opengl-drawForeground`
+
+### Root cause of white screen
+With `QOpenGLWidget` as viewport, `paintEvent` did:
+
+1. `QGraphicsView::paintEvent` (renders scene into the GL framebuffer)
+2. `QPainter painter(viewport())` — a **second** paint engine on the same
+   QOpenGLWidget **clears / invalidates** the framebuffer → white screen
+
+### Fix (not a feature removal)
+- Keep `QOpenGLWidget` viewport + `Qt6::OpenGLWidgets` + swap interval 1
+- Move all viewport-space overlays into `paintViewportOverlays`
+- Call that from `drawForeground` after `resetTransform()` (same QPainter as
+  the scene, GL-safe)
+- `paintEvent` only forwards to `QGraphicsView::paintEvent`
+
+Motion atlas path unchanged. Tick rate unchanged.
+
+### Done criteria
+- [x] OpenGL viewport restored
+- [x] White-screen cause fixed properly
+- [x] Next **180**

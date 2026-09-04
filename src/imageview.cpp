@@ -22,6 +22,7 @@
 #include <QPainterPath>
 #include <QPolygonF>
 #include <QPaintEvent>
+#include <QOpenGLWidget>
 #include <QScrollBar>
 #include <QRubberBand>
 #include <QTimer>
@@ -91,6 +92,8 @@ ImageView::ImageView(QWidget *parent)
     });
 
     setRenderHint(QPainter::SmoothPixmapTransform, true);
+    // OpenGL viewport — overlays must use drawForeground (see paintEvent).
+    setViewport(new QOpenGLWidget);
     setAcceptDrops(true);
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);

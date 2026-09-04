@@ -86,10 +86,13 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
     }
 }
 
-void ImageView::paintEvent(QPaintEvent *event)
+void ImageView::paintViewportOverlays(QPainter &painter)
 {
-    QGraphicsView::paintEvent(event);
-    QPainter painter(viewport());
+    // Viewport-device-pixel overlays (handles, HUD, slideshow cover). Called from
+    // drawForeground with an identity transform so this works on both the
+    // raster and QOpenGLWidget viewports — a second QPainter on the GL viewport
+    // after QGraphicsView::paintEvent clears the framebuffer (white screen).
+
     // Workspace chrome in *viewport* device pixels (not scene drawForeground).
     // Painting here keeps handles a constant on-screen size under any view or
     // item scale — the same coordinate space as edge affordances and the HUD.
@@ -483,6 +486,12 @@ void ImageView::paintEvent(QPaintEvent *event)
     }
 }
 
+void ImageView::paintEvent(QPaintEvent *event)
+{
+    // All overlays are drawn in drawForeground (single GL-safe paint path).
+    QGraphicsView::paintEvent(event);
+}
+
 void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
                                            qreal viewScale)
 {
@@ -595,7 +604,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
     // Page guide outline above images so the frame stays visible when tiles
-    // cover the white sheet. Transform chrome stays in paintEvent (viewport space).
+    // cover the white sheet (scene coordinates).
     if (m_pageGuideVisible && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
@@ -617,6 +626,22 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
             painter->restore();
         }
     }
+
+    // Viewport-space overlays on the same painter as the scene (required for
+    // QOpenGLWidget: a second QPainter(viewport()) after paintEvent whites out).
+    if (!painter) {
+        return;
+    }
+    painter->save();
+    painter->resetTransform();
+    if (viewport()) {
+        const qreal dpr = viewport()->devicePixelRatioF();
+        if (!qFuzzyCompare(dpr, 1.0)) {
+            painter->scale(dpr, dpr);
+        }
+    }
+    paintViewportOverlays(*painter);
+    painter->restore();
 }
 
 void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const

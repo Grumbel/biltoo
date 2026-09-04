@@ -739,6 +739,7 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+    void paintViewportOverlays(QPainter &painter);
     void drawBackground(QPainter *painter, const QRectF &rect) override;
     /** Scene-space canvas background (AppDefault or Workspace override). */
     void paintCanvasBackground(QPainter *painter, const QRectF &rect, qreal viewScale);

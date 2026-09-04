@@ -17,10 +17,20 @@
 #include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
+#include <QSurfaceFormat>
 
 int main(int argc, char *argv[])
 {
     ImageLoader::init(argv[0]);
+
+    // Before QApplication: vsync + buffers for QOpenGLWidget viewports.
+    {
+        QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
+        fmt.setSwapInterval(1);
+        fmt.setDepthBufferSize(24);
+        fmt.setStencilBufferSize(8);
+        QSurfaceFormat::setDefaultFormat(fmt);
+    }
 
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("biltoo"));
