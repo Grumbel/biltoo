@@ -50,25 +50,25 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_motionCombo->setToolTip(
         tr("Pan and zoom: Ken Burns zoom while panning between points of interest.\n"
            "Pan and scan: pan across the image (no zoom).\n"
-           "Motion uses Fill framing; Slideshow zoom applies when motion is Off."));
+           "Both start from the Slideshow zoom base (Fit / Fill / 1:1)."));
 
     m_panZoomFactorSpin = new QDoubleSpinBox(this);
     m_panZoomFactorSpin->setRange(1.02, 1.40);
     m_panZoomFactorSpin->setSingleStep(0.01);
     m_panZoomFactorSpin->setDecimals(2);
     m_panZoomFactorSpin->setToolTip(
-        tr("Pan and zoom only: end scale relative to cover framing"));
+        tr("Pan and zoom only: end scale relative to the Slideshow zoom base"));
 
     m_zoomCombo = new QComboBox(this);
     m_zoomCombo->addItem(tr("Fit"), 0);
     m_zoomCombo->addItem(tr("Fill"), 1);
     m_zoomCombo->addItem(tr("1:1"), 2);
     m_zoomCombo->setToolTip(
-        tr("How each slide is framed when dwell motion is Off.\n"
-           "Fit: whole image visible.\n"
+        tr("Base framing for each slide (also when dwell motion is On).\n"
+           "Fit: whole image visible (letterbox).\n"
            "Fill: cover the window (may crop).\n"
-           "1:1: native pixels, centred.\n"
-           "When motion is On, the camera always uses Fill."));
+           "1:1: native pixels, centred (padding if smaller than the window).\n"
+           "Pan and zoom starts from this scale; pan and scan pans at this scale."));
 
     auto *form = new QFormLayout;
     form->setContentsMargins(0, 0, 0, 0);

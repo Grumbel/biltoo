@@ -146,12 +146,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_slideshowZoomCombo->addItem(tr("Fill"), 1);
     m_slideshowZoomCombo->addItem(tr("1:1"), 2);
     m_slideshowZoomCombo->setToolTip(
-        tr("How each slide is framed while the slideshow runs.\n"
+        tr("Base framing for each slide (also when dwell motion is On).\n"
            "Fit: whole image visible (letterbox).\n"
            "Fill: cover the window (may crop).\n"
-           "1:1: native pixels, centred.\n"
-           "Dwell motion (pan and zoom / pan and scan) always uses Fill "
-           "for the camera path."));
+           "1:1: native pixels, centred (padding if smaller than the window).\n"
+           "Pan and zoom starts from this scale; pan and scan pans at this scale."));
     slideshowForm->addRow(tr("Slideshow zoom:"),
                           wrapWithReset(m_slideshowZoomCombo, &m_resetSlideshowZoomBtn, [this]() {
                               setSlideshowZoomIndex(kDefaultSlideshowZoom);
