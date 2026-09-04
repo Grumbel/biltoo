@@ -716,8 +716,10 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     // sessionIndex (crop/flip sync to the matching Workspace slot).
     // Slideshow auto-advance must not pulse filename/index (only user nav or pinned HUD).
     if (m_imageView) {
-        m_imageView->setSessionPosition(m_currentIndex, m_session.paths().size(),
-                                        !m_slideshowAdvancing);
+        // HUD identity pulse only in Image mode (Gallery pulse forced a full
+        // viewport repaint of every tile on each click).
+        const bool pulse = !m_slideshowAdvancing && isImageMode();
+        m_imageView->setSessionPosition(m_currentIndex, m_session.paths().size(), pulse);
         m_imageView->setCurrentSessionId(currentSessionId());
     }
 
@@ -743,8 +745,15 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         m_metadataPath.clear();
     }
     updateWindowTitle();
-    updateStatus();
-    updateNavigationActions();
+    // Gallery: skip heavy status/adjustments path on every click — selection
+    // chrome is already on the tile; filmstrip row is updated above.
+    if (isGalleryMode()) {
+        updateNavigationActions();
+        m_statusLabel->setText(m_imageView ? m_imageView->statusText() : QString());
+    } else {
+        updateStatus();
+        updateNavigationActions();
+    }
 }
 
 void MainWindow::removeSessionIndices(const QList<int> &indices)

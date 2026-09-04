@@ -13,13 +13,26 @@
 
 namespace {
 
-/** Rasterize an embedded SVG via linked Qt Svg (no iconengines plugin needed). */
+bool isStandardDesktopIconName(const QString &name)
+{
+    // FreeDesktop-style names that themes provide well — prefer the theme.
+    return name.startsWith(QLatin1String("document-"))
+        || name.startsWith(QLatin1String("edit-"))
+        || name.startsWith(QLatin1String("go-"))
+        || name.startsWith(QLatin1String("media-"))
+        || name.startsWith(QLatin1String("zoom-"))
+        || name.startsWith(QLatin1String("view-"))
+        || name.startsWith(QLatin1String("object-"))
+        || name == QLatin1String("folder-open")
+        || name == QLatin1String("list-add")
+        || name == QLatin1String("preferences-system");
+}
+
 QIcon iconFromSvgResource(const QString &resource)
 {
     if (!QFile::exists(resource)) {
         return {};
     }
-    // Prefer QIcon's native SVG engine when the plugin is on QT_PLUGIN_PATH.
     {
         const QIcon native(resource);
         if (!native.isNull() && !native.availableSizes().isEmpty()) {
@@ -30,7 +43,6 @@ QIcon iconFromSvgResource(const QString &resource)
     if (!renderer.isValid()) {
         return {};
     }
-    // Multi-size icon so toolbars/menus pick a crisp size.
     QIcon icon;
     for (int s : {16, 22, 24, 32, 48, 64}) {
         QPixmap pm(s, s);
@@ -48,9 +60,21 @@ QIcon iconFromSvgResource(const QString &resource)
 
 QIcon themeIcon(const QString &name, QStyle::StandardPixmap fallback)
 {
-    // Prefer embedded biltoo icons (works from out-of-tree build without install
-    // and without QT_PLUGIN_PATH pointing at qtsvg iconengines).
     const QString resource = QStringLiteral(":/icons/actions/%1.svg").arg(name);
+
+    if (isStandardDesktopIconName(name)) {
+        const QIcon theme = QIcon::fromTheme(name);
+        if (!theme.isNull() && !theme.availableSizes().isEmpty()) {
+            return theme;
+        }
+        const QIcon embedded = iconFromSvgResource(resource);
+        if (!embedded.isNull()) {
+            return embedded;
+        }
+        return QApplication::style()->standardIcon(fallback);
+    }
+
+    // Biltoo-specific names (gallery-*, workspace-*, …): our artwork first.
     const QIcon embedded = iconFromSvgResource(resource);
     if (!embedded.isNull()) {
         return embedded;

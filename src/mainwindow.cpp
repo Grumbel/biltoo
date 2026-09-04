@@ -1224,6 +1224,10 @@ void MainWindow::updateAdjustmentsPanel()
     if (!m_adjustmentsPanel || !m_imageView) {
         return;
     }
+    // Hidden dock: never copy tile pixels on Gallery selection (was a major lag spike).
+    if (m_adjustmentsDock && !m_adjustmentsDock->isVisible()) {
+        return;
+    }
     ImageItem *item = m_imageView->targetItem();
     if (!item && !m_imageView->liveItems().isEmpty() && m_imageView->isImageMode()) {
         item = m_imageView->liveItems().first();
@@ -1238,7 +1242,12 @@ void MainWindow::updateAdjustmentsPanel()
         QSignalBlocker b(m_adjustmentsPanel);
         m_adjustmentsPanel->setAdjustments(item->colorAdjustments());
     }
-    m_adjustmentsPanel->setPreviewImage(item->pixmap().toImage());
+    // Preview is optional chrome — keep it cheap (scaled down).
+    QPixmap pm = item->pixmap();
+    if (!pm.isNull() && (pm.width() > 512 || pm.height() > 512)) {
+        pm = pm.scaled(512, 512, Qt::KeepAspectRatio, Qt::FastTransformation);
+    }
+    m_adjustmentsPanel->setPreviewImage(pm.toImage());
 }
 
 

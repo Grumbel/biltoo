@@ -611,7 +611,9 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            emit statusChanged();
+            if (m_hudVisible || m_hudFlashVisible) {
+                emit statusChanged();
+            }
             return;
         }
 

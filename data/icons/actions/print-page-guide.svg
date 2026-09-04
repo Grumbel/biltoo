@@ -3,9 +3,9 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-  <!-- White page on desk + dashed print frame -->
-  <rect x="4" y="2" width="16" height="20" rx="1.5" fill="#f6f5f4" stroke="#9a9996" stroke-width="1"/>
-  <rect x="6.5" y="4.5" width="11" height="15" rx="0.5" fill="none" stroke="#1c71d8" stroke-width="1.4" stroke-dasharray="2.2 1.6"/>
-  <!-- small image tile on the page -->
-  <rect x="8" y="7" width="7" height="5" rx="0.6" fill="#62a0ea"/>
+  <path d="M6 9V3h12v6" stroke="#5e5c64" stroke-width="1.5" fill="none"/>
+  <rect x="4" y="9" width="16" height="8" rx="1.5" fill="#3584e4"/>
+  <path d="M6 14v7h12v-7" stroke="#5e5c64" stroke-width="1.5" fill="#f6f5f4"/>
+  <circle cx="17" cy="12" r="1" fill="#f6f5f4"/>
+
 </svg>

@@ -2,13 +2,10 @@
 SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Colour-grade sliders: red / green / blue knobs -->
-  <line x1="4" y1="7" x2="20" y2="7" stroke="#888a85"/>
-  <circle cx="9" cy="7" r="3" fill="#e01b24" stroke="#c01c28"/>
-  <line x1="4" y1="12" x2="20" y2="12" stroke="#888a85"/>
-  <circle cx="14" cy="12" r="3" fill="#2ec27e" stroke="#26a269"/>
-  <line x1="4" y1="17" x2="20" y2="17" stroke="#888a85"/>
-  <circle cx="11" cy="17" r="3" fill="#3584e4" stroke="#1c71d8"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <circle cx="12" cy="12" r="8" fill="none" stroke="#5e5c64" stroke-width="1.5"/>
+  <path d="M12 4a8 8 0 0 1 0 16" fill="#3584e4"/>
+  <path d="M12 4a8 8 0 0 0 0 16" fill="#e66100"/>
+  <circle cx="12" cy="12" r="3" fill="#f6f5f4" stroke="#5e5c64" stroke-width="1"/>
+
 </svg>

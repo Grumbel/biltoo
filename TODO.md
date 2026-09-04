@@ -3206,3 +3206,25 @@ development.
 ### Done criteria
 - [x] Toolbar/app icons visible from biltoo-run
 - [x] Next **182**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-182-select-icons`
+
+### Selection lag
+Root cause: `updateStatus` → `updateAdjustmentsPanel` → `pixmap().toImage()` on
+the full tile for every Gallery click (even with the dock closed).
+
+- Skip adjustments when dock is hidden; scale preview ≤512 if shown
+- Gallery `setCurrentIndex`: no identity pulse, no full `updateStatus`
+- Ctrl-select: no unconditional `statusChanged`
+
+### Icons
+- Standard FreeDesktop names (document-*, edit-*, go-*, …): **theme first**,
+  embedded SVG fallback
+- Biltoo-specific (gallery-*, workspace-*, …): embedded first
+- Custom SVGs redrawn with fills / accent blue; improved open/undo/nav fallbacks
+
+### Done criteria
+- [x] Gallery selection without lag spikes
+- [x] Themed icons where available; richer custom SVGs
+- [x] Next **183**
