@@ -883,7 +883,7 @@ void MainWindow::showKeyboardShortcuts()
         "Esc — leave fullscreen (or return to Gallery)</p>"
         "<p><b>Slideshow</b><br/>"
         "Preferences: transition (none, crossfade, fade to black, slide), "
-        "duration, and optional Ken Burns pan/zoom during each dwell. "
+        "duration, and optional pan&scan during each dwell. "
         "Transitions apply on automatic advances only.</p>"
         "<p><b>View</b><br/>"
         "F / F11 — fullscreen (chrome and docks hide; restored on exit)<br/>"

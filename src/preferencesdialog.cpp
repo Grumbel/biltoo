@@ -113,9 +113,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                               updateResetButtons();
                           }));
 
-    m_slideshowKenBurnsCheck = new QCheckBox(tr("Ken Burns pan && zoom during slides"), this);
+    m_slideshowKenBurnsCheck = new QCheckBox(tr("Pan && scan during slides"), this);
     m_slideshowKenBurnsCheck->setToolTip(
-        tr("Slowly fill the screen and pan/zoom across each image during the dwell"));
+        tr("Fill the screen and slowly pan across each image during the dwell (landscape: left to right; portrait: top to bottom)"));
     slideshowForm->addRow(QString(),
                           wrapWithReset(m_slideshowKenBurnsCheck, &m_resetSlideshowKenBurnsBtn, [this]() {
                               setSlideshowKenBurns(kDefaultSlideshowKenBurns);
@@ -129,7 +129,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_slideshowKenBurnsZoomSpin->setValue(kDefaultSlideshowKenBurnsZoom);
     m_slideshowKenBurnsZoomSpin->setToolTip(
         tr("End zoom relative to the starting cover framing (1.12 = 12% closer)"));
-    slideshowForm->addRow(tr("Ken Burns zoom:"),
+    slideshowForm->addRow(tr("Pan && scan zoom:"),
                           wrapWithReset(m_slideshowKenBurnsZoomSpin, &m_resetSlideshowKenBurnsZoomBtn, [this]() {
                               setSlideshowKenBurnsZoom(kDefaultSlideshowKenBurnsZoom);
                               updateResetButtons();

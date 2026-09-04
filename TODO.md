@@ -1921,3 +1921,17 @@ Decode/prepare at `thumbSize * dpr`, tag pixmap DPR, draw pixmap into the
 icon rect, snap near-square sources to fill.
 
 **Next:** `qimgview-128-…`
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-128-pan-scan`
+
+**Pan & scan (was Ken Burns) polish:**
+- Rename UI to **Pan & scan**
+- Remove random corner drift; deterministic L→R / T→B; linear easing
+- Cover-frame on load (no letterboxed flash before camera starts)
+- Start camera immediately under inter-slide transitions (do not wait for
+  transition end; do not stop camera merely because a transition grab ran)
+
+**Next:** `qimgview-129-…`

@@ -483,13 +483,13 @@ public:
     void prepareSlideshowTransition();
     void cancelSlideshowTransition();
 
-    /** Slow pan/zoom during a slideshow dwell (Ken Burns). */
+    /** Slow pan/zoom during a slideshow dwell (pan && scan). */
     void setKenBurnsEnabled(bool on);
     bool kenBurnsEnabled() const { return m_kenBurnsEnabled; }
     void setKenBurnsZoomFactor(qreal factor);
     qreal kenBurnsZoomFactor() const { return m_kenBurnsZoomFactor; }
     void cancelKenBurns();
-    /** Start Ken Burns if enabled and a slideshow dwell is active. */
+    /** Start pan&&scan if enabled and a slideshow dwell is active. */
     void maybeStartKenBurns();
 
     /** Invoked by ImageItem during handle interaction for live status updates. */

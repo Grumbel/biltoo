@@ -431,12 +431,12 @@ void ImageView::prepareSlideshowTransition()
         || m_slideshowTransitionDurationMs <= 0
         || !isImageMode()
         || !viewport()) {
-        cancelKenBurns();
+        // Pan&scan keeps running until the next image replaces this one.
         return;
     }
-    // Grab first so a mid-Ken-Burns frame is preserved in the transition.
+    // Grab the current pan&scan frame; do not stop the camera — the underlay
+    // may still move until LoadReplace, and the next slide starts its own move.
     const QPixmap shot = viewport()->grab();
-    cancelKenBurns();
     if (shot.isNull()) {
         return;
     }
@@ -500,7 +500,6 @@ void ImageView::startSlideshowTransitionAnimation()
             if (viewport()) {
                 viewport()->update();
             }
-            maybeStartKenBurns();
         });
     }
     m_slideshowTransitionAnim->stop();
@@ -540,15 +539,12 @@ void ImageView::maybeStartKenBurns()
     if (!m_kenBurnsEnabled || !m_slideshowProgressActive || !isImageMode()) {
         return;
     }
-    if (m_slideshowTransitionPending || m_slideshowTransitionActive) {
-        return; // transition finished handler will call again
-    }
+    // Start immediately — including under an in-progress inter-slide transition
+    // — so the new image is already covering and moving as it is revealed.
     int duration = m_slideshowProgressIntervalMs;
     if (duration < 250) {
         return;
     }
-    // Leave a little idle at the end of the dwell so the last frame holds.
-    duration = qMax(250, duration - 80);
     startKenBurns(duration);
 }
 
@@ -563,7 +559,7 @@ void ImageView::startKenBurns(int durationMs)
         return;
     }
 
-    // Cover the viewport so pan/zoom never letterboxes mid-slide.
+    // Cover framing from the first frame (no letterboxed “small” flash).
     m_fitMode = false;
     m_fillMode = true;
     fitItem(item, Qt::KeepAspectRatioByExpanding);
@@ -573,21 +569,30 @@ void ImageView::startKenBurns(int durationMs)
         return;
     }
     m_kenBurnsEndScale = m_kenBurnsStartScale * m_kenBurnsZoomFactor;
-    m_kenBurnsStartCenter = mapToScene(viewport()->rect().center());
 
-    // Drift toward a random corner of the image (classic documentary feel).
+    // Deterministic pan&scan: landscape pans left→right, portrait top→bottom.
+    // No random corners (that read as wobble).
     const QRectF br = item->sceneBoundingRect();
-    const QPointF corners[4] = {
-        br.topLeft(), br.topRight(), br.bottomLeft(), br.bottomRight()
-    };
-    const int corner = QRandomGenerator::global()->bounded(4);
-    const QPointF toward = corners[corner];
-    // Blend only part-way so the frame stays mostly on the image at end scale.
-    m_kenBurnsEndCenter = m_kenBurnsStartCenter + (toward - m_kenBurnsStartCenter) * 0.28;
+    const QPointF mid = br.center();
+    // How far we can shift the view centre while staying mostly on the image
+    // at the *end* scale (more zoomed ⇒ less travel).
+    const qreal viewW = viewport()->width() / m_kenBurnsEndScale;
+    const qreal viewH = viewport()->height() / m_kenBurnsEndScale;
+    const qreal maxDx = qMax(0.0, (br.width() - viewW) * 0.5);
+    const qreal maxDy = qMax(0.0, (br.height() - viewH) * 0.5);
+    const qreal travel = 0.85; // use most of the available room, not a random fraction
+    if (br.width() >= br.height()) {
+        m_kenBurnsStartCenter = QPointF(mid.x() - maxDx * travel, mid.y());
+        m_kenBurnsEndCenter = QPointF(mid.x() + maxDx * travel, mid.y());
+    } else {
+        m_kenBurnsStartCenter = QPointF(mid.x(), mid.y() - maxDy * travel);
+        m_kenBurnsEndCenter = QPointF(mid.x(), mid.y() + maxDy * travel);
+    }
 
     if (!m_kenBurnsAnim) {
         m_kenBurnsAnim = new QVariantAnimation(this);
-        m_kenBurnsAnim->setEasingCurve(QEasingCurve::InOutSine);
+        // Linear = constant pan speed (InOutSine felt like a wobble).
+        m_kenBurnsAnim->setEasingCurve(QEasingCurve::Linear);
         connect(m_kenBurnsAnim, &QVariantAnimation::valueChanged, this,
                 [this](const QVariant &v) {
                     applyKenBurnsProgress(v.toReal());
@@ -595,6 +600,8 @@ void ImageView::startKenBurns(int durationMs)
         connect(m_kenBurnsAnim, &QVariantAnimation::finished, this, [this]() {
             m_kenBurnsActive = false;
         });
+    } else {
+        m_kenBurnsAnim->setEasingCurve(QEasingCurve::Linear);
     }
     m_kenBurnsActive = true;
     m_kenBurnsAnim->stop();
