@@ -599,28 +599,29 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     if (!item || !viewport()) {
         return;
     }
-    // Explicit scale + centerOn (same approach as the dwell camera). fitInView
-    // is scrollbar-sensitive and often yields nearly identical Fit vs Fill
-    // framing when the image aspect is close to the viewport.
-    const QRectF br = item->sceneBoundingRect();
-    if (br.width() < 1.0 || br.height() < 1.0) {
-        return;
-    }
-    const qreal vw = qreal(qMax(1, viewport()->width()));
-    const qreal vh = qreal(qMax(1, viewport()->height()));
-    const QPointF mid = br.center();
-
+    // Explicit uniform scale (same approach as the dwell camera).
+    item->setItemShear(0.0);
+    item->setItemRotation(0.0);
     item->setItemScale(1.0);
     if (isImageMode()) {
         item->setPos(0, 0);
     }
+    const QRectF content = item->contentRect();
+    if (content.width() < 1.0 || content.height() < 1.0) {
+        return;
+    }
+    const qreal iw = content.width();
+    const qreal ih = content.height();
+    const qreal vw = qreal(qMax(1, viewport()->width()));
+    const qreal vh = qreal(qMax(1, viewport()->height()));
+    const QPointF mid = item->mapToScene(content.center());
 
     qreal scale = 1.0;
     switch (m_slideshowZoom) {
     case SlideshowZoom::Fill:
         m_fitMode = false;
         m_fillMode = true;
-        scale = qMax(vw / br.width(), vh / br.height());
+        scale = qMax(vw / iw, vh / ih);
         break;
     case SlideshowZoom::Actual:
         m_fitMode = false;
@@ -631,17 +632,27 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     default:
         m_fitMode = true;
         m_fillMode = false;
-        scale = qMin(vw / br.width(), vh / br.height());
+        scale = qMin(vw / iw, vh / ih);
         break;
     }
     if (scale <= 0.0 || !qIsFinite(scale)) {
         return;
     }
+    const qreal vx = qreal(viewport()->width()) * 0.5;
+    const qreal vy = qreal(viewport()->height()) * 0.5;
     setTransformationAnchor(QGraphicsView::NoAnchor);
+    setResizeAnchor(QGraphicsView::NoAnchor);
     QTransform xform;
+    xform.translate(vx, vy);
     xform.scale(scale, scale);
+    xform.translate(-mid.x(), -mid.y());
     setTransform(xform);
-    centerOn(mid);
+    if (horizontalScrollBar()) {
+        horizontalScrollBar()->setValue(0);
+    }
+    if (verticalScrollBar()) {
+        verticalScrollBar()->setValue(0);
+    }
 }
 
 void ImageView::reapplySlideshowFraming()
@@ -1005,40 +1016,49 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         return;
     }
 
-    // Normalise item pose; camera is entirely in the view matrix.
-    // Slideshow zoom sets the base scale; motion pans/zooms relative to it.
+    // Identity item pose — camera is entirely the view matrix. Residual
+    // Workspace shear/rotation would look like stretch under the view scale.
+    // m_fitMode must stay false so resizeEvent cannot fitItem over the camera.
+    m_fitMode = false;
+    m_fillMode = (m_slideshowZoom == SlideshowZoom::Fill);
+    item->setItemShear(0.0);
+    item->setItemRotation(0.0);
     item->setItemScale(1.0);
     if (isImageMode()) {
         item->setPos(0, 0);
     }
-    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
 
-    const QRectF br = item->sceneBoundingRect();
-    if (br.width() < 1.0 || br.height() < 1.0) {
+    // Content size (source aspect), not scene AABB which can inflate under
+    // a non-identity local transform.
+    const QRectF content = item->contentRect();
+    if (content.width() < 1.0 || content.height() < 1.0) {
         return;
     }
-    const QPointF mid = br.center();
+    const qreal iw = content.width();
+    const qreal ih = content.height();
+    const QPointF mid = item->mapToScene(content.center());
     const qreal vw = qreal(qMax(1, viewport()->width()));
     const qreal vh = qreal(qMax(1, viewport()->height()));
 
-    const qreal coverScale = qMax(vw / br.width(), vh / br.height());
-    const qreal fitScale = qMin(vw / br.width(), vh / br.height());
+    // Room for the camera to pan without scrollbar clamping.
+    if (m_scene) {
+        const qreal pad = qMax(vw, vh) * 2.0;
+        m_scene->setSceneRect(QRectF(mid.x() - iw * 0.5 - pad, mid.y() - ih * 0.5 - pad,
+                                     iw + 2.0 * pad, ih + 2.0 * pad));
+    }
+
+    const qreal coverScale = qMax(vw / iw, vh / ih);
+    const qreal fitScale = qMin(vw / iw, vh / ih);
     qreal baseScale = coverScale;
     switch (m_slideshowZoom) {
     case SlideshowZoom::Fill:
-        m_fitMode = false;
-        m_fillMode = true;
         baseScale = coverScale;
         break;
     case SlideshowZoom::Actual:
-        m_fitMode = false;
-        m_fillMode = false;
         baseScale = 1.0;
         break;
     case SlideshowZoom::Fit:
     default:
-        m_fitMode = true;
-        m_fillMode = false;
         baseScale = fitScale;
         break;
     }
@@ -1055,8 +1075,8 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         }
         const qreal viewW = vw / scale;
         const qreal viewH = vh / scale;
-        return QPointF(qMax(0.0, (br.width() - viewW) * 0.5),
-                       qMax(0.0, (br.height() - viewH) * 0.5));
+        return QPointF(qMax(0.0, (iw - viewW) * 0.5),
+                       qMax(0.0, (ih - viewH) * 0.5));
     };
     auto clampCenter = [&](QPointF c, qreal scale) -> QPointF {
         const QPointF half = halfOverflow(scale);
@@ -1069,18 +1089,18 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         // almost no overflow (e.g. Fit, or Fill on near-matching aspect).
         qreal scale = baseScale;
         QPointF half = halfOverflow(scale);
-        const bool preferX = br.width() * vh >= br.height() * vw; // wider than view
+        const bool preferX = iw * vh >= ih * vw; // wider than view
         qreal travel = preferX ? half.x() : half.y();
         constexpr qreal kMinTravelScene = 8.0; // px of motion at least
         if (travel < kMinTravelScene) {
             // Target ~20% of the long image side as total travel (10% each side).
-            const qreal longSide = preferX ? br.width() : br.height();
+            const qreal longSide = preferX ? iw : ih;
             const qreal wantHalf = qMax(kMinTravelScene, longSide * 0.10);
             if (preferX) {
-                const qreal viewW = qMax(vw * 0.5, br.width() - 2.0 * wantHalf);
+                const qreal viewW = qMax(vw * 0.5, iw - 2.0 * wantHalf);
                 scale = vw / viewW;
             } else {
-                const qreal viewH = qMax(vh * 0.5, br.height() - 2.0 * wantHalf);
+                const qreal viewH = qMax(vh * 0.5, ih - 2.0 * wantHalf);
                 scale = vh / viewH;
             }
             scale = qMax(scale, baseScale);
@@ -1130,14 +1150,10 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         const QPointF biasA = kBias[seed % 8];
         const QPointF biasB = kBias[(seed / 8 + 3) % 8]; // force different slot
 
-        // At pure cover, halfStart may be ~0; still set end far into halfEnd so
-        // the zoom pulls toward a corner/edge (classic Ken Burns).
         m_motionStartCenter = QPointF(mid.x() + biasA.x() * halfStart.x(),
                                       mid.y() + biasA.y() * halfStart.y());
         m_motionEndCenter = QPointF(mid.x() + biasB.x() * halfEnd.x(),
                                     mid.y() + biasB.y() * halfEnd.y());
-        // If start has no room, begin slightly inset on the end bias axis so
-        // the path is not a pure radial zoom into the centre.
         if (halfStart.x() < 0.5 && halfStart.y() < 0.5 && (halfEnd.x() > 0.5 || halfEnd.y() > 0.5)) {
             m_motionStartCenter = mid;
             m_motionEndCenter = QPointF(mid.x() + biasB.x() * halfEnd.x(),
@@ -1200,17 +1216,27 @@ void ImageView::applySlideshowMotionProgress(qreal t)
     const QPointF c(
         m_motionStartCenter.x() + (m_motionEndCenter.x() - m_motionStartCenter.x()) * t,
         m_motionStartCenter.y() + (m_motionEndCenter.y() - m_motionStartCenter.y()) * t);
-    if (s <= 0.0 || !viewport()) {
+    if (s <= 0.0 || !qIsFinite(s) || !viewport()) {
         return;
     }
-    // Scale + centerOn — do not bake translation into the matrix alone.
-    // QGraphicsView still applies scrollbar offsets on top of setTransform;
-    // a previous fitInView/centerOn left non-zero scroll and cancelled the pan.
+    // Uniform scale only. Bake the camera centre into the matrix and zero
+    // scrollbars so QGraphicsView cannot cancel the pan or introduce a
+    // non-uniform effective mapping via scrollbar ranges.
+    const qreal vx = qreal(viewport()->width()) * 0.5;
+    const qreal vy = qreal(viewport()->height()) * 0.5;
     setTransformationAnchor(QGraphicsView::NoAnchor);
+    setResizeAnchor(QGraphicsView::NoAnchor);
     QTransform xform;
+    xform.translate(vx, vy);
     xform.scale(s, s);
+    xform.translate(-c.x(), -c.y());
     setTransform(xform);
-    centerOn(c);
+    if (horizontalScrollBar()) {
+        horizontalScrollBar()->setValue(0);
+    }
+    if (verticalScrollBar()) {
+        verticalScrollBar()->setValue(0);
+    }
     if (viewport()) {
         viewport()->update();
     }

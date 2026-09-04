@@ -318,6 +318,10 @@ void ImageView::resizeEvent(QResizeEvent *event)
     if (isGalleryMode()) {
         return;
     }
+    // Dwell camera owns the view transform — never refit over it.
+    if (m_slideshowMotionActive) {
+        return;
+    }
     if (m_fitMode && m_items.size() == 1) {
         fitItem(m_items.first(), currentFitAspectMode());
     }
