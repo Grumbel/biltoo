@@ -185,6 +185,11 @@ MainWindow::MainWindow(QWidget *parent)
                                    | QDockWidget::DockWidgetFloatable);
     addDockWidget(Qt::RightDockWidgetArea, m_adjustmentsDock);
     m_adjustmentsDock->hide();
+    connect(m_adjustmentsDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (visible) {
+            updateAdjustmentsPanel();
+        }
+    });
     connect(m_adjustmentsPanel, &AdjustmentsPanel::adjustmentsChanged,
             this, [this](const ColorAdjustments &adj) {
                 if (m_imageView) {
