@@ -2278,3 +2278,38 @@ then moves relative to that base:
 - [x] 1:1 + motion: native scale at start (padding on small images)
 - [x] Live crossfade incoming frame matches the same base
 - [x] Next **137**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-137-motion-jump`
+
+**Issue:** Dwell motion “ping-pongs”: transition looks normal, then the view
+jumps to a different camera position.
+
+### Root causes
+1. **LoadReplace double framing:** `applySlideshowZoomFraming` centres the
+   slide, then `maybeStartSlideshowMotion` immediately moves to motion t=0
+   (often an edge/corner). Visible jump when the live-transition hold drops.
+2. **Live overlay vs camera mismatch:** Incoming cover was animated with
+   `motionT = transitionProgress` (full path compressed into the fade). Hold
+   shows near path *end*; camera restarts at path *start* → snap.
+
+### Fix
+1. When motion ≠ Off on LoadReplace, skip `applySlideshowZoomFraming`; only
+   `startSlideshowMotion` sets the transform (at the intended start sample).
+2. Live transition cover samples the dwell path in **real time**:
+   `motionT = elapsedMs / intervalMs` (small during a short fade).
+3. `startSlideshowMotion(duration, initialProgress)` so after a live transition
+   the clock starts at `transitionDuration/interval`, matching the overlay.
+4. Store `m_liveTransitionMotionProgress` at hold time for the handoff.
+
+### Commits
+1. Fix motion jump (load framing + live overlay continuity)
+2. Docs → next **138**
+
+### Done criteria
+- [x] No centre→edge jump when hold releases after crossfade/slide
+- [x] Incoming cover moves gently in real time during live fade
+- [x] Camera starts at live-overlay motion sample (offset clock)
+- [x] Next **138**
