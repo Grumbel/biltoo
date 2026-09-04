@@ -2400,3 +2400,92 @@ viewport, so `MouseMove` only arrived while a button was held.
 - [x] Crossfade to-frames keep aspect under pan&zoom
 - [x] Slide frames keep aspect; motion frozen during projector swap
 - [x] Next **141**
+
+
+---
+
+## Design: slideshow transitions × dwell motion (2026-09-04)
+
+Canonical behaviour. Implementation notes in *Audit* below refer to tip
+after `qimgview-140-transition-stretch`.
+
+### Shared rules
+
+| Rule | Intent |
+|------|--------|
+| Duration | User-set; hard-capped to ≤ half of interval so a transition cannot overrun the next dwell |
+| Aspect | Every composited frame (from/to/overlay) keeps the image’s aspect — never stretch to the viewport |
+| Zoom base | Fit / Fill / 1:1 is the **base scale** for each slide (static framing and camera start) |
+| Motion | Off / Pan&zoom / Pan&scan runs **during the dwell** after the transition has finished (except live-crossfade underlay — see below) |
+| Load | Next decode may be async; overlays must not reveal a wrong or unframed underlay |
+
+### Modes
+
+#### None
+- Instant cut to the next slide.
+- No overlay, no grab.
+- If motion ≠ Off: start camera on the new slide at progress 0 after load.
+
+#### Crossfade
+**Visual:** previous frame fades out while the next fades in (opacity over duration).
+
+| Motion | Intended pipeline |
+|--------|-------------------|
+| **Off** | **Snapshot path:** grab viewport (old) → load/frame next → animate old pixmap opacity 1→0 over the new underlay. |
+| **On** | **Live path:** keep drawing the *current* item with its dwell camera; decode next off-thread; composite an aspect-correct **to-frame** (sampled on the next slide’s camera path in real time) with rising opacity; at end **hold** final composite until LoadReplace has framed the item and the camera has started at the **same** motion progress; drop hold. |
+
+#### Fade through black
+**Visual:** old → solid black → new (two equal halves of duration).
+
+| Motion | Intended pipeline |
+|--------|-------------------|
+| **Off** | Snapshot old; phase 1 draw old + rising black; at mid-black load next; phase 2 lift black over the framed next underlay. |
+| **On** | **Live path:** phase 1 black rises over the still-moving underlay; at mid-black emit advance + **await load** (hold solid black); after LoadReplace, phase 2 lifts black; no “to” pixmap required. |
+
+#### Slide (projector)
+**Visual:** two **static** full-viewport frames — old exits left, new enters from the right (black in the gap).
+
+| Motion | Intended pipeline |
+|--------|-------------------|
+| **Any** | **Snapshot only.** Live moving underlay is incompatible (looks like a third moving layer under sliding cards). Grab from-frame; load next; grab to-frame; **freeze dwell camera** for the animation; resume motion after the slide finishes. |
+
+### Framing of “to” frames (when a pixmap is built)
+
+- Scale uniformly from the slideshow zoom base (and motion sample if live).
+- Compose onto a viewport-sized canvas: **pad** if smaller, **clip** if larger.
+- Never `IgnoreAspectRatio` stretch to fill the viewport.
+
+---
+
+### Audit vs implementation (tip 140)
+
+| Spec item | Status | Notes |
+|-----------|--------|--------|
+| Duration ≤ half interval | OK | Settings + `readSettings` cap |
+| None = instant cut | OK | `prepare` no-ops when None / duration 0 |
+| Crossfade + motion Off = snapshot | OK | `onSlideshowTick` → `prepare` → `goNext` → anim |
+| Crossfade + motion On = live | OK | `beginLiveSlideshowTransition`; opacity to-pixmap over live underlay |
+| Live to-frame aspect-correct | OK after 140 | Canvas compose with uniform scale; no force-stretch |
+| Live camera handoff (same progress) | OK after 137 | `m_liveTransitionMotionProgress` + motion clock offset |
+| FadeBlack + motion Off | OK | Two-phase paint on snapshot |
+| FadeBlack + motion On | OK | Mid-black advance + `m_liveTransitionAwaitingLoad` |
+| Slide always snapshot | OK after 140 | `beginLive…` returns false for Slide |
+| Slide freezes/resumes motion | OK after 140 | Cancel on to-grab; `maybeStart` on anim finished |
+| Slide paint no stretch | OK after 140 | `drawPixmap(x,y,pm)` native size |
+| Snapshot from-grab is viewport | OK | `viewport()->grab()` |
+| Snapshot to-grab (Slide) | OK | Grab after load in `startSlideshowTransitionAnimation` |
+| Zoom base applies with motion | OK after 136 | Camera start scale from Fit/Fill/1:1 |
+| Hold prevents end-of-fade flash | OK | `m_liveTransitionHold` until `releaseLiveTransitionHold` |
+
+### Residual risks / follow-ups
+
+1. **HiDPI grabs:** `viewport()->grab()` is device pixels; painting into logical `viewport()->rect()` can soft-scale. Prefer matching devicePixelRatio on stored pixmaps if artifacts appear on scaled displays.
+2. **Crossfade live “to” uses thumbnail decode** (`loadThumbnail(maxEdge*2)`): fine for motion samples; very large prints may look softer than the post-load item until hold drops.
+3. **Snapshot Crossfade/FadeBlack with motion Off** still uses from-snapshot only; underlay is the real next item (correct). If motion were somehow left on during snapshot (should not happen for Crossfade — live path wins), underlay could move under a static from-fade.
+4. **Slide + motion:** from-frame may be a mid-pan grab (intentional freeze of last dwell pose); to-frame is post-load at camera start (or zoom framing). Acceptable projector behaviour.
+
+### Decision log
+
+- Slide ⊄ live motion (product): static dual-frame only.
+- Crossfade ∩ live motion: keep outgoing camera alive; incoming is a motion-sampled overlay until handoff.
+- Aspect is inviolable for all composited frames.
