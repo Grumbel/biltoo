@@ -851,6 +851,35 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     return true;
 }
 
+void ImageView::preloadSlideshowImage(const QString &path)
+{
+    if (path.isEmpty() || path == m_preloadPath) {
+        return;
+    }
+    const quint64 gen = ++m_preloadGeneration;
+    m_preloadPath.clear();
+    m_preloadImage = QImage();
+    const QString loadPath = path;
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start([guard, loadPath, gen]() {
+        const QImage img = ImageLoader::load(loadPath);
+        if (!guard || img.isNull()) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard.data(), [guard, loadPath, img, gen]() {
+            ImageView *view = guard.data();
+            if (!view || img.isNull()) {
+                return;
+            }
+            if (gen != view->m_preloadGeneration) {
+                return;
+            }
+            view->m_preloadPath = loadPath;
+            view->m_preloadImage = img;
+        }, Qt::QueuedConnection);
+    });
+}
+
 QPixmap ImageView::renderCoverPixmap(const QImage &image) const
 {
     // Static centre cover — used when motion is Off or as a fallback.
