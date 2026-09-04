@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-144-dual-motion-handoff”**
-(Both images keep moving in crossfade; hold advances through load).
-Next bundle number: **145**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-145-motion-extend-debug”**
+(Extend outgoing motion through live crossfade; [qimgview-slideshow] logs).
+Next bundle number: **146**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

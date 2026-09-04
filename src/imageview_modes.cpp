@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include <QDebug>
 #include "imageitem.h"
 #include "imageloader.h"
 
@@ -134,6 +135,11 @@ void ImageView::clearInteractionState()
 
 void ImageView::clearLiveCanvas()
 {
+    qWarning("[qimgview-slideshow] clearLiveCanvas items=%d motionActive=%d "
+             "liveHold=%d liveActive=%d m11=%.4f",
+             m_items.size(), int(m_slideshowMotionActive),
+             int(m_liveTransitionHold), int(m_liveTransitionActive),
+             transform().m11());
     // Destroy only the live scene items. Mode stashes (Workspace/Gallery tiles
     // kept while in Image mode) must survive Image-mode LoadReplace / Next.
     clearInteractionState();
@@ -197,12 +203,21 @@ void ImageView::prepareImageModeCanvas()
 {
     m_undoStack->clear();
     m_scene->clearSelection();
-    resetTransform();
-    if (horizontalScrollBar()) {
-        horizontalScrollBar()->setValue(0);
-    }
-    if (verticalScrollBar()) {
-        verticalScrollBar()->setValue(0);
+    const bool liveCover = m_liveTransitionHold || m_liveTransitionActive;
+    qWarning("[qimgview-slideshow] prepareImageModeCanvas liveCover=%d hold=%d active=%d "
+             "items_before_reset=%d m11=%.4f",
+             int(liveCover), int(m_liveTransitionHold), int(m_liveTransitionActive),
+             m_items.size(), transform().m11());
+    // Under a live hold the overlay covers the viewport; still avoid a bare
+    // resetTransform flash if updates sneak through before the new camera runs.
+    if (!liveCover) {
+        resetTransform();
+        if (horizontalScrollBar()) {
+            horizontalScrollBar()->setValue(0);
+        }
+        if (verticalScrollBar()) {
+            verticalScrollBar()->setValue(0);
+        }
     }
     // Drop large Gallery/Workspace scene rects so fitInView centres cleanly.
     m_scene->setSceneRect(QRectF());

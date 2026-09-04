@@ -2542,3 +2542,31 @@ images must keep moving on their own paths. Freeze also did not fix the jump
 - [x] Both images move during crossfade + pan&zoom
 - [x] Handoff progress includes load wait
 - [x] Next **145**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-145-motion-extend-debug`
+
+**Feedback:** Still jumps; both images still not moving; suspect widget recalc
+when one image is removed. Requested debug values.
+
+### Root cause (outgoing freeze)
+Dwell motion duration equals the slideshow interval. At the advance tick the
+outgoing camera is already at **t=1 and stopped**, so crossfade runs over a
+frozen underlay even with dual-motion intent.
+
+### Fix
+1. `extendOutgoingMotionThroughTransition()` — new camera leg from the *current*
+   pose for fade+load duration when a live transition starts (and if a leg ends
+   mid-transition).
+2. Skip `resetTransform()` in `prepareImageModeCanvas` while a live hold/active
+   covers the viewport (widget reset under the overlay).
+3. `qWarning` traces prefixed `[qimgview-slideshow]` for: beginLive, extend,
+   startMotion, applyMotion (throttled), enterHold, releaseHold, clearLiveCanvas,
+   prepareImageModeCanvas, cancelMotion, motion stop.
+
+### Done criteria
+- [x] Outgoing keeps moving during live crossfade
+- [x] Debug lines available on stderr
+- [x] Next **146**

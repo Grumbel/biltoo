@@ -183,6 +183,8 @@ public:
     void applyToolDragMode();
     void startSlideshowTransitionAnimation();
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
+    /** Continue outgoing camera from the current pose through a live transition. */
+    void extendOutgoingMotionThroughTransition();
     void applySlideshowMotionProgress(qreal t);
     void tickSlideshowMotion();
     void tickLiveTransition();
