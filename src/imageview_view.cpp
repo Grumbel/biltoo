@@ -412,6 +412,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         cancelSlideshowMotion();
         m_motionBiasValid = false;
         m_motionTravelDir = QPointF(0.0, 1.0);
+        m_motionSign = 1.0;
     }
     viewport()->update();
 }
@@ -710,50 +711,23 @@ void ImageView::cancelSlideshowMotion()
 
 void ImageView::chooseContinuingMotionBiases(uint seed)
 {
-    static const QPointF kBias[8] = {
-        QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
-        QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
-        QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
-        QPointF(0.0, -1.0), QPointF(0.0, 1.0),
-    };
+    // One travel direction for the whole slideshow. Reversing A→B per slide
+    // made the outgoing leg and the incoming overlay pan opposite ways during
+    // crossfade (logs: extend toward +Y, handoff endC toward -Y).
     if (seed == 0) {
         seed = 1;
     }
     if (!m_motionBiasValid) {
-        m_motionBiasA = kBias[seed % 8];
-        m_motionBiasB = kBias[(seed / 8 + 3) % 8];
-        if (qFuzzyCompare(m_motionBiasA.x(), m_motionBiasB.x())
-            && qFuzzyCompare(m_motionBiasA.y(), m_motionBiasB.y())) {
-            m_motionBiasB = kBias[(seed + 1) % 8];
-        }
+        m_motionSign = (seed & 1u) ? 1.0 : -1.0;
         m_motionBiasValid = true;
-        m_motionTravelDir = m_motionBiasB - m_motionBiasA;
-        qWarning("[qimgview-slideshow] bias init A=(%.0f,%.0f) B=(%.0f,%.0f)",
-                 m_motionBiasA.x(), m_motionBiasA.y(),
-                 m_motionBiasB.x(), m_motionBiasB.y());
-        return;
     }
-    const QPointF prevTravel = m_motionBiasB - m_motionBiasA;
-    m_motionBiasA = m_motionBiasB;
-    QPointF best = kBias[0];
-    qreal bestDot = -1e9;
-    for (const QPointF &cand : kBias) {
-        if (qFuzzyCompare(cand.x(), m_motionBiasA.x())
-            && qFuzzyCompare(cand.y(), m_motionBiasA.y())) {
-            continue;
-        }
-        const QPointF step = cand - m_motionBiasA;
-        const qreal d = step.x() * prevTravel.x() + step.y() * prevTravel.y();
-        if (d > bestDot) {
-            bestDot = d;
-            best = cand;
-        }
-    }
-    m_motionBiasB = best;
+    // Mild diagonal, primary axis is Y with fixed sign for the session.
+    m_motionBiasA = QPointF(-0.25, -m_motionSign);
+    m_motionBiasB = QPointF(0.25, m_motionSign);
     m_motionTravelDir = m_motionBiasB - m_motionBiasA;
-    qWarning("[qimgview-slideshow] bias continue A=(%.0f,%.0f) B=(%.0f,%.0f) dot=%.2f",
-             m_motionBiasA.x(), m_motionBiasA.y(),
-             m_motionBiasB.x(), m_motionBiasB.y(), bestDot);
+    qWarning("[qimgview-slideshow] bias fixed sign=%.0f A=(%.2f,%.2f) B=(%.2f,%.2f)",
+             m_motionSign, m_motionBiasA.x(), m_motionBiasA.y(),
+             m_motionBiasB.x(), m_motionBiasB.y());
 }
 
 void ImageView::extendOutgoingMotionThroughTransition()

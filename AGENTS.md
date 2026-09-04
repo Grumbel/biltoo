@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-147-continuous-bias”**
-(Shared continuous motion biases across live crossfade).
-Next bundle number: **148**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-148-fixed-direction”**
+(Session-fixed pan direction; opaque hold under to-frame).
+Next bundle number: **149**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

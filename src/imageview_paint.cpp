@@ -178,6 +178,17 @@ void ImageView::paintEvent(QPaintEvent *event)
         const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {
             if (!m_slideshowTransitionToPixmap.isNull()) {
+                // At full hold, paint an opaque pad under the to-frame so the
+                // underlay (old path / new identity flash) cannot show through
+                // and produce a scale/direction jump on release.
+                if (m_liveTransitionHold || t >= 0.999) {
+                    QColor pad(36, 36, 36);
+                    const QBrush b = backgroundBrush();
+                    if (b.style() != Qt::NoBrush && b.color().isValid()) {
+                        pad = b.color();
+                    }
+                    painter.fillRect(vr, pad);
+                }
                 painter.setOpacity(t);
                 painter.drawPixmap(vr, m_slideshowTransitionToPixmap);
                 painter.setOpacity(1.0);

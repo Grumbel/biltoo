@@ -2594,3 +2594,22 @@ frozen underlay even with dual-motion intent.
 - [x] One continuous travel direction across a crossfade
 - [x] Overlay and handoff camera share the same A→B path
 - [x] Next **148**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-148-fixed-direction`
+
+**Logs (147):** `bias continue … dot=0.00` still allowed orthogonal/reverse ends;
+extend went +Y while handoff `endC` went -Y; hold release `m11` 0.30→0.27.
+
+### Fix
+1. Session-fixed `m_motionSign` — bias A/B always pan the same way (mild diagonal,
+   primary Y). No per-slide reverse.
+2. On live hold, paint opaque view background under the to-frame so the underlay
+   cannot flash a different scale at release.
+
+### Done criteria
+- [x] No direction reverse across consecutive slides / crossfade
+- [x] Hold fully covers underlay
+- [x] Next **149**
