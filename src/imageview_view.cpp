@@ -837,32 +837,31 @@ void ImageView::startSlideshowMotion(int durationMs)
         return;
     }
 
-    // Cover framing from the first frame (motion always uses fill so the
-    // camera never letterboxes during the dwell).
+    // Normalise item pose; camera is entirely in the view matrix.
     m_fitMode = false;
     m_fillMode = true;
+    item->setItemScale(1.0);
+    if (isImageMode()) {
+        item->setPos(0, 0);
+    }
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
-    fitItem(item, Qt::KeepAspectRatioByExpanding);
 
-    m_motionStartScale = viewScale();
-    if (m_motionStartScale <= 0.0) {
+    const QRectF br = item->sceneBoundingRect();
+    if (br.width() < 1.0 || br.height() < 1.0) {
+        return;
+    }
+    const QPointF mid = br.center();
+    const qreal vw = qreal(qMax(1, viewport()->width()));
+    const qreal vh = qreal(qMax(1, viewport()->height()));
+
+    // Explicit cover scale (do not rely on fitInView — aspect-matched images
+    // otherwise yield ~0 overflow and a stationary camera).
+    const qreal coverScale = qMax(vw / br.width(), vh / br.height());
+    if (coverScale <= 0.0 || !qIsFinite(coverScale)) {
         return;
     }
 
-    if (m_slideshowMotion == SlideshowMotion::PanZoom) {
-        m_motionEndScale = m_motionStartScale * m_panZoomFactor;
-    } else {
-        // PanScan: constant scale, travel the full overflow of the cover frame.
-        m_motionEndScale = m_motionStartScale;
-    }
-
-    const QRectF br = item->sceneBoundingRect();
-    const QPointF mid = br.center();
-    const qreal vw = qreal(viewport()->width());
-    const qreal vh = qreal(viewport()->height());
-
-    // Visible scene size at a given scale; clamp centres so the view never
-    // shows empty margin outside the item bounds.
+    // Half the room the camera may move at a given scale (scene units).
     auto halfOverflow = [&](qreal scale) -> QPointF {
         if (scale <= 0.0) {
             return QPointF(0, 0);
@@ -879,13 +878,35 @@ void ImageView::startSlideshowMotion(int durationMs)
     };
 
     if (m_slideshowMotion == SlideshowMotion::PanScan) {
-        // Full long-axis travel at cover scale: edge → opposite edge.
-        const QPointF half = halfOverflow(m_motionStartScale);
-        const bool landscape = br.width() >= br.height();
-        if (landscape && half.x() > 0.5) {
+        // Constant scale. If natural cover leaves almost no overflow (image
+        // aspect ≈ viewport), overscan so edge→edge travel is still visible.
+        qreal scale = coverScale;
+        QPointF half = halfOverflow(scale);
+        const bool preferX = br.width() * vh >= br.height() * vw; // wider than view
+        qreal travel = preferX ? half.x() : half.y();
+        constexpr qreal kMinTravelScene = 8.0; // px of motion at least
+        if (travel < kMinTravelScene) {
+            // Target ~20% of the long image side as total travel (10% each side).
+            const qreal longSide = preferX ? br.width() : br.height();
+            const qreal wantHalf = qMax(kMinTravelScene, longSide * 0.10);
+            if (preferX) {
+                // viewW = br.w - 2*wantHalf  →  scale = vw / viewW
+                const qreal viewW = qMax(vw * 0.5, br.width() - 2.0 * wantHalf);
+                scale = vw / viewW;
+            } else {
+                const qreal viewH = qMax(vh * 0.5, br.height() - 2.0 * wantHalf);
+                scale = vh / viewH;
+            }
+            scale = qMax(scale, coverScale);
+            half = halfOverflow(scale);
+            travel = preferX ? half.x() : half.y();
+        }
+        m_motionStartScale = scale;
+        m_motionEndScale = scale;
+        if (preferX && half.x() > 0.5) {
             m_motionStartCenter = QPointF(mid.x() - half.x(), mid.y());
             m_motionEndCenter = QPointF(mid.x() + half.x(), mid.y());
-        } else if (!landscape && half.y() > 0.5) {
+        } else if (!preferX && half.y() > 0.5) {
             m_motionStartCenter = QPointF(mid.x(), mid.y() - half.y());
             m_motionEndCenter = QPointF(mid.x(), mid.y() + half.y());
         } else if (half.x() >= half.y() && half.x() > 0.5) {
@@ -895,41 +916,47 @@ void ImageView::startSlideshowMotion(int durationMs)
             m_motionStartCenter = QPointF(mid.x(), mid.y() - half.y());
             m_motionEndCenter = QPointF(mid.x(), mid.y() + half.y());
         } else {
-            // Nearly fills the view — no meaningful pan.
             m_motionStartCenter = mid;
             m_motionEndCenter = mid;
         }
         m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
         m_motionEndCenter = clampCenter(m_motionEndCenter, m_motionEndScale);
     } else {
-        // Ken Burns–style pan & zoom: start and end centres are chosen at their
-        // respective scales so both ends are valid cover frames, biased toward
-        // rule-of-thirds / corner “points of interest” for variety.
+        // Ken Burns: zoom from cover toward cover*factor while panning between
+        // two distinct cover-valid centres (rule-of-thirds / corners).
+        m_motionStartScale = coverScale;
+        m_motionEndScale = coverScale * m_panZoomFactor;
         const QPointF halfStart = halfOverflow(m_motionStartScale);
         const QPointF halfEnd = halfOverflow(m_motionEndScale);
 
-        // Deterministic variety from path so the same image repeats the same move.
         const QString path = item->path();
         uint seed = qHash(path);
         if (seed == 0) {
             seed = 1;
         }
-        // Eight thirds/corner biases in normalised [-1, 1]².
+        // Prefer strong corner/edge biases so the pan is obvious under zoom.
         static const QPointF kBias[8] = {
             QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
             QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
-            QPointF(-0.6, 0.0), QPointF(0.6, 0.0),
-            QPointF(0.0, -0.6), QPointF(0.0, 0.6),
+            QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
+            QPointF(0.0, -1.0), QPointF(0.0, 1.0),
         };
         const QPointF biasA = kBias[seed % 8];
-        const QPointF biasB = kBias[(seed / 8) % 8];
-        // Prefer a different end bias when possible.
-        const QPointF endBias = (biasA == biasB) ? kBias[(seed / 8 + 3) % 8] : biasB;
+        const QPointF biasB = kBias[(seed / 8 + 3) % 8]; // force different slot
 
+        // At pure cover, halfStart may be ~0; still set end far into halfEnd so
+        // the zoom pulls toward a corner/edge (classic Ken Burns).
         m_motionStartCenter = QPointF(mid.x() + biasA.x() * halfStart.x(),
                                       mid.y() + biasA.y() * halfStart.y());
-        m_motionEndCenter = QPointF(mid.x() + endBias.x() * halfEnd.x(),
-                                    mid.y() + endBias.y() * halfEnd.y());
+        m_motionEndCenter = QPointF(mid.x() + biasB.x() * halfEnd.x(),
+                                    mid.y() + biasB.y() * halfEnd.y());
+        // If start has no room, begin slightly inset on the end bias axis so
+        // the path is not a pure radial zoom into the centre.
+        if (halfStart.x() < 0.5 && halfStart.y() < 0.5 && (halfEnd.x() > 0.5 || halfEnd.y() > 0.5)) {
+            m_motionStartCenter = mid;
+            m_motionEndCenter = QPointF(mid.x() + biasB.x() * halfEnd.x(),
+                                        mid.y() + biasB.y() * halfEnd.y());
+        }
         m_motionStartCenter = clampCenter(m_motionStartCenter, m_motionStartScale);
         m_motionEndCenter = clampCenter(m_motionEndCenter, m_motionEndScale);
     }
@@ -979,15 +1006,17 @@ void ImageView::applySlideshowMotionProgress(qreal t)
     if (s <= 0.0 || !viewport()) {
         return;
     }
-    // Keep anchor centred so mouse position cannot bias setTransform.
-    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
-    const qreal vcX = qreal(viewport()->width()) * 0.5;
-    const qreal vcY = qreal(viewport()->height()) * 0.5;
+    // Scale + centerOn — do not bake translation into the matrix alone.
+    // QGraphicsView still applies scrollbar offsets on top of setTransform;
+    // a previous fitInView/centerOn left non-zero scroll and cancelled the pan.
+    setTransformationAnchor(QGraphicsView::NoAnchor);
     QTransform xform;
-    xform.translate(vcX, vcY);
     xform.scale(s, s);
-    xform.translate(-c.x(), -c.y());
     setTransform(xform);
+    centerOn(c);
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)

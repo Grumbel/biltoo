@@ -12,9 +12,8 @@ class QDoubleSpinBox;
 class QSpinBox;
 
 /**
- * Mid-session slideshow controls (interval, transition, dwell motion, zoom).
- * Same options as Preferences → Slideshow; kept separate so fullscreen /
- * viewing flow does not require the full preferences dialog.
+ * Mid-session slideshow controls. Changes apply immediately (no OK); the
+ * dialog is dismissed with Close. Same keys as Preferences → Slideshow.
  */
 class SlideshowSettingsDialog : public QDialog
 {
@@ -43,7 +42,14 @@ public:
     int zoomIndex() const;
     void setZoomIndex(int index);
 
+signals:
+    /** Emitted after any control changes (live apply). */
+    void settingsChanged();
+
 private:
+    void emitChanged();
+    void syncTransitionCap();
+
     QDoubleSpinBox *m_intervalSpin = nullptr;
     QCheckBox *m_fullscreenCheck = nullptr;
     QComboBox *m_transitionCombo = nullptr;
@@ -51,6 +57,7 @@ private:
     QComboBox *m_motionCombo = nullptr;
     QDoubleSpinBox *m_panZoomFactorSpin = nullptr;
     QComboBox *m_zoomCombo = nullptr;
+    bool m_blockEmit = false;
 };
 
 #endif

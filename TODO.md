@@ -2126,3 +2126,52 @@ elsewhere. Incomplete.
 - [x] TODO / AGENTS; next **134**
 
 **Next bundle:** `qimgview-134-…`
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-134-motion-live-settings`
+
+**Issues:**
+1. Slideshow Settings should apply live (no OK required).
+2. Pan & scan shows no visible pan.
+3. Pan & zoom only zooms center — Ken Burns pan not visible.
+4. Transition duration must be ≤ half of interval (else transition overlaps next dwell).
+
+### Motion root cause
+
+Camera path used `fitInView(..., KeepAspectRatioByExpanding)` then derived
+overflow from `viewScale()`. When the image aspect is close to the viewport
+(or fitInView effectively fits), horizontal/vertical overflow is ~0, so start
+and end centres collapse to the image centre — pan&scan is a no-op and
+pan&zoom is pure centre zoom.
+
+**Fix:** Compute cover scale explicitly:
+`cover = max(vw/br.w, vh/br.h)`. Build start/end centres in scene space from
+that scale. For pan&scan, if overflow on the long axis is below a small
+threshold, slightly increase scale (overscan) so a full edge→edge travel is
+always possible on non-square content. Ken Burns: start at cover with a
+corner/thirds bias, end at `cover * factor` with a different bias; both
+clamped to valid cover frames at their scales.
+
+### Live settings dialog
+
+- Replace OK/Cancel with **Close** only.
+- Connect interval / transition / motion / zoom / factor / fullscreen widgets
+  to a `changed` signal; MainWindow applies immediately and writes settings
+  (debounced write optional — write on each change is fine for these keys).
+- Cap transition duration spin max when interval changes: `min(5000, intervalMs/2)`.
+
+### Commits
+1. Rewrite dwell camera path (explicit cover scale + guaranteed pan travel)
+2. Live Slideshow Settings + transition ≤ half interval
+
+**Next:** `qimgview-135-…`
+
+### Done criteria
+- [x] Pan & scan / pan & zoom use explicit cover scale + centerOn (scrollbar-safe)
+- [x] Pan & scan overscans when aspect matches so edge→edge travel is visible
+- [x] Ken Burns pans toward corner/edge bias while zooming
+- [x] Slideshow Settings applies live; Close only
+- [x] Transition duration capped to half of interval
+- [x] Next **135**

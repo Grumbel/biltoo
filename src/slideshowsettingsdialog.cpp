@@ -8,6 +8,7 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
 
@@ -39,15 +40,16 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_transitionMsSpin->setRange(0, 5000);
     m_transitionMsSpin->setSingleStep(50);
     m_transitionMsSpin->setSuffix(tr(" ms"));
-    m_transitionMsSpin->setToolTip(tr("Duration of the transition (0 = instant)"));
+    m_transitionMsSpin->setToolTip(
+        tr("Duration of the transition (capped to half the interval)"));
 
     m_motionCombo = new QComboBox(this);
     m_motionCombo->addItem(tr("Off"), 0);
     m_motionCombo->addItem(tr("Pan and zoom"), 1);
     m_motionCombo->addItem(tr("Pan and scan"), 2);
     m_motionCombo->setToolTip(
-        tr("Pan and zoom: slowly zoom in while panning (Ken Burns).\n"
-           "Pan and scan: pan across the full width or height (no zoom).\n"
+        tr("Pan and zoom: Ken Burns zoom while panning between points of interest.\n"
+           "Pan and scan: pan across the image (no zoom).\n"
            "Motion uses Fill framing; Slideshow zoom applies when motion is Off."));
 
     m_panZoomFactorSpin = new QDoubleSpinBox(this);
@@ -80,9 +82,12 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     form->addRow(tr("Pan and zoom factor:"), m_panZoomFactorSpin);
     form->addRow(tr("Slideshow zoom:"), m_zoomCombo);
 
-    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    // Close button maps to reject() for a Close-only box.
+    if (QPushButton *closeBtn = buttons->button(QDialogButtonBox::Close)) {
+        connect(closeBtn, &QPushButton::clicked, this, &QDialog::close);
+    }
 
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(12, 12, 12, 12);
@@ -90,7 +95,46 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     root->addLayout(form);
     root->addWidget(buttons);
 
+    connect(m_intervalSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double) {
+                syncTransitionCap();
+                emitChanged();
+            });
+    connect(m_fullscreenCheck, &QCheckBox::toggled, this, [this](bool) { emitChanged(); });
+    connect(m_transitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { emitChanged(); });
+    connect(m_transitionMsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int) { emitChanged(); });
+    connect(m_motionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { emitChanged(); });
+    connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double) { emitChanged(); });
+    connect(m_zoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { emitChanged(); });
+
     setMinimumWidth(360);
+}
+
+void SlideshowSettingsDialog::emitChanged()
+{
+    if (!m_blockEmit) {
+        emit settingsChanged();
+    }
+}
+
+void SlideshowSettingsDialog::syncTransitionCap()
+{
+    if (!m_intervalSpin || !m_transitionMsSpin) {
+        return;
+    }
+    const int halfMs = qMax(0, intervalMs() / 2);
+    const int cap = qMin(5000, halfMs);
+    m_blockEmit = true;
+    m_transitionMsSpin->setMaximum(qMax(0, cap));
+    if (m_transitionMsSpin->value() > cap) {
+        m_transitionMsSpin->setValue(cap);
+    }
+    m_blockEmit = false;
 }
 
 int SlideshowSettingsDialog::intervalMs() const
@@ -100,9 +144,13 @@ int SlideshowSettingsDialog::intervalMs() const
 
 void SlideshowSettingsDialog::setIntervalMs(int ms)
 {
-    if (m_intervalSpin) {
-        m_intervalSpin->setValue(qMax(0.5, ms / 1000.0));
+    if (!m_intervalSpin) {
+        return;
     }
+    m_blockEmit = true;
+    m_intervalSpin->setValue(qMax(0.5, ms / 1000.0));
+    m_blockEmit = false;
+    syncTransitionCap();
 }
 
 bool SlideshowSettingsDialog::startFullscreen() const
@@ -112,9 +160,12 @@ bool SlideshowSettingsDialog::startFullscreen() const
 
 void SlideshowSettingsDialog::setStartFullscreen(bool on)
 {
-    if (m_fullscreenCheck) {
-        m_fullscreenCheck->setChecked(on);
+    if (!m_fullscreenCheck) {
+        return;
     }
+    m_blockEmit = true;
+    m_fullscreenCheck->setChecked(on);
+    m_blockEmit = false;
 }
 
 int SlideshowSettingsDialog::transitionIndex() const
@@ -127,10 +178,12 @@ void SlideshowSettingsDialog::setTransitionIndex(int index)
     if (!m_transitionCombo) {
         return;
     }
+    m_blockEmit = true;
     const int idx = m_transitionCombo->findData(index);
     if (idx >= 0) {
         m_transitionCombo->setCurrentIndex(idx);
     }
+    m_blockEmit = false;
 }
 
 int SlideshowSettingsDialog::transitionDurationMs() const
@@ -140,9 +193,14 @@ int SlideshowSettingsDialog::transitionDurationMs() const
 
 void SlideshowSettingsDialog::setTransitionDurationMs(int ms)
 {
-    if (m_transitionMsSpin) {
-        m_transitionMsSpin->setValue(qBound(0, ms, 5000));
+    if (!m_transitionMsSpin) {
+        return;
     }
+    m_blockEmit = true;
+    syncTransitionCap();
+    const int cap = m_transitionMsSpin->maximum();
+    m_transitionMsSpin->setValue(qBound(0, ms, cap));
+    m_blockEmit = false;
 }
 
 int SlideshowSettingsDialog::motionIndex() const
@@ -155,10 +213,12 @@ void SlideshowSettingsDialog::setMotionIndex(int index)
     if (!m_motionCombo) {
         return;
     }
+    m_blockEmit = true;
     const int idx = m_motionCombo->findData(index);
     if (idx >= 0) {
         m_motionCombo->setCurrentIndex(idx);
     }
+    m_blockEmit = false;
 }
 
 double SlideshowSettingsDialog::panZoomFactor() const
@@ -168,9 +228,12 @@ double SlideshowSettingsDialog::panZoomFactor() const
 
 void SlideshowSettingsDialog::setPanZoomFactor(double factor)
 {
-    if (m_panZoomFactorSpin) {
-        m_panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
+    if (!m_panZoomFactorSpin) {
+        return;
     }
+    m_blockEmit = true;
+    m_panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
+    m_blockEmit = false;
 }
 
 int SlideshowSettingsDialog::zoomIndex() const
@@ -183,8 +246,10 @@ void SlideshowSettingsDialog::setZoomIndex(int index)
     if (!m_zoomCombo) {
         return;
     }
+    m_blockEmit = true;
     const int idx = m_zoomCombo->findData(index);
     if (idx >= 0) {
         m_zoomCombo->setCurrentIndex(idx);
     }
+    m_blockEmit = false;
 }

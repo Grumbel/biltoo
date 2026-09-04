@@ -744,15 +744,19 @@ void MainWindow::showSlideshowSettings()
         dlg.setPanZoomFactor(m_imageView->panZoomFactor());
         dlg.setZoomIndex(static_cast<int>(m_imageView->slideshowZoom()));
     }
-    if (dlg.exec() != QDialog::Accepted) {
-        return;
-    }
-    setSlideshowIntervalMs(dlg.intervalMs());
-    m_slideshowFullscreen = dlg.startFullscreen();
-    if (m_imageView) {
+    // Live apply — no OK; Close dismisses. settingsChanged fires on each edit.
+    auto applyFromDialog = [this, &dlg]() {
+        setSlideshowIntervalMs(dlg.intervalMs());
+        m_slideshowFullscreen = dlg.startFullscreen();
+        if (!m_imageView) {
+            return;
+        }
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(dlg.transitionIndex()));
-        m_imageView->setSlideshowTransitionDurationMs(dlg.transitionDurationMs());
+        // Cap already enforced by the dialog max; clamp again for safety.
+        const int half = m_slideshowIntervalMs / 2;
+        m_imageView->setSlideshowTransitionDurationMs(
+            qMin(dlg.transitionDurationMs(), qMax(0, half)));
         m_imageView->setSlideshowMotion(
             static_cast<ImageView::SlideshowMotion>(dlg.motionIndex()));
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
@@ -761,10 +765,11 @@ void MainWindow::showSlideshowSettings()
         if (m_slideshowTimer && m_slideshowTimer->isActive()) {
             m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
             m_imageView->reapplySlideshowFraming();
-            m_imageView->flashHud(tr("Slideshow settings updated"));
         }
-    }
-    writeSettings();
+        writeSettings();
+    };
+    connect(&dlg, &SlideshowSettingsDialog::settingsChanged, this, applyFromDialog);
+    dlg.exec();
 }
 
 void MainWindow::onSlideshowTick()
@@ -1051,7 +1056,11 @@ void MainWindow::showPreferences()
     if (m_imageView) {
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(dlg.slideshowTransitionIndex()));
-        m_imageView->setSlideshowTransitionDurationMs(dlg.slideshowTransitionDurationMs());
+        {
+            const int half = m_slideshowIntervalMs / 2;
+            m_imageView->setSlideshowTransitionDurationMs(
+                qMin(dlg.slideshowTransitionDurationMs(), qMax(0, half)));
+        }
         m_imageView->setSlideshowMotion(
             static_cast<ImageView::SlideshowMotion>(dlg.slideshowMotionIndex()));
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
@@ -1501,8 +1510,11 @@ void MainWindow::readSettings()
         const int tr = settings.value(QStringLiteral("slideshowTransition"), 1).toInt();
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(qBound(0, tr, 3)));
-        m_imageView->setSlideshowTransitionDurationMs(
-            settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt());
+        {
+            const int half = m_slideshowIntervalMs / 2;
+            const int tr = settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt();
+            m_imageView->setSlideshowTransitionDurationMs(qMin(tr, qMax(0, half)));
+        }
         m_imageView->setSlideshowMotion(
             static_cast<ImageView::SlideshowMotion>(
                 qBound(0, settings.value(QStringLiteral("slideshowMotion"), 0).toInt(), 2)));
