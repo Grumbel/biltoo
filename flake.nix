@@ -51,7 +51,22 @@
 
       # Local cmake builds default to Debug. nix build still uses RelWithDebInfo
       # with separateDebugInfo (see default.nix).
-      devShells.${system}.default = pkgs.mkShell {
+      devShells.${system}.default =
+        let
+          # Recent nixpkgs dropped qtPluginPrefix on some Qt outputs; fall back
+          # to the standard Qt 6 plugin layout under the lib output.
+          qtPluginRoot = pkg:
+            let
+              libOut = pkgs.lib.getLib pkg;
+              prefix = pkg.qtPluginPrefix or "lib/qt-6/plugins";
+            in
+            "${libOut}/${prefix}";
+          qtPluginPath = pkgs.lib.concatStringsSep ":" [
+            (qtPluginRoot pkgs.qt6.qtbase)
+            (qtPluginRoot pkgs.qt6.qtsvg)
+          ];
+        in
+        pkgs.mkShell {
         inputsFrom = [ biltoo ];
         packages = with pkgs; [
           cmake
@@ -68,9 +83,10 @@
           # Our layout is data/icons/hicolor/... so datadir = $BILTOO_SOURCE/data.
           export XDG_DATA_DIRS="$BILTOO_SOURCE/data''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
 
-          # Unwrapped ./build/biltoo does not get wrapQtAppsHook. Point Qt at
+          # Unwrapped out-of-tree biltoo does not get wrapQtAppsHook. Point Qt at
           # iconengines (svg) + imageformats from the same Qt the package uses.
-          export QT_PLUGIN_PATH="${pkgs.qt6.qtbase}/${pkgs.qt6.qtbase.qtPluginPrefix}:${pkgs.qt6.qtsvg}/${pkgs.qt6.qtsvg.qtPluginPrefix}''${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+          # (qtPluginPrefix is not always present on qtbase/qtsvg in current nixpkgs.)
+          export QT_PLUGIN_PATH="${qtPluginPath}''${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
 
           # Out-of-tree build dir (override with BILTOO_BUILD_DIR=...).
           export BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"

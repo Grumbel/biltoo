@@ -3298,3 +3298,29 @@ Three small UI cleanups:
 - [x] No histogram in Metadata
 - [x] Up not on main toolbar
 - [x] Next **187**
+
+
+## Plan / work (2026-09-04) — bundle `biltoo-187-flake-qtpluginprefix`
+
+`nix develop` failed evaluating `shellHook`:
+
+```
+error: attribute 'qtPluginPrefix' missing
+at flake.nix: … pkgs.qt6.qtbase.qtPluginPrefix
+```
+
+Recent nixpkgs no longer always exposes `qtPluginPrefix` on `qtbase` / `qtsvg`.
+
+### Fix
+Compute plugin roots in Nix with a fallback:
+
+```
+libOut = lib.getLib pkg
+prefix = pkg.qtPluginPrefix or "lib/qt-6/plugins"
+```
+
+Concatenate qtbase + qtsvg into `QT_PLUGIN_PATH` for unwrapped out-of-tree runs.
+
+### Done criteria
+- [x] `nix develop` evaluates without `qtPluginPrefix` error
+- [x] Next **188**
