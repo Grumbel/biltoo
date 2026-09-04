@@ -2613,3 +2613,25 @@ extend went +Y while handoff `endC` went -Y; hold release `m11` 0.30→0.27.
 - [x] No direction reverse across consecutive slides / crossfade
 - [x] Hold fully covers underlay
 - [x] Next **149**
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-149-camera-mode`
+
+**Insight:** Jumps on image remove match QGraphicsView **AlignCenter** (and
+mouse transform anchors) recentering when the scene/item changes — not only
+pose math. Transition:None looked fine because nothing rebuilt the scene under
+a dual-frame composite the same way.
+
+### Proper fix (not another path hack)
+`enterSlideshowCameraMode()` / `leaveSlideshowCameraMode()`:
+- `AlignLeft | AlignTop` (no auto-center on scene/item change)
+- `NoAnchor` for transform/resize
+- scrollbars **AlwaysOff** (matrix is the only camera; no scroll offset fight)
+
+Enter on motion start and live begin; leave when motion and live transition end.
+
+### Done criteria
+- [x] Camera mode disables AlignCenter during motion/transition
+- [x] Next **150**

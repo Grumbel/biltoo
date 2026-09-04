@@ -410,6 +410,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     }
     if (!active) {
         cancelSlideshowMotion();
+        leaveSlideshowCameraMode();
         m_motionBiasValid = false;
         m_motionTravelDir = QPointF(0.0, 1.0);
         m_motionSign = 1.0;
@@ -519,6 +520,9 @@ void ImageView::releaseLiveTransitionHold()
     m_liveTransitionNextPath.clear();
     if (m_liveTransitionTimer) {
         m_liveTransitionTimer->stop();
+    }
+    if (!m_slideshowMotionActive) {
+        leaveSlideshowCameraMode();
     }
     if (viewport()) {
         viewport()->update();
@@ -707,6 +711,43 @@ void ImageView::cancelSlideshowMotion()
     if (m_motionTimer) {
         m_motionTimer->stop();
     }
+    // Leave camera mode only when no live transition still needs a frozen matrix.
+    if (!m_liveTransitionActive && !m_liveTransitionHold && !m_liveTransitionAwaitingLoad) {
+        leaveSlideshowCameraMode();
+    }
+}
+
+void ImageView::enterSlideshowCameraMode()
+{
+    if (m_slideshowCameraMode) {
+        return;
+    }
+    m_slideshowCameraMode = true;
+    // QGraphicsView::AlignCenter recenters whenever the scene/item changes.
+    // That fights setTransform on LoadReplace and is the classic "jump when the
+    // previous image is removed" behaviour. Same for AnchorUnderMouse.
+    m_savedScrollBarPolicyH = horizontalScrollBarPolicy();
+    m_savedScrollBarPolicyV = verticalScrollBarPolicy();
+    setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    setTransformationAnchor(QGraphicsView::NoAnchor);
+    setResizeAnchor(QGraphicsView::NoAnchor);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    qWarning("[qimgview-slideshow] enterCameraMode (no AlignCenter, scrollbars off)");
+}
+
+void ImageView::leaveSlideshowCameraMode()
+{
+    if (!m_slideshowCameraMode) {
+        return;
+    }
+    m_slideshowCameraMode = false;
+    setAlignment(Qt::AlignCenter);
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    setResizeAnchor(QGraphicsView::AnchorViewCenter);
+    setHorizontalScrollBarPolicy(m_savedScrollBarPolicyH);
+    setVerticalScrollBarPolicy(m_savedScrollBarPolicyV);
+    qWarning("[qimgview-slideshow] leaveCameraMode");
 }
 
 void ImageView::chooseContinuingMotionBiases(uint seed)
@@ -852,6 +893,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     // 1) Extend outgoing along the *current* path (no reverse).
     // 2) Then advance shared biases for the *incoming* overlay + handoff camera
     //    so both sides of the fade share one continuous travel direction.
+    enterSlideshowCameraMode();
     extendOutgoingMotionThroughTransition();
     chooseContinuingMotionBiases(qHash(nextPath));
     qWarning("[qimgview-slideshow] beginLive next=%s motionActive=%d transition=%d",
@@ -1177,6 +1219,8 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         return;
     }
 
+    enterSlideshowCameraMode();
+
     // Identity item pose — camera is entirely the view matrix. Residual
     // Workspace shear/rotation would look like stretch under the view scale.
     // m_fitMode must stay false so resizeEvent cannot fitItem over the camera.
@@ -1398,10 +1442,12 @@ void ImageView::applySlideshowMotionProgress(qreal t)
     xform.scale(s, s);
     xform.translate(-c.x(), -c.y());
     setTransform(xform);
-    if (horizontalScrollBar()) {
+    // Scrollbars are off in camera mode; never let AlignCenter-style scroll
+    // offsets accumulate under the matrix.
+    if (horizontalScrollBar() && horizontalScrollBar()->value() != 0) {
         horizontalScrollBar()->setValue(0);
     }
-    if (verticalScrollBar()) {
+    if (verticalScrollBar() && verticalScrollBar()->value() != 0) {
         verticalScrollBar()->setValue(0);
     }
     {
@@ -1409,9 +1455,9 @@ void ImageView::applySlideshowMotionProgress(qreal t)
         if ((m_liveTransitionActive || m_liveTransitionHold) && (++s_logCounter % 20) == 0) {
             const QTransform tr = transform();
             qWarning("[qimgview-slideshow] applyMotion t=%.3f s=%.4f c=(%.1f,%.1f) "
-                     "m11=%.4f dx=%.1f dy=%.1f liveA=%d hold=%d items=%d",
+                     "m11=%.4f dx=%.1f dy=%.1f align=%d camMode=%d items=%d",
                      t, s, c.x(), c.y(), tr.m11(), tr.dx(), tr.dy(),
-                     int(m_liveTransitionActive), int(m_liveTransitionHold),
+                     int(alignment()), int(m_slideshowCameraMode),
                      int(m_items.size()));
         }
     }

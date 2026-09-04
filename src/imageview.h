@@ -187,6 +187,9 @@ public:
     void extendOutgoingMotionThroughTransition();
     void chooseContinuingMotionBiases(uint seed);
     void applySlideshowMotionProgress(qreal t);
+    /** Disable AlignCenter / scrollbars / mouse-anchor that fight setTransform. */
+    void enterSlideshowCameraMode();
+    void leaveSlideshowCameraMode();
     void tickSlideshowMotion();
     void tickLiveTransition();
     void startLiveTransitionWithImage(const QImage &nextImage);
@@ -992,6 +995,9 @@ private:
     QPointF m_motionTravelDir{0.0, 1.0};
     /** Fixed session pan sign (+1 / -1); never reverses mid-show. */
     qreal m_motionSign = 1.0;
+    bool m_slideshowCameraMode = false;
+    Qt::ScrollBarPolicy m_savedScrollBarPolicyH = Qt::ScrollBarAsNeeded;
+    Qt::ScrollBarPolicy m_savedScrollBarPolicyV = Qt::ScrollBarAsNeeded;
     int m_motionDurationMs = 0;
     /** Added to m_motionClock.elapsed() so live-transition handoff can start mid-path. */
     qint64 m_motionElapsedOffsetMs = 0;
