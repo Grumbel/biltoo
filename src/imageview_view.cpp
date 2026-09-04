@@ -708,6 +708,10 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return false;
     }
     cancelSlideshowTransition(); // no frozen snapshot path
+    // Freeze the outgoing dwell camera. If the old pan keeps running under the
+    // crossfade, removing that image at hold-release snaps the visible motion
+    // onto the new slide's path (direction / position jump).
+    cancelSlideshowMotion();
     m_liveTransitionNextPath = nextPath;
     m_liveTransitionMidAdvanced = false;
     const QString path = nextPath;
@@ -839,13 +843,22 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     // Compose onto an exact viewport-sized canvas. Overflow → negative dest
     // (clips); undersize → padding. Bias shifts the image for pan samples.
     QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
-    out.fill(Qt::transparent);
+    // Opaque pad (view background) so letterboxed to-frames cannot show the
+    // outgoing underlay through empty bars during crossfade.
+    QColor pad(36, 36, 36);
+    {
+        const QBrush b = backgroundBrush();
+        if (b.style() != Qt::NoBrush && b.color().isValid()) {
+            pad = b.color();
+        }
+    }
+    out.fill(pad);
     const qreal overflowX = qMax(0.0, (qreal(dw) - qreal(vw)) * 0.5);
     const qreal overflowY = qMax(0.0, (qreal(dh) - qreal(vh)) * 0.5);
     const int destX = int(qRound((qreal(vw) - qreal(dw)) * 0.5 - biasX * overflowX));
     const int destY = int(qRound((qreal(vh) - qreal(dh)) * 0.5 - biasY * overflowY));
     QPainter painter(&out);
-    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter.drawImage(destX, destY, scaled);
     painter.end();
     return QPixmap::fromImage(out);
@@ -861,6 +874,8 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         emit slideshowLiveTransitionFinished();
         return;
     }
+    // Ensure outgoing camera is frozen once the overlay is about to paint.
+    cancelSlideshowMotion();
     m_liveTransitionSourceImage = nextImage;
     m_liveTransitionPathHash = qHash(m_liveTransitionNextPath);
     // First frame at motion t=0; subsequent ticks re-render along the path.

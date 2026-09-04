@@ -218,17 +218,17 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 fitItem(item, currentFitAspectMode());
             }
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-            setUpdatesEnabled(true);
-            // Start dwell camera immediately (also under an active transition).
+            // Apply camera while updates are still blocked and any live hold still
+            // covers the viewport — avoids a flash of identity / wrong pan pose.
             maybeStartSlideshowMotion();
             if (m_slideshowProgressActive && m_slideshowMotion != SlideshowMotion::Off
                 && !m_slideshowMotionActive) {
-                // Duration too short or no item — still frame the slide.
                 applySlideshowZoomFraming(item);
             }
             // Drop held live-transition overlay only after the new item is fitted
-            // (and motion sample applied) so the old underlay never flashes.
+            // (and motion sample applied) so the outgoing underlay never flashes.
             releaseLiveTransitionHold();
+            setUpdatesEnabled(true);
             if (m_slideshowTransitionPending) {
                 startSlideshowTransitionAnimation();
             } else {

@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → “Design: slideshow transitions × dwell motion”**
-(Canonical transition×motion matrix + audit vs tip 140).
-Next bundle number: **142**.
+Latest agent handoff: **TODO.md → “Plan / work (2026-09-04) — bundle qimgview-142-crossfade-freeze”**
+(Freeze outgoing camera during live crossfade; opaque to-frames).
+Next bundle number: **143**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

@@ -2489,3 +2489,28 @@ after `qimgview-140-transition-stretch`.
 - Slide ⊄ live motion (product): static dual-frame only.
 - Crossfade ∩ live motion: keep outgoing camera alive; incoming is a motion-sampled overlay until handoff.
 - Aspect is inviolable for all composited frames.
+
+
+---
+
+## Plan / work (2026-09-04) — bundle `qimgview-142-crossfade-freeze`
+
+**Issue:** Pan&zoom + Crossfade still jumps when the previous image disappears
+(direction/position snap); screen not cleared cleanly.
+
+### Root cause
+Live crossfade kept the **outgoing** dwell camera running under the fade. When
+LoadReplace removed that item, the visible motion path switched from the old
+slide’s camera to the new one → jump. Transparent letterbox pads in the to-frame
+also let the underlay show through (“not clearing the screen”).
+
+### Fix
+1. `cancelSlideshowMotion()` when a live transition begins (and again when the
+   to-frame is ready) — outgoing underlay freezes at its last pose.
+2. To-frame canvas filled with the view background (opaque), not transparent.
+3. LoadReplace: start camera + release hold **before** re-enabling updates.
+
+### Done criteria
+- [x] No direction snap at end of crossfade under pan&zoom
+- [x] Letterbox bars do not reveal the outgoing image
+- [x] Next **143**
