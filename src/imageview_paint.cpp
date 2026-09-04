@@ -155,7 +155,6 @@ void ImageView::paintEvent(QPaintEvent *event)
         } else if (m_slideshowTransition == SlideshowTransition::Slide) {
             // Slide projector: old exits left, new enters from the right.
             const int w = vr.width();
-            const int h = vr.height();
             const int xOld = int(-qRound(t * w));
             const int xNew = int(qRound((1.0 - t) * w));
             painter.setOpacity(1.0);
@@ -196,7 +195,6 @@ void ImageView::paintEvent(QPaintEvent *event)
         } else if (m_slideshowTransition == SlideshowTransition::Slide) {
             // Live old view is the underlay; slide the incoming frame in from the right.
             const int w = vr.width();
-            const int h = vr.height();
             const int xNew = m_liveTransitionHold ? 0 : int(qRound((1.0 - t) * w));
             if (!m_slideshowTransitionToPixmap.isNull()) {
                 painter.drawPixmap(xNew, 0, m_slideshowTransitionToPixmap);
