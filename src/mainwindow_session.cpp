@@ -1844,6 +1844,7 @@ void MainWindow::startSlideshow()
     armSlideshowCursorHide();
     if (m_imageView) {
         m_imageView->setSlideshowMotionPaused(false);
+        m_imageView->setSlideshowPausedHud(false);
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
         // Frame + start dwell motion BEFORE the pure clock can open the first
         // transition (arm → updateSlideshowFromClock). Otherwise beginLive has
@@ -1881,7 +1882,7 @@ void MainWindow::pauseSlideshow()
         m_imageView->cancelSlideshowTransition();
         m_imageView->setSlideshowMotionPaused(true);
         m_imageView->setSlideshowProgress(true, 0);
-        m_imageView->flashHud(tr("❚❚  Paused"));
+        m_imageView->setSlideshowPausedHud(true);
     }
     updateSlideshowActionUi();
 }
@@ -1901,6 +1902,7 @@ void MainWindow::resumeSlideshow()
     m_slideshowClockRunning = true;
     if (m_imageView) {
         m_imageView->setSlideshowMotionPaused(false);
+        m_imageView->setSlideshowPausedHud(false);
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
@@ -1936,6 +1938,7 @@ void MainWindow::stopSlideshow()
     }
     if (m_imageView) {
         m_imageView->setSlideshowMotionPaused(false);
+        m_imageView->setSlideshowPausedHud(false);
         m_imageView->cancelSlideshowTransition();
         m_imageView->cancelSlideshowMotion();
     }

@@ -330,7 +330,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     //   bottom    — filename (+ technical detail when the HUD is pinned)
     // Crop mode: always show a pinned “Crop mode” cue so the tool state is clear.
     if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
-        || !m_gallery.hoverPath().isEmpty()) {
+        || m_slideshowPausedHud || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
         const int pt = qBound(8, m_hudFontPointSize, 48);
@@ -447,10 +447,15 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             }
         };
 
-        // Top-left: crop mode cue (persistent while active) or transient flash.
+        // Top-left: crop mode cue (persistent while active), slideshow paused
+        // cue (persistent until resume/stop), or transient flash.
         if (m_cropMode) {
             drawPanel({{tr("Crop mode"), true},
                        {tr("Handles · Reset · Apply · Esc"), false}},
+                      margin, margin, false, false);
+        } else if (m_slideshowPausedHud) {
+            drawPanel({{tr("❚❚  Paused"), true},
+                       {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
         } else if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
             QString actionLine = m_hudAction;
@@ -719,6 +724,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     // Bare Gallery: selection chrome is on the items themselves — skip overlay
     // pass (HUD/edges/slideshow) so selection does not pay for empty work.
     if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
+        && !m_slideshowPausedHud
         && m_hoverEdge == EdgeZone::None && !m_cropMode
         && !m_slideshowMotionActive && !m_liveTransitionActive
         && !m_slideshowTransitionActive) {

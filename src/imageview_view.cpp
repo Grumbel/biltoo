@@ -3,6 +3,7 @@
 
 #include "imageview.h"
 #include "imageloader.h"
+#include "imagecache.h"
 #include "archivepath.h"
 #include <QPixmap>
 #include "imageitem.h"
@@ -187,7 +188,7 @@ qreal ImageView::viewScale() const
 void ImageView::refreshStatus()
 {
     emit statusChanged();
-    if (m_hudVisible || m_hudFlashVisible) {
+    if (m_hudVisible || m_hudFlashVisible || m_slideshowPausedHud) {
         viewport()->update();
     }
 }
@@ -359,7 +360,8 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
             m_hudFlashTimer->start(1000);
         }
     }
-    if (!(changed || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse)) {
+    if (!(changed || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
+          || m_slideshowPausedHud)) {
         return;
     }
     // Gallery selection already invalidates the tile; a full viewport()->update()
@@ -884,6 +886,31 @@ void ImageView::setSlideshowMotionPaused(bool paused)
     }
 }
 
+
+void ImageView::setSlideshowPausedHud(bool on)
+{
+    if (on == m_slideshowPausedHud) {
+        return;
+    }
+    m_slideshowPausedHud = on;
+    if (on) {
+        // Keep a stable action line for the permanent cue; flash timer must
+        // not clear it (paint draws paused HUD independently of flash).
+        m_hudAction = tr("❚❚  Paused");
+        m_hudDetail.clear();
+        m_hudFlashVisible = false;
+        if (m_hudFlashTimer) {
+            m_hudFlashTimer->stop();
+        }
+    } else if (m_hudAction.contains(QStringLiteral("Paused"))) {
+        m_hudAction.clear();
+        m_hudDetail.clear();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
 void ImageView::cancelSlideshowMotion()
 {
     const bool wasMotion = m_slideshowMotionActive;
@@ -1058,6 +1085,34 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return true;
     }
 
+    // Shared preview cache (warmed at slideshow start). Paint the transition
+    // immediately so superfast / interval≈transition does not stall waiting for
+    // a full multi-megapixel decode. Do NOT write m_handoff* — handoff must
+    // remain full-res only so LoadReplace is not locked onto a thumbnail.
+    {
+        const QImage cached = ImageCache::get(nextPath);
+        if (!cached.isNull()) {
+            qDebug().nospace()
+                << "[slideshow] beginLive cache-hit "
+                << QFileInfo(nextPath).fileName()
+                << " " << cached.width() << "x" << cached.height()
+                << " from=" << m_liveFromSourceImage.width() << "x"
+                << m_liveFromSourceImage.height();
+            const QPointer<ImageView> guard(this);
+            const QImage img = cached;
+            QMetaObject::invokeMethod(this, [guard, img]() {
+                if (guard) {
+                    guard->startLiveTransitionWithImage(img);
+                }
+            }, Qt::QueuedConnection);
+            // Still warm a full decode for later cycles / post-transition load.
+            if (m_preloadPath != nextPath && m_preloadInFlightPath != nextPath) {
+                preloadSlideshowImage(nextPath);
+            }
+            return true;
+        }
+    }
+
     // Preload already decoding this path — stay awaiting; preload-ready will
     // start the fade (avoid a second full disk load of the same file).
     if (m_preloadInFlightPath == nextPath) {
@@ -1195,7 +1250,7 @@ qreal ImageView::motionPathMaxScale(const QImage &image) const
         const qreal halfX = qMax(0.0, (iw - viewW) * 0.5);
         const qreal halfY = qMax(0.0, (ih - viewH) * 0.5);
         const qreal travel = preferX ? halfX : halfY;
-        constexpr qreal kMinTravel = 8.0;
+        const qreal kMinTravel = qMax(2.0, qMax(iw, ih) * 0.015);
         if (travel < kMinTravel) {
             const qreal longSide = preferX ? iw : ih;
             const qreal targetHalf = qMax(kMinTravel, longSide * 0.10);
@@ -1312,7 +1367,7 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
             const qreal halfX = qMax(0.0, (iw - viewW) * 0.5);
             const qreal halfY = qMax(0.0, (ih - viewH) * 0.5);
             const qreal travel = preferX ? halfX : halfY;
-            constexpr qreal kMinTravel = 8.0;
+            const qreal kMinTravel = qMax(2.0, qMax(iw, ih) * 0.015);
             if (travel < kMinTravel) {
                 const qreal longSide = preferX ? iw : ih;
                 const qreal targetHalf = qMax(kMinTravel, longSide * 0.10);

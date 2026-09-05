@@ -63,7 +63,7 @@ ImageView::ImageView(QWidget *parent)
     qRegisterMetaType<quint64>("quint64");
 
     connect(this, &ImageView::statusChanged, this, [this]() {
-        if (m_hudVisible || m_hudFlashVisible) {
+        if (m_hudVisible || m_hudFlashVisible || m_slideshowPausedHud) {
             viewport()->update();
         }
     });

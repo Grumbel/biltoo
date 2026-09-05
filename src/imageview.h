@@ -545,6 +545,12 @@ public:
      * Used for slideshow pause/resume (Space), not full stop.
      */
     void setSlideshowMotionPaused(bool paused);
+    /**
+     * Persistent top-left "Paused" cue while a slideshow session is paused.
+     * Independent of flashHud (which times out after ~1s). Cleared on resume/stop.
+     */
+    void setSlideshowPausedHud(bool on);
+    bool slideshowPausedHud() const { return m_slideshowPausedHud; }
     /** Image-mode fit after leaving slideshow (Fit to window). */
     void restoreImageFramingAfterSlideshow();
     /** Start dwell image-blit Ken Burns if enabled and slideshow is active. */
@@ -1013,6 +1019,8 @@ private:
     SessionImageId m_currentSessionId = kInvalidSessionImageId;
     QString m_lastLoadError;
     bool m_hudFlashVisible = false;
+    /** Persistent slideshow-paused cue (top-left); not cleared by flash timer. */
+    bool m_slideshowPausedHud = false;
     /** Filename + index shown briefly after navigation / flash (not only when pinned). */
     bool m_hudIdentityPulse = false;
     QString m_hudAction;
