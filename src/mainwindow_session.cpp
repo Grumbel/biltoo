@@ -423,8 +423,8 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                     : QDirIterator::NoIteratorFlags;
                 QDirIterator it(path, filters, flags);
                 while (it.hasNext()) {
-                    MainWindow *const window = guard.data();
-            if (!window || gen != window->m_expandGeneration) {
+                    // Re-check cancellation without a local that shadows outer `window`.
+                    if (!guard || gen != guard->m_expandGeneration) {
                         return;
                     }
                     const QString full = it.next();
@@ -619,11 +619,11 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
                 const int done = i + 1;
                 const int total = paths.size();
                 QMetaObject::invokeMethod(guard.data(), [guard, gen, done, total]() {
-                    MainWindow *const window = guard.data();
-                    if (!window || gen != window->m_sortGeneration) {
+                    // No local `window`: would shadow the worker-loop binding (-Wshadow).
+                    if (!guard || gen != guard->m_sortGeneration) {
                         return;
                     }
-                    window->setExpandProgress(
+                    guard->setExpandProgress(
                         done, total,
                         MainWindow::tr("Measuring images… %1/%2").arg(done).arg(total));
                 }, Qt::QueuedConnection);

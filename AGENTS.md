@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-208-transition-cap-full-interval**
-(Slideshow transition duration capped at full interval).
-Next bundle number: **209**.
+Latest agent handoff: **TODO.md → biltoo-209-shadow-window-warnings**
+(-Wshadow MainWindow*window in session workers).
+Next bundle number: **210**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

@@ -3673,3 +3673,17 @@ spin / ImageView).
 - [x] Transition duration max = min(5000, intervalMs), not interval/2
 - [x] Tooltips/comments match
 - [x] Next **209**
+
+## Plan / work (2026-09-05) — bundle `biltoo-209-shadow-window-warnings`
+
+`-Wshadow` on nested `MainWindow *const window = guard.data()` in
+`mainwindow_session.cpp` expand worker (dir walk) and sort-probe progress
+lambda.
+
+### Fix
+- Dir-iterator loop: re-check via `guard` / `guard->` (no local).
+- Sort progress UI lambda: same, avoid shadowing the worker-loop `window`.
+
+### Done criteria
+- [x] No -Wshadow on those two sites
+- [x] Next **210**
