@@ -1,35 +1,69 @@
-# Slideshow invariants and known failure modes
+# Slideshow — pure model (read this before changing code)
 
-# ⚠ STOP — slideshow complexity
+## Interval and transition (wall-clock arithmetic)
 
-**Do not add another soft-handoff, dual timeline, underlay show/hide, or
-preload-generation “fix” without deleting an equal amount of state.**
+```
+intervalMs  = pureMs + transitionMs     // e.g. 1000 + 500 = 1500
+cycle       = floor(wallMs / intervalMs)
+phaseMs     = wallMs % intervalMs       // 0 .. intervalMs-1
 
-The product model is intentionally tiny:
+if phaseMs < pureMs:
+    // DWELL slide[cycle]
+    opacityFrom = 1
+    opacityTo   = 0
+    fromIdx     = cycle % n
+    toIdx       = unused
+else:
+    // CROSSFADE slide[cycle] → slide[cycle+1]
+    t           = (phaseMs - pureMs) / transitionMs   // 0..1
+    opacityFrom = 1 - t
+    opacityTo   = t
+    fromIdx     = cycle % n
+    toIdx       = (cycle + 1) % n
+```
 
-1. **Pure wall clock** in `MainWindow` decides *when* and *which* pair (from→to).
-2. **Two CPU buffers** (from / to): full pixels if ready, else cache preview
-   scaled to **native size**. Full replaces soft in place — same geometry.
-3. **Paint**: blit from, blit to, opacity. Dwell = one blit. Underlay item is
-   **always hidden** for the whole show.
-4. **Ken Burns** (optional): one path **0→1 per image**, restarted at 0 when
-   that image becomes the dwell slide. Never carry progress across images.
+One pure clock in MainWindow owns `wallMs`. ImageView does **not** schedule
+advances. ImageView only: (1) ensure pixel buffers for from/to, (2) blit.
 
-If a change needs a third clock, a second handoff path, or “visible underlay
-during slideshow”, it is the wrong change.
+## Pixels for a path
+
+```
+buf(path) = full_decode if ready
+         else cache_preview scaled to native size (same aspect, same cover math)
+```
+
+Full may replace soft later; geometry must not jump.
+
+## What to paint (pure function of the numbers above)
+
+```
+DWELL:     blit(buf(fromIdx), motionT=f(path, wall), opacity=1)
+CROSSFADE: blit(buf(fromIdx), motionT_from, opacity=1-t)
+           blit(buf(toIdx),   motionT_to=0.., opacity=t)
+```
+
+Ken Burns is optional sampling on a buffer: `motionT = clamp(localMs / pathMs, 0, 1)`,
+**restarted at 0 when that path becomes the dwell slide**. No second clock for
+scheduling. Underlay QGraphicsItem is **never shown** during the show.
+
+## What is forbidden
+
+- Events that cancel motion / clear the canvas during the show (pending tile)
+- Soft-handoff that waits on LoadReplace to install the dwell buffer
+- A second scheduler (single-shot timers, resume chains)
+- Showing the underlay “for one frame” during handoff
+- Carrying motion progress across different images until t=1 freezes
+
+## Implementation map
+
+| Concern | Where |
+|---------|--------|
+| wallMs, cycle, phase, which indices | MainWindow pure clock |
+| buf(path), beginLive when phase enters fade | ImageView buffers |
+| blit | ImageView paint only |
+| LoadReplace | updates hidden underlay only; never cancels motion during show |
 
 ---
-
-Read this before changing live transitions, preload, handoff, motion, or the
-pure-clock scheduler. Most “glitches” in this area are regressions of the same
-mistakes.
-
-### 16. Dwell is armed at fade-end in the motion tick
-
-Do **not** wait for LoadReplace → onImageLoaded → releaseLiveTransitionHold to
-install the dwell buffer. That chain was skipped/late and left dwellT frozen at
-1.0 with a stale image. Arm dwell from the live to-frame when t≥1, then emit
-finished so LoadReplace only updates the hidden underlay.
 
 ## Settled design (do not grow a second scheduler)
 

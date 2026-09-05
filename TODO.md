@@ -4812,3 +4812,24 @@ canvas item when it has more pixels.
 - [x] `dwell-start … (at fade-end)` every cycle
 - [x] dwellT restarts near 0 after each fade
 - [x] Next **265**
+
+## Plan / work (2026-09-05) — bundle `biltoo-265-pure-model-no-pending`
+
+### Diagnosis
+Fade-end armed dwell, then `emit finished` → LoadReplace →
+`installImageModePendingTile` (hold already false) → `cancelSlideshowMotion` +
+`clearLiveCanvas`. That is why dwell never stuck and logs showed
+`underlayVisible=true item="-"`.
+
+### Pure model (SLIDESHOW.md)
+Documented wall-clock arithmetic: phase < pureMs → dwell; else crossfade with
+t = (phase-pure)/transition. One clock. Two buffers. Blit. No pending tile
+during the show.
+
+### Code
+`installImageModePendingTile` returns immediately when `m_slideshowProgressActive`.
+
+### Done criteria
+- [x] Pure model written
+- [x] Pending tile cannot cancel motion mid-show
+- [x] Next **266**

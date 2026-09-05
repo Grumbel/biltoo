@@ -78,10 +78,12 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     if (!isImageMode() || path.isEmpty()) {
         return;
     }
-    // Live overlay owns the viewport. Wiping the canvas / cancelling motion
-    // under an active hold causes a visible jump (placeholder at wrong pose).
-    // Full pixels arrive via onImageLoaded → releaseLiveTransitionHold.
-    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
+    // Slideshow owns the viewport with dwell/live blits. Pending tile used to
+    // clearLiveCanvas + cancelSlideshowMotion after fade-end cleared the hold,
+    // wiping the dwell we just armed (logs: underlayVisible=true item="-",
+    // dwellT never restarted). Underlay is hidden for the whole show.
+    if (m_slideshowProgressActive
+        || m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
         return;
     }
     // Layout size = native dimensions (cache / probe), never thumbnail pixels.
