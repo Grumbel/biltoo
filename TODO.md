@@ -4554,3 +4554,40 @@ max 384 entries). API: get / put / has / ensure / warm / clear.
 - [x] Generic shared cache
 - [x] Slideshow start warms every path
 - [x] Next **253**
+
+## Plan / work (2026-09-05) — bundle `biltoo-253-slideshow-pause-hud-superfast`
+
+### Pause indicator disappeared
+`pauseSlideshow` only `flashHud("❚❚  Paused")` (~1s). After the flash the UI
+gave no durable cue that the session was still paused (Space = resume vs play).
+
+### Fix — permanent paused HUD
+- `ImageView::setSlideshowPausedHud(bool)` — persistent top-left panel
+  ("❚❚  Paused" + "Space: resume · Esc: leave"), independent of the flash timer
+- Wired from pause / resume / start / stop
+- Paint + HUD visibility gates treat paused HUD like crop-mode cue
+
+### Superfast glitches (interval ≈ transition)
+Pure clock is authority; while `isSlideshowTransitionBusy()` the tick returned
+early. When a transition ran longer than one cycle (continuous pureMs=0), the
+cycle counter advanced and the stale busy lock skipped every later cycle until
+stop — visual "stuck / weird" advance.
+
+Also: live path waited on full multi-MP decode even though `ImageCache::warm`
+had ≥512 previews ready at start. Full-res handoff rule stays (no thumb in
+`m_handoff*`); paint may use the cache so the fade can open immediately.
+
+Motion `kMinTravel` was a fixed 8px — resolution-dependent between full and
+preview frames. Now `max(2, longEdge * 1.5%)`.
+
+### Fix
+1. Busy + `cycle > transitionCycle` → cancel stale overlay and start the
+   transition that matches the current pure-clock cycle
+2. `beginLive` cache-hit path (ImageCache) for paint only; still preload full
+3. Relative `kMinTravel`
+
+### Done criteria
+- [x] Paused cue stays until resume/stop
+- [x] Superfast continuous mode does not lock behind a missed cycle
+- [x] Preview cache can open live fades without waiting for full decode
+- [x] Next **254**
