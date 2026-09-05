@@ -191,8 +191,13 @@ void GalleryController::onLeave(int nextMode)
     if (next != ImageView::ViewMode::Image) {
         m_haveScroll = false;
         m_haveViewCenter = false;
+        // Gallery → Workspace (or any non-Image leave): cancel background
+        // decode-window jobs. Otherwise LoadAdd completions land on the new
+        // mode and spawn free-form tiles from gallery pathOrder.
+        m_view->invalidateGalleryDecodes();
     } else {
         // Keep tiles + decoded pixels for a fast return to Gallery.
+        // Pending LoadAdds may still fill stashed placeholders in Image mode.
         stashItems();
     }
 }

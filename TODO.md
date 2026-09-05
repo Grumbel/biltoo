@@ -5081,3 +5081,27 @@ project).
 - [x] Image → empty Workspace shows blank canvas
 - [x] Non-empty Workspace still restores stash/snapshot
 - [x] Next **280**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-280-cancel-gallery-decode-on-leave`
+
+### Symptom
+Switching Gallery → Workspace still ends up with session images on the canvas
+after background Gallery decodes finish.
+
+### Cause
+Gallery decode-window jobs (`scheduleGalleryDecode` → LoadAdd) stay pending
+across mode switch. `onImageLoaded(LoadAdd)` did not check generation; with
+gallery `pathOrder` still set it created free-form tiles on Workspace.
+
+### Fix
+- `invalidateGalleryDecodes()`: clear scheduled/pending, bump `m_loadGeneration`
+- Gallery `onLeave` (non-Image): invalidate gallery decodes
+- Empty Workspace enter: invalidate + clear pathOrder/sessionIdOrder
+- `scheduleGalleryDecode` only while Gallery mode
+- LoadAdd: reject when generation mismatches
+
+### Done criteria
+- [x] Late Gallery LoadAdd cannot populate Workspace
+- [x] Gallery → Image still allows stash pixel fill (no invalidate on that path)
+- [x] Next **281**

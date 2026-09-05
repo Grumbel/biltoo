@@ -167,6 +167,8 @@ public:
     QString takeClassicPath() { return m_image.takeClassicPath(); }
     /** Controller host: drop in-flight workspace/gallery pending load queues. */
     void clearPendingLoads();
+    /** Cancel in-flight Gallery window decodes (mode leave / empty Workspace). */
+    void invalidateGalleryDecodes();
     /** Controller host: scene->clear with signals blocked (stashes already detached). */
     void clearSceneKeepingStashes();
     /** Controller host: LoadReplace for a path (no-op if empty). */

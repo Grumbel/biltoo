@@ -247,6 +247,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
+    if (!isGalleryMode()) {
+        return;
+    }
     if (path.isEmpty() || m_galleryDecodeFailed.contains(path)
         || m_galleryDecodeScheduled.contains(path)) {
         return;
@@ -532,10 +535,17 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
     // Duplicate paths are separate session images: fill every undecoded live
     // occurrence, then create until live count matches pathOrder occurrences.
+    m_galleryDecodeScheduled.remove(path);
+    // Mode leave / empty Workspace bumps generation and clears pending paths.
+    // Reject superseded gallery window decodes so they cannot spawn tiles on
+    // Workspace after the user switched modes mid-decode.
+    if (generation != m_loadGeneration.load()) {
+        emit statusChanged();
+        return;
+    }
     if (!image.isNull()) {
         rememberImageSize(path, image.size());
     }
-    m_galleryDecodeScheduled.remove(path);
     if (!m_pendingWorkspacePaths.contains(path)) {
         // Cancelled (e.g. path removed from session) — drop the result.
         emit statusChanged();

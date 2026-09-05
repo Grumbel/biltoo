@@ -280,6 +280,11 @@ void WorkspaceController::enter(int previousMode)
         // load places tiles. (Previously only Gallery was cleared; Image→
         // Workspace left the classic single tile on the free-form canvas.)
         m_view->clearLiveCanvas();
+        // Drop gallery pathOrder / in-flight LoadAdd so background Gallery
+        // decodes cannot recreate session tiles on this blank canvas.
+        m_view->invalidateGalleryDecodes();
+        m_view->pathOrder().clear();
+        m_view->sessionIdOrder().clear();
         m_view->applyModeFlagsToLiveItems();
     }
     // Always clear canvas selection on enter — restored stash may keep old

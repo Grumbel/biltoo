@@ -44,6 +44,16 @@ void ImageView::clearPendingLoads()
     m_pendingRestoreStates.clear();
 }
 
+void ImageView::invalidateGalleryDecodes()
+{
+    // Drop scheduled markers and pending path counts so late LoadAdd results
+    // cannot create tiles after leaving Gallery. Bump generation so in-flight
+    // pool jobs are rejected in onImageLoaded.
+    m_galleryDecodeScheduled.clear();
+    m_pendingWorkspacePaths.clear();
+    ++m_loadGeneration;
+}
+
 void ImageView::takePendingWorkspacePath(const QString &path)
 {
     const auto it = m_pendingWorkspacePaths.find(path);
