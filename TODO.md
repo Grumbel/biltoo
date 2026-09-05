@@ -4704,3 +4704,27 @@ Paint diag fingerprint also includes coarse dwellT/toT steps.
 ### Done criteria
 - [x] No toT=0 against mid-path fromT on every fade
 - [x] Next **260**
+
+## Plan / work (2026-09-05) — bundle `biltoo-260-soft-handoff-dwellt`
+
+### Diagnosis
+Paint log after shared timeline: mid-fade `dwellT`/`toT` matched, then on every
+cycle:
+
+```
+dwell dwellT=0.750
+dwell dwellT=0.011   ← snap back to start of Ken Burns path
+```
+
+Soft-handoff left a fragile `offset = progress*duration - elapsed` against a
+timer that could be restarted; `maybeStartSlideshowMotion` could also call
+`startSlideshowMotion(..., 0)` after hold cleared.
+
+### Fix
+- On release: `m_motionClock.start(); offset = progress * duration`
+- `maybeStartSlideshowMotion`: no-op if motion already active; else continue
+  from `m_dwellMotionT` not always 0
+
+### Done criteria
+- [x] No dwellT 0.75→0.01 after each fade
+- [x] Next **261**

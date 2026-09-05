@@ -662,13 +662,29 @@ void ImageView::releaseLiveTransitionHold()
     m_toLayerWallMs = -1.0;
     // Host stopped the advance timer for the transition; resume pure dwell now.
     emit slideshowDwellResumeRequested();
-    if (m_slideshowMotionActive && m_motionDurationMs > 0) {
-        const qreal elapsed = qreal(m_motionClock.elapsed());
-        m_motionElapsedOffsetMs = qint64(handoffProgress * qreal(m_motionDurationMs) - elapsed);
+    // Re-arm the motion clock at handoffProgress. The old
+    //   offset = progress * duration - elapsed
+    // form was correct only while the same QElapsedTimer kept running; any
+    // cancel/restart left a stale pair and the next tick snapped dwellT
+    // 0.75 → 0.01 (every cycle in paint logs). Restart elapsed at 0 with
+    // offset = progress * duration so wallMs is exact.
+    if (m_slideshowProgressActive
+        && m_slideshowMotion != SlideshowMotion::Off
+        && m_motionDurationMs > 0) {
+        const qreal p = qBound(0.0, handoffProgress, 1.0);
+        m_motionClock.start();
+        m_motionElapsedOffsetMs = qint64(p * qreal(m_motionDurationMs));
+        m_dwellMotionT = p;
+        qDebug().nospace()
+            << "[slideshow] soft-handoff dwellT=" << QString::number(p, 'f', 3)
+            << " durationMs=" << m_motionDurationMs;
         m_dwellCoverPixmap = QPixmap();
+        m_slideshowMotionActive = true;
+        if (m_motionTimer && !m_motionTimer->isActive()) {
+            m_motionTimer->start();
+        }
     } else if (m_slideshowProgressActive
                && m_slideshowMotion != SlideshowMotion::Off) {
-        // Motion was not running — start once (should be rare).
         const int duration = m_slideshowProgressIntervalMs;
         if (duration >= 250) {
             startSlideshowMotion(duration, handoffProgress);
@@ -1661,11 +1677,18 @@ void ImageView::maybeStartSlideshowMotion()
     if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
         return;
     }
+    // Already running — do not restart from 0 (that caused dwellT 0.75→0.01
+    // after every live soft-handoff when a late maybeStart fired).
+    if (m_slideshowMotionActive) {
+        return;
+    }
     int duration = m_slideshowProgressIntervalMs;
     if (duration < 250) {
         return;
     }
-    startSlideshowMotion(duration, 0.0);
+    // Continue from the dwell sample if soft-handoff already set one.
+    const qreal initial = qBound(0.0, m_dwellMotionT, 1.0);
+    startSlideshowMotion(duration, initial);
 }
 
 void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)

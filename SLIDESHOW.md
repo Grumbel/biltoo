@@ -126,6 +126,14 @@ mismatched pans and soft-handoff snapped dwell backward (dwellT 0.74→0.25).
 Set `m_toLayerWallMs = 0` so both layers sample the same wall progress (each
 with its own biases). Handoff progress then continues the dwell camera.
 
+
+### 15. Soft-handoff must re-arm the motion clock at handoff progress
+
+After a live fade, `dwellT` must continue from the fade’s end progress. Never
+leave a stale `offset`/`elapsed` pair and never let `maybeStartSlideshowMotion`
+call `startSlideshowMotion(duration, 0)` while motion is already active — paint
+logs showed `dwellT` 0.75 → 0.01 on every cycle.
+
 ## Symptoms → usual cause
 
 | Symptom | Usual cause |

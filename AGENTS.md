@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-259-shared-motion-timeline**
-(Live from/to share motion wall progress; no toT=0 snap).
-Next bundle number: **260**.
+Latest agent handoff: **TODO.md → biltoo-260-soft-handoff-dwellt**
+(Re-arm motion clock at handoff progress; no maybeStart from 0).
+Next bundle number: **261**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
