@@ -3977,3 +3977,47 @@ transition (race at the equality boundary).
 ### Done criteria
 - [x] Interval == Transition advances reliably
 - [x] Next **227**
+
+## Plan / work (2026-09-05) — bundle `biltoo-227-slideshow-overlap-pure-dwell`
+
+Interval == Transition still showed static single-image gaps, and Ken Burns
+could appear to stop during the fade.
+
+### Root cause
+Advance timer was armed for the *full* interval *after* each transition ended.
+That yields non-overlapping timing:
+
+  pure dwell = interval, then transition = transition
+  cycle = interval + transition
+
+When interval == transition the user therefore spent half the time on a static
+(or single-image moving) frame. Continuous dual-image fade never occurred.
+
+Motion path length was already interval + transition (so progress < 1 at
+advance), but the wrong pure length made the visual "regular images" dominate.
+
+### Intended model (overlapping)
+- Interval = time from cycle start until the *next* transition begins
+  (i.e. until the next image starts to appear).
+- Transition runs for transitionMs after that point and overlaps the end of
+  the previous timing window.
+- pureDwellMs = max(0, intervalMs - transitionMs)
+- When interval == transition → pureDwellMs == 0 → arm(0) after a transition
+  ends → next transition starts immediately → continuous crossfade, two images
+  always compositing, no static gaps.
+- Motion duration stays interval + transition so the outgoing frame keeps
+  lerping for the whole fade (never clamps to 1 for the duration of the
+  transition).
+
+### Fix
+- `armSlideshowAdvanceTimer()`: start the single-shot timer with pureDwellMs
+  instead of full intervalMs. Still pass full interval to setSlideshowProgress
+  (HUD cycle + motion base duration).
+- Transition duration remains capped ≤ interval (existing setSlideshowIntervalMs
+  logic).
+
+### Done criteria
+- [x] Interval == Transition → continuous dual-image transition, no static gaps
+- [x] Images keep moving throughout the transition (Ken Burns / Pan&Scan)
+- [x] Interval > Transition → pure dwell of (interval - transition), then fade
+- [x] Next **228**

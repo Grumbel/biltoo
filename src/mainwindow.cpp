@@ -845,9 +845,24 @@ void MainWindow::armSlideshowAdvanceTimer()
     if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
         return;
     }
-    // Single-shot dwell until the next advance.
-    m_slideshowTimer->start(qMax(0, m_slideshowIntervalMs));
+    // Overlapping interval / transition model (see DOMAIN / TODO):
+    //   pureDwellMs = max(0, intervalMs - transitionMs)
+    // The advance timer covers only the pure segment. Transition runs after
+    // the timer fires and overlaps the end of the previous cycle's timing.
+    // When interval == transition, pureDwellMs == 0 → arm(0) starts the next
+    // transition immediately after the current one ends → continuous dual-image
+    // fade with no static single-image gaps.
+    // ImageView motion duration is already interval + transition so the Ken
+    // Burns path retains headroom and never clamps to 1 for the whole fade.
+    int pureMs = m_slideshowIntervalMs;
     if (m_imageView) {
+        const int tr = m_imageView->slideshowTransitionDurationMs();
+        pureMs = qMax(0, m_slideshowIntervalMs - tr);
+    }
+    // Single-shot pure dwell until the next advance.
+    m_slideshowTimer->start(pureMs);
+    if (m_imageView) {
+        // HUD progress and motion base use the full interval (cycle length).
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
         if (m_session.paths().size() > 1) {
             int n = (m_currentIndex + 1) % m_session.paths().size();
