@@ -3909,3 +3909,21 @@ Left/Right also stopped the show.
 - [x] Esc leaves slideshow
 - [x] Arrows do not stop the show
 - [x] Next **223**
+
+## Plan / work (2026-09-05) — bundle `biltoo-223-slideshow-nav-keep-session`
+
+Left/Right still appeared to end the show: pending-tile install used Image fit
+when motion was on, cleared the dwell underlay under a live camera, and
+statusChanged mid-nav could interact badly with stop conditions.
+
+### Fix
+- Pending tile: cancel motion, then **always** slideshow zoom framing while
+  progress is active (not Image fit)
+- Skip statusChanged from pending install during slideshow
+- Stop session only for Workspace or ≤1 file (not transient empty canvas)
+- User ←/→: no snapshot transition; restart dwell / keep paused progress
+- Fullscreen leave: stop if playing **or** paused
+
+### Done criteria
+- [x] Arrows keep the slideshow session
+- [x] Next **224**

@@ -1397,7 +1397,11 @@ void MainWindow::updateNavigationActions()
     // file). Idle stopSlideshow is a no-op for the timer, but still emitted
     // statusChanged via restoreImageFramingAfterSlideshow → re-entered here
     // forever (stack overflow / SEGV in QToolButton when loading one image).
-    if (!canSlideshow && isSlideshowSession()) {
+    // Only end the session when it becomes impossible (Workspace / single file).
+    // Do not use transient "no canvas items" mid LoadReplace as a stop signal.
+    if (isSlideshowSession()
+        && (m_session.paths().size() <= 1
+            || (m_imageView && m_imageView->isWorkspaceMode()))) {
         stopSlideshow();
     }
 
@@ -1509,10 +1513,6 @@ void MainWindow::goPrevious()
     if (m_session.paths().size() <= 1) {
         return;
     }
-    // Stay in the slideshow session (playing or paused); do not tear down framing.
-    if (isSlideshowSession() && !m_slideshowAdvancing && m_imageView && isImageMode()) {
-        m_imageView->prepareSlideshowTransition();
-    }
     int idx = m_currentIndex - 1;
     if (idx < 0) {
         idx = m_session.paths().size() - 1;
@@ -1525,9 +1525,6 @@ void MainWindow::goNext()
 {
     if (m_session.paths().size() <= 1) {
         return;
-    }
-    if (isSlideshowSession() && !m_slideshowAdvancing && m_imageView && isImageMode()) {
-        m_imageView->prepareSlideshowTransition();
     }
     int idx = m_currentIndex + 1;
     if (idx >= m_session.paths().size()) {
@@ -1542,9 +1539,6 @@ void MainWindow::goFirst()
     if (m_session.paths().isEmpty()) {
         return;
     }
-    if (isSlideshowSession() && !m_slideshowAdvancing && m_imageView && isImageMode()) {
-        m_imageView->prepareSlideshowTransition();
-    }
     setCurrentIndex(0);
     onSlideshowUserNavigated();
 }
@@ -1553,9 +1547,6 @@ void MainWindow::goLast()
 {
     if (m_session.paths().isEmpty()) {
         return;
-    }
-    if (isSlideshowSession() && !m_slideshowAdvancing && m_imageView && isImageMode()) {
-        m_imageView->prepareSlideshowTransition();
     }
     setCurrentIndex(m_session.paths().size() - 1);
     onSlideshowUserNavigated();
@@ -1772,9 +1763,10 @@ void MainWindow::onSlideshowUserNavigated()
         return;
     }
     // Playing: restart dwell for the new slide. Paused: keep frozen until resume.
-    if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+    if (!m_slideshowPaused && m_slideshowTimer) {
         m_slideshowTimer->start(m_slideshowIntervalMs);
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        // Full load will maybeStartSlideshowMotion; ensure progress stays on.
         if (m_session.paths().size() > 1) {
             int n = (m_currentIndex + 1) % m_session.paths().size();
             if (n < 0) {
@@ -1782,7 +1774,11 @@ void MainWindow::onSlideshowUserNavigated()
             }
             m_imageView->preloadSlideshowImage(m_session.paths().at(n));
         }
+    } else if (m_slideshowPaused) {
+        // Stay in slideshow mode (Fill/Fit camera) while the next image loads.
+        m_imageView->setSlideshowProgress(true, 0);
     }
+    updateSlideshowActionUi();
 }
 
 void MainWindow::startSlideshow()

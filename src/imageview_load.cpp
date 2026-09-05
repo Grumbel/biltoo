@@ -90,6 +90,11 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
 
     setUpdatesEnabled(false);
+    // Wipe the underlay under an active dwell camera would leave motion pointing
+    // at a destroyed item — drop motion first; full load restarts it.
+    if (m_slideshowProgressActive) {
+        cancelSlideshowMotion();
+    }
     clearLiveCanvas();
     ImageItem *item = createPlaceholderItem(path, sz);
     if (!item) {
@@ -111,9 +116,10 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     item->setPos(0, 0);
     item->setItemRotation(0.0);
     prepareImageModeCanvas();
-    if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
+    if (m_slideshowProgressActive) {
+        // Stay on slideshow zoom (Fit/Fill/Actual), not normal Image fit.
         applySlideshowZoomFraming(item);
-    } else if (!m_slideshowProgressActive) {
+    } else {
         fitItem(item, currentFitAspectMode());
     }
     m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
@@ -121,7 +127,11 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     if (viewport()) {
         viewport()->update();
     }
-    emit statusChanged();
+    // Avoid statusChanged here during slideshow — updateNavigationActions must
+    // not run mid-nav (and must not treat a transient empty canvas as end-of-show).
+    if (!m_slideshowProgressActive) {
+        emit statusChanged();
+    }
 }
 
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
