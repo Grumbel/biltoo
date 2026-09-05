@@ -4021,3 +4021,44 @@ advance), but the wrong pure length made the visual "regular images" dominate.
 - [x] Images keep moving throughout the transition (Ken Burns / Pan&Scan)
 - [x] Interval > Transition → pure dwell of (interval - transition), then fade
 - [x] Next **228**
+
+## Plan / work (2026-09-05) — bundle `biltoo-228-slideshow-overlap-concurrent-arm`
+
+227 (pureDwell = interval - transition, arm(0) when equal) fell apart again
+at Interval == Transition.
+
+### Why pure=0 failed
+arm(0) from releaseLiveTransitionHold / dwell-resume posts an immediate
+timeout. That races with the still-settling LoadReplace / hold flags /
+motion handoff. beginLive could fail or double-fire, producing stuck slides,
+skipped images, or a tight advance loop. The single-shot design of 226 existed
+precisely to keep a positive gap between “transition finished” and “next
+advance scheduled”.
+
+### Correct overlapping schedule (no arm(0))
+- onSlideshowTick **first** arms the next full interval (wall-clock cadence).
+- Then starts the current live/snapshot transition.
+- Transition-finished / dwell-resume signals **do not** re-arm (except the
+  safety case when the timer is already stopped).
+- Consequence when interval == transition: the timer that was started at the
+  beginning of this transition fires exactly when the transition ends → next
+  transition begins at once → continuous dual-image fade.
+- When interval > transition: after the transition ends the already-running
+  timer still has (interval - transition) left → pure dwell, then next tick.
+
+Motion path length (interval + transition) is unchanged and still prevents
+clamping to 1 for the whole outgoing fade.
+
+### Fix
+- armSlideshowAdvanceTimer: always full interval (revert pureMs).
+- onSlideshowTick: call armSlideshowAdvanceTimer() at the top; remove the
+  trailing arm / busy early-return that re-armed after snapshot.
+- slideshowLiveTransitionFinished: only goNext + progress; never arm.
+- slideshowDwellResumeRequested: arm only if timer is inactive (pause/resume
+  safety net).
+
+### Done criteria
+- [x] Interval == Transition continuous, no static gaps, no stuck/skip races
+- [x] Interval > Transition still has pure dwell of (interval - transition)
+- [x] Motion keeps moving through transitions
+- [x] Next **229**

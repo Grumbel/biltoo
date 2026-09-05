@@ -295,16 +295,25 @@ MainWindow::MainWindow(QWidget *parent)
             m_slideshowAdvancing = true;
             goNext();
             m_slideshowAdvancing = false;
-            // Fade-black emits at mid-veil (still busy). Crossfade emits at end
-            // but hold is still set until load finishes — arm on dwell resume.
-            if (m_imageView && !m_imageView->isSlideshowTransitionBusy()) {
-                armSlideshowAdvanceTimer();
-            } else if (m_imageView) {
+            // Do NOT arm here. onSlideshowTick already armed the next full
+            // interval at the start of this transition (overlapping model).
+            // Re-arming from the end would turn the schedule into
+            // interval+transition and re-introduce static gaps when equal.
+            // Fade-black still holds until load; crossfade hold drops in
+            // releaseLiveTransitionHold — neither path must touch the timer.
+            if (m_imageView) {
                 m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
             }
         });
         connect(m_imageView, &ImageView::slideshowDwellResumeRequested, this, [this]() {
-            armSlideshowAdvanceTimer();
+            // Overlapping model: the advance timer is already counting from
+            // the previous onSlideshowTick. Only arm if the timer is stopped
+            // (e.g. after pause/resume edge, or first frame after a manual
+            // nav that cleared it). Never restart a live interval from here.
+            if (m_slideshowTimer && !m_slideshowTimer->isActive()
+                && !m_slideshowPaused) {
+                armSlideshowAdvanceTimer();
+            }
         });
     }
 
@@ -845,24 +854,18 @@ void MainWindow::armSlideshowAdvanceTimer()
     if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
         return;
     }
-    // Overlapping interval / transition model (see DOMAIN / TODO):
-    //   pureDwellMs = max(0, intervalMs - transitionMs)
-    // The advance timer covers only the pure segment. Transition runs after
-    // the timer fires and overlaps the end of the previous cycle's timing.
-    // When interval == transition, pureDwellMs == 0 → arm(0) starts the next
-    // transition immediately after the current one ends → continuous dual-image
-    // fade with no static single-image gaps.
-    // ImageView motion duration is already interval + transition so the Ken
-    // Burns path retains headroom and never clamps to 1 for the whole fade.
-    int pureMs = m_slideshowIntervalMs;
+    // Overlapping interval/transition model:
+    // Arm the *full* interval from this moment. onSlideshowTick also arms at
+    // the start of every advance so the schedule is a steady cadence of
+    // intervalMs. When interval == transition the next tick therefore lands
+    // at the end of the current transition → continuous dual-image fade with
+    // no static single-image gaps. Pure time is simply the remainder of the
+    // interval after the transition finishes; it is never armed separately.
+    // (Arming pure=0 after the transition re-introduced equality races.)
+    // Motion path length stays interval+transition so Ken Burns keeps moving
+    // through the whole outgoing fade.
+    m_slideshowTimer->start(qMax(0, m_slideshowIntervalMs));
     if (m_imageView) {
-        const int tr = m_imageView->slideshowTransitionDurationMs();
-        pureMs = qMax(0, m_slideshowIntervalMs - tr);
-    }
-    // Single-shot pure dwell until the next advance.
-    m_slideshowTimer->start(pureMs);
-    if (m_imageView) {
-        // HUD progress and motion base use the full interval (cycle length).
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
         if (m_session.paths().size() > 1) {
             int n = (m_currentIndex + 1) % m_session.paths().size();
@@ -876,7 +879,13 @@ void MainWindow::armSlideshowAdvanceTimer()
 
 void MainWindow::onSlideshowTick()
 {
-    // Timer is single-shot — stays stopped until armSlideshowAdvanceTimer().
+    // Single-shot timer; we re-arm immediately for the next full interval so
+    // the cadence is wall-clock interval regardless of transition length.
+    // This is what makes Interval == Transition continuous.
+    if (!m_slideshowPaused) {
+        armSlideshowAdvanceTimer();
+    }
+
     // With dwell camera motion, run a *live* transition (outgoing keeps panning)
     // and only then advance. Snapshot transitions freeze the outgoing frame.
     if (m_imageView && m_imageView->isImageMode()
@@ -888,7 +897,7 @@ void MainWindow::onSlideshowTick()
         }
         if (nextIdx >= 0 && nextIdx < m_session.paths().size()
             && m_imageView->beginLiveSlideshowTransition(m_session.paths().at(nextIdx))) {
-            // Resume after live transition ends (dwell resume / not-busy path).
+            // Next arm already done above. Live path will goNext via signal.
             return;
         }
     }
@@ -898,12 +907,9 @@ void MainWindow::onSlideshowTick()
     }
     goNext();
     m_slideshowAdvancing = false;
-    if (m_imageView && m_imageView->isSlideshowTransitionBusy()) {
-        // Snapshot anim running — arm when slideshowDwellResumeRequested fires.
-        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-        return;
-    }
-    armSlideshowAdvanceTimer();
+    // Do not arm here — already armed at top. Snapshot/live finished signals
+    // must not re-arm either (that would restart the interval from the end
+    // and destroy overlap).
 }
 
 void MainWindow::toggleToolBar()
