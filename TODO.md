@@ -5034,3 +5034,28 @@ to a smaller cached frame if the decode fails.
 ### Done criteria
 - [x] Visible thumbnails fill on open / scroll without relying on ensure race
 - [x] Next **278**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-278-workspace-selection-clear`
+
+### Symptom
+Enter Workspace, drag one filmstrip thumb onto the canvas → every session
+image is placed. Selection chrome looks wrong; Workspace should start empty
+of selection.
+
+### Cause
+Entering Workspace could leave Image/Gallery filmstrip selection (or restored
+Workspace tile selection flags) active. A drag from a selected cell used
+`selectedItems()`, so one gesture exported the whole selection. Restored
+stash also kept selection flags, which MainWindow mirrored onto the filmstrip.
+
+### Fix
+- Toggle Workspace: clear canvas + filmstrip selection after enabling multi-select
+- `WorkspaceController::enter`: clear scene selection; do not auto-select primary
+- Drag: multi-select payload only in Workspace multi mode; full-strip selection
+  without Ctrl/Shift collapses to the pressed thumb
+
+### Done criteria
+- [x] Workspace enters with nothing selected
+- [x] Single-thumb drag places one image
+- [x] Next **279**

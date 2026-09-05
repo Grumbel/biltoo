@@ -1304,13 +1304,21 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
         if (dist >= QApplication::startDragDistance()) {
             // AUDIT M19: drag selected thumbs as files in every mode (no dead gesture).
             m_dragStarted = true;
-            // Only the explicit selection (or the pressed thumb). Never the
-            // whole filmstrip — that used to happen when archive container
-            // URLs were expanded on drop, and must not recur via select-all
-            // style accidental payloads either.
+            // Payload is the pressed thumb, or the current multi-selection when
+            // the press is on a selected cell in Workspace multi-select.
+            // Never ship the whole filmstrip because of a stale Select-All /
+            // mirrored canvas selection after entering Workspace.
             QList<QListWidgetItem *> items;
-            if (m_pressItem->isSelected()) {
+            if (m_multiSelect && m_pressItem->isSelected()) {
                 items = selectedItems();
+                // Guard: a full-strip selection is almost always accidental
+                // residual state — drag only the pressed row unless the user
+                // held Ctrl/Shift (explicit multi intent).
+                if (items.size() == count() && count() > 1
+                    && !(m_pressModifiers & (Qt::ControlModifier | Qt::ShiftModifier
+                                            | Qt::MetaModifier))) {
+                    items = {m_pressItem};
+                }
             }
             if (items.isEmpty()) {
                 items = {m_pressItem};

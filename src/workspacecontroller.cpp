@@ -281,7 +281,13 @@ void WorkspaceController::enter(int previousMode)
             m_view->clearLiveCanvas();
         }
         m_view->applyModeFlagsToLiveItems();
-        m_view->ensurePrimarySelection();
+        // Do not auto-select a primary tile: Workspace starts with nothing
+        // selected so filmstrip drags are not inflated by leftover selection.
+    }
+    // Always clear canvas selection on enter — restored stash may keep old
+    // selected flags, which MainWindow would mirror onto every filmstrip row.
+    if (m_view->canvasScene()) {
+        m_view->canvasScene()->clearSelection();
     }
     m_view->updateWorkspaceSceneRect();
     emit m_view->statusChanged();

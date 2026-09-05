@@ -390,6 +390,10 @@ void MainWindow::onThumbnailCanvasMembershipToggled(int index)
         m_workspaceModeAct->setChecked(true);
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
         m_thumbnailBar->setMultiSelectEnabled(true);
+        if (m_imageView->canvasScene()) {
+            m_imageView->canvasScene()->clearSelection();
+        }
+        m_thumbnailBar->selectNoneThumbs();
         updateWorkspaceActionVisibility();
     }
     const QString path = m_session.paths().at(index);
@@ -751,6 +755,13 @@ void MainWindow::toggleWorkspaceMode()
         }
         m_thumbnailBar->setMultiSelectEnabled(true);
         m_imageView->setViewMode(ImageView::ViewMode::Workspace);
+        // Workspace opens with nothing selected (filmstrip + canvas). Residual
+        // Image/Gallery selection used to stay selected so a one-thumb drag
+        // shipped every selected path via selectedItems().
+        if (m_imageView->canvasScene()) {
+            m_imageView->canvasScene()->clearSelection();
+        }
+        m_thumbnailBar->selectNoneThumbs();
         // Workspace starts/stays empty unless the user (or a project) places tiles.
         // Do not seed from the session list — arrangement is permanent across modes.
         syncThumbnailCanvasMembership();
