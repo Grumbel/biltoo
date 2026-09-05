@@ -17,8 +17,11 @@ endif()
 
 project(biltoo VERSION ${_project_version_cmake} LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+option(BILTOO_WITH_THUMTOO "Build against thumtoo (cache index + ladder)" ON)
+set(THUMTOO_SOURCE_DIR "" CACHE PATH "Path to thumtoo source tree (flake input)")
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -78,6 +81,8 @@ add_executable(biltoo
   src/imageloader.h
   src/imagecache.cpp
   src/imagecache.h
+  src/thumtoocache.cpp
+  src/thumtoocache.h
   src/archivepath.cpp
   src/archivepath.h
   src/archivereader.cpp
@@ -163,6 +168,7 @@ set(BILTOO_FEATURE_VIPS 0)
 set(BILTOO_FEATURE_EXIV2 0)
 set(BILTOO_FEATURE_ARCHIVE 0)
 set(BILTOO_FEATURE_GIO 0)
+set(BILTOO_FEATURE_THUMTOO 0)
 
 if(PkgConfig_FOUND)
   # libvips — extra codecs (HEIF/AVIF/…), autorot, smartcrop attention for Pan&Zoom
@@ -200,6 +206,21 @@ else()
   message(STATUS "PkgConfig not found — all optional native libraries disabled")
 endif()
 
+# thumtoo — durable size index + display ladder (flake input / local source)
+if(BILTOO_WITH_THUMTOO AND THUMTOO_SOURCE_DIR AND EXISTS "${THUMTOO_SOURCE_DIR}/CMakeLists.txt")
+  set(THUMTOO_BUILD_TESTS OFF CACHE BOOL "thumtoo tests" FORCE)
+  set(THUMTOO_BUILD_TOOLS OFF CACHE BOOL "thumtoo tools" FORCE)
+  add_subdirectory("${THUMTOO_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/thumtoo" EXCLUDE_FROM_ALL)
+  target_link_libraries(biltoo PRIVATE thumtoo)
+  target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_THUMTOO=1)
+  set(BILTOO_FEATURE_THUMTOO 1)
+  message(STATUS "thumtoo: enabled (${THUMTOO_SOURCE_DIR})")
+elseif(BILTOO_WITH_THUMTOO)
+  message(STATUS "thumtoo: requested but THUMTOO_SOURCE_DIR not set or missing CMakeLists.txt")
+else()
+  message(STATUS "thumtoo: disabled")
+endif()
+
 # Version + feature macros: only TUs that include version.h recompile on bump.
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
@@ -219,6 +240,7 @@ biltoo_feature_status(BILTOO_FEATURE_VIPS _st_vips)
 biltoo_feature_status(BILTOO_FEATURE_EXIV2 _st_exiv2)
 biltoo_feature_status(BILTOO_FEATURE_ARCHIVE _st_archive)
 biltoo_feature_status(BILTOO_FEATURE_GIO _st_gio)
+biltoo_feature_status(BILTOO_FEATURE_THUMTOO _st_thumtoo)
 
 message(STATUS "")
 message(STATUS "Biltoo ${PROJECT_VERSION_FULL} — build summary")
@@ -227,6 +249,7 @@ message(STATUS "  libvips .......... ${_st_vips}  (extra image codecs, autorot, 
 message(STATUS "  libexiv2 ......... ${_st_exiv2}  (Exif/IPTC/XMP metadata panel)")
 message(STATUS "  libarchive ....... ${_st_archive}  (images inside zip/tar/7z/rar/…)")
 message(STATUS "  gio-unix-2.0 ..... ${_st_gio}  (default-application Preferences)")
+message(STATUS "  thumtoo .......... ${_st_thumtoo}  (durable size index + display ladder)")
 message(STATUS "  Runtime: install KImageFormats for XCF/KRA/ORA and other Qt plugins.")
 message(STATUS "")
 

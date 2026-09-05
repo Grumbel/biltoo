@@ -288,3 +288,13 @@ HIG-conformant on every desktop.
 - **Workspace Delete** removes from the **canvas** only; session membership stays.
 - Gallery pack order follows session/`setWorkspacePaths` order, not async decode completion.
 - Gallery wheel scrolls only; do not add view-zoom on wheel in Gallery.
+
+## thumtoo
+
+Durable size index and display ladder live in the **thumtoo** library
+(<https://github.com/Grumbel/thumtoo>), integrated as a **flake input**
+(`inputs.thumtoo`) and `add_subdirectory` when `THUMTOO_SOURCE_DIR` is set.
+`ImageLoader::probeSize` consults `ThumtooCache` first (cache-only), then
+schedules a background probe. Session edit identity remains biltoo
+`SessionImageId` — do not key durable pixels by session id.
+

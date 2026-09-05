@@ -8,6 +8,7 @@
 #endif
 
 #include "imageloader.h"
+#include "thumtoocache.h"
 #include "imagecache.h"
 #include "archivepath.h"
 #include "archivereader.h"
@@ -412,6 +413,13 @@ QSize probeSizeWithVips(const QString &path)
 
 QSize probeSize(const QString &path)
 {
+    // Prefer durable thumtoo index (no source I/O) when a size is already known.
+    if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
+        return cached;
+    }
+    // Warm the cache in the background for the next visit.
+    ThumtooCache::scheduleProbe(path);
+
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
         if (!ref.valid || !ArchiveReader::isAvailable()) {
@@ -475,6 +483,7 @@ void init(const char *argv0)
 #else
     Q_UNUSED(argv0);
 #endif
+    ThumtooCache::init();
 }
 
 bool hasVips()

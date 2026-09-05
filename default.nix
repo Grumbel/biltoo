@@ -13,6 +13,9 @@
 , libimagequant
 , libarchive
 , kimageformats
+, thumtooSrc ? null
+, sqlite
+, libjxl
   # Further vips Requires.private (and their .pc deps) — pkg-config noise only.
 , cgif
 , libexif
@@ -64,6 +67,8 @@ stdenv.mkDerivation (finalAttrs: {
     # (nixpkgs package name is libimagequant; module name is imagequant).
     libimagequant
     libarchive
+    sqlite
+    libjxl
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats
     # More vips Requires.private (and transitive .pc names) so pkg_check_modules(vips)
@@ -99,6 +104,9 @@ stdenv.mkDerivation (finalAttrs: {
   cmakeFlags = [
     "--no-warn-unused-cli"
     "-DPROJECT_VERSION_FULL=${finalAttrs.version}"
+  ] ++ lib.optionals (thumtooSrc != null) [
+    "-DTHUMTOO_SOURCE_DIR=${thumtooSrc}"
+    "-DBILTOO_WITH_THUMTOO=ON"
   ];
 
   # `nix flake check` / `nix build` with checks: run CMake tests

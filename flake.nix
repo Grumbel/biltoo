@@ -3,9 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    thumtoo.url = "github:Grumbel/thumtoo";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, thumtoo }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -22,6 +23,8 @@
       biltoo = pkgs.qt6Packages.callPackage ./default.nix {
         inherit version;
         kimageformats = pkgs.kdePackages.kimageformats;
+        # Flake source of thumtoo (add_subdirectory in CMake; not a prebuilt package).
+        thumtooSrc = thumtoo;
       };
     in
     {
