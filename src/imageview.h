@@ -1028,6 +1028,8 @@ private:
     QTimer *m_hudFlashTimer = nullptr;
     /** Slideshow progress (pinned HUD only): active dwell countdown. */
     bool m_slideshowProgressActive = false;
+    /** Last [slideshow-paint] fingerprint (size/mode); skip duplicate logs. */
+    QString m_lastSlideshowPaintFp;
     int m_slideshowProgressIntervalMs = 0;
     QElapsedTimer m_slideshowProgressElapsed;
     QTimer *m_slideshowProgressTimer = nullptr;

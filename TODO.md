@@ -4671,3 +4671,18 @@ full frame.
 - [x] Ready preload survives until beginLive / handoff consumes it
 - [x] Cache-hit can receive live-upgrade full decode
 - [x] Next **258**
+
+## Plan / work (2026-09-05) — bundle `biltoo-258-slideshow-paint-diag`
+
+### Goal
+Log what is actually painted during slideshow whenever the drawn layer set
+changes (mode, from/to/dwell/item pixel sizes, hold/active flags).
+
+### Format
+`[slideshow-paint] mode=… t=… fromOp=… toOp=… from=WxH to=WxH dwell=WxH item=… next=… itemPath=… dwellT=… toT=… underlayVisible=…`
+
+Only emitted when the fingerprint changes (not every vsync).
+
+### Done criteria
+- [x] Paint diag on layer/size change
+- [x] Next **259**

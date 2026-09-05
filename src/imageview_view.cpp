@@ -453,6 +453,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_motionSign = 1.0;
         m_slideshowTimelineElapsedMs = 0;
         m_slideshowTimelineTotalMs = 0;
+        m_lastSlideshowPaintFp.clear();
     }
     viewport()->update();
 }

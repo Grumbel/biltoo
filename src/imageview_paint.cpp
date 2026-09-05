@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include <QFileInfo>
+#include <QDebug>
 #include <QPixmap>
 #include "imageitem.h"
 
@@ -176,6 +178,73 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     auto fillPad = [&](const QRect &vr) {
         painter.fillRect(vr, slideshowPadColor());
     };
+
+    // --- slideshow paint diagnostics (log only when drawn layers change) ---
+    if (m_slideshowProgressActive) {
+        auto sz = [](const QImage &im) -> QString {
+            if (im.isNull()) {
+                return QStringLiteral("-");
+            }
+            return QStringLiteral("%1x%2").arg(im.width()).arg(im.height());
+        };
+        auto base = [](const QString &path) -> QString {
+            return path.isEmpty() ? QStringLiteral("-") : QFileInfo(path).fileName();
+        };
+        QString mode = QStringLiteral("underlay");
+        if (m_liveTransitionHold) {
+            mode = QStringLiteral("live-hold");
+        } else if (m_liveTransitionActive) {
+            mode = QStringLiteral("live-fade");
+        } else if (m_liveTransitionAwaitingLoad) {
+            mode = QStringLiteral("await-load");
+        } else if (m_slideshowMotionActive && !m_dwellSourceImage.isNull()) {
+            mode = QStringLiteral("dwell");
+        } else if (m_slideshowTransitionActive) {
+            mode = QStringLiteral("snapshot");
+        }
+        const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
+        const qreal fromOp = (m_liveTransitionActive || m_liveTransitionHold)
+            ? (m_liveTransitionHold ? 0.0 : (1.0 - t))
+            : -1.0;
+        const qreal toOp = (m_liveTransitionActive || m_liveTransitionHold)
+            ? (m_liveTransitionHold ? 1.0 : t)
+            : -1.0;
+        const QString itemPath = targetItem() ? targetItem()->path() : QString();
+        const QString itemSz = (targetItem() && !targetItem()->sourceImage().isNull())
+            ? sz(targetItem()->sourceImage())
+            : (targetItem() && !targetItem()->pixmap().isNull()
+                   ? QStringLiteral("pm%1x%2")
+                         .arg(targetItem()->pixmap().width())
+                         .arg(targetItem()->pixmap().height())
+                   : QStringLiteral("-"));
+        // Fingerprint: mode + pixel sizes (jumps show up as size flips).
+        const QString fp = QStringLiteral("%1|from=%2|to=%3|dwell=%4|item=%5|hold=%6|act=%7|await=%8")
+            .arg(mode,
+                 sz(m_liveFromSourceImage),
+                 sz(m_liveTransitionSourceImage),
+                 sz(m_dwellSourceImage),
+                 itemSz)
+            .arg(m_liveTransitionHold)
+            .arg(m_liveTransitionActive)
+            .arg(m_liveTransitionAwaitingLoad);
+        if (fp != m_lastSlideshowPaintFp) {
+            m_lastSlideshowPaintFp = fp;
+            qDebug().nospace()
+                << "[slideshow-paint] mode=" << mode
+                << " t=" << QString::number(t, 'f', 3)
+                << " fromOp=" << QString::number(fromOp, 'f', 3)
+                << " toOp=" << QString::number(toOp, 'f', 3)
+                << " from=" << sz(m_liveFromSourceImage)
+                << " to=" << sz(m_liveTransitionSourceImage)
+                << " dwell=" << sz(m_dwellSourceImage)
+                << " item=" << itemSz
+                << " next=" << base(m_liveTransitionNextPath)
+                << " itemPath=" << base(itemPath)
+                << " dwellT=" << QString::number(m_dwellMotionT, 'f', 3)
+                << " toT=" << QString::number(m_liveTransitionMotionProgress, 'f', 3)
+                << " underlayVisible=" << (targetItem() && targetItem()->isVisible());
+        }
+    }
 
     // Dwell cover while motion is on and we are not compositing two live frames.
     // IMPORTANT: also paint while m_liveTransitionAwaitingLoad — beginLive sets
