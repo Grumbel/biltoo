@@ -3649,3 +3649,27 @@ valid targets for the `exec` that `nix develop -c` uses.
 - [x] `nix develop -c biltoo-run --help` (or similar) finds the command
 - [x] Interactive shell still has biltoo-configure / build / run
 - [x] Next **208**
+
+## Plan / work (2026-09-05) — bundle `biltoo-208-transition-cap-full-interval`
+
+Slideshow transition duration was clamped to **Interval/2** in the settings
+dialog, when applying Preferences / Slideshow Settings, on interval change,
+and when loading QSettings. That assumed the transition had to finish inside
+half a dwell.
+
+### Reality
+The configured duration is the **full** transition (outgoing + incoming /
+fade-out + fade-in). It may use the whole dwell interval. Cap at the full
+interval (still also bounded by the existing 5000 ms absolute max on the
+spin / ImageView).
+
+### Touch points
+- `SlideshowSettingsDialog::syncTransitionCap` + tooltip
+- `MainWindow::setSlideshowIntervalMs`
+- Apply paths in `mainwindow.cpp` (Slideshow Settings live apply,
+  Preferences accept, QSettings restore)
+
+### Done criteria
+- [x] Transition duration max = min(5000, intervalMs), not interval/2
+- [x] Tooltips/comments match
+- [x] Next **209**

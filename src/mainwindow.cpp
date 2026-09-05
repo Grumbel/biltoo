@@ -807,9 +807,10 @@ void MainWindow::showSlideshowSettings()
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(dlg.transitionIndex()));
         // Cap already enforced by the dialog max; clamp again for safety.
-        const int half = m_slideshowIntervalMs / 2;
+        // Duration is the full transition (out + in), so cap at the interval.
+        const int intervalCap = m_slideshowIntervalMs;
         m_imageView->setSlideshowTransitionDurationMs(
-            qMin(dlg.transitionDurationMs(), qMax(0, half)));
+            qMin(dlg.transitionDurationMs(), qMax(0, intervalCap)));
         m_imageView->setSlideshowMotion(
             static_cast<ImageView::SlideshowMotion>(dlg.motionIndex()));
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
@@ -1137,9 +1138,10 @@ void MainWindow::showPreferences()
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(dlg.slideshowTransitionIndex()));
         {
-            const int half = m_slideshowIntervalMs / 2;
+            // Full transition (out + in); cap at the interval.
+            const int intervalCap = m_slideshowIntervalMs;
             m_imageView->setSlideshowTransitionDurationMs(
-                qMin(dlg.slideshowTransitionDurationMs(), qMax(0, half)));
+                qMin(dlg.slideshowTransitionDurationMs(), qMax(0, intervalCap)));
         }
         m_imageView->setSlideshowMotion(
             static_cast<ImageView::SlideshowMotion>(dlg.slideshowMotionIndex()));
@@ -1611,10 +1613,12 @@ void MainWindow::readSettings()
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(qBound(0, transitionKind, 3)));
         {
-            const int half = m_slideshowIntervalMs / 2;
+            // Full transition (out + in); cap at the interval.
+            const int intervalCap = m_slideshowIntervalMs;
             const int transitionMs =
                 settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt();
-            m_imageView->setSlideshowTransitionDurationMs(qMin(transitionMs, qMax(0, half)));
+            m_imageView->setSlideshowTransitionDurationMs(
+                qMin(transitionMs, qMax(0, intervalCap)));
         }
         m_imageView->setSlideshowMotion(
             static_cast<ImageView::SlideshowMotion>(

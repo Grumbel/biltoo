@@ -1556,12 +1556,12 @@ void MainWindow::setSlideshowIntervalMs(int ms)
 {
     // 0 ms = as fast as the event loop allows; upper bound keeps UI usable.
     m_slideshowIntervalMs = qBound(0, ms, 60000);
-    // Transition must finish before the next dwell; keep it ≤ half interval.
+    // Transition duration is the full effect (out + in); may use the whole interval.
     if (m_imageView) {
-        const int half = m_slideshowIntervalMs / 2;
+        const int cap = m_slideshowIntervalMs;
         const int tr = m_imageView->slideshowTransitionDurationMs();
-        if (half >= 0 && tr > half) {
-            m_imageView->setSlideshowTransitionDurationMs(half);
+        if (cap >= 0 && tr > cap) {
+            m_imageView->setSlideshowTransitionDurationMs(cap);
         }
     }
     if (m_slideshowTimer && m_slideshowTimer->isActive()) {

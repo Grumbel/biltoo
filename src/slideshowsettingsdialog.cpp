@@ -41,7 +41,7 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_transitionMsSpin->setSingleStep(50);
     m_transitionMsSpin->setSuffix(tr(" ms"));
     m_transitionMsSpin->setToolTip(
-        tr("Duration of the transition (capped to half the interval)"));
+        tr("Duration of the full transition (outgoing + incoming; capped to the interval)"));
 
     m_motionCombo = new QComboBox(this);
     m_motionCombo->addItem(tr("Off"), 0);
@@ -127,8 +127,9 @@ void SlideshowSettingsDialog::syncTransitionCap()
     if (!m_intervalSpin || !m_transitionMsSpin) {
         return;
     }
-    const int halfMs = qMax(0, intervalMs() / 2);
-    const int cap = qMin(5000, halfMs);
+    // Duration is the full transition (out + in); may use the whole dwell.
+    const int intervalCap = qMax(0, intervalMs());
+    const int cap = qMin(5000, intervalCap);
     m_blockEmit = true;
     m_transitionMsSpin->setMaximum(qMax(0, cap));
     if (m_transitionMsSpin->value() > cap) {
