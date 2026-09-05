@@ -4421,3 +4421,12 @@ Avoids beginLive decline and blank await gaps after ←/→.
 - [x] Live fade can start on thumbnails
 - [x] Full decode upgrades in place when ready
 - [x] Next **245**
+
+## Plan / work (2026-09-05) — bundle `biltoo-245-fix-qpointer-warnings`
+
+Silence -Wnull-dereference on QPointer lambdas: bind `ImageView *view =
+guard.data()` after a null check and use `view` only.
+
+### Done criteria
+- [x] Clean build without null-deref warnings in beginLive
+- [x] Next **246**

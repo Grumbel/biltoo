@@ -1050,70 +1050,69 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path]() {
         const QImage thumb = ImageLoader::loadThumbnail(path, 512);
-        if (guard && !thumb.isNull()) {
-            QMetaObject::invokeMethod(guard.data(), [guard, path, thumb]() {
-                if (!guard || guard->m_liveTransitionNextPath != path) {
-                    return;
-                }
-                if (!guard->m_liveTransitionAwaitingLoad
-                    && !guard->m_liveTransitionActive
-                    && !guard->m_liveTransitionHold) {
-                    return;
-                }
-                if (guard->m_liveTransitionActive || guard->m_liveTransitionHold) {
-                    // Already running (unlikely): upgrade pixels only.
-                    guard->m_liveTransitionSourceImage = thumb;
-                    guard->m_handoffPath = path;
-                    guard->m_handoffImage = thumb;
-                    guard->ensureMotionAtlas(
-                        guard->m_liveTransitionSourceImage, &guard->m_liveToAtlas,
-                        &guard->m_liveToAtlasScale, &guard->m_liveToAtlasVw,
-                        &guard->m_liveToAtlasVh);
-                    if (guard->viewport()) {
-                        guard->viewport()->update();
+        if (!thumb.isNull()) {
+            if (ImageView *const target = guard.data()) {
+                QMetaObject::invokeMethod(target, [guard, path, thumb]() {
+                    ImageView *const view = guard.data();
+                    if (!view || view->m_liveTransitionNextPath != path) {
+                        return;
                     }
-                    return;
-                }
-                guard->startLiveTransitionWithImage(thumb);
-            }, Qt::QueuedConnection);
+                    if (!view->m_liveTransitionAwaitingLoad
+                        && !view->m_liveTransitionActive
+                        && !view->m_liveTransitionHold) {
+                        return;
+                    }
+                    if (view->m_liveTransitionActive || view->m_liveTransitionHold) {
+                        view->m_liveTransitionSourceImage = thumb;
+                        view->m_handoffPath = path;
+                        view->m_handoffImage = thumb;
+                        view->ensureMotionAtlas(
+                            view->m_liveTransitionSourceImage, &view->m_liveToAtlas,
+                            &view->m_liveToAtlasScale, &view->m_liveToAtlasVw,
+                            &view->m_liveToAtlasVh);
+                        if (view->viewport()) {
+                            view->viewport()->update();
+                        }
+                        return;
+                    }
+                    view->startLiveTransitionWithImage(thumb);
+                }, Qt::QueuedConnection);
+            }
         }
 
         const QImage full = ImageLoader::load(path);
-        if (!guard) {
+        ImageView *const target = guard.data();
+        if (!target) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, path, full, thumb]() {
-            if (!guard) {
-                return;
-            }
-            if (guard->m_liveTransitionNextPath != path) {
+        QMetaObject::invokeMethod(target, [guard, path, full, thumb]() {
+            ImageView *const view = guard.data();
+            if (!view || view->m_liveTransitionNextPath != path) {
                 return;
             }
             if (full.isNull()) {
-                // No full image: if we never started on a thumb, fail the fade.
-                if (!guard->m_liveTransitionActive && !guard->m_liveTransitionHold
-                    && guard->m_liveTransitionAwaitingLoad && thumb.isNull()) {
-                    guard->m_liveTransitionAwaitingLoad = false;
-                    emit guard->slideshowLiveTransitionFinished();
+                if (!view->m_liveTransitionActive && !view->m_liveTransitionHold
+                    && view->m_liveTransitionAwaitingLoad && thumb.isNull()) {
+                    view->m_liveTransitionAwaitingLoad = false;
+                    emit view->slideshowLiveTransitionFinished();
                 }
                 return;
             }
-            guard->m_handoffPath = path;
-            guard->m_handoffImage = full;
-            if (guard->m_liveTransitionActive || guard->m_liveTransitionHold) {
-                // Upgrade in-flight fade from thumbnail to full resolution.
-                guard->m_liveTransitionSourceImage = full;
-                guard->ensureMotionAtlas(
-                    guard->m_liveTransitionSourceImage, &guard->m_liveToAtlas,
-                    &guard->m_liveToAtlasScale, &guard->m_liveToAtlasVw,
-                    &guard->m_liveToAtlasVh);
-                if (guard->viewport()) {
-                    guard->viewport()->update();
+            view->m_handoffPath = path;
+            view->m_handoffImage = full;
+            if (view->m_liveTransitionActive || view->m_liveTransitionHold) {
+                view->m_liveTransitionSourceImage = full;
+                view->ensureMotionAtlas(
+                    view->m_liveTransitionSourceImage, &view->m_liveToAtlas,
+                    &view->m_liveToAtlasScale, &view->m_liveToAtlasVw,
+                    &view->m_liveToAtlasVh);
+                if (view->viewport()) {
+                    view->viewport()->update();
                 }
                 return;
             }
-            if (guard->m_liveTransitionAwaitingLoad) {
-                guard->startLiveTransitionWithImage(full);
+            if (view->m_liveTransitionAwaitingLoad) {
+                view->startLiveTransitionWithImage(full);
             }
         }, Qt::QueuedConnection);
     });
