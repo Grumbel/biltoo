@@ -989,8 +989,10 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
 
 bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 {
-    // CONTRACT: two images, both moving, opacity crossfade.
-    // Both frames are motion-sampled image blits each tick.
+    // CONTRACT: two FULL-RES images, both moving, opacity crossfade.
+    // Never open the incoming frame on a thumbnail — thumb→full always jumps
+    // because motion cover uses the image's real pixel size (travel thresholds
+    // and atlas scale are not resolution-invariant in absolute pixels).
     if (m_slideshowMotion == SlideshowMotion::Off
         || m_slideshowTransition == SlideshowTransition::None
         || m_slideshowTransition == SlideshowTransition::Slide
@@ -998,6 +1000,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         || !isImageMode()
         || !viewport()
         || nextPath.isEmpty()) {
+        qDebug() << "[slideshow] beginLive declined: mode/duration/path";
         return false;
     }
 
@@ -1005,7 +1008,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     m_liveTransitionNextPath = nextPath;
     m_liveTransitionMidAdvanced = false;
 
-    // Capture outgoing image + progress + biases for continuous from-path.
+    // Outgoing: dwell cover or canvas full decode only (no cache thumb).
     m_liveFromSourceImage = QImage();
     m_liveFromMotionProgress0 = 0.0;
     m_liveFromBiasA = m_motionBiasA;
@@ -1017,10 +1020,6 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         if (m_liveFromSourceImage.isNull() && !item->pixmap().isNull()) {
             m_liveFromSourceImage = item->pixmap().toImage();
         }
-        // Process thumb cache (filled by filmstrip / prior preloads).
-        if (m_liveFromSourceImage.isNull() && !item->path().isEmpty()) {
-            m_liveFromSourceImage = ImageLoader::cachedThumbnail(item->path());
-        }
     }
     if (m_slideshowMotionActive && m_motionDurationMs > 0) {
         m_liveFromMotionProgress0 = qBound(
@@ -1030,23 +1029,26 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
             1.0);
     }
 
-    // Do NOT pick incoming biases here and do NOT touch m_motionBiasA/B.
-    // Incoming biases are chosen in startLiveTransitionWithImage into
-    // m_liveToBiasA/B only. Do NOT cancel dwell motion.
-
     if (m_liveFromSourceImage.isNull()) {
+        qDebug() << "[slideshow] beginLive declined: no from full pixels";
         return false;
     }
 
-    // Busy for the whole decode gap (thumbnail and/or full).
     m_liveTransitionAwaitingLoad = true;
 
+    // Fast path: full decode already preloaded.
     if (m_preloadPath == nextPath && !m_preloadImage.isNull()) {
         const QImage img = m_preloadImage;
         m_preloadPath.clear();
         m_preloadImage = QImage();
         m_handoffPath = nextPath;
         m_handoffImage = img;
+        qDebug().nospace()
+            << "[slideshow] beginLive preload-hit "
+            << QFileInfo(nextPath).fileName()
+            << " " << img.width() << "x" << img.height()
+            << " from=" << m_liveFromSourceImage.width() << "x"
+            << m_liveFromSourceImage.height();
         const QPointer<ImageView> guard(this);
         QMetaObject::invokeMethod(this, [guard, img]() {
             if (guard) {
@@ -1056,30 +1058,31 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return true;
     }
 
-    // Transition frame: aspect-preserving cache at ≥512 long edge.
-    // NEVER put this into m_handoffImage — LoadReplace treats handoff as a
-    // full decode and would skip the real load (stuck on tiny thumbs forever).
-    constexpr int kLiveThumbEdge = 512;
-    {
-        const QImage cached = ImageLoader::cachedThumbnail(nextPath);
-        if (!cached.isNull()
-            && qMax(cached.width(), cached.height()) >= kLiveThumbEdge) {
-            startLiveTransitionWithImage(cached);
-            preloadSlideshowImage(nextPath); // full → preload for hold
-            return true;
-        }
-    }
-
-    // Need a ≥512 frame: load off-thread into cache, start fade, preload full.
+    // Full decode only. While awaiting, paint keeps the from/dwell cover —
+    // no low-res stand-in for "to".
     const QString path = nextPath;
     const QPointer<ImageView> guard(this);
+    qDebug().nospace()
+        << "[slideshow] beginLive full-decode "
+        << QFileInfo(path).fileName()
+        << " from=" << m_liveFromSourceImage.width() << "x"
+        << m_liveFromSourceImage.height();
     QThreadPool::globalInstance()->start([guard, path]() {
-        const QImage thumb = ImageLoader::loadThumbnailCached(path, 512);
+        const QImage full = ImageLoader::load(path);
+        if (!full.isNull() && ImageLoader::cachedThumbnail(path).isNull()) {
+            const int maxEdge = 512;
+            QImage thumb = full;
+            if (thumb.width() > maxEdge || thumb.height() > maxEdge) {
+                thumb = thumb.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
+                                    Qt::SmoothTransformation);
+            }
+            ImageLoader::putCachedThumbnail(path, thumb);
+        }
         ImageView *const target = guard.data();
         if (!target) {
             return;
         }
-        QMetaObject::invokeMethod(target, [guard, path, thumb]() {
+        QMetaObject::invokeMethod(target, [guard, path, full]() {
             ImageView *const view = guard.data();
             if (!view || view->m_liveTransitionNextPath != path) {
                 return;
@@ -1087,14 +1090,20 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
             if (!view->m_liveTransitionAwaitingLoad) {
                 return;
             }
-            if (thumb.isNull()) {
+            if (full.isNull()) {
+                qDebug() << "[slideshow] beginLive full-decode failed"
+                         << QFileInfo(path).fileName();
                 view->m_liveTransitionAwaitingLoad = false;
                 emit view->slideshowLiveTransitionFinished();
                 return;
             }
-            // Transition pixels only — leave m_handoff* for full preload.
-            view->startLiveTransitionWithImage(thumb);
-            view->preloadSlideshowImage(path);
+            view->m_handoffPath = path;
+            view->m_handoffImage = full;
+            qDebug().nospace()
+                << "[slideshow] beginLive full-ready "
+                << QFileInfo(path).fileName()
+                << " " << full.width() << "x" << full.height();
+            view->startLiveTransitionWithImage(full);
         }, Qt::QueuedConnection);
     });
     return true;

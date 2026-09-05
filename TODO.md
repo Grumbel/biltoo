@@ -4497,3 +4497,23 @@ a completed full decode and skipped disk load → stuck on tiny frames.
 - [x] Full decode runs after transition again
 - [x] No permanent low-res lock-in
 - [x] Next **250**
+
+## Plan / work (2026-09-05) — bundle `biltoo-250-fullres-only-live`
+
+### Root cause of jump
+Incoming live frame was opened on a **thumbnail**, then swapped/handed to
+full-res. Motion cover uses **real pixel dimensions** (cover scale, PanScan
+travel thresholds in absolute pixels) — not resolution-invariant. Thumb→full
+always jumps. Not float rounding of interval/transition.
+
+### Fix
+- Incoming frame: **full decode only** (preload hit or async full load)
+- While awaiting full: keep painting from/dwell — no low-res "to"
+- Outgoing: dwell/canvas only — no cache thumb
+- Handoff is full only again
+- Restore [slideshow] qDebug on beginLive / start-transition
+
+### Done criteria
+- [x] No thumb as live "to" frame
+- [x] Debug logs back
+- [x] Next **251**

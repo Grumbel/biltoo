@@ -959,6 +959,16 @@ void MainWindow::updateSlideshowFromClock()
 
     const QString toPath = m_session.paths().at(toIdx);
 
+    qDebug().nospace()
+        << "[slideshow] start-transition cycle=" << cycle
+        << " phase=" << phaseMs
+        << " pureMs=" << pureMs
+        << " trMs=" << transitionMs
+        << " intervalMs=" << intervalMs
+        << " from=" << fromIdx
+        << " to=" << toIdx
+        << " path=" << QFileInfo(toPath).fileName();
+
     // Live crossfade / fade-black when motion is on.
     if (m_imageView && m_imageView->isImageMode()
         && m_imageView->slideshowMotion() != ImageView::SlideshowMotion::Off) {
@@ -970,7 +980,7 @@ void MainWindow::updateSlideshowFromClock()
                 m_slideshowPendingToIndex = toIdx;
                 return;
             }
-            // No from-pixels yet (decode still in flight after ←/→): retry.
+            qDebug() << "[slideshow] beginLive declined; retry next tick";
             return;
         }
     }
