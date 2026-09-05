@@ -1175,7 +1175,10 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             }
             m_slideshowMotionActive = true;
             m_motionDurationMs = pathMs;
-            m_motionTimer->start();
+            // While the show is paused, arm motion state but do not run the timer.
+            if (!m_slideshowMotionPaused) {
+                m_motionTimer->start();
+            }
         }
         qDebug().nospace()
             << "[slideshow] phase-from "

@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-280-cancel-gallery-decode-on-leave**
-(Cancel Gallery background LoadAdd on mode leave).
-Next bundle number: **281**.
+Latest agent handoff: **TODO.md → biltoo-281-paused-slideshow-nav-redraw**
+(Paused slideshow next/prev refreshes pure phase).
+Next bundle number: **282**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

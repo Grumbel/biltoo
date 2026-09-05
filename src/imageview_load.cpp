@@ -448,6 +448,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             }
             if (m_slideshowProgressActive) {
                 item->setVisible(false);
+                // Paused ←/→ loads the underlay while pure phase still paints
+                // the previous path — refresh dwell to this decode.
+                setSlideshowPhase(path, QString(), -1.0);
             }
             // Drop held live-transition overlay only after the new item is fitted
             // (and motion sample applied) so the outgoing underlay never flashes.

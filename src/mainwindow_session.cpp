@@ -1798,7 +1798,16 @@ void MainWindow::onSlideshowUserNavigated()
     if (!m_slideshowPaused) {
         armSlideshowAdvanceTimer();
     } else {
-        m_imageView->setSlideshowProgress(true, 0);
+        // Clock is frozen while paused, so updateSlideshowFromClock will not
+        // push a new pure phase. Drive the composite to the navigated slide
+        // or the screen stays on the previous m_ssFromImage until unpause.
+        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+            m_imageView->setSlideshowPhase(m_session.paths().at(m_currentIndex),
+                                           QString(), -1.0);
+        }
+        m_imageView->setSlideshowMotionPaused(true);
+        m_imageView->setSlideshowPausedHud(true);
     }
     updateSlideshowActionUi();
 }

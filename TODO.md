@@ -5105,3 +5105,25 @@ gallery `pathOrder` still set it created free-form tiles on Workspace.
 - [x] Late Gallery LoadAdd cannot populate Workspace
 - [x] Gallery → Image still allows stash pixel fill (no invalidate on that path)
 - [x] Next **281**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-281-paused-slideshow-nav-redraw`
+
+### Symptom
+Slideshow paused: Next/Previous does not update the screen until unpause.
+
+### Cause
+While paused the pure wall clock does not run, so `setSlideshowPhase` is never
+called. Paint keeps drawing the previous `m_ssFromImage` over the hidden
+underlay even after `LoadReplace` loads the navigated file.
+
+### Fix
+- `onSlideshowUserNavigated` while paused: set progress + `setSlideshowPhase`
+  to the current path; keep motion paused and paused HUD
+- `setSlideshowPhase`: do not start the motion timer when motion is paused
+- LoadReplace completion under active slideshow: refresh pure phase from the
+  newly decoded path
+
+### Done criteria
+- [x] Paused ←/→ shows the new slide immediately
+- [x] Next **282**
