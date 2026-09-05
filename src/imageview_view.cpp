@@ -1188,31 +1188,14 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
             biasA = kBias[seed % 8];
             biasB = kBias[(seed / 8 + 3) % 8];
         }
-        const qreal half0x = qMax(0.0, (iw - qreal(vw) / s0) * 0.5);
-        const qreal half0y = qMax(0.0, (ih - qreal(vh) / s0) * 0.5);
-        const qreal half1x = qMax(0.0, (iw - qreal(vw) / s1) * 0.5);
-        const qreal half1y = qMax(0.0, (ih - qreal(vh) / s1) * 0.5);
-        const qreal off0x = biasA.x() * half0x;
-        const qreal off0y = biasA.y() * half0y;
-        const qreal off1x = biasB.x() * half1x;
-        const qreal off1y = biasB.y() * half1y;
-        // Image-space pan offset (pixels of source). Linear in motionT — keep
-        // dest in terms of this value so zoom+pan stays continuous.
-        const qreal offX = off0x + (off1x - off0x) * motionT;
-        const qreal offY = off0y + (off1y - off0y) * motionT;
-        // Current-frame max offset in image space. Clamp so we never ask for a
-        // pan beyond cover; do NOT zero when overflow is small (the old
-        // halfNow > 0.5 gate snapped bias 0 → full when an axis first gained
-        // overflow mid-path — visible as rare small jumps).
-        const qreal maxOffX = qMax(0.0, (iw - qreal(vw) / scale) * 0.5);
-        const qreal maxOffY = qMax(0.0, (ih - qreal(vh) / scale) * 0.5);
-        const qreal useOffX = qBound(-maxOffX, offX, maxOffX);
-        const qreal useOffY = qBound(-maxOffY, offY, maxOffY);
-        // Encode as normalized bias for the shared dest formula below.
-        const qreal halfNowX = maxOffX * scale; // == (iw*scale - vw)/2
-        const qreal halfNowY = maxOffY * scale;
-        biasX = (halfNowX > 1e-6) ? (useOffX * scale / halfNowX) : 0.0;
-        biasY = (halfNowY > 1e-6) ? (useOffY * scale / halfNowY) : 0.0;
+        // Lerp *normalized* bias in [-1, 1], not absolute image-space offsets.
+        // Absolute offsets (bias × half at each endpoint) can exceed the pan
+        // room available at intermediate scales; clamping then pushes the image
+        // back when an edge meets the window — the “edge hit → shove” jump.
+        // Normalized bias always maps through the current frame’s overflow, so
+        // the crop stays within cover with no clamp and no discontinuity.
+        biasX = biasA.x() + (biasB.x() - biasA.x()) * motionT;
+        biasY = biasA.y() + (biasB.y() - biasA.y()) * motionT;
     } else {
         scale = base;
         biasX = 0.0;

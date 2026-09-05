@@ -3429,3 +3429,23 @@ normalized bias with a tiny epsilon (no 0.5 gate). Continuous in motionT.
 ### Done criteria
 - [x] Discontinuous gate removed
 - [x] Next **194**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-194-panzoom-normalized-bias`
+
+User confirmed: jump when image edge hits window edge, then pushed back.
+
+### Analysis
+193 clamped absolute image-space offsets to the current max pan. That *is*
+the shove: absolute lerp can request more pan than intermediate scale allows;
+clamp pulls the crop back inside. Clean path is not “better clamp” but **never
+leave the legal range**.
+
+### Fix
+Interpolate normalized biasA→biasB in [-1,1]; dest uses current-frame overflow
+only. Same pattern as PanScan. No clamp, continuous, edge can ride the window
+for the whole dwell when bias is ±1.
+
+### Done criteria
+- [x] No absolute-offset lerp / clamp
+- [x] Next **195**
