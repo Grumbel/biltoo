@@ -3514,3 +3514,13 @@ and independent of OpenGL; the discontinuity was in that gate.
 ### Done criteria
 - [x] No overflow>0 bias gate
 - [x] Next **199**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-199-panzoom-dest-decl`
+
+Compile fix: declare `destX` / `destY` / `destFromOffset` at function scope
+in `paintMotionCover` (198 used them without declarations).
+
+### Done criteria
+- [x] Builds
+- [x] Next **200**

@@ -1132,6 +1132,9 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     qreal scale = base;
     qreal biasX = 0.0;
     qreal biasY = 0.0;
+    qreal destX = 0.0;
+    qreal destY = 0.0;
+    bool destFromOffset = false;
 
     if (m_slideshowMotion == SlideshowMotion::PanScan) {
         qreal s = base;
