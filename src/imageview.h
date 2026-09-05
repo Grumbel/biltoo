@@ -999,6 +999,11 @@ private:
     qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
     SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
     bool m_slideshowMotionActive = false;
+    /** Scroll policies restored when Ken Burns underlay returns. */
+    Qt::ScrollBarPolicy m_motionSavedHBarPolicy = Qt::ScrollBarAsNeeded;
+    Qt::ScrollBarPolicy m_motionSavedVBarPolicy = Qt::ScrollBarAsNeeded;
+    bool m_motionSavedBarPolicies = false;
+
     /** Corner/edge biases for Ken Burns paths (dwell + dual-blit). */
     QPointF m_motionBiasA{-1.0, -1.0};
     QPointF m_motionBiasB{1.0, 1.0};

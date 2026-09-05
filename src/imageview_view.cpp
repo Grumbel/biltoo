@@ -803,6 +803,11 @@ void ImageView::reapplySlideshowFraming()
 void ImageView::cancelSlideshowMotion()
 {
     m_slideshowMotionActive = false;
+    if (m_motionSavedBarPolicies) {
+        setHorizontalScrollBarPolicy(m_motionSavedHBarPolicy);
+        setVerticalScrollBarPolicy(m_motionSavedVBarPolicy);
+        m_motionSavedBarPolicies = false;
+    }
     setSlideshowUnderlayVisible(true);
     m_dwellAtlas = QPixmap();
     m_dwellAtlasScale = 0.0;
@@ -1188,34 +1193,37 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
             biasA = kBias[seed % 8];
             biasB = kBias[(seed / 8 + 3) % 8];
         }
-        // Path: linear scale s0→s1 and linear image-space pan off0→off1.
-        // dest places the scaled image so that pan is continuous in t — no
-        // clamp, no normalized-bias rewrite, no halfNow gate (those kink or
-        // change the path).
+        // Linear path only: scale s0→s1, image-space pan off0→off1.
+        // dest = viewportCentre − off×scale (no bias encoding, no overflow gate —
+        // the old overflow>0 ? bias : 0 snap was a discontinuity when an axis
+        // first gained crop room, often at a corner).
         const qreal half0x = qMax(0.0, (iw - qreal(vw) / s0) * 0.5);
         const qreal half0y = qMax(0.0, (ih - qreal(vh) / s0) * 0.5);
         const qreal half1x = qMax(0.0, (iw - qreal(vw) / s1) * 0.5);
         const qreal half1y = qMax(0.0, (ih - qreal(vh) / s1) * 0.5);
-        const qreal offX = (biasA.x() * half0x) + (biasB.x() * half1x - biasA.x() * half0x) * motionT;
-        const qreal offY = (biasA.y() * half0y) + (biasB.y() * half1y - biasA.y() * half0y) * motionT;
-        // Encode as unclamped "bias" for the shared dest formula:
-        // dest = centre - off * scale  ⇔  centre - bias * overflow.
-        const qreal overflowX = qMax(0.0, (iw * scale - qreal(vw)) * 0.5);
-        const qreal overflowY = qMax(0.0, (ih * scale - qreal(vh)) * 0.5);
-        biasX = (overflowX > 0.0) ? (offX * scale / overflowX) : 0.0;
-        biasY = (overflowY > 0.0) ? (offY * scale / overflowY) : 0.0;
+        const qreal offX = (biasA.x() * half0x)
+            + (biasB.x() * half1x - biasA.x() * half0x) * motionT;
+        const qreal offY = (biasA.y() * half0y)
+            + (biasB.y() * half1y - biasA.y() * half0y) * motionT;
+        const qreal dw = iw * scale;
+        const qreal dh = ih * scale;
+        destX = (qreal(vw) - dw) * 0.5 - offX * scale;
+        destY = (qreal(vh) - dh) * 0.5 - offY * scale;
+        destFromOffset = true;
     } else {
         scale = base;
         biasX = 0.0;
         biasY = 0.0;
     }
 
-    const qreal dw = iw * scale;
-    const qreal dh = ih * scale;
-    const qreal overflowX = qMax(0.0, (dw - qreal(vw)) * 0.5);
-    const qreal overflowY = qMax(0.0, (dh - qreal(vh)) * 0.5);
-    const qreal destX = (qreal(vw) - dw) * 0.5 - biasX * overflowX;
-    const qreal destY = (qreal(vh) - dh) * 0.5 - biasY * overflowY;
+    qreal dw = iw * scale;
+    qreal dh = ih * scale;
+    if (!destFromOffset) {
+        const qreal overflowX = qMax(0.0, (dw - qreal(vw)) * 0.5);
+        const qreal overflowY = qMax(0.0, (dh - qreal(vh)) * 0.5);
+        destX = (qreal(vw) - dw) * 0.5 - biasX * overflowX;
+        destY = (qreal(vh) - dh) * 0.5 - biasY * overflowY;
+    }
 
     // Prefer pre-scaled atlas (one Smooth scale per slide/resize). Fall back to
     // drawImage only if no atlas matches this source (should be rare).
@@ -1377,6 +1385,21 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                       &m_dwellAtlasVw, &m_dwellAtlasVh);
     setSlideshowUnderlayVisible(false);
+    // Freeze scrollbars so the view cannot re-clamp/centre while the overlay
+    // path is the only thing that should move (underlay is hidden).
+    if (!m_motionSavedBarPolicies) {
+        m_motionSavedHBarPolicy = horizontalScrollBarPolicy();
+        m_motionSavedVBarPolicy = verticalScrollBarPolicy();
+        m_motionSavedBarPolicies = true;
+    }
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    if (horizontalScrollBar()) {
+        horizontalScrollBar()->setValue(0);
+    }
+    if (verticalScrollBar()) {
+        verticalScrollBar()->setValue(0);
+    }
 
     m_fitMode = false;
     m_fillMode = (m_slideshowZoom == SlideshowZoom::Fill);

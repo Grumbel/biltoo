@@ -3496,3 +3496,21 @@ advertises archives; add the same archive types (with labels) to
 ### Done criteria
 - [x] Archives in default-app list
 - [x] Next **198**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-198-panzoom-direct-dest`
+
+### Cause of corner jump (not QGraphicsView clamp on the blit)
+PanZoom encoded pan as `bias = (overflow>0) ? off*scale/overflow : 0`.
+When an axis first gained overflow mid-path, dest snapped from centre to the
+offset pan — often as the image met a corner. Overlay paint is viewport-space
+and independent of OpenGL; the discontinuity was in that gate.
+
+### Fix
+- dest = (vw−dw)/2 − off×scale directly (linear path, no bias intermediate)
+- While motion runs: ScrollBarAlwaysOff + scroll 0 so the hidden underlay cannot
+  re-centre the view
+
+### Done criteria
+- [x] No overflow>0 bias gate
+- [x] Next **199**
