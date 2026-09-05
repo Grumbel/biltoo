@@ -52,13 +52,12 @@ QImage load(const QString &path);
 QImage loadThumbnail(const QString &path, int maxEdge);
 
 /**
- * Process-wide aspect-preserving thumbnail cache (path → image).
- * Filled by the filmstrip and slideshow preload so live transitions do not
- * re-decode the same file every cycle.
+ * Thin wrappers around ImageCache (shared process-wide path → image store).
+ * Prefer ImageCache::* in new code.
  */
 QImage cachedThumbnail(const QString &path);
 void putCachedThumbnail(const QString &path, const QImage &image);
-/** cachedThumbnail if present, otherwise loadThumbnail + put. */
+/** Ensure ≥ maxEdge in ImageCache (async on miss); return best available. */
 QImage loadThumbnailCached(const QString &path, int maxEdge);
 
 /** True if the path's suffix is a known image extension (Qt and/or vips). */

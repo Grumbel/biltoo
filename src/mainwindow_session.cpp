@@ -7,6 +7,7 @@
 #include "archivereader.h"
 #include "workspacebackgrounddialog.h"
 #include "imageitem.h"
+#include "imagecache.h"
 #include <QFileInfo>
 #include <QPointer>
 #include <QThreadPool>
@@ -1809,6 +1810,8 @@ void MainWindow::startSlideshow()
         updateSlideshowActionUi();
         return;
     }
+    // Shared preview cache: every session path gets a ≥512 frame scheduled now.
+    ImageCache::warm(m_session.paths(), ImageCache::kPreviewEdge);
     // Gallery: open the focused session image in Image mode, then advance.
     if (isGalleryMode()) {
         QString path;

@@ -8,6 +8,7 @@
 #endif
 
 #include "imageloader.h"
+#include "imagecache.h"
 #include "archivepath.h"
 #include "archivereader.h"
 
@@ -591,67 +592,25 @@ QImage loadThumbnail(const QString &path, int maxEdge)
 #endif
 }
 
-namespace {
-
-QMutex &thumbCacheMutex()
-{
-    static QMutex m;
-    return m;
-}
-
-QHash<QString, QImage> &thumbCacheMap()
-{
-    static QHash<QString, QImage> map;
-    return map;
-}
-
-constexpr int kThumbCacheMaxEntries = 256;
-
-} // namespace
 
 QImage cachedThumbnail(const QString &path)
 {
-    if (path.isEmpty()) {
-        return {};
-    }
-    QMutexLocker lock(&thumbCacheMutex());
-    return thumbCacheMap().value(path);
+    return ImageCache::get(path);
 }
 
 void putCachedThumbnail(const QString &path, const QImage &image)
 {
-    if (path.isEmpty() || image.isNull()) {
-        return;
-    }
-    QMutexLocker lock(&thumbCacheMutex());
-    QHash<QString, QImage> &map = thumbCacheMap();
-    if (map.contains(path)) {
-        const QImage &old = map.value(path);
-        // Keep the larger decode — filmstrip cells are small; slideshow wants ≥512.
-        if (qMax(old.width(), old.height()) >= qMax(image.width(), image.height())) {
-            return;
-        }
-    } else if (map.size() >= kThumbCacheMaxEntries) {
-        auto it = map.begin();
-        if (it != map.end()) {
-            map.erase(it);
-        }
-    }
-    map.insert(path, image);
+    ImageCache::put(path, image);
 }
 
 QImage loadThumbnailCached(const QString &path, int maxEdge)
 {
-    QImage hit = cachedThumbnail(path);
-    if (!hit.isNull() && qMax(hit.width(), hit.height()) >= maxEdge) {
+    // Prefer a ready frame; schedule upgrade via ensure when too small.
+    QImage hit = ImageCache::get(path, maxEdge);
+    if (!hit.isNull()) {
         return hit;
     }
-    QImage loaded = loadThumbnail(path, maxEdge);
-    if (!loaded.isNull()) {
-        putCachedThumbnail(path, loaded);
-        return loaded;
-    }
-    return hit;
+    return ImageCache::ensure(path, maxEdge);
 }
 
 QStringList imageSuffixes()

@@ -74,6 +74,8 @@ add_executable(biltoo
   src/imageitem.h
   src/imageloader.cpp
   src/imageloader.h
+  src/imagecache.cpp
+  src/imagecache.h
   src/archivepath.cpp
   src/archivepath.h
   src/archivereader.cpp

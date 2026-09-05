@@ -6,6 +6,7 @@
 #include <QDebug>
 #include "imageitem.h"
 #include "imageloader.h"
+#include "imagecache.h"
 #include "archivepath.h"
 #include "sessionappearance.h"
 
@@ -299,6 +300,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
     if (image.isNull()) {
         return;
     }
+    ImageCache::put(path, image);
     // Session cache for rapid revisit (path is the decode source; size is small).
     m_previewByPath.insert(path, image);
     // Replace navigations: drop superseded previews.
@@ -343,6 +345,16 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
 void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role)
 {
+    // Feed shared cache (preview-sized) so slideshow/gallery reuse this decode.
+    if (!image.isNull() && !path.isEmpty()) {
+        const int edge = ImageCache::kPreviewEdge;
+        if (qMax(image.width(), image.height()) > edge) {
+            ImageCache::put(path, image.scaled(edge, edge, Qt::KeepAspectRatio,
+                                               Qt::SmoothTransformation));
+        } else {
+            ImageCache::put(path, image);
+        }
+    }
     // Replace loads only care about the latest request
     if (role == LoadReplace) {
         if (generation != m_loadGeneration) {

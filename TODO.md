@@ -4536,3 +4536,21 @@ generation on every call.
 - [x] Log should show preload-hit after first cycle
 - [x] Phase drift from repeated full-decode should shrink
 - [x] Next **252**
+
+## Plan / work (2026-09-05) — bundle `biltoo-252-image-cache`
+
+### Shared ImageCache
+New `src/imagecache.{h,cpp}`: process-wide path→image store (keep larger,
+max 384 entries). API: get / put / has / ensure / warm / clear.
+
+### Wiring
+- ImageLoader cached* wrappers → ImageCache
+- Filmstrip still fills via loadThumbnailCached
+- onImageLoaded / onImagePreviewLoaded put preview-sized frames
+- startSlideshow: ImageCache::warm(all session paths, 512)
+- clearWorkspace: ImageCache::clear()
+
+### Done criteria
+- [x] Generic shared cache
+- [x] Slideshow start warms every path
+- [x] Next **253**

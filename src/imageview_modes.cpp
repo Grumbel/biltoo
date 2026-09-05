@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "imagecache.h"
 #include <QDebug>
 #include "imageitem.h"
 #include "imageloader.h"
@@ -190,6 +191,7 @@ void ImageView::clearWorkspace()
     m_imageSizeByPath.clear();
     m_sizeProbeScheduled.clear();
     m_previewByPath.clear();
+    ImageCache::clear();
     m_pathOrder.clear();
     m_sessionIdOrder.clear();
     // Path-keyed placement is legacy for unbound tiles only; drop it so a
