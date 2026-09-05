@@ -4857,3 +4857,18 @@ fromPath changes.
 ### Done criteria
 - [x] No cancel of in-flight crossfade from the clock
 - [x] Next **267**
+
+## Plan / work (2026-09-05) — bundle `biltoo-267-slideshow-spec`
+
+### Change
+Rewrite `SLIDESHOW.md` as the product timeline only:
+
+- interval − transition: A only
+- transition: A + B (opacity; midpoint B dominant; end B only)
+- dwell motion runs for the full interval (dwell + transition)
+- previews scaled to native size; full replaces soft in place
+- one wall clock; no implementation failure archaeology
+
+### Done criteria
+- [x] Spec matches the described timeline
+- [x] Next **268**
