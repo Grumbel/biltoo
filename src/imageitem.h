@@ -82,9 +82,20 @@ public:
     void setSessionIndex(int index) { m_sessionIndex = index; }
     QSize imageSize() const;
     const QImage &sourceImage() const { return m_source; }
-    bool hasDecodedPixels() const { return !m_source.isNull(); }
+    /**
+     * True when a full (non-preview) decode is present. Provisional thumbnail
+     * pixels do not count — gallery still schedules a full load.
+     */
+    bool hasDecodedPixels() const { return !m_source.isNull() && !m_previewPixels; }
+    /** Any displayable pixels (full decode or provisional preview). */
+    bool hasDisplayPixels() const { return !m_source.isNull() || !m_preview.isNull(); }
     /** Replace or clear decoded pixels; keeps path and intrinsic size. */
     void setSourceImage(const QImage &image);
+    /**
+     * Low-res stand-in while a full decode is in flight. Does not change
+     * intrinsic geometry; painted scaled into contentRect().
+     */
+    void setPreviewImage(const QImage &preview);
     void clearDecodedPixels();
 
     /** Uniform scale factor (geometric mean of X/Y); prefer itemScaleX/Y when anisotropic. */
@@ -286,6 +297,9 @@ private:
     ColorAdjustments m_colorAdjust;
     /** Valid when m_source is null (placeholder) or as size cache. */
     QSize m_intrinsicSize;
+    /** Downscaled stand-in; intrinsic size stays full resolution. */
+    QImage m_preview;
+    bool m_previewPixels = false;
     qreal m_scaleX = 1.0;
     qreal m_scaleY = 1.0;
     qreal m_shear = 0.0;

@@ -67,6 +67,8 @@ void ImageItem::setSourceImage(const QImage &image)
 {
     prepareGeometryChange();
     m_source = image;
+    m_preview = QImage();
+    m_previewPixels = false;
     if (!m_source.isNull()) {
         m_intrinsicSize = m_source.size();
         setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
@@ -80,16 +82,41 @@ void ImageItem::setSourceImage(const QImage &image)
     update();
 }
 
+void ImageItem::setPreviewImage(const QImage &preview)
+{
+    if (preview.isNull()) {
+        return;
+    }
+    // Full decode already present — ignore late previews.
+    if (!m_source.isNull() && !m_previewPixels) {
+        return;
+    }
+    prepareGeometryChange();
+    m_preview = preview;
+    m_previewPixels = true;
+    // Keep intrinsic size (probe / full geometry); do not adopt preview size.
+    m_source = QImage();
+    setPixmap(QPixmap());
+    const QSize s = imageSize();
+    setOffset(-s.width() / 2.0, -s.height() / 2.0);
+    applyLocalTransform();
+    update();
+}
+
 void ImageItem::clearDecodedPixels()
 {
-    if (m_source.isNull()) {
+    if (m_source.isNull() && m_preview.isNull()) {
         return;
     }
     prepareGeometryChange();
     if (!m_intrinsicSize.isValid() || m_intrinsicSize.isEmpty()) {
-        m_intrinsicSize = m_source.size();
+        if (!m_source.isNull()) {
+            m_intrinsicSize = m_source.size();
+        }
     }
     m_source = QImage();
+    m_preview = QImage();
+    m_previewPixels = false;
     setPixmap(QPixmap());
     const QSize s = imageSize();
     setOffset(-s.width() / 2.0, -s.height() / 2.0);

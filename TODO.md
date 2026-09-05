@@ -3752,3 +3752,24 @@ Stack overflow surfaced in QToolButton::setDefaultAction / QString::replace.
 - [x] Single-image open does not recurse stopSlideshow
 - [x] Real stop still restores Image framing + HUD
 - [x] Next **214**
+
+## Plan / work (2026-09-05) — bundle `biltoo-214-loading-placeholders`
+
+When gallery virtualization / decode cannot keep up, tiles stay a flat dark
+rect (`ImageItem::paint`). Better feedback:
+
+1. **Loading chrome** — soft panel + centred mark when no pixels at all
+2. **Provisional preview** — `ImageLoader::loadThumbnail` (~384px edge) posted
+   before the full decode; drawn scaled into intrinsic geometry without
+   changing layout size (`m_preview` + `m_previewPixels`)
+3. **Gallery + Image navigate** — two-phase worker in `scheduleGalleryDecode`
+   and `scheduleImageLoad` (LoadReplace / LoadAdd)
+
+`hasDecodedPixels()` remains false while only a preview is shown so full
+decode still runs. Full `setSourceImage` clears the preview.
+
+### Done criteria
+- [x] Empty tiles show loading-style placeholder
+- [x] Low-res appears when thumbnail decode succeeds before full load
+- [x] Layout size stays intrinsic / probe size
+- [x] Next **215**

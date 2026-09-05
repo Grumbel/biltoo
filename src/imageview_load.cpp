@@ -118,6 +118,15 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     // superseding once the slot runs on the GUI thread.
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, role, gen]() {
+        constexpr int kPreviewEdge = 384;
+        const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
+        if (guard && !preview.isNull()) {
+            QMetaObject::invokeMethod(guard, "onImagePreviewLoaded", Qt::QueuedConnection,
+                                      Q_ARG(QString, path),
+                                      Q_ARG(QImage, preview),
+                                      Q_ARG(quint64, gen),
+                                      Q_ARG(int, static_cast<int>(role)));
+        }
         const QImage image = ImageLoader::load(path);
         if (!guard) {
             return;
@@ -156,6 +165,16 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
+        // Provisional low-res first so tiles are not blank while full decode lags.
+        constexpr int kPreviewEdge = 384;
+        const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
+        if (guard && !preview.isNull()) {
+            QMetaObject::invokeMethod(guard, "onImagePreviewLoaded", Qt::QueuedConnection,
+                                      Q_ARG(QString, path),
+                                      Q_ARG(QImage, preview),
+                                      Q_ARG(quint64, gen),
+                                      Q_ARG(int, static_cast<int>(LoadAdd)));
+        }
         const QImage image = ImageLoader::load(path);
         if (!guard) {
             return;
@@ -166,6 +185,45 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                                   Q_ARG(quint64, gen),
                                   Q_ARG(int, static_cast<int>(LoadAdd)));
     });
+}
+
+void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
+                                     int role)
+{
+    if (image.isNull()) {
+        return;
+    }
+    // Replace navigations: drop superseded previews.
+    if (role == LoadReplace && generation != m_loadGeneration.load()) {
+        return;
+    }
+    if (role == LoadReplace) {
+        // Image mode: show provisional on the current item only.
+        if (path != classicPath() && !(isMultiItemMode() && m_items.isEmpty())) {
+            if (path != classicPath()) {
+                return;
+            }
+        }
+        if (!isMultiItemMode()) {
+            ImageItem *item = targetItem();
+            if (item && item->path() == path && !item->hasDecodedPixels()) {
+                item->setPreviewImage(image);
+                if (viewport()) {
+                    viewport()->update();
+                }
+            }
+            return;
+        }
+    }
+    // Gallery / Workspace: fill undecoded occurrences of this path.
+    for (ImageItem *item : m_items) {
+        if (item && item->path() == path && !item->hasDecodedPixels()) {
+            item->setPreviewImage(image);
+        }
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,

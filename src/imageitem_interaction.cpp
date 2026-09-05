@@ -1071,13 +1071,28 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->setClipRect(crop);
         }
         painter->setOpacity(m_opacity);
-        if (m_source.isNull() || pixmap().isNull()) {
-            // Placeholder while Gallery decode is pending or unloaded.
-            painter->fillRect(contentRect(), QColor(48, 48, 48));
-            painter->setPen(QPen(QColor(70, 70, 70), 0));
-            painter->drawRect(contentRect());
-        } else {
+        if (!m_source.isNull() && !m_previewPixels && !pixmap().isNull()) {
             QGraphicsPixmapItem::paint(painter, &opt, widget);
+        } else if (!m_preview.isNull()) {
+            // Provisional low-res: stretch into intrinsic content rect.
+            painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+            painter->drawImage(contentRect(), m_preview);
+        } else {
+            // Loading placeholder while decode is pending or unloaded.
+            const QRectF cr = contentRect();
+            painter->fillRect(cr, QColor(40, 40, 44));
+            const qreal inset = qMin(cr.width(), cr.height()) * 0.06;
+            const QRectF inner = cr.adjusted(inset, inset, -inset, -inset);
+            painter->setPen(QPen(QColor(70, 72, 80), 0));
+            painter->setBrush(QColor(52, 54, 62));
+            painter->drawRoundedRect(inner, inset * 0.8, inset * 0.8);
+            painter->setPen(QPen(QColor(140, 145, 160), 0));
+            QFont f = painter->font();
+            const qreal edge = qMin(inner.width(), inner.height());
+            f.setPointSizeF(qBound(8.0, edge * 0.08, 28.0));
+            f.setBold(true);
+            painter->setFont(f);
+            painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
         }
         painter->restore();
     }

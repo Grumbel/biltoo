@@ -740,6 +740,9 @@ public slots:
     /** Deliver a finished background decode (generation must still match). */
     void onImageLoaded(const QString &path, const QImage &image, quint64 generation,
                        int role);
+    /** Fast downscaled stand-in before the full decode arrives. */
+    void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
+                              int role);
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
