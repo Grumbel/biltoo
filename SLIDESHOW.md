@@ -11,15 +11,13 @@ One continuous wall clock. For each slide **A**, then **B**, then **C**, …:
  …
 ```
 
-Definitions:
-
 | Name | Meaning |
 |------|---------|
 | **interval** | Time from the start of one slide’s “only” period to the start of the next slide’s “only” period |
 | **transition** | Length of the A+B (or B+C, …) overlap at the end of that interval |
 | **dwell** | The “only” part: `interval − transition` |
 
-So each slide is on screen for a full **interval** of wall time: first alone, then sharing the screen during the transition, then the next slide continues alone.
+Each slide is on screen for a full **interval** of wall time: first alone, then sharing the screen during the transition, then the next slide continues alone.
 
 ## What is on screen
 
@@ -30,14 +28,21 @@ So each slide is on screen for a full **interval** of wall time: first alone, th
 
 ### Transition (A + B)
 
-- Still drawing **A** and **B**.
-- **Opacity** is what the transition controls (crossfade, or fade-through-black, etc.).
-- At transition **start**: A is dominant (opacity A ≈ 1, B ≈ 0).
-- At transition **midpoint**: B becomes the dominant image.
-- At transition **end**: B is the only image that matters (opacity B = 1, A = 0).
-- Dwell motion continues across the whole **interval** (dwell + transition). It is not paused for the fade; the transition is opacity (and similar), not a substitute for motion.
+- Draw **A** and **B**.
+- **Opacity** is what the transition controls. Motion keeps running on both.
+- **Crossfade:** A opacity 1→0, B opacity 0→1. At the midpoint B is dominant; at the end B is the only image.
+- **Fade-to-black:** V-shaped envelope. First half: only A, fading toward black (at midpoint the screen is black). Second half: only B, rising from black to full. A and B switch roles at the midpoint; they are not both visible as a blend over black.
 
 After the transition, the next dwell is **B only**, with the same rules.
+
+## Motion
+
+Every image that is part of the current segment is in motion for as long as it participates:
+
+- **A** moves for its full interval (dwell + transition).
+- **B** moves for the whole transition *and* its following interval (not only after the transition ends).
+
+Motion is independent of opacity. The transition changes compositing, not whether motion runs.
 
 ## Pixels
 
@@ -49,7 +54,7 @@ For any path on screen:
 
 ## Scheduling
 
-A single wall-clock phase decides the segment (dwell vs transition) and which pair (A,B). Rendering only draws the buffers for that phase. There is no second scheduler and no need for start/cancel/hold chains to decide *when* slides change.
+A single wall-clock phase decides the segment (dwell vs transition) and which pair (A, B). Rendering draws the buffers for that phase. There is no second scheduler.
 
 ## Pause
 

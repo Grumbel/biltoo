@@ -4872,3 +4872,13 @@ Rewrite `SLIDESHOW.md` as the product timeline only:
 ### Done criteria
 - [x] Spec matches the described timeline
 - [x] Next **268**
+
+## Plan / work (2026-09-05) — bundle `biltoo-268-slideshow-spec-motion-fade`
+
+### Spec clarifications
+- B is in motion for the whole transition and its interval
+- Fade-to-black: V envelope (A→black, then black→B); switch at midpoint
+
+### Done criteria
+- [x] SLIDESHOW.md updated
+- [x] Next **269**
