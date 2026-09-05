@@ -5168,3 +5168,22 @@ Hide `[slideshow]` / `[slideshow-paint]` debug printouts behind `--debug`.
 - [x] Quiet by default
 - [x] `biltoo --debug` shows slideshow traces
 - [x] Next **284**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-284-gallery-preserve-scroll`
+
+### Symptom
+Gallery relayout when new images arrive resets scroll to the top/origin.
+
+### Cause
+`applyLayout` always `centerOn(0, 0)` except for Image→Gallery `pendingRestore`.
+`GalleryPackReason` was unused (`Q_UNUSED`).
+
+### Fix
+For `ContentChange`, `SessionMutate`, and `Reload`, remember the scene point under
+the viewport centre before pack and `centerOn` it again after. Enter / explicit
+layout still start at the origin.
+
+### Done criteria
+- [x] Incremental gallery packs keep approximate scroll position
+- [x] Next **285**

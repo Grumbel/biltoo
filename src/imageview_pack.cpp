@@ -198,7 +198,6 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
 
 void ImageView::applyLayout(GalleryPackReason reason)
 {
-    Q_UNUSED(reason);
     if (m_applyingLayout) {
         return;
     }
@@ -222,11 +221,24 @@ void ImageView::applyLayout(GalleryPackReason reason)
         item->setItemVFlip(false);
     }
 
+    // Incremental packs (new session tiles, decode size change, F5) should keep
+    // the user roughly in the same place. Enter / explicit layout switch still
+    // starts at the origin. Image→Gallery restore uses pendingRestore instead.
+    const bool preserveView =
+        !m_gallery.pendingRestore()
+        && (reason == GalleryPackReason::ContentChange
+            || reason == GalleryPackReason::SessionMutate
+            || reason == GalleryPackReason::Reload);
+    QPointF keptCenter;
+    if (preserveView && viewport()) {
+        keptCenter = mapToScene(viewport()->rect().center());
+    }
+
     m_applyingLayout = true;
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     resetTransform();
-    if (!m_gallery.pendingRestore()) {
+    if (!m_gallery.pendingRestore() && !preserveView) {
         centerOn(0, 0);
     }
 
@@ -289,6 +301,11 @@ void ImageView::applyLayout(GalleryPackReason reason)
     m_applyingLayout = false;
     // Re-apply scroll after centerOn(0,0) above when returning from Image.
     applyPendingGalleryRestore();
+    if (preserveView) {
+        // Scene geometry changed; map the previous centre back if it still
+        // falls in the new bounds (clamped by QGraphicsView otherwise).
+        centerOn(keptCenter);
+    }
     updateGalleryDecodeWindow();
 }
 
