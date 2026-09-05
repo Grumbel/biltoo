@@ -46,11 +46,19 @@ Motion is independent of opacity. The transition changes compositing, not whethe
 
 ## Pixels
 
-For any path on screen:
+For any path on screen, **each draw** chooses:
 
-- Prefer **full-resolution** pixels when they are ready.
-- If not, use a **preview** scaled to the image’s **native size** so layout and motion match full-res.
-- When full-res arrives, replace the buffer in place — sharper, same geometry.
+```
+if full-res ready for path → blit full-res
+else                       → blit low-res placeholder (scaled to native size)
+```
+
+No events in the draw path. Full decode is started ahead of time and stored as
+something pollable (a future / ready buffer). When it becomes ready, the
+**next** draw simply sees full-res and uses it. Same geometry either way, so
+the switch is seamless (sharper, no layout jump).
+
+Do not wire “decode finished” into start/cancel/hold of the transition.
 
 ## Scheduling
 

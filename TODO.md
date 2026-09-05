@@ -4882,3 +4882,13 @@ Rewrite `SLIDESHOW.md` as the product timeline only:
 ### Done criteria
 - [x] SLIDESHOW.md updated
 - [x] Next **269**
+
+## Plan / work (2026-09-05) — bundle `biltoo-269-slideshow-spec-pixels`
+
+### Spec
+Draw path: poll full-res if ready else placeholder. No decode-finished events
+in the transition/draw machine.
+
+### Done criteria
+- [x] SLIDESHOW.md
+- [x] Next **270**

@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-268-slideshow-spec-motion-fade**
-(Spec: B motion for transition+interval; fade-black V envelope).
-Next bundle number: **269**.
+Latest agent handoff: **TODO.md → biltoo-269-slideshow-spec-pixels**
+(Spec: draw polls full vs placeholder; no decode events in draw).
+Next bundle number: **270**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
