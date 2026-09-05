@@ -4405,3 +4405,19 @@ user nav (play or pause).
 ### Done criteria
 - [x] ←/→ updates current time on HUD when paused and when playing
 - [x] Next **244**
+
+## Plan / work (2026-09-05) — bundle `biltoo-244-slideshow-thumb-placeholder`
+
+### Thumbnail placeholders for live transitions
+When full pixels are not ready:
+- **from**: dwell → source → pixmap → `loadThumbnail(path, 512)`
+- **to**: if no preload, decode thumbnail first and `startLiveTransitionWithImage(thumb)`,
+  then upgrade `m_liveTransitionSourceImage` to full when the full decode arrives
+  (same path, still active/hold).
+
+Avoids beginLive decline and blank await gaps after ←/→.
+
+### Done criteria
+- [x] Live fade can start on thumbnails
+- [x] Full decode upgrades in place when ready
+- [x] Next **245**

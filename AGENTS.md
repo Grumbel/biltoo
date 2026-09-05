@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-243-slideshow-nav-timeline**
-(←/→ always publishes setSlideshowTimeline — was frozen when paused).
-Next bundle number: **244**.
+Latest agent handoff: **TODO.md → biltoo-244-slideshow-thumb-placeholder**
+(Live transitions start on thumbnails; upgrade to full decode in place).
+Next bundle number: **245**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

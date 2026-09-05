@@ -1004,6 +1004,11 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         if (m_liveFromSourceImage.isNull() && !item->pixmap().isNull()) {
             m_liveFromSourceImage = item->pixmap().toImage();
         }
+        // Last resort: filmstrip-sized decode so we can still open a live fade.
+        if (m_liveFromSourceImage.isNull() && !item->path().isEmpty()) {
+            m_liveFromSourceImage =
+                ImageLoader::loadThumbnail(item->path(), 512);
+        }
     }
     if (m_slideshowMotionActive && m_motionDurationMs > 0) {
         m_liveFromMotionProgress0 = qBound(
@@ -1014,20 +1019,14 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     }
 
     // Do NOT pick incoming biases here and do NOT touch m_motionBiasA/B.
-    // Dwell is still painting the outgoing image; overwriting biases snaps
-    // Pan&Zoom to the next path and looks like motion stopped/jumped.
     // Incoming biases are chosen in startLiveTransitionWithImage into
-    // m_liveToBiasA/B only.
-
-    // Do NOT cancel dwell motion. Transitions only change opacity/colour;
-    // images keep moving until (and during) the composite.
+    // m_liveToBiasA/B only. Do NOT cancel dwell motion.
 
     if (m_liveFromSourceImage.isNull()) {
         return false;
     }
 
-    // Mark busy immediately so the host clock cannot start another transition
-    // during the async decode gap (isSlideshowTransitionBusy includes this flag).
+    // Busy for the whole decode gap (thumbnail and/or full).
     m_liveTransitionAwaitingLoad = true;
 
     if (m_preloadPath == nextPath && !m_preloadImage.isNull()) {
@@ -1045,22 +1044,77 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return true;
     }
 
+    // No full preload: open the fade on a thumbnail as soon as it is ready,
+    // then upgrade to the full decode if the same transition is still live.
     const QString path = nextPath;
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path]() {
-        QImage img = ImageLoader::load(path);
+        const QImage thumb = ImageLoader::loadThumbnail(path, 512);
+        if (guard && !thumb.isNull()) {
+            QMetaObject::invokeMethod(guard.data(), [guard, path, thumb]() {
+                if (!guard || guard->m_liveTransitionNextPath != path) {
+                    return;
+                }
+                if (!guard->m_liveTransitionAwaitingLoad
+                    && !guard->m_liveTransitionActive
+                    && !guard->m_liveTransitionHold) {
+                    return;
+                }
+                if (guard->m_liveTransitionActive || guard->m_liveTransitionHold) {
+                    // Already running (unlikely): upgrade pixels only.
+                    guard->m_liveTransitionSourceImage = thumb;
+                    guard->m_handoffPath = path;
+                    guard->m_handoffImage = thumb;
+                    guard->ensureMotionAtlas(
+                        guard->m_liveTransitionSourceImage, &guard->m_liveToAtlas,
+                        &guard->m_liveToAtlasScale, &guard->m_liveToAtlasVw,
+                        &guard->m_liveToAtlasVh);
+                    if (guard->viewport()) {
+                        guard->viewport()->update();
+                    }
+                    return;
+                }
+                guard->startLiveTransitionWithImage(thumb);
+            }, Qt::QueuedConnection);
+        }
+
+        const QImage full = ImageLoader::load(path);
         if (!guard) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, path, img]() {
+        QMetaObject::invokeMethod(guard.data(), [guard, path, full, thumb]() {
             if (!guard) {
                 return;
             }
-            if (!img.isNull()) {
-                guard->m_handoffPath = path;
-                guard->m_handoffImage = img;
+            if (guard->m_liveTransitionNextPath != path) {
+                return;
             }
-            guard->startLiveTransitionWithImage(img);
+            if (full.isNull()) {
+                // No full image: if we never started on a thumb, fail the fade.
+                if (!guard->m_liveTransitionActive && !guard->m_liveTransitionHold
+                    && guard->m_liveTransitionAwaitingLoad && thumb.isNull()) {
+                    guard->m_liveTransitionAwaitingLoad = false;
+                    emit guard->slideshowLiveTransitionFinished();
+                }
+                return;
+            }
+            guard->m_handoffPath = path;
+            guard->m_handoffImage = full;
+            if (guard->m_liveTransitionActive || guard->m_liveTransitionHold) {
+                // Upgrade in-flight fade from thumbnail to full resolution.
+                guard->m_liveTransitionSourceImage = full;
+                guard->ensureMotionAtlas(
+                    guard->m_liveTransitionSourceImage, &guard->m_liveToAtlas,
+                    &guard->m_liveToAtlasScale, &guard->m_liveToAtlasVw,
+                    &guard->m_liveToAtlasVh);
+                if (guard->viewport()) {
+                    guard->viewport()->update();
+                }
+                return;
+            }
+            if (guard->m_liveTransitionAwaitingLoad) {
+                guard->startLiveTransitionWithImage(full);
+            }
         }, Qt::QueuedConnection);
     });
     return true;
