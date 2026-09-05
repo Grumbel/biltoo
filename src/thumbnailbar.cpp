@@ -3,6 +3,7 @@
 
 #include "thumbnailbar.h"
 #include "archivepath.h"
+#include "imagecache.h"
 #include "imageloader.h"
 
 #include <QAction>
@@ -550,11 +551,23 @@ void ThumbnailBar::setCropToSquare(bool on)
 
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
 {
-    // Aspect-preserving decode into the process cache first (slideshow live
-    // fades use this). The filmstrip cell may then square-crop a copy.
-    QImage image = ImageLoader::loadThumbnailCached(path, maxSize);
+    // Prefer a ready cache hit already large enough for the cell.
+    // On miss, decode synchronously here: filmstrip jobs already run on the
+    // thread pool. ImageCache::ensure() / loadThumbnailCached() only *schedule*
+    // a decode and often return null; combined with m_thumbLoadScheduled that
+    // left blank cells that never retried after the cache filled.
+    QImage image = ImageCache::get(path, maxSize);
     if (image.isNull()) {
-        return image;
+        image = ImageLoader::loadThumbnail(path, maxSize);
+        if (!image.isNull()) {
+            ImageCache::put(path, image);
+        } else {
+            // Any smaller mid-flight frame is better than an empty cell.
+            image = ImageCache::get(path);
+        }
+    }
+    if (image.isNull()) {
+        return {};
     }
     return prepareThumbnailFromImage(image, maxSize);
 }

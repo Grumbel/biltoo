@@ -5013,3 +5013,24 @@ Crop action icon should use yellow/amber like the live crop tool chrome.
 ### Done criteria
 - [x] Crop icon matches tool amber family
 - [x] Next **277**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-277-thumbnail-sync-decode`
+
+### Symptom
+Filmstrip / Thumbnail View cells stay blank or stale after ImageCache work.
+
+### Cause
+`makeThumbnail` used `loadThumbnailCached` → `ImageCache::ensure()`, which
+schedules an async decode and often returns null on miss. The pool worker then
+abandoned the row (`image.isNull()`), while `m_thumbLoadScheduled` blocked a
+retry when the cache later filled.
+
+### Fix
+Filmstrip workers decode with `ImageLoader::loadThumbnail` on miss (they are
+already off the GUI thread), `ImageCache::put` the result, and only fall back
+to a smaller cached frame if the decode fails.
+
+### Done criteria
+- [x] Visible thumbnails fill on open / scroll without relying on ensure race
+- [x] Next **278**
