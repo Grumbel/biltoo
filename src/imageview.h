@@ -1064,7 +1064,9 @@ private:
     bool m_ssFromMotionClockRunning = false;
     bool m_ssToMotionClockRunning = false;
     /** Native-size soft placeholders; scaled once per path, never every tick. */
-    QHash<QString, QImage> m_ssSoftByPath; /**< Source pixels for dwell blit */
+    QHash<QString, QImage> m_ssSoftByPath;
+    /** Full decodes retained by path so A and B can both be full at once. */
+    QHash<QString, QImage> m_ssFullByPath; /**< Source pixels for dwell blit */
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;

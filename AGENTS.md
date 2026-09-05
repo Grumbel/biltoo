@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-272-no-rescale-every-tick**
-(Soft scale once per path; full-only upgrade poll).
-Next bundle number: **273**.
+Latest agent handoff: **TODO.md → biltoo-273-full-by-path**
+(Full decode map; always preload from/to/next).
+Next bundle number: **274**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

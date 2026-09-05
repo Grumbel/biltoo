@@ -466,6 +466,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssFromMotionClockRunning = false;
         m_ssToMotionClockRunning = false;
         m_ssSoftByPath.clear();
+        m_ssFullByPath.clear();
     }
     viewport()->update();
 }
@@ -1060,14 +1061,16 @@ QImage ImageView::slideshowFullIfReady(const QString &path) const
     if (path.isEmpty()) {
         return QImage();
     }
-    // Const path: only buffers we already own — no ImageCache scale, no probe.
+    const auto fullIt = m_ssFullByPath.constFind(path);
+    if (fullIt != m_ssFullByPath.cend() && !fullIt->isNull()) {
+        return *fullIt;
+    }
     if (path == m_preloadPath && !m_preloadImage.isNull()) {
         return m_preloadImage;
     }
     if (path == m_handoffPath && !m_handoffImage.isNull()) {
         return m_handoffImage;
     }
-    // targetItem() is non-const; use m_items scan for const.
     for (ImageItem *item : m_items) {
         if (item && item->path() == path && !item->sourceImage().isNull()) {
             return item->sourceImage();
@@ -1397,36 +1400,33 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    // Already have this full image ready (preload slot or live handoff).
+    // Already have full pixels for this path (retained map or live slots).
+    if (m_ssFullByPath.contains(path) && !m_ssFullByPath.value(path).isNull()) {
+        return;
+    }
     if (path == m_preloadPath && !m_preloadImage.isNull()) {
+        m_ssFullByPath.insert(path, m_preloadImage);
         return;
     }
     if (path == m_handoffPath && !m_handoffImage.isNull()) {
+        m_ssFullByPath.insert(path, m_handoffImage);
         return;
     }
-    // Same path already decoding — do not bump generation (that cancelled the
-    // in-flight job and forced every beginLive down the full-decode path).
     if (path == m_preloadInFlightPath) {
         return;
     }
-    // CRITICAL: a READY preload of another path must not be discarded. The tick
-    // used to warm toIdx+1 while toIdx sat in m_preload* — clear() wiped the
-    // pixels beginLive needed, forcing cache-hit / re-decode every cycle.
+    // Promote any ready preload of another path into the full map so we can
+    // start decoding @p path without discarding those pixels.
     if (!m_preloadPath.isEmpty() && !m_preloadImage.isNull() && m_preloadPath != path) {
+        m_ssFullByPath.insert(m_preloadPath, m_preloadImage);
+        m_preloadPath.clear();
+        m_preloadImage = QImage();
+    }
+    // One in-flight decode at a time; do not cancel a different path mid-load.
+    if (!m_preloadInFlightPath.isEmpty() && m_preloadInFlightPath != path) {
         return;
     }
-    // CRITICAL: do not cancel an in-flight full decode that the live path still
-    // needs (soft cache-hit waiting for live-upgrade, or handoff target).
-    if (!m_preloadInFlightPath.isEmpty() && m_preloadInFlightPath != path) {
-        if (m_preloadInFlightPath == m_liveTransitionNextPath
-            || m_preloadInFlightPath == m_handoffPath) {
-            return;
-        }
-    }
     const quint64 gen = ++m_preloadGeneration;
-    // Only clear the ready slot when replacing the *same* path (stale) or when
-    // it is empty. Never clear a different path's ready pixels here — guarded
-    // above. In-flight target switches to @p path.
     if (m_preloadPath == path) {
         m_preloadPath.clear();
         m_preloadImage = QImage();
@@ -1464,13 +1464,11 @@ void ImageView::preloadSlideshowImage(const QString &path)
             view->m_preloadPath = loadPath;
             view->m_preloadImage = img;
             view->m_preloadInFlightPath.clear();
+            view->m_ssFullByPath.insert(loadPath, img);
             qDebug().nospace()
                 << "[slideshow] preload-ready " << QFileInfo(loadPath).fileName()
                 << " " << img.width() << "x" << img.height();
             view->rememberImageSize(loadPath, img.size());
-            // Pure-phase: full landed — next draw (or this update) picks it up.
-            // Pause exception: schedule one redraw so sharpness appears without
-            // the motion timer running.
             if (view->m_slideshowProgressActive) {
                 if (loadPath == view->m_ssFromPath) {
                     view->m_ssFromImage = img;

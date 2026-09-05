@@ -4929,3 +4929,18 @@ When interval==transition, every clock tick polled both paths via
 ### Done criteria
 - [x] No per-tick native scale
 - [x] Next **273**
+
+## Plan / work (2026-09-05) — bundle `biltoo-273-full-by-path`
+
+### Cause
+Only one preload slot; clock warmed toIdx+1 during transition so the current
+to-image never got a full decode → soft placeholders only.
+
+### Fix
+- `m_ssFullByPath` retains full decodes by path
+- preload promotes ready slot into the map before starting the next decode
+- clock always preloads fromIdx, toIdx, and toIdx+1
+
+### Done criteria
+- [x] Full decode requested for visible pair
+- [x] Next **274**

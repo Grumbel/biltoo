@@ -919,17 +919,12 @@ void MainWindow::updateSlideshowFromClock()
         const qint64 raw =
             qint64(m_slideshowBaseIndex) * qint64(intervalMs) + elapsed;
         m_imageView->setSlideshowTimeline(totalMs > 0 ? (raw % totalMs) : 0, totalMs);
-        // Warm the image we will need next. While a transition to *toIdx* is
-        // already in flight, that path is handoff/preload already — warm the
-        // *following* slide so the next cycle does not pay a full decode.
-        // Re-preloading toIdx after beginLive consumed the preload caused a
-        // second disk load of the same file every cycle (see logs).
-        int warmIdx = toIdx;
-        if (m_imageView->isSlideshowTransitionBusy()
-            || m_slideshowTransitionCycle == cycle) {
-            warmIdx = (toIdx + 1) % n;
-        }
-        m_imageView->preloadSlideshowImage(m_session.paths().at(warmIdx));
+        // Full decodes for the visible pair (and one look-ahead). Pure phase
+        // keeps fulls in m_ssFullByPath so A and B can both be full at once.
+        // Do not skip toIdx during the transition — that left only soft paint.
+        m_imageView->preloadSlideshowImage(m_session.paths().at(fromIdx));
+        m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
+        m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 1) % n));
     }
 
     // Pure phase drive — no beginLive / busy / cancel for Crossfade.
