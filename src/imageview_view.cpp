@@ -1196,12 +1196,23 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
         const qreal off0y = biasA.y() * half0y;
         const qreal off1x = biasB.x() * half1x;
         const qreal off1y = biasB.y() * half1y;
+        // Image-space pan offset (pixels of source). Linear in motionT — keep
+        // dest in terms of this value so zoom+pan stays continuous.
         const qreal offX = off0x + (off1x - off0x) * motionT;
         const qreal offY = off0y + (off1y - off0y) * motionT;
-        const qreal halfNowX = qMax(0.0, (iw * scale - qreal(vw)) * 0.5);
-        const qreal halfNowY = qMax(0.0, (ih * scale - qreal(vh)) * 0.5);
-        biasX = (halfNowX > 0.5) ? ((offX * scale) / halfNowX) : 0.0;
-        biasY = (halfNowY > 0.5) ? ((offY * scale) / halfNowY) : 0.0;
+        // Current-frame max offset in image space. Clamp so we never ask for a
+        // pan beyond cover; do NOT zero when overflow is small (the old
+        // halfNow > 0.5 gate snapped bias 0 → full when an axis first gained
+        // overflow mid-path — visible as rare small jumps).
+        const qreal maxOffX = qMax(0.0, (iw - qreal(vw) / scale) * 0.5);
+        const qreal maxOffY = qMax(0.0, (ih - qreal(vh) / scale) * 0.5);
+        const qreal useOffX = qBound(-maxOffX, offX, maxOffX);
+        const qreal useOffY = qBound(-maxOffY, offY, maxOffY);
+        // Encode as normalized bias for the shared dest formula below.
+        const qreal halfNowX = maxOffX * scale; // == (iw*scale - vw)/2
+        const qreal halfNowY = maxOffY * scale;
+        biasX = (halfNowX > 1e-6) ? (useOffX * scale / halfNowX) : 0.0;
+        biasY = (halfNowY > 1e-6) ? (useOffY * scale / halfNowY) : 0.0;
     } else {
         scale = base;
         biasX = 0.0;

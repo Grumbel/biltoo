@@ -3411,3 +3411,21 @@ CMake summary and About use **enabled** / **missing** instead of 1/0 or yes/no.
 ### Done criteria
 - [x] No “(1 = enabled, 0 = left out)” legend
 - [x] Next **193**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-193-panzoom-bias-continuity`
+
+### Root cause
+`paintMotionCover` Pan&Zoom path converted image-space offsets to normalized
+bias with `halfNow > 0.5 ? off*scale/halfNow : 0`. When an axis first gained
+overflow mid-path (halfNow crossed 0.5), bias snapped from 0 to a non-zero
+value → rare small jump. Not camera/ensureVisible (slideshow paints a viewport
+overlay; underlay is hidden).
+
+### Fix
+Clamp image-space offset to the current frame’s max pan range; always map to
+normalized bias with a tiny epsilon (no 0.5 gate). Continuous in motionT.
+
+### Done criteria
+- [x] Discontinuous gate removed
+- [x] Next **194**
