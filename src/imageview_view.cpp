@@ -1188,14 +1188,22 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
             biasA = kBias[seed % 8];
             biasB = kBias[(seed / 8 + 3) % 8];
         }
-        // Lerp *normalized* bias in [-1, 1], not absolute image-space offsets.
-        // Absolute offsets (bias × half at each endpoint) can exceed the pan
-        // room available at intermediate scales; clamping then pushes the image
-        // back when an edge meets the window — the “edge hit → shove” jump.
-        // Normalized bias always maps through the current frame’s overflow, so
-        // the crop stays within cover with no clamp and no discontinuity.
-        biasX = biasA.x() + (biasB.x() - biasA.x()) * motionT;
-        biasY = biasA.y() + (biasB.y() - biasA.y()) * motionT;
+        // Path: linear scale s0→s1 and linear image-space pan off0→off1.
+        // dest places the scaled image so that pan is continuous in t — no
+        // clamp, no normalized-bias rewrite, no halfNow gate (those kink or
+        // change the path).
+        const qreal half0x = qMax(0.0, (iw - qreal(vw) / s0) * 0.5);
+        const qreal half0y = qMax(0.0, (ih - qreal(vh) / s0) * 0.5);
+        const qreal half1x = qMax(0.0, (iw - qreal(vw) / s1) * 0.5);
+        const qreal half1y = qMax(0.0, (ih - qreal(vh) / s1) * 0.5);
+        const qreal offX = (biasA.x() * half0x) + (biasB.x() * half1x - biasA.x() * half0x) * motionT;
+        const qreal offY = (biasA.y() * half0y) + (biasB.y() * half1y - biasA.y() * half0y) * motionT;
+        // Encode as unclamped "bias" for the shared dest formula:
+        // dest = centre - off * scale  ⇔  centre - bias * overflow.
+        const qreal overflowX = qMax(0.0, (iw * scale - qreal(vw)) * 0.5);
+        const qreal overflowY = qMax(0.0, (ih * scale - qreal(vh)) * 0.5);
+        biasX = (overflowX > 0.0) ? (offX * scale / overflowX) : 0.0;
+        biasY = (overflowY > 0.0) ? (offY * scale / overflowY) : 0.0;
     } else {
         scale = base;
         biasX = 0.0;

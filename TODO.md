@@ -3469,3 +3469,19 @@ status-bar progress.
 - [x] Archive open does not freeze UI
 - [x] Progress visible while scanning
 - [x] Next **196**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-196-panzoom-linear-path`
+
+Revert path-changing “fixes” (normalized bias lerp, absolute-offset clamp,
+halfNow>0.5 gate). Pan&Zoom is again:
+
+- scale = lerp(s0, s1, t)
+- off = lerp(biasA×half0, biasB×half1, t) in image space
+- dest = viewportCentre − off×scale
+
+No clamp, no gate. Continuous straight path in (scale, pan).
+
+### Done criteria
+- [x] Linear path restored
+- [x] Next **197**
