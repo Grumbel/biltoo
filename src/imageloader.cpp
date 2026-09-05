@@ -586,6 +586,35 @@ QImage loadThumbnail(const QString &path, int maxEdge)
     if (maxEdge <= 0) {
         return load(path);
     }
+
+    // Durable ladder first (no source I/O). Decode JXL/etc. via the same
+    // buffer path used for archive members.
+    {
+        const QByteArray ladder = ThumtooCache::cachedLadderBytes(path, maxEdge);
+        if (!ladder.isEmpty()) {
+#ifdef BILTOO_HAVE_VIPS
+            QImage fromLadder = loadWithVipsBuffer(ladder, 0);
+            if (!fromLadder.isNull()) {
+                if (fromLadder.width() > maxEdge || fromLadder.height() > maxEdge) {
+                    fromLadder = fromLadder.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
+                                                   Qt::SmoothTransformation);
+                }
+                return fromLadder;
+            }
+#endif
+            QImage qtImg;
+            if (qtImg.loadFromData(ladder)) {
+                if (qtImg.width() > maxEdge || qtImg.height() > maxEdge) {
+                    qtImg = qtImg.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
+                                         Qt::SmoothTransformation);
+                }
+                return qtImg;
+            }
+        }
+        // Miss: ask thumtoo to build the level in the background for next time.
+        ThumtooCache::schedulePixels(path, maxEdge);
+    }
+
     if (ArchivePath::isArchiveRef(path)) {
         return loadArchiveRef(path, maxEdge);
     }

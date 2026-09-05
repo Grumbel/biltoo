@@ -294,7 +294,8 @@ HIG-conformant on every desktop.
 Durable size index and display ladder live in the **thumtoo** library
 (<https://github.com/Grumbel/thumtoo>), integrated as a **flake input**
 (`inputs.thumtoo`) and `add_subdirectory` when `THUMTOO_SOURCE_DIR` is set.
-`ImageLoader::probeSize` consults `ThumtooCache` first (cache-only), then
-schedules a background probe. Session edit identity remains biltoo
-`SessionImageId` — do not key durable pixels by session id.
+`ImageLoader::probeSize` and `loadThumbnail` consult `ThumtooCache` first
+(cache-only size / ladder bytes via `get_pixels`). Misses schedule
+`request_size` / `request_pixels` and fall back to Qt/vips/archive decode.
+Session edit identity remains biltoo `SessionImageId`.
 

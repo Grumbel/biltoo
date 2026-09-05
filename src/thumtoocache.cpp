@@ -48,6 +48,11 @@ std::string toThumtooUri(const QString &path)
     return thumtoo::file_uri_from_path(fi.absoluteFilePath().toStdString());
 }
 
+thumtoo::Client *clientUnlocked()
+{
+    return g_client.get();
+}
+
 #endif
 
 } // namespace
@@ -85,11 +90,15 @@ QSize cachedSize(const QString &path)
     if (uri.empty()) {
         return {};
     }
-    std::lock_guard lock(g_mu);
-    if (!g_client) {
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
         return {};
     }
-    if (auto sz = g_client->get_size(uri)) {
+    if (auto sz = c->get_size(uri)) {
         return QSize(sz->width, sz->height);
     }
 #else
@@ -106,13 +115,76 @@ void scheduleProbe(const QString &path)
     if (uri.empty()) {
         return;
     }
-    std::lock_guard lock(g_mu);
-    if (!g_client) {
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
         return;
     }
-    g_client->request_size(std::move(uri), {});
+    c->request_size(uri, {});
 #else
     Q_UNUSED(path);
+#endif
+}
+
+QByteArray cachedLadderBytes(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (maxEdge <= 0) {
+        return {};
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return {};
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return {};
+    }
+    if (auto px = c->get_pixels(uri, maxEdge)) {
+        if (px->bytes.empty()) {
+            return {};
+        }
+        return QByteArray(reinterpret_cast<const char *>(px->bytes.data()),
+                          int(px->bytes.size()));
+    }
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+#endif
+    return {};
+}
+
+void schedulePixels(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (maxEdge <= 0) {
+        return;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return;
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return;
+    }
+    c->request_pixels(uri, maxEdge, {});
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
 #endif
 }
 

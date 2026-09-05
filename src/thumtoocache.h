@@ -4,6 +4,7 @@
 #ifndef THUMTOOCACHE_H
 #define THUMTOOCACHE_H
 
+#include <QByteArray>
 #include <QSize>
 #include <QString>
 
@@ -24,6 +25,18 @@ QSize cachedSize(const QString &path);
  * Does not block; does not drain the queue on the GUI thread.
  */
 void scheduleProbe(const QString &path);
+
+/**
+ * Cache-only ladder payload (usually JPEG-XL) with long edge <= maxEdge.
+ * Empty if thumtoo has no level yet. Caller decodes (e.g. via libvips).
+ */
+QByteArray cachedLadderBytes(const QString &path, int maxEdge);
+
+/**
+ * Ensure ladder level exists for maxEdge (probe/encode in thumtoo worker).
+ * Non-blocking; next cachedLadderBytes may succeed.
+ */
+void schedulePixels(const QString &path, int maxEdge);
 
 } // namespace ThumtooCache
 
