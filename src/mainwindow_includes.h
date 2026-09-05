@@ -44,6 +44,7 @@
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QLabel>
+#include <QProgressBar>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>

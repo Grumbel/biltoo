@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-194-panzoom-normalized-bias**
+Latest agent handoff: **TODO.md → biltoo-195-archive-expand-worker**
 (Pan&Zoom VIPS attention biases).
-Next bundle number: **195**.
+Next bundle number: **196**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

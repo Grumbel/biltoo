@@ -3449,3 +3449,23 @@ for the whole dwell when bias is ±1.
 ### Done criteria
 - [x] No absolute-offset lerp / clamp
 - [x] Next **195**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-195-archive-expand-worker`
+
+Archive listing blocks the GUI on large zip/tar. Expand on QThreadPool with
+status-bar progress.
+
+### Design
+- `ArchiveReader::listImageMembers` / `expandArchiveToImageRefs` optional progress
+  callback (hits, scanned), throttled every 32 headers
+- `pathsNeedBackgroundExpand`: archive files or directories (may contain archives)
+- `expandPathsInBackground`: worker copies expand logic; generation token cancels
+  stale jobs; status message + busy `QProgressBar` in the status bar
+- `applyExpandedLoad` / `applyExpandedAppend`: GUI-only session update after expand
+- Plain single images stay synchronous (no extra latency)
+
+### Done criteria
+- [x] Archive open does not freeze UI
+- [x] Progress visible while scanning
+- [x] Next **196**

@@ -9,6 +9,7 @@
 #include "imageview_types.h"
 
 #include <QMainWindow>
+#include <QProgressBar>
 #include <QUrl>
 #include <QEvent>
 #include <QStringList>
@@ -303,6 +304,18 @@ private:
     void hideSlideshowCursor();
     void armSlideshowCursorHide();
     QStringList expandPaths(const QStringList &paths) const;
+
+    /** True when expansion may touch archives (run off the GUI thread). */
+    bool pathsNeedBackgroundExpand(const QStringList &paths) const;
+    /**
+     * Expand paths on a worker thread, then load or append the result.
+     * @p append false → replace session (loadFiles); true → appendFiles.
+     */
+    void expandPathsInBackground(const QStringList &paths, bool append, int startAt = 0);
+    void setExpandProgressMessage(const QString &message);
+    void setExpandProgressBusy(bool busy);
+    void applyExpandedLoad(const QStringList &images, int startAt);
+    void applyExpandedAppend(const QStringList &images);
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
     void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                            const QPointF &scenePos = QPointF(),
@@ -325,6 +338,9 @@ private:
     QToolBar *m_toolBar = nullptr;
     QToolBar *m_workspaceToolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
+    QProgressBar *m_statusProgress = nullptr;
+    /** Cancels stale archive-expand workers when a newer open starts. */
+    quint64 m_expandGeneration = 0;
     QLabel *m_mouseLabel = nullptr;
     QLabel *m_colorSwatch = nullptr;
     QTimer *m_slideshowTimer = nullptr;

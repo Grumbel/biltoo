@@ -181,7 +181,7 @@ int nextHeader(struct archive *a, struct archive_entry **entry)
 
 } // namespace
 
-QStringList listImageMembers(const QString &archivePath)
+QStringList listImageMembers(const QString &archivePath, const ListProgress &progress)
 {
     QStringList out;
     if (archivePath.isEmpty() || !QFileInfo::exists(archivePath)) {
@@ -194,6 +194,7 @@ QStringList listImageMembers(const QString &archivePath)
         return out;
     }
     struct archive_entry *entry = nullptr;
+    int scanned = 0;
     for (;;) {
         const int rc = nextHeader(guard.a, &entry);
         if (rc == ARCHIVE_EOF) {
@@ -205,6 +206,7 @@ QStringList listImageMembers(const QString &archivePath)
                      archive_error_string(guard.a) ? archive_error_string(guard.a) : "unknown");
             break;
         }
+        ++scanned;
         const QString name = entryPathString(entry);
         if (entryIsImage(name)) {
             const QString member = normalizeMemberName(name);
@@ -213,6 +215,13 @@ QStringList listImageMembers(const QString &archivePath)
             }
         }
         archive_read_data_skip(guard.a);
+        // Throttle progress to keep the GUI queue light on huge archives.
+        if (progress && (scanned == 1 || (scanned % 32) == 0)) {
+            progress(out.size(), scanned);
+        }
+    }
+    if (progress && scanned > 0) {
+        progress(out.size(), scanned);
     }
     out.sort();
     return out;
@@ -265,7 +274,8 @@ QByteArray readMember(const QString &archivePath, const QString &memberPath)
 
 #else // !BILTOO_HAVE_ARCHIVE
 
-QStringList listImageMembers(const QString & /*archivePath*/)
+QStringList listImageMembers(const QString & /*archivePath*/,
+                             const ListProgress & /*progress*/)
 {
     return {};
 }
@@ -277,7 +287,8 @@ QByteArray readMember(const QString & /*archivePath*/, const QString & /*memberP
 
 #endif
 
-QStringList expandArchiveToImageRefs(const QString &archivePath)
+QStringList expandArchiveToImageRefs(const QString &archivePath,
+                                     const ListProgress &progress)
 {
     QStringList refs;
     if (!isAvailable()) {
@@ -290,7 +301,7 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
         return refs;
     }
     const QString abs = QFileInfo(archivePath).absoluteFilePath();
-    const QStringList members = listImageMembers(abs);
+    const QStringList members = listImageMembers(abs, progress);
     if (members.isEmpty()) {
         qWarning("ArchiveReader: no image members in %s", qPrintable(abs));
         return refs;

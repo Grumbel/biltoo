@@ -7,6 +7,9 @@
 #include "archivereader.h"
 #include "workspacebackgrounddialog.h"
 #include "imageitem.h"
+#include <QFileInfo>
+#include <QPointer>
+#include <QThreadPool>
 
 #include <QClipboard>
 #include <QJsonArray>
@@ -235,6 +238,13 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
         return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
     };
 
+    // Optional progress: only used when expand runs on a worker thread.
+    // Synchronous callers pass a no-op.
+    auto expandArchive = [](const QString &archivePath,
+                            const ArchiveReader::ListProgress &progress) {
+        return ArchiveReader::expandArchiveToImageRefs(archivePath, progress);
+    };
+
     QStringList images;
     for (const QString &path : paths) {
         // Already an archive member reference — keep as-is when valid.
@@ -257,7 +267,7 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             while (it.hasNext()) {
                 const QString full = it.next();
                 if (ArchivePath::isArchiveFile(full) && ArchiveReader::isAvailable()) {
-                    images.append(ArchiveReader::expandArchiveToImageRefs(full));
+                    images.append(expandArchive(full, {}));
                 } else if (isImageFile(full)) {
                     const QString c = canonicalImage(full);
                     if (!c.isEmpty()) {
@@ -267,7 +277,7 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             }
         } else if (info.isFile() && ArchivePath::isArchiveFile(path)
                    && ArchiveReader::isAvailable()) {
-            images.append(ArchiveReader::expandArchiveToImageRefs(path));
+            images.append(expandArchive(path, {}));
         } else if (info.isFile() && isImageFile(path)) {
             const QString c = canonicalImage(path);
             if (!c.isEmpty()) {
@@ -276,6 +286,163 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
         }
     }
     return images;
+}
+
+bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
+{
+    if (!ArchiveReader::isAvailable()) {
+        return false;
+    }
+    for (const QString &path : paths) {
+        if (ArchivePath::isArchiveRef(path)) {
+            continue;
+        }
+        const QFileInfo info(path);
+        if (info.isFile() && ArchivePath::isArchiveFile(path)) {
+            return true;
+        }
+        // Directory walks may encounter archives; keep the GUI responsive.
+        if (info.isDir()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void MainWindow::setExpandProgressMessage(const QString &message)
+{
+    if (statusBar()) {
+        statusBar()->showMessage(message, 0);
+    }
+}
+
+void MainWindow::setExpandProgressBusy(bool busy)
+{
+    if (!m_statusProgress) {
+        return;
+    }
+    if (busy) {
+        m_statusProgress->setRange(0, 0);
+        m_statusProgress->show();
+    } else {
+        m_statusProgress->hide();
+        m_statusProgress->setRange(0, 1);
+        m_statusProgress->setValue(0);
+    }
+}
+
+void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, int startAt)
+{
+    const quint64 gen = ++m_expandGeneration;
+    const bool recursive = m_recursive;
+    setExpandProgressBusy(true);
+    setExpandProgressMessage(tr("Scanning archives…"));
+
+    const QPointer<MainWindow> guard(this);
+    QThreadPool::globalInstance()->start([guard, paths, append, startAt, gen, recursive]() {
+        auto canonicalImage = [](const QString &path) -> QString {
+            const QFileInfo info(path);
+            if (!info.exists() || !info.isFile()) {
+                return {};
+            }
+            const QString resolved = info.canonicalFilePath();
+            return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
+        };
+
+        QStringList images;
+        const auto report = [guard, gen](const QString &msg) {
+            if (!guard) {
+                return;
+            }
+            QMetaObject::invokeMethod(guard.data(), [guard, gen, msg]() {
+                if (!guard || gen != guard->m_expandGeneration) {
+                    return;
+                }
+                guard->setExpandProgressMessage(msg);
+            }, Qt::QueuedConnection);
+        };
+
+        for (const QString &path : paths) {
+            if (!guard || gen != guard->m_expandGeneration) {
+                return;
+            }
+            if (ArchivePath::isArchiveRef(path)) {
+                if (ImageLoader::isImageFile(path)) {
+                    const ArchivePath::Ref ref = ArchivePath::parse(path);
+                    if (ref.valid) {
+                        images.append(ArchivePath::makeRef(ref.archivePath, ref.memberPath));
+                    }
+                }
+                continue;
+            }
+            const QFileInfo info(path);
+            if (info.isDir()) {
+                report(MainWindow::tr("Scanning folder “%1”…").arg(info.fileName()));
+                QDir::Filters filters = QDir::Files | QDir::Readable | QDir::NoDotAndDotDot;
+                QDirIterator::IteratorFlags flags = recursive
+                    ? QDirIterator::Subdirectories
+                    : QDirIterator::NoIteratorFlags;
+                QDirIterator it(path, filters, flags);
+                while (it.hasNext()) {
+                    if (!guard || gen != guard->m_expandGeneration) {
+                        return;
+                    }
+                    const QString full = it.next();
+                    if (ArchivePath::isArchiveFile(full) && ArchiveReader::isAvailable()) {
+                        const QString name = QFileInfo(full).fileName();
+                        report(MainWindow::tr("Reading archive “%1”…").arg(name));
+                        images.append(ArchiveReader::expandArchiveToImageRefs(
+                            full, [report, name](int hits, int /*scanned*/) {
+                                report(MainWindow::tr("Reading archive “%1”… %2 image(s)")
+                                           .arg(name)
+                                           .arg(hits));
+                            }));
+                    } else if (ImageLoader::isImageFile(full)) {
+                        const QString c = canonicalImage(full);
+                        if (!c.isEmpty()) {
+                            images.append(c);
+                        }
+                    }
+                }
+            } else if (info.isFile() && ArchivePath::isArchiveFile(path)
+                       && ArchiveReader::isAvailable()) {
+                const QString name = info.fileName();
+                report(MainWindow::tr("Reading archive “%1”…").arg(name));
+                images.append(ArchiveReader::expandArchiveToImageRefs(
+                    path, [report, name](int hits, int /*scanned*/) {
+                        report(MainWindow::tr("Reading archive “%1”… %2 image(s)")
+                                   .arg(name)
+                                   .arg(hits));
+                    }));
+            } else if (info.isFile() && ImageLoader::isImageFile(path)) {
+                const QString c = canonicalImage(path);
+                if (!c.isEmpty()) {
+                    images.append(c);
+                }
+            }
+        }
+
+        QMetaObject::invokeMethod(guard.data(), [guard, gen, images, append, startAt]() {
+            if (!guard || gen != guard->m_expandGeneration) {
+                return;
+            }
+            guard->setExpandProgressBusy(false);
+            if (images.isEmpty()) {
+                if (guard->statusBar()) {
+                    guard->statusBar()->showMessage(
+                        append ? MainWindow::tr("No readable images to add.")
+                               : MainWindow::tr("No readable images found."),
+                        5000);
+                }
+                return;
+            }
+            if (append) {
+                guard->applyExpandedAppend(images);
+            } else {
+                guard->applyExpandedLoad(images, startAt);
+            }
+        }, Qt::QueuedConnection);
+    });
 }
 
 void MainWindow::sortFileList()
@@ -496,6 +663,14 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
 {
     stopSlideshow();
 
+    if (pathsNeedBackgroundExpand(paths)) {
+        expandPathsInBackground(paths, /*append=*/false, startAt);
+        return;
+    }
+    // Sync path: invalidate any in-flight archive expand from a previous Open.
+    ++m_expandGeneration;
+    setExpandProgressBusy(false);
+
     QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
         // AUDIT M26: explicit feedback when Open finds nothing usable
@@ -504,7 +679,11 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
         }
         return;
     }
+    applyExpandedLoad(images, startAt);
+}
 
+void MainWindow::applyExpandedLoad(const QStringList &images, int startAt)
+{
     m_session.setPaths(images);
     m_session.validateUniqueIds("loadFiles");
     sortFileList();
@@ -592,6 +771,13 @@ void MainWindow::newSession()
 
 void MainWindow::appendFiles(const QStringList &paths)
 {
+    if (pathsNeedBackgroundExpand(paths)) {
+        expandPathsInBackground(paths, /*append=*/true);
+        return;
+    }
+    ++m_expandGeneration;
+    setExpandProgressBusy(false);
+
     QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
         if (statusBar()) {
@@ -599,7 +785,11 @@ void MainWindow::appendFiles(const QStringList &paths)
         }
         return;
     }
+    applyExpandedAppend(images);
+}
 
+void MainWindow::applyExpandedAppend(const QStringList &images)
+{
     const QString current = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
                                 ? m_session.paths().at(m_currentIndex)
                                 : QString();

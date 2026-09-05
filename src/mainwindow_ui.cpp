@@ -982,6 +982,12 @@ void MainWindow::createStatusBar()
 {
     m_statusLabel = new QLabel(tr("Ready"));
     m_statusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_statusProgress = new QProgressBar;
+    m_statusProgress->setMaximumWidth(140);
+    m_statusProgress->setMaximumHeight(12);
+    m_statusProgress->setTextVisible(false);
+    m_statusProgress->setRange(0, 0); // busy indicator while scanning
+    m_statusProgress->hide();
     m_colorSwatch = new QLabel;
     m_colorSwatch->setFixedSize(16, 16);
     m_colorSwatch->setToolTip(tr("Colour under the cursor"));
@@ -993,6 +999,7 @@ void MainWindow::createStatusBar()
     m_mouseLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     statusBar()->setSizeGripEnabled(true);
     statusBar()->addWidget(m_statusLabel, 1);
+    statusBar()->addPermanentWidget(m_statusProgress);
     statusBar()->addPermanentWidget(m_colorSwatch);
     statusBar()->addPermanentWidget(m_mouseLabel);
 }
