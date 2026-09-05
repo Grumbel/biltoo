@@ -240,27 +240,50 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         }
     }
 
-    // Pure-phase composite: driven by setSlideshowPhase from the wall clock.
-    // No live-hold / beginLive / cancel path for Crossfade during the show.
+    // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
     if (m_slideshowProgressActive
-        && (!m_ssFromImage.isNull() || !m_dwellSourceImage.isNull())) {
+        && (!m_ssFromImage.isNull() || !m_dwellSourceImage.isNull() || !m_ssToImage.isNull())) {
         const QRect vr = viewport()->rect();
         const QImage fromImg = !m_ssFromImage.isNull() ? m_ssFromImage : m_dwellSourceImage;
+        const qreal fromT = m_ssFromMotionT;
+        const qreal toT = m_ssToMotionT;
         if (m_ssFadeT >= 0.0 && !m_ssToImage.isNull()) {
             const qreal t = qBound(0.0, m_ssFadeT, 1.0);
             fillPad(vr);
-            if (!fromImg.isNull()) {
-                painter.setOpacity(1.0 - t);
-                paintMotionCover(&painter, fromImg, m_dwellMotionT,
-                                 m_motionBiasA, m_motionBiasB, 0);
+            if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
+                // V envelope: A→black (t in [0,0.5]), then black→B (t in [0.5,1]).
+                if (t < 0.5) {
+                    if (!fromImg.isNull()) {
+                        painter.setOpacity(1.0);
+                        paintMotionCover(&painter, fromImg, fromT,
+                                         m_motionBiasA, m_motionBiasB, 0);
+                    }
+                    painter.setOpacity(t * 2.0);
+                    painter.fillRect(vr, Qt::black);
+                    painter.setOpacity(1.0);
+                } else {
+                    painter.setOpacity(1.0);
+                    paintMotionCover(&painter, m_ssToImage, toT,
+                                     m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
+                    painter.setOpacity((1.0 - t) * 2.0);
+                    painter.fillRect(vr, Qt::black);
+                    painter.setOpacity(1.0);
+                }
+            } else {
+                // Crossfade: A 1→0, B 0→1; both in motion.
+                if (!fromImg.isNull()) {
+                    painter.setOpacity(1.0 - t);
+                    paintMotionCover(&painter, fromImg, fromT,
+                                     m_motionBiasA, m_motionBiasB, 0);
+                }
+                painter.setOpacity(t);
+                paintMotionCover(&painter, m_ssToImage, toT,
+                                 m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
+                painter.setOpacity(1.0);
             }
-            painter.setOpacity(t);
-            paintMotionCover(&painter, m_ssToImage, 0.0,
-                             m_motionBiasA, m_motionBiasB, qHash(m_ssToPath));
-            painter.setOpacity(1.0);
         } else if (!fromImg.isNull()) {
             fillPad(vr);
-            paintMotionCover(&painter, fromImg, m_dwellMotionT,
+            paintMotionCover(&painter, fromImg, fromT,
                              m_motionBiasA, m_motionBiasB, 0);
         }
     }

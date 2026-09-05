@@ -1052,7 +1052,15 @@ private:
     QString m_ssToPath;
     QImage m_ssFromImage;
     QImage m_ssToImage;
-    qreal m_ssFadeT = -1.0; // <0 = dwell /**< Source pixels for dwell blit */
+    qreal m_ssFadeT = -1.0; // <0 = dwell
+    qreal m_ssFromMotionT = 0.0;
+    qreal m_ssToMotionT = 0.0;
+    QPointF m_ssToBiasA{-1.0, -1.0};
+    QPointF m_ssToBiasB{1.0, 1.0};
+    QElapsedTimer m_ssFromMotionClock;
+    QElapsedTimer m_ssToMotionClock;
+    bool m_ssFromMotionClockRunning = false;
+    bool m_ssToMotionClockRunning = false; /**< Source pixels for dwell blit */
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;

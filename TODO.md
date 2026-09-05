@@ -4901,3 +4901,16 @@ Paused: if full-res arrives for the visible path, schedule one redraw.
 ### Done criteria
 - [x] SLIDESHOW.md
 - [x] Next **271**
+
+## Plan / work (2026-09-05) — bundle `biltoo-271-slideshow-pure-impl`
+
+### Implementation against SLIDESHOW.md
+- MainWindow every tick: dwell `setSlideshowPhase(A,{},-1)` or fade `setSlideshowPhase(A,B,t)`
+- Crossfade + FadeBlack (V envelope) from pure `t`
+- Dual motion clocks: A from dwell start; B from transition start; promote B→A without reset
+- Each tick/draw polls full vs placeholder; preload-ready only fills buffer + update()
+- No beginLive/cancel on Crossfade/FadeBlack path
+
+### Done criteria
+- [x] Spec-aligned pure phase path
+- [x] Next **272**

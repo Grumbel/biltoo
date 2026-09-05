@@ -955,30 +955,32 @@ void MainWindow::updateSlideshowFromClock()
         return;
     }
 
-    // Crossfade window: t from pure clock only.
+    // Transition window: t from pure clock only (Crossfade + FadeBlack).
     const qreal t = qBound(0.0, qreal(phaseMs - pureMs) / qreal(transitionMs), 1.0);
-    if (m_imageView
-        && m_imageView->slideshowTransition() == ImageView::SlideshowTransition::Crossfade) {
-        if (m_slideshowTransitionCycle != cycle) {
-            qDebug().nospace()
-                << "[slideshow] phase-fade cycle=" << cycle
-                << " phase=" << phaseMs
-                << " t=" << QString::number(t, 'f', 3)
-                << " from=" << fromIdx
-                << " to=" << toIdx
-                << " path=" << QFileInfo(toPath).fileName();
-            m_slideshowTransitionCycle = cycle;
-            m_slideshowPendingToIndex = toIdx;
+    if (m_imageView) {
+        const auto tr = m_imageView->slideshowTransition();
+        if (tr == ImageView::SlideshowTransition::Crossfade
+            || tr == ImageView::SlideshowTransition::FadeBlack) {
+            if (m_slideshowTransitionCycle != cycle) {
+                qDebug().nospace()
+                    << "[slideshow] phase-fade cycle=" << cycle
+                    << " phase=" << phaseMs
+                    << " t=" << QString::number(t, 'f', 3)
+                    << " from=" << fromIdx
+                    << " to=" << toIdx
+                    << " path=" << QFileInfo(toPath).fileName();
+                m_slideshowTransitionCycle = cycle;
+                m_slideshowPendingToIndex = toIdx;
+            }
+            m_imageView->setSlideshowPhase(fromPath, toPath, t);
+            if (t >= 1.0 - 1e-6 && m_currentIndex != toIdx && !m_slideshowAdvancing) {
+                m_slideshowAdvancing = true;
+                setCurrentIndex(toIdx);
+                m_slideshowAdvancing = false;
+                m_slideshowPendingToIndex = -1;
+            }
+            return;
         }
-        m_imageView->setSlideshowPhase(fromPath, toPath, t);
-        // Commit session index once the fade has finished (t==1).
-        if (t >= 1.0 - 1e-6 && m_currentIndex != toIdx && !m_slideshowAdvancing) {
-            m_slideshowAdvancing = true;
-            setCurrentIndex(toIdx);
-            m_slideshowAdvancing = false;
-            m_slideshowPendingToIndex = -1;
-        }
-        return;
     }
 
     // Non-crossfade transitions: keep legacy once-per-cycle path.

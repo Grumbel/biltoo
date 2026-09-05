@@ -461,6 +461,10 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssFromImage = QImage();
         m_ssToImage = QImage();
         m_ssFadeT = -1.0;
+        m_ssFromMotionT = 0.0;
+        m_ssToMotionT = 0.0;
+        m_ssFromMotionClockRunning = false;
+        m_ssToMotionClockRunning = false;
     }
     viewport()->update();
 }
@@ -1089,37 +1093,65 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     if (!m_slideshowProgressActive) {
         return;
     }
+
     const bool fromChanged = (fromPath != m_ssFromPath);
     const bool toChanged = (toPath != m_ssToPath);
+    const int pathMs = qMax(250, m_slideshowProgressIntervalMs
+                            + qMax(0, m_slideshowTransitionDurationMs));
 
+    // --- From (A) ---
     if (fromChanged) {
+        // Spec: B moves through transition *and* its following interval.
+        // When dwell becomes B after A+B fade, promote B's motion — do not restart at 0.
+        const bool promoteB = (!fromPath.isEmpty() && fromPath == m_ssToPath
+                               && m_ssToMotionClockRunning);
         m_ssFromPath = fromPath;
-        m_ssFromImage = slideshowPixelsForPath(fromPath);
-        m_dwellSourceImage = m_ssFromImage;
-        m_motionBiasValid = false;
-        if (!fromPath.isEmpty()) {
+        if (promoteB) {
+            m_ssFromImage = !m_ssToImage.isNull() ? m_ssToImage
+                                                 : slideshowPixelsForPath(fromPath);
+            m_motionBiasA = m_ssToBiasA;
+            m_motionBiasB = m_ssToBiasB;
+            m_motionBiasValid = true;
             m_motionBiasPath = fromPath;
-            pickInterestingMotionBiases(qHash(fromPath), m_ssFromImage);
-        }
-        // New slide → Ken Burns path from 0.
-        if (m_slideshowMotion != SlideshowMotion::Off
-            && m_slideshowProgressIntervalMs >= 250
-            && !m_ssFromImage.isNull()) {
-            startSlideshowMotion(m_slideshowProgressIntervalMs, 0.0);
-            m_dwellSourceImage = m_ssFromImage;
+            m_ssFromMotionClock = m_ssToMotionClock;
+            m_ssFromMotionClockRunning = true;
+            m_ssFromMotionT = m_ssToMotionT;
+            m_dwellMotionT = m_ssFromMotionT;
+        } else {
+            m_ssFromImage = slideshowPixelsForPath(fromPath);
+            if (!fromPath.isEmpty()) {
+                m_motionBiasValid = false;
+                pickInterestingMotionBiases(qHash(fromPath), m_ssFromImage);
+                m_motionBiasPath = fromPath;
+            }
+            m_ssFromMotionClock.start();
+            m_ssFromMotionClockRunning = true;
+            m_ssFromMotionT = 0.0;
             m_dwellMotionT = 0.0;
-            m_motionElapsedOffsetMs = 0;
-            m_motionClock.start();
-            m_slideshowMotionActive = true;
-            ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+        }
+        m_dwellSourceImage = m_ssFromImage;
+        if (!m_ssFromImage.isNull()) {
+            ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                               &m_dwellAtlasVw, &m_dwellAtlasVh);
+        }
+        if (m_slideshowMotion != SlideshowMotion::Off && pathMs >= 250) {
+            if (!m_motionTimer) {
+                m_motionTimer = new QTimer(this);
+                m_motionTimer->setTimerType(Qt::PreciseTimer);
+                m_motionTimer->setInterval(16);
+                connect(m_motionTimer, &QTimer::timeout, this, &ImageView::tickSlideshowMotion);
+            }
+            m_slideshowMotionActive = true;
+            m_motionDurationMs = pathMs;
+            m_motionTimer->start();
         }
         qDebug().nospace()
             << "[slideshow] phase-from "
             << QFileInfo(fromPath).fileName()
-            << " " << m_ssFromImage.width() << "x" << m_ssFromImage.height();
-    } else if (!fromPath.isEmpty()) {
-        // Upgrade soft → full if better pixels appeared.
+            << " " << m_ssFromImage.width() << "x" << m_ssFromImage.height()
+            << (promoteB ? " (continue)" : " (start)");
+    } else {
+        // Poll: upgrade soft → full without events.
         const QImage better = slideshowPixelsForPath(fromPath);
         if (!better.isNull()
             && (m_ssFromImage.isNull()
@@ -1127,21 +1159,44 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
                     > m_ssFromImage.width() * m_ssFromImage.height())) {
             m_ssFromImage = better;
             m_dwellSourceImage = better;
-            ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+            ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                               &m_dwellAtlasVw, &m_dwellAtlasVh);
         }
     }
+    if (m_ssFromMotionClockRunning && pathMs > 0) {
+        m_ssFromMotionT = qBound(0.0, qreal(m_ssFromMotionClock.elapsed()) / qreal(pathMs), 1.0);
+        m_dwellMotionT = m_ssFromMotionT;
+    }
 
-    if (toChanged) {
+    // --- To (B) ---
+    if (toPath.isEmpty()) {
+        m_ssToPath.clear();
+        m_ssToImage = QImage();
+        m_ssToMotionClockRunning = false;
+        m_ssToMotionT = 0.0;
+    } else if (toChanged) {
         m_ssToPath = toPath;
         m_ssToImage = slideshowPixelsForPath(toPath);
-        if (!toPath.isEmpty()) {
-            qDebug().nospace()
-                << "[slideshow] phase-to "
-                << QFileInfo(toPath).fileName()
-                << " " << m_ssToImage.width() << "x" << m_ssToImage.height();
+        {
+            const QPointF saveA = m_motionBiasA;
+            const QPointF saveB = m_motionBiasB;
+            const bool saveV = m_motionBiasValid;
+            m_motionBiasValid = false;
+            pickInterestingMotionBiases(qHash(toPath), m_ssToImage);
+            m_ssToBiasA = m_motionBiasA;
+            m_ssToBiasB = m_motionBiasB;
+            m_motionBiasA = saveA;
+            m_motionBiasB = saveB;
+            m_motionBiasValid = saveV;
         }
-    } else if (!toPath.isEmpty()) {
+        m_ssToMotionClock.start();
+        m_ssToMotionClockRunning = true;
+        m_ssToMotionT = 0.0;
+        qDebug().nospace()
+            << "[slideshow] phase-to "
+            << QFileInfo(toPath).fileName()
+            << " " << m_ssToImage.width() << "x" << m_ssToImage.height();
+    } else {
         const QImage better = slideshowPixelsForPath(toPath);
         if (!better.isNull()
             && (m_ssToImage.isNull()
@@ -1150,14 +1205,19 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             m_ssToImage = better;
         }
     }
+    if (m_ssToMotionClockRunning && pathMs > 0) {
+        m_ssToMotionT = qBound(0.0, qreal(m_ssToMotionClock.elapsed()) / qreal(pathMs), 1.0);
+    }
 
     m_ssFadeT = fadeT;
-    // Kill legacy live state — pure phase owns the composite now.
+
+    // Pure phase owns the composite — clear legacy live flags so nothing cancels us.
     m_liveTransitionActive = false;
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveFromSourceImage = QImage();
     m_liveTransitionSourceImage = QImage();
+
     hideSlideshowUnderlay();
     if (viewport()) {
         viewport()->update();
@@ -1379,9 +1439,22 @@ void ImageView::preloadSlideshowImage(const QString &path)
                 << "[slideshow] preload-ready " << QFileInfo(loadPath).fileName()
                 << " " << img.width() << "x" << img.height();
             view->rememberImageSize(loadPath, img.size());
-            // Full decode landed while a soft (cache-scaled) live fade is already
-            // painting this path — upgrade pixels + handoff in place. Same native
-            // size ⇒ no geometry jump; only sharpness improves.
+            // Pure-phase: full landed — next draw (or this update) picks it up.
+            // Pause exception: schedule one redraw so sharpness appears without
+            // the motion timer running.
+            if (view->m_slideshowProgressActive) {
+                if (loadPath == view->m_ssFromPath) {
+                    view->m_ssFromImage = img;
+                    view->m_dwellSourceImage = img;
+                }
+                if (loadPath == view->m_ssToPath) {
+                    view->m_ssToImage = img;
+                }
+                if (view->viewport()) {
+                    view->viewport()->update();
+                }
+            }
+            // Legacy live-fade upgrade path.
             if (view->m_liveTransitionNextPath == loadPath
                 && (view->m_liveTransitionActive || view->m_liveTransitionHold
                     || view->m_liveTransitionAwaitingLoad)) {
@@ -1934,21 +2007,57 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
 
 void ImageView::tickSlideshowMotion()
 {
-    // SINGLE motion clock. Transitions never stop this timer.
-    // Live/crossfade/fade-black only change which frames are composited.
     if (!m_slideshowMotionActive) {
         if (m_motionTimer) {
             m_motionTimer->stop();
         }
         return;
     }
-    if (m_motionDurationMs <= 0 || !viewport()) {
+    if (!viewport()) {
+        return;
+    }
+
+    // Pure-phase path: advance A/B motion from their own clocks (spec: both
+    // move during transition; B moves through transition + its interval).
+    if (m_slideshowProgressActive && (m_ssFromMotionClockRunning || m_ssToMotionClockRunning)) {
+        const int pathMs = qMax(250, m_slideshowProgressIntervalMs
+                                + qMax(0, m_slideshowTransitionDurationMs));
+        if (m_ssFromMotionClockRunning) {
+            m_ssFromMotionT = qBound(0.0, qreal(m_ssFromMotionClock.elapsed()) / qreal(pathMs), 1.0);
+            m_dwellMotionT = m_ssFromMotionT;
+        }
+        if (m_ssToMotionClockRunning) {
+            m_ssToMotionT = qBound(0.0, qreal(m_ssToMotionClock.elapsed()) / qreal(pathMs), 1.0);
+        }
+        // Poll soft→full on the visible paths (no decode-finished events).
+        if (!m_ssFromPath.isEmpty()) {
+            const QImage better = slideshowPixelsForPath(m_ssFromPath);
+            if (!better.isNull()
+                && (m_ssFromImage.isNull()
+                    || better.width() * better.height()
+                        > m_ssFromImage.width() * m_ssFromImage.height())) {
+                m_ssFromImage = better;
+                m_dwellSourceImage = better;
+            }
+        }
+        if (!m_ssToPath.isEmpty()) {
+            const QImage better = slideshowPixelsForPath(m_ssToPath);
+            if (!better.isNull()
+                && (m_ssToImage.isNull()
+                    || better.width() * better.height()
+                        > m_ssToImage.width() * m_ssToImage.height())) {
+                m_ssToImage = better;
+            }
+        }
+        viewport()->update();
+        return;
+    }
+
+    if (m_motionDurationMs <= 0) {
         return;
     }
 
     const qreal wallMs = qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed());
-    // Never clamp-and-hold at 1: that froze the from-image for the whole fade
-    // because the slideshow advances exactly when wall ≈ duration.
     const qreal dwellT = motionProgress01(wallMs, qreal(m_motionDurationMs));
     m_dwellMotionT = dwellT;
     if (!m_dwellSourceImage.isNull()) {
