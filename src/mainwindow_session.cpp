@@ -1133,6 +1133,8 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         armSlideshowAdvanceTimer();
     }
 }
+
+void MainWindow::removeSessionIndices(const QList<int> &indices)
 {
     if (indices.isEmpty() || m_session.paths().isEmpty()) {
         return;

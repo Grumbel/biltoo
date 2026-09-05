@@ -4237,3 +4237,13 @@ start-transition, live-finished. No per-tick spam.
 - [x] Manual index change updates clock + HUD
 - [x] beginLive busy during decode
 - [x] Next **235**
+
+## Plan / work (2026-09-05) — bundle `biltoo-235-fix-removeSessionIndices-sig`
+
+Compile fix: 234 dropped the `void MainWindow::removeSessionIndices(...)`
+signature when appending the setCurrentIndex resync block.
+
+### Done criteria
+- [x] Builds
+- [x] Next **236**
+
