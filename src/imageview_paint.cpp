@@ -518,15 +518,8 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             }
 
             if (m_slideshowTimelineTotalMs > 0) {
-                // Whole seconds alone stick at 0:00 for the entire slide when
-                // interval is 1s (phase never reaches 1000ms before wrap).
-                const bool fine = m_slideshowTimelineTotalMs < 10000;
-                auto fmt = [fine](qint64 ms) -> QString {
+                auto fmt = [](qint64 ms) -> QString {
                     ms = qMax(qint64(0), ms);
-                    if (fine) {
-                        const double sec = double(ms) / 1000.0;
-                        return QString::number(sec, 'f', 1);
-                    }
                     const qint64 totalSec = ms / 1000;
                     const int h = int(totalSec / 3600);
                     const int m = int((totalSec % 3600) / 60);

@@ -4345,3 +4345,17 @@ and “progress takes forever” (HUD used full-playlist elapsed).
 - [x] HUD advances during a 1s interval
 - [x] beginLive retry does not pin phase at 0
 - [x] Next **241**
+
+## Plan / work (2026-09-05) — bundle `biltoo-241-slideshow-hud-session`
+
+### Decimal-second HUD was a hack
+Per-slide phase/interval with tenths looked wrong. Real video-player HUD is
+the full session: total = n×interval, elapsed = base×interval + clock
+(mod total). Whole seconds work naturally (116×1s → ~1:56 show).
+
+←/→ still arm-resets base so current time jumps to that slide's position.
+
+### Done criteria
+- [x] No decimal-second formatting
+- [x] Session-scale current / total / −remaining
+- [x] Next **242**

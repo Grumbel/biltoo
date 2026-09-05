@@ -913,10 +913,14 @@ void MainWindow::updateSlideshowFromClock()
     qint64 cycle = elapsed / intervalMs;
     int phaseMs = int(elapsed % intervalMs);
 
-    // Per-slide timeline for extended HUD (resets on ←/→ / arm).
-    // Overall playlist position is already shown by the session badge.
+    // Full-session timeline (video-player style): place in the n-image loop.
+    // ←/→ arm resets baseIndex + elapsed so current time jumps to that slide.
     if (m_imageView) {
-        m_imageView->setSlideshowTimeline(phaseMs, intervalMs);
+        const qint64 totalMs = qint64(n) * qint64(intervalMs);
+        const qint64 raw =
+            qint64(m_slideshowBaseIndex) * qint64(intervalMs) + elapsed;
+        const qint64 loopElapsed = totalMs > 0 ? (raw % totalMs) : 0;
+        m_imageView->setSlideshowTimeline(loopElapsed, totalMs);
     }
 
     int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
@@ -1003,9 +1007,6 @@ void MainWindow::updateSlideshowFromClock()
         m_slideshowClock.restart();
         elapsed = m_slideshowPausedAccumMs;
         phaseMs = pureMs;
-        if (m_imageView) {
-            m_imageView->setSlideshowTimeline(phaseMs, intervalMs);
-        }
     }
 
     const QString toPath = m_session.paths().at(toIdx);
