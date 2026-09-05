@@ -183,7 +183,7 @@ public:
     void applyToolDragMode();
     void startSlideshowTransitionAnimation();
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
-    void pickInterestingMotionBiases(uint seed);
+    void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
     /** Decode path off the GUI thread into m_preload* for the next live transition. */
     void preloadSlideshowImage(const QString &path);
     void tickSlideshowMotion();

@@ -5,6 +5,7 @@
 #define IMAGELOADER_H
 
 #include <QImage>
+#include <QPointF>
 #include <QSize>
 #include <QString>
 #include <QStringList>
@@ -22,6 +23,13 @@ void init(const char *argv0);
 
 /** True when this build linked against libvips. */
 bool hasVips();
+
+/**
+ * Approximate attention / focus point in normalized image coordinates (0–1).
+ * Uses libvips smartcrop (VIPS_INTERESTING_ATTENTION) on a downscaled copy.
+ * Returns false when VIPS is unavailable, the image is empty, or the probe fails.
+ */
+bool attentionPoint(const QImage &image, QPointF *normalizedOut);
 
 /**
  * Fast size probe without a full pixel decode when the backend allows it.

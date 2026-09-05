@@ -12,6 +12,7 @@
 #include "archivereader.h"
 
 #include <QBuffer>
+#include <cstring>
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -479,6 +480,76 @@ bool hasVips()
     return true;
 #else
     return false;
+#endif
+}
+
+bool attentionPoint(const QImage &image, QPointF *normalizedOut)
+{
+    if (!normalizedOut || image.isNull() || image.width() < 8 || image.height() < 8) {
+        return false;
+    }
+#ifndef BILTOO_HAVE_VIPS
+    Q_UNUSED(image);
+    return false;
+#else
+    // Work on a small RGB copy — attention is coarse and must stay off the
+    // slideshow tick path latency budget.
+    QImage src = image;
+    constexpr int kMaxEdge = 256;
+    if (src.width() > kMaxEdge || src.height() > kMaxEdge) {
+        src = src.scaled(kMaxEdge, kMaxEdge, Qt::KeepAspectRatio, Qt::FastTransformation);
+    }
+    src = src.convertToFormat(QImage::Format_RGB888);
+    if (src.isNull() || src.bytesPerLine() < src.width() * 3) {
+        return false;
+    }
+
+    // Deep-copy pixels into a contiguous buffer vips can own independently of QImage.
+    const int width = src.width();
+    const int height = src.height();
+    const int bands = 3;
+    const size_t rowBytes = size_t(width) * size_t(bands);
+    const size_t nbytes = rowBytes * size_t(height);
+    void *buf = g_malloc(nbytes);
+    if (!buf) {
+        return false;
+    }
+    for (int y = 0; y < height; ++y) {
+        memcpy(static_cast<uchar *>(buf) + size_t(y) * rowBytes,
+               src.constScanLine(y), rowBytes);
+    }
+
+    // Copy into a VipsImage so we can free buf immediately (no lifetime tie).
+    VipsImage *in = vips_image_new_from_memory_copy(buf, nbytes, width, height, bands,
+                                                    VIPS_FORMAT_UCHAR);
+    g_free(buf);
+    if (!in) {
+        return false;
+    }
+
+    // Crop a central-ish window so smartcrop must choose where interesting content is.
+    const int cropW = qMax(8, (width * 2) / 3);
+    const int cropH = qMax(8, (height * 2) / 3);
+    VipsImage *out = nullptr;
+    if (vips_smartcrop(in, &out, cropW, cropH,
+                       "interesting", VIPS_INTERESTING_ATTENTION,
+                       nullptr) != 0
+        || !out) {
+        g_object_unref(in);
+        return false;
+    }
+
+    // Crop origin within the input; attention focus ≈ centre of that window.
+    const int left = out->Xoffset;
+    const int top = out->Yoffset;
+    const qreal cx = qreal(left) + qreal(cropW) * 0.5;
+    const qreal cy = qreal(top) + qreal(cropH) * 0.5;
+    *normalizedOut = QPointF(qBound(0.0, cx / qreal(width), 1.0),
+                             qBound(0.0, cy / qreal(height), 1.0));
+
+    g_object_unref(out);
+    g_object_unref(in);
+    return true;
 #endif
 }
 

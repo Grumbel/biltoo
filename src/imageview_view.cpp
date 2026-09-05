@@ -813,26 +813,50 @@ void ImageView::cancelSlideshowMotion()
     m_dwellCoverPixmap = QPixmap();
 }
 
-void ImageView::pickInterestingMotionBiases(uint seed)
+void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
 {
-    // Path-hash corners/edges: each dwell gets a distinct pan/zoom axis pair.
-    // Do NOT force a session-wide Y sign — that made every slide pan the same way.
+    // Prefer content-aware centres (libvips attention) when the decoded frame
+    // is available; otherwise path-hash corners/edges as before.
+    if (seed == 0) {
+        seed = 1;
+    }
+
+    QPointF att01;
+    if (!source.isNull() && ImageLoader::attentionPoint(source, &att01)) {
+        // Map normalized focus to bias space [-1, 1] (same as corner table).
+        QPointF subject((att01.x() - 0.5) * 2.0, (att01.y() - 0.5) * 2.0);
+        subject.setX(qBound(-1.0, subject.x(), 1.0));
+        subject.setY(qBound(-1.0, subject.y(), 1.0));
+        // Near-centre attention still needs travel — fall through to geometry.
+        if (qAbs(subject.x()) > 0.12 || qAbs(subject.y()) > 0.12) {
+            const QPointF opposite(-subject.x() * 0.65, -subject.y() * 0.65);
+            // Odd seed: start on subject and ease away; even: travel toward it.
+            if (seed & 1u) {
+                m_motionBiasA = subject;
+                m_motionBiasB = opposite;
+            } else {
+                m_motionBiasA = opposite;
+                m_motionBiasB = subject;
+            }
+            m_motionBiasValid = true;
+            m_motionTravelDir = m_motionBiasB - m_motionBiasA;
+            m_motionSign = (m_motionTravelDir.y() >= 0.0) ? 1.0 : -1.0;
+            return;
+        }
+    }
+
     static const QPointF kBias[8] = {
         QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
         QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
         QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
         QPointF(0.0, -1.0), QPointF(0.0, 1.0),
     };
-    if (seed == 0) {
-        seed = 1;
-    }
     m_motionBiasA = kBias[seed % 8];
     m_motionBiasB = kBias[(seed / 8 + 3) % 8];
     if (qFuzzyCompare(m_motionBiasA.x(), m_motionBiasB.x())
         && qFuzzyCompare(m_motionBiasA.y(), m_motionBiasB.y())) {
         m_motionBiasB = kBias[(seed + 5) % 8];
     }
-    // Prefer a path with real travel (not A≈B).
     if (qAbs(m_motionBiasA.x() - m_motionBiasB.x()) < 0.1
         && qAbs(m_motionBiasA.y() - m_motionBiasB.y()) < 0.1) {
         m_motionBiasB = kBias[(seed + 7) % 8];
@@ -1249,7 +1273,8 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         const bool saveValid = m_motionBiasValid;
         pickInterestingMotionBiases(m_liveTransitionPathHash
                                         ? m_liveTransitionPathHash
-                                        : 1u);
+                                        : 1u,
+                                    nextImage);
         m_liveToBiasA = m_motionBiasA;
         m_liveToBiasB = m_motionBiasB;
         m_motionBiasA = saveA;
@@ -1365,7 +1390,8 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     // a new path when starting a fresh dwell with no valid biases.
     if (!m_motionBiasValid
         && !(m_liveTransitionHold || m_liveTransitionActive)) {
-        pickInterestingMotionBiases(qHash(path));
+        const QImage src = item ? item->sourceImage() : QImage();
+        pickInterestingMotionBiases(qHash(path), src);
     }
     // Biases + slideshow zoom are read by renderMotionCoverPixmap.
 

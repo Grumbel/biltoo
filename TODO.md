@@ -3356,3 +3356,26 @@ Distinct from **File → New** (clears the current window’s session).
 - [x] New Window menu action + Ctrl+Shift+N
 - [x] Empty session; existing window unchanged
 - [x] Next **190**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-190-attention-panzoom`
+
+Content-aware Pan&Zoom path centres using **libvips smartcrop attention**
+when `BILTOO_HAVE_VIPS` is available; keep the existing path-hash corner/edge
+biases as fallback.
+
+### Design
+- `ImageLoader::attentionPoint(QImage) → optional normalized (0–1) focus`
+  - Downscale max edge ~256 for speed
+  - `vips_smartcrop` with `VIPS_INTERESTING_ATTENTION`
+  - Focus = crop centre from Xoffset/Yoffset + crop size
+- `pickInterestingMotionBiases(seed, sourceImage)`:
+  - If attention found: end bias near subject, start opposite (~0.6×) for travel;
+    seed bit flips direction (zoom into vs away)
+  - Else: existing 8-corner geometric table
+- Call sites pass dwell / next-slide `QImage` when available
+
+### Done criteria
+- [x] VIPS builds bias toward attention
+- [x] No-VIPS / failure keeps geometric biases
+- [x] Next **191**
