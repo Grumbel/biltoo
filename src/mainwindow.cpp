@@ -973,7 +973,11 @@ void MainWindow::updateSlideshowFromClock()
                 m_slideshowPendingToIndex = toIdx;
             }
             m_imageView->setSlideshowPhase(fromPath, toPath, t);
-            if (t >= 1.0 - 1e-6 && m_currentIndex != toIdx && !m_slideshowAdvancing) {
+            // phaseMs ∈ [0, intervalMs). When pureMs==0, t never reaches 1.0
+            // because phase max is interval-1. Commit on the last phase sample.
+            const bool transitionDone =
+                (t >= 1.0 - 1e-6) || (phaseMs >= intervalMs - 1);
+            if (transitionDone && m_currentIndex != toIdx && !m_slideshowAdvancing) {
                 m_slideshowAdvancing = true;
                 setCurrentIndex(toIdx);
                 m_slideshowAdvancing = false;

@@ -572,6 +572,8 @@ public:
     /** Pure-clock drive: fadeT<0 dwell on fromPath; else crossfade from→to at fadeT in [0,1]. */
     void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
     QImage slideshowPixelsForPath(const QString &path);
+    QImage slideshowFullIfReady(const QString &path) const;
+    QImage slideshowSoftPlaceholder(const QString &path);
     /**
      * Drop any held live-transition overlay once the next slide is fitted.
      * Called from the LoadReplace path so the incoming frame is not cleared
@@ -1060,7 +1062,9 @@ private:
     QElapsedTimer m_ssFromMotionClock;
     QElapsedTimer m_ssToMotionClock;
     bool m_ssFromMotionClockRunning = false;
-    bool m_ssToMotionClockRunning = false; /**< Source pixels for dwell blit */
+    bool m_ssToMotionClockRunning = false;
+    /** Native-size soft placeholders; scaled once per path, never every tick. */
+    QHash<QString, QImage> m_ssSoftByPath; /**< Source pixels for dwell blit */
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;

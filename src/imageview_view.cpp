@@ -465,6 +465,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssToMotionT = 0.0;
         m_ssFromMotionClockRunning = false;
         m_ssToMotionClockRunning = false;
+        m_ssSoftByPath.clear();
     }
     viewport()->update();
 }
@@ -1054,21 +1055,35 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
 }
 
 
-QImage ImageView::slideshowPixelsForPath(const QString &path)
+QImage ImageView::slideshowFullIfReady(const QString &path) const
 {
     if (path.isEmpty()) {
         return QImage();
     }
-    if (ImageItem *item = targetItem()) {
-        if (item->path() == path && !item->sourceImage().isNull()) {
-            return item->sourceImage();
-        }
-    }
+    // Const path: only buffers we already own — no ImageCache scale, no probe.
     if (path == m_preloadPath && !m_preloadImage.isNull()) {
         return m_preloadImage;
     }
     if (path == m_handoffPath && !m_handoffImage.isNull()) {
         return m_handoffImage;
+    }
+    // targetItem() is non-const; use m_items scan for const.
+    for (ImageItem *item : m_items) {
+        if (item && item->path() == path && !item->sourceImage().isNull()) {
+            return item->sourceImage();
+        }
+    }
+    return QImage();
+}
+
+QImage ImageView::slideshowSoftPlaceholder(const QString &path)
+{
+    if (path.isEmpty()) {
+        return QImage();
+    }
+    const auto softIt = m_ssSoftByPath.constFind(path);
+    if (softIt != m_ssSoftByPath.cend() && !softIt->isNull()) {
+        return *softIt;
     }
     const QImage cached = ImageCache::get(path);
     if (cached.isNull()) {
@@ -1080,12 +1095,26 @@ QImage ImageView::slideshowPixelsForPath(const QString &path)
         fullSz = *it;
     } else {
         fullSz = ImageLoader::probeSize(path);
+        if (fullSz.isValid() && fullSz.width() > 0) {
+            rememberImageSize(path, fullSz);
+        }
     }
+    QImage soft = cached;
     if (fullSz.isValid() && fullSz.width() > 0
-        && (cached.width() != fullSz.width() || cached.height() != fullSz.height())) {
-        return cached.scaled(fullSz, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        && (soft.width() != fullSz.width() || soft.height() != fullSz.height())) {
+        soft = soft.scaled(fullSz, Qt::IgnoreAspectRatio, Qt::FastTransformation);
     }
-    return cached;
+    m_ssSoftByPath.insert(path, soft);
+    return soft;
+}
+
+QImage ImageView::slideshowPixelsForPath(const QString &path)
+{
+    const QImage full = slideshowFullIfReady(path);
+    if (!full.isNull()) {
+        return full;
+    }
+    return slideshowSoftPlaceholder(path);
 }
 
 void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
@@ -1151,14 +1180,14 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             << " " << m_ssFromImage.width() << "x" << m_ssFromImage.height()
             << (promoteB ? " (continue)" : " (start)");
     } else {
-        // Poll: upgrade soft → full without events.
-        const QImage better = slideshowPixelsForPath(fromPath);
-        if (!better.isNull()
+        // Upgrade only when a full buffer is ready — never re-scale soft every tick.
+        const QImage full = slideshowFullIfReady(fromPath);
+        if (!full.isNull()
             && (m_ssFromImage.isNull()
-                || better.width() * better.height()
+                || full.width() * full.height()
                     > m_ssFromImage.width() * m_ssFromImage.height())) {
-            m_ssFromImage = better;
-            m_dwellSourceImage = better;
+            m_ssFromImage = full;
+            m_dwellSourceImage = full;
             ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                               &m_dwellAtlasVw, &m_dwellAtlasVh);
         }
@@ -1197,12 +1226,12 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             << QFileInfo(toPath).fileName()
             << " " << m_ssToImage.width() << "x" << m_ssToImage.height();
     } else {
-        const QImage better = slideshowPixelsForPath(toPath);
-        if (!better.isNull()
+        const QImage full = slideshowFullIfReady(toPath);
+        if (!full.isNull()
             && (m_ssToImage.isNull()
-                || better.width() * better.height()
+                || full.width() * full.height()
                     > m_ssToImage.width() * m_ssToImage.height())) {
-            m_ssToImage = better;
+            m_ssToImage = full;
         }
     }
     if (m_ssToMotionClockRunning && pathMs > 0) {
@@ -2029,24 +2058,24 @@ void ImageView::tickSlideshowMotion()
         if (m_ssToMotionClockRunning) {
             m_ssToMotionT = qBound(0.0, qreal(m_ssToMotionClock.elapsed()) / qreal(pathMs), 1.0);
         }
-        // Poll soft→full on the visible paths (no decode-finished events).
+        // Upgrade only from full buffers (preload/item) — no soft scale per tick.
         if (!m_ssFromPath.isEmpty()) {
-            const QImage better = slideshowPixelsForPath(m_ssFromPath);
-            if (!better.isNull()
+            const QImage full = slideshowFullIfReady(m_ssFromPath);
+            if (!full.isNull()
                 && (m_ssFromImage.isNull()
-                    || better.width() * better.height()
+                    || full.width() * full.height()
                         > m_ssFromImage.width() * m_ssFromImage.height())) {
-                m_ssFromImage = better;
-                m_dwellSourceImage = better;
+                m_ssFromImage = full;
+                m_dwellSourceImage = full;
             }
         }
         if (!m_ssToPath.isEmpty()) {
-            const QImage better = slideshowPixelsForPath(m_ssToPath);
-            if (!better.isNull()
+            const QImage full = slideshowFullIfReady(m_ssToPath);
+            if (!full.isNull()
                 && (m_ssToImage.isNull()
-                    || better.width() * better.height()
+                    || full.width() * full.height()
                         > m_ssToImage.width() * m_ssToImage.height())) {
-                m_ssToImage = better;
+                m_ssToImage = full;
             }
         }
         viewport()->update();

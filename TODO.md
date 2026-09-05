@@ -4914,3 +4914,18 @@ Paused: if full-res arrives for the visible path, schedule one redraw.
 ### Done criteria
 - [x] Spec-aligned pure phase path
 - [x] Next **272**
+
+## Plan / work (2026-09-05) — bundle `biltoo-272-no-rescale-every-tick`
+
+### Cause
+When interval==transition, every clock tick polled both paths via
+`cached.scaled(nativeSize)`, reallocating multi-MP soft images continuously.
+
+### Fix
+- Soft placeholder scaled **once** per path (`m_ssSoftByPath`)
+- Per-tick upgrade only checks full buffers (preload/item/handoff)
+- Commit index at last phase sample when pureMs==0 (t never hits 1.0)
+
+### Done criteria
+- [x] No per-tick native scale
+- [x] Next **273**
