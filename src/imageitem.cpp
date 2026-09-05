@@ -94,9 +94,13 @@ void ImageItem::setPreviewImage(const QImage &preview)
     prepareGeometryChange();
     m_preview = preview;
     m_previewPixels = true;
-    // Keep intrinsic size (probe / full geometry); do not adopt preview size.
     m_source = QImage();
     setPixmap(QPixmap());
+    // Match preview aspect so fit/layout are not based on the previous image
+    // or a square fallback. Full decode replaces this with native size later.
+    if (preview.width() > 0 && preview.height() > 0) {
+        m_intrinsicSize = preview.size();
+    }
     const QSize s = imageSize();
     setOffset(-s.width() / 2.0, -s.height() / 2.0);
     applyLocalTransform();

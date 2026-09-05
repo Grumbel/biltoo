@@ -77,20 +77,20 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     if (!isImageMode() || path.isEmpty()) {
         return;
     }
-    // Prefer real aspect: probe header when cheap; else keep previous tile size.
+    // Aspect must match the *new* image. Previous tile size is last resort only
+    // (wrong aspect caused stretched previews on rapid next/prev).
     QSize sz(1000, 1000);
-    if (ImageItem *cur = targetItem()) {
-        const QSize curSz = cur->imageSize();
-        if (curSz.isValid() && curSz.width() > 0 && curSz.height() > 0) {
-            sz = curSz;
-        }
-    }
     if (!preview.isNull() && preview.width() > 0 && preview.height() > 0) {
         sz = preview.size();
     } else if (!ArchivePath::isArchiveRef(path)) {
         const QSize probed = ImageLoader::probeSize(path);
         if (probed.isValid() && probed.width() > 0 && probed.height() > 0) {
             sz = probed;
+        } else if (ImageItem *cur = targetItem()) {
+            const QSize curSz = cur->imageSize();
+            if (curSz.isValid() && curSz.width() > 0 && curSz.height() > 0) {
+                sz = curSz;
+            }
         }
     } else {
         sz = QSize(1024, 1024);
@@ -276,6 +276,14 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                 // Upgrade loading placeholder (same path) in place when possible.
                 if (cur->path() == path && !cur->hasDecodedPixels()) {
                     cur->setPreviewImage(image);
+                    // Intrinsic size may have changed to preview aspect — re-fit.
+                    if (m_slideshowProgressActive
+                        && m_slideshowMotion == SlideshowMotion::Off) {
+                        applySlideshowZoomFraming(cur);
+                    } else if (!m_slideshowProgressActive) {
+                        fitItem(cur, currentFitAspectMode());
+                    }
+                    m_scene->setSceneRect(cur->sceneBoundingRect().adjusted(-8, -8, 8, 8));
                     if (viewport()) {
                         viewport()->update();
                     }

@@ -3808,3 +3808,18 @@ finished; async thumbnail was too late / easy to miss.
 - [x] Next/prev drops previous image immediately (loading chrome)
 - [x] Thumbnail upgrades the pending tile when ready
 - [x] Next **217**
+
+## Plan / work (2026-09-05) — bundle `biltoo-217-preview-aspect-ratio`
+
+Pending/preview tiles used the *previous* image size or stretched the
+thumbnail into a mismatched content rect → wrong aspect on next/prev.
+
+### Fix
+- Size order: preview → probe → previous → default (never prefer previous first)
+- `setPreviewImage` adopts preview size as intrinsic aspect
+- Paint previews with KeepAspectRatio letterbox inside content rect
+- In-place preview upgrade re-fits and updates scene rect
+
+### Done criteria
+- [x] Preview matches image aspect
+- [x] Next **218**

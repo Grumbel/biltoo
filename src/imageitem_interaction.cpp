@@ -1074,9 +1074,15 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         if (!m_source.isNull() && !m_previewPixels && !pixmap().isNull()) {
             QGraphicsPixmapItem::paint(painter, &opt, widget);
         } else if (!m_preview.isNull()) {
-            // Provisional low-res: stretch into intrinsic content rect.
+            // Provisional low-res: keep aspect inside content rect (no stretch).
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-            painter->drawImage(contentRect(), m_preview);
+            const QRectF box = contentRect();
+            QSizeF fit(m_preview.size());
+            fit.scale(box.size(), Qt::KeepAspectRatio);
+            QRectF dest(QPointF(0, 0), fit);
+            dest.moveCenter(box.center());
+            painter->fillRect(box, QColor(40, 40, 44));
+            painter->drawImage(dest, m_preview);
         } else {
             // Loading placeholder while decode is pending or unloaded.
             const QRectF cr = contentRect();
