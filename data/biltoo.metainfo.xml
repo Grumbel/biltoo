@@ -49,6 +49,8 @@
     <keyword>workspace</keyword>
     <keyword>slideshow</keyword>
     <keyword>photo</keyword>
+    <keyword>archive</keyword>
+    <keyword>zip</keyword>
   </keywords>
   <screenshots>
     <screenshot type="default">
@@ -67,6 +69,33 @@
       </description>
     </release>
   </releases>
+  <mimetypes>
+    <mimetype>image/jpeg</mimetype>
+    <mimetype>image/png</mimetype>
+    <mimetype>image/gif</mimetype>
+    <mimetype>image/bmp</mimetype>
+    <mimetype>image/webp</mimetype>
+    <mimetype>image/tiff</mimetype>
+    <mimetype>image/svg+xml</mimetype>
+    <mimetype>image/avif</mimetype>
+    <mimetype>image/heic</mimetype>
+    <mimetype>image/heif</mimetype>
+    <mimetype>image/jxl</mimetype>
+    <mimetype>application/zip</mimetype>
+    <mimetype>application/x-7z-compressed</mimetype>
+    <mimetype>application/vnd.rar</mimetype>
+    <mimetype>application/x-rar</mimetype>
+    <mimetype>application/x-tar</mimetype>
+    <mimetype>application/x-compressed-tar</mimetype>
+    <mimetype>application/gzip</mimetype>
+    <mimetype>application/x-bzip-compressed-tar</mimetype>
+    <mimetype>application/x-xz-compressed-tar</mimetype>
+    <mimetype>application/zstd</mimetype>
+    <mimetype>application/x-cpio</mimetype>
+    <mimetype>application/x-iso9660-image</mimetype>
+    <mimetype>application/vnd.ms-cab-compressed</mimetype>
+    <mimetype>application/x-archive</mimetype>
+  </mimetypes>
   <content_rating type="oars-1.1" />
   <recommends>
     <control>keyboard</control>

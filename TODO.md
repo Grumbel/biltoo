@@ -3324,3 +3324,20 @@ Concatenate qtbase + qtsvg into `QT_PLUGIN_PATH` for unwrapped out-of-tree runs.
 ### Done criteria
 - [x] `nix develop` evaluates without `qtPluginPrefix` error
 - [x] Next **188**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-188-desktop-archive-mime`
+
+`.desktop` already listed a few archives (zip/7z/rar/tar/gzip/bzip2/xz). Align
+with `ArchivePath::archiveSuffixes()` and AppStream so file managers offer
+Biltoo for the same containers libarchive can open.
+
+### Additions
+- Desktop `MimeType`: compressed-tar variants, zstd, cpio, iso, cab, ar,
+  `application/vnd.rar`
+- `biltoo.metainfo.xml`: `<mimetypes>` for images + archives (was missing)
+
+### Done criteria
+- [x] Desktop MIME covers archiveSuffixes-backed types
+- [x] AppStream lists the same archive mimetypes
+- [x] Next **189**
