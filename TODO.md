@@ -3707,3 +3707,17 @@ on item hover-leave.
 - [x] Chrome buttons show tooltips on hover
 - [x] Crop action buttons show tooltips
 - [x] Next **211**
+
+## Plan / work (2026-09-05) — bundle `biltoo-211-null-deref-host`
+
+Replacing nested `window = guard.data()` with `guard->` fixed -Wshadow but
+introduced -Wnull-dereference (GCC does not trust QPointer short-circuit).
+
+### Fix
+- Dir-walk and sort progress lambda: bind `MainWindow *const host = guard.data()`
+  then test/use `host` (no shadow, no null-deref warning).
+
+### Done criteria
+- [x] No -Wnull-dereference on those sites
+- [x] No -Wshadow regression
+- [x] Next **212**

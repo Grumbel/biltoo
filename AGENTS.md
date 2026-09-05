@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-210-handle-button-tooltips**
-(Workspace/crop handle button tooltips).
-Next bundle number: **211**.
+Latest agent handoff: **TODO.md → biltoo-211-null-deref-host**
+(QPointer checks via host*, not guard->).
+Next bundle number: **212**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
