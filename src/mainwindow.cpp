@@ -907,13 +907,11 @@ void MainWindow::updateSlideshowFromClock()
     transitionMs = qBound(0, transitionMs, intervalMs);
     const int pureMs = intervalMs - transitionMs;
 
-    const qint64 elapsed = m_slideshowPausedAccumMs + m_slideshowClock.elapsed();
-    const qint64 cycle = elapsed / intervalMs;
-    const int phaseMs = int(elapsed % intervalMs);
+    qint64 elapsed = m_slideshowPausedAccumMs + m_slideshowClock.elapsed();
+    qint64 cycle = elapsed / intervalMs;
+    int phaseMs = int(elapsed % intervalMs);
 
-    // Playlist position: account for starting mid-session and after prev/next.
-    // displayElapsed = (baseIndex * interval + wallElapsed) mod (n * interval)
-    // so starting on image k shows k/n of the bar, not 0.
+    // Playlist position for extended HUD.
     if (m_imageView) {
         const qint64 totalMs = qint64(n) * qint64(intervalMs);
         const qint64 raw =
@@ -922,16 +920,12 @@ void MainWindow::updateSlideshowFromClock()
         m_imageView->setSlideshowTimeline(loopElapsed, totalMs);
     }
 
-    // Clock is the sole authority for which pair should be on screen.
-    const int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
-    const int toIdx = (fromIdx + 1) % n;
+    int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
+    int toIdx = (fromIdx + 1) % n;
     const bool busy = m_imageView && m_imageView->isSlideshowTransitionBusy();
 
-    // --- lag recovery (only when more than one full cycle behind) ---
-    // When pureMs==0 the cycle increments at the same moment the previous
-    // transition is finishing. Treating cycle==transitionCycle+1 as lag and
-    // cancelling caused a visible blip on every boundary. Wait for the in-flight
-    // transition to finish; only hard-recover if we skipped an entire cycle.
+    // Wait out an in-flight transition/hold. Only hard-cancel if more than one
+    // full cycle behind (true stall), not on the normal boundary.
     if (busy) {
         if (m_slideshowTransitionCycle >= 0
             && cycle > m_slideshowTransitionCycle + 1) {
@@ -946,7 +940,6 @@ void MainWindow::updateSlideshowFromClock()
             }
             m_slideshowPendingToIndex = -1;
             m_slideshowTransitionCycle = -1;
-            // Fall through with busy cleared by cancel.
         } else {
             return;
         }
@@ -977,38 +970,11 @@ void MainWindow::updateSlideshowFromClock()
 
     // --- transition zone ---
     if (m_slideshowTransitionCycle == cycle) {
-        return; // already started or intentionally skipped for this cycle
-    }
-
-    // If we missed the start of this cycle (previous hold/load ran long), do
-    // NOT start a short mid-cycle transition — that drifts phase and causes
-    // the next finish to land in the following cycle (runaway glitch). Mark
-    // this cycle consumed and wait for the next boundary; snap index to the
-    // clock's from-image so the right still is on screen.
-    // Slack: allow a few ticks of scheduling delay only.
-    constexpr int kStartSlackMs = 64;
-    if (phaseMs > kStartSlackMs) {
-        qDebug().nospace()
-            << "[slideshow] skip-late-start cycle=" << cycle
-            << " phase=" << phaseMs
-            << " current=" << m_currentIndex
-            << " from=" << fromIdx
-            << " to=" << toIdx;
-        m_slideshowTransitionCycle = cycle;
-        if (m_currentIndex != fromIdx && !m_slideshowAdvancing) {
-            m_slideshowAdvancing = true;
-            setCurrentIndex(fromIdx);
-            m_slideshowAdvancing = false;
-        }
-        m_slideshowPendingToIndex = -1;
-        if (m_imageView) {
-            m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
-        }
         return;
     }
 
-    // Align from-image on a *previous* tick only: load is async; beginLive
-    // needs decoded pixels. Never setCurrentIndex + beginLive in the same turn.
+    // Need the from-image on the canvas before beginLive (decoded pixels).
+    // Load on this tick; start the fade on a later tick.
     if (m_currentIndex != fromIdx) {
         if (!m_slideshowAdvancing) {
             qDebug().nospace()
@@ -1023,6 +989,20 @@ void MainWindow::updateSlideshowFromClock()
             m_slideshowAdvancing = false;
         }
         return;
+    }
+
+    // Re-anchor so this moment is the *start* of the transition window
+    // (phase == pureMs). Load/hold latency after the previous fade must not
+    // leave us deep in the zone — that skipped every other cycle.
+    if (phaseMs != pureMs) {
+        qDebug().nospace()
+            << "[slideshow] reanchor cycle=" << cycle
+            << " wasPhase=" << phaseMs
+            << " pureMs=" << pureMs;
+        m_slideshowPausedAccumMs = cycle * qint64(intervalMs) + pureMs;
+        m_slideshowClock.restart();
+        elapsed = m_slideshowPausedAccumMs;
+        phaseMs = pureMs;
     }
 
     m_slideshowTransitionCycle = cycle;
@@ -1047,7 +1027,6 @@ void MainWindow::updateSlideshowFromClock()
         qDebug() << "[slideshow] beginLive declined, falling back to snapshot";
     }
 
-    // Snapshot / no-motion / live declined — absolute index, not goNext.
     m_slideshowAdvancing = true;
     if (m_imageView && m_imageView->isImageMode()) {
         m_imageView->prepareSlideshowTransition();

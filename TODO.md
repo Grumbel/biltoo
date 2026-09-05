@@ -4247,3 +4247,23 @@ signature when appending the setCurrentIndex resync block.
 - [x] Builds
 - [x] Next **236**
 
+
+## Plan / work (2026-09-05) — bundle `biltoo-236-slideshow-reanchor`
+
+### Log (234 skip-late-start)
+Every other cycle was skipped: hold/load left phase≈180 into the next cycle,
+skip-late-start consumed it, align-from hard-jumped the index — glitchy and
+missing transitions.
+
+### Fix
+Remove skip-late-start. When starting a transition for cycle C, **re-anchor**
+the pure clock so phase == pureMs (start of the transition window):
+
+  pausedAccum = cycle * interval + pureMs; clock.restart();
+
+The fade always runs a full transitionMs from a clean phase origin. Load
+latency no longer shifts the next boundary.
+
+### Done criteria
+- [x] No every-other-image skip when interval==transition
+- [x] Next **237**
