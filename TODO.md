@@ -4785,3 +4785,30 @@ Paint sizes were always native (`3744x5616` / `5616x3744`). Glitch sources:
 - [x] No mode=underlay during show when dwell buffer exists
 - [x] dwellT restarts near 0 after each fade
 - [x] Next **264**
+
+## Plan / work (2026-09-05) — bundle `biltoo-264-dwell-at-fade-end`
+
+### Root cause
+Soft-handoff lived only in `releaseLiveTransitionHold` after LoadReplace.
+That path often never ran (or ran after hold was already cleared), so:
+
+- no `dwell-start` log
+- `dwellT` continued 0.66→1.0 and froze
+- dwell buffer stayed on the previous image while `item` changed aspect
+
+### Fix
+When opacity timeline hits t≥1, **in the motion tick**:
+
+1. Install dwell from the live to-frame
+2. Restart Ken Burns at 0
+3. Drop live composite flags
+4. *Then* emit `slideshowLiveTransitionFinished` so LoadReplace can fill the
+   hidden underlay / upgrade dwell if fuller pixels arrive
+
+`releaseLiveTransitionHold` with hold already false upgrades dwell from the
+canvas item when it has more pixels.
+
+### Done criteria
+- [x] `dwell-start … (at fade-end)` every cycle
+- [x] dwellT restarts near 0 after each fade
+- [x] Next **265**

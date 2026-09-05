@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-263-no-underlay-gap**
-(Dwell paint without motionActive; arm dwell before drop hold).
-Next bundle number: **264**.
+Latest agent handoff: **TODO.md → biltoo-264-dwell-at-fade-end**
+(Arm dwell at fade-end in motion tick; do not wait for LoadReplace).
+Next bundle number: **265**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

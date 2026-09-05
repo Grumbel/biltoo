@@ -24,6 +24,13 @@ Read this before changing live transitions, preload, handoff, motion, or the
 pure-clock scheduler. Most “glitches” in this area are regressions of the same
 mistakes.
 
+### 16. Dwell is armed at fade-end in the motion tick
+
+Do **not** wait for LoadReplace → onImageLoaded → releaseLiveTransitionHold to
+install the dwell buffer. That chain was skipped/late and left dwellT frozen at
+1.0 with a stale image. Arm dwell from the live to-frame when t≥1, then emit
+finished so LoadReplace only updates the hidden underlay.
+
 ## Settled design (do not grow a second scheduler)
 
 | Concern | Owner |

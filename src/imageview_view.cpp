@@ -592,6 +592,28 @@ void ImageView::cancelSlideshowTransition()
 void ImageView::releaseLiveTransitionHold()
 {
     if (!m_liveTransitionHold && !m_liveTransitionAwaitingLoad) {
+        // Fade-end already armed dwell in tickSlideshowMotion; LoadReplace only
+        // updates the hidden underlay. Upgrade dwell if the canvas has better pixels.
+        if (m_slideshowProgressActive) {
+            if (ImageItem *item = targetItem()) {
+                if (!item->sourceImage().isNull()
+                    && (m_dwellSourceImage.isNull()
+                        || (item->sourceImage().width() * item->sourceImage().height()
+                            > m_dwellSourceImage.width() * m_dwellSourceImage.height()))) {
+                    m_dwellSourceImage = item->sourceImage();
+                    ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                                      &m_dwellAtlasVw, &m_dwellAtlasVh);
+                    hideSlideshowUnderlay();
+                    qDebug().nospace()
+                        << "[slideshow] dwell-upgrade "
+                        << m_dwellSourceImage.width() << "x"
+                        << m_dwellSourceImage.height()
+                        << " path=" << QFileInfo(item->path()).fileName();
+                } else {
+                    hideSlideshowUnderlay();
+                }
+            }
+        }
         return;
     }
     if (m_liveTransitionAwaitingLoad
@@ -1854,6 +1876,62 @@ void ImageView::tickSlideshowMotion()
                 m_liveTransitionProgress = 1.0;
                 if (!m_liveTransitionHold) {
                     m_liveTransitionHold = true;
+                    // Arm dwell HERE from the to-frame at progress 0. Do not wait
+                    // for LoadReplace → onImageLoaded → releaseLiveTransitionHold:
+                    // that path was often skipped or late, so dwellT never reset
+                    // (logs: 0.66 → 0.70 → 1.0 frozen) and the dwell buffer kept
+                    // the previous image across orientation changes.
+                    {
+                        const QImage toFrame = m_liveTransitionSourceImage;
+                        m_motionBiasA = m_liveToBiasA;
+                        m_motionBiasB = m_liveToBiasB;
+                        m_motionBiasValid = true;
+                        m_motionBiasPath = m_liveTransitionNextPath;
+                        if (!toFrame.isNull()) {
+                            m_dwellSourceImage = toFrame;
+                            m_dwellAtlas = m_liveToAtlas;
+                            m_dwellAtlasScale = m_liveToAtlasScale;
+                            m_dwellAtlasVw = m_liveToAtlasVw;
+                            m_dwellAtlasVh = m_liveToAtlasVh;
+                            ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas,
+                                              &m_dwellAtlasScale, &m_dwellAtlasVw,
+                                              &m_dwellAtlasVh);
+                        }
+                        m_dwellMotionT = 0.0;
+                        hideSlideshowUnderlay();
+                        if (m_slideshowProgressActive
+                            && m_slideshowMotion != SlideshowMotion::Off
+                            && m_slideshowProgressIntervalMs >= 250
+                            && !m_dwellSourceImage.isNull()) {
+                            startSlideshowMotion(m_slideshowProgressIntervalMs, 0.0);
+                            if (!toFrame.isNull()) {
+                                m_dwellSourceImage = toFrame;
+                                ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas,
+                                                  &m_dwellAtlasScale, &m_dwellAtlasVw,
+                                                  &m_dwellAtlasVh);
+                            }
+                            m_dwellMotionT = 0.0;
+                            m_motionElapsedOffsetMs = 0;
+                            m_motionClock.start();
+                            m_slideshowMotionActive = true;
+                        }
+                        qDebug().nospace()
+                            << "[slideshow] dwell-start "
+                            << m_dwellSourceImage.width() << "x"
+                            << m_dwellSourceImage.height()
+                            << " path="
+                            << QFileInfo(m_liveTransitionNextPath).fileName()
+                            << " (at fade-end)";
+                        // Live composite done — dwell owns the viewport.
+                        m_liveTransitionActive = false;
+                        m_liveTransitionHold = false;
+                        m_liveFromSourceImage = QImage();
+                        m_liveTransitionSourceImage = QImage();
+                        m_liveFromAtlas = QPixmap();
+                        m_liveToAtlas = QPixmap();
+                        m_liveTransitionMotionProgress = 0.0;
+                        m_toLayerWallMs = -1.0;
+                    }
                     if (m_slideshowTransition != SlideshowTransition::FadeBlack) {
                         emit slideshowLiveTransitionFinished();
                     } else {
