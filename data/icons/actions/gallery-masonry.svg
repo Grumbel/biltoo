@@ -2,10 +2,9 @@
 SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-  <rect x="3" y="3" width="7" height="11" rx="1.5" fill="#3584e4"/>
-  <rect x="12" y="3" width="9" height="7" rx="1.5" fill="#62a0ea"/>
-  <rect x="3" y="16" width="7" height="5" rx="1.5" fill="#99c1f1"/>
-  <rect x="12" y="12" width="9" height="9" rx="1.5" fill="#1c71d8"/>
-
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+  <rect x="3" y="3" width="7" height="11" rx="1.5" fill="#813d9c"/>
+  <rect x="12" y="3" width="9" height="7" rx="1.5" fill="#c061cb"/>
+  <rect x="3" y="16" width="7" height="5" rx="1.5" fill="#dc8add"/>
+  <rect x="12" y="12" width="9" height="9" rx="1.5" fill="#9141ac"/>
 </svg>

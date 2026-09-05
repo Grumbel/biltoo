@@ -2,4 +2,7 @@
 SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#2e3436" stroke="none"><polygon points="7,4 20,12 7,20"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+  <circle cx="12" cy="12" r="9" fill="#26a269"/>
+  <path d="M10 8.5v7l6-3.5z" fill="#f6f5f4"/>
+</svg>

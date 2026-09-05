@@ -43,12 +43,16 @@ QIcon iconFromSvgResource(const QString &resource)
     if (!renderer.isValid()) {
         return {};
     }
+    // Rasterise at a dense ladder so toolbars, menus, and PNG export stay
+    // sharp on HiDPI; SVG geometry is independent of these pixel sizes.
     QIcon icon;
-    for (int s : {16, 22, 24, 32, 48, 64}) {
+    for (int s : {16, 22, 24, 32, 48, 64, 96, 128, 256}) {
         QPixmap pm(s, s);
+        pm.setDevicePixelRatio(1.0);
         pm.fill(Qt::transparent);
         QPainter p(&pm);
         p.setRenderHint(QPainter::Antialiasing, true);
+        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
         renderer.render(&p);
         p.end();
         icon.addPixmap(pm);

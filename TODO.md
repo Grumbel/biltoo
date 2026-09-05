@@ -4973,3 +4973,29 @@ snapshot Slide cards and covered them every frame.
 - [x] Pure paint implements projector geometry
 - [x] Snapshot flags cleared on phase drive
 - [x] Next **275**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-275-icon-color-dpi`
+
+### Request
+Icons should use colour well (no monochrome / flat KDE-blue look). Layout
+icons especially need subtle colour grouping. Show Adjustment should be a full
+colour wheel. Raise default raster resolution so PNG conversion is not soft.
+
+### Changes
+- **Layout families (gallery-* + related view glyphs)**
+  - Strip (side-by-side / vertical / split): teal greens
+  - Grid (grid / grid-crop / view-grid): amber / warm orange
+  - Masonry (masonry / rows / stack): violet
+  - Layout panel: mixed family tiles
+  - Workspace mode: coral + green freeform
+- **color-adjustments.svg**: six-segment hue wheel (R Y G C B M) + neutral hub
+- Other action SVGs recolored with fills/accents (zoom, nav, rotate, edit, …)
+- SVG `width`/`height` hint raised to 48 (viewBox still 24)
+- `iconFromSvgResource`: raster ladder adds 96, 128, 256
+
+### Done criteria
+- [x] Layout icons grouped by hue family
+- [x] Adjustments = full colour wheel
+- [x] Higher PNG raster sizes
+- [x] Next **276**

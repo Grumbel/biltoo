@@ -2,4 +2,10 @@
 SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2e3436" stroke-width="2" stroke-linecap="round"><polyline points="4,9 4,4 9,4"/><polyline points="20,9 20,4 15,4"/><polyline points="4,15 4,20 9,20"/><polyline points="20,15 20,20 15,20"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+  <rect x="5" y="5" width="14" height="14" rx="1.5" fill="#deddda"/>
+  <polyline points="4,9 4,4 9,4" fill="none" stroke="#e66100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="20,9 20,4 15,4" fill="none" stroke="#e66100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="4,15 4,20 9,20" fill="none" stroke="#e66100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="20,15 20,20 15,20" fill="none" stroke="#e66100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
