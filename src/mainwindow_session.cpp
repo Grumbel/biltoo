@@ -1130,14 +1130,8 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         updateNavigationActions();
     }
 
-    // User / filmstrip / arrow navigation while the pure clock is running must
-    // resync baseIndex + elapsed so the HUD and cycle math match the new slide.
-    // Auto-advance sets m_slideshowAdvancing and must not reset the clock.
-    if (m_slideshowClockRunning && !m_slideshowPaused && !m_slideshowAdvancing) {
-        qDebug().nospace()
-            << "[slideshow] index-changed-resync current=" << m_currentIndex;
-        armSlideshowAdvanceTimer();
-    }
+    // Clock resync on user navigation is owned by onSlideshowUserNavigated
+    // (goNext/goPrevious/filmstrip). Arming here double-fired every ←/→.
 }
 
 void MainWindow::removeSessionIndices(const QList<int> &indices)
@@ -1776,16 +1770,15 @@ void MainWindow::onSlideshowUserNavigated()
         return;
     }
     // Resync pure clock so the new slide is phase 0 of a fresh cycle.
+    m_imageView->cancelSlideshowTransition();
+    m_slideshowPendingToIndex = -1;
+    m_slideshowTransitionCycle = -1;
     if (!m_slideshowPaused) {
         armSlideshowAdvanceTimer();
     } else {
-        // Paused: must clear any leftover transition overlay or ←/→ looks stuck.
-        m_imageView->cancelSlideshowTransition();
         m_imageView->setSlideshowProgress(true, 0);
         m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
         m_slideshowPausedAccumMs = 0;
-        m_slideshowTransitionCycle = -1;
-        m_slideshowPendingToIndex = -1;
     }
     updateSlideshowActionUi();
 }

@@ -4306,3 +4306,24 @@ Fix: framing + progress first, then arm. arm also calls reapplySlideshowFraming.
 - [x] No pad flash between continuous transitions
 - [x] First beginLive has from-image when possible
 - [x] Next **239**
+
+## Plan / work (2026-09-05) — bundle `biltoo-239-slideshow-nav-hud`
+
+### ←/→ double-arm + desync
+setCurrentIndex *and* onSlideshowUserNavigated both called arm → log showed
+duplicate arms; cycle advanced while currentIndex lagged → align-from jumps
+and “progress takes forever” (HUD used full-playlist elapsed).
+
+### Fixes
+1. Arm only from onSlideshowUserNavigated (single path).
+2. User nav cancels any in-flight transition before arm.
+3. HUD timeline is **per-slide**: phase / interval (resets on ←/→), not
+   full-playlist position (badge still shows index).
+4. beginLive decline (no pixels after nav): retry next tick; do not consume
+   the cycle or snapshot-jump.
+
+### Done criteria
+- [x] One arm per ←/→
+- [x] HUD current/remaining match the current slide after nav
+- [x] No align-from leap after prev/next
+- [x] Next **240**

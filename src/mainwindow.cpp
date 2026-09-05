@@ -913,13 +913,10 @@ void MainWindow::updateSlideshowFromClock()
     qint64 cycle = elapsed / intervalMs;
     int phaseMs = int(elapsed % intervalMs);
 
-    // Playlist position for extended HUD.
+    // Per-slide timeline for extended HUD (resets on ←/→ / arm).
+    // Overall playlist position is already shown by the session badge.
     if (m_imageView) {
-        const qint64 totalMs = qint64(n) * qint64(intervalMs);
-        const qint64 raw =
-            qint64(m_slideshowBaseIndex) * qint64(intervalMs) + elapsed;
-        const qint64 loopElapsed = totalMs > 0 ? (raw % totalMs) : 0;
-        m_imageView->setSlideshowTimeline(loopElapsed, totalMs);
+        m_imageView->setSlideshowTimeline(phaseMs, intervalMs);
     }
 
     int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
@@ -1007,9 +1004,6 @@ void MainWindow::updateSlideshowFromClock()
         phaseMs = pureMs;
     }
 
-    m_slideshowTransitionCycle = cycle;
-    m_slideshowPendingToIndex = toIdx;
-
     const QString toPath = m_session.paths().at(toIdx);
     qDebug().nospace()
         << "[slideshow] start-transition cycle=" << cycle
@@ -1023,12 +1017,25 @@ void MainWindow::updateSlideshowFromClock()
 
     if (m_imageView && m_imageView->isImageMode()
         && m_imageView->slideshowMotion() != ImageView::SlideshowMotion::Off) {
-        if (m_imageView->beginLiveSlideshowTransition(toPath)) {
+        const auto trKind = m_imageView->slideshowTransition();
+        const bool liveCapable =
+            trKind == ImageView::SlideshowTransition::Crossfade
+            || trKind == ImageView::SlideshowTransition::FadeBlack;
+        if (liveCapable) {
+            // Mark cycle only after beginLive accepts — if pixels are not ready
+            // yet (just after ←/→), retry next tick instead of snapshot-jumping.
+            if (m_imageView->beginLiveSlideshowTransition(toPath)) {
+                m_slideshowTransitionCycle = cycle;
+                m_slideshowPendingToIndex = toIdx;
+                return;
+            }
+            qDebug() << "[slideshow] beginLive declined; wait for pixels / retry";
             return;
         }
-        qDebug() << "[slideshow] beginLive declined, falling back to snapshot";
     }
 
+    m_slideshowTransitionCycle = cycle;
+    m_slideshowPendingToIndex = toIdx;
     m_slideshowAdvancing = true;
     if (m_imageView && m_imageView->isImageMode()) {
         m_imageView->prepareSlideshowTransition();
