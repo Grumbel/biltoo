@@ -25,7 +25,7 @@ struct MimeStatus {
 /** MIME types we advertise in biltoo.desktop and offer in Preferences. */
 QStringList supportedMimeTypes();
 
-/** Still-image types (image/*) from supportedMimeTypes(). */
+/** Still-image types (MIME type prefix image/) from supportedMimeTypes(). */
 QStringList imageMimeTypes();
 
 /** Archive/container types from supportedMimeTypes(). */

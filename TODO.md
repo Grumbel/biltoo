@@ -3582,3 +3582,13 @@ UI freezes remained because:
 - [x] Probe/sort off GUI
 - [x] Progress less spammy
 - [x] Next **204**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-204-warning-fixes`
+
+- defaultapps.h: avoid `/*` inside block comment
+- QPointer checks: bind `MainWindow *window = guard.data()` before use
+
+### Done criteria
+- [x] Warnings addressed
+- [x] Next **205**

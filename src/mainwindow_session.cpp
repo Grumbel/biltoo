@@ -387,20 +387,22 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
             }
             lastReportMs = now;
             QMetaObject::invokeMethod(guard.data(), [guard, gen, msg, current, total]() {
-                if (!guard || gen != guard->m_expandGeneration) {
+                MainWindow *const window = guard.data();
+                if (!window || gen != window->m_expandGeneration) {
                     return;
                 }
                 if (total > 0) {
-                    guard->setExpandProgress(current, total, msg);
+                    window->setExpandProgress(current, total, msg);
                 } else {
-                    guard->setExpandProgressBusy(true);
-                    guard->setExpandProgressMessage(msg);
+                    window->setExpandProgressBusy(true);
+                    window->setExpandProgressMessage(msg);
                 }
             }, Qt::QueuedConnection);
         };
 
         for (const QString &path : paths) {
-            if (!guard || gen != guard->m_expandGeneration) {
+            MainWindow *const window = guard.data();
+            if (!window || gen != window->m_expandGeneration) {
                 return;
             }
             if (ArchivePath::isArchiveRef(path)) {
@@ -421,7 +423,8 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                     : QDirIterator::NoIteratorFlags;
                 QDirIterator it(path, filters, flags);
                 while (it.hasNext()) {
-                    if (!guard || gen != guard->m_expandGeneration) {
+                    MainWindow *const window = guard.data();
+            if (!window || gen != window->m_expandGeneration) {
                         return;
                     }
                     const QString full = it.next();
@@ -464,25 +467,26 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
         }
 
         QMetaObject::invokeMethod(guard.data(), [guard, gen, images, append, startAt]() {
-            if (!guard || gen != guard->m_expandGeneration) {
+            MainWindow *const window = guard.data();
+            if (!window || gen != window->m_expandGeneration) {
                 return;
             }
             if (images.isEmpty()) {
-                guard->setExpandProgressBusy(false);
-                if (guard->statusBar()) {
-                    guard->statusBar()->showMessage(
+                window->setExpandProgressBusy(false);
+                if (window->statusBar()) {
+                    window->statusBar()->showMessage(
                         append ? MainWindow::tr("No readable images to add.")
                                : MainWindow::tr("No readable images found."),
                         5000);
                 }
                 return;
             }
-            guard->setExpandProgressMessage(
+            window->setExpandProgressMessage(
                 MainWindow::tr("Opening %n image(s)…", "", images.size()));
             if (append) {
-                guard->applyExpandedAppend(images);
+                window->applyExpandedAppend(images);
             } else {
-                guard->applyExpandedLoad(images, startAt);
+                window->applyExpandedLoad(images, startAt);
             }
         }, Qt::QueuedConnection);
     });
@@ -601,7 +605,8 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
         qint64 lastUi = -1000;
 
         for (int i = 0; i < paths.size(); ++i) {
-            if (!guard || gen != guard->m_sortGeneration) {
+            MainWindow *const window = guard.data();
+            if (!window || gen != window->m_sortGeneration) {
                 return;
             }
             const QString &path = paths.at(i);
@@ -614,10 +619,11 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
                 const int done = i + 1;
                 const int total = paths.size();
                 QMetaObject::invokeMethod(guard.data(), [guard, gen, done, total]() {
-                    if (!guard || gen != guard->m_sortGeneration) {
+                    MainWindow *const window = guard.data();
+                    if (!window || gen != window->m_sortGeneration) {
                         return;
                     }
-                    guard->setExpandProgress(
+                    window->setExpandProgress(
                         done, total,
                         MainWindow::tr("Measuring images… %1/%2").arg(done).arg(total));
                 }, Qt::QueuedConnection);
@@ -670,13 +676,14 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
         }
 
         QMetaObject::invokeMethod(guard.data(), [guard, gen, newFiles, newIds, onDone]() {
-            if (!guard || gen != guard->m_sortGeneration) {
+            MainWindow *const window = guard.data();
+            if (!window || gen != window->m_sortGeneration) {
                 return;
             }
-            guard->m_session.replaceAll(newFiles, newIds);
-            guard->setExpandProgressBusy(false);
-            if (guard->statusBar()) {
-                guard->statusBar()->clearMessage();
+            window->m_session.replaceAll(newFiles, newIds);
+            window->setExpandProgressBusy(false);
+            if (window->statusBar()) {
+                window->statusBar()->clearMessage();
             }
             if (onDone) {
                 onDone();
