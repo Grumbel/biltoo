@@ -4892,3 +4892,12 @@ in the transition/draw machine.
 ### Done criteria
 - [x] SLIDESHOW.md
 - [x] Next **270**
+
+## Plan / work (2026-09-05) — bundle `biltoo-270-slideshow-spec-pause-redraw`
+
+### Spec
+Paused: if full-res arrives for the visible path, schedule one redraw.
+
+### Done criteria
+- [x] SLIDESHOW.md
+- [x] Next **271**

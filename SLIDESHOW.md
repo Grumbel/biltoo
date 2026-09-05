@@ -58,6 +58,11 @@ something pollable (a future / ready buffer). When it becomes ready, the
 **next** draw simply sees full-res and uses it. Same geometry either way, so
 the switch is seamless (sharper, no layout jump).
 
+**Pause exception:** while paused the clock (and usually redraws) stop. If full
+pixels arrive for the visible path, schedule **one redraw** so the sharper
+image appears. That is only “pixels ready → update view,” not transition
+start/cancel/hold logic.
+
 Do not wire “decode finished” into start/cancel/hold of the transition.
 
 ## Scheduling
