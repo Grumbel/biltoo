@@ -3628,3 +3628,24 @@ About dialog “Optional features in this build” still uses plain
 - [x] About list uses ✔ / ✘ (or equivalent) for enabled / missing
 - [x] Still fully translated via `tr`
 - [x] Next **207**
+
+## Plan / work (2026-09-05) — bundle `biltoo-207-dev-scripts-on-path`
+
+`nix develop -c biltoo-run` fails with `exec: biltoo-run: not found`
+because `biltoo-configure` / `biltoo-build` / `biltoo-run` are shell
+*functions* defined in `shellHook`. Functions are not on PATH and are not
+valid targets for the `exec` that `nix develop -c` uses.
+
+### Fix
+- Provide the three helpers as real executables via `pkgs.writeShellScriptBin`
+  and add them to the devShell `packages` list (so they are on PATH).
+- Scripts read `BILTOO_SOURCE`, `BILTOO_BUILD_DIR`, `CMAKE_BUILD_TYPE` from
+  the environment (still exported by `shellHook`).
+- Drop the duplicate function definitions from `shellHook`; keep env exports
+  and the help banner.
+- Behaviour unchanged for interactive `nix develop` sessions.
+
+### Done criteria
+- [x] `nix develop -c biltoo-run --help` (or similar) finds the command
+- [x] Interactive shell still has biltoo-configure / build / run
+- [x] Next **208**
