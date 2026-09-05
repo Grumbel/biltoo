@@ -40,6 +40,7 @@
 - Layouts: side-by-side, vertical strip, grid, masonry (columns or rows), masonry fill
 - Multi-select; double-click or Enter opens Image mode
 - Return restores the previous Gallery viewport
+- Incremental re-packs (new tiles, decode size) keep the approximate scroll position
 - Grid-crop layout remains disabled until it coexists cleanly with session crop
 
 ### Workspace
@@ -47,6 +48,7 @@
 - Free placement: move, scale, rotate, shear, opacity, raise/lower
 - Tools: **Select**, **Pan**, **Zoom** (region) on a left toolbar
 - Durable canvas: leaving for Gallery/Image and returning restores the snapshot
+- Entering an empty Workspace does not import Image/Gallery tiles; selection starts empty
 - **Layout panel**: pack the current selection without leaving Workspace
 - **Page Guide** and **Fit Page Guide to Content** for export framing
 - Custom **Workspace background** (solid, checker, image tile) with temporary Default preview
@@ -85,7 +87,8 @@ Press **F1** in the app for the full list. Highlights:
 | C | Crop |
 | R | Rotate right |
 | Ctrl+O / Ctrl+S | Open / save project |
-| Ctrl+Q | Quit |
+| Q / Ctrl+Q | Quit (plain **Q** for fast in/out) |
+| Ctrl+Shift+N | New window |
 
 ## Command line
 
@@ -103,8 +106,12 @@ biltoo [options] [files-or-directories…]
 | `--interval=ms` | Slideshow dwell in milliseconds |
 | `-f`, `--fullscreen` | Start fullscreen |
 | `--thumbnails` / `--no-thumbnails` | Force thumbnail bar on or off |
+| `--debug` | Verbose diagnostics (slideshow traces, libexiv2 warnings) |
 
 Drag-and-drop onto the window **appends** to the session.
+
+Shortcuts are **window-scoped**: each window (File → New Window) has its own
+Space / Q / navigation bindings so two frames do not fight for the same keys.
 
 ## Image formats
 

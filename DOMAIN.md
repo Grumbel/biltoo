@@ -296,3 +296,28 @@ canvas (Workspace paths or Gallery seed).
 - Interaction chrome is painted in **device pixels** and hit-tested primarily
   by **ImageView** (view-owned path). Item mouse handlers are a fallback that
   call the same `beginHandleInteraction` API.
+
+
+## Mode boundary invariants
+
+Shared `QGraphicsView` / scene across Image, Gallery, and Workspace. Mode leave
+must not leave another mode’s work on the canvas.
+
+| Rule | Detail |
+|------|--------|
+| Empty Workspace enter | Clear live canvas; do not adopt the current Image tile or Gallery packing. Tiles appear only from stash/snapshot restore or explicit place (drop, double-click, project). |
+| Workspace selection | Enter with nothing selected (canvas + filmstrip). Residual selection used to inflate a single-thumb drag into “all selected”. |
+| Gallery → Workspace | Cancel in-flight gallery decode-window `LoadAdd` jobs (`invalidateGalleryDecodes`, load generation bump). Late completions must not spawn free-form tiles from residual `pathOrder`. |
+| Gallery → Image | Keep gallery stash + pending fills for placeholders; do not invalidate the same way. |
+| Incremental Gallery pack | `ContentChange` / `SessionMutate` / `Reload` preserve the scene point under the viewport centre. Enter / explicit layout switch may start at the origin. |
+| Provisional layout size | Unknown native size must not use a permanent 1000×1000 **aspect** for fit/pack. Prefer cached native size; else preview aspect until probe/full decode (`layoutSizeForPath`, provisional path set). |
+
+Async load completions always check **mode** and **load generation** before creating tiles.
+
+## Shortcuts and multi-window
+
+Per-window actions use **`Qt::WindowShortcut`** (not `ApplicationShortcut`). A
+second `MainWindow` (New Window) must not register Space / Ctrl+Q / … process-wide
+or Qt reports ambiguous shortcut overload and keys appear dead. Quit accepts
+plain **Q** and platform Quit (Ctrl+Q).
+

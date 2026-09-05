@@ -78,3 +78,14 @@ A single wall-clock phase decides the segment (dwell vs transition) and which pa
 ## Pause
 
 While paused, the clock does not advance. The pause state stays visible until resume or stop.
+
+### User navigation while paused
+
+← / → (and filmstrip) must still show the new slide. The pure phase buffers are
+updated immediately (`setSlideshowPhase` to the current path); the underlay may
+load asynchronously. Unpausing must not be required to see the navigated image.
+
+### Debug
+
+Slideshow `qCDebug` traces (`[slideshow]…`, `[slideshow-paint]…`) are off by
+default. Run with **`--debug`** to enable category `biltoo.slideshow`.

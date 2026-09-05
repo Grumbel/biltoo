@@ -5229,3 +5229,20 @@ the first pack stayed wrong relative to the new contentRect.
 ### Done criteria
 - [x] Gallery low-res tiles pack at preview aspect
 - [x] Next **287**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-287-docs-recent-changes`
+
+### Task
+Document recent product rules from bundles ~274–286 (mode boundaries, slideshow
+pause nav, WindowShortcut, `--debug`, provisional layout size, Gallery scroll).
+
+### Files
+- README.md — Q quit, New Window, --debug, Gallery/Workspace bullets
+- DOMAIN.md — mode boundary invariants + multi-window shortcuts
+- SLIDESHOW.md — paused navigation + debug category
+- AGENTS.md — handoff + theme summary 274–286
+
+### Done criteria
+- [x] Durable rules in DOMAIN/SLIDESHOW, not only TODO plan notes
+- [x] Next **288**

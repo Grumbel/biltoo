@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-286-gallery-preview-layout-size**
-(Gallery low-res provisional size re-packs).
-Next bundle number: **287**.
+Latest agent handoff: **TODO.md → biltoo-287-docs-recent-changes**
+(Docs: mode boundaries, slideshow pause nav, WindowShortcut, provisional size).
+Next bundle number: **288**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -142,10 +142,12 @@ invariant 6).
 
 ### Sharp edges (do not paper over)
 
-- **Fullscreen shortcuts:** menu/toolbar are hidden in fullscreen. Every
-  `QAction` with a key sequence must be registered on the main window via
-  `bindViewerShortcuts()` (`addAction` + `Qt::ApplicationShortcut`). Do not
-  rely on menu-only WindowShortcut for viewer keys (H, Space, Ctrl+F, …).
+- **Fullscreen / multi-window shortcuts:** menu/toolbar are hidden in fullscreen.
+  Every `QAction` with a key sequence must be registered on the main window via
+  `bindViewerShortcuts()` (`addAction` + **`Qt::WindowShortcut`**). Window scope
+  keeps New Window from ambiguous app-wide clashes (Space, Q, …). Do not use
+  `ApplicationShortcut` for per-window actions; do not rely on menu-only
+  registration for viewer keys (H, Space, Ctrl+F, …).
 - Transform chrome input is **owned by ImageView only** (viewport hits +
   paintEvent). ImageItem must not begin handle drags or set chrome cursors.
 - Session ↔ canvas sync differs by mode; prefer named helpers over ad-hoc
@@ -253,6 +255,23 @@ Do not rely on `QDialogButtonBox` alone for order: under many Qt styles
 (e.g. Fusion) the platform hint yields Windows/KDE order (OK left of Cancel).
 Build the button row explicitly (`Cancel`, stretch, `OK`) so the layout stays
 HIG-conformant on every desktop.
+
+
+
+### Mode boundaries & UX polish (274–286)
+
+- **Slide (projector)** on pure wall-clock phase (`setSlideshowPhase` + paint translate).
+- **Icons**: colour (no monochrome / KDE-blue); layout families by hue; crop amber;
+  denser raster ladder; adjustments colour wheel.
+- **Filmstrip**: synchronous thumbnail decode on `ImageCache` miss.
+- **Workspace enter**: clear selection; empty Workspace does not adopt Image/Gallery
+  live tiles; cancel Gallery background `LoadAdd` on Gallery→Workspace.
+- **Paused slideshow ←/→**: refresh pure phase (clock does not tick while paused).
+- **Shortcuts**: `WindowShortcut` for multi-window; plain **Q** quits; `--debug`
+  gates `biltoo.slideshow` traces.
+- **Gallery scroll**: incremental packs preserve viewport centre.
+- **Provisional size**: Image + Gallery low-res use preview aspect until native
+  size is known so fit/pack fills correctly before full decode.
 
 ## What not to do
 
