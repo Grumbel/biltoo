@@ -3687,3 +3687,23 @@ lambda.
 ### Done criteria
 - [x] No -Wshadow on those two sites
 - [x] Next **210**
+
+## Plan / work (2026-09-05) — bundle `biltoo-210-handle-button-tooltips`
+
+Workspace chrome handle *buttons* (flip, 90° rotate, raise/lower, resets,
+opacity) and crop-mode action buttons had no hover tooltips — only a clear
+on item hover-leave.
+
+### Fix
+- `ImageItem::handleToolTip(Handle)` — translated strings for chrome buttons
+  and useful short tips for scale / rotate / shear grips
+- Show via `QToolTip::showText` from `ImageView` when view-driven hover
+  changes (hits are view-owned; item `setToolTip` is unreliable)
+- Crop mode: tips for Expand / Reset / Cancel / Apply (Close)
+- Group multi-select grips: Scale / Rotate
+- Hide tooltip when hover leaves a handle
+
+### Done criteria
+- [x] Chrome buttons show tooltips on hover
+- [x] Crop action buttons show tooltips
+- [x] Next **211**

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+
+#include <QCoreApplication>
 #include "placementlinear.h"
 #include "imageview.h"
 
@@ -1157,6 +1159,56 @@ void ImageItem::setHoverHandle(Handle h)
     m_hoverHandle = h;
     // Chrome is painted by ImageView::paintEvent; the view refreshes the
     // viewport. Avoid item-only update which would miss external handle pads.
+}
+
+QString ImageItem::handleToolTip(Handle h)
+{
+    switch (h) {
+    case Handle::None:
+        return {};
+    case Handle::ScaleTopLeft:
+    case Handle::ScaleTopRight:
+    case Handle::ScaleBottomLeft:
+    case Handle::ScaleBottomRight:
+        return QCoreApplication::translate("ImageItem", "Scale (Shift: opposite edge; Ctrl: about centre)");
+    case Handle::ScaleTop:
+    case Handle::ScaleBottom:
+        return QCoreApplication::translate("ImageItem", "Scale height");
+    case Handle::ScaleLeft:
+    case Handle::ScaleRight:
+        return QCoreApplication::translate("ImageItem", "Scale width");
+    case Handle::ShearTop:
+    case Handle::ShearBottom:
+    case Handle::ShearLeft:
+    case Handle::ShearRight:
+        return QCoreApplication::translate("ImageItem", "Shear");
+    case Handle::RotateTop:
+    case Handle::RotateRight:
+    case Handle::RotateBottom:
+    case Handle::RotateLeft:
+        return QCoreApplication::translate("ImageItem", "Rotate");
+    case Handle::FlipH:
+        return QCoreApplication::translate("ImageItem", "Flip horizontal");
+    case Handle::FlipV:
+        return QCoreApplication::translate("ImageItem", "Flip vertical");
+    case Handle::Rotate90CCW:
+        return QCoreApplication::translate("ImageItem", "Rotate 90° counter-clockwise");
+    case Handle::Rotate90CW:
+        return QCoreApplication::translate("ImageItem", "Rotate 90° clockwise");
+    case Handle::Raise:
+        return QCoreApplication::translate("ImageItem", "Raise (bring forward)");
+    case Handle::Lower:
+        return QCoreApplication::translate("ImageItem", "Lower (send backward)");
+    case Handle::ResetScale:
+        return QCoreApplication::translate("ImageItem", "Reset scale to 1:1");
+    case Handle::ResetRotation:
+        return QCoreApplication::translate("ImageItem", "Reset rotation to 0°");
+    case Handle::ResetShear:
+        return QCoreApplication::translate("ImageItem", "Reset shear");
+    case Handle::OpacitySlider:
+        return QCoreApplication::translate("ImageItem", "Opacity");
+    }
+    return {};
 }
 
 void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRect) const

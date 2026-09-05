@@ -22,6 +22,7 @@
 #include <QAbstractScrollArea>
 #include <QScrollBar>
 #include <QTimer>
+#include <QToolTip>
 #include <QSet>
 #include <QThreadPool>
 #include <QVector>
@@ -734,7 +735,8 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
     if (m_cropMode) {
         const CropHandle h = cropHandleAt(event->pos());
-        if (h != m_cropHoverHandle) {
+        const bool cropHoverChanged = (h != m_cropHoverHandle);
+        if (cropHoverChanged) {
             m_cropHoverHandle = h;
             viewport()->update();
         }
@@ -770,6 +772,46 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         case CropHandle::None:
             viewport()->setCursor(Qt::CrossCursor);
             break;
+        }
+        if (cropHoverChanged) {
+            QString tip;
+            switch (h) {
+            case CropHandle::Move:
+                tip = tr("Move crop");
+                break;
+            case CropHandle::Rotate:
+                tip = tr("Rotate crop");
+                break;
+            case CropHandle::Left:
+            case CropHandle::Right:
+            case CropHandle::Top:
+            case CropHandle::Bottom:
+            case CropHandle::TopLeft:
+            case CropHandle::TopRight:
+            case CropHandle::BottomLeft:
+            case CropHandle::BottomRight:
+                tip = tr("Resize crop");
+                break;
+            case CropHandle::ExpandToggle:
+                tip = tr("Allow crop outside image (pad on apply)");
+                break;
+            case CropHandle::Reset:
+                tip = tr("Reset crop to full image");
+                break;
+            case CropHandle::Cancel:
+                tip = tr("Cancel crop (Esc)");
+                break;
+            case CropHandle::Close:
+                tip = tr("Apply crop (Enter)");
+                break;
+            case CropHandle::None:
+                break;
+            }
+            if (!tip.isEmpty()) {
+                QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
+            } else {
+                QToolTip::hideText();
+            }
         }
         updateMouseInfo(event->pos());
         event->accept();
@@ -904,7 +946,8 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                 }
             }
             const int gh = groupHandleAt(event->pos(), candidates);
-            if (gh != m_groupHoverHandle) {
+            const bool groupHoverChanged = (gh != m_groupHoverHandle);
+            if (groupHoverChanged) {
                 m_groupHoverHandle = gh;
                 viewport()->update();
             }
@@ -930,8 +973,17 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                     viewport()->setCursor(Qt::ArrowCursor);
                     break;
                 }
+                if (groupHoverChanged) {
+                    const QString tip = (gh >= 8 && gh <= 11)
+                        ? tr("Rotate selection")
+                        : tr("Scale selection");
+                    QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
+                }
             } else if (!m_panning) {
                 viewport()->unsetCursor();
+                if (groupHoverChanged) {
+                    QToolTip::hideText();
+                }
             }
         } else {
             if (m_groupHoverHandle != -1) {
@@ -998,8 +1050,19 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                     viewport()->setCursor(Qt::PointingHandCursor);
                     break;
                 }
+                if (hoverChanged) {
+                    const QString tip = ImageItem::handleToolTip(hoverH);
+                    if (!tip.isEmpty()) {
+                        QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
+                    } else {
+                        QToolTip::hideText();
+                    }
+                }
             } else if (!m_panning && !m_handleDragItem) {
                 viewport()->unsetCursor();
+                if (hoverChanged) {
+                    QToolTip::hideText();
+                }
             }
         }
     }
