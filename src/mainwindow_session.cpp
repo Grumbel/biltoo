@@ -1456,11 +1456,11 @@ void MainWindow::updateNavigationActions()
 
 void MainWindow::onThumbnailActivated(int index)
 {
-    // User interaction: pause slideshow
-    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
-        stopSlideshow();
-    }
+    // Filmstrip currentRowChanged also fires when setCurrentIndex syncs the bar
+    // after Left/Right — that must not end a running slideshow. Treat bar
+    // activation like session navigation: stay playing/paused, restart dwell.
     setCurrentIndex(index);
+    onSlideshowUserNavigated();
 }
 
 void MainWindow::openFiles()

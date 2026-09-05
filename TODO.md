@@ -3927,3 +3927,18 @@ statusChanged mid-nav could interact badly with stop conditions.
 ### Done criteria
 - [x] Arrows keep the slideshow session
 - [x] Next **224**
+
+## Plan / work (2026-09-05) — bundle `biltoo-224-slideshow-thumb-nav`
+
+Left/Right stopped a **running** show but worked when **paused**.
+
+Root cause: `setCurrentIndex` → filmstrip `setCurrentRow` → `indexActivated` →
+`onThumbnailActivated` called `stopSlideshow()` only when the timer was active
+(paused has timer stopped, so the path was a no-op).
+
+### Fix
+- Thumbnail activation keeps the slideshow session (same as ←/→).
+
+### Done criteria
+- [x] Playing + Left/Right keeps the show
+- [x] Next **225**
