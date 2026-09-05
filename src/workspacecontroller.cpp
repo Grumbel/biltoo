@@ -275,14 +275,12 @@ void WorkspaceController::enter(int previousMode)
         // as the free-form canvas (that silently overwrote user arrangement).
         restore();
     } else {
-        // Empty permanent Workspace. Drop residual Gallery tiles so mode switch
-        // does not import a packaged layout by accident.
-        if (previous == ImageView::ViewMode::Gallery) {
-            m_view->clearLiveCanvas();
-        }
+        // Empty permanent Workspace. Never adopt whatever Image/Gallery is
+        // currently showing — only filmstrip drop / double-click / project
+        // load places tiles. (Previously only Gallery was cleared; Image→
+        // Workspace left the classic single tile on the free-form canvas.)
+        m_view->clearLiveCanvas();
         m_view->applyModeFlagsToLiveItems();
-        // Do not auto-select a primary tile: Workspace starts with nothing
-        // selected so filmstrip drags are not inflated by leftover selection.
     }
     // Always clear canvas selection on enter — restored stash may keep old
     // selected flags, which MainWindow would mirror onto every filmstrip row.

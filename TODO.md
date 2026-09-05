@@ -5059,3 +5059,25 @@ stash also kept selection flags, which MainWindow mirrored onto the filmstrip.
 - [x] Workspace enters with nothing selected
 - [x] Single-thumb drag places one image
 - [x] Next **279**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-279-workspace-no-adopt-live`
+
+### Symptom
+Switching to Workspace puts whatever is currently visible in Image (or was
+left live) onto the free-form canvas.
+
+### Cause
+`WorkspaceController::enter` only `clearLiveCanvas()` when coming from Gallery
+and the permanent Workspace was empty. Image → empty Workspace left the classic
+single-image tile on the scene and only applied Workspace mode flags.
+
+### Fix
+Empty permanent Workspace always clears the live canvas. Tiles appear only from
+stash restore, durable snapshot restore, or explicit place (drop / double-click /
+project).
+
+### Done criteria
+- [x] Image → empty Workspace shows blank canvas
+- [x] Non-empty Workspace still restores stash/snapshot
+- [x] Next **280**
