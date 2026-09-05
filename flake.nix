@@ -87,7 +87,9 @@
             biltooDevPreamble
             + ''
               cmake -S "$BILTOO_SOURCE" -B "$BILTOO_BUILD_DIR" -G Ninja \
-                -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}"
+                -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}" \
+                -DBILTOO_WITH_THUMTOO=ON \
+                -DTHUMTOO_SOURCE_DIR="''${THUMTOO_SOURCE_DIR:-${thumtoo}}"
             ''
           );
 
@@ -165,10 +167,12 @@
 
             # Out-of-tree build dir (override with BILTOO_BUILD_DIR=...).
             export BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"
+            export THUMTOO_SOURCE_DIR="''${THUMTOO_SOURCE_DIR:-${thumtoo}}"
 
             echo "biltoo dev shell (CMAKE_BUILD_TYPE=''${CMAKE_BUILD_TYPE:-Debug})"
             echo "  build dir: $BILTOO_BUILD_DIR"
-            echo "  biltoo-configure   # cmake -S . -B \$BILTOO_BUILD_DIR -G Ninja"
+            echo "  biltoo-configure   # cmake -S . -B \$BILTOO_BUILD_DIR -G Ninja (+ thumtoo)"
+            echo "  THUMTOO_SOURCE_DIR=$THUMTOO_SOURCE_DIR"
             echo "  biltoo-build       # incremental cmake --build"
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"
