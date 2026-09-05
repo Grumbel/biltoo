@@ -625,8 +625,13 @@ void putCachedThumbnail(const QString &path, const QImage &image)
     }
     QMutexLocker lock(&thumbCacheMutex());
     QHash<QString, QImage> &map = thumbCacheMap();
-    if (map.size() >= kThumbCacheMaxEntries && !map.contains(path)) {
-        // Simple eviction: drop an arbitrary entry (hash order).
+    if (map.contains(path)) {
+        const QImage &old = map.value(path);
+        // Keep the larger decode — filmstrip cells are small; slideshow wants ≥512.
+        if (qMax(old.width(), old.height()) >= qMax(image.width(), image.height())) {
+            return;
+        }
+    } else if (map.size() >= kThumbCacheMaxEntries) {
         auto it = map.begin();
         if (it != map.end()) {
             map.erase(it);
@@ -638,14 +643,15 @@ void putCachedThumbnail(const QString &path, const QImage &image)
 QImage loadThumbnailCached(const QString &path, int maxEdge)
 {
     QImage hit = cachedThumbnail(path);
-    if (!hit.isNull()) {
+    if (!hit.isNull() && qMax(hit.width(), hit.height()) >= maxEdge) {
         return hit;
     }
     QImage loaded = loadThumbnail(path, maxEdge);
     if (!loaded.isNull()) {
         putCachedThumbnail(path, loaded);
+        return loaded;
     }
-    return loaded;
+    return hit;
 }
 
 QStringList imageSuffixes()

@@ -1056,22 +1056,21 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return true;
     }
 
-    // Prefer the process thumb cache (aspect-preserving, filled by the
-    // filmstrip). Same pixels every time — no mid-fade upgrade, no disk hit.
+    // Transition frame: aspect-preserving cache at ≥512 long edge.
+    // NEVER put this into m_handoffImage — LoadReplace treats handoff as a
+    // full decode and would skip the real load (stuck on tiny thumbs forever).
+    constexpr int kLiveThumbEdge = 512;
     {
         const QImage cached = ImageLoader::cachedThumbnail(nextPath);
-        if (!cached.isNull()) {
-            m_handoffPath = nextPath;
-            m_handoffImage = cached;
+        if (!cached.isNull()
+            && qMax(cached.width(), cached.height()) >= kLiveThumbEdge) {
             startLiveTransitionWithImage(cached);
-            // Warm full decode for the post-hold canvas load.
-            preloadSlideshowImage(nextPath);
+            preloadSlideshowImage(nextPath); // full → preload for hold
             return true;
         }
     }
 
-    // Cache miss: decode a 512px aspect thumb off-thread, cache it, start fade.
-    // Do not open on full resolution here — keeps geometry stable and fast.
+    // Need a ≥512 frame: load off-thread into cache, start fade, preload full.
     const QString path = nextPath;
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path]() {
@@ -1093,8 +1092,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
                 emit view->slideshowLiveTransitionFinished();
                 return;
             }
-            view->m_handoffPath = path;
-            view->m_handoffImage = thumb;
+            // Transition pixels only — leave m_handoff* for full preload.
             view->startLiveTransitionWithImage(thumb);
             view->preloadSlideshowImage(path);
         }, Qt::QueuedConnection);

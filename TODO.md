@@ -4481,3 +4481,19 @@ square crops also caused aspect jumps when used as live frames.
 - [x] No re-decode when filmstrip already warmed the path
 - [x] Aspect-preserving frames (no square-crop jump)
 - [x] Next **249**
+
+## Plan / work (2026-09-05) — bundle `biltoo-249-fix-handoff-fullres`
+
+### Full-res never loaded
+beginLive put **thumbnails into m_handoffImage**. LoadReplace treats handoff as
+a completed full decode and skipped disk load → stuck on tiny frames.
+
+### Fix
+- Never write thumbs into m_handoff*
+- Cache keeps the **larger** image; loadThumbnailCached upgrades if too small
+- Live fade requires ≥512 long-edge cache (or loads 512); full via preload
+
+### Done criteria
+- [x] Full decode runs after transition again
+- [x] No permanent low-res lock-in
+- [x] Next **250**
