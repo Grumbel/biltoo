@@ -1393,9 +1393,11 @@ void MainWindow::updateNavigationActions()
     if (m_imageView) {
         m_imageView->setImageModeNavigationEnabled(imageNav);
     }
-    // Stop only when slideshow cannot run (Workspace or single file), not merely
-    // because the user is browsing the Gallery with the action still available.
-    if (!canSlideshow) {
+    // Stop only when a running slideshow becomes invalid (Workspace or single
+    // file). Idle stopSlideshow is a no-op for the timer, but still emitted
+    // statusChanged via restoreImageFramingAfterSlideshow → re-entered here
+    // forever (stack overflow / SEGV in QToolButton when loading one image).
+    if (!canSlideshow && m_slideshowTimer && m_slideshowTimer->isActive()) {
         stopSlideshow();
     }
 
@@ -1781,6 +1783,12 @@ void MainWindow::stopSlideshow()
     // Only announce when a running slideshow is actually stopped. Silent no-ops
     // (mode switches, navigation while idle) must not flash "Stop" on the HUD.
     const bool wasRunning = m_slideshowTimer && m_slideshowTimer->isActive();
+    const bool actPlaying = m_slideshowAct && m_slideshowAct->isChecked();
+    // Fully idle: avoid restoreImageFramingAfterSlideshow → statusChanged →
+    // updateNavigationActions → stopSlideshow re-entry (SEGV stack blow-up).
+    if (!wasRunning && !actPlaying) {
+        return;
+    }
 
     if (m_slideshowTimer) {
         m_slideshowTimer->stop();
@@ -1803,8 +1811,10 @@ void MainWindow::stopSlideshow()
         m_imageView->setSlideshowProgress(false);
         // Progress=false already cancelled motion; re-fit Image mode so zoom
         // and position are not left on the last slideshow Fill/Fit camera.
-        m_imageView->restoreImageFramingAfterSlideshow();
+        // Only when we actually interrupted a running show — idle calls must
+        // not emit statusChanged and re-enter updateNavigationActions.
         if (wasRunning) {
+            m_imageView->restoreImageFramingAfterSlideshow();
             m_imageView->flashHud(tr("■  Slideshow stopped"));
         }
     }

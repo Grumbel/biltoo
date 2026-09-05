@@ -3731,3 +3731,24 @@ then `gdb --args $BILTOO_BUILD_DIR/biltoo` with optional program args.
 - [x] PATH script in devShell packages
 - [x] shellHook / AGENTS mention it
 - [x] Next **213**
+
+## Plan / work (2026-09-05) — bundle `biltoo-213-stop-slideshow-reentry`
+
+Loading a single image from history SEGV'd: infinite re-entry
+
+  updateNavigationActions (!canSlideshow)
+    → stopSlideshow
+      → restoreImageFramingAfterSlideshow → statusChanged
+        → updateStatus → updateNavigationActions → …
+
+Stack overflow surfaced in QToolButton::setDefaultAction / QString::replace.
+
+### Fix
+- Call stopSlideshow from updateNavigationActions only if the timer is active
+- stopSlideshow: early-return when already idle (timer off, action unchecked)
+- restoreImageFramingAfterSlideshow only when wasRunning (avoids statusChanged loop)
+
+### Done criteria
+- [x] Single-image open does not recurse stopSlideshow
+- [x] Real stop still restores Image framing + HUD
+- [x] Next **214**
