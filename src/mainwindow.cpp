@@ -1048,7 +1048,7 @@ void MainWindow::about()
     box.setText(tr("<h3>Biltoo %1</h3>").arg(QApplication::applicationVersion()));
 
     auto feat = [](bool on) {
-        return on ? QObject::tr("yes") : QObject::tr("no");
+        return on ? QObject::tr("enabled") : QObject::tr("missing");
     };
     const QString features = tr(
         "<p><b>Optional features in this build</b></p>"

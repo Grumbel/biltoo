@@ -203,15 +203,26 @@ configure_file(
   @ONLY
 )
 
-# Configuration summary (always printed at the end of the optional-deps block)
+# Configuration summary — human-readable enabled/missing (not 1/0).
+macro(biltoo_feature_status _var _out)
+  if(${_var})
+    set(${_out} "enabled")
+  else()
+    set(${_out} "missing")
+  endif()
+endmacro()
+biltoo_feature_status(BILTOO_FEATURE_VIPS _st_vips)
+biltoo_feature_status(BILTOO_FEATURE_EXIV2 _st_exiv2)
+biltoo_feature_status(BILTOO_FEATURE_ARCHIVE _st_archive)
+biltoo_feature_status(BILTOO_FEATURE_GIO _st_gio)
+
 message(STATUS "")
 message(STATUS "Biltoo ${PROJECT_VERSION_FULL} — build summary")
-message(STATUS "  Qt6 .............. REQUIRED (Core Gui Widgets Svg OpenGLWidgets PrintSupport)")
-message(STATUS "  libvips .......... ${BILTOO_FEATURE_VIPS}  (extra image codecs, autorot, attention Pan&Zoom)")
-message(STATUS "  libexiv2 ......... ${BILTOO_FEATURE_EXIV2}  (Exif/IPTC/XMP metadata panel)")
-message(STATUS "  libarchive ....... ${BILTOO_FEATURE_ARCHIVE}  (images inside zip/tar/7z/rar/…)")
-message(STATUS "  gio-unix-2.0 ..... ${BILTOO_FEATURE_GIO}  (default-application Preferences)")
-message(STATUS "  (1 = enabled, 0 = left out)")
+message(STATUS "  Qt6 .............. required (Core Gui Widgets Svg OpenGLWidgets PrintSupport)")
+message(STATUS "  libvips .......... ${_st_vips}  (extra image codecs, autorot, attention Pan&Zoom)")
+message(STATUS "  libexiv2 ......... ${_st_exiv2}  (Exif/IPTC/XMP metadata panel)")
+message(STATUS "  libarchive ....... ${_st_archive}  (images inside zip/tar/7z/rar/…)")
+message(STATUS "  gio-unix-2.0 ..... ${_st_gio}  (default-application Preferences)")
 message(STATUS "  Runtime: install KImageFormats for XCF/KRA/ORA and other Qt plugins.")
 message(STATUS "")
 

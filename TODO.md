@@ -3402,3 +3402,12 @@ Optional set (complete):
 - [x] CMake end summary lists all optional features
 - [x] About lists compiled-in features
 - [x] Next **192**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-192-feature-status-words`
+
+CMake summary and About use **enabled** / **missing** instead of 1/0 or yes/no.
+
+### Done criteria
+- [x] No “(1 = enabled, 0 = left out)” legend
+- [x] Next **193**
