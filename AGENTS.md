@@ -10,10 +10,10 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-228-slideshow-overlap-concurrent-arm**
-(Overlapping cadence: arm full interval at start of every tick; no arm(0);
-continuous when interval==transition without equality races).
-Next bundle number: **229**.
+Latest agent handoff: **TODO.md → biltoo-229-slideshow-failproof-schedule**
+(Fail-proof: timer only for pure dwell; pureMs==0 queues next tick;
+transition duration UI in seconds).
+Next bundle number: **230**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

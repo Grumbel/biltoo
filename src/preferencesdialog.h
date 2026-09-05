@@ -137,7 +137,7 @@ private:
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
     QComboBox *m_slideshowTransitionCombo = nullptr;
-    QSpinBox *m_slideshowTransitionMsSpin = nullptr;
+    QDoubleSpinBox *m_slideshowTransitionMsSpin = nullptr;
     QToolButton *m_resetSlideshowTransitionBtn = nullptr;
     QToolButton *m_resetSlideshowTransitionMsBtn = nullptr;
     QComboBox *m_slideshowMotionCombo = nullptr;

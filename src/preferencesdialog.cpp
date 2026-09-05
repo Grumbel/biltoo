@@ -102,11 +102,12 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                               updateResetButtons();
                           }));
 
-    m_slideshowTransitionMsSpin = new QSpinBox(this);
-    m_slideshowTransitionMsSpin->setRange(0, 5000);
-    m_slideshowTransitionMsSpin->setSingleStep(50);
-    m_slideshowTransitionMsSpin->setSuffix(tr(" ms"));
-    m_slideshowTransitionMsSpin->setValue(kDefaultSlideshowTransitionMs);
+    m_slideshowTransitionMsSpin = new QDoubleSpinBox(this);
+    m_slideshowTransitionMsSpin->setRange(0.0, 5.0);
+    m_slideshowTransitionMsSpin->setSingleStep(0.05);
+    m_slideshowTransitionMsSpin->setDecimals(2);
+    m_slideshowTransitionMsSpin->setSuffix(tr(" s"));
+    m_slideshowTransitionMsSpin->setValue(kDefaultSlideshowTransitionMs / 1000.0);
     m_slideshowTransitionMsSpin->setToolTip(tr("Duration of the slideshow transition (0 = instant)"));
     slideshowForm->addRow(tr("Transition duration:"),
                           wrapWithReset(m_slideshowTransitionMsSpin, &m_resetSlideshowTransitionMsBtn, [this]() {
@@ -524,8 +525,8 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
             this, [this](double) { updateResetButtons(); });
     connect(m_slideshowTransitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
-    connect(m_slideshowTransitionMsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
-            this, [this](int) { updateResetButtons(); });
+    connect(m_slideshowTransitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double) { updateResetButtons(); });
     connect(m_slideshowMotionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
     connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
@@ -1062,13 +1063,16 @@ void PreferencesDialog::setSlideshowTransitionIndex(int index)
 
 int PreferencesDialog::slideshowTransitionDurationMs() const
 {
-    return m_slideshowTransitionMsSpin ? m_slideshowTransitionMsSpin->value() : 400;
+    // UI is seconds; internal API stays milliseconds.
+    return m_slideshowTransitionMsSpin
+        ? qRound(m_slideshowTransitionMsSpin->value() * 1000.0)
+        : 400;
 }
 
 void PreferencesDialog::setSlideshowTransitionDurationMs(int ms)
 {
     if (m_slideshowTransitionMsSpin) {
-        m_slideshowTransitionMsSpin->setValue(qBound(0, ms, 5000));
+        m_slideshowTransitionMsSpin->setValue(qBound(0.0, ms / 1000.0, 5.0));
     }
 }
 

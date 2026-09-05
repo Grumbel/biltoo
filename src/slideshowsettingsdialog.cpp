@@ -36,10 +36,11 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_transitionCombo->addItem(tr("Slide (projector)"), 3);
     m_transitionCombo->setToolTip(tr("Effect used when advancing to the next image"));
 
-    m_transitionMsSpin = new QSpinBox(this);
-    m_transitionMsSpin->setRange(0, 5000);
-    m_transitionMsSpin->setSingleStep(50);
-    m_transitionMsSpin->setSuffix(tr(" ms"));
+    m_transitionMsSpin = new QDoubleSpinBox(this);
+    m_transitionMsSpin->setRange(0.0, 5.0);
+    m_transitionMsSpin->setSingleStep(0.05);
+    m_transitionMsSpin->setDecimals(2);
+    m_transitionMsSpin->setSuffix(tr(" s"));
     m_transitionMsSpin->setToolTip(
         tr("Duration of the full transition (outgoing + incoming; capped to the interval)"));
 
@@ -103,8 +104,8 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     connect(m_fullscreenCheck, &QCheckBox::toggled, this, [this](bool) { emitChanged(); });
     connect(m_transitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { emitChanged(); });
-    connect(m_transitionMsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
-            this, [this](int) { emitChanged(); });
+    connect(m_transitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double) { emitChanged(); });
     connect(m_motionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { emitChanged(); });
     connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
@@ -128,12 +129,13 @@ void SlideshowSettingsDialog::syncTransitionCap()
         return;
     }
     // Duration is the full transition (out + in); may use the whole dwell.
-    const int intervalCap = qMax(0, intervalMs());
-    const int cap = qMin(5000, intervalCap);
+    // Both interval and transition are shown in seconds.
+    const double intervalSec = m_intervalSpin->value();
+    const double capSec = qBound(0.0, intervalSec, 5.0);
     m_blockEmit = true;
-    m_transitionMsSpin->setMaximum(qMax(0, cap));
-    if (m_transitionMsSpin->value() > cap) {
-        m_transitionMsSpin->setValue(cap);
+    m_transitionMsSpin->setMaximum(capSec);
+    if (m_transitionMsSpin->value() > capSec) {
+        m_transitionMsSpin->setValue(capSec);
     }
     m_blockEmit = false;
 }
@@ -189,7 +191,8 @@ void SlideshowSettingsDialog::setTransitionIndex(int index)
 
 int SlideshowSettingsDialog::transitionDurationMs() const
 {
-    return m_transitionMsSpin ? m_transitionMsSpin->value() : 400;
+    // UI is seconds; internal API stays milliseconds.
+    return m_transitionMsSpin ? qRound(m_transitionMsSpin->value() * 1000.0) : 400;
 }
 
 void SlideshowSettingsDialog::setTransitionDurationMs(int ms)
@@ -199,8 +202,9 @@ void SlideshowSettingsDialog::setTransitionDurationMs(int ms)
     }
     m_blockEmit = true;
     syncTransitionCap();
-    const int cap = m_transitionMsSpin->maximum();
-    m_transitionMsSpin->setValue(qBound(0, ms, cap));
+    const double capSec = m_transitionMsSpin->maximum();
+    const double sec = qBound(0.0, ms / 1000.0, capSec);
+    m_transitionMsSpin->setValue(sec);
     m_blockEmit = false;
 }
 

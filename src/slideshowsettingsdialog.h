@@ -53,7 +53,7 @@ private:
     QDoubleSpinBox *m_intervalSpin = nullptr;
     QCheckBox *m_fullscreenCheck = nullptr;
     QComboBox *m_transitionCombo = nullptr;
-    QSpinBox *m_transitionMsSpin = nullptr;
+    QDoubleSpinBox *m_transitionMsSpin = nullptr;
     QComboBox *m_motionCombo = nullptr;
     QDoubleSpinBox *m_panZoomFactorSpin = nullptr;
     QComboBox *m_zoomCombo = nullptr;

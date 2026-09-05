@@ -4062,3 +4062,44 @@ clamping to 1 for the whole outgoing fade.
 - [x] Interval > Transition still has pure dwell of (interval - transition)
 - [x] Motion keeps moving through transitions
 - [x] Next **229**
+
+## Plan / work (2026-09-05) — bundle `biltoo-229-slideshow-failproof-schedule`
+
+227 (arm pure=0) and 228 (concurrent full-interval arm) both failed when
+interval == transition: the show got stuck on the current image.
+
+### Clean fail-proof structure
+Single owner of the advance timer; no arm(0); no concurrent arm during
+transition.
+
+1. **armSlideshowAdvanceTimer** (only entry that starts the timer):
+   - pureMs = max(0, intervalMs - transitionMs)
+   - if pureMs > 0 → start single-shot pureMs
+   - if pureMs == 0 → **QueuedConnection** invoke onSlideshowTick
+     (never arm(0) on the completion stack)
+
+2. **onSlideshowTick** (only entry that starts a transition):
+   - stop timer
+   - if already busy → return (completion will re-enter via dwell-resume)
+   - beginLive or prepare+goNext
+   - if still not busy (instant) → arm again
+
+3. **slideshowLiveTransitionFinished**: only goNext; never arm
+
+4. **slideshowDwellResumeRequested**: sole completion path → armSlideshowAdvanceTimer
+
+Result when interval == transition: after a transition fully settles,
+dwell-resume queues the next onSlideshowTick on a clean stack → continuous
+crossfade, no stuck state, no static gaps.
+
+### Also
+- Transition duration UI now in **seconds** (same unit as interval) in both
+  Preferences and the mid-session Slideshow settings dialog. Internal storage
+  remains milliseconds.
+
+### Done criteria
+- [x] Interval == Transition advances continuously, never sticks
+- [x] Interval > Transition has pure dwell then transition
+- [x] Motion keeps moving through transitions
+- [x] Transition duration shown in seconds
+- [x] Next **230**
