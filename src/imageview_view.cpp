@@ -617,10 +617,19 @@ void ImageView::releaseLiveTransitionHold()
     m_motionBiasPath = m_liveTransitionNextPath.isEmpty()
         ? (targetItem() ? targetItem()->path() : QString())
         : m_liveTransitionNextPath;
-    if (!toSource.isNull()) {
+    // Prefer the canvas item's full decode when it already matches the target
+    // path (LoadReplace finished under the hold) so we do not install a
+    // smaller handoff/thumbnail as the dwell cover.
+    m_dwellSourceImage = QImage();
+    if (ImageItem *item = targetItem()) {
+        if (!item->sourceImage().isNull()
+            && (m_liveTransitionNextPath.isEmpty()
+                || item->path() == m_liveTransitionNextPath)) {
+            m_dwellSourceImage = item->sourceImage();
+        }
+    }
+    if (m_dwellSourceImage.isNull() && !toSource.isNull()) {
         m_dwellSourceImage = toSource;
-    } else if (ImageItem *item = targetItem()) {
-        m_dwellSourceImage = item->sourceImage();
     }
     if (!m_dwellSourceImage.isNull()) {
         // Reuse to-atlas as dwell atlas when scales match path max.
@@ -1044,76 +1053,37 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return true;
     }
 
-    // No full preload: open the fade on a thumbnail as soon as it is ready,
-    // then upgrade to the full decode if the same transition is still live.
+    // No full preload: decode full off-thread. If that is still pending for a
+    // long time we do not open a thumbnail mid-fade — swapping thumb→full
+    // changes pixel density / PanScan travel and jumps the crop.
+    // Thumbnail is only used as a last-resort start if the full decode fails.
     const QString path = nextPath;
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path]() {
-        const QImage thumb = ImageLoader::loadThumbnail(path, 512);
-        if (!thumb.isNull()) {
-            if (ImageView *const target = guard.data()) {
-                QMetaObject::invokeMethod(target, [guard, path, thumb]() {
-                    ImageView *const view = guard.data();
-                    if (!view || view->m_liveTransitionNextPath != path) {
-                        return;
-                    }
-                    if (!view->m_liveTransitionAwaitingLoad
-                        && !view->m_liveTransitionActive
-                        && !view->m_liveTransitionHold) {
-                        return;
-                    }
-                    if (view->m_liveTransitionActive || view->m_liveTransitionHold) {
-                        view->m_liveTransitionSourceImage = thumb;
-                        view->m_handoffPath = path;
-                        view->m_handoffImage = thumb;
-                        view->ensureMotionAtlas(
-                            view->m_liveTransitionSourceImage, &view->m_liveToAtlas,
-                            &view->m_liveToAtlasScale, &view->m_liveToAtlasVw,
-                            &view->m_liveToAtlasVh);
-                        if (view->viewport()) {
-                            view->viewport()->update();
-                        }
-                        return;
-                    }
-                    view->startLiveTransitionWithImage(thumb);
-                }, Qt::QueuedConnection);
-            }
+        QImage full = ImageLoader::load(path);
+        if (full.isNull()) {
+            full = ImageLoader::loadThumbnail(path, 512);
         }
-
-        const QImage full = ImageLoader::load(path);
         ImageView *const target = guard.data();
         if (!target) {
             return;
         }
-        QMetaObject::invokeMethod(target, [guard, path, full, thumb]() {
+        QMetaObject::invokeMethod(target, [guard, path, full]() {
             ImageView *const view = guard.data();
             if (!view || view->m_liveTransitionNextPath != path) {
                 return;
             }
+            if (!view->m_liveTransitionAwaitingLoad) {
+                return;
+            }
             if (full.isNull()) {
-                if (!view->m_liveTransitionActive && !view->m_liveTransitionHold
-                    && view->m_liveTransitionAwaitingLoad && thumb.isNull()) {
-                    view->m_liveTransitionAwaitingLoad = false;
-                    emit view->slideshowLiveTransitionFinished();
-                }
+                view->m_liveTransitionAwaitingLoad = false;
+                emit view->slideshowLiveTransitionFinished();
                 return;
             }
             view->m_handoffPath = path;
             view->m_handoffImage = full;
-            if (view->m_liveTransitionActive || view->m_liveTransitionHold) {
-                view->m_liveTransitionSourceImage = full;
-                view->ensureMotionAtlas(
-                    view->m_liveTransitionSourceImage, &view->m_liveToAtlas,
-                    &view->m_liveToAtlasScale, &view->m_liveToAtlasVw,
-                    &view->m_liveToAtlasVh);
-                if (view->viewport()) {
-                    view->viewport()->update();
-                }
-                return;
-            }
-            if (view->m_liveTransitionAwaitingLoad) {
-                view->startLiveTransitionWithImage(full);
-            }
+            view->startLiveTransitionWithImage(full);
         }, Qt::QueuedConnection);
     });
     return true;

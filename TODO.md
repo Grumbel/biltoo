@@ -4430,3 +4430,18 @@ guard.data()` after a null check and use `view` only.
 ### Done criteria
 - [x] Clean build without null-deref warnings in beginLive
 - [x] Next **246**
+
+## Plan / work (2026-09-05) — bundle `biltoo-246-thumb-jump-spin-step`
+
+### Thumbnail jump
+Mid-fade thumb→full upgrade changed pixel density / PanScan travel → crop jump.
+Fix: only start live fade on full decode (thumb only if full load fails). No
+in-place upgrade. releaseHold prefers canvas item full source over handoff.
+
+### Settings
+Interval and transition duration both use 0.5 s single-step, 1 decimal.
+
+### Done criteria
+- [x] No mid-fade resolution swap
+- [x] Matching spin steps
+- [x] Next **247**

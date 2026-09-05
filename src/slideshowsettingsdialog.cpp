@@ -38,8 +38,9 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
 
     m_transitionMsSpin = new QDoubleSpinBox(this);
     m_transitionMsSpin->setRange(0.0, 5.0);
-    m_transitionMsSpin->setSingleStep(0.05);
-    m_transitionMsSpin->setDecimals(2);
+    // Same step as Interval so the two times stay easy to match (e.g. 1.0 / 1.0).
+    m_transitionMsSpin->setSingleStep(0.5);
+    m_transitionMsSpin->setDecimals(1);
     m_transitionMsSpin->setSuffix(tr(" s"));
     m_transitionMsSpin->setToolTip(
         tr("Duration of the full transition (outgoing + incoming; capped to the interval)"));
