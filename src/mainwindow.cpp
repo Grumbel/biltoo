@@ -891,6 +891,13 @@ void MainWindow::updateSlideshowFromClock()
     const qint64 cycle = elapsed / intervalMs;
     const int phaseMs = int(elapsed % intervalMs);
 
+    // Extended HUD: video-player timeline for one full loop of the session.
+    if (m_imageView) {
+        const qint64 totalMs = qint64(n) * qint64(intervalMs);
+        const qint64 loopElapsed = totalMs > 0 ? (elapsed % totalMs) : 0;
+        m_imageView->setSlideshowTimeline(loopElapsed, totalMs);
+    }
+
     // Desired "from" index for this cycle.
     const int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
     const int toIdx = (fromIdx + 1) % n;

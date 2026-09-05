@@ -480,28 +480,87 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         }
     }
 
-    // Slideshow dwell: single device pixel along the bottom edge while the full
-    // HUD is pinned. No track, no panel — only the filled fraction of the width.
-    if (m_hudVisible && m_slideshowProgressActive && m_slideshowProgressIntervalMs > 0) {
-        const qint64 elapsed = m_slideshowProgressElapsed.isValid()
-            ? m_slideshowProgressElapsed.elapsed()
-            : 0;
-        qreal fraction = qreal(elapsed) / qreal(m_slideshowProgressIntervalMs);
-        if (fraction < 0.0) {
-            fraction = 0.0;
-        } else if (fraction > 1.0) {
-            fraction = 1.0;
-        }
+    // Slideshow timeline (extended HUD only): video-player style progress bar
+    // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
+    // the host clock. Falls back to per-interval dwell line if no timeline.
+    if (m_hudVisible && m_slideshowProgressActive) {
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
-        if (viewW > 0 && viewH > 0 && fraction > 0.0) {
-            const int barW = qMax(1, int(qRound(fraction * viewW)));
+        if (viewW > 0 && viewH > 0) {
+            qreal fraction = 0.0;
+            if (m_slideshowTimelineTotalMs > 0) {
+                fraction = qreal(m_slideshowTimelineElapsedMs)
+                    / qreal(m_slideshowTimelineTotalMs);
+            } else if (m_slideshowProgressIntervalMs > 0) {
+                const qint64 elapsed = m_slideshowProgressElapsed.isValid()
+                    ? m_slideshowProgressElapsed.elapsed()
+                    : 0;
+                fraction = qreal(elapsed) / qreal(m_slideshowProgressIntervalMs);
+            }
+            fraction = qBound(0.0, fraction, 1.0);
+
             QColor c = m_hudTextColor.isValid() ? m_hudTextColor : QColor(255, 255, 255);
-            // Soft so it does not fight the image; still readable on dark or light.
+            QColor track = c;
+            track.setAlpha(60);
             c.setAlpha(200);
             painter.setPen(Qt::NoPen);
-            painter.setBrush(c);
-            painter.drawRect(0, viewH - 1, barW, 1);
+            painter.setBrush(track);
+            painter.drawRect(0, viewH - 2, viewW, 2);
+            if (fraction > 0.0) {
+                const int barW = qMax(1, int(qRound(fraction * viewW)));
+                painter.setBrush(c);
+                painter.drawRect(0, viewH - 2, barW, 2);
+            }
+
+            if (m_slideshowTimelineTotalMs > 0) {
+                auto fmt = [](qint64 ms) -> QString {
+                    ms = qMax(qint64(0), ms);
+                    const qint64 totalSec = ms / 1000;
+                    const int h = int(totalSec / 3600);
+                    const int m = int((totalSec % 3600) / 60);
+                    const int s = int(totalSec % 60);
+                    if (h > 0) {
+                        return QStringLiteral("%1:%2:%3")
+                            .arg(h)
+                            .arg(m, 2, 10, QLatin1Char('0'))
+                            .arg(s, 2, 10, QLatin1Char('0'));
+                    }
+                    return QStringLiteral("%1:%2")
+                        .arg(m)
+                        .arg(s, 2, 10, QLatin1Char('0'));
+                };
+                const qint64 remain = m_slideshowTimelineTotalMs
+                    - m_slideshowTimelineElapsedMs;
+                const QString timeLine =
+                    QStringLiteral("%1 / %2   −%3")
+                        .arg(fmt(m_slideshowTimelineElapsedMs),
+                             fmt(m_slideshowTimelineTotalMs),
+                             fmt(remain));
+
+                QFont f = painter.font();
+                f.setPointSize(qMax(8, m_hudFontPointSize));
+                painter.setFont(f);
+                const QFontMetrics fm(f);
+                const int textW = fm.horizontalAdvance(timeLine);
+                const int textH = fm.height();
+                const int padX = 10;
+                const int padY = 4;
+                const int bgW = textW + 2 * padX;
+                const int bgH = textH + 2 * padY;
+                const int x = (viewW - bgW) / 2;
+                const int y = viewH - 2 - 8 - bgH;
+                QColor panel = m_hudPanelColor;
+                if (!panel.isValid() || panel.alpha() == 0) {
+                    panel = QColor(0, 0, 0, 160);
+                }
+                painter.setBrush(panel);
+                painter.setPen(Qt::NoPen);
+                painter.drawRoundedRect(QRect(x, y, bgW, bgH), 6, 6);
+                painter.setPen(m_hudTextColor.isValid() ? m_hudTextColor
+                                                       : QColor(240, 240, 240));
+                painter.drawText(QRect(x + padX, y + padY, textW, textH),
+                                 Qt::AlignLeft | Qt::AlignVCenter, timeLine);
+            }
         }
     }
 }

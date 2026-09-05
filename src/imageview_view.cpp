@@ -449,8 +449,36 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_motionBiasPath.clear();
         m_motionTravelDir = QPointF(0.0, 1.0);
         m_motionSign = 1.0;
+        m_slideshowTimelineElapsedMs = 0;
+        m_slideshowTimelineTotalMs = 0;
     }
     viewport()->update();
+}
+
+void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
+{
+    if (totalMs <= 0) {
+        if (m_slideshowTimelineTotalMs == 0) {
+            return;
+        }
+        m_slideshowTimelineElapsedMs = 0;
+        m_slideshowTimelineTotalMs = 0;
+        if (viewport()) {
+            viewport()->update();
+        }
+        return;
+    }
+    elapsedMs = qBound(qint64(0), elapsedMs, totalMs);
+    if (elapsedMs == m_slideshowTimelineElapsedMs
+        && totalMs == m_slideshowTimelineTotalMs) {
+        return;
+    }
+    m_slideshowTimelineElapsedMs = elapsedMs;
+    m_slideshowTimelineTotalMs = totalMs;
+    // Progress bar needs sub-second updates while the extended HUD is pinned.
+    if (m_hudVisible && viewport()) {
+        viewport()->update();
+    }
 }
 
 

@@ -4141,3 +4141,19 @@ one transition starts per cycle boundary; cycles advance only with real time
 - [x] Interval > Transition: pure then transition
 - [x] No rush-through, no stuck-on-one
 - [x] Next **231**
+
+## Plan / work (2026-09-05) — bundle `biltoo-231-slideshow-hud-timeline`
+
+Extended (pinned) HUD shows video-player style slideshow time.
+
+### Behaviour
+- Only when full HUD is on (`H` / Show HUD Overlay) and a slideshow is active
+- Bottom track + fill = position within one full loop (`n * interval`)
+- Centre-bottom panel: `elapsed / total   −remaining` (M:SS or H:MM:SS)
+- Driven by `ImageView::setSlideshowTimeline` from the clock tick
+- Cleared when slideshow progress is deactivated (stop)
+
+### Done criteria
+- [x] Extended HUD shows elapsed, total, remaining during slideshow
+- [x] Hidden when HUD is off
+- [x] Next **232**

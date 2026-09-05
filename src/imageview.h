@@ -499,6 +499,12 @@ public:
      * slideshow stops. The line is drawn only while the full HUD is pinned.
      */
     void setSlideshowProgress(bool active, int intervalMs = 0);
+    /**
+     * Overall slideshow timeline for the extended (pinned) HUD — video-player
+     * style elapsed / total and remaining. Pass totalMs<=0 to clear.
+     * Drawn only while the full HUD is pinned and a slideshow is active.
+     */
+    void setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs);
 
     void setSlideshowTransition(SlideshowTransition kind);
     SlideshowTransition slideshowTransition() const { return m_slideshowTransition; }
@@ -1017,6 +1023,9 @@ private:
     int m_slideshowProgressIntervalMs = 0;
     QElapsedTimer m_slideshowProgressElapsed;
     QTimer *m_slideshowProgressTimer = nullptr;
+    /** Overall timeline for extended HUD (video-player style). total<=0 = off. */
+    qint64 m_slideshowTimelineElapsedMs = 0;
+    qint64 m_slideshowTimelineTotalMs = 0;
     SlideshowTransition m_slideshowTransition = SlideshowTransition::Crossfade;
     int m_slideshowTransitionDurationMs = 400;
     QPixmap m_slideshowTransitionPixmap; /**< From-frame snapshot */
