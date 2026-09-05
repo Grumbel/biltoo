@@ -69,6 +69,29 @@ QStringList supportedMimeTypes()
     };
 }
 
+
+QStringList imageMimeTypes()
+{
+    QStringList out;
+    for (const QString &m : supportedMimeTypes()) {
+        if (m.startsWith(QLatin1String("image/"))) {
+            out.append(m);
+        }
+    }
+    return out;
+}
+
+QStringList archiveMimeTypes()
+{
+    QStringList out;
+    for (const QString &m : supportedMimeTypes()) {
+        if (!m.startsWith(QLatin1String("image/"))) {
+            out.append(m);
+        }
+    }
+    return out;
+}
+
 static QString labelForMime(const QString &mime)
 {
     static const QHash<QString, QString> labels = {

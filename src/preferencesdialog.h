@@ -112,6 +112,12 @@ private:
     void onMimeItemChanged(QTreeWidgetItem *item, int column);
     void onSetAllAsDefault();
     void onRemoveAllAsDefault();
+    void onSetImagesAsDefault();
+    void onRemoveImagesAsDefault();
+    void onSetArchivesAsDefault();
+    void onRemoveArchivesAsDefault();
+    void applySetDefaults(const QStringList &types);
+    void applyClearDefaults(const QStringList &types);
     void updateColorButton(QPushButton *button, const QColor &color);
     void chooseBackgroundColor();
     void chooseBackgroundColorAlt();
@@ -189,6 +195,10 @@ private:
     QLabel *m_mimeStatusLabel = nullptr;
     QPushButton *m_setAllBtn = nullptr;
     QPushButton *m_removeAllBtn = nullptr;
+    QPushButton *m_setImagesBtn = nullptr;
+    QPushButton *m_removeImagesBtn = nullptr;
+    QPushButton *m_setArchivesBtn = nullptr;
+    QPushButton *m_removeArchivesBtn = nullptr;
 };
 
 #endif // PREFERENCESDIALOG_H

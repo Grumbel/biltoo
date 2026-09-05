@@ -436,23 +436,57 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_mimeTree->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     m_mimeTree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
-    auto *btnRow = new QHBoxLayout;
-    m_setAllBtn = new QPushButton(tr("&Set all as default"), defaultsPage);
-    m_removeAllBtn = new QPushButton(tr("&Remove all as default"), defaultsPage);
-    m_setAllBtn->setToolTip(tr("Make Biltoo the default handler for every listed type"));
+    auto *btnCol = new QVBoxLayout;
+    auto *btnRowAll = new QHBoxLayout;
+    m_setAllBtn = new QPushButton(tr("Set &all as default"), defaultsPage);
+    m_removeAllBtn = new QPushButton(tr("Remove a&ll as default"), defaultsPage);
+    m_setAllBtn->setToolTip(tr("Make Biltoo the preferred handler for every listed type"));
     m_removeAllBtn->setToolTip(
-        tr("Stop using Biltoo as the default for these types"));
-    btnRow->addWidget(m_setAllBtn);
-    btnRow->addWidget(m_removeAllBtn);
-    btnRow->addStretch(1);
+        tr("Remove Biltoo from the preferred list for every type where it is set"));
+    btnRowAll->addWidget(m_setAllBtn);
+    btnRowAll->addWidget(m_removeAllBtn);
+    btnRowAll->addStretch(1);
+
+    auto *btnRowImg = new QHBoxLayout;
+    m_setImagesBtn = new QPushButton(tr("Set &images as default"), defaultsPage);
+    m_removeImagesBtn = new QPushButton(tr("Remove i&mages as default"), defaultsPage);
+    m_setImagesBtn->setToolTip(
+        tr("Prefer Biltoo for still-image types (JPEG, PNG, …) only"));
+    m_removeImagesBtn->setToolTip(
+        tr("Remove Biltoo as preferred handler for image types only"));
+    btnRowImg->addWidget(m_setImagesBtn);
+    btnRowImg->addWidget(m_removeImagesBtn);
+    btnRowImg->addStretch(1);
+
+    auto *btnRowArch = new QHBoxLayout;
+    m_setArchivesBtn = new QPushButton(tr("Set &archives as default"), defaultsPage);
+    m_removeArchivesBtn = new QPushButton(tr("Remove ar&chives as default"), defaultsPage);
+    m_setArchivesBtn->setToolTip(
+        tr("Prefer Biltoo for archive types (ZIP, tar, 7z, …) only"));
+    m_removeArchivesBtn->setToolTip(
+        tr("Remove Biltoo as preferred handler for archive types only"));
+    btnRowArch->addWidget(m_setArchivesBtn);
+    btnRowArch->addWidget(m_removeArchivesBtn);
+    btnRowArch->addStretch(1);
+
+    btnCol->addLayout(btnRowAll);
+    btnCol->addLayout(btnRowImg);
+    btnCol->addLayout(btnRowArch);
 
     defaultsLayout->addWidget(m_mimeStatusLabel);
     defaultsLayout->addWidget(m_mimeTree, 1);
-    defaultsLayout->addLayout(btnRow);
+    defaultsLayout->addLayout(btnCol);
 
     connect(m_mimeTree, &QTreeWidget::itemChanged, this, &PreferencesDialog::onMimeItemChanged);
     connect(m_setAllBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetAllAsDefault);
     connect(m_removeAllBtn, &QPushButton::clicked, this, &PreferencesDialog::onRemoveAllAsDefault);
+    connect(m_setImagesBtn, &QPushButton::clicked, this, &PreferencesDialog::onSetImagesAsDefault);
+    connect(m_removeImagesBtn, &QPushButton::clicked, this,
+            &PreferencesDialog::onRemoveImagesAsDefault);
+    connect(m_setArchivesBtn, &QPushButton::clicked, this,
+            &PreferencesDialog::onSetArchivesAsDefault);
+    connect(m_removeArchivesBtn, &QPushButton::clicked, this,
+            &PreferencesDialog::onRemoveArchivesAsDefault);
     refreshDefaultAppsList();
 
     auto *tabs = new QTabWidget(this);
@@ -546,17 +580,25 @@ void PreferencesDialog::refreshDefaultAppsList()
         m_mimeTree->setEnabled(false);
         m_setAllBtn->setEnabled(false);
         m_removeAllBtn->setEnabled(false);
+        m_setImagesBtn->setEnabled(false);
+        m_removeImagesBtn->setEnabled(false);
+        m_setArchivesBtn->setEnabled(false);
+        m_removeArchivesBtn->setEnabled(false);
         m_mimeTreeUpdating = false;
         return;
     }
 
     m_mimeStatusLabel->setText(
-        tr("Checked types are handled by Biltoo as the system default. "
-           "Toggle a checkbox to set or clear the association immediately. "
-           "Uses the FreeDesktop GIO API (biltoo.desktop must be installed)."));
+        tr("Checked types list Biltoo first among preferred handlers. "
+           "Toggle a checkbox to set or clear that association. "
+           "Use the buttons to change images, archives, or everything at once."));
     m_mimeTree->setEnabled(true);
     m_setAllBtn->setEnabled(true);
     m_removeAllBtn->setEnabled(true);
+    m_setImagesBtn->setEnabled(true);
+    m_removeImagesBtn->setEnabled(true);
+    m_setArchivesBtn->setEnabled(true);
+    m_removeArchivesBtn->setEnabled(true);
 
     for (const DefaultApps::MimeStatus &s : DefaultApps::statusForSupportedTypes()) {
         auto *item = new QTreeWidgetItem(m_mimeTree);
@@ -606,14 +648,8 @@ void PreferencesDialog::onMimeItemChanged(QTreeWidgetItem *item, int column)
     refreshDefaultAppsList();
 }
 
-void PreferencesDialog::onSetAllAsDefault()
+void PreferencesDialog::applySetDefaults(const QStringList &types)
 {
-    QStringList types;
-    for (int i = 0; i < m_mimeTree->topLevelItemCount(); ++i) {
-        if (QTreeWidgetItem *item = m_mimeTree->topLevelItem(i)) {
-            types.append(item->data(0, Qt::UserRole).toString());
-        }
-    }
     if (types.isEmpty()) {
         return;
     }
@@ -630,16 +666,8 @@ void PreferencesDialog::onSetAllAsDefault()
     }
 }
 
-void PreferencesDialog::onRemoveAllAsDefault()
+void PreferencesDialog::applyClearDefaults(const QStringList &types)
 {
-    QStringList types;
-    for (int i = 0; i < m_mimeTree->topLevelItemCount(); ++i) {
-        QTreeWidgetItem *item = m_mimeTree->topLevelItem(i);
-        // Checked rows are those where Biltoo is currently the default.
-        if (item && item->checkState(0) == Qt::Checked) {
-            types.append(item->data(0, Qt::UserRole).toString());
-        }
-    }
     if (types.isEmpty()) {
         return;
     }
@@ -654,6 +682,36 @@ void PreferencesDialog::onRemoveAllAsDefault()
                 .arg(types.size())
                 .arg(errors.join(QLatin1Char('\n'))));
     }
+}
+
+void PreferencesDialog::onSetAllAsDefault()
+{
+    applySetDefaults(DefaultApps::supportedMimeTypes());
+}
+
+void PreferencesDialog::onRemoveAllAsDefault()
+{
+    applyClearDefaults(DefaultApps::supportedMimeTypes());
+}
+
+void PreferencesDialog::onSetImagesAsDefault()
+{
+    applySetDefaults(DefaultApps::imageMimeTypes());
+}
+
+void PreferencesDialog::onRemoveImagesAsDefault()
+{
+    applyClearDefaults(DefaultApps::imageMimeTypes());
+}
+
+void PreferencesDialog::onSetArchivesAsDefault()
+{
+    applySetDefaults(DefaultApps::archiveMimeTypes());
+}
+
+void PreferencesDialog::onRemoveArchivesAsDefault()
+{
+    applyClearDefaults(DefaultApps::archiveMimeTypes());
 }
 
 int PreferencesDialog::slideshowIntervalMs() const

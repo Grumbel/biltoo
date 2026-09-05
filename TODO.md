@@ -3552,3 +3552,13 @@ biltoo and keep other handlers. Clear must remove only biltoo (not
 ### Done criteria
 - [x] Prepend on set, remove-only on clear
 - [x] Next **202**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-202-defaultapps-image-archive-buttons`
+
+Preferences Default application: group actions for images vs archives
+(plus existing all). DefaultApps::imageMimeTypes / archiveMimeTypes.
+
+### Done criteria
+- [x] Separate set/remove for images and archives
+- [x] Next **203**

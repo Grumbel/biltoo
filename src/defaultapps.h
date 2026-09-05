@@ -25,6 +25,12 @@ struct MimeStatus {
 /** MIME types we advertise in biltoo.desktop and offer in Preferences. */
 QStringList supportedMimeTypes();
 
+/** Still-image types (image/*) from supportedMimeTypes(). */
+QStringList imageMimeTypes();
+
+/** Archive/container types from supportedMimeTypes(). */
+QStringList archiveMimeTypes();
+
 /** Desktop file id used for associations (must match installed .desktop). */
 QString desktopFileId();
 
