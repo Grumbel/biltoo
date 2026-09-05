@@ -3379,3 +3379,26 @@ biases as fallback.
 - [x] VIPS builds bias toward attention
 - [x] No-VIPS / failure keeps geometric biases
 - [x] Next **191**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-191-feature-summary`
+
+Document optional build features end-to-end:
+
+1. **CMake** — after pkg-config probes, print a summary of every optional
+   library (1/0) with a one-line purpose; generate the same flags into
+   `version.h`.
+2. **About dialog** — list yes/no for libvips, libexiv2, libarchive, GIO;
+   note runtime Qt imageformat plugins separately.
+3. **version.h.in** — `BILTOO_FEATURE_{VIPS,EXIV2,ARCHIVE,GIO}`.
+
+Optional set (complete):
+- libvips — codecs, autorot, attention Pan&Zoom
+- libexiv2 — Exif/IPTC/XMP
+- libarchive — archive member images
+- gio-unix — default-app Preferences
+
+### Done criteria
+- [x] CMake end summary lists all optional features
+- [x] About lists compiled-in features
+- [x] Next **192**

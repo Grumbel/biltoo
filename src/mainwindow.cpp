@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include "version.h"
 #include "imageitem.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -1045,11 +1046,32 @@ void MainWindow::about()
     box.setWindowTitle(tr("About Biltoo"));
     box.setIconPixmap(QApplication::windowIcon().pixmap(64, 64));
     box.setText(tr("<h3>Biltoo %1</h3>").arg(QApplication::applicationVersion()));
+
+    auto feat = [](bool on) {
+        return on ? QObject::tr("yes") : QObject::tr("no");
+    };
+    const QString features = tr(
+        "<p><b>Optional features in this build</b></p>"
+        "<ul>"
+        "<li>libvips (extra codecs, attention Pan&amp;Zoom): %1</li>"
+        "<li>libexiv2 (Exif / IPTC / XMP metadata): %2</li>"
+        "<li>libarchive (images in zip / tar / 7z / rar / …): %3</li>"
+        "<li>GIO (default-application Preferences): %4</li>"
+        "</ul>"
+        "<p>Qt imageformat plugins (e.g. KImageFormats for XCF) are loaded at "
+        "runtime when installed.</p>")
+        .arg(feat(BILTOO_FEATURE_VIPS),
+             feat(BILTOO_FEATURE_EXIV2),
+             feat(BILTOO_FEATURE_ARCHIVE),
+             feat(BILTOO_FEATURE_GIO));
+
     box.setInformativeText(
         tr("<p>A classic image viewer with Gallery overview and a free-form "
            "Workspace for comparing images.</p>"
+           "%1"
            "<p>Copyright © 2026 Ingo Ruhnke &lt;grumbel@gmail.com&gt;<br/>"
-           "License: GPL-3.0-or-later</p>"));
+           "License: GPL-3.0-or-later</p>")
+            .arg(features));
     // GNOME 2 HIG: single affirmative Close on the right is fine for about boxes
     box.setStandardButtons(QMessageBox::Close);
     box.button(QMessageBox::Close)->setText(tr("&Close"));

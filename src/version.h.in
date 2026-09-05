@@ -4,3 +4,9 @@
 #pragma once
 
 #define BILTOO_VERSION_STRING "@PROJECT_VERSION_FULL@"
+
+/* Optional features (1 = linked at build time, 0 = not available). */
+#define BILTOO_FEATURE_VIPS @BILTOO_FEATURE_VIPS@
+#define BILTOO_FEATURE_EXIV2 @BILTOO_FEATURE_EXIV2@
+#define BILTOO_FEATURE_ARCHIVE @BILTOO_FEATURE_ARCHIVE@
+#define BILTOO_FEATURE_GIO @BILTOO_FEATURE_GIO@

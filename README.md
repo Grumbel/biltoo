@@ -144,7 +144,20 @@ cmake --install .   # optional; installs binary, desktop, metainfo, icon
 ./biltoo
 ```
 
-Optional libraries (vips, exiv2, libarchive, …) are detected when present. CMake tests include `biltoo --help` and project-file round-trip unit tests.
+Optional libraries are detected via pkg-config; CMake prints a feature summary
+at the end of configuration (also listed in **Help → About**):
+
+| Library | Feature when enabled |
+|---------|----------------------|
+| **libvips** | Extra codecs, EXIF autorot, attention-based slideshow Pan&Zoom |
+| **libexiv2** | Full Exif / IPTC / XMP in the Metadata panel |
+| **libarchive** | Open images inside zip, tar, 7z, rar, and related archives |
+| **gio-unix-2.0** | “Default application” Preferences (Linux) |
+
+Qt **imageformats** plugins (e.g. KDE **KImageFormats** for XCF/KRA/ORA) are
+loaded at runtime when installed — not a compile-time link.
+
+CMake tests include `biltoo --help` and project-file round-trip unit tests.
 
 ## License
 

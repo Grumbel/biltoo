@@ -99,14 +99,6 @@ add_executable(biltoo
   src/icons.qrc
 )
 
-# Version string lives only in generated version.h so a VERSION bump
-# recompiles translation units that include it (typically main.cpp), not the
-# whole target via a global compile definition.
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/version.h"
-  @ONLY
-)
 target_include_directories(biltoo PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_BINARY_DIR}"
@@ -159,45 +151,69 @@ target_link_libraries(biltoo PRIVATE
   Qt6::PrintSupport
 )
 
-# Optional libvips for formats Qt cannot decode
+# ---------------------------------------------------------------------------
+# Optional dependencies (pkg-config). Each sets BILTOO_FEATURE_* for version.h
+# and BILTOO_HAVE_* compile definitions used by #ifdef in the sources.
+# ---------------------------------------------------------------------------
+set(BILTOO_FEATURE_VIPS 0)
+set(BILTOO_FEATURE_EXIV2 0)
+set(BILTOO_FEATURE_ARCHIVE 0)
+set(BILTOO_FEATURE_GIO 0)
+
 if(PkgConfig_FOUND)
+  # libvips — extra codecs (HEIF/AVIF/…), autorot, smartcrop attention for Pan&Zoom
   pkg_check_modules(VIPS IMPORTED_TARGET vips)
   if(VIPS_FOUND)
     target_link_libraries(biltoo PRIVATE PkgConfig::VIPS)
     target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_VIPS=1)
-    message(STATUS "libvips found — broader image format support enabled")
-  else()
-    message(STATUS "libvips not found — using Qt image codecs only")
+    set(BILTOO_FEATURE_VIPS 1)
   endif()
 
+  # libexiv2 — full Exif / IPTC / XMP in the Metadata panel
   pkg_check_modules(EXIV2 IMPORTED_TARGET exiv2)
   if(EXIV2_FOUND)
     target_link_libraries(biltoo PRIVATE PkgConfig::EXIV2)
     target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_EXIV2=1)
-    message(STATUS "libexiv2 found — full Exif/IPTC/XMP metadata enabled")
-  else()
-    message(STATUS "libexiv2 not found — using Qt image plugin metadata only")
+    set(BILTOO_FEATURE_EXIV2 1)
   endif()
 
+  # libarchive — open zip/tar/7z/rar/… and load member images in memory
   pkg_check_modules(LIBARCHIVE IMPORTED_TARGET libarchive)
   if(LIBARCHIVE_FOUND)
     target_link_libraries(biltoo PRIVATE PkgConfig::LIBARCHIVE)
     target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_ARCHIVE=1)
-    message(STATUS "libarchive found — in-memory archive image loading enabled")
-  else()
-    message(WARNING "libarchive not found — archive image loading will be disabled")
+    set(BILTOO_FEATURE_ARCHIVE 1)
   endif()
 
-  # gio-unix provides GDesktopAppInfo (gdesktopappinfo.h); pulls in gio-2.0
+  # gio-unix — GDesktopAppInfo for “default application” Preferences (Linux)
   pkg_check_modules(GIOUNIX IMPORTED_TARGET gio-unix-2.0)
   if(GIOUNIX_FOUND)
     target_link_libraries(biltoo PRIVATE PkgConfig::GIOUNIX)
     target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_GIO=1)
-    message(STATUS "GLib GIO (unix) found — default application associations enabled")
-  else()
-    message(STATUS "gio-unix-2.0 not found — default-app preferences disabled")
+    set(BILTOO_FEATURE_GIO 1)
   endif()
+else()
+  message(STATUS "PkgConfig not found — all optional native libraries disabled")
 endif()
+
+# Version + feature macros: only TUs that include version.h recompile on bump.
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/version.h"
+  @ONLY
+)
+
+# Configuration summary (always printed at the end of the optional-deps block)
+message(STATUS "")
+message(STATUS "Biltoo ${PROJECT_VERSION_FULL} — build summary")
+message(STATUS "  Qt6 .............. REQUIRED (Core Gui Widgets Svg OpenGLWidgets PrintSupport)")
+message(STATUS "  libvips .......... ${BILTOO_FEATURE_VIPS}  (extra image codecs, autorot, attention Pan&Zoom)")
+message(STATUS "  libexiv2 ......... ${BILTOO_FEATURE_EXIV2}  (Exif/IPTC/XMP metadata panel)")
+message(STATUS "  libarchive ....... ${BILTOO_FEATURE_ARCHIVE}  (images inside zip/tar/7z/rar/…)")
+message(STATUS "  gio-unix-2.0 ..... ${BILTOO_FEATURE_GIO}  (default-application Preferences)")
+message(STATUS "  (1 = enabled, 0 = left out)")
+message(STATUS "  Runtime: install KImageFormats for XCF/KRA/ORA and other Qt plugins.")
+message(STATUS "")
 
 include(GNUInstallDirs)
 
