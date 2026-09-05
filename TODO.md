@@ -4391,3 +4391,17 @@ not the scheduler; the clock never branches on finished for *next* timing.
 - [x] Single pure derivation in updateSlideshowFromClock
 - [x] No reanchor / lag-cancel
 - [x] Next **243**
+
+## Plan / work (2026-09-05) — bundle `biltoo-243-slideshow-nav-timeline`
+
+### ←/→ HUD frozen
+onSlideshowUserNavigated while **paused** updated baseIndex but never called
+setSlideshowTimeline — tick does not run when paused, so the HUD never moved.
+
+While playing, arm→update also writes the timeline; the paused path was the
+hole. Fixed by always publishing timeline at baseIndex×interval after any
+user nav (play or pause).
+
+### Done criteria
+- [x] ←/→ updates current time on HUD when paused and when playing
+- [x] Next **244**

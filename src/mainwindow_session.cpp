@@ -1769,16 +1769,28 @@ void MainWindow::onSlideshowUserNavigated()
     if (!m_imageView) {
         return;
     }
-    // Resync pure clock so the new slide is phase 0 of a fresh cycle.
+
     m_imageView->cancelSlideshowTransition();
     m_slideshowPendingToIndex = -1;
     m_slideshowTransitionCycle = -1;
+    m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
+    m_slideshowPausedAccumMs = 0;
+
+    // Always publish HUD position for this index. While playing, arm()/tick
+    // also write the timeline; while paused the tick does not run, so without
+    // this the clock stayed frozen on ←/→.
+    const int n = m_session.paths().size();
+    const int intervalMs = qMax(1, m_slideshowIntervalMs);
+    if (n > 0) {
+        const qint64 totalMs = qint64(n) * qint64(intervalMs);
+        const qint64 at = qint64(m_slideshowBaseIndex) * qint64(intervalMs);
+        m_imageView->setSlideshowTimeline(at, totalMs);
+    }
+
     if (!m_slideshowPaused) {
         armSlideshowAdvanceTimer();
     } else {
         m_imageView->setSlideshowProgress(true, 0);
-        m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
-        m_slideshowPausedAccumMs = 0;
     }
     updateSlideshowActionUi();
 }
