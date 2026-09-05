@@ -4517,3 +4517,22 @@ always jumps. Not float rounding of interval/transition.
 - [x] No thumb as live "to" frame
 - [x] Debug logs back
 - [x] Next **251**
+
+## Plan / work (2026-09-05) — bundle `biltoo-251-preload-always`
+
+### Log diagnosis
+Every cycle: `full-decode` never `preload-hit`. phase drifts 4→151→303→…→1825
+(~150ms/cycle). pureMs=0 so pure-zone preload never ran; busy return skipped
+warming the *next* image; preload() also cancelled in-flight jobs by bumping
+generation on every call.
+
+### Fix
+- Preload `toIdx` every tick (including while busy)
+- preloadSlideshowImage: no-op if same path in-flight or ready
+- beginLive: wait on in-flight preload; preload-ready starts the fade
+- Debug: preload-start / preload-ready / wait-preload / preload-hit
+
+### Done criteria
+- [x] Log should show preload-hit after first cycle
+- [x] Phase drift from repeated full-decode should shrink
+- [x] Next **252**

@@ -1058,73 +1058,52 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return true;
     }
 
-    // Full decode only. While awaiting, paint keeps the from/dwell cover —
-    // no low-res stand-in for "to".
-    const QString path = nextPath;
-    const QPointer<ImageView> guard(this);
+    // Preload already decoding this path — stay awaiting; preload-ready will
+    // start the fade (avoid a second full disk load of the same file).
+    if (m_preloadInFlightPath == nextPath) {
+        qDebug().nospace()
+            << "[slideshow] beginLive wait-preload "
+            << QFileInfo(nextPath).fileName();
+        return true;
+    }
+
+    // Kick preload and wait. preload-ready starts the fade when done.
     qDebug().nospace()
-        << "[slideshow] beginLive full-decode "
-        << QFileInfo(path).fileName()
+        << "[slideshow] beginLive request-preload "
+        << QFileInfo(nextPath).fileName()
         << " from=" << m_liveFromSourceImage.width() << "x"
         << m_liveFromSourceImage.height();
-    QThreadPool::globalInstance()->start([guard, path]() {
-        const QImage full = ImageLoader::load(path);
-        if (!full.isNull() && ImageLoader::cachedThumbnail(path).isNull()) {
-            const int maxEdge = 512;
-            QImage thumb = full;
-            if (thumb.width() > maxEdge || thumb.height() > maxEdge) {
-                thumb = thumb.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
-                                    Qt::SmoothTransformation);
-            }
-            ImageLoader::putCachedThumbnail(path, thumb);
-        }
-        ImageView *const target = guard.data();
-        if (!target) {
-            return;
-        }
-        QMetaObject::invokeMethod(target, [guard, path, full]() {
-            ImageView *const view = guard.data();
-            if (!view || view->m_liveTransitionNextPath != path) {
-                return;
-            }
-            if (!view->m_liveTransitionAwaitingLoad) {
-                return;
-            }
-            if (full.isNull()) {
-                qDebug() << "[slideshow] beginLive full-decode failed"
-                         << QFileInfo(path).fileName();
-                view->m_liveTransitionAwaitingLoad = false;
-                emit view->slideshowLiveTransitionFinished();
-                return;
-            }
-            view->m_handoffPath = path;
-            view->m_handoffImage = full;
-            qDebug().nospace()
-                << "[slideshow] beginLive full-ready "
-                << QFileInfo(path).fileName()
-                << " " << full.width() << "x" << full.height();
-            view->startLiveTransitionWithImage(full);
-        }, Qt::QueuedConnection);
-    });
+    preloadSlideshowImage(nextPath);
     return true;
 }
 
 void ImageView::preloadSlideshowImage(const QString &path)
 {
-    if (path.isEmpty() || path == m_preloadPath) {
+    if (path.isEmpty()) {
+        return;
+    }
+    // Already have this full image ready.
+    if (path == m_preloadPath && !m_preloadImage.isNull()) {
+        return;
+    }
+    // Same path already decoding — do not bump generation (that cancelled the
+    // in-flight job and forced every beginLive down the full-decode path).
+    if (path == m_preloadInFlightPath) {
         return;
     }
     const quint64 gen = ++m_preloadGeneration;
     m_preloadPath.clear();
     m_preloadImage = QImage();
+    m_preloadInFlightPath = path;
     const QString loadPath = path;
     const QPointer<ImageView> guard(this);
+    qDebug().nospace()
+        << "[slideshow] preload-start " << QFileInfo(loadPath).fileName();
     QThreadPool::globalInstance()->start([guard, loadPath, gen]() {
         const QImage img = ImageLoader::load(loadPath);
         if (img.isNull()) {
             return;
         }
-        // Seed aspect-preserving thumb cache from the full decode when empty.
         if (ImageLoader::cachedThumbnail(loadPath).isNull()) {
             const int maxEdge = 512;
             QImage thumb = img;
@@ -1147,6 +1126,26 @@ void ImageView::preloadSlideshowImage(const QString &path)
             }
             view->m_preloadPath = loadPath;
             view->m_preloadImage = img;
+            view->m_preloadInFlightPath.clear();
+            qDebug().nospace()
+                << "[slideshow] preload-ready " << QFileInfo(loadPath).fileName()
+                << " " << img.width() << "x" << img.height();
+            // beginLive is waiting on this path — open the fade now.
+            if (view->m_liveTransitionAwaitingLoad
+                && view->m_liveTransitionNextPath == loadPath
+                && !view->m_liveTransitionActive
+                && !view->m_liveTransitionHold) {
+                const QImage full = img;
+                view->m_preloadPath.clear();
+                view->m_preloadImage = QImage();
+                view->m_handoffPath = loadPath;
+                view->m_handoffImage = full;
+                qDebug().nospace()
+                    << "[slideshow] beginLive preload-hit "
+                    << QFileInfo(loadPath).fileName()
+                    << " " << full.width() << "x" << full.height();
+                view->startLiveTransitionWithImage(full);
+            }
         }, Qt::QueuedConnection);
     });
 }

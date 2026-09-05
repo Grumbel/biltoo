@@ -919,6 +919,9 @@ void MainWindow::updateSlideshowFromClock()
         const qint64 raw =
             qint64(m_slideshowBaseIndex) * qint64(intervalMs) + elapsed;
         m_imageView->setSlideshowTimeline(totalMs > 0 ? (raw % totalMs) : 0, totalMs);
+        // Always warm the current cycle's *to* image — including while busy and
+        // when pureMs==0 (pure-zone preload never runs in continuous mode).
+        m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
     }
 
     // In-flight transition: do not start another. Clock keeps ticking; HUD
@@ -937,7 +940,6 @@ void MainWindow::updateSlideshowFromClock()
         }
         if (m_imageView) {
             m_imageView->setSlideshowProgress(true, intervalMs);
-            m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
         }
         return;
     }

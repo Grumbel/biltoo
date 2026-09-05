@@ -1108,6 +1108,8 @@ private:
     qreal m_toLayerWallMs = -1.0;
     QString m_preloadPath;
     QImage m_preloadImage;
+    /** Path currently decoding into preload (may not be in m_preloadPath yet). */
+    QString m_preloadInFlightPath;
     quint64 m_preloadGeneration = 0;
     /** Pixels kept after transition decode so LoadReplace need not re-decode. */
     QString m_handoffPath;

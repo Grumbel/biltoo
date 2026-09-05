@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-250-fullres-only-live**
-(Live fade to-frame is full decode only; no thumb→full jump; debug restored).
-Next bundle number: **251**.
+Latest agent handoff: **TODO.md → biltoo-251-preload-always**
+(Preload toIdx every tick; do not cancel in-flight; beginLive waits on preload).
+Next bundle number: **252**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
