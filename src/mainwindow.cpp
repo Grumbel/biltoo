@@ -977,22 +977,52 @@ void MainWindow::updateSlideshowFromClock()
 
     // --- transition zone ---
     if (m_slideshowTransitionCycle == cycle) {
-        return; // already started for this cycle
+        return; // already started or intentionally skipped for this cycle
     }
 
-    // Align the visible "from" image only if we are truly on the wrong row.
-    // Avoid load/flash when current already matches.
-    if (m_currentIndex != fromIdx && !m_slideshowAdvancing) {
+    // If we missed the start of this cycle (previous hold/load ran long), do
+    // NOT start a short mid-cycle transition — that drifts phase and causes
+    // the next finish to land in the following cycle (runaway glitch). Mark
+    // this cycle consumed and wait for the next boundary; snap index to the
+    // clock's from-image so the right still is on screen.
+    // Slack: allow a few ticks of scheduling delay only.
+    constexpr int kStartSlackMs = 64;
+    if (phaseMs > kStartSlackMs) {
         qDebug().nospace()
-            << "[slideshow] align-from cycle=" << cycle
+            << "[slideshow] skip-late-start cycle=" << cycle
+            << " phase=" << phaseMs
             << " current=" << m_currentIndex
-            << " -> from=" << fromIdx;
-        m_slideshowAdvancing = true;
-        if (m_imageView) {
-            m_imageView->cancelSlideshowTransition();
+            << " from=" << fromIdx
+            << " to=" << toIdx;
+        m_slideshowTransitionCycle = cycle;
+        if (m_currentIndex != fromIdx && !m_slideshowAdvancing) {
+            m_slideshowAdvancing = true;
+            setCurrentIndex(fromIdx);
+            m_slideshowAdvancing = false;
         }
-        setCurrentIndex(fromIdx);
-        m_slideshowAdvancing = false;
+        m_slideshowPendingToIndex = -1;
+        if (m_imageView) {
+            m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
+        }
+        return;
+    }
+
+    // Align from-image on a *previous* tick only: load is async; beginLive
+    // needs decoded pixels. Never setCurrentIndex + beginLive in the same turn.
+    if (m_currentIndex != fromIdx) {
+        if (!m_slideshowAdvancing) {
+            qDebug().nospace()
+                << "[slideshow] align-from cycle=" << cycle
+                << " current=" << m_currentIndex
+                << " -> from=" << fromIdx;
+            m_slideshowAdvancing = true;
+            if (m_imageView) {
+                m_imageView->cancelSlideshowTransition();
+            }
+            setCurrentIndex(fromIdx);
+            m_slideshowAdvancing = false;
+        }
+        return;
     }
 
     m_slideshowTransitionCycle = cycle;

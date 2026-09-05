@@ -12,6 +12,7 @@
 #include <QThreadPool>
 #include <QElapsedTimer>
 #include <QHash>
+#include <QDebug>
 
 #include <QClipboard>
 #include <QJsonArray>
@@ -1122,9 +1123,16 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         updateStatus();
         updateNavigationActions();
     }
-}
 
-void MainWindow::removeSessionIndices(const QList<int> &indices)
+    // User / filmstrip / arrow navigation while the pure clock is running must
+    // resync baseIndex + elapsed so the HUD and cycle math match the new slide.
+    // Auto-advance sets m_slideshowAdvancing and must not reset the clock.
+    if (m_slideshowClockRunning && !m_slideshowPaused && !m_slideshowAdvancing) {
+        qDebug().nospace()
+            << "[slideshow] index-changed-resync current=" << m_currentIndex;
+        armSlideshowAdvanceTimer();
+    }
+}
 {
     if (indices.isEmpty() || m_session.paths().isEmpty()) {
         return;

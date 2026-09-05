@@ -1021,6 +1021,10 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return false;
     }
 
+    // Mark busy immediately so the host clock cannot start another transition
+    // during the async decode gap (isSlideshowTransitionBusy includes this flag).
+    m_liveTransitionAwaitingLoad = true;
+
     if (m_preloadPath == nextPath && !m_preloadImage.isNull()) {
         const QImage img = m_preloadImage;
         m_preloadPath.clear();
@@ -1372,10 +1376,12 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
 void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
 {
     if (!isImageMode() || !viewport()) {
+        m_liveTransitionAwaitingLoad = false;
         emit slideshowLiveTransitionFinished();
         return;
     }
     if (nextImage.isNull()) {
+        m_liveTransitionAwaitingLoad = false;
         emit slideshowLiveTransitionFinished();
         return;
     }

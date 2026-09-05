@@ -4211,3 +4211,29 @@ start-transition, live-finished. No per-tick spam.
 - [x] HUD total/elapsed respects start index and nav
 - [x] Debug log of index/cycle decisions
 - [x] Next **234**
+
+## Plan / work (2026-09-05) — bundle `biltoo-234-slideshow-phase-drift`
+
+### Log diagnosis (interval=transition=1000ms)
+- live-finished then next start at phase≈160..700 — transitions started *late*
+  in the cycle after hold/load cleared busy.
+- A transition started at phase P ends in the *next* cycle → busy at the next
+  boundary → further delay → runaway phase drift → lag-recover / beginLive
+  declined (align-from load not ready).
+
+### Fixes
+1. **beginLive** sets `m_liveTransitionAwaitingLoad` immediately (busy during
+   async decode gap).
+2. **skip-late-start**: if phase > 64ms into the transition zone and this cycle
+   has not started yet, mark cycle consumed, snap to fromIdx, wait for next
+   boundary — never start a short mid-cycle fade.
+3. **align-from** returns after setCurrentIndex (next tick begins live once
+   pixels exist); no setCurrentIndex+beginLive in the same turn.
+4. **setCurrentIndex** while clock running and not auto-advancing resyncs the
+   clock (fixes prev/next / filmstrip not updating timeline).
+
+### Done criteria
+- [x] No phase drift / lag-recover spiral when interval==transition
+- [x] Manual index change updates clock + HUD
+- [x] beginLive busy during decode
+- [x] Next **235**
