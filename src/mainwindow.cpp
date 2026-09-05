@@ -919,9 +919,17 @@ void MainWindow::updateSlideshowFromClock()
         const qint64 raw =
             qint64(m_slideshowBaseIndex) * qint64(intervalMs) + elapsed;
         m_imageView->setSlideshowTimeline(totalMs > 0 ? (raw % totalMs) : 0, totalMs);
-        // Always warm the current cycle's *to* image — including while busy and
-        // when pureMs==0 (pure-zone preload never runs in continuous mode).
-        m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
+        // Warm the image we will need next. While a transition to *toIdx* is
+        // already in flight, that path is handoff/preload already — warm the
+        // *following* slide so the next cycle does not pay a full decode.
+        // Re-preloading toIdx after beginLive consumed the preload caused a
+        // second disk load of the same file every cycle (see logs).
+        int warmIdx = toIdx;
+        if (m_imageView->isSlideshowTransitionBusy()
+            || m_slideshowTransitionCycle == cycle) {
+            warmIdx = (toIdx + 1) % n;
+        }
+        m_imageView->preloadSlideshowImage(m_session.paths().at(warmIdx));
     }
 
     // In-flight transition: do not start another while the *same* cycle is

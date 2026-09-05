@@ -4609,3 +4609,24 @@ soft until the full preload lands. Still no thumb in `m_handoff*`.
 - [x] Log shows paint=fullWxH on cache-hit
 - [x] No geometry jump when full-res replaces soft transition frame
 - [x] Next **255**
+
+## Plan / work (2026-09-05) — bundle `biltoo-255-slideshow-invariants`
+
+### Problem
+Same slideshow mistakes keep coming back (thumb as live “to”, handoff thumbs,
+cancelling in-flight preload, re-decoding the handoff target every cycle, busy
+skipping pure-clock cycles). Agents need a single hard-rules doc.
+
+Also: after every `preload-hit`, logs showed `preload-start` of the **same**
+file — tick always warmed `toIdx`, but beginLive had just moved that image into
+handoff and cleared `m_preload*`.
+
+### Fix
+1. New **SLIDESHOW.md** — architecture table, 10 hard rules, symptom → cause
+2. Tick warms `(toIdx+1)%n` while transition busy / same cycle already started
+3. `preloadSlideshowImage` no-ops when `m_handoffPath` already holds that path
+
+### Done criteria
+- [x] SLIDESHOW.md linked from AGENTS.md
+- [x] No second full decode of the handoff target per cycle
+- [x] Next **256**

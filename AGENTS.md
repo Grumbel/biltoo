@@ -10,13 +10,15 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-254-cache-scale-full**
-(Scale cache previews to native full size for live fades).
-Next bundle number: **255**.
+Latest agent handoff: **TODO.md → biltoo-255-slideshow-invariants**
+(Document slideshow hard rules; stop re-preloading handoff target).
+Next bundle number: **256**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
 drop, or filmstrip change, read §0, §13 (crop lock), and §14 (id allocation).
+
+**Slideshow:** [SLIDESHOW.md](SLIDESHOW.md) — pure-clock vs live fade, handoff/preload rules, anti-patterns (read before touching transitions).
 
 **Handoff:** [SESSION.md](SESSION.md) — SessionImageId model, what shipped
 in the chrome/identity series, residual risks, and how to continue.

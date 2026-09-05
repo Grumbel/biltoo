@@ -1158,8 +1158,11 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    // Already have this full image ready.
+    // Already have this full image ready (preload slot or live handoff).
     if (path == m_preloadPath && !m_preloadImage.isNull()) {
+        return;
+    }
+    if (path == m_handoffPath && !m_handoffImage.isNull()) {
         return;
     }
     // Same path already decoding — do not bump generation (that cancelled the
