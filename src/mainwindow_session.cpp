@@ -1077,6 +1077,12 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     if (m_imageView && m_imageView->isCropMode()) {
         m_imageView->cancelCrop();
     }
+    // Paused slideshow: clear transition overlay so the newly loaded image is
+    // visible (hold/live layers otherwise mask LoadReplace).
+    if (m_slideshowPaused && m_imageView) {
+        m_imageView->cancelSlideshowTransition();
+        m_slideshowPendingToIndex = -1;
+    }
 
     m_currentIndex = index;
     const QString path = m_session.paths().at(m_currentIndex);
@@ -1773,6 +1779,8 @@ void MainWindow::onSlideshowUserNavigated()
     if (!m_slideshowPaused) {
         armSlideshowAdvanceTimer();
     } else {
+        // Paused: must clear any leftover transition overlay or ←/→ looks stuck.
+        m_imageView->cancelSlideshowTransition();
         m_imageView->setSlideshowProgress(true, 0);
         m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
         m_slideshowPausedAccumMs = 0;
@@ -1847,10 +1855,14 @@ void MainWindow::pauseSlideshow()
     // Freeze elapsed: fold running segment into accumulator, stop tick.
     m_slideshowPausedAccumMs += m_slideshowClock.elapsed();
     m_slideshowPaused = true;
+    m_slideshowPendingToIndex = -1;
     if (m_slideshowTimer) {
         m_slideshowTimer->stop();
     }
     if (m_imageView) {
+        // Drop any in-flight live/snapshot overlay so ←/→ can show the new
+        // image immediately (otherwise the hold layer masks LoadReplace).
+        m_imageView->cancelSlideshowTransition();
         m_imageView->setSlideshowMotionPaused(true);
         m_imageView->setSlideshowProgress(true, 0);
         m_imageView->flashHud(tr("❚❚  Paused"));

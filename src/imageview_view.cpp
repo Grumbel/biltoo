@@ -997,8 +997,13 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     m_liveFromMotionProgress0 = 0.0;
     m_liveFromBiasA = m_motionBiasA;
     m_liveFromBiasB = m_motionBiasB;
-    if (ImageItem *item = targetItem()) {
+    if (!m_dwellSourceImage.isNull()) {
+        m_liveFromSourceImage = m_dwellSourceImage;
+    } else if (ImageItem *item = targetItem()) {
         m_liveFromSourceImage = item->sourceImage();
+        if (m_liveFromSourceImage.isNull() && !item->pixmap().isNull()) {
+            m_liveFromSourceImage = item->pixmap().toImage();
+        }
     }
     if (m_slideshowMotionActive && m_motionDurationMs > 0) {
         m_liveFromMotionProgress0 = qBound(
@@ -1018,6 +1023,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     // images keep moving until (and during) the composite.
 
     if (m_liveFromSourceImage.isNull()) {
+        qDebug() << "[slideshow] beginLive declined: no from-image pixels";
         return false;
     }
 

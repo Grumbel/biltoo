@@ -4267,3 +4267,21 @@ latency no longer shifts the next boundary.
 ### Done criteria
 - [x] No every-other-image skip when interval==transition
 - [x] Next **237**
+
+## Plan / work (2026-09-05) — bundle `biltoo-237-slideshow-pause-nav-beginlive`
+
+### Pause ←/→ looked stuck
+pauseSlideshow did not cancel the live/snapshot overlay. Hold layer masked
+LoadReplace after setCurrentIndex.
+
+Fix: cancelSlideshowTransition on pause, on paused user-nav, and on
+setCurrentIndex while paused.
+
+### beginLive declined at start
+from-image only used item->sourceImage(); often empty before dwell atlas is
+ready. Fall back to m_dwellSourceImage then item pixmap.
+
+### Done criteria
+- [x] ←/→ while paused changes the visible image
+- [x] beginLive more reliable at first transition
+- [x] Next **238**
