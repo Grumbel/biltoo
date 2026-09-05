@@ -1089,17 +1089,38 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     // immediately so superfast / interval≈transition does not stall waiting for
     // a full multi-megapixel decode. Do NOT write m_handoff* — handoff must
     // remain full-res only so LoadReplace is not locked onto a thumbnail.
+    //
+    // Scale the preview up to the path's native full pixel size so motion-cover
+    // cover scale and travel thresholds match the full-res frame. Without that,
+    // a 512px "to" against a multi-MP "from" jumps when the real decode lands.
     {
         const QImage cached = ImageCache::get(nextPath);
         if (!cached.isNull()) {
+            QSize fullSz;
+            const auto it = m_imageSizeByPath.constFind(nextPath);
+            if (it != m_imageSizeByPath.cend() && it->isValid()
+                && it->width() > 0 && it->height() > 0) {
+                fullSz = *it;
+            } else {
+                fullSz = ImageLoader::probeSize(nextPath);
+                if (fullSz.isValid() && fullSz.width() > 0 && fullSz.height() > 0) {
+                    rememberImageSize(nextPath, fullSz);
+                }
+            }
+            QImage img = cached;
+            if (fullSz.isValid() && fullSz.width() > 0 && fullSz.height() > 0
+                && (img.width() != fullSz.width() || img.height() != fullSz.height())) {
+                img = img.scaled(fullSz, Qt::IgnoreAspectRatio,
+                                 Qt::FastTransformation);
+            }
             qDebug().nospace()
                 << "[slideshow] beginLive cache-hit "
                 << QFileInfo(nextPath).fileName()
-                << " " << cached.width() << "x" << cached.height()
+                << " cache=" << cached.width() << "x" << cached.height()
+                << " paint=" << img.width() << "x" << img.height()
                 << " from=" << m_liveFromSourceImage.width() << "x"
                 << m_liveFromSourceImage.height();
             const QPointer<ImageView> guard(this);
-            const QImage img = cached;
             QMetaObject::invokeMethod(this, [guard, img]() {
                 if (guard) {
                     guard->startLiveTransitionWithImage(img);

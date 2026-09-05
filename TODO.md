@@ -4591,3 +4591,21 @@ preview frames. Now `max(2, longEdge * 1.5%)`.
 - [x] Superfast continuous mode does not lock behind a missed cycle
 - [x] Preview cache can open live fades without waiting for full decode
 - [x] Next **254**
+
+## Plan / work (2026-09-05) — bundle `biltoo-254-cache-scale-full`
+
+### Problem
+`beginLive` cache-hit painted raw 512px previews against multi-MP from frames
+(`cache-hit 341x512 from=3744x5616`). Motion cover uses absolute pixel size for
+cover scale / travel → jump when full decode appears.
+
+### Fix
+Scale the cached preview up to the path's **native full pixel size**
+(`m_imageSizeByPath` or `ImageLoader::probeSize`) with `IgnoreAspectRatio`
+before `startLiveTransitionWithImage`. Geometry matches full-res; quality is
+soft until the full preload lands. Still no thumb in `m_handoff*`.
+
+### Done criteria
+- [x] Log shows paint=fullWxH on cache-hit
+- [x] No geometry jump when full-res replaces soft transition frame
+- [x] Next **255**
