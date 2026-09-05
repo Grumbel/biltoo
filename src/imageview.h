@@ -532,6 +532,8 @@ public:
     void setSlideshowZoom(SlideshowZoom mode);
     SlideshowZoom slideshowZoom() const { return m_slideshowZoom; }
     void cancelSlideshowMotion();
+    /** Image-mode fit after leaving slideshow (Fit to window). */
+    void restoreImageFramingAfterSlideshow();
     /** Start dwell image-blit Ken Burns if enabled and slideshow is active. */
     void maybeStartSlideshowMotion();
     /**

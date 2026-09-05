@@ -802,6 +802,7 @@ void ImageView::reapplySlideshowFraming()
 
 void ImageView::cancelSlideshowMotion()
 {
+    const bool wasMotion = m_slideshowMotionActive;
     m_slideshowMotionActive = false;
     if (m_motionSavedBarPolicies) {
         setHorizontalScrollBarPolicy(m_motionSavedHBarPolicy);
@@ -816,6 +817,36 @@ void ImageView::cancelSlideshowMotion()
         m_motionTimer->stop();
     }
     m_dwellCoverPixmap = QPixmap();
+    // Ken Burns only moved the overlay blit. Bring the underlay back in line
+    // with static slideshow framing while the show is still running.
+    if (wasMotion && m_slideshowProgressActive && isImageMode()) {
+        if (ImageItem *item = targetItem()) {
+            applySlideshowZoomFraming(item);
+        }
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::restoreImageFramingAfterSlideshow()
+{
+    // Leave slideshow Fill/Actual flags and camera from applySlideshowZoomFraming
+    // so Image mode is normal Fit-to-window again.
+    if (!isImageMode()) {
+        return;
+    }
+    ImageItem *item = targetItem();
+    if (!item || item->boundingRect().isEmpty()) {
+        return;
+    }
+    m_fitMode = true;
+    m_fillMode = false;
+    fitItem(item, Qt::KeepAspectRatio);
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
 }
 
 void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
@@ -1385,6 +1416,9 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     if (m_dwellSourceImage.isNull()) {
         return;
     }
+    // Align underlay camera to slideshow zoom before hiding it so cancel/stop
+    // can restore a known static frame.
+    applySlideshowZoomFraming(item);
     ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                       &m_dwellAtlasVw, &m_dwellAtlasVh);
     setSlideshowUnderlayVisible(false);

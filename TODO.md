@@ -3524,3 +3524,19 @@ in `paintMotionCover` (198 used them without declarations).
 ### Done criteria
 - [x] Builds
 - [x] Next **200**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-200-slideshow-restore-framing`
+
+Stopping/pausing slideshow left the underlay on the last slideshow camera
+(Fill/Fit/Actual from Ken Burns setup) without re-fitting Image mode.
+
+### Fix
+- `cancelSlideshowMotion`: if slideshow still active, `applySlideshowZoomFraming`
+- `restoreImageFramingAfterSlideshow`: Fit-to-window for Image mode
+- `stopSlideshow`: call restore after clearing progress
+- `startSlideshowMotion`: apply static framing before hiding underlay
+
+### Done criteria
+- [x] Stop returns to normal Image fit
+- [x] Next **201**

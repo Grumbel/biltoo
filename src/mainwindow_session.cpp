@@ -1623,6 +1623,9 @@ void MainWindow::stopSlideshow()
     }
     if (m_imageView) {
         m_imageView->setSlideshowProgress(false);
+        // Progress=false already cancelled motion; re-fit Image mode so zoom
+        // and position are not left on the last slideshow Fill/Fit camera.
+        m_imageView->restoreImageFramingAfterSlideshow();
         if (wasRunning) {
             m_imageView->flashHud(tr("■  Slideshow stopped"));
         }
