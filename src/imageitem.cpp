@@ -116,11 +116,15 @@ void ImageItem::setPreviewImage(const QImage &preview)
     m_source = QImage();
     setPixmap(QPixmap());
     // Intrinsic size is layout geometry (probe / full native size). Never adopt
-    // the thumbnail's pixel dimensions — that collapses Gallery packs.
-    // Only seed intrinsic when still unknown (empty placeholder).
-    if ((!m_intrinsicSize.isValid() || m_intrinsicSize.width() <= 1
-         || m_intrinsicSize.height() <= 1)
-        && preview.width() > 0 && preview.height() > 0) {
+    // the thumbnail's pixel dimensions for Gallery packs when size is known.
+    // Seed or replace only the neutral 1000² / 1024² stand-in so Image-mode
+    // fitInView can fill the window before the async size probe returns.
+    const bool neutral =
+        !m_intrinsicSize.isValid()
+        || m_intrinsicSize.width() <= 1 || m_intrinsicSize.height() <= 1
+        || m_intrinsicSize == QSize(1000, 1000)
+        || m_intrinsicSize == QSize(1024, 1024);
+    if (neutral && preview.width() > 0 && preview.height() > 0) {
         m_intrinsicSize = preview.size();
     }
     const QSize s = imageSize();

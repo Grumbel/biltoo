@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-284-gallery-preserve-scroll**
-(Gallery incremental pack keeps viewport centre).
-Next bundle number: **285**.
+Latest agent handoff: **TODO.md → biltoo-285-image-preview-fit-size**
+(Image low-res provisional size fills window).
+Next bundle number: **286**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

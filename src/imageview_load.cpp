@@ -86,8 +86,6 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         || m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
         return;
     }
-    // Layout size = native dimensions (cache / probe), never thumbnail pixels.
-    const QSize sz = imageSizeForPath(path);
     // Prefer an explicit preview argument; else a session-cached thumbnail for
     // this path (revisit during rapid next/prev).
     QImage pixels = preview;
@@ -97,6 +95,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             pixels = it.value();
         }
     }
+    // Layout size = native when known; else preview aspect so fitInView fills
+    // the window (not a provisional square that letterboxes the content).
+    const QSize sz = layoutSizeForPath(path, pixels);
 
     setUpdatesEnabled(false);
     // Wipe the underlay under an active dwell camera would leave motion pointing
@@ -329,8 +330,25 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                 }
                 // Upgrade loading placeholder (same path) in place when possible.
                 if (cur->path() == path && !cur->hasDecodedPixels()) {
-                    // Pixels only — intrinsic size stays native (probe/cache).
-                    cur->setPreviewImage(image);
+                    // If layout size was still provisional, adopt preview aspect
+                    // and re-fit so the frame fills the window immediately.
+                    if (isProvisionalImageSize(path)
+                        && image.width() > 0 && image.height() > 0) {
+                        cur->setIntrinsicSize(image.size());
+                        cur->setPreviewImage(image);
+                        if (!m_slideshowProgressActive) {
+                            fitItem(cur, currentFitAspectMode());
+                        } else {
+                            applySlideshowZoomFraming(cur);
+                        }
+                        if (m_scene) {
+                            m_scene->setSceneRect(
+                                cur->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+                        }
+                    } else {
+                        // Pixels only — intrinsic size stays native (probe/cache).
+                        cur->setPreviewImage(image);
+                    }
                     if (viewport()) {
                         viewport()->update();
                     }

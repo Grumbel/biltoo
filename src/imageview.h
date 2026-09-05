@@ -822,6 +822,13 @@ private:
      * probe when unknown (slow network/USB must not block the GUI thread).
      */
     QSize imageSizeForPath(const QString &path);
+    /**
+     * Layout geometry for Image-mode pending tiles. Prefer cached native size;
+     * if still unknown, use @p previewHint aspect so fitInView fills the window
+     * (neutral 1000×1000 made portrait/landscape images look letterboxed).
+     */
+    QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
+    bool isProvisionalImageSize(const QString &path) const;
     /** Remember native size after a successful full decode (or async probe). */
     void rememberImageSize(const QString &path, const QSize &size);
     void scheduleImageSizeProbe(const QString &path);
@@ -975,6 +982,8 @@ private:
      * property of the file contents; safe to key by path (not SessionImageId).
      */
     QHash<QString, QSize> m_imageSizeByPath;
+    /** Paths whose layout size is still a stand-in (probe/full decode pending). */
+    QSet<QString> m_provisionalSizePaths;
     /** Paths with an in-flight async size probe. */
     QSet<QString> m_sizeProbeScheduled;
     /** Path → last provisional thumbnail (session cache for rapid next/prev). */

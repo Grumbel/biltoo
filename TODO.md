@@ -5187,3 +5187,25 @@ layout still start at the origin.
 ### Done criteria
 - [x] Incremental gallery packs keep approximate scroll position
 - [x] Next **285**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-285-image-preview-fit-size`
+
+### Symptom
+Rapid Image-mode next/prev: low-res stand-in does not expand to fill the
+window; full decode then “pops” to fill. Aspect of the bitmap looks fine.
+
+### Cause
+Unknown native size used a neutral **1000×1000** layout box. `fitInView` framed
+that square (letterboxed in a wide window). Preview painted with correct aspect
+*inside* the square, so the content looked small until full size + re-fit.
+
+### Fix
+- Track provisional size paths
+- `layoutSizeForPath(path, preview)` uses preview aspect when native unknown
+- Pending tile + in-place preview upgrade re-fit when size was provisional
+- `setPreviewImage` may replace neutral 1000²/1024² with preview aspect
+
+### Done criteria
+- [x] Low-res Image frame fills the window (correct aspect box)
+- [x] Next **286**

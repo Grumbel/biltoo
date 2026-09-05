@@ -194,6 +194,12 @@ void ImageView::rememberImageSize(const QString &path, const QSize &size)
         return;
     }
     m_imageSizeByPath.insert(path, size);
+    m_provisionalSizePaths.remove(path);
+}
+
+bool ImageView::isProvisionalImageSize(const QString &path) const
+{
+    return !path.isEmpty() && m_provisionalSizePaths.contains(path);
 }
 
 QSize ImageView::imageSizeForPath(const QString &path)
@@ -207,12 +213,31 @@ QSize ImageView::imageSizeForPath(const QString &path)
     }
     // Archives: fixed stand-in (probe would open the container on this thread).
     if (ArchivePath::isArchiveRef(path)) {
+        m_provisionalSizePaths.insert(path);
         return QSize(1024, 1024);
     }
     // Unknown size: do not touch the filesystem on the GUI thread. Neutral
-    // geometry until async probe or full decode fills the cache.
+    // geometry until async probe, preview aspect, or full decode fills the cache.
+    // Callers that have a preview should use layoutSizeForPath(path, preview).
     scheduleImageSizeProbe(path);
+    m_provisionalSizePaths.insert(path);
     return QSize(1000, 1000);
+}
+
+QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHint)
+{
+    const auto it = m_imageSizeByPath.constFind(path);
+    if (it != m_imageSizeByPath.cend()) {
+        return it.value();
+    }
+    // Aspect from preview so fitInView frames the window correctly; magnitude
+    // only needs to be stable (view scale absorbs absolute size).
+    if (!previewHint.isNull() && previewHint.width() > 0 && previewHint.height() > 0) {
+        scheduleImageSizeProbe(path);
+        m_provisionalSizePaths.insert(path);
+        return previewHint.size();
+    }
+    return imageSizeForPath(path);
 }
 
 void ImageView::scheduleImageSizeProbe(const QString &path)
