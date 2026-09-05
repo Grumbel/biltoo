@@ -531,16 +531,25 @@ void MetadataPanel::fillImageAnalysis(const QString &path, const QImage &decoded
 
     QImage image = decodedHint;
     if (image.isNull()) {
+        // Structure-only when we have no canvas pixels: do not full-decode on the
+        // UI thread (archives especially). Dimensions come from probeSize/hint.
         QImageReader reader(path);
         reader.setAutoTransform(true);
-        const int frameCount = reader.imageCount();
-        if (frameCount > 1) {
-            addChildRow(structGroup, tr("Frames / pages"), QString::number(frameCount));
+        if (reader.canRead()) {
+            const int frameCount = reader.imageCount();
+            if (frameCount > 1) {
+                addChildRow(structGroup, tr("Frames / pages"), QString::number(frameCount));
+            }
+            const QSize sz = reader.size();
+            if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
+                addChildRow(structGroup, tr("Pixels"),
+                            tr("%1 × %2").arg(sz.width()).arg(sz.height()));
+                return;
+            }
         }
-        image = reader.read();
-        if (image.isNull()) {
-            image = ImageLoader::load(path);
-        }
+        // No cheap size — skip structure rather than block the GUI on ImageLoader::load.
+        addChildRow(structGroup, tr("Pixels"), tr("(open image to analyse)"));
+        return;
     } else {
         // Hint path: still try frame count without forcing a full re-read when possible.
         QImageReader reader(path);

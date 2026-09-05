@@ -10,6 +10,8 @@
 #include <QFileInfo>
 #include <QPointer>
 #include <QThreadPool>
+#include <QElapsedTimer>
+#include <QHash>
 
 #include <QClipboard>
 #include <QJsonArray>
@@ -331,6 +333,24 @@ void MainWindow::setExpandProgressBusy(bool busy)
     }
 }
 
+void MainWindow::setExpandProgress(int current, int total, const QString &message)
+{
+    if (statusBar()) {
+        statusBar()->showMessage(message, 0);
+    }
+    if (!m_statusProgress) {
+        return;
+    }
+    if (total > 0) {
+        m_statusProgress->setRange(0, total);
+        m_statusProgress->setValue(qBound(0, current, total));
+        m_statusProgress->show();
+    } else {
+        m_statusProgress->setRange(0, 0);
+        m_statusProgress->show();
+    }
+}
+
 void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, int startAt)
 {
     const quint64 gen = ++m_expandGeneration;
@@ -350,15 +370,32 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
         };
 
         QStringList images;
-        const auto report = [guard, gen](const QString &msg) {
+        QElapsedTimer reportClock;
+        reportClock.start();
+        qint64 lastReportMs = -1000;
+        // Rate-limit GUI posts (~8 Hz) so listing huge archives does not flood
+        // the event queue and freeze the UI that way.
+        const auto report = [guard, gen, &reportClock, &lastReportMs](const QString &msg,
+                                                                     int current = -1,
+                                                                     int total = -1) {
             if (!guard) {
                 return;
             }
-            QMetaObject::invokeMethod(guard.data(), [guard, gen, msg]() {
+            const qint64 now = reportClock.elapsed();
+            if (now - lastReportMs < 120 && current >= 0 && total > 0 && current < total) {
+                return;
+            }
+            lastReportMs = now;
+            QMetaObject::invokeMethod(guard.data(), [guard, gen, msg, current, total]() {
                 if (!guard || gen != guard->m_expandGeneration) {
                     return;
                 }
-                guard->setExpandProgressMessage(msg);
+                if (total > 0) {
+                    guard->setExpandProgress(current, total, msg);
+                } else {
+                    guard->setExpandProgressBusy(true);
+                    guard->setExpandProgressMessage(msg);
+                }
             }, Qt::QueuedConnection);
         };
 
@@ -392,10 +429,12 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                         const QString name = QFileInfo(full).fileName();
                         report(MainWindow::tr("Reading archive “%1”…").arg(name));
                         images.append(ArchiveReader::expandArchiveToImageRefs(
-                            full, [report, name](int hits, int /*scanned*/) {
-                                report(MainWindow::tr("Reading archive “%1”… %2 image(s)")
+                            full, [report, name](int hits, int scanned) {
+                                report(MainWindow::tr("Reading archive “%1”… %2 image(s), %3 entries")
                                            .arg(name)
-                                           .arg(hits));
+                                           .arg(hits)
+                                           .arg(scanned),
+                                       hits, -1);
                             }));
                     } else if (ImageLoader::isImageFile(full)) {
                         const QString c = canonicalImage(full);
@@ -409,10 +448,12 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                 const QString name = info.fileName();
                 report(MainWindow::tr("Reading archive “%1”…").arg(name));
                 images.append(ArchiveReader::expandArchiveToImageRefs(
-                    path, [report, name](int hits, int /*scanned*/) {
-                        report(MainWindow::tr("Reading archive “%1”… %2 image(s)")
+                    path, [report, name](int hits, int scanned) {
+                        report(MainWindow::tr("Reading archive “%1”… %2 image(s), %3 entries")
                                    .arg(name)
-                                   .arg(hits));
+                                   .arg(hits)
+                                   .arg(scanned),
+                               hits, -1);
                     }));
             } else if (info.isFile() && ImageLoader::isImageFile(path)) {
                 const QString c = canonicalImage(path);
@@ -426,8 +467,8 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
             if (!guard || gen != guard->m_expandGeneration) {
                 return;
             }
-            guard->setExpandProgressBusy(false);
             if (images.isEmpty()) {
+                guard->setExpandProgressBusy(false);
                 if (guard->statusBar()) {
                     guard->statusBar()->showMessage(
                         append ? MainWindow::tr("No readable images to add.")
@@ -436,6 +477,8 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                 }
                 return;
             }
+            guard->setExpandProgressMessage(
+                MainWindow::tr("Opening %n image(s)…", "", images.size()));
             if (append) {
                 guard->applyExpandedAppend(images);
             } else {
@@ -450,7 +493,26 @@ void MainWindow::sortFileList()
     if (m_session.paths().size() <= 1) {
         return;
     }
-    // Ensure parallel id vector matches (legacy / partial updates).
+    if (sortModeNeedsImageProbe()) {
+        // Probing archive members / large images must not run on the GUI thread.
+        sortFileListWithProbesInBackground();
+        return;
+    }
+    sortFileListSync();
+}
+
+bool MainWindow::sortModeNeedsImageProbe() const
+{
+    return m_sortMode == SortMode::Width
+        || m_sortMode == SortMode::Height
+        || m_sortMode == SortMode::PixelCount;
+}
+
+void MainWindow::sortFileListSync()
+{
+    if (m_session.paths().size() <= 1) {
+        return;
+    }
     m_session.ensureIdsAligned();
 
     auto nameLess = [](const QString &a, const QString &b) {
@@ -460,16 +522,13 @@ void MainWindow::sortFileList()
         return collator.compare(ArchivePath::displayName(a), ArchivePath::displayName(b)) < 0;
     };
 
-    auto imageSize = [](const QString &path) {
-        return ImageLoader::probeSize(path); // header-only when possible
-    };
+    auto pathAt = [&](int i) -> const QString & { return m_session.paths().at(i); };
 
-    // Sort indices so path list and stable ids stay aligned.
     QVector<int> order(m_session.paths().size());
     for (int i = 0; i < order.size(); ++i) {
         order[i] = i;
     }
-    auto pathAt = [&](int i) -> const QString & { return m_session.paths().at(i); };
+
 
     switch (m_sortMode) {
     case SortMode::MTime:
@@ -492,34 +551,10 @@ void MainWindow::sortFileList()
         });
         break;
     case SortMode::Width:
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            const int wa = imageSize(pathAt(ia)).width();
-            const int wb = imageSize(pathAt(ib)).width();
-            if (wa != wb) {
-                return wa < wb;
-            }
-            return nameLess(pathAt(ia), pathAt(ib));
-        });
-        break;
     case SortMode::Height:
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            const int ha = imageSize(pathAt(ia)).height();
-            const int hb = imageSize(pathAt(ib)).height();
-            if (ha != hb) {
-                return ha < hb;
-            }
-            return nameLess(pathAt(ia), pathAt(ib));
-        });
-        break;
     case SortMode::PixelCount:
+        // Must use sortFileListWithProbesInBackground — no probe on GUI.
         std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            const QSize sa = imageSize(pathAt(ia));
-            const QSize sb = imageSize(pathAt(ib));
-            const qint64 pa = qint64(sa.width()) * sa.height();
-            const qint64 pb = qint64(sb.width()) * sb.height();
-            if (pa != pb) {
-                return pa < pb;
-            }
             return nameLess(pathAt(ia), pathAt(ib));
         });
         break;
@@ -540,6 +575,114 @@ void MainWindow::sortFileList()
         newIds.append(m_session.ids().at(i));
     }
     m_session.replaceAll(newFiles, newIds);
+}
+
+void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> &onDone)
+{
+    if (m_session.paths().size() <= 1) {
+        if (onDone) {
+            onDone();
+        }
+        return;
+    }
+    const quint64 gen = ++m_sortGeneration;
+    const SortMode mode = m_sortMode;
+    const QStringList paths = m_session.paths();
+    const QVector<SessionImageId> ids = m_session.ids();
+
+    setExpandProgress(0, paths.size(), tr("Measuring images… 0/%1").arg(paths.size()));
+
+    const QPointer<MainWindow> guard(this);
+    QThreadPool::globalInstance()->start([guard, gen, mode, paths, ids, onDone]() {
+        QHash<QString, QSize> sizes;
+        sizes.reserve(paths.size());
+        QElapsedTimer clock;
+        clock.start();
+        qint64 lastUi = -1000;
+
+        for (int i = 0; i < paths.size(); ++i) {
+            if (!guard || gen != guard->m_sortGeneration) {
+                return;
+            }
+            const QString &path = paths.at(i);
+            if (!sizes.contains(path)) {
+                sizes.insert(path, ImageLoader::probeSize(path));
+            }
+            const qint64 now = clock.elapsed();
+            if (now - lastUi >= 120 || i + 1 == paths.size()) {
+                lastUi = now;
+                const int done = i + 1;
+                const int total = paths.size();
+                QMetaObject::invokeMethod(guard.data(), [guard, gen, done, total]() {
+                    if (!guard || gen != guard->m_sortGeneration) {
+                        return;
+                    }
+                    guard->setExpandProgress(
+                        done, total,
+                        MainWindow::tr("Measuring images… %1/%2").arg(done).arg(total));
+                }, Qt::QueuedConnection);
+            }
+        }
+
+        auto nameLess = [](const QString &a, const QString &b) {
+            QCollator collator;
+            collator.setNumericMode(true);
+            collator.setCaseSensitivity(Qt::CaseInsensitive);
+            return collator.compare(ArchivePath::displayName(a), ArchivePath::displayName(b)) < 0;
+        };
+
+        QVector<int> order(paths.size());
+        for (int i = 0; i < order.size(); ++i) {
+            order[i] = i;
+        }
+        auto sizeOf = [&](int i) -> QSize {
+            return sizes.value(paths.at(i));
+        };
+
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const QSize sa = sizeOf(ia);
+            const QSize sb = sizeOf(ib);
+            if (mode == SortMode::Width) {
+                if (sa.width() != sb.width()) {
+                    return sa.width() < sb.width();
+                }
+            } else if (mode == SortMode::Height) {
+                if (sa.height() != sb.height()) {
+                    return sa.height() < sb.height();
+                }
+            } else { // PixelCount
+                const qint64 pa = qint64(sa.width()) * sa.height();
+                const qint64 pb = qint64(sb.width()) * sb.height();
+                if (pa != pb) {
+                    return pa < pb;
+                }
+            }
+            return nameLess(paths.at(ia), paths.at(ib));
+        });
+
+        QStringList newFiles;
+        QVector<SessionImageId> newIds;
+        newFiles.reserve(order.size());
+        newIds.reserve(order.size());
+        for (int i : order) {
+            newFiles.append(paths.at(i));
+            newIds.append(ids.at(i));
+        }
+
+        QMetaObject::invokeMethod(guard.data(), [guard, gen, newFiles, newIds, onDone]() {
+            if (!guard || gen != guard->m_sortGeneration) {
+                return;
+            }
+            guard->m_session.replaceAll(newFiles, newIds);
+            guard->setExpandProgressBusy(false);
+            if (guard->statusBar()) {
+                guard->statusBar()->clearMessage();
+            }
+            if (onDone) {
+                onDone();
+            }
+        }, Qt::QueuedConnection);
+    });
 }
 
 void MainWindow::setSortMode(SortMode mode)
@@ -571,41 +714,48 @@ void MainWindow::setSortMode(SortMode mode)
     const QString current = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
                                 ? m_session.paths().at(m_currentIndex)
                                 : QString();
-    sortFileList();
-    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-    if (isWorkspaceMode()) {
-        m_thumbnailBar->setMultiSelectEnabled(true);
-        syncThumbnailWorkspaceSelection();
-    }
 
-    int newIndex = 0;
-    if (!current.isEmpty()) {
-        newIndex = m_session.paths().indexOf(current);
-        if (newIndex < 0) {
-            newIndex = 0;
+    auto applyUi = [this, current]() {
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+        if (isWorkspaceMode()) {
+            m_thumbnailBar->setMultiSelectEnabled(true);
+            syncThumbnailWorkspaceSelection();
         }
-    }
-    m_currentIndex = -1; // force reload of Image mode cursor
-    setCurrentIndex(newIndex);
 
-    // Gallery pack follows session order — refresh canvas so tiles match sort.
-    if (isGalleryMode()) {
-        const ImageView::LayoutMode layout = m_imageView
-            ? m_imageView->layoutMode()
-            : ImageView::LayoutMode::Masonry;
-        populateGalleryCanvas();
-        if (m_imageView) {
-            m_imageView->enterGallery(layout);
-            if (!current.isEmpty()) {
-                m_imageView->focusSessionPath(current);
+        int newIndex = 0;
+        if (!current.isEmpty()) {
+            newIndex = m_session.paths().indexOf(current);
+            if (newIndex < 0) {
+                newIndex = 0;
             }
         }
-    } else if (isWorkspaceMode() && m_imageView) {
-        // Keep canvas membership; only path order for any future gallery use.
-        m_imageView->reorderItemsByPaths(m_session.paths());
-    }
+        m_currentIndex = -1; // force reload of Image mode cursor
+        setCurrentIndex(newIndex);
 
-    applyThumbnailVisibility();
+        if (isGalleryMode()) {
+            const ImageView::LayoutMode layout = m_imageView
+                ? m_imageView->layoutMode()
+                : ImageView::LayoutMode::Masonry;
+            populateGalleryCanvas();
+            if (m_imageView) {
+                m_imageView->enterGallery(layout);
+                if (!current.isEmpty()) {
+                    m_imageView->focusSessionPath(current);
+                }
+            }
+        } else if (isWorkspaceMode() && m_imageView) {
+            m_imageView->reorderItemsByPaths(m_session.paths());
+        }
+
+        applyThumbnailVisibility();
+    };
+
+    if (sortModeNeedsImageProbe()) {
+        sortFileListWithProbesInBackground(applyUi);
+    } else {
+        sortFileListSync();
+        applyUi();
+    }
 }
 
 void MainWindow::sortByName()
@@ -686,7 +836,18 @@ void MainWindow::applyExpandedLoad(const QStringList &images, int startAt)
 {
     m_session.setPaths(images);
     m_session.validateUniqueIds("loadFiles");
-    sortFileList();
+    if (sortModeNeedsImageProbe()) {
+        sortFileListWithProbesInBackground([this, startAt]() {
+            finishApplyExpandedLoad(startAt);
+        });
+        return;
+    }
+    sortFileListSync();
+    finishApplyExpandedLoad(startAt);
+}
+
+void MainWindow::finishApplyExpandedLoad(int startAt)
+{
     m_currentIndex = -1;
 
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
@@ -729,6 +890,10 @@ void MainWindow::applyExpandedLoad(const QStringList &images, int startAt)
     }
     updateNavigationActions();
     updateWorkspaceActionVisibility();
+        setExpandProgressBusy(false);
+    if (statusBar() && statusBar()->currentMessage().startsWith(tr("Opening "))) {
+        statusBar()->clearMessage();
+    }
     rememberSessionHistory(m_session.paths());
 }
 
@@ -811,49 +976,53 @@ void MainWindow::applyExpandedAppend(const QStringList &images)
     // Paths currently on the workspace (selection must be restored after setFiles)
     const QStringList workspacePaths = isWorkspaceMode() ? m_imageView->itemPaths() : QStringList();
 
-    sortFileList();
-    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-    if (isWorkspaceMode()) {
-        // setFiles rebuilds items; re-apply multi-select mode and canvas selection
-        m_thumbnailBar->setMultiSelectEnabled(true);
-        syncThumbnailWorkspaceSelection();
-        // If the canvas was empty, selection may still be empty — restore paths we had
-        if (m_thumbnailBar->selectedIndices().isEmpty() && !workspacePaths.isEmpty()) {
-            QList<int> indices;
-            for (const QString &path : workspacePaths) {
-                const int idx = m_session.paths().indexOf(path);
-                if (idx >= 0) {
-                    indices.append(idx);
+    auto finish = [this, current, workspacePaths]() {
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+        if (isWorkspaceMode()) {
+            m_thumbnailBar->setMultiSelectEnabled(true);
+            syncThumbnailWorkspaceSelection();
+            if (m_thumbnailBar->selectedIndices().isEmpty() && !workspacePaths.isEmpty()) {
+                QList<int> indices;
+                for (const QString &path : workspacePaths) {
+                    const int idx = m_session.paths().indexOf(path);
+                    if (idx >= 0) {
+                        indices.append(idx);
+                    }
                 }
+                m_thumbnailBar->setSelectedIndices(indices);
             }
-            m_thumbnailBar->setSelectedIndices(indices);
         }
-    }
-    applyThumbnailVisibility();
-    updateWorkspaceActionVisibility();
+        applyThumbnailVisibility();
+        updateWorkspaceActionVisibility();
+        setExpandProgressBusy(false);
 
-    int newIndex = 0;
-    if (!current.isEmpty()) {
-        newIndex = m_session.paths().indexOf(current);
-        if (newIndex < 0) {
-            newIndex = 0;
+        int newIndex = 0;
+        if (!current.isEmpty()) {
+            newIndex = m_session.paths().indexOf(current);
+            if (newIndex < 0) {
+                newIndex = 0;
+            }
         }
-    } else {
-        // Jump to the first newly added image after sort
-        newIndex = 0;
-    }
 
-    if (isWorkspaceMode()) {
-        m_currentIndex = newIndex;
-        if (m_metadataPanel) {
-            m_metadataPath.clear();
+        if (isWorkspaceMode()) {
+            m_currentIndex = newIndex;
+            if (m_metadataPanel) {
+                m_metadataPath.clear();
+            }
+            updateStatus();
+            updateNavigationActions();
+        } else {
+            m_currentIndex = -1;
+            setCurrentIndex(newIndex);
+            updateNavigationActions();
         }
-        updateStatus();
-        updateNavigationActions();
+    };
+
+    if (sortModeNeedsImageProbe()) {
+        sortFileListWithProbesInBackground(finish);
     } else {
-        m_currentIndex = -1;
-        setCurrentIndex(newIndex);
-        updateNavigationActions();
+        sortFileListSync();
+        finish();
     }
 }
 

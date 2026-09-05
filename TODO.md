@@ -3562,3 +3562,23 @@ Preferences Default application: group actions for images vs archives
 ### Done criteria
 - [x] Separate set/remove for images and archives
 - [x] Next **203**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-203-async-io-progress`
+
+UI freezes remained because:
+1. Expand progress posted every ~32 archive headers → event queue flood
+2. Sort by width/height/pixels called ImageLoader::probeSize (full archive member
+   read) on the GUI thread for every path
+3. Metadata panel full-decoded on GUI without a canvas hint
+
+### Fix
+- Rate-limit expand status (~8 Hz) + richer messages
+- Dimension sorts probe on QThreadPool with determinate progress
+- applyExpandedLoad/Append and setSortMode wait for async sort before UI apply
+- Metadata structure skips ImageLoader::load on GUI when no decodedHint
+
+### Done criteria
+- [x] Probe/sort off GUI
+- [x] Progress less spammy
+- [x] Next **204**

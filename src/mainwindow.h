@@ -9,6 +9,7 @@
 #include "imageview_types.h"
 
 #include <QMainWindow>
+#include <functional>
 #include <QProgressBar>
 #include <QUrl>
 #include <QEvent>
@@ -285,6 +286,11 @@ private:
     void setThumbnailBarPosition(ThumbnailEdge edge);
     void updateThumbnailEdgeActions();
     void sortFileList();
+    /** Name / mtime / file size — no image I/O. */
+    void sortFileListSync();
+    /** Width / height / pixels: probe off the GUI thread, then apply order. */
+    void sortFileListWithProbesInBackground(const std::function<void()> &onDone = {});
+    bool sortModeNeedsImageProbe() const;
     void readSettings();
     void writeSettings();
     void rememberSessionHistory(const QStringList &paths);
@@ -316,6 +322,9 @@ private:
     void setExpandProgressBusy(bool busy);
     void applyExpandedLoad(const QStringList &images, int startAt);
     void applyExpandedAppend(const QStringList &images);
+    void finishApplyExpandedLoad(int startAt);
+    void finishApplyExpandedAppend();
+    void setExpandProgress(int current, int total, const QString &message);
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
     void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                            const QPointF &scenePos = QPointF(),
@@ -341,6 +350,7 @@ private:
     QProgressBar *m_statusProgress = nullptr;
     /** Cancels stale archive-expand workers when a newer open starts. */
     quint64 m_expandGeneration = 0;
+    quint64 m_sortGeneration = 0;
     QLabel *m_mouseLabel = nullptr;
     QLabel *m_colorSwatch = nullptr;
     QTimer *m_slideshowTimer = nullptr;
