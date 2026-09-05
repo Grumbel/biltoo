@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-261-slideshow-invariants-clean**
-(Underlay hidden for whole show; per-image KB path from 0).
-Next bundle number: **262**.
+Latest agent handoff: **TODO.md → biltoo-262-dwell-start-simple**
+(Simple dwell-start at 0; hide all underlay items; STOP warning).
+Next bundle number: **263**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

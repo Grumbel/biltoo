@@ -1,5 +1,25 @@
 # Slideshow invariants and known failure modes
 
+# ⚠ STOP — slideshow complexity
+
+**Do not add another soft-handoff, dual timeline, underlay show/hide, or
+preload-generation “fix” without deleting an equal amount of state.**
+
+The product model is intentionally tiny:
+
+1. **Pure wall clock** in `MainWindow` decides *when* and *which* pair (from→to).
+2. **Two CPU buffers** (from / to): full pixels if ready, else cache preview
+   scaled to **native size**. Full replaces soft in place — same geometry.
+3. **Paint**: blit from, blit to, opacity. Dwell = one blit. Underlay item is
+   **always hidden** for the whole show.
+4. **Ken Burns** (optional): one path **0→1 per image**, restarted at 0 when
+   that image becomes the dwell slide. Never carry progress across images.
+
+If a change needs a third clock, a second handoff path, or “visible underlay
+during slideshow”, it is the wrong change.
+
+---
+
 Read this before changing live transitions, preload, handoff, motion, or the
 pure-clock scheduler. Most “glitches” in this area are regressions of the same
 mistakes.

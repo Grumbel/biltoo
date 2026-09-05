@@ -609,7 +609,6 @@ void ImageView::releaseLiveTransitionHold()
         }
         return;
     }
-    const qreal handoffProgress = m_liveTransitionMotionProgress;
     const QImage toSource = m_liveTransitionSourceImage;
 
     // Soft handoff FIRST: install dwell cover before dropping live flags so one
@@ -643,38 +642,61 @@ void ImageView::releaseLiveTransitionHold()
         ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                           &m_dwellAtlasVw, &m_dwellAtlasVh);
     }
-    m_dwellMotionT = handoffProgress;
-    setSlideshowUnderlayVisible(false);
-
+    // Drop live composite flags before starting dwell on the new slide.
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionActive = false;
     m_liveTransitionProgress = 1.0;
     m_slideshowTransitionToPixmap = QPixmap();
     m_slideshowTransitionFromPixmap = QPixmap();
-    m_liveTransitionSourceImage = QImage();
     m_liveFromSourceImage = QImage();
     m_liveFromAtlas = QPixmap();
     m_liveToAtlas = QPixmap();
     m_liveTransitionPathHash = 0;
     m_liveTransitionMotionProgress = 0.0;
+    const QString nextPath = m_liveTransitionNextPath;
     m_liveTransitionNextPath.clear();
     m_toLayerWallMs = -1.0;
-    // Host stopped the advance timer for the transition; resume pure dwell now.
+    // Keep toSource in m_liveTransitionSourceImage only until dwell is installed;
+    // clear after path start so paint diag does not show a stale "to".
+    m_liveTransitionSourceImage = QImage();
+
     emit slideshowDwellResumeRequested();
-    // New slide → new Ken Burns path from 0. Carrying handoffProgress across
-    // images burned through the path and froze at dwellT=1.0 for the next fade
-    // (paint logs). Duration is interval+transition so the following pure+fade
-    // stay below 1.0 without a second clock.
-    if (m_slideshowProgressActive
-        && m_slideshowMotion != SlideshowMotion::Off) {
-        const int duration = m_slideshowProgressIntervalMs;
-        if (duration >= 250) {
+
+    // --- SIMPLE DWELL START (do not elaborate) ---
+    // One buffer (dwell), path 0→1 over interval, underlay hidden.
+    // Prefer the loaded canvas image; else the fade's to-frame.
+    {
+        QImage dwell = toSource;
+        if (ImageItem *item = targetItem()) {
+            if (!item->sourceImage().isNull()
+                && (nextPath.isEmpty() || item->path() == nextPath)) {
+                dwell = item->sourceImage();
+            }
+            item->setVisible(false);
+        }
+        m_dwellSourceImage = dwell;
+        m_dwellMotionT = 0.0;
+        hideSlideshowUnderlay();
+        if (m_slideshowProgressActive
+            && m_slideshowMotion != SlideshowMotion::Off
+            && m_slideshowProgressIntervalMs >= 250
+            && !m_dwellSourceImage.isNull()) {
+            startSlideshowMotion(m_slideshowProgressIntervalMs, 0.0);
+            // startSlideshowMotion may rebuild dwell from the item; force our
+            // pixels and zero progress in case the item was still empty.
+            if (!dwell.isNull()) {
+                m_dwellSourceImage = dwell;
+                ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                                  &m_dwellAtlasVw, &m_dwellAtlasVh);
+            }
+            m_dwellMotionT = 0.0;
+            m_motionElapsedOffsetMs = 0;
+            m_motionClock.start();
             qDebug().nospace()
-                << "[slideshow] soft-handoff new-path durationMs=" << duration
-                << " (was handoffProgress="
-                << QString::number(handoffProgress, 'f', 3) << ")";
-            startSlideshowMotion(duration, 0.0);
+                << "[slideshow] dwell-start "
+                << m_dwellSourceImage.width() << "x" << m_dwellSourceImage.height()
+                << " path=" << QFileInfo(nextPath).fileName();
         }
     }
     if (viewport()) {
@@ -1387,15 +1409,26 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
 
 void ImageView::setSlideshowUnderlayVisible(bool visible)
 {
-    // Invariant: while a slideshow is in progress the underlay item is never
-    // shown. Only dwell/live blits draw the slide. Showing the underlay mid
-    // handoff (cancelSlideshowMotion → visible) was the mode=underlay flash
-    // in paint logs (item="-", underlayVisible=true).
+    // Invariant: while a slideshow is in progress the underlay is never shown.
     if (m_slideshowProgressActive) {
         visible = false;
     }
     if (ImageItem *item = targetItem()) {
         item->setVisible(visible);
+    }
+}
+
+void ImageView::hideSlideshowUnderlay()
+{
+    // Hide every canvas item — new LoadReplace items default to visible and
+    // were slipping past a single targetItem() hide (paint: underlayVisible=true).
+    if (!m_scene) {
+        return;
+    }
+    for (QGraphicsItem *gi : m_scene->items()) {
+        if (qgraphicsitem_cast<ImageItem *>(gi)) {
+            gi->setVisible(false);
+        }
     }
 }
 

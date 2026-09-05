@@ -441,6 +441,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 && !m_slideshowMotionActive) {
                 applySlideshowZoomFraming(item);
             }
+            if (m_slideshowProgressActive) {
+                item->setVisible(false);
+            }
             // Drop held live-transition overlay only after the new item is fitted
             // (and motion sample applied) so the outgoing underlay never flashes.
             releaseLiveTransitionHold();

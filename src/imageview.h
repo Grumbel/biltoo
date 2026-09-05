@@ -208,6 +208,7 @@ public:
     void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
                            int *atlasVw, int *atlasVh) const;
     void setSlideshowUnderlayVisible(bool visible);
+    void hideSlideshowUnderlay();
     /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
     void applySlideshowZoomFraming(ImageItem *item);
     /** Controller host: session path order used for Gallery packing. */

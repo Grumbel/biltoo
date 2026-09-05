@@ -4745,3 +4745,22 @@ dwell, and `dwellT=1.000` frozen into the next fade.
 ### Done criteria
 - [x] No underlay flash in paint log during slideshow
 - [x] Next **262**
+
+## Plan / work (2026-09-05) — bundle `biltoo-262-dwell-start-simple`
+
+### Pushback
+Paint still: `underlayVisible=true` during dwell; `dwellT` continued from ~0.75
+instead of restarting; orientation change left `dwell` size ≠ `item` size.
+
+### Simplify soft-handoff
+- Clear live flags
+- Dwell buffer = canvas full image or fade to-frame
+- `hideSlideshowUnderlay()` hides **all** scene ImageItems
+- `startSlideshowMotion(interval, 0)` then **force** dwell pixels + `dwellT=0`
+  + clock restart (startSlideshowMotion alone was not resetting progress in logs)
+- Fat warning at top of SLIDESHOW.md
+
+### Done criteria
+- [x] dwell-start log with size and path
+- [x] underlay hidden after handoff
+- [x] Next **263**
