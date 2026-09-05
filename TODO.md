@@ -4686,3 +4686,21 @@ Only emitted when the fingerprint changes (not every vsync).
 ### Done criteria
 - [x] Paint diag on layer/size change
 - [x] Next **259**
+
+## Plan / work (2026-09-05) — bundle `biltoo-259-shared-motion-timeline`
+
+### Diagnosis (paint logs)
+`live-fade` never showed `live-hold`. More important: dwellT went **backward**
+across transitions (0.740 → 0.492). Cause: `toLayerWallMs = wallMs` started the
+incoming Ken Burns at progress 0 while from was mid-path; handoff then snapped
+dwell to that low toT.
+
+### Fix
+Shared motion timeline for live from/to (`m_toLayerWallMs = 0`). Both layers use
+the same wall progress; only biases differ. Soft-handoff continues forward.
+
+Paint diag fingerprint also includes coarse dwellT/toT steps.
+
+### Done criteria
+- [x] No toT=0 against mid-path fromT on every fade
+- [x] Next **260**

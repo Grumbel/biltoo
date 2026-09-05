@@ -217,8 +217,8 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                          .arg(targetItem()->pixmap().width())
                          .arg(targetItem()->pixmap().height())
                    : QStringLiteral("-"));
-        // Fingerprint: mode + pixel sizes (jumps show up as size flips).
-        const QString fp = QStringLiteral("%1|from=%2|to=%3|dwell=%4|item=%5|hold=%6|act=%7|await=%8")
+        // Fingerprint: mode + pixel sizes + coarse progress (catches camera snaps).
+        const QString fp = QStringLiteral("%1|from=%2|to=%3|dwell=%4|item=%5|hold=%6|act=%7|await=%8|dT=%9|tT=%10")
             .arg(mode,
                  sz(m_liveFromSourceImage),
                  sz(m_liveTransitionSourceImage),
@@ -226,7 +226,9 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                  itemSz)
             .arg(m_liveTransitionHold)
             .arg(m_liveTransitionActive)
-            .arg(m_liveTransitionAwaitingLoad);
+            .arg(m_liveTransitionAwaitingLoad)
+            .arg(int(m_dwellMotionT * 20.0))   // 0.05 steps
+            .arg(int(m_liveTransitionMotionProgress * 20.0));
         if (fp != m_lastSlideshowPaintFp) {
             m_lastSlideshowPaintFp = fp;
             qDebug().nospace()

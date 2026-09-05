@@ -1593,19 +1593,21 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         m_motionBiasValid = saveValid;
     }
 
-    // To-layer starts at the current motion wall (progress 0 on B).
-    // From continues on the same wall clock — no reset, no second timer.
+    // Shared motion timeline: both layers sample the same wall progress.
+    // Previously toLayerWallMs = wallMs forced toT=0 while from sat mid-path
+    // (~0.5–0.7), so every crossfade blended mismatched pans and soft-handoff
+    // snapped dwell backward to a small toT (visible jump every transition).
     const qreal wallMs = (m_slideshowMotionActive && m_motionDurationMs > 0)
         ? qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
         : 0.0;
-    m_toLayerWallMs = wallMs;
+    m_toLayerWallMs = 0.0;
     m_liveFromMotionProgress0 = (m_motionDurationMs > 0)
         ? motionProgress01(wallMs, qreal(m_motionDurationMs))
         : 0.0;
 
     // Frames are drawn in paintEvent via atlas-backed paintMotionCover.
     m_dwellMotionT = m_liveFromMotionProgress0;
-    m_liveTransitionMotionProgress = 0.0;
+    m_liveTransitionMotionProgress = m_liveFromMotionProgress0;
     ensureMotionAtlas(m_liveFromSourceImage, &m_liveFromAtlas, &m_liveFromAtlasScale,
                       &m_liveFromAtlasVw, &m_liveFromAtlasVh);
     ensureMotionAtlas(m_liveTransitionSourceImage, &m_liveToAtlas, &m_liveToAtlasScale,

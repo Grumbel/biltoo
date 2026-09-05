@@ -116,6 +116,16 @@ the fade. Sharpness improves; geometry stays put.
 Only one ready slot exists. Warm the *next* path only after the current ready
 slot has been consumed into handoff/beginLive.
 
+
+### 14. Live from/to layers share one motion timeline
+
+Do **not** start the “to” layer at progress 0 while “from” is mid-path.
+`m_toLayerWallMs = wallMs` forced `toT=0` every fade → crossfade blended
+mismatched pans and soft-handoff snapped dwell backward (dwellT 0.74→0.25).
+
+Set `m_toLayerWallMs = 0` so both layers sample the same wall progress (each
+with its own biases). Handoff progress then continues the dwell camera.
+
 ## Symptoms → usual cause
 
 | Symptom | Usual cause |
