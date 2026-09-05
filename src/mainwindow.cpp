@@ -709,8 +709,22 @@ void MainWindow::openSelectionInNewWindow()
     }
     auto *window = new MainWindow;
     window->setAttribute(Qt::WA_DeleteOnClose);
+    if (isVisible()) {
+        window->move(frameGeometry().topLeft() + QPoint(32, 32));
+    }
     window->show();
     window->loadFiles(paths);
+}
+
+void MainWindow::newWindow()
+{
+    auto *window = new MainWindow;
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    // Offset so the new frame is not fully stacked under this one.
+    if (isVisible()) {
+        window->move(frameGeometry().topLeft() + QPoint(32, 32));
+    }
+    window->show();
 }
 
 void MainWindow::toggleWorkspaceMode()
@@ -991,6 +1005,7 @@ void MainWindow::showKeyboardShortcuts()
         "duration, and optional pan&zoom or pan&scan during each dwell. "
         "Transitions apply on automatic advances only.</p>"
         "<p><b>View</b><br/>"
+        "Ctrl+Shift+N — new window<br/>"
         "F / F11 — fullscreen (chrome and docks hide; restored on exit)<br/>"
         "H — toggle HUD (filename / session index; dwell progress while slideshow runs)<br/>"
         "F5 — reload from disk (current image / gallery tiles)<br/>"

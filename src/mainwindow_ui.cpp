@@ -17,6 +17,12 @@ void MainWindow::createActions()
     m_newAct->setStatusTip(tr("Start a new empty session"));
     connect(m_newAct, &QAction::triggered, this, &MainWindow::newSession);
 
+    m_newWindowAct = new QAction(tr("New &Window"), this);
+    m_newWindowAct->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N));
+    m_newWindowAct->setIcon(themeIcon(QStringLiteral("window-new"), QStyle::SP_TitleBarMaxButton));
+    m_newWindowAct->setStatusTip(tr("Open a new empty Biltoo window"));
+    connect(m_newWindowAct, &QAction::triggered, this, &MainWindow::newWindow);
+
     m_openProjectAct = new QAction(tr("Open &Project…"), this);
     m_openProjectAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_O);
     m_openProjectAct->setStatusTip(tr("Open a .biltoo project (session + Workspace poses)"));
@@ -659,6 +665,7 @@ void MainWindow::createMenus()
 {
     m_fileMenu = menuBar()->addMenu(tr("&File"));
     m_fileMenu->addAction(m_newAct);
+    m_fileMenu->addAction(m_newWindowAct);
     m_fileMenu->addAction(m_openAct);
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);

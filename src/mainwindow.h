@@ -192,6 +192,8 @@ private slots:
     void openProject();
     /** Open selected canvas paths in a new MainWindow (WA_DeleteOnClose). */
     void openSelectionInNewWindow();
+    /** Spawn an empty MainWindow (File → New Window). */
+    void newWindow();
     void opacityDown();
     void opacityUp();
     void lowerSelected();
@@ -343,6 +345,7 @@ private:
 
     QAction *m_openAct = nullptr;
     QAction *m_newAct = nullptr;
+    QAction *m_newWindowAct = nullptr;
     QAction *m_addAct = nullptr;
     QAction *m_openDirAct = nullptr;
     QAction *m_reloadAct = nullptr;

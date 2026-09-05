@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-188-desktop-archive-mime**
-(desktop + AppStream archive MIME types).
-Next bundle number: **189**.
+Latest agent handoff: **TODO.md → biltoo-189-new-window**
+(File → New Window).
+Next bundle number: **190**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

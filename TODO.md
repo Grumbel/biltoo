@@ -3341,3 +3341,18 @@ Biltoo for the same containers libarchive can open.
 - [x] Desktop MIME covers archiveSuffixes-backed types
 - [x] AppStream lists the same archive mimetypes
 - [x] Next **189**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-189-new-window`
+
+**File → New Window** (Ctrl+Shift+N): spawn another MainWindow with an empty
+session. Reuses the same in-process pattern as Open Selection in New Window
+(`WA_DeleteOnClose`). Slight position offset so the new frame is not fully
+stacked under the parent.
+
+Distinct from **File → New** (clears the current window’s session).
+
+### Done criteria
+- [x] New Window menu action + Ctrl+Shift+N
+- [x] Empty session; existing window unchanged
+- [x] Next **190**

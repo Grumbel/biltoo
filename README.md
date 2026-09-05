@@ -51,7 +51,7 @@
 - **Page Guide** and **Fit Page Guide to Content** for export framing
 - Custom **Workspace background** (solid, checker, image tile) with temporary Default preview
 - Delete removes from the canvas only; session membership stays
-- Open the current selection in a new window
+- **New Window** (Ctrl+Shift+N); open the current selection in a new window
 
 ### Crop & appearance
 
