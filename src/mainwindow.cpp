@@ -955,7 +955,8 @@ void MainWindow::updateSlideshowFromClock()
     if (m_imageView) {
         const auto tr = m_imageView->slideshowTransition();
         if (tr == ImageView::SlideshowTransition::Crossfade
-            || tr == ImageView::SlideshowTransition::FadeBlack) {
+            || tr == ImageView::SlideshowTransition::FadeBlack
+            || tr == ImageView::SlideshowTransition::Slide) {
             if (m_slideshowTransitionCycle != cycle) {
                 qDebug().nospace()
                     << "[slideshow] phase-fade cycle=" << cycle

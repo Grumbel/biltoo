@@ -4944,3 +4944,32 @@ to-image never got a full decode → soft placeholders only.
 ### Done criteria
 - [x] Full decode requested for visible pair
 - [x] Next **274**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-274-slide-pure-phase`
+
+### Symptom
+Slideshow transition **Slide** (projector: old exits left, new enters from the
+right) did not show the geometric slide — frames looked stuck / cut over.
+
+### Cause
+After the pure-phase path (271–273), MainWindow only drove Crossfade/FadeBlack
+via `setSlideshowPhase`. Slide stayed on the legacy once-per-cycle path
+(`prepareSlideshowTransition` + snapshot animation). During the transition
+window the clock early-returned without clearing pure buffers, so the pure
+**phase-dwell** paint (`m_ssFromImage` at full opacity) drew *after* the
+snapshot Slide cards and covered them every frame.
+
+### Fix
+- MainWindow: treat **Slide** like Crossfade/FadeBlack on the pure wall-clock
+  path (`setSlideshowPhase(from, to, t)` + index commit at end of phase).
+- `ImageView` pure-phase paint: Slide branch — pad, translate A left / B right
+  by `t`, both still use motion covers; clip to viewport.
+- `setSlideshowPhase`: cancel any residual snapshot/live transition state so
+  cards cannot paint over the pure composite.
+
+### Done criteria
+- [x] Slide uses pure phase path
+- [x] Pure paint implements projector geometry
+- [x] Snapshot flags cleared on phase drive
+- [x] Next **275**

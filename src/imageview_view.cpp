@@ -1243,12 +1243,22 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
 
     m_ssFadeT = fadeT;
 
-    // Pure phase owns the composite — clear legacy live flags so nothing cancels us.
+    // Pure phase owns the composite — clear legacy live + snapshot flags so
+    // residual Slide projector cards / animations cannot paint over us.
     m_liveTransitionActive = false;
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveFromSourceImage = QImage();
     m_liveTransitionSourceImage = QImage();
+    m_slideshowTransitionPending = false;
+    m_slideshowTransitionActive = false;
+    m_slideshowTransitionProgress = 1.0;
+    if (m_slideshowTransitionAnim) {
+        m_slideshowTransitionAnim->stop();
+    }
+    m_slideshowTransitionPixmap = QPixmap();
+    m_slideshowTransitionToPixmap = QPixmap();
+    m_slideshowTransitionFromPixmap = QPixmap();
 
     hideSlideshowUnderlay();
     if (viewport()) {

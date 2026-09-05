@@ -192,7 +192,9 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         };
         QString mode = QStringLiteral("underlay");
         if (m_ssFadeT >= 0.0 && !m_ssToImage.isNull()) {
-            mode = QStringLiteral("phase-fade");
+            mode = (m_slideshowTransition == SlideshowTransition::Slide)
+                ? QStringLiteral("phase-slide")
+                : QStringLiteral("phase-fade");
         } else if (!m_ssFromImage.isNull() || !m_dwellSourceImage.isNull()) {
             mode = QStringLiteral("phase-dwell");
         } else if (m_slideshowTransitionActive) {
@@ -269,6 +271,26 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
                 }
+            } else if (m_slideshowTransition == SlideshowTransition::Slide) {
+                // Projector: A exits left, B enters from the right; both in motion.
+                const int w = vr.width();
+                const int xOld = int(qRound(-t * w));
+                const int xNew = int(qRound((1.0 - t) * w));
+                painter.setOpacity(1.0);
+                painter.setClipRect(vr);
+                if (!fromImg.isNull()) {
+                    painter.save();
+                    painter.translate(xOld, 0);
+                    paintMotionCover(&painter, fromImg, fromT,
+                                     m_motionBiasA, m_motionBiasB, 0);
+                    painter.restore();
+                }
+                painter.save();
+                painter.translate(xNew, 0);
+                paintMotionCover(&painter, m_ssToImage, toT,
+                                 m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
+                painter.restore();
+                painter.setClipping(false);
             } else {
                 // Crossfade: A 1→0, B 0→1; both in motion.
                 if (!fromImg.isNull()) {

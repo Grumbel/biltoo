@@ -35,6 +35,12 @@ Each slide is on screen for a full **interval** of wall time: first alone, then 
 
 After the transition, the next dwell is **B only**, with the same rules.
 
+### Slide (projector)
+
+- Geometry, not opacity: **A** translates left off-screen; **B** enters from the right.
+- Same pure wall clock and dual motion as crossfade; only the composite differs.
+- Implemented on the pure phase path (`setSlideshowPhase` + paint translates).
+
 ## Motion
 
 Every image that is part of the current segment is in motion for as long as it participates:
