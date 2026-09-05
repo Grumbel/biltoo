@@ -188,6 +188,7 @@ void ImageView::clearWorkspace()
     m_galleryDecodeScheduled.clear();
     m_galleryDecodeFailed.clear();
     m_imageSizeByPath.clear();
+    m_sizeProbeScheduled.clear();
     m_previewByPath.clear();
     m_pathOrder.clear();
     m_sessionIdOrder.clear();

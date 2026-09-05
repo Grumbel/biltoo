@@ -57,10 +57,29 @@ ImageItem::ImageItem(const QString &path, const QSize &intrinsicSize, QGraphicsI
 
 QSize ImageItem::imageSize() const
 {
-    if (!m_source.isNull()) {
+    if (!m_source.isNull() && !m_previewPixels) {
         return m_source.size();
     }
     return m_intrinsicSize.isValid() ? m_intrinsicSize : QSize(1, 1);
+}
+
+void ImageItem::setIntrinsicSize(const QSize &size)
+{
+    if (!size.isValid() || size.width() <= 0 || size.height() <= 0) {
+        return;
+    }
+    // Full decode owns geometry via source pixels.
+    if (!m_source.isNull() && !m_previewPixels) {
+        return;
+    }
+    if (m_intrinsicSize == size) {
+        return;
+    }
+    prepareGeometryChange();
+    m_intrinsicSize = size;
+    setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
+    applyLocalTransform();
+    update();
 }
 
 void ImageItem::setSourceImage(const QImage &image)

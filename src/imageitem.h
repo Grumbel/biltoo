@@ -81,6 +81,11 @@ public:
     int sessionIndex() const { return m_sessionIndex; }
     void setSessionIndex(int index) { m_sessionIndex = index; }
     QSize imageSize() const;
+    /**
+     * Update layout geometry without touching pixels (async size probe).
+     * No-op when a full decode already owns the size.
+     */
+    void setIntrinsicSize(const QSize &size);
     const QImage &sourceImage() const { return m_source; }
     /**
      * True when a full (non-preview) decode is present. Provisional thumbnail

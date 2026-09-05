@@ -29,6 +29,7 @@
 #include <QTimer>
 #include <QSet>
 #include <QThreadPool>
+#include <QPointer>
 #include <QVector>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
@@ -204,13 +205,89 @@ QSize ImageView::imageSizeForPath(const QString &path)
     if (it != m_imageSizeByPath.cend()) {
         return it.value();
     }
-    const QSize probed = probeImageSize(path);
-    // Cache real probes; skip caching the archive stand-in so a later full
-    // decode can replace it with the true member size.
-    if (!ArchivePath::isArchiveRef(path)) {
-        rememberImageSize(path, probed);
+    // Archives: fixed stand-in (probe would open the container on this thread).
+    if (ArchivePath::isArchiveRef(path)) {
+        return QSize(1024, 1024);
     }
-    return probed;
+    // Unknown size: do not touch the filesystem on the GUI thread. Neutral
+    // geometry until async probe or full decode fills the cache.
+    scheduleImageSizeProbe(path);
+    return QSize(1000, 1000);
+}
+
+void ImageView::scheduleImageSizeProbe(const QString &path)
+{
+    if (path.isEmpty() || ArchivePath::isArchiveRef(path)) {
+        return;
+    }
+    if (m_imageSizeByPath.contains(path) || m_sizeProbeScheduled.contains(path)) {
+        return;
+    }
+    m_sizeProbeScheduled.insert(path);
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start([guard, path]() {
+        QSize s = ImageLoader::probeSize(path);
+        if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
+            s = QSize(1000, 1000);
+        }
+        if (!guard) {
+            return;
+        }
+        ImageView *view = guard.data();
+        if (!view) {
+            return;
+        }
+        QMetaObject::invokeMethod(view, [guard, path, s]() {
+            if (!guard) {
+                return;
+            }
+            guard->m_sizeProbeScheduled.remove(path);
+            // Prefer a size already learned from a full decode.
+            if (guard->m_imageSizeByPath.contains(path)) {
+                return;
+            }
+            guard->rememberImageSize(path, s);
+            guard->applyProbedImageSize(path, s);
+        }, Qt::QueuedConnection);
+    });
+}
+
+void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
+{
+    if (path.isEmpty() || !size.isValid()) {
+        return;
+    }
+    bool any = false;
+    for (ImageItem *item : m_items) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        if (item->hasDecodedPixels()) {
+            continue;
+        }
+        const QSize cur = item->imageSize();
+        if (cur == size) {
+            continue;
+        }
+        item->setIntrinsicSize(size);
+        any = true;
+        if (isImageMode() && item == targetItem()) {
+            if (m_slideshowProgressActive
+                && m_slideshowMotion == SlideshowMotion::Off) {
+                applySlideshowZoomFraming(item);
+            } else if (!m_slideshowProgressActive) {
+                fitItem(item, currentFitAspectMode());
+            }
+            if (m_scene) {
+                m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+            }
+        }
+    }
+    if (any && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
+        applyLayout(GalleryPackReason::ContentChange);
+    } else if (any && viewport()) {
+        viewport()->update();
+    }
 }
 
 int ImageView::pendingDecodeCount() const

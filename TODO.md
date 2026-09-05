@@ -3865,3 +3865,19 @@ both finished (or never if string invoke/Q_ARG was flaky).
 - [x] Image next/prev can show thumbnail before full decode
 - [x] Revisit uses cached preview without waiting
 - [x] Next **220**
+
+## Plan / work (2026-09-05) — bundle `biltoo-220-async-size-probe`
+
+GUI froze on slow network USB because `imageSizeForPath` called
+`ImageLoader::probeSize` on the GUI thread (Image next/prev pending tile,
+Gallery virtualization placeholders).
+
+### Fix
+- `imageSizeForPath`: cache only; neutral size if unknown; never FS I/O
+- `scheduleImageSizeProbe`: background probe → cache → `applyProbedImageSize`
+- `ImageItem::setIntrinsicSize` for layout update without clearing pixels
+- Archives stay fixed 1024×1024 (no container open on GUI)
+
+### Done criteria
+- [x] No size probe on GUI thread for normal files
+- [x] Next **221**

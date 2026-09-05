@@ -788,12 +788,15 @@ private:
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     QSize probeImageSize(const QString &path) const;
     /**
-     * Best-known native pixel size for @p path: session cache, else probe and
-     * cache. Used for placeholder geometry so previews never become layout size.
+     * Best-known native pixel size for @p path from the session cache only.
+     * Never does filesystem I/O — returns a neutral size and schedules an async
+     * probe when unknown (slow network/USB must not block the GUI thread).
      */
     QSize imageSizeForPath(const QString &path);
-    /** Remember native size after a successful full decode (or solid probe). */
+    /** Remember native size after a successful full decode (or async probe). */
     void rememberImageSize(const QString &path, const QSize &size);
+    void scheduleImageSizeProbe(const QString &path);
+    void applyProbedImageSize(const QString &path, const QSize &size);
     void updateGalleryDecodeWindow();
     void scheduleGalleryDecode(const QString &path);
     ImageItem *primaryItem() const;
@@ -943,6 +946,8 @@ private:
      * property of the file contents; safe to key by path (not SessionImageId).
      */
     QHash<QString, QSize> m_imageSizeByPath;
+    /** Paths with an in-flight async size probe. */
+    QSet<QString> m_sizeProbeScheduled;
     /** Path → last provisional thumbnail (session cache for rapid next/prev). */
     QHash<QString, QImage> m_previewByPath;
     QStringList m_pathOrder;
