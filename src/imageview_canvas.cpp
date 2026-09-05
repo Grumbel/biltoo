@@ -196,7 +196,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         }
 
         if (virtualize) {
-            ImageItem *ph = createPlaceholderItem(path, probeImageSize(path));
+            ImageItem *ph = createPlaceholderItem(path, imageSizeForPath(path));
             if (ph) {
                 if (sid != kInvalidSessionImageId) {
                     ph->setSessionId(sid);

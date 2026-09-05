@@ -187,6 +187,7 @@ void ImageView::clearWorkspace()
     m_pendingSelectSessionIds.clear();
     m_galleryDecodeScheduled.clear();
     m_galleryDecodeFailed.clear();
+    m_imageSizeByPath.clear();
     m_pathOrder.clear();
     m_sessionIdOrder.clear();
     // Path-keyed placement is legacy for unbound tiles only; drop it so a

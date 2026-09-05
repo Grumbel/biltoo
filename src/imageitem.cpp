@@ -96,9 +96,12 @@ void ImageItem::setPreviewImage(const QImage &preview)
     m_previewPixels = true;
     m_source = QImage();
     setPixmap(QPixmap());
-    // Match preview aspect so fit/layout are not based on the previous image
-    // or a square fallback. Full decode replaces this with native size later.
-    if (preview.width() > 0 && preview.height() > 0) {
+    // Intrinsic size is layout geometry (probe / full native size). Never adopt
+    // the thumbnail's pixel dimensions — that collapses Gallery packs.
+    // Only seed intrinsic when still unknown (empty placeholder).
+    if ((!m_intrinsicSize.isValid() || m_intrinsicSize.width() <= 1
+         || m_intrinsicSize.height() <= 1)
+        && preview.width() > 0 && preview.height() > 0) {
         m_intrinsicSize = preview.size();
     }
     const QSize s = imageSize();

@@ -3823,3 +3823,28 @@ thumbnail into a mismatched content rect → wrong aspect on next/prev.
 ### Done criteria
 - [x] Preview matches image aspect
 - [x] Next **218**
+
+## Plan / work (2026-09-05) — bundle `biltoo-218-intrinsic-vs-preview-size`
+
+### Model
+- **Intrinsic size** = native geometry for layout/fit (probe or full decode)
+- **Preview pixels** = paint-only, scaled into contentRect (letterboxed)
+- Never set intrinsic from thumbnail pixel size (collapsed Gallery packs)
+
+### What went wrong
+`setPreviewImage` replaced `m_intrinsicSize` with the 512px thumbnail size.
+Gallery aspect looked fine but tile *scale* was wrong; Image-mode fit also
+used the wrong absolute size.
+
+### Fix
+- `setPreviewImage` keeps existing intrinsic; only seeds if still unknown
+- `m_imageSizeByPath`: cache native size from probe / full decode (path-keyed;
+  file property, not SessionImageId)
+- `imageSizeForPath` for placeholders + Image pending tiles
+- `rememberImageSize` on successful full LoadReplace / LoadAdd
+- Clear cache on full session wipe
+
+### Done criteria
+- [x] Gallery tile size stays native while showing preview
+- [x] Image-mode pending uses probe/cache size, not thumbnail size
+- [x] Next **219**

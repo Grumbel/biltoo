@@ -787,6 +787,13 @@ private:
     void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     QSize probeImageSize(const QString &path) const;
+    /**
+     * Best-known native pixel size for @p path: session cache, else probe and
+     * cache. Used for placeholder geometry so previews never become layout size.
+     */
+    QSize imageSizeForPath(const QString &path);
+    /** Remember native size after a successful full decode (or solid probe). */
+    void rememberImageSize(const QString &path, const QSize &size);
     void updateGalleryDecodeWindow();
     void scheduleGalleryDecode(const QString &path);
     ImageItem *primaryItem() const;
@@ -931,6 +938,11 @@ private:
     SessionAppearanceStore m_appearance;
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */
+    /**
+     * Path → native pixel size (from probe or full decode). Dimensions are a
+     * property of the file contents; safe to key by path (not SessionImageId).
+     */
+    QHash<QString, QSize> m_imageSizeByPath;
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */
     QVector<SessionImageId> m_sessionIdOrder;

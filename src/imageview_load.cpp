@@ -77,24 +77,8 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     if (!isImageMode() || path.isEmpty()) {
         return;
     }
-    // Aspect must match the *new* image. Previous tile size is last resort only
-    // (wrong aspect caused stretched previews on rapid next/prev).
-    QSize sz(1000, 1000);
-    if (!preview.isNull() && preview.width() > 0 && preview.height() > 0) {
-        sz = preview.size();
-    } else if (!ArchivePath::isArchiveRef(path)) {
-        const QSize probed = ImageLoader::probeSize(path);
-        if (probed.isValid() && probed.width() > 0 && probed.height() > 0) {
-            sz = probed;
-        } else if (ImageItem *cur = targetItem()) {
-            const QSize curSz = cur->imageSize();
-            if (curSz.isValid() && curSz.width() > 0 && curSz.height() > 0) {
-                sz = curSz;
-            }
-        }
-    } else {
-        sz = QSize(1024, 1024);
-    }
+    // Layout size = native dimensions (cache / probe), never thumbnail pixels.
+    const QSize sz = imageSizeForPath(path);
 
     setUpdatesEnabled(false);
     clearLiveCanvas();
@@ -275,15 +259,8 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                 }
                 // Upgrade loading placeholder (same path) in place when possible.
                 if (cur->path() == path && !cur->hasDecodedPixels()) {
+                    // Pixels only — intrinsic size stays native (probe/cache).
                     cur->setPreviewImage(image);
-                    // Intrinsic size may have changed to preview aspect — re-fit.
-                    if (m_slideshowProgressActive
-                        && m_slideshowMotion == SlideshowMotion::Off) {
-                        applySlideshowZoomFraming(cur);
-                    } else if (!m_slideshowProgressActive) {
-                        fitItem(cur, currentFitAspectMode());
-                    }
-                    m_scene->setSceneRect(cur->sceneBoundingRect().adjusted(-8, -8, 8, 8));
                     if (viewport()) {
                         viewport()->update();
                     }
@@ -329,6 +306,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         if (isImageMode()) {
             m_lastLoadError.clear();
+            rememberImageSize(path, image.size());
             // Suppress paints between removing the old item and fitting the new one
             // so we never present a native-scale (or empty) intermediate frame.
             setUpdatesEnabled(false);
@@ -474,6 +452,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
     // Duplicate paths are separate session images: fill every undecoded live
     // occurrence, then create until live count matches pathOrder occurrences.
+    if (!image.isNull()) {
+        rememberImageSize(path, image.size());
+    }
     m_galleryDecodeScheduled.remove(path);
     if (!m_pendingWorkspacePaths.contains(path)) {
         // Cancelled (e.g. path removed from session) — drop the result.

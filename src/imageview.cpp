@@ -187,6 +187,32 @@ QSize ImageView::probeImageSize(const QString &path) const
     return s;
 }
 
+void ImageView::rememberImageSize(const QString &path, const QSize &size)
+{
+    if (path.isEmpty() || !size.isValid() || size.width() <= 0 || size.height() <= 0) {
+        return;
+    }
+    m_imageSizeByPath.insert(path, size);
+}
+
+QSize ImageView::imageSizeForPath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return QSize(1000, 1000);
+    }
+    const auto it = m_imageSizeByPath.constFind(path);
+    if (it != m_imageSizeByPath.cend()) {
+        return it.value();
+    }
+    const QSize probed = probeImageSize(path);
+    // Cache real probes; skip caching the archive stand-in so a later full
+    // decode can replace it with the true member size.
+    if (!ArchivePath::isArchiveRef(path)) {
+        rememberImageSize(path, probed);
+    }
+    return probed;
+}
+
 int ImageView::pendingDecodeCount() const
 {
     // m_galleryDecodeScheduled ⊆ m_pendingWorkspacePaths for gallery window loads;
