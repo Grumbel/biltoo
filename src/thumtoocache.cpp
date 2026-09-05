@@ -59,17 +59,21 @@ void init()
     if (g_inited) {
         return;
     }
-    thumtoo::image_library_init();
-    std::filesystem::path root;
-    if (const char *xdg = std::getenv("XDG_CACHE_HOME"); xdg && *xdg) {
-        root = std::filesystem::path(xdg) / "thumtoo";
-    } else if (const char *home = std::getenv("HOME"); home && *home) {
-        root = std::filesystem::path(home) / ".cache" / "thumtoo";
-    } else {
-        root = std::filesystem::path(".cache") / "thumtoo";
+    g_inited = true; // one attempt; leave g_client null on failure
+    try {
+        thumtoo::image_library_init();
+        std::filesystem::path root;
+        if (const char *xdg = std::getenv("XDG_CACHE_HOME"); xdg && *xdg) {
+            root = std::filesystem::path(xdg) / "thumtoo";
+        } else if (const char *home = std::getenv("HOME"); home && *home) {
+            root = std::filesystem::path(home) / ".cache" / "thumtoo";
+        } else {
+            root = std::filesystem::path(".cache") / "thumtoo";
+        }
+        g_client = thumtoo::Client::open(root);
+    } catch (...) {
+        g_client.reset();
     }
-    g_client = thumtoo::Client::open(root);
-    g_inited = true;
 #endif
 }
 

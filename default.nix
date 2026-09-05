@@ -114,6 +114,9 @@ stdenv.mkDerivation (finalAttrs: {
   doCheck = true;
   preCheck = ''
     export QT_QPA_PLATFORM=offscreen
+    # Nix builder HOME is /homeless-shelter (not writable). Point the XDG cache
+    # root at a sandbox temp dir so thumtoo can create $XDG_CACHE_HOME/thumtoo.
+    export XDG_CACHE_HOME="''${TMPDIR:-/tmp}/thumtoo-cache"
   '';
 
   meta = with lib; {
