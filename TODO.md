@@ -4184,3 +4184,30 @@ Extended (pinned) HUD shows video-player style slideshow time.
 - [x] No wrong-image advances after slow loads
 - [x] Missed cycles recover instead of staying stuck/skipping forever
 - [x] Next **233**
+
+## Plan / work (2026-09-05) — bundle `biltoo-233-slideshow-blip-timeline`
+
+### Blip on every transition
+Lag recovery treated `cycle == transitionCycle + 1` while still busy as
+failure and **cancelled** the in-flight transition. When interval==transition
+that is the *normal* boundary (cycle rolls as the fade ends) → cancel every
+time → visible blip.
+
+Fix: hard-recover only when `cycle > transitionCycle + 1` (more than one full
+cycle behind). Otherwise wait for live-finished.
+
+### Timeline mid-start / prev-next
+HUD used `elapsed % (n*interval)` so starting on image k always showed 0.
+Now: `loopElapsed = (baseIndex * interval + elapsed) % (n * interval)` so the
+bar reflects playlist position after mid-start or manual nav (arm resets base
+to current index).
+
+### Debug
+`[slideshow]` qDebug lines on arm, lag-recover, pure-snap, align-from,
+start-transition, live-finished. No per-tick spam.
+
+### Done criteria
+- [x] No boundary cancel blip when interval==transition
+- [x] HUD total/elapsed respects start index and nav
+- [x] Debug log of index/cycle decisions
+- [x] Next **234**
