@@ -4285,3 +4285,24 @@ ready. Fall back to m_dwellSourceImage then item pixmap.
 - [x] ←/→ while paused changes the visible image
 - [x] beginLive more reliable at first transition
 - [x] Next **238**
+
+## Plan / work (2026-09-05) — bundle `biltoo-238-slideshow-await-paint`
+
+### Flash at end of every transition (interval==transition)
+beginLive sets `m_liveTransitionAwaitingLoad` before decode completes.
+Paint skipped both dwell (`!awaitingLoad`) and live (`!active`) → only the
+pad/background was drawn for the decode gap → visible flash every cycle.
+
+Fix: paint dwell while awaiting (only skip dwell when live active/hold).
+Live composite branch no longer treats awaiting-alone as a live frame.
+
+### beginLive declined on first transition
+startSlideshow called arm (immediate transition) *before* progress/framing, so
+dwellSourceImage was still empty.
+
+Fix: framing + progress first, then arm. arm also calls reapplySlideshowFraming.
+
+### Done criteria
+- [x] No pad flash between continuous transitions
+- [x] First beginLive has from-image when possible
+- [x] Next **239**

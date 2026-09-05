@@ -873,6 +873,8 @@ void MainWindow::armSlideshowAdvanceTimer()
 
     if (m_imageView) {
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        // Ensure dwell pixels exist before pureMs==0 opens a transition.
+        m_imageView->reapplySlideshowFraming();
         if (m_session.paths().size() > 1) {
             int n = (m_currentIndex + 1) % m_session.paths().size();
             if (n < 0) {

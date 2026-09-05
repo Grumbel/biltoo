@@ -1817,7 +1817,6 @@ void MainWindow::startSlideshow()
     }
     m_slideshowPaused = false;
     updateSlideshowActionUi();
-    armSlideshowAdvanceTimer();
     qApp->installEventFilter(this);
     // Ensure free mouse moves reach the app filter during the show.
     setMouseTracking(true);
@@ -1831,9 +1830,9 @@ void MainWindow::startSlideshow()
     if (m_imageView) {
         m_imageView->setSlideshowMotionPaused(false);
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-        // Frame the current (already loaded) slide: zoom mode when motion is
-        // off, cover + camera when motion is on. maybeStart alone skipped
-        // zoom mode and left slide 0 on ordinary Image-mode fit.
+        // Frame + start dwell motion BEFORE the pure clock can open the first
+        // transition (arm → updateSlideshowFromClock). Otherwise beginLive has
+        // no from-image pixels and declines.
         m_imageView->reapplySlideshowFraming();
         if (m_session.paths().size() > 1) {
             int n = (m_currentIndex + 1) % m_session.paths().size();
@@ -1845,6 +1844,8 @@ void MainWindow::startSlideshow()
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }
+    // Clock last — may immediately start a transition when pureMs==0.
+    armSlideshowAdvanceTimer();
 }
 
 void MainWindow::pauseSlideshow()

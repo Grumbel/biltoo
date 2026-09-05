@@ -177,8 +177,12 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         painter.fillRect(vr, slideshowPadColor());
     };
 
+    // Dwell cover while motion is on and we are not compositing two live frames.
+    // IMPORTANT: also paint while m_liveTransitionAwaitingLoad — beginLive sets
+    // that flag before the decode finishes; skipping dwell here flashed the
+    // pad/background between every continuous (interval==transition) pair.
     if (m_slideshowMotionActive && !m_liveTransitionActive && !m_liveTransitionHold
-        && !m_liveTransitionAwaitingLoad && !m_dwellSourceImage.isNull()) {
+        && !m_dwellSourceImage.isNull()) {
         const QRect vr = viewport()->rect();
         fillPad(vr);
         paintMotionCover(&painter, m_dwellSourceImage, m_dwellMotionT,
@@ -186,9 +190,10 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     }
 
     // Live transition: two moving frames, opacity blend.
+    // Only when the crossfade is actually running or held — not during the
+    // decode gap (awaitingLoad alone), which is covered by the dwell branch.
     if ((m_liveTransitionActive || m_liveTransitionHold)
-        && (m_liveTransitionProgress < 1.0 || m_liveTransitionHold
-            || m_liveTransitionAwaitingLoad)) {
+        && (m_liveTransitionProgress < 1.0 || m_liveTransitionHold)) {
         const QRect vr = viewport()->rect();
         const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {
