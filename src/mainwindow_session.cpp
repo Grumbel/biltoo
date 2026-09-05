@@ -1575,7 +1575,14 @@ void MainWindow::setSlideshowIntervalMs(int ms)
         }
     }
     if (isSlideshowSession() && !m_slideshowPaused) {
-        // Restart dwell so the HUD progress line matches the new interval.
+        // Drop any in-flight fade before re-arming. Leaving busy=true while
+        // transitionCycle is reset made the pure clock wait forever and
+        // reapplySlideshowFraming restarted dwell under a live overlay.
+        if (m_imageView) {
+            m_imageView->cancelSlideshowTransition();
+        }
+        m_slideshowPendingToIndex = -1;
+        m_slideshowTransitionCycle = -1;
         armSlideshowAdvanceTimer();
         if (m_imageView) {
             m_imageView->reapplySlideshowFraming();

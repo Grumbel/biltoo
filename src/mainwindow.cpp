@@ -827,7 +827,13 @@ void MainWindow::showSlideshowSettings()
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
         m_imageView->setSlideshowZoom(
             static_cast<ImageView::SlideshowZoom>(qBound(0, dlg.zoomIndex(), 2)));
-        if (m_slideshowClockRunning) {
+        // Interval path already cancelled + re-armed. Other live settings still
+        // need a clean slate so the pure clock is not blocked on a stale busy.
+        if (m_slideshowClockRunning && !m_slideshowPaused) {
+            m_imageView->cancelSlideshowTransition();
+            m_slideshowPendingToIndex = -1;
+            m_slideshowTransitionCycle = -1;
+            armSlideshowAdvanceTimer();
             m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
             m_imageView->reapplySlideshowFraming();
         }

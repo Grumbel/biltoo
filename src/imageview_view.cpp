@@ -837,6 +837,10 @@ void ImageView::reapplySlideshowFraming()
     if (!item || item->boundingRect().isEmpty()) {
         return;
     }
+    // Never restart dwell under an in-flight live fade (underlay flash / stuck busy).
+    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
+        return;
+    }
     if (m_slideshowMotion != SlideshowMotion::Off) {
         // Restart dwell Ken Burns from the zoom base + current interval.
         int duration = m_slideshowProgressIntervalMs;

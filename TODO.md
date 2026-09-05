@@ -4445,3 +4445,20 @@ Interval and transition duration both use 0.5 s single-step, 1 decimal.
 - [x] No mid-fade resolution swap
 - [x] Matching spin steps
 - [x] Next **247**
+
+## Plan / work (2026-09-05) — bundle `biltoo-247-slideshow-speed-rearm`
+
+### Speed change stopped advancing
+setSlideshowIntervalMs re-armed the pure clock without cancelling the in-flight
+live transition. busy stayed true while transitionCycle was cleared; finished
+had pending=-1. reapplySlideshowFraming also restarted dwell under the live
+overlay (underlay visible).
+
+### Fix
+- cancelSlideshowTransition before arm on interval change
+- settings apply path cancels + re-arms as well
+- reapplySlideshowFraming no-ops while live busy
+
+### Done criteria
+- [x] Changing interval keeps advancing
+- [x] Next **248**
