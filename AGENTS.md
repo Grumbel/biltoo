@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-225-slideshow-nav-bias-reset**
-(Per-path Ken Burns bias reset after manual next/prev).
-Next bundle number: **226**.
+Latest agent handoff: **TODO.md → biltoo-226-slideshow-interval-eq-transition**
+(Single-shot advance timer; no race when interval==transition).
+Next bundle number: **227**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

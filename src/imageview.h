@@ -510,6 +510,8 @@ public:
      */
     void prepareSlideshowTransition();
     void cancelSlideshowTransition();
+    /** True while a live or snapshot transition still owns the advance cycle. */
+    bool isSlideshowTransitionBusy() const;
 
     /** Image motion (Ken Burns / pan-scan) during a slideshow dwell. */
     enum class SlideshowMotion {
@@ -708,6 +710,8 @@ signals:
     void fullscreenToggleRequested();
     /** Black exit veil finished — host should advance the slideshow. */
     void slideshowLiveTransitionFinished();
+    /** Host may restart the advance timer (snapshot end / fade-black complete). */
+    void slideshowDwellResumeRequested();
     /** Crop mode toggled on/off (toolbar checkable state). */
     void cropModeChanged(bool active);
     /** Session crop committed; @p image is the new displayed pixels for @p path. */

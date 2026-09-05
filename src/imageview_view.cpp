@@ -522,6 +522,12 @@ void ImageView::prepareSlideshowTransition()
     m_slideshowTransitionActive = false;
 }
 
+bool ImageView::isSlideshowTransitionBusy() const
+{
+    return m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad
+        || m_slideshowTransitionActive || m_slideshowTransitionPending;
+}
+
 void ImageView::cancelSlideshowTransition()
 {
     m_slideshowTransitionPending = false;
@@ -614,6 +620,8 @@ void ImageView::releaseLiveTransitionHold()
     m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionNextPath.clear();
     m_toLayerWallMs = -1.0;
+    // Host stopped the advance timer for the transition; resume pure dwell now.
+    emit slideshowDwellResumeRequested();
     if (m_slideshowMotionActive && m_motionDurationMs > 0) {
         const qreal elapsed = qreal(m_motionClock.elapsed());
         m_motionElapsedOffsetMs = qint64(handoffProgress * qreal(m_motionDurationMs) - elapsed);
@@ -635,6 +643,8 @@ void ImageView::startSlideshowTransitionAnimation()
 {
     if (!m_slideshowTransitionPending || m_slideshowTransitionPixmap.isNull()) {
         m_slideshowTransitionPending = false;
+        // Host may be waiting to re-arm the advance timer after goNext.
+        emit slideshowDwellResumeRequested();
         return;
     }
     m_slideshowTransitionPending = false;
@@ -672,6 +682,9 @@ void ImageView::startSlideshowTransitionAnimation()
             if (viewport()) {
                 viewport()->update();
             }
+            // Interval may equal transition duration — host must not arm the
+            // advance timer until this finishes (avoids tick/transition races).
+            emit slideshowDwellResumeRequested();
         });
     }
     m_slideshowTransitionAnim->stop();

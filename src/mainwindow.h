@@ -164,6 +164,7 @@ private slots:
     void updateSlideshowActionUi();
     /** After user next/prev during an active show: keep dwell in sync. */
     void onSlideshowUserNavigated();
+    void armSlideshowAdvanceTimer();
     void setLayoutFreeForm();
     void setLayoutSideBySide();
     void setLayoutVertical();

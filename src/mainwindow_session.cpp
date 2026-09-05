@@ -1564,12 +1564,10 @@ void MainWindow::setSlideshowIntervalMs(int ms)
             m_imageView->setSlideshowTransitionDurationMs(cap);
         }
     }
-    if (m_slideshowTimer && m_slideshowTimer->isActive()) {
-        // Restart so the current dwell and the HUD progress line match the new
-        // interval instead of keeping a stale remaining time.
-        m_slideshowTimer->start(m_slideshowIntervalMs);
+    if (isSlideshowSession() && !m_slideshowPaused) {
+        // Restart dwell so the HUD progress line matches the new interval.
+        armSlideshowAdvanceTimer();
         if (m_imageView) {
-            m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
             m_imageView->reapplySlideshowFraming();
         }
     }
@@ -1763,17 +1761,8 @@ void MainWindow::onSlideshowUserNavigated()
         return;
     }
     // Playing: restart dwell for the new slide. Paused: keep frozen until resume.
-    if (!m_slideshowPaused && m_slideshowTimer) {
-        m_slideshowTimer->start(m_slideshowIntervalMs);
-        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-        // Full load will maybeStartSlideshowMotion; ensure progress stays on.
-        if (m_session.paths().size() > 1) {
-            int n = (m_currentIndex + 1) % m_session.paths().size();
-            if (n < 0) {
-                n = 0;
-            }
-            m_imageView->preloadSlideshowImage(m_session.paths().at(n));
-        }
+    if (!m_slideshowPaused) {
+        armSlideshowAdvanceTimer();
     } else if (m_slideshowPaused) {
         // Stay in slideshow mode (Fill/Fit camera) while the next image loads.
         m_imageView->setSlideshowProgress(true, 0);
@@ -1807,8 +1796,8 @@ void MainWindow::startSlideshow()
         showFullScreen();
     }
     m_slideshowPaused = false;
-    m_slideshowTimer->start(m_slideshowIntervalMs);
     updateSlideshowActionUi();
+    armSlideshowAdvanceTimer();
     qApp->installEventFilter(this);
     // Ensure free mouse moves reach the app filter during the show.
     setMouseTracking(true);
@@ -1865,13 +1854,12 @@ void MainWindow::resumeSlideshow()
         return;
     }
     m_slideshowPaused = false;
-    m_slideshowTimer->start(m_slideshowIntervalMs);
     if (m_imageView) {
-        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
         m_imageView->setSlideshowMotionPaused(false);
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }
+    armSlideshowAdvanceTimer();
     armSlideshowCursorHide();
     updateSlideshowActionUi();
 }

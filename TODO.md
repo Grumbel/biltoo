@@ -3959,3 +3959,21 @@ wrong camera path.
 ### Done criteria
 - [x] Clean first transition after ←/→
 - [x] Next **226**
+
+## Plan / work (2026-09-05) — bundle `biltoo-226-slideshow-interval-eq-transition`
+
+Interval == Transition glitched and could stick on one image.
+
+Cause: repeating advance timer kept firing while a transition of the same
+length was still running, so the next tick cancelled/re-entered the
+transition (race at the equality boundary).
+
+### Fix
+- Single-shot advance timer
+- `armSlideshowAdvanceTimer()` after each pure dwell completes
+- Stop during transition; resume via `slideshowDwellResumeRequested`
+  (snapshot end / live hold release) or when not busy after live finished
+
+### Done criteria
+- [x] Interval == Transition advances reliably
+- [x] Next **227**

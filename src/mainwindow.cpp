@@ -285,20 +285,26 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_slideshowTimer = new QTimer(this);
     m_slideshowTimer->setTimerType(Qt::PreciseTimer);
+    // Single-shot: each cycle is armed explicitly after dwell/transition so
+    // Interval == Transition cannot race a free-running tick against the
+    // in-flight transition (stuck slide / glitched first frame).
+    m_slideshowTimer->setSingleShot(true);
     connect(m_slideshowTimer, &QTimer::timeout, this, &MainWindow::onSlideshowTick);
     if (m_imageView) {
         connect(m_imageView, &ImageView::slideshowLiveTransitionFinished, this, [this]() {
             m_slideshowAdvancing = true;
             goNext();
             m_slideshowAdvancing = false;
-            if (m_imageView && m_slideshowTimer && m_slideshowTimer->isActive()) {
+            // Fade-black emits at mid-veil (still busy). Crossfade emits at end
+            // but hold is still set until load finishes — arm on dwell resume.
+            if (m_imageView && !m_imageView->isSlideshowTransitionBusy()) {
+                armSlideshowAdvanceTimer();
+            } else if (m_imageView) {
                 m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-                // Preload the following slide off-thread for the next transition.
-                if (m_session.paths().size() > 1) {
-                    int n = (m_currentIndex + 1) % m_session.paths().size();
-                    m_imageView->preloadSlideshowImage(m_session.paths().at(n));
-                }
             }
+        });
+        connect(m_imageView, &ImageView::slideshowDwellResumeRequested, this, [this]() {
+            armSlideshowAdvanceTimer();
         });
     }
 
@@ -831,8 +837,31 @@ void MainWindow::showSlideshowSettings()
     dlg.exec();
 }
 
+void MainWindow::armSlideshowAdvanceTimer()
+{
+    if (m_slideshowPaused || !m_slideshowTimer) {
+        return;
+    }
+    if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
+        return;
+    }
+    // Single-shot dwell until the next advance.
+    m_slideshowTimer->start(qMax(0, m_slideshowIntervalMs));
+    if (m_imageView) {
+        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        if (m_session.paths().size() > 1) {
+            int n = (m_currentIndex + 1) % m_session.paths().size();
+            if (n < 0) {
+                n = 0;
+            }
+            m_imageView->preloadSlideshowImage(m_session.paths().at(n));
+        }
+    }
+}
+
 void MainWindow::onSlideshowTick()
 {
+    // Timer is single-shot — stays stopped until armSlideshowAdvanceTimer().
     // With dwell camera motion, run a *live* transition (outgoing keeps panning)
     // and only then advance. Snapshot transitions freeze the outgoing frame.
     if (m_imageView && m_imageView->isImageMode()
@@ -844,6 +873,7 @@ void MainWindow::onSlideshowTick()
         }
         if (nextIdx >= 0 && nextIdx < m_session.paths().size()
             && m_imageView->beginLiveSlideshowTransition(m_session.paths().at(nextIdx))) {
+            // Resume after live transition ends (dwell resume / not-busy path).
             return;
         }
     }
@@ -853,13 +883,12 @@ void MainWindow::onSlideshowTick()
     }
     goNext();
     m_slideshowAdvancing = false;
-    if (m_imageView && m_slideshowTimer && m_slideshowTimer->isActive()) {
+    if (m_imageView && m_imageView->isSlideshowTransitionBusy()) {
+        // Snapshot anim running — arm when slideshowDwellResumeRequested fires.
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-        if (m_session.paths().size() > 1) {
-            int n = (m_currentIndex + 1) % m_session.paths().size();
-            m_imageView->preloadSlideshowImage(m_session.paths().at(n));
-        }
+        return;
     }
+    armSlideshowAdvanceTimer();
 }
 
 void MainWindow::toggleToolBar()
