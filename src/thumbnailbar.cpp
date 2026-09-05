@@ -550,7 +550,9 @@ void ThumbnailBar::setCropToSquare(bool on)
 
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
 {
-    QImage image = ImageLoader::loadThumbnail(path, maxSize);
+    // Aspect-preserving decode into the process cache first (slideshow live
+    // fades use this). The filmstrip cell may then square-crop a copy.
+    QImage image = ImageLoader::loadThumbnailCached(path, maxSize);
     if (image.isNull()) {
         return image;
     }

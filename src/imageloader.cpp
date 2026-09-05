@@ -16,6 +16,8 @@
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
+#include <QMutex>
 #include <QSize>
 #include <QImageReader>
 
@@ -587,6 +589,63 @@ QImage loadThumbnail(const QString &path, int maxEdge)
 #else
     return {};
 #endif
+}
+
+namespace {
+
+QMutex &thumbCacheMutex()
+{
+    static QMutex m;
+    return m;
+}
+
+QHash<QString, QImage> &thumbCacheMap()
+{
+    static QHash<QString, QImage> map;
+    return map;
+}
+
+constexpr int kThumbCacheMaxEntries = 256;
+
+} // namespace
+
+QImage cachedThumbnail(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    QMutexLocker lock(&thumbCacheMutex());
+    return thumbCacheMap().value(path);
+}
+
+void putCachedThumbnail(const QString &path, const QImage &image)
+{
+    if (path.isEmpty() || image.isNull()) {
+        return;
+    }
+    QMutexLocker lock(&thumbCacheMutex());
+    QHash<QString, QImage> &map = thumbCacheMap();
+    if (map.size() >= kThumbCacheMaxEntries && !map.contains(path)) {
+        // Simple eviction: drop an arbitrary entry (hash order).
+        auto it = map.begin();
+        if (it != map.end()) {
+            map.erase(it);
+        }
+    }
+    map.insert(path, image);
+}
+
+QImage loadThumbnailCached(const QString &path, int maxEdge)
+{
+    QImage hit = cachedThumbnail(path);
+    if (!hit.isNull()) {
+        return hit;
+    }
+    QImage loaded = loadThumbnail(path, maxEdge);
+    if (!loaded.isNull()) {
+        putCachedThumbnail(path, loaded);
+    }
+    return loaded;
 }
 
 QStringList imageSuffixes()

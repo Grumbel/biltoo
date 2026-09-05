@@ -1017,10 +1017,9 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         if (m_liveFromSourceImage.isNull() && !item->pixmap().isNull()) {
             m_liveFromSourceImage = item->pixmap().toImage();
         }
-        // Last resort: filmstrip-sized decode so we can still open a live fade.
+        // Process thumb cache (filled by filmstrip / prior preloads).
         if (m_liveFromSourceImage.isNull() && !item->path().isEmpty()) {
-            m_liveFromSourceImage =
-                ImageLoader::loadThumbnail(item->path(), 512);
+            m_liveFromSourceImage = ImageLoader::cachedThumbnail(item->path());
         }
     }
     if (m_slideshowMotionActive && m_motionDurationMs > 0) {
@@ -1057,22 +1056,31 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         return true;
     }
 
-    // No full preload: decode full off-thread. If that is still pending for a
-    // long time we do not open a thumbnail mid-fade — swapping thumb→full
-    // changes pixel density / PanScan travel and jumps the crop.
-    // Thumbnail is only used as a last-resort start if the full decode fails.
+    // Prefer the process thumb cache (aspect-preserving, filled by the
+    // filmstrip). Same pixels every time — no mid-fade upgrade, no disk hit.
+    {
+        const QImage cached = ImageLoader::cachedThumbnail(nextPath);
+        if (!cached.isNull()) {
+            m_handoffPath = nextPath;
+            m_handoffImage = cached;
+            startLiveTransitionWithImage(cached);
+            // Warm full decode for the post-hold canvas load.
+            preloadSlideshowImage(nextPath);
+            return true;
+        }
+    }
+
+    // Cache miss: decode a 512px aspect thumb off-thread, cache it, start fade.
+    // Do not open on full resolution here — keeps geometry stable and fast.
     const QString path = nextPath;
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path]() {
-        QImage full = ImageLoader::load(path);
-        if (full.isNull()) {
-            full = ImageLoader::loadThumbnail(path, 512);
-        }
+        const QImage thumb = ImageLoader::loadThumbnailCached(path, 512);
         ImageView *const target = guard.data();
         if (!target) {
             return;
         }
-        QMetaObject::invokeMethod(target, [guard, path, full]() {
+        QMetaObject::invokeMethod(target, [guard, path, thumb]() {
             ImageView *const view = guard.data();
             if (!view || view->m_liveTransitionNextPath != path) {
                 return;
@@ -1080,14 +1088,15 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
             if (!view->m_liveTransitionAwaitingLoad) {
                 return;
             }
-            if (full.isNull()) {
+            if (thumb.isNull()) {
                 view->m_liveTransitionAwaitingLoad = false;
                 emit view->slideshowLiveTransitionFinished();
                 return;
             }
             view->m_handoffPath = path;
-            view->m_handoffImage = full;
-            view->startLiveTransitionWithImage(full);
+            view->m_handoffImage = thumb;
+            view->startLiveTransitionWithImage(thumb);
+            view->preloadSlideshowImage(path);
         }, Qt::QueuedConnection);
     });
     return true;
@@ -1105,7 +1114,20 @@ void ImageView::preloadSlideshowImage(const QString &path)
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, loadPath, gen]() {
         const QImage img = ImageLoader::load(loadPath);
-        if (!guard || img.isNull()) {
+        if (img.isNull()) {
+            return;
+        }
+        // Seed aspect-preserving thumb cache from the full decode when empty.
+        if (ImageLoader::cachedThumbnail(loadPath).isNull()) {
+            const int maxEdge = 512;
+            QImage thumb = img;
+            if (thumb.width() > maxEdge || thumb.height() > maxEdge) {
+                thumb = thumb.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
+                                    Qt::SmoothTransformation);
+            }
+            ImageLoader::putCachedThumbnail(loadPath, thumb);
+        }
+        if (!guard) {
             return;
         }
         QMetaObject::invokeMethod(guard.data(), [guard, loadPath, img, gen]() {

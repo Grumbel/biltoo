@@ -47,8 +47,19 @@ QImage load(const QString &path);
 /**
  * Load a downscaled preview (longest edge ≈ maxEdge). Falls back to a full
  * load + smooth scale when the backend cannot shrink during decode.
+ * Aspect ratio is preserved (not square-cropped).
  */
 QImage loadThumbnail(const QString &path, int maxEdge);
+
+/**
+ * Process-wide aspect-preserving thumbnail cache (path → image).
+ * Filled by the filmstrip and slideshow preload so live transitions do not
+ * re-decode the same file every cycle.
+ */
+QImage cachedThumbnail(const QString &path);
+void putCachedThumbnail(const QString &path, const QImage &image);
+/** cachedThumbnail if present, otherwise loadThumbnail + put. */
+QImage loadThumbnailCached(const QString &path, int maxEdge);
 
 /** True if the path's suffix is a known image extension (Qt and/or vips). */
 bool isImageFile(const QString &path);

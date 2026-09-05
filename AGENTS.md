@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-247-slideshow-speed-rearm**
-(Cancel live transition before re-arm on speed/settings change).
-Next bundle number: **248**.
+Latest agent handoff: **TODO.md → biltoo-248-thumb-cache**
+(Process-wide aspect-preserving thumb cache for filmstrip + live fades).
+Next bundle number: **249**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

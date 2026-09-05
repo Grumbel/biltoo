@@ -4462,3 +4462,22 @@ overlay (underlay visible).
 ### Done criteria
 - [x] Changing interval keeps advancing
 - [x] Next **248**
+
+## Plan / work (2026-09-05) — bundle `biltoo-248-thumb-cache`
+
+### Problem
+Slideshow re-decoded thumbnails every transition (slow at high speed). Filmstrip
+square crops also caused aspect jumps when used as live frames.
+
+### Fix
+- Process-wide aspect-preserving cache: `ImageLoader::cachedThumbnail` /
+  `putCachedThumbnail` / `loadThumbnailCached` (max 256 entries)
+- Filmstrip `makeThumbnail` fills the cache before square-cropping the cell
+- Live fade: cache hit starts immediately (no disk); miss loads 512px once into
+  cache; full preload still warms the canvas post-hold
+- preloadSlideshowImage seeds the cache from full decode when empty
+
+### Done criteria
+- [x] No re-decode when filmstrip already warmed the path
+- [x] Aspect-preserving frames (no square-crop jump)
+- [x] Next **249**
