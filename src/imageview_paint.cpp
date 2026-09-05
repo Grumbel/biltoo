@@ -11,6 +11,7 @@
 #include <QPainterPath>
 #include <QPaintEvent>
 #include <QStyleOptionGraphicsItem>
+#include "biltoo_logging.h"
 
 void ImageView::drawEdgeAffordances(QPainter &painter)
 {
@@ -225,7 +226,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             .arg(int(m_liveTransitionMotionProgress * 20.0));
         if (fp != m_lastSlideshowPaintFp) {
             m_lastSlideshowPaintFp = fp;
-            qDebug().nospace()
+            qCDebug(lcSlideshow).nospace()
                 << "[slideshow-paint] mode=" << mode
                 << " t=" << QString::number(t, 'f', 3)
                 << " fromOp=" << QString::number(fromOp, 'f', 3)

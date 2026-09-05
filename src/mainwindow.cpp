@@ -7,6 +7,7 @@
 #include "imageitem.h"
 
 #include <QDebug>
+#include "biltoo_logging.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -969,7 +970,7 @@ void MainWindow::updateSlideshowFromClock()
             || tr == ImageView::SlideshowTransition::FadeBlack
             || tr == ImageView::SlideshowTransition::Slide) {
             if (m_slideshowTransitionCycle != cycle) {
-                qDebug().nospace()
+                qCDebug(lcSlideshow).nospace()
                     << "[slideshow] phase-fade cycle=" << cycle
                     << " phase=" << phaseMs
                     << " t=" << QString::number(t, 'f', 3)

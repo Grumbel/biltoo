@@ -37,6 +37,8 @@ add_executable(biltoo
   src/mainwindow_includes.h
   src/icons.cpp
   src/icons.h
+  src/biltoo_logging.cpp
+  src/biltoo_logging.h
   src/gallerylayout.cpp
   src/gallerylayout.h
   src/imageview.cpp

@@ -21,6 +21,7 @@
 #include <QRubberBand>
 #include <QDebug>
 #include <QtMath>
+#include "biltoo_logging.h"
 
 
 /** Linear motion progress in [0,1]. Caller must size duration so the slideshow
@@ -617,7 +618,7 @@ void ImageView::releaseLiveTransitionHold()
                     ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                                       &m_dwellAtlasVw, &m_dwellAtlasVh);
                     hideSlideshowUnderlay();
-                    qDebug().nospace()
+                    qCDebug(lcSlideshow).nospace()
                         << "[slideshow] dwell-upgrade "
                         << m_dwellSourceImage.width() << "x"
                         << m_dwellSourceImage.height()
@@ -691,7 +692,7 @@ void ImageView::releaseLiveTransitionHold()
         m_motionElapsedOffsetMs = 0;
         m_motionClock.start();
         m_slideshowMotionActive = true;
-        qDebug().nospace()
+        qCDebug(lcSlideshow).nospace()
             << "[slideshow] dwell-start "
             << m_dwellSourceImage.width() << "x" << m_dwellSourceImage.height()
             << " path=" << QFileInfo(nextPath).fileName();
@@ -1180,7 +1181,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
                 m_motionTimer->start();
             }
         }
-        qDebug().nospace()
+        qCDebug(lcSlideshow).nospace()
             << "[slideshow] phase-from "
             << QFileInfo(fromPath).fileName()
             << " " << m_ssFromImage.width() << "x" << m_ssFromImage.height()
@@ -1227,7 +1228,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         m_ssToMotionClock.start();
         m_ssToMotionClockRunning = true;
         m_ssToMotionT = 0.0;
-        qDebug().nospace()
+        qCDebug(lcSlideshow).nospace()
             << "[slideshow] phase-to "
             << QFileInfo(toPath).fileName()
             << " " << m_ssToImage.width() << "x" << m_ssToImage.height();
@@ -1282,7 +1283,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         || !isImageMode()
         || !viewport()
         || nextPath.isEmpty()) {
-        qDebug() << "[slideshow] beginLive declined: mode/duration/path";
+        qCDebug(lcSlideshow) << "[slideshow] beginLive declined: mode/duration/path";
         return false;
     }
 
@@ -1312,7 +1313,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     }
 
     if (m_liveFromSourceImage.isNull()) {
-        qDebug() << "[slideshow] beginLive declined: no from full pixels";
+        qCDebug(lcSlideshow) << "[slideshow] beginLive declined: no from full pixels";
         return false;
     }
 
@@ -1325,7 +1326,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
         m_preloadImage = QImage();
         m_handoffPath = nextPath;
         m_handoffImage = img;
-        qDebug().nospace()
+        qCDebug(lcSlideshow).nospace()
             << "[slideshow] beginLive preload-hit "
             << QFileInfo(nextPath).fileName()
             << " " << img.width() << "x" << img.height()
@@ -1368,7 +1369,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
                 img = img.scaled(fullSz, Qt::IgnoreAspectRatio,
                                  Qt::FastTransformation);
             }
-            qDebug().nospace()
+            qCDebug(lcSlideshow).nospace()
                 << "[slideshow] beginLive cache-hit "
                 << QFileInfo(nextPath).fileName()
                 << " cache=" << cached.width() << "x" << cached.height()
@@ -1392,14 +1393,14 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     // Preload already decoding this path — stay awaiting; preload-ready will
     // start the fade (avoid a second full disk load of the same file).
     if (m_preloadInFlightPath == nextPath) {
-        qDebug().nospace()
+        qCDebug(lcSlideshow).nospace()
             << "[slideshow] beginLive wait-preload "
             << QFileInfo(nextPath).fileName();
         return true;
     }
 
     // Kick preload and wait. preload-ready starts the fade when done.
-    qDebug().nospace()
+    qCDebug(lcSlideshow).nospace()
         << "[slideshow] beginLive request-preload "
         << QFileInfo(nextPath).fileName()
         << " from=" << m_liveFromSourceImage.width() << "x"
@@ -1447,7 +1448,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
     m_preloadInFlightPath = path;
     const QString loadPath = path;
     const QPointer<ImageView> guard(this);
-    qDebug().nospace()
+    qCDebug(lcSlideshow).nospace()
         << "[slideshow] preload-start " << QFileInfo(loadPath).fileName();
     QThreadPool::globalInstance()->start([guard, loadPath, gen]() {
         const QImage img = ImageLoader::load(loadPath);
@@ -1478,7 +1479,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
             view->m_preloadImage = img;
             view->m_preloadInFlightPath.clear();
             view->m_ssFullByPath.insert(loadPath, img);
-            qDebug().nospace()
+            qCDebug(lcSlideshow).nospace()
                 << "[slideshow] preload-ready " << QFileInfo(loadPath).fileName()
                 << " " << img.width() << "x" << img.height();
             view->rememberImageSize(loadPath, img.size());
@@ -1507,7 +1508,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
                                         &view->m_liveToAtlasScale,
                                         &view->m_liveToAtlasVw,
                                         &view->m_liveToAtlasVh);
-                qDebug().nospace()
+                qCDebug(lcSlideshow).nospace()
                     << "[slideshow] live-upgrade "
                     << QFileInfo(loadPath).fileName()
                     << " " << img.width() << "x" << img.height();
@@ -1531,7 +1532,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
                 view->m_preloadImage = QImage();
                 view->m_handoffPath = loadPath;
                 view->m_handoffImage = full;
-                qDebug().nospace()
+                qCDebug(lcSlideshow).nospace()
                     << "[slideshow] beginLive preload-hit "
                     << QFileInfo(loadPath).fileName()
                     << " " << full.width() << "x" << full.height();
@@ -2186,7 +2187,7 @@ void ImageView::tickSlideshowMotion()
                             m_motionClock.start();
                             m_slideshowMotionActive = true;
                         }
-                        qDebug().nospace()
+                        qCDebug(lcSlideshow).nospace()
                             << "[slideshow] dwell-start "
                             << m_dwellSourceImage.width() << "x"
                             << m_dwellSourceImage.height()

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow.h"
+#include "biltoo_logging.h"
 #include "metadatapanel.h"
 #include "imageloader.h"
 #include "version.h"
@@ -164,13 +165,15 @@ int main(int argc, char *argv[])
     QCommandLineOption debugOption(
         QStringList() << QStringLiteral("debug"),
         QCoreApplication::translate("main",
-            "Verbose diagnostics (e.g. libexiv2 metadata warnings with file path)"));
+            "Verbose diagnostics (slideshow traces, libexiv2 metadata warnings)"));
     parser.addOption(debugOption);
 
     parser.process(app);
 
-    // Quiet Exiv2 IFD noise by default; --debug shows warnings with file path.
-    configureMetadataLibraryLogging(parser.isSet(debugOption));
+    const bool debug = parser.isSet(debugOption);
+    // Quiet by default; --debug enables biltoo.slideshow qCDebug + Exiv2 warnings.
+    configureBiltooDebugLogging(debug);
+    configureMetadataLibraryLogging(debug);
 
     const QStringList files = parser.positionalArguments();
 

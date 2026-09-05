@@ -5151,3 +5151,20 @@ neither.
 - [x] Two windows do not ambiguous-clash on Space
 - [x] Q quits
 - [x] Next **283**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-283-slideshow-debug-flag`
+
+### Request
+Hide `[slideshow]` / `[slideshow-paint]` debug printouts behind `--debug`.
+
+### Fix
+- `biltoo_logging.{h,cpp}`: `lcSlideshow` category + `configureBiltooDebugLogging`
+- Default: `biltoo.slideshow.debug=false`
+- `--debug`: enable category + existing Exiv2 verbose
+- Convert slideshow `qDebug` sites to `qCDebug(lcSlideshow)`
+
+### Done criteria
+- [x] Quiet by default
+- [x] `biltoo --debug` shows slideshow traces
+- [x] Next **284**
