@@ -3608,3 +3608,23 @@ per session row on the GUI thread**.
 ### Done criteria
 - [x] No per-member archive read on GUI during gallery seed
 - [x] Next **206**
+
+## Plan / work (2026-09-05) — bundle `biltoo-206-about-feature-marks`
+
+About dialog “Optional features in this build” still uses plain
+“enabled” / “missing” text. Make the list easier to scan.
+
+### Change
+- Prefix each feature status with a Unicode mark:
+  - ✔ enabled (library linked at build time)
+  - ✘ missing (library not found / not linked)
+- Keep the existing four features and the note about runtime Qt
+  imageformat plugins.
+- No runtime “user disabled” state exists yet; only the two compile-time
+  states are shown. If a future preference can turn a linked feature off,
+  extend the helper then.
+
+### Done criteria
+- [x] About list uses ✔ / ✘ (or equivalent) for enabled / missing
+- [x] Still fully translated via `tr`
+- [x] Next **207**

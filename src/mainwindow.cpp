@@ -1047,8 +1047,9 @@ void MainWindow::about()
     box.setIconPixmap(QApplication::windowIcon().pixmap(64, 64));
     box.setText(tr("<h3>Biltoo %1</h3>").arg(QApplication::applicationVersion()));
 
+    // Compile-time optional libs only (no runtime user-disable yet).
     auto feat = [](bool on) {
-        return on ? QObject::tr("enabled") : QObject::tr("missing");
+        return on ? QObject::tr("✔ enabled") : QObject::tr("✘ missing");
     };
     const QString features = tr(
         "<p><b>Optional features in this build</b></p>"
