@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-218-intrinsic-vs-preview-size**
-(Intrinsic=native size; preview paint-only + size cache).
-Next bundle number: **219**.
+Latest agent handoff: **TODO.md → biltoo-219-image-preview-parallel-cache**
+(Parallel thumb/full + preview path cache).
+Next bundle number: **220**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

@@ -943,6 +943,8 @@ private:
      * property of the file contents; safe to key by path (not SessionImageId).
      */
     QHash<QString, QSize> m_imageSizeByPath;
+    /** Path → last provisional thumbnail (session cache for rapid next/prev). */
+    QHash<QString, QImage> m_previewByPath;
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */
     QVector<SessionImageId> m_sessionIdOrder;

@@ -79,6 +79,15 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
     // Layout size = native dimensions (cache / probe), never thumbnail pixels.
     const QSize sz = imageSizeForPath(path);
+    // Prefer an explicit preview argument; else a session-cached thumbnail for
+    // this path (revisit during rapid next/prev).
+    QImage pixels = preview;
+    if (pixels.isNull()) {
+        const auto it = m_previewByPath.constFind(path);
+        if (it != m_previewByPath.cend()) {
+            pixels = it.value();
+        }
+    }
 
     setUpdatesEnabled(false);
     clearLiveCanvas();
@@ -87,8 +96,8 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         setUpdatesEnabled(true);
         return;
     }
-    if (!preview.isNull()) {
-        item->setPreviewImage(preview);
+    if (!pixels.isNull()) {
+        item->setPreviewImage(pixels);
     }
     if (m_currentSessionId != kInvalidSessionImageId) {
         item->setSessionId(m_currentSessionId);
@@ -158,35 +167,53 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     }
 
     // Image mode: drop the previous frame immediately so rapid next/prev is not
-    // stuck on the old image until the background decode finishes.
+    // stuck on the old image until the background decode finishes. Reuses a
+    // cached preview for this path when available.
     if (role == LoadReplace && isImageMode()) {
         installImageModePendingTile(path);
     }
 
-    // QPointer: worker must not invokeMethod on a destroyed view (secondary
-    // windows with WA_DeleteOnClose, app exit). Generation only filters
+    // QPointer: worker must not touch a destroyed view. Generation filters
     // superseding once the slot runs on the GUI thread.
     const QPointer<ImageView> guard(this);
-    // Higher priority so Image-mode navigation is not starved by gallery decodes.
+    constexpr int kPreviewEdge = 512;
+
+    // Thumbnail and full decode in parallel. Sequential (thumb then full) meant
+    // Image mode stayed on the loading placeholder until *both* finished when
+    // loadThumbnail was slow or as costly as a full decode.
     QThreadPool::globalInstance()->start([guard, path, role, gen]() {
-        constexpr int kPreviewEdge = 512;
         const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
-        if (guard && !preview.isNull()) {
-            QMetaObject::invokeMethod(guard, "onImagePreviewLoaded", Qt::QueuedConnection,
-                                      Q_ARG(QString, path),
-                                      Q_ARG(QImage, preview),
-                                      Q_ARG(quint64, gen),
-                                      Q_ARG(int, static_cast<int>(role)));
+        if (!guard || preview.isNull()) {
+            return;
         }
+        ImageView *view = guard.data();
+        if (!view) {
+            return;
+        }
+        // Functor invoke avoids string/slot lookup and Q_ARG metatype issues.
+        QMetaObject::invokeMethod(view, [guard, path, preview, gen, role]() {
+            if (!guard) {
+                return;
+            }
+            guard->onImagePreviewLoaded(path, preview, gen, static_cast<int>(role));
+        }, Qt::QueuedConnection);
+    }, 2);
+
+    QThreadPool::globalInstance()->start([guard, path, role, gen]() {
         const QImage image = ImageLoader::load(path);
         if (!guard) {
             return;
         }
-        QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,
-                                  Q_ARG(QString, path),
-                                  Q_ARG(QImage, image),
-                                  Q_ARG(quint64, gen),
-                                  Q_ARG(int, static_cast<int>(role)));
+        ImageView *view = guard.data();
+        if (!view) {
+            return;
+        }
+        QMetaObject::invokeMethod(view, [guard, path, image, gen, role]() {
+            if (!guard) {
+                return;
+            }
+            guard->onImageLoaded(path, image, gen, static_cast<int>(role));
+        }, Qt::QueuedConnection);
     }, 1);
 }
 
@@ -216,25 +243,34 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
-        // Provisional low-res first so tiles are not blank while full decode lags.
         constexpr int kPreviewEdge = 384;
         const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
         if (guard && !preview.isNull()) {
-            QMetaObject::invokeMethod(guard, "onImagePreviewLoaded", Qt::QueuedConnection,
-                                      Q_ARG(QString, path),
-                                      Q_ARG(QImage, preview),
-                                      Q_ARG(quint64, gen),
-                                      Q_ARG(int, static_cast<int>(LoadAdd)));
+            ImageView *view = guard.data();
+            if (view) {
+                QMetaObject::invokeMethod(view, [guard, path, preview, gen]() {
+                    if (!guard) {
+                        return;
+                    }
+                    guard->onImagePreviewLoaded(path, preview, gen,
+                                                static_cast<int>(LoadAdd));
+                }, Qt::QueuedConnection);
+            }
         }
         const QImage image = ImageLoader::load(path);
         if (!guard) {
             return;
         }
-        QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,
-                                  Q_ARG(QString, path),
-                                  Q_ARG(QImage, image),
-                                  Q_ARG(quint64, gen),
-                                  Q_ARG(int, static_cast<int>(LoadAdd)));
+        ImageView *view = guard.data();
+        if (!view) {
+            return;
+        }
+        QMetaObject::invokeMethod(view, [guard, path, image, gen]() {
+            if (!guard) {
+                return;
+            }
+            guard->onImageLoaded(path, image, gen, static_cast<int>(LoadAdd));
+        }, Qt::QueuedConnection);
     });
 }
 
@@ -244,6 +280,8 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
     if (image.isNull()) {
         return;
     }
+    // Session cache for rapid revisit (path is the decode source; size is small).
+    m_previewByPath.insert(path, image);
     // Replace navigations: drop superseded previews.
     if (role == LoadReplace && generation != m_loadGeneration.load()) {
         return;

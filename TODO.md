@@ -3848,3 +3848,20 @@ used the wrong absolute size.
 - [x] Gallery tile size stays native while showing preview
 - [x] Image-mode pending uses probe/cache size, not thumbnail size
 - [x] Next **219**
+
+## Plan / work (2026-09-05) — bundle `biltoo-219-image-preview-parallel-cache`
+
+Image mode stayed on the loading “⋯” tile: thumbnail and full decode ran
+**sequentially** in one pool job, so the provisional frame only appeared after
+both finished (or never if string invoke/Q_ARG was flaky).
+
+### Fix
+- Parallel pool jobs: thumbnail (priority 2) and full decode (priority 1)
+- Functor `QMetaObject::invokeMethod` (no string slot / Q_ARG)
+- `m_previewByPath` session cache; install pending tile reuses it immediately
+- Clear cache on session wipe
+
+### Done criteria
+- [x] Image next/prev can show thumbnail before full decode
+- [x] Revisit uses cached preview without waiting
+- [x] Next **220**
