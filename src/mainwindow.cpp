@@ -990,10 +990,11 @@ void MainWindow::updateSlideshowFromClock()
         return;
     }
 
-    // Re-anchor so this moment is the *start* of the transition window
-    // (phase == pureMs). Load/hold latency after the previous fade must not
-    // leave us deep in the zone — that skipped every other cycle.
-    if (phaseMs != pureMs) {
+    // Re-anchor only when we entered the zone *late* (hold/load latency).
+    // Do NOT reanchor on every beginLive retry: phaseMs is then pureMs+ε and
+    // resetting it every tick pinned the HUD at 0:00 forever.
+    constexpr int kReanchorSlackMs = 48;
+    if (phaseMs > pureMs + kReanchorSlackMs) {
         qDebug().nospace()
             << "[slideshow] reanchor cycle=" << cycle
             << " wasPhase=" << phaseMs
@@ -1002,6 +1003,9 @@ void MainWindow::updateSlideshowFromClock()
         m_slideshowClock.restart();
         elapsed = m_slideshowPausedAccumMs;
         phaseMs = pureMs;
+        if (m_imageView) {
+            m_imageView->setSlideshowTimeline(phaseMs, intervalMs);
+        }
     }
 
     const QString toPath = m_session.paths().at(toIdx);

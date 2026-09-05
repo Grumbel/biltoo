@@ -4327,3 +4327,21 @@ and “progress takes forever” (HUD used full-playlist elapsed).
 - [x] HUD current/remaining match the current slide after nav
 - [x] No align-from leap after prev/next
 - [x] Next **240**
+
+## Plan / work (2026-09-05) — bundle `biltoo-240-slideshow-hud-unstick`
+
+### HUD stuck at 0:00 — verified root causes
+1. **Reanchor every beginLive retry**: on decline we returned without setting
+   `transitionCycle`, next tick had phase≈16 ≠ pureMs=0 → reanchor to 0 again
+   → phase pinned at 0 forever while pixels were missing.
+2. **Second-resolution format**: with interval=1s, phase is always <1000ms so
+   `ms/1000` elapsed is always 0 → display `0:00 / 0:01` even when phase moves.
+
+### Fixes
+- Reanchor only when `phaseMs > pureMs + 48` (late entry), not on every ε.
+- Format with one decimal second when total < 10s (`0.3 / 1.0   −0.7`).
+
+### Done criteria
+- [x] HUD advances during a 1s interval
+- [x] beginLive retry does not pin phase at 0
+- [x] Next **241**

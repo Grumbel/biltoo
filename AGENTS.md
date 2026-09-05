@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-239-slideshow-nav-hud**
-(Single arm on nav; per-slide HUD; retry beginLive instead of snapshot jump).
-Next bundle number: **240**.
+Latest agent handoff: **TODO.md → biltoo-240-slideshow-hud-unstick**
+(Reanchor only when late; tenths on short HUD times — was stuck at 0:00).
+Next bundle number: **241**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
