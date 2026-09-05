@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-265-pure-model-no-pending**
-(Pure interval/transition model; pending tile no-op during show).
-Next bundle number: **266**.
+Latest agent handoff: **TODO.md → biltoo-266-pure-phase-drive**
+(Crossfade driven by pure phase every tick; no beginLive cancel path).
+Next bundle number: **267**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

@@ -932,78 +932,67 @@ void MainWindow::updateSlideshowFromClock()
         m_imageView->preloadSlideshowImage(m_session.paths().at(warmIdx));
     }
 
-    // In-flight transition: do not start another while the *same* cycle is
-    // still busy. If the pure clock has already advanced past that cycle
-    // (superfast / interval≈transition), abandon the stale overlay and catch
-    // up so we never skip indefinitely waiting for a finished signal.
-    if (m_imageView && m_imageView->isSlideshowTransitionBusy()) {
-        if (m_slideshowTransitionCycle >= 0 && cycle > m_slideshowTransitionCycle) {
-            m_imageView->cancelSlideshowTransition();
-            m_slideshowPendingToIndex = -1;
-            // fall through — start the transition that matches *this* cycle
-        } else {
-            return;
-        }
+    // Pure phase drive — no beginLive / busy / cancel for Crossfade.
+    // Every tick: set buffers + fadeT from wall arithmetic; blit does the rest.
+    if (m_imageView) {
+        m_imageView->setSlideshowProgress(true, intervalMs);
     }
 
-    // Single-image dwell: session index must match the clock's fromIdx.
-    if (phaseMs < pureMs) {
+    const QString fromPath = m_session.paths().at(fromIdx);
+    const QString toPath = m_session.paths().at(toIdx);
+
+    if (phaseMs < pureMs || transitionMs <= 0) {
+        if (m_imageView) {
+            m_imageView->setSlideshowPhase(fromPath, QString(), -1.0);
+        }
         if (m_currentIndex != fromIdx && !m_slideshowAdvancing) {
             m_slideshowAdvancing = true;
             setCurrentIndex(fromIdx);
             m_slideshowAdvancing = false;
-            m_slideshowPendingToIndex = -1;
         }
-        if (m_imageView) {
-            m_imageView->setSlideshowProgress(true, intervalMs);
+        m_slideshowPendingToIndex = -1;
+        m_slideshowTransitionCycle = -1;
+        return;
+    }
+
+    // Crossfade window: t from pure clock only.
+    const qreal t = qBound(0.0, qreal(phaseMs - pureMs) / qreal(transitionMs), 1.0);
+    if (m_imageView
+        && m_imageView->slideshowTransition() == ImageView::SlideshowTransition::Crossfade) {
+        if (m_slideshowTransitionCycle != cycle) {
+            qDebug().nospace()
+                << "[slideshow] phase-fade cycle=" << cycle
+                << " phase=" << phaseMs
+                << " t=" << QString::number(t, 'f', 3)
+                << " from=" << fromIdx
+                << " to=" << toIdx
+                << " path=" << QFileInfo(toPath).fileName();
+            m_slideshowTransitionCycle = cycle;
+            m_slideshowPendingToIndex = toIdx;
+        }
+        m_imageView->setSlideshowPhase(fromPath, toPath, t);
+        // Commit session index once the fade has finished (t==1).
+        if (t >= 1.0 - 1e-6 && m_currentIndex != toIdx && !m_slideshowAdvancing) {
+            m_slideshowAdvancing = true;
+            setCurrentIndex(toIdx);
+            m_slideshowAdvancing = false;
+            m_slideshowPendingToIndex = -1;
         }
         return;
     }
 
-    // Transition window for this cycle — at most once.
+    // Non-crossfade transitions: keep legacy once-per-cycle path.
     if (m_slideshowTransitionCycle == cycle) {
         return;
     }
-
-    // fromIdx must be the loaded canvas before a live fade can capture pixels.
     if (m_currentIndex != fromIdx) {
         if (!m_slideshowAdvancing) {
             m_slideshowAdvancing = true;
             setCurrentIndex(fromIdx);
             m_slideshowAdvancing = false;
         }
-        return; // next tick retries once pixels exist
+        return;
     }
-
-    const QString toPath = m_session.paths().at(toIdx);
-
-    qDebug().nospace()
-        << "[slideshow] start-transition cycle=" << cycle
-        << " phase=" << phaseMs
-        << " pureMs=" << pureMs
-        << " trMs=" << transitionMs
-        << " intervalMs=" << intervalMs
-        << " from=" << fromIdx
-        << " to=" << toIdx
-        << " path=" << QFileInfo(toPath).fileName();
-
-    // Live crossfade / fade-black when motion is on.
-    if (m_imageView && m_imageView->isImageMode()
-        && m_imageView->slideshowMotion() != ImageView::SlideshowMotion::Off) {
-        const auto trKind = m_imageView->slideshowTransition();
-        if (trKind == ImageView::SlideshowTransition::Crossfade
-            || trKind == ImageView::SlideshowTransition::FadeBlack) {
-            if (m_imageView->beginLiveSlideshowTransition(toPath)) {
-                m_slideshowTransitionCycle = cycle;
-                m_slideshowPendingToIndex = toIdx;
-                return;
-            }
-            qDebug() << "[slideshow] beginLive declined; retry next tick";
-            return;
-        }
-    }
-
-    // Snapshot path or transition off/slide: advance session index once.
     m_slideshowTransitionCycle = cycle;
     m_slideshowPendingToIndex = -1;
     m_slideshowAdvancing = true;

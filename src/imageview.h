@@ -569,6 +569,9 @@ public:
      * @return false if a normal snapshot transition should be used instead.
      */
     bool beginLiveSlideshowTransition(const QString &nextPath);
+    /** Pure-clock drive: fadeT<0 dwell on fromPath; else crossfade from→to at fadeT in [0,1]. */
+    void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
+    QImage slideshowPixelsForPath(const QString &path);
     /**
      * Drop any held live-transition overlay once the next slide is fitted.
      * Called from the LoadReplace path so the incoming frame is not cleared
@@ -1043,7 +1046,13 @@ private:
     QPixmap m_slideshowTransitionToPixmap; /**< To-frame (live blit / Slide) */
     QPixmap m_slideshowTransitionFromPixmap; /**< From-frame during dual-image fade */
     QPixmap m_dwellCoverPixmap; /**< Single-image Ken Burns blit during dwell */
-    QImage m_dwellSourceImage; /**< Source pixels for dwell blit */
+    QImage m_dwellSourceImage;
+    /** Pure-phase composite (driven every clock tick; no begin/cancel). */
+    QString m_ssFromPath;
+    QString m_ssToPath;
+    QImage m_ssFromImage;
+    QImage m_ssToImage;
+    qreal m_ssFadeT = -1.0; // <0 = dwell /**< Source pixels for dwell blit */
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;

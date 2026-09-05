@@ -191,24 +191,16 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             return path.isEmpty() ? QStringLiteral("-") : QFileInfo(path).fileName();
         };
         QString mode = QStringLiteral("underlay");
-        if (m_liveTransitionHold) {
-            mode = QStringLiteral("live-hold");
-        } else if (m_liveTransitionActive) {
-            mode = QStringLiteral("live-fade");
-        } else if (m_liveTransitionAwaitingLoad) {
-            mode = QStringLiteral("await-load");
-        } else if (!m_dwellSourceImage.isNull()) {
-            mode = QStringLiteral("dwell");
+        if (m_ssFadeT >= 0.0 && !m_ssToImage.isNull()) {
+            mode = QStringLiteral("phase-fade");
+        } else if (!m_ssFromImage.isNull() || !m_dwellSourceImage.isNull()) {
+            mode = QStringLiteral("phase-dwell");
         } else if (m_slideshowTransitionActive) {
             mode = QStringLiteral("snapshot");
         }
-        const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
-        const qreal fromOp = (m_liveTransitionActive || m_liveTransitionHold)
-            ? (m_liveTransitionHold ? 0.0 : (1.0 - t))
-            : -1.0;
-        const qreal toOp = (m_liveTransitionActive || m_liveTransitionHold)
-            ? (m_liveTransitionHold ? 1.0 : t)
-            : -1.0;
+        const qreal t = m_ssFadeT >= 0.0 ? m_ssFadeT : 0.0;
+        const qreal fromOp = m_ssFadeT >= 0.0 ? (1.0 - m_ssFadeT) : -1.0;
+        const qreal toOp = m_ssFadeT >= 0.0 ? m_ssFadeT : -1.0;
         const QString itemPath = targetItem() ? targetItem()->path() : QString();
         const QString itemSz = (targetItem() && !targetItem()->sourceImage().isNull())
             ? sz(targetItem()->sourceImage())
@@ -220,8 +212,8 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         // Fingerprint: mode + pixel sizes + coarse progress (catches camera snaps).
         const QString fp = QStringLiteral("%1|from=%2|to=%3|dwell=%4|item=%5|hold=%6|act=%7|await=%8|dT=%9|tT=%10")
             .arg(mode,
-                 sz(m_liveFromSourceImage),
-                 sz(m_liveTransitionSourceImage),
+                 sz(m_ssFromImage.isNull() ? m_liveFromSourceImage : m_ssFromImage),
+                 sz(m_ssToImage.isNull() ? m_liveTransitionSourceImage : m_ssToImage),
                  sz(m_dwellSourceImage),
                  itemSz)
             .arg(m_liveTransitionHold)
@@ -236,11 +228,11 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                 << " t=" << QString::number(t, 'f', 3)
                 << " fromOp=" << QString::number(fromOp, 'f', 3)
                 << " toOp=" << QString::number(toOp, 'f', 3)
-                << " from=" << sz(m_liveFromSourceImage)
-                << " to=" << sz(m_liveTransitionSourceImage)
+                << " from=" << sz(m_ssFromImage.isNull() ? m_liveFromSourceImage : m_ssFromImage)
+                << " to=" << sz(m_ssToImage.isNull() ? m_liveTransitionSourceImage : m_ssToImage)
                 << " dwell=" << sz(m_dwellSourceImage)
                 << " item=" << itemSz
-                << " next=" << base(m_liveTransitionNextPath)
+                << " next=" << base(m_ssToPath.isEmpty() ? m_liveTransitionNextPath : m_ssToPath)
                 << " itemPath=" << base(itemPath)
                 << " dwellT=" << QString::number(m_dwellMotionT, 'f', 3)
                 << " toT=" << QString::number(m_liveTransitionMotionProgress, 'f', 3)
@@ -248,22 +240,35 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         }
     }
 
-    // Dwell cover: one buffer, no underlay. Paint whenever the show is running
-    // and we are not in a live composite — even if motion was briefly cancelled
-    // mid-handoff (that gap was mode=underlay / underlayVisible=true in logs).
-    if (m_slideshowProgressActive && !m_liveTransitionActive && !m_liveTransitionHold
-        && !m_dwellSourceImage.isNull()) {
+    // Pure-phase composite: driven by setSlideshowPhase from the wall clock.
+    // No live-hold / beginLive / cancel path for Crossfade during the show.
+    if (m_slideshowProgressActive
+        && (!m_ssFromImage.isNull() || !m_dwellSourceImage.isNull())) {
         const QRect vr = viewport()->rect();
-        fillPad(vr);
-        paintMotionCover(&painter, m_dwellSourceImage, m_dwellMotionT,
-                         m_motionBiasA, m_motionBiasB, 0);
+        const QImage fromImg = !m_ssFromImage.isNull() ? m_ssFromImage : m_dwellSourceImage;
+        if (m_ssFadeT >= 0.0 && !m_ssToImage.isNull()) {
+            const qreal t = qBound(0.0, m_ssFadeT, 1.0);
+            fillPad(vr);
+            if (!fromImg.isNull()) {
+                painter.setOpacity(1.0 - t);
+                paintMotionCover(&painter, fromImg, m_dwellMotionT,
+                                 m_motionBiasA, m_motionBiasB, 0);
+            }
+            painter.setOpacity(t);
+            paintMotionCover(&painter, m_ssToImage, 0.0,
+                             m_motionBiasA, m_motionBiasB, qHash(m_ssToPath));
+            painter.setOpacity(1.0);
+        } else if (!fromImg.isNull()) {
+            fillPad(vr);
+            paintMotionCover(&painter, fromImg, m_dwellMotionT,
+                             m_motionBiasA, m_motionBiasB, 0);
+        }
     }
 
-    // Live transition: two moving frames, opacity blend.
-    // Only when the crossfade is actually running or held — not during the
-    // decode gap (awaitingLoad alone), which is covered by the dwell branch.
+    // Legacy live path (FadeBlack / Slide / non-phase). Prefer pure phase above.
     if ((m_liveTransitionActive || m_liveTransitionHold)
-        && (m_liveTransitionProgress < 1.0 || m_liveTransitionHold)) {
+        && (m_liveTransitionProgress < 1.0 || m_liveTransitionHold)
+        && m_ssFadeT < 0.0) {
         const QRect vr = viewport()->rect();
         const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {

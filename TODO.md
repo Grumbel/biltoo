@@ -4833,3 +4833,27 @@ during the show.
 - [x] Pure model written
 - [x] Pending tile cannot cancel motion mid-show
 - [x] Next **266**
+
+## Plan / work (2026-09-05) — bundle `biltoo-266-pure-phase-drive`
+
+### Change
+Crossfade is no longer beginLive/busy/cancel/hold/release.
+
+Every pure-clock tick:
+
+```
+if phase < pureMs:
+  setSlideshowPhase(fromPath, {}, -1)   // dwell
+else:
+  t = (phase-pure)/transition
+  setSlideshowPhase(fromPath, toPath, t) // crossfade
+  if t>=1: setCurrentIndex(toIdx)
+```
+
+Paint blits from `m_ssFromImage` / `m_ssToImage` with opacity from `m_ssFadeT`.
+Buffers from full/preload/cache (native-scaled). Ken Burns restarts when
+fromPath changes.
+
+### Done criteria
+- [x] No cancel of in-flight crossfade from the clock
+- [x] Next **267**

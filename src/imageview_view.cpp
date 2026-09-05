@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "imagecache.h"
+#include "imageloader.h"
 #include "imageloader.h"
 #include "imagecache.h"
 #include "archivepath.h"
@@ -454,6 +456,11 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_slideshowTimelineElapsedMs = 0;
         m_slideshowTimelineTotalMs = 0;
         m_lastSlideshowPaintFp.clear();
+        m_ssFromPath.clear();
+        m_ssToPath.clear();
+        m_ssFromImage = QImage();
+        m_ssToImage = QImage();
+        m_ssFadeT = -1.0;
     }
     viewport()->update();
 }
@@ -1040,6 +1047,121 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
     m_motionBiasValid = true;
     m_motionTravelDir = m_motionBiasB - m_motionBiasA;
     m_motionSign = (m_motionTravelDir.y() >= 0.0) ? 1.0 : -1.0;
+}
+
+
+QImage ImageView::slideshowPixelsForPath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return QImage();
+    }
+    if (ImageItem *item = targetItem()) {
+        if (item->path() == path && !item->sourceImage().isNull()) {
+            return item->sourceImage();
+        }
+    }
+    if (path == m_preloadPath && !m_preloadImage.isNull()) {
+        return m_preloadImage;
+    }
+    if (path == m_handoffPath && !m_handoffImage.isNull()) {
+        return m_handoffImage;
+    }
+    const QImage cached = ImageCache::get(path);
+    if (cached.isNull()) {
+        return QImage();
+    }
+    QSize fullSz;
+    const auto it = m_imageSizeByPath.constFind(path);
+    if (it != m_imageSizeByPath.cend() && it->isValid() && it->width() > 0) {
+        fullSz = *it;
+    } else {
+        fullSz = ImageLoader::probeSize(path);
+    }
+    if (fullSz.isValid() && fullSz.width() > 0
+        && (cached.width() != fullSz.width() || cached.height() != fullSz.height())) {
+        return cached.scaled(fullSz, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    }
+    return cached;
+}
+
+void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
+{
+    if (!m_slideshowProgressActive) {
+        return;
+    }
+    const bool fromChanged = (fromPath != m_ssFromPath);
+    const bool toChanged = (toPath != m_ssToPath);
+
+    if (fromChanged) {
+        m_ssFromPath = fromPath;
+        m_ssFromImage = slideshowPixelsForPath(fromPath);
+        m_dwellSourceImage = m_ssFromImage;
+        m_motionBiasValid = false;
+        if (!fromPath.isEmpty()) {
+            m_motionBiasPath = fromPath;
+            pickInterestingMotionBiases(qHash(fromPath), m_ssFromImage);
+        }
+        // New slide → Ken Burns path from 0.
+        if (m_slideshowMotion != SlideshowMotion::Off
+            && m_slideshowProgressIntervalMs >= 250
+            && !m_ssFromImage.isNull()) {
+            startSlideshowMotion(m_slideshowProgressIntervalMs, 0.0);
+            m_dwellSourceImage = m_ssFromImage;
+            m_dwellMotionT = 0.0;
+            m_motionElapsedOffsetMs = 0;
+            m_motionClock.start();
+            m_slideshowMotionActive = true;
+            ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                              &m_dwellAtlasVw, &m_dwellAtlasVh);
+        }
+        qDebug().nospace()
+            << "[slideshow] phase-from "
+            << QFileInfo(fromPath).fileName()
+            << " " << m_ssFromImage.width() << "x" << m_ssFromImage.height();
+    } else if (!fromPath.isEmpty()) {
+        // Upgrade soft → full if better pixels appeared.
+        const QImage better = slideshowPixelsForPath(fromPath);
+        if (!better.isNull()
+            && (m_ssFromImage.isNull()
+                || better.width() * better.height()
+                    > m_ssFromImage.width() * m_ssFromImage.height())) {
+            m_ssFromImage = better;
+            m_dwellSourceImage = better;
+            ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                              &m_dwellAtlasVw, &m_dwellAtlasVh);
+        }
+    }
+
+    if (toChanged) {
+        m_ssToPath = toPath;
+        m_ssToImage = slideshowPixelsForPath(toPath);
+        if (!toPath.isEmpty()) {
+            qDebug().nospace()
+                << "[slideshow] phase-to "
+                << QFileInfo(toPath).fileName()
+                << " " << m_ssToImage.width() << "x" << m_ssToImage.height();
+        }
+    } else if (!toPath.isEmpty()) {
+        const QImage better = slideshowPixelsForPath(toPath);
+        if (!better.isNull()
+            && (m_ssToImage.isNull()
+                || better.width() * better.height()
+                    > m_ssToImage.width() * m_ssToImage.height())) {
+            m_ssToImage = better;
+        }
+    }
+
+    m_ssFadeT = fadeT;
+    // Kill legacy live state — pure phase owns the composite now.
+    m_liveTransitionActive = false;
+    m_liveTransitionHold = false;
+    m_liveTransitionAwaitingLoad = false;
+    m_liveFromSourceImage = QImage();
+    m_liveTransitionSourceImage = QImage();
+    hideSlideshowUnderlay();
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
