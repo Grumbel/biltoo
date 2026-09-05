@@ -3540,3 +3540,15 @@ Stopping/pausing slideshow left the underlay on the last slideshow camera
 ### Done criteria
 - [x] Stop returns to normal Image fit
 - [x] Next **201**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-201-mimeapps-prepend-default`
+
+`g_app_info_set_as_default_for_type` writes a single desktop id and drops the
+rest of [Default Applications]. XDG allows an ordered list; we must prepend
+biltoo and keep other handlers. Clear must remove only biltoo (not
+`reset_type_associations`).
+
+### Done criteria
+- [x] Prepend on set, remove-only on clear
+- [x] Next **202**

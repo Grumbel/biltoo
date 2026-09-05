@@ -35,7 +35,8 @@ MimeStatus statusForType(const QString &mimeType);
 QVector<MimeStatus> statusForSupportedTypes();
 
 /**
- * Set biltoo as the default handler for @p mimeType.
+ * Move biltoo to the front of the ordered default-handler list for @p mimeType
+ * (XDG mimeapps.list [Default Applications]). Other handlers stay in the list.
  * Returns true on success; @p errorMessage receives a translated reason on failure.
  */
 bool setDefaultForType(const QString &mimeType, QString *errorMessage = nullptr);
@@ -44,9 +45,8 @@ bool setDefaultForType(const QString &mimeType, QString *errorMessage = nullptr)
 int setDefaultForTypes(const QStringList &mimeTypes, QStringList *errors = nullptr);
 
 /**
- * Clear user default association for @p mimeType when Biltoo is the default
- * (GIO reset_type_associations). No-op if another app is already default.
- * After a clear, the system default (or next recommended app) applies.
+ * Remove biltoo from the default-handler list for @p mimeType without wiping
+ * other apps' associations. The next entry (if any) becomes preferred.
  * Returns true on success; @p errorMessage receives a translated reason on failure.
  */
 bool clearDefaultForType(const QString &mimeType, QString *errorMessage = nullptr);

@@ -12,6 +12,8 @@
 
 #include <QCoreApplication>
 #include <QHash>
+#include <QVector>
+#include <QByteArrayList>
 
 namespace DefaultApps {
 
@@ -161,9 +163,173 @@ QVector<MimeStatus> statusForSupportedTypes()
     return out;
 }
 
+#ifdef BILTOO_HAVE_GIO
+/**
+ * XDG mimeapps.list: [Default Applications] values are an ordered list of
+ * desktop ids (semicolon-separated). GLib's g_app_info_set_as_default_for_type
+ * writes a *single* id and drops the rest. We prepend biltoo and keep others.
+ * Clear removes only biltoo from that list (no reset_type_associations wipe).
+ */
+static QString userMimeappsPath()
+{
+    const char *dir = g_get_user_config_dir();
+    if (!dir || !dir[0]) {
+        return {};
+    }
+    return QString::fromUtf8(dir) + QStringLiteral("/mimeapps.list");
+}
+
+static QStringList keyFileStringList(GKeyFile *kf, const char *group, const char *key)
+{
+    QStringList out;
+    gsize len = 0;
+    GError *err = nullptr;
+    gchar **list = g_key_file_get_string_list(kf, group, key, &len, &err);
+    if (err) {
+        g_error_free(err);
+        return out;
+    }
+    if (list) {
+        for (gsize i = 0; i < len; ++i) {
+            if (list[i] && list[i][0]) {
+                out.append(QString::fromUtf8(list[i]));
+            }
+        }
+        g_strfreev(list);
+    }
+    return out;
+}
+
+static void keyFileSetStringList(GKeyFile *kf, const char *group, const char *key,
+                                 const QStringList &ids)
+{
+    if (ids.isEmpty()) {
+        g_key_file_remove_key(kf, group, key, nullptr);
+        return;
+    }
+    QByteArrayList utf8;
+    utf8.reserve(ids.size());
+    for (const QString &id : ids) {
+        utf8.append(id.toUtf8());
+    }
+    QVector<const gchar *> ptrs;
+    ptrs.reserve(utf8.size());
+    for (const QByteArray &b : utf8) {
+        ptrs.append(b.constData());
+    }
+    g_key_file_set_string_list(kf, group, key, ptrs.constData(),
+                               static_cast<gsize>(ptrs.size()));
+}
+
+/** Prepend @p desktopId in Default Applications; ensure Added Associations. */
+static bool mimeappsPrependDefault(const QString &mimeType, const QString &desktopId,
+                                   QString *errorMessage)
+{
+    const QString path = userMimeappsPath();
+    if (path.isEmpty()) {
+        if (errorMessage) {
+            *errorMessage = QCoreApplication::translate(
+                "DefaultApps", "Could not resolve user config directory.");
+        }
+        return false;
+    }
+    const QByteArray pathUtf8 = path.toUtf8();
+    const QByteArray mimeUtf8 = mimeType.toUtf8();
+    const char *mimeKey = mimeUtf8.constData();
+
+    GKeyFile *kf = g_key_file_new();
+    // Missing file is fine (first association).
+    g_key_file_load_from_file(kf, pathUtf8.constData(),
+                              static_cast<GKeyFileFlags>(G_KEY_FILE_KEEP_COMMENTS
+                                                         | G_KEY_FILE_KEEP_TRANSLATIONS),
+                              nullptr);
+
+    QStringList defaults = keyFileStringList(kf, "Default Applications", mimeKey);
+    defaults.removeAll(desktopId);
+    defaults.prepend(desktopId);
+    keyFileSetStringList(kf, "Default Applications", mimeKey, defaults);
+
+    QStringList added = keyFileStringList(kf, "Added Associations", mimeKey);
+    if (!added.contains(desktopId)) {
+        added.prepend(desktopId);
+        keyFileSetStringList(kf, "Added Associations", mimeKey, added);
+    }
+
+    // Drop from Removed Associations if present (re-enable).
+    QStringList removed = keyFileStringList(kf, "Removed Associations", mimeKey);
+    if (removed.removeAll(desktopId) > 0) {
+        keyFileSetStringList(kf, "Removed Associations", mimeKey, removed);
+    }
+
+    GError *err = nullptr;
+    const gboolean ok = g_key_file_save_to_file(kf, pathUtf8.constData(), &err);
+    g_key_file_free(kf);
+    if (!ok) {
+        if (errorMessage) {
+            *errorMessage = err ? QString::fromUtf8(err->message)
+                                : QCoreApplication::translate(
+                                      "DefaultApps", "Failed to write mimeapps.list.");
+        }
+        if (err) {
+            g_error_free(err);
+        }
+        return false;
+    }
+    return true;
+}
+
+/** Remove @p desktopId from Default Applications (and Added Associations). */
+static bool mimeappsRemoveDefault(const QString &mimeType, const QString &desktopId,
+                                  QString *errorMessage)
+{
+    const QString path = userMimeappsPath();
+    if (path.isEmpty()) {
+        return true;
+    }
+    const QByteArray pathUtf8 = path.toUtf8();
+    const QByteArray mimeUtf8 = mimeType.toUtf8();
+    const char *mimeKey = mimeUtf8.constData();
+
+    GKeyFile *kf = g_key_file_new();
+    if (!g_key_file_load_from_file(kf, pathUtf8.constData(),
+                                   static_cast<GKeyFileFlags>(G_KEY_FILE_KEEP_COMMENTS
+                                                              | G_KEY_FILE_KEEP_TRANSLATIONS),
+                                   nullptr)) {
+        g_key_file_free(kf);
+        return true; // nothing to clear
+    }
+
+    QStringList defaults = keyFileStringList(kf, "Default Applications", mimeKey);
+    defaults.removeAll(desktopId);
+    keyFileSetStringList(kf, "Default Applications", mimeKey, defaults);
+
+    QStringList added = keyFileStringList(kf, "Added Associations", mimeKey);
+    if (added.removeAll(desktopId) > 0) {
+        keyFileSetStringList(kf, "Added Associations", mimeKey, added);
+    }
+
+    GError *err = nullptr;
+    const gboolean ok = g_key_file_save_to_file(kf, pathUtf8.constData(), &err);
+    g_key_file_free(kf);
+    if (!ok) {
+        if (errorMessage) {
+            *errorMessage = err ? QString::fromUtf8(err->message)
+                                : QCoreApplication::translate(
+                                      "DefaultApps", "Failed to write mimeapps.list.");
+        }
+        if (err) {
+            g_error_free(err);
+        }
+        return false;
+    }
+    return true;
+}
+#endif // BILTOO_HAVE_GIO
+
 bool setDefaultForType(const QString &mimeType, QString *errorMessage)
 {
 #ifdef BILTOO_HAVE_GIO
+    // Ensure the desktop file is visible to GIO (installed / local share).
     GDesktopAppInfo *desk = g_desktop_app_info_new(desktopFileId().toUtf8().constData());
     if (!desk) {
         if (errorMessage) {
@@ -174,27 +340,10 @@ bool setDefaultForType(const QString &mimeType, QString *errorMessage)
         }
         return false;
     }
-
-    GError *err = nullptr;
-    const gboolean ok = g_app_info_set_as_default_for_type(
-        G_APP_INFO(desk), mimeType.toUtf8().constData(), &err);
     g_object_unref(desk);
 
-    if (!ok) {
-        if (errorMessage) {
-            if (err) {
-                *errorMessage = QString::fromUtf8(err->message);
-            } else {
-                *errorMessage = QCoreApplication::translate(
-                    "DefaultApps", "Failed to set default application.");
-            }
-        }
-        if (err) {
-            g_error_free(err);
-        }
-        return false;
-    }
-    return true;
+    // Prepend to the ordered default list; do not replace other handlers.
+    return mimeappsPrependDefault(mimeType, desktopFileId(), errorMessage);
 #else
     Q_UNUSED(mimeType);
     if (errorMessage) {
@@ -223,17 +372,8 @@ int setDefaultForTypes(const QStringList &mimeTypes, QStringList *errors)
 bool clearDefaultForType(const QString &mimeType, QString *errorMessage)
 {
 #ifdef BILTOO_HAVE_GIO
-    // Only reset when Biltoo is the current default. Resetting while another
-    // app is default would wipe that user choice with no benefit to us.
-    // g_app_info_reset_type_associations removes all user overrides for the type;
-    // GIO has no API to demote a single app while keeping other overrides.
-    if (!statusForType(mimeType).isUs) {
-        Q_UNUSED(errorMessage);
-        return true;
-    }
-    g_app_info_reset_type_associations(mimeType.toUtf8().constData());
-    Q_UNUSED(errorMessage);
-    return true;
+    // Demote Biltoo only — keep other apps in the default list.
+    return mimeappsRemoveDefault(mimeType, desktopFileId(), errorMessage);
 #else
     Q_UNUSED(mimeType);
     if (errorMessage) {
