@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-275-icon-color-dpi**
-(Coloured icons by family; denser SVG raster ladder).
-Next bundle number: **276**.
+Latest agent handoff: **TODO.md → biltoo-276-crop-icon-amber**
+(Crop icon amber matches tool chrome).
+Next bundle number: **277**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

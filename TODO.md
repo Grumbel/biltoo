@@ -4999,3 +4999,17 @@ colour wheel. Raise default raster resolution so PNG conversion is not soft.
 - [x] Adjustments = full colour wheel
 - [x] Higher PNG raster sizes
 - [x] Next **276**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-276-crop-icon-amber`
+
+### Request
+Crop action icon should use yellow/amber like the live crop tool chrome.
+
+### Fix
+`transform-crop.svg`: strokes/fill aligned to crop frame amber
+`QColor(255, 190, 40)` / Apply `#f0af28` / highlight `#ffd246`.
+
+### Done criteria
+- [x] Crop icon matches tool amber family
+- [x] Next **277**
