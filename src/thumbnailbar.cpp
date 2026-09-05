@@ -31,6 +31,7 @@
 #include <QResizeEvent>
 #include <QStyle>
 #include <QThreadPool>
+#include <QScrollBar>
 #include <QUrl>
 #include <QVariant>
 #include <algorithm>
@@ -235,6 +236,14 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
 
     connect(this, &QListWidget::itemActivated, this, &ThumbnailBar::onItemActivated);
     connect(this, &QListWidget::currentRowChanged, this, &ThumbnailBar::onCurrentRowChanged);
+    if (horizontalScrollBar()) {
+        connect(horizontalScrollBar(), &QScrollBar::valueChanged, this,
+                &ThumbnailBar::scheduleVisibleThumbnailLoads);
+    }
+    if (verticalScrollBar()) {
+        connect(verticalScrollBar(), &QScrollBar::valueChanged, this,
+                &ThumbnailBar::scheduleVisibleThumbnailLoads);
+    }
 }
 
 ThumbnailBar::~ThumbnailBar()
@@ -431,6 +440,7 @@ void ThumbnailBar::setLabelsVisible(bool on)
 
 void ThumbnailBar::cancelPendingLoads()
 {
+    m_thumbLoadScheduled.clear();
     ++m_generation;
 }
 
@@ -671,11 +681,41 @@ void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)
 
 void ThumbnailBar::scheduleThumbnailLoads()
 {
+    m_thumbLoadScheduled.clear();
+    scheduleVisibleThumbnailLoads();
+}
+
+void ThumbnailBar::scheduleVisibleThumbnailLoads()
+{
+    if (m_files.isEmpty()) {
+        return;
+    }
     const quint64 gen = m_generation.load();
     const int decodeSize = thumbDecodePixels();
     m_decodedSize = decodeSize;
 
-    for (int i = 0; i < m_files.size(); ++i) {
+    const int n = m_files.size();
+    int focus = currentRow();
+    if (focus < 0) {
+        focus = 0;
+    }
+    // ~2 screens of thumbs each side; keeps archive member reads off the pool flood.
+    constexpr int kMinRadius = 32;
+    int radius = kMinRadius;
+    if (viewport()) {
+        const int cell = qMax(1, m_thumbSize + 8);
+        const int across = qMax(1, viewport()->width() / cell);
+        const int down = qMax(1, viewport()->height() / cell);
+        radius = qMax(kMinRadius, across * down * 2);
+    }
+    const int lo = qMax(0, focus - radius);
+    const int hi = qMin(n, focus + radius + 1);
+
+    for (int i = lo; i < hi; ++i) {
+        if (m_thumbLoadScheduled.contains(i)) {
+            continue;
+        }
+        m_thumbLoadScheduled.insert(i);
         const QString path = m_files.at(i);
         // Prefer per-session-image override (stable id). Path-level override is
         // legacy only for unbound rows — never paint a path crop onto a bound
@@ -784,6 +824,8 @@ void ThumbnailBar::setFiles(const QStringList &files)
 
     const QSize cell = m_delegate ? m_delegate->cellSize(font())
                                   : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight());
+    // Bulk insert: avoid per-item repaints (large archives can have thousands of rows).
+    setUpdatesEnabled(false);
     for (int i = 0; i < files.size(); ++i) {
         const QString &path = files.at(i);
         auto *item = new QListWidgetItem(this);
@@ -796,6 +838,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
         item->setSizeHint(cell);
         item->setIcon(QIcon::fromTheme(QStringLiteral("image-x-generic")));
     }
+    setUpdatesEnabled(true);
 
     if (m_multiSelect) {
         setSelectionMode(QAbstractItemView::MultiSelection);
@@ -886,6 +929,7 @@ void ThumbnailBar::onItemActivated(QListWidgetItem *item)
 
 void ThumbnailBar::onCurrentRowChanged(int row)
 {
+    scheduleVisibleThumbnailLoads();
     if (m_multiSelect) {
         return;
     }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "archivepath.h"
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
@@ -171,10 +172,16 @@ ImageView::~ImageView()
 
 QSize ImageView::probeImageSize(const QString &path) const
 {
+    // Archive member "probes" still open the container and read the member on
+    // the calling thread (ImageLoader::probeSize → ArchiveReader::readMember).
+    // Gallery virtualization calls this once per session row when opening a
+    // large zip — that froze the UI. Use a neutral placeholder; decode reflows.
+    if (ArchivePath::isArchiveRef(path)) {
+        return QSize(1024, 1024);
+    }
     // Header-only when possible (Qt, then VIPS); see ImageLoader::probeSize.
     QSize s = ImageLoader::probeSize(path);
     if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
-        // Last resort so pack has geometry until the first full decode reflows.
         s = QSize(1000, 1000);
     }
     return s;

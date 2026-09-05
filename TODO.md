@@ -3592,3 +3592,19 @@ UI freezes remained because:
 ### Done criteria
 - [x] Warnings addressed
 - [x] Next **205**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-205-zip-open-ui-freeze`
+
+Large zip open froze the UI because Gallery virtualization (≥80 items) called
+`probeImageSize` → `ImageLoader::probeSize` → `ArchiveReader::readMember` **once
+per session row on the GUI thread**.
+
+### Fix
+- `probeImageSize`: archive refs use fixed 1024² placeholder (decode reflows)
+- Filmstrip: `setUpdatesEnabled(false)` during bulk row create
+- Thumbnails: only schedule a viewport-sized window of jobs (scroll/current fills more)
+
+### Done criteria
+- [x] No per-member archive read on GUI during gallery seed
+- [x] Next **206**

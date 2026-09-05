@@ -168,6 +168,8 @@ private:
     void applyThumbMetrics();
     void applyOrientation();
     void scheduleThumbnailLoads();
+    /** Queue decode jobs for rows near the viewport / current index only. */
+    void scheduleVisibleThumbnailLoads();
     void requestRemoveSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
     /** Centre icons when the row/column is shorter than the viewport. */
@@ -180,6 +182,8 @@ private:
     int thumbDecodePixels() const;
 
     std::atomic<quint64> m_generation{0};
+    /** Row indices that already have a pool job (or finished) this generation. */
+    QSet<int> m_thumbLoadScheduled;
     bool m_multiSelect = false;
     int m_selectionAnchor = -1;
     bool m_centeringGuard = false;
