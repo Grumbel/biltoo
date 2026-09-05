@@ -4728,3 +4728,20 @@ timer that could be restarted; `maybeStartSlideshowMotion` could also call
 ### Done criteria
 - [x] No dwellT 0.75→0.01 after each fade
 - [x] Next **261**
+
+## Plan / work (2026-09-05) — bundle `biltoo-261-slideshow-invariants-clean`
+
+### Pushback
+Soft-handoff offset re-arms were stacking on a tangled motion path. Paint log
+still showed `mode=underlay underlayVisible=true item="-"` between fade and
+dwell, and `dwellT=1.000` frozen into the next fade.
+
+### Settled rules applied
+1. Underlay **never** visible while `m_slideshowProgressActive` (central
+   `setSlideshowUnderlayVisible`)
+2. Soft-handoff starts a **new** Ken Burns path at 0 for the new image
+3. To-layer starts at 0 for its own path; from keeps dwell wall through the fade
+
+### Done criteria
+- [x] No underlay flash in paint log during slideshow
+- [x] Next **262**

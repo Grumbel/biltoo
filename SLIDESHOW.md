@@ -4,6 +4,18 @@ Read this before changing live transitions, preload, handoff, motion, or the
 pure-clock scheduler. Most “glitches” in this area are regressions of the same
 mistakes.
 
+## Settled design (do not grow a second scheduler)
+
+| Concern | Owner |
+|---------|--------|
+| When / which slide | `MainWindow` pure wall clock only |
+| How pixels crossfade | `ImageView` live blit (opacity + two frames) |
+| Ken Burns per image | One path 0→1 over `interval+transition`; restart at 0 on each new slide |
+| Underlay QGraphicsItem | **Hidden** for the whole slideshow session |
+
+Defensive offset math, dual wall clocks, and “continue progress across images”
+are what produced the paint-log jumps. Prefer the table above over another patch.
+
 ## Architecture (do not invent a second scheduler)
 
 | Piece | Owns |
@@ -117,22 +129,18 @@ Only one ready slot exists. Warm the *next* path only after the current ready
 slot has been consumed into handoff/beginLive.
 
 
-### 14. Live from/to layers share one motion timeline
+### 14. One Ken Burns path per image
 
-Do **not** start the “to” layer at progress 0 while “from” is mid-path.
-`m_toLayerWallMs = wallMs` forced `toT=0` every fade → crossfade blended
-mismatched pans and soft-handoff snapped dwell backward (dwellT 0.74→0.25).
-
-Set `m_toLayerWallMs = 0` so both layers sample the same wall progress (each
-with its own biases). Handoff progress then continues the dwell camera.
+- **From** layer keeps the dwell wall clock through the fade.
+- **To** layer starts its path at 0 (`toLayerWallMs = wallMs`).
+- **Soft-handoff** starts a **new** path at 0 for the new slide (do not carry
+  mid-path progress across images — that freezes at dwellT=1.0 on the next fade).
 
 
-### 15. Soft-handoff must re-arm the motion clock at handoff progress
+### 15. Underlay is never visible while slideshow progress is active
 
-After a live fade, `dwellT` must continue from the fade’s end progress. Never
-leave a stale `offset`/`elapsed` pair and never let `maybeStartSlideshowMotion`
-call `startSlideshowMotion(duration, 0)` while motion is already active — paint
-logs showed `dwellT` 0.75 → 0.01 on every cycle.
+`setSlideshowUnderlayVisible(true)` is ignored during the show. Only dwell/live
+blits draw. Cancel/handoff must not flash `mode=underlay` with an empty item.
 
 ## Symptoms → usual cause
 

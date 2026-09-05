@@ -662,32 +662,19 @@ void ImageView::releaseLiveTransitionHold()
     m_toLayerWallMs = -1.0;
     // Host stopped the advance timer for the transition; resume pure dwell now.
     emit slideshowDwellResumeRequested();
-    // Re-arm the motion clock at handoffProgress. The old
-    //   offset = progress * duration - elapsed
-    // form was correct only while the same QElapsedTimer kept running; any
-    // cancel/restart left a stale pair and the next tick snapped dwellT
-    // 0.75 → 0.01 (every cycle in paint logs). Restart elapsed at 0 with
-    // offset = progress * duration so wallMs is exact.
+    // New slide → new Ken Burns path from 0. Carrying handoffProgress across
+    // images burned through the path and froze at dwellT=1.0 for the next fade
+    // (paint logs). Duration is interval+transition so the following pure+fade
+    // stay below 1.0 without a second clock.
     if (m_slideshowProgressActive
-        && m_slideshowMotion != SlideshowMotion::Off
-        && m_motionDurationMs > 0) {
-        const qreal p = qBound(0.0, handoffProgress, 1.0);
-        m_motionClock.start();
-        m_motionElapsedOffsetMs = qint64(p * qreal(m_motionDurationMs));
-        m_dwellMotionT = p;
-        qDebug().nospace()
-            << "[slideshow] soft-handoff dwellT=" << QString::number(p, 'f', 3)
-            << " durationMs=" << m_motionDurationMs;
-        m_dwellCoverPixmap = QPixmap();
-        m_slideshowMotionActive = true;
-        if (m_motionTimer && !m_motionTimer->isActive()) {
-            m_motionTimer->start();
-        }
-    } else if (m_slideshowProgressActive
-               && m_slideshowMotion != SlideshowMotion::Off) {
+        && m_slideshowMotion != SlideshowMotion::Off) {
         const int duration = m_slideshowProgressIntervalMs;
         if (duration >= 250) {
-            startSlideshowMotion(duration, handoffProgress);
+            qDebug().nospace()
+                << "[slideshow] soft-handoff new-path durationMs=" << duration
+                << " (was handoffProgress="
+                << QString::number(handoffProgress, 'f', 3) << ")";
+            startSlideshowMotion(duration, 0.0);
         }
     }
     if (viewport()) {
@@ -1400,6 +1387,13 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
 
 void ImageView::setSlideshowUnderlayVisible(bool visible)
 {
+    // Invariant: while a slideshow is in progress the underlay item is never
+    // shown. Only dwell/live blits draw the slide. Showing the underlay mid
+    // handoff (cancelSlideshowMotion → visible) was the mode=underlay flash
+    // in paint logs (item="-", underlayVisible=true).
+    if (m_slideshowProgressActive) {
+        visible = false;
+    }
     if (ImageItem *item = targetItem()) {
         item->setVisible(visible);
     }
@@ -1609,21 +1603,20 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         m_motionBiasValid = saveValid;
     }
 
-    // Shared motion timeline: both layers sample the same wall progress.
-    // Previously toLayerWallMs = wallMs forced toT=0 while from sat mid-path
-    // (~0.5–0.7), so every crossfade blended mismatched pans and soft-handoff
-    // snapped dwell backward to a small toT (visible jump every transition).
+    // From keeps the running dwell wall clock. To starts its own path at 0
+    // (toLayerWallMs = wallMs ⇒ toT starts at 0). Soft-handoff then starts a
+    // fresh path at 0 for the new slide — one progress domain per image.
     const qreal wallMs = (m_slideshowMotionActive && m_motionDurationMs > 0)
         ? qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
         : 0.0;
-    m_toLayerWallMs = 0.0;
+    m_toLayerWallMs = wallMs;
     m_liveFromMotionProgress0 = (m_motionDurationMs > 0)
         ? motionProgress01(wallMs, qreal(m_motionDurationMs))
         : 0.0;
 
     // Frames are drawn in paintEvent via atlas-backed paintMotionCover.
     m_dwellMotionT = m_liveFromMotionProgress0;
-    m_liveTransitionMotionProgress = m_liveFromMotionProgress0;
+    m_liveTransitionMotionProgress = 0.0;
     ensureMotionAtlas(m_liveFromSourceImage, &m_liveFromAtlas, &m_liveFromAtlasScale,
                       &m_liveFromAtlasVw, &m_liveFromAtlasVh);
     ensureMotionAtlas(m_liveTransitionSourceImage, &m_liveToAtlas, &m_liveToAtlasScale,
