@@ -4359,3 +4359,35 @@ the full session: total = n×interval, elapsed = base×interval + clock
 - [x] No decimal-second formatting
 - [x] Session-scale current / total / −remaining
 - [x] Next **242**
+
+## Plan / work (2026-09-05) — bundle `biltoo-242-slideshow-pure-scheduler`
+
+### Conceptual model (by design)
+```
+elapsed = pausedAccum + clock
+cycle   = elapsed / interval
+phase   = elapsed % interval
+fromIdx = (baseIndex + cycle) % n
+toIdx   = (fromIdx + 1) % n
+```
+
+- phase < pureMs  → dwell on fromIdx
+- phase ≥ pureMs  → start at most one transition fromIdx→toIdx for this cycle
+- busy            → wait (no cancel, no reanchor)
+- live-finished   → install session index only (does not schedule)
+
+### Removed hacks
+- reanchor (clock rewrite)
+- lag-recover cancel
+- pure-snap / align-from as special cases (same: set index to fromIdx)
+- debug spam
+- snapshot fallback when live declines for missing pixels (retry next tick)
+
+### Honest residual (not scheduling)
+ImageView still uses async decode + hold for *rendering* a transition. That is
+not the scheduler; the clock never branches on finished for *next* timing.
+
+### Done criteria
+- [x] Single pure derivation in updateSlideshowFromClock
+- [x] No reanchor / lag-cancel
+- [x] Next **243**

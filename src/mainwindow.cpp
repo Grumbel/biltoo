@@ -294,25 +294,15 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_slideshowTimer, &QTimer::timeout, this, &MainWindow::onSlideshowTick);
     if (m_imageView) {
         connect(m_imageView, &ImageView::slideshowLiveTransitionFinished, this, [this]() {
-            // Install the absolute target index recorded when the transition
-            // started. Never goNext() here: relative +1 desyncs after lag, and
-            // goNext also calls onSlideshowUserNavigated (clock reset).
+            // Commit the target index for this transition. Scheduling of the
+            // *next* transition stays with the pure clock only.
             const int to = m_slideshowPendingToIndex;
             m_slideshowPendingToIndex = -1;
-            qDebug().nospace()
-                << "[slideshow] live-finished pendingTo=" << to
-                << " current=" << m_currentIndex
-                << " busy=" << (m_imageView && m_imageView->isSlideshowTransitionBusy());
             m_slideshowAdvancing = true;
-            if (to >= 0 && to < m_session.paths().size()) {
-                if (m_currentIndex != to) {
-                    setCurrentIndex(to);
-                }
+            if (to >= 0 && to < m_session.paths().size() && m_currentIndex != to) {
+                setCurrentIndex(to);
             }
             m_slideshowAdvancing = false;
-            if (m_imageView) {
-                m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-            }
         });
         // Dwell-resume must not schedule — clock owns the schedule.
         connect(m_imageView, &ImageView::slideshowDwellResumeRequested, this, []() {});
@@ -849,8 +839,8 @@ void MainWindow::showSlideshowSettings()
 
 void MainWindow::armSlideshowAdvanceTimer()
 {
-    // (Re)start the pure time-based clock. Called from start / resume /
-    // interval change / manual nav. The repeating tick does the rest.
+    // Restart the pure clock at the current session index (start / resume /
+    // interval change / ←/→). The tick only *derives* state from elapsed.
     if (m_slideshowPaused || !m_slideshowTimer) {
         return;
     }
@@ -865,34 +855,36 @@ void MainWindow::armSlideshowAdvanceTimer()
     m_slideshowClock.start();
     m_slideshowClockRunning = true;
 
-    qDebug().nospace()
-        << "[slideshow] arm base=" << m_slideshowBaseIndex
-        << " current=" << m_currentIndex
-        << " intervalMs=" << m_slideshowIntervalMs
-        << " n=" << m_session.paths().size();
-
     if (m_imageView) {
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-        // Ensure dwell pixels exist before pureMs==0 opens a transition.
         m_imageView->reapplySlideshowFraming();
         if (m_session.paths().size() > 1) {
-            int n = (m_currentIndex + 1) % m_session.paths().size();
-            if (n < 0) {
-                n = 0;
+            int next = (m_currentIndex + 1) % m_session.paths().size();
+            if (next < 0) {
+                next = 0;
             }
-            m_imageView->preloadSlideshowImage(m_session.paths().at(n));
+            m_imageView->preloadSlideshowImage(m_session.paths().at(next));
         }
     }
 
     if (!m_slideshowTimer->isActive()) {
         m_slideshowTimer->start();
     }
-    // Apply phase immediately (handles pureMs==0 → start first transition now).
     updateSlideshowFromClock();
 }
 
 void MainWindow::updateSlideshowFromClock()
 {
+    // ------------------------------------------------------------------
+    // Pure scheduler: wall clock is the only authority for *when* and
+    // *which* pair (fromIdx → toIdx). ImageView only renders a transition
+    // when asked; its finished signal installs the session index but does
+    // not schedule the next step.
+    //
+    // elapsed → cycle → (fromIdx, toIdx, phase)
+    // phase < pureMs  → show fromIdx only
+    // phase ≥ pureMs  → one transition fromIdx→toIdx per cycle
+    // ------------------------------------------------------------------
     if (m_slideshowPaused || !m_slideshowClockRunning || !m_slideshowTimer) {
         return;
     }
@@ -909,57 +901,30 @@ void MainWindow::updateSlideshowFromClock()
     transitionMs = qBound(0, transitionMs, intervalMs);
     const int pureMs = intervalMs - transitionMs;
 
-    qint64 elapsed = m_slideshowPausedAccumMs + m_slideshowClock.elapsed();
-    qint64 cycle = elapsed / intervalMs;
-    int phaseMs = int(elapsed % intervalMs);
+    const qint64 elapsed = m_slideshowPausedAccumMs + m_slideshowClock.elapsed();
+    const qint64 cycle = elapsed / intervalMs;
+    const int phaseMs = int(elapsed % intervalMs);
+    const int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
+    const int toIdx = (fromIdx + 1) % n;
 
-    // Full-session timeline (video-player style): place in the n-image loop.
-    // ←/→ arm resets baseIndex + elapsed so current time jumps to that slide.
+    // HUD: session loop position (video-player style).
     if (m_imageView) {
         const qint64 totalMs = qint64(n) * qint64(intervalMs);
         const qint64 raw =
             qint64(m_slideshowBaseIndex) * qint64(intervalMs) + elapsed;
-        const qint64 loopElapsed = totalMs > 0 ? (raw % totalMs) : 0;
-        m_imageView->setSlideshowTimeline(loopElapsed, totalMs);
+        m_imageView->setSlideshowTimeline(totalMs > 0 ? (raw % totalMs) : 0, totalMs);
     }
 
-    int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
-    int toIdx = (fromIdx + 1) % n;
-    const bool busy = m_imageView && m_imageView->isSlideshowTransitionBusy();
-
-    // Wait out an in-flight transition/hold. Only hard-cancel if more than one
-    // full cycle behind (true stall), not on the normal boundary.
-    if (busy) {
-        if (m_slideshowTransitionCycle >= 0
-            && cycle > m_slideshowTransitionCycle + 1) {
-            qDebug().nospace()
-                << "[slideshow] lag-recover busy cycle=" << cycle
-                << " startedCycle=" << m_slideshowTransitionCycle
-                << " current=" << m_currentIndex
-                << " wantFrom=" << fromIdx
-                << " wantTo=" << toIdx;
-            if (m_imageView) {
-                m_imageView->cancelSlideshowTransition();
-            }
-            m_slideshowPendingToIndex = -1;
-            m_slideshowTransitionCycle = -1;
-        } else {
-            return;
-        }
+    // In-flight transition: do not start another. Clock keeps ticking; HUD
+    // above still advances. No cancel/reanchor — finish owns the hold.
+    if (m_imageView && m_imageView->isSlideshowTransitionBusy()) {
+        return;
     }
 
-    // --- pure single-image zone ---
+    // Single-image dwell: session index must match the clock's fromIdx.
     if (phaseMs < pureMs) {
         if (m_currentIndex != fromIdx && !m_slideshowAdvancing) {
-            qDebug().nospace()
-                << "[slideshow] pure-snap cycle=" << cycle
-                << " phase=" << phaseMs
-                << " current=" << m_currentIndex
-                << " -> from=" << fromIdx;
             m_slideshowAdvancing = true;
-            if (m_imageView) {
-                m_imageView->cancelSlideshowTransition();
-            }
             setCurrentIndex(fromIdx);
             m_slideshowAdvancing = false;
             m_slideshowPendingToIndex = -1;
@@ -971,83 +936,48 @@ void MainWindow::updateSlideshowFromClock()
         return;
     }
 
-    // --- transition zone ---
+    // Transition window for this cycle — at most once.
     if (m_slideshowTransitionCycle == cycle) {
         return;
     }
 
-    // Need the from-image on the canvas before beginLive (decoded pixels).
-    // Load on this tick; start the fade on a later tick.
+    // fromIdx must be the loaded canvas before a live fade can capture pixels.
     if (m_currentIndex != fromIdx) {
         if (!m_slideshowAdvancing) {
-            qDebug().nospace()
-                << "[slideshow] align-from cycle=" << cycle
-                << " current=" << m_currentIndex
-                << " -> from=" << fromIdx;
             m_slideshowAdvancing = true;
-            if (m_imageView) {
-                m_imageView->cancelSlideshowTransition();
-            }
             setCurrentIndex(fromIdx);
             m_slideshowAdvancing = false;
         }
-        return;
-    }
-
-    // Re-anchor only when we entered the zone *late* (hold/load latency).
-    // Do NOT reanchor on every beginLive retry: phaseMs is then pureMs+ε and
-    // resetting it every tick pinned the HUD at 0:00 forever.
-    constexpr int kReanchorSlackMs = 48;
-    if (phaseMs > pureMs + kReanchorSlackMs) {
-        qDebug().nospace()
-            << "[slideshow] reanchor cycle=" << cycle
-            << " wasPhase=" << phaseMs
-            << " pureMs=" << pureMs;
-        m_slideshowPausedAccumMs = cycle * qint64(intervalMs) + pureMs;
-        m_slideshowClock.restart();
-        elapsed = m_slideshowPausedAccumMs;
-        phaseMs = pureMs;
+        return; // next tick retries once pixels exist
     }
 
     const QString toPath = m_session.paths().at(toIdx);
-    qDebug().nospace()
-        << "[slideshow] start-transition cycle=" << cycle
-        << " phase=" << phaseMs
-        << " pureMs=" << pureMs
-        << " trMs=" << transitionMs
-        << " from=" << fromIdx
-        << " to=" << toIdx
-        << " path=" << QFileInfo(toPath).fileName()
-        << " motion=" << (m_imageView ? int(m_imageView->slideshowMotion()) : -1);
 
+    // Live crossfade / fade-black when motion is on.
     if (m_imageView && m_imageView->isImageMode()
         && m_imageView->slideshowMotion() != ImageView::SlideshowMotion::Off) {
         const auto trKind = m_imageView->slideshowTransition();
-        const bool liveCapable =
-            trKind == ImageView::SlideshowTransition::Crossfade
-            || trKind == ImageView::SlideshowTransition::FadeBlack;
-        if (liveCapable) {
-            // Mark cycle only after beginLive accepts — if pixels are not ready
-            // yet (just after ←/→), retry next tick instead of snapshot-jumping.
+        if (trKind == ImageView::SlideshowTransition::Crossfade
+            || trKind == ImageView::SlideshowTransition::FadeBlack) {
             if (m_imageView->beginLiveSlideshowTransition(toPath)) {
                 m_slideshowTransitionCycle = cycle;
                 m_slideshowPendingToIndex = toIdx;
                 return;
             }
-            qDebug() << "[slideshow] beginLive declined; wait for pixels / retry";
+            // No from-pixels yet (decode still in flight after ←/→): retry.
             return;
         }
     }
 
+    // Snapshot path or transition off/slide: advance session index once.
     m_slideshowTransitionCycle = cycle;
-    m_slideshowPendingToIndex = toIdx;
+    m_slideshowPendingToIndex = -1;
     m_slideshowAdvancing = true;
     if (m_imageView && m_imageView->isImageMode()) {
         m_imageView->prepareSlideshowTransition();
     }
     setCurrentIndex(toIdx);
     m_slideshowAdvancing = false;
-    m_slideshowPendingToIndex = -1;
 }
 
 void MainWindow::onSlideshowTick()

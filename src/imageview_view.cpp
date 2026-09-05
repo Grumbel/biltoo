@@ -1023,7 +1023,6 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     // images keep moving until (and during) the composite.
 
     if (m_liveFromSourceImage.isNull()) {
-        qDebug() << "[slideshow] beginLive declined: no from-image pixels";
         return false;
     }
 
