@@ -3942,3 +3942,20 @@ Root cause: `setCurrentIndex` → filmstrip `setCurrentRow` → `indexActivated`
 ### Done criteria
 - [x] Playing + Left/Right keeps the show
 - [x] Next **225**
+
+## Plan / work (2026-09-05) — bundle `biltoo-225-slideshow-nav-bias-reset`
+
+First auto-transition after manual next/prev was glitchy; later ones OK.
+
+Cause: Ken Burns A/B biases stayed valid for the *previous* path after
+LoadReplace, so the new dwell (and the next live crossfade) started with the
+wrong camera path.
+
+### Fix
+- `m_motionBiasPath` — biases are per image
+- User LoadReplace (no live hold): clear transition + bias path
+- `startSlideshowMotion`: if bias path ≠ item path, re-pick biases
+
+### Done criteria
+- [x] Clean first transition after ←/→
+- [x] Next **226**

@@ -1043,6 +1043,8 @@ private:
     QPointF m_motionBiasA{-1.0, -1.0};
     QPointF m_motionBiasB{1.0, 1.0};
     bool m_motionBiasValid = false;
+    /** Path for which m_motionBiasA/B were chosen; invalidated on manual next/prev. */
+    QString m_motionBiasPath;
     /** Last scene-space travel direction (end - start), for continuing legs. */
     QPointF m_motionTravelDir{0.0, 1.0};
     /** Fixed session pan sign (+1 / -1); never reverses mid-show. */

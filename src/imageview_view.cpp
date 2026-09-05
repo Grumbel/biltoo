@@ -446,6 +446,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     if (!active) {
         cancelSlideshowMotion();
         m_motionBiasValid = false;
+        m_motionBiasPath.clear();
         m_motionTravelDir = QPointF(0.0, 1.0);
         m_motionSign = 1.0;
     }
@@ -579,6 +580,9 @@ void ImageView::releaseLiveTransitionHold()
     m_motionBiasA = m_liveToBiasA;
     m_motionBiasB = m_liveToBiasB;
     m_motionBiasValid = true;
+    m_motionBiasPath = m_liveTransitionNextPath.isEmpty()
+        ? (targetItem() ? targetItem()->path() : QString())
+        : m_liveTransitionNextPath;
     if (!toSource.isNull()) {
         m_dwellSourceImage = toSource;
     } else if (ImageItem *item = targetItem()) {
@@ -1475,12 +1479,20 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     }
 
     const QString path = item->path();
-    // Prefer biases already installed (handoff from live to-path). Only pick
-    // a new path when starting a fresh dwell with no valid biases.
+    // Biases are per-image. Manual next/prev (and any LoadReplace) must not keep
+    // the previous slide's A/B — that made the first post-nav transition glitch.
+    // Live handoff installs to-path biases + path before calling here.
+    if (m_motionBiasValid && m_motionBiasPath != path
+        && !(m_liveTransitionHold || m_liveTransitionActive)) {
+        m_motionBiasValid = false;
+    }
     if (!m_motionBiasValid
         && !(m_liveTransitionHold || m_liveTransitionActive)) {
         const QImage src = item ? item->sourceImage() : QImage();
         pickInterestingMotionBiases(qHash(path), src);
+        m_motionBiasPath = path;
+    } else if (m_motionBiasValid && m_motionBiasPath.isEmpty()) {
+        m_motionBiasPath = path;
     }
     // Biases + slideshow zoom are read by renderMotionCoverPixmap.
 

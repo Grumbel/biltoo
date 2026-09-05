@@ -93,6 +93,15 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     // Wipe the underlay under an active dwell camera would leave motion pointing
     // at a destroyed item — drop motion first; full load restarts it.
     if (m_slideshowProgressActive) {
+        // User next/prev (no live hold): drop transition leftovers and per-image
+        // motion biases so the new dwell / next auto-transition starts clean.
+        // Mid live-advance keeps composite state; only cancel underlay motion.
+        if (!(m_liveTransitionActive || m_liveTransitionHold
+              || m_liveTransitionAwaitingLoad)) {
+            cancelSlideshowTransition();
+            m_motionBiasValid = false;
+            m_motionBiasPath.clear();
+        }
         cancelSlideshowMotion();
     }
     clearLiveCanvas();
