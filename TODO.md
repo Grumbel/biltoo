@@ -5127,3 +5127,27 @@ underlay even after `LoadReplace` loads the navigated file.
 ### Done criteria
 - [x] Paused ←/→ shows the new slide immediately
 - [x] Next **282**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-282-window-shortcuts-quit-q`
+
+### Symptom
+`QAction::event: Ambiguous shortcut overload: Space` (also Ctrl+Q). Keyboard
+often dead after opening a second window.
+
+### Cause
+`bindViewerShortcuts` forced `Qt::ApplicationShortcut` on every action so keys
+worked fullscreen. **New Window** creates a second `MainWindow`; both register
+Space / Ctrl+Q / … app-wide → Qt marks the sequences ambiguous and delivers
+neither.
+
+### Fix
+- Use `Qt::WindowShortcut` for bound actions and Esc/F/F11 QShortcuts (still
+  `addAction` on the window so fullscreen + image-view focus works)
+- Quit: plain **Q** and platform Quit (Ctrl+Q)
+- Open Directory: Ctrl+Shift+D (was Ctrl+Shift+O, same as Open Project)
+
+### Done criteria
+- [x] Two windows do not ambiguous-clash on Space
+- [x] Q quits
+- [x] Next **283**

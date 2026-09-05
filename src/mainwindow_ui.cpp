@@ -45,9 +45,9 @@ void MainWindow::createActions()
     connect(m_addAct, &QAction::triggered, this, &MainWindow::addFiles);
 
     m_openDirAct = new QAction(tr("Open &Directory..."), this);
-    m_openDirAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_O);
+    m_openDirAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_D);
     m_openDirAct->setIcon(themeIcon(QStringLiteral("folder-open"), QStyle::SP_DirOpenIcon));
-    m_openDirAct->setStatusTip(tr("Open all images in a directory"));
+    m_openDirAct->setStatusTip(tr("Open all images in a directory (Ctrl+Shift+D)"));
     connect(m_openDirAct, &QAction::triggered, this, &MainWindow::openDirectory);
 
     m_reloadAct = new QAction(tr("&Reload"), this);
@@ -116,10 +116,10 @@ void MainWindow::createActions()
     connect(m_fitPageGuideAct, &QAction::triggered, this, &MainWindow::fitPageGuideToContent);
 
     m_quitAct = new QAction(tr("&Quit"), this);
-    // Standard Quit only (Ctrl+Q / platform); bare Q was too easy to hit by accident.
-    m_quitAct->setShortcuts(QKeySequence::Quit);
+    // Fast in/out viewer: plain Q plus platform Quit (Ctrl+Q on X11).
+    m_quitAct->setShortcuts({QKeySequence(Qt::Key_Q), QKeySequence::Quit});
     m_quitAct->setIcon(themeIcon(QStringLiteral("application-exit"), QStyle::SP_DialogCloseButton));
-    m_quitAct->setStatusTip(tr("Quit Biltoo (Ctrl+Q; prompts if the Workspace has unsaved images)"));
+    m_quitAct->setStatusTip(tr("Quit Biltoo (Q or Ctrl+Q; prompts if the Workspace has unsaved images)"));
     // Only closeEvent confirms unsaved Workspace — calling confirm here and
     // then close() would show the dialog twice (Discard leaves dirty true).
     connect(m_quitAct, &QAction::triggered, this, &QWidget::close);
@@ -165,7 +165,7 @@ void MainWindow::createActions()
     });
 
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
-    // Keyboard F/F11 are QShortcut ApplicationShortcuts in MainWindow so leave
+    // Keyboard F/F11 are QShortcut WindowShortcuts in MainWindow so leave
     // fullscreen cannot get stuck when the checkable action and window state
     // briefly disagree. Menu/toolbar still use this action.
     m_fullscreenAct->setIcon(themeIcon(QStringLiteral("view-fullscreen"), QStyle::SP_TitleBarMaxButton));
@@ -257,7 +257,7 @@ void MainWindow::createActions()
 
     m_slideshowAct = new QAction(tr("Play &Slideshow"), this);
     m_slideshowAct->setShortcut(Qt::Key_Space);
-    m_slideshowAct->setShortcutContext(Qt::ApplicationShortcut);
+    m_slideshowAct->setShortcutContext(Qt::WindowShortcut);
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     m_slideshowAct->setCheckable(true);
     m_slideshowAct->setStatusTip(
@@ -271,14 +271,14 @@ void MainWindow::createActions()
 
     m_slideshowFasterAct = new QAction(tr("Slideshow &Faster"), this);
     m_slideshowFasterAct->setShortcut(Qt::Key_BracketRight);
-    m_slideshowFasterAct->setShortcutContext(Qt::ApplicationShortcut);
+    m_slideshowFasterAct->setShortcutContext(Qt::WindowShortcut);
     m_slideshowFasterAct->setStatusTip(
         tr("Shorten the slideshow interval (faster). Shortcut: ]"));
     connect(m_slideshowFasterAct, &QAction::triggered, this, &MainWindow::slideshowFaster);
 
     m_slideshowSlowerAct = new QAction(tr("Slideshow S&lower"), this);
     m_slideshowSlowerAct->setShortcut(Qt::Key_BracketLeft);
-    m_slideshowSlowerAct->setShortcutContext(Qt::ApplicationShortcut);
+    m_slideshowSlowerAct->setShortcutContext(Qt::WindowShortcut);
     m_slideshowSlowerAct->setStatusTip(
         tr("Lengthen the slideshow interval (slower). Shortcut: ["));
     connect(m_slideshowSlowerAct, &QAction::triggered, this, &MainWindow::slideshowSlower);
@@ -546,7 +546,7 @@ void MainWindow::createActions()
 
     m_toggleToolBarAct = new QAction(tr("Show &Toolbar"), this);
     m_toggleToolBarAct->setShortcut(Qt::CTRL | Qt::Key_T);
-    m_toggleToolBarAct->setShortcutContext(Qt::ApplicationShortcut);
+    m_toggleToolBarAct->setShortcutContext(Qt::WindowShortcut);
     m_toggleToolBarAct->setCheckable(true);
     m_toggleToolBarAct->setChecked(true);
     m_toggleToolBarAct->setIcon(themeIcon(QStringLiteral("configure-toolbars"), QStyle::SP_ToolBarHorizontalExtensionButton));
@@ -1007,12 +1007,11 @@ void MainWindow::createStatusBar()
 
 void MainWindow::bindViewerShortcuts()
 {
-    // In fullscreen the menu bar and toolbars are hidden. QAction shortcuts with
-    // the default WindowShortcut context only fire reliably when the action is
-    // reachable through a visible widget (menu/toolbar). Associate every
-    // shortcut-bearing action with the main window and use ApplicationShortcut
-    // so H, Space, Ctrl+F, Ctrl+R, zoom, navigation, etc. keep working while
-    // the image view has focus.
+    // In fullscreen the menu bar and toolbars are hidden. Associate every
+    // shortcut-bearing action with this window so keys still fire with the
+    // image view focused. Use WindowShortcut — not ApplicationShortcut —
+    // so a second MainWindow (File → New Window) does not register the same
+    // sequences app-wide (Qt "Ambiguous shortcut overload: Space" / Ctrl+Q).
     //
     // F/F11 are owned by dedicated QShortcuts in MainWindow (not the action),
     // to avoid checkable-action desync on leave-fullscreen.
@@ -1021,6 +1020,6 @@ void MainWindow::bindViewerShortcuts()
             continue;
         }
         addAction(act);
-        act->setShortcutContext(Qt::ApplicationShortcut);
+        act->setShortcutContext(Qt::WindowShortcut);
     }
 }

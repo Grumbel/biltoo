@@ -247,7 +247,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Application-wide shortcuts so they work while the image view has focus
     auto *escShortcut = new QShortcut(Qt::Key_Escape, this);
-    escShortcut->setContext(Qt::ApplicationShortcut);
+    escShortcut->setContext(Qt::WindowShortcut);
     connect(escShortcut, &QShortcut::activated, this, [this]() {
         if (m_imageView && m_imageView->isCropMode()) {
             m_imageView->cancelCrop();
@@ -268,12 +268,12 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    // Dedicated F/F11 shortcuts (ApplicationShortcut) so leave-fullscreen is
+    // Dedicated F/F11 shortcuts (WindowShortcut) so leave-fullscreen is
     // reliable even when the checkable action and window state briefly disagree.
-    // The action keeps the same keys for menus/tooltips; Qt de-duplicates.
+    // Window-scoped so a second MainWindow does not fight for the same keys.
     for (const int key : {static_cast<int>(Qt::Key_F), static_cast<int>(Qt::Key_F11)}) {
         auto *sc = new QShortcut(QKeySequence(key), this);
-        sc->setContext(Qt::ApplicationShortcut);
+        sc->setContext(Qt::WindowShortcut);
         connect(sc, &QShortcut::activated, this, [this]() {
             if (isFullScreen()) {
                 showNormal();
@@ -1198,7 +1198,7 @@ void MainWindow::showKeyboardShortcuts()
         "<p><b>Files</b><br/>"
         "Ctrl+O — open · Ctrl+Shift+A — add · Ctrl+Shift+O — open project<br/>"
         "Ctrl+S / Ctrl+Shift+S — save / save project as<br/>"
-        "Ctrl+Q — quit</p>"));
+        "Q / Ctrl+Q — quit</p>"));
     box.setStandardButtons(QMessageBox::Close);
     box.button(QMessageBox::Close)->setText(tr("&Close"));
     box.setDefaultButton(QMessageBox::Close);
