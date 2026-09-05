@@ -1719,8 +1719,7 @@ void MainWindow::armSlideshowCursorHide()
 
 bool MainWindow::isSlideshowSession() const
 {
-    return m_slideshowPaused
-        || (m_slideshowTimer && m_slideshowTimer->isActive());
+    return m_slideshowPaused || m_slideshowClockRunning;
 }
 
 void MainWindow::updateSlideshowActionUi()
@@ -1735,7 +1734,7 @@ void MainWindow::updateSlideshowActionUi()
                                            QStyle::SP_MediaPlay));
         m_slideshowAct->setStatusTip(
             tr("Space: resume · Esc: leave slideshow"));
-    } else if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+    } else if (m_slideshowClockRunning) {
         m_slideshowAct->setChecked(true);
         m_slideshowAct->setText(tr("Pause &Slideshow"));
         m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-pause"),
@@ -1760,12 +1759,14 @@ void MainWindow::onSlideshowUserNavigated()
     if (!m_imageView) {
         return;
     }
-    // Playing: restart dwell for the new slide. Paused: keep frozen until resume.
+    // Resync pure clock so the new slide is phase 0 of a fresh cycle.
     if (!m_slideshowPaused) {
         armSlideshowAdvanceTimer();
-    } else if (m_slideshowPaused) {
-        // Stay in slideshow mode (Fill/Fit camera) while the next image loads.
+    } else {
         m_imageView->setSlideshowProgress(true, 0);
+        m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
+        m_slideshowPausedAccumMs = 0;
+        m_slideshowTransitionCycle = -1;
     }
     updateSlideshowActionUi();
 }
@@ -1829,15 +1830,17 @@ void MainWindow::startSlideshow()
 
 void MainWindow::pauseSlideshow()
 {
-    if (!m_slideshowTimer || !m_slideshowTimer->isActive()) {
+    if (!m_slideshowClockRunning || m_slideshowPaused) {
         return;
     }
-    m_slideshowTimer->stop();
+    // Freeze elapsed: fold running segment into accumulator, stop tick.
+    m_slideshowPausedAccumMs += m_slideshowClock.elapsed();
     m_slideshowPaused = true;
+    if (m_slideshowTimer) {
+        m_slideshowTimer->stop();
+    }
     if (m_imageView) {
         m_imageView->setSlideshowMotionPaused(true);
-        // Keep progress flag so framing/motion state stays in slideshow mode;
-        // freeze the HUD progress line by not restarting the progress timer.
         m_imageView->setSlideshowProgress(true, 0);
         m_imageView->flashHud(tr("❚❚  Paused"));
     }
@@ -1854,12 +1857,19 @@ void MainWindow::resumeSlideshow()
         return;
     }
     m_slideshowPaused = false;
+    // Continue the same timeline (do not reset base index / cycle).
+    m_slideshowClock.start();
+    m_slideshowClockRunning = true;
     if (m_imageView) {
         m_imageView->setSlideshowMotionPaused(false);
+        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }
-    armSlideshowAdvanceTimer();
+    if (m_slideshowTimer && !m_slideshowTimer->isActive()) {
+        m_slideshowTimer->start();
+    }
+    updateSlideshowFromClock();
     armSlideshowCursorHide();
     updateSlideshowActionUi();
 }
@@ -1875,6 +1885,9 @@ void MainWindow::stopSlideshow()
     const bool announce = isSlideshowSession();
 
     m_slideshowPaused = false;
+    m_slideshowClockRunning = false;
+    m_slideshowPausedAccumMs = 0;
+    m_slideshowTransitionCycle = -1;
     if (m_slideshowTimer) {
         m_slideshowTimer->stop();
     }
@@ -1891,7 +1904,6 @@ void MainWindow::stopSlideshow()
     updateSlideshowActionUi();
     if (m_imageView) {
         m_imageView->setSlideshowProgress(false);
-        // Leave Fill/Ken Burns camera and return to normal Image-mode fit.
         if (announce) {
             m_imageView->restoreImageFramingAfterSlideshow();
             m_imageView->flashHud(tr("■  Slideshow stopped"));
@@ -1924,7 +1936,7 @@ void MainWindow::toggleSlideshow()
 {
     if (m_slideshowPaused) {
         resumeSlideshow();
-    } else if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+    } else if (m_slideshowClockRunning) {
         pauseSlideshow();
     } else {
         startSlideshow();

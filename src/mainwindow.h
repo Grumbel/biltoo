@@ -16,6 +16,7 @@
 #include <QStringList>
 #include <QVector>
 #include <QMimeData>
+#include <QElapsedTimer>
 
 class ThumbnailBar;
 class MetadataPanel;
@@ -162,9 +163,12 @@ private slots:
     /** Playing or paused (not fully stopped). */
     bool isSlideshowSession() const;
     void updateSlideshowActionUi();
-    /** After user next/prev during an active show: keep dwell in sync. */
+    /** After user next/prev during an active show: resync clock to new slide. */
     void onSlideshowUserNavigated();
+    /** Start/restart the pure time-based slideshow clock and tick timer. */
     void armSlideshowAdvanceTimer();
+    /** Sole tick handler: elapsed → cycle/phase → pure or transition (pure functions). */
+    void updateSlideshowFromClock();
     void setLayoutFreeForm();
     void setLayoutSideBySide();
     void setLayoutVertical();
@@ -208,7 +212,7 @@ private slots:
     void opacityUp();
     void lowerSelected();
     void raiseSelected();
-    void onSlideshowTick();
+    void onSlideshowTick(); // legacy name kept as private alias; use updateSlideshowFromClock
     void sortByName();
     void sortByMTime();
     void sortByFileSize();
@@ -510,6 +514,15 @@ private:
     bool m_forceNoThumbnails = false;
     bool m_slideshowAdvancing = false; // true while timer-driven next runs
     bool m_slideshowPaused = false; // session active, timer stopped, framing kept
+    /** Pure time base: elapsed since start (minus paused gaps). */
+    QElapsedTimer m_slideshowClock;
+    qint64 m_slideshowPausedAccumMs = 0;
+    /** Session index at clock zero; cycle adds on top. */
+    int m_slideshowBaseIndex = 0;
+    /** Cycle number for which we already started a transition (-1 = none). */
+    qint64 m_slideshowTransitionCycle = -1;
+    /** True while the repeating clock tick is the authority (playing). */
+    bool m_slideshowClockRunning = false;
 
     bool m_toolBarVisibleBeforeFullscreen = true;
     bool m_thumbnailBarVisibleBeforeFullscreen = true;

@@ -10,10 +10,10 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-229-slideshow-failproof-schedule**
-(Fail-proof: timer only for pure dwell; pureMs==0 queues next tick;
-transition duration UI in seconds).
-Next bundle number: **230**.
+Latest agent handoff: **TODO.md → biltoo-230-slideshow-clock**
+(Pure elapsed-time scheduler: cycle/phase from clock; one transition per cycle;
+no completion-driven arm).
+Next bundle number: **231**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

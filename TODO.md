@@ -4103,3 +4103,41 @@ crossfade, no stuck state, no static gaps.
 - [x] Motion keeps moving through transitions
 - [x] Transition duration shown in seconds
 - [x] Next **230**
+
+## Plan / work (2026-09-05) — bundle `biltoo-230-slideshow-clock`
+
+Event-driven arm/resume/queued-tick scheduling failed repeatedly when
+interval == transition (stuck, or rush through all images).
+
+### New model (user-specified)
+Pure functions of elapsed time — no completion-driven reschedule:
+
+```
+elapsed = clock - paused_gaps
+cycle   = elapsed / interval
+phase   = elapsed % interval
+pureMs  = interval - transition   // transition capped to interval
+
+if phase < pureMs:
+    show single image at index (base + cycle)
+else:
+    transition zone — start at most one transition per cycle
+    from (base+cycle) to (base+cycle+1)
+```
+
+- Repeating 16 ms tick only updates elapsed and evaluates the functions.
+- `armSlideshowAdvanceTimer` resets the clock (start / resume after nav /
+  interval change).
+- Live finished still does goNext (install incoming image) but never arms.
+- Dwell-resume is a no-op for scheduling.
+- Pause folds elapsed into an accumulator; resume continues the timeline.
+
+When interval == transition: pureMs == 0 → always in transition zone;
+one transition starts per cycle boundary; cycles advance only with real time
+→ continuous crossfade, no rush, no stuck.
+
+### Done criteria
+- [x] Interval == Transition: continuous dual-image fade, steady pace
+- [x] Interval > Transition: pure then transition
+- [x] No rush-through, no stuck-on-one
+- [x] Next **231**
