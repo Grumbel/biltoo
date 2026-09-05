@@ -24,6 +24,7 @@ QStringList supportedMimeTypes()
 {
     // Keep in sync with data/biltoo.desktop MimeType=
     return {
+        // Images
         QStringLiteral("image/jpeg"),
         QStringLiteral("image/png"),
         QStringLiteral("image/gif"),
@@ -41,6 +42,28 @@ QStringList supportedMimeTypes()
         QStringLiteral("image/heic"),
         QStringLiteral("image/heif"),
         QStringLiteral("image/jxl"),
+        // Archives (libarchive session expand)
+        QStringLiteral("application/zip"),
+        QStringLiteral("application/x-7z-compressed"),
+        QStringLiteral("application/vnd.rar"),
+        QStringLiteral("application/x-rar"),
+        QStringLiteral("application/x-rar-compressed"),
+        QStringLiteral("application/x-tar"),
+        QStringLiteral("application/x-compressed-tar"),
+        QStringLiteral("application/x-gtar"),
+        QStringLiteral("application/gzip"),
+        QStringLiteral("application/x-bzip-compressed-tar"),
+        QStringLiteral("application/x-bzip2"),
+        QStringLiteral("application/x-xz-compressed-tar"),
+        QStringLiteral("application/x-xz"),
+        QStringLiteral("application/x-zstd-compressed-tar"),
+        QStringLiteral("application/zstd"),
+        QStringLiteral("application/x-cpio"),
+        QStringLiteral("application/x-iso9660-image"),
+        QStringLiteral("application/x-cd-image"),
+        QStringLiteral("application/vnd.ms-cab-compressed"),
+        QStringLiteral("application/x-archive"),
+        QStringLiteral("application/x-ar"),
     };
 }
 
@@ -64,6 +87,27 @@ static QString labelForMime(const QString &mime)
         {QStringLiteral("image/heic"), QObject::tr("HEIC")},
         {QStringLiteral("image/heif"), QObject::tr("HEIF")},
         {QStringLiteral("image/jxl"), QObject::tr("JPEG XL")},
+        {QStringLiteral("application/zip"), QObject::tr("ZIP archive")},
+        {QStringLiteral("application/x-7z-compressed"), QObject::tr("7z archive")},
+        {QStringLiteral("application/vnd.rar"), QObject::tr("RAR archive")},
+        {QStringLiteral("application/x-rar"), QObject::tr("RAR archive (legacy)")},
+        {QStringLiteral("application/x-rar-compressed"), QObject::tr("RAR archive (compressed)")},
+        {QStringLiteral("application/x-tar"), QObject::tr("Tar archive")},
+        {QStringLiteral("application/x-compressed-tar"), QObject::tr("Tar.gz archive")},
+        {QStringLiteral("application/x-gtar"), QObject::tr("GNU tar archive")},
+        {QStringLiteral("application/gzip"), QObject::tr("Gzip")},
+        {QStringLiteral("application/x-bzip-compressed-tar"), QObject::tr("Tar.bz2 archive")},
+        {QStringLiteral("application/x-bzip2"), QObject::tr("Bzip2")},
+        {QStringLiteral("application/x-xz-compressed-tar"), QObject::tr("Tar.xz archive")},
+        {QStringLiteral("application/x-xz"), QObject::tr("XZ")},
+        {QStringLiteral("application/x-zstd-compressed-tar"), QObject::tr("Tar.zst archive")},
+        {QStringLiteral("application/zstd"), QObject::tr("Zstd")},
+        {QStringLiteral("application/x-cpio"), QObject::tr("Cpio archive")},
+        {QStringLiteral("application/x-iso9660-image"), QObject::tr("ISO image")},
+        {QStringLiteral("application/x-cd-image"), QObject::tr("CD image")},
+        {QStringLiteral("application/vnd.ms-cab-compressed"), QObject::tr("CAB archive")},
+        {QStringLiteral("application/x-archive"), QObject::tr("Unix archive (.a)")},
+        {QStringLiteral("application/x-ar"), QObject::tr("AR archive")},
     };
     return labels.value(mime, mime);
 }

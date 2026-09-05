@@ -3485,3 +3485,14 @@ No clamp, no gate. Continuous straight path in (scale, pan).
 ### Done criteria
 - [x] Linear path restored
 - [x] Next **197**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-197-defaultapps-archives`
+
+Preferences → Default application listed only image MIME types. Desktop already
+advertises archives; add the same archive types (with labels) to
+`DefaultApps::supportedMimeTypes()`.
+
+### Done criteria
+- [x] Archives in default-app list
+- [x] Next **198**
