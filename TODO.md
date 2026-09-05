@@ -3791,3 +3791,20 @@ install a provisional placeholder + `setPreviewImage`, then fit. Full
 - [x] Rapid next/prev shows low-res of the *new* image when ready
 - [x] Full decode still supersedes preview
 - [x] Next **216**
+
+## Plan / work (2026-09-05) — bundle `biltoo-216-image-mode-immediate-pending`
+
+Image next/prev still kept the previous full frame until the full decode
+finished; async thumbnail was too late / easy to miss.
+
+### Fix
+- `installImageModePendingTile`: on LoadReplace in Image mode, immediately
+  replace the live tile with a loading placeholder (probe aspect when cheap)
+- When the thumbnail arrives, upgrade that tile in place via setPreviewImage
+- Full decode still replaces with the final item
+- Image-mode decode tasks use higher QThreadPool priority
+
+### Done criteria
+- [x] Next/prev drops previous image immediately (loading chrome)
+- [x] Thumbnail upgrades the pending tile when ready
+- [x] Next **217**

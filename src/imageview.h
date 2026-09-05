@@ -780,6 +780,11 @@ private:
                                    bool applyStoredSessionCrop = true);
     /** Interactive / gallery / static flags for the current ViewMode. */
     void scheduleImageLoad(const QString &path, LoadRole role);
+    /**
+     * Image mode: drop the previous frame and show a loading/provisional tile
+     * for @p path immediately (do not wait for the background decode).
+     */
+    void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     QSize probeImageSize(const QString &path) const;
     void updateGalleryDecodeWindow();

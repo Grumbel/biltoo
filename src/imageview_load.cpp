@@ -6,6 +6,7 @@
 #include <QDebug>
 #include "imageitem.h"
 #include "imageloader.h"
+#include "archivepath.h"
 #include "sessionappearance.h"
 
 #include <QFileInfo>
@@ -71,6 +72,65 @@ ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &in
     return item;
 }
 
+void ImageView::installImageModePendingTile(const QString &path, const QImage &preview)
+{
+    if (!isImageMode() || path.isEmpty()) {
+        return;
+    }
+    // Prefer real aspect: probe header when cheap; else keep previous tile size.
+    QSize sz(1000, 1000);
+    if (ImageItem *cur = targetItem()) {
+        const QSize curSz = cur->imageSize();
+        if (curSz.isValid() && curSz.width() > 0 && curSz.height() > 0) {
+            sz = curSz;
+        }
+    }
+    if (!preview.isNull() && preview.width() > 0 && preview.height() > 0) {
+        sz = preview.size();
+    } else if (!ArchivePath::isArchiveRef(path)) {
+        const QSize probed = ImageLoader::probeSize(path);
+        if (probed.isValid() && probed.width() > 0 && probed.height() > 0) {
+            sz = probed;
+        }
+    } else {
+        sz = QSize(1024, 1024);
+    }
+
+    setUpdatesEnabled(false);
+    clearLiveCanvas();
+    ImageItem *item = createPlaceholderItem(path, sz);
+    if (!item) {
+        setUpdatesEnabled(true);
+        return;
+    }
+    if (!preview.isNull()) {
+        item->setPreviewImage(preview);
+    }
+    if (m_currentSessionId != kInvalidSessionImageId) {
+        item->setSessionId(m_currentSessionId);
+    }
+    if (m_sessionIndex >= 0) {
+        item->setSessionIndex(m_sessionIndex);
+    }
+    item->setInteractive(false);
+    item->setScaleHandlesEnabled(false);
+    item->setItemScale(1.0);
+    item->setPos(0, 0);
+    item->setItemRotation(0.0);
+    prepareImageModeCanvas();
+    if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
+        applySlideshowZoomFraming(item);
+    } else if (!m_slideshowProgressActive) {
+        fitItem(item, currentFitAspectMode());
+    }
+    m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    setUpdatesEnabled(true);
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
+}
+
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 {
     if (path.isEmpty()) {
@@ -113,12 +173,19 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         }
     }
 
+    // Image mode: drop the previous frame immediately so rapid next/prev is not
+    // stuck on the old image until the background decode finishes.
+    if (role == LoadReplace && isImageMode()) {
+        installImageModePendingTile(path);
+    }
+
     // QPointer: worker must not invokeMethod on a destroyed view (secondary
     // windows with WA_DeleteOnClose, app exit). Generation only filters
     // superseding once the slot runs on the GUI thread.
     const QPointer<ImageView> guard(this);
+    // Higher priority so Image-mode navigation is not starved by gallery decodes.
     QThreadPool::globalInstance()->start([guard, path, role, gen]() {
-        constexpr int kPreviewEdge = 384;
+        constexpr int kPreviewEdge = 512;
         const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
         if (guard && !preview.isNull()) {
             QMetaObject::invokeMethod(guard, "onImagePreviewLoaded", Qt::QueuedConnection,
@@ -136,7 +203,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                                   Q_ARG(QImage, image),
                                   Q_ARG(quint64, gen),
                                   Q_ARG(int, static_cast<int>(role)));
-    });
+    }, 1);
 }
 
 void ImageView::scheduleGalleryDecode(const QString &path)
@@ -201,50 +268,24 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         if (path != classicPath()) {
             return;
         }
-        // Image mode next/prev: previous full pixels stay until full decode.
-        // Swap in a provisional tile as soon as the thumbnail is ready so rapid
-        // navigation is not stuck on the previous image.
         if (isImageMode()) {
             if (ImageItem *cur = targetItem()) {
                 if (cur->path() == path && cur->hasDecodedPixels()) {
                     return; // full decode already won the race
                 }
+                // Upgrade loading placeholder (same path) in place when possible.
+                if (cur->path() == path && !cur->hasDecodedPixels()) {
+                    cur->setPreviewImage(image);
+                    if (viewport()) {
+                        viewport()->update();
+                    }
+                    return;
+                }
             }
-            setUpdatesEnabled(false);
-            clearLiveCanvas();
-            ImageItem *item = createPlaceholderItem(path, image.size());
-            if (!item) {
-                setUpdatesEnabled(true);
-                return;
-            }
-            item->setPreviewImage(image);
-            if (m_currentSessionId != kInvalidSessionImageId) {
-                item->setSessionId(m_currentSessionId);
-            }
-            if (m_sessionIndex >= 0) {
-                item->setSessionIndex(m_sessionIndex);
-            }
-            item->setInteractive(false);
-            item->setScaleHandlesEnabled(false);
-            item->setItemScale(1.0);
-            item->setPos(0, 0);
-            item->setItemRotation(0.0);
-            prepareImageModeCanvas();
-            if (m_slideshowProgressActive
-                && m_slideshowMotion == SlideshowMotion::Off) {
-                applySlideshowZoomFraming(item);
-            } else if (!m_slideshowProgressActive) {
-                fitItem(item, currentFitAspectMode());
-            }
-            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-            setUpdatesEnabled(true);
-            if (viewport()) {
-                viewport()->update();
-            }
-            emit statusChanged();
+            installImageModePendingTile(path, image);
             return;
         }
-        // Empty multi-item canvas falling through to classic seed: treat like gallery.
+        // Empty multi-item canvas: fall through to per-item fill.
     }
     // Gallery / Workspace: fill undecoded occurrences of this path.
     for (ImageItem *item : m_items) {
@@ -693,9 +734,8 @@ bool ImageView::loadImage(const QString &path)
         return true;
     }
 
-    // Classic mode: decode off the GUI thread. Keep the previous image and its
-    // fit transform until the new decode arrives — resetting the transform here
-    // would show the old pixmap at 1:1 for a frame (glitchy rapid navigation).
+    // Classic mode: decode off the GUI thread. scheduleImageLoad installs a
+    // loading tile immediately, then upgrades to thumbnail and full decode.
     scheduleImageLoad(path, LoadReplace);
     emit statusChanged();
     return true;

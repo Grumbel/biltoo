@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-215-image-mode-preview-nav**
-(Image next/prev provisional preview).
-Next bundle number: **216**.
+Latest agent handoff: **TODO.md → biltoo-216-image-mode-immediate-pending**
+(Image next/prev immediate loading tile + preview).
+Next bundle number: **217**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
