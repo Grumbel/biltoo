@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-255-slideshow-invariants**
-(Document slideshow hard rules; stop re-preloading handoff target).
-Next bundle number: **256**.
+Latest agent handoff: **TODO.md → biltoo-256-live-upgrade-no-pending**
+(No pending tile under live hold; soft→full in-place upgrade).
+Next bundle number: **257**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

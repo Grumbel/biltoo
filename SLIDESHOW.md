@@ -88,6 +88,21 @@ Changing interval while running must `cancelSlideshowTransition`, reset
 `m_slideshowTransitionCycle` / pending index, and re-arm. Leaving busy=true
 with a reset cycle made the pure clock wait forever.
 
+
+### 11. Never install a pending Image-mode tile under a live hold
+
+`installImageModePendingTile` clears the canvas and cancels motion. Under an
+active live fade/hold that is a hard jump (placeholder framing). Skip entirely
+when `m_liveTransitionActive|Hold|AwaitingLoad`. Full pixels arrive via
+`onImageLoaded` → soft handoff.
+
+### 12. Soft cache-hit must upgrade in place when full preload lands
+
+Cache-hit paints a native-size upscaled preview and must still run full preload.
+When `preload-ready` matches `m_liveTransitionNextPath` during live, replace
+`m_liveTransitionSourceImage` + set `m_handoff*` + rebuild atlas — do not restart
+the fade. Sharpness improves; geometry stays put.
+
 ## Symptoms → usual cause
 
 | Symptom | Usual cause |

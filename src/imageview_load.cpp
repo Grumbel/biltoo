@@ -78,6 +78,12 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     if (!isImageMode() || path.isEmpty()) {
         return;
     }
+    // Live overlay owns the viewport. Wiping the canvas / cancelling motion
+    // under an active hold causes a visible jump (placeholder at wrong pose).
+    // Full pixels arrive via onImageLoaded → releaseLiveTransitionHold.
+    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
+        return;
+    }
     // Layout size = native dimensions (cache / probe), never thumbnail pixels.
     const QSize sz = imageSizeForPath(path);
     // Prefer an explicit preview argument; else a session-cached thumbnail for

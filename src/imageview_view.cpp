@@ -1209,6 +1209,36 @@ void ImageView::preloadSlideshowImage(const QString &path)
             qDebug().nospace()
                 << "[slideshow] preload-ready " << QFileInfo(loadPath).fileName()
                 << " " << img.width() << "x" << img.height();
+            view->rememberImageSize(loadPath, img.size());
+            // Full decode landed while a soft (cache-scaled) live fade is already
+            // painting this path — upgrade pixels + handoff in place. Same native
+            // size ⇒ no geometry jump; only sharpness improves.
+            if (view->m_liveTransitionNextPath == loadPath
+                && (view->m_liveTransitionActive || view->m_liveTransitionHold
+                    || view->m_liveTransitionAwaitingLoad)) {
+                view->m_liveTransitionSourceImage = img;
+                view->m_handoffPath = loadPath;
+                view->m_handoffImage = img;
+                view->m_preloadPath.clear();
+                view->m_preloadImage = QImage();
+                view->ensureMotionAtlas(img, &view->m_liveToAtlas,
+                                        &view->m_liveToAtlasScale,
+                                        &view->m_liveToAtlasVw,
+                                        &view->m_liveToAtlasVh);
+                qDebug().nospace()
+                    << "[slideshow] live-upgrade "
+                    << QFileInfo(loadPath).fileName()
+                    << " " << img.width() << "x" << img.height();
+                if (view->m_liveTransitionAwaitingLoad
+                    && !view->m_liveTransitionActive
+                    && !view->m_liveTransitionHold) {
+                    view->startLiveTransitionWithImage(img);
+                }
+                if (view->viewport()) {
+                    view->viewport()->update();
+                }
+                return;
+            }
             // beginLive is waiting on this path — open the fade now.
             if (view->m_liveTransitionAwaitingLoad
                 && view->m_liveTransitionNextPath == loadPath

@@ -4630,3 +4630,22 @@ handoff and cleared `m_preload*`.
 - [x] SLIDESHOW.md linked from AGENTS.md
 - [x] No second full decode of the handoff target per cycle
 - [x] Next **256**
+
+## Plan / work (2026-09-05) — bundle `biltoo-256-live-upgrade-no-pending`
+
+### Problem
+Cache-hit scaled previews to native size (geometry OK) but left handoff empty.
+Finish → LoadReplace → `installImageModePendingTile` wiped the canvas and
+cancelled motion under the live hold → jump every time the first slide (and any
+cache-only path) advanced.
+
+### Fix
+1. `installImageModePendingTile` no-ops while live active/hold/awaiting
+2. `preload-ready` for the live next path upgrades to-frame + handoff in place
+   (`live-upgrade` log) without restarting the fade
+3. SLIDESHOW.md rules 11–12
+
+### Done criteria
+- [x] No pending-tile wipe under live hold
+- [x] Soft → sharp upgrade without geometry jump
+- [x] Next **257**
