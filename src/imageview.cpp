@@ -238,16 +238,17 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
             return;
         }
         QMetaObject::invokeMethod(view, [guard, path, s]() {
-            if (!guard) {
+            ImageView *const host = guard.data();
+            if (!host) {
                 return;
             }
-            guard->m_sizeProbeScheduled.remove(path);
+            host->m_sizeProbeScheduled.remove(path);
             // Prefer a size already learned from a full decode.
-            if (guard->m_imageSizeByPath.contains(path)) {
+            if (host->m_imageSizeByPath.contains(path)) {
                 return;
             }
-            guard->rememberImageSize(path, s);
-            guard->applyProbedImageSize(path, s);
+            host->rememberImageSize(path, s);
+            host->applyProbedImageSize(path, s);
         }, Qt::QueuedConnection);
     });
 }

@@ -3881,3 +3881,13 @@ Gallery virtualization placeholders).
 ### Done criteria
 - [x] No size probe on GUI thread for normal files
 - [x] Next **221**
+
+## Plan / work (2026-09-05) — bundle `biltoo-221-size-probe-null-warn`
+
+Silence -Wnull-dereference on scheduleImageSizeProbe GUI lambda:
+use `ImageView *const host = guard.data()` after null check (same pattern
+as mainwindow_session).
+
+### Done criteria
+- [x] Warning fixed
+- [x] Next **222**
