@@ -3721,3 +3721,13 @@ introduced -Wnull-dereference (GCC does not trust QPointer short-circuit).
 - [x] No -Wnull-dereference on those sites
 - [x] No -Wshadow regression
 - [x] Next **212**
+
+## Plan / work (2026-09-05) — bundle `biltoo-212-biltoo-run-gdb`
+
+Add `biltoo-run-gdb` next to `biltoo-run`: build the out-of-tree Debug binary
+then `gdb --args $BILTOO_BUILD_DIR/biltoo` with optional program args.
+
+### Done criteria
+- [x] PATH script in devShell packages
+- [x] shellHook / AGENTS mention it
+- [x] Next **213**

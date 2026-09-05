@@ -113,6 +113,25 @@
               "$BILTOO_BUILD_DIR/biltoo" "$@"
             ''
           );
+
+          # Debug build + gdb. Extra args are biltoo's (via gdb --args).
+          biltooRunGdb = pkgs.writeShellScriptBin "biltoo-run-gdb" (
+            biltooDevPreamble
+            + ''
+              biltoo-build || exit 1
+              if [ ! -x "$BILTOO_BUILD_DIR/biltoo" ]; then
+                echo "biltoo-run-gdb: $BILTOO_BUILD_DIR/biltoo missing after build" >&2
+                exit 1
+              fi
+              if ! command -v gdb >/dev/null 2>&1; then
+                echo "biltoo-run-gdb: gdb not found (should be in the nix develop shell)" >&2
+                exit 1
+              fi
+              # Inherit QT_PLUGIN_PATH / XDG_DATA_DIRS from shellHook.
+              # No exec: return to the interactive shell when gdb exits.
+              gdb --args "$BILTOO_BUILD_DIR/biltoo" "$@"
+            ''
+          );
         in
         pkgs.mkShell {
           inputsFrom = [ biltoo ];
@@ -125,6 +144,7 @@
             biltooConfigure
             biltooBuild
             biltooRun
+            biltooRunGdb
           ];
           CMAKE_BUILD_TYPE = "Debug";
           shellHook = ''
@@ -148,6 +168,7 @@
             echo "  biltoo-configure   # cmake -S . -B \$BILTOO_BUILD_DIR -G Ninja"
             echo "  biltoo-build       # incremental cmake --build"
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
+            echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"
             echo "  nix build          # RelWithDebInfo package (wrapped)"
             echo "  nix build .#debug  # matching debug symbols"
             echo "  also: nix develop -c biltoo-run   # helpers are on PATH"

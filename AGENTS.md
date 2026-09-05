@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-211-null-deref-host**
-(QPointer checks via host*, not guard->).
-Next bundle number: **212**.
+Latest agent handoff: **TODO.md → biltoo-212-biltoo-run-gdb**
+(`biltoo-run-gdb` PATH helper).
+Next bundle number: **213**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -28,8 +28,9 @@ Windows / cross-compile feasibility (not a scheduled port).
 
 - Primary build system: **Nix flake** + CMake + Qt6.
   - `nix develop` – deps only (compiler, Qt, vips, …). Not a mini install.
-  - In the shell: `biltoo-configure`, `biltoo-build`, `biltoo-run`
-    (out-of-tree default: `/tmp/biltoo-build`, override with `BILTOO_BUILD_DIR`)
+  - In the shell: `biltoo-configure`, `biltoo-build`, `biltoo-run`,
+    `biltoo-run-gdb` (out-of-tree default: `/tmp/biltoo-build`, override with
+    `BILTOO_BUILD_DIR`)
   - Also: `nix develop -c biltoo-run` (helpers are real PATH scripts, not
     shellHook functions)
   - First time: `biltoo-configure` then `biltoo-run`
