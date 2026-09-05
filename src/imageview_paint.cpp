@@ -197,7 +197,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             mode = QStringLiteral("live-fade");
         } else if (m_liveTransitionAwaitingLoad) {
             mode = QStringLiteral("await-load");
-        } else if (m_slideshowMotionActive && !m_dwellSourceImage.isNull()) {
+        } else if (!m_dwellSourceImage.isNull()) {
             mode = QStringLiteral("dwell");
         } else if (m_slideshowTransitionActive) {
             mode = QStringLiteral("snapshot");
@@ -248,11 +248,10 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         }
     }
 
-    // Dwell cover while motion is on and we are not compositing two live frames.
-    // IMPORTANT: also paint while m_liveTransitionAwaitingLoad — beginLive sets
-    // that flag before the decode finishes; skipping dwell here flashed the
-    // pad/background between every continuous (interval==transition) pair.
-    if (m_slideshowMotionActive && !m_liveTransitionActive && !m_liveTransitionHold
+    // Dwell cover: one buffer, no underlay. Paint whenever the show is running
+    // and we are not in a live composite — even if motion was briefly cancelled
+    // mid-handoff (that gap was mode=underlay / underlayVisible=true in logs).
+    if (m_slideshowProgressActive && !m_liveTransitionActive && !m_liveTransitionHold
         && !m_dwellSourceImage.isNull()) {
         const QRect vr = viewport()->rect();
         fillPad(vr);

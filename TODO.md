@@ -4764,3 +4764,24 @@ instead of restarting; orientation change left `dwell` size ≠ `item` size.
 - [x] dwell-start log with size and path
 - [x] underlay hidden after handoff
 - [x] Next **263**
+
+## Plan / work (2026-09-05) — bundle `biltoo-263-no-underlay-gap`
+
+### Diagnosis (not integer thumbnail crop)
+Paint sizes were always native (`3744x5616` / `5616x3744`). Glitch sources:
+
+1. One frame `mode=underlay item="-"` — hold cleared / motion cancelled before
+   dwell was armed; paint fell through because it required `m_slideshowMotionActive`.
+2. `dwellT` stayed ~0.75 after fade — dwell path not reset to 0 before hold drop.
+3. Portrait→landscape is a real aspect change (not a scale bug of one image).
+
+### Fix
+- Paint dwell whenever `m_slideshowProgressActive && dwell buffer` (not only when
+  motionActive).
+- Arm dwell + `dwellT=0` **before** clearing live hold.
+- Log `dwell-start WxH path=…` every handoff.
+
+### Done criteria
+- [x] No mode=underlay during show when dwell buffer exists
+- [x] dwellT restarts near 0 after each fade
+- [x] Next **264**

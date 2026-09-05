@@ -594,13 +594,10 @@ void ImageView::releaseLiveTransitionHold()
     if (!m_liveTransitionHold && !m_liveTransitionAwaitingLoad) {
         return;
     }
-    // Fade-through-black: load finished under solid black — resume the second
-    // half so the veil lifts over the already-fitted next slide.
     if (m_liveTransitionAwaitingLoad
         && m_slideshowTransition == SlideshowTransition::FadeBlack
         && m_liveTransitionActive) {
         m_liveTransitionAwaitingLoad = false;
-        // Veil timeline only. Motion wall is untouched.
         m_liveTransitionElapsedBaseMs = m_liveTransitionDurationMs / 2;
         m_liveTransitionClock.restart();
         m_liveTransitionProgress = 0.5;
@@ -609,32 +606,32 @@ void ImageView::releaseLiveTransitionHold()
         }
         return;
     }
-    const QImage toSource = m_liveTransitionSourceImage;
 
-    // Soft handoff FIRST: install dwell cover before dropping live flags so one
-    // frame cannot expose the fitted scene underlay (fullscreen flash).
+    const QImage toSource = m_liveTransitionSourceImage;
+    const QString nextPath = m_liveTransitionNextPath;
+
+    // Biases for the incoming slide.
     m_motionBiasA = m_liveToBiasA;
     m_motionBiasB = m_liveToBiasB;
     m_motionBiasValid = true;
-    m_motionBiasPath = m_liveTransitionNextPath.isEmpty()
+    m_motionBiasPath = nextPath.isEmpty()
         ? (targetItem() ? targetItem()->path() : QString())
-        : m_liveTransitionNextPath;
-    // Prefer the canvas item's full decode when it already matches the target
-    // path (LoadReplace finished under the hold) so we do not install a
-    // smaller handoff/thumbnail as the dwell cover.
-    m_dwellSourceImage = QImage();
+        : nextPath;
+
+    // Dwell buffer: canvas full decode if it matches the target, else fade to-frame.
+    QImage dwell;
     if (ImageItem *item = targetItem()) {
         if (!item->sourceImage().isNull()
-            && (m_liveTransitionNextPath.isEmpty()
-                || item->path() == m_liveTransitionNextPath)) {
-            m_dwellSourceImage = item->sourceImage();
+            && (nextPath.isEmpty() || item->path() == nextPath)) {
+            dwell = item->sourceImage();
         }
     }
-    if (m_dwellSourceImage.isNull() && !toSource.isNull()) {
-        m_dwellSourceImage = toSource;
+    if (dwell.isNull()) {
+        dwell = toSource;
     }
-    if (!m_dwellSourceImage.isNull()) {
-        // Reuse to-atlas as dwell atlas when scales match path max.
+    m_dwellSourceImage = dwell;
+    m_dwellMotionT = 0.0;
+    if (!dwell.isNull()) {
         m_dwellAtlas = m_liveToAtlas;
         m_dwellAtlasScale = m_liveToAtlasScale;
         m_dwellAtlasVw = m_liveToAtlasVw;
@@ -642,7 +639,30 @@ void ImageView::releaseLiveTransitionHold()
         ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                           &m_dwellAtlasVw, &m_dwellAtlasVh);
     }
-    // Drop live composite flags before starting dwell on the new slide.
+
+    // Start path at 0 while hold still covers the viewport (no underlay gap).
+    hideSlideshowUnderlay();
+    if (m_slideshowProgressActive
+        && m_slideshowMotion != SlideshowMotion::Off
+        && m_slideshowProgressIntervalMs >= 250
+        && !m_dwellSourceImage.isNull()) {
+        startSlideshowMotion(m_slideshowProgressIntervalMs, 0.0);
+        m_dwellSourceImage = dwell;
+        if (!dwell.isNull()) {
+            ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                              &m_dwellAtlasVw, &m_dwellAtlasVh);
+        }
+        m_dwellMotionT = 0.0;
+        m_motionElapsedOffsetMs = 0;
+        m_motionClock.start();
+        m_slideshowMotionActive = true;
+        qDebug().nospace()
+            << "[slideshow] dwell-start "
+            << m_dwellSourceImage.width() << "x" << m_dwellSourceImage.height()
+            << " path=" << QFileInfo(nextPath).fileName();
+    }
+
+    // Clear live composite only after dwell is armed.
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionActive = false;
@@ -650,55 +670,15 @@ void ImageView::releaseLiveTransitionHold()
     m_slideshowTransitionToPixmap = QPixmap();
     m_slideshowTransitionFromPixmap = QPixmap();
     m_liveFromSourceImage = QImage();
+    m_liveTransitionSourceImage = QImage();
     m_liveFromAtlas = QPixmap();
     m_liveToAtlas = QPixmap();
     m_liveTransitionPathHash = 0;
     m_liveTransitionMotionProgress = 0.0;
-    const QString nextPath = m_liveTransitionNextPath;
     m_liveTransitionNextPath.clear();
     m_toLayerWallMs = -1.0;
-    // Keep toSource in m_liveTransitionSourceImage only until dwell is installed;
-    // clear after path start so paint diag does not show a stale "to".
-    m_liveTransitionSourceImage = QImage();
 
     emit slideshowDwellResumeRequested();
-
-    // --- SIMPLE DWELL START (do not elaborate) ---
-    // One buffer (dwell), path 0→1 over interval, underlay hidden.
-    // Prefer the loaded canvas image; else the fade's to-frame.
-    {
-        QImage dwell = toSource;
-        if (ImageItem *item = targetItem()) {
-            if (!item->sourceImage().isNull()
-                && (nextPath.isEmpty() || item->path() == nextPath)) {
-                dwell = item->sourceImage();
-            }
-            item->setVisible(false);
-        }
-        m_dwellSourceImage = dwell;
-        m_dwellMotionT = 0.0;
-        hideSlideshowUnderlay();
-        if (m_slideshowProgressActive
-            && m_slideshowMotion != SlideshowMotion::Off
-            && m_slideshowProgressIntervalMs >= 250
-            && !m_dwellSourceImage.isNull()) {
-            startSlideshowMotion(m_slideshowProgressIntervalMs, 0.0);
-            // startSlideshowMotion may rebuild dwell from the item; force our
-            // pixels and zero progress in case the item was still empty.
-            if (!dwell.isNull()) {
-                m_dwellSourceImage = dwell;
-                ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                                  &m_dwellAtlasVw, &m_dwellAtlasVh);
-            }
-            m_dwellMotionT = 0.0;
-            m_motionElapsedOffsetMs = 0;
-            m_motionClock.start();
-            qDebug().nospace()
-                << "[slideshow] dwell-start "
-                << m_dwellSourceImage.width() << "x" << m_dwellSourceImage.height()
-                << " path=" << QFileInfo(nextPath).fileName();
-        }
-    }
     if (viewport()) {
         viewport()->update();
     }
