@@ -103,6 +103,19 @@ When `preload-ready` matches `m_liveTransitionNextPath` during live, replace
 `m_liveTransitionSourceImage` + set `m_handoff*` + rebuild atlas — do not restart
 the fade. Sharpness improves; geometry stays put.
 
+
+### 13. Never discard a ready or needed in-flight preload
+
+`preloadSlideshowImage` must **not**:
+
+- `clear()` a READY `m_preload*` of a *different* path (tick warming ahead
+  wiped the image beginLive was about to use),
+- bump generation to cancel an in-flight decode of `m_liveTransitionNextPath`
+  or `m_handoffPath` (soft cache-hit never got `live-upgrade`).
+
+Only one ready slot exists. Warm the *next* path only after the current ready
+slot has been consumed into handoff/beginLive.
+
 ## Symptoms → usual cause
 
 | Symptom | Usual cause |

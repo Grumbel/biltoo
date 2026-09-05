@@ -1170,9 +1170,28 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (path == m_preloadInFlightPath) {
         return;
     }
+    // CRITICAL: a READY preload of another path must not be discarded. The tick
+    // used to warm toIdx+1 while toIdx sat in m_preload* — clear() wiped the
+    // pixels beginLive needed, forcing cache-hit / re-decode every cycle.
+    if (!m_preloadPath.isEmpty() && !m_preloadImage.isNull() && m_preloadPath != path) {
+        return;
+    }
+    // CRITICAL: do not cancel an in-flight full decode that the live path still
+    // needs (soft cache-hit waiting for live-upgrade, or handoff target).
+    if (!m_preloadInFlightPath.isEmpty() && m_preloadInFlightPath != path) {
+        if (m_preloadInFlightPath == m_liveTransitionNextPath
+            || m_preloadInFlightPath == m_handoffPath) {
+            return;
+        }
+    }
     const quint64 gen = ++m_preloadGeneration;
-    m_preloadPath.clear();
-    m_preloadImage = QImage();
+    // Only clear the ready slot when replacing the *same* path (stale) or when
+    // it is empty. Never clear a different path's ready pixels here — guarded
+    // above. In-flight target switches to @p path.
+    if (m_preloadPath == path) {
+        m_preloadPath.clear();
+        m_preloadImage = QImage();
+    }
     m_preloadInFlightPath = path;
     const QString loadPath = path;
     const QPointer<ImageView> guard(this);

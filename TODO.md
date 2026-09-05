@@ -4649,3 +4649,25 @@ cache-only path) advanced.
 - [x] No pending-tile wipe under live hold
 - [x] Soft → sharp upgrade without geometry jump
 - [x] Next **257**
+
+## Plan / work (2026-09-05) — bundle `biltoo-257-protect-preload`
+
+### Problem
+Logs: `preload-ready 003` then `preload-start 004` then `preload-start 003` again.
+Starting a warm of the *next* path cleared `m_preload*` of the *current* target
+and cancelled in-flight full decodes needed for cache-hit `live-upgrade`. Soft
+fades never sharpened; beginLive often fell back to cache after losing the ready
+full frame.
+
+### Fix
+`preloadSlideshowImage`:
+
+- If a different path is READY in `m_preload*`, return (do not clear it)
+- If a different path is in-flight and is `m_liveTransitionNextPath` or
+  `m_handoffPath`, return (do not bump generation)
+- Only clear ready when replacing the same path
+
+### Done criteria
+- [x] Ready preload survives until beginLive / handoff consumes it
+- [x] Cache-hit can receive live-upgrade full decode
+- [x] Next **258**
