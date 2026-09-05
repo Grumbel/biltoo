@@ -196,12 +196,22 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         }
 
         if (virtualize) {
-            ImageItem *ph = createPlaceholderItem(path, imageSizeForPath(path));
+            // Prefer cached preview aspect when native size is still unknown so
+            // the first pack does not use a neutral 1000×1000 cell.
+            QImage hint;
+            const auto pit = m_previewByPath.constFind(path);
+            if (pit != m_previewByPath.cend()) {
+                hint = pit.value();
+            }
+            ImageItem *ph = createPlaceholderItem(path, layoutSizeForPath(path, hint));
             if (ph) {
                 if (sid != kInvalidSessionImageId) {
                     ph->setSessionId(sid);
                 }
                 ph->setSessionIndex(i);
+                if (!hint.isNull()) {
+                    ph->setPreviewImage(hint);
+                }
                 claimed.insert(ph);
             }
         } else {

@@ -5209,3 +5209,23 @@ that square (letterboxed in a wide window). Preview painted with correct aspect
 ### Done criteria
 - [x] Low-res Image frame fills the window (correct aspect box)
 - [x] Next **286**
+
+
+## Plan / work (2026-09-05) — bundle `biltoo-286-gallery-preview-layout-size`
+
+### Symptom
+Gallery low-res tiles do not take the proper packed size until full decode.
+
+### Cause
+Placeholders used `imageSizeForPath` → neutral 1000×1000. Preview fill via
+`setPreviewImage` could change intrinsic without re-packing, so item scale from
+the first pack stayed wrong relative to the new contentRect.
+
+### Fix
+- Virtual placeholders: `layoutSizeForPath` + cached preview when available
+- Preview load: if provisional, set intrinsic from preview aspect and
+  `applyLayout(ContentChange)`
+
+### Done criteria
+- [x] Gallery low-res tiles pack at preview aspect
+- [x] Next **287**

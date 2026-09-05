@@ -361,12 +361,28 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         // Empty multi-item canvas: fall through to per-item fill.
     }
     // Gallery / Workspace: fill undecoded occurrences of this path.
+    // If layout size was still provisional, adopt preview aspect and re-pack
+    // so low-res tiles occupy the same footprint as the eventual full image
+    // (otherwise pack stays on 1000×1000 and the preview looks unstretched).
+    bool gallerySizeChanged = false;
     for (ImageItem *item : m_items) {
-        if (item && item->path() == path && !item->hasDecodedPixels()) {
-            item->setPreviewImage(image);
+        if (!item || item->path() != path || item->hasDecodedPixels()) {
+            continue;
+        }
+        const QSize before = item->imageSize();
+        if (isProvisionalImageSize(path)
+            && image.width() > 0 && image.height() > 0
+            && before != image.size()) {
+            item->setIntrinsicSize(image.size());
+        }
+        item->setPreviewImage(image);
+        if (item->imageSize() != before) {
+            gallerySizeChanged = true;
         }
     }
-    if (viewport()) {
+    if (gallerySizeChanged && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
+        applyLayout(GalleryPackReason::ContentChange);
+    } else if (viewport()) {
         viewport()->update();
     }
 }
