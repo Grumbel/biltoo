@@ -924,10 +924,18 @@ void MainWindow::updateSlideshowFromClock()
         m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
     }
 
-    // In-flight transition: do not start another. Clock keeps ticking; HUD
-    // above still advances. No cancel/reanchor — finish owns the hold.
+    // In-flight transition: do not start another while the *same* cycle is
+    // still busy. If the pure clock has already advanced past that cycle
+    // (superfast / interval≈transition), abandon the stale overlay and catch
+    // up so we never skip indefinitely waiting for a finished signal.
     if (m_imageView && m_imageView->isSlideshowTransitionBusy()) {
-        return;
+        if (m_slideshowTransitionCycle >= 0 && cycle > m_slideshowTransitionCycle) {
+            m_imageView->cancelSlideshowTransition();
+            m_slideshowPendingToIndex = -1;
+            // fall through — start the transition that matches *this* cycle
+        } else {
+            return;
+        }
     }
 
     // Single-image dwell: session index must match the clock's fromIdx.
