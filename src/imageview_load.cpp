@@ -198,22 +198,53 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         return;
     }
     if (role == LoadReplace) {
-        // Image mode: show provisional on the current item only.
-        if (path != classicPath() && !(isMultiItemMode() && m_items.isEmpty())) {
-            if (path != classicPath()) {
-                return;
-            }
-        }
-        if (!isMultiItemMode()) {
-            ImageItem *item = targetItem();
-            if (item && item->path() == path && !item->hasDecodedPixels()) {
-                item->setPreviewImage(image);
-                if (viewport()) {
-                    viewport()->update();
-                }
-            }
+        if (path != classicPath()) {
             return;
         }
+        // Image mode next/prev: previous full pixels stay until full decode.
+        // Swap in a provisional tile as soon as the thumbnail is ready so rapid
+        // navigation is not stuck on the previous image.
+        if (isImageMode()) {
+            if (ImageItem *cur = targetItem()) {
+                if (cur->path() == path && cur->hasDecodedPixels()) {
+                    return; // full decode already won the race
+                }
+            }
+            setUpdatesEnabled(false);
+            clearLiveCanvas();
+            ImageItem *item = createPlaceholderItem(path, image.size());
+            if (!item) {
+                setUpdatesEnabled(true);
+                return;
+            }
+            item->setPreviewImage(image);
+            if (m_currentSessionId != kInvalidSessionImageId) {
+                item->setSessionId(m_currentSessionId);
+            }
+            if (m_sessionIndex >= 0) {
+                item->setSessionIndex(m_sessionIndex);
+            }
+            item->setInteractive(false);
+            item->setScaleHandlesEnabled(false);
+            item->setItemScale(1.0);
+            item->setPos(0, 0);
+            item->setItemRotation(0.0);
+            prepareImageModeCanvas();
+            if (m_slideshowProgressActive
+                && m_slideshowMotion == SlideshowMotion::Off) {
+                applySlideshowZoomFraming(item);
+            } else if (!m_slideshowProgressActive) {
+                fitItem(item, currentFitAspectMode());
+            }
+            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+            setUpdatesEnabled(true);
+            if (viewport()) {
+                viewport()->update();
+            }
+            emit statusChanged();
+            return;
+        }
+        // Empty multi-item canvas falling through to classic seed: treat like gallery.
     }
     // Gallery / Workspace: fill undecoded occurrences of this path.
     for (ImageItem *item : m_items) {

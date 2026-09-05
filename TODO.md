@@ -3773,3 +3773,21 @@ decode still runs. Full `setSourceImage` clears the preview.
 - [x] Low-res appears when thumbnail decode succeeds before full load
 - [x] Layout size stays intrinsic / probe size
 - [x] Next **215**
+
+## Plan / work (2026-09-05) — bundle `biltoo-215-image-mode-preview-nav`
+
+Gallery previews worked; Image-mode next/prev still showed the *previous*
+full image until the full decode finished. `onImagePreviewLoaded` required
+`path == item->path() && !hasDecodedPixels()`, which never matched the old
+tile still displaying the prior path.
+
+### Fix
+On LoadReplace preview for the current `classicPath()` in Image mode: if a
+full decode for that path is not already present, `clearLiveCanvas` and
+install a provisional placeholder + `setPreviewImage`, then fit. Full
+`onImageLoaded` still replaces with the final item.
+
+### Done criteria
+- [x] Rapid next/prev shows low-res of the *new* image when ready
+- [x] Full decode still supersedes preview
+- [x] Next **216**
