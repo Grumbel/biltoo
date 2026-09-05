@@ -800,10 +800,37 @@ void ImageView::reapplySlideshowFraming()
     }
 }
 
+void ImageView::setSlideshowMotionPaused(bool paused)
+{
+    if (paused == m_slideshowMotionPaused) {
+        return;
+    }
+    if (paused) {
+        if (m_slideshowMotionActive && m_motionTimer && m_motionTimer->isActive()) {
+            m_motionElapsedOffsetMs += m_motionClock.elapsed();
+            m_motionTimer->stop();
+        }
+        m_slideshowMotionPaused = true;
+        if (viewport()) {
+            viewport()->update();
+        }
+        return;
+    }
+    m_slideshowMotionPaused = false;
+    if (m_slideshowMotionActive && m_motionTimer && m_motionDurationMs > 0) {
+        m_motionClock.restart();
+        m_motionTimer->start();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
 void ImageView::cancelSlideshowMotion()
 {
     const bool wasMotion = m_slideshowMotionActive;
     m_slideshowMotionActive = false;
+    m_slideshowMotionPaused = false;
     if (m_motionSavedBarPolicies) {
         setHorizontalScrollBarPolicy(m_motionSavedHBarPolicy);
         setVerticalScrollBarPolicy(m_motionSavedVBarPolicy);

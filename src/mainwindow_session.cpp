@@ -1383,7 +1383,7 @@ void MainWindow::updateNavigationActions()
     m_slideshowAct->setEnabled(canSlideshow);
     if (m_slideshowAct) {
         if (canSlideshow) {
-            m_slideshowAct->setStatusTip(tr("Start or stop the slideshow (Space)"));
+            m_slideshowAct->setStatusTip(tr("Space: pause/resume · Esc: leave slideshow"));
         } else if (m_imageView && m_imageView->isWorkspaceMode()) {
             m_slideshowAct->setStatusTip(tr("Slideshow is not available in Workspace mode"));
         } else {
@@ -1397,7 +1397,7 @@ void MainWindow::updateNavigationActions()
     // file). Idle stopSlideshow is a no-op for the timer, but still emitted
     // statusChanged via restoreImageFramingAfterSlideshow → re-entered here
     // forever (stack overflow / SEGV in QToolButton when loading one image).
-    if (!canSlideshow && m_slideshowTimer && m_slideshowTimer->isActive()) {
+    if (!canSlideshow && isSlideshowSession()) {
         stopSlideshow();
     }
 
@@ -1509,14 +1509,16 @@ void MainWindow::goPrevious()
     if (m_session.paths().size() <= 1) {
         return;
     }
-    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
-        stopSlideshow();
+    // Stay in the slideshow session (playing or paused); do not tear down framing.
+    if (isSlideshowSession() && !m_slideshowAdvancing && m_imageView && isImageMode()) {
+        m_imageView->prepareSlideshowTransition();
     }
     int idx = m_currentIndex - 1;
     if (idx < 0) {
         idx = m_session.paths().size() - 1;
     }
     setCurrentIndex(idx);
+    onSlideshowUserNavigated();
 }
 
 void MainWindow::goNext()
@@ -1524,14 +1526,15 @@ void MainWindow::goNext()
     if (m_session.paths().size() <= 1) {
         return;
     }
-    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
-        stopSlideshow();
+    if (isSlideshowSession() && !m_slideshowAdvancing && m_imageView && isImageMode()) {
+        m_imageView->prepareSlideshowTransition();
     }
     int idx = m_currentIndex + 1;
     if (idx >= m_session.paths().size()) {
         idx = 0;
     }
     setCurrentIndex(idx);
+    onSlideshowUserNavigated();
 }
 
 void MainWindow::goFirst()
@@ -1539,10 +1542,11 @@ void MainWindow::goFirst()
     if (m_session.paths().isEmpty()) {
         return;
     }
-    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
-        stopSlideshow();
+    if (isSlideshowSession() && !m_slideshowAdvancing && m_imageView && isImageMode()) {
+        m_imageView->prepareSlideshowTransition();
     }
     setCurrentIndex(0);
+    onSlideshowUserNavigated();
 }
 
 void MainWindow::goLast()
@@ -1550,10 +1554,11 @@ void MainWindow::goLast()
     if (m_session.paths().isEmpty()) {
         return;
     }
-    if (m_slideshowTimer->isActive() && !m_slideshowAdvancing) {
-        stopSlideshow();
+    if (isSlideshowSession() && !m_slideshowAdvancing && m_imageView && isImageMode()) {
+        m_imageView->prepareSlideshowTransition();
     }
     setCurrentIndex(m_session.paths().size() - 1);
+    onSlideshowUserNavigated();
 }
 
 void MainWindow::setSlideshowIntervalMs(int ms)
@@ -1704,7 +1709,7 @@ void MainWindow::showSlideshowCursor()
 
 void MainWindow::hideSlideshowCursor()
 {
-    if (!m_slideshowTimer || !m_slideshowTimer->isActive()) {
+    if (!isSlideshowSession()) {
         return;
     }
     if (!m_slideshowCursorHidden) {
@@ -1715,7 +1720,7 @@ void MainWindow::hideSlideshowCursor()
 
 void MainWindow::armSlideshowCursorHide()
 {
-    if (!m_cursorHideTimer || !m_slideshowTimer || !m_slideshowTimer->isActive()) {
+    if (!m_cursorHideTimer || !isSlideshowSession()) {
         return;
     }
     // Show on activity, then hide after 1 s of inactivity (timer interval).
@@ -1723,10 +1728,68 @@ void MainWindow::armSlideshowCursorHide()
     m_cursorHideTimer->start();
 }
 
+bool MainWindow::isSlideshowSession() const
+{
+    return m_slideshowPaused
+        || (m_slideshowTimer && m_slideshowTimer->isActive());
+}
+
+void MainWindow::updateSlideshowActionUi()
+{
+    if (!m_slideshowAct) {
+        return;
+    }
+    if (m_slideshowPaused) {
+        m_slideshowAct->setChecked(true);
+        m_slideshowAct->setText(tr("Resume &Slideshow"));
+        m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"),
+                                           QStyle::SP_MediaPlay));
+        m_slideshowAct->setStatusTip(
+            tr("Space: resume · Esc: leave slideshow"));
+    } else if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+        m_slideshowAct->setChecked(true);
+        m_slideshowAct->setText(tr("Pause &Slideshow"));
+        m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-pause"),
+                                           QStyle::SP_MediaPause));
+        m_slideshowAct->setStatusTip(
+            tr("Space: pause · Esc: leave slideshow · ←/→ change slide"));
+    } else {
+        m_slideshowAct->setChecked(false);
+        m_slideshowAct->setText(tr("Play &Slideshow"));
+        m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"),
+                                           QStyle::SP_MediaPlay));
+        m_slideshowAct->setStatusTip(
+            tr("Space: pause/resume · Esc: leave slideshow"));
+    }
+}
+
+void MainWindow::onSlideshowUserNavigated()
+{
+    if (!isSlideshowSession() || m_slideshowAdvancing) {
+        return;
+    }
+    if (!m_imageView) {
+        return;
+    }
+    // Playing: restart dwell for the new slide. Paused: keep frozen until resume.
+    if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+        m_slideshowTimer->start(m_slideshowIntervalMs);
+        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        if (m_session.paths().size() > 1) {
+            int n = (m_currentIndex + 1) % m_session.paths().size();
+            if (n < 0) {
+                n = 0;
+            }
+            m_imageView->preloadSlideshowImage(m_session.paths().at(n));
+        }
+    }
+}
+
 void MainWindow::startSlideshow()
 {
     if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
-        m_slideshowAct->setChecked(false);
+        m_slideshowPaused = false;
+        updateSlideshowActionUi();
         return;
     }
     // Gallery: open the focused session image in Image mode, then advance.
@@ -1738,7 +1801,8 @@ void MainWindow::startSlideshow()
             path = m_session.paths().first();
         }
         if (path.isEmpty()) {
-            m_slideshowAct->setChecked(false);
+            m_slideshowPaused = false;
+            updateSlideshowActionUi();
             return;
         }
         showPathInImageMode(path);
@@ -1746,10 +1810,9 @@ void MainWindow::startSlideshow()
     if (m_slideshowFullscreen && !isFullScreen()) {
         showFullScreen();
     }
+    m_slideshowPaused = false;
     m_slideshowTimer->start(m_slideshowIntervalMs);
-    m_slideshowAct->setChecked(true);
-    m_slideshowAct->setText(tr("Stop &Slideshow"));
-    m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-stop"), QStyle::SP_MediaStop));
+    updateSlideshowActionUi();
     qApp->installEventFilter(this);
     // Ensure free mouse moves reach the app filter during the show.
     setMouseTracking(true);
@@ -1761,6 +1824,7 @@ void MainWindow::startSlideshow()
     }
     armSlideshowCursorHide();
     if (m_imageView) {
+        m_imageView->setSlideshowMotionPaused(false);
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
         // Frame the current (already loaded) slide: zoom mode when motion is
         // off, cover + camera when motion is on. maybeStart alone skipped
@@ -1778,18 +1842,55 @@ void MainWindow::startSlideshow()
     }
 }
 
-void MainWindow::stopSlideshow()
+void MainWindow::pauseSlideshow()
 {
-    // Only announce when a running slideshow is actually stopped. Silent no-ops
-    // (mode switches, navigation while idle) must not flash "Stop" on the HUD.
-    const bool wasRunning = m_slideshowTimer && m_slideshowTimer->isActive();
-    const bool actPlaying = m_slideshowAct && m_slideshowAct->isChecked();
-    // Fully idle: avoid restoreImageFramingAfterSlideshow → statusChanged →
-    // updateNavigationActions → stopSlideshow re-entry (SEGV stack blow-up).
-    if (!wasRunning && !actPlaying) {
+    if (!m_slideshowTimer || !m_slideshowTimer->isActive()) {
         return;
     }
+    m_slideshowTimer->stop();
+    m_slideshowPaused = true;
+    if (m_imageView) {
+        m_imageView->setSlideshowMotionPaused(true);
+        // Keep progress flag so framing/motion state stays in slideshow mode;
+        // freeze the HUD progress line by not restarting the progress timer.
+        m_imageView->setSlideshowProgress(true, 0);
+        m_imageView->flashHud(tr("❚❚  Paused"));
+    }
+    updateSlideshowActionUi();
+}
 
+void MainWindow::resumeSlideshow()
+{
+    if (!m_slideshowPaused) {
+        return;
+    }
+    if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
+        stopSlideshow();
+        return;
+    }
+    m_slideshowPaused = false;
+    m_slideshowTimer->start(m_slideshowIntervalMs);
+    if (m_imageView) {
+        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        m_imageView->setSlideshowMotionPaused(false);
+        m_imageView->flashHud(tr("▶  Slideshow"),
+                              formatSlideshowInterval(m_slideshowIntervalMs));
+    }
+    armSlideshowCursorHide();
+    updateSlideshowActionUi();
+}
+
+void MainWindow::stopSlideshow()
+{
+    // Session = playing or paused. Silent no-ops when fully idle.
+    const bool wasSession = isSlideshowSession()
+        || (m_slideshowAct && m_slideshowAct->isChecked());
+    if (!wasSession) {
+        return;
+    }
+    const bool announce = isSlideshowSession();
+
+    m_slideshowPaused = false;
     if (m_slideshowTimer) {
         m_slideshowTimer->stop();
     }
@@ -1797,23 +1898,17 @@ void MainWindow::stopSlideshow()
         m_cursorHideTimer->stop();
     }
     if (m_imageView) {
+        m_imageView->setSlideshowMotionPaused(false);
         m_imageView->cancelSlideshowTransition();
         m_imageView->cancelSlideshowMotion();
     }
     showSlideshowCursor();
     qApp->removeEventFilter(this);
-    if (m_slideshowAct) {
-        m_slideshowAct->setChecked(false);
-        m_slideshowAct->setText(tr("Play &Slideshow"));
-        m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
-    }
+    updateSlideshowActionUi();
     if (m_imageView) {
         m_imageView->setSlideshowProgress(false);
-        // Progress=false already cancelled motion; re-fit Image mode so zoom
-        // and position are not left on the last slideshow Fill/Fit camera.
-        // Only when we actually interrupted a running show — idle calls must
-        // not emit statusChanged and re-enter updateNavigationActions.
-        if (wasRunning) {
+        // Leave Fill/Ken Burns camera and return to normal Image-mode fit.
+        if (announce) {
             m_imageView->restoreImageFramingAfterSlideshow();
             m_imageView->flashHud(tr("■  Slideshow stopped"));
         }
@@ -1823,7 +1918,7 @@ void MainWindow::stopSlideshow()
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
     Q_UNUSED(watched);
-    if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+    if (isSlideshowSession()) {
         switch (event->type()) {
         case QEvent::MouseMove:
         case QEvent::HoverMove:
@@ -1843,8 +1938,10 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 
 void MainWindow::toggleSlideshow()
 {
-    if (m_slideshowTimer->isActive()) {
-        stopSlideshow();
+    if (m_slideshowPaused) {
+        resumeSlideshow();
+    } else if (m_slideshowTimer && m_slideshowTimer->isActive()) {
+        pauseSlideshow();
     } else {
         startSlideshow();
     }

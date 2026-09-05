@@ -261,7 +261,7 @@ void MainWindow::createActions()
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     m_slideshowAct->setCheckable(true);
     m_slideshowAct->setStatusTip(
-        tr("Start or stop the slideshow (Space). Unavailable in workspace mode."));
+        tr("Space: pause/resume · Esc: leave slideshow (Space). Unavailable in workspace mode."));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
     m_slideshowSettingsAct = new QAction(tr("Slideshow &Settings…"), this);

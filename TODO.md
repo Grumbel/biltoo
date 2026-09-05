@@ -3891,3 +3891,21 @@ as mainwindow_session).
 ### Done criteria
 - [x] Warning fixed
 - [x] Next **222**
+
+## Plan / work (2026-09-05) — bundle `biltoo-222-slideshow-pause`
+
+Slideshow pause was full stop → Image framing (different zoom/scroll).
+Left/Right also stopped the show.
+
+### Model
+- **Playing / Paused / Off**
+- Space: pause ↔ resume (framing kept; Ken Burns frozen via motion offset)
+- Esc: leave session (restore Image fit)
+- ←/→ (and Home/End): change slide, stay in session; restart dwell if playing
+- Up / returnFromImageMode: still stopSlideshow
+
+### Done criteria
+- [x] Space does not restore Image framing
+- [x] Esc leaves slideshow
+- [x] Arrows do not stop the show
+- [x] Next **223**

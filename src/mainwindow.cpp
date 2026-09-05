@@ -251,6 +251,11 @@ MainWindow::MainWindow(QWidget *parent)
             m_imageView->cancelCrop();
             return;
         }
+        // Leave slideshow (playing or paused) before leaving fullscreen / Image mode.
+        if (isSlideshowSession()) {
+            stopSlideshow();
+            return;
+        }
         if (isFullScreen()) {
             showNormal();
             return;

@@ -157,6 +157,13 @@ private slots:
     void goFirst();
     void goLast();
     void toggleSlideshow();
+    void pauseSlideshow();
+    void resumeSlideshow();
+    /** Playing or paused (not fully stopped). */
+    bool isSlideshowSession() const;
+    void updateSlideshowActionUi();
+    /** After user next/prev during an active show: keep dwell in sync. */
+    void onSlideshowUserNavigated();
     void setLayoutFreeForm();
     void setLayoutSideBySide();
     void setLayoutVertical();
@@ -501,6 +508,7 @@ private:
     bool m_forceThumbnails = false;
     bool m_forceNoThumbnails = false;
     bool m_slideshowAdvancing = false; // true while timer-driven next runs
+    bool m_slideshowPaused = false; // session active, timer stopped, framing kept
 
     bool m_toolBarVisibleBeforeFullscreen = true;
     bool m_thumbnailBarVisibleBeforeFullscreen = true;

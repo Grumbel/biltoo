@@ -532,6 +532,11 @@ public:
     void setSlideshowZoom(SlideshowZoom mode);
     SlideshowZoom slideshowZoom() const { return m_slideshowZoom; }
     void cancelSlideshowMotion();
+    /**
+     * Freeze or continue Ken Burns without tearing down the dwell camera.
+     * Used for slideshow pause/resume (Space), not full stop.
+     */
+    void setSlideshowMotionPaused(bool paused);
     /** Image-mode fit after leaving slideshow (Fit to window). */
     void restoreImageFramingAfterSlideshow();
     /** Start dwell image-blit Ken Burns if enabled and slideshow is active. */
@@ -1028,6 +1033,7 @@ private:
     qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
     SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
     bool m_slideshowMotionActive = false;
+    bool m_slideshowMotionPaused = false;
     /** Scroll policies restored when Ken Burns underlay returns. */
     Qt::ScrollBarPolicy m_motionSavedHBarPolicy = Qt::ScrollBarAsNeeded;
     Qt::ScrollBarPolicy m_motionSavedVBarPolicy = Qt::ScrollBarAsNeeded;
