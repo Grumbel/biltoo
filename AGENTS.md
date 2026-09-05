@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-231-slideshow-hud-timeline**
-(Extended HUD: video-player elapsed/total/remaining during slideshow).
-Next bundle number: **232**.
+Latest agent handoff: **TODO.md → biltoo-232-slideshow-clock-sync**
+(Clock/index sync: absolute pending to-index; lag recovery; no goNext on finish).
+Next bundle number: **233**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

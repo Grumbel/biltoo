@@ -521,6 +521,8 @@ private:
     int m_slideshowBaseIndex = 0;
     /** Cycle number for which we already started a transition (-1 = none). */
     qint64 m_slideshowTransitionCycle = -1;
+    /** Target session index for the in-flight transition (-1 = none). */
+    int m_slideshowPendingToIndex = -1;
     /** True while the repeating clock tick is the authority (playing). */
     bool m_slideshowClockRunning = false;
 

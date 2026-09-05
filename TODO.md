@@ -4157,3 +4157,30 @@ Extended (pinned) HUD shows video-player style slideshow time.
 - [x] Extended HUD shows elapsed, total, remaining during slideshow
 - [x] Hidden when HUD is off
 - [x] Next **232**
+
+## Plan / work (2026-09-05) — bundle `biltoo-232-slideshow-clock-sync`
+
+### Bugs found in 230/231 clock scheduler
+1. **Relative goNext on live finished** — after a slow load the clock may have
+   advanced; +1 from a stale currentIndex installs the wrong image. Also
+   `goNext()` calls `onSlideshowUserNavigated()` (clock reset) unless the
+   advancing guard is set.
+2. **No lag recovery** — if decode kept the transition busy across a cycle
+   boundary, the next cycle's transition was skipped forever
+   (`transitionCycle` stuck, busy returns early, pure zone never healed).
+3. **Snapshot path used goNext** — same relative-index hazard.
+
+### Fix
+- Record `m_slideshowPendingToIndex` when a transition starts (absolute to-idx
+  from the clock: `(base+cycle+1)%n`).
+- Live finished → `setCurrentIndex(pending)`, never `goNext()`.
+- Snapshot path → `setCurrentIndex(toIdx)` directly.
+- If still busy and `cycle > transitionCycle`: cancel stale transition, clear
+  pending, fall through and start the *current* cycle's correct pair (skip
+  intermediates — acceptable recovery after lag).
+- Before starting a transition, force `currentIndex == fromIdx`.
+
+### Done criteria
+- [x] No wrong-image advances after slow loads
+- [x] Missed cycles recover instead of staying stuck/skipping forever
+- [x] Next **233**

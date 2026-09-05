@@ -1767,6 +1767,7 @@ void MainWindow::onSlideshowUserNavigated()
         m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
         m_slideshowPausedAccumMs = 0;
         m_slideshowTransitionCycle = -1;
+        m_slideshowPendingToIndex = -1;
     }
     updateSlideshowActionUi();
 }
@@ -1888,6 +1889,7 @@ void MainWindow::stopSlideshow()
     m_slideshowClockRunning = false;
     m_slideshowPausedAccumMs = 0;
     m_slideshowTransitionCycle = -1;
+    m_slideshowPendingToIndex = -1;
     if (m_slideshowTimer) {
         m_slideshowTimer->stop();
     }
