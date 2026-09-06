@@ -5968,3 +5968,116 @@ ceilLadderEdge can request a higher step for larger on-screen cells.
 ### Still OK
 - Pack algorithms, ImageView switch, menu/toolbar, columns spin for Flow
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-331-slideshow-letterbox-fill`
+
+### Request
+When a slideshow image does not cover the viewport (Fit, Actual, or motion
+frames that leave bars), the empty regions currently show the normal app /
+scene background. Add explicit **letterbox fill modes** in Slideshow Settings:
+
+1. **Solid colour** — dedicated colour (with picker), independent of Preferences
+   canvas background if desired; default can still track app background.
+2. **Zoom + blur** — TV/news style: scale the *current* image to cover the
+   viewport, heavily blur it, draw as full-bleed underlay; sharp image stays
+   fitted on top. Requires the live slide pixels (not a static workspace tile).
+
+May share colour-button / preview patterns with `WorkspaceBackgroundDialog`, but
+Zoom+blur is slideshow-specific (per-frame / per-slide image, not project bg).
+
+Also: ensure **attention point UI** is on the pre-release TODO (multi-point
+edit / undo still open from 314 → 315+).
+
+### Design
+
+**Enum** (`ImageView` / types):
+
+```text
+SlideshowLetterboxFill {
+  AppBackground = 0,  // current behaviour: Preferences bg / checker
+  Solid         = 1,  // m_slideshowPadColor (QColor)
+  ZoomBlur      = 2,  // cover-scale + blur of current slide under sharp image
+}
+```
+
+**When it applies**
+
+- Active only while `m_slideshowProgressActive` (Image mode slideshow).
+- Visible whenever the composed slide does not fully cover the viewport:
+  Fit, Actual, or motion intermediate frames that leave bars.
+- Fill mode is orthogonal to **Slideshow zoom** (Fit / Fill / 1:1): Fill zoom
+  already covers; letterbox fill is a no-op for coverage but still fine to keep
+  selected for when the user switches back to Fit.
+
+**Solid**
+
+- New settings key `slideshowPadColor` (HexRgb).
+- Optional: “Use app background colour” checkbox that mirrors
+  `backgroundColor` when checked (default on → same as today for Solid path).
+- Simpler MVP: Solid always uses `slideshowPadColor`, defaulting to current
+  `backgroundColor` on first run.
+
+**ZoomBlur**
+
+- Paint path (dwell + pure phase covers + live transition frames that letterbox):
+  1. Build or reuse a **cover-scaled** pixmap of the current slide image.
+  2. Apply Gaussian (or multi-pass box) blur — radius ~ viewport short edge / 40
+     or a fixed ~24–48 px at 1× DPR, scaled for DPR.
+  3. Draw blurred pixmap stretched to the full viewport (cover crop centre).
+  4. Draw the sharp slide with existing Fit/motion framing on top.
+- Cache: key = (session image id or path + content generation, viewport size,
+  DPR, blur radius). Invalidate on slide change, resize, zoom mode change.
+- Prefer Qt stack-blur / `QImage` box blur on a downscaled buffer for speed
+  (blur at ~1/4 res then upscale) so dwell paint stays cheap. Optional later:
+  `vips_gaussblur` on ladder bytes if quality demands it.
+- Transitions: from/to frames each get their own blurred underlay when that
+  slide letterboxes; crossfade opacities apply to the sharp layer (blur underlay
+  can follow the same opacity or stay under both — prefer matching opacity so
+  Fade-to-black stays correct).
+
+**Settings UI** (`SlideshowSettingsDialog` + Preferences Slideshow tab)
+
+- Combo: Letterbox fill — App background / Solid colour / Zoom + blur
+- Colour button enabled only for Solid (style like Workspace background)
+- Live apply (existing `settingsChanged` path)
+
+**Non-goals this bundle**
+
+- Checkerboard as a slideshow-only pad (App background already covers that)
+- Per-project letterbox fill (app settings only for 0.1.0)
+- Sharing a full dialog class with WorkspaceBackground (colour button helper
+  only if trivial)
+
+### Attention UI (pre-release)
+
+Elevate residual from 314/315:
+
+- [ ] Attention multi-point insert / select / delete / move
+- [ ] Undo/redo for attention edits
+- [ ] Optional: secondary points as Pan&Zoom waypoints
+
+Single-point mode + load/save + mid-path bias already shipped (310–314).
+Multi-point data foundation exists; **edit UI still needs work before release**.
+
+### Implementation order
+
+1. Docs: this plan; attention pre-release checklist
+2. Enum + QSettings + dialog/prefs wiring + Solid paint path
+3. ZoomBlur cache + paint underlay for dwell / cover pixmaps
+4. Transition path + resize invalidation
+5. Polish tooltips; verify Fit/Fill/Actual × Off/Pan&zoom/Pan&scan
+
+### Done criteria
+
+- [x] Letterbox fill combo in Slideshow Settings + Preferences
+- [x] Solid colour fills bars during slideshow
+- [x] Zoom+blur underlay from current image when letterboxed
+- [x] Attention multi-point UI listed as pre-release TODO
+- [x] Docs / handoff; next **332**
+
+### Notes
+- ZoomBlur uses a downscaled multi-pass box blur (≈ Gaussian), cached per
+  viewport size + source buffer identity. Resize invalidates the cache.
+- Transition Slide gap still falls back to solid pad when sources missing.
+- Attention multi-point edit UI remains open (see pre-release checklist above).
