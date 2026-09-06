@@ -12,6 +12,7 @@
 , cfitsio
 , libimagequant
 , libarchive
+, poppler  # thumtoo PDF pages (poppler-cpp.pc when BILTOO_WITH_THUMTOO)
 , kimageformats
 , thumtooSrc ? null
 , sqlite
@@ -67,6 +68,7 @@ stdenv.mkDerivation (finalAttrs: {
     # (nixpkgs package name is libimagequant; module name is imagequant).
     libimagequant
     libarchive
+    poppler
     sqlite
     libjxl
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …

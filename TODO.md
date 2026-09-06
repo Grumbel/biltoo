@@ -5849,3 +5849,15 @@ No dependency on `Client::pdf_*`.
 Flake `thumtoo` input must include the Poppler/PDF commits so `pdf.hpp` is
 on the include path; otherwise expand is empty at runtime.
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-321-poppler-dep`
+
+### Bug
+Standalone thumtoo finds poppler-cpp; biltoo’s embedded thumtoo did not —
+pkg-config had no poppler on biltoo’s PKG_CONFIG_PATH.
+
+### Fix
+Add `poppler` to default.nix function args and buildInputs (provides
+poppler-cpp.pc). Dev shell inherits via inputsFrom.
+

@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-320-pdf-compat**
-(PDF via thumtoo/pdf.hpp free API; no Client::pdf_* required).
-Next bundle number: **321**.
+Latest agent handoff: **TODO.md → biltoo-321-poppler-dep**
+(default.nix: poppler for thumtoo PDF when building biltoo).
+Next bundle number: **322**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
