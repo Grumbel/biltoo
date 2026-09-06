@@ -5285,3 +5285,28 @@ and for member byte extraction (full decode).
 - [x] ThumtooCache archive expand API + unit-safe fallbacks
 - [x] expandPaths + expandPathsInBackground use cache-first TOC
 - [x] Docs: TODO plan + AGENTS handoff; next **289**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-289-thumtoo-archive-extract`
+
+### Task
+Use thumtoo `extract_archive_member` for //archive: full/probe byte reads so
+archive I/O policy (size caps, libarchive) is shared with the durable TOC path.
+Keep ArchiveReader as fallback when thumtoo is off or extract fails.
+
+### Design
+1. `ThumtooCache::readArchiveMemberBytes(sessionPath)` for //archive: refs only:
+   - Parse ArchivePath, call `thumtoo::extract_archive_member`, return QByteArray.
+   - Empty on failure / non-archive / no thumtoo.
+2. `ImageLoader::loadArchiveRef` and archive branch of `probeSize`: try
+   ThumtooCache bytes first, then ArchiveReader::readMember.
+3. Soft ladder path unchanged (already uses get_pixels / schedulePixels).
+
+### Out of scope
+- Batch multi-member extract API in biltoo
+- Dropping ArchiveReader entirely
+
+### Done criteria
+- [x] ThumtooCache::readArchiveMemberBytes
+- [x] ImageLoader archive load + probe use it with fallback
+- [x] Docs / handoff; next **290**

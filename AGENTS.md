@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-288-thumtoo-archive-toc**
-(thumtoo durable archive TOC for session expand; ArchiveReader fallback).
-Next bundle number: **289**.
+Latest agent handoff: **TODO.md → biltoo-289-thumtoo-archive-extract**
+(thumtoo extract for //archive: member bytes; ArchiveReader fallback).
+Next bundle number: **290**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -305,6 +305,10 @@ Session edit identity remains biltoo `SessionImageId`.
 **Archive expand:** `ThumtooCache::expandArchiveToImageRefs` uses cache-first
 `get_archive_entries`, then `refresh_archive_toc` (stores durable TOC). Session
 `expandPaths` / background expand prefer that list and fall back to
-`ArchiveReader::expandArchiveToImageRefs`. Full member decode still uses
-`ArchiveReader::readMember` (not thumtoo extract yet).
+`ArchiveReader::expandArchiveToImageRefs`.
+
+**Archive member bytes:** `ThumtooCache::readArchiveMemberBytes` calls
+`thumtoo::extract_archive_member` (shared size caps). `ImageLoader` tries that
+first, then `ArchiveReader::readMember`. GUI-thread size probes for archive
+refs stay cache-only / neutral placeholder (no extract on the UI thread).
 
