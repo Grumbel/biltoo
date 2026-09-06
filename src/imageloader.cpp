@@ -681,79 +681,134 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
     return true;
 }
 
-bool smartCropRect(const QImage &image, int cropW, int cropH, QRect *pixelRectOut)
+bool autoTrimRect(const QImage &image, const QRect &searchWithin, QRect *trimmedOut,
+                  int colorThreshold, int noisePercent)
 {
-    if (!pixelRectOut || image.isNull() || cropW < 1 || cropH < 1) {
+    if (!trimmedOut || image.isNull()) {
         return false;
     }
-    const int iw = image.width();
-    const int ih = image.height();
-    cropW = qBound(1, cropW, iw);
-    cropH = qBound(1, cropH, ih);
+    const QRect imgRect(0, 0, image.width(), image.height());
+    QRect area = searchWithin.intersected(imgRect).normalized();
+    if (area.width() < 2 || area.height() < 2) {
+        return false;
+    }
+    colorThreshold = qBound(0, colorThreshold, 255);
+    noisePercent = qBound(0, noisePercent, 50);
 
-#ifndef BILTOO_HAVE_VIPS
-    // No VIPS: centre crop of the requested size.
-    *pixelRectOut = QRect((iw - cropW) / 2, (ih - cropH) / 2, cropW, cropH);
-    return true;
-#else
-    // Full-resolution path (no pre-shrink): smartcrop itself resizes for scoring.
-    QImage src = image.convertToFormat(QImage::Format_RGB888);
-    if (src.isNull() || src.bytesPerLine() < src.width() * 3) {
-        *pixelRectOut = QRect((iw - cropW) / 2, (ih - cropH) / 2, cropW, cropH);
-        return true;
-    }
-    const int width = src.width();
-    const int height = src.height();
-    const int bands = 3;
-    const size_t rowBytes = size_t(width) * size_t(bands);
-    const size_t nbytes = rowBytes * size_t(height);
-    void *buf = g_malloc(nbytes);
-    if (!buf) {
-        return false;
-    }
-    for (int y = 0; y < height; ++y) {
-        memcpy(static_cast<uchar *>(buf) + size_t(y) * rowBytes,
-               src.constScanLine(y), rowBytes);
-    }
-    VipsImage *in = vips_image_new_from_memory_copy(buf, nbytes, width, height, bands,
-                                                    VIPS_FORMAT_UCHAR);
-    g_free(buf);
-    if (!in) {
-        return false;
+    QImage src = image;
+    if (src.format() != QImage::Format_RGB32
+        && src.format() != QImage::Format_ARGB32
+        && src.format() != QImage::Format_ARGB32_Premultiplied) {
+        src = src.convertToFormat(QImage::Format_ARGB32);
     }
 
-    // ENTROPY: slide a cropW×cropH window and keep the highest-detail placement.
-    // ATTENTION (smartcrop.js) shrinks to ~32px, scores edges+skin+saturation,
-    // takes a global max after heavy blur — reliable on a black dot, but feels
-    // random on complex photos. ENTROPY matches the requested window size and
-    // is the better default for Crop → Smart.
-    VipsImage *out = nullptr;
-    if (vips_smartcrop(in, &out, cropW, cropH,
-                       "interesting", VIPS_INTERESTING_ENTROPY,
-                       nullptr) != 0
-        || !out) {
-        // Fall back to attention peak-centred window.
-        g_object_unref(in);
-        QPointF peak(0.5, 0.5);
-        if (!attentionPointVipsPeak(image, &peak)) {
-            peak = QPointF(0.5, 0.5);
+    auto sample = [&](int x, int y, int *r, int *g, int *b) {
+        const QRgb px = src.pixel(x, y);
+        *r = qRed(px);
+        *g = qGreen(px);
+        *b = qBlue(px);
+        // Treat near-transparent as background contribution of pure white so
+        // scans with alpha still trim empty margins.
+        if (qAlpha(px) < 8) {
+            *r = *g = *b = 255;
         }
-        const int cx = int(qRound(peak.x() * qreal(iw - 1)));
-        const int cy = int(qRound(peak.y() * qreal(ih - 1)));
-        int left = qBound(0, cx - cropW / 2, iw - cropW);
-        int top = qBound(0, cy - cropH / 2, ih - cropH);
-        *pixelRectOut = QRect(left, top, cropW, cropH);
-        return true;
+    };
+
+    // Border samples for median background (edges of the search rect).
+    QVector<int> rs, gs, bs;
+    rs.reserve(area.width() * 2 + area.height() * 2);
+    gs.reserve(rs.capacity());
+    bs.reserve(rs.capacity());
+    auto push = [&](int x, int y) {
+        int r, g, b;
+        sample(x, y, &r, &g, &b);
+        rs.append(r);
+        gs.append(g);
+        bs.append(b);
+    };
+    for (int x = area.left(); x <= area.right(); ++x) {
+        push(x, area.top());
+        if (area.height() > 1) {
+            push(x, area.bottom());
+        }
+    }
+    for (int y = area.top() + 1; y <= area.bottom() - 1; ++y) {
+        push(area.left(), y);
+        if (area.width() > 1) {
+            push(area.right(), y);
+        }
+    }
+    if (rs.isEmpty()) {
+        return false;
+    }
+    auto medianOf = [](QVector<int> v) -> int {
+        std::sort(v.begin(), v.end());
+        return v.at(v.size() / 2);
+    };
+    const int bgR = medianOf(rs);
+    const int bgG = medianOf(gs);
+    const int bgB = medianOf(bs);
+
+    auto isContent = [&](int x, int y) -> bool {
+        int r, g, b;
+        sample(x, y, &r, &g, &b);
+        const int dr = qAbs(r - bgR);
+        const int dg = qAbs(g - bgG);
+        const int db = qAbs(b - bgB);
+        return qMax(dr, qMax(dg, db)) > colorThreshold;
+    };
+
+    auto columnHasContent = [&](int x, int y0, int y1) -> bool {
+        const int h = y1 - y0 + 1;
+        if (h <= 0) {
+            return false;
+        }
+        int hits = 0;
+        for (int y = y0; y <= y1; ++y) {
+            if (isContent(x, y)) {
+                ++hits;
+            }
+        }
+        // Need more than noisePercent of the column to count as content.
+        return hits * 100 > noisePercent * h;
+    };
+    auto rowHasContent = [&](int y, int x0, int x1) -> bool {
+        const int w = x1 - x0 + 1;
+        if (w <= 0) {
+            return false;
+        }
+        int hits = 0;
+        for (int x = x0; x <= x1; ++x) {
+            if (isContent(x, y)) {
+                ++hits;
+            }
+        }
+        return hits * 100 > noisePercent * w;
+    };
+
+    int left = area.left();
+    int right = area.right();
+    int top = area.top();
+    int bottom = area.bottom();
+
+    while (left < right && !columnHasContent(left, top, bottom)) {
+        ++left;
+    }
+    while (right > left && !columnHasContent(right, top, bottom)) {
+        --right;
+    }
+    while (top < bottom && !rowHasContent(top, left, right)) {
+        ++top;
+    }
+    while (bottom > top && !rowHasContent(bottom, left, right)) {
+        --bottom;
     }
 
-    // extract_area sets Xoffset/Yoffset on the result — the true crop origin.
-    const int left = qBound(0, int(out->Xoffset), iw - cropW);
-    const int top = qBound(0, int(out->Yoffset), ih - cropH);
-    *pixelRectOut = QRect(left, top, cropW, cropH);
-    g_object_unref(out);
-    g_object_unref(in);
-    return true;
-#endif
+    if (left > right || top > bottom) {
+        return false;
+    }
+    *trimmedOut = QRect(QPoint(left, top), QPoint(right, bottom));
+    return trimmedOut->isValid() && !trimmedOut->isEmpty();
 }
 
 

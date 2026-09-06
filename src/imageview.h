@@ -455,8 +455,8 @@ public:
     void detectAttentionPoint();
     /** Commit the draft crop rect to pixels and leave crop mode. */
     void applyCrop();
-    /** Reposition draft via VIPS smartcrop (current size, attention). */
-    void applySmartCrop();
+    /** Shrink draft to non-background content (margin trim). */
+    void applyAutoCrop();
     /** Discard the draft and leave crop mode. */
     void cancelCrop();
     /** Restore pixels + session crop metadata (used by crop undo/redo). */
@@ -925,10 +925,10 @@ private:
          */
         ExpandToggle,
         /**
-         * Reposition the draft to a VIPS smartcrop of the current size
-         * (attention peak centred, axis-aligned; rotation cleared).
+         * Shrink the draft to content: median border colour as background,
+         * trim empty margins (GIMP-style autocrop). Axis-aligned.
          */
-        Smart,
+        Auto,
         /** Clears the draft rect to the full image (reset session crop on apply). */
         Reset,
         /** Leave crop mode and discard the draft. */
@@ -945,7 +945,7 @@ private:
     QRectF cropRectView() const;
     /** Viewport rects of Reset / Apply controls above the crop frame. */
     QRect cropExpandButtonView() const;
-    QRect cropSmartButtonView() const;
+    QRect cropAutoButtonView() const;
     QRect cropResetButtonView() const;
     QRect cropCancelButtonView() const;
     QRect cropCloseButtonView() const;

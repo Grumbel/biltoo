@@ -6239,3 +6239,20 @@ ATTENTION peak-centre remains the fallback.
 - [x] Entropy smartcrop for Smart button
 - [x] Docs; next **342**
 
+## Plan / work (2026-09-06) — bundle `biltoo-342-crop-auto-trim`
+
+### Request
+Replace VIPS Smart crop (random / top-left) with GIMP-style **Auto** margin
+trim: shrink the current draft until non-background content is found.
+
+### Behaviour
+- Median RGB of pixels on the draft border = background
+- Max channel delta > 24 ⇒ content; row/col needs >4% content (noise floor)
+- Shrink left/right/top/bottom independently
+- 2px pad; rotation cleared; Expand off; still needs Apply
+
+### Done criteria
+- [x] Auto button (was Smart)
+- [x] ImageLoader::autoTrimRect
+- [x] Docs; next **343**
+

@@ -42,12 +42,17 @@ bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut,
                      int maxPoints = 5);
 
 /**
- * Axis-aligned smart crop of @a cropW × @a cropH within @a image (pixels).
- * Prefers libvips INTERESTING_ENTROPY (window search for detail); falls back
- * to ATTENTION peak-centred placement. Origin comes from the extract's
- * Xoffset/Yoffset when entropy succeeds. Without VIPS: centred crop.
+ * Shrink @a searchWithin to the bounding box of non-background content
+ * (GIMP-style autocrop / margin trim).
+ *
+ * Background is the per-channel median of pixels on the border of
+ * @a searchWithin. A pixel is "content" if its max RGB channel delta from
+ * the background exceeds @a colorThreshold. A row/column is still background
+ * if fewer than @a noisePercent percent of its samples are content (ignores
+ * speckles). Returns false if the result would be empty.
  */
-bool smartCropRect(const QImage &image, int cropW, int cropH, QRect *pixelRectOut);
+bool autoTrimRect(const QImage &image, const QRect &searchWithin, QRect *trimmedOut,
+                  int colorThreshold = 24, int noisePercent = 4);
 
 /**
  * Fast size probe without a full pixel decode when the backend allows it.
