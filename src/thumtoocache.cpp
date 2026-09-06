@@ -9,7 +9,9 @@
 #include <QFileInfo>
 #include <QMetaObject>
 #include <QSet>
+#include <QThreadPool>
 
+#include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
@@ -132,29 +134,154 @@ void releaseBatchIfIdle(const std::string &archiveAbs, const std::shared_ptr<Arc
     }
 }
 
-std::string absPathStd(const QString &p)
+/**
+ * Path for URI building without mandatory exists()/canonical().
+ * Session paths are almost always absolute — avoid realpath on every hit.
+ */
+std::string absPathFast(const QString &p)
 {
     QFileInfo fi(p);
+    if (fi.isAbsolute()) {
+        // absoluteFilePath for absolute input is path cleanup, not a full walk.
+        return fi.absoluteFilePath().toStdString();
+    }
     const QString can = fi.canonicalFilePath();
     const QString abs = can.isEmpty() ? fi.absoluteFilePath() : can;
     return abs.toStdString();
 }
 
-std::string toThumtooUri(const QString &path)
+/** Legacy name used by expand/register paths that still want a stable abs. */
+std::string absPathStd(const QString &p)
+{
+    return absPathFast(p);
+}
+
+std::mutex g_uriMu;
+std::unordered_map<std::string, std::string> g_uriBySessionPath;
+
+std::string resolveUriUncached(const QString &path)
 {
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
         if (!ref.valid) {
             return {};
         }
-        return thumtoo::archive_uri(absPathStd(ref.archivePath),
+        return thumtoo::archive_uri(absPathFast(ref.archivePath),
                                     ref.memberPath.toStdString());
     }
-    const QFileInfo fi(path);
-    if (!fi.exists()) {
+    if (path.isEmpty()) {
         return {};
     }
-    return thumtoo::file_uri_from_path(absPathStd(path));
+    // Do not require exists() — missing files simply miss in the durable index.
+    return thumtoo::file_uri_from_path(absPathFast(path));
+}
+
+std::string toThumtooUri(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    const std::string key = path.toStdString();
+    {
+        std::lock_guard lock(g_uriMu);
+        const auto it = g_uriBySessionPath.find(key);
+        if (it != g_uriBySessionPath.end()) {
+            return it->second;
+        }
+    }
+    std::string uri = resolveUriUncached(path);
+    if (!uri.empty()) {
+        std::lock_guard lock(g_uriMu);
+        g_uriBySessionPath.emplace(key, uri);
+    }
+    return uri;
+}
+
+// Rate-limit background mtime checks (per thumtoo URI).
+std::mutex g_revalMu;
+std::unordered_map<std::string, std::chrono::steady_clock::time_point> g_revalLast;
+constexpr auto kRevalidateMinInterval = std::chrono::seconds(2);
+
+std::optional<std::int64_t> fileMtimeFingerprint(const std::filesystem::path &p)
+{
+    std::error_code ec;
+    const auto ft = std::filesystem::last_write_time(p, ec);
+    if (ec) {
+        return std::nullopt;
+    }
+    return static_cast<std::int64_t>(ft.time_since_epoch().count());
+}
+
+std::optional<std::int64_t> fileSizeBytes(const std::filesystem::path &p)
+{
+    std::error_code ec;
+    const auto sz = std::filesystem::file_size(p, ec);
+    if (ec) {
+        return std::nullopt;
+    }
+    return static_cast<std::int64_t>(sz);
+}
+
+/**
+ * After a durable-cache hit: compare source fingerprint to locator row later.
+ * Does not block the caller. On mismatch, scheduleProbe(path).
+ */
+void scheduleBackgroundRevalidate(const QString &path, const std::string &uri)
+{
+    if (path.isEmpty() || uri.empty()) {
+        return;
+    }
+    const auto now = std::chrono::steady_clock::now();
+    {
+        std::lock_guard lock(g_revalMu);
+        const auto it = g_revalLast.find(uri);
+        if (it != g_revalLast.end() && (now - it->second) < kRevalidateMinInterval) {
+            return;
+        }
+        g_revalLast[uri] = now;
+    }
+    const QString pathCopy = path;
+    const std::string uriCopy = uri;
+    QThreadPool::globalInstance()->start([pathCopy, uriCopy]() {
+        init();
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (!c) {
+            return;
+        }
+        const auto loc = c->db().find_locator(uriCopy);
+        if (!loc || !loc->outer_path || loc->outer_path->empty()) {
+            return;
+        }
+        const std::filesystem::path outer(*loc->outer_path);
+        const auto mtime = fileMtimeFingerprint(outer);
+        const auto size = fileSizeBytes(outer);
+        // No stored fingerprint: nothing to compare; leave cache as-is.
+        if (!loc->mtime_ns && !loc->size) {
+            return;
+        }
+        bool mismatch = false;
+        if (loc->mtime_ns && mtime && *loc->mtime_ns != *mtime) {
+            mismatch = true;
+        }
+        if (loc->size && size && *loc->size != *size) {
+            mismatch = true;
+        }
+        // Source vanished.
+        if (!mtime && !size) {
+            mismatch = true;
+        }
+        if (!mismatch) {
+            return;
+        }
+        // Refresh durable rows (probe worker re-reads source).
+        scheduleProbe(pathCopy);
+        // Also nudge a gallery-level ladder rebuild when size changes.
+        schedulePixels(pathCopy, kGalleryLadderEdge);
+    });
 }
 
 thumtoo::Client *clientUnlocked()
@@ -284,6 +411,7 @@ QSize cachedSize(const QString &path)
         return {};
     }
     if (auto sz = c->get_size(uri)) {
+        scheduleBackgroundRevalidate(path, uri);
         return QSize(sz->width, sz->height);
     }
 #else
@@ -374,6 +502,7 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge)
         if (px->bytes.empty()) {
             return {};
         }
+        scheduleBackgroundRevalidate(path, uri);
         return QByteArray(reinterpret_cast<const char *>(px->bytes.data()),
                           int(px->bytes.size()));
     }

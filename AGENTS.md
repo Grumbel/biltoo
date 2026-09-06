@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-298-archives-via-thumtoo-only**
-(ArchiveReader removed; archives only via thumtoo).
-Next bundle number: **299**.
+Latest agent handoff: **TODO.md → biltoo-299-cache-uri-revalidate**
+(URI cache for instant get_*; background mtime revalidate).
+Next bundle number: **300**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -326,4 +326,10 @@ the planned surface (size, ladder, prepare, archive TOC/extract, status, edges).
 `ArchiveReader` removed. Optional later: per-entry TOC progress in thumtoo;
 filmstrip-only ladder edge schedule. Background expand: “Indexing archive…”
 then image count from thumtoo TOC.
+
+**Cache latency:** `toThumtooUri` caches path→URI and does not `exists()` /
+`canonicalFilePath()` on every hit (absolute session paths use fast abs). After
+`get_size` / `get_pixels` hits, `scheduleBackgroundRevalidate` compares the
+container/file fingerprint to the locator `mtime_ns`/`size` (≥2 s rate limit)
+and only then `scheduleProbe` + ladder if stale. Hits return immediately.
 

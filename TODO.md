@@ -5496,3 +5496,24 @@ and member extract go only through thumtoo (`ThumtooCache`). No dual fallback.
 - [x] No ArchiveReader call sites or sources
 - [x] Archives require thumtoo
 - [x] Docs; next **299**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-299-cache-uri-revalidate`
+
+### Task
+1. **Fast cache hits:** `toThumtooUri` must not `exists()` / `canonicalFilePath()` on
+   every `get_size` / `get_pixels`. Cache path→URI; prefer absolute paths as-is.
+2. **Background mtime:** After a cache hit, revalidate in the background against
+   thumtoo locator `mtime_ns` (+ size). On mismatch, `scheduleProbe` so the next
+   visit refreshes. Serve the cached row immediately (no wait on revalidate).
+
+### Design
+- Process-local `path → uri` map (mutex).
+- `absPathFast`: absolute → `absoluteFilePath` only; relative → canonical once.
+- Rate-limited revalidate (e.g. ≥2s per uri) via `QThreadPool` + `db().find_locator`.
+- Archive members: fingerprint is the **container** file (outer_path).
+
+### Done criteria
+- [x] Warm size/ladder path has no per-hit exists/canonical
+- [x] Stale source triggers background probe without blocking the hit
+- [x] Docs; next **300**
