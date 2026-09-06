@@ -41,6 +41,9 @@ std::mutex g_mu;
 std::unique_ptr<thumtoo::Client> g_client;
 bool g_inited = false;
 
+// Used by scheduleBackgroundRevalidate before the definition below.
+thumtoo::Client *clientUnlocked();
+
 // Process-local archive member byte cache (not durable — avoids re-extract in
 // the same process when probe + thumb + full decode hit the same member).
 constexpr int kMemberLruMaxEntries = 48;
