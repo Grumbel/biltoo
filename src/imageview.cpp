@@ -201,11 +201,13 @@ ImageView::~ImageView()
 
 QSize ImageView::probeImageSize(const QString &path) const
 {
-    // Archive member "probes" still open the container and read the member on
-    // the calling thread (ImageLoader::probeSize → ArchiveReader::readMember).
-    // Gallery virtualization calls this once per session row when opening a
-    // large zip — that froze the UI. Use a neutral placeholder; decode reflows.
+    // Archive member probes must not extract on the GUI thread (large zip
+    // open would freeze Gallery virtualization). Prefer thumtoo cache-only
+    // size; otherwise a neutral placeholder until ladder/sizeReady reflows.
     if (ArchivePath::isArchiveRef(path)) {
+        if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
+            return cached;
+        }
         return QSize(1024, 1024);
     }
     // Header-only when possible (Qt, then VIPS); see ImageLoader::probeSize.

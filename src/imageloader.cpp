@@ -128,19 +128,31 @@ QImage decodeFromBytes(const QByteArray &bytes, const QString &formatHint, int m
     return {};
 }
 
-QImage loadArchiveRef(const QString &path, int maxEdge)
+/** Archive member bytes: thumtoo extract first, then biltoo ArchiveReader. */
+QByteArray readArchiveMemberBytes(const QString &path)
 {
+    QByteArray bytes = ThumtooCache::readArchiveMemberBytes(path);
+    if (!bytes.isEmpty()) {
+        return bytes;
+    }
     if (!ArchiveReader::isAvailable()) {
-        qWarning("ImageLoader: archive path but libarchive not built in: %s",
-                 qPrintable(path));
         return {};
     }
+    const ArchivePath::Ref ref = ArchivePath::parse(path);
+    if (!ref.valid) {
+        return {};
+    }
+    return ArchiveReader::readMember(ref.archivePath, ref.memberPath);
+}
+
+QImage loadArchiveRef(const QString &path, int maxEdge)
+{
     const ArchivePath::Ref ref = ArchivePath::parse(path);
     if (!ref.valid) {
         qWarning("ImageLoader: invalid archive ref: %s", qPrintable(path));
         return {};
     }
-    const QByteArray bytes = ArchiveReader::readMember(ref.archivePath, ref.memberPath);
+    const QByteArray bytes = readArchiveMemberBytes(path);
     if (bytes.isEmpty()) {
         qWarning("ImageLoader: empty archive member %s from %s",
                  qPrintable(ref.memberPath), qPrintable(ref.archivePath));
@@ -422,10 +434,10 @@ QSize probeSize(const QString &path)
 
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
-        if (!ref.valid || !ArchiveReader::isAvailable()) {
+        if (!ref.valid) {
             return {};
         }
-        const QByteArray bytes = ArchiveReader::readMember(ref.archivePath, ref.memberPath);
+        const QByteArray bytes = readArchiveMemberBytes(path);
         if (bytes.isEmpty()) {
             return {};
         }
