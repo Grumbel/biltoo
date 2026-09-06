@@ -180,8 +180,13 @@ void ImageView::paintViewportOverlays(QPainter &painter)
 
     // Slideshow Ken Burns: draw source images with dest rects so scaling is
     // done by the (OpenGL) paint engine, not QImage::scaled every tick.
-    auto fillPad = [&](const QRect &vr) {
-        painter.fillRect(vr, slideshowPadColor());
+    auto fillPad = [&](const QRect &vr, const QImage &blurSrc = QImage()) {
+        if (m_slideshowLetterboxFill == SlideshowLetterboxFill::ZoomBlur
+            && !blurSrc.isNull()) {
+            paintZoomBlurUnderlay(&painter, blurSrc, vr);
+        } else {
+            painter.fillRect(vr, slideshowPadColor());
+        }
     };
 
     // --- slideshow paint diagnostics (log only when drawn layers change) ---
@@ -256,7 +261,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         const qreal toT = m_ssToMotionT;
         if (m_ssFadeT >= 0.0 && !m_ssToImage.isNull()) {
             const qreal t = qBound(0.0, m_ssFadeT, 1.0);
-            fillPad(vr);
+            fillPad(vr, fromImg.isNull() ? m_ssToImage : fromImg);
             if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
                 // V envelope: A→black (t in [0,0.5]), then black→B (t in [0.5,1]).
                 if (t < 0.5) {
@@ -309,7 +314,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                 painter.setOpacity(1.0);
             }
         } else if (!fromImg.isNull()) {
-            fillPad(vr);
+            fillPad(vr, fromImg);
             paintMotionCover(&painter, fromImg, fromT,
                              m_motionBiasA, m_motionBiasB, 0);
         }
@@ -322,7 +327,8 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         const QRect vr = viewport()->rect();
         const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
         if (m_slideshowTransition == SlideshowTransition::Crossfade) {
-            fillPad(vr);
+            fillPad(vr, !m_liveFromSourceImage.isNull() ? m_liveFromSourceImage
+                                                       : m_liveTransitionSourceImage);
             if (!m_liveFromSourceImage.isNull()) {
                 painter.setOpacity(m_liveTransitionHold ? 0.0 : (1.0 - t));
                 paintMotionCover(&painter, m_liveFromSourceImage, m_dwellMotionT,
@@ -337,7 +343,8 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             }
             painter.setOpacity(1.0);
         } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
-            fillPad(vr);
+            fillPad(vr, !m_liveFromSourceImage.isNull() ? m_liveFromSourceImage
+                                                       : m_liveTransitionSourceImage);
             if (t < 0.5 || m_liveTransitionAwaitingLoad) {
                 if (!m_liveFromSourceImage.isNull()) {
                     painter.setOpacity(1.0);
@@ -365,7 +372,8 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             const int w = vr.width();
             const int xOld = m_liveTransitionHold ? -w : int(qRound(-t * w));
             const int xNew = m_liveTransitionHold ? 0 : int(qRound((1.0 - t) * w));
-            painter.fillRect(vr, slideshowPadColor());
+            fillPad(vr, !m_liveFromSourceImage.isNull() ? m_liveFromSourceImage
+                                                       : m_liveTransitionSourceImage);
             if (!m_liveFromSourceImage.isNull() || !m_liveTransitionSourceImage.isNull()) {
                 if (!m_liveFromSourceImage.isNull()) {
                     painter.save();

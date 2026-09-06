@@ -22,6 +22,8 @@
 #include <QRubberBand>
 #include <QDebug>
 #include <QtMath>
+#include <QVector>
+#include <cmath>
 #include "biltoo_logging.h"
 
 
@@ -96,6 +98,10 @@ void ImageView::setBackgroundColor(const QColor &color)
 
 QColor ImageView::slideshowPadColor() const
 {
+    if (m_slideshowLetterboxFill == SlideshowLetterboxFill::Solid
+        && m_slideshowPadColor.isValid()) {
+        return m_slideshowPadColor;
+    }
     if (m_bgColor.isValid()) {
         return m_bgColor;
     }
@@ -103,7 +109,31 @@ QColor ImageView::slideshowPadColor() const
     if (b.style() != Qt::NoBrush && b.color().isValid()) {
         return b.color();
     }
-    return QColor(42, 42, 42);
+    return m_slideshowPadColor.isValid() ? m_slideshowPadColor : QColor(42, 42, 42);
+}
+
+void ImageView::setSlideshowPadColor(const QColor &color)
+{
+    if (!color.isValid() || color == m_slideshowPadColor) {
+        return;
+    }
+    m_slideshowPadColor = color;
+    m_zoomBlurUnderlay = QPixmap();
+    if (m_slideshowProgressActive && viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
+{
+    if (m_slideshowLetterboxFill == mode) {
+        return;
+    }
+    m_slideshowLetterboxFill = mode;
+    m_zoomBlurUnderlay = QPixmap();
+    if (m_slideshowProgressActive && viewport()) {
+        viewport()->update();
+    }
 }
 
 void ImageView::setBackgroundColorAlt(const QColor &color)
@@ -1702,7 +1732,145 @@ void ImageView::hideSlideshowUnderlay()
     }
 }
 
+namespace {
+
+/** Fast approximate Gaussian: downsample → horizontal+vertical box passes → upscale. */
+QImage makeZoomBlurCover(const QImage &src, int vw, int vh)
+{
+    if (src.isNull() || vw < 1 || vh < 1) {
+        return {};
+    }
+    const qreal iw = qreal(src.width());
+    const qreal ih = qreal(src.height());
+    if (iw < 1.0 || ih < 1.0) {
+        return {};
+    }
+    // Work at ~1/4 resolution for speed; blur radius in work pixels.
+    const int workW = qMax(8, vw / 4);
+    const int workH = qMax(8, vh / 4);
+    const qreal cover = qMax(qreal(workW) / iw, qreal(workH) / ih);
+    const int sw = qMax(1, int(std::ceil(iw * cover)));
+    const int sh = qMax(1, int(std::ceil(ih * cover)));
+    QImage scaled = src.scaled(sw, sh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+                        .convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    // Centre-crop to workW×workH
+    const int x0 = qMax(0, (sw - workW) / 2);
+    const int y0 = qMax(0, (sh - workH) / 2);
+    scaled = scaled.copy(x0, y0, qMin(workW, scaled.width()), qMin(workH, scaled.height()));
+    if (scaled.width() != workW || scaled.height() != workH) {
+        QImage canvas(workW, workH, QImage::Format_ARGB32_Premultiplied);
+        canvas.fill(Qt::black);
+        QPainter p(&canvas);
+        p.drawImage((workW - scaled.width()) / 2, (workH - scaled.height()) / 2, scaled);
+        p.end();
+        scaled = canvas;
+    }
+
+    auto boxBlurPass = [](QImage &img, int radius, bool horizontal) {
+        if (radius < 1) {
+            return;
+        }
+        const int w = img.width();
+        const int h = img.height();
+        QImage out(w, h, QImage::Format_ARGB32_Premultiplied);
+        const int diam = radius * 2 + 1;
+        if (horizontal) {
+            for (int y = 0; y < h; ++y) {
+                const QRgb *inLine = reinterpret_cast<const QRgb *>(img.constScanLine(y));
+                QRgb *outLine = reinterpret_cast<QRgb *>(out.scanLine(y));
+                int rSum = 0, gSum = 0, bSum = 0, aSum = 0;
+                for (int i = -radius; i <= radius; ++i) {
+                    const QRgb px = inLine[qBound(0, i, w - 1)];
+                    rSum += qRed(px); gSum += qGreen(px); bSum += qBlue(px); aSum += qAlpha(px);
+                }
+                outLine[0] = qRgba(rSum / diam, gSum / diam, bSum / diam, aSum / diam);
+                for (int x = 1; x < w; ++x) {
+                    const QRgb leave = inLine[qBound(0, x - radius - 1, w - 1)];
+                    const QRgb enter = inLine[qBound(0, x + radius, w - 1)];
+                    rSum += qRed(enter) - qRed(leave);
+                    gSum += qGreen(enter) - qGreen(leave);
+                    bSum += qBlue(enter) - qBlue(leave);
+                    aSum += qAlpha(enter) - qAlpha(leave);
+                    outLine[x] = qRgba(rSum / diam, gSum / diam, bSum / diam, aSum / diam);
+                }
+            }
+        } else {
+            // Vertical: column-wise sliding window
+            QVector<int> rSum(w), gSum(w), bSum(w), aSum(w);
+            rSum.fill(0); gSum.fill(0); bSum.fill(0); aSum.fill(0);
+            for (int i = -radius; i <= radius; ++i) {
+                const int yy = qBound(0, i, h - 1);
+                const QRgb *line = reinterpret_cast<const QRgb *>(img.constScanLine(yy));
+                for (int x = 0; x < w; ++x) {
+                    const QRgb px = line[x];
+                    rSum[x] += qRed(px); gSum[x] += qGreen(px);
+                    bSum[x] += qBlue(px); aSum[x] += qAlpha(px);
+                }
+            }
+            QRgb *out0 = reinterpret_cast<QRgb *>(out.scanLine(0));
+            for (int x = 0; x < w; ++x) {
+                out0[x] = qRgba(rSum[x] / diam, gSum[x] / diam, bSum[x] / diam, aSum[x] / diam);
+            }
+            for (int y = 1; y < h; ++y) {
+                const int leaveY = qBound(0, y - radius - 1, h - 1);
+                const int enterY = qBound(0, y + radius, h - 1);
+                const QRgb *leaveLine = reinterpret_cast<const QRgb *>(img.constScanLine(leaveY));
+                const QRgb *enterLine = reinterpret_cast<const QRgb *>(img.constScanLine(enterY));
+                QRgb *outLine = reinterpret_cast<QRgb *>(out.scanLine(y));
+                for (int x = 0; x < w; ++x) {
+                    const QRgb leave = leaveLine[x];
+                    const QRgb enter = enterLine[x];
+                    rSum[x] += qRed(enter) - qRed(leave);
+                    gSum[x] += qGreen(enter) - qGreen(leave);
+                    bSum[x] += qBlue(enter) - qBlue(leave);
+                    aSum[x] += qAlpha(enter) - qAlpha(leave);
+                    outLine[x] = qRgba(rSum[x] / diam, gSum[x] / diam, bSum[x] / diam, aSum[x] / diam);
+                }
+            }
+        }
+        img = out;
+    };
+
+    // Three box passes ≈ Gaussian; radius in work pixels (~12 → strong soft).
+    constexpr int kRadius = 12;
+    for (int pass = 0; pass < 3; ++pass) {
+        boxBlurPass(scaled, kRadius, true);
+        boxBlurPass(scaled, kRadius, false);
+    }
+
+    return scaled.scaled(vw, vh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+}
+
+} // namespace
+
+void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
+                                      const QRect &viewportRect) const
+{
+    if (!painter || image.isNull() || viewportRect.isEmpty()) {
+        return;
+    }
+    const int vw = viewportRect.width();
+    const int vh = viewportRect.height();
+    // Key: image bits address + size (slide identity proxy) + viewport.
+    const qint64 key = qint64(quintptr(image.constBits()))
+        ^ (qint64(image.width()) << 16) ^ qint64(image.height());
+    if (m_zoomBlurUnderlay.isNull() || m_zoomBlurSourceKey != key
+        || m_zoomBlurVw != vw || m_zoomBlurVh != vh) {
+        const QImage blurred = makeZoomBlurCover(image, vw, vh);
+        if (blurred.isNull()) {
+            painter->fillRect(viewportRect, slideshowPadColor());
+            return;
+        }
+        m_zoomBlurUnderlay = QPixmap::fromImage(blurred);
+        m_zoomBlurSourceKey = key;
+        m_zoomBlurVw = vw;
+        m_zoomBlurVh = vh;
+    }
+    painter->drawPixmap(viewportRect, m_zoomBlurUnderlay);
+}
+
 void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
+
                                  qreal motionT, QPointF biasA, QPointF biasB,
                                  uint pathHash) const
 {

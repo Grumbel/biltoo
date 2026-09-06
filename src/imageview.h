@@ -210,6 +210,10 @@ public:
     /** Draw Ken Burns / pan-scan using a pre-scaled atlas (cheap per-frame blit). */
     void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT,
                           QPointF biasA, QPointF biasB, uint pathHash) const;
+    /** Draw cover-scaled blurred @a image into @a viewportRect (ZoomBlur fill). */
+    void paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
+                               const QRect &viewportRect) const;
+
     /** Max image→view scale used by the current motion path (for atlas size). */
     qreal motionPathMaxScale(const QImage &image) const;
     /** Build/refresh atlas: one Smooth scale per source/viewport change. */
@@ -457,7 +461,10 @@ public:
 
     void setBackgroundColor(const QColor &color);
     QColor backgroundColor() const { return m_bgColor; }
-    /** Pad/letterbox colour for slideshow covers (Preferences background). */
+    /**
+     * Effective solid pad colour for slideshow letterbox (Solid mode colour,
+     * else Preferences background). Used when ZoomBlur cannot run.
+     */
     QColor slideshowPadColor() const;
     void setBackgroundColorAlt(const QColor &color);
     QColor backgroundColorAlt() const { return m_bgColorAlt; }
@@ -559,6 +566,20 @@ public:
     };
     void setSlideshowZoom(SlideshowZoom mode);
     SlideshowZoom slideshowZoom() const { return m_slideshowZoom; }
+
+    /**
+     * How to fill viewport regions the slide does not cover (Fit / Actual /
+     * motion frames with bars). Orthogonal to SlideshowZoom.
+     */
+    enum class SlideshowLetterboxFill {
+        AppBackground = 0, /**< Preferences canvas colour / checker */
+        Solid = 1,         /**< Dedicated slideshow pad colour */
+        ZoomBlur = 2       /**< Cover-scale + blur of current slide under sharp image */
+    };
+    void setSlideshowLetterboxFill(SlideshowLetterboxFill mode);
+    SlideshowLetterboxFill slideshowLetterboxFill() const { return m_slideshowLetterboxFill; }
+    /** Pad colour when letterbox fill is Solid (also fallback for ZoomBlur miss). */
+    void setSlideshowPadColor(const QColor &color);
     void cancelSlideshowMotion();
     /**
      * Freeze or continue Ken Burns without tearing down the dwell camera.
@@ -1122,6 +1143,13 @@ private:
     SlideshowMotion m_slideshowMotion = SlideshowMotion::Off;
     qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
     SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
+    SlideshowLetterboxFill m_slideshowLetterboxFill = SlideshowLetterboxFill::AppBackground;
+    QColor m_slideshowPadColor{42, 42, 42};
+    /** Cached ZoomBlur underlay (viewport-sized); invalidated on slide/resize. */
+    mutable QPixmap m_zoomBlurUnderlay;
+    mutable qint64 m_zoomBlurSourceKey = 0;
+    mutable int m_zoomBlurVw = 0;
+    mutable int m_zoomBlurVh = 0;
     bool m_slideshowMotionActive = false;
     bool m_slideshowMotionPaused = false;
     /** Scroll policies restored when Ken Burns underlay returns. */
