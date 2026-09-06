@@ -6155,3 +6155,14 @@ cost was residual CPU blur rebuilds when soft→full changed source dimensions
 - [x] Cheaper first-build
 - [x] Docs; next **337**
 
+## Plan / work (2026-09-06) — bundle `biltoo-337-zoomblur-linear`
+
+### Fix
+ZoomBlur underlay looked blocky: draw used nearest-neighbour upscale.
+Re-enable `QPainter::SmoothPixmapTransform` so QOpenGLWidget samples with
+linear filtering (GL_LINEAR) when stretching the low-res blur.
+
+### Done criteria
+- [x] Smooth underlay upscale
+- [x] Docs; next **338**
+

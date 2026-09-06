@@ -1901,8 +1901,9 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
         m_zoomBlurSourceKey[slot] = key;
     }
-    // Already soft — skip SmoothPixmapTransform (extra work for no benefit).
-    painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+    // Low-res underlay: SmoothPixmapTransform → GL_LINEAR on QOpenGLWidget
+    // (without it, nearest-neighbour shows blocky pixels when stretched).
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
     painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[slot]);
 }
 
