@@ -32,20 +32,28 @@ bool g_inited = false;
 
 std::string toThumtooUri(const QString &path)
 {
+    // Match thumtoo-prepare: absolute, preferably canonical paths so SHA-256
+    // content rows and locator URIs line up across CLI and GUI.
+    auto absPath = [](const QString &p) -> std::string {
+        QFileInfo fi(p);
+        const QString can = fi.canonicalFilePath();
+        const QString abs = can.isEmpty() ? fi.absoluteFilePath() : can;
+        return abs.toStdString();
+    };
+
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
         if (!ref.valid) {
             return {};
         }
-        const QFileInfo fi(ref.archivePath);
-        const auto abs = fi.absoluteFilePath().toStdString();
-        return thumtoo::archive_uri(abs, ref.memberPath.toStdString());
+        return thumtoo::archive_uri(absPath(ref.archivePath),
+                                    ref.memberPath.toStdString());
     }
     const QFileInfo fi(path);
     if (!fi.exists()) {
         return {};
     }
-    return thumtoo::file_uri_from_path(fi.absoluteFilePath().toStdString());
+    return thumtoo::file_uri_from_path(absPath(path));
 }
 
 thumtoo::Client *clientUnlocked()
