@@ -277,9 +277,17 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                         if (!bar || image.isNull() || gen != bar->m_generation.load()) {
                             return;
                         }
-                        QMetaObject::invokeMethod(bar, "setThumbnailIcon", Qt::QueuedConnection,
-                                                  Q_ARG(int, i),
-                                                  Q_ARG(QImage, image));
+                        QMetaObject::invokeMethod(bar, [guard, i, path, gen, image]() {
+                            ThumbnailBar *const host = guard.data();
+                            if (!host || gen != host->m_generation.load()) {
+                                return;
+                            }
+                            if (i < 0 || i >= host->m_files.size()
+                                || host->m_files.at(i) != path) {
+                                return;
+                            }
+                            host->setThumbnailIcon(i, image);
+                        }, Qt::QueuedConnection);
                     });
                 }
             });
@@ -820,9 +828,19 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             } else if (bar->m_sessionImageOverrides.contains(path)) {
                 return;
             }
-            QMetaObject::invokeMethod(bar, "setThumbnailIcon", Qt::QueuedConnection,
-                                      Q_ARG(int, i),
-                                      Q_ARG(QImage, image));
+            // Re-check generation + path on the GUI thread: cancelPendingLoads /
+            // setFiles may have rebuilt the list between pool completion and
+            // this queued call (History session switch showed old thumbs).
+            QMetaObject::invokeMethod(bar, [guard, i, path, gen, image]() {
+                ThumbnailBar *const host = guard.data();
+                if (!host || gen != host->m_generation.load()) {
+                    return;
+                }
+                if (i < 0 || i >= host->m_files.size() || host->m_files.at(i) != path) {
+                    return;
+                }
+                host->setThumbnailIcon(i, image);
+            }, Qt::QueuedConnection);
         });
     }
 }
