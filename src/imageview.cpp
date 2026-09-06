@@ -304,13 +304,14 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
     if (ThumtooCache::isUnsupported(path)) {
         return;
     }
-    // Archive members: only durable-cache probe (sizeReady applies the result).
-    // Never extract the container on the GUI thread or a local pool worker.
-    if (ArchivePath::isArchiveRef(path)) {
+    // Prefer thumtoo: scheduleProbe only; Bridge::sizeReady applies the size.
+    // No thread-pool Qt/vips/extract size read when the durable client is up.
+    if (ThumtooCache::isAvailable()) {
         m_sizeProbeScheduled.insert(path);
         ThumtooCache::scheduleProbe(path);
         return;
     }
+    // Builds without thumtoo: native size probe on a worker.
     m_sizeProbeScheduled.insert(path);
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path]() {

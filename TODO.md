@@ -5517,3 +5517,23 @@ and member extract go only through thumtoo (`ThumtooCache`). No dual fallback.
 - [x] Warm size/ladder path has no per-hit exists/canonical
 - [x] Stale source triggers background probe without blocking the hit
 - [x] Docs; next **300**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-300-probe-thumtoo-only`
+
+### Task
+When thumtoo is available, size probes must not also open the source (Qt/vips
+or archive extract). Cache miss → `scheduleProbe` only; `sizeReady` applies
+the size. Native probe remains the fallback when thumtoo is off.
+
+### Design
+1. `ImageLoader::probeSize`: after cache miss + scheduleProbe, if
+   `ThumtooCache::isAvailable()` return invalid size (no `QFile::exists`, no
+   extract, no QImageReader).
+2. `ImageView::scheduleImageSizeProbe`: same path for plain files and archives
+   when thumtoo is up — only `scheduleProbe`; drop the thread-pool native probe
+   and the false 1000×1000 placeholder for that path.
+
+### Done criteria
+- [x] No dual source size I/O when thumtoo is available
+- [x] Docs; next **301**

@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-299-cache-uri-revalidate**
-(URI cache for instant get_*; background mtime revalidate).
-Next bundle number: **300**.
+Latest agent handoff: **TODO.md → biltoo-300-probe-thumtoo-only**
+(Size probe is thumtoo-only when client available).
+Next bundle number: **301**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -332,4 +332,8 @@ then image count from thumtoo TOC.
 `get_size` / `get_pixels` hits, `scheduleBackgroundRevalidate` compares the
 container/file fingerprint to the locator `mtime_ns`/`size` (≥2 s rate limit)
 and only then `scheduleProbe` + ladder if stale. Hits return immediately.
+
+**Size probe:** When thumtoo is available, `probeSize` / `scheduleImageSizeProbe`
+only `scheduleProbe` — no Qt/vips/extract size open on the miss path. `sizeReady`
+applies the size. Native size probe is the no-thumtoo fallback only.
 

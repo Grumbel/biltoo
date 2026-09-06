@@ -422,43 +422,14 @@ QSize probeSize(const QString &path)
         ThumtooCache::scheduleProbe(path);
     }
 
+    // When thumtoo is available, do not open the source for size — sizeReady
+    // delivers the result. Avoids dual I/O (probe worker + Qt/vips/extract).
+    if (ThumtooCache::isAvailable()) {
+        return {};
+    }
+
     if (ArchivePath::isArchiveRef(path)) {
-        const ArchivePath::Ref ref = ArchivePath::parse(path);
-        if (!ref.valid) {
-            return {};
-        }
-        const QByteArray bytes = readArchiveMemberBytes(path);
-        if (bytes.isEmpty()) {
-            return {};
-        }
-        const QString suffix = QFileInfo(ref.memberPath).suffix().toLower();
-        for (const QString &fmt : formatCandidates(suffix)) {
-            QByteArray data = bytes;
-            QBuffer buffer(&data);
-            if (!buffer.open(QIODevice::ReadOnly)) {
-                continue;
-            }
-            QImageReader reader(&buffer);
-            reader.setAutoTransform(true);
-            reader.setFormat(fmt.toLatin1());
-            const QSize sz = reader.size();
-            if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
-                return sz;
-            }
-        }
-#ifdef BILTOO_HAVE_VIPS
-        {
-            VipsImage *in = vips_image_new_from_buffer(bytes.constData(), size_t(bytes.size()),
-                                                       "", nullptr);
-            if (in) {
-                const QSize sz(vips_image_get_width(in), vips_image_get_height(in));
-                g_object_unref(in);
-                if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
-                    return sz;
-                }
-            }
-        }
-#endif
+        // No thumtoo: cannot size archive members without extract support.
         return {};
     }
     if (path.isEmpty() || !QFile::exists(path)) {
