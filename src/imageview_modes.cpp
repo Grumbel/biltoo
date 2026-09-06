@@ -65,6 +65,8 @@ void ImageView::takePendingWorkspacePath(const QString &path)
     } else {
         it.value() -= 1;
     }
+    // Status bar / HUD pending count (even when the caller also emits).
+    emit statusChanged();
 }
 
 void ImageView::clearSceneKeepingStashes()

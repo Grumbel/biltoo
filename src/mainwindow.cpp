@@ -1518,12 +1518,15 @@ void MainWindow::updateStatus()
                 tr("Could not load “%1”").arg(ArchivePath::displayName(err)), 5000);
         }
         // Drag/open decode progress (also covers Gallery virtualization window).
+        // Use m_decodeStatusActive — do not match message text (breaks under i18n).
         const int pending = m_imageView->pendingDecodeCount();
         if (pending > 0 && statusBar()) {
             statusBar()->showMessage(
                 tr("Decoding %n image…", "decode progress", pending), 0);
-        } else if (statusBar() && statusBar()->currentMessage().startsWith(tr("Decoding "))) {
+            m_decodeStatusActive = true;
+        } else if (m_decodeStatusActive && statusBar()) {
             statusBar()->clearMessage();
+            m_decodeStatusActive = false;
         }
     }
     m_statusLabel->setText(m_imageView->statusText());
