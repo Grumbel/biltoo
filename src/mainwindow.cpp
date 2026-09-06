@@ -50,9 +50,6 @@ MainWindow::MainWindow(QWidget *parent)
         if (m_attentionAct) {
             m_attentionAct->setChecked(on);
         }
-        if (m_detectAttentionAct) {
-            m_detectAttentionAct->setEnabled(on);
-        }
     });
     connect(m_imageView,
             QOverload<SessionImageId, const QString &, const QImage &>::of(
@@ -657,22 +654,6 @@ void MainWindow::toggleThumbnailLabels()
     m_thumbnailBar->setLabelsVisible(!m_hideThumbLabelsAct->isChecked());
 }
 
-void MainWindow::detectAttentionPoint()
-{
-    if (!m_imageView) {
-        return;
-    }
-    if (!m_imageView->isAttentionMode()) {
-        m_imageView->setAttentionMode(true);
-        if (m_attentionAct) {
-            m_attentionAct->setChecked(m_imageView->isAttentionMode());
-        }
-        if (m_detectAttentionAct) {
-            m_detectAttentionAct->setEnabled(m_imageView->isAttentionMode());
-        }
-    }
-    m_imageView->detectAttentionPoint();
-}
 
 void MainWindow::toggleAttentionMode()
 {

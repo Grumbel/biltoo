@@ -6271,3 +6271,14 @@ trim: shrink the current draft until non-background content is found.
 - [x] Toolbar cleanup
 - [x] Docs; next **344**
 
+## Plan / work (2026-09-06) — bundle `biltoo-344-drop-detect-attention-ui`
+
+### Change
+Remove Detect Attention from Image menu as well (toolbar already gone).
+MainWindow action/slot removed; ImageView::detectAttentionPoint kept for
+internal use if crop Auto ever grows attention-based framing later.
+
+### Done criteria
+- [x] No Detect Attention UI
+- [x] Docs; next **345**
+

@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-343-comics-detect-toolbar**
-(Comic archives + drop Detect Attention from toolbar).
-Next bundle number: **344**.
+Latest agent handoff: **TODO.md → biltoo-344-drop-detect-attention-ui**
+(Remove Detect Attention from Image menu).
+Next bundle number: **345**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
