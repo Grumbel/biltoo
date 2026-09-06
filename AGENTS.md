@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-292-thumb-session-switch**
-(Filmstrip: gen+path guard on async icons; clear on session replace).
-Next bundle number: **293**.
+Latest agent handoff: **TODO.md → biltoo-293-archive-extract-batch**
+(Concurrent //archive: extracts batched; process-local member LRU).
+Next bundle number: **294**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -311,9 +311,11 @@ filter matches biltoo image suffixes (HEIC/AVIF/KRA/…), not thumtoo's short
 ArchiveReader fallback and drop those members. Session expand prefers that
 list and falls back to `ArchiveReader::expandArchiveToImageRefs` when empty.
 
-**Archive member bytes:** `ThumtooCache::readArchiveMemberBytes` calls
-`thumtoo::extract_archive_member` (shared size caps). `ImageLoader` tries that
-first, then `ArchiveReader::readMember`.
+**Archive member bytes:** `ThumtooCache::readArchiveMemberBytes` uses
+`extract_archive_members` with a per-container gate so concurrent probe/thumb
+loads on one zip open the archive once per batch. A small process-local LRU
+(48 entries / 64 MiB) avoids re-extract of the same member in-session.
+`ImageLoader` tries that first, then `ArchiveReader::readMember`.
 
 **Size readiness:** `Bridge::sizeReady` updates `ImageView` intrinsic sizes and
 repacks provisional Gallery tiles. Archive refs never extract on the GUI thread:

@@ -5380,3 +5380,25 @@ thumbnails linger and are slowly replaced by the new session.
 - [x] Stale async thumbs cannot paint after session rebuild
 - [x] Replace load clears filmstrip before expand/decode
 - [x] Docs / handoff; next **293**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-293-archive-extract-batch`
+
+### Task
+Opening a large zip still extracts each //archive: member separately when
+probe/thumb/full-decode run on the thread pool. Coalesce concurrent extracts
+for the same container via `thumtoo::extract_archive_members`, and keep a small
+process-local LRU so the same member is not re-extracted in one session.
+
+### Design
+1. `readArchiveMemberBytes`: LRU hit by session path (archive ref).
+2. Per-archive gate: concurrent callers for the same container enqueue member
+   paths; one thread runs `extract_archive_members` for the batch; others wait
+   for their member in the batch result.
+3. Caps: LRU max entries + max total bytes (e.g. 32 members / 64 MiB).
+4. ArchiveReader fallback unchanged when thumtoo extract fails / disabled.
+
+### Done criteria
+- [x] Concurrent same-archive reads batch extract
+- [x] LRU avoids repeat extract of the same member
+- [x] Docs / handoff; next **294**
