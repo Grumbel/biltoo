@@ -512,7 +512,7 @@ void ImageView::setSlideshowTransition(SlideshowTransition kind)
 
 void ImageView::setSlideshowTransitionDurationMs(int ms)
 {
-    m_slideshowTransitionDurationMs = qBound(0, ms, 5000);
+    m_slideshowTransitionDurationMs = qMax(0, ms);
 }
 
 QPixmap ImageView::captureSlideshowFrame() const

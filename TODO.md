@@ -5631,3 +5631,20 @@ Also `updateGalleryDecodeWindow` schedules **visible and rest** (all tiles).
 - [x] No full-res decode for Gallery tiles
 - [x] Virtual gallery does not queue offscreen full-session decodes
 - [x] Docs; next **307**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-308-slideshow-timing`
+
+### Task
+1. Transition duration must cap at **interval** only (not a fixed 5s).
+2. Interval must allow **below 0.5s** (frame sequences / “video as PNGs”), including 0 = as fast as possible.
+
+### Changes
+- SlideshowSettingsDialog: interval min 0, finer decimals/steps; transition max = interval (no 5s).
+- PreferencesDialog: same transition policy; align interval range.
+- ImageView::setSlideshowTransitionDurationMs: drop 5000ms hard ceiling.
+
+### Done criteria
+- [x] Transition UI max tracks interval
+- [x] Interval can be < 0.5s (and 0)
+- [x] Docs; next **309**

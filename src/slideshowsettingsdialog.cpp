@@ -19,11 +19,13 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     setModal(true);
 
     m_intervalSpin = new QDoubleSpinBox(this);
-    m_intervalSpin->setRange(0.5, 3600.0);
-    m_intervalSpin->setDecimals(1);
-    m_intervalSpin->setSingleStep(0.5);
+    // 0 = as fast as the event loop allows (e.g. frame sequences / PNG “video”).
+    m_intervalSpin->setRange(0.0, 3600.0);
+    m_intervalSpin->setDecimals(3);
+    m_intervalSpin->setSingleStep(0.05);
     m_intervalSpin->setSuffix(tr(" s"));
-    m_intervalSpin->setToolTip(tr("Time each image stays on screen (dwell)"));
+    m_intervalSpin->setToolTip(
+        tr("Time each image stays on screen (dwell). 0 = as fast as possible."));
 
     m_fullscreenCheck = new QCheckBox(tr("Start slideshow in fullscreen"), this);
     m_fullscreenCheck->setToolTip(
@@ -37,10 +39,10 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_transitionCombo->setToolTip(tr("Effect used when advancing to the next image"));
 
     m_transitionMsSpin = new QDoubleSpinBox(this);
-    m_transitionMsSpin->setRange(0.0, 5.0);
-    // Same step as Interval so the two times stay easy to match (e.g. 1.0 / 1.0).
-    m_transitionMsSpin->setSingleStep(0.5);
-    m_transitionMsSpin->setDecimals(1);
+    // Maximum is kept in sync with the interval (no fixed 5s ceiling).
+    m_transitionMsSpin->setRange(0.0, 3600.0);
+    m_transitionMsSpin->setSingleStep(0.05);
+    m_transitionMsSpin->setDecimals(3);
     m_transitionMsSpin->setSuffix(tr(" s"));
     m_transitionMsSpin->setToolTip(
         tr("Duration of the full transition (outgoing + incoming; capped to the interval)"));
@@ -130,9 +132,9 @@ void SlideshowSettingsDialog::syncTransitionCap()
         return;
     }
     // Duration is the full transition (out + in); may use the whole dwell.
-    // Both interval and transition are shown in seconds.
+    // Cap only at the interval (open-ended — no fixed 5s ceiling).
     const double intervalSec = m_intervalSpin->value();
-    const double capSec = qBound(0.0, intervalSec, 5.0);
+    const double capSec = qMax(0.0, intervalSec);
     m_blockEmit = true;
     m_transitionMsSpin->setMaximum(capSec);
     if (m_transitionMsSpin->value() > capSec) {
@@ -152,7 +154,7 @@ void SlideshowSettingsDialog::setIntervalMs(int ms)
         return;
     }
     m_blockEmit = true;
-    m_intervalSpin->setValue(qMax(0.5, ms / 1000.0));
+    m_intervalSpin->setValue(qMax(0.0, ms / 1000.0));
     m_blockEmit = false;
     syncTransitionCap();
 }

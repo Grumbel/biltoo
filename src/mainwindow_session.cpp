@@ -1598,7 +1598,7 @@ void MainWindow::goLast()
 void MainWindow::setSlideshowIntervalMs(int ms)
 {
     // 0 ms = as fast as the event loop allows; upper bound keeps UI usable.
-    m_slideshowIntervalMs = qBound(0, ms, 60000);
+    m_slideshowIntervalMs = qBound(0, ms, 3600000); // match UI max 3600s
     // Transition duration is the full effect (out + in); may use the whole interval.
     if (m_imageView) {
         const int cap = m_slideshowIntervalMs;

@@ -108,6 +108,7 @@ public:
     void setDefaultGalleryLayoutMode(int layoutMode);
 
 private:
+    void syncSlideshowTransitionCap();
     void refreshDefaultAppsList();
     void onMimeItemChanged(QTreeWidgetItem *item, int column);
     void onSetAllAsDefault();

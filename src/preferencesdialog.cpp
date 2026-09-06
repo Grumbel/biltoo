@@ -65,8 +65,8 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     // --- Slideshow ---
     m_intervalSpin = new QDoubleSpinBox(this);
     // 0 s = as fast as the machine can advance; milliseconds via three decimals.
-    m_intervalSpin->setRange(0.0, 60.0);
-    m_intervalSpin->setSingleStep(0.1);
+    m_intervalSpin->setRange(0.0, 3600.0);
+    m_intervalSpin->setSingleStep(0.05);
     m_intervalSpin->setDecimals(3);
     m_intervalSpin->setSuffix(tr(" s"));
     m_intervalSpin->setToolTip(tr("Seconds between slides (0 = as fast as possible)"));
@@ -103,12 +103,13 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                           }));
 
     m_slideshowTransitionMsSpin = new QDoubleSpinBox(this);
-    m_slideshowTransitionMsSpin->setRange(0.0, 5.0);
+    m_slideshowTransitionMsSpin->setRange(0.0, 3600.0);
     m_slideshowTransitionMsSpin->setSingleStep(0.05);
-    m_slideshowTransitionMsSpin->setDecimals(2);
+    m_slideshowTransitionMsSpin->setDecimals(3);
     m_slideshowTransitionMsSpin->setSuffix(tr(" s"));
     m_slideshowTransitionMsSpin->setValue(kDefaultSlideshowTransitionMs / 1000.0);
-    m_slideshowTransitionMsSpin->setToolTip(tr("Duration of the slideshow transition (0 = instant)"));
+    m_slideshowTransitionMsSpin->setToolTip(
+        tr("Full transition duration (out + in; capped to the interval; 0 = instant)"));
     slideshowForm->addRow(tr("Transition duration:"),
                           wrapWithReset(m_slideshowTransitionMsSpin, &m_resetSlideshowTransitionMsBtn, [this]() {
                               setSlideshowTransitionDurationMs(kDefaultSlideshowTransitionMs);
@@ -522,7 +523,10 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 
     // Keep reset buttons enabled only when the value differs from the default.
     connect(m_intervalSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-            this, [this](double) { updateResetButtons(); });
+            this, [this](double) {
+                syncSlideshowTransitionCap();
+                updateResetButtons();
+            });
     connect(m_slideshowTransitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
     connect(m_slideshowTransitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
@@ -715,6 +719,18 @@ void PreferencesDialog::onRemoveArchivesAsDefault()
     applyClearDefaults(DefaultApps::archiveMimeTypes());
 }
 
+void PreferencesDialog::syncSlideshowTransitionCap()
+{
+    if (!m_intervalSpin || !m_slideshowTransitionMsSpin) {
+        return;
+    }
+    const double capSec = qMax(0.0, m_intervalSpin->value());
+    m_slideshowTransitionMsSpin->setMaximum(capSec);
+    if (m_slideshowTransitionMsSpin->value() > capSec) {
+        m_slideshowTransitionMsSpin->setValue(capSec);
+    }
+}
+
 int PreferencesDialog::slideshowIntervalMs() const
 {
     return qRound(m_intervalSpin->value() * 1000.0);
@@ -722,8 +738,9 @@ int PreferencesDialog::slideshowIntervalMs() const
 
 void PreferencesDialog::setSlideshowIntervalMs(int ms)
 {
-    const double seconds = qBound(0.0, ms / 1000.0, 60.0);
+    const double seconds = qBound(0.0, ms / 1000.0, 3600.0);
     m_intervalSpin->setValue(seconds);
+    syncSlideshowTransitionCap();
 }
 
 int PreferencesDialog::sortModeIndex() const
@@ -1071,9 +1088,12 @@ int PreferencesDialog::slideshowTransitionDurationMs() const
 
 void PreferencesDialog::setSlideshowTransitionDurationMs(int ms)
 {
-    if (m_slideshowTransitionMsSpin) {
-        m_slideshowTransitionMsSpin->setValue(qBound(0.0, ms / 1000.0, 5.0));
+    if (!m_slideshowTransitionMsSpin) {
+        return;
     }
+    syncSlideshowTransitionCap();
+    const double capSec = m_slideshowTransitionMsSpin->maximum();
+    m_slideshowTransitionMsSpin->setValue(qBound(0.0, ms / 1000.0, capSec));
 }
 
 

@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-307-ladderready-nullwarn**
-(Fix -Wnull-dereference in ladderReady lambda).
-Next bundle number: **308**.
+Latest agent handoff: **TODO.md → biltoo-308-slideshow-timing**
+(Slideshow interval <0.5s; transition caps at interval only).
+Next bundle number: **309**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
