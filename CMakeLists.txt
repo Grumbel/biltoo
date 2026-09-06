@@ -85,8 +85,6 @@ add_executable(biltoo
   src/thumtoocache.h
   src/archivepath.cpp
   src/archivepath.h
-  src/archivereader.cpp
-  src/archivereader.h
   src/thumbnailbar.cpp
   src/thumbnailbar.h
   src/preferencesdialog.cpp
@@ -187,13 +185,7 @@ if(PkgConfig_FOUND)
     set(BILTOO_FEATURE_EXIV2 1)
   endif()
 
-  # libarchive — open zip/tar/7z/rar/… and load member images in memory
-  pkg_check_modules(LIBARCHIVE IMPORTED_TARGET libarchive)
-  if(LIBARCHIVE_FOUND)
-    target_link_libraries(biltoo PRIVATE PkgConfig::LIBARCHIVE)
-    target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_ARCHIVE=1)
-    set(BILTOO_FEATURE_ARCHIVE 1)
-  endif()
+  # Archives (zip/tar/…): handled by thumtoo (libarchive is thumtoo’s dependency).
 
   # gio-unix — GDesktopAppInfo for “default application” Preferences (Linux)
   pkg_check_modules(GIOUNIX IMPORTED_TARGET gio-unix-2.0)
@@ -214,6 +206,8 @@ if(BILTOO_WITH_THUMTOO AND THUMTOO_SOURCE_DIR AND EXISTS "${THUMTOO_SOURCE_DIR}/
   target_link_libraries(biltoo PRIVATE thumtoo)
   target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_THUMTOO=1)
   set(BILTOO_FEATURE_THUMTOO 1)
+  # Archive containers are opened only through thumtoo (no biltoo ArchiveReader).
+  set(BILTOO_FEATURE_ARCHIVE 1)
   message(STATUS "thumtoo: enabled (${THUMTOO_SOURCE_DIR})")
 elseif(BILTOO_WITH_THUMTOO)
   message(STATUS "thumtoo: requested but THUMTOO_SOURCE_DIR not set or missing CMakeLists.txt")
@@ -247,7 +241,7 @@ message(STATUS "Biltoo ${PROJECT_VERSION_FULL} — build summary")
 message(STATUS "  Qt6 .............. required (Core Gui Widgets Svg OpenGLWidgets PrintSupport)")
 message(STATUS "  libvips .......... ${_st_vips}  (extra image codecs, autorot, attention Pan&Zoom)")
 message(STATUS "  libexiv2 ......... ${_st_exiv2}  (Exif/IPTC/XMP metadata panel)")
-message(STATUS "  libarchive ....... ${_st_archive}  (images inside zip/tar/7z/rar/…)")
+message(STATUS "  archives ......... ${_st_archive}  (via thumtoo; zip/tar/7z/rar/…)")
 message(STATUS "  gio-unix-2.0 ..... ${_st_gio}  (default-application Preferences)")
 message(STATUS "  thumtoo .......... ${_st_thumtoo}  (durable size index + display ladder)")
 message(STATUS "  Runtime: install KImageFormats for XCF/KRA/ORA and other Qt plugins.")

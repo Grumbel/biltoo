@@ -5,7 +5,6 @@
 #include "thumtoocache.h"
 #include "projectfile.h"
 #include "archivepath.h"
-#include "archivereader.h"
 #include "workspacebackgrounddialog.h"
 #include "imageitem.h"
 #include "imagecache.h"
@@ -256,16 +255,9 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
         return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
     };
 
-    // Optional progress: only used when expand runs on a worker thread.
-    // Synchronous callers pass a no-op. Prefer thumtoo durable TOC; fall back
-    // to libarchive walk (progress only on that path).
-    auto expandArchive = [](const QString &archivePath,
-                            const ArchiveReader::ListProgress &progress) {
-        const QStringList fromCache = ThumtooCache::expandArchiveToImageRefs(archivePath);
-        if (!fromCache.isEmpty()) {
-            return fromCache;
-        }
-        return ArchiveReader::expandArchiveToImageRefs(archivePath, progress);
+    // Archive expand is thumtoo-only (durable TOC + refresh).
+    auto expandArchive = [](const QString &archivePath) {
+        return ThumtooCache::expandArchiveToImageRefs(archivePath);
     };
 
     QStringList images;
@@ -289,9 +281,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             QDirIterator it(path, filters, flags);
             while (it.hasNext()) {
                 const QString full = it.next();
-                if (ArchivePath::isArchiveFile(full)
-                    && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
-                    images.append(expandArchive(full, {}));
+                if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
+                    images.append(expandArchive(full));
                 } else if (isImageFile(full)) {
                     const QString c = canonicalImage(full);
                     if (!c.isEmpty()) {
@@ -300,8 +291,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
                 }
             }
         } else if (info.isFile() && ArchivePath::isArchiveFile(path)
-                   && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
-            images.append(expandArchive(path, {}));
+                   && ThumtooCache::isAvailable()) {
+            images.append(expandArchive(path));
         } else if (info.isFile() && isImageFile(path)) {
             const QString c = canonicalImage(path);
             if (!c.isEmpty()) {
@@ -314,7 +305,7 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
 
 bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
 {
-    if (!ArchiveReader::isAvailable() && !ThumtooCache::isAvailable()) {
+    if (!ThumtooCache::isAvailable()) {
         return false;
     }
     for (const QString &path : paths) {
@@ -456,26 +447,15 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                         return;
                     }
                     const QString full = it.next();
-                    if (ArchivePath::isArchiveFile(full)
-                        && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
+                    if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
                         const QString name = QFileInfo(full).fileName();
                         report(MainWindow::tr("Indexing archive “%1”…").arg(name));
-                        QStringList members = ThumtooCache::expandArchiveToImageRefs(full);
+                        const QStringList members =
+                            ThumtooCache::expandArchiveToImageRefs(full);
                         if (!members.isEmpty()) {
                             report(MainWindow::tr("Archive “%1”: %n image(s)", "",
                                                  members.size())
                                        .arg(name));
-                        } else if (ArchiveReader::isAvailable()) {
-                            report(MainWindow::tr("Reading archive “%1”…").arg(name));
-                            members = ArchiveReader::expandArchiveToImageRefs(
-                                full, [report, name](int hits, int scanned) {
-                                    report(MainWindow::tr(
-                                               "Reading archive “%1”… %2 image(s), %3 entries")
-                                               .arg(name)
-                                               .arg(hits)
-                                               .arg(scanned),
-                                           hits, -1);
-                                });
                         }
                         images.append(members);
                     } else if (ImageLoader::isImageFile(full)) {
@@ -486,24 +466,13 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                     }
                 }
             } else if (info.isFile() && ArchivePath::isArchiveFile(path)
-                       && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
+                       && ThumtooCache::isAvailable()) {
                 const QString name = info.fileName();
                 report(MainWindow::tr("Indexing archive “%1”…").arg(name));
-                QStringList members = ThumtooCache::expandArchiveToImageRefs(path);
+                const QStringList members = ThumtooCache::expandArchiveToImageRefs(path);
                 if (!members.isEmpty()) {
                     report(MainWindow::tr("Archive “%1”: %n image(s)", "", members.size())
                                .arg(name));
-                } else if (ArchiveReader::isAvailable()) {
-                    report(MainWindow::tr("Reading archive “%1”…").arg(name));
-                    members = ArchiveReader::expandArchiveToImageRefs(
-                        path, [report, name](int hits, int scanned) {
-                            report(MainWindow::tr(
-                                       "Reading archive “%1”… %2 image(s), %3 entries")
-                                       .arg(name)
-                                       .arg(hits)
-                                       .arg(scanned),
-                                   hits, -1);
-                        });
                 }
                 images.append(members);
             } else if (info.isFile() && ImageLoader::isImageFile(path)) {

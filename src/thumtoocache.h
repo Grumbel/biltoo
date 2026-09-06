@@ -93,8 +93,8 @@ bool isAvailable();
 /**
  * Expand an archive container to biltoo //archive: image refs using thumtoo's
  * durable TOC (cache-first, then refresh_archive_toc). Empty when thumtoo is
- * unavailable or the archive has no image members — callers fall back to
- * ArchiveReader. Safe to call from a worker thread.
+ * unavailable or the archive has no image members. Safe to call from a worker
+ * thread. Sole archive expand path in biltoo.
  */
 QStringList expandArchiveToImageRefs(const QString &archivePath);
 
@@ -102,7 +102,7 @@ QStringList expandArchiveToImageRefs(const QString &archivePath);
  * Extract one //archive: member into memory via thumtoo (size caps shared with
  * the cache worker). Empty for non-archive paths, extract failure, or when
  * thumtoo is not linked. Does not require the durable cache client to be open.
- * Callers fall back to ArchiveReader::readMember.
+ * Sole archive-member byte path in biltoo.
  */
 QByteArray readArchiveMemberBytes(const QString &archiveRefPath);
 

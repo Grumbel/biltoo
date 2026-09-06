@@ -44,7 +44,7 @@ QStringList supportedMimeTypes()
         QStringLiteral("image/heic"),
         QStringLiteral("image/heif"),
         QStringLiteral("image/jxl"),
-        // Archives (libarchive session expand)
+        // Archives (thumtoo session expand)
         QStringLiteral("application/zip"),
         QStringLiteral("application/x-7z-compressed"),
         QStringLiteral("application/vnd.rar"),

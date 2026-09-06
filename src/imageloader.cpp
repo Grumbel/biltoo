@@ -11,7 +11,6 @@
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "archivepath.h"
-#include "archivereader.h"
 
 #include <QBuffer>
 #include <cstring>
@@ -128,21 +127,10 @@ QImage decodeFromBytes(const QByteArray &bytes, const QString &formatHint, int m
     return {};
 }
 
-/** Archive member bytes: thumtoo extract first, then biltoo ArchiveReader. */
+/** Archive member bytes via thumtoo only (no biltoo libarchive path). */
 QByteArray readArchiveMemberBytes(const QString &path)
 {
-    QByteArray bytes = ThumtooCache::readArchiveMemberBytes(path);
-    if (!bytes.isEmpty()) {
-        return bytes;
-    }
-    if (!ArchiveReader::isAvailable()) {
-        return {};
-    }
-    const ArchivePath::Ref ref = ArchivePath::parse(path);
-    if (!ref.valid) {
-        return {};
-    }
-    return ArchiveReader::readMember(ref.archivePath, ref.memberPath);
+    return ThumtooCache::readArchiveMemberBytes(path);
 }
 
 QImage loadArchiveRef(const QString &path, int maxEdge)

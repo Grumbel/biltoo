@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-297-session-remove-redo-by-id**
-(SessionRemoveCommand redo resolves by SessionImageId).
-Next bundle number: **298**.
+Latest agent handoff: **TODO.md → biltoo-298-archives-via-thumtoo-only**
+(ArchiveReader removed; archives only via thumtoo).
+Next bundle number: **299**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -304,18 +304,11 @@ Client uses a Qt `Executor` so callbacks land on the GUI thread.
 `Bridge::ladderReady` refreshes filmstrip cells when a level is encoded.
 Session edit identity remains biltoo `SessionImageId`.
 
-**Archive expand:** `ThumtooCache::expandArchiveToImageRefs` uses cache-first
-`get_archive_entries`, then `refresh_archive_toc` (stores durable TOC). Member
-filter matches biltoo image suffixes (HEIC/AVIF/KRA/…), not thumtoo's short
-`is_likely_image_member_path` list — otherwise a partial TOC hit would skip
-ArchiveReader fallback and drop those members. Session expand prefers that
-list and falls back to `ArchiveReader::expandArchiveToImageRefs` when empty.
-
-**Archive member bytes:** `ThumtooCache::readArchiveMemberBytes` uses
-`extract_archive_members` with a per-container gate so concurrent probe/thumb
-loads on one zip open the archive once per batch. A small process-local LRU
-(48 entries / 64 MiB) avoids re-extract of the same member in-session.
-`ImageLoader` tries that first, then `ArchiveReader::readMember`.
+**Archive expand / bytes:** Sole path is thumtoo. `expandArchiveToImageRefs`
+(cache-first TOC + `refresh_archive_toc`) and `readArchiveMemberBytes`
+(`extract_archive_members` + per-container batch gate + process LRU). Member
+filter uses biltoo image suffixes. **No biltoo `ArchiveReader` / direct
+libarchive** — without thumtoo, archives are not opened.
 
 **Size readiness:** `Bridge::sizeReady` updates `ImageView` intrinsic sizes and
 repacks provisional Gallery tiles. Archive refs never extract on the GUI thread:
@@ -329,9 +322,8 @@ cache-only size or a neutral placeholder until `sizeReady`.
 `kImageLadderEdge` 1024 (soft Image upgrade when edge unspecified).
 
 **0.1.0 consumer status:** biltoo↔thumtoo integration is **feature-complete** for
-the planned surface (size, ladder, prepare, archive TOC, member extract/batch,
-status, edges). Optional later: per-entry TOC progress API in thumtoo, dropping
-`ArchiveReader`, mode-specific schedule of filmstrip-only edges. Background
-expand status: “Indexing archive…” then count from cache, or libarchive
-progress if TOC path is empty.
+the planned surface (size, ladder, prepare, archive TOC/extract, status, edges).
+`ArchiveReader` removed. Optional later: per-entry TOC progress in thumtoo;
+filmstrip-only ladder edge schedule. Background expand: “Indexing archive…”
+then image count from thumtoo TOC.
 

@@ -189,10 +189,9 @@ std::filesystem::path defaultCacheRoot()
 }
 
 /**
- * Archive member image filter aligned with ArchiveReader::entryIsImage /
- * ImageLoader::imageSuffixes base set (no imageloader include — circular).
- * Broader than thumtoo::is_likely_image_member_path so mixed HEIC/AVIF/…
- * archives are not truncated when TOC is a cache hit.
+ * Archive member image filter aligned with ImageLoader::imageSuffixes base
+ * set (no imageloader include — circular). Broader than thumtoo's short
+ * is_likely_image_member_path so mixed HEIC/AVIF/… archives are not truncated.
  */
 bool isBiltooImageMemberPath(const QString &memberPath)
 {

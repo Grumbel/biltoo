@@ -5476,3 +5476,23 @@ wrong if the user undoes remove and then inserts/reorders before redo.
 ### Done criteria
 - [x] Redo remove is id-stable
 - [x] SESSION residual documented; next **298**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-298-archives-via-thumtoo-only`
+
+### Task
+Remove `ArchiveReader` and biltoo’s direct libarchive link. Archive TOC expand
+and member extract go only through thumtoo (`ThumtooCache`). No dual fallback.
+
+### Changes
+1. `ImageLoader` archive bytes: only `ThumtooCache::readArchiveMemberBytes`.
+2. Session expand: only `ThumtooCache::expandArchiveToImageRefs`; archive
+   support gated on `ThumtooCache::isAvailable()`.
+3. Delete `src/archivereader.{h,cpp}`; drop from CMake.
+4. CMake: stop linking libarchive into biltoo; feature “archives” follows thumtoo.
+5. Docs: AGENTS / TODO — ArchiveReader removed.
+
+### Done criteria
+- [x] No ArchiveReader call sites or sources
+- [x] Archives require thumtoo
+- [x] Docs; next **299**

@@ -1222,7 +1222,7 @@ void MainWindow::about()
         "<ul>"
         "<li>libvips (extra codecs, attention Pan&amp;Zoom): %1</li>"
         "<li>libexiv2 (Exif / IPTC / XMP metadata): %2</li>"
-        "<li>libarchive (images in zip / tar / 7z / rar / …): %3</li>"
+        "<li>thumtoo archives (zip / tar / 7z / rar / …): %3</li>"
         "<li>GIO (default-application Preferences): %4</li>"
         "</ul>"
         "<p>Qt imageformat plugins (e.g. KImageFormats for XCF) are loaded at "
