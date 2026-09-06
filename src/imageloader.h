@@ -42,9 +42,10 @@ bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut,
                      int maxPoints = 5);
 
 /**
- * Axis-aligned smart crop of @a cropW × @a cropH within @a image (pixels),
- * using libvips INTERESTING_ATTENTION (peak-centred window, edge-clamped).
- * Returns false without VIPS, on empty input, or if the size is invalid.
+ * Axis-aligned smart crop of @a cropW × @a cropH within @a image (pixels).
+ * Prefers libvips INTERESTING_ENTROPY (window search for detail); falls back
+ * to ATTENTION peak-centred placement. Origin comes from the extract's
+ * Xoffset/Yoffset when entropy succeeds. Without VIPS: centred crop.
  */
 bool smartCropRect(const QImage &image, int cropW, int cropH, QRect *pixelRectOut);
 

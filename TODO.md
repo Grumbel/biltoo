@@ -6223,3 +6223,19 @@ Crop mode: **Smart** button runs VIPS smartcrop and sets the draft frame.
 - [x] ImageLoader::smartCropRect
 - [x] Docs; next **341**
 
+## Plan / work (2026-09-06) — bundle `biltoo-341-smartcrop-entropy`
+
+### Context
+VIPS ATTENTION is used correctly via attention_x/y, but the algorithm itself is
+weak for complex images: shrink to ~32px, score edges+skin+saturation, global
+max after blur (smartcrop.js). A black dot wins; photos feel random.
+
+### Change
+Crop → Smart now uses **ENTROPY** (slide cropW×cropH, keep highest-detail
+placement) and reads the real origin from the extract Xoffset/Yoffset.
+ATTENTION peak-centre remains the fallback.
+
+### Done criteria
+- [x] Entropy smartcrop for Smart button
+- [x] Docs; next **342**
+

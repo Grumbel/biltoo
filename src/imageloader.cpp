@@ -691,23 +691,69 @@ bool smartCropRect(const QImage &image, int cropW, int cropH, QRect *pixelRectOu
     cropW = qBound(1, cropW, iw);
     cropH = qBound(1, cropH, ih);
 
-    QPointF peak(0.5, 0.5);
-#ifdef BILTOO_HAVE_VIPS
-    if (!attentionPointVipsPeak(image, &peak)) {
-        // Fall through to centred crop.
-        peak = QPointF(0.5, 0.5);
-    }
-#else
-    Q_UNUSED(image);
-#endif
-    const int cx = int(qRound(peak.x() * qreal(iw - 1)));
-    const int cy = int(qRound(peak.y() * qreal(ih - 1)));
-    int left = cx - cropW / 2;
-    int top = cy - cropH / 2;
-    left = qBound(0, left, iw - cropW);
-    top = qBound(0, top, ih - cropH);
-    *pixelRectOut = QRect(left, top, cropW, cropH);
+#ifndef BILTOO_HAVE_VIPS
+    // No VIPS: centre crop of the requested size.
+    *pixelRectOut = QRect((iw - cropW) / 2, (ih - cropH) / 2, cropW, cropH);
     return true;
+#else
+    // Full-resolution path (no pre-shrink): smartcrop itself resizes for scoring.
+    QImage src = image.convertToFormat(QImage::Format_RGB888);
+    if (src.isNull() || src.bytesPerLine() < src.width() * 3) {
+        *pixelRectOut = QRect((iw - cropW) / 2, (ih - cropH) / 2, cropW, cropH);
+        return true;
+    }
+    const int width = src.width();
+    const int height = src.height();
+    const int bands = 3;
+    const size_t rowBytes = size_t(width) * size_t(bands);
+    const size_t nbytes = rowBytes * size_t(height);
+    void *buf = g_malloc(nbytes);
+    if (!buf) {
+        return false;
+    }
+    for (int y = 0; y < height; ++y) {
+        memcpy(static_cast<uchar *>(buf) + size_t(y) * rowBytes,
+               src.constScanLine(y), rowBytes);
+    }
+    VipsImage *in = vips_image_new_from_memory_copy(buf, nbytes, width, height, bands,
+                                                    VIPS_FORMAT_UCHAR);
+    g_free(buf);
+    if (!in) {
+        return false;
+    }
+
+    // ENTROPY: slide a cropW×cropH window and keep the highest-detail placement.
+    // ATTENTION (smartcrop.js) shrinks to ~32px, scores edges+skin+saturation,
+    // takes a global max after heavy blur — reliable on a black dot, but feels
+    // random on complex photos. ENTROPY matches the requested window size and
+    // is the better default for Crop → Smart.
+    VipsImage *out = nullptr;
+    if (vips_smartcrop(in, &out, cropW, cropH,
+                       "interesting", VIPS_INTERESTING_ENTROPY,
+                       nullptr) != 0
+        || !out) {
+        // Fall back to attention peak-centred window.
+        g_object_unref(in);
+        QPointF peak(0.5, 0.5);
+        if (!attentionPointVipsPeak(image, &peak)) {
+            peak = QPointF(0.5, 0.5);
+        }
+        const int cx = int(qRound(peak.x() * qreal(iw - 1)));
+        const int cy = int(qRound(peak.y() * qreal(ih - 1)));
+        int left = qBound(0, cx - cropW / 2, iw - cropW);
+        int top = qBound(0, cy - cropH / 2, ih - cropH);
+        *pixelRectOut = QRect(left, top, cropW, cropH);
+        return true;
+    }
+
+    // extract_area sets Xoffset/Yoffset on the result — the true crop origin.
+    const int left = qBound(0, int(out->Xoffset), iw - cropW);
+    const int top = qBound(0, int(out->Yoffset), ih - cropH);
+    *pixelRectOut = QRect(left, top, cropW, cropH);
+    g_object_unref(out);
+    g_object_unref(in);
+    return true;
+#endif
 }
 
 
