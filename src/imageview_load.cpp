@@ -16,6 +16,7 @@
 #include <QThreadPool>
 #include <QPointer>
 #include <QMetaObject>
+#include <QtMath>
 
 ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image,
                                           bool applyStoredSessionCrop)
@@ -274,12 +275,30 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     m_galleryDecodeScheduled.insert(path);
     addPendingWorkspacePath(path);
     emit statusChanged();
+
+    // Ladder step at or above the cell's on-screen long edge (device pixels).
+    int previewEdge = ThumtooCache::kGalleryLadderEdge;
+    for (ImageItem *item : m_items) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        const QRectF br = item->sceneBoundingRect();
+        if (br.isEmpty()) {
+            break;
+        }
+        const QPointF a = mapFromScene(br.topLeft());
+        const QPointF b = mapFromScene(br.bottomRight());
+        const qreal longPx =
+            qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
+        previewEdge = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
+        break;
+    }
+
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
-    QThreadPool::globalInstance()->start([guard, path, gen]() {
-        // Soft edge only — never ImageLoader::load() full native / full archive.
-        constexpr int kPreviewEdge = ThumtooCache::kGalleryLadderEdge;
-        const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
+    QThreadPool::globalInstance()->start([guard, path, gen, previewEdge]() {
+        // Soft ladder decode only — never ImageLoader::load() full native.
+        const QImage preview = ImageLoader::loadThumbnail(path, previewEdge);
         if (!guard) {
             return;
         }

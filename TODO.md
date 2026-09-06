@@ -5895,3 +5895,16 @@ No `-dirty` suffix; no `git describe`.
 CMAKE_CONFIGURE_DEPENDS on VERSION, .git/HEAD, .git/index (worktree-aware
 gitdir). Next `cmake --build` re-runs configure when those change.
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-324-gallery-ladder`
+
+### Issue
+Gallery always requested kGalleryLadderEdge (512) even when larger ladder
+levels (1024/2048) exist and cells are larger on screen.
+
+### Fix
+- ThumtooCache::ceilLadderEdge — smallest step ≥ display long edge
+- scheduleGalleryDecode measures cell scene→view pixels × DPR, requests that step
+- thumtoo still returns largest level ≤ request (scale down in UI)
+

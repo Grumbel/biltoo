@@ -45,12 +45,28 @@ void init();
 void shutdown();
 
 /**
- * Ladder long-edge targets (subset of thumtoo::kLadderEdges). Prefer the
- * largest cached level ≤ request; do not upscale in the client.
+ * Ladder long-edge targets (match thumtoo::kLadderEdges).
+ * get_pixels / cachedLadderBytes return the largest level with edge ≤ request.
+ * Request the ceiling step so Gallery can scale a slightly larger thumb down.
  */
+constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048};
 constexpr int kFilmstripLadderEdge = 256;
-constexpr int kGalleryLadderEdge = 512;
+constexpr int kGalleryLadderEdge = 512;  // fallback when cell size unknown
 constexpr int kImageLadderEdge = 1024;
+
+/** Smallest ladder step ≥ displayLongEdge (px); max step if larger. */
+inline int ceilLadderEdge(int displayLongEdge)
+{
+    if (displayLongEdge <= 0) {
+        return kGalleryLadderEdge;
+    }
+    for (int e : kLadderEdges) {
+        if (e >= displayLongEdge) {
+            return e;
+        }
+    }
+    return kLadderEdges[sizeof(kLadderEdges) / sizeof(kLadderEdges[0]) - 1];
+}
 
 /** Cache-only native size for a session path (file or //archive: ref). */
 QSize cachedSize(const QString &path);
