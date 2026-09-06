@@ -5779,3 +5779,22 @@ the current image — felt like an unusually long pause.
 - [x] Interval change preserves ~same cycle fraction
 - [x] Non-interval live settings do not restart dwell
 - [x] Docs; next **317**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-317-pdf-pages` (on df9f9e9)
+
+### Scope
+- PagePath `doc.pdf//page:N` (1-based)
+- Expand on open/drop/background; ImageLoader load via ladder or Poppler raster
+- `application/pdf` in defaultapps + biltoo.desktop
+- Open dialog filters include PDFs
+- Project hash container + store page refs; display names
+
+### Requires
+- thumtoo tip with Poppler (`thumtoo-pdf-poppler.bundle`)
+
+### Done criteria
+- [x] MIME + desktop
+- [x] File dialog
+- [x] Expand / load / HUD / project
+- [x] Docs; next **318**

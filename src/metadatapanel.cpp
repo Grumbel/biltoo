@@ -3,6 +3,7 @@
 
 #include "metadatapanel.h"
 #include "archivepath.h"
+#include "pagepath.h"
 #include "imageloader.h"
 
 #include <QDateTime>
@@ -644,7 +645,7 @@ void MetadataPanel::applyPendingPath()
     }
 
     const bool isArchive = ArchivePath::isArchiveRef(path);
-    const QString displayName = ArchivePath::displayName(path);
+    const QString displayName = PagePath::displayName(path);
     m_header->setText(displayName.isEmpty() ? path : displayName);
     m_header->setToolTip(path);
 

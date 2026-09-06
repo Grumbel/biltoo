@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-316-slideshow-phase-remap**
-(Preserve normalized slideshow phase when interval/settings change).
-Next bundle number: **317**.
+Latest agent handoff: **TODO.md → biltoo-317-pdf-pages**
+(PDF //page:N, MIME, open dialog, expand/load; needs thumtoo Poppler tip).
+Next bundle number: **318**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

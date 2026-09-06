@@ -11,6 +11,11 @@
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "archivepath.h"
+#include "pagepath.h"
+#ifdef BILTOO_HAVE_THUMTOO
+#include "thumtoo/pdf.hpp"
+#include <filesystem>
+#endif
 
 #include <QBuffer>
 #include <cstring>
@@ -155,6 +160,56 @@ QImage loadArchiveRef(const QString &path, int maxEdge)
                  qPrintable(suffix), head.constData());
     }
     return image;
+}
+
+QImage loadPageRef(const QString &path, int maxEdge)
+{
+    const PagePath::Ref ref = PagePath::parse(path);
+    if (!ref.valid) {
+        qWarning("ImageLoader: invalid page ref: %s", qPrintable(path));
+        return {};
+    }
+    const int edge = maxEdge > 0 ? maxEdge : 2048;
+
+    {
+        const QByteArray ladder = ThumtooCache::cachedLadderBytes(path, edge);
+        if (!ladder.isEmpty()) {
+#ifdef BILTOO_HAVE_VIPS
+            QImage fromLadder = loadWithVipsBuffer(ladder, 0);
+            if (!fromLadder.isNull()) {
+                return scaleToMaxEdge(fromLadder, maxEdge);
+            }
+#endif
+            QImage qtImg;
+            if (qtImg.loadFromData(ladder)) {
+                return scaleToMaxEdge(qtImg, maxEdge);
+            }
+        }
+    }
+
+#ifdef BILTOO_HAVE_THUMTOO
+    if (ThumtooCache::isAvailable()) {
+        const std::filesystem::path abs = std::filesystem::path(ref.pdfPath.toStdString());
+        auto raster = thumtoo::pdf_rasterize_page(abs, ref.page, edge);
+        if (raster && !raster->rgb.empty() && raster->width > 0 && raster->height > 0) {
+            QImage img(raster->width, raster->height, QImage::Format_RGB888);
+            for (int y = 0; y < raster->height; ++y) {
+                memcpy(img.scanLine(y),
+                       raster->rgb.data()
+                           + static_cast<size_t>(y) * static_cast<size_t>(raster->width) * 3u,
+                       static_cast<size_t>(raster->width) * 3u);
+            }
+            ThumtooCache::schedulePixels(path, edge);
+            return scaleToMaxEdge(img.copy(), maxEdge);
+        }
+        ThumtooCache::schedulePixels(path, edge);
+        return {};
+    }
+#else
+    Q_UNUSED(edge);
+#endif
+    qWarning("ImageLoader: cannot load PDF page (no thumtoo/Poppler): %s", qPrintable(path));
+    return {};
 }
 
 QImage loadWithQt(const QString &path, int maxEdge)
@@ -428,8 +483,8 @@ QSize probeSize(const QString &path)
         return {};
     }
 
-    if (ArchivePath::isArchiveRef(path)) {
-        // No thumtoo: cannot size archive members without extract support.
+    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)) {
+        // No thumtoo: cannot size container pages without backend support.
         return {};
     }
     if (path.isEmpty() || !QFile::exists(path)) {
@@ -542,6 +597,9 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
 
 QImage load(const QString &path)
 {
+    if (PagePath::isPageRef(path)) {
+        return loadPageRef(path, 0);
+    }
     if (ArchivePath::isArchiveRef(path)) {
         return loadArchiveRef(path, 0);
     }
@@ -590,6 +648,12 @@ QImage loadThumbnail(const QString &path, int maxEdge)
         ThumtooCache::schedulePixels(path, maxEdge);
     }
 
+    if (PagePath::isPageRef(path)) {
+        if (ThumtooCache::isAvailable()) {
+            return {};
+        }
+        return loadPageRef(path, maxEdge);
+    }
     if (ArchivePath::isArchiveRef(path)) {
         // With thumtoo: do not extract+decode here (doubles work with schedulePixels).
         // ladderReady / a later pass fills the filmstrip cell from the durable ladder.
@@ -666,6 +730,9 @@ QStringList imageSuffixes()
 
 bool isImageFile(const QString &path)
 {
+    if (PagePath::isPageRef(path)) {
+        return PagePath::parse(path).valid;
+    }
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
         if (!ref.valid) {

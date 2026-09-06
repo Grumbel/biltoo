@@ -3,6 +3,7 @@
 
 #include "thumbnailbar.h"
 #include "archivepath.h"
+#include "pagepath.h"
 #include "imagecache.h"
 #include "imageloader.h"
 #include "thumtoocache.h"
@@ -921,7 +922,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
     for (int i = 0; i < files.size(); ++i) {
         const QString &path = files.at(i);
         auto *item = new QListWidgetItem(this);
-        item->setText(ArchivePath::displayName(path));
+        item->setText(PagePath::displayName(path));
         item->setToolTip(path);
         item->setData(RolePath, path);
         const SessionImageId sid = (i < m_sessionIds.size()) ? m_sessionIds.at(i)

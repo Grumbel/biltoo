@@ -4,6 +4,7 @@
 #include "thumtoocache.h"
 
 #include "archivepath.h"
+#include "pagepath.h"
 
 #include <QCoreApplication>
 #include <QFileInfo>
@@ -19,6 +20,7 @@
 
 #ifdef BILTOO_HAVE_THUMTOO
 #include "thumtoo/archive.hpp"
+#include "thumtoo/pdf.hpp"
 #include "thumtoo/client.hpp"
 #include "thumtoo/image.hpp"
 #include "thumtoo/status.hpp"
@@ -164,6 +166,13 @@ std::unordered_map<std::string, std::string> g_uriBySessionPath;
 
 std::string resolveUriUncached(const QString &path)
 {
+    if (PagePath::isPageRef(path)) {
+        const PagePath::Ref ref = PagePath::parse(path);
+        if (!ref.valid) {
+            return {};
+        }
+        return thumtoo::pdf_page_uri(absPathFast(ref.pdfPath), ref.page);
+    }
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
         if (!ref.valid) {
@@ -672,6 +681,36 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
     }
 #else
     Q_UNUSED(archivePath);
+#endif
+    return out;
+}
+
+
+QStringList expandPdfToPageRefs(const QString &pdfPath)
+{
+    QStringList out;
+#ifdef BILTOO_HAVE_THUMTOO
+    if (pdfPath.isEmpty()) {
+        return out;
+    }
+    const std::filesystem::path abs = absPathStd(pdfPath);
+    if (!thumtoo::is_likely_pdf_path(abs)) {
+        return out;
+    }
+    const auto count = thumtoo::pdf_page_count(abs);
+    if (!count || *count <= 0) {
+        return out;
+    }
+    const QString pdfAbs = QString::fromStdString(abs.string());
+    out.reserve(*count);
+    for (int page = 1; page <= *count; ++page) {
+        const QString ref = PagePath::makeRef(pdfAbs, page);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#else
+    Q_UNUSED(pdfPath);
 #endif
     return out;
 }

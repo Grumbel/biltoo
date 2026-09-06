@@ -99,6 +99,9 @@ bool isAvailable();
  */
 QStringList expandArchiveToImageRefs(const QString &archivePath);
 
+/** Expand a PDF into one session path per page (…//page:N, 1-based). */
+QStringList expandPdfToPageRefs(const QString &pdfPath);
+
 /**
  * Extract one //archive: member into memory via thumtoo (size caps shared with
  * the cache worker). Empty for non-archive paths, extract failure, or when

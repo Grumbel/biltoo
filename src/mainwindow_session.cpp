@@ -5,6 +5,7 @@
 #include "thumtoocache.h"
 #include "projectfile.h"
 #include "archivepath.h"
+#include "pagepath.h"
 #include "workspacebackgrounddialog.h"
 #include "imageitem.h"
 #include "imagecache.h"
@@ -36,9 +37,10 @@ QString imageFileDialogFilter()
     }
     const QString images = imagePatterns.join(QLatin1Char(' '));
     const QString archives = archivePatterns.join(QLatin1Char(' '));
-    // First filter is the dialog default — include archives so .zip/.tar are visible.
+    // First filter is the dialog default — include archives/PDFs so containers are visible.
     return QObject::tr(
-               "Images and archives (%1 %2);;Images only (%1);;Archives only (%2);;All Files (*)")
+               "Images, archives and PDFs (%1 %2 *.pdf);;Images only (%1);;"
+               "Archives only (%2);;PDF documents (*.pdf);;All Files (*)")
         .arg(images, archives);
 }
 
@@ -255,14 +257,23 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
         return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
     };
 
-    // Archive expand is thumtoo-only (durable TOC + refresh).
+    // Archive/PDF expand is thumtoo-backed (TOC / page count).
     auto expandArchive = [](const QString &archivePath) {
         return ThumtooCache::expandArchiveToImageRefs(archivePath);
+    };
+    auto expandPdf = [](const QString &pdfPath) {
+        return ThumtooCache::expandPdfToPageRefs(pdfPath);
     };
 
     QStringList images;
     for (const QString &path : paths) {
-        // Already an archive member reference — keep as-is when valid.
+        if (PagePath::isPageRef(path)) {
+            const PagePath::Ref ref = PagePath::parse(path);
+            if (ref.valid) {
+                images.append(PagePath::makeRef(ref.pdfPath, ref.page));
+            }
+            continue;
+        }
         if (ArchivePath::isArchiveRef(path)) {
             if (isImageFile(path)) {
                 const ArchivePath::Ref ref = ArchivePath::parse(path);
@@ -281,7 +292,9 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             QDirIterator it(path, filters, flags);
             while (it.hasNext()) {
                 const QString full = it.next();
-                if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
+                if (PagePath::isPdfFile(full) && ThumtooCache::isAvailable()) {
+                    images.append(expandPdf(full));
+                } else if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
                     images.append(expandArchive(full));
                 } else if (isImageFile(full)) {
                     const QString c = canonicalImage(full);
@@ -290,6 +303,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
                     }
                 }
             }
+        } else if (info.isFile() && PagePath::isPdfFile(path) && ThumtooCache::isAvailable()) {
+            images.append(expandPdf(path));
         } else if (info.isFile() && ArchivePath::isArchiveFile(path)
                    && ThumtooCache::isAvailable()) {
             images.append(expandArchive(path));
@@ -309,14 +324,14 @@ bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
         return false;
     }
     for (const QString &path : paths) {
-        if (ArchivePath::isArchiveRef(path)) {
+        if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)) {
             continue;
         }
         const QFileInfo info(path);
-        if (info.isFile() && ArchivePath::isArchiveFile(path)) {
+        if (info.isFile() && (ArchivePath::isArchiveFile(path) || PagePath::isPdfFile(path))) {
             return true;
         }
-        // Directory walks may encounter archives; keep the GUI responsive.
+        // Directory walks may encounter archives/PDFs; keep the GUI responsive.
         if (info.isDir()) {
             return true;
         }
@@ -423,6 +438,13 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
             if (!window || gen != window->m_expandGeneration) {
                 return;
             }
+            if (PagePath::isPageRef(path)) {
+                const PagePath::Ref ref = PagePath::parse(path);
+                if (ref.valid) {
+                    images.append(PagePath::makeRef(ref.pdfPath, ref.page));
+                }
+                continue;
+            }
             if (ArchivePath::isArchiveRef(path)) {
                 if (ImageLoader::isImageFile(path)) {
                     const ArchivePath::Ref ref = ArchivePath::parse(path);
@@ -441,13 +463,21 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                     : QDirIterator::NoIteratorFlags;
                 QDirIterator it(path, filters, flags);
                 while (it.hasNext()) {
-                    // Fresh pointer each iteration; name avoids -Wshadow on outer `window`.
                     MainWindow *const host = guard.data();
                     if (!host || gen != host->m_expandGeneration) {
                         return;
                     }
                     const QString full = it.next();
-                    if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
+                    if (PagePath::isPdfFile(full) && ThumtooCache::isAvailable()) {
+                        const QString name = QFileInfo(full).fileName();
+                        report(MainWindow::tr("Indexing PDF “%1”…").arg(name));
+                        const QStringList pages = ThumtooCache::expandPdfToPageRefs(full);
+                        if (!pages.isEmpty()) {
+                            report(MainWindow::tr("PDF “%1”: %n page(s)", "", pages.size())
+                                       .arg(name));
+                        }
+                        images.append(pages);
+                    } else if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
                         const QString name = QFileInfo(full).fileName();
                         report(MainWindow::tr("Indexing archive “%1”…").arg(name));
                         const QStringList members =
@@ -465,6 +495,15 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                         }
                     }
                 }
+            } else if (info.isFile() && PagePath::isPdfFile(path)
+                       && ThumtooCache::isAvailable()) {
+                const QString name = info.fileName();
+                report(MainWindow::tr("Indexing PDF “%1”…").arg(name));
+                const QStringList pages = ThumtooCache::expandPdfToPageRefs(path);
+                if (!pages.isEmpty()) {
+                    report(MainWindow::tr("PDF “%1”: %n page(s)", "", pages.size()).arg(name));
+                }
+                images.append(pages);
             } else if (info.isFile() && ArchivePath::isArchiveFile(path)
                        && ThumtooCache::isAvailable()) {
                 const QString name = info.fileName();
@@ -545,7 +584,7 @@ void MainWindow::sortFileListSync()
         QCollator collator;
         collator.setNumericMode(true);
         collator.setCaseSensitivity(Qt::CaseInsensitive);
-        return collator.compare(ArchivePath::displayName(a), ArchivePath::displayName(b)) < 0;
+        return collator.compare(PagePath::displayName(a), PagePath::displayName(b)) < 0;
     };
 
     auto pathAt = [&](int i) -> const QString & { return m_session.paths().at(i); };
@@ -657,7 +696,7 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
             QCollator collator;
             collator.setNumericMode(true);
             collator.setCaseSensitivity(Qt::CaseInsensitive);
-            return collator.compare(ArchivePath::displayName(a), ArchivePath::displayName(b)) < 0;
+            return collator.compare(PagePath::displayName(a), PagePath::displayName(b)) < 0;
         };
 
         QVector<int> order(paths.size());
@@ -2043,6 +2082,10 @@ QString MainWindow::historyEntryLabel(const QStringList &paths) const
         return tr("(empty)");
     }
     auto containerDir = [](const QString &p) -> QString {
+        if (PagePath::isPageRef(p)) {
+            const PagePath::Ref r = PagePath::parse(p);
+            return r.valid ? QFileInfo(r.pdfPath).absolutePath() : QString();
+        }
         if (ArchivePath::isArchiveRef(p)) {
             const ArchivePath::Ref r = ArchivePath::parse(p);
             return r.valid ? QFileInfo(r.archivePath).absolutePath() : QString();
@@ -2058,10 +2101,17 @@ QString MainWindow::historyEntryLabel(const QStringList &paths) const
         }
     }
     if (paths.size() == 1) {
-        return ArchivePath::displayName(paths.first());
+        return PagePath::displayName(paths.first());
     }
     if (sameDir) {
         // Prefer archive filename when all members share one container.
+        if (PagePath::isPageRef(paths.first())) {
+            const PagePath::Ref r = PagePath::parse(paths.first());
+            if (r.valid) {
+                return tr("%1 — %n page(s)", "history entry", paths.size())
+                    .arg(QFileInfo(r.pdfPath).fileName());
+            }
+        }
         if (ArchivePath::isArchiveRef(paths.first())) {
             const ArchivePath::Ref r = ArchivePath::parse(paths.first());
             if (r.valid) {
@@ -2073,7 +2123,7 @@ QString MainWindow::historyEntryLabel(const QStringList &paths) const
         return tr("%1 — %n image(s)", "history entry", paths.size()).arg(folder);
     }
     return tr("%1 (+%n more)", "history entry", paths.size() - 1)
-        .arg(ArchivePath::displayName(paths.first()));
+        .arg(PagePath::displayName(paths.first()));
 }
 
 void MainWindow::rememberSessionHistory(const QStringList &paths)
@@ -2086,7 +2136,7 @@ void MainWindow::rememberSessionHistory(const QStringList &paths)
     for (const QString &p : paths) {
         // Never run archive refs through QFileInfo::absoluteFilePath — QDir::cleanPath
         // collapses "//archive:" into "/archive:" and breaks the member path.
-        const QString abs = ArchivePath::canonicalSessionPath(p);
+        const QString abs = PagePath::canonicalSessionPath(p);
         if (!abs.isEmpty()) {
             normalized.append(abs);
         }
@@ -2621,10 +2671,12 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
         if (sessionPath.isEmpty()) {
             return {};
         }
-        // Archive members: hash the container file, not the virtual member path.
+        // Archive/PDF pages: hash the container file, not the virtual page path.
         QString hashPath = sessionPath;
         if (ArchivePath::isArchiveRef(sessionPath)) {
             hashPath = ArchivePath::archiveFilePath(sessionPath);
+        } else if (PagePath::isPageRef(sessionPath)) {
+            hashPath = PagePath::pdfFilePath(sessionPath);
         }
         if (hashPath.isEmpty()) {
             return {};
@@ -2676,8 +2728,8 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
             im.appearance = m_imageView->sessionAppearanceValue(id);
             im.hasAppearance = true;
         }
-        // Archive members need the full ref stored; asset is only the container.
-        if (ArchivePath::isArchiveRef(path)) {
+        // Archive/PDF pages need the full ref stored; asset is only the container.
+        if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)) {
             im.hasAppearance = true;
         }
         if (poses.contains(id)) {
@@ -2812,10 +2864,14 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
             missing.append(resolveErr.isEmpty() ? im.assetSha256.left(12) : resolveErr);
             continue;
         }
-        // Asset resolves to a filesystem file (image or archive container).
-        // Archive members keep their member path from the stored appearance ref.
+        // Asset resolves to a filesystem file (image, archive, or PDF container).
         QString sessionPath = resolved;
-        if (im.hasAppearance && ArchivePath::isArchiveRef(im.appearance.path)) {
+        if (im.hasAppearance && PagePath::isPageRef(im.appearance.path)) {
+            const PagePath::Ref ref = PagePath::parse(im.appearance.path);
+            if (ref.valid) {
+                sessionPath = PagePath::makeRef(resolved, ref.page);
+            }
+        } else if (im.hasAppearance && ArchivePath::isArchiveRef(im.appearance.path)) {
             const ArchivePath::Ref ref = ArchivePath::parse(im.appearance.path);
             if (ref.valid) {
                 sessionPath = ArchivePath::makeRef(resolved, ref.memberPath);

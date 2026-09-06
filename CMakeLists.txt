@@ -86,6 +86,8 @@ add_executable(biltoo
   src/thumtoocache.h
   src/archivepath.cpp
   src/archivepath.h
+  src/pagepath.cpp
+  src/pagepath.h
   src/thumbnailbar.cpp
   src/thumbnailbar.h
   src/preferencesdialog.cpp
