@@ -576,8 +576,8 @@ void preparePaths(const QStringList &paths)
             continue;
         }
         if (ArchivePath::isArchiveRef(p)) {
-            // Size only — ladder on demand (visible filmstrip / gallery window).
-            scheduleProbe(p);
+            // Skip: probing every member on open is extract(+hash)×N before any
+            // thumb. Visible filmstrip/gallery/Image schedule work on demand.
             continue;
         }
         const QFileInfo fi(p);

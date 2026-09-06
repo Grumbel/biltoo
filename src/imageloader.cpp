@@ -588,6 +588,11 @@ QImage loadThumbnail(const QString &path, int maxEdge)
     }
 
     if (ArchivePath::isArchiveRef(path)) {
+        // With thumtoo: do not extract+decode here (doubles work with schedulePixels).
+        // ladderReady / a later pass fills the filmstrip cell from the durable ladder.
+        if (ThumtooCache::isAvailable()) {
+            return {};
+        }
         return loadArchiveRef(path, maxEdge);
     }
 

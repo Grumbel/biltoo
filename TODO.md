@@ -5592,3 +5592,24 @@ Fix lives in **thumtoo** (not biltoo layout):
 `artifacts/thumtoo-probe-size-only.bundle` — size probe → Incomplete; ladder only
 on `request_pixels`. Point biltoo’s thumtoo flake input / THUMTOO_SOURCE_DIR at
 that tip and rebuild.
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-305-archive-thumbs-on-demand`
+
+### Cause (still slow after ladder-on-probe split)
+1. `preparePaths` still `scheduleProbe`’d **every** archive member → extract+SHA-256×N
+   before any thumb.
+2. Filmstrip `loadThumbnail` on ladder miss **extracted+decoded** immediately **and**
+   `schedulePixels` (second extract + ladder).
+
+### Fix
+1. `preparePaths`: skip `//archive:` refs entirely (sizes/pixels on demand).
+2. `loadThumbnail`: for archive refs with thumtoo, only `schedulePixels`; return
+   empty and let `ladderReady` fill the cell (no sync extract on the pool job).
+3. thumtoo: size probe keeps provisional id (no SHA-256); hash+ladder on
+   `request_pixels` in one extract.
+
+### Done criteria
+- [x] No full-session archive probe storm
+- [x] Filmstrip archive thumbs via ladder only when thumtoo up
+- [x] thumtoo test still OK; bundles

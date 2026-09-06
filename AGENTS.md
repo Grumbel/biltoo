@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-304-thumtoo-probe-note**
-(Thumbs delay: thumtoo ladder-on-probe; use thumtoo-probe-size-only).
-Next bundle number: **305**.
+Latest agent handoff: **TODO.md → biltoo-305-archive-thumbs-on-demand**
+(No full-session archive probe; thumbs via ladder only).
+Next bundle number: **306**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
