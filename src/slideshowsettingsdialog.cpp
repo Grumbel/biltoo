@@ -92,12 +92,9 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_letterboxCombo->addItem(tr("Solid colour"), 1);
     m_letterboxCombo->addItem(tr("Zoom and blur"), 2);
     m_letterboxCombo->setToolTip(
-        tr("When the image does not cover the window (Fit / 1:1):
-"
-           "App background: Preferences canvas colour.
-"
-           "Solid colour: dedicated pad colour.
-"
+        tr("When the image does not cover the window (Fit / 1:1):\n"
+           "App background: Preferences canvas colour.\n"
+           "Solid colour: dedicated pad colour.\n"
            "Zoom and blur: TV-style — cover-scaled blurred copy of the current image."));
 
     m_padColorBtn = new QPushButton(this);

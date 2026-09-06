@@ -6081,3 +6081,14 @@ Multi-point data foundation exists; **edit UI still needs work before release**.
   viewport size + source buffer identity. Resize invalidates the cache.
 - Transition Slide gap still falls back to solid pad when sources missing.
 - Attention multi-point edit UI remains open (see pre-release checklist above).
+
+## Plan / work (2026-09-06) — bundle `biltoo-332-letterbox-tooltip-fix`
+
+### Fix
+Compile error in `slideshowsettingsdialog.cpp`: tooltip `tr()` strings had
+raw line breaks instead of `\n`, so the C++ lexer saw unterminated string
+literals.
+
+### Done criteria
+- [x] Tooltip compiles
+- [x] Docs; next **333**
