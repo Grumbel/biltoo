@@ -5908,3 +5908,18 @@ levels (1024/2048) exist and cells are larger on screen.
 - scheduleGalleryDecode measures cell scene→view pixels × DPR, requests that step
 - thumtoo still returns largest level ≤ request (scale down in UI)
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-325-gallery-priority`
+
+### Issues
+- Null contentSceneRect treated as visible → queued entire PDF session
+- Once a low-res preview was shown, higher ladder steps never applied
+- Off-screen work competed with visible tiles (thumtoo worker FIFO)
+
+### Fix
+- Only true scene intersection counts as visible; skip pre-pack null tiles
+- Virtualized: never schedule off-screen
+- Upgrade when display need > current preview long edge
+- preparePaths skips //page: refs (same as archives)
+

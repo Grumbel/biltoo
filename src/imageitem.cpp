@@ -101,6 +101,17 @@ void ImageItem::setSourceImage(const QImage &image)
     update();
 }
 
+int ImageItem::displayPixelLongEdge() const
+{
+    if (!m_source.isNull() && !m_previewPixels) {
+        return qMax(m_source.width(), m_source.height());
+    }
+    if (!m_preview.isNull()) {
+        return qMax(m_preview.width(), m_preview.height());
+    }
+    return 0;
+}
+
 void ImageItem::setPreviewImage(const QImage &preview)
 {
     if (preview.isNull()) {

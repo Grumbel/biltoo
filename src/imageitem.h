@@ -94,6 +94,8 @@ public:
     bool hasDecodedPixels() const { return !m_source.isNull() && !m_previewPixels; }
     /** Any displayable pixels (full decode or provisional preview). */
     bool hasDisplayPixels() const { return !m_source.isNull() || !m_preview.isNull(); }
+    /** Long edge of current display pixels (0 if none). */
+    int displayPixelLongEdge() const;
     /** Replace or clear decoded pixels; keeps path and intrinsic size. */
     void setSourceImage(const QImage &image);
     /**

@@ -248,20 +248,61 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     }, 1);
 }
 
+
+int ImageView::galleryDisplayEdgeForItem(const ImageItem *item) const
+{
+    if (!item) {
+        return ThumtooCache::kGalleryLadderEdge;
+    }
+    const QRectF br = item->contentSceneRect();
+    if (br.isEmpty()) {
+        return ThumtooCache::kGalleryLadderEdge;
+    }
+    const QPointF a = mapFromScene(br.topLeft());
+    const QPointF b = mapFromScene(br.bottomRight());
+    const qreal longPx =
+        qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
+    return ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
+}
+
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
     if (!isGalleryMode()) {
         return;
     }
     if (path.isEmpty() || m_galleryDecodeFailed.contains(path)
-        || m_galleryDecodeScheduled.contains(path)
-        || m_galleryAwaitLadder.contains(path)) {
+        || m_galleryDecodeScheduled.contains(path)) {
         return;
     }
-    // Soft gallery tiles only need displayable pixels (preview is enough).
+    // Soft-miss await: only skip if we still have no pixels (keep single in-flight
+    // ladder wait). Once a preview exists, updateGalleryDecodeWindow may clear
+    // await and request a higher edge.
+    if (m_galleryAwaitLadder.contains(path)) {
+        bool anyPreview = false;
+        for (ImageItem *item : m_items) {
+            if (item && item->path() == path && item->hasDisplayPixels()) {
+                anyPreview = true;
+                break;
+            }
+        }
+        if (!anyPreview) {
+            return;
+        }
+        m_galleryAwaitLadder.remove(path);
+    }
+    // Need decode or a higher ladder step than the current preview.
     bool needsPixels = false;
+    int previewEdge = ThumtooCache::kGalleryLadderEdge;
     for (ImageItem *item : m_items) {
-        if (item && item->path() == path && !item->hasDisplayPixels()) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        if (item->hasDecodedPixels()) {
+            continue;
+        }
+        previewEdge = galleryDisplayEdgeForItem(item);
+        const int have = item->displayPixelLongEdge();
+        if (have <= 0 || have < previewEdge) {
             needsPixels = true;
             break;
         }
@@ -275,24 +316,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     m_galleryDecodeScheduled.insert(path);
     addPendingWorkspacePath(path);
     emit statusChanged();
-
-    // Ladder step at or above the cell's on-screen long edge (device pixels).
-    int previewEdge = ThumtooCache::kGalleryLadderEdge;
-    for (ImageItem *item : m_items) {
-        if (!item || item->path() != path) {
-            continue;
-        }
-        const QRectF br = item->sceneBoundingRect();
-        if (br.isEmpty()) {
-            break;
-        }
-        const QPointF a = mapFromScene(br.topLeft());
-        const QPointF b = mapFromScene(br.bottomRight());
-        const qreal longPx =
-            qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
-        previewEdge = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
-        break;
-    }
 
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
@@ -392,6 +415,11 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
     bool gallerySizeChanged = false;
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path || item->hasDecodedPixels()) {
+            continue;
+        }
+        // Keep a sharper preview; do not replace with a smaller ladder step.
+        const int incoming = qMax(image.width(), image.height());
+        if (item->hasDisplayPixels() && item->displayPixelLongEdge() >= incoming) {
             continue;
         }
         const QSize before = item->imageSize();

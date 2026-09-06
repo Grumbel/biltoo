@@ -595,9 +595,9 @@ void preparePaths(const QStringList &paths)
         if (isUnsupported(p)) {
             continue;
         }
-        if (ArchivePath::isArchiveRef(p)) {
-            // Skip: probing every member on open is extract(+hash)×N before any
-            // thumb. Visible filmstrip/gallery/Image schedule work on demand.
+        if (ArchivePath::isArchiveRef(p) || PagePath::isPageRef(p)) {
+            // Skip containers: probing every page/member on open floods the
+            // worker before visible filmstrip/gallery tiles can decode.
             continue;
         }
         const QFileInfo fi(p);

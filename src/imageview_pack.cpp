@@ -20,44 +20,65 @@ void ImageView::updateGalleryDecodeWindow()
     const bool virtualize = m_items.size() >= kGalleryVirtualThreshold
                             || m_pathOrder.size() >= kGalleryVirtualThreshold;
 
-    // Visible-first priority, then the rest of the session. Never unload decoded
-    // tiles — clearing pixels while a job was in flight left permanent placeholders
-    // and size/scale mismatches broke pack geometry.
+    // Visible-first only. Never treat null geometry as visible (that used to
+    // queue the entire session before pack). Never unload decoded tiles.
     QStringList visible;
     QStringList rest;
-    if (virtualize) {
-        const QRect viewRect = viewport()->rect().adjusted(
-            -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
-            kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
-        const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
-        for (ImageItem *item : m_items) {
-            if (!item || item->hasDisplayPixels()
-                || m_galleryDecodeFailed.contains(item->path())
-                || m_galleryAwaitLadder.contains(item->path())) {
-                continue;
-            }
-            const QRectF tile = item->contentSceneRect();
-            if (tile.isNull() || tile.intersects(sceneVisible)) {
-                visible.append(item->path());
-            } else {
-                rest.append(item->path());
-            }
+    const QRect viewRect = viewport()->rect().adjusted(
+        -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
+        kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
+    const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
+
+    auto needsDecodeOrUpgrade = [this](ImageItem *item) -> bool {
+        if (!item) {
+            return false;
         }
-    } else {
-        for (ImageItem *item : m_items) {
-            if (!item || item->hasDisplayPixels()
-                || m_galleryDecodeFailed.contains(item->path())
-                || m_galleryAwaitLadder.contains(item->path())) {
-                continue;
-            }
+        const QString &path = item->path();
+        if (path.isEmpty() || m_galleryDecodeFailed.contains(path)
+            || m_galleryDecodeScheduled.contains(path)) {
+            return false;
+        }
+        // Waiting on ladder for a soft miss: keep waiting unless we need a
+        // higher edge than the one already requested (handled by re-schedule
+        // after clearing await below).
+        if (m_galleryAwaitLadder.contains(path) && item->hasDisplayPixels()) {
+            // Have some pixels; may still upgrade.
+        } else if (m_galleryAwaitLadder.contains(path)) {
+            return false;
+        }
+        if (item->hasDecodedPixels()) {
+            return false; // full decode
+        }
+        const int need = galleryDisplayEdgeForItem(item);
+        const int have = item->displayPixelLongEdge();
+        if (have <= 0) {
+            return true; // placeholder
+        }
+        // Upgrade when on-screen need exceeds current preview long edge.
+        return have < need;
+    };
+
+    for (ImageItem *item : m_items) {
+        if (!needsDecodeOrUpgrade(item)) {
+            continue;
+        }
+        const QRectF tile = item->contentSceneRect();
+        // No scene footprint yet (pre-pack): skip until layout assigns cells.
+        if (tile.isNull() || !tile.isValid()) {
+            continue;
+        }
+        if (tile.intersects(sceneVisible)) {
             visible.append(item->path());
+        } else if (!virtualize) {
+            rest.append(item->path());
         }
     }
 
     for (const QString &path : visible) {
+        // Allow a higher-edge retry after a soft miss once pixels exist or need grew.
+        m_galleryAwaitLadder.remove(path);
         scheduleGalleryDecode(path);
     }
-    // Virtualized gallery: do not queue full-session offscreen decodes.
     if (!virtualize) {
         for (const QString &path : rest) {
             scheduleGalleryDecode(path);
