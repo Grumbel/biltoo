@@ -426,6 +426,17 @@ public:
     void setCropMode(bool on);
     bool isCropMode() const { return m_cropMode; }
     void toggleCropMode();
+
+    /**
+     * Attention / focus-point mode (Image mode). Overlay + drag the session
+     * attention point used by slideshow Ken Burns. Auto-detects via VIPS when
+     * entering if no stored point exists.
+     */
+    void setAttentionMode(bool on);
+    bool isAttentionMode() const { return m_attentionMode; }
+    void toggleAttentionMode();
+    /** Re-run VIPS attention on the current image and store the point. */
+    void detectAttentionPoint();
     /** Commit the draft crop rect to pixels and leave crop mode. */
     void applyCrop();
     /** Discard the draft and leave crop mode. */
@@ -740,6 +751,7 @@ signals:
     void slideshowDwellResumeRequested();
     /** Crop mode toggled on/off (toolbar checkable state). */
     void cropModeChanged(bool active);
+    void attentionModeChanged(bool active);
     /** Session crop committed; @p image is the new displayed pixels for @p path. */
     void sessionCropApplied(const QString &path, const QImage &image);
     void sessionCropApplied(SessionImageId sessionId, const QString &path, const QImage &image);
@@ -897,6 +909,11 @@ private:
     bool cropAllowExpand() const { return m_cropAllowExpand; }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
+    void paintAttentionOverlay(QPainter &painter);
+    bool attentionHandleAt(const QPoint &viewPos) const;
+    QPointF attentionNormForTarget() const;
+    void setAttentionNormForTarget(const QPointF &norm);
+    void ensureAttentionPoint();
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
     void updateCropHandleDrag(const QPoint &viewPos);
     void endCropHandleDrag();
@@ -1222,6 +1239,8 @@ private:
     ImageItem *m_handleDragItem = nullptr;
 
     bool m_cropMode = false;
+    bool m_attentionMode = false;
+    bool m_attentionDragging = false;
     /** Locked crop subject for the whole crop session (IDENTITY.md). */
     SessionImageId m_cropTargetId = kInvalidSessionImageId;
     /** Non-owning; ImageItem is not a QObject so QPointer is unavailable. */

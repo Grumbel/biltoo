@@ -45,6 +45,11 @@ MainWindow::MainWindow(QWidget *parent)
             m_cropAct->setChecked(on);
         }
     });
+    connect(m_imageView, &ImageView::attentionModeChanged, this, [this](bool on) {
+        if (m_attentionAct) {
+            m_attentionAct->setChecked(on);
+        }
+    });
     connect(m_imageView,
             QOverload<SessionImageId, const QString &, const QImage &>::of(
                 &ImageView::sessionAppearanceChanged),
@@ -565,6 +570,12 @@ void MainWindow::toggleCropMode()
     if (!m_imageView) {
         return;
     }
+    if (m_imageView->isAttentionMode()) {
+        m_imageView->setAttentionMode(false);
+        if (m_attentionAct) {
+            m_attentionAct->setChecked(false);
+        }
+    }
     const bool want = m_cropAct && m_cropAct->isChecked();
     // Gallery: crop on the packed grid is unusable — open the subject in Image
     // mode, then enter crop once pixels are ready.
@@ -640,6 +651,34 @@ void MainWindow::toggleThumbnailLabels()
         return;
     }
     m_thumbnailBar->setLabelsVisible(!m_hideThumbLabelsAct->isChecked());
+}
+
+void MainWindow::toggleAttentionMode()
+{
+    if (!m_imageView || !m_attentionAct) {
+        return;
+    }
+    const bool want = m_attentionAct->isChecked();
+    if (want && m_imageView->isCropMode()) {
+        m_imageView->cancelCrop();
+        if (m_cropAct) {
+            m_cropAct->setChecked(false);
+        }
+    }
+    if (want && !m_imageView->isImageMode()) {
+        // Attention edit is Image-mode only for now.
+        if (m_session.paths().isEmpty()) {
+            m_attentionAct->setChecked(false);
+            return;
+        }
+        int idx = m_currentIndex;
+        if (idx < 0 || idx >= m_session.paths().size()) {
+            idx = 0;
+        }
+        openSessionIndexInImageMode(idx);
+    }
+    m_imageView->setAttentionMode(want);
+    m_attentionAct->setChecked(m_imageView->isAttentionMode());
 }
 
 void MainWindow::toggleThumbnailCrop()

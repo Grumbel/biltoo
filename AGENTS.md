@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-309-thumb-ladder-edge**
-(Filmstrip thumbs: ladder edge + await; thumtoo find_best fallback).
-Next bundle number: **310**.
+Latest agent handoff: **TODO.md → biltoo-310-attention-mode**
+(Attention point mode: editable focus for slideshow).
+Next bundle number: **311**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

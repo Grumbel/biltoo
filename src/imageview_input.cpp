@@ -337,6 +337,24 @@ void ImageView::resizeEvent(QResizeEvent *event)
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
+    // Attention mode: drag handle or click to place the focus point.
+    if (m_attentionMode && event->button() == Qt::LeftButton && isImageMode()) {
+        ImageItem *item = targetItem();
+        if (item && !item->contentRect().isEmpty()) {
+            const QPointF scene = mapToScene(event->pos());
+            const QPointF local = item->mapFromScene(scene);
+            const QRectF cr = item->contentRect();
+            if (cr.contains(local) || attentionHandleAt(event->pos())) {
+                const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
+                const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
+                setAttentionNormForTarget(QPointF(nx, ny));
+                m_attentionDragging = true;
+                event->accept();
+                return;
+            }
+        }
+    }
+
     // Crop mode: handles adjust the draft rect; drag on image starts rubber-band.
     if (m_cropMode && event->button() == Qt::LeftButton) {
         const CropHandle h = cropHandleAt(event->pos());
@@ -704,6 +722,23 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_attentionMode && m_attentionDragging && isImageMode()) {
+        ImageItem *item = targetItem();
+        if (item && !item->contentRect().isEmpty()) {
+            const QPointF scene = mapToScene(event->pos());
+            const QPointF local = item->mapFromScene(scene);
+            const QRectF cr = item->contentRect();
+            const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
+            const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
+            setAttentionNormForTarget(QPointF(nx, ny));
+        }
+        event->accept();
+        return;
+    }
+    if (m_attentionMode && isImageMode()) {
+        viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
+                                                              : Qt::CrossCursor);
+    }
     if (m_cropMode && m_cropActiveHandle != CropHandle::None) {
         updateCropHandleDrag(event->pos());
         event->accept();
@@ -1072,6 +1107,11 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_attentionMode && m_attentionDragging && event->button() == Qt::LeftButton) {
+        m_attentionDragging = false;
+        event->accept();
+        return;
+    }
     if (m_cropMode && m_cropActiveHandle != CropHandle::None
         && event->button() == Qt::LeftButton) {
         endCropHandleDrag();
@@ -1287,6 +1327,19 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
 
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
+    if (m_attentionMode) {
+        if (event->key() == Qt::Key_Escape) {
+            setAttentionMode(false);
+            event->accept();
+            return;
+        }
+        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter
+            || event->key() == Qt::Key_Space) {
+            detectAttentionPoint();
+            event->accept();
+            return;
+        }
+    }
     if (m_cropMode) {
         if (event->key() == Qt::Key_Escape) {
             cancelCrop();

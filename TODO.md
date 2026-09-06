@@ -5666,3 +5666,32 @@ Filmstrip `thumbDecodePixels()` can be **below** thumtoo’s smallest ladder edg
 - [x] Small filmstrip cells still get ladder thumbs
 - [x] Null soft loads do not permanently block a row
 - [x] Bundles thumtoo + biltoo
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-310-attention-mode`
+
+### Goal
+Make VIPS attention / focus points **first-class**: visible, editable, toolbar mode
+(like Crop), not only background Ken Burns magic.
+
+### Design (MVP)
+1. **Session data** (`WorkspaceItemState`): `hasAttention`, `attentionNorm` (0–1 in
+   image pixel space). Persist in `.biltoo` appearance JSON.
+2. **Mode** (`ImageView`): checkable Attention mode (Image mode only for MVP).
+   Overlay: crosshair + handle at the point; drag to move; click to place.
+3. **Auto**: on enter mode, if no stored point, run `ImageLoader::attentionPoint`
+   once and store. Action “Detect attention” re-runs VIPS.
+4. **Slideshow**: `pickInterestingMotionBiases` prefers stored attention when
+   `hasAttention`; else existing VIPS / hash fallback.
+5. **Toolbar**: checkable action with drawn icon (crosshair), next to Crop.
+
+### Non-goals (later)
+- Multi-point paths / explicit A–B Ken Burns handles
+- Gallery multi-select attention edit
+- Undo stack for attention moves (can add next)
+
+### Done criteria
+- [x] Mode + overlay + drag
+- [x] Persist in project appearance
+- [x] Slideshow uses stored point
+- [x] Docs; next **311**

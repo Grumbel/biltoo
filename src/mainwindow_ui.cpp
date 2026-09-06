@@ -213,6 +213,28 @@ void MainWindow::createActions()
     m_cropAct->setToolTip(tr("Crop mode"));
     connect(m_cropAct, &QAction::triggered, this, &MainWindow::toggleCropMode);
 
+    m_attentionAct = new QAction(tr("&Attention Point"), this);
+    m_attentionAct->setCheckable(true);
+    m_attentionAct->setShortcut(Qt::SHIFT | Qt::Key_A);
+    {
+        QPixmap pm(64, 64);
+        pm.fill(Qt::transparent);
+        QPainter painter(&pm);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setPen(QPen(QColor(40, 40, 40), 4));
+        painter.drawEllipse(QRectF(12, 12, 40, 40));
+        painter.drawLine(QPointF(32, 6), QPointF(32, 58));
+        painter.drawLine(QPointF(6, 32), QPointF(58, 32));
+        painter.setBrush(QColor(255, 200, 40));
+        painter.setPen(Qt::NoPen);
+        painter.drawEllipse(QPointF(32, 32), 6, 6);
+        m_attentionAct->setIcon(QIcon(pm));
+    }
+    m_attentionAct->setStatusTip(
+        tr("Edit the attention / focus point used for slideshow pan and zoom"));
+    m_attentionAct->setToolTip(tr("Attention point"));
+    connect(m_attentionAct, &QAction::triggered, this, &MainWindow::toggleAttentionMode);
+
     m_toggleHudAct = new QAction(tr("Show &HUD Overlay"), this);
     m_toggleHudAct->setShortcut(Qt::Key_H);
     m_toggleHudAct->setCheckable(true);
@@ -722,6 +744,7 @@ void MainWindow::createMenus()
     m_imageMenu->addAction(m_flipVAct);
     m_imageMenu->addSeparator();
     m_imageMenu->addAction(m_cropAct);
+    m_imageMenu->addAction(m_attentionAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));
@@ -867,6 +890,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipHAct);
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addAction(m_cropAct);
+    m_toolBar->addAction(m_attentionAct);
     m_toolBar->addSeparator();
     // Gallery layout combo: main button = Go to Gallery (current layout icon);
     // small menu button = pick a different layout (QToolButton::MenuButtonPopup).

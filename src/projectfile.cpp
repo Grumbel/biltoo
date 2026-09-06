@@ -114,6 +114,11 @@ QJsonObject appearanceToJson(const WorkspaceItemState &s, bool includePose)
             o.insert(QStringLiteral("cropRotation"), s.cropRotation);
         }
     }
+    if (s.hasAttention) {
+        o.insert(QStringLiteral("hasAttention"), true);
+        o.insert(QStringLiteral("attention"),
+                 QJsonArray{s.attentionNorm.x(), s.attentionNorm.y()});
+    }
     if (s.contentHFlip) {
         o.insert(QStringLiteral("contentHFlip"), true);
     }

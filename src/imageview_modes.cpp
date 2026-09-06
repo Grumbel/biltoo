@@ -274,6 +274,9 @@ void ImageView::setViewMode(ViewMode mode)
     if (m_cropMode) {
         leaveCropModeInternal(false);
     }
+    if (m_attentionMode) {
+        setAttentionMode(false);
+    }
 
     const ViewMode previous = m_viewMode;
     if (previous == ViewMode::Gallery) {

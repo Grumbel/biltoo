@@ -104,6 +104,12 @@ struct WorkspaceItemState {
      * axis-aligned. 0 = axis-aligned crop (default).
      */
     qreal cropRotation = 0.0;
+    /**
+     * Attention / focus point in normalized image coordinates (0–1, top-left
+     * origin). Used for slideshow Ken Burns subject; editable in Attention mode.
+     */
+    bool hasAttention = false;
+    QPointF attentionNorm; // valid when hasAttention
     ColorAdjustments colorAdjust;
 };
 

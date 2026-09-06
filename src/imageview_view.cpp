@@ -1012,7 +1012,22 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
     }
 
     QPointF att01;
-    if (!source.isNull() && ImageLoader::attentionPoint(source, &att01)) {
+    bool haveAtt = false;
+    if (ImageItem *item = targetItem()) {
+        const SessionImageId sid = item->sessionId();
+        if (sid != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *st = m_appearance.get(sid)) {
+                if (st->hasAttention) {
+                    att01 = st->attentionNorm;
+                    haveAtt = true;
+                }
+            }
+        }
+    }
+    if (!haveAtt && !source.isNull() && ImageLoader::attentionPoint(source, &att01)) {
+        haveAtt = true;
+    }
+    if (haveAtt) {
         // Map normalized focus to bias space [-1, 1] (same as corner table).
         QPointF subject((att01.x() - 0.5) * 2.0, (att01.y() - 0.5) * 2.0);
         subject.setX(qBound(-1.0, subject.x(), 1.0));
