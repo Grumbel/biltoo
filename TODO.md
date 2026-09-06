@@ -5564,3 +5564,19 @@ decode window, Image soft preview).
 ### Done criteria
 - [x] preparePaths does not schedulePixels
 - [x] Docs; next **303**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-303-debounce-size-pack`
+
+### Task
+Opening a large archive still feels multi-second because each thumtoo
+`sizeReady` calls `applyProbedImageSize` → **immediate** `applyLayout` in Gallery.
+~100 members ⇒ ~100 full masonry packs on the GUI thread.
+
+### Fix
+Debounce Gallery packs triggered by size probes (and similar ContentChange
+storms): coalesce into one `applyLayout` after a short idle (~48ms).
+
+### Done criteria
+- [x] sizeReady storm packs once, not N times
+- [x] Docs; next **304**

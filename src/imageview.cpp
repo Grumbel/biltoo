@@ -116,10 +116,11 @@ ImageView::ImageView(QWidget *parent)
     m_hudFlashTimer->setSingleShot(true);
     m_layoutDebounceTimer = new QTimer(this);
     m_layoutDebounceTimer->setSingleShot(true);
-    m_layoutDebounceTimer->setInterval(0);
+    m_layoutDebounceTimer->setInterval(48);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
-        // Automatic debounce pack removed (Phase 1). Explicit applyLayout only.
-        Q_UNUSED(this);
+        if (isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
+            applyLayout(m_debouncedPackReason);
+        }
     });
     connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
         m_hudFlashVisible = false;
@@ -374,10 +375,21 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         }
     }
     if (any && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
-        applyLayout(GalleryPackReason::ContentChange);
+        // Coalesce sizeReady storms (large archives) into one pack.
+        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     } else if (any && viewport()) {
         viewport()->update();
     }
+}
+
+void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
+{
+    m_debouncedPackReason = reason;
+    if (!m_layoutDebounceTimer) {
+        applyLayout(reason);
+        return;
+    }
+    m_layoutDebounceTimer->start();
 }
 
 int ImageView::pendingDecodeCount() const

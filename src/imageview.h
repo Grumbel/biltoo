@@ -628,6 +628,12 @@ public:
     LayoutMode layoutMode() const { return m_layoutMode; }
     void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);
     /**
+     * Coalesce rapid Gallery packs (e.g. sizeReady storm when opening a large
+     * archive). Runs applyLayout after a short idle; Enter/Explicit callers
+     * should still use applyLayout directly.
+     */
+    void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
+    /**
      * Workspace only: pack @p items (or current selection) with a packaged
      * layout without leaving FreeForm / Workspace mode. Returns false if
      * there is nothing to arrange.
@@ -1261,6 +1267,7 @@ private:
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     int m_galleryRelayoutSuppressCount = 0;
     QTimer *m_layoutDebounceTimer = nullptr;
+    GalleryPackReason m_debouncedPackReason = GalleryPackReason::ContentChange;
 };
 
 #endif // IMAGEVIEW_H
