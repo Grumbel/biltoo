@@ -5,6 +5,7 @@
 
 #include "archivepath.h"
 #include "pagepath.h"
+#include <cstring>
 
 #include <QCoreApplication>
 #include <QFileInfo>
@@ -20,7 +21,10 @@
 
 #ifdef BILTOO_HAVE_THUMTOO
 #include "thumtoo/archive.hpp"
+#if defined(BILTOO_HAVE_THUMTOO) && __has_include("thumtoo/pdf.hpp")
 #include "thumtoo/pdf.hpp"
+#define BILTOO_HAVE_THUMTOO_PDF 1
+#endif
 #include "thumtoo/client.hpp"
 #include "thumtoo/image.hpp"
 #include "thumtoo/status.hpp"
@@ -171,7 +175,13 @@ std::string resolveUriUncached(const QString &path)
         if (!ref.valid) {
             return {};
         }
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
         return thumtoo::pdf_page_uri(absPathFast(ref.pdfPath), ref.page);
+#else
+        // Match thumtoo Location form even when headers predate PDF support.
+        return thumtoo::file_uri_from_path(absPathFast(ref.pdfPath))
+               + "//page:" + std::to_string(ref.page);
+#endif
     }
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
@@ -689,7 +699,7 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
 QStringList expandPdfToPageRefs(const QString &pdfPath)
 {
     QStringList out;
-#ifdef BILTOO_HAVE_THUMTOO
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
     if (pdfPath.isEmpty()) {
         return out;
     }
@@ -713,6 +723,34 @@ QStringList expandPdfToPageRefs(const QString &pdfPath)
     Q_UNUSED(pdfPath);
 #endif
     return out;
+}
+
+QImage rasterizePdfPage(const QString &pdfPath, int page_1based, int maxEdge)
+{
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+    if (pdfPath.isEmpty() || page_1based < 1) {
+        return {};
+    }
+    const std::filesystem::path abs = absPathStd(pdfPath);
+    const int edge = maxEdge > 0 ? maxEdge : 2048;
+    auto raster = thumtoo::pdf_rasterize_page(abs, page_1based, edge);
+    if (!raster || raster->rgb.empty() || raster->width <= 0 || raster->height <= 0) {
+        return {};
+    }
+    QImage img(raster->width, raster->height, QImage::Format_RGB888);
+    for (int y = 0; y < raster->height; ++y) {
+        memcpy(img.scanLine(y),
+               raster->rgb.data()
+                   + static_cast<size_t>(y) * static_cast<size_t>(raster->width) * 3u,
+               static_cast<size_t>(raster->width) * 3u);
+    }
+    return img.copy();
+#else
+    Q_UNUSED(pdfPath);
+    Q_UNUSED(page_1based);
+    Q_UNUSED(maxEdge);
+    return {};
+#endif
 }
 
 QByteArray readArchiveMemberBytes(const QString &archiveRefPath)

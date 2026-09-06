@@ -5798,3 +5798,20 @@ the current image — felt like an unusually long pause.
 - [x] File dialog
 - [x] Expand / load / HUD / project
 - [x] Docs; next **318**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-318-pdf-decouple`
+
+### Problem
+`imageloader.cpp` included `thumtoo/pdf.hpp` directly → hard fail when flake
+`thumtoo` input lags behind Poppler/PDF commits.
+
+### Fix
+- `ThumtooCache::rasterizePdfPage` owns Poppler access
+- `__has_include("thumtoo/pdf.hpp")` → `BILTOO_HAVE_THUMTOO_PDF`
+- ImageLoader only calls ThumtooCache (ladder + rasterizePdfPage)
+- Page URI string built even without PDF headers
+
+### Done criteria
+- [x] Compiles with old thumtoo (PDF expand empty) and new thumtoo (full PDF)
+- [x] Docs; next **319**

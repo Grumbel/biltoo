@@ -7,6 +7,7 @@
 #include <QByteArray>
 #include <QObject>
 #include <QSize>
+#include <QImage>
 #include <QString>
 #include <QStringList>
 
@@ -101,6 +102,12 @@ QStringList expandArchiveToImageRefs(const QString &archivePath);
 
 /** Expand a PDF into one session path per page (…//page:N, 1-based). */
 QStringList expandPdfToPageRefs(const QString &pdfPath);
+
+/**
+ * Rasterize one PDF page to RGB888 QImage (long edge ≈ maxEdge).
+ * Empty if thumtoo was built without Poppler or the page fails.
+ */
+QImage rasterizePdfPage(const QString &pdfPath, int page_1based, int maxEdge);
 
 /**
  * Extract one //archive: member into memory via thumtoo (size caps shared with

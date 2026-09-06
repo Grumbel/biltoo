@@ -12,10 +12,6 @@
 #include "imagecache.h"
 #include "archivepath.h"
 #include "pagepath.h"
-#ifdef BILTOO_HAVE_THUMTOO
-#include "thumtoo/pdf.hpp"
-#include <filesystem>
-#endif
 
 #include <QBuffer>
 #include <cstring>
@@ -187,27 +183,16 @@ QImage loadPageRef(const QString &path, int maxEdge)
         }
     }
 
-#ifdef BILTOO_HAVE_THUMTOO
+    // Direct raster via ThumtooCache (no thumtoo/pdf.hpp in this TU).
     if (ThumtooCache::isAvailable()) {
-        const std::filesystem::path abs = std::filesystem::path(ref.pdfPath.toStdString());
-        auto raster = thumtoo::pdf_rasterize_page(abs, ref.page, edge);
-        if (raster && !raster->rgb.empty() && raster->width > 0 && raster->height > 0) {
-            QImage img(raster->width, raster->height, QImage::Format_RGB888);
-            for (int y = 0; y < raster->height; ++y) {
-                memcpy(img.scanLine(y),
-                       raster->rgb.data()
-                           + static_cast<size_t>(y) * static_cast<size_t>(raster->width) * 3u,
-                       static_cast<size_t>(raster->width) * 3u);
-            }
+        QImage img = ThumtooCache::rasterizePdfPage(ref.pdfPath, ref.page, edge);
+        if (!img.isNull()) {
             ThumtooCache::schedulePixels(path, edge);
-            return scaleToMaxEdge(img.copy(), maxEdge);
+            return scaleToMaxEdge(img, maxEdge);
         }
         ThumtooCache::schedulePixels(path, edge);
         return {};
     }
-#else
-    Q_UNUSED(edge);
-#endif
     qWarning("ImageLoader: cannot load PDF page (no thumtoo/Poppler): %s", qPrintable(path));
     return {};
 }
