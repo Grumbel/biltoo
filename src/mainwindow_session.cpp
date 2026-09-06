@@ -244,9 +244,14 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
     };
 
     // Optional progress: only used when expand runs on a worker thread.
-    // Synchronous callers pass a no-op.
+    // Synchronous callers pass a no-op. Prefer thumtoo durable TOC; fall back
+    // to libarchive walk (progress only on that path).
     auto expandArchive = [](const QString &archivePath,
                             const ArchiveReader::ListProgress &progress) {
+        const QStringList fromCache = ThumtooCache::expandArchiveToImageRefs(archivePath);
+        if (!fromCache.isEmpty()) {
+            return fromCache;
+        }
         return ArchiveReader::expandArchiveToImageRefs(archivePath, progress);
     };
 
@@ -271,7 +276,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             QDirIterator it(path, filters, flags);
             while (it.hasNext()) {
                 const QString full = it.next();
-                if (ArchivePath::isArchiveFile(full) && ArchiveReader::isAvailable()) {
+                if (ArchivePath::isArchiveFile(full)
+                    && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
                     images.append(expandArchive(full, {}));
                 } else if (isImageFile(full)) {
                     const QString c = canonicalImage(full);
@@ -281,7 +287,7 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
                 }
             }
         } else if (info.isFile() && ArchivePath::isArchiveFile(path)
-                   && ArchiveReader::isAvailable()) {
+                   && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
             images.append(expandArchive(path, {}));
         } else if (info.isFile() && isImageFile(path)) {
             const QString c = canonicalImage(path);
@@ -295,7 +301,7 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
 
 bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
 {
-    if (!ArchiveReader::isAvailable()) {
+    if (!ArchiveReader::isAvailable() && !ThumtooCache::isAvailable()) {
         return false;
     }
     for (const QString &path : paths) {
@@ -432,17 +438,23 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                         return;
                     }
                     const QString full = it.next();
-                    if (ArchivePath::isArchiveFile(full) && ArchiveReader::isAvailable()) {
+                    if (ArchivePath::isArchiveFile(full)
+                        && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
                         const QString name = QFileInfo(full).fileName();
                         report(MainWindow::tr("Reading archive “%1”…").arg(name));
-                        images.append(ArchiveReader::expandArchiveToImageRefs(
-                            full, [report, name](int hits, int scanned) {
-                                report(MainWindow::tr("Reading archive “%1”… %2 image(s), %3 entries")
-                                           .arg(name)
-                                           .arg(hits)
-                                           .arg(scanned),
-                                       hits, -1);
-                            }));
+                        QStringList members = ThumtooCache::expandArchiveToImageRefs(full);
+                        if (members.isEmpty() && ArchiveReader::isAvailable()) {
+                            members = ArchiveReader::expandArchiveToImageRefs(
+                                full, [report, name](int hits, int scanned) {
+                                    report(MainWindow::tr(
+                                               "Reading archive “%1”… %2 image(s), %3 entries")
+                                               .arg(name)
+                                               .arg(hits)
+                                               .arg(scanned),
+                                           hits, -1);
+                                });
+                        }
+                        images.append(members);
                     } else if (ImageLoader::isImageFile(full)) {
                         const QString c = canonicalImage(full);
                         if (!c.isEmpty()) {
@@ -451,17 +463,22 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                     }
                 }
             } else if (info.isFile() && ArchivePath::isArchiveFile(path)
-                       && ArchiveReader::isAvailable()) {
+                       && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
                 const QString name = info.fileName();
                 report(MainWindow::tr("Reading archive “%1”…").arg(name));
-                images.append(ArchiveReader::expandArchiveToImageRefs(
-                    path, [report, name](int hits, int scanned) {
-                        report(MainWindow::tr("Reading archive “%1”… %2 image(s), %3 entries")
-                                   .arg(name)
-                                   .arg(hits)
-                                   .arg(scanned),
-                               hits, -1);
-                    }));
+                QStringList members = ThumtooCache::expandArchiveToImageRefs(path);
+                if (members.isEmpty() && ArchiveReader::isAvailable()) {
+                    members = ArchiveReader::expandArchiveToImageRefs(
+                        path, [report, name](int hits, int scanned) {
+                            report(MainWindow::tr(
+                                       "Reading archive “%1”… %2 image(s), %3 entries")
+                                       .arg(name)
+                                       .arg(hits)
+                                       .arg(scanned),
+                                   hits, -1);
+                        });
+                }
+                images.append(members);
             } else if (info.isFile() && ImageLoader::isImageFile(path)) {
                 const QString c = canonicalImage(path);
                 if (!c.isEmpty()) {
