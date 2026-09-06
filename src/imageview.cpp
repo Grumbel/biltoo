@@ -90,23 +90,25 @@ ImageView::ImageView(QWidget *parent)
                 const QPointer<ImageView> guard(this);
                 QThreadPool::globalInstance()->start([guard, path, edge]() {
                     const QImage preview = ImageLoader::loadThumbnail(path, edge);
-                    if (!guard || preview.isNull()) {
+                    ImageView *const view = guard.data();
+                    if (!view || preview.isNull()) {
                         return;
                     }
-                    QMetaObject::invokeMethod(guard, [guard, path, preview]() {
-                        if (!guard) {
+                    QMetaObject::invokeMethod(view, [guard, path, preview]() {
+                        ImageView *const host = guard.data();
+                        if (!host) {
                             return;
                         }
-                        guard->m_galleryAwaitLadder.remove(path);
+                        host->m_galleryAwaitLadder.remove(path);
                         // LoadAdd: refresh gallery/workspace/image tiles that still
                         // show placeholders; do not fight a completed full decode.
-                        guard->onImagePreviewLoaded(
+                        host->onImagePreviewLoaded(
                             path, preview, 0,
                             static_cast<int>(ImageView::LoadAdd));
-                        if (guard->isGalleryMode()) {
-                            guard->updateGalleryDecodeWindow();
+                        if (host->isGalleryMode()) {
+                            host->updateGalleryDecodeWindow();
                         }
-                    });
+                    }, Qt::QueuedConnection);
                 });
             });
 

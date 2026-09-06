@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-306-gallery-soft-only**
-(Gallery soft edge only; no full-res tile decode).
-Next bundle number: **307**.
+Latest agent handoff: **TODO.md → biltoo-307-ladderready-nullwarn**
+(Fix -Wnull-dereference in ladderReady lambda).
+Next bundle number: **308**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
