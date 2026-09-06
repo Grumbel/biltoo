@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-290-thumtoo-size-ready**
-(sizeReady → provisional reflow; archive probes via thumtoo only).
-Next bundle number: **291**.
+Latest agent handoff: **TODO.md → biltoo-291-archive-member-filter**
+(TOC expand uses biltoo image suffixes, not thumtoo's short list).
+Next bundle number: **292**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -303,9 +303,11 @@ Client uses a Qt `Executor` so callbacks land on the GUI thread.
 Session edit identity remains biltoo `SessionImageId`.
 
 **Archive expand:** `ThumtooCache::expandArchiveToImageRefs` uses cache-first
-`get_archive_entries`, then `refresh_archive_toc` (stores durable TOC). Session
-`expandPaths` / background expand prefer that list and fall back to
-`ArchiveReader::expandArchiveToImageRefs`.
+`get_archive_entries`, then `refresh_archive_toc` (stores durable TOC). Member
+filter matches biltoo image suffixes (HEIC/AVIF/KRA/…), not thumtoo's short
+`is_likely_image_member_path` list — otherwise a partial TOC hit would skip
+ArchiveReader fallback and drop those members. Session expand prefers that
+list and falls back to `ArchiveReader::expandArchiveToImageRefs` when empty.
 
 **Archive member bytes:** `ThumtooCache::readArchiveMemberBytes` calls
 `thumtoo::extract_archive_member` (shared size caps). `ImageLoader` tries that

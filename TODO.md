@@ -5332,3 +5332,25 @@ archive size probes via thumtoo instead of skipping them on the GUI path.
 - [x] sizeReady connected and applies intrinsic size
 - [x] Archive paths schedule thumtoo probe; cache-only size preferred
 - [x] Docs / handoff; next **291**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-291-archive-member-filter`
+
+### Task
+thumtoo `is_likely_image_member_path` only accepts a short extension list
+(jpg/png/webp/jxl/…). When TOC hits and returns some members, biltoo skips
+ArchiveReader fallback — so HEIC/AVIF/KRA/… in the same archive are dropped.
+Align archive expand filtering with biltoo's image suffixes.
+
+### Design
+1. In `ThumtooCache::expandArchiveToImageRefs`, stop using
+   `is_likely_image_member_path` alone.
+2. Apply ArchiveReader-equivalent rules: skip `__MACOSX/`, directories, dotfiles,
+   unsafe paths; accept members whose suffix is in biltoo's image suffix set
+   (static list mirroring `ImageLoader::imageSuffixes` base — no circular
+   include of imageloader).
+3. Keep ArchiveReader fallback when the whole expand returns empty.
+
+### Done criteria
+- [x] Mixed archives keep HEIC/etc. when TOC is cache-hit
+- [x] Docs / handoff; next **292**
