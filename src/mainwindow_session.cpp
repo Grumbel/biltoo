@@ -446,9 +446,14 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                     if (ArchivePath::isArchiveFile(full)
                         && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
                         const QString name = QFileInfo(full).fileName();
-                        report(MainWindow::tr("Reading archive “%1”…").arg(name));
+                        report(MainWindow::tr("Indexing archive “%1”…").arg(name));
                         QStringList members = ThumtooCache::expandArchiveToImageRefs(full);
-                        if (members.isEmpty() && ArchiveReader::isAvailable()) {
+                        if (!members.isEmpty()) {
+                            report(MainWindow::tr("Archive “%1”: %n image(s)", "",
+                                                 members.size())
+                                       .arg(name));
+                        } else if (ArchiveReader::isAvailable()) {
+                            report(MainWindow::tr("Reading archive “%1”…").arg(name));
                             members = ArchiveReader::expandArchiveToImageRefs(
                                 full, [report, name](int hits, int scanned) {
                                     report(MainWindow::tr(
@@ -470,9 +475,13 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
             } else if (info.isFile() && ArchivePath::isArchiveFile(path)
                        && (ThumtooCache::isAvailable() || ArchiveReader::isAvailable())) {
                 const QString name = info.fileName();
-                report(MainWindow::tr("Reading archive “%1”…").arg(name));
+                report(MainWindow::tr("Indexing archive “%1”…").arg(name));
                 QStringList members = ThumtooCache::expandArchiveToImageRefs(path);
-                if (members.isEmpty() && ArchiveReader::isAvailable()) {
+                if (!members.isEmpty()) {
+                    report(MainWindow::tr("Archive “%1”: %n image(s)", "", members.size())
+                               .arg(name));
+                } else if (ArchiveReader::isAvailable()) {
+                    report(MainWindow::tr("Reading archive “%1”…").arg(name));
                     members = ArchiveReader::expandArchiveToImageRefs(
                         path, [report, name](int hits, int scanned) {
                             report(MainWindow::tr(

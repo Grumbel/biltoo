@@ -429,8 +429,10 @@ QSize probeSize(const QString &path)
     if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
         return cached;
     }
-    // Warm the cache in the background for the next visit.
-    ThumtooCache::scheduleProbe(path);
+    // Warm the cache in the background for the next visit (not Unsupported).
+    if (!ThumtooCache::isUnsupported(path)) {
+        ThumtooCache::scheduleProbe(path);
+    }
 
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
