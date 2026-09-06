@@ -126,9 +126,10 @@ unbound and edits will not propagate correctly in Workspace).
    3-arg id signals exist; path-only emits may still update all rows with that
    path if anything connects the old overload.
 
-5. **Session undo remove/restore**  
-   `SessionRemoveCommand` stores path+index, not id. Restore allocates **new**
-   ids — Workspace associations after undo may not match pre-remove ids.
+5. **Session undo remove/restore** — **fixed**  
+   `SessionEntrySnapshot` stores `SessionImageId` + appearance; undo
+   `restoreSessionEntries` re-inserts the same id. Redo resolves rows by id
+   (index is fallback only).
 
 6. **`setWorkspacePaths(paths)` path-only**  
    Gallery/session rebuild still path-keyed; path duplicates in Gallery are
@@ -180,8 +181,9 @@ unbound and edits will not propagate correctly in Workspace).
    - `m_itemStates.constFind` / `findItemByPath` used for appearance or open
    - `indexOf(path)` for navigation into Image mode
    - `clearWorkspace()` on Image-mode load paths (should be `clearLiveCanvas`)
-3. Gallery: open tile when path is duplicated — pass session id.
-4. Session remove undo: store/restore `SessionImageId`.
+3. Gallery: open tile when path is duplicated — pass session id (double-click
+   already prefers `sessionImageOpenRequested` / slot index).
+4. Session remove undo by id — done (see §5).
 5. Optional: stop writing path appearance entirely once readers are gone.
 6. Mark AUDIT M16/M27 resolved after verification.
 

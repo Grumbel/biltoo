@@ -5459,3 +5459,20 @@ paths could leave a stale count until the next unrelated event.
 - [x] Decode status clears reliably (translation-safe)
 - [x] Pending decrement always refreshes status
 - [x] Docs; next **297**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-297-session-remove-redo-by-id`
+
+### Task
+`SessionRemoveCommand` undo already restores stable `SessionImageId`s via
+`restoreSessionEntries`. Redo still removed by **captured index**, which is
+wrong if the user undoes remove and then inserts/reorders before redo.
+
+### Fix
+- `SessionRemoveCommand::redo`: resolve each entry via `sessionIndexOfId(e.id)`,
+  fall back to `e.index` only if the id is missing.
+- Update SESSION.md residual #5 to match current behavior.
+
+### Done criteria
+- [x] Redo remove is id-stable
+- [x] SESSION residual documented; next **298**

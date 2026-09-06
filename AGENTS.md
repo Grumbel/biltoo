@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-296-decode-status-harden**
-(Decode status bar flag; takePending emits statusChanged).
-Next bundle number: **297**.
+Latest agent handoff: **TODO.md → biltoo-297-session-remove-redo-by-id**
+(SessionRemoveCommand redo resolves by SessionImageId).
+Next bundle number: **298**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
