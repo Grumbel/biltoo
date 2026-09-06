@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-293-archive-extract-batch**
-(Concurrent //archive: extracts batched; process-local member LRU).
-Next bundle number: **294**.
+Latest agent handoff: **TODO.md → biltoo-294-thumtoo-status-edges**
+(Unsupported skips probes; ladder edges 256/512/1024).
+Next bundle number: **295**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -321,4 +321,10 @@ loads on one zip open the archive once per batch. A small process-local LRU
 repacks provisional Gallery tiles. Archive refs never extract on the GUI thread:
 `scheduleImageSizeProbe` only calls `ThumtooCache::scheduleProbe`; layout uses
 cache-only size or a neutral placeholder until `sizeReady`.
+
+**Status / ladder edges:** `isUnsupported` (cache-only `get_meta`) stops
+`scheduleProbe` / `schedulePixels` / `preparePaths` for
+`ContentStatus::Unsupported`. Failed remains retryable. Ladder targets:
+`kFilmstripLadderEdge` 256, `kGalleryLadderEdge` 512 (session prewarm),
+`kImageLadderEdge` 1024 (soft Image upgrade when edge unspecified).
 

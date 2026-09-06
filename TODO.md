@@ -5402,3 +5402,24 @@ process-local LRU so the same member is not re-extracted in one session.
 - [x] Concurrent same-archive reads batch extract
 - [x] LRU avoids repeat extract of the same member
 - [x] Docs / handoff; next **294**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-294-thumtoo-status-edges`
+
+### Task
+Honour thumtoo `ContentStatus::Unsupported` so biltoo stops re-queueing probes
+and pixel jobs for codecs/containers the cache will never handle. Document
+ladder long-edge targets aligned with thumtoo `kLadderEdges`.
+
+### Design
+1. `ThumtooCache::isUnsupported(path)` via cache-only `get_meta`.
+2. `scheduleProbe` / `schedulePixels` / `preparePaths` no-op when unsupported.
+3. Named edges in façade: filmstrip 256, gallery/prewarm 512, image soft 1024
+   (subset of thumtoo ladder). `preparePaths` uses gallery edge; ImageView
+   ladderReady decode uses image soft edge when maxEdge was 0.
+4. Failed remains retryable (no permanent skip).
+
+### Done criteria
+- [x] Unsupported paths are not re-scheduled
+- [x] Ladder edge constants documented and used for prewarm
+- [x] Docs / handoff; next **295**
