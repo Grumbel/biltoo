@@ -364,6 +364,11 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
 {
     const quint64 gen = ++m_expandGeneration;
     const bool recursive = m_recursive;
+    // Replace loads already clear the filmstrip in loadFiles; append keeps it.
+    // Direct callers with append=false still need an immediate empty strip.
+    if (!append && m_thumbnailBar && m_thumbnailBar->count() > 0) {
+        m_thumbnailBar->setSession(QStringList(), QVector<SessionImageId>());
+    }
     setExpandProgressBusy(true);
     setExpandProgressMessage(tr("Scanning archives…"));
 
@@ -494,6 +499,11 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
             }
             if (images.isEmpty()) {
                 window->setExpandProgressBusy(false);
+                // Replace path cleared the filmstrip at start; restore current.
+                if (!append && window->m_thumbnailBar) {
+                    window->m_thumbnailBar->setSession(window->m_session.paths(),
+                                                      window->m_session.ids());
+                }
                 if (window->statusBar()) {
                     window->statusBar()->showMessage(
                         append ? MainWindow::tr("No readable images to add.")
@@ -842,6 +852,12 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
 {
     stopSlideshow();
 
+    // Drop the previous filmstrip immediately so History / Open does not keep
+    // showing old session thumbs while expand or async sort runs.
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setSession(QStringList(), QVector<SessionImageId>());
+    }
+
     if (pathsNeedBackgroundExpand(paths)) {
         expandPathsInBackground(paths, /*append=*/false, startAt);
         return;
@@ -853,6 +869,10 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
         // AUDIT M26: explicit feedback when Open finds nothing usable
+        // Restore filmstrip for the still-current session (we cleared above).
+        if (m_thumbnailBar) {
+            m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+        }
         if (statusBar()) {
             statusBar()->showMessage(tr("No readable images found."), 5000);
         }
