@@ -5758,3 +5758,24 @@ not as pure start or pure end. Seed still picks travel direction.
 ### Later (315+)
 - Multi-point insert/select/delete/move + undo
 - Optional: secondary points influence path waypoints
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-316-slideshow-phase-remap`
+
+### Problem
+Live edits to Slideshow Settings (or interval faster/slower) called
+`armSlideshowAdvanceTimer()`, which zeroed phase and restarted a full dwell on
+the current image — felt like an unusually long pause.
+
+### Fix
+- `remapSlideshowPhase(old, new)`: keep completed cycles folded into base index;
+  map `phaseT = (elapsed % old) / old` into the new interval.
+- `setSlideshowIntervalMs`: remap instead of re-arm when the clock is running
+  (or paused with accumulated elapsed).
+- Settings dialog: stop calling `armSlideshowAdvanceTimer` on every live apply;
+  only cancel transition state + `updateSlideshowFromClock`.
+
+### Done criteria
+- [x] Interval change preserves ~same cycle fraction
+- [x] Non-interval live settings do not restart dwell
+- [x] Docs; next **317**
