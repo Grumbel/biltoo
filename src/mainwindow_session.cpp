@@ -862,6 +862,8 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
     m_currentIndex = -1;
 
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+    // Background size+ladder for the session (same cache as thumtoo-prepare).
+    ThumtooCache::preparePaths(m_session.paths());
     applyThumbnailVisibility();
 
     // Session open is not a Workspace document. Drop any free-form arrangement
@@ -989,6 +991,7 @@ void MainWindow::applyExpandedAppend(const QStringList &images)
 
     auto finish = [this, current, workspacePaths]() {
         m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+        ThumtooCache::preparePaths(m_session.paths());
         if (isWorkspaceMode()) {
             m_thumbnailBar->setMultiSelectEnabled(true);
             syncThumbnailWorkspaceSelection();

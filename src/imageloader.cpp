@@ -483,7 +483,6 @@ void init(const char *argv0)
 #else
     Q_UNUSED(argv0);
 #endif
-    ThumtooCache::init();
 }
 
 bool hasVips()

@@ -7,6 +7,7 @@
 #include <QByteArray>
 #include <QSize>
 #include <QString>
+#include <QStringList>
 
 /**
  * Thin biltoo façade over thumtoo::Client (durable size index + ladder).
@@ -14,7 +15,10 @@
  */
 namespace ThumtooCache {
 
-/** Open the default XDG cache client once (safe to call repeatedly). */
+/**
+ * Open the default XDG cache client once (safe to call repeatedly).
+ * Prefer calling after QApplication exists so callbacks can use the Qt loop.
+ */
 void init();
 
 /** Drop the client (join thumtoo worker). Safe to call more than once. */
@@ -40,6 +44,12 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
  * Non-blocking; next cachedLadderBytes may succeed.
  */
 void schedulePixels(const QString &path, int maxEdge);
+
+/**
+ * Prewarm size (+ ladder) for a session file list — same idea as
+ * thumtoo-prepare, non-blocking via the worker queue.
+ */
+void preparePaths(const QStringList &paths);
 
 } // namespace ThumtooCache
 

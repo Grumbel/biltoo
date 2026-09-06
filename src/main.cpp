@@ -40,6 +40,8 @@ int main(int argc, char *argv[])
     }
 
     QApplication app(argc, argv);
+    // After QApplication so thumtoo callbacks can queue onto the GUI thread.
+    ThumtooCache::init();
     QObject::connect(&app, &QCoreApplication::aboutToQuit, []() {
         // Drop queued thumbnail work and tear down thumtoo so quit is not blocked
         // by a worker draining EnsurePixels / QThreadPool loadThumbnail jobs.

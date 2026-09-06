@@ -295,7 +295,9 @@ Durable size index and display ladder live in the **thumtoo** library
 (<https://github.com/Grumbel/thumtoo>), integrated as a **flake input**
 (`inputs.thumtoo`) and `add_subdirectory` when `THUMTOO_SOURCE_DIR` is set.
 `ImageLoader::probeSize` and `loadThumbnail` consult `ThumtooCache` first
-(cache-only size / ladder bytes via `get_pixels`). Misses schedule
+(cache-only size / ladder via `get_pixels`). Session open calls
+`ThumtooCache::preparePaths` (non-blocking). Misses schedule
 `request_size` / `request_pixels` and fall back to Qt/vips/archive decode.
+Client uses a Qt `Executor` so callbacks land on the GUI thread.
 Session edit identity remains biltoo `SessionImageId`.
 

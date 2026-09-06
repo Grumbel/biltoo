@@ -5,10 +5,13 @@
 
 #include "archivepath.h"
 
+#include <QCoreApplication>
 #include <QFileInfo>
+#include <QMetaObject>
 
 #include <cstdlib>
 #include <filesystem>
+#include <functional>
 #include <mutex>
 
 #ifdef BILTOO_HAVE_THUMTOO
@@ -19,6 +22,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #endif
 
 namespace ThumtooCache {
@@ -30,35 +34,60 @@ std::mutex g_mu;
 std::unique_ptr<thumtoo::Client> g_client;
 bool g_inited = false;
 
+std::string absPathStd(const QString &p)
+{
+    QFileInfo fi(p);
+    const QString can = fi.canonicalFilePath();
+    const QString abs = can.isEmpty() ? fi.absoluteFilePath() : can;
+    return abs.toStdString();
+}
+
 std::string toThumtooUri(const QString &path)
 {
-    // Match thumtoo-prepare: absolute, preferably canonical paths so SHA-256
-    // content rows and locator URIs line up across CLI and GUI.
-    auto absPath = [](const QString &p) -> std::string {
-        QFileInfo fi(p);
-        const QString can = fi.canonicalFilePath();
-        const QString abs = can.isEmpty() ? fi.absoluteFilePath() : can;
-        return abs.toStdString();
-    };
-
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
         if (!ref.valid) {
             return {};
         }
-        return thumtoo::archive_uri(absPath(ref.archivePath),
+        return thumtoo::archive_uri(absPathStd(ref.archivePath),
                                     ref.memberPath.toStdString());
     }
     const QFileInfo fi(path);
     if (!fi.exists()) {
         return {};
     }
-    return thumtoo::file_uri_from_path(absPath(path));
+    return thumtoo::file_uri_from_path(absPathStd(path));
 }
 
 thumtoo::Client *clientUnlocked()
 {
     return g_client.get();
+}
+
+thumtoo::Executor qtExecutor()
+{
+    return thumtoo::Executor{[](std::function<void()> fn) {
+        QCoreApplication *app = QCoreApplication::instance();
+        if (!app) {
+            fn();
+            return;
+        }
+        QMetaObject::invokeMethod(
+            app,
+            [fn = std::move(fn)]() mutable { fn(); },
+            Qt::QueuedConnection);
+    }};
+}
+
+std::filesystem::path defaultCacheRoot()
+{
+    if (const char *xdg = std::getenv("XDG_CACHE_HOME"); xdg && *xdg) {
+        return std::filesystem::path(xdg) / "thumtoo";
+    }
+    if (const char *home = std::getenv("HOME"); home && *home) {
+        return std::filesystem::path(home) / ".cache" / "thumtoo";
+    }
+    return std::filesystem::path(".cache") / "thumtoo";
 }
 
 #endif
@@ -72,18 +101,10 @@ void init()
     if (g_inited) {
         return;
     }
-    g_inited = true; // one attempt; leave g_client null on failure
+    g_inited = true;
     try {
         thumtoo::image_library_init();
-        std::filesystem::path root;
-        if (const char *xdg = std::getenv("XDG_CACHE_HOME"); xdg && *xdg) {
-            root = std::filesystem::path(xdg) / "thumtoo";
-        } else if (const char *home = std::getenv("HOME"); home && *home) {
-            root = std::filesystem::path(home) / ".cache" / "thumtoo";
-        } else {
-            root = std::filesystem::path(".cache") / "thumtoo";
-        }
-        g_client = thumtoo::Client::open(root);
+        g_client = thumtoo::Client::open(defaultCacheRoot(), qtExecutor());
     } catch (...) {
         g_client.reset();
     }
@@ -94,7 +115,7 @@ void shutdown()
 {
 #ifdef BILTOO_HAVE_THUMTOO
     std::lock_guard lock(g_mu);
-    g_client.reset(); // joins worker; queue cleared in ~Client (thumtoo ≥ shutdown fix)
+    g_client.reset();
     g_inited = false;
 #endif
 }
@@ -202,6 +223,45 @@ void schedulePixels(const QString &path, int maxEdge)
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
+#endif
+}
+
+void preparePaths(const QStringList &paths)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (paths.isEmpty()) {
+        return;
+    }
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return;
+    }
+    std::vector<std::filesystem::path> fsPaths;
+    fsPaths.reserve(size_t(paths.size()));
+    for (const QString &p : paths) {
+        if (ArchivePath::isArchiveRef(p)) {
+            // prepare_paths expands archives itself when given the container;
+            // member refs are individual URIs — schedule size/pixels instead.
+            scheduleProbe(p);
+            schedulePixels(p, 512);
+            continue;
+        }
+        const QFileInfo fi(p);
+        if (!fi.exists()) {
+            continue;
+        }
+        fsPaths.emplace_back(absPathStd(p));
+    }
+    if (!fsPaths.empty()) {
+        c->prepare_paths(fsPaths, {});
+    }
+#else
+    Q_UNUSED(paths);
 #endif
 }
 
