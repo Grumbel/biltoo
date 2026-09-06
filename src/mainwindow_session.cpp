@@ -1598,6 +1598,7 @@ void MainWindow::goLast()
 void MainWindow::setSlideshowIntervalMs(int ms)
 {
     // 0 ms = as fast as the event loop allows; upper bound keeps UI usable.
+    const int oldInterval = m_slideshowIntervalMs;
     m_slideshowIntervalMs = qBound(0, ms, 3600000); // match UI max 3600s
     // Transition duration is the full effect (out + in); may use the whole interval.
     if (m_imageView) {
@@ -1607,19 +1608,28 @@ void MainWindow::setSlideshowIntervalMs(int ms)
             m_imageView->setSlideshowTransitionDurationMs(cap);
         }
     }
-    if (isSlideshowSession() && !m_slideshowPaused) {
-        // Drop any in-flight fade before re-arming. Leaving busy=true while
-        // transitionCycle is reset made the pure clock wait forever and
-        // reapplySlideshowFraming restarted dwell under a live overlay.
+    if (!isSlideshowSession()) {
+        return;
+    }
+    // Preserve normalized cycle progress under the new interval (running or
+    // paused). Re-arming from zero caused multi-second stalls on the current
+    // image whenever the user nudged interval or opened Slideshow Settings.
+    if (m_slideshowClockRunning && oldInterval != m_slideshowIntervalMs) {
+        const int oldI = oldInterval > 0 ? oldInterval : 1;
+        const int newI = m_slideshowIntervalMs > 0 ? m_slideshowIntervalMs : 1;
+        remapSlideshowPhase(oldI, newI);
+    }
+    if (m_imageView) {
+        m_imageView->cancelSlideshowTransition();
+    }
+    m_slideshowPendingToIndex = -1;
+    m_slideshowTransitionCycle = -1;
+    if (!m_slideshowPaused) {
         if (m_imageView) {
-            m_imageView->cancelSlideshowTransition();
-        }
-        m_slideshowPendingToIndex = -1;
-        m_slideshowTransitionCycle = -1;
-        armSlideshowAdvanceTimer();
-        if (m_imageView) {
+            m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
             m_imageView->reapplySlideshowFraming();
         }
+        updateSlideshowFromClock();
     }
 }
 

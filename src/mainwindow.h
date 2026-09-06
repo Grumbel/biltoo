@@ -169,6 +169,12 @@ private slots:
     void onSlideshowUserNavigated();
     /** Start/restart the pure time-based slideshow clock and tick timer. */
     void armSlideshowAdvanceTimer();
+    /**
+     * After an interval change, keep the same slide and ~the same fraction of
+     * the cycle (phaseT ∈ [0,1)) under the new interval so live settings edits
+     * do not restart a full dwell (long pause on the current image).
+     */
+    void remapSlideshowPhase(int oldIntervalMs, int newIntervalMs);
     /** Sole tick handler: elapsed → cycle/phase → pure or transition (pure functions). */
     void updateSlideshowFromClock();
     void setLayoutFreeForm();

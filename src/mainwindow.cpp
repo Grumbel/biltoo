@@ -898,15 +898,16 @@ void MainWindow::showSlideshowSettings()
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
         m_imageView->setSlideshowZoom(
             static_cast<ImageView::SlideshowZoom>(qBound(0, dlg.zoomIndex(), 2)));
-        // Interval path already cancelled + re-armed. Other live settings still
-        // need a clean slate so the pure clock is not blocked on a stale busy.
+        // Interval changes remap phase inside setSlideshowIntervalMs. Other live
+        // settings must not re-arm the clock (that restarted the dwell at 0 and
+        // felt like a long pause on the current image).
         if (m_slideshowClockRunning && !m_slideshowPaused) {
             m_imageView->cancelSlideshowTransition();
             m_slideshowPendingToIndex = -1;
             m_slideshowTransitionCycle = -1;
-            armSlideshowAdvanceTimer();
             m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
             m_imageView->reapplySlideshowFraming();
+            updateSlideshowFromClock();
         }
         writeSettings();
     };
@@ -914,10 +915,51 @@ void MainWindow::showSlideshowSettings()
     dlg.exec();
 }
 
+void MainWindow::remapSlideshowPhase(int oldIntervalMs, int newIntervalMs)
+{
+    // Map elapsed under oldInterval → same cycle index + normalized phase under
+    // newInterval. Keeps the visible slide; avoids a full dwell restart when
+    // the user edits interval while the show is running or paused.
+    if (oldIntervalMs <= 0) {
+        oldIntervalMs = 1;
+    }
+    if (newIntervalMs <= 0) {
+        newIntervalMs = 1;
+    }
+    const int n = m_session.paths().size();
+    if (n <= 0 || !m_slideshowClockRunning) {
+        return;
+    }
+
+    qint64 elapsed = m_slideshowPausedAccumMs;
+    if (!m_slideshowPaused && m_slideshowClock.isValid()) {
+        elapsed += m_slideshowClock.elapsed();
+    }
+    if (elapsed < 0) {
+        elapsed = 0;
+    }
+
+    const qint64 cycle = elapsed / oldIntervalMs;
+    const qreal phaseT = qreal(elapsed % oldIntervalMs) / qreal(oldIntervalMs);
+
+    m_slideshowBaseIndex = int((qint64(m_slideshowBaseIndex) + cycle) % n);
+    // Stay strictly inside the cycle so we do not land on a sticky "done" edge.
+    const qint64 newPhase =
+        qBound(qint64(0), qint64(qRound(phaseT * qreal(newIntervalMs))),
+               qint64(newIntervalMs) - 1);
+    m_slideshowPausedAccumMs = newPhase;
+    m_slideshowTransitionCycle = -1;
+    m_slideshowPendingToIndex = -1;
+    if (!m_slideshowPaused) {
+        m_slideshowClock.start();
+    }
+}
+
 void MainWindow::armSlideshowAdvanceTimer()
 {
     // Restart the pure clock at the current session index (start / resume /
-    // interval change / ←/→). The tick only *derives* state from elapsed.
+    // ←/→ navigation). Interval *edits* use remapSlideshowPhase instead so the
+    // dwell is not reset to zero.
     if (m_slideshowPaused || !m_slideshowTimer) {
         return;
     }
