@@ -5832,3 +5832,20 @@ flake thumtoo input.
 ### Done criteria
 - [x] Expand uses Client::pdf_page_count
 - [x] Docs; next **320**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-320-pdf-compat`
+
+### Bug
+Build failed: `Client::pdf_page_uri` not in user’s thumtoo (Client wrappers
+not yet in their flake pin). Their thumtoo *does* have free `pdf.hpp` APIs
+(`thumtoo-prepare` worked).
+
+### Fix
+Use `thumtoo::pdf_*` free functions when `__has_include("thumtoo/pdf.hpp")`.
+No dependency on `Client::pdf_*`.
+
+### Note
+Flake `thumtoo` input must include the Poppler/PDF commits so `pdf.hpp` is
+on the include path; otherwise expand is empty at runtime.
+

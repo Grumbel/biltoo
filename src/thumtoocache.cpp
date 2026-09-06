@@ -25,6 +25,12 @@
 #include "thumtoo/image.hpp"
 #include "thumtoo/status.hpp"
 #include "thumtoo/uri.hpp"
+// PDF helpers live in pdf.hpp (Poppler). Prefer free functions so biltoo works
+// with thumtoo tips that have PDF but not yet Client::pdf_* wrappers.
+#if __has_include("thumtoo/pdf.hpp")
+#include "thumtoo/pdf.hpp"
+#define BILTOO_HAVE_THUMTOO_PDF 1
+#endif
 
 #include <condition_variable>
 #include <list>
@@ -171,7 +177,12 @@ std::string resolveUriUncached(const QString &path)
         if (!ref.valid) {
             return {};
         }
-        return thumtoo::Client::pdf_page_uri(absPathFast(ref.pdfPath), ref.page);
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+        return thumtoo::pdf_page_uri(absPathFast(ref.pdfPath), ref.page);
+#else
+        return thumtoo::file_uri_from_path(absPathFast(ref.pdfPath))
+               + "//page:" + std::to_string(ref.page);
+#endif
     }
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
@@ -689,15 +700,15 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
 QStringList expandPdfToPageRefs(const QString &pdfPath)
 {
     QStringList out;
-#ifdef BILTOO_HAVE_THUMTOO
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_PDF)
     if (pdfPath.isEmpty()) {
         return out;
     }
     const std::filesystem::path abs = absPathStd(pdfPath);
-    if (!thumtoo::Client::is_pdf_path(abs)) {
+    if (!thumtoo::is_likely_pdf_path(abs)) {
         return out;
     }
-    const auto count = thumtoo::Client::pdf_page_count(abs);
+    const auto count = thumtoo::pdf_page_count(abs);
     if (!count || *count <= 0) {
         return out;
     }
@@ -717,13 +728,13 @@ QStringList expandPdfToPageRefs(const QString &pdfPath)
 
 QImage rasterizePdfPage(const QString &pdfPath, int page_1based, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_PDF)
     if (pdfPath.isEmpty() || page_1based < 1) {
         return {};
     }
     const std::filesystem::path abs = absPathStd(pdfPath);
     const int edge = maxEdge > 0 ? maxEdge : 2048;
-    auto raster = thumtoo::Client::pdf_rasterize_page(abs, page_1based, edge);
+    auto raster = thumtoo::pdf_rasterize_page(abs, page_1based, edge);
     if (!raster || raster->rgb.empty() || raster->width <= 0 || raster->height <= 0) {
         return {};
     }
