@@ -5580,3 +5580,15 @@ storms): coalesce into one `applyLayout` after a short idle (~48ms).
 ### Done criteria
 - [x] sizeReady storm packs once, not N times
 - [x] Docs; next **304**
+
+
+## Note (2026-09-06) — thumtoo probe vs ladder
+
+Thumbs waited ~3s on first archive open because **thumtoo `handle_probe_size`
+encoded the full JXL ladder** (and SHA-256’d member bytes) for every
+`scheduleProbe`. Warm reopen was fast (Ready short-circuit).
+
+Fix lives in **thumtoo** (not biltoo layout):
+`artifacts/thumtoo-probe-size-only.bundle` — size probe → Incomplete; ladder only
+on `request_pixels`. Point biltoo’s thumtoo flake input / THUMTOO_SOURCE_DIR at
+that tip and rebuild.
