@@ -5613,3 +5613,21 @@ that tip and rebuild.
 - [x] No full-session archive probe storm
 - [x] Filmstrip archive thumbs via ladder only when thumtoo up
 - [x] thumtoo test still OK; bundles
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-306-gallery-soft-only`
+
+### Cause
+`scheduleGalleryDecode` loads a 384px preview then **always** `ImageLoader::load(path)`
+(full native / full archive extract+decode). Gallery tiles do not need full-res.
+Also `updateGalleryDecodeWindow` schedules **visible and rest** (all tiles).
+
+### Fix
+1. Gallery decode: soft max-edge only (`kGalleryLadderEdge` / 384), never full load.
+2. Virtualized gallery: schedule **visible** paths only (overscan already in view rect).
+3. Archive+thumtoo: rely on ladder via loadThumbnail + ladderReady (empty until ready).
+
+### Done criteria
+- [x] No full-res decode for Gallery tiles
+- [x] Virtual gallery does not queue offscreen full-session decodes
+- [x] Docs; next **307**

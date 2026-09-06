@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "thumtoocache.h"
 
 #include <QDebug>
 #include "imageitem.h"
@@ -252,13 +253,14 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
     if (path.isEmpty() || m_galleryDecodeFailed.contains(path)
-        || m_galleryDecodeScheduled.contains(path)) {
+        || m_galleryDecodeScheduled.contains(path)
+        || m_galleryAwaitLadder.contains(path)) {
         return;
     }
-    // Decode if any live occurrence still lacks pixels (duplicates share one decode).
+    // Soft gallery tiles only need displayable pixels (preview is enough).
     bool needsPixels = false;
     for (ImageItem *item : m_items) {
-        if (item && item->path() == path && !item->hasDecodedPixels()) {
+        if (item && item->path() == path && !item->hasDisplayPixels()) {
             needsPixels = true;
             break;
         }
@@ -275,21 +277,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
-        constexpr int kPreviewEdge = 384;
+        // Soft edge only — never ImageLoader::load() full native / full archive.
+        constexpr int kPreviewEdge = ThumtooCache::kGalleryLadderEdge;
         const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
-        if (guard && !preview.isNull()) {
-            ImageView *view = guard.data();
-            if (view) {
-                QMetaObject::invokeMethod(view, [guard, path, preview, gen]() {
-                    if (!guard) {
-                        return;
-                    }
-                    guard->onImagePreviewLoaded(path, preview, gen,
-                                                static_cast<int>(LoadAdd));
-                }, Qt::QueuedConnection);
-            }
-        }
-        const QImage image = ImageLoader::load(path);
         if (!guard) {
             return;
         }
@@ -297,11 +287,27 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         if (!view) {
             return;
         }
-        QMetaObject::invokeMethod(view, [guard, path, image, gen]() {
-            if (!guard) {
+        QMetaObject::invokeMethod(view, [guard, path, preview, gen]() {
+            ImageView *const host = guard.data();
+            if (!host) {
                 return;
             }
-            guard->onImageLoaded(path, image, gen, static_cast<int>(LoadAdd));
+            host->m_galleryDecodeScheduled.remove(path);
+            host->takePendingWorkspacePath(path);
+            if (!preview.isNull()) {
+                host->m_galleryAwaitLadder.remove(path);
+                host->onImagePreviewLoaded(path, preview, gen,
+                                           static_cast<int>(LoadAdd));
+            } else if (ThumtooCache::isAvailable()) {
+                // loadThumbnail already schedulePixels; wait for ladderReady.
+                host->m_galleryAwaitLadder.insert(path);
+            } else {
+                host->m_galleryDecodeFailed.insert(path);
+            }
+            if (host->isGalleryMode()) {
+                host->updateGalleryDecodeWindow();
+            }
+            emit host->statusChanged();
         }, Qt::QueuedConnection);
     });
 }

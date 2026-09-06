@@ -1177,8 +1177,10 @@ private:
     std::atomic<quint64> m_loadGeneration{0};
     /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
     QHash<QString, int> m_pendingWorkspacePaths;
-    /** Gallery virtualization: paths scheduled for decode this window. */
+    /** Gallery virtualization: paths with an in-flight soft-decode pool job. */
     QSet<QString> m_galleryDecodeScheduled;
+    /** Gallery: soft miss, waiting on thumtoo ladderReady (do not re-queue). */
+    QSet<QString> m_galleryAwaitLadder;
     /** Paths that failed decode — do not spin forever on placeholders. */
     QSet<QString> m_galleryDecodeFailed;
     static constexpr int kGalleryVirtualThreshold = 80;

@@ -86,7 +86,7 @@ ImageView::ImageView(QWidget *parent)
                 if (path.isEmpty()) {
                     return;
                 }
-                const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kImageLadderEdge;
+                const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;
                 const QPointer<ImageView> guard(this);
                 QThreadPool::globalInstance()->start([guard, path, edge]() {
                     const QImage preview = ImageLoader::loadThumbnail(path, edge);
@@ -97,11 +97,15 @@ ImageView::ImageView(QWidget *parent)
                         if (!guard) {
                             return;
                         }
+                        guard->m_galleryAwaitLadder.remove(path);
                         // LoadAdd: refresh gallery/workspace/image tiles that still
                         // show placeholders; do not fight a completed full decode.
                         guard->onImagePreviewLoaded(
                             path, preview, 0,
                             static_cast<int>(ImageView::LoadAdd));
+                        if (guard->isGalleryMode()) {
+                            guard->updateGalleryDecodeWindow();
+                        }
                     });
                 });
             });
@@ -207,6 +211,7 @@ ImageView::~ImageView()
         m_items.clear();
         m_pendingWorkspacePaths.clear();
         m_galleryDecodeScheduled.clear();
+        m_galleryAwaitLadder.clear();
         m_galleryDecodeFailed.clear();
         setScene(nullptr);
         delete m_scene;

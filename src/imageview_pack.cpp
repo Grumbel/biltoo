@@ -31,8 +31,9 @@ void ImageView::updateGalleryDecodeWindow()
             kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
         const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
         for (ImageItem *item : m_items) {
-            if (!item || item->hasDecodedPixels()
-                || m_galleryDecodeFailed.contains(item->path())) {
+            if (!item || item->hasDisplayPixels()
+                || m_galleryDecodeFailed.contains(item->path())
+                || m_galleryAwaitLadder.contains(item->path())) {
                 continue;
             }
             const QRectF tile = item->contentSceneRect();
@@ -44,8 +45,9 @@ void ImageView::updateGalleryDecodeWindow()
         }
     } else {
         for (ImageItem *item : m_items) {
-            if (!item || item->hasDecodedPixels()
-                || m_galleryDecodeFailed.contains(item->path())) {
+            if (!item || item->hasDisplayPixels()
+                || m_galleryDecodeFailed.contains(item->path())
+                || m_galleryAwaitLadder.contains(item->path())) {
                 continue;
             }
             visible.append(item->path());
@@ -55,8 +57,11 @@ void ImageView::updateGalleryDecodeWindow()
     for (const QString &path : visible) {
         scheduleGalleryDecode(path);
     }
-    for (const QString &path : rest) {
-        scheduleGalleryDecode(path);
+    // Virtualized gallery: do not queue full-session offscreen decodes.
+    if (!virtualize) {
+        for (const QString &path : rest) {
+            scheduleGalleryDecode(path);
+        }
     }
     emit statusChanged();
 }

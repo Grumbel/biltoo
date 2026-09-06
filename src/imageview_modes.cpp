@@ -50,6 +50,7 @@ void ImageView::invalidateGalleryDecodes()
     // cannot create tiles after leaving Gallery. Bump generation so in-flight
     // pool jobs are rejected in onImageLoaded.
     m_galleryDecodeScheduled.clear();
+    m_galleryAwaitLadder.clear();
     m_pendingWorkspacePaths.clear();
     ++m_loadGeneration;
 }
@@ -199,6 +200,7 @@ void ImageView::clearWorkspace()
     m_pendingSessionIndexByPath.clear();
     m_pendingSelectSessionIds.clear();
     m_galleryDecodeScheduled.clear();
+    m_galleryAwaitLadder.clear();
     m_galleryDecodeFailed.clear();
     m_imageSizeByPath.clear();
     m_sizeProbeScheduled.clear();
