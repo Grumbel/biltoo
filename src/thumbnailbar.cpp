@@ -5,6 +5,7 @@
 #include "archivepath.h"
 #include "imagecache.h"
 #include "imageloader.h"
+#include "thumtoocache.h"
 
 #include <QAction>
 #include <QApplication>
@@ -245,6 +246,43 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
         connect(verticalScrollBar(), &QScrollBar::valueChanged, this,
                 &ThumbnailBar::scheduleVisibleThumbnailLoads);
     }
+
+    // When thumtoo finishes a ladder level mid-session, refresh matching cells.
+    connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
+            [this](const QString &path, int /*maxEdge*/) {
+                if (path.isEmpty() || m_files.isEmpty()) {
+                    return;
+                }
+                const int decodeSize = thumbDecodePixels();
+                const quint64 gen = m_generation.load();
+                for (int i = 0; i < m_files.size(); ++i) {
+                    if (m_files.at(i) != path) {
+                        continue;
+                    }
+                    if (i < m_sessionIds.size()) {
+                        const SessionImageId sid = m_sessionIds.at(i);
+                        if (sid != kInvalidSessionImageId
+                            && m_sessionIdImageOverrides.contains(sid)) {
+                            continue;
+                        }
+                    }
+                    const QPointer<ThumbnailBar> guard(this);
+                    QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
+                        ThumbnailBar *bar = guard.data();
+                        if (!bar || gen != bar->m_generation.load()) {
+                            return;
+                        }
+                        const QImage image = bar->makeThumbnail(path, decodeSize);
+                        bar = guard.data();
+                        if (!bar || image.isNull() || gen != bar->m_generation.load()) {
+                            return;
+                        }
+                        QMetaObject::invokeMethod(bar, "setThumbnailIcon", Qt::QueuedConnection,
+                                                  Q_ARG(int, i),
+                                                  Q_ARG(QImage, image));
+                    });
+                }
+            });
 }
 
 ThumbnailBar::~ThumbnailBar()

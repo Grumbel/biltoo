@@ -299,5 +299,6 @@ Durable size index and display ladder live in the **thumtoo** library
 `ThumtooCache::preparePaths` (non-blocking). Misses schedule
 `request_size` / `request_pixels` and fall back to Qt/vips/archive decode.
 Client uses a Qt `Executor` so callbacks land on the GUI thread.
+`Bridge::ladderReady` refreshes filmstrip cells when a level is encoded.
 Session edit identity remains biltoo `SessionImageId`.
 

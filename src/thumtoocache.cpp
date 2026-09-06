@@ -4,9 +4,11 @@
 #include "thumtoocache.h"
 
 #include "archivepath.h"
+#include "imagecache.h"
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QImage>
 #include <QMetaObject>
 
 #include <cstdlib>
@@ -90,9 +92,33 @@ std::filesystem::path defaultCacheRoot()
     return std::filesystem::path(".cache") / "thumtoo";
 }
 
+QImage decodeLadderBytes(const std::vector<std::uint8_t> &bytes)
+{
+    if (bytes.empty()) {
+        return {};
+    }
+    const QByteArray ba(reinterpret_cast<const char *>(bytes.data()),
+                        int(bytes.size()));
+    QImage img;
+    if (img.loadFromData(ba)) {
+        return img;
+    }
+    return {};
+}
+
 #endif
 
+Bridge *g_bridge = nullptr;
+
 } // namespace
+
+Bridge *bridge()
+{
+    if (!g_bridge) {
+        g_bridge = new Bridge(QCoreApplication::instance());
+    }
+    return g_bridge;
+}
 
 void init()
 {
@@ -161,7 +187,13 @@ void scheduleProbe(const QString &path)
     if (!c) {
         return;
     }
-    c->request_size(uri, {});
+    const QString pathCopy = path;
+    c->request_size(uri, [pathCopy](std::string, std::optional<thumtoo::Size> sz) {
+        if (!sz) {
+            return;
+        }
+        emit bridge()->sizeReady(pathCopy, QSize(sz->width, sz->height));
+    });
 #else
     Q_UNUSED(path);
 #endif
@@ -219,7 +251,25 @@ void schedulePixels(const QString &path, int maxEdge)
     if (!c) {
         return;
     }
-    c->request_pixels(uri, maxEdge, {});
+    const QString pathCopy = path;
+    const int edge = maxEdge;
+    c->request_pixels(
+        uri, maxEdge,
+        [pathCopy, edge](std::string, int, std::optional<thumtoo::PixelLevel> px) {
+            if (!px || px->bytes.empty()) {
+                return;
+            }
+            QImage img = decodeLadderBytes(px->bytes);
+            if (img.isNull()) {
+                return;
+            }
+            if (img.width() > edge || img.height() > edge) {
+                img = img.scaled(edge, edge, Qt::KeepAspectRatio,
+                                 Qt::SmoothTransformation);
+            }
+            ImageCache::put(pathCopy, img);
+            emit bridge()->ladderReady(pathCopy, edge);
+        });
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
@@ -243,10 +293,10 @@ void preparePaths(const QStringList &paths)
     }
     std::vector<std::filesystem::path> fsPaths;
     fsPaths.reserve(size_t(paths.size()));
+    // Keep path strings for callbacks (prepare_paths only returns URIs).
+    QStringList plainPaths;
     for (const QString &p : paths) {
         if (ArchivePath::isArchiveRef(p)) {
-            // prepare_paths expands archives itself when given the container;
-            // member refs are individual URIs — schedule size/pixels instead.
             scheduleProbe(p);
             schedulePixels(p, 512);
             continue;
@@ -256,10 +306,28 @@ void preparePaths(const QStringList &paths)
             continue;
         }
         fsPaths.emplace_back(absPathStd(p));
+        plainPaths.append(p);
     }
-    if (!fsPaths.empty()) {
-        c->prepare_paths(fsPaths, {});
+    if (fsPaths.empty()) {
+        return;
     }
+    // After each size probe, also request a preview ladder and notify UI.
+    c->prepare_paths(fsPaths, [plainPaths](std::string uri, std::optional<thumtoo::Size> sz) {
+        QString path;
+        for (const QString &p : plainPaths) {
+            if (toThumtooUri(p) == uri) {
+                path = p;
+                break;
+            }
+        }
+        if (path.isEmpty()) {
+            return;
+        }
+        if (sz) {
+            emit bridge()->sizeReady(path, QSize(sz->width, sz->height));
+        }
+        schedulePixels(path, 512);
+    });
 #else
     Q_UNUSED(paths);
 #endif

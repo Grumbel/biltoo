@@ -5,6 +5,7 @@
 #define THUMTOOCACHE_H
 
 #include <QByteArray>
+#include <QObject>
 #include <QSize>
 #include <QString>
 #include <QStringList>
@@ -14,6 +15,24 @@
  * Compile-time optional: without BILTOO_HAVE_THUMTOO every call is a no-op.
  */
 namespace ThumtooCache {
+
+/**
+ * Notifies the UI when durable cache rows become ready (Qt Executor → GUI).
+ */
+class Bridge : public QObject {
+    Q_OBJECT
+public:
+    using QObject::QObject;
+
+signals:
+    /** Native size known for session path (may still lack ladder pixels). */
+    void sizeReady(const QString &path, const QSize &size);
+    /** Ladder level available; ImageCache already holds a decoded preview. */
+    void ladderReady(const QString &path, int maxEdge);
+};
+
+/** Process-wide notifier (created on first use). */
+Bridge *bridge();
 
 /**
  * Open the default XDG cache client once (safe to call repeatedly).
@@ -41,7 +60,7 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
 
 /**
  * Ensure ladder level exists for maxEdge (probe/encode in thumtoo worker).
- * Non-blocking; next cachedLadderBytes may succeed.
+ * On success (GUI thread): ImageCache::put + Bridge::ladderReady.
  */
 void schedulePixels(const QString &path, int maxEdge);
 
