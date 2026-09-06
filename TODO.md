@@ -6110,3 +6110,13 @@ Independent of Crossfade / Fade-through-black / Slide image compositing.
 - [x] Dual-slot blur cache
 - [x] Docs; next **334**
 
+## Plan / work (2026-09-06) — bundle `biltoo-334-zoomblur-slot-warning`
+
+### Fix
+`-Wduplicated-branches` on ZoomBlur cache slot pick (`? 1 : 1`). Use a
+plain if/else: fill slot 0 first, otherwise slot 1.
+
+### Done criteria
+- [x] Warning gone
+- [x] Docs; next **335**
+

@@ -1876,9 +1876,13 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         }
     }
     if (slot < 0) {
-        // Prefer empty slot; else replace slot 1 (keep slot 0 as stable "from").
-        slot = m_zoomBlurUnderlay[0].isNull() ? 0
-             : (m_zoomBlurUnderlay[1].isNull() ? 1 : 1);
+        // Prefer empty slot 0, else empty/replace slot 1
+        // (keep slot 0 as the stable "from" underlay during transitions).
+        if (m_zoomBlurUnderlay[0].isNull()) {
+            slot = 0;
+        } else {
+            slot = 1;
+        }
         const QImage blurred = makeZoomBlurCover(image, vw, vh);
         if (blurred.isNull()) {
             painter->fillRect(viewportRect, slideshowPadColor());
