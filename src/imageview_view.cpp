@@ -1034,15 +1034,22 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
         subject.setY(qBound(-1.0, subject.y(), 1.0));
         // Near-centre attention still needs travel — fall through to geometry.
         if (qAbs(subject.x()) > 0.12 || qAbs(subject.y()) > 0.12) {
-            const QPointF opposite(-subject.x() * 0.65, -subject.y() * 0.65);
-            // Odd seed: start on subject and ease away; even: travel toward it.
+            // Subject must sit mid-path: start/end of the dwell are largely
+            // hidden by the transition, so endpoint focus is invisible.
+            // Travel along the subject↔opposite axis, centred on the subject.
+            const QPointF travel = QPointF(subject.x() * 0.55, subject.y() * 0.55);
+            // Seed picks which way the path runs (toward / away from opposite).
             if (seed & 1u) {
-                m_motionBiasA = subject;
-                m_motionBiasB = opposite;
+                m_motionBiasA = subject - travel;
+                m_motionBiasB = subject + travel;
             } else {
-                m_motionBiasA = opposite;
-                m_motionBiasB = subject;
+                m_motionBiasA = subject + travel;
+                m_motionBiasB = subject - travel;
             }
+            m_motionBiasA.setX(qBound(-1.0, m_motionBiasA.x(), 1.0));
+            m_motionBiasA.setY(qBound(-1.0, m_motionBiasA.y(), 1.0));
+            m_motionBiasB.setX(qBound(-1.0, m_motionBiasB.x(), 1.0));
+            m_motionBiasB.setY(qBound(-1.0, m_motionBiasB.y(), 1.0));
             m_motionBiasValid = true;
             m_motionTravelDir = m_motionBiasB - m_motionBiasA;
             m_motionSign = (m_motionTravelDir.y() >= 0.0) ? 1.0 : -1.0;
