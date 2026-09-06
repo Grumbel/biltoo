@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-295-thumtoo-expand-status**
-(Archive expand status; Unsupported probe skip; thumtoo 0.1.0 complete).
-Next bundle number: **296**.
+Latest agent handoff: **TODO.md → biltoo-296-decode-status-harden**
+(Decode status bar flag; takePending emits statusChanged).
+Next bundle number: **297**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

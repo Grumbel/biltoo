@@ -174,7 +174,7 @@ editor; Biltoo stays a **viewer with quick fixes**.
 
 - [ ] Thumbnail click crash (needs reliable repro)
 - [x] CLI `--mode=image|gallery|workspace` (overrides Preferences start-in-workspace for the launch)
-- [ ] Drag-load status: show count of images still decoding
+- [x] Drag-load status: show count of images still decoding
 - [ ] AppStream screenshots for Flathub-style stores
 - [x] Virtualize Gallery when sessions are huge (viewport decode window + placeholders)
 - [ ] Colour-managed display pipeline (beyond libexiv2 metadata)
@@ -5438,3 +5438,24 @@ ladder long-edge targets aligned with thumtoo `kLadderEdges`.
 - [x] Expand status distinguishes cache / thumtoo walk / libarchive
 - [x] probeSize does not schedule Unsupported
 - [x] Docs; next **296**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-296-decode-status-harden`
+
+### Task
+Drag-load / gallery pending decode status already shows via `updateStatus` +
+`pendingDecodeCount`, but clearing the status bar used a fragile
+`startsWith(tr("Decoding "))` check (breaks under translation), and
+`takePendingWorkspacePath` did not emit `statusChanged` so some complete
+paths could leave a stale count until the next unrelated event.
+
+### Fix
+1. `MainWindow::m_decodeStatusActive` — set when showing decode message; clear
+   status bar only when pending hits 0 and the flag is set.
+2. `takePendingWorkspacePath` emits `statusChanged`.
+3. Mark TODO “Drag-load status” done.
+
+### Done criteria
+- [x] Decode status clears reliably (translation-safe)
+- [x] Pending decrement always refreshes status
+- [x] Docs; next **297**
