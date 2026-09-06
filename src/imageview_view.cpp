@@ -1838,28 +1838,36 @@ QImage makeZoomBlurCover(const QImage &src, int vw, int vh)
     };
 
     // Three box passes ≈ Gaussian; radius in work pixels (~12 → strong soft).
+    // Keep the result at work resolution — the GPU scales it to the viewport
+    // on draw (cheap). Full-size QImage::scaled here was a large CPU hit.
     constexpr int kRadius = 12;
     for (int pass = 0; pass < 3; ++pass) {
         boxBlurPass(scaled, kRadius, true);
         boxBlurPass(scaled, kRadius, false);
     }
-
-    return scaled.scaled(vw, vh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    Q_UNUSED(vw);
+    Q_UNUSED(vh);
+    return scaled;
 }
 
 } // namespace
 
 void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
-                                      const QRect &viewportRect) const
+                                      const QRect &viewportRect, qint64 stableKey) const
 {
     if (!painter || image.isNull() || viewportRect.isEmpty()) {
         return;
     }
     const int vw = viewportRect.width();
     const int vh = viewportRect.height();
-    // Key: image bits address + size (slide identity proxy) + viewport.
-    const qint64 key = qint64(quintptr(image.constBits()))
-        ^ (qint64(image.width()) << 16) ^ qint64(image.height());
+    // Stable identity: caller path hash folded with native size + viewport.
+    // Never use constBits() — QImage buffers are reallocated across loads /
+    // atlas refreshes while the logical slide is unchanged.
+    const qint64 key = stableKey
+        ^ (qint64(image.width()) << 32)
+        ^ (qint64(image.height()) << 16)
+        ^ (qint64(vw) << 8)
+        ^ qint64(vh);
     if (m_zoomBlurVw != vw || m_zoomBlurVh != vh) {
         m_zoomBlurUnderlay[0] = QPixmap();
         m_zoomBlurUnderlay[1] = QPixmap();
@@ -1876,13 +1884,8 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         }
     }
     if (slot < 0) {
-        // Prefer empty slot 0, else empty/replace slot 1
-        // (keep slot 0 as the stable "from" underlay during transitions).
-        if (m_zoomBlurUnderlay[0].isNull()) {
-            slot = 0;
-        } else {
-            slot = 1;
-        }
+        // Prefer empty slot 0, else replace slot 1 (stable "from" in slot 0).
+        slot = m_zoomBlurUnderlay[0].isNull() ? 0 : 1;
         const QImage blurred = makeZoomBlurCover(image, vw, vh);
         if (blurred.isNull()) {
             painter->fillRect(viewportRect, slideshowPadColor());
@@ -1891,6 +1894,8 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
         m_zoomBlurSourceKey[slot] = key;
     }
+    // Low-res underlay stretched by the (OpenGL) paint engine.
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
     painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[slot]);
 }
 

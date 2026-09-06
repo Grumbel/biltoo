@@ -6120,3 +6120,20 @@ plain if/else: fill slot 0 first, otherwise slot 1.
 - [x] Warning gone
 - [x] Docs; next **335**
 
+## Plan / work (2026-09-06) — bundle `biltoo-335-zoomblur-cache-stable`
+
+### Problem
+Zoom+blur crossfade spiked CPU every frame. Cache key used
+`QImage::constBits()`; buffers are reallocated while the logical slide is
+unchanged → miss → full CPU box-blur every paint. Fade itself is only two
+pixmap draws with opacity (GPU).
+
+### Fix
+- Stable key: path hash + native size + viewport size
+- Keep underlay at work resolution (~1/4); OpenGL scales on draw
+- fillPad passes phase/live paths into the underlay painter
+
+### Done criteria
+- [x] No per-frame blur rebuild on stable slides
+- [x] Docs; next **336**
+

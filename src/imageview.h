@@ -210,9 +210,15 @@ public:
     /** Draw Ken Burns / pan-scan using a pre-scaled atlas (cheap per-frame blit). */
     void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT,
                           QPointF biasA, QPointF biasB, uint pathHash) const;
-    /** Draw cover-scaled blurred @a image into @a viewportRect (ZoomBlur fill). */
+    /**
+     * Draw cover-scaled blurred @a image into @a viewportRect (ZoomBlur fill).
+     * @a stableKey must identify the slide for the current viewport size
+     * (path hash + dimensions). Do not use QImage::constBits() — buffers are
+     * often reallocated while pixels stay the same, which forced a full CPU
+     * blur every paint and spiked transitions.
+     */
     void paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
-                               const QRect &viewportRect) const;
+                               const QRect &viewportRect, qint64 stableKey) const;
 
     /** Max image→view scale used by the current motion path (for atlas size). */
     qreal motionPathMaxScale(const QImage &image) const;
