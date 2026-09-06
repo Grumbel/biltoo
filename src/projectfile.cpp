@@ -174,6 +174,27 @@ WorkspaceItemState appearanceFromJson(const QJsonObject &o)
             s.cropSourceSize = QSize(a.at(0).toInt(), a.at(1).toInt());
         }
     }
+    // Attention focus point (normalized 0–1). Save writes hasAttention + attention:[x,y].
+    // Accept multi-point form [[x,y],…] (primary = first) for forward compatibility.
+    if (o.contains(QStringLiteral("attention"))) {
+        const QJsonArray a = o.value(QStringLiteral("attention")).toArray();
+        if (!a.isEmpty() && a.at(0).isArray()) {
+            const QJsonArray p = a.at(0).toArray();
+            if (p.size() >= 2) {
+                s.hasAttention = true;
+                s.attentionNorm = QPointF(qBound(0.0, p.at(0).toDouble(), 1.0),
+                                          qBound(0.0, p.at(1).toDouble(), 1.0));
+            }
+        } else if (a.size() >= 2) {
+            s.hasAttention = true;
+            s.attentionNorm = QPointF(qBound(0.0, a.at(0).toDouble(), 1.0),
+                                      qBound(0.0, a.at(1).toDouble(), 1.0));
+        }
+    } else if (o.value(QStringLiteral("hasAttention")).toBool(false)) {
+        // Defensive: hasAttention without coordinates → centre.
+        s.hasAttention = true;
+        s.attentionNorm = QPointF(0.5, 0.5);
+    }
     s.contentHFlip = o.value(QStringLiteral("contentHFlip")).toBool(false);
     s.contentVFlip = o.value(QStringLiteral("contentVFlip")).toBool(false);
     s.contentQuarterTurns = o.value(QStringLiteral("contentQuarterTurns")).toInt(0);
