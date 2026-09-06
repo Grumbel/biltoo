@@ -5310,3 +5310,25 @@ Keep ArchiveReader as fallback when thumtoo is off or extract fails.
 - [x] ThumtooCache::readArchiveMemberBytes
 - [x] ImageLoader archive load + probe use it with fallback
 - [x] Docs / handoff; next **290**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-290-thumtoo-size-ready`
+
+### Task
+Wire `ThumtooCache::Bridge::sizeReady` into ImageView so durable sizes update
+provisional tiles (especially //archive: members that start at 1024²). Schedule
+archive size probes via thumtoo instead of skipping them on the GUI path.
+
+### Design
+1. Connect `sizeReady` → `rememberImageSize` + `applyProbedImageSize` (same as
+   async probe completion).
+2. `imageSizeForPath`: for archive refs, try `ThumtooCache::cachedSize` before
+   provisional 1024²; call `ThumtooCache::scheduleProbe` when still unknown.
+3. `scheduleImageSizeProbe`: for archive refs, only `ThumtooCache::scheduleProbe`
+   (no worker extract on the UI path); plain files keep existing probe thread.
+4. Soft ladder / `ladderReady` path unchanged.
+
+### Done criteria
+- [x] sizeReady connected and applies intrinsic size
+- [x] Archive paths schedule thumtoo probe; cache-only size preferred
+- [x] Docs / handoff; next **291**

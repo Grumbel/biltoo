@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-289-thumtoo-archive-extract**
-(thumtoo extract for //archive: member bytes; ArchiveReader fallback).
-Next bundle number: **290**.
+Latest agent handoff: **TODO.md → biltoo-290-thumtoo-size-ready**
+(sizeReady → provisional reflow; archive probes via thumtoo only).
+Next bundle number: **291**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -309,6 +309,10 @@ Session edit identity remains biltoo `SessionImageId`.
 
 **Archive member bytes:** `ThumtooCache::readArchiveMemberBytes` calls
 `thumtoo::extract_archive_member` (shared size caps). `ImageLoader` tries that
-first, then `ArchiveReader::readMember`. GUI-thread size probes for archive
-refs stay cache-only / neutral placeholder (no extract on the UI thread).
+first, then `ArchiveReader::readMember`.
+
+**Size readiness:** `Bridge::sizeReady` updates `ImageView` intrinsic sizes and
+repacks provisional Gallery tiles. Archive refs never extract on the GUI thread:
+`scheduleImageSizeProbe` only calls `ThumtooCache::scheduleProbe`; layout uses
+cache-only size or a neutral placeholder until `sizeReady`.
 
