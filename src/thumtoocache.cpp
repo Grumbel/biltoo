@@ -82,6 +82,15 @@ void init()
 #endif
 }
 
+void shutdown()
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    std::lock_guard lock(g_mu);
+    g_client.reset(); // joins worker; queue cleared in ~Client (thumtoo ≥ shutdown fix)
+    g_inited = false;
+#endif
+}
+
 QSize cachedSize(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO

@@ -17,6 +17,9 @@ namespace ThumtooCache {
 /** Open the default XDG cache client once (safe to call repeatedly). */
 void init();
 
+/** Drop the client (join thumtoo worker). Safe to call more than once. */
+void shutdown();
+
 /** Cache-only native size for a session path (file or //archive: ref). */
 QSize cachedSize(const QString &path);
 

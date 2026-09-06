@@ -5,9 +5,12 @@
 #include "biltoo_logging.h"
 #include "metadatapanel.h"
 #include "imageloader.h"
+#include "imagecache.h"
+#include "thumtoocache.h"
 #include "version.h"
 
 #include <QApplication>
+#include <QThreadPool>
 #include <QGuiApplication>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
@@ -37,6 +40,13 @@ int main(int argc, char *argv[])
     }
 
     QApplication app(argc, argv);
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, []() {
+        // Drop queued thumbnail work and tear down thumtoo so quit is not blocked
+        // by a worker draining EnsurePixels / QThreadPool loadThumbnail jobs.
+        QThreadPool::globalInstance()->clear();
+        ImageCache::clear();
+        ThumtooCache::shutdown();
+    });
     QApplication::setApplicationName(QStringLiteral("biltoo"));
     QApplication::setApplicationDisplayName(QStringLiteral("Biltoo"));
     QApplication::setApplicationVersion(QStringLiteral(BILTOO_VERSION_STRING));
