@@ -5695,3 +5695,66 @@ Make VIPS attention / focus points **first-class**: visible, editable, toolbar m
 - [x] Persist in project appearance
 - [x] Slideshow uses stored point
 - [x] Docs; next **311**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-314-attention-edit`
+
+### Context
+Attention mode (310–313) ships a single editable focus point + VIPS peak.
+User follow-ups:
+
+1. Only one point shown — can we detect more than one?
+2. Insert additional points
+3. Mode UX: “Up to Gallery” edge steals clicks; should only be active when
+   attention mode is left (mirror crop: no edge affordances in tool mode)
+4. VIPS placement still feels random — peak API is used; residual is map quality
+5. Pan&Zoom must focus the point mid-path (start/end are largely hidden in the
+   transition)
+6. Multi-select / delete / move / undo-redo like a select tool
+7. Load/save of attention in `.biltoo` (save exists; **load was missing**)
+
+### VIPS multi-point reality
+`vips_smartcrop(..., interesting=attention)` exposes **one** peak
+(`attention_x` / `attention_y`). There is no public multi-peak API. Detect
+stays single-point. Additional points are **user-authored**.
+
+### Design (this bundle + follow-ons)
+
+**A. Fix load (must)** — `appearanceFromJson` never read `hasAttention` /
+`attention`. Restore on open.
+
+**B. Mode chrome** — While `m_attentionMode` (like crop):
+- `edgeZoneAt` returns None
+- `drawEdgeAffordances` / hover edge ignore GalleryReturn and nav
+- Esc exits mode; Up only when mode is off
+
+**C. Mid-path Pan&Zoom** — When a stored/detected attention exists, build A/B
+so the subject sits near **t ≈ 0.5** of the bias path (travel past the point),
+not as pure start or pure end. Seed still picks travel direction.
+
+**D. Multi-point data (foundation in 314, full edit may span 315)**
+- `WorkspaceItemState::attentionPoints` as `QVector<QPointF>` (norm 0–1)
+- `hasAttention` / `attentionNorm` remain as primary = first point for
+  backward compat and current single-bias path
+- JSON: `"attention": [[x,y], ...]` preferred; accept legacy `[x,y]` and
+  `hasAttention`+pair
+- Detect: replace primary (or clear + set one point)
+- Edit MVP: show all points; click empty adds; drag moves hit; Delete removes
+  selection; primary highlighted
+- Undo: push appearance commands on commit (mirror crop pattern) — can land
+  with multi-edit
+
+### Non-goals this bundle
+- Full multi-peak VIPS map extraction
+- Explicit A–B Ken Burns path editor beyond mid-path bias
+- Gallery multi-image attention edit
+
+### Done criteria (314)
+- [x] appearanceFromJson loads attention
+- [x] Attention mode suppresses Up/edge nav (tool-like)
+- [x] Pan&Zoom mid-path when attention present
+- [x] Docs / AGENTS handoff; next **315** (multi-point UI + undo if not done)
+
+### Later (315+)
+- Multi-point insert/select/delete/move + undo
+- Optional: secondary points influence path waypoints
