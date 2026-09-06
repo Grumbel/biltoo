@@ -8,6 +8,7 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QMetaObject>
+#include <QSet>
 
 #include <cstdlib>
 #include <filesystem>
@@ -88,6 +89,46 @@ std::filesystem::path defaultCacheRoot()
         return std::filesystem::path(home) / ".cache" / "thumtoo";
     }
     return std::filesystem::path(".cache") / "thumtoo";
+}
+
+/**
+ * Archive member image filter aligned with ArchiveReader::entryIsImage /
+ * ImageLoader::imageSuffixes base set (no imageloader include — circular).
+ * Broader than thumtoo::is_likely_image_member_path so mixed HEIC/AVIF/…
+ * archives are not truncated when TOC is a cache hit.
+ */
+bool isBiltooImageMemberPath(const QString &memberPath)
+{
+    if (memberPath.isEmpty() || memberPath.endsWith(QLatin1Char('/'))) {
+        return false;
+    }
+    if (memberPath.contains(QLatin1String("__MACOSX/"))) {
+        return false;
+    }
+    const int slash = memberPath.lastIndexOf(QLatin1Char('/'));
+    const QString base = (slash >= 0) ? memberPath.mid(slash + 1) : memberPath;
+    if (base.isEmpty() || base.startsWith(QLatin1Char('.'))) {
+        return false;
+    }
+    const QString suffix = QFileInfo(base).suffix().toLower();
+    if (suffix.isEmpty()) {
+        return false;
+    }
+    static const QSet<QString> kSuffixes = {
+        QStringLiteral("png"),  QStringLiteral("jpg"),  QStringLiteral("jpeg"),
+        QStringLiteral("bmp"),  QStringLiteral("gif"),  QStringLiteral("webp"),
+        QStringLiteral("tif"),  QStringLiteral("tiff"), QStringLiteral("svg"),
+        QStringLiteral("xpm"),  QStringLiteral("pbm"),  QStringLiteral("pgm"),
+        QStringLiteral("ppm"),  QStringLiteral("ico"),  QStringLiteral("xbm"),
+        QStringLiteral("heic"), QStringLiteral("heif"), QStringLiteral("avif"),
+        QStringLiteral("jxl"),  QStringLiteral("jp2"),  QStringLiteral("j2k"),
+        QStringLiteral("exr"),  QStringLiteral("hdr"),  QStringLiteral("pic"),
+        QStringLiteral("tga"),  QStringLiteral("pcx"),  QStringLiteral("psd"),
+        QStringLiteral("dds"),  QStringLiteral("fits"), QStringLiteral("fit"),
+        QStringLiteral("vips"), QStringLiteral("xcf"),  QStringLiteral("kra"),
+        QStringLiteral("ora"),
+    };
+    return kSuffixes.contains(suffix);
 }
 
 #endif
@@ -356,10 +397,13 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
     const QString archiveAbs = QString::fromStdString(abs.string());
     out.reserve(int(entries.size()));
     for (const auto &entry : entries) {
-        if (!thumtoo::is_likely_image_member_path(entry.member_path)) {
+        if (thumtoo::is_unsafe_archive_member_path(entry.member_path)) {
             continue;
         }
         const QString member = QString::fromStdString(entry.member_path);
+        if (!isBiltooImageMemberPath(member)) {
+            continue;
+        }
         const QString ref = ArchivePath::makeRef(archiveAbs, member);
         if (!ref.isEmpty()) {
             out.append(ref);
