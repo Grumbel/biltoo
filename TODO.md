@@ -5423,3 +5423,18 @@ ladder long-edge targets aligned with thumtoo `kLadderEdges`.
 - [x] Unsupported paths are not re-scheduled
 - [x] Ladder edge constants documented and used for prewarm
 - [x] Docs / handoff; next **295**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-295-thumtoo-expand-status`
+
+### Task
+1. Background archive expand: clear status when TOC comes from thumtoo cache vs
+   source refresh vs ArchiveReader fallback (no per-entry progress from thumtoo).
+2. ImageLoader: do not scheduleProbe for Unsupported locators.
+3. AGENTS: mark biltoo↔thumtoo consumer integration feature-complete for 0.1.0
+   (remaining items are optional polish).
+
+### Done criteria
+- [x] Expand status distinguishes cache / thumtoo walk / libarchive
+- [x] probeSize does not schedule Unsupported
+- [x] Docs; next **296**

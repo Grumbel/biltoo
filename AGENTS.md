@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-294-thumtoo-status-edges**
-(Unsupported skips probes; ladder edges 256/512/1024).
-Next bundle number: **295**.
+Latest agent handoff: **TODO.md → biltoo-295-thumtoo-expand-status**
+(Archive expand status; Unsupported probe skip; thumtoo 0.1.0 complete).
+Next bundle number: **296**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -327,4 +327,11 @@ cache-only size or a neutral placeholder until `sizeReady`.
 `ContentStatus::Unsupported`. Failed remains retryable. Ladder targets:
 `kFilmstripLadderEdge` 256, `kGalleryLadderEdge` 512 (session prewarm),
 `kImageLadderEdge` 1024 (soft Image upgrade when edge unspecified).
+
+**0.1.0 consumer status:** biltoo↔thumtoo integration is **feature-complete** for
+the planned surface (size, ladder, prepare, archive TOC, member extract/batch,
+status, edges). Optional later: per-entry TOC progress API in thumtoo, dropping
+`ArchiveReader`, mode-specific schedule of filmstrip-only edges. Background
+expand status: “Indexing archive…” then count from cache, or libarchive
+progress if TOC path is empty.
 
