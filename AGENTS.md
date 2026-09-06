@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-326-idle-thumbs**
-(Idle off-screen gallery decode ≤2 concurrent after visible).
-Next bundle number: **327**.
+Latest agent handoff: **TODO.md → biltoo-327-gallery-zoom-thumbs**
+(Gallery zoom refreshes decode window for ladder upgrades).
+Next bundle number: **328**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

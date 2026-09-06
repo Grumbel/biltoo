@@ -5935,3 +5935,15 @@ After visible tiles take the concurrent budget, use up to
 kMaxIdleGalleryDecodes (2) free slots for off-screen soft-decodes.
 Visible always wins; idle fills the rest of a large PDF gradually.
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-327-gallery-zoom-thumbs`
+
+### Issue
+Gallery view zoom (+/− / Fit / Fill / Reset) did not call
+updateGalleryDecodeWindow, so cells stayed on the pre-zoom ladder step.
+
+### Fix
+Call updateGalleryDecodeWindow after gallery zoom transforms so
+ceilLadderEdge can request a higher step for larger on-screen cells.
+

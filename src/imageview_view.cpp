@@ -212,6 +212,10 @@ void ImageView::zoomViewBy(qreal factor)
     if (viewport()) {
         viewport()->update();
     }
+    // Zoom changes on-screen cell size → may need a higher ladder step.
+    if (isGalleryMode()) {
+        updateGalleryDecodeWindow();
+    }
     emit statusChanged();
 }
 
@@ -232,6 +236,9 @@ void ImageView::zoomReset()
     m_fillMode = false;
     if (isMultiItemMode()) {
         resetTransform();
+        if (isGalleryMode()) {
+            updateGalleryDecodeWindow();
+        }
         emit statusChanged();
         return;
     }
@@ -259,6 +266,7 @@ void ImageView::zoomFit()
                 m_scene->setSceneRect(bounds);
                 fitInView(bounds, Qt::KeepAspectRatio);
             }
+            updateGalleryDecodeWindow();
             emit statusChanged();
         }
         return;
@@ -292,6 +300,7 @@ void ImageView::zoomFill()
                 m_scene->setSceneRect(bounds);
                 fitInView(bounds, Qt::KeepAspectRatioByExpanding);
             }
+            updateGalleryDecodeWindow();
             emit statusChanged();
         }
         return;
