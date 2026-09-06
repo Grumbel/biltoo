@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-328-book-layouts**
-(Flow / Flow Fill / Facing gallery layouts for books).
-Next bundle number: **329**.
+Latest agent handoff: **TODO.md → biltoo-329-book-layouts-verify**
+(Preferences + action lists for Flow/Facing; verified wiring).
+Next bundle number: **330**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

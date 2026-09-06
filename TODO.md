@@ -5956,3 +5956,15 @@ ceilLadderEdge can request a higher step for larger on-screen cells.
 - **Flow Fill**: same + justify each row to layout width
 - **Facing**: cover alone, then height-matched two-up pairs
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-329-book-layouts-verify`
+
+### Verification fixes
+- Preferences default-layout combo: Flow (9), Flow fill (10), Facing (11)
+- Workspace mode uncheck list includes new layout actions
+- Settings load range already included Facing (328)
+
+### Still OK
+- Pack algorithms, ImageView switch, menu/toolbar, columns spin for Flow
+
