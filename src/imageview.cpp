@@ -64,6 +64,22 @@ ImageView::ImageView(QWidget *parent)
     qRegisterMetaType<QImage>("QImage");
     qRegisterMetaType<quint64>("quint64");
 
+    // Durable native size from thumtoo (GUI thread via Qt Executor).
+    connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::sizeReady, this,
+            [this](const QString &path, const QSize &size) {
+                if (path.isEmpty() || !size.isValid() || size.width() <= 0
+                    || size.height() <= 0) {
+                    return;
+                }
+                m_sizeProbeScheduled.remove(path);
+                // Prefer a size already learned from a full decode.
+                if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
+                    return;
+                }
+                rememberImageSize(path, size);
+                applyProbedImageSize(path, size);
+            });
+
     // Soft preview upgrade when thumtoo finishes a ladder level for a path.
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int maxEdge) {
@@ -241,8 +257,14 @@ QSize ImageView::imageSizeForPath(const QString &path)
     if (it != m_imageSizeByPath.cend()) {
         return it.value();
     }
-    // Archives: fixed stand-in (probe would open the container on this thread).
+    // Cache-only durable size (files and //archive: members) — no source I/O.
+    if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
+        rememberImageSize(path, cached);
+        return cached;
+    }
+    // Archives: schedule thumtoo probe; neutral stand-in until sizeReady.
     if (ArchivePath::isArchiveRef(path)) {
+        scheduleImageSizeProbe(path);
         m_provisionalSizePaths.insert(path);
         return QSize(1024, 1024);
     }
@@ -272,10 +294,17 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
 
 void ImageView::scheduleImageSizeProbe(const QString &path)
 {
-    if (path.isEmpty() || ArchivePath::isArchiveRef(path)) {
+    if (path.isEmpty()) {
         return;
     }
     if (m_imageSizeByPath.contains(path) || m_sizeProbeScheduled.contains(path)) {
+        return;
+    }
+    // Archive members: only durable-cache probe (sizeReady applies the result).
+    // Never extract the container on the GUI thread or a local pool worker.
+    if (ArchivePath::isArchiveRef(path)) {
+        m_sizeProbeScheduled.insert(path);
+        ThumtooCache::scheduleProbe(path);
         return;
     }
     m_sizeProbeScheduled.insert(path);
