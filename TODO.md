@@ -5879,3 +5879,19 @@ Same scheme as flake.nix. Dirty tree appends `-dirty`.
 - Stale build dir: re-run biltoo-configure after new commits
 - No .git → plain VERSION string
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-323-version-rebuild`
+
+### Requests
+- cmake --build should notice version-relevant git changes
+- Style must match Nix flake, not git-describe
+
+### Scheme (aligned with flake.nix)
+`0.1.0-dev.<rev-list --count>+g<rev-parse --short=7>`
+No `-dirty` suffix; no `git describe`.
+
+### Rebuild detection
+CMAKE_CONFIGURE_DEPENDS on VERSION, .git/HEAD, .git/index (worktree-aware
+gitdir). Next `cmake --build` re-runs configure when those change.
+

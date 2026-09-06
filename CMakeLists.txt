@@ -3,20 +3,37 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Source of truth: top-level VERSION (e.g. "0.1.0-dev"), or
-# -DPROJECT_VERSION_FULL=... from packaging (Nix flake appends .<revCount>+g<rev>).
+# Version string (About / QApplication::applicationVersion):
+#   Packaging (nix build): -DPROJECT_VERSION_FULL=0.1.0-dev.N+gHASH from flake.nix
+#   Dev (nix develop / biltoo-configure): VERSION + git, same scheme — NOT git-describe.
+#     flake: "${versionBase}.${revCount}+g${shortRev or dirtyShortRev or "dirty"}"
+#     cmake: "${VERSION}.${rev-list --count}+g$(rev-parse --short=7)"
 #
-# Dev / out-of-tree cmake (nix develop, biltoo-configure): when packaging did
-# not pass PROJECT_VERSION_FULL and VERSION contains "-dev", enrich from the
-# source tree's .git so About shows e.g. 0.1.0-dev.853+gcdba1fd — same scheme
-# as flake.nix. Shallow clones under-count; pure tarballs stay at VERSION.
-if(NOT DEFINED PROJECT_VERSION_FULL OR PROJECT_VERSION_FULL STREQUAL "")
+# cmake --build re-runs configure when VERSION or .git/HEAD (or index) changes
+# via CMAKE_CONFIGURE_DEPENDS, so the baked version tracks commits without a
+# manual biltoo-configure.
+if(DEFINED PROJECT_VERSION_FULL AND NOT PROJECT_VERSION_FULL STREQUAL "")
+  # Packaging or explicit -D: keep as-is (already Nix-shaped).
+  string(STRIP "${PROJECT_VERSION_FULL}" PROJECT_VERSION_FULL)
+else()
   file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" PROJECT_VERSION_FULL LIMIT_COUNT 1)
   string(STRIP "${PROJECT_VERSION_FULL}" PROJECT_VERSION_FULL)
 
   if(PROJECT_VERSION_FULL MATCHES "-dev")
     find_package(Git QUIET)
-    if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    set(_biltoo_git_dir "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    if(Git_FOUND AND EXISTS "${_biltoo_git_dir}")
+      # Worktree: .git is a file "gitdir: …"
+      if(NOT IS_DIRECTORY "${_biltoo_git_dir}")
+        file(READ "${_biltoo_git_dir}" _biltoo_gitfile)
+        string(REGEX REPLACE "^gitdir:[ 	]*([^
+]+).*" "\1" _biltoo_git_dir
+               "${_biltoo_gitfile}")
+        if(NOT IS_ABSOLUTE "${_biltoo_git_dir}")
+          set(_biltoo_git_dir "${CMAKE_CURRENT_SOURCE_DIR}/${_biltoo_git_dir}")
+        endif()
+      endif()
+
       execute_process(
         COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-list --count HEAD
         OUTPUT_VARIABLE _biltoo_git_count
@@ -31,20 +48,24 @@ if(NOT DEFINED PROJECT_VERSION_FULL OR PROJECT_VERSION_FULL STREQUAL "")
         ERROR_QUIET
         RESULT_VARIABLE _biltoo_git_rev_rc
       )
-      execute_process(
-        COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_CURRENT_SOURCE_DIR}" status --porcelain
-        OUTPUT_VARIABLE _biltoo_git_porcelain
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-      )
       if(_biltoo_git_count_rc EQUAL 0 AND _biltoo_git_rev_rc EQUAL 0
          AND NOT _biltoo_git_count STREQUAL "" AND NOT _biltoo_git_rev STREQUAL "")
+        # Match flake.nix: no git-describe, no separate -dirty suffix.
         set(PROJECT_VERSION_FULL
             "${PROJECT_VERSION_FULL}.${_biltoo_git_count}+g${_biltoo_git_rev}")
-        if(NOT _biltoo_git_porcelain STREQUAL "")
-          set(PROJECT_VERSION_FULL "${PROJECT_VERSION_FULL}-dirty")
-        endif()
         message(STATUS "Dev version from git: ${PROJECT_VERSION_FULL}")
+      endif()
+
+      # Reconfigure on cmake --build when the commit or VERSION file changes.
+      set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+      if(EXISTS "${_biltoo_git_dir}/HEAD")
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+          "${_biltoo_git_dir}/HEAD")
+      endif()
+      if(EXISTS "${_biltoo_git_dir}/index")
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+          "${_biltoo_git_dir}/index")
       endif()
     endif()
   endif()
