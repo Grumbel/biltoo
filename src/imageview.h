@@ -1145,9 +1145,9 @@ private:
     SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
     SlideshowLetterboxFill m_slideshowLetterboxFill = SlideshowLetterboxFill::AppBackground;
     QColor m_slideshowPadColor{42, 42, 42};
-    /** Cached ZoomBlur underlay (viewport-sized); invalidated on slide/resize. */
-    mutable QPixmap m_zoomBlurUnderlay;
-    mutable qint64 m_zoomBlurSourceKey = 0;
+    /** Two-slot ZoomBlur underlay cache (from/to during transitions). */
+    mutable QPixmap m_zoomBlurUnderlay[2];
+    mutable qint64 m_zoomBlurSourceKey[2] = {0, 0};
     mutable int m_zoomBlurVw = 0;
     mutable int m_zoomBlurVh = 0;
     bool m_slideshowMotionActive = false;

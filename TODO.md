@@ -6092,3 +6092,21 @@ literals.
 ### Done criteria
 - [x] Tooltip compiles
 - [x] Docs; next **333**
+
+## Plan / work (2026-09-06) — bundle `biltoo-333-letterbox-crossfade`
+
+### Request
+Crossfade the letterbox underlay (especially Zoom+blur) with the next slide's
+underlay during any slideshow transition, so the background does not pop.
+Independent of Crossfade / Fade-through-black / Slide image compositing.
+
+### Approach
+- `fillPad(vr, from, to, t)` draws from underlay full, then to at opacity t
+- Two-slot ZoomBlur cache so from/to underlays are not rebuilt every frame
+- Solid / App background unchanged (single pad colour)
+
+### Done criteria
+- [x] ZoomBlur underlay crossfades for pure-phase and live transitions
+- [x] Dual-slot blur cache
+- [x] Docs; next **334**
+

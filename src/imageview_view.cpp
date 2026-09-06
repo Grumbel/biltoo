@@ -118,7 +118,10 @@ void ImageView::setSlideshowPadColor(const QColor &color)
         return;
     }
     m_slideshowPadColor = color;
-    m_zoomBlurUnderlay = QPixmap();
+    m_zoomBlurUnderlay[0] = QPixmap();
+    m_zoomBlurUnderlay[1] = QPixmap();
+    m_zoomBlurSourceKey[0] = 0;
+    m_zoomBlurSourceKey[1] = 0;
     if (m_slideshowProgressActive && viewport()) {
         viewport()->update();
     }
@@ -130,7 +133,10 @@ void ImageView::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
         return;
     }
     m_slideshowLetterboxFill = mode;
-    m_zoomBlurUnderlay = QPixmap();
+    m_zoomBlurUnderlay[0] = QPixmap();
+    m_zoomBlurUnderlay[1] = QPixmap();
+    m_zoomBlurSourceKey[0] = 0;
+    m_zoomBlurSourceKey[1] = 0;
     if (m_slideshowProgressActive && viewport()) {
         viewport()->update();
     }
@@ -1854,19 +1860,34 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     // Key: image bits address + size (slide identity proxy) + viewport.
     const qint64 key = qint64(quintptr(image.constBits()))
         ^ (qint64(image.width()) << 16) ^ qint64(image.height());
-    if (m_zoomBlurUnderlay.isNull() || m_zoomBlurSourceKey != key
-        || m_zoomBlurVw != vw || m_zoomBlurVh != vh) {
+    if (m_zoomBlurVw != vw || m_zoomBlurVh != vh) {
+        m_zoomBlurUnderlay[0] = QPixmap();
+        m_zoomBlurUnderlay[1] = QPixmap();
+        m_zoomBlurSourceKey[0] = 0;
+        m_zoomBlurSourceKey[1] = 0;
+        m_zoomBlurVw = vw;
+        m_zoomBlurVh = vh;
+    }
+    int slot = -1;
+    for (int i = 0; i < 2; ++i) {
+        if (m_zoomBlurSourceKey[i] == key && !m_zoomBlurUnderlay[i].isNull()) {
+            slot = i;
+            break;
+        }
+    }
+    if (slot < 0) {
+        // Prefer empty slot; else replace slot 1 (keep slot 0 as stable "from").
+        slot = m_zoomBlurUnderlay[0].isNull() ? 0
+             : (m_zoomBlurUnderlay[1].isNull() ? 1 : 1);
         const QImage blurred = makeZoomBlurCover(image, vw, vh);
         if (blurred.isNull()) {
             painter->fillRect(viewportRect, slideshowPadColor());
             return;
         }
-        m_zoomBlurUnderlay = QPixmap::fromImage(blurred);
-        m_zoomBlurSourceKey = key;
-        m_zoomBlurVw = vw;
-        m_zoomBlurVh = vh;
+        m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
+        m_zoomBlurSourceKey[slot] = key;
     }
-    painter->drawPixmap(viewportRect, m_zoomBlurUnderlay);
+    painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[slot]);
 }
 
 void ImageView::paintMotionCover(QPainter *painter, const QImage &image,

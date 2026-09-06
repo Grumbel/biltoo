@@ -330,7 +330,10 @@ void ImageView::resizeEvent(QResizeEvent *event)
         m_dwellAtlasVw = 0;
         m_liveFromAtlasVw = 0;
         m_liveToAtlasVw = 0;
-        m_zoomBlurUnderlay = QPixmap();
+        m_zoomBlurUnderlay[0] = QPixmap();
+        m_zoomBlurUnderlay[1] = QPixmap();
+        m_zoomBlurSourceKey[0] = 0;
+        m_zoomBlurSourceKey[1] = 0;
         if (viewport()) {
             viewport()->update();
         }
