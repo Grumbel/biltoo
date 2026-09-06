@@ -1740,7 +1740,11 @@ void ImageView::hideSlideshowUnderlay()
 
 namespace {
 
-/** Fast approximate Gaussian: downsample → horizontal+vertical box passes → upscale. */
+/**
+ * Tiny cover-frame blur for letterbox underlay. Intentionally low-res: the
+ * underlay is out of focus and the GPU scales it to the viewport. Cap the
+ * long edge so even a first-build on the GUI thread stays cheap.
+ */
 QImage makeZoomBlurCover(const QImage &src, int vw, int vh)
 {
     if (src.isNull() || vw < 1 || vh < 1) {
@@ -1751,13 +1755,21 @@ QImage makeZoomBlurCover(const QImage &src, int vw, int vh)
     if (iw < 1.0 || ih < 1.0) {
         return {};
     }
-    // Work at ~1/4 resolution for speed; blur radius in work pixels.
-    const int workW = qMax(8, vw / 4);
-    const int workH = qMax(8, vh / 4);
+    // ~1/16 of the viewport, hard-capped — soft background, not a second slide.
+    constexpr int kMaxLongEdge = 128;
+    int workW = qMax(8, vw / 16);
+    int workH = qMax(8, vh / 16);
+    const int longEdge = qMax(workW, workH);
+    if (longEdge > kMaxLongEdge) {
+        const qreal s = qreal(kMaxLongEdge) / qreal(longEdge);
+        workW = qMax(8, int(workW * s));
+        workH = qMax(8, int(workH * s));
+    }
     const qreal cover = qMax(qreal(workW) / iw, qreal(workH) / ih);
     const int sw = qMax(1, int(std::ceil(iw * cover)));
     const int sh = qMax(1, int(std::ceil(ih * cover)));
-    QImage scaled = src.scaled(sw, sh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+    // FastTransformation: underlay is blurred anyway; Smooth is pure CPU cost.
+    QImage scaled = src.scaled(sw, sh, Qt::IgnoreAspectRatio, Qt::FastTransformation)
                         .convertToFormat(QImage::Format_ARGB32_Premultiplied);
     // Centre-crop to workW×workH
     const int x0 = qMax(0, (sw - workW) / 2);
@@ -1837,11 +1849,10 @@ QImage makeZoomBlurCover(const QImage &src, int vw, int vh)
         img = out;
     };
 
-    // Three box passes ≈ Gaussian; radius in work pixels (~12 → strong soft).
-    // Keep the result at work resolution — the GPU scales it to the viewport
-    // on draw (cheap). Full-size QImage::scaled here was a large CPU hit.
-    constexpr int kRadius = 12;
-    for (int pass = 0; pass < 3; ++pass) {
+    // Two box passes, modest radius — strong enough once stretched to the
+    // viewport; cheaper first-build on the GUI thread.
+    constexpr int kRadius = 6;
+    for (int pass = 0; pass < 2; ++pass) {
         boxBlurPass(scaled, kRadius, true);
         boxBlurPass(scaled, kRadius, false);
     }
@@ -1860,14 +1871,10 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     }
     const int vw = viewportRect.width();
     const int vh = viewportRect.height();
-    // Stable identity: caller path hash folded with native size + viewport.
-    // Never use constBits() — QImage buffers are reallocated across loads /
-    // atlas refreshes while the logical slide is unchanged.
-    const qint64 key = stableKey
-        ^ (qint64(image.width()) << 32)
-        ^ (qint64(image.height()) << 16)
-        ^ (qint64(vw) << 8)
-        ^ qint64(vh);
+    // Stable identity: path key + viewport only.
+    // Do NOT fold source width/height — soft→full upgrades would miss the
+    // cache and re-blur mid-transition (the spike after the first fix).
+    const qint64 key = stableKey ^ (qint64(vw) << 16) ^ qint64(vh);
     if (m_zoomBlurVw != vw || m_zoomBlurVh != vh) {
         m_zoomBlurUnderlay[0] = QPixmap();
         m_zoomBlurUnderlay[1] = QPixmap();
@@ -1894,8 +1901,8 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
         m_zoomBlurSourceKey[slot] = key;
     }
-    // Low-res underlay stretched by the (OpenGL) paint engine.
-    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+    // Already soft — skip SmoothPixmapTransform (extra work for no benefit).
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
     painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[slot]);
 }
 

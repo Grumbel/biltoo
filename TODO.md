@@ -6137,3 +6137,21 @@ pixmap draws with opacity (GPU).
 - [x] No per-frame blur rebuild on stable slides
 - [x] Docs; next **336**
 
+## Plan / work (2026-09-06) — bundle `biltoo-336-zoomblur-cheap`
+
+### Problem
+Still CPU-spiky during ZoomBlur crossfade. Fade is already GPU opacity; the
+cost was residual CPU blur rebuilds when soft→full changed source dimensions
+(cache key included width/height) plus a still-heavy ~1/4-res blur build.
+
+### Fix
+- Cache key: path + viewport only (ignore source size)
+- Work buffer ≤128 long edge (~1/16 viewport)
+- FastTransformation downscale; 2× box blur radius 6
+- No SmoothPixmapTransform on underlay draw
+
+### Done criteria
+- [x] Soft→full no longer re-blurs
+- [x] Cheaper first-build
+- [x] Docs; next **337**
+

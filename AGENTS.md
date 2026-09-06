@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-335-zoomblur-cache-stable**
-(Stable ZoomBlur cache keys; GPU fade only per frame).
-Next bundle number: **336**.
+Latest agent handoff: **TODO.md → biltoo-336-zoomblur-cheap**
+(Cheaper ZoomBlur; path+viewport cache key only).
+Next bundle number: **337**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
