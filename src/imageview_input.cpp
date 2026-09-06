@@ -346,23 +346,57 @@ void ImageView::resizeEvent(QResizeEvent *event)
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
-    // Attention mode: drag handle or click to place the focus point.
-    // Never steal edge zones (Gallery return / prev / next).
+    // Attention mode: multi-point select / move / rubber-band / click-to-add.
     if (m_attentionMode && event->button() == Qt::LeftButton && isImageMode()
         && edgeZoneAt(event->pos()) == EdgeZone::None) {
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()) {
-            const QPointF scene = mapToScene(event->pos());
-            const QPointF local = item->mapFromScene(scene);
-            const QRectF cr = item->contentRect();
-            if (cr.contains(local) || attentionHandleAt(event->pos())) {
-                const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
-                const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
-                setAttentionNormForTarget(QPointF(nx, ny));
+            const int hit = attentionHandleIndexAt(event->pos());
+            const bool shift = event->modifiers() & Qt::ShiftModifier;
+            if (hit >= 0) {
+                if (shift) {
+                    if (m_attentionSelected.contains(hit)) {
+                        m_attentionSelected.removeAll(hit);
+                    } else {
+                        m_attentionSelected.append(hit);
+                    }
+                } else if (!m_attentionSelected.contains(hit)) {
+                    m_attentionSelected = {hit};
+                }
                 m_attentionDragging = true;
+                m_attentionRubberbanding = false;
+                m_attentionDragOriginView = event->pos();
+                m_attentionDragStartPts = attentionPointsForTarget();
+                viewport()->update();
                 event->accept();
                 return;
             }
+            const QPointF scene = mapToScene(event->pos());
+            const QPointF local = item->mapFromScene(scene);
+            const QRectF cr = item->contentRect();
+            if (cr.contains(local) && !shift) {
+                const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
+                const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
+                QVector<QPointF> pts = attentionPointsForTarget();
+                pts.append(QPointF(nx, ny));
+                setAttentionPointsForTarget(pts);
+                m_attentionSelected = {pts.size() - 1};
+                m_attentionDragging = true;
+                m_attentionDragOriginView = event->pos();
+                m_attentionDragStartPts = attentionPointsForTarget();
+                event->accept();
+                return;
+            }
+            m_attentionRubberbanding = true;
+            m_attentionDragging = false;
+            m_attentionRubberOrigin = event->pos();
+            m_attentionRubberRect = QRect(event->pos(), QSize());
+            if (!shift) {
+                m_attentionSelected.clear();
+            }
+            viewport()->update();
+            event->accept();
+            return;
         }
     }
 
@@ -733,15 +767,34 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_attentionMode && m_attentionRubberbanding && isImageMode()) {
+        m_attentionRubberRect = QRect(m_attentionRubberOrigin, event->pos()).normalized();
+        viewport()->update();
+        event->accept();
+        return;
+    }
     if (m_attentionMode && m_attentionDragging && isImageMode()) {
         ImageItem *item = targetItem();
-        if (item && !item->contentRect().isEmpty()) {
-            const QPointF scene = mapToScene(event->pos());
-            const QPointF local = item->mapFromScene(scene);
+        if (item && !item->contentRect().isEmpty()
+            && !m_attentionSelected.isEmpty()
+            && m_attentionDragStartPts.size() == attentionPointsForTarget().size()) {
+            // Translate selected points by view-delta mapped through content.
+            const QPointF scene0 = mapToScene(m_attentionDragOriginView);
+            const QPointF scene1 = mapToScene(event->pos());
+            const QPointF local0 = item->mapFromScene(scene0);
+            const QPointF local1 = item->mapFromScene(scene1);
             const QRectF cr = item->contentRect();
-            const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
-            const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
-            setAttentionNormForTarget(QPointF(nx, ny));
+            const qreal dx = (local1.x() - local0.x()) / qMax(1e-6, cr.width());
+            const qreal dy = (local1.y() - local0.y()) / qMax(1e-6, cr.height());
+            QVector<QPointF> pts = m_attentionDragStartPts;
+            for (int idx : m_attentionSelected) {
+                if (idx < 0 || idx >= pts.size()) {
+                    continue;
+                }
+                pts[idx] = QPointF(qBound(0.0, pts[idx].x() + dx, 1.0),
+                                   qBound(0.0, pts[idx].y() + dy, 1.0));
+            }
+            setAttentionPointsForTarget(pts);
         }
         event->accept();
         return;
@@ -1118,10 +1171,42 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (m_attentionMode && m_attentionDragging && event->button() == Qt::LeftButton) {
-        m_attentionDragging = false;
-        event->accept();
-        return;
+    if (m_attentionMode && event->button() == Qt::LeftButton) {
+        if (m_attentionRubberbanding) {
+            m_attentionRubberbanding = false;
+            ImageItem *item = targetItem();
+            if (item && !item->contentRect().isEmpty()) {
+                const QRect band = m_attentionRubberRect.normalized();
+                const QVector<QPointF> pts = attentionPointsForTarget();
+                const bool shift = event->modifiers() & Qt::ShiftModifier;
+                QVector<int> hit;
+                for (int i = 0; i < pts.size(); ++i) {
+                    const QPointF v = attentionViewPos(item, pts.at(i));
+                    if (band.contains(v.toPoint())) {
+                        hit.append(i);
+                    }
+                }
+                if (shift) {
+                    for (int i : hit) {
+                        if (!m_attentionSelected.contains(i)) {
+                            m_attentionSelected.append(i);
+                        }
+                    }
+                } else {
+                    m_attentionSelected = hit;
+                }
+            }
+            m_attentionRubberRect = QRect();
+            viewport()->update();
+            event->accept();
+            return;
+        }
+        if (m_attentionDragging) {
+            m_attentionDragging = false;
+            attentionCommitSelectionMove();
+            event->accept();
+            return;
+        }
     }
     if (m_cropMode && m_cropActiveHandle != CropHandle::None
         && event->button() == Qt::LeftButton) {
@@ -1341,6 +1426,23 @@ void ImageView::keyPressEvent(QKeyEvent *event)
     if (m_attentionMode) {
         if (event->key() == Qt::Key_Escape) {
             setAttentionMode(false);
+            event->accept();
+            return;
+        }
+        if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+            attentionDeleteSelected();
+            event->accept();
+            return;
+        }
+        if (event->key() == Qt::Key_A && (event->modifiers() & Qt::ControlModifier)) {
+            const int n = attentionPointsForTarget().size();
+            m_attentionSelected.clear();
+            for (int i = 0; i < n; ++i) {
+                m_attentionSelected.append(i);
+            }
+            if (viewport()) {
+                viewport()->update();
+            }
             event->accept();
             return;
         }

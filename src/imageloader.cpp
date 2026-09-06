@@ -507,16 +507,13 @@ bool hasVips()
 #endif
 }
 
-bool attentionPoint(const QImage &image, QPointF *normalizedOut)
+#ifdef BILTOO_HAVE_VIPS
+/** Internal: single VIPS smartcrop attention peak (normalized). */
+static bool attentionPointVipsPeak(const QImage &image, QPointF *normalizedOut)
 {
-    if (!normalizedOut || image.isNull() || image.width() < 8 || image.height() < 8) {
+    if (!normalizedOut || image.isNull()) {
         return false;
     }
-#ifndef BILTOO_HAVE_VIPS
-    Q_UNUSED(image);
-    return false;
-#else
-    // Work on a modest RGB copy — attention is coarse; keep latency reasonable.
     QImage src = image;
     constexpr int kMaxEdge = 512;
     if (src.width() > kMaxEdge || src.height() > kMaxEdge) {
@@ -526,8 +523,6 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
     if (src.isNull() || src.bytesPerLine() < src.width() * 3) {
         return false;
     }
-
-    // Deep-copy pixels into a contiguous buffer vips can own independently of QImage.
     const int width = src.width();
     const int height = src.height();
     const int bands = 3;
@@ -541,27 +536,17 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
         memcpy(static_cast<uchar *>(buf) + size_t(y) * rowBytes,
                src.constScanLine(y), rowBytes);
     }
-
     VipsImage *in = vips_image_new_from_memory_copy(buf, nbytes, width, height, bands,
                                                     VIPS_FORMAT_UCHAR);
     g_free(buf);
     if (!in) {
         return false;
     }
-
-    // smartcrop requires a crop size, but the real focus is the optional
-    // attention_x / attention_y outputs (peak of the attention map), not the
-    // centre of the extracted window. Using crop-centre was near-random for
-    // large windows.
-    // Crop size only affects the blur sigma of the attention map; a moderate
-    // square keeps the peak localized without being a full-frame average.
     const int cropEdge = qBound(8, qMin(width, height) / 3, qMin(width, height));
-    const int cropW = cropEdge;
-    const int cropH = cropEdge;
     VipsImage *out = nullptr;
     int attentionX = 0;
     int attentionY = 0;
-    if (vips_smartcrop(in, &out, cropW, cropH,
+    if (vips_smartcrop(in, &out, cropEdge, cropEdge,
                        "interesting", VIPS_INTERESTING_ATTENTION,
                        "attention_x", &attentionX,
                        "attention_y", &attentionY,
@@ -570,14 +555,130 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
         g_object_unref(in);
         return false;
     }
-
     *normalizedOut = QPointF(qBound(0.0, qreal(attentionX) / qreal(width), 1.0),
                              qBound(0.0, qreal(attentionY) / qreal(height), 1.0));
-
     g_object_unref(out);
     g_object_unref(in);
     return true;
+}
 #endif
+
+bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut, int maxPoints)
+{
+    if (!normalizedOut || image.isNull() || image.width() < 8 || image.height() < 8) {
+        return false;
+    }
+    maxPoints = qBound(1, maxPoints, 16);
+    normalizedOut->clear();
+
+    constexpr int kMaxEdge = 256;
+    QImage src = image;
+    if (src.width() > kMaxEdge || src.height() > kMaxEdge) {
+        src = src.scaled(kMaxEdge, kMaxEdge, Qt::KeepAspectRatio, Qt::FastTransformation);
+    }
+    src = src.convertToFormat(QImage::Format_Grayscale8);
+    const int w = src.width();
+    const int h = src.height();
+    if (w < 8 || h < 8) {
+        return false;
+    }
+
+    QVector<float> score(w * h, 0.0f);
+    constexpr int kR = 3;
+    for (int y = 0; y < h; ++y) {
+        const uchar *row = src.constScanLine(y);
+        for (int x = 0; x < w; ++x) {
+            int sum = 0;
+            int n = 0;
+            for (int dy = -kR; dy <= kR; ++dy) {
+                const int yy = qBound(0, y + dy, h - 1);
+                const uchar *r2 = src.constScanLine(yy);
+                for (int dx = -kR; dx <= kR; ++dx) {
+                    const int xx = qBound(0, x + dx, w - 1);
+                    sum += r2[xx];
+                    ++n;
+                }
+            }
+            const float mean = float(sum) / float(n);
+            score[y * w + x] = qAbs(float(row[x]) - mean);
+        }
+    }
+
+#ifdef BILTOO_HAVE_VIPS
+    {
+        QPointF vipsPt;
+        if (attentionPointVipsPeak(image, &vipsPt)) {
+            const int px = qBound(0, int(vipsPt.x() * (w - 1)), w - 1);
+            const int py = qBound(0, int(vipsPt.y() * (h - 1)), h - 1);
+            score[py * w + px] = qMax(score[py * w + px], 255.0f);
+        }
+    }
+#endif
+
+    struct Peak { float s; int x; int y; };
+    QVector<Peak> peaks;
+    constexpr int kNms = 12;
+    for (int y = kNms; y < h - kNms; ++y) {
+        for (int x = kNms; x < w - kNms; ++x) {
+            const float s = score[y * w + x];
+            if (s < 8.0f) {
+                continue;
+            }
+            bool isMax = true;
+            for (int dy = -kNms; dy <= kNms && isMax; ++dy) {
+                for (int dx = -kNms; dx <= kNms; ++dx) {
+                    if (dx == 0 && dy == 0) {
+                        continue;
+                    }
+                    if (score[(y + dy) * w + (x + dx)] > s) {
+                        isMax = false;
+                        break;
+                    }
+                }
+            }
+            if (isMax) {
+                peaks.append({s, x, y});
+            }
+        }
+    }
+    std::sort(peaks.begin(), peaks.end(),
+              [](const Peak &a, const Peak &b) { return a.s > b.s; });
+
+    for (const Peak &pk : peaks) {
+        if (normalizedOut->size() >= maxPoints) {
+            break;
+        }
+        const QPointF n(qreal(pk.x) / qreal(qMax(1, w - 1)),
+                        qreal(pk.y) / qreal(qMax(1, h - 1)));
+        bool near = false;
+        for (const QPointF &ex : *normalizedOut) {
+            if (QLineF(ex, n).length() < 0.08) {
+                near = true;
+                break;
+            }
+        }
+        if (!near) {
+            normalizedOut->append(n);
+        }
+    }
+
+    if (normalizedOut->isEmpty()) {
+        normalizedOut->append(QPointF(0.5, 0.5));
+    }
+    return true;
+}
+
+bool attentionPoint(const QImage &image, QPointF *normalizedOut)
+{
+    if (!normalizedOut) {
+        return false;
+    }
+    QVector<QPointF> pts;
+    if (!attentionPoints(image, &pts, 1) || pts.isEmpty()) {
+        return false;
+    }
+    *normalizedOut = pts.first();
+    return true;
 }
 
 QImage load(const QString &path)

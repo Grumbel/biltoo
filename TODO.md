@@ -6166,3 +6166,34 @@ linear filtering (GL_LINEAR) when stretching the low-res blur.
 - [x] Smooth underlay upscale
 - [x] Docs; next **338**
 
+## Plan / work (2026-09-06) — bundle `biltoo-338-attention-multipoint`
+
+### Request
+Expand attention editing to normal tool UX: multiple points, multi-select,
+move, delete, rubber-band. Also: VIPS attention feels random — better libs?
+
+### Data
+- `WorkspaceItemState::attentionPoints` (QVector, norm 0–1)
+- `hasAttention` / `attentionNorm` = primary (index 0) for Ken Burns + legacy
+- JSON: `"attention": [[x,y], …]` (legacy `[x,y]` still loads)
+
+### UI (Attention mode)
+- Click empty: add point
+- Click handle: select; Shift+click: toggle multi-select
+- Drag selection: move
+- Drag empty: rubber-band select
+- Del / Backspace: delete selected
+- Ctrl+A: select all
+- Detect: multi-peak local-contrast + NMS (VIPS peak seeded when available)
+
+### Saliency note
+VIPS smartcrop exposes **one** peak; OpenCV contrib Saliency is better but is a
+heavy new dependency. This bundle adds a pure-Qt multi-peak detector so Detect
+returns several candidates without OpenCV.
+
+### Done criteria
+- [x] Multi-point edit UI
+- [x] Persist / load multi-point
+- [x] Multi-peak detect
+- [x] Docs; next **339**
+

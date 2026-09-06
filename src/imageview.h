@@ -444,14 +444,14 @@ public:
     void toggleCropMode();
 
     /**
-     * Attention / focus-point mode (Image mode). Overlay + drag the session
-     * attention point used by slideshow Ken Burns. Auto-detects via VIPS when
-     * entering if no stored point exists.
+     * Attention / focus-point mode (Image mode). Multi-point overlay: add,
+     * select (shift / rubber-band), move, delete. Primary (first) point drives
+     * slideshow Ken Burns. Auto-detects peaks when entering if none stored.
      */
     void setAttentionMode(bool on);
     bool isAttentionMode() const { return m_attentionMode; }
     void toggleAttentionMode();
-    /** Re-run VIPS attention on the current image and store the point. */
+    /** Re-run saliency detect on the current image (replaces all points). */
     void detectAttentionPoint();
     /** Commit the draft crop rect to pixels and leave crop mode. */
     void applyCrop();
@@ -945,11 +945,17 @@ private:
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
     void paintAttentionOverlay(QPainter &painter);
+    int attentionHandleIndexAt(const QPoint &viewPos) const;
     bool attentionHandleAt(const QPoint &viewPos) const;
+    QVector<QPointF> attentionPointsForTarget() const;
     QPointF attentionNormForTarget() const;
+    void setAttentionPointsForTarget(const QVector<QPointF> &pts);
     void setAttentionNormForTarget(const QPointF &norm);
     void ensureAttentionPoint();
     SessionImageId attentionSessionId() const;
+    void attentionCommitSelectionMove();
+    void attentionDeleteSelected();
+    QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
     void updateCropHandleDrag(const QPoint &viewPos);
     void endCropHandleDrag();
@@ -1286,8 +1292,14 @@ private:
     bool m_cropMode = false;
     bool m_attentionMode = false;
     bool m_attentionDragging = false;
+    bool m_attentionRubberbanding = false;
+    QPoint m_attentionRubberOrigin;
+    QRect m_attentionRubberRect; // viewport coords
+    QVector<int> m_attentionSelected; // indices into attentionPoints
+    QVector<QPointF> m_attentionDragStartPts; // snapshot at press for selected move
+    QPoint m_attentionDragOriginView;
     bool m_attentionDraftValid = false;
-    QPointF m_attentionDraftNorm{0.5, 0.5};
+    QVector<QPointF> m_attentionDraftPts;
     SessionImageId m_attentionDraftSessionId = kInvalidSessionImageId;
     /** Locked crop subject for the whole crop session (IDENTITY.md). */
     SessionImageId m_cropTargetId = kInvalidSessionImageId;

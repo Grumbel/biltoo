@@ -10,6 +10,7 @@
 #include <QRect>
 #include <QSize>
 #include <QString>
+#include <QVector>
 #include "coloradjust.h"
 #include <QtGlobal>
 
@@ -105,12 +106,26 @@ struct WorkspaceItemState {
      */
     qreal cropRotation = 0.0;
     /**
-     * Attention / focus point in normalized image coordinates (0–1, top-left
-     * origin). Used for slideshow Ken Burns subject; editable in Attention mode.
+     * Attention / focus points in normalized image coordinates (0–1, top-left
+     * origin). Primary (index 0) drives slideshow Ken Burns; additional points
+     * are user waypoints editable in Attention mode.
      */
     bool hasAttention = false;
-    QPointF attentionNorm; // valid when hasAttention
+    QPointF attentionNorm; // primary; mirrors attentionPoints[0] when non-empty
+    QVector<QPointF> attentionPoints; // all points; empty ⇔ !hasAttention
     ColorAdjustments colorAdjust;
+
+    /** Keep hasAttention / attentionNorm in sync with attentionPoints. */
+    void syncAttentionPrimary()
+    {
+        if (attentionPoints.isEmpty()) {
+            hasAttention = false;
+            attentionNorm = QPointF(0.5, 0.5);
+            return;
+        }
+        hasAttention = true;
+        attentionNorm = attentionPoints.first();
+    }
 };
 
 #endif // IMAGEVIEW_TYPES_H

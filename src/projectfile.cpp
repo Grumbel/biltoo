@@ -114,10 +114,16 @@ QJsonObject appearanceToJson(const WorkspaceItemState &s, bool includePose)
             o.insert(QStringLiteral("cropRotation"), s.cropRotation);
         }
     }
-    if (s.hasAttention) {
+    if (s.hasAttention || !s.attentionPoints.isEmpty()) {
         o.insert(QStringLiteral("hasAttention"), true);
-        o.insert(QStringLiteral("attention"),
-                 QJsonArray{s.attentionNorm.x(), s.attentionNorm.y()});
+        QJsonArray pts;
+        const QVector<QPointF> list = !s.attentionPoints.isEmpty()
+            ? s.attentionPoints
+            : QVector<QPointF>{s.attentionNorm};
+        for (const QPointF &pt : list) {
+            pts.append(QJsonArray{pt.x(), pt.y()});
+        }
+        o.insert(QStringLiteral("attention"), pts);
     }
     if (s.contentHFlip) {
         o.insert(QStringLiteral("contentHFlip"), true);
@@ -174,26 +180,28 @@ WorkspaceItemState appearanceFromJson(const QJsonObject &o)
             s.cropSourceSize = QSize(a.at(0).toInt(), a.at(1).toInt());
         }
     }
-    // Attention focus point (normalized 0–1). Save writes hasAttention + attention:[x,y].
-    // Accept multi-point form [[x,y],…] (primary = first) for forward compatibility.
+    // Attention points (normalized 0–1). Preferred: [[x,y], …]; legacy: [x,y].
     if (o.contains(QStringLiteral("attention"))) {
         const QJsonArray a = o.value(QStringLiteral("attention")).toArray();
+        s.attentionPoints.clear();
         if (!a.isEmpty() && a.at(0).isArray()) {
-            const QJsonArray p = a.at(0).toArray();
-            if (p.size() >= 2) {
-                s.hasAttention = true;
-                s.attentionNorm = QPointF(qBound(0.0, p.at(0).toDouble(), 1.0),
-                                          qBound(0.0, p.at(1).toDouble(), 1.0));
+            for (const QJsonValue &v : a) {
+                const QJsonArray p = v.toArray();
+                if (p.size() >= 2) {
+                    s.attentionPoints.append(
+                        QPointF(qBound(0.0, p.at(0).toDouble(), 1.0),
+                                qBound(0.0, p.at(1).toDouble(), 1.0)));
+                }
             }
         } else if (a.size() >= 2) {
-            s.hasAttention = true;
-            s.attentionNorm = QPointF(qBound(0.0, a.at(0).toDouble(), 1.0),
-                                      qBound(0.0, a.at(1).toDouble(), 1.0));
+            s.attentionPoints.append(
+                QPointF(qBound(0.0, a.at(0).toDouble(), 1.0),
+                        qBound(0.0, a.at(1).toDouble(), 1.0)));
         }
+        s.syncAttentionPrimary();
     } else if (o.value(QStringLiteral("hasAttention")).toBool(false)) {
-        // Defensive: hasAttention without coordinates → centre.
-        s.hasAttention = true;
-        s.attentionNorm = QPointF(0.5, 0.5);
+        s.attentionPoints = {QPointF(0.5, 0.5)};
+        s.syncAttentionPrimary();
     }
     s.contentHFlip = o.value(QStringLiteral("contentHFlip")).toBool(false);
     s.contentVFlip = o.value(QStringLiteral("contentVFlip")).toBool(false);

@@ -9,6 +9,7 @@
 #include <QSize>
 #include <QString>
 #include <QStringList>
+#include <QVector>
 
 /**
  * Central image decode path: try QImageReader first (including system Qt
@@ -26,11 +27,18 @@ bool hasVips();
 
 /**
  * Approximate attention / focus point in normalized image coordinates (0–1).
- * Uses libvips smartcrop attention_x/attention_y (peak of the attention map)
- * on a downscaled RGB copy — not the centre of the crop window.
- * Returns false when VIPS is unavailable, the image is empty, or the probe fails.
+ * Primary peak from attentionPoints(); falls back to image centre.
  */
 bool attentionPoint(const QImage &image, QPointF *normalizedOut);
+
+/**
+ * Up to @a maxPoints local saliency peaks (normalized 0–1), strongest first.
+ * Uses a pure-Qt local-contrast map + non-max suppression (no OpenCV). When
+ * VIPS is available, the smartcrop attention peak is seeded as a candidate.
+ * Returns false when the image is empty or no peaks are found.
+ */
+bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut,
+                     int maxPoints = 5);
 
 /**
  * Fast size probe without a full pixel decode when the backend allows it.
