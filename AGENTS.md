@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-287-docs-recent-changes**
-(Docs: mode boundaries, slideshow pause nav, WindowShortcut, provisional size).
-Next bundle number: **288**.
+Latest agent handoff: **TODO.md → biltoo-288-thumtoo-archive-toc**
+(thumtoo durable archive TOC for session expand; ArchiveReader fallback).
+Next bundle number: **289**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -301,4 +301,10 @@ Durable size index and display ladder live in the **thumtoo** library
 Client uses a Qt `Executor` so callbacks land on the GUI thread.
 `Bridge::ladderReady` refreshes filmstrip cells when a level is encoded.
 Session edit identity remains biltoo `SessionImageId`.
+
+**Archive expand:** `ThumtooCache::expandArchiveToImageRefs` uses cache-first
+`get_archive_entries`, then `refresh_archive_toc` (stores durable TOC). Session
+`expandPaths` / background expand prefer that list and fall back to
+`ArchiveReader::expandArchiveToImageRefs`. Full member decode still uses
+`ArchiveReader::readMember` (not thumtoo extract yet).
 

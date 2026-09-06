@@ -5246,3 +5246,42 @@ pause nav, WindowShortcut, `--debug`, provisional layout size, Gallery scroll).
 ### Done criteria
 - [x] Durable rules in DOMAIN/SLIDESHOW, not only TODO plan notes
 - [x] Next **288**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-288-thumtoo-archive-toc`
+
+### Task
+Integrate thumtoo durable archive TOC into biltoo session expand so opening the
+same zip/cbz/rar/… does not re-walk every time. Keep ArchiveReader as fallback
+and for member byte extraction (full decode).
+
+### Context
+- thumtoo already provides `get_archive_entries` (cache-only) and
+  `refresh_archive_toc` (libarchive + store under archive URI).
+- biltoo `ArchiveReader::expandArchiveToImageRefs` always walks source.
+- Soft ladder + size for `//archive:` members already go through ThumtooCache;
+  only the *member list* for Open/drop/folder expand is still pure libarchive.
+
+### Design
+1. `ThumtooCache::expandArchiveToImageRefs(archivePath)`:
+   - If no thumtoo client → empty (caller falls back).
+   - Cache-only: `get_archive_entries(archive_uri)`.
+   - If empty: `refresh_archive_toc(archive_path)` (source I/O; OK on expand
+     worker thread and rare sync path).
+   - Filter with `thumtoo::is_likely_image_member_path` (align with prepare).
+   - Map to biltoo refs via `ArchivePath::makeRef`.
+2. `MainWindow::expandPaths` and background expand: prefer ThumtooCache result;
+   if empty, `ArchiveReader::expandArchiveToImageRefs` as today (progress
+   callbacks remain on the ArchiveReader path only).
+3. Do **not** remove ArchiveReader or change full-decode `readMember`.
+4. After expand, existing `preparePaths` still prewarms member size/ladder.
+
+### Out of scope (later)
+- Full decode via `thumtoo::extract_archive_member` instead of ArchiveReader
+- Progress callbacks from thumtoo TOC refresh
+- Directory-snapshot APIs
+
+### Done criteria
+- [x] ThumtooCache archive expand API + unit-safe fallbacks
+- [x] expandPaths + expandPathsInBackground use cache-first TOC
+- [x] Docs: TODO plan + AGENTS handoff; next **289**
