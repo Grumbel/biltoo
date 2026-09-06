@@ -371,4 +371,31 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
     return out;
 }
 
+QByteArray readArchiveMemberBytes(const QString &archiveRefPath)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (!ArchivePath::isArchiveRef(archiveRefPath)) {
+        return {};
+    }
+    const ArchivePath::Ref ref = ArchivePath::parse(archiveRefPath);
+    if (!ref.valid) {
+        return {};
+    }
+    const std::filesystem::path abs = absPathStd(ref.archivePath);
+    const std::string member = ref.memberPath.toStdString();
+    if (member.empty()) {
+        return {};
+    }
+    auto bytes = thumtoo::extract_archive_member(abs, member);
+    if (!bytes || bytes->empty()) {
+        return {};
+    }
+    return QByteArray(reinterpret_cast<const char *>(bytes->data()),
+                      int(bytes->size()));
+#else
+    Q_UNUSED(archiveRefPath);
+    return {};
+#endif
+}
+
 } // namespace ThumtooCache

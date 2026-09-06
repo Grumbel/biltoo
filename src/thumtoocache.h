@@ -81,6 +81,14 @@ bool isAvailable();
  */
 QStringList expandArchiveToImageRefs(const QString &archivePath);
 
+/**
+ * Extract one //archive: member into memory via thumtoo (size caps shared with
+ * the cache worker). Empty for non-archive paths, extract failure, or when
+ * thumtoo is not linked. Does not require the durable cache client to be open.
+ * Callers fall back to ArchiveReader::readMember.
+ */
+QByteArray readArchiveMemberBytes(const QString &archiveRefPath);
+
 } // namespace ThumtooCache
 
 #endif
