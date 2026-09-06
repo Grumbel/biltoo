@@ -159,6 +159,37 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                               updateResetButtons();
                           }));
 
+    m_slideshowLetterboxCombo = new QComboBox(this);
+    m_slideshowLetterboxCombo->addItem(tr("App background"), 0);
+    m_slideshowLetterboxCombo->addItem(tr("Solid colour"), 1);
+    m_slideshowLetterboxCombo->addItem(tr("Zoom and blur"), 2);
+    m_slideshowLetterboxCombo->setToolTip(
+        tr("When the image does not cover the window (Fit / 1:1):\n"
+           "App background: Preferences canvas colour.\n"
+           "Solid colour: dedicated pad colour.\n"
+           "Zoom and blur: cover-scaled blurred copy of the current image."));
+    slideshowForm->addRow(tr("Letterbox fill:"), m_slideshowLetterboxCombo);
+
+    m_slideshowPadColorBtn = new QPushButton(this);
+    m_slideshowPadColorBtn->setToolTip(tr("Colour for Solid letterbox fill"));
+    m_slideshowPadColorBtn->setText(m_slideshowPadColor.name(QColor::HexRgb));
+    connect(m_slideshowPadColorBtn, &QPushButton::clicked, this, [this]() {
+        const QColor c = QColorDialog::getColor(m_slideshowPadColor, this, tr("Letterbox colour"));
+        if (c.isValid()) {
+            setSlideshowPadColor(c);
+        }
+    });
+    connect(m_slideshowLetterboxCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) {
+                if (m_slideshowPadColorBtn) {
+                    m_slideshowPadColorBtn->setEnabled(
+                        m_slideshowLetterboxCombo
+                        && m_slideshowLetterboxCombo->currentData().toInt() == 1);
+                }
+            });
+    m_slideshowPadColorBtn->setEnabled(false);
+    slideshowForm->addRow(tr("Letterbox colour:"), m_slideshowPadColorBtn);
+
     auto *slideshowGroup = new QGroupBox(tr("Slideshow"), this);
     slideshowGroup->setLayout(slideshowForm);
 
@@ -1141,6 +1172,45 @@ void PreferencesDialog::setSlideshowZoomIndex(int index)
     const int idx = m_slideshowZoomCombo->findData(index);
     if (idx >= 0) {
         m_slideshowZoomCombo->setCurrentIndex(idx);
+    }
+}
+
+int PreferencesDialog::slideshowLetterboxFillIndex() const
+{
+    return m_slideshowLetterboxCombo ? m_slideshowLetterboxCombo->currentData().toInt() : 0;
+}
+
+void PreferencesDialog::setSlideshowLetterboxFillIndex(int index)
+{
+    if (!m_slideshowLetterboxCombo) {
+        return;
+    }
+    const int idx = m_slideshowLetterboxCombo->findData(index);
+    if (idx >= 0) {
+        m_slideshowLetterboxCombo->setCurrentIndex(idx);
+    }
+    if (m_slideshowPadColorBtn) {
+        m_slideshowPadColorBtn->setEnabled(index == 1);
+    }
+}
+
+QColor PreferencesDialog::slideshowPadColor() const
+{
+    return m_slideshowPadColor;
+}
+
+void PreferencesDialog::setSlideshowPadColor(const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    m_slideshowPadColor = color;
+    if (m_slideshowPadColorBtn) {
+        const QColor fg = (color.lightness() > 140) ? QColor(Qt::black) : QColor(Qt::white);
+        m_slideshowPadColorBtn->setText(color.name(QColor::HexRgb));
+        m_slideshowPadColorBtn->setStyleSheet(
+            QStringLiteral("QPushButton { background-color: %1; color: %2; padding: 4px 10px; }")
+                .arg(color.name(QColor::HexRgb), fg.name(QColor::HexRgb)));
     }
 }
 

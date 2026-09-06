@@ -9,6 +9,7 @@
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QPushButton>
+#include <QColorDialog>
 #include <QSpinBox>
 #include <QVBoxLayout>
 
@@ -86,6 +87,33 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     form->addRow(tr("Pan and zoom factor:"), m_panZoomFactorSpin);
     form->addRow(tr("Slideshow zoom:"), m_zoomCombo);
 
+    m_letterboxCombo = new QComboBox(this);
+    m_letterboxCombo->addItem(tr("App background"), 0);
+    m_letterboxCombo->addItem(tr("Solid colour"), 1);
+    m_letterboxCombo->addItem(tr("Zoom and blur"), 2);
+    m_letterboxCombo->setToolTip(
+        tr("When the image does not cover the window (Fit / 1:1):
+"
+           "App background: Preferences canvas colour.
+"
+           "Solid colour: dedicated pad colour.
+"
+           "Zoom and blur: TV-style — cover-scaled blurred copy of the current image."));
+
+    m_padColorBtn = new QPushButton(this);
+    m_padColorBtn->setToolTip(tr("Colour used for Solid letterbox fill"));
+    styleColorButton(m_padColorBtn, m_padColor);
+    connect(m_padColorBtn, &QPushButton::clicked, this, [this]() {
+        const QColor c = QColorDialog::getColor(m_padColor, this, tr("Letterbox colour"));
+        if (c.isValid()) {
+            setPadColor(c);
+            emitChanged();
+        }
+    });
+
+    form->addRow(tr("Letterbox fill:"), m_letterboxCombo);
+    form->addRow(tr("Letterbox colour:"), m_padColorBtn);
+
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     // Close button maps to reject() for a Close-only box.
@@ -115,7 +143,13 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
             this, [this](double) { emitChanged(); });
     connect(m_zoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { emitChanged(); });
+    connect(m_letterboxCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) {
+                updateLetterboxControls();
+                emitChanged();
+            });
 
+    updateLetterboxControls();
     setMinimumWidth(360);
 }
 
@@ -260,4 +294,58 @@ void SlideshowSettingsDialog::setZoomIndex(int index)
         m_zoomCombo->setCurrentIndex(idx);
     }
     m_blockEmit = false;
+}
+
+int SlideshowSettingsDialog::letterboxFillIndex() const
+{
+    return m_letterboxCombo ? m_letterboxCombo->currentData().toInt() : 0;
+}
+
+void SlideshowSettingsDialog::setLetterboxFillIndex(int index)
+{
+    if (!m_letterboxCombo) {
+        return;
+    }
+    m_blockEmit = true;
+    const int idx = m_letterboxCombo->findData(index);
+    if (idx >= 0) {
+        m_letterboxCombo->setCurrentIndex(idx);
+    }
+    m_blockEmit = false;
+    updateLetterboxControls();
+}
+
+QColor SlideshowSettingsDialog::padColor() const
+{
+    return m_padColor;
+}
+
+void SlideshowSettingsDialog::setPadColor(const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    m_padColor = color;
+    styleColorButton(m_padColorBtn, m_padColor);
+}
+
+void SlideshowSettingsDialog::updateLetterboxControls()
+{
+    const bool solid = letterboxFillIndex() == 1;
+    if (m_padColorBtn) {
+        m_padColorBtn->setEnabled(solid);
+    }
+}
+
+void SlideshowSettingsDialog::styleColorButton(QPushButton *btn, const QColor &color)
+{
+    if (!btn) {
+        return;
+    }
+    btn->setText(color.name(QColor::HexRgb));
+    const QString bg = color.name(QColor::HexRgb);
+    const QColor fg = (color.lightness() > 140) ? QColor(Qt::black) : QColor(Qt::white);
+    btn->setStyleSheet(
+        QStringLiteral("QPushButton { background-color: %1; color: %2; padding: 4px 10px; }")
+            .arg(bg, fg.name(QColor::HexRgb)));
 }

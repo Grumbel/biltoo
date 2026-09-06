@@ -5,11 +5,13 @@
 #define SLIDESHOWSETTINGSDIALOG_H
 
 #include <QDialog>
+#include <QColor>
 
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QSpinBox;
+class QPushButton;
 
 /**
  * Mid-session slideshow controls. Changes apply immediately (no OK); the
@@ -42,6 +44,12 @@ public:
     int zoomIndex() const;
     void setZoomIndex(int index);
 
+    int letterboxFillIndex() const;
+    void setLetterboxFillIndex(int index);
+
+    QColor padColor() const;
+    void setPadColor(const QColor &color);
+
 signals:
     /** Emitted after any control changes (live apply). */
     void settingsChanged();
@@ -57,7 +65,13 @@ private:
     QComboBox *m_motionCombo = nullptr;
     QDoubleSpinBox *m_panZoomFactorSpin = nullptr;
     QComboBox *m_zoomCombo = nullptr;
+    QComboBox *m_letterboxCombo = nullptr;
+    QPushButton *m_padColorBtn = nullptr;
+    QColor m_padColor{42, 42, 42};
     bool m_blockEmit = false;
+
+    void updateLetterboxControls();
+    static void styleColorButton(QPushButton *btn, const QColor &color);
 };
 
 #endif

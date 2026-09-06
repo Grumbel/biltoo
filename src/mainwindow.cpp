@@ -880,6 +880,13 @@ void MainWindow::showSlideshowSettings()
         dlg.setMotionIndex(static_cast<int>(m_imageView->slideshowMotion()));
         dlg.setPanZoomFactor(m_imageView->panZoomFactor());
         dlg.setZoomIndex(static_cast<int>(m_imageView->slideshowZoom()));
+        dlg.setLetterboxFillIndex(static_cast<int>(m_imageView->slideshowLetterboxFill()));
+        dlg.setPadColor(m_imageView->slideshowPadColor());
+        // Solid mode stores its own colour; surface current effective pad for UI.
+        if (m_imageView->slideshowLetterboxFill()
+            == ImageView::SlideshowLetterboxFill::Solid) {
+            // pad from setter path uses dedicated colour via slideshowPadColor
+        }
     }
     // Live apply — no OK; Close dismisses. settingsChanged fires on each edit.
     auto applyFromDialog = [this, &dlg]() {
@@ -900,6 +907,10 @@ void MainWindow::showSlideshowSettings()
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
         m_imageView->setSlideshowZoom(
             static_cast<ImageView::SlideshowZoom>(qBound(0, dlg.zoomIndex(), 2)));
+        m_imageView->setSlideshowPadColor(dlg.padColor());
+        m_imageView->setSlideshowLetterboxFill(
+            static_cast<ImageView::SlideshowLetterboxFill>(
+                qBound(0, dlg.letterboxFillIndex(), 2)));
         // Interval changes remap phase inside setSlideshowIntervalMs. Other live
         // settings must not re-arm the clock (that restarted the dwell at 0 and
         // felt like a long pause on the current image).
@@ -1360,6 +1371,8 @@ void MainWindow::showPreferences()
         dlg.setSlideshowMotionIndex(static_cast<int>(m_imageView->slideshowMotion()));
         dlg.setPanZoomFactor(m_imageView->panZoomFactor());
         dlg.setSlideshowZoomIndex(static_cast<int>(m_imageView->slideshowZoom()));
+        dlg.setSlideshowLetterboxFillIndex(static_cast<int>(m_imageView->slideshowLetterboxFill()));
+        dlg.setSlideshowPadColor(m_imageView->slideshowPadColor());
     }
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
@@ -1417,6 +1430,10 @@ void MainWindow::showPreferences()
         m_imageView->setSlideshowZoom(
             static_cast<ImageView::SlideshowZoom>(
                 qBound(0, dlg.slideshowZoomIndex(), 2)));
+        m_imageView->setSlideshowPadColor(dlg.slideshowPadColor());
+        m_imageView->setSlideshowLetterboxFill(
+            static_cast<ImageView::SlideshowLetterboxFill>(
+                qBound(0, dlg.slideshowLetterboxFillIndex(), 2)));
         // If a slideshow is running, re-frame the current slide for zoom/motion.
         if (m_slideshowClockRunning) {
             m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
@@ -1899,6 +1916,14 @@ void MainWindow::readSettings()
         m_imageView->setSlideshowZoom(
             static_cast<ImageView::SlideshowZoom>(
                 qBound(0, settings.value(QStringLiteral("slideshowZoomMode"), 0).toInt(), 2)));
+        const QColor pad = QColor(settings.value(QStringLiteral("slideshowPadColor"),
+            m_imageView->backgroundColor().name(QColor::HexRgb)).toString());
+        if (pad.isValid()) {
+            m_imageView->setSlideshowPadColor(pad);
+        }
+        m_imageView->setSlideshowLetterboxFill(
+            static_cast<ImageView::SlideshowLetterboxFill>(
+                qBound(0, settings.value(QStringLiteral("slideshowLetterboxFill"), 0).toInt(), 2)));
     }
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
     const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
@@ -2124,6 +2149,10 @@ void MainWindow::writeSettings()
                           m_imageView->panZoomFactor());
         settings.setValue(QStringLiteral("slideshowZoomMode"),
                           static_cast<int>(m_imageView->slideshowZoom()));
+        settings.setValue(QStringLiteral("slideshowLetterboxFill"),
+                          static_cast<int>(m_imageView->slideshowLetterboxFill()));
+        settings.setValue(QStringLiteral("slideshowPadColor"),
+                          m_imageView->slideshowPadColor().name(QColor::HexRgb));
     }
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     if (m_imageView) {

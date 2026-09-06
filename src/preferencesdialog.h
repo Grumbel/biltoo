@@ -56,6 +56,12 @@ public:
     int slideshowZoomIndex() const;
     void setSlideshowZoomIndex(int index);
 
+    /** 0 = app background, 1 = solid, 2 = zoom+blur */
+    int slideshowLetterboxFillIndex() const;
+    void setSlideshowLetterboxFillIndex(int index);
+    QColor slideshowPadColor() const;
+    void setSlideshowPadColor(const QColor &color);
+
     bool imageModeLeftDragPan() const;
     void setImageModeLeftDragPan(bool on);
 
@@ -147,6 +153,9 @@ private:
     QToolButton *m_resetPanZoomFactorBtn = nullptr;
     QComboBox *m_slideshowZoomCombo = nullptr;
     QToolButton *m_resetSlideshowZoomBtn = nullptr;
+    QComboBox *m_slideshowLetterboxCombo = nullptr;
+    QPushButton *m_slideshowPadColorBtn = nullptr;
+    QColor m_slideshowPadColor{42, 42, 42};
     QCheckBox *m_imageModePanCheck = nullptr;
 
     QPushButton *m_bgColorBtn = nullptr;
