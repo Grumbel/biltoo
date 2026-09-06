@@ -151,6 +151,7 @@ private slots:
     void flipVertical();
     void toggleCropMode();
     void toggleAttentionMode();
+    void detectAttentionPoint();
     void toggleHud();
     void toggleThumbnailLabels();
     void toggleThumbnailCrop();
@@ -409,6 +410,7 @@ private:
     QAction *m_flipVAct = nullptr;
     QAction *m_cropAct = nullptr;
     QAction *m_attentionAct = nullptr;
+    QAction *m_detectAttentionAct = nullptr;
     QAction *m_toggleHudAct = nullptr;
     QAction *m_hideThumbLabelsAct = nullptr;
     QAction *m_cropThumbnailsAct = nullptr;

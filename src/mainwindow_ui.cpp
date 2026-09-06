@@ -235,6 +235,13 @@ void MainWindow::createActions()
     m_attentionAct->setToolTip(tr("Attention point"));
     connect(m_attentionAct, &QAction::triggered, this, &MainWindow::toggleAttentionMode);
 
+    m_detectAttentionAct = new QAction(tr("&Detect Attention"), this);
+    m_detectAttentionAct->setStatusTip(
+        tr("Run content-aware attention detection (libvips) on the current image"));
+    m_detectAttentionAct->setToolTip(tr("Detect attention point"));
+    m_detectAttentionAct->setEnabled(false);
+    connect(m_detectAttentionAct, &QAction::triggered, this, &MainWindow::detectAttentionPoint);
+
     m_toggleHudAct = new QAction(tr("Show &HUD Overlay"), this);
     m_toggleHudAct->setShortcut(Qt::Key_H);
     m_toggleHudAct->setCheckable(true);
@@ -745,6 +752,7 @@ void MainWindow::createMenus()
     m_imageMenu->addSeparator();
     m_imageMenu->addAction(m_cropAct);
     m_imageMenu->addAction(m_attentionAct);
+    m_imageMenu->addAction(m_detectAttentionAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));
@@ -891,6 +899,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addAction(m_cropAct);
     m_toolBar->addAction(m_attentionAct);
+    m_toolBar->addAction(m_detectAttentionAct);
     m_toolBar->addSeparator();
     // Gallery layout combo: main button = Go to Gallery (current layout icon);
     // small menu button = pick a different layout (QToolButton::MenuButtonPopup).

@@ -796,7 +796,19 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
 
 void ImageView::setCurrentSessionId(SessionImageId id)
 {
+    if (m_currentSessionId == id) {
+        return;
+    }
     m_currentSessionId = id;
+    // Attention marker is per SessionImageId — reload draft for the new image.
+    if (m_attentionMode) {
+        m_attentionDraftValid = false;
+        m_attentionDraftSessionId = kInvalidSessionImageId;
+        ensureAttentionPoint();
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
 }
 
 bool ImageView::hasWorkspaceSessionIndex(int sessionIndex) const

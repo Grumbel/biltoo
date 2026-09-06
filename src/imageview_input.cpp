@@ -338,7 +338,9 @@ void ImageView::resizeEvent(QResizeEvent *event)
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
     // Attention mode: drag handle or click to place the focus point.
-    if (m_attentionMode && event->button() == Qt::LeftButton && isImageMode()) {
+    // Never steal edge zones (Gallery return / prev / next).
+    if (m_attentionMode && event->button() == Qt::LeftButton && isImageMode()
+        && edgeZoneAt(event->pos()) == EdgeZone::None) {
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()) {
             const QPointF scene = mapToScene(event->pos());
@@ -736,8 +738,13 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         return;
     }
     if (m_attentionMode && isImageMode()) {
-        viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
-                                                              : Qt::CrossCursor);
+        const EdgeZone ez = edgeZoneAt(event->pos());
+        if (ez == EdgeZone::GalleryReturn || ez == EdgeZone::Previous || ez == EdgeZone::Next) {
+            viewport()->setCursor(Qt::PointingHandCursor);
+        } else {
+            viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
+                                                                  : Qt::CrossCursor);
+        }
     }
     if (m_cropMode && m_cropActiveHandle != CropHandle::None) {
         updateCropHandleDrag(event->pos());
@@ -1333,12 +1340,7 @@ void ImageView::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
-        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter
-            || event->key() == Qt::Key_Space) {
-            detectAttentionPoint();
-            event->accept();
-            return;
-        }
+        // Detect is toolbar-only — Space is reserved for slideshow.
     }
     if (m_cropMode) {
         if (event->key() == Qt::Key_Escape) {

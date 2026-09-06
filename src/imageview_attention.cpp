@@ -31,6 +31,7 @@ SessionImageId ImageView::attentionSessionId() const
 QPointF ImageView::attentionNormForTarget() const
 {
     const SessionImageId sid = attentionSessionId();
+    // Prefer appearance for *this* session image only.
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_appearance.get(sid)) {
             if (st->hasAttention) {
@@ -38,8 +39,10 @@ QPointF ImageView::attentionNormForTarget() const
             }
         }
     }
-    // Draft point while editing before first store (always visible in mode).
-    if (m_attentionMode && m_attentionDraftValid) {
+    // Draft is only valid for the session id it was edited under.
+    if (m_attentionMode && m_attentionDraftValid
+        && sid != kInvalidSessionImageId
+        && sid == m_attentionDraftSessionId) {
         return m_attentionDraftNorm;
     }
     return QPointF(0.5, 0.5);
@@ -48,14 +51,15 @@ QPointF ImageView::attentionNormForTarget() const
 void ImageView::setAttentionNormForTarget(const QPointF &norm)
 {
     const QPointF clamped(qBound(0.0, norm.x(), 1.0), qBound(0.0, norm.y(), 1.0));
-    m_attentionDraftNorm = clamped;
-    m_attentionDraftValid = true;
-
     SessionImageId sid = attentionSessionId();
     ImageItem *item = targetItem();
     if (item && sid != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
         item->setSessionId(sid);
     }
+    m_attentionDraftNorm = clamped;
+    m_attentionDraftValid = true;
+    m_attentionDraftSessionId = sid;
+
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState st = m_appearance.value(sid);
         st.hasAttention = true;
@@ -71,19 +75,21 @@ void ImageView::setAttentionNormForTarget(const QPointF &norm)
 void ImageView::ensureAttentionPoint()
 {
     const SessionImageId sid = attentionSessionId();
+    // Always rebind draft to the *current* session image.
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_appearance.get(sid)) {
             if (st->hasAttention) {
                 m_attentionDraftNorm = st->attentionNorm;
                 m_attentionDraftValid = true;
+                m_attentionDraftSessionId = sid;
                 return;
             }
         }
     }
-    if (m_attentionDraftValid) {
-        return;
-    }
-    detectAttentionPoint();
+    // No stored point for this image — centre draft, do not steal another image's point.
+    m_attentionDraftNorm = QPointF(0.5, 0.5);
+    m_attentionDraftValid = true;
+    m_attentionDraftSessionId = sid;
 }
 
 void ImageView::detectAttentionPoint()
@@ -202,7 +208,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     painter.setFont(f);
     painter.setPen(QColor(255, 255, 255, 240));
     const QString hint =
-        tr("Attention point — drag or click to place · Space detects · Esc exits\n"
+        tr("Attention point — drag or click to place · Detect on toolbar · Esc exits\n"
            "(%1, %2)")
             .arg(norm.x(), 0, 'f', 3)
             .arg(norm.y(), 0, 'f', 3);

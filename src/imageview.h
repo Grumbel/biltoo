@@ -1244,6 +1244,7 @@ private:
     bool m_attentionDragging = false;
     bool m_attentionDraftValid = false;
     QPointF m_attentionDraftNorm{0.5, 0.5};
+    SessionImageId m_attentionDraftSessionId = kInvalidSessionImageId;
     /** Locked crop subject for the whole crop session (IDENTITY.md). */
     SessionImageId m_cropTargetId = kInvalidSessionImageId;
     /** Non-owning; ImageItem is not a QObject so QPointer is unavailable. */
