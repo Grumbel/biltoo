@@ -86,7 +86,7 @@ ImageView::ImageView(QWidget *parent)
                 if (path.isEmpty()) {
                     return;
                 }
-                const int edge = maxEdge > 0 ? maxEdge : ImageCache::kPreviewEdge;
+                const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kImageLadderEdge;
                 const QPointer<ImageView> guard(this);
                 QThreadPool::globalInstance()->start([guard, path, edge]() {
                     const QImage preview = ImageLoader::loadThumbnail(path, edge);
@@ -298,6 +298,10 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
         return;
     }
     if (m_imageSizeByPath.contains(path) || m_sizeProbeScheduled.contains(path)) {
+        return;
+    }
+    // Durable cache will never handle this locator — do not spin probes.
+    if (ThumtooCache::isUnsupported(path)) {
         return;
     }
     // Archive members: only durable-cache probe (sizeReady applies the result).

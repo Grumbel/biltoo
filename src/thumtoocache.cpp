@@ -19,6 +19,7 @@
 #include "thumtoo/archive.hpp"
 #include "thumtoo/client.hpp"
 #include "thumtoo/image.hpp"
+#include "thumtoo/status.hpp"
 #include "thumtoo/uri.hpp"
 
 #include <condition_variable>
@@ -292,9 +293,40 @@ QSize cachedSize(const QString &path)
     return {};
 }
 
+bool isUnsupported(const QString &path)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty()) {
+        return false;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return false;
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return false;
+    }
+    if (auto meta = c->get_meta(uri)) {
+        return meta->status == thumtoo::ContentStatus::Unsupported;
+    }
+#else
+    Q_UNUSED(path);
+#endif
+    return false;
+}
+
 void scheduleProbe(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO
+    if (isUnsupported(path)) {
+        return;
+    }
     init();
     const std::string uri = toThumtooUri(path);
     if (uri.empty()) {
@@ -356,7 +388,7 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge)
 void schedulePixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
-    if (maxEdge <= 0) {
+    if (maxEdge <= 0 || isUnsupported(path)) {
         return;
     }
     init();
@@ -409,9 +441,12 @@ void preparePaths(const QStringList &paths)
     // Keep path strings for callbacks (prepare_paths only returns URIs).
     QStringList plainPaths;
     for (const QString &p : paths) {
+        if (isUnsupported(p)) {
+            continue;
+        }
         if (ArchivePath::isArchiveRef(p)) {
             scheduleProbe(p);
-            schedulePixels(p, 512);
+            schedulePixels(p, kGalleryLadderEdge);
             continue;
         }
         const QFileInfo fi(p);
@@ -424,7 +459,7 @@ void preparePaths(const QStringList &paths)
     if (fsPaths.empty()) {
         return;
     }
-    // After each size probe, also request a preview ladder and notify UI.
+    // After each size probe, also request a gallery-level ladder and notify UI.
     c->prepare_paths(fsPaths, [plainPaths](std::string uri, std::optional<thumtoo::Size> sz) {
         QString path;
         for (const QString &p : plainPaths) {
@@ -439,7 +474,7 @@ void preparePaths(const QStringList &paths)
         if (sz) {
             emit bridge()->sizeReady(path, QSize(sz->width, sz->height));
         }
-        schedulePixels(path, 512);
+        schedulePixels(path, kGalleryLadderEdge);
     });
 #else
     Q_UNUSED(paths);

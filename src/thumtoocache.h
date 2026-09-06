@@ -43,12 +43,27 @@ void init();
 /** Drop the client (join thumtoo worker). Safe to call more than once. */
 void shutdown();
 
+/**
+ * Ladder long-edge targets (subset of thumtoo::kLadderEdges). Prefer the
+ * largest cached level ≤ request; do not upscale in the client.
+ */
+constexpr int kFilmstripLadderEdge = 256;
+constexpr int kGalleryLadderEdge = 512;
+constexpr int kImageLadderEdge = 1024;
+
 /** Cache-only native size for a session path (file or //archive: ref). */
 QSize cachedSize(const QString &path);
 
 /**
+ * Cache-only: thumtoo reported ContentStatus::Unsupported for this locator.
+ * Callers should stop scheduling probes/pixels (Failed remains retryable).
+ */
+bool isUnsupported(const QString &path);
+
+/**
  * Schedule a background size probe (and ladder) when missing.
  * Does not block; does not drain the queue on the GUI thread.
+ * No-op when isUnsupported(path).
  */
 void scheduleProbe(const QString &path);
 
@@ -61,12 +76,14 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
 /**
  * Ensure ladder level exists for maxEdge (probe/encode in thumtoo worker).
  * On success (GUI thread): Bridge::ladderReady (decode via ImageLoader).
+ * No-op when isUnsupported(path).
  */
 void schedulePixels(const QString &path, int maxEdge);
 
 /**
- * Prewarm size (+ ladder) for a session file list — same idea as
- * thumtoo-prepare, non-blocking via the worker queue.
+ * Prewarm size (+ ladder at kGalleryLadderEdge) for a session file list —
+ * same idea as thumtoo-prepare, non-blocking via the worker queue.
+ * Skips paths already marked Unsupported in the durable cache.
  */
 void preparePaths(const QStringList &paths);
 
