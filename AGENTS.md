@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-338-attention-multipoint**
-(Multi-point attention edit + multi-peak detect).
-Next bundle number: **339**.
+Latest agent handoff: **TODO.md → biltoo-339-attention-narrowing**
+(Quiet attention select narrowing warning).
+Next bundle number: **340**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

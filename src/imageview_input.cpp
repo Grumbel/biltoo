@@ -380,7 +380,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 QVector<QPointF> pts = attentionPointsForTarget();
                 pts.append(QPointF(nx, ny));
                 setAttentionPointsForTarget(pts);
-                m_attentionSelected = {pts.size() - 1};
+                m_attentionSelected = {int(pts.size() - 1)};
                 m_attentionDragging = true;
                 m_attentionDragOriginView = event->pos();
                 m_attentionDragStartPts = attentionPointsForTarget();

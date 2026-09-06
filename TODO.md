@@ -6197,3 +6197,13 @@ returns several candidates without OpenCV.
 - [x] Multi-peak detect
 - [x] Docs; next **339**
 
+## Plan / work (2026-09-06) — bundle `biltoo-339-attention-narrowing`
+
+### Fix
+`-Wnarrowing` on `m_attentionSelected = {pts.size() - 1}` (qsizetype → int).
+Cast explicitly.
+
+### Done criteria
+- [x] Warning fixed
+- [x] Docs; next **340**
+
