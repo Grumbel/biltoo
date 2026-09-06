@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include "thumtoocache.h"
 #include "projectfile.h"
 #include "archivepath.h"
 #include "archivereader.h"
