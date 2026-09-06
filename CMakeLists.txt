@@ -4,9 +4,50 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Source of truth: top-level VERSION (e.g. "0.1.0-dev"), or
-# -DPROJECT_VERSION_FULL=... from packaging (Nix may append .<revCount>+g<rev>).
-if(NOT DEFINED PROJECT_VERSION_FULL)
+# -DPROJECT_VERSION_FULL=... from packaging (Nix flake appends .<revCount>+g<rev>).
+#
+# Dev / out-of-tree cmake (nix develop, biltoo-configure): when packaging did
+# not pass PROJECT_VERSION_FULL and VERSION contains "-dev", enrich from the
+# source tree's .git so About shows e.g. 0.1.0-dev.853+gcdba1fd — same scheme
+# as flake.nix. Shallow clones under-count; pure tarballs stay at VERSION.
+if(NOT DEFINED PROJECT_VERSION_FULL OR PROJECT_VERSION_FULL STREQUAL "")
   file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" PROJECT_VERSION_FULL LIMIT_COUNT 1)
+  string(STRIP "${PROJECT_VERSION_FULL}" PROJECT_VERSION_FULL)
+
+  if(PROJECT_VERSION_FULL MATCHES "-dev")
+    find_package(Git QUIET)
+    if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+      execute_process(
+        COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-list --count HEAD
+        OUTPUT_VARIABLE _biltoo_git_count
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE _biltoo_git_count_rc
+      )
+      execute_process(
+        COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-parse --short=7 HEAD
+        OUTPUT_VARIABLE _biltoo_git_rev
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE _biltoo_git_rev_rc
+      )
+      execute_process(
+        COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_CURRENT_SOURCE_DIR}" status --porcelain
+        OUTPUT_VARIABLE _biltoo_git_porcelain
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+      )
+      if(_biltoo_git_count_rc EQUAL 0 AND _biltoo_git_rev_rc EQUAL 0
+         AND NOT _biltoo_git_count STREQUAL "" AND NOT _biltoo_git_rev STREQUAL "")
+        set(PROJECT_VERSION_FULL
+            "${PROJECT_VERSION_FULL}.${_biltoo_git_count}+g${_biltoo_git_rev}")
+        if(NOT _biltoo_git_porcelain STREQUAL "")
+          set(PROJECT_VERSION_FULL "${PROJECT_VERSION_FULL}-dirty")
+        endif()
+        message(STATUS "Dev version from git: ${PROJECT_VERSION_FULL}")
+      endif()
+    endif()
+  endif()
 endif()
 
 # project() needs a numeric version; strip -dev / +git / similar suffixes.

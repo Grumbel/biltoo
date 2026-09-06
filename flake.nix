@@ -173,6 +173,7 @@
             echo "  build dir: $BILTOO_BUILD_DIR"
             echo "  biltoo-configure   # cmake -S . -B \$BILTOO_BUILD_DIR -G Ninja (+ thumtoo)"
             echo "  THUMTOO_SOURCE_DIR=$THUMTOO_SOURCE_DIR"
+            echo "  version: cmake reads VERSION + .git (About → full 0.1.0-dev.N+gHASH)"
             echo "  biltoo-build       # incremental cmake --build"
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"

@@ -5861,3 +5861,21 @@ pkg-config had no poppler on biltoo’s PKG_CONFIG_PATH.
 Add `poppler` to default.nix function args and buildInputs (provides
 poppler-cpp.pc). Dev shell inherits via inputsFrom.
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-322-dev-version`
+
+### Goal
+About / applicationVersion show full `0.1.0-dev.N+gHASH` under nix develop.
+
+### Approach
+CMake (not runtime): if packaging did not set PROJECT_VERSION_FULL and
+VERSION has `-dev`, run git rev-list / rev-parse in CMAKE_SOURCE_DIR.
+Same scheme as flake.nix. Dirty tree appends `-dirty`.
+`nix build` still passes -DPROJECT_VERSION_FULL from flake (unchanged).
+
+### Limits
+- Shallow clones under-count N
+- Stale build dir: re-run biltoo-configure after new commits
+- No .git → plain VERSION string
+
