@@ -348,6 +348,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             contentW += gap * qMax(0, row.size() - 1);
             const qreal s = (fill && contentW > 1e-6) ? (layoutW / contentW) : 1.0;
             qreal x = margin;
+            qreal placedH = 0.0;
             for (Entry &e : row) {
                 const qreal scale = e.scale * s;
                 e.item->setItemScale(scale);
@@ -356,9 +357,10 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 const qreal h = e.ns.height() * scale;
                 e.item->setPos(x + w / 2.0, y + h / 2.0);
                 x += w + gap * s;
+                placedH = qMax(placedH, h);
                 finish(e.item, afterEach);
             }
-            y += contentH * s + gap;
+            y += placedH + gap;
         }
     } else if (params.mode == Mode::Facing) {
         // Cover alone, then height-matched pairs (verso | recto), stacked.
@@ -407,11 +409,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                     scaleR = halfW / qMax(1.0, nsR.width());
                 }
             }
-            const qreal hL = nsL.height() * scaleL;
             const QSizeF szL = placeScaled(left, scaleL, margin, y);
             qreal rowH = szL.height();
             if (right) {
-                const QSizeF nsR = layoutSize(right);
                 const QSizeF szR = placeScaled(right, scaleR,
                     margin + halfW + pairGap, y);
                 rowH = qMax(rowH, szR.height());
@@ -419,7 +419,6 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             } else {
                 i += 1;
             }
-            Q_UNUSED(hL);
             y += rowH + gap;
         }
     }
