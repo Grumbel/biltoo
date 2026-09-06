@@ -21,8 +21,11 @@
 #include "thumtoo/image.hpp"
 #include "thumtoo/uri.hpp"
 
+#include <condition_variable>
+#include <list>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #endif
 
@@ -34,6 +37,99 @@ namespace {
 std::mutex g_mu;
 std::unique_ptr<thumtoo::Client> g_client;
 bool g_inited = false;
+
+// Process-local archive member byte cache (not durable — avoids re-extract in
+// the same process when probe + thumb + full decode hit the same member).
+constexpr int kMemberLruMaxEntries = 48;
+constexpr qint64 kMemberLruMaxBytes = 64 * 1024 * 1024;
+
+struct MemberLru {
+    std::mutex mu;
+    std::list<QString> order; // front = most recent
+    std::unordered_map<std::string, std::pair<QByteArray, std::list<QString>::iterator>> map;
+    qint64 totalBytes = 0;
+};
+
+MemberLru g_memberLru;
+
+void memberLruPut(const QString &key, const QByteArray &bytes)
+{
+    if (key.isEmpty() || bytes.isEmpty()) {
+        return;
+    }
+    const std::string k = key.toStdString();
+    std::lock_guard lock(g_memberLru.mu);
+    auto it = g_memberLru.map.find(k);
+    if (it != g_memberLru.map.end()) {
+        g_memberLru.totalBytes -= it->second.first.size();
+        g_memberLru.order.erase(it->second.second);
+        g_memberLru.map.erase(it);
+    }
+    g_memberLru.order.push_front(key);
+    g_memberLru.map.emplace(k, std::make_pair(bytes, g_memberLru.order.begin()));
+    g_memberLru.totalBytes += bytes.size();
+    while (!g_memberLru.map.empty()
+           && (int(g_memberLru.map.size()) > kMemberLruMaxEntries
+               || g_memberLru.totalBytes > kMemberLruMaxBytes)) {
+        const QString drop = g_memberLru.order.back();
+        g_memberLru.order.pop_back();
+        auto dit = g_memberLru.map.find(drop.toStdString());
+        if (dit != g_memberLru.map.end()) {
+            g_memberLru.totalBytes -= dit->second.first.size();
+            g_memberLru.map.erase(dit);
+        }
+    }
+}
+
+QByteArray memberLruGet(const QString &key)
+{
+    if (key.isEmpty()) {
+        return {};
+    }
+    const std::string k = key.toStdString();
+    std::lock_guard lock(g_memberLru.mu);
+    auto it = g_memberLru.map.find(k);
+    if (it == g_memberLru.map.end()) {
+        return {};
+    }
+    g_memberLru.order.erase(it->second.second);
+    g_memberLru.order.push_front(key);
+    it->second.second = g_memberLru.order.begin();
+    return it->second.first;
+}
+
+// Coalesce concurrent extracts for one archive container.
+struct ArchiveExtractBatch {
+    std::mutex mu;
+    std::condition_variable cv;
+    std::vector<std::string> pending;
+    std::unordered_map<std::string, QByteArray> done;
+    int waiters = 0;
+    bool running = false;
+};
+
+std::mutex g_batchMu;
+std::unordered_map<std::string, std::shared_ptr<ArchiveExtractBatch>> g_batches;
+
+std::shared_ptr<ArchiveExtractBatch> batchForArchive(const std::string &archiveAbs)
+{
+    std::lock_guard lock(g_batchMu);
+    auto it = g_batches.find(archiveAbs);
+    if (it != g_batches.end()) {
+        return it->second;
+    }
+    auto b = std::make_shared<ArchiveExtractBatch>();
+    g_batches.emplace(archiveAbs, b);
+    return b;
+}
+
+void releaseBatchIfIdle(const std::string &archiveAbs, const std::shared_ptr<ArchiveExtractBatch> &b)
+{
+    std::lock_guard lock(g_batchMu);
+    if (b->waiters == 0 && !b->running && b->pending.empty()) {
+        g_batches.erase(archiveAbs);
+    }
+}
 
 std::string absPathStd(const QString &p)
 {
@@ -425,17 +521,103 @@ QByteArray readArchiveMemberBytes(const QString &archiveRefPath)
     if (!ref.valid) {
         return {};
     }
+    // Canonical session path key for LRU (stable across relative spellings).
+    const QString cacheKey = ArchivePath::makeRef(
+        QString::fromStdString(absPathStd(ref.archivePath)), ref.memberPath);
+    if (cacheKey.isEmpty()) {
+        return {};
+    }
+    if (const QByteArray hit = memberLruGet(cacheKey); !hit.isEmpty()) {
+        return hit;
+    }
+
     const std::filesystem::path abs = absPathStd(ref.archivePath);
+    const std::string archiveKey = abs.string();
     const std::string member = ref.memberPath.toStdString();
     if (member.empty()) {
         return {};
     }
-    auto bytes = thumtoo::extract_archive_member(abs, member);
-    if (!bytes || bytes->empty()) {
-        return {};
+
+    auto batch = batchForArchive(archiveKey);
+    QByteArray result;
+    {
+        std::unique_lock lock(batch->mu);
+        ++batch->waiters;
+        // Already extracted by a concurrent batch?
+        auto dit = batch->done.find(member);
+        if (dit != batch->done.end()) {
+            result = dit->second;
+            --batch->waiters;
+            if (batch->waiters == 0) {
+                batch->done.clear();
+            }
+            lock.unlock();
+            releaseBatchIfIdle(archiveKey, batch);
+            if (!result.isEmpty()) {
+                memberLruPut(cacheKey, result);
+            }
+            return result;
+        }
+
+        batch->pending.push_back(member);
+        if (!batch->running) {
+            batch->running = true;
+            // Snapshot pending under lock, then extract outside the lock.
+            std::vector<std::string> toExtract = batch->pending;
+            batch->pending.clear();
+            lock.unlock();
+
+            auto extracted = thumtoo::extract_archive_members(abs, toExtract);
+
+            lock.lock();
+            for (const auto &m : toExtract) {
+                QByteArray ba;
+                auto eit = extracted.find(m);
+                if (eit != extracted.end() && !eit->second.empty()) {
+                    ba = QByteArray(reinterpret_cast<const char *>(eit->second.data()),
+                                    int(eit->second.size()));
+                }
+                batch->done[m] = ba;
+            }
+            // Drain any members queued while we were extracting.
+            while (!batch->pending.empty()) {
+                std::vector<std::string> more = batch->pending;
+                batch->pending.clear();
+                lock.unlock();
+                auto moreEx = thumtoo::extract_archive_members(abs, more);
+                lock.lock();
+                for (const auto &m : more) {
+                    QByteArray ba;
+                    auto eit = moreEx.find(m);
+                    if (eit != moreEx.end() && !eit->second.empty()) {
+                        ba = QByteArray(reinterpret_cast<const char *>(eit->second.data()),
+                                        int(eit->second.size()));
+                    }
+                    batch->done[m] = ba;
+                }
+            }
+            batch->running = false;
+            batch->cv.notify_all();
+        } else {
+            batch->cv.wait(lock, [&] {
+                return batch->done.find(member) != batch->done.end();
+            });
+        }
+
+        auto fit = batch->done.find(member);
+        if (fit != batch->done.end()) {
+            result = fit->second;
+        }
+        --batch->waiters;
+        if (batch->waiters == 0) {
+            batch->done.clear();
+        }
     }
-    return QByteArray(reinterpret_cast<const char *>(bytes->data()),
-                      int(bytes->size()));
+    releaseBatchIfIdle(archiveKey, batch);
+    if (!result.isEmpty()) {
+        memberLruPut(cacheKey, result);
+    }
+    return result;
 #else
     Q_UNUSED(archiveRefPath);
     return {};
