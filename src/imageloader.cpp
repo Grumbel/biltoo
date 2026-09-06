@@ -476,10 +476,9 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
     Q_UNUSED(image);
     return false;
 #else
-    // Work on a small RGB copy — attention is coarse and must stay off the
-    // slideshow tick path latency budget.
+    // Work on a modest RGB copy — attention is coarse; keep latency reasonable.
     QImage src = image;
-    constexpr int kMaxEdge = 256;
+    constexpr int kMaxEdge = 512;
     if (src.width() > kMaxEdge || src.height() > kMaxEdge) {
         src = src.scaled(kMaxEdge, kMaxEdge, Qt::KeepAspectRatio, Qt::FastTransformation);
     }
@@ -503,7 +502,6 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
                src.constScanLine(y), rowBytes);
     }
 
-    // Copy into a VipsImage so we can free buf immediately (no lifetime tie).
     VipsImage *in = vips_image_new_from_memory_copy(buf, nbytes, width, height, bands,
                                                     VIPS_FORMAT_UCHAR);
     g_free(buf);
@@ -511,25 +509,30 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
         return false;
     }
 
-    // Crop a central-ish window so smartcrop must choose where interesting content is.
-    const int cropW = qMax(8, (width * 2) / 3);
-    const int cropH = qMax(8, (height * 2) / 3);
+    // smartcrop requires a crop size, but the real focus is the optional
+    // attention_x / attention_y outputs (peak of the attention map), not the
+    // centre of the extracted window. Using crop-centre was near-random for
+    // large windows.
+    // Crop size only affects the blur sigma of the attention map; a moderate
+    // square keeps the peak localized without being a full-frame average.
+    const int cropEdge = qBound(8, qMin(width, height) / 3, qMin(width, height));
+    const int cropW = cropEdge;
+    const int cropH = cropEdge;
     VipsImage *out = nullptr;
+    int attentionX = 0;
+    int attentionY = 0;
     if (vips_smartcrop(in, &out, cropW, cropH,
                        "interesting", VIPS_INTERESTING_ATTENTION,
+                       "attention_x", &attentionX,
+                       "attention_y", &attentionY,
                        nullptr) != 0
         || !out) {
         g_object_unref(in);
         return false;
     }
 
-    // Crop origin within the input; attention focus ≈ centre of that window.
-    const int left = out->Xoffset;
-    const int top = out->Yoffset;
-    const qreal cx = qreal(left) + qreal(cropW) * 0.5;
-    const qreal cy = qreal(top) + qreal(cropH) * 0.5;
-    *normalizedOut = QPointF(qBound(0.0, cx / qreal(width), 1.0),
-                             qBound(0.0, cy / qreal(height), 1.0));
+    *normalizedOut = QPointF(qBound(0.0, qreal(attentionX) / qreal(width), 1.0),
+                             qBound(0.0, qreal(attentionY) / qreal(height), 1.0));
 
     g_object_unref(out);
     g_object_unref(in);

@@ -26,7 +26,8 @@ bool hasVips();
 
 /**
  * Approximate attention / focus point in normalized image coordinates (0–1).
- * Uses libvips smartcrop (VIPS_INTERESTING_ATTENTION) on a downscaled copy.
+ * Uses libvips smartcrop attention_x/attention_y (peak of the attention map)
+ * on a downscaled RGB copy — not the centre of the crop window.
  * Returns false when VIPS is unavailable, the image is empty, or the probe fails.
  */
 bool attentionPoint(const QImage &image, QPointF *normalizedOut);
