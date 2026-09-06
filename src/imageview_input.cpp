@@ -412,6 +412,11 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             event->accept();
             return;
         }
+        if (h == CropHandle::Smart) {
+            applySmartCrop();
+            event->accept();
+            return;
+        }
         if (h == CropHandle::Reset) {
             // Expand draft to the full image; Apply commits a cleared session crop.
             if (ImageItem *item = cropTargetItem()) {
@@ -863,6 +868,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             viewport()->setCursor(Qt::SizeBDiagCursor);
             break;
         case CropHandle::ExpandToggle:
+        case CropHandle::Smart:
         case CropHandle::Reset:
         case CropHandle::Cancel:
         case CropHandle::Close:
@@ -891,6 +897,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             case CropHandle::BottomRight:
                 tip = tr("Resize crop");
                 break;
+            case CropHandle::Smart:
             case CropHandle::ExpandToggle:
                 tip = tr("Allow crop outside image (pad on apply)");
                 break;

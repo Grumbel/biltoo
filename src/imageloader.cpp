@@ -681,6 +681,36 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut)
     return true;
 }
 
+bool smartCropRect(const QImage &image, int cropW, int cropH, QRect *pixelRectOut)
+{
+    if (!pixelRectOut || image.isNull() || cropW < 1 || cropH < 1) {
+        return false;
+    }
+    const int iw = image.width();
+    const int ih = image.height();
+    cropW = qBound(1, cropW, iw);
+    cropH = qBound(1, cropH, ih);
+
+    QPointF peak(0.5, 0.5);
+#ifdef BILTOO_HAVE_VIPS
+    if (!attentionPointVipsPeak(image, &peak)) {
+        // Fall through to centred crop.
+        peak = QPointF(0.5, 0.5);
+    }
+#else
+    Q_UNUSED(image);
+#endif
+    const int cx = int(qRound(peak.x() * qreal(iw - 1)));
+    const int cy = int(qRound(peak.y() * qreal(ih - 1)));
+    int left = cx - cropW / 2;
+    int top = cy - cropH / 2;
+    left = qBound(0, left, iw - cropW);
+    top = qBound(0, top, ih - cropH);
+    *pixelRectOut = QRect(left, top, cropW, cropH);
+    return true;
+}
+
+
 QImage load(const QString &path)
 {
     if (PagePath::isPageRef(path)) {

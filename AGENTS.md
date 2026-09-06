@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-339-attention-narrowing**
-(Quiet attention select narrowing warning).
-Next bundle number: **340**.
+Latest agent handoff: **TODO.md → biltoo-340-crop-smart**
+(Crop mode Smart = VIPS attention smartcrop draft).
+Next bundle number: **341**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

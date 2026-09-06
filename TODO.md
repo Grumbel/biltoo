@@ -6207,3 +6207,19 @@ Cast explicitly.
 - [x] Warning fixed
 - [x] Docs; next **340**
 
+## Plan / work (2026-09-06) — bundle `biltoo-340-crop-smart`
+
+### Request
+Crop mode: **Smart** button runs VIPS smartcrop and sets the draft frame.
+
+### Behaviour
+- Keeps current draft size (or ~2/3 short edge if draft is nearly full-frame)
+- Places window on VIPS INTERESTING_ATTENTION peak (centre-clamped), axis-aligned
+- Clears draft rotation; Expand off
+- Does not apply/commit — user still hits Apply
+
+### Done criteria
+- [x] Smart button in crop chrome
+- [x] ImageLoader::smartCropRect
+- [x] Docs; next **341**
+

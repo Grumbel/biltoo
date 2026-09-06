@@ -6,6 +6,7 @@
 
 #include <QImage>
 #include <QPointF>
+#include <QRect>
 #include <QSize>
 #include <QString>
 #include <QStringList>
@@ -39,6 +40,13 @@ bool attentionPoint(const QImage &image, QPointF *normalizedOut);
  */
 bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut,
                      int maxPoints = 5);
+
+/**
+ * Axis-aligned smart crop of @a cropW × @a cropH within @a image (pixels),
+ * using libvips INTERESTING_ATTENTION (peak-centred window, edge-clamped).
+ * Returns false without VIPS, on empty input, or if the size is invalid.
+ */
+bool smartCropRect(const QImage &image, int cropW, int cropH, QRect *pixelRectOut);
 
 /**
  * Fast size probe without a full pixel decode when the backend allows it.

@@ -21,6 +21,7 @@ namespace {
 // buttons so labels fit rounded corners; y clears the bottom rotate knobs.
 struct CropButtonLayout {
     QRect expand;
+    QRect smart;
     QRect reset;
     QRect cancel;
     QRect apply;
@@ -40,9 +41,10 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     constexpr int kOutsideGap = 32;
     constexpr int kInsideInset = 10;
     constexpr int kMargin = 6;
-    constexpr int kGroupGapMin = 18; // min air between Expand and the right group
+    constexpr int kGroupGapMin = 18; // min air between left group and right group
 
     const int rightGroupW = kW * 3 + kGap * 2;
+    const int leftGroupW = kW * 2 + kGap; // Expand + Smart
 
     auto pickY = [&](int spanLeft, int spanW) -> int {
         const int yOutside = qRound(cropView.bottom()) + kOutsideGap;
@@ -70,21 +72,23 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     const int resetX = cancelX - kGap - kW;
     const int yRight = pickY(resetX, rightGroupW);
 
-    // Left: Expand alone, aligned to crop left edge.
+    // Left: Expand + Smart, aligned to crop left edge.
     int expandX = qRound(cropView.left());
     expandX = qBound(viewportRect.left() + kMargin,
                      expandX,
-                     viewportRect.right() - kMargin - kW);
-    if (expandX + kW + kGroupGapMin > resetX) {
+                     viewportRect.right() - kMargin - leftGroupW);
+    if (expandX + leftGroupW + kGroupGapMin > resetX) {
         expandX = qMax(viewportRect.left() + kMargin,
-                       resetX - kGroupGapMin - kW);
+                       resetX - kGroupGapMin - leftGroupW);
     }
-    const int yLeft = pickY(expandX, kW);
+    const int smartX = expandX + kW + kGap;
+    const int yLeft = pickY(expandX, leftGroupW);
     // Prefer a shared baseline when both bands land near the same y.
     const int yExpand = (qAbs(yLeft - yRight) <= 2) ? yRight : yLeft;
     const int yGroup = yRight;
 
     L.expand = QRect(expandX, yExpand, kW, kH);
+    L.smart = QRect(smartX, yExpand, kW, kH);
     L.reset = QRect(resetX, yGroup, kW, kH);
     L.cancel = QRect(cancelX, yGroup, kW, kH);
     L.apply = QRect(right, yGroup, kW, kH);
@@ -605,6 +609,70 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     emit statusChanged();
 }
 
+void ImageView::applySmartCrop()
+{
+    ImageItem *item = cropTargetItem();
+    if (!item || !m_cropMode) {
+        return;
+    }
+    QImage src = item->sourceImage();
+    if (src.isNull()) {
+        src = item->pixmap().toImage();
+    }
+    if (src.isNull()) {
+        return;
+    }
+    ensureCropRectValid();
+    const QRectF cr = item->contentRect();
+    if (cr.width() < 1.0 || cr.height() < 1.0) {
+        return;
+    }
+    // Draft size in source pixels (content local matches pixel space for display images).
+    int cropW = qMax(1, int(qRound(m_cropRect.width())));
+    int cropH = qMax(1, int(qRound(m_cropRect.height())));
+    // If the draft is the full image (or nearly), use ~2/3 of the short edge so
+    // smartcrop has room to choose a subject window.
+    const bool nearlyFull =
+        m_cropRect.width() >= cr.width() * 0.95
+        && m_cropRect.height() >= cr.height() * 0.95;
+    if (nearlyFull) {
+        const int shortEdge = qMin(src.width(), src.height());
+        const int edge = qMax(8, (shortEdge * 2) / 3);
+        // Keep the draft aspect if it is meaningful; otherwise square.
+        const qreal aspect = m_cropRect.height() > 1.0
+            ? (m_cropRect.width() / m_cropRect.height())
+            : 1.0;
+        if (aspect >= 1.0) {
+            cropW = edge;
+            cropH = qMax(8, int(qRound(edge / aspect)));
+        } else {
+            cropH = edge;
+            cropW = qMax(8, int(qRound(edge * aspect)));
+        }
+        cropW = qMin(cropW, src.width());
+        cropH = qMin(cropH, src.height());
+    }
+
+    QRect pixel;
+    if (!ImageLoader::smartCropRect(src, cropW, cropH, &pixel)) {
+        return;
+    }
+    // Map source pixels → content-local draft (origin at content top-left).
+    const qreal sx = cr.width() / qreal(qMax(1, src.width()));
+    const qreal sy = cr.height() / qreal(qMax(1, src.height()));
+    m_cropRect = QRectF(cr.left() + pixel.x() * sx,
+                        cr.top() + pixel.y() * sy,
+                        pixel.width() * sx,
+                        pixel.height() * sy);
+    m_cropRotation = 0.0;
+    m_cropAllowExpand = false;
+    ensureCropRectValid();
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
+}
+
 void ImageView::applyCrop()
 {
     leaveCropModeInternal(true);
@@ -973,6 +1041,15 @@ QRect ImageView::cropExpandButtonView() const
     return L.valid ? L.expand : QRect();
 }
 
+QRect ImageView::cropSmartButtonView() const
+{
+    if (!m_cropMode) {
+        return {};
+    }
+    const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
+    return L.valid ? L.smart : QRect();
+}
+
 QRect ImageView::cropResetButtonView() const
 {
     if (!m_cropMode) {
@@ -1245,6 +1322,8 @@ void ImageView::paintCropOverlay(QPainter &painter)
     // Local QPoint names must not hide QObject::tr — use ImageView::tr.
     drawTextButton(cropExpandButtonView(), CropHandle::ExpandToggle,
                    ImageView::tr("Expand"), CropBtnRole::Toggle, m_cropAllowExpand);
+    drawTextButton(cropSmartButtonView(), CropHandle::Smart, ImageView::tr("Smart"),
+                   CropBtnRole::Action);
     drawTextButton(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"),
                    CropBtnRole::Action);
     drawTextButton(cropCancelButtonView(), CropHandle::Cancel, ImageView::tr("Cancel"),
@@ -1290,7 +1369,8 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
     if (!item || h == CropHandle::None || h == CropHandle::Reset || h == CropHandle::Close
-        || h == CropHandle::Cancel || h == CropHandle::ExpandToggle) {
+        || h == CropHandle::Cancel || h == CropHandle::ExpandToggle
+        || h == CropHandle::Smart) {
         return;
     }
     m_cropActiveHandle = h;
@@ -1560,6 +1640,10 @@ ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     const QRect expandBtn = cropExpandButtonView();
     if (expandBtn.contains(viewPos)) {
         return CropHandle::ExpandToggle;
+    }
+    const QRect smartBtn = cropSmartButtonView();
+    if (smartBtn.contains(viewPos)) {
+        return CropHandle::Smart;
     }
     const QRect resetBtn = cropResetButtonView();
     if (resetBtn.contains(viewPos)) {
