@@ -5537,3 +5537,13 @@ the size. Native probe remains the fallback when thumtoo is off.
 ### Done criteria
 - [x] No dual source size I/O when thumtoo is available
 - [x] Docs; next **301**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-301-fix-clientunlocked-fwd`
+
+### Task
+Fix compile: `scheduleBackgroundRevalidate` lambda used `clientUnlocked()` before
+its definition in the anonymous namespace. Add a forward declaration.
+
+### Done criteria
+- [x] Builds; next **302**
