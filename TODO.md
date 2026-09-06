@@ -5815,3 +5815,20 @@ the current image — felt like an unusually long pause.
 ### Done criteria
 - [x] Compiles with old thumtoo (PDF expand empty) and new thumtoo (full PDF)
 - [x] Docs; next **319**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-319-pdf-expand`
+
+### Bug
+Opening a .pdf showed “No readable images found” — expandPdfToPageRefs
+was empty when `__has_include(thumtoo/pdf.hpp)` failed against a lagging
+flake thumtoo input.
+
+### Fix
+- thumtoo: Client::pdf_* stable API in client.hpp
+- biltoo: expand/raster only via Client (no pdf.hpp)
+- Status bar explains PDF/Poppler mismatch
+
+### Done criteria
+- [x] Expand uses Client::pdf_page_count
+- [x] Docs; next **320**

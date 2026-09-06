@@ -522,7 +522,7 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
             }
         }
 
-        QMetaObject::invokeMethod(guard.data(), [guard, gen, images, append, startAt]() {
+        QMetaObject::invokeMethod(guard.data(), [guard, gen, images, append, startAt, paths]() {
             MainWindow *const window = guard.data();
             if (!window || gen != window->m_expandGeneration) {
                 return;
@@ -535,10 +535,26 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                                                       window->m_session.ids());
                 }
                 if (window->statusBar()) {
-                    window->statusBar()->showMessage(
-                        append ? MainWindow::tr("No readable images to add.")
-                               : MainWindow::tr("No readable images found."),
-                        5000);
+                    bool anyPdf = false;
+                    for (const QString &p : paths) {
+                        if (PagePath::isPdfFile(p)) {
+                            anyPdf = true;
+                            break;
+                        }
+                    }
+                    QString msg;
+                    if (anyPdf && !ThumtooCache::isAvailable()) {
+                        msg = MainWindow::tr(
+                            "Cannot open PDF: thumtoo is not available.");
+                    } else if (anyPdf) {
+                        msg = MainWindow::tr(
+                            "Cannot open PDF (no pages found). Rebuild thumtoo "
+                            "with Poppler and update the biltoo flake input.");
+                    } else {
+                        msg = append ? MainWindow::tr("No readable images to add.")
+                                     : MainWindow::tr("No readable images found.");
+                    }
+                    window->statusBar()->showMessage(msg, 8000);
                 }
                 return;
             }
