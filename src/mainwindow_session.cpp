@@ -106,11 +106,24 @@ public:
 
     void redo() override
     {
-        if (m_mw) {
-            QList<int> indices;
-            for (const auto &e : m_entries) {
-                indices.append(e.index);
+        if (!m_mw) {
+            return;
+        }
+        // Prefer SessionImageId so redo stays correct after undo + insert/reorder.
+        QList<int> indices;
+        for (const auto &e : m_entries) {
+            int idx = -1;
+            if (e.id != kInvalidSessionImageId) {
+                idx = m_mw->sessionIndexOfId(e.id);
             }
+            if (idx < 0) {
+                idx = e.index;
+            }
+            if (idx >= 0) {
+                indices.append(idx);
+            }
+        }
+        if (!indices.isEmpty()) {
             m_mw->applySessionRemoveIndices(indices);
         }
     }
