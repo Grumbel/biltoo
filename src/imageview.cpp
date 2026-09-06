@@ -6,6 +6,8 @@
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
+#include "imagecache.h"
+#include "thumtoocache.h"
 #include "sessionappearance.h"
 
 #include <QUndoCommand>
@@ -61,6 +63,32 @@ ImageView::ImageView(QWidget *parent)
     m_undoStack = new QUndoStack(this);
     qRegisterMetaType<QImage>("QImage");
     qRegisterMetaType<quint64>("quint64");
+
+    // Soft preview upgrade when thumtoo finishes a ladder level for a path.
+    connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
+            [this](const QString &path, int maxEdge) {
+                if (path.isEmpty()) {
+                    return;
+                }
+                const int edge = maxEdge > 0 ? maxEdge : ImageCache::kPreviewEdge;
+                const QPointer<ImageView> guard(this);
+                QThreadPool::globalInstance()->start([guard, path, edge]() {
+                    const QImage preview = ImageLoader::loadThumbnail(path, edge);
+                    if (!guard || preview.isNull()) {
+                        return;
+                    }
+                    QMetaObject::invokeMethod(guard, [guard, path, preview]() {
+                        if (!guard) {
+                            return;
+                        }
+                        // LoadAdd: refresh gallery/workspace/image tiles that still
+                        // show placeholders; do not fight a completed full decode.
+                        guard->onImagePreviewLoaded(
+                            path, preview, 0,
+                            static_cast<int>(ImageView::LoadAdd));
+                    });
+                });
+            });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
         if (m_hudVisible || m_hudFlashVisible || m_slideshowPausedHud) {
