@@ -292,7 +292,138 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             }
             y += rowHeight + gap;
         }
+    } else if (params.mode == Mode::Flow || params.mode == Mode::FlowFill) {
+        // Order-preserving wrap: L→R then T→B. Width budget from columns.
+        const bool fill = (params.mode == Mode::FlowFill);
+        const int cols = params.gridColumns > 0
+                             ? qMax(1, params.gridColumns)
+                             : 3;
+        const qreal layoutW = availW;
+        const qreal targetW = (layoutW - gap * qMax(0, cols - 1)) / qMax(1, cols);
+
+        struct Entry {
+            ImageItem *item = nullptr;
+            QSizeF ns;
+            qreal scale = 1.0;
+            qreal w = 0.0;
+            qreal h = 0.0;
+        };
+        QVector<QVector<Entry>> rows;
+        QVector<Entry> cur;
+        qreal rowW = 0.0;
+        qreal rowH = 0.0;
+
+        auto flushRow = [&]() {
+            if (cur.isEmpty()) {
+                return;
+            }
+            rows.append(cur);
+            cur.clear();
+            rowW = 0.0;
+            rowH = 0.0;
+        };
+
+        for (ImageItem *item : items) {
+            const QSizeF ns = layoutSize(item);
+            const qreal scale = targetW / qMax(1.0, ns.width());
+            const qreal w = ns.width() * scale;
+            const qreal h = ns.height() * scale;
+            if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
+                flushRow();
+            }
+            cur.append(Entry{item, ns, scale, w, h});
+            rowW += (cur.size() == 1 ? w : gap + w);
+            rowH = qMax(rowH, h);
+        }
+        flushRow();
+
+        qreal y = margin;
+        for (QVector<Entry> &row : rows) {
+            qreal contentW = 0.0;
+            qreal contentH = 0.0;
+            for (const Entry &e : row) {
+                contentW += e.w;
+                contentH = qMax(contentH, e.h);
+            }
+            contentW += gap * qMax(0, row.size() - 1);
+            const qreal s = (fill && contentW > 1e-6) ? (layoutW / contentW) : 1.0;
+            qreal x = margin;
+            for (Entry &e : row) {
+                const qreal scale = e.scale * s;
+                e.item->setItemScale(scale);
+                e.item->setItemShear(0.0);
+                const qreal w = e.ns.width() * scale;
+                const qreal h = e.ns.height() * scale;
+                e.item->setPos(x + w / 2.0, y + h / 2.0);
+                x += w + gap * s;
+                finish(e.item, afterEach);
+            }
+            y += contentH * s + gap;
+        }
+    } else if (params.mode == Mode::Facing) {
+        // Cover alone, then height-matched pairs (verso | recto), stacked.
+        const qreal pairGap = gap;
+        qreal y = margin;
+        int i = 0;
+
+        auto placeScaled = [&](ImageItem *item, qreal scale, qreal xLeft, qreal yTop) {
+            const QSizeF ns = layoutSize(item);
+            item->setItemScale(scale);
+            item->setItemShear(0.0);
+            const qreal w = ns.width() * scale;
+            const qreal h = ns.height() * scale;
+            item->setPos(xLeft + w / 2.0, yTop + h / 2.0);
+            finish(item, afterEach);
+            return QSizeF(w, h);
+        };
+
+        if (n >= 1) {
+            const QSizeF ns = layoutSize(items.at(0));
+            const qreal scale = qMin(availW / qMax(1.0, ns.width()),
+                                    availH / qMax(1.0, ns.height()));
+            const QSizeF sz = placeScaled(items.at(0), scale, margin, y);
+            y += sz.height() + gap;
+            i = 1;
+        }
+        const qreal halfW = (availW - pairGap) / 2.0;
+        while (i < n) {
+            ImageItem *left = items.at(i);
+            ImageItem *right = (i + 1 < n) ? items.at(i + 1) : nullptr;
+            const QSizeF nsL = layoutSize(left);
+            qreal scaleL = halfW / qMax(1.0, nsL.width());
+            qreal scaleR = scaleL;
+            if (right) {
+                const QSizeF nsR = layoutSize(right);
+                // Shared height: min of height-from-halfW for each page.
+                const qreal hFromL = nsL.height() * (halfW / qMax(1.0, nsL.width()));
+                const qreal hFromR = nsR.height() * (halfW / qMax(1.0, nsR.width()));
+                const qreal targetH = qMin(hFromL, hFromR);
+                scaleL = targetH / qMax(1.0, nsL.height());
+                scaleR = targetH / qMax(1.0, nsR.height());
+                if (nsL.width() * scaleL > halfW) {
+                    scaleL = halfW / qMax(1.0, nsL.width());
+                }
+                if (nsR.width() * scaleR > halfW) {
+                    scaleR = halfW / qMax(1.0, nsR.width());
+                }
+            }
+            const qreal hL = nsL.height() * scaleL;
+            const QSizeF szL = placeScaled(left, scaleL, margin, y);
+            qreal rowH = szL.height();
+            if (right) {
+                const QSizeF nsR = layoutSize(right);
+                const QSizeF szR = placeScaled(right, scaleR,
+                    margin + halfW + pairGap, y);
+                rowH = qMax(rowH, szR.height());
+                i += 2;
+            } else {
+                i += 1;
+            }
+            Q_UNUSED(hL);
+            y += rowH + gap;
+        }
     }
+
 }
 
 } // namespace GalleryLayout

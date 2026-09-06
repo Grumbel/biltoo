@@ -67,7 +67,9 @@ diverge from it.
 - User may activate one object → leave Gallery, enter **Image** on that path,
   remembering enough to **return** (layout, scroll, which cell was current).
 - Arrow keys move the session cursor among tiles by **scene position** (spatial neighbour); Home/End first/last; Enter opens.
-- Grid / Masonry column or row count is user-configurable (toolbar spin; 0 = automatic for grid).
+- Grid / Masonry / Flow column or row count is user-configurable (toolbar spin; 0 = automatic for grid).
+- **Flow / Flow Fill**: session order L→R, T→B; wrap at layout width (book-friendly). Flow Fill justifies each row.
+- **Facing**: cover page alone, then two-up spreads (verso|recto), stacked — PDF-reader style.
 - User may rotate (±90°) and flip selected tiles; scale/opacity/stack remain Workspace-only.
 - Linear viewer navigation (slideshow, prev/next) is not the primary job here.
 

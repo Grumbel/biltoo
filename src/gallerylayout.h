@@ -25,7 +25,13 @@ enum class Mode {
     /** Column masonry then per-column scale so all columns share one bottom edge. */
     MasonryFill,
     /** Row masonry then per-row scale so all rows share one right edge. */
-    MasonryRowsFill
+    MasonryRowsFill,
+    /** Session order L→R, T→B; wrap at layout width (columns ≈ pages across). */
+    Flow,
+    /** Flow, then scale each row to exactly fill layout width. */
+    FlowFill,
+    /** Two-up spreads; page 1 alone as cover, then pairs (2–3), (4–5), … */
+    Facing
 };
 
 struct Params {
@@ -36,7 +42,7 @@ struct Params {
     qreal availH = 600.0;
     int masonryColumns = 3;
     int masonryRows = 3;
-    /** Grid / GridCrop column count; 0 = automatic (ceil sqrt n). */
+    /** Grid / GridCrop / Flow column count; 0 = automatic (ceil sqrt n for Grid, 3 for Flow). */
     int gridColumns = 0;
 };
 

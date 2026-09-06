@@ -108,7 +108,13 @@ public:
         /** Column masonry scaled per-column to a shared bottom edge (no dangling). */
         MasonryFill,
         /** Row masonry scaled per-row to a shared right edge (no dangling). */
-        MasonryRowsFill
+        MasonryRowsFill,
+        /** Session order wrap (book/comic contact sheet). */
+        Flow,
+        /** Flow with each row scaled to full layout width. */
+        FlowFill,
+        /** Two-up spreads; cover page alone, then pairs. */
+        Facing
     };
 
     explicit ImageView(QWidget *parent = nullptr);

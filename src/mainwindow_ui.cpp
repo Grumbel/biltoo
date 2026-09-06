@@ -426,6 +426,27 @@ void MainWindow::createActions()
         tr("Row masonry scaled to a shared right edge (rectangular)"));
     connect(m_layoutMasonryRowsFillAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryRowsFill);
 
+    m_layoutFlowAct = new QAction(tr("Layout &Flow"), this);
+    m_layoutFlowAct->setCheckable(true);
+    m_layoutFlowAct->setIcon(resourceIcon(QStringLiteral("gallery-grid")));
+    m_layoutFlowAct->setStatusTip(
+        tr("Gallery: reading order, wrap rows to fill width (good for books)"));
+    connect(m_layoutFlowAct, &QAction::triggered, this, &MainWindow::setLayoutFlow);
+
+    m_layoutFlowFillAct = new QAction(tr("Layout Flow F&ill"), this);
+    m_layoutFlowFillAct->setCheckable(true);
+    m_layoutFlowFillAct->setIcon(resourceIcon(QStringLiteral("gallery-grid")));
+    m_layoutFlowFillAct->setStatusTip(
+        tr("Flow with each row scaled to the full layout width"));
+    connect(m_layoutFlowFillAct, &QAction::triggered, this, &MainWindow::setLayoutFlowFill);
+
+    m_layoutFacingAct = new QAction(tr("Layout F&acing"), this);
+    m_layoutFacingAct->setCheckable(true);
+    m_layoutFacingAct->setIcon(resourceIcon(QStringLiteral("gallery-side-by-side")));
+    m_layoutFacingAct->setStatusTip(
+        tr("Gallery: two-page spreads (cover alone, then pairs)"));
+    connect(m_layoutFacingAct, &QAction::triggered, this, &MainWindow::setLayoutFacing);
+
     m_backToGalleryAct = new QAction(tr("&Up"), this);
     m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-up"), QStyle::SP_ArrowUp));
     m_backToGalleryAct->setStatusTip(tr("Up to gallery"));
@@ -443,6 +464,9 @@ void MainWindow::createActions()
     layoutGroup->addAction(m_layoutMasonryRowsAct);
     layoutGroup->addAction(m_layoutMasonryFillAct);
     layoutGroup->addAction(m_layoutMasonryRowsFillAct);
+    layoutGroup->addAction(m_layoutFlowAct);
+    layoutGroup->addAction(m_layoutFlowFillAct);
+    layoutGroup->addAction(m_layoutFacingAct);
     layoutGroup->setExclusive(true);
     // No default checked gallery layout until the user chooses one.
     for (QAction *act : layoutGroup->actions()) {
@@ -795,6 +819,9 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutMasonryRowsAct);
     galleryMenu->addAction(m_layoutMasonryFillAct);
     galleryMenu->addAction(m_layoutMasonryRowsFillAct);
+    galleryMenu->addAction(m_layoutFlowAct);
+    galleryMenu->addAction(m_layoutFlowFillAct);
+    galleryMenu->addAction(m_layoutFacingAct);
     galleryMenu->addSeparator();
     auto *gallerySortMenu = galleryMenu->addMenu(tr("&Sort Session"));
     gallerySortMenu->addAction(m_sortNameAct);
@@ -916,6 +943,10 @@ void MainWindow::createToolBar()
         layoutPopup->addAction(m_layoutMasonryRowsAct);
         layoutPopup->addAction(m_layoutMasonryFillAct);
         layoutPopup->addAction(m_layoutMasonryRowsFillAct);
+        layoutPopup->addSeparator();
+        layoutPopup->addAction(m_layoutFlowAct);
+        layoutPopup->addAction(m_layoutFlowFillAct);
+        layoutPopup->addAction(m_layoutFacingAct);
         layoutBtn->setMenu(layoutPopup);
         layoutBtn->setDefaultAction(m_galleryLayoutToolbarAct);
         m_toolBar->addWidget(layoutBtn);
@@ -936,7 +967,7 @@ void MainWindow::createToolBar()
     m_masonryCountSpin->setSingleStep(1);
     m_masonryCountSpin->setValue(3);
     m_masonryCountSpin->setToolTip(
-        tr("Columns (Grid / Masonry) or rows (Masonry Rows)."));
+        tr("Columns (Grid / Flow / Masonry) or rows (Masonry Rows)."));
     masonryCountLayout->addWidget(m_masonryCountLabel);
     masonryCountLayout->addWidget(m_masonryCountSpin);
     m_masonryCountAction = m_toolBar->addWidget(masonryCountHost);
@@ -951,7 +982,9 @@ void MainWindow::createToolBar()
                     || mode == ImageView::LayoutMode::MasonryRowsFill) {
                     m_imageView->setMasonryRows(count);
                 } else if (mode == ImageView::LayoutMode::Grid
-                           || mode == ImageView::LayoutMode::GridCrop) {
+                           || mode == ImageView::LayoutMode::GridCrop
+                           || mode == ImageView::LayoutMode::Flow
+                           || mode == ImageView::LayoutMode::FlowFill) {
                     m_imageView->setGridColumns(count);
                 } else {
                     m_imageView->setMasonryColumns(count);

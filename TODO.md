@@ -5947,3 +5947,12 @@ updateGalleryDecodeWindow, so cells stayed on the pre-zoom ladder step.
 Call updateGalleryDecodeWindow after gallery zoom transforms so
 ceilLadderEdge can request a higher step for larger on-screen cells.
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-328-book-layouts`
+
+### Added
+- **Flow**: ordered L→R,T→B wrap; columns spin ≈ pages across
+- **Flow Fill**: same + justify each row to layout width
+- **Facing**: cover alone, then height-matched two-up pairs
+

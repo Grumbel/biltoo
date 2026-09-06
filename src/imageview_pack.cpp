@@ -147,7 +147,9 @@ void ImageView::setGridColumns(int columns)
     }
     m_gridColumns = clamped;
     if (isGalleryMode()
-        && (m_layoutMode == LayoutMode::Grid || m_layoutMode == LayoutMode::GridCrop)) {
+        && (m_layoutMode == LayoutMode::Grid || m_layoutMode == LayoutMode::GridCrop
+            || m_layoutMode == LayoutMode::Flow || m_layoutMode == LayoutMode::FlowFill
+            || m_layoutMode == LayoutMode::Facing)) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
@@ -317,6 +319,15 @@ void ImageView::applyLayout(GalleryPackReason reason)
         break;
     case LayoutMode::MasonryRowsFill:
         params.mode = GalleryLayout::Mode::MasonryRowsFill;
+        break;
+    case LayoutMode::Flow:
+        params.mode = GalleryLayout::Mode::Flow;
+        break;
+    case LayoutMode::FlowFill:
+        params.mode = GalleryLayout::Mode::FlowFill;
+        break;
+    case LayoutMode::Facing:
+        params.mode = GalleryLayout::Mode::Facing;
         break;
     default:
         params.mode = GalleryLayout::Mode::Masonry;
