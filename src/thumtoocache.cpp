@@ -576,8 +576,8 @@ void preparePaths(const QStringList &paths)
             continue;
         }
         if (ArchivePath::isArchiveRef(p)) {
+            // Size only — ladder on demand (visible filmstrip / gallery window).
             scheduleProbe(p);
-            schedulePixels(p, kGalleryLadderEdge);
             continue;
         }
         const QFileInfo fi(p);
@@ -590,7 +590,7 @@ void preparePaths(const QStringList &paths)
     if (fsPaths.empty()) {
         return;
     }
-    // After each size probe, also request a gallery-level ladder and notify UI.
+    // Size probes only; do not encode ladders for the whole session here.
     c->prepare_paths(fsPaths, [plainPaths](std::string uri, std::optional<thumtoo::Size> sz) {
         QString path;
         for (const QString &p : plainPaths) {
@@ -605,7 +605,6 @@ void preparePaths(const QStringList &paths)
         if (sz) {
             emit bridge()->sizeReady(path, QSize(sz->width, sz->height));
         }
-        schedulePixels(path, kGalleryLadderEdge);
     });
 #else
     Q_UNUSED(paths);

@@ -5547,3 +5547,20 @@ its definition in the anonymous namespace. Add a forward declaration.
 
 ### Done criteria
 - [x] Builds; next **302**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-302-prepare-size-only`
+
+### Task
+Opening a ~100-image archive stays slow (~3s) because `preparePaths` calls
+`schedulePixels` for **every** member (and every plain file after probe). That
+queues extract+ladder encode for the whole session up front.
+
+### Fix
+`preparePaths` only warms **sizes** (`scheduleProbe` / `prepare_paths` size
+callback). Ladder/pixels stay demand-driven (filmstrip visible window, gallery
+decode window, Image soft preview).
+
+### Done criteria
+- [x] preparePaths does not schedulePixels
+- [x] Docs; next **303**

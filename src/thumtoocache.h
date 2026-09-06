@@ -81,9 +81,10 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
 void schedulePixels(const QString &path, int maxEdge);
 
 /**
- * Prewarm size (+ ladder at kGalleryLadderEdge) for a session file list —
- * same idea as thumtoo-prepare, non-blocking via the worker queue.
- * Skips paths already marked Unsupported in the durable cache.
+ * Prewarm **sizes** only for a session file list (thumtoo prepare / probe).
+ * Does not schedule ladder encode — filmstrip, gallery window, and Image soft
+ * preview request pixels on demand so large archives are not all extracted up
+ * front. Skips paths marked Unsupported in the durable cache.
  */
 void preparePaths(const QStringList &paths);
 

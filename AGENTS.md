@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-301-fix-clientunlocked-fwd**
-(Forward-declare clientUnlocked for revalidate lambda).
-Next bundle number: **302**
+Latest agent handoff: **TODO.md → biltoo-302-prepare-size-only**
+(preparePaths sizes only; ladder on demand).
+Next bundle number: **303**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -298,10 +298,11 @@ Durable size index and display ladder live in the **thumtoo** library
 (`inputs.thumtoo`) and `add_subdirectory` when `THUMTOO_SOURCE_DIR` is set.
 `ImageLoader::probeSize` and `loadThumbnail` consult `ThumtooCache` first
 (cache-only size / ladder via `get_pixels`). Session open calls
-`ThumtooCache::preparePaths` (non-blocking). Misses schedule
-`request_size` / `request_pixels` and fall back to Qt/vips/archive decode.
-Client uses a Qt `Executor` so callbacks land on the GUI thread.
-`Bridge::ladderReady` refreshes filmstrip cells when a level is encoded.
+`ThumtooCache::preparePaths` (size probes only — not full-session ladder
+encode). Visible filmstrip/gallery/Image request pixels on demand. Misses
+schedule `request_size` / `request_pixels` and fall back to Qt/vips decode of
+extracted bytes. Client uses a Qt `Executor` so callbacks land on the GUI
+thread. `Bridge::ladderReady` refreshes filmstrip cells when a level is encoded.
 Session edit identity remains biltoo `SessionImageId`.
 
 **Archive expand / bytes:** Sole path is thumtoo. `expandArchiveToImageRefs`
