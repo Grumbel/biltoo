@@ -6256,3 +6256,18 @@ trim: shrink the current draft until non-background content is found.
 - [x] ImageLoader::autoTrimRect
 - [x] Docs; next **343**
 
+## Plan / work (2026-09-06) — bundle `biltoo-343-comics-detect-toolbar`
+
+### Comics
+- Suffixes: cbz, cbr, cb7, cbt in ArchivePath::archiveSuffixes
+- MIME: comicbook+zip/rar + x-cbz/cbr/cb7/cbt in desktop, metainfo, defaultapps
+- No thumtoo change (open path is biltoo isArchiveFile → thumtoo expand)
+
+### UI
+- Remove Detect Attention from the main toolbar (menu action kept)
+
+### Done criteria
+- [x] Comic open/association
+- [x] Toolbar cleanup
+- [x] Docs; next **344**
+

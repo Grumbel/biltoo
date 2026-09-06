@@ -50,6 +50,13 @@ QStringList supportedMimeTypes()
         QStringLiteral("application/vnd.rar"),
         QStringLiteral("application/x-rar"),
         QStringLiteral("application/x-rar-compressed"),
+        // Comic book archives
+        QStringLiteral("application/vnd.comicbook+zip"),
+        QStringLiteral("application/x-cbz"),
+        QStringLiteral("application/vnd.comicbook-rar"),
+        QStringLiteral("application/x-cbr"),
+        QStringLiteral("application/x-cb7"),
+        QStringLiteral("application/x-cbt"),
         QStringLiteral("application/x-tar"),
         QStringLiteral("application/x-compressed-tar"),
         QStringLiteral("application/x-gtar"),

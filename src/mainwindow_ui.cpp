@@ -926,7 +926,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addAction(m_cropAct);
     m_toolBar->addAction(m_attentionAct);
-    m_toolBar->addAction(m_detectAttentionAct);
+    // Detect Attention is not on the toolbar (attention multi-peak path is inactive).
     m_toolBar->addSeparator();
     // Gallery layout combo: main button = Go to Gallery (current layout icon);
     // small menu button = pick a different layout (QToolButton::MenuButtonPopup).

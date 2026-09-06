@@ -108,6 +108,11 @@ QStringList archiveSuffixes()
         QStringLiteral("zip"),
         QStringLiteral("7z"),
         QStringLiteral("rar"),
+        // Comic book archives (zip/rar/7z/tar containers with image pages)
+        QStringLiteral("cbz"),
+        QStringLiteral("cbr"),
+        QStringLiteral("cb7"),
+        QStringLiteral("cbt"),
         QStringLiteral("cpio"),
         QStringLiteral("iso"),
         QStringLiteral("cab"),
