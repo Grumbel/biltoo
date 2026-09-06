@@ -17,11 +17,9 @@ void ImageView::updateGalleryDecodeWindow()
         return;
     }
 
-    const bool virtualize = m_items.size() >= kGalleryVirtualThreshold
-                            || m_pathOrder.size() >= kGalleryVirtualThreshold;
-
-    // Visible-first only. Never treat null geometry as visible (that used to
-    // queue the entire session before pack). Never unload decoded tiles.
+    // Visible-first, then a small idle budget for off-screen tiles. Never
+    // treat null geometry as visible (that used to queue the entire session
+    // before pack). Never unload decoded tiles.
     QStringList visible;
     QStringList rest;
     const QRect viewRect = viewport()->rect().adjusted(
@@ -69,19 +67,33 @@ void ImageView::updateGalleryDecodeWindow()
         }
         if (tile.intersects(sceneVisible)) {
             visible.append(item->path());
-        } else if (!virtualize) {
+        } else {
             rest.append(item->path());
         }
     }
 
+    // Visible tiles always first (full concurrent budget).
     for (const QString &path : visible) {
-        // Allow a higher-edge retry after a soft miss once pixels exist or need grew.
         m_galleryAwaitLadder.remove(path);
         scheduleGalleryDecode(path);
     }
-    if (!virtualize) {
+
+    // Background: fill off-screen when slots remain (idle / not scrolling hard).
+    // Cap idle concurrency so a PDF book cannot starve the viewport.
+    const int freeSlots =
+        kMaxConcurrentGalleryDecodes - m_galleryDecodeScheduled.size();
+    if (freeSlots > 0 && !rest.isEmpty()) {
+        const int idleBudget = qMin(freeSlots, kMaxIdleGalleryDecodes);
+        int started = 0;
         for (const QString &path : rest) {
+            if (started >= idleBudget) {
+                break;
+            }
+            const int before = m_galleryDecodeScheduled.size();
             scheduleGalleryDecode(path);
+            if (m_galleryDecodeScheduled.size() > before) {
+                ++started;
+            }
         }
     }
     emit statusChanged();

@@ -5923,3 +5923,15 @@ levels (1024/2048) exist and cells are larger on screen.
 - Upgrade when display need > current preview long edge
 - preparePaths skips //page: refs (same as archives)
 
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-326-idle-thumbs`
+
+### Request
+Background thumbnail generation when idle is fine.
+
+### Change
+After visible tiles take the concurrent budget, use up to
+kMaxIdleGalleryDecodes (2) free slots for off-screen soft-decodes.
+Visible always wins; idle fills the rest of a large PDF gradually.
+

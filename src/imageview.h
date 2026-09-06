@@ -1206,6 +1206,8 @@ private:
     static constexpr int kGalleryVirtualThreshold = 80;
     static constexpr int kGalleryDecodeOverscanPx = 400;
     static constexpr int kMaxConcurrentGalleryDecodes = 12;
+    /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
+    static constexpr int kMaxIdleGalleryDecodes = 2;
     /** Queue of workspace restores still waiting for decode (supports same path twice). */
     QList<WorkspaceItemState> m_pendingRestoreStates;
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */
