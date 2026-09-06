@@ -914,6 +914,7 @@ private:
     QPointF attentionNormForTarget() const;
     void setAttentionNormForTarget(const QPointF &norm);
     void ensureAttentionPoint();
+    SessionImageId attentionSessionId() const;
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
     void updateCropHandleDrag(const QPoint &viewPos);
     void endCropHandleDrag();
@@ -1241,6 +1242,8 @@ private:
     bool m_cropMode = false;
     bool m_attentionMode = false;
     bool m_attentionDragging = false;
+    bool m_attentionDraftValid = false;
+    QPointF m_attentionDraftNorm{0.5, 0.5};
     /** Locked crop subject for the whole crop session (IDENTITY.md). */
     SessionImageId m_cropTargetId = kInvalidSessionImageId;
     /** Non-owning; ImageItem is not a QObject so QPointer is unavailable. */

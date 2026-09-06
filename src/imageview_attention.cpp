@@ -15,13 +15,22 @@ namespace {
 constexpr qreal kHandleScreenPx = 14.0;
 }
 
+SessionImageId ImageView::attentionSessionId() const
+{
+    if (ImageItem *item = targetItem()) {
+        if (item->sessionId() != kInvalidSessionImageId) {
+            return item->sessionId();
+        }
+    }
+    if (m_currentSessionId != kInvalidSessionImageId) {
+        return m_currentSessionId;
+    }
+    return kInvalidSessionImageId;
+}
+
 QPointF ImageView::attentionNormForTarget() const
 {
-    ImageItem *item = targetItem();
-    if (!item) {
-        return QPointF(0.5, 0.5);
-    }
-    const SessionImageId sid = item->sessionId();
+    const SessionImageId sid = attentionSessionId();
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_appearance.get(sid)) {
             if (st->hasAttention) {
@@ -29,23 +38,30 @@ QPointF ImageView::attentionNormForTarget() const
             }
         }
     }
+    // Draft point while editing before first store (always visible in mode).
+    if (m_attentionMode && m_attentionDraftValid) {
+        return m_attentionDraftNorm;
+    }
     return QPointF(0.5, 0.5);
 }
 
 void ImageView::setAttentionNormForTarget(const QPointF &norm)
 {
+    const QPointF clamped(qBound(0.0, norm.x(), 1.0), qBound(0.0, norm.y(), 1.0));
+    m_attentionDraftNorm = clamped;
+    m_attentionDraftValid = true;
+
+    SessionImageId sid = attentionSessionId();
     ImageItem *item = targetItem();
-    if (!item) {
-        return;
+    if (item && sid != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
+        item->setSessionId(sid);
     }
-    const SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId) {
-        return;
+    if (sid != kInvalidSessionImageId) {
+        WorkspaceItemState st = m_appearance.value(sid);
+        st.hasAttention = true;
+        st.attentionNorm = clamped;
+        m_appearance.set(sid, st);
     }
-    WorkspaceItemState st = m_appearance.value(sid);
-    st.hasAttention = true;
-    st.attentionNorm = QPointF(qBound(0.0, norm.x(), 1.0), qBound(0.0, norm.y(), 1.0));
-    m_appearance.set(sid, st);
     if (viewport()) {
         viewport()->update();
     }
@@ -54,18 +70,18 @@ void ImageView::setAttentionNormForTarget(const QPointF &norm)
 
 void ImageView::ensureAttentionPoint()
 {
-    ImageItem *item = targetItem();
-    if (!item) {
-        return;
-    }
-    const SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId) {
-        return;
-    }
-    if (const WorkspaceItemState *st = m_appearance.get(sid)) {
-        if (st->hasAttention) {
-            return;
+    const SessionImageId sid = attentionSessionId();
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *st = m_appearance.get(sid)) {
+            if (st->hasAttention) {
+                m_attentionDraftNorm = st->attentionNorm;
+                m_attentionDraftValid = true;
+                return;
+            }
         }
+    }
+    if (m_attentionDraftValid) {
+        return;
     }
     detectAttentionPoint();
 }
@@ -73,13 +89,15 @@ void ImageView::ensureAttentionPoint()
 void ImageView::detectAttentionPoint()
 {
     ImageItem *item = targetItem();
-    if (!item) {
-        return;
+    QImage src;
+    if (item) {
+        src = item->sourceImage();
     }
-    QImage src = item->sourceImage();
     QPointF att01(0.5, 0.5);
     if (!src.isNull()) {
-        ImageLoader::attentionPoint(src, &att01);
+        if (!ImageLoader::attentionPoint(src, &att01)) {
+            att01 = QPointF(0.5, 0.5);
+        }
     }
     setAttentionNormForTarget(att01);
 }
@@ -100,11 +118,15 @@ void ImageView::setAttentionMode(bool on)
         m_attentionMode = true;
         m_attentionDragging = false;
         ensureAttentionPoint();
-        setCursor(Qt::CrossCursor);
+        if (viewport()) {
+            viewport()->setCursor(Qt::CrossCursor);
+        }
     } else {
         m_attentionMode = false;
         m_attentionDragging = false;
-        unsetCursor();
+        if (viewport()) {
+            viewport()->unsetCursor();
+        }
     }
     if (viewport()) {
         viewport()->update();
@@ -130,8 +152,7 @@ bool ImageView::attentionHandleAt(const QPoint &viewPos) const
                         cr.top() + norm.y() * cr.height());
     const QPointF scene = item->mapToScene(local);
     const QPointF view = mapFromScene(scene);
-    const qreal d = QLineF(view, QPointF(viewPos)).length();
-    return d <= kHandleScreenPx;
+    return QLineF(view, QPointF(viewPos)).length() <= kHandleScreenPx;
 }
 
 void ImageView::paintAttentionOverlay(QPainter &painter)
@@ -141,6 +162,13 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     }
     ImageItem *item = targetItem();
     if (!item || item->contentRect().isEmpty()) {
+        // Still show a HUD so the mode is obvious.
+        painter.save();
+        painter.setPen(QColor(255, 255, 255, 230));
+        painter.drawText(viewport()->rect().adjusted(12, 12, -12, -12),
+                         Qt::AlignTop | Qt::AlignLeft,
+                         tr("Attention mode: no image loaded"));
+        painter.restore();
         return;
     }
     const QPointF norm = attentionNormForTarget();
@@ -153,32 +181,33 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Dim the image slightly so the marker reads clearly.
-    painter.fillRect(viewport()->rect(), QColor(0, 0, 0, 40));
+    painter.fillRect(viewport()->rect(), QColor(0, 0, 0, 35));
 
     const qreal r = kHandleScreenPx;
-    QPen ring(QColor(255, 220, 60), 2.0);
-    painter.setPen(ring);
-    painter.setBrush(QColor(255, 220, 60, 60));
+    painter.setPen(QPen(QColor(255, 220, 60), 2.5));
+    painter.setBrush(QColor(255, 220, 60, 70));
     painter.drawEllipse(view, r, r);
-    painter.setBrush(QColor(255, 220, 60, 200));
-    painter.drawEllipse(view, 3.5, 3.5);
+    painter.setBrush(QColor(255, 220, 60, 230));
+    painter.setPen(Qt::NoPen);
+    painter.drawEllipse(view, 4.0, 4.0);
 
-    QPen cross(QColor(20, 20, 20, 220), 1.5);
-    painter.setPen(cross);
-    painter.drawLine(QPointF(view.x() - r - 4, view.y()),
-                     QPointF(view.x() + r + 4, view.y()));
-    painter.drawLine(QPointF(view.x(), view.y() - r - 4),
-                     QPointF(view.x(), view.y() + r + 4));
+    painter.setPen(QPen(QColor(20, 20, 20, 230), 1.8));
+    painter.drawLine(QPointF(view.x() - r - 6, view.y()),
+                     QPointF(view.x() + r + 6, view.y()));
+    painter.drawLine(QPointF(view.x(), view.y() - r - 6),
+                     QPointF(view.x(), view.y() + r + 6));
 
-    // HUD hint
     QFont f = painter.font();
-    f.setPointSize(qMax(9, f.pointSize()));
+    f.setPointSize(qMax(10, f.pointSize() + 1));
     painter.setFont(f);
-    painter.setPen(QColor(255, 255, 255, 230));
+    painter.setPen(QColor(255, 255, 255, 240));
+    const QString hint =
+        tr("Attention point — drag or click to place · Space detects · Esc exits\n"
+           "(%1, %2)")
+            .arg(norm.x(), 0, 'f', 3)
+            .arg(norm.y(), 0, 'f', 3);
     painter.drawText(viewport()->rect().adjusted(12, 12, -12, -12),
-                     Qt::AlignTop | Qt::AlignLeft,
-                     tr("Attention: drag the marker · click to place · Esc exits"));
+                     Qt::AlignTop | Qt::AlignLeft, hint);
 
     painter.restore();
 }

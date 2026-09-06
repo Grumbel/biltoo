@@ -101,8 +101,11 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     // item scale — the same coordinate space as edge affordances and the HUD.
     if (m_cropMode) {
         paintCropOverlay(painter);
+    }
+    if (m_attentionMode) {
         paintAttentionOverlay(painter);
-    } else if (isWorkspaceMode() && m_scene) {
+    }
+    if (!m_cropMode && isWorkspaceMode() && m_scene) {
         QList<ImageItem *> selected;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
