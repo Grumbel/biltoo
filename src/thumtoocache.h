@@ -70,6 +70,17 @@ void schedulePixels(const QString &path, int maxEdge);
  */
 void preparePaths(const QStringList &paths);
 
+/** True when built with thumtoo and the client opened successfully. */
+bool isAvailable();
+
+/**
+ * Expand an archive container to biltoo //archive: image refs using thumtoo's
+ * durable TOC (cache-first, then refresh_archive_toc). Empty when thumtoo is
+ * unavailable or the archive has no image members — callers fall back to
+ * ArchiveReader. Safe to call from a worker thread.
+ */
+QStringList expandArchiveToImageRefs(const QString &archivePath);
+
 } // namespace ThumtooCache
 
 #endif

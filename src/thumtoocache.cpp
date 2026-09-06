@@ -309,4 +309,66 @@ void preparePaths(const QStringList &paths)
 #endif
 }
 
+bool isAvailable()
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    init();
+    std::lock_guard lock(g_mu);
+    return clientUnlocked() != nullptr;
+#else
+    return false;
+#endif
+}
+
+QStringList expandArchiveToImageRefs(const QString &archivePath)
+{
+    QStringList out;
+#ifdef BILTOO_HAVE_THUMTOO
+    if (archivePath.isEmpty()) {
+        return out;
+    }
+    const QFileInfo fi(archivePath);
+    if (!fi.exists() || !fi.isFile()) {
+        return out;
+    }
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return out;
+    }
+
+    const std::filesystem::path abs = absPathStd(archivePath);
+    const std::string archiveUri = thumtoo::archive_uri(abs);
+
+    auto entries = c->get_archive_entries(archiveUri);
+    if (entries.empty()) {
+        // Source I/O + durable store; callers use this from expand workers.
+        entries = c->refresh_archive_toc(abs);
+    }
+    if (entries.empty()) {
+        return out;
+    }
+
+    const QString archiveAbs = QString::fromStdString(abs.string());
+    out.reserve(int(entries.size()));
+    for (const auto &entry : entries) {
+        if (!thumtoo::is_likely_image_member_path(entry.member_path)) {
+            continue;
+        }
+        const QString member = QString::fromStdString(entry.member_path);
+        const QString ref = ArchivePath::makeRef(archiveAbs, member);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#else
+    Q_UNUSED(archivePath);
+#endif
+    return out;
+}
+
 } // namespace ThumtooCache
