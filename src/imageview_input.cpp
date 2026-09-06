@@ -53,6 +53,11 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     if (!isImageMode()) {
         return EdgeZone::None;
     }
+    // Tool modes own the canvas: no Up-to-Gallery / prev-next edge chrome
+    // (same as crop). Esc or the toolbar toggle leaves the mode.
+    if (m_cropMode || m_attentionMode) {
+        return EdgeZone::None;
+    }
     // Top strip: back to Gallery or Workspace (when Image was opened from there).
     // Takes priority over left/right so the upper corners still return.
     if (m_galleryReturnAvailable && viewPos.y() < edgeZoneHeight()) {
@@ -738,13 +743,8 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         return;
     }
     if (m_attentionMode && isImageMode()) {
-        const EdgeZone ez = edgeZoneAt(event->pos());
-        if (ez == EdgeZone::GalleryReturn || ez == EdgeZone::Previous || ez == EdgeZone::Next) {
-            viewport()->setCursor(Qt::PointingHandCursor);
-        } else {
-            viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
-                                                                  : Qt::CrossCursor);
-        }
+        viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
+                                                              : Qt::CrossCursor);
     }
     if (m_cropMode && m_cropActiveHandle != CropHandle::None) {
         updateCropHandleDrag(event->pos());

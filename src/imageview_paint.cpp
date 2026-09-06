@@ -131,7 +131,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             paintPageGuideHandles(&painter);
         }
     }
-    if (!m_cropMode && m_hoverEdge != EdgeZone::None && isImageMode()
+    if (!m_cropMode && !m_attentionMode && m_hoverEdge != EdgeZone::None && isImageMode()
         && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }

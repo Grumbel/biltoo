@@ -123,6 +123,10 @@ void ImageView::setAttentionMode(bool on)
         }
         m_attentionMode = true;
         m_attentionDragging = false;
+        // Drop edge hover so Up-to-Gallery chrome disappears immediately.
+        if (m_hoverEdge != EdgeZone::None) {
+            m_hoverEdge = EdgeZone::None;
+        }
         ensureAttentionPoint();
         if (viewport()) {
             viewport()->setCursor(Qt::CrossCursor);
@@ -209,7 +213,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     painter.setPen(QColor(255, 255, 255, 240));
     const QString hint =
         tr("Attention point — drag or click to place · Detect on toolbar · Esc exits\n"
-           "(%1, %2)")
+           "(Up to Gallery is off while editing)  (%1, %2)")
             .arg(norm.x(), 0, 'f', 3)
             .arg(norm.y(), 0, 'f', 3);
     painter.drawText(viewport()->rect().adjusted(12, 12, -12, -12),
