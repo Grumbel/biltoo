@@ -5354,3 +5354,29 @@ Align archive expand filtering with biltoo's image suffixes.
 ### Done criteria
 - [x] Mixed archives keep HEIC/etc. when TOC is cache-hit
 - [x] Docs / handoff; next **292**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-292-thumb-session-switch`
+
+### Symptom
+Switching Recent Sessions (History): filmstrip does not empty immediately; old
+thumbnails linger and are slowly replaced by the new session.
+
+### Causes
+1. Async `setThumbnailIcon` via `QMetaObject::invokeMethod` does not re-check
+   `m_generation` after the queue hop — jobs from the previous session can paint
+   into the new row indices after `setFiles` rebuilt the list.
+2. `loadFiles` → background expand leaves the previous session UI visible until
+   expand finishes (no immediate filmstrip clear on replace).
+
+### Fix
+1. Thumbnail load workers: on GUI apply, require matching generation **and**
+   `m_files[row] == path` before `setThumbnailIcon`.
+2. Same guard for `ladderReady` filmstrip refresh jobs.
+3. `loadFiles` / background expand replace path: clear filmstrip immediately
+   (`setSession({}, {})`) so History switch does not keep old icons.
+
+### Done criteria
+- [x] Stale async thumbs cannot paint after session rebuild
+- [x] Replace load clears filmstrip before expand/decode
+- [x] Docs / handoff; next **293**

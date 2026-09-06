@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-291-archive-member-filter**
-(TOC expand uses biltoo image suffixes, not thumtoo's short list).
-Next bundle number: **292**.
+Latest agent handoff: **TODO.md → biltoo-292-thumb-session-switch**
+(Filmstrip: gen+path guard on async icons; clear on session replace).
+Next bundle number: **293**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -263,7 +263,9 @@ HIG-conformant on every desktop.
 - **Slide (projector)** on pure wall-clock phase (`setSlideshowPhase` + paint translate).
 - **Icons**: colour (no monochrome / KDE-blue); layout families by hue; crop amber;
   denser raster ladder; adjustments colour wheel.
-- **Filmstrip**: synchronous thumbnail decode on `ImageCache` miss.
+- **Filmstrip**: synchronous thumbnail decode on `ImageCache` miss. Async icon
+  apply must re-check `m_generation` and `m_files[row] == path` after the queue
+  hop. Session replace (`loadFiles` / History) clears the strip immediately.
 - **Workspace enter**: clear selection; empty Workspace does not adopt Image/Gallery
   live tiles; cancel Gallery background `LoadAdd` on Gallery→Workspace.
 - **Paused slideshow ←/→**: refresh pure phase (clock does not tick while paused).
