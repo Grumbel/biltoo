@@ -253,12 +253,15 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                 if (path.isEmpty() || m_files.isEmpty()) {
                     return;
                 }
-                const int decodeSize = thumbDecodePixels();
+                const int decodeSize =
+                    qMax(thumbDecodePixels(), ThumtooCache::kFilmstripLadderEdge);
                 const quint64 gen = m_generation.load();
                 for (int i = 0; i < m_files.size(); ++i) {
                     if (m_files.at(i) != path) {
                         continue;
                     }
+                    m_thumbAwaitLadder.remove(i);
+                    m_thumbLoadScheduled.remove(i);
                     if (i < m_sessionIds.size()) {
                         const SessionImageId sid = m_sessionIds.at(i);
                         if (sid != kInvalidSessionImageId
@@ -488,6 +491,7 @@ void ThumbnailBar::setLabelsVisible(bool on)
 void ThumbnailBar::cancelPendingLoads()
 {
     m_thumbLoadScheduled.clear();
+    m_thumbAwaitLadder.clear();
     ++m_generation;
 }
 
@@ -752,7 +756,9 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         return;
     }
     const quint64 gen = m_generation.load();
-    const int decodeSize = thumbDecodePixels();
+    // Never request below thumtoo's smallest ladder edge (find_best used to miss).
+    const int decodeSize =
+        qMax(thumbDecodePixels(), ThumtooCache::kFilmstripLadderEdge);
     m_decodedSize = decodeSize;
 
     const int n = m_files.size();
@@ -773,7 +779,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
     const int hi = qMin(n, focus + radius + 1);
 
     for (int i = lo; i < hi; ++i) {
-        if (m_thumbLoadScheduled.contains(i)) {
+        if (m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i)) {
             continue;
         }
         m_thumbLoadScheduled.insert(i);
@@ -811,7 +817,22 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             }
             const QImage image = bar->makeThumbnail(path, decodeSize);
             bar = guard.data();
-            if (!bar || image.isNull() || gen != bar->m_generation.load()) {
+            if (!bar || gen != bar->m_generation.load()) {
+                return;
+            }
+            if (image.isNull()) {
+                // Soft miss (e.g. archive ladder pending): free the slot and wait
+                // for ladderReady instead of leaving the row permanently scheduled.
+                QMetaObject::invokeMethod(bar, [guard, i, gen]() {
+                    ThumbnailBar *const host = guard.data();
+                    if (!host || gen != host->m_generation.load()) {
+                        return;
+                    }
+                    host->m_thumbLoadScheduled.remove(i);
+                    if (ThumtooCache::isAvailable()) {
+                        host->m_thumbAwaitLadder.insert(i);
+                    }
+                }, Qt::QueuedConnection);
                 return;
             }
             // A crop may have landed while this job ran — do not clobber it.

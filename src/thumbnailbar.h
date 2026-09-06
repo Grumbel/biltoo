@@ -184,6 +184,8 @@ private:
     std::atomic<quint64> m_generation{0};
     /** Row indices that already have a pool job (or finished) this generation. */
     QSet<int> m_thumbLoadScheduled;
+    /** Soft miss waiting on thumtoo ladderReady (row index). */
+    QSet<int> m_thumbAwaitLadder;
     bool m_multiSelect = false;
     int m_selectionAnchor = -1;
     bool m_centeringGuard = false;

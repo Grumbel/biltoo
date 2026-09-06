@@ -5648,3 +5648,21 @@ Also `updateGalleryDecodeWindow` schedules **visible and rest** (all tiles).
 - [x] Transition UI max tracks interval
 - [x] Interval can be < 0.5s (and 0)
 - [x] Docs; next **309**
+
+
+## Plan / work (2026-09-06) — bundle `biltoo-309-thumb-ladder-edge`
+
+### Cause
+Filmstrip `thumbDecodePixels()` can be **below** thumtoo’s smallest ladder edge
+(128). `find_best_level` requires `max_edge <= request` → miss after encode →
+`ladderReady` never emits → `m_thumbLoadScheduled` keeps the row forever.
+
+### Fix
+1. thumtoo: if no level ≤ request, fall back to the **smallest** available level.
+2. biltoo filmstrip: request at least `kFilmstripLadderEdge`; on soft miss clear
+   scheduled (or await-ladder) so cells can retry.
+
+### Done criteria
+- [x] Small filmstrip cells still get ladder thumbs
+- [x] Null soft loads do not permanently block a row
+- [x] Bundles thumtoo + biltoo
