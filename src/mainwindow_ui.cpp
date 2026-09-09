@@ -184,16 +184,19 @@ void MainWindow::createActions()
     connect(m_fullscreenAct, &QAction::triggered, this, &MainWindow::toggleFullscreen);
 
     m_rotateLeftAct = new QAction(tr("Rotate &Left"), this);
-    // Ctrl+L is Open Location; use Ctrl+Shift+L for rotate left.
-    m_rotateLeftAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_L);
+    // < (feh/nsxiv) + Ctrl+Shift+R (desktop viewers). Ctrl+L is Open Location.
+    m_rotateLeftAct->setShortcuts({QKeySequence(Qt::Key_Less),
+                                   QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R)});
     m_rotateLeftAct->setIcon(themeIcon(QStringLiteral("object-rotate-left"), QStyle::SP_ArrowBack));
-    m_rotateLeftAct->setStatusTip(tr("Rotate 90° counter-clockwise (Ctrl+Shift+L)"));
+    m_rotateLeftAct->setStatusTip(tr("Rotate 90° counter-clockwise (< or Ctrl+Shift+R)"));
     connect(m_rotateLeftAct, &QAction::triggered, this, &MainWindow::rotateLeft);
 
     m_rotateRightAct = new QAction(tr("Rotate &Right"), this);
-    m_rotateRightAct->setShortcuts({Qt::CTRL | Qt::Key_R, Qt::Key_R});
+    m_rotateRightAct->setShortcuts({QKeySequence(Qt::Key_Greater),
+                                    QKeySequence(Qt::CTRL | Qt::Key_R),
+                                    QKeySequence(Qt::Key_R)});
     m_rotateRightAct->setIcon(themeIcon(QStringLiteral("object-rotate-right"), QStyle::SP_ArrowForward));
-    m_rotateRightAct->setStatusTip(tr("Rotate 90° clockwise"));
+    m_rotateRightAct->setStatusTip(tr("Rotate 90° clockwise (> , R, or Ctrl+R)"));
     connect(m_rotateRightAct, &QAction::triggered, this, &MainWindow::rotateRight);
 
     m_flipHAct = new QAction(tr("Flip &Horizontal"), this);
