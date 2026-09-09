@@ -2,7 +2,7 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-354-pdfimage-probe.** Requires **thumtoo ≥ 123** for `//pdfimage`
+**Tip: biltoo-355-pdfimage-soft-miss.** Requires **thumtoo ≥ 123** for `//pdfimage`
 locator registration + dict-size extract.
 
 ### Shipped

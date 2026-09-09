@@ -9,6 +9,7 @@
 #include "imageloader.h"
 #include "imagecache.h"
 #include "archivepath.h"
+#include "pagepath.h"
 #include "sessionappearance.h"
 
 #include <QFileInfo>
@@ -467,7 +468,17 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             }
         }
         if (image.isNull()) {
-            m_lastLoadError = path;
+            if (ThumtooCache::isAvailable()
+                && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
+                // Soft miss: schedule ladder; status bar keeps loading until
+                // ladderReady / a later successful load.
+                ThumtooCache::scheduleProbe(path);
+                ThumtooCache::schedulePixels(
+                    path, qMax(ThumtooCache::kGalleryLadderEdge, 512));
+                m_lastLoadError.clear();
+            } else {
+                m_lastLoadError = path;
+            }
             emit statusChanged();
             return;
         }
@@ -647,9 +658,30 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     takePendingWorkspacePath(path);
 
     if (image.isNull()) {
+        // //pdfimage: / //page: with thumtoo: empty sync load is expected while the
+        // ladder builds — await ladderReady instead of permanent failure.
+        if (ThumtooCache::isAvailable()
+            && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
+            ThumtooCache::scheduleProbe(path);
+            ThumtooCache::schedulePixels(
+                path, qMax(ThumtooCache::kGalleryLadderEdge, 512));
+            m_galleryAwaitLadder.insert(path);
+            m_lastLoadError.clear();
+            emit statusChanged();
+            if (isGalleryMode()) {
+                updateGalleryDecodeWindow();
+            }
+            return;
+        }
         qWarning("ImageView: decode failed for %s", qPrintable(path));
         m_galleryDecodeFailed.insert(path);
         m_lastLoadError = path;
+        // Surface the error on any live placeholder for this path.
+        for (ImageItem *item : m_items) {
+            if (item && item->path() == path && !item->hasDecodedPixels()) {
+                item->setToolTip(tr("Failed to load:\n%1").arg(path));
+            }
+        }
         emit statusChanged();
         if (isGalleryMode()) {
             updateGalleryDecodeWindow();
