@@ -6,6 +6,7 @@
 #include "projectfile.h"
 #include "archivepath.h"
 #include "pagepath.h"
+#include "epublayoutdialog.h"
 #include "workspacebackgrounddialog.h"
 #include "imageitem.h"
 #include "imagecache.h"
@@ -1585,6 +1586,22 @@ void MainWindow::updateNavigationActions()
     const bool canSlideshow = hasMany && m_imageView && !m_imageView->isWorkspaceMode();
     m_previousAct->setEnabled(imageNav);
     m_nextAct->setEnabled(imageNav);
+    if (m_epubLayoutAct) {
+        bool epub = false;
+        if (hasFiles) {
+            const int i = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                              ? m_currentIndex
+                              : 0;
+            const QString pth = m_session.paths().at(i);
+            if (PagePath::isPageRef(pth)) {
+                const PagePath::Ref r = PagePath::parse(pth);
+                epub = r.valid && r.isEpub();
+            } else {
+                epub = PagePath::isEpubFile(pth) || PagePath::isEpubLayoutOnly(pth);
+            }
+        }
+        m_epubLayoutAct->setEnabled(epub);
+    }
     if (m_firstAct) {
         m_firstAct->setEnabled(imageNav);
     }
@@ -1805,6 +1822,89 @@ void MainWindow::commitLocationBar()
     }
     if (m_imageView) {
         m_imageView->setFocus(Qt::OtherFocusReason);
+    }
+}
+
+
+void MainWindow::showEpubLayoutDialog()
+{
+    if (m_session.paths().isEmpty()) {
+        return;
+    }
+    const int idx = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                        ? m_currentIndex
+                        : 0;
+    const QString curPath = m_session.paths().at(idx);
+
+    QString epubFile;
+    QString layoutParams;
+    int keepPage = 1;
+
+    if (PagePath::isPageRef(curPath)) {
+        const PagePath::Ref ref = PagePath::parse(curPath);
+        if (!ref.valid || !ref.isEpub()) {
+            if (statusBar()) {
+                statusBar()->showMessage(tr("EPUB Layout applies to EPUB pages only."), 4000);
+            }
+            return;
+        }
+        epubFile = ref.pdfPath;
+        layoutParams = ref.epubLayoutParams;
+        keepPage = ref.page;
+    } else if (PagePath::isEpubLayoutOnly(curPath)) {
+        epubFile = PagePath::documentFilePath(curPath);
+        layoutParams = PagePath::epubLayoutParamsOf(curPath);
+    } else if (PagePath::isEpubFile(curPath)) {
+        epubFile = curPath;
+        layoutParams.clear();
+    } else {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("EPUB Layout applies to EPUB pages only."), 4000);
+        }
+        return;
+    }
+
+    EpubLayoutDialog dlg(this);
+    dlg.setLayoutParams(layoutParams);
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+    const QString newParams = dlg.layoutParams();
+    if (newParams == layoutParams) {
+        return;
+    }
+
+    // Rewrite every session page that belongs to this EPUB.
+    QStringList paths = m_session.paths();
+    int newIndex = idx;
+    const QFileInfo epubInfo(epubFile);
+    const QString epubAbs =
+        epubInfo.exists() ? epubInfo.absoluteFilePath() : epubFile;
+
+    for (int i = 0; i < paths.size(); ++i) {
+        if (!PagePath::isPageRef(paths.at(i))) {
+            continue;
+        }
+        const PagePath::Ref r = PagePath::parse(paths.at(i));
+        if (!r.valid || !r.isEpub()) {
+            continue;
+        }
+        const QFileInfo fi(r.pdfPath);
+        const QString abs = fi.exists() ? fi.absoluteFilePath() : r.pdfPath;
+        if (abs != epubAbs && r.pdfPath != epubFile) {
+            continue;
+        }
+        paths[i] = PagePath::makeEpubRef(r.pdfPath, r.page, newParams);
+        if (r.page == keepPage) {
+            newIndex = i;
+        }
+    }
+
+    const int startAt = (newIndex >= 0 && newIndex < paths.size()) ? newIndex : 0;
+    // Full reload so thumtoo picks up new layout URIs (reflow + cache keys).
+    loadFiles(paths, startAt);
+    if (statusBar()) {
+        statusBar()->showMessage(tr("EPUB layout applied."), 3000);
     }
 }
 

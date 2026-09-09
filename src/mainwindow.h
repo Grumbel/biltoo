@@ -241,6 +241,7 @@ private slots:
     void about();
     void showKeyboardShortcuts();
     void showPreferences();
+    void showEpubLayoutDialog();
     void showSlideshowSettings();
     void onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                         const QPointF &scenePos, const QList<qint64> &sessionIds = {},
@@ -511,6 +512,7 @@ private:
     QAction *m_toggleLayoutPanelAct = nullptr;
     QAction *m_toggleScrollBarsAct = nullptr;
     QAction *m_preferencesAct = nullptr;
+    QAction *m_epubLayoutAct = nullptr;
     QAction *m_aboutAct = nullptr;
     QAction *m_keyboardShortcutsAct = nullptr;
     QActionGroup *m_sortGroup = nullptr;

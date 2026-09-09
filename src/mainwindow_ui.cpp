@@ -714,6 +714,9 @@ void MainWindow::createActions()
 
     m_preferencesAct = new QAction(tr("&Preferences..."), this);
     m_preferencesAct->setShortcut(QKeySequence::Preferences);
+    m_epubLayoutAct = new QAction(tr("EPUB &Layout..."), this);
+    m_epubLayoutAct->setToolTip(tr("Edit //epub: layout profile for the current book"));
+    connect(m_epubLayoutAct, &QAction::triggered, this, &MainWindow::showEpubLayoutDialog);
     m_preferencesAct->setIcon(themeIcon(QStringLiteral("preferences-system"), QStyle::SP_FileDialogInfoView));
     m_preferencesAct->setStatusTip(tr("Application preferences"));
     connect(m_preferencesAct, &QAction::triggered, this, &MainWindow::showPreferences);
@@ -792,6 +795,8 @@ void MainWindow::createMenus()
     m_imageMenu->addSeparator();
     m_imageMenu->addAction(m_cropAct);
     m_imageMenu->addAction(m_attentionAct);
+    m_imageMenu->addSeparator();
+    m_imageMenu->addAction(m_epubLayoutAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));

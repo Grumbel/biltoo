@@ -6388,3 +6388,15 @@ Return still hid it. Root causes:
 ### Done criteria
 - [x] Full document after removing //page:N
 - [x] Docs; next **351**
+
+
+## Plan / work (2026-09-09) — bundle `biltoo-351-epub-layout-dialog`
+
+### Change
+Cancel/Apply **EPUB Layout** dialog (Image → EPUB Layout…) edits the
+`//epub:` profile via `thumtoo::parse/format_epub_layout_params` and rewrites
+all session pages for that book, then `loadFiles` to reflow.
+
+### Done criteria
+- [x] Dialog + menu + session path rewrite
+- [x] Docs; next **352**

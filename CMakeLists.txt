@@ -27,7 +27,8 @@ else()
       if(NOT IS_DIRECTORY "${_biltoo_git_dir}")
         file(READ "${_biltoo_git_dir}" _biltoo_gitfile)
         string(REGEX REPLACE "^gitdir:[ 	]*([^
-]+).*" "\1" _biltoo_git_dir
+
+]+).*" "\1" _biltoo_git_dir
                "${_biltoo_gitfile}")
         if(NOT IS_ABSOLUTE "${_biltoo_git_dir}")
           set(_biltoo_git_dir "${CMAKE_CURRENT_SOURCE_DIR}/${_biltoo_git_dir}")
@@ -156,6 +157,8 @@ add_executable(biltoo
   src/preferencesdialog.h
   src/slideshowsettingsdialog.cpp
   src/slideshowsettingsdialog.h
+  src/epublayoutdialog.cpp
+  src/epublayoutdialog.h
   src/workspacebackgrounddialog.cpp
   src/workspacebackgrounddialog.h
   src/metadatapanel.cpp

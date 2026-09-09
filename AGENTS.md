@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-350-location-strip-page**
+Latest agent handoff: **TODO.md → biltoo-351-epub-layout-dialog**
 (EPUB URI: pixels + fs; see thumtoo-107).
-Next bundle number: **351**.
+Next bundle number: **352**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
