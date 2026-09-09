@@ -6354,3 +6354,24 @@ to force the dedicated row every startup.
 ### Done criteria
 - [x] Location bar stays on its own row even with old windowState
 - [x] Docs; next **348**
+
+## Plan / work (2026-09-09) — bundle `biltoo-348-location-bar-hide`
+
+### Context
+After forcing the own-row break, the location bar stopped hiding on:
+- unchecking “Show Location Bar”
+- Escape
+
+Return still hid it. Root causes:
+1. `insertToolBarBreak` after `setLocationBarPinned` could leave the bar visible.
+2. `setLocationBarPinned(false)` only hid when the line edit did *not* have focus,
+   so an open/focused bar ignored the toggle.
+
+### Change
+- Re-apply `m_locationBar->setVisible(m_locationBarPinned)` after the break.
+- On unpin, always clear focus, hide the bar, and return focus to the view.
+
+### Done criteria
+- [x] Toggle hides the bar
+- [x] Escape hides the bar when not pinned
+- [x] Docs; next **349**

@@ -1663,8 +1663,17 @@ void MainWindow::setLocationBarPinned(bool pinned)
     if (pinned) {
         syncLocationBarText();
         m_locationBar->setVisible(true);
-    } else if (!m_locationEdit || !m_locationEdit->hasFocus()) {
+    } else {
+        // Explicit unpin via the menu: always hide and release focus.
+        // (Previously we kept the bar if the line edit had focus, which made
+        // the toggle appear broken and left Escape with nothing to cancel.)
+        if (m_locationEdit) {
+            m_locationEdit->clearFocus();
+        }
         m_locationBar->setVisible(false);
+        if (m_imageView) {
+            m_imageView->setFocus(Qt::OtherFocusReason);
+        }
     }
 }
 

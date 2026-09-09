@@ -1864,8 +1864,11 @@ void MainWindow::readSettings()
     // restoreState can put the location bar back on the same row as the main
     // toolbar (from sessions saved before the dedicated-row layout). Force a
     // break so it always sits on its own row under the main toolbar.
+    // Re-apply visibility afterwards — insertToolBarBreak / restoreState can
+    // leave the bar shown even when it is not pinned.
     if (m_locationBar) {
         insertToolBarBreak(m_locationBar);
+        m_locationBar->setVisible(m_locationBarPinned);
     }
 
     m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
