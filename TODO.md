@@ -1,3 +1,37 @@
+# TODO / agent handoff
+
+## Status (2026-09-09, session end)
+
+**Tip: biltoo-353-qt69-flipped.** Requires **thumtoo ≥ 121** for `//pdfimage` /
+`//pdfimages` and current EPUB layout APIs.
+
+### Shipped this session (high level)
+
+- Location bar: own toolbar row; show/hide + Escape fixed; strip `//page:N`
+  returns to full multipage document (`PagePath::isEpubLayoutOnly` / expand).
+- **EPUB Layout** dialog (Image menu): Cancel/Apply edits `//epub:` via
+  `thumtoo::EpubLayout` (w/h px, fs, margins, lh, cols, align, ff, theme, pubcss).
+- **//pdfimages** collection expand → session leaves `//pdfimage:N` (native
+  embeds). Bare PDF still expands to `//page:N`.
+- Qt ≥ 6.9: `QImage::flipped` only (no deprecated `mirrored`).
+
+### Depends on thumtoo
+
+| Need | thumtoo tip (approx) |
+|------|----------------------|
+| EPUB pixels + fs + margins + lh/cols/align + CSS | 113+ |
+| Canonical `//epub:` on parse | 114 |
+| `//pdfimage:N` extract + client | 115–117, 119 |
+| `//pdfimages` collection + expand namespace/consts | 118, 120–121 |
+
+### Next ideas
+
+- Menu: “Open PDF as embedded images” (same as appending `//pdfimages`).
+- Pixel-filter pipes (`//crop:`, invert, …) — design notes in thumtoo TODO.
+- Full compile verification after human pulls both tips.
+
+---
+
 ## biltoo-002 — page res / HUD / DjVu / location
 
 - [x] HUD uses native intrinsic size (not ladder step)

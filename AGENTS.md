@@ -10,9 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-351-epub-layout-dialog**
-(EPUB URI: pixels + fs; see thumtoo-107).
-Next bundle number: **352**.
+Latest agent handoff: **TODO.md → biltoo-353-qt69-flipped** (stack with
+**thumtoo-121**). Next bundle number: **354**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
@@ -28,7 +27,7 @@ Windows / cross-compile feasibility (not a scheduled port).
 
 ## Build & run
 
-- Primary build system: **Nix flake** + CMake + Qt6.
+- Primary build system: **Nix flake** + CMake + **Qt ≥ 6.9**.
   - `nix develop` – deps only (compiler, Qt, vips, …). Not a mini install.
   - In the shell: `biltoo-configure`, `biltoo-build`, `biltoo-run`,
     `biltoo-run-gdb` (out-of-tree default: `/tmp/biltoo-build`, override with
@@ -66,9 +65,45 @@ Windows / cross-compile feasibility (not a scheduled port).
   ```
   Co-authored-by: Grok <grok@x.ai>
   ```
-- Deliverables are sequential git bundles (`biltoo-001-…`, `biltoo-002-…`, …)
+- Deliverables are sequential **git bundles** (`biltoo-NNN-short-slug.bundle`)
   that stack cleanly on the previous tip and use `HEAD` as the ref.
   Bundle numbers never repeat.
+
+### Bundle handovers (agents)
+
+Agents often work in a sandbox **without** write access to the user’s real
+git remotes. The reliable handoff is:
+
+1. Commit on a local clone (often under `/tmp/…`).
+2. `git bundle create /path/to/biltoo-NNN-slug.bundle HEAD`
+3. Copy the file into a place the chat UI can expose as a **downloadable**
+   artifact (this session: `/home/workdir/artifacts/`).
+4. Mention the path in the reply so the human can `git pull` the bundle.
+
+**Do not** end a coding turn with only a commit hash and no bundle unless the
+human can already pull that commit from a remote they control. Prefer always
+emitting a numbered `.bundle` for any tip the human is expected to integrate.
+
+Apply on the human side:
+
+```bash
+cd ~/projects/biltoo
+git pull /path/to/biltoo-NNN-slug.bundle HEAD
+# or: git fetch bundle.file HEAD:refs/heads/agent-tip && git merge …
+```
+
+thumtoo is a **separate** repo with its own sequence (`thumtoo-NNN-…`). Keep
+numbers and tips independent; note required thumtoo tip in biltoo TODO when
+APIs change.
+
+### First message vs AGENTS.md
+
+Standing rules (identity, crop lock, commit author, no feature removal, …)
+belong in **this file** and related docs (`IDENTITY.md`, `DOMAIN.md`). The
+human’s first chat message can be short: point at the tip/TODO and the task.
+Re-pasting the full rule book every session is optional if AGENTS.md is
+current; do **refresh AGENTS.md / TODO.md** at session end so the next agent
+does not depend on chat history.
 
 ## Domain model
 
@@ -338,3 +373,26 @@ and only then `scheduleProbe` + ladder if stale. Hits return immediately.
 only `scheduleProbe` — no Qt/vips/extract size open on the miss path. `sizeReady`
 applies the size. Native size probe is the no-thumtoo fallback only.
 
+
+
+## Agent sandbox / environment
+
+Lessons from automated sessions (do not assume the opposite):
+
+| Capability | Typical agent sandbox | Human / Nix flake |
+|------------|----------------------|-------------------|
+| Full `nix build` of biltoo | Often **unavailable** or incomplete | Yes — primary |
+| System Qt / CMake compile | May lack Qt ≥ 6.9 | Flake provides |
+| Network `git clone` GitHub | Usually works | Yes |
+| Write to user’s `~/projects` | **No** | Human pulls bundles |
+| Downloadable artifacts | Use `/home/workdir/artifacts/*.bundle` when available | `git pull` bundle |
+| `make -k` / compile-all-errors | Not default in Nix/cmake; ask for `-k` if needed | Optional |
+
+- Prefer **static review + bundle delivery** when the sandbox cannot link Qt.
+- Never claim “builds clean” unless a real compile was run in that environment.
+- Nested **thumtoo** source is often a flake input; biltoo compile errors in
+  `thumtoo/` mean the **thumtoo tip** must advance first.
+- `nix build -k` keeps going across **derivations**, not across object files
+  inside one failed `make`. For many compile errors in one drv: `cmake --build . -- -k`.
+
+See also [AGENT-ENV.md](AGENT-ENV.md).
