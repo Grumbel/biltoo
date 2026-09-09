@@ -229,7 +229,8 @@ QSize ImageView::probeImageSize(const QString &path) const
     // Archive member probes must not extract on the GUI thread (large zip
     // open would freeze Gallery virtualization). Prefer thumtoo cache-only
     // size; otherwise a neutral placeholder until ladder/sizeReady reflows.
-    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)) {
+    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
+        || PagePath::isPdfImageRef(path)) {
         if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
             return cached;
         }
@@ -271,8 +272,10 @@ QSize ImageView::imageSizeForPath(const QString &path)
         rememberImageSize(path, cached);
         return cached;
     }
-    // Archives: schedule thumtoo probe; neutral stand-in until sizeReady.
-    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)) {
+    // Archives / multipage / embedded PDF images: schedule thumtoo probe;
+    // neutral stand-in until sizeReady.
+    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
+        || PagePath::isPdfImageRef(path)) {
         scheduleImageSizeProbe(path);
         m_provisionalSizePaths.insert(path);
         return QSize(1024, 1024);

@@ -485,8 +485,9 @@ QSize probeSize(const QString &path)
         return {};
     }
 
-    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)) {
-        // No thumtoo: cannot size container pages without backend support.
+    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
+        || PagePath::isPdfImageRef(path)) {
+        // No thumtoo: cannot size container pages / embedded images without backend.
         return {};
     }
     if (path.isEmpty() || !QFile::exists(path)) {
@@ -834,6 +835,31 @@ QImage load(const QString &path)
     if (PagePath::isPageRef(path)) {
         return loadPageRef(path, 0);
     }
+    if (PagePath::isPdfImageRef(path)) {
+        // Embedded PDF images: thumtoo ladder only (no page-render backend).
+        int edge = 4096;
+        const QSize native = ThumtooCache::cachedSize(path);
+        if (native.isValid() && native.width() > 0 && native.height() > 0) {
+            edge = qMin(8192, qMax(native.width(), native.height()));
+        }
+        const QByteArray ladder = ThumtooCache::cachedLadderBytes(path, edge);
+        if (!ladder.isEmpty()) {
+#ifdef BILTOO_HAVE_VIPS
+            QImage fromLadder = loadWithVipsBuffer(ladder, 0);
+            if (!fromLadder.isNull()) {
+                return fromLadder;
+            }
+#endif
+            QImage qtImg;
+            if (qtImg.loadFromData(ladder)) {
+                return qtImg;
+            }
+        }
+        if (ThumtooCache::isAvailable()) {
+            ThumtooCache::schedulePixels(path, edge);
+        }
+        return {};
+    }
     if (ArchivePath::isArchiveRef(path)) {
         return loadArchiveRef(path, 0);
     }
@@ -882,9 +908,13 @@ QImage loadThumbnail(const QString &path, int maxEdge)
         ThumtooCache::schedulePixels(path, maxEdge);
     }
 
-    if (PagePath::isPageRef(path)) {
+    if (PagePath::isPageRef(path) || PagePath::isPdfImageRef(path)) {
+        // //page: and //pdfimage: — with thumtoo, wait for ladderReady; no sync decode.
         if (ThumtooCache::isAvailable()) {
             return {};
+        }
+        if (PagePath::isPdfImageRef(path)) {
+            return {}; // no non-thumtoo path for embedded images
         }
         return loadPageRef(path, maxEdge);
     }

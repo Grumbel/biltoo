@@ -2,8 +2,14 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-353-qt69-flipped.** Requires **thumtoo ≥ 121** for `//pdfimage` /
-`//pdfimages` and current EPUB layout APIs.
+**Tip: biltoo-354-pdfimage-probe.** Requires **thumtoo ≥ 123** for `//pdfimage`
+locator registration + dict-size extract.
+
+### Shipped
+- Treat `//pdfimage:N` like `//page:` for size probe placeholders (ImageView).
+- ImageLoader: no Qt/Vips path for pdfimage; ladder + schedulePixels.
+- preparePaths skips pdfimage leaves (per-tile scheduleProbe).
+
 
 ### Shipped this session (high level)
 

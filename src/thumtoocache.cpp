@@ -637,9 +637,10 @@ void preparePaths(const QStringList &paths)
         if (isUnsupported(p)) {
             continue;
         }
-        if (ArchivePath::isArchiveRef(p) || PagePath::isPageRef(p)) {
-            // Skip containers: probing every page/member on open floods the
-            // worker before visible filmstrip/gallery tiles can decode.
+        if (ArchivePath::isArchiveRef(p) || PagePath::isPageRef(p)
+            || PagePath::isPdfImageRef(p) || PagePath::isPdfImagesCollection(p)) {
+            // Skip containers / embedded leaves: probing every page/member on
+            // open floods the worker; per-tile scheduleProbe handles leaves.
             continue;
         }
         const QFileInfo fi(p);
