@@ -37,10 +37,10 @@ QString imageFileDialogFilter()
     }
     const QString images = imagePatterns.join(QLatin1Char(' '));
     const QString archives = archivePatterns.join(QLatin1Char(' '));
-    // First filter is the dialog default — include archives/PDFs so containers are visible.
+    // First filter is the dialog default — include archives/PDFs/EPUBs so containers are visible.
     return QObject::tr(
-               "Images, archives and PDFs (%1 %2 *.pdf);;Images only (%1);;"
-               "Archives only (%2);;PDF documents (*.pdf);;All Files (*)")
+               "Images, archives, PDF and EPUB (%1 %2 *.pdf *.epub);;Images only (%1);;"
+               "Archives only (%2);;PDF documents (*.pdf);;EPUB books (*.epub);;All Files (*)")
         .arg(images, archives);
 }
 
@@ -264,13 +264,21 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
     auto expandPdf = [](const QString &pdfPath) {
         return ThumtooCache::expandPdfToPageRefs(pdfPath);
     };
+    auto expandEpub = [](const QString &epubPath) {
+        return ThumtooCache::expandEpubToPageRefs(epubPath);
+    };
 
     QStringList images;
     for (const QString &path : paths) {
         if (PagePath::isPageRef(path)) {
             const PagePath::Ref ref = PagePath::parse(path);
             if (ref.valid) {
-                images.append(PagePath::makeRef(ref.pdfPath, ref.page));
+                if (ref.isEpub()) {
+                    images.append(PagePath::makeEpubRef(ref.pdfPath, ref.page,
+                                                        ref.epubLayoutParams));
+                } else {
+                    images.append(PagePath::makeRef(ref.pdfPath, ref.page));
+                }
             }
             continue;
         }
@@ -294,6 +302,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
                 const QString full = it.next();
                 if (PagePath::isPdfFile(full) && ThumtooCache::isAvailable()) {
                     images.append(expandPdf(full));
+                } else if (PagePath::isEpubFile(full) && ThumtooCache::isAvailable()) {
+                    images.append(expandEpub(full));
                 } else if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
                     images.append(expandArchive(full));
                 } else if (isImageFile(full)) {
@@ -305,6 +315,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             }
         } else if (info.isFile() && PagePath::isPdfFile(path) && ThumtooCache::isAvailable()) {
             images.append(expandPdf(path));
+        } else if (info.isFile() && PagePath::isEpubFile(path) && ThumtooCache::isAvailable()) {
+            images.append(expandEpub(path));
         } else if (info.isFile() && ArchivePath::isArchiveFile(path)
                    && ThumtooCache::isAvailable()) {
             images.append(expandArchive(path));
@@ -328,7 +340,8 @@ bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
             continue;
         }
         const QFileInfo info(path);
-        if (info.isFile() && (ArchivePath::isArchiveFile(path) || PagePath::isPdfFile(path))) {
+        if (info.isFile() && (ArchivePath::isArchiveFile(path) || PagePath::isPdfFile(path)
+                               || PagePath::isEpubFile(path))) {
             return true;
         }
         // Directory walks may encounter archives/PDFs; keep the GUI responsive.
@@ -441,7 +454,12 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
             if (PagePath::isPageRef(path)) {
                 const PagePath::Ref ref = PagePath::parse(path);
                 if (ref.valid) {
-                    images.append(PagePath::makeRef(ref.pdfPath, ref.page));
+                    if (ref.isEpub()) {
+                        images.append(PagePath::makeEpubRef(ref.pdfPath, ref.page,
+                                                            ref.epubLayoutParams));
+                    } else {
+                        images.append(PagePath::makeRef(ref.pdfPath, ref.page));
+                    }
                 }
                 continue;
             }
@@ -477,6 +495,15 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                                        .arg(name));
                         }
                         images.append(pages);
+                    } else if (PagePath::isEpubFile(full) && ThumtooCache::isAvailable()) {
+                        const QString name = QFileInfo(full).fileName();
+                        report(MainWindow::tr("Indexing EPUB “%1”…").arg(name));
+                        const QStringList pages = ThumtooCache::expandEpubToPageRefs(full);
+                        if (!pages.isEmpty()) {
+                            report(MainWindow::tr("EPUB “%1”: %n page(s)", "", pages.size())
+                                       .arg(name));
+                        }
+                        images.append(pages);
                     } else if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
                         const QString name = QFileInfo(full).fileName();
                         report(MainWindow::tr("Indexing archive “%1”…").arg(name));
@@ -502,6 +529,15 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                 const QStringList pages = ThumtooCache::expandPdfToPageRefs(path);
                 if (!pages.isEmpty()) {
                     report(MainWindow::tr("PDF “%1”: %n page(s)", "", pages.size()).arg(name));
+                }
+                images.append(pages);
+            } else if (info.isFile() && PagePath::isEpubFile(path)
+                       && ThumtooCache::isAvailable()) {
+                const QString name = info.fileName();
+                report(MainWindow::tr("Indexing EPUB “%1”…").arg(name));
+                const QStringList pages = ThumtooCache::expandEpubToPageRefs(path);
+                if (!pages.isEmpty()) {
+                    report(MainWindow::tr("EPUB “%1”: %n page(s)", "", pages.size()).arg(name));
                 }
                 images.append(pages);
             } else if (info.isFile() && ArchivePath::isArchiveFile(path)
@@ -536,20 +572,27 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                 }
                 if (window->statusBar()) {
                     bool anyPdf = false;
+                    bool anyEpub = false;
                     for (const QString &p : paths) {
                         if (PagePath::isPdfFile(p)) {
                             anyPdf = true;
-                            break;
+                        }
+                        if (PagePath::isEpubFile(p)) {
+                            anyEpub = true;
                         }
                     }
                     QString msg;
-                    if (anyPdf && !ThumtooCache::isAvailable()) {
+                    if ((anyPdf || anyEpub) && !ThumtooCache::isAvailable()) {
                         msg = MainWindow::tr(
-                            "Cannot open PDF: thumtoo is not available.");
+                            "Cannot open PDF/EPUB: thumtoo is not available.");
+                    } else if (anyEpub) {
+                        msg = MainWindow::tr(
+                            "Cannot open EPUB (no pages found). Rebuild thumtoo "
+                            "with MuPDF and update the biltoo flake input.");
                     } else if (anyPdf) {
                         msg = MainWindow::tr(
                             "Cannot open PDF (no pages found). Rebuild thumtoo "
-                            "with Poppler and update the biltoo flake input.");
+                            "with Poppler/MuPDF and update the biltoo flake input.");
                     } else {
                         msg = append ? MainWindow::tr("No readable images to add.")
                                      : MainWindow::tr("No readable images found.");

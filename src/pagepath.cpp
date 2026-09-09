@@ -12,18 +12,25 @@ namespace PagePath {
 
 bool isPageRef(const QString &path)
 {
-    return path.contains(QLatin1String(kMarker));
+    return path.contains(QLatin1String(kPageMarker));
 }
 
 Ref parse(const QString &path)
 {
     Ref out;
-    const int idx = path.indexOf(QLatin1String(kMarker));
-    if (idx < 0) {
+    const int pageIdx = path.indexOf(QLatin1String(kPageMarker));
+    if (pageIdx < 0) {
         return out;
     }
-    QString left = path.left(idx);
-    QString right = path.mid(idx + QLatin1String(kMarker).size());
+    QString left = path.left(pageIdx);
+    QString right = path.mid(pageIdx + QLatin1String(kPageMarker).size());
+
+    QString layoutParams;
+    const int epubIdx = left.indexOf(QLatin1String(kEpubMarker));
+    if (epubIdx >= 0) {
+        layoutParams = left.mid(epubIdx + QLatin1String(kEpubMarker).size());
+        left = left.left(epubIdx);
+    }
 
     if (left.startsWith(QLatin1String("file:"))) {
         const QUrl url(left);
@@ -36,6 +43,7 @@ Ref parse(const QString &path)
     }
     out.pdfPath = left;
     out.page = page;
+    out.epubLayoutParams = layoutParams;
     out.valid = !out.pdfPath.isEmpty();
     return out;
 }
@@ -50,7 +58,21 @@ QString makeRef(const QString &pdfPath, int page_1based)
     if (info.exists()) {
         abs = info.absoluteFilePath();
     }
-    return abs + QLatin1String(kMarker) + QString::number(page_1based);
+    return abs + QLatin1String(kPageMarker) + QString::number(page_1based);
+}
+
+QString makeEpubRef(const QString &epubPath, int page_1based, const QString &layoutParams)
+{
+    if (epubPath.isEmpty() || page_1based < 1 || layoutParams.isEmpty()) {
+        return {};
+    }
+    QString abs = epubPath;
+    const QFileInfo info(epubPath);
+    if (info.exists()) {
+        abs = info.absoluteFilePath();
+    }
+    return abs + QLatin1String(kEpubMarker) + layoutParams + QLatin1String(kPageMarker)
+           + QString::number(page_1based);
 }
 
 QString pdfFilePath(const QString &path)
@@ -90,6 +112,9 @@ QString canonicalSessionPath(const QString &path)
         if (!r.valid) {
             return path;
         }
+        if (r.isEpub()) {
+            return makeEpubRef(r.pdfPath, r.page, r.epubLayoutParams);
+        }
         return makeRef(r.pdfPath, r.page);
     }
     return ArchivePath::canonicalSessionPath(path);
@@ -104,9 +129,23 @@ bool isPdfFile(const QString &path)
     return name.endsWith(QLatin1String(".pdf"));
 }
 
+bool isEpubFile(const QString &path)
+{
+    if (isPageRef(path) || ArchivePath::isArchiveRef(path)) {
+        return false;
+    }
+    const QString name = QFileInfo(path).fileName().toLower();
+    return name.endsWith(QLatin1String(".epub"));
+}
+
 QStringList pdfSuffixes()
 {
     return {QStringLiteral("pdf")};
+}
+
+QStringList epubSuffixes()
+{
+    return {QStringLiteral("epub")};
 }
 
 } // namespace PagePath

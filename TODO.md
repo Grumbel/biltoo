@@ -1,3 +1,15 @@
+## EPUB open (thumtoo MuPDF) — **biltoo-xxx**
+
+- [x] `.desktop` / AppStream / default-apps: `application/epub+zip`
+- [x] File dialog: `*.epub` filter
+- [x] PagePath: `//epub:w,h,em//page:N` session refs
+- [x] Expand/open via `ThumtooCache::expandEpubToPageRefs` (default layout)
+- [ ] Font size / layout presets in UI — needs cleaner hierarchical document
+      model (book container + page children); URI already carries `em=` /
+      layout profile, so do not invent a one-off UI binding yet
+
+---
+
 # Biltoo TODO
 
 ## Core Vision

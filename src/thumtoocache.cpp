@@ -31,6 +31,14 @@
 #include "thumtoo/pdf.hpp"
 #define BILTOO_HAVE_THUMTOO_PDF 1
 #endif
+#if __has_include("thumtoo/epub.hpp")
+#include "thumtoo/epub.hpp"
+#define BILTOO_HAVE_THUMTOO_EPUB 1
+#endif
+#if __has_include("thumtoo/expand.hpp")
+#include "thumtoo/expand.hpp"
+#define BILTOO_HAVE_THUMTOO_EXPAND 1
+#endif
 
 #include <condition_variable>
 #include <list>
@@ -176,6 +184,18 @@ std::string resolveUriUncached(const QString &path)
         const PagePath::Ref ref = PagePath::parse(path);
         if (!ref.valid) {
             return {};
+        }
+        if (ref.isEpub()) {
+#if defined(BILTOO_HAVE_THUMTOO_EPUB)
+            thumtoo::EpubLayout layout =
+                thumtoo::parse_epub_layout_params(ref.epubLayoutParams.toStdString());
+            return thumtoo::epub_page_uri(absPathFast(ref.pdfPath), ref.page, layout);
+#else
+            // Layout + page pipes only — needs thumtoo EPUB support at runtime.
+            return thumtoo::file_uri_from_path(absPathFast(ref.pdfPath))
+                   + "//epub:" + ref.epubLayoutParams.toStdString()
+                   + "//page:" + std::to_string(ref.page);
+#endif
         }
 #if defined(BILTOO_HAVE_THUMTOO_PDF)
         return thumtoo::pdf_page_uri(absPathFast(ref.pdfPath), ref.page);
@@ -722,6 +742,57 @@ QStringList expandPdfToPageRefs(const QString &pdfPath)
     }
 #else
     Q_UNUSED(pdfPath);
+#endif
+    return out;
+}
+
+QStringList expandEpubToPageRefs(const QString &epubPath)
+{
+    QStringList out;
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_EPUB)
+    if (epubPath.isEmpty()) {
+        return out;
+    }
+    const std::filesystem::path abs = absPathStd(epubPath);
+    if (!thumtoo::is_likely_epub_path(abs)) {
+        return out;
+    }
+#if defined(BILTOO_HAVE_THUMTOO_EXPAND)
+    auto uris = thumtoo::expand_media_uris(abs, 512);
+    out.reserve(static_cast<int>(uris.size()));
+    for (const auto &uri : uris) {
+        // file://…//epub:…//page:N → session path form
+        auto parsed = thumtoo::parse_epub_uri(uri);
+        if (!parsed) {
+            continue;
+        }
+        const QString layout = QString::fromStdString(
+            thumtoo::format_epub_layout_params(parsed->layout));
+        const QString ref = PagePath::makeEpubRef(
+            QString::fromStdString(parsed->epub_path.string()), parsed->page, layout);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#else
+    const auto layout = thumtoo::default_epub_layout();
+    const auto count = thumtoo::epub_page_count(abs, layout);
+    if (!count || *count <= 0) {
+        return out;
+    }
+    const QString layoutStr =
+        QString::fromStdString(thumtoo::format_epub_layout_params(layout));
+    const QString epubAbs = QString::fromStdString(abs.string());
+    out.reserve(*count);
+    for (int page = 1; page <= *count; ++page) {
+        const QString ref = PagePath::makeEpubRef(epubAbs, page, layoutStr);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#endif
+#else
+    Q_UNUSED(epubPath);
 #endif
     return out;
 }

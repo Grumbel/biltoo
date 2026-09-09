@@ -73,8 +73,9 @@ QStringList supportedMimeTypes()
         QStringLiteral("application/vnd.ms-cab-compressed"),
         QStringLiteral("application/x-archive"),
         QStringLiteral("application/x-ar"),
-        // Documents (one session image per page via thumtoo Poppler)
+        // Documents (one session image per page via thumtoo)
         QStringLiteral("application/pdf"),
+        QStringLiteral("application/epub+zip"),
     };
 }
 
@@ -143,6 +144,7 @@ static QString labelForMime(const QString &mime)
         {QStringLiteral("application/x-archive"), QObject::tr("Unix archive (.a)")},
         {QStringLiteral("application/x-ar"), QObject::tr("AR archive")},
         {QStringLiteral("application/pdf"), QObject::tr("PDF document")},
+        {QStringLiteral("application/epub+zip"), QObject::tr("EPUB book")},
     };
     return labels.value(mime, mime);
 }
