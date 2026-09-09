@@ -6339,3 +6339,18 @@ so it never shares a row with the main toolbar.
 ### Done criteria
 - [x] Location bar on dedicated top-area row
 - [x] Docs; next **347**
+
+## Plan / work (2026-09-09) — bundle `biltoo-347-location-bar-force-row`
+
+### Context
+`addToolBarBreak` only affects the initial layout. `restoreState()` from
+QSettings re-applies the previous row arrangement, so existing users still
+saw the location bar sharing a line with the main toolbar.
+
+### Change
+After `restoreState` in `readSettings()`, call `insertToolBarBreak(m_locationBar)`
+to force the dedicated row every startup.
+
+### Done criteria
+- [x] Location bar stays on its own row even with old windowState
+- [x] Docs; next **348**
