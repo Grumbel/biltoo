@@ -9,6 +9,8 @@
 #include "imageview_types.h"
 
 #include <QMainWindow>
+#include <QLineEdit>
+#include <QToolBar>
 #include <functional>
 #include <QProgressBar>
 #include <QUrl>
@@ -136,6 +138,10 @@ protected:
 private slots:
     void openFiles();
     void openLocation();
+    void commitLocationBar();
+    void cancelLocationBar();
+    void setLocationBarPinned(bool pinned);
+    void syncLocationBarText();
     void addFiles();
     void openDirectory();
     /** F5: reload current image (Image) or re-decode gallery/workspace tiles. */
@@ -399,6 +405,10 @@ private:
     QAction *m_openDirAct = nullptr;
     QAction *m_reloadAct = nullptr;
     QAction *m_openLocationAct = nullptr;
+    QAction *m_showLocationBarAct = nullptr;
+    QToolBar *m_locationBar = nullptr;
+    QLineEdit *m_locationEdit = nullptr;
+    bool m_locationBarPinned = false;
     QAction *m_quitAct = nullptr;
     QAction *m_printAct = nullptr;
     QAction *m_printPreviewAct = nullptr;

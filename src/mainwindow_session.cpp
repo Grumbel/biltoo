@@ -1278,6 +1278,7 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         m_metadataPath.clear();
     }
     updateWindowTitle();
+    syncLocationBarText();
     // Gallery: skip heavy status/adjustments path on every click — selection
     // chrome is already on the tile; filmstrip row is updated above.
     if (isGalleryMode()) {
@@ -1631,27 +1632,84 @@ void MainWindow::onThumbnailActivated(int index)
     onSlideshowUserNavigated();
 }
 
-void MainWindow::openLocation()
+void MainWindow::syncLocationBarText()
 {
-    QString initial;
-    if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-        initial = m_session.paths().at(m_currentIndex);
-    } else if (!m_session.paths().isEmpty()) {
-        initial = m_session.paths().first();
-    }
-    bool ok = false;
-    const QString text = QInputDialog::getText(
-        this,
-        tr("Open Location"),
-        tr("Path or URI:"),
-        QLineEdit::Normal,
-        initial,
-        &ok);
-    if (!ok) {
+    if (!m_locationEdit) {
         return;
     }
-    const QString trimmed = text.trimmed();
+    QString text;
+    if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        text = m_session.paths().at(m_currentIndex);
+    } else if (!m_session.paths().isEmpty()) {
+        text = m_session.paths().first();
+    }
+    // Avoid fighting the user while they are typing.
+    if (m_locationEdit->hasFocus()) {
+        return;
+    }
+    m_locationEdit->setText(text);
+}
+
+void MainWindow::setLocationBarPinned(bool pinned)
+{
+    m_locationBarPinned = pinned;
+    if (m_showLocationBarAct && m_showLocationBarAct->isChecked() != pinned) {
+        QSignalBlocker block(m_showLocationBarAct);
+        m_showLocationBarAct->setChecked(pinned);
+    }
+    if (!m_locationBar) {
+        return;
+    }
+    if (pinned) {
+        syncLocationBarText();
+        m_locationBar->setVisible(true);
+    } else if (!m_locationEdit || !m_locationEdit->hasFocus()) {
+        m_locationBar->setVisible(false);
+    }
+}
+
+void MainWindow::openLocation()
+{
+    if (!m_locationBar || !m_locationEdit) {
+        return;
+    }
+    syncLocationBarText();
+    // If empty (no session), still show so the user can type a path.
+    if (m_locationEdit->text().isEmpty()
+        && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        m_locationEdit->setText(m_session.paths().at(m_currentIndex));
+    } else if (m_locationEdit->text().isEmpty() && !m_session.paths().isEmpty()) {
+        m_locationEdit->setText(m_session.paths().first());
+    }
+    m_locationBar->setVisible(true);
+    m_locationEdit->setFocus(Qt::ShortcutFocusReason);
+    m_locationEdit->selectAll();
+}
+
+void MainWindow::cancelLocationBar()
+{
+    if (!m_locationBar || !m_locationEdit) {
+        return;
+    }
+    m_locationEdit->clearFocus();
+    if (!m_locationBarPinned) {
+        m_locationBar->setVisible(false);
+    } else {
+        syncLocationBarText();
+    }
+    if (m_imageView) {
+        m_imageView->setFocus(Qt::OtherFocusReason);
+    }
+}
+
+void MainWindow::commitLocationBar()
+{
+    if (!m_locationEdit) {
+        return;
+    }
+    const QString trimmed = m_locationEdit->text().trimmed();
     if (trimmed.isEmpty()) {
+        cancelLocationBar();
         return;
     }
     // Accept file:// URLs and plain paths; page/archive refs pass through.
@@ -1659,7 +1717,6 @@ void MainWindow::openLocation()
     if (path.startsWith(QLatin1String("file:"))) {
         const QUrl url(path);
         if (url.isLocalFile()) {
-            // Keep //page: / //archive: / //epub: suffix if present.
             const int pipe = path.indexOf(QLatin1String("//"), 7);
             const QString local = url.toLocalFile();
             if (pipe > 0) {
@@ -1670,6 +1727,13 @@ void MainWindow::openLocation()
         }
     }
     loadFiles(QStringList{path});
+    if (!m_locationBarPinned && m_locationBar) {
+        m_locationEdit->clearFocus();
+        m_locationBar->setVisible(false);
+    }
+    if (m_imageView) {
+        m_imageView->setFocus(Qt::OtherFocusReason);
+    }
 }
 
 void MainWindow::openFiles()
@@ -2173,7 +2237,13 @@ void MainWindow::stopSlideshow()
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
-    Q_UNUSED(watched);
+    if (watched == m_locationEdit && event->type() == QEvent::KeyPress) {
+        const auto *ke = static_cast<QKeyEvent *>(event);
+        if (ke->key() == Qt::Key_Escape) {
+            cancelLocationBar();
+            return true;
+        }
+    }
     if (isSlideshowSession()) {
         switch (event->type()) {
         case QEvent::MouseMove:

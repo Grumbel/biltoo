@@ -611,6 +611,13 @@ void MainWindow::createActions()
     m_toggleToolBarAct->setStatusTip(tr("Show or hide the toolbar (Ctrl+T)"));
     connect(m_toggleToolBarAct, &QAction::triggered, this, &MainWindow::toggleToolBar);
 
+    m_showLocationBarAct = new QAction(tr("Show &Location Bar"), this);
+    m_showLocationBarAct->setCheckable(true);
+    m_showLocationBarAct->setChecked(false);
+    m_showLocationBarAct->setStatusTip(
+        tr("Keep the location bar visible (otherwise it opens with Ctrl+L and hides on Enter or Esc)"));
+    connect(m_showLocationBarAct, &QAction::toggled, this, &MainWindow::setLocationBarPinned);
+
     m_toggleThumbnailBarAct = new QAction(tr("Show Thum&bnails"), this);
     m_toggleThumbnailBarAct->setShortcut(Qt::CTRL | Qt::Key_M);
     m_toggleThumbnailBarAct->setCheckable(true);
@@ -796,6 +803,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
+    m_viewMenu->addAction(m_showLocationBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
     if (m_toggleAdjustmentsAct) {
         m_viewMenu->addAction(m_toggleAdjustmentsAct);
@@ -1049,6 +1057,31 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     m_workspaceToolBar->hide();
 }
+
+    // Browser-style location bar (full width under the main toolbar).
+    m_locationBar = addToolBar(tr("Location"));
+    m_locationBar->setObjectName(QStringLiteral("LocationBar"));
+    m_locationBar->setMovable(false);
+    m_locationBar->setFloatable(false);
+    m_locationBar->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);
+    m_locationEdit = new QLineEdit(m_locationBar);
+    m_locationEdit->setObjectName(QStringLiteral("LocationEdit"));
+    m_locationEdit->setClearButtonEnabled(true);
+    m_locationEdit->setPlaceholderText(tr("Path or URI…"));
+    m_locationEdit->setMinimumWidth(200);
+    m_locationEdit->installEventFilter(this);
+    connect(m_locationEdit, &QLineEdit::returnPressed, this, &MainWindow::commitLocationBar);
+    auto *locHost = new QWidget(m_locationBar);
+    auto *locLay = new QHBoxLayout(locHost);
+    locLay->setContentsMargins(4, 0, 4, 0);
+    locLay->setSpacing(6);
+    auto *locLabel = new QLabel(tr("Location:"), locHost);
+    locLay->addWidget(locLabel);
+    locLay->addWidget(m_locationEdit, 1);
+    m_locationBar->addWidget(locHost);
+    // Transient by default (Ctrl+L shows it); pin via View menu.
+    m_locationBar->setVisible(false);
+
 
 void MainWindow::createStatusBar()
 {

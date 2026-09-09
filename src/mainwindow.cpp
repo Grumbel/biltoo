@@ -1856,6 +1856,11 @@ void MainWindow::readSettings()
         settings.value(QStringLiteral("layoutPreferredInWorkspace"), false).toBool();
     m_toolBarVisibleBeforeFullscreen =
         settings.value(QStringLiteral("toolBarVisible"), true).toBool();
+    {
+        const bool pinned = settings.value(QStringLiteral("locationBarPinned"), false).toBool();
+        setLocationBarPinned(pinned);
+    }
+
     m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
     m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
 
@@ -2107,6 +2112,7 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("toolBarVisible"),
                       isFullScreen() ? m_toolBarVisibleBeforeFullscreen
                                      : m_toolBar->isVisible());
+    settings.setValue(QStringLiteral("locationBarPinned"), m_locationBarPinned);
     QString sortKey = QStringLiteral("name");
     switch (m_sortMode) {
     case SortMode::MTime: sortKey = QStringLiteral("mtime"); break;
