@@ -1060,7 +1060,8 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     m_workspaceToolBar->hide();
 
-    // Browser-style location bar (full width under the main toolbar).
+    // Browser-style location bar on its own row under the main toolbar.
+    addToolBarBreak(Qt::TopToolBarArea);
     m_locationBar = addToolBar(tr("Location"));
     m_locationBar->setObjectName(QStringLiteral("LocationBar"));
     m_locationBar->setMovable(false);

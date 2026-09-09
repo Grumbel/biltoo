@@ -6326,3 +6326,16 @@ Additionally, Qt 6.4 (common on Ubuntu 24.04) rejects:
 - [x] Location bar code is inside the member function
 - [x] Clean build on Qt 6.4
 - [x] Docs; next **346**
+
+## Plan / work (2026-09-09) — bundle `biltoo-346-location-bar-own-row`
+
+### Request
+Move the location bar to its own row (under the main toolbar).
+
+### Change
+Insert `addToolBarBreak(Qt::TopToolBarArea)` before creating the Location toolbar
+so it never shares a row with the main toolbar.
+
+### Done criteria
+- [x] Location bar on dedicated top-area row
+- [x] Docs; next **347**

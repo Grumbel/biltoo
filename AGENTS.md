@@ -10,9 +10,9 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-345-fix-location-bar-scope**
-(Fix location-bar scope + Qt 6.4 compat).
-Next bundle number: **346**.
+Latest agent handoff: **TODO.md → biltoo-346-location-bar-own-row**
+(Location bar on its own toolbar row).
+Next bundle number: **347**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
