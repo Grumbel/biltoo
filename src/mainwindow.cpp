@@ -1276,7 +1276,7 @@ void MainWindow::showKeyboardShortcuts()
         "Ctrl+T — toolbar · Ctrl+M — thumbnails · Ctrl+E — metadata<br/>"
         "Ctrl+U — colour adjustments · F1 — this list</p>"
         "<p><b>Image</b><br/>"
-        "R / Ctrl+R — rotate right · Ctrl+L — rotate left<br/>"
+        "R / Ctrl+R — rotate right · Ctrl+Shift+L — rotate left<br/>Ctrl+L — open location · F5 — reload<br/>"
         "Ctrl+H / Ctrl+Shift+H — flip horizontal / vertical<br/>"
         "C — crop mode</p>"
         "<p><b>Workspace</b><br/>"

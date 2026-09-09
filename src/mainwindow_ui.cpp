@@ -52,8 +52,9 @@ void MainWindow::createActions()
 
     m_openLocationAct = new QAction(tr("Open &Location…"), this);
     m_openLocationAct->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_L));
-    m_openLocationAct->setIcon(themeIcon(QStringLiteral("document-open-recent"),
-                                         QStyle::SP_DialogOpenButton));
+    m_openLocationAct->setShortcutContext(Qt::WindowShortcut);
+    m_openLocationAct->setIcon(themeIcon(QStringLiteral("go-jump"),
+                                         QStyle::SP_ArrowForward));
     m_openLocationAct->setStatusTip(
         tr("Open a path or URI (file, PDF/EPUB/DjVu page ref, archive member)"));
     connect(m_openLocationAct, &QAction::triggered, this, &MainWindow::openLocation);
@@ -183,9 +184,10 @@ void MainWindow::createActions()
     connect(m_fullscreenAct, &QAction::triggered, this, &MainWindow::toggleFullscreen);
 
     m_rotateLeftAct = new QAction(tr("Rotate &Left"), this);
-    m_rotateLeftAct->setShortcut(Qt::CTRL | Qt::Key_L);
+    // Ctrl+L is Open Location; use Ctrl+Shift+L for rotate left.
+    m_rotateLeftAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_L);
     m_rotateLeftAct->setIcon(themeIcon(QStringLiteral("object-rotate-left"), QStyle::SP_ArrowBack));
-    m_rotateLeftAct->setStatusTip(tr("Rotate 90° counter-clockwise"));
+    m_rotateLeftAct->setStatusTip(tr("Rotate 90° counter-clockwise (Ctrl+Shift+L)"));
     connect(m_rotateLeftAct, &QAction::triggered, this, &MainWindow::rotateLeft);
 
     m_rotateRightAct = new QAction(tr("Rotate &Right"), this);
