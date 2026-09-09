@@ -36,6 +36,7 @@
 #include <QEvent>
 #include <QFile>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QFileInfo>
 #include <QImageReader>
 #include <QGuiApplication>

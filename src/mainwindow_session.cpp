@@ -10,6 +10,7 @@
 #include "imageitem.h"
 #include "imagecache.h"
 #include <QFileInfo>
+#include <QUrl>
 #include <QPointer>
 #include <QThreadPool>
 #include <QElapsedTimer>
@@ -39,8 +40,9 @@ QString imageFileDialogFilter()
     const QString archives = archivePatterns.join(QLatin1Char(' '));
     // First filter is the dialog default — include archives/PDFs/EPUBs so containers are visible.
     return QObject::tr(
-               "Images, archives, PDF and EPUB (%1 %2 *.pdf *.epub);;Images only (%1);;"
-               "Archives only (%2);;PDF documents (*.pdf);;EPUB books (*.epub);;All Files (*)")
+               "Images, archives, PDF, EPUB and DjVu (%1 %2 *.pdf *.epub *.djvu *.djv);;"
+               "Images only (%1);;Archives only (%2);;PDF documents (*.pdf);;"
+               "EPUB books (*.epub);;DjVu documents (*.djvu *.djv);;All Files (*)")
         .arg(images, archives);
 }
 
@@ -267,6 +269,9 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
     auto expandEpub = [](const QString &epubPath) {
         return ThumtooCache::expandEpubToPageRefs(epubPath);
     };
+    auto expandDjvu = [](const QString &djvuPath) {
+        return ThumtooCache::expandDjvuToPageRefs(djvuPath);
+    };
 
     QStringList images;
     for (const QString &path : paths) {
@@ -304,6 +309,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
                     images.append(expandPdf(full));
                 } else if (PagePath::isEpubFile(full) && ThumtooCache::isAvailable()) {
                     images.append(expandEpub(full));
+                } else if (PagePath::isDjvuFile(full) && ThumtooCache::isAvailable()) {
+                    images.append(expandDjvu(full));
                 } else if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
                     images.append(expandArchive(full));
                 } else if (isImageFile(full)) {
@@ -317,6 +324,8 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             images.append(expandPdf(path));
         } else if (info.isFile() && PagePath::isEpubFile(path) && ThumtooCache::isAvailable()) {
             images.append(expandEpub(path));
+        } else if (info.isFile() && PagePath::isDjvuFile(path) && ThumtooCache::isAvailable()) {
+            images.append(expandDjvu(path));
         } else if (info.isFile() && ArchivePath::isArchiveFile(path)
                    && ThumtooCache::isAvailable()) {
             images.append(expandArchive(path));
@@ -341,7 +350,7 @@ bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
         }
         const QFileInfo info(path);
         if (info.isFile() && (ArchivePath::isArchiveFile(path) || PagePath::isPdfFile(path)
-                               || PagePath::isEpubFile(path))) {
+                               || PagePath::isEpubFile(path) || PagePath::isDjvuFile(path))) {
             return true;
         }
         // Directory walks may encounter archives/PDFs; keep the GUI responsive.
@@ -504,6 +513,15 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                                        .arg(name));
                         }
                         images.append(pages);
+                    } else if (PagePath::isDjvuFile(full) && ThumtooCache::isAvailable()) {
+                        const QString name = QFileInfo(full).fileName();
+                        report(MainWindow::tr("Indexing DjVu “%1”…").arg(name));
+                        const QStringList pages = ThumtooCache::expandDjvuToPageRefs(full);
+                        if (!pages.isEmpty()) {
+                            report(MainWindow::tr("DjVu “%1”: %n page(s)", "", pages.size())
+                                       .arg(name));
+                        }
+                        images.append(pages);
                     } else if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
                         const QString name = QFileInfo(full).fileName();
                         report(MainWindow::tr("Indexing archive “%1”…").arg(name));
@@ -538,6 +556,15 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                 const QStringList pages = ThumtooCache::expandEpubToPageRefs(path);
                 if (!pages.isEmpty()) {
                     report(MainWindow::tr("EPUB “%1”: %n page(s)", "", pages.size()).arg(name));
+                }
+                images.append(pages);
+            } else if (info.isFile() && PagePath::isDjvuFile(path)
+                       && ThumtooCache::isAvailable()) {
+                const QString name = info.fileName();
+                report(MainWindow::tr("Indexing DjVu “%1”…").arg(name));
+                const QStringList pages = ThumtooCache::expandDjvuToPageRefs(path);
+                if (!pages.isEmpty()) {
+                    report(MainWindow::tr("DjVu “%1”: %n page(s)", "", pages.size()).arg(name));
                 }
                 images.append(pages);
             } else if (info.isFile() && ArchivePath::isArchiveFile(path)
@@ -1602,6 +1629,47 @@ void MainWindow::onThumbnailActivated(int index)
     // activation like session navigation: stay playing/paused, restart dwell.
     setCurrentIndex(index);
     onSlideshowUserNavigated();
+}
+
+void MainWindow::openLocation()
+{
+    QString initial;
+    if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        initial = m_session.paths().at(m_currentIndex);
+    } else if (!m_session.paths().isEmpty()) {
+        initial = m_session.paths().first();
+    }
+    bool ok = false;
+    const QString text = QInputDialog::getText(
+        this,
+        tr("Open Location"),
+        tr("Path or URI:"),
+        QLineEdit::Normal,
+        initial,
+        &ok);
+    if (!ok) {
+        return;
+    }
+    const QString trimmed = text.trimmed();
+    if (trimmed.isEmpty()) {
+        return;
+    }
+    // Accept file:// URLs and plain paths; page/archive refs pass through.
+    QString path = trimmed;
+    if (path.startsWith(QLatin1String("file:"))) {
+        const QUrl url(path);
+        if (url.isLocalFile()) {
+            // Keep //page: / //archive: / //epub: suffix if present.
+            const int pipe = path.indexOf(QLatin1String("//"), 7);
+            const QString local = url.toLocalFile();
+            if (pipe > 0) {
+                path = local + path.mid(pipe);
+            } else {
+                path = local;
+            }
+        }
+    }
+    loadFiles(QStringList{path});
 }
 
 void MainWindow::openFiles()

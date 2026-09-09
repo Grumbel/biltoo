@@ -48,8 +48,10 @@ QString displayName(const QString &path);
 QString canonicalSessionPath(const QString &path);
 bool isPdfFile(const QString &path);
 bool isEpubFile(const QString &path);
+bool isDjvuFile(const QString &path);
 QStringList pdfSuffixes();
 QStringList epubSuffixes();
+QStringList djvuSuffixes();
 
 } // namespace PagePath
 

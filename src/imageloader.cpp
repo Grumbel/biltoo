@@ -165,7 +165,19 @@ QImage loadPageRef(const QString &path, int maxEdge)
         qWarning("ImageLoader: invalid page ref: %s", qPrintable(path));
         return {};
     }
-    const int edge = maxEdge > 0 ? maxEdge : 2048;
+    // Full load (maxEdge==0): prefer native page long-edge from size probe so
+    // Image mode is not capped at the 2048 ladder step.
+    int edge = maxEdge;
+    if (edge <= 0) {
+        const QSize native = ThumtooCache::cachedSize(path);
+        if (native.isValid() && native.width() > 0 && native.height() > 0) {
+            edge = qMax(native.width(), native.height());
+        } else {
+            edge = 4096; // probe may still be in flight; aim above typical ladder
+        }
+    }
+    constexpr int kPageRasterCap = 8192;
+    edge = qMin(edge, kPageRasterCap);
 
     {
         const QByteArray ladder = ThumtooCache::cachedLadderBytes(path, edge);
@@ -173,27 +185,32 @@ QImage loadPageRef(const QString &path, int maxEdge)
 #ifdef BILTOO_HAVE_VIPS
             QImage fromLadder = loadWithVipsBuffer(ladder, 0);
             if (!fromLadder.isNull()) {
-                return scaleToMaxEdge(fromLadder, maxEdge);
+                const int ladderEdge = qMax(fromLadder.width(), fromLadder.height());
+                if (maxEdge > 0 || ladderEdge >= edge * 9 / 10) {
+                    return scaleToMaxEdge(fromLadder, maxEdge);
+                }
             }
 #endif
             QImage qtImg;
             if (qtImg.loadFromData(ladder)) {
-                return scaleToMaxEdge(qtImg, maxEdge);
+                const int ladderEdge = qMax(qtImg.width(), qtImg.height());
+                if (maxEdge > 0 || ladderEdge >= edge * 9 / 10) {
+                    return scaleToMaxEdge(qtImg, maxEdge);
+                }
             }
         }
     }
 
-    // Direct raster via ThumtooCache (no thumtoo/pdf.hpp in this TU).
     if (ThumtooCache::isAvailable()) {
-        QImage img = ThumtooCache::rasterizePdfPage(ref.pdfPath, ref.page, edge);
+        QImage img = ThumtooCache::rasterizePageRef(path, edge);
         if (!img.isNull()) {
-            ThumtooCache::schedulePixels(path, edge);
+            ThumtooCache::schedulePixels(path, qMin(edge, 2048));
             return scaleToMaxEdge(img, maxEdge);
         }
         ThumtooCache::schedulePixels(path, edge);
         return {};
     }
-    qWarning("ImageLoader: cannot load PDF page (no thumtoo/Poppler): %s", qPrintable(path));
+    qWarning("ImageLoader: cannot load page (no thumtoo): %s", qPrintable(path));
     return {};
 }
 

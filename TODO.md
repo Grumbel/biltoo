@@ -1,3 +1,14 @@
+## biltoo-002 — page res / HUD / DjVu / location
+
+- [x] HUD uses native intrinsic size (not ladder step)
+- [x] Page full load uses probe edge / direct raster (not hard-capped 2048)
+- [x] `rasterizePageRef` for PDF/EPUB/DjVu
+- [x] DjVu expand, MIME, file dialog
+- [x] Ctrl+L Open Location; Reload on toolbar + File menu (F5)
+- [ ] Optional: hierarchical book document for layout/font UI
+
+---
+
 ## EPUB open (thumtoo MuPDF) — **biltoo-xxx**
 
 - [x] `.desktop` / AppStream / default-apps: `application/epub+zip`

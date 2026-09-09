@@ -76,6 +76,9 @@ QStringList supportedMimeTypes()
         // Documents (one session image per page via thumtoo)
         QStringLiteral("application/pdf"),
         QStringLiteral("application/epub+zip"),
+        QStringLiteral("image/vnd.djvu"),
+        QStringLiteral("image/x-djvu"),
+        QStringLiteral("image/vnd.djvu+multipage"),
     };
 }
 
@@ -145,6 +148,9 @@ static QString labelForMime(const QString &mime)
         {QStringLiteral("application/x-ar"), QObject::tr("AR archive")},
         {QStringLiteral("application/pdf"), QObject::tr("PDF document")},
         {QStringLiteral("application/epub+zip"), QObject::tr("EPUB book")},
+        {QStringLiteral("image/vnd.djvu"), QObject::tr("DjVu document")},
+        {QStringLiteral("image/x-djvu"), QObject::tr("DjVu document")},
+        {QStringLiteral("image/vnd.djvu+multipage"), QObject::tr("DjVu document")},
     };
     return labels.value(mime, mime);
 }

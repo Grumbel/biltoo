@@ -35,6 +35,10 @@
 #include "thumtoo/epub.hpp"
 #define BILTOO_HAVE_THUMTOO_EPUB 1
 #endif
+#if __has_include("thumtoo/djvu.hpp")
+#include "thumtoo/djvu.hpp"
+#define BILTOO_HAVE_THUMTOO_DJVU 1
+#endif
 #if __has_include("thumtoo/expand.hpp")
 #include "thumtoo/expand.hpp"
 #define BILTOO_HAVE_THUMTOO_EXPAND 1
@@ -197,6 +201,11 @@ std::string resolveUriUncached(const QString &path)
                    + "//page:" + std::to_string(ref.page);
 #endif
         }
+#if defined(BILTOO_HAVE_THUMTOO_DJVU)
+        if (thumtoo::is_likely_djvu_path(absPathFast(ref.pdfPath))) {
+            return thumtoo::djvu_page_uri(absPathFast(ref.pdfPath), ref.page);
+        }
+#endif
 #if defined(BILTOO_HAVE_THUMTOO_PDF)
         return thumtoo::pdf_page_uri(absPathFast(ref.pdfPath), ref.page);
 #else
@@ -797,6 +806,36 @@ QStringList expandEpubToPageRefs(const QString &epubPath)
     return out;
 }
 
+
+QStringList expandDjvuToPageRefs(const QString &djvuPath)
+{
+    QStringList out;
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_DJVU)
+    if (djvuPath.isEmpty()) {
+        return out;
+    }
+    const std::filesystem::path abs = absPathStd(djvuPath);
+    if (!thumtoo::is_likely_djvu_path(abs)) {
+        return out;
+    }
+    const auto count = thumtoo::djvu_page_count(abs);
+    if (!count || *count <= 0) {
+        return out;
+    }
+    const QString absQ = QString::fromStdString(abs.string());
+    out.reserve(*count);
+    for (int page = 1; page <= *count; ++page) {
+        const QString ref = PagePath::makeRef(absQ, page);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#else
+    Q_UNUSED(djvuPath);
+#endif
+    return out;
+}
+
 QImage rasterizePdfPage(const QString &pdfPath, int page_1based, int maxEdge)
 {
 #if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_PDF)
@@ -820,6 +859,66 @@ QImage rasterizePdfPage(const QString &pdfPath, int page_1based, int maxEdge)
 #else
     Q_UNUSED(pdfPath);
     Q_UNUSED(page_1based);
+    Q_UNUSED(maxEdge);
+    return {};
+#endif
+}
+
+
+QImage rasterizePageRef(const QString &sessionPath, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (sessionPath.isEmpty()) {
+        return {};
+    }
+    const PagePath::Ref ref = PagePath::parse(sessionPath);
+    if (!ref.valid) {
+        return {};
+    }
+    const int edge = maxEdge > 0 ? maxEdge : 2048;
+    const std::filesystem::path abs = absPathStd(ref.pdfPath);
+
+    if (ref.isEpub()) {
+#if defined(BILTOO_HAVE_THUMTOO_EPUB)
+        thumtoo::EpubLayout layout =
+            thumtoo::parse_epub_layout_params(ref.epubLayoutParams.toStdString());
+        auto raster = thumtoo::epub_rasterize_page(abs, ref.page, layout, edge);
+        if (!raster || raster->rgb.empty() || raster->width <= 0 || raster->height <= 0) {
+            return {};
+        }
+        QImage img(raster->width, raster->height, QImage::Format_RGB888);
+        for (int y = 0; y < raster->height; ++y) {
+            memcpy(img.scanLine(y),
+                   raster->rgb.data()
+                       + static_cast<size_t>(y) * static_cast<size_t>(raster->width) * 3u,
+                   static_cast<size_t>(raster->width) * 3u);
+        }
+        return img.copy();
+#else
+        return {};
+#endif
+    }
+
+#if defined(BILTOO_HAVE_THUMTOO_DJVU)
+    if (thumtoo::is_likely_djvu_path(abs)) {
+        auto raster = thumtoo::djvu_rasterize_page(abs, ref.page, edge);
+        if (!raster || raster->rgb.empty() || raster->width <= 0 || raster->height <= 0) {
+            return {};
+        }
+        QImage img(raster->width, raster->height, QImage::Format_RGB888);
+        for (int y = 0; y < raster->height; ++y) {
+            memcpy(img.scanLine(y),
+                   raster->rgb.data()
+                       + static_cast<size_t>(y) * static_cast<size_t>(raster->width) * 3u,
+                   static_cast<size_t>(raster->width) * 3u);
+        }
+        return img.copy();
+    }
+#endif
+
+    return rasterizePdfPage(ref.pdfPath, ref.page, edge);
+#else
+    Q_UNUSED(sessionPath);
     Q_UNUSED(maxEdge);
     return {};
 #endif

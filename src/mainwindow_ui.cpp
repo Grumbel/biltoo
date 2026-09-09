@@ -50,9 +50,18 @@ void MainWindow::createActions()
     m_openDirAct->setStatusTip(tr("Open all images in a directory (Ctrl+Shift+D)"));
     connect(m_openDirAct, &QAction::triggered, this, &MainWindow::openDirectory);
 
+    m_openLocationAct = new QAction(tr("Open &Location…"), this);
+    m_openLocationAct->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_L));
+    m_openLocationAct->setIcon(themeIcon(QStringLiteral("document-open-recent"),
+                                         QStyle::SP_DialogOpenButton));
+    m_openLocationAct->setStatusTip(
+        tr("Open a path or URI (file, PDF/EPUB/DjVu page ref, archive member)"));
+    connect(m_openLocationAct, &QAction::triggered, this, &MainWindow::openLocation);
+
     m_reloadAct = new QAction(tr("&Reload"), this);
     m_reloadAct->setShortcut(Qt::Key_F5);
     m_reloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
+    m_reloadAct->setToolTip(tr("Reload current image(s) from disk (F5)"));
     m_reloadAct->setStatusTip(
         tr("Reload from disk (F5): current image in Image mode, all tiles in Gallery/Workspace"));
     connect(m_reloadAct, &QAction::triggered, this, &MainWindow::reloadFromDisk);
@@ -714,6 +723,7 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_newAct);
     m_fileMenu->addAction(m_newWindowAct);
     m_fileMenu->addAction(m_openAct);
+    m_fileMenu->addAction(m_openLocationAct);
     m_fileMenu->addAction(m_addAct);
     m_fileMenu->addAction(m_openDirAct);
     if (m_openSelectionNewWindowAct) {
@@ -892,7 +902,9 @@ void MainWindow::createToolBar()
     // Left: file + undo/redo
     // Up stays in Gallery menu / Esc — not on the main toolbar.
     m_toolBar->addAction(m_openAct);
+    m_toolBar->addAction(m_openLocationAct);
     m_toolBar->addAction(m_addAct);
+    m_toolBar->addAction(m_reloadAct);
     {
         auto *sortBtn = new QToolButton(m_toolBar);
         sortBtn->setObjectName(QStringLiteral("SortToolButton"));

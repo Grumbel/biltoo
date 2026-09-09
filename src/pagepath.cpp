@@ -148,4 +148,19 @@ QStringList epubSuffixes()
     return {QStringLiteral("epub")};
 }
 
+bool isDjvuFile(const QString &path)
+{
+    if (isPageRef(path) || ArchivePath::isArchiveRef(path)) {
+        return false;
+    }
+    const QString name = QFileInfo(path).fileName().toLower();
+    return name.endsWith(QLatin1String(".djvu"))
+        || name.endsWith(QLatin1String(".djv"));
+}
+
+QStringList djvuSuffixes()
+{
+    return {QStringLiteral("djvu"), QStringLiteral("djv")};
+}
+
 } // namespace PagePath

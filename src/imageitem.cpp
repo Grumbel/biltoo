@@ -57,6 +57,15 @@ ImageItem::ImageItem(const QString &path, const QSize &intrinsicSize, QGraphicsI
 
 QSize ImageItem::imageSize() const
 {
+    // Prefer known native/layout size over decoded ladder/preview pixels so HUD
+    // and packs report the full page size, not a 512–2048 ladder step.
+    const bool intrinsicKnown =
+        m_intrinsicSize.isValid() && m_intrinsicSize.width() > 1
+        && m_intrinsicSize.height() > 1 && m_intrinsicSize != QSize(1000, 1000)
+        && m_intrinsicSize != QSize(1024, 1024);
+    if (intrinsicKnown) {
+        return m_intrinsicSize;
+    }
     if (!m_source.isNull() && !m_previewPixels) {
         return m_source.size();
     }
@@ -68,9 +77,15 @@ void ImageItem::setIntrinsicSize(const QSize &size)
     if (!size.isValid() || size.width() <= 0 || size.height() <= 0) {
         return;
     }
-    // Full decode owns geometry via source pixels.
+    // Allow growth when a size probe reports true native dimensions larger than
+    // a ladder decode already installed as source (HUD / layout geometry).
     if (!m_source.isNull() && !m_previewPixels) {
-        return;
+        const bool larger =
+            qint64(size.width()) * size.height()
+            > qint64(m_intrinsicSize.width()) * m_intrinsicSize.height();
+        if (!larger && m_intrinsicSize.isValid()) {
+            return;
+        }
     }
     if (m_intrinsicSize == size) {
         return;
@@ -89,8 +104,21 @@ void ImageItem::setSourceImage(const QImage &image)
     m_preview = QImage();
     m_previewPixels = false;
     if (!m_source.isNull()) {
-        m_intrinsicSize = m_source.size();
-        setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+        const QSize src = m_source.size();
+        const bool intrinsicKnown =
+            m_intrinsicSize.isValid() && m_intrinsicSize.width() > 1
+            && m_intrinsicSize.height() > 1
+            && m_intrinsicSize != QSize(1000, 1000)
+            && m_intrinsicSize != QSize(1024, 1024);
+        // Grow intrinsic when a larger full decode arrives; never shrink to a
+        // ladder step (that made HUD show 1024×… instead of native page size).
+        if (!intrinsicKnown
+            || (qint64(src.width()) * src.height()
+                > qint64(m_intrinsicSize.width()) * m_intrinsicSize.height())) {
+            m_intrinsicSize = src;
+        }
+        const QSize s = imageSize();
+        setOffset(-s.width() / 2.0, -s.height() / 2.0);
         updateDisplayedPixmap();
     } else {
         setPixmap(QPixmap());

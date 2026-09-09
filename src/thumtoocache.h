@@ -122,11 +122,20 @@ QStringList expandPdfToPageRefs(const QString &pdfPath);
 /** Expand an EPUB into session paths (…//epub:w,h,em//page:N) via thumtoo default layout. */
 QStringList expandEpubToPageRefs(const QString &epubPath);
 
+/** Expand a DjVu into session paths (…//page:N). */
+QStringList expandDjvuToPageRefs(const QString &djvuPath);
+
 /**
  * Rasterize one PDF page to RGB888 QImage (long edge ≈ maxEdge).
  * Empty if thumtoo was built without Poppler or the page fails.
  */
 QImage rasterizePdfPage(const QString &pdfPath, int page_1based, int maxEdge);
+
+/**
+ * Rasterize a session page ref (PDF / EPUB / DjVu) to RGB888.
+ * Prefer this over rasterizePdfPage for generic //page: paths.
+ */
+QImage rasterizePageRef(const QString &sessionPath, int maxEdge);
 
 /**
  * Extract one //archive: member into memory via thumtoo (size caps shared with
