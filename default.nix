@@ -13,6 +13,8 @@
 , libimagequant
 , libarchive
 , poppler  # thumtoo PDF pages (poppler-cpp.pc when BILTOO_WITH_THUMTOO)
+, mupdf
+, djvulibre
 , kimageformats
 , thumtooSrc ? null
 , sqlite
@@ -69,6 +71,8 @@ stdenv.mkDerivation (finalAttrs: {
     libimagequant
     libarchive
     poppler
+    mupdf
+    djvulibre
     sqlite
     libjxl
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
