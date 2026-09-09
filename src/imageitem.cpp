@@ -279,17 +279,19 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
             axes |= Qt::Vertical;
         }
         if (axes) {
-            // mirrored() for Qt 6.4+; flipped(Qt::Orientations) is Qt 6.9+.
-            m_source = m_source.mirrored(bool(axes & Qt::Horizontal),
-                                         bool(axes & Qt::Vertical));
+            m_source = m_source.flipped(axes);
         }
     }
     // Bake any pending display flips into the same op.
-    if (m_hFlip) {
-        m_source = m_source.mirrored(true, false);
-    }
-    if (m_vFlip) {
-        m_source = m_source.mirrored(false, true);
+    if (m_hFlip || m_vFlip) {
+        Qt::Orientations axes2;
+        if (m_hFlip) {
+            axes2 |= Qt::Horizontal;
+        }
+        if (m_vFlip) {
+            axes2 |= Qt::Vertical;
+        }
+        m_source = m_source.flipped(axes2);
     }
     m_hFlip = false;
     m_vFlip = false;
@@ -499,8 +501,14 @@ void ImageItem::updateDisplayedPixmap()
     }
     QImage img = m_source;
     if (m_hFlip || m_vFlip) {
-        // mirrored() for Qt 6.4+; flipped(Qt::Orientations) is Qt 6.9+.
-        img = img.mirrored(m_hFlip, m_vFlip);
+        Qt::Orientations axes;
+        if (m_hFlip) {
+            axes |= Qt::Horizontal;
+        }
+        if (m_vFlip) {
+            axes |= Qt::Vertical;
+        }
+        img = img.flipped(axes);
     }
     if (!m_colorAdjust.isIdentity()) {
         img = applyColorAdjustments(img, m_colorAdjust);

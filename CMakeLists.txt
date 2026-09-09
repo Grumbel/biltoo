@@ -89,7 +89,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport)
 find_package(PkgConfig)
 
 add_executable(biltoo
@@ -306,7 +306,7 @@ biltoo_feature_status(BILTOO_FEATURE_THUMTOO _st_thumtoo)
 
 message(STATUS "")
 message(STATUS "Biltoo ${PROJECT_VERSION_FULL} — build summary")
-message(STATUS "  Qt6 .............. required (Core Gui Widgets Svg OpenGLWidgets PrintSupport)")
+message(STATUS "  Qt6 .............. required ≥ 6.9 (Core Gui Widgets Svg OpenGLWidgets PrintSupport)")
 message(STATUS "  libvips .......... ${_st_vips}  (extra image codecs, autorot, attention Pan&Zoom)")
 message(STATUS "  libexiv2 ......... ${_st_exiv2}  (Exif/IPTC/XMP metadata panel)")
 message(STATUS "  archives ......... ${_st_archive}  (via thumtoo; zip/tar/7z/rar/…)")

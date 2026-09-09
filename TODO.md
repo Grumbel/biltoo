@@ -6404,3 +6404,6 @@ all session pages for that book, then `loadFiles` to reflow.
 
 ## Plan / work — biltoo-352-pdfimages-expand
 Open path…//pdfimages expands to //pdfimage:N session leaves (native embeds).
+
+
+## biltoo-353 — QImage::flipped, require Qt ≥ 6.9

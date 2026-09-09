@@ -202,12 +202,15 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
         return {};
     }
     // Legacy live flip flags (should be empty after bake).
-    // Use mirrored() for Qt 6.4+ compatibility (flipped() is Qt 6.9+).
-    if (item->itemHFlip()) {
-        img = img.mirrored(true, false);
-    }
-    if (item->itemVFlip()) {
-        img = img.mirrored(false, true);
+    if (item->itemHFlip() || item->itemVFlip()) {
+        Qt::Orientations axes;
+        if (item->itemHFlip()) {
+            axes |= Qt::Horizontal;
+        }
+        if (item->itemVFlip()) {
+            axes |= Qt::Vertical;
+        }
+        img = img.flipped(axes);
     }
     const ColorAdjustments adj = item->colorAdjustments();
     if (!adj.isIdentity()) {

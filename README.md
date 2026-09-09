@@ -2,6 +2,8 @@
 
 **Biltoo** is a classic Qt 6 desktop image viewer with three modes on one canvas:
 
+**Requires Qt ≥ 6.9** (uses `QImage::flipped`).
+
 | Mode | Purpose |
 |------|---------|
 | **Image** | Browse one file at a time — zoom, pan, rotate, flip, crop, slideshow |
@@ -141,7 +143,7 @@ nix build      # package
 nix run        # run
 ```
 
-### CMake (Qt 6 Widgets)
+### CMake (Qt ≥ 6.9 Widgets)
 
 ```bash
 mkdir build && cd build

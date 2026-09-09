@@ -45,7 +45,7 @@ apt-get install -y -qq qt6-base-dev cmake g++ pkg-config rsync
 Verify:
 
 ```bash
-pkg-config --modversion Qt6Widgets   # expect 6.4.2 on Noble
+pkg-config --modversion Qt6Widgets   # project requires ≥ 6.9 (nixpkgs)
 which rsync cmake g++
 ```
 
@@ -65,36 +65,5 @@ CMake already tolerates missing libvips / libexiv2 (“using Qt image codecs onl
 
 ## Qt version caveat
 
-- Sandbox packages: **Qt 6.4.2**
-- Project / nixpkgs: newer Qt (code uses `QImage::flipped`, which exists only since **Qt 6.9**)
-
-A full link under this sandbox therefore fails on `.flipped(...)` until either:
-
-1. a compatibility helper (`#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)` → `flipped` else `mirrored`) is added, or
-2. verification is done only under the project’s Nix environment.
-
-The LayoutMode declaration-order fix is independent of that API and is the compile error that appeared under Nix after Phase 3.
-
-## Bundles & artifacts
-
-- Work in `/tmp`, then:
-
-  ```bash
-  rsync -a /tmp/biltoo-00N-….bundle /home/workdir/artifacts/
-  ```
-
-- Prefer thin stacking bundles:
-
-  ```bash
-  git bundle create biltoo-00N-description.bundle <previous-tip>..HEAD
-  ```
-
-  First bundle after upstream tip `a194a10` was `a194a10..HEAD`.
-
-- Bundle rules (project): continuous numbering, `HEAD` as ref, author `Ingo Ruhnke <grumbel@gmail.com>` + `Co-authored-by: Grok <grok@x.ai>`, small focused commits.
-
-## Practical tips
-
-- Re-run the `apt-get` bootstrap when `pkg-config --modversion Qt6Widgets` fails — the environment can be reset between turns.
-- Keep intermediate trees under `/tmp`; only the final `.bundle` (and any requested docs) go into `artifacts`.
-- Never assume Nix or Qt ≥ 6.9 in this sandbox.
+- Project requires **Qt ≥ 6.9** (`QImage::flipped(Qt::Orientations)`).
+- Sandbox/apt may still ship older Qt; use the Nix flake for a full build.
