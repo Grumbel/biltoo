@@ -119,7 +119,7 @@ QStringList expandArchiveToImageRefs(const QString &archivePath);
 /** Expand a PDF into one session path per page (…//page:N, 1-based). */
 QStringList expandPdfToPageRefs(const QString &pdfPath);
 
-/** Expand an EPUB into session paths (…//epub:w,h,em//page:N) via thumtoo default layout. */
+/** Expand an EPUB into session paths (…//epub:w,h,fs//page:N) via thumtoo default layout. */
 QStringList expandEpubToPageRefs(const QString &epubPath);
 
 /** Expand a DjVu into session paths (…//page:N). */

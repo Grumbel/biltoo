@@ -13,10 +13,10 @@
 
 - [x] `.desktop` / AppStream / default-apps: `application/epub+zip`
 - [x] File dialog: `*.epub` filter
-- [x] PagePath: `//epub:w,h,em//page:N` session refs
+- [x] PagePath: `//epub:w,h,fs//page:N` session refs (pixels + font size; thumtoo-107)
 - [x] Expand/open via `ThumtooCache::expandEpubToPageRefs` (default layout)
 - [ ] Font size / layout presets in UI — needs cleaner hierarchical document
-      model (book container + page children); URI already carries `em=` /
+      model (book container + page children); URI already carries `fs=` /
       layout profile, so do not invent a one-off UI binding yet
 
 ---

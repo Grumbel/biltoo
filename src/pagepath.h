@@ -15,7 +15,7 @@
  *   file:///home/user/doc.pdf//page:12
  *
  * EPUB (layout profile required by thumtoo; default w/h/em when expanding):
- *   /home/user/book.epub//epub:w=600,h=900,em=12//page:3
+ *   /home/user/book.epub//epub:w=1200,h=1800,fs=12//page:3
  *
  * Page numbers are 1-based. Only one page level is supported.
  */
@@ -30,7 +30,7 @@ struct Ref {
     QString pdfPath; /**< Local filesystem path of the PDF or EPUB file. */
     int page = 0;    /**< 1-based page index. */
     bool valid = false;
-    /** Empty for PDF; for EPUB holds "w=600,h=900,em=12" (no //epub: prefix). */
+    /** Empty for PDF; for EPUB holds "w=1200,h=1800,fs=12" (no //epub: prefix). */
     QString epubLayoutParams;
     bool isEpub() const { return !epubLayoutParams.isEmpty(); }
 };
