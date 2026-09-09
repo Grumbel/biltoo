@@ -131,11 +131,51 @@ bool isPdfFile(const QString &path)
 
 bool isEpubFile(const QString &path)
 {
-    if (isPageRef(path) || ArchivePath::isArchiveRef(path)) {
+    if (isPageRef(path) || ArchivePath::isArchiveRef(path) || isEpubLayoutOnly(path)) {
         return false;
     }
     const QString name = QFileInfo(path).fileName().toLower();
     return name.endsWith(QLatin1String(".epub"));
+}
+
+bool isEpubLayoutOnly(const QString &path)
+{
+    return path.contains(QLatin1String(kEpubMarker)) && !isPageRef(path);
+}
+
+QString documentFilePath(const QString &path)
+{
+    if (isPageRef(path)) {
+        const Ref r = parse(path);
+        return r.valid ? r.pdfPath : QString();
+    }
+    if (isEpubLayoutOnly(path)) {
+        const int epubIdx = path.indexOf(QLatin1String(kEpubMarker));
+        QString left = path.left(epubIdx);
+        if (left.startsWith(QLatin1String("file:"))) {
+            const QUrl url(left);
+            left = url.isLocalFile() ? url.toLocalFile() : left;
+        }
+        return left;
+    }
+    if (path.startsWith(QLatin1String("file:"))) {
+        const QUrl url(path);
+        return url.isLocalFile() ? url.toLocalFile() : path;
+    }
+    return path;
+}
+
+QString epubLayoutParamsOf(const QString &path)
+{
+    if (isPageRef(path)) {
+        const Ref r = parse(path);
+        return r.epubLayoutParams;
+    }
+    if (isEpubLayoutOnly(path)) {
+        const int epubIdx = path.indexOf(QLatin1String(kEpubMarker));
+        return path.mid(epubIdx + QLatin1String(kEpubMarker).size());
+    }
+    return {};
 }
 
 QStringList pdfSuffixes()

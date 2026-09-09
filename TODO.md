@@ -6375,3 +6375,16 @@ Return still hid it. Root causes:
 - [x] Toggle hides the bar
 - [x] Escape hides the bar when not pinned
 - [x] Docs; next **349**
+
+
+## Plan / work (2026-09-09) — bundle `biltoo-350-location-strip-page`
+
+### Change
+- Stripping `//page:N` in the location bar expands the full PDF/EPUB/DjVu again
+  (including leaving `//epub:layout` without a page).
+- Start at the previous page index when re-expanding the same document.
+- PagePath helpers: `isEpubLayoutOnly`, `documentFilePath`, `epubLayoutParamsOf`.
+
+### Done criteria
+- [x] Full document after removing //page:N
+- [x] Docs; next **351**

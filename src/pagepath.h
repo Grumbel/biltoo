@@ -49,6 +49,12 @@ QString canonicalSessionPath(const QString &path);
 bool isPdfFile(const QString &path);
 bool isEpubFile(const QString &path);
 bool isDjvuFile(const QString &path);
+/** True when path has //epub:… but no //page: (layout profile, full book). */
+bool isEpubLayoutOnly(const QString &path);
+/** Filesystem path for a page ref, //epub: layout-only, or plain path. */
+QString documentFilePath(const QString &path);
+/** Layout payload after //epub: when present (empty otherwise). */
+QString epubLayoutParamsOf(const QString &path);
 QStringList pdfSuffixes();
 QStringList epubSuffixes();
 QStringList djvuSuffixes();

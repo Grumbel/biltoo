@@ -296,6 +296,23 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             }
             continue;
         }
+        // Location bar may leave //epub:w,h,fs after stripping //page:N.
+        if (PagePath::isEpubLayoutOnly(path) && ThumtooCache::isAvailable()) {
+            const QString doc = PagePath::documentFilePath(path);
+            const QString layout = PagePath::epubLayoutParamsOf(path);
+            QStringList pages = expandEpub(doc);
+            if (!layout.isEmpty()) {
+                for (const QString &pg : pages) {
+                    const PagePath::Ref r = PagePath::parse(pg);
+                    if (r.valid) {
+                        images.append(PagePath::makeEpubRef(r.pdfPath, r.page, layout));
+                    }
+                }
+            } else {
+                images.append(pages);
+            }
+            continue;
+        }
         const QFileInfo info(path);
         if (info.isDir()) {
             QDir::Filters filters = QDir::Files | QDir::Readable | QDir::NoDotAndDotDot;
@@ -347,6 +364,9 @@ bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
     for (const QString &path : paths) {
         if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)) {
             continue;
+        }
+        if (PagePath::isEpubLayoutOnly(path)) {
+            return true;
         }
         const QFileInfo info(path);
         if (info.isFile() && (ArchivePath::isArchiveFile(path) || PagePath::isPdfFile(path)
@@ -479,6 +499,28 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                         images.append(ArchivePath::makeRef(ref.archivePath, ref.memberPath));
                     }
                 }
+                continue;
+            }
+            if (PagePath::isEpubLayoutOnly(path) && ThumtooCache::isAvailable()) {
+                const QString doc = PagePath::documentFilePath(path);
+                const QString layout = PagePath::epubLayoutParamsOf(path);
+                const QString name = QFileInfo(doc).fileName();
+                report(MainWindow::tr("Indexing EPUB “%1”…").arg(name));
+                QStringList pages = ThumtooCache::expandEpubToPageRefs(doc);
+                if (!layout.isEmpty()) {
+                    QStringList relayout;
+                    for (const QString &pg : pages) {
+                        const PagePath::Ref r = PagePath::parse(pg);
+                        if (r.valid) {
+                            relayout.append(PagePath::makeEpubRef(r.pdfPath, r.page, layout));
+                        }
+                    }
+                    pages = relayout;
+                }
+                if (!pages.isEmpty()) {
+                    report(MainWindow::tr("EPUB “%1”: %n page(s)", "", pages.size()).arg(name));
+                }
+                images.append(pages);
                 continue;
             }
             const QFileInfo info(path);
@@ -1735,7 +1777,28 @@ void MainWindow::commitLocationBar()
             }
         }
     }
-    loadFiles(QStringList{path});
+
+    // If the user strips //page:N (or //epub:…//page:N) back to the bare
+    // document path, open the full expanded session — not a single page.
+    // Prefer starting at the page they were on when it belongs to the same file.
+    int startAt = 0;
+    if (!PagePath::isPageRef(path)) {
+        const QFileInfo info(path);
+        const QString abs = info.exists() ? info.absoluteFilePath() : path;
+        if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+            const PagePath::Ref cur = PagePath::parse(m_session.paths().at(m_currentIndex));
+            if (cur.valid) {
+                const QFileInfo curInfo(cur.pdfPath);
+                const QString curAbs =
+                    curInfo.exists() ? curInfo.absoluteFilePath() : cur.pdfPath;
+                if (curAbs == abs || cur.pdfPath == path) {
+                    startAt = cur.page - 1; // 0-based index into expanded pages
+                }
+            }
+        }
+    }
+
+    loadFiles(QStringList{path}, startAt);
     if (!m_locationBarPinned && m_locationBar) {
         m_locationEdit->clearFocus();
         m_locationBar->setVisible(false);
