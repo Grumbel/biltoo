@@ -6400,3 +6400,7 @@ all session pages for that book, then `loadFiles` to reflow.
 ### Done criteria
 - [x] Dialog + menu + session path rewrite
 - [x] Docs; next **352**
+
+
+## Plan / work — biltoo-352-pdfimages-expand
+Open path…//pdfimages expands to //pdfimage:N session leaves (native embeds).

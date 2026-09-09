@@ -213,6 +213,19 @@ std::string resolveUriUncached(const QString &path)
                + "//page:" + std::to_string(ref.page);
 #endif
     }
+    if (PagePath::isPdfImageRef(path)) {
+        const QString doc = PagePath::documentFilePath(path);
+        const int n = PagePath::pdfImageNumber(path);
+        if (doc.isEmpty() || n < 1) {
+            return {};
+        }
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+        return thumtoo::pdf_image_uri(absPathFast(doc), n);
+#else
+        return thumtoo::file_uri_from_path(absPathFast(doc))
+               + "//pdfimage:" + std::to_string(n);
+#endif
+    }
     if (ArchivePath::isArchiveRef(path)) {
         const ArchivePath::Ref ref = ArchivePath::parse(path);
         if (!ref.valid) {
@@ -749,6 +762,51 @@ QStringList expandPdfToPageRefs(const QString &pdfPath)
             out.append(ref);
         }
     }
+#else
+    Q_UNUSED(pdfPath);
+#endif
+    return out;
+}
+
+QStringList expandPdfToImageRefs(const QString &pdfPath)
+{
+    QStringList out;
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_PDF)
+    if (pdfPath.isEmpty()) {
+        return out;
+    }
+    const std::filesystem::path abs = absPathStd(pdfPath);
+    if (!thumtoo::is_likely_pdf_path(abs)) {
+        return out;
+    }
+#if defined(BILTOO_HAVE_THUMTOO_EXPAND)
+    auto uris = thumtoo::expand_pdf_image_uris(abs, 4096);
+    out.reserve(static_cast<int>(uris.size()));
+    const QString pdfAbs = QString::fromStdString(abs.string());
+    for (const auto &uri : uris) {
+        auto parsed = thumtoo::parse_pdf_image_uri(uri);
+        if (!parsed) {
+            continue;
+        }
+        const QString ref = PagePath::makePdfImageRef(pdfAbs, parsed->image);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#else
+    const auto count = thumtoo::pdf_embedded_image_count(abs);
+    if (!count || *count <= 0) {
+        return out;
+    }
+    const QString pdfAbs = QString::fromStdString(abs.string());
+    out.reserve(*count);
+    for (int i = 1; i <= *count; ++i) {
+        const QString ref = PagePath::makePdfImageRef(pdfAbs, i);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#endif
 #else
     Q_UNUSED(pdfPath);
 #endif

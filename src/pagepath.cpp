@@ -96,6 +96,11 @@ QString displayName(const QString &path)
             return QStringLiteral("%1 — p.%2").arg(base).arg(r.page);
         }
     }
+    if (isPdfImageRef(path)) {
+        const QString doc = documentFilePath(path);
+        const int n = pdfImageNumber(path);
+        return QStringLiteral("%1 — img.%2").arg(QFileInfo(doc).fileName()).arg(n);
+    }
     if (ArchivePath::isArchiveRef(path)) {
         return ArchivePath::displayName(path);
     }
@@ -122,7 +127,8 @@ QString canonicalSessionPath(const QString &path)
 
 bool isPdfFile(const QString &path)
 {
-    if (isPageRef(path) || ArchivePath::isArchiveRef(path)) {
+    if (isPageRef(path) || isPdfImageRef(path) || isPdfImagesCollection(path)
+        || ArchivePath::isArchiveRef(path)) {
         return false;
     }
     const QString name = QFileInfo(path).fileName().toLower();
@@ -148,6 +154,24 @@ QString documentFilePath(const QString &path)
     if (isPageRef(path)) {
         const Ref r = parse(path);
         return r.valid ? r.pdfPath : QString();
+    }
+    if (isPdfImageRef(path)) {
+        const int idx = path.indexOf(QLatin1String(kPdfImageMarker));
+        QString left = path.left(idx);
+        if (left.startsWith(QLatin1String("file:"))) {
+            const QUrl url(left);
+            left = url.isLocalFile() ? url.toLocalFile() : left;
+        }
+        return left;
+    }
+    if (isPdfImagesCollection(path)) {
+        const int idx = path.indexOf(QLatin1String(kPdfImagesMarker));
+        QString left = path.left(idx);
+        if (left.startsWith(QLatin1String("file:"))) {
+            const QUrl url(left);
+            left = url.isLocalFile() ? url.toLocalFile() : left;
+        }
+        return left;
     }
     if (isEpubLayoutOnly(path)) {
         const int epubIdx = path.indexOf(QLatin1String(kEpubMarker));
@@ -201,6 +225,41 @@ bool isDjvuFile(const QString &path)
 QStringList djvuSuffixes()
 {
     return {QStringLiteral("djvu"), QStringLiteral("djv")};
+}
+
+bool isPdfImagesCollection(const QString &path)
+{
+    return path.contains(QLatin1String(kPdfImagesMarker))
+        && !path.contains(QLatin1String(kPdfImageMarker));
+}
+
+bool isPdfImageRef(const QString &path)
+{
+    return path.contains(QLatin1String(kPdfImageMarker));
+}
+
+QString makePdfImageRef(const QString &pdfPath, int image_1based)
+{
+    if (pdfPath.isEmpty() || image_1based < 1) {
+        return {};
+    }
+    QString abs = pdfPath;
+    const QFileInfo info(pdfPath);
+    if (info.exists()) {
+        abs = info.absoluteFilePath();
+    }
+    return abs + QLatin1String(kPdfImageMarker) + QString::number(image_1based);
+}
+
+int pdfImageNumber(const QString &path)
+{
+    const int idx = path.indexOf(QLatin1String(kPdfImageMarker));
+    if (idx < 0) {
+        return 0;
+    }
+    bool ok = false;
+    const int n = path.mid(idx + int(qstrlen(kPdfImageMarker))).toInt(&ok);
+    return (ok && n >= 1) ? n : 0;
 }
 
 } // namespace PagePath

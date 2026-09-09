@@ -23,6 +23,8 @@ namespace PagePath {
 
 inline constexpr const char kPageMarker[] = "//page:";
 inline constexpr const char kEpubMarker[] = "//epub:";
+inline constexpr const char kPdfImageMarker[] = "//pdfimage:";
+inline constexpr const char kPdfImagesMarker[] = "//pdfimages";
 /** @deprecated use kPageMarker */
 inline constexpr const char kMarker[] = "//page:";
 
@@ -55,6 +57,13 @@ bool isEpubLayoutOnly(const QString &path);
 QString documentFilePath(const QString &path);
 /** Layout payload after //epub: when present (empty otherwise). */
 QString epubLayoutParamsOf(const QString &path);
+
+/** //pdfimages collection — expand to //pdfimage:1..N. */
+bool isPdfImagesCollection(const QString &path);
+/** //pdfimage:N single embedded image leaf. */
+bool isPdfImageRef(const QString &path);
+QString makePdfImageRef(const QString &pdfPath, int image_1based);
+int pdfImageNumber(const QString &path);
 QStringList pdfSuffixes();
 QStringList epubSuffixes();
 QStringList djvuSuffixes();

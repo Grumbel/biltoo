@@ -288,6 +288,19 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
             }
             continue;
         }
+        if (PagePath::isPdfImageRef(path)) {
+            const QString doc = PagePath::documentFilePath(path);
+            const int n = PagePath::pdfImageNumber(path);
+            if (!doc.isEmpty() && n >= 1) {
+                images.append(PagePath::makePdfImageRef(doc, n));
+            }
+            continue;
+        }
+        if (PagePath::isPdfImagesCollection(path) && ThumtooCache::isAvailable()) {
+            const QString doc = PagePath::documentFilePath(path);
+            images.append(ThumtooCache::expandPdfToImageRefs(doc));
+            continue;
+        }
         if (ArchivePath::isArchiveRef(path)) {
             if (isImageFile(path)) {
                 const ArchivePath::Ref ref = ArchivePath::parse(path);
@@ -363,10 +376,11 @@ bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
         return false;
     }
     for (const QString &path : paths) {
-        if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)) {
+        if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
+            || PagePath::isPdfImageRef(path)) {
             continue;
         }
-        if (PagePath::isEpubLayoutOnly(path)) {
+        if (PagePath::isPdfImagesCollection(path) || PagePath::isEpubLayoutOnly(path)) {
             return true;
         }
         const QFileInfo info(path);
@@ -491,6 +505,25 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                         images.append(PagePath::makeRef(ref.pdfPath, ref.page));
                     }
                 }
+                continue;
+            }
+            if (PagePath::isPdfImageRef(path)) {
+                const QString doc = PagePath::documentFilePath(path);
+                const int n = PagePath::pdfImageNumber(path);
+                if (!doc.isEmpty() && n >= 1) {
+                    images.append(PagePath::makePdfImageRef(doc, n));
+                }
+                continue;
+            }
+            if (PagePath::isPdfImagesCollection(path) && ThumtooCache::isAvailable()) {
+                const QString doc = PagePath::documentFilePath(path);
+                const QString name = QFileInfo(doc).fileName();
+                report(MainWindow::tr("Extracting images from “%1”…").arg(name));
+                const QStringList imgs = ThumtooCache::expandPdfToImageRefs(doc);
+                if (!imgs.isEmpty()) {
+                    report(MainWindow::tr("PDF “%1”: %n image(s)", "", imgs.size()).arg(name));
+                }
+                images.append(imgs);
                 continue;
             }
             if (ArchivePath::isArchiveRef(path)) {
