@@ -1059,7 +1059,6 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     m_workspaceToolBar->hide();
-}
 
     // Browser-style location bar (full width under the main toolbar).
     m_locationBar = addToolBar(tr("Location"));
@@ -1084,6 +1083,7 @@ void MainWindow::createToolBar()
     m_locationBar->addWidget(locHost);
     // Transient by default (Ctrl+L shows it); pin via View menu.
     m_locationBar->setVisible(false);
+}
 
 
 void MainWindow::createStatusBar()

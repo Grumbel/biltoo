@@ -6305,3 +6305,24 @@ internal use if crop Auto ever grows attention-based framing later.
 - [x] No Detect Attention UI
 - [x] Docs; next **345**
 
+
+## Plan / work (2026-09-09) — bundle `biltoo-345-fix-location-bar-scope`
+
+### Context
+`createToolBar()` closed too early; the browser-style location bar setup landed
+outside any function, producing cascading “does not name a type” errors for
+`m_locationBar` / `m_locationEdit`.
+
+Additionally, Qt 6.4 (common on Ubuntu 24.04) rejects:
+- `QImage::flipped(Qt::Orientations)` (added in 6.9)
+- `QEvent::DevicePixelRatioChange` (added in 6.6)
+
+### Change
+- Move location-bar construction inside `MainWindow::createToolBar()`.
+- Replace `flipped` with `mirrored(bool, bool)`.
+- Guard `DevicePixelRatioChange` with `QT_VERSION_CHECK(6, 6, 0)`.
+
+### Done criteria
+- [x] Location bar code is inside the member function
+- [x] Clean build on Qt 6.4
+- [x] Docs; next **346**

@@ -518,11 +518,15 @@ int ThumbnailBar::thumbDecodePixels() const
 void ThumbnailBar::changeEvent(QEvent *event)
 {
     QListWidget::changeEvent(event);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
     if (event && event->type() == QEvent::DevicePixelRatioChange) {
         if (!m_files.isEmpty()) {
             scheduleThumbnailLoads();
         }
     }
+#else
+    Q_UNUSED(event);
+#endif
 }
 
 void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
