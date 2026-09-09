@@ -101,6 +101,8 @@
     <mimetype>application/x-cbr</mimetype>
     <mimetype>application/x-cb7</mimetype>
     <mimetype>application/x-cbt</mimetype>
+    <mimetype>application/pdf</mimetype>
+    <mimetype>application/epub+zip</mimetype>
   </mimetypes>
   <content_rating type="oars-1.1" />
   <recommends>
