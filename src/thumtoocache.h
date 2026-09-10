@@ -50,15 +50,15 @@ bool debugTracingEnabled();
 void shutdown();
 
 /**
- * Ladder long-edge targets (match thumtoo::kLadderEdges).
- * get_pixels / cachedLadderBytes return the largest level with edge ≤ request.
- * Request the ceiling step so Gallery can scale a slightly larger thumb down.
+ * Soft ladder long-edge targets (see thumtoo kMaxSoftLadderEdge = 512).
+ * get_pixels / cachedLadderBytes return the largest soft level ≤ request.
+ * Gallery must not request_pixels above kGalleryLadderEdge; zoom uses full decode.
+ * docs/GALLERY_SOFT.md
  */
 constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048};
 constexpr int kFilmstripLadderEdge = 256;
-constexpr int kGalleryLadderEdge = 512;  // fallback when cell size unknown
-/** Max soft ladder for Gallery. Higher on-screen size scales the soft thumb;
- *  true high-res is tiles / Image mode, not request_pixels(1024|2048). */
+constexpr int kGalleryLadderEdge = 512;  // soft max (thumtoo kMaxSoftLadderEdge)
+/** Soft cap only; name kept for call sites. Zoomed Gallery uses ImageLoader::load. */
 constexpr int kImageLadderEdge = 512;
 
 /** Smallest ladder step ≥ displayLongEdge (px); max step if larger. */
