@@ -46,17 +46,20 @@ void ImageView::updateGalleryDecodeWindow()
         }
         const int need = galleryDisplayEdgeForItem(item);
         const int have = item->displayPixelLongEdge();
-        // Already finished a soft attempt at this edge (or higher): settle even
-        // if still a placeholder — avoids schedulePixels/ladderReady CPU spin when
-        // the level never becomes decodable.
-        if (m_galleryLadderAttemptedEdge.value(path, 0) >= need) {
-            return false;
+        // Upgrade path: on-screen need exceeds pixels we have (zoom in).
+        // Do not block upgrades with attemptedEdge — that map only stops
+        // repeated attempts for empty placeholders at the same need.
+        if (have > 0 && have < need) {
+            return true;
         }
         if (have <= 0) {
-            return true; // placeholder, not yet attempted at need
+            // Placeholder: skip if we already attempted this need (or higher).
+            if (m_galleryLadderAttemptedEdge.value(path, 0) >= need) {
+                return false;
+            }
+            return true;
         }
-        // Upgrade when on-screen need exceeds current preview long edge.
-        return have < need;
+        return false;
     };
 
     for (ImageItem *item : m_items) {

@@ -991,28 +991,72 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         return;
     }
     const quint64 gen = m_generation.load();
-    // Never request below thumtoo's smallest ladder edge (find_best used to miss).
     // Filmstrip only needs the small ladder step; higher edges are Gallery/Image.
-    // Requesting device pixels above 256 caused schedulePixels(512) storms.
     const int decodeSize = ThumtooCache::kFilmstripLadderEdge;
     m_decodedSize = decodeSize;
 
     const int n = m_files.size();
-    int focus = currentRow();
-    if (focus < 0) {
-        focus = 0;
+    // Visible range from the viewport (scroll position), NOT currentRow.
+    // Selection-centred scheduling never loaded thumbs the user scrolled to
+    // without clicking (currentRow stayed put).
+    int lo = 0;
+    int hi = n;
+    if (viewport() && n > 0) {
+        const QRect vr = viewport()->rect();
+        const int pad = qMax(m_thumbSize, 32);
+        const QRect expanded = vr.adjusted(-pad, -pad, pad, pad);
+        int minRow = n;
+        int maxRow = -1;
+        const QPoint samples[] = {
+            expanded.topLeft(),
+            expanded.topRight(),
+            expanded.bottomLeft(),
+            expanded.bottomRight(),
+            expanded.center(),
+            QPoint(expanded.center().x(), expanded.top()),
+            QPoint(expanded.center().x(), expanded.bottom()),
+            QPoint(expanded.left(), expanded.center().y()),
+            QPoint(expanded.right(), expanded.center().y()),
+        };
+        for (const QPoint &pt : samples) {
+            const QModelIndex idx = indexAt(pt);
+            if (!idx.isValid()) {
+                continue;
+            }
+            minRow = qMin(minRow, idx.row());
+            maxRow = qMax(maxRow, idx.row());
+        }
+        // Fallback: scan items whose visual rect intersects the viewport.
+        if (maxRow < 0) {
+            for (int i = 0; i < n; ++i) {
+                QListWidgetItem *it = item(i);
+                if (!it) {
+                    continue;
+                }
+                if (visualItemRect(it).intersects(expanded)) {
+                    minRow = qMin(minRow, i);
+                    maxRow = qMax(maxRow, i);
+                }
+            }
+        }
+        if (maxRow >= 0) {
+            // Extra overscan in index space (~half a screen of cells).
+            const int cell = qMax(1, m_thumbSize + 8);
+            const int across = qMax(1, viewport()->width() / cell);
+            const int down = qMax(1, viewport()->height() / cell);
+            const int over = qMax(8, across * down);
+            lo = qMax(0, minRow - over);
+            hi = qMin(n, maxRow + over + 1);
+        } else {
+            // No geometry yet — seed from selection or start.
+            int focus = currentRow();
+            if (focus < 0) {
+                focus = 0;
+            }
+            lo = qMax(0, focus - 24);
+            hi = qMin(n, focus + 25);
+        }
     }
-    // Prefetch about two screens around focus (or start of strip).
-    constexpr int kMinRadius = 24;
-    int radius = kMinRadius;
-    if (viewport()) {
-        const int cell = qMax(1, m_thumbSize + 8);
-        const int across = qMax(1, viewport()->width() / cell);
-        const int down = qMax(1, viewport()->height() / cell);
-        radius = qMax(kMinRadius, across * down * 2);
-    }
-    const int lo = qMax(0, focus - radius);
-    const int hi = qMin(n, focus + radius + 1);
 
     // Pool jobs only — thumtoo pixel concurrency is separate (kMaxConcurrentPixelJobs).
     constexpr int kMaxConcurrentThumbLoads = 12;
