@@ -11,6 +11,7 @@
 #include <QUndoStack>
 
 #include <QApplication>
+#include <QCursor>
 #include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
@@ -158,9 +159,9 @@ void ImageView::dropEvent(QDropEvent *event)
         return;
     }
     // Prefer global→viewport→scene. Drop events may land on the view or the
-    // viewport child; widget-local position() is then wrong for mapToScene.
-    // globalPosition matches the cursor regardless of which widget got the event.
-    const QPoint viewPos = viewport()->mapFromGlobal(event->globalPosition().toPoint());
+    // OpenGL viewport child; widget-local position() is then wrong for mapToScene.
+    // QDropEvent has no portable globalPosition() here — use the cursor.
+    const QPoint viewPos = viewport()->mapFromGlobal(QCursor::pos());
     const QPointF scenePos = mapToScene(viewPos);
     QList<qint64> sessionIds;
     const QByteArray idBytes =
