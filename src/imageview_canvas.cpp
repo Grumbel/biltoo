@@ -10,6 +10,8 @@
 #include <QSet>
 #include <QDebug>
 #include <QHash>
+#include <QPointer>
+#include <QTimer>
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
 {
