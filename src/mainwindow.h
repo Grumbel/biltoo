@@ -432,6 +432,7 @@ private:
     QAction *m_cropAct = nullptr;
     QAction *m_attentionAct = nullptr;
     QAction *m_toggleHudAct = nullptr;
+    QAction *m_showTextRegionsAct = nullptr;
     QAction *m_hideThumbLabelsAct = nullptr;
     QAction *m_cropThumbnailsAct = nullptr;
     QAction *m_previousAct = nullptr;

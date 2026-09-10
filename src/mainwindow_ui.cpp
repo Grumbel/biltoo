@@ -255,6 +255,15 @@ void MainWindow::createActions()
     m_toggleHudAct->setCheckable(true);
     m_toggleHudAct->setStatusTip(tr("Show an on-image overlay with filename, zoom and size"));
     connect(m_toggleHudAct, &QAction::triggered, this, &MainWindow::toggleHud);
+    m_showTextRegionsAct = new QAction(tr("Show &Text Regions"), this);
+    m_showTextRegionsAct->setCheckable(true);
+    m_showTextRegionsAct->setStatusTip(
+        tr("Debug: outline text and link regions from the document text layer (PDF/DjVu/EPUB pages)"));
+    connect(m_showTextRegionsAct, &QAction::toggled, this, [this](bool on) {
+        if (m_imageView) {
+            m_imageView->setShowTextRegions(on);
+        }
+    });
 
     m_hideThumbLabelsAct = new QAction(tr("Hide Thumbnail &Filenames"), this);
     m_hideThumbLabelsAct->setCheckable(true);
@@ -808,6 +817,7 @@ void MainWindow::createMenus()
     zoomMenu->addAction(m_zoomRegionAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
+    m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);

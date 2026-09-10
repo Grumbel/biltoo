@@ -2,7 +2,7 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-355-pdfimage-soft-miss.** Plan refined: **biltoo-357 semantic text layer** (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
+**Tip: biltoo-358-text-region-overlay.** Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
 locator registration + dict-size extract.
 
 ### Shipped
@@ -36,6 +36,25 @@ locator registration + dict-size extract.
 - Pixel-filter pipes (`//crop:`, invert, …) — design notes in thumtoo TODO.
 - Full compile verification after human pulls both tips.
 
+
+## Plan / work — bundle `biltoo-358-text-region-overlay`
+
+### Goal
+First biltoo consumer of thumtoo text layers: fetch regions + debug overlay.
+
+### Done criteria
+- [x] `ThumtooCache::cachedPageTextLayer` / `ensurePageTextLayer` / `pageRectToImageRect`
+- [x] Image mode debug overlay (View → Show Text Regions)
+- [x] Map page space (Y-up) → image pixels → scene
+- [ ] Search + highlight (next)
+- [ ] Rubberband select + copy (next)
+- [ ] Requires **thumtoo ≥ 131** (text extract + cache)
+
+### Notes
+- Overlay is checkable debug UI, not a permanent chrome.
+- Ensure may block on first extract; later work should use a worker.
+
+---
 
 ## Plan / research — semantic text layer (biltoo-356 → 357 refined)
 

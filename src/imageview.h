@@ -5,6 +5,7 @@
 #define IMAGEVIEW_H
 
 #include "imageview_types.h"
+#include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
 #include "gallerycontroller.h"
@@ -465,6 +466,12 @@ public:
 
     /** When true (default), left-drag pans in Image mode. */
     void setImageModeLeftDragPan(bool on);
+
+    /** Debug: paint text/link region rects for page documents (Image mode). */
+    void setShowTextRegions(bool on);
+    bool showTextRegions() const { return m_showTextRegions; }
+    void refreshTextLayer();
+
     bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
 
     void setBackgroundColor(const QColor &color);
@@ -1100,6 +1107,9 @@ private:
     bool m_workspaceBackgroundShowDefault = false;
     QPixmap m_workspaceBgTile; /**< Cached tile for ImageTile mode */
     QString m_workspaceBgTilePath; /**< Path loaded into m_workspaceBgTile */
+    bool m_showTextRegions = false;
+    ThumtooCache::PageTextLayer m_textLayer;
+    QString m_textLayerPath;
     bool m_hudVisible = false;
     int m_hudFontPointSize = 11;
     QColor m_hudTextColor{255, 255, 255};

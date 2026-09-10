@@ -10,6 +10,8 @@
 #include <QImage>
 #include <QString>
 #include <QStringList>
+#include <QRectF>
+#include <QVector>
 
 /**
  * Thin biltoo façade over thumtoo::Client (durable size index + ladder).
@@ -147,6 +149,45 @@ QImage rasterizePageRef(const QString &sessionPath, int maxEdge);
  * Sole archive-member byte path in biltoo.
  */
 QByteArray readArchiveMemberBytes(const QString &archiveRefPath);
+
+
+/** One text or link region in page space (see pageBounds for coordinate system). */
+struct TextRegion {
+    enum class Role { Text, Link };
+    QRectF bbox;  ///< page space (PDF/EPUB: points Y-up; DjVu: pixels Y-up)
+    Role role = Role::Text;
+    QString text;
+    /** Link target: internal 1-based page (0 = none) and/or URI. */
+    int linkPage = 0;
+    QString linkUri;
+};
+
+struct PageTextLayer {
+    int page = 0;
+    QString layoutKey;
+    QRectF pageBounds;
+    QVector<TextRegion> regions;
+};
+
+/**
+ * Cache-only text layer for a session page path (//page: / //epub:…//page:).
+ * Empty when thumtoo is off, headers missing, or nothing stored yet.
+ */
+PageTextLayer cachedPageTextLayer(const QString &sessionPath);
+
+/**
+ * Extract (and cache in thumtoo when content_id known) text/link regions.
+ * Source I/O — call off the GUI thread for large books when possible.
+ * Empty layer if unsupported path or extract failure.
+ */
+PageTextLayer ensurePageTextLayer(const QString &sessionPath);
+
+/**
+ * Map a page-space rect into image-pixel space (top-left origin) using pageBounds.
+ * Handles Y-up page space → Y-down image.
+ */
+QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
+                           const QSize &imageSize);
 
 } // namespace ThumtooCache
 

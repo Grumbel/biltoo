@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "thumtoocache.h"
+#include "pagepath.h"
 #include <QFileInfo>
 #include <QDebug>
 #include <QPixmap>
@@ -860,6 +862,50 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 }
 
 
+
+void ImageView::setShowTextRegions(bool on)
+{
+    if (m_showTextRegions == on) {
+        return;
+    }
+    m_showTextRegions = on;
+    if (m_showTextRegions) {
+        refreshTextLayer();
+    } else {
+        m_textLayer = {};
+        m_textLayerPath.clear();
+    }
+    viewport()->update();
+}
+
+void ImageView::refreshTextLayer()
+{
+    m_textLayer = {};
+    m_textLayerPath.clear();
+    if (!m_showTextRegions || !isImageMode()) {
+        return;
+    }
+    const QString path = classicPath();
+    if (path.isEmpty()) {
+        return;
+    }
+    if (!PagePath::isPageRef(path) && !PagePath::isEpubLayoutOnly(path)) {
+        // Only multipage document leaves for now.
+        if (!PagePath::isPageRef(path)) {
+            return;
+        }
+    }
+    if (!PagePath::isPageRef(path)) {
+        return;
+    }
+    m_textLayerPath = path;
+    // Prefer cache; ensure may do source I/O (acceptable for debug toggle).
+    m_textLayer = ThumtooCache::cachedPageTextLayer(path);
+    if (m_textLayer.regions.isEmpty()) {
+        m_textLayer = ThumtooCache::ensurePageTextLayer(path);
+    }
+}
+
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
     // Page guide outline above images so the frame stays visible when tiles
@@ -883,6 +929,40 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
             painter->setPen(marginPen);
             painter->drawRect(margin);
             painter->restore();
+        }
+    }
+
+    // Text/link region debug overlay (scene space, Image mode page docs).
+    if (m_showTextRegions && isImageMode() && !m_textLayer.regions.isEmpty()) {
+        if (ImageItem *item = primaryItem()) {
+            const QSize sz = item->imageSize();
+            if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBounds.isValid()) {
+                painter->save();
+                painter->setBrush(Qt::NoBrush);
+                for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
+                    const QRectF img = ThumtooCache::pageRectToImageRect(
+                        r.bbox, m_textLayer.pageBounds, sz);
+                    if (img.isEmpty()) {
+                        continue;
+                    }
+                    // Item pixmap is centred: local = image + offset.
+                    const QRectF local = img.translated(item->offset());
+                    const QPolygonF scenePoly = item->mapToScene(local);
+                    if (r.role == ThumtooCache::TextRegion::Role::Link) {
+                        QPen pen(QColor(40, 180, 80, 200));
+                        pen.setCosmetic(true);
+                        pen.setWidthF(0);
+                        painter->setPen(pen);
+                    } else {
+                        QPen pen(QColor(220, 80, 40, 180));
+                        pen.setCosmetic(true);
+                        pen.setWidthF(0);
+                        painter->setPen(pen);
+                    }
+                    painter->drawPolygon(scenePoly);
+                }
+                painter->restore();
+            }
         }
     }
 

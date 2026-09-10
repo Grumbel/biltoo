@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-357 semantic text layer** (refined plan: regions, search+highlight, rubberband select+copy, always-cache, optional TOC panel).
-Next bundle number: **357** (docs only until thumtoo text APIs exist).
+Latest agent handoff: **TODO.md → biltoo-358-text-region-overlay** (text region debug overlay; needs thumtoo ≥ 131).
+Next bundle number: **359**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

@@ -43,6 +43,10 @@
 #include "thumtoo/expand.hpp"
 #define BILTOO_HAVE_THUMTOO_EXPAND 1
 #endif
+#if __has_include("thumtoo/text.hpp")
+#include "thumtoo/text.hpp"
+#define BILTOO_HAVE_THUMTOO_TEXT 1
+#endif
 
 #include <condition_variable>
 #include <list>
@@ -1095,5 +1099,123 @@ QByteArray readArchiveMemberBytes(const QString &archiveRefPath)
     return {};
 #endif
 }
+
+
+QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
+                           const QSize &imageSize)
+{
+    const qreal pw = pageBounds.width();
+    const qreal ph = pageBounds.height();
+    if (pw <= 0 || ph <= 0 || imageSize.width() <= 0 || imageSize.height() <= 0) {
+        return {};
+    }
+    const qreal nx0 = (pageRect.left() - pageBounds.left()) / pw;
+    const qreal nx1 = (pageRect.right() - pageBounds.left()) / pw;
+    // Page space Y increases upward; image Y increases downward.
+    const qreal ny0 = (pageBounds.bottom() - pageRect.bottom()) / ph;
+    const qreal ny1 = (pageBounds.bottom() - pageRect.top()) / ph;
+    return QRectF(nx0 * imageSize.width(), ny0 * imageSize.height(),
+                  (nx1 - nx0) * imageSize.width(), (ny1 - ny0) * imageSize.height());
+}
+
+#ifdef BILTOO_HAVE_THUMTOO
+#if defined(BILTOO_HAVE_THUMTOO_TEXT)
+
+namespace {
+
+TextRegion convertRegion(const thumtoo::TextRegion &r)
+{
+    TextRegion out;
+    out.bbox = QRectF(r.bbox.x0, r.bbox.y0, r.bbox.width(), r.bbox.height());
+    out.role = (r.role == thumtoo::TextRegionRole::Link) ? TextRegion::Role::Link
+                                                         : TextRegion::Role::Text;
+    out.text = QString::fromStdString(r.text);
+    if (r.target.kind == thumtoo::TextLinkTargetKind::InternalPage) {
+        out.linkPage = r.target.page_1based;
+    } else if (r.target.kind == thumtoo::TextLinkTargetKind::Uri) {
+        out.linkUri = QString::fromStdString(r.target.uri);
+    }
+    return out;
+}
+
+PageTextLayer convertLayer(const thumtoo::PageTextLayer &layer)
+{
+    PageTextLayer out;
+    out.page = layer.page_1based;
+    out.layoutKey = QString::fromStdString(layer.layout_key);
+    out.pageBounds = QRectF(layer.page_bounds.x0, layer.page_bounds.y0,
+                            layer.page_bounds.width(), layer.page_bounds.height());
+    out.regions.reserve(static_cast<int>(layer.regions.size()));
+    for (const auto &r : layer.regions) {
+        out.regions.push_back(convertRegion(r));
+    }
+    return out;
+}
+
+} // namespace
+
+PageTextLayer cachedPageTextLayer(const QString &sessionPath)
+{
+    init();
+    std::lock_guard lock(g_mu);
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return {};
+    }
+    const std::string uri = toThumtooUri(sessionPath);
+    if (uri.empty()) {
+        return {};
+    }
+    auto layer = c->get_page_text_layer(uri);
+    if (!layer) {
+        return {};
+    }
+    return convertLayer(*layer);
+}
+
+PageTextLayer ensurePageTextLayer(const QString &sessionPath)
+{
+    init();
+    std::lock_guard lock(g_mu);
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return {};
+    }
+    const std::string uri = toThumtooUri(sessionPath);
+    if (uri.empty()) {
+        return {};
+    }
+    auto layer = c->ensure_page_text_layer(uri);
+    if (!layer) {
+        return {};
+    }
+    return convertLayer(*layer);
+}
+
+#else // BILTOO_HAVE_THUMTOO_TEXT
+
+PageTextLayer cachedPageTextLayer(const QString &)
+{
+    return {};
+}
+PageTextLayer ensurePageTextLayer(const QString &)
+{
+    return {};
+}
+
+#endif
+#else // no thumtoo
+
+PageTextLayer cachedPageTextLayer(const QString &)
+{
+    return {};
+}
+PageTextLayer ensurePageTextLayer(const QString &)
+{
+    return {};
+}
+
+#endif
+
 
 } // namespace ThumtooCache

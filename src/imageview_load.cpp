@@ -922,6 +922,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
 bool ImageView::loadImage(const QString &path)
 {
     setClassicPath(path);
+    if (m_showTextRegions) {
+        refreshTextLayer();
+    }
     m_lastLoadError.clear();
 
     if (isMultiItemMode()) {
