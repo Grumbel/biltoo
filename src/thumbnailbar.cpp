@@ -980,19 +980,20 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
     if (focus < 0) {
         focus = 0;
     }
-    // ~2 screens of thumbs each side; keeps archive member reads off the pool flood.
-    constexpr int kMinRadius = 32;
+    // Prefer near-focus thumbs first; thumtoo PDF ladder builds are expensive.
+    // ~1 screen each side is enough — scrolling loads more.
+    constexpr int kMinRadius = 12;
     int radius = kMinRadius;
     if (viewport()) {
         const int cell = qMax(1, m_thumbSize + 8);
         const int across = qMax(1, viewport()->width() / cell);
         const int down = qMax(1, viewport()->height() / cell);
-        radius = qMax(kMinRadius, across * down * 2);
+        radius = qMax(kMinRadius, across * down);
     }
     const int lo = qMax(0, focus - radius);
     const int hi = qMin(n, focus + radius + 1);
 
-    constexpr int kMaxConcurrentThumbLoads = 6;
+    constexpr int kMaxConcurrentThumbLoads = 3;
     int inFlight = 0;
     for (int idx : m_thumbLoadScheduled) {
         Q_UNUSED(idx);

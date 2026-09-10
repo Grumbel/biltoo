@@ -1318,7 +1318,7 @@ private:
     QHash<QString, int> m_galleryLadderAttemptedEdge;
     static constexpr int kGalleryVirtualThreshold = 80;
     static constexpr int kGalleryDecodeOverscanPx = 400;
-    static constexpr int kMaxConcurrentGalleryDecodes = 12;
+    static constexpr int kMaxConcurrentGalleryDecodes = 4;
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
     static constexpr int kMaxIdleGalleryDecodes = 2;
     /** Queue of workspace restores still waiting for decode (supports same path twice). */

@@ -59,6 +59,16 @@
 namespace ThumtooCache {
 namespace {
 QSet<QString> g_pixelsInflight;
+/** Cap concurrent thumtoo request_pixels — PDF raster+encode is heavy. */
+constexpr int kMaxConcurrentPixelJobs = 3;
+int g_pixelsActive = 0;
+struct PendingPixels {
+    QString path;
+    int maxEdge = 0;
+    QString inflightKey;
+    std::string uri;
+};
+std::vector<PendingPixels> g_pixelsQueue;
 
 #ifdef BILTOO_HAVE_THUMTOO
 
@@ -583,6 +593,45 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge)
     return {};
 }
 
+#ifdef BILTOO_HAVE_THUMTOO
+void startNextPixelJobsUnlocked()
+{
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return;
+    }
+    while (g_pixelsActive < kMaxConcurrentPixelJobs && !g_pixelsQueue.empty()) {
+        PendingPixels job = std::move(g_pixelsQueue.front());
+        g_pixelsQueue.erase(g_pixelsQueue.begin());
+        // May have been completed by another path; skip stale keys.
+        if (!g_pixelsInflight.contains(job.inflightKey)) {
+            continue;
+        }
+        ++g_pixelsActive;
+        const QString pathCopy = job.path;
+        const int edge = job.maxEdge;
+        const QString inflightKey = job.inflightKey;
+        const std::string uri = job.uri;
+        c->request_pixels(
+            uri, edge,
+            [pathCopy, edge, inflightKey](std::string, int,
+                                          std::optional<thumtoo::PixelLevel> px) {
+                {
+                    std::lock_guard lock(g_mu);
+                    g_pixelsInflight.remove(inflightKey);
+                    g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                    startNextPixelJobsUnlocked();
+                }
+                if (!px || px->bytes.empty()) {
+                    emit bridge()->ladderReady(pathCopy, edge);
+                    return;
+                }
+                emit bridge()->ladderReady(pathCopy, edge);
+            });
+    }
+}
+#endif
+
 void schedulePixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
@@ -594,40 +643,18 @@ void schedulePixels(const QString &path, int maxEdge)
     if (uri.empty()) {
         return;
     }
-    // Dedup in-flight requests (path + edge). loadThumbnail shortfall and
-    // filmstrip ladderReady used to re-queue the same edge until CPU saturated.
+    // Dedup + global concurrency cap. PDF page raster+JXL in thumtoo is costly;
+    // flooding request_pixels pegged a core even when the GUI was idle.
     const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
-    thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);
         if (g_pixelsInflight.contains(inflightKey)) {
             return;
         }
         g_pixelsInflight.insert(inflightKey);
-        c = clientUnlocked();
+        g_pixelsQueue.push_back(PendingPixels{path, maxEdge, inflightKey, uri});
+        startNextPixelJobsUnlocked();
     }
-    if (!c) {
-        std::lock_guard lock(g_mu);
-        g_pixelsInflight.remove(inflightKey);
-        return;
-    }
-    const QString pathCopy = path;
-    const int edge = maxEdge;
-    c->request_pixels(
-        uri, maxEdge,
-        [pathCopy, edge, inflightKey](std::string, int, std::optional<thumtoo::PixelLevel> px) {
-            {
-                std::lock_guard lock(g_mu);
-                g_pixelsInflight.remove(inflightKey);
-            }
-            if (!px || px->bytes.empty()) {
-                // Still notify so gallery await can settle (null path).
-                emit bridge()->ladderReady(pathCopy, edge);
-                return;
-            }
-            // Decode happens in ThumbnailBar/ImageLoader (vips) on ladderReady.
-            emit bridge()->ladderReady(pathCopy, edge);
-        });
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
