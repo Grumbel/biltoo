@@ -81,61 +81,60 @@ ImageView::ImageView(QWidget *parent)
                 applyProbedImageSize(path, size);
             });
 
-    // Soft preview: only finish GallerySoftState waits (no re-queue storms).
+    // Soft preview: install better ladder pixels; clear inflight when matched.
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int maxEdge) {
                 if (path.isEmpty() || !isGalleryMode()) {
                     return;
                 }
-                auto it = m_gallerySoft.find(path);
-                if (it == m_gallerySoft.end() || it->inflight <= 0) {
-                    return;
-                }
-                const int edge = maxEdge > 0 ? maxEdge : it->inflight;
-                // Ignore completions for other edges while we wait on inflight.
-                if (edge < it->inflight && edge != it->inflight) {
-                    // Accept equal or larger builds for our request.
-                }
+                const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;
                 const QPointer<ImageView> guard(this);
-                const int waitEdge = it->inflight;
-                QThreadPool::globalInstance()->start([guard, path, edge, waitEdge]() {
-                    const QImage preview = ImageLoader::loadThumbnail(path, waitEdge);
+                QThreadPool::globalInstance()->start([guard, path, edge]() {
+                    // Prefer exact edge; loadThumbnail returns best ≤ edge from cache.
+                    const QImage preview = ImageLoader::loadThumbnail(path, edge);
                     if (!guard) {
                         return;
                     }
-                    QMetaObject::invokeMethod(guard.data(), [guard, path, preview, waitEdge]() {
+                    QMetaObject::invokeMethod(guard.data(), [guard, path, preview, edge]() {
                         ImageView *const host = guard.data();
-                        if (!host) {
+                        if (!host || !host->isGalleryMode()) {
                             return;
                         }
-                        auto it2 = host->m_gallerySoft.find(path);
-                        if (it2 == host->m_gallerySoft.end() || it2->inflight != waitEdge) {
-                            return;
-                        }
-                        GallerySoftState &st = it2.value();
-                        st.inflight = 0;
+                        const int got = preview.isNull()
+                                            ? 0
+                                            : qMax(preview.width(), preview.height());
                         if (!preview.isNull()) {
-                            const int got = qMax(preview.width(), preview.height());
                             host->onImagePreviewLoaded(
                                 path, preview, 0,
                                 static_cast<int>(ImageView::LoadAdd));
-                            st.have = qMax(st.have, got);
-                            if (got >= waitEdge * 9 / 10) {
-                                if (st.gaveUpWant <= waitEdge) {
-                                    st.gaveUpWant = 0;
+                        }
+                        auto it = host->m_gallerySoft.find(path);
+                        if (it != host->m_gallerySoft.end()) {
+                            GallerySoftState &st = it.value();
+                            if (got > 0) {
+                                st.have = qMax(st.have, got);
+                            }
+                            // Finish wait if this completion covers our request.
+                            if (st.inflight > 0
+                                && (edge >= st.inflight || got >= st.inflight * 9 / 10)) {
+                                const int waited = st.inflight;
+                                st.inflight = 0;
+                                if (got >= waited * 9 / 10) {
+                                    if (st.gaveUpWant <= waited) {
+                                        st.gaveUpWant = 0;
+                                    }
+                                } else {
+                                    st.gaveUpWant = qMax(st.gaveUpWant, waited);
                                 }
-                            } else {
-                                st.gaveUpWant = qMax(st.gaveUpWant, waitEdge);
-                            }
-                        } else {
-                            st.gaveUpWant = qMax(st.gaveUpWant, waitEdge);
-                            if (st.have <= 0) {
-                                st.failed = true;
+                            } else if (st.inflight > 0 && edge == st.inflight && got <= 0) {
+                                st.inflight = 0;
+                                st.gaveUpWant = qMax(st.gaveUpWant, edge);
+                                if (st.have <= 0) {
+                                    st.failed = true;
+                                }
                             }
                         }
-                        if (host->isGalleryMode()) {
-                            host->updateGalleryDecodeWindow();
-                        }
+                        host->updateGalleryDecodeWindow();
                         emit host->statusChanged();
                     }, Qt::QueuedConnection);
                 });
