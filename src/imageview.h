@@ -1308,9 +1308,11 @@ private:
     /** Paths that failed decode — do not spin forever on placeholders. */
     QSet<QString> m_galleryDecodeFailed;
     /**
-     * Highest ladder long-edge we have already obtained (or permanently settled)
-     * for a gallery soft-decode. Updated to the delivered size on shortfall so
-     * a later zoom (higher need) can request the next step; set to the request
+     * Highest gallery soft *need* finished for a path (satisfied or given up).
+     * Only advance to the requested edge when delivery is ≥ ~90% of that edge
+     * or schedulePixels can no longer accept a build; never mark a high need
+     * satisfied when only a low-res thumb was installed (zoom upgrade stuck).
+     * Historical note: was advanced to the request edge on every ladderReady,
      * only when the delivered level meets ~90% of the request or the attempt
      * failed. Prevents schedulePixels/ladderReady CPU spin when thumtoo cannot
      * grow the ladder further.

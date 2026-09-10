@@ -57,7 +57,7 @@ void shutdown();
 constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048};
 constexpr int kFilmstripLadderEdge = 256;
 constexpr int kGalleryLadderEdge = 512;  // fallback when cell size unknown
-constexpr int kImageLadderEdge = 1024;
+constexpr int kImageLadderEdge = 2048; // max soft step in Gallery when zoomed
 
 /** Smallest ladder step ≥ displayLongEdge (px); max step if larger. */
 inline int ceilLadderEdge(int displayLongEdge)
@@ -102,6 +102,9 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
  */
 /** @return false if skipped (already in-flight, settled success, or unsupported). */
 bool schedulePixels(const QString &path, int maxEdge);
+
+/** Allow a later schedulePixels for this path/edge after a shortfall delivery. */
+void forgetPixelsSettled(const QString &path, int maxEdge);
 
 /**
  * Prewarm **sizes** only for a session file list (thumtoo prepare / probe).

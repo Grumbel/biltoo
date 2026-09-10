@@ -101,19 +101,47 @@ ImageView::ImageView(QWidget *parent)
                             return;
                         }
                         host->m_galleryAwaitLadder.remove(path);
-                        // Attempt at `edge` is finished (success or empty).
-                        host->m_galleryLadderAttemptedEdge.insert(
-                            path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                       edge));
+                        auto markAttempted = [&](int e) {
+                            host->m_galleryLadderAttemptedEdge.insert(
+                                path,
+                                qMax(host->m_galleryLadderAttemptedEdge.value(path, 0), e));
+                        };
                         if (preview.isNull()) {
+                            // Empty delivery: do not treat `edge` as satisfied — only
+                            // block this need if we cannot re-queue a build.
+                            if (ThumtooCache::isAvailable()) {
+                                ThumtooCache::forgetPixelsSettled(path, edge);
+                                if (ThumtooCache::schedulePixels(path, edge)) {
+                                    host->m_galleryAwaitLadder.insert(path);
+                                } else {
+                                    markAttempted(edge);
+                                }
+                            } else {
+                                markAttempted(edge);
+                            }
                             if (host->isGalleryMode()) {
                                 host->updateGalleryDecodeWindow();
                             }
                             return;
                         }
+                        const int got = qMax(preview.width(), preview.height());
                         host->onImagePreviewLoaded(
                             path, preview, 0,
                             static_cast<int>(ImageView::LoadAdd));
+                        if (got >= edge * 9 / 10) {
+                            markAttempted(edge);
+                        } else if (ThumtooCache::isAvailable()) {
+                            // Under-delivery for this need: allow one more build
+                            // (clear settle) so zoom upgrades are not stuck on 512.
+                            ThumtooCache::forgetPixelsSettled(path, edge);
+                            if (ThumtooCache::schedulePixels(path, edge)) {
+                                host->m_galleryAwaitLadder.insert(path);
+                            } else {
+                                markAttempted(edge);
+                            }
+                        } else {
+                            markAttempted(qMax(got, 1));
+                        }
                         if (host->isGalleryMode()) {
                             host->updateGalleryDecodeWindow();
                         }

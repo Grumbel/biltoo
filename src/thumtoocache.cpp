@@ -744,6 +744,21 @@ void startNextPixelJobsUnlocked()
 }
 #endif
 
+void forgetPixelsSettled(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty() || maxEdge <= 0) {
+        return;
+    }
+    const QString key = path + QLatin1Char('#') + QString::number(maxEdge);
+    std::lock_guard lock(g_mu);
+    g_pixelsSettled.remove(key);
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+#endif
+}
+
 bool schedulePixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
