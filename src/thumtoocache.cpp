@@ -759,6 +759,22 @@ void forgetPixelsSettled(const QString &path, int maxEdge)
 #endif
 }
 
+bool isPixelsInflight(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty() || maxEdge <= 0) {
+        return false;
+    }
+    const QString key = path + QLatin1Char('#') + QString::number(maxEdge);
+    std::lock_guard lock(g_mu);
+    return g_pixelsInflight.contains(key);
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#endif
+}
+
 bool schedulePixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO

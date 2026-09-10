@@ -37,7 +37,11 @@ Image mode only.
 4. If `failed` → stop.
 5. If `gaveUpWant >= want` and `have > 0` → stop (cannot grow for this want).
 6. Else set `inflight = want`, fetch soft pixels once (`loadThumbnail` / ladder).
-7. On completion: install if better; if `got >= want * 0.9` clear give-up for that band; else set `gaveUpWant = want`. **Never** clear thumtoo settle to re-queue the same want in a loop.
+7. On completion: install if better. If `got >= want * 0.9`, clear give-up.
+   If `got` is only a placeholder but thumtoo is still building `want`
+   (`isPixelsInflight` / accepted `schedulePixels`), **keep `inflight`** and
+   wait for `ladderReady` — do not set `gaveUpWant` yet. Only give up when the
+   build is finished and delivery is still short.
 
 ## Concurrency
 

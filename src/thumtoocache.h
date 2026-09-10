@@ -106,6 +106,10 @@ bool schedulePixels(const QString &path, int maxEdge);
 /** Allow a later schedulePixels for this path/edge after a shortfall delivery. */
 void forgetPixelsSettled(const QString &path, int maxEdge);
 
+/** True while a request_pixels for this path/edge is queued or running. */
+bool isPixelsInflight(const QString &path, int maxEdge);
+
+
 /**
  * Prewarm **sizes** only for a session file list (thumtoo prepare / probe).
  * Does not schedule ladder encode — filmstrip, gallery window, and Image soft

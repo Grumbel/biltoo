@@ -407,8 +407,23 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     }
                     return;
                 }
-                st.inflight = 0;
                 host->takePendingWorkspacePath(path);
+
+                // Cache may still hold only a placeholder while thumtoo builds
+                // requestEdge — keep inflight and wait for ladderReady.
+                auto stillWaitingForLadder = [&](int got) -> bool {
+                    if (!ThumtooCache::isAvailable()) {
+                        return false;
+                    }
+                    if (got >= requestEdge * 9 / 10) {
+                        return false;
+                    }
+                    // loadThumbnail may already have queued this edge.
+                    if (ThumtooCache::isPixelsInflight(path, requestEdge)) {
+                        return true;
+                    }
+                    return ThumtooCache::schedulePixels(path, requestEdge);
+                };
 
                 if (!preview.isNull()) {
                     const int got = qMax(preview.width(), preview.height());
@@ -416,27 +431,24 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                                                static_cast<int>(LoadAdd));
                     st.have = qMax(st.have, got);
                     if (got >= requestEdge * 9 / 10) {
-                        // Satisfied this want.
+                        st.inflight = 0;
                         if (st.gaveUpWant <= requestEdge) {
                             st.gaveUpWant = 0;
                         }
+                    } else if (stillWaitingForLadder(got)) {
+                        st.inflight = requestEdge; // ladderReady will finish
                     } else {
-                        // Best effort for this want — do not retry until want grows.
+                        st.inflight = 0;
                         st.gaveUpWant = qMax(st.gaveUpWant, requestEdge);
                     }
-                } else if (ThumtooCache::isAvailable()) {
-                    // Miss: one background build; wait for ladderReady.
-                    if (ThumtooCache::schedulePixels(path, requestEdge)) {
-                        st.inflight = requestEdge; // keep waiting
-                    } else {
-                        // Already settled / cannot build — give up this want.
-                        st.gaveUpWant = qMax(st.gaveUpWant, requestEdge);
-                        if (st.have <= 0) {
-                            st.failed = true;
-                        }
-                    }
+                } else if (stillWaitingForLadder(0)) {
+                    st.inflight = requestEdge;
                 } else {
-                    st.failed = true;
+                    st.inflight = 0;
+                    st.gaveUpWant = qMax(st.gaveUpWant, requestEdge);
+                    if (st.have <= 0) {
+                        st.failed = true;
+                    }
                 }
 
                 if (host->isGalleryMode()) {
