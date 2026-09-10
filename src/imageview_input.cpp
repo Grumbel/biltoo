@@ -101,6 +101,27 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
 
 
 
+
+bool ImageView::viewportEvent(QEvent *event)
+{
+    // Viewport is a QOpenGLWidget; it receives drag/drop when acceptDrops is
+    // set on it. Forward to the view so scene mapping runs here.
+    switch (event->type()) {
+    case QEvent::DragEnter:
+        dragEnterEvent(static_cast<QDragEnterEvent *>(event));
+        return event->isAccepted();
+    case QEvent::DragMove:
+        dragMoveEvent(static_cast<QDragMoveEvent *>(event));
+        return event->isAccepted();
+    case QEvent::Drop:
+        dropEvent(static_cast<QDropEvent *>(event));
+        return event->isAccepted();
+    default:
+        break;
+    }
+    return QGraphicsView::viewportEvent(event);
+}
+
 void ImageView::dragEnterEvent(QDragEnterEvent *event)
 {
     if (event->mimeData()
