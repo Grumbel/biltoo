@@ -237,6 +237,8 @@ public:
     const QVector<SessionImageId> &sessionIdOrder() const { return m_sessionIdOrder; }
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */
     void clearFitFillModes();
+    /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
+    void refreshScrollBarGeometry();
     /** Controller host: Image/Gallery soft reset to fit, not fill. */
     void enableFitMode();
     /** Controller host: session appearance store (id-keyed). */
