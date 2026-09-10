@@ -27,11 +27,11 @@ class ThumbnailDelegate : public QStyledItemDelegate
 public:
     static constexpr int kLabelGap = 2;
     static constexpr int kCellPadX = 2;
-    /** Space above/below the icon so thumbs are not flush with the strip edge. */
+    /** Space above/below the icon (same amount — strip edge breathing room). */
     static constexpr int kCellPadTop = 6;
     static constexpr int kCellPadBottom = 6;
-    /** Tighter bottom gap when captions are hidden. */
-    static constexpr int kCellPadBottomCompact = 2;
+    /** Qt::UserRole for content pixel size of the prepared thumb (letterbox). */
+    static constexpr int ThumbContentSizeRole = Qt::UserRole + 42;
 
     explicit ThumbnailDelegate(int thumbSize, QObject *parent = nullptr);
 
@@ -46,8 +46,10 @@ public:
     QSize sizeHint(const QStyleOptionViewItem &option,
                    const QModelIndex &index) const override;
 
-    /** Cell size for the current thumb size and font. */
+    /** Cell size for the current thumb size and font (square slot). */
     QSize cellSize(const QFont &font) const;
+    /** Cell size for a content pixmap size (letterbox: hug aspect + pads). */
+    QSize cellSizeForContent(const QFont &font, QSize contentPx) const;
 
     /** Caption band under the icon (0 when labels hidden). */
     int labelBandHeight(const QFont &font) const;

@@ -75,9 +75,10 @@ void ImageView::updateGalleryDecodeWindow()
         }
     }
 
-    // Visible tiles always first (full concurrent budget).
+    // Visible tiles first. Do *not* clear m_galleryAwaitLadder here — that
+    // forced re-schedule of every visible path on every decode-window pass and
+    // pegged the CPU while ladder builds were still in flight.
     for (const QString &path : visible) {
-        m_galleryAwaitLadder.remove(path);
         scheduleGalleryDecode(path);
     }
 

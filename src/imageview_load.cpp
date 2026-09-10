@@ -252,6 +252,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 
 int ImageView::galleryDisplayEdgeForItem(const ImageItem *item) const
 {
+    // Soft Gallery previews only — never request full-page / 2k+ ladder steps
+    // for every tile (that saturates thumtoo and leaves the overview on the
+    // first small level for a long time). Image mode still does a full load.
     if (!item) {
         return ThumtooCache::kGalleryLadderEdge;
     }
@@ -263,7 +266,9 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item) const
     const QPointF b = mapFromScene(br.bottomRight());
     const qreal longPx =
         qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
-    return ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
+    const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
+    // Cap soft decode at gallery ladder edge (512). Higher steps are for Image.
+    return qMin(need, ThumtooCache::kGalleryLadderEdge);
 }
 
 void ImageView::scheduleGalleryDecode(const QString &path)

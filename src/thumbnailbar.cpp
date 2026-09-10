@@ -79,7 +79,7 @@ void ThumbnailDelegate::setLabelsVisible(bool on)
 
 int ThumbnailDelegate::bottomPad() const
 {
-    return m_labelsVisible ? kCellPadBottom : kCellPadBottomCompact;
+    return kCellPadBottom;
 }
 
 QSize ThumbnailDelegate::cellSize(const QFont &font) const
@@ -89,10 +89,32 @@ QSize ThumbnailDelegate::cellSize(const QFont &font) const
                  kCellPadTop + m_thumbSize + bottomPad() + labelH);
 }
 
+QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentPx) const
+{
+    const int labelH = labelBandHeight(font);
+    int iw = m_thumbSize;
+    int ih = m_thumbSize;
+    if (contentPx.width() > 0 && contentPx.height() > 0) {
+        const QSize fitted = contentPx.scaled(m_thumbSize, m_thumbSize, Qt::KeepAspectRatio);
+        iw = qMax(1, fitted.width());
+        ih = qMax(1, fitted.height());
+    }
+    return QSize(iw + 2 * kCellPadX, kCellPadTop + ih + bottomPad() + labelH);
+}
+
 QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
                                  const QModelIndex &index) const
 {
-    Q_UNUSED(index);
+    bool crop = false;
+    if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
+        crop = bar->cropToSquare();
+    }
+    if (!crop) {
+        const QSize content = index.data(ThumbContentSizeRole).toSize();
+        if (content.width() > 0 && content.height() > 0) {
+            return cellSizeForContent(option.font, content);
+        }
+    }
     return cellSize(option.font);
 }
 
@@ -116,14 +138,14 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QFontMetrics fm(option.font);
     const int labelBand = labelBandHeight(option.font);
-    // Icon must leave room for top/bottom pad + caption inside the allocated cell
+    // Content box inside the cell (pads + optional caption). Not forced square —
+    // letterbox cells are only as wide/tall as the thumb + horizontal pad.
     const int botPad = bottomPad();
-    const int iconSide = qBound(
-        1, qMin(m_thumbSize, cell.height() - labelBand - kCellPadTop - botPad),
-        cell.width());
-    const int iconX = cell.left() + (cell.width() - iconSide) / 2;
+    const int boxW = qMax(1, cell.width() - 2 * kCellPadX);
+    const int boxH = qMax(1, cell.height() - labelBand - kCellPadTop - botPad);
+    const int iconX = cell.left() + kCellPadX;
     const int iconY = cell.top() + kCellPadTop;
-    const QRect iconRect(iconX, iconY, iconSide, iconSide);
+    const QRect iconRect(iconX, iconY, boxW, boxH);
 
     // Destination of the *image* inside the square slot (may be letterboxed).
     // Outline follows this rect, not the full cell, so white pages get a tight edge.
@@ -135,7 +157,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         // pixmap centered without upscaling (HiDPI / tiny files).
         const qreal dpr = qMax<qreal>(
             1.0, painter->device() ? painter->device()->devicePixelRatioF() : 1.0);
-        const int phys = qMax(1, qRound(iconSide * dpr));
+        const int phys = qMax(1, qRound(qMax(iconRect.width(), iconRect.height()) * dpr));
         // Crop thumbs are square; letterbox thumbs keep native aspect (no pad).
         QPixmap pm = icon.pixmap(QSize(phys, phys));
         if (pm.isNull()) {
@@ -166,9 +188,9 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     }
 
     const QString text = index.data(Qt::DisplayRole).toString();
-    if (m_labelsVisible && !text.isEmpty() && labelBand > 0 && cell.height() > iconSide) {
+    if (m_labelsVisible && !text.isEmpty() && labelBand > 0) {
         const QRect textRect(cell.left() + kCellPadX,
-                             iconY + iconSide + kLabelGap,
+                             cell.bottom() - labelBand + kLabelGap,
                              qMax(1, cell.width() - 2 * kCellPadX),
                              fm.height());
         const QColor textColor = selected
@@ -363,10 +385,9 @@ int ThumbnailBar::thumbSizeFromBarExtent(int extent) const
 {
     if (m_orientation == Qt::Horizontal) {
         // extent is bar height = cell height = pads + thumb + labelBand
-        const int bottom = m_labelsVisible ? ThumbnailDelegate::kCellPadBottom
-                                           : ThumbnailDelegate::kCellPadBottomCompact;
         return qBound(kMinThumbSize,
-                     extent - labelBandHeight() - ThumbnailDelegate::kCellPadTop - bottom,
+                     extent - labelBandHeight() - ThumbnailDelegate::kCellPadTop
+                         - ThumbnailDelegate::kCellPadBottom,
                      kMaxThumbSize);
     }
     // Vertical bar: extent is bar width ≈ cell width = thumb + 2*pad
@@ -459,17 +480,21 @@ void ThumbnailBar::applyThumbMetrics()
 
     const QSize cell = m_delegate ? m_delegate->cellSize(font())
                                   : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight());
-    // gridSize is the definitive cell size for IconMode
-    setGridSize(cell);
+    // Crop mode: uniform squares. Letterbox: per-item sizeHint hugs content.
+    setUniformItemSizes(m_cropToSquare);
+    if (m_cropToSquare) {
+        setGridSize(cell);
+    } else {
+        // Max cell so IconMode layout still has a bound; items use sizeHint.
+        setGridSize(cell);
+    }
 
     const int label = labelBandHeight();
-    const int vPad = ThumbnailDelegate::kCellPadTop
-        + (m_labelsVisible ? ThumbnailDelegate::kCellPadBottom
-                           : ThumbnailDelegate::kCellPadBottomCompact);
-    // Tighter inter-item gaps when captions are hidden.
+    const int vPad = ThumbnailDelegate::kCellPadTop + ThumbnailDelegate::kCellPadBottom;
     setSpacing(m_labelsVisible ? 2 : 1);
     if (m_orientation == Qt::Horizontal) {
-        // Thin axis = height = pads + thumb + label
+        // Thin axis = height = pads + thumb + label (square slot; letterbox items
+        // may be shorter but bar height stays stable).
         setMinimumHeight(kMinThumbSize + label + vPad);
         setMaximumHeight(kMaxThumbSize + label + vPad);
         setMinimumWidth(0);
@@ -502,9 +527,7 @@ QSize ThumbnailBar::sizeHint() const
 QSize ThumbnailBar::minimumSizeHint() const
 {
     if (m_orientation == Qt::Horizontal) {
-        const int vPad = ThumbnailDelegate::kCellPadTop
-            + (m_labelsVisible ? ThumbnailDelegate::kCellPadBottom
-                               : ThumbnailDelegate::kCellPadBottomCompact);
+        const int vPad = ThumbnailDelegate::kCellPadTop + ThumbnailDelegate::kCellPadBottom;
         return QSize(200, kMinThumbSize + labelBandHeight() + vPad);
     }
     return QSize(kMinThumbSize + 2 * ThumbnailDelegate::kCellPadX, 200);
@@ -591,6 +614,15 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
             pm.setDevicePixelRatio(dpr);
         }
         it->setIcon(QIcon(pm));
+        // Logical content size for aspect-aware cells (letterbox mode).
+        const QSize logical(qMax(1, int(qRound(pm.width() / dpr))),
+                            qMax(1, int(qRound(pm.height() / dpr))));
+        it->setData(ThumbnailDelegate::ThumbContentSizeRole, logical);
+        if (m_delegate && !m_cropToSquare) {
+            it->setSizeHint(m_delegate->cellSizeForContent(font(), logical));
+        } else if (m_delegate) {
+            it->setSizeHint(m_delegate->cellSize(font()));
+        }
     }
 }
 
@@ -640,6 +672,7 @@ void ThumbnailBar::setCropToSquare(bool on)
     }
     m_cropToSquare = on;
     ++m_generation;
+    applyThumbMetrics();
     scheduleThumbnailLoads();
 }
 
