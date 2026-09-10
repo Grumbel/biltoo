@@ -1308,9 +1308,12 @@ private:
     /** Paths that failed decode — do not spin forever on placeholders. */
     QSet<QString> m_galleryDecodeFailed;
     /**
-     * Highest ladder edge we already completed a gallery soft-decode attempt for
-     * (success or settled shortfall). Prevents re-requesting the same/higher
-     * edge forever when thumtoo cannot supply a larger level.
+     * Highest ladder long-edge we have already obtained (or permanently settled)
+     * for a gallery soft-decode. Updated to the delivered size on shortfall so
+     * a later zoom (higher need) can request the next step; set to the request
+     * only when the delivered level meets ~90% of the request or the attempt
+     * failed. Prevents schedulePixels/ladderReady CPU spin when thumtoo cannot
+     * grow the ladder further.
      */
     QHash<QString, int> m_galleryLadderAttemptedEdge;
     static constexpr int kGalleryVirtualThreshold = 80;

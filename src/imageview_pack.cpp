@@ -36,12 +36,9 @@ void ImageView::updateGalleryDecodeWindow()
             || m_galleryDecodeScheduled.contains(path)) {
             return false;
         }
-        // Waiting on ladder for a soft miss: keep waiting unless we need a
-        // higher edge than the one already requested (handled by re-schedule
-        // after clearing await below).
-        if (m_galleryAwaitLadder.contains(path) && item->hasDisplayPixels()) {
-            // Have some pixels; may still upgrade.
-        } else if (m_galleryAwaitLadder.contains(path)) {
+        // Waiting on an in-flight ladder build (possibly while showing a smaller
+        // preview). Do not start another pool job until ladderReady settles.
+        if (m_galleryAwaitLadder.contains(path)) {
             return false;
         }
         if (item->hasDecodedPixels()) {

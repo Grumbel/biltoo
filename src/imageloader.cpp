@@ -885,23 +885,29 @@ QImage loadThumbnail(const QString &path, int maxEdge)
     {
         const QByteArray ladder = ThumtooCache::cachedLadderBytes(path, maxEdge);
         if (!ladder.isEmpty()) {
+            QImage decoded;
 #ifdef BILTOO_HAVE_VIPS
-            QImage fromLadder = loadWithVipsBuffer(ladder, 0);
-            if (!fromLadder.isNull()) {
-                if (fromLadder.width() > maxEdge || fromLadder.height() > maxEdge) {
-                    fromLadder = fromLadder.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
-                                                   Qt::SmoothTransformation);
-                }
-                return fromLadder;
-            }
+            decoded = loadWithVipsBuffer(ladder, 0);
 #endif
-            QImage qtImg;
-            if (qtImg.loadFromData(ladder)) {
-                if (qtImg.width() > maxEdge || qtImg.height() > maxEdge) {
-                    qtImg = qtImg.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
-                                         Qt::SmoothTransformation);
+            if (decoded.isNull()) {
+                QImage qtImg;
+                if (qtImg.loadFromData(ladder)) {
+                    decoded = qtImg;
                 }
-                return qtImg;
+            }
+            if (!decoded.isNull()) {
+                const int got = qMax(decoded.width(), decoded.height());
+                // get_pixels returns the largest level ≤ maxEdge. If that is still
+                // well below the request, ask thumtoo for the higher step (async);
+                // return the current best so the UI is not blank while it builds.
+                if (got < maxEdge * 9 / 10) {
+                    ThumtooCache::schedulePixels(path, maxEdge);
+                }
+                if (decoded.width() > maxEdge || decoded.height() > maxEdge) {
+                    decoded = decoded.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
+                                             Qt::SmoothTransformation);
+                }
+                return decoded;
             }
             // Bytes exist but neither VIPS nor Qt could decode — do not call
             // schedulePixels again (that re-emits ladderReady and spins the pool).
