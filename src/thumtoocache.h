@@ -42,6 +42,9 @@ Bridge *bridge();
  * Prefer calling after QApplication exists so callbacks can use the Qt loop.
  */
 void init();
+/** Force THUMTOO_DEBUG-style traces (stderr + ~/.cache/biltoo/thumtoo-debug.log). */
+void enableDebugTracing();
+bool debugTracingEnabled();
 
 /** Drop the client (join thumtoo worker). Safe to call more than once. */
 void shutdown();

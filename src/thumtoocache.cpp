@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <functional>
 #include <mutex>
+#include <string>
 
 #ifdef BILTOO_HAVE_THUMTOO
 #include "thumtoo/archive.hpp"
@@ -76,9 +77,37 @@ bool envFlagOn(const char *name)
     return true;
 }
 
+bool g_forceDebug = false;
+
 bool thumtooDebugEnabled()
 {
-    return envFlagOn("THUMTOO_DEBUG") || envFlagOn("BILTOO_THUMTOO_DEBUG");
+    return g_forceDebug || envFlagOn("THUMTOO_DEBUG")
+        || envFlagOn("BILTOO_THUMTOO_DEBUG");
+}
+
+std::FILE *thumtooDebugFile()
+{
+    static std::FILE *fp = []() -> std::FILE * {
+        const char *xdg = std::getenv("XDG_CACHE_HOME");
+        const char *home = std::getenv("HOME");
+        std::string path;
+        if (xdg && xdg[0]) {
+            path = std::string(xdg) + "/biltoo";
+        } else if (home && home[0]) {
+            path = std::string(home) + "/.cache/biltoo";
+        } else {
+            path = "/tmp/biltoo-debug";
+        }
+        std::filesystem::create_directories(path);
+        path += "/thumtoo-debug.log";
+        std::FILE *f = std::fopen(path.c_str(), "a");
+        if (f) {
+            std::fprintf(f, "---- biltoo thumtoo debug session ----\n");
+            std::fflush(f);
+        }
+        return f;
+    }();
+    return fp;
 }
 
 void thumtooDbg(const char *fmt, ...)
@@ -86,13 +115,21 @@ void thumtooDbg(const char *fmt, ...)
     if (!thumtooDebugEnabled()) {
         return;
     }
-    std::fputs("biltoo/thumtoo: ", stderr);
+    char buf[2048];
     va_list ap;
     va_start(ap, fmt);
-    std::vfprintf(stderr, fmt, ap);
+    std::vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
+    std::fputs("biltoo/thumtoo: ", stderr);
+    std::fputs(buf, stderr);
     std::fputc('\n', stderr);
     std::fflush(stderr);
+    if (std::FILE *f = thumtooDebugFile()) {
+        std::fputs("biltoo/thumtoo: ", f);
+        std::fputs(buf, f);
+        std::fputc('\n', f);
+        std::fflush(f);
+    }
 }
 
 /** Cap concurrent thumtoo request_pixels — PDF raster+encode is heavy. */
@@ -516,6 +553,19 @@ void shutdown()
     g_client.reset();
     g_inited = false;
 #endif
+}
+
+void enableDebugTracing()
+{
+    g_forceDebug = true;
+    ::setenv("THUMTOO_DEBUG", "1", 1);
+    thumtooDbg("debug tracing forced on (CLI/API); log file under XDG_CACHE_HOME/biltoo/thumtoo-debug.log");
+    qWarning("biltoo/thumtoo: debug tracing ON → ~/.cache/biltoo/thumtoo-debug.log");
+}
+
+bool debugTracingEnabled()
+{
+    return thumtooDebugEnabled();
 }
 
 QSize cachedSize(const QString &path)

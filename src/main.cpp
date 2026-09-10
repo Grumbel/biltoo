@@ -25,10 +25,36 @@
 #include <QLocale>
 #include <QTranslator>
 #include <QSurfaceFormat>
+#include <cstring>
+#include <cstdlib>
 
 int main(int argc, char *argv[])
 {
     ImageLoader::init(argv[0]);
+
+    // ThumtooCache::init() runs before QCommandLineParser — honour env and a
+    // raw argv flag here so debug is on for Client construction.
+    {
+        bool want = false;
+        if (const char *e = std::getenv("THUMTOO_DEBUG");
+            e && e[0] && e[0] != '0') {
+            want = true;
+        }
+        if (const char *e = std::getenv("BILTOO_THUMTOO_DEBUG");
+            e && e[0] && e[0] != '0') {
+            want = true;
+        }
+        for (int i = 1; i < argc; ++i) {
+            if (std::strcmp(argv[i], "--thumtoo-debug") == 0
+                || std::strcmp(argv[i], "--debug") == 0) {
+                want = true;
+                break;
+            }
+        }
+        if (want) {
+            ThumtooCache::enableDebugTracing();
+        }
+    }
 
     // Before QApplication: vsync + buffers for QOpenGLWidget viewports.
     {
@@ -177,8 +203,16 @@ int main(int argc, char *argv[])
     QCommandLineOption debugOption(
         QStringList() << QStringLiteral("debug"),
         QCoreApplication::translate("main",
-            "Verbose diagnostics (slideshow traces, libexiv2 metadata warnings)"));
+            "Verbose diagnostics (slideshow traces, libexiv2 metadata warnings; "
+            "also enables thumtoo task traces)"));
     parser.addOption(debugOption);
+
+    QCommandLineOption thumtooDebugOption(
+        QStringList() << QStringLiteral("thumtoo-debug"),
+        QCoreApplication::translate("main",
+            "Trace thumtoo ladder/tile work to stderr and "
+            "~/.cache/biltoo/thumtoo-debug.log"));
+    parser.addOption(thumtooDebugOption);
 
     parser.process(app);
 
