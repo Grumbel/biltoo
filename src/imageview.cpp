@@ -113,22 +113,18 @@ ImageView::ImageView(QWidget *parent)
                             if (got > 0) {
                                 st.have = qMax(st.have, got);
                             }
-                            // Finish wait if this completion covers our request.
-                            if (st.inflight > 0
-                                && (edge >= st.inflight || got >= st.inflight * 9 / 10)) {
-                                const int waited = st.inflight;
+                            if (st.inflight > 0 && edge >= st.inflight) {
                                 st.inflight = 0;
-                                if (got >= waited * 9 / 10) {
-                                    if (st.gaveUpWant <= waited) {
-                                        st.gaveUpWant = 0;
-                                    }
-                                } else {
-                                    st.gaveUpWant = qMax(st.gaveUpWant, waited);
+                            }
+                            // Always record shortfall for this edge so we do not
+                            // re-request forever when thumtoo cannot grow.
+                            if (got >= edge * 9 / 10) {
+                                if (st.gaveUpWant <= edge) {
+                                    st.gaveUpWant = 0;
                                 }
-                            } else if (st.inflight > 0 && edge == st.inflight && got <= 0) {
-                                st.inflight = 0;
+                            } else {
                                 st.gaveUpWant = qMax(st.gaveUpWant, edge);
-                                if (st.have <= 0) {
+                                if (st.have <= 0 && got <= 0) {
                                     st.failed = true;
                                 }
                             }
