@@ -264,6 +264,11 @@ void MainWindow::createActions()
             m_imageView->setShowTextRegions(on);
         }
     });
+    m_findOnPageAct = new QAction(tr("&Find on Page…"), this);
+    m_findOnPageAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_F);
+    m_findOnPageAct->setStatusTip(
+        tr("Search text on the current document page and highlight matching regions"));
+    connect(m_findOnPageAct, &QAction::triggered, this, &MainWindow::findOnPage);
 
     m_hideThumbLabelsAct = new QAction(tr("Hide Thumbnail &Filenames"), this);
     m_hideThumbLabelsAct->setCheckable(true);
@@ -777,6 +782,7 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_redoAct);
     m_editMenu->addSeparator();
     m_editMenu->addAction(m_selectAllAct);
+    m_editMenu->addAction(m_findOnPageAct);
     m_editMenu->addSeparator();
     m_editMenu->addAction(m_copyWorkspaceAct);
     m_editMenu->addAction(m_cutWorkspaceAct);

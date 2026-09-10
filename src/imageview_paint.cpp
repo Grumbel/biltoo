@@ -869,11 +869,12 @@ void ImageView::setShowTextRegions(bool on)
         return;
     }
     m_showTextRegions = on;
-    if (m_showTextRegions) {
+    if (m_showTextRegions || !m_textSearchQuery.isEmpty()) {
         refreshTextLayer();
     } else {
         m_textLayer = {};
         m_textLayerPath.clear();
+        m_textSearchMatches.clear();
     }
     viewport()->update();
 }
@@ -882,28 +883,127 @@ void ImageView::refreshTextLayer()
 {
     m_textLayer = {};
     m_textLayerPath.clear();
-    if (!m_showTextRegions || !isImageMode()) {
+    m_textSearchMatches.clear();
+    const bool needLayer = m_showTextRegions || !m_textSearchQuery.isEmpty();
+    if (!needLayer || !isImageMode()) {
         return;
     }
     const QString path = classicPath();
-    if (path.isEmpty()) {
-        return;
-    }
-    if (!PagePath::isPageRef(path) && !PagePath::isEpubLayoutOnly(path)) {
-        // Only multipage document leaves for now.
-        if (!PagePath::isPageRef(path)) {
-            return;
-        }
-    }
-    if (!PagePath::isPageRef(path)) {
+    if (path.isEmpty() || !PagePath::isPageRef(path)) {
         return;
     }
     m_textLayerPath = path;
-    // Prefer cache; ensure may do source I/O (acceptable for debug toggle).
+    // Prefer cache; ensure may do source I/O (acceptable for toggle / Find).
     m_textLayer = ThumtooCache::cachedPageTextLayer(path);
     if (m_textLayer.regions.isEmpty()) {
         m_textLayer = ThumtooCache::ensurePageTextLayer(path);
     }
+    if (!m_textSearchQuery.isEmpty()) {
+        recomputeTextSearchMatches();
+    }
+}
+
+namespace {
+
+QString normalizeForSearch(QString s)
+{
+    s = s.toLower();
+    // Collapse whitespace; keep letters/digits for light OCR tolerance.
+    QString out;
+    out.reserve(s.size());
+    bool prevSpace = false;
+    for (QChar c : s) {
+        if (c.isSpace()) {
+            if (!prevSpace && !out.isEmpty()) {
+                out.append(QLatin1Char(' '));
+                prevSpace = true;
+            }
+            continue;
+        }
+        prevSpace = false;
+        out.append(c);
+    }
+    return out.trimmed();
+}
+
+/** Alphanumeric-only form for fuzzy OCR (ignore punctuation/spaces). */
+QString alnumOnly(const QString &s)
+{
+    QString out;
+    out.reserve(s.size());
+    for (QChar c : s) {
+        if (c.isLetterOrNumber()) {
+            out.append(c.toLower());
+        }
+    }
+    return out;
+}
+
+bool regionMatchesQuery(const QString &regionText, const QString &queryNorm,
+                        const QString &queryAlnum)
+{
+    if (queryNorm.isEmpty()) {
+        return false;
+    }
+    const QString rn = normalizeForSearch(regionText);
+    if (rn.contains(queryNorm)) {
+        return true;
+    }
+    // Fuzzy: alnum-only contains (helps OCR noise / missing spaces).
+    if (!queryAlnum.isEmpty()) {
+        const QString ra = alnumOnly(regionText);
+        if (ra.contains(queryAlnum)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+} // namespace
+
+void ImageView::recomputeTextSearchMatches()
+{
+    m_textSearchMatches.clear();
+    if (m_textSearchQuery.isEmpty() || m_textLayer.regions.isEmpty()) {
+        return;
+    }
+    const QString qn = normalizeForSearch(m_textSearchQuery);
+    const QString qa = alnumOnly(m_textSearchQuery);
+    for (int i = 0; i < m_textLayer.regions.size(); ++i) {
+        const auto &r = m_textLayer.regions.at(i);
+        if (r.text.isEmpty()) {
+            continue;
+        }
+        if (regionMatchesQuery(r.text, qn, qa)) {
+            m_textSearchMatches.push_back(i);
+        }
+    }
+}
+
+int ImageView::setTextSearchQuery(const QString &query)
+{
+    const QString trimmed = query.trimmed();
+    if (m_textSearchQuery == trimmed && !m_textLayer.regions.isEmpty()) {
+        return m_textSearchMatches.size();
+    }
+    m_textSearchQuery = trimmed;
+    if (m_textSearchQuery.isEmpty()) {
+        m_textSearchMatches.clear();
+        if (!m_showTextRegions) {
+            m_textLayer = {};
+            m_textLayerPath.clear();
+        }
+        viewport()->update();
+        return 0;
+    }
+    // Ensure layer is loaded for the current page.
+    if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
+        refreshTextLayer();
+    } else {
+        recomputeTextSearchMatches();
+    }
+    viewport()->update();
+    return m_textSearchMatches.size();
 }
 
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
@@ -932,34 +1032,54 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
         }
     }
 
-    // Text/link region debug overlay (scene space, Image mode page docs).
-    if (m_showTextRegions && isImageMode() && !m_textLayer.regions.isEmpty()) {
+    // Text search highlights + optional region outlines (Image mode page docs).
+    if (isImageMode() && !m_textLayer.regions.isEmpty()
+        && (m_showTextRegions || !m_textSearchMatches.isEmpty())) {
         if (ImageItem *item = primaryItem()) {
             const QSize sz = item->imageSize();
             if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBounds.isValid()) {
                 painter->save();
-                painter->setBrush(Qt::NoBrush);
-                for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
-                    const QRectF img = ThumtooCache::pageRectToImageRect(
-                        r.bbox, m_textLayer.pageBounds, sz);
-                    if (img.isEmpty()) {
-                        continue;
+                // Search hits: filled yellow first (under outlines).
+                if (!m_textSearchMatches.isEmpty()) {
+                    painter->setPen(Qt::NoPen);
+                    painter->setBrush(QColor(255, 220, 40, 110));
+                    for (int idxMatch : m_textSearchMatches) {
+                        if (idxMatch < 0 || idxMatch >= m_textLayer.regions.size()) {
+                            continue;
+                        }
+                        const auto &r = m_textLayer.regions.at(idxMatch);
+                        const QRectF img = ThumtooCache::pageRectToImageRect(
+                            r.bbox, m_textLayer.pageBounds, sz);
+                        if (img.isEmpty()) {
+                            continue;
+                        }
+                        const QRectF local = img.translated(item->offset());
+                        painter->drawPolygon(item->mapToScene(local));
                     }
-                    // Item pixmap is centred: local = image + offset.
-                    const QRectF local = img.translated(item->offset());
-                    const QPolygonF scenePoly = item->mapToScene(local);
-                    if (r.role == ThumtooCache::TextRegion::Role::Link) {
-                        QPen pen(QColor(40, 180, 80, 200));
-                        pen.setCosmetic(true);
-                        pen.setWidthF(0);
-                        painter->setPen(pen);
-                    } else {
-                        QPen pen(QColor(220, 80, 40, 180));
-                        pen.setCosmetic(true);
-                        pen.setWidthF(0);
-                        painter->setPen(pen);
+                }
+                if (m_showTextRegions) {
+                    painter->setBrush(Qt::NoBrush);
+                    for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
+                        const QRectF img = ThumtooCache::pageRectToImageRect(
+                            r.bbox, m_textLayer.pageBounds, sz);
+                        if (img.isEmpty()) {
+                            continue;
+                        }
+                        const QRectF local = img.translated(item->offset());
+                        const QPolygonF scenePoly = item->mapToScene(local);
+                        if (r.role == ThumtooCache::TextRegion::Role::Link) {
+                            QPen pen(QColor(40, 180, 80, 200));
+                            pen.setCosmetic(true);
+                            pen.setWidthF(0);
+                            painter->setPen(pen);
+                        } else {
+                            QPen pen(QColor(220, 80, 40, 180));
+                            pen.setCosmetic(true);
+                            pen.setWidthF(0);
+                            painter->setPen(pen);
+                        }
+                        painter->drawPolygon(scenePoly);
                     }
-                    painter->drawPolygon(scenePoly);
                 }
                 painter->restore();
             }

@@ -472,6 +472,15 @@ public:
     bool showTextRegions() const { return m_showTextRegions; }
     void refreshTextLayer();
 
+    /**
+     * Highlight regions whose text contains @p query (case-insensitive).
+     * Empty query clears highlights. Loads the text layer if needed.
+     * Returns number of matching regions on the current page.
+     */
+    int setTextSearchQuery(const QString &query);
+    QString textSearchQuery() const { return m_textSearchQuery; }
+    int textSearchMatchCount() const { return m_textSearchMatches.size(); }
+
     bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
 
     void setBackgroundColor(const QColor &color);
@@ -838,6 +847,8 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void paintViewportOverlays(QPainter &painter);
+    void recomputeTextSearchMatches();
+
     void drawBackground(QPainter *painter, const QRectF &rect) override;
     /** Scene-space canvas background (AppDefault or Workspace override). */
     void paintCanvasBackground(QPainter *painter, const QRectF &rect, qreal viewScale);
@@ -1110,6 +1121,9 @@ private:
     bool m_showTextRegions = false;
     ThumtooCache::PageTextLayer m_textLayer;
     QString m_textLayerPath;
+    QString m_textSearchQuery;
+    /** Indices into m_textLayer.regions that match the current query. */
+    QVector<int> m_textSearchMatches;
     bool m_hudVisible = false;
     int m_hudFontPointSize = 11;
     QColor m_hudTextColor{255, 255, 255};

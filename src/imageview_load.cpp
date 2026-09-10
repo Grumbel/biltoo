@@ -922,7 +922,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
 bool ImageView::loadImage(const QString &path)
 {
     setClassicPath(path);
-    if (m_showTextRegions) {
+    if (m_showTextRegions || !m_textSearchQuery.isEmpty()) {
         refreshTextLayer();
     }
     m_lastLoadError.clear();

@@ -640,6 +640,31 @@ void MainWindow::toggleCropMode()
     }
 }
 
+
+void MainWindow::findOnPage()
+{
+    if (!m_imageView) {
+        return;
+    }
+    bool ok = false;
+    const QString query = QInputDialog::getText(
+        this, tr("Find on Page"),
+        tr("Search text on the current page (PDF / DjVu / EPUB):"),
+        QLineEdit::Normal, m_imageView->textSearchQuery(), &ok);
+    if (!ok) {
+        return;
+    }
+    const int n = m_imageView->setTextSearchQuery(query);
+    if (query.trimmed().isEmpty()) {
+        statusBar()->showMessage(tr("Text search cleared"), 3000);
+    } else if (n == 0) {
+        statusBar()->showMessage(tr("No matches for “%1” on this page").arg(query.trimmed()), 5000);
+    } else {
+        statusBar()->showMessage(
+            tr("%n match(es) for “%1”", "", n).arg(query.trimmed()), 5000);
+    }
+}
+
 void MainWindow::toggleHud()
 {
     const bool on = m_toggleHudAct->isChecked();
