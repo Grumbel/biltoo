@@ -184,8 +184,8 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath);
 
 /**
  * Map a page-space rect into image-pixel space (top-left origin) using pageBounds.
- * @p pageYUp true for PDF/DjVu (origin bottom-left, Y up); false for EPUB
- * (origin top-left, Y down — same as the raster).
+ * @p pageYUp true for DjVu (origin bottom-left, Y up). False for PDF and EPUB
+ * where MuPDF text already matches the top-left Y-down raster.
  */
 QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
                            const QSize &imageSize, bool pageYUp = true);

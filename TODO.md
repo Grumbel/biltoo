@@ -2,7 +2,7 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-360-epub-text-y-orient.** EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
+**Tip: biltoo-361-pdf-text-y-orient.** PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
 locator registration + dict-size extract.
 
 ### Shipped

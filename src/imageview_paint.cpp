@@ -1039,9 +1039,12 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
             const QSize sz = item->imageSize();
             if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBounds.isValid()) {
                 painter->save();
-                // EPUB layout_key is non-empty; MuPDF reflow page space is Y-down.
-                // PDF/DjVu page space is Y-up (bottom-left origin).
-                const bool pageYUp = m_textLayer.layoutKey.isEmpty();
+                // Coordinate systems (matched to what thumtoo returns vs raster):
+                // - DjVu: native bottom-left, Y-up → flip when mapping to the image
+                // - PDF (MuPDF stext): aligns with the pixmap as Y-down → no flip
+                // - EPUB (MuPDF reflow): top-left Y-down → no flip
+                const QString docPath = PagePath::documentFilePath(classicPath());
+                const bool pageYUp = PagePath::isDjvuFile(docPath);
                 // Search hits: filled yellow first (under outlines).
                 if (!m_textSearchMatches.isEmpty()) {
                     painter->setPen(Qt::NoPen);
