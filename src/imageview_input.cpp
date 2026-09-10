@@ -515,6 +515,41 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         // No handle hit — fall through to move/select / clear.
     }
 
+    // Image mode: plain left click on a link region (PDF/DjVu/EPUB).
+    if (isImageMode() && !m_cropMode && !m_attentionMode
+        && event->button() == Qt::LeftButton
+        && event->modifiers() == Qt::NoModifier
+        && PagePath::isPageRef(classicPath())) {
+        ImageItem *item = primaryItem();
+        if (item && !item->contentRect().isEmpty()) {
+            if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
+                const bool hadShow = m_showTextRegions;
+                m_showTextRegions = true;
+                refreshTextLayer();
+                m_showTextRegions = hadShow;
+            }
+            const QPointF scene = mapToScene(event->pos());
+            const QPointF local = item->mapFromScene(scene);
+            const QRectF imgPt = QRectF(local - item->offset(), QSizeF(1, 1));
+            const QSize sz = item->imageSize();
+            if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBounds.isValid()) {
+                const bool pageYUp = pageYUpForTextLayer();
+                for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
+                    if (r.role != ThumtooCache::TextRegion::Role::Link) {
+                        continue;
+                    }
+                    const QRectF img = ThumtooCache::pageRectToImageRect(
+                        r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+                    if (img.contains(local - item->offset())) {
+                        emit linkActivated(r.linkPage, r.linkUri);
+                        event->accept();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     // Image mode: Shift+left rubber-band select text on PDF/DjVu/EPUB pages.
     if (isImageMode() && !m_cropMode && !m_attentionMode
         && event->button() == Qt::LeftButton

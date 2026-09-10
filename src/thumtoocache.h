@@ -169,6 +169,17 @@ struct PageTextLayer {
     QVector<TextRegion> regions;
 };
 
+struct OutlineItem {
+    int level = 1;
+    QString title;
+    int page = 0;  ///< 1-based when known; 0 if URI-only
+    QString uri;
+};
+
+struct DocumentOutline {
+    QVector<OutlineItem> items;
+};
+
 /**
  * Cache-only text layer for a session page path (//page: / //epub:…//page:).
  * Empty when thumtoo is off, headers missing, or nothing stored yet.
@@ -181,6 +192,12 @@ PageTextLayer cachedPageTextLayer(const QString &sessionPath);
  * Empty layer if unsupported path or extract failure.
  */
 PageTextLayer ensurePageTextLayer(const QString &sessionPath);
+
+/** Cache-only document outline (TOC). Empty if not stored. */
+DocumentOutline cachedDocumentOutline(const QString &sessionOrFilePath);
+
+/** Extract + cache outline for a document (page ref or bare file path). */
+DocumentOutline ensureDocumentOutline(const QString &sessionOrFilePath);
 
 /**
  * Map a page-space rect into image-pixel space (top-left origin) using pageBounds.

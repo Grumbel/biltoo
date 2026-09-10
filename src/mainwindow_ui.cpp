@@ -649,6 +649,9 @@ void MainWindow::createActions()
     m_toggleMetadataAct->setShortcut(Qt::CTRL | Qt::Key_E);
     m_toggleMetadataAct->setIcon(themeIcon(QStringLiteral("dialog-information"), QStyle::SP_FileDialogInfoView));
     m_toggleMetadataAct->setStatusTip(tr("Show or hide the metadata side panel"));
+    m_toggleTocAct = m_tocDock->toggleViewAction();
+    m_toggleTocAct->setText(tr("Show &Contents"));
+    m_toggleTocAct->setStatusTip(tr("Show or hide the document table of contents"));
 
     if (m_adjustmentsDock) {
         m_toggleAdjustmentsAct = m_adjustmentsDock->toggleViewAction();
@@ -829,6 +832,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_showLocationBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
+    m_viewMenu->addAction(m_toggleTocAct);
     if (m_toggleAdjustmentsAct) {
         m_viewMenu->addAction(m_toggleAdjustmentsAct);
     }

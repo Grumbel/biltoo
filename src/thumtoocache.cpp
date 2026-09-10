@@ -1101,6 +1101,89 @@ QByteArray readArchiveMemberBytes(const QString &archiveRefPath)
 }
 
 
+
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_TEXT)
+
+namespace {
+
+DocumentOutline convertOutline(const thumtoo::DocumentOutline &in)
+{
+    DocumentOutline out;
+    out.items.reserve(static_cast<int>(in.items.size()));
+    for (const auto &it : in.items) {
+        OutlineItem o;
+        o.level = it.level;
+        o.title = QString::fromStdString(it.title);
+        o.page = it.page_1based;
+        o.uri = QString::fromStdString(it.uri);
+        out.items.push_back(std::move(o));
+    }
+    return out;
+}
+
+/** Prefer page-ref URI; for outline, base document URI is enough. */
+std::string outlineUriForPath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    // Page refs work with ensure_document_outline (resolves base file).
+    return toThumtooUri(path);
+}
+
+} // namespace
+
+DocumentOutline cachedDocumentOutline(const QString &sessionOrFilePath)
+{
+    init();
+    std::lock_guard lock(g_mu);
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return {};
+    }
+    const std::string uri = outlineUriForPath(sessionOrFilePath);
+    if (uri.empty()) {
+        return {};
+    }
+    auto outline = c->get_document_outline(uri);
+    if (!outline) {
+        return {};
+    }
+    return convertOutline(*outline);
+}
+
+DocumentOutline ensureDocumentOutline(const QString &sessionOrFilePath)
+{
+    init();
+    std::lock_guard lock(g_mu);
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return {};
+    }
+    const std::string uri = outlineUriForPath(sessionOrFilePath);
+    if (uri.empty()) {
+        return {};
+    }
+    auto outline = c->ensure_document_outline(uri);
+    if (!outline) {
+        return {};
+    }
+    return convertOutline(*outline);
+}
+
+#else
+
+DocumentOutline cachedDocumentOutline(const QString &)
+{
+    return {};
+}
+DocumentOutline ensureDocumentOutline(const QString &)
+{
+    return {};
+}
+
+#endif
+
 QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
                            const QSize &imageSize, bool pageYUp)
 {

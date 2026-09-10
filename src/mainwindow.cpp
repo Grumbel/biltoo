@@ -39,6 +39,15 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::goPrevious);
     connect(m_imageView, &ImageView::navigateNextRequested,
             this, &MainWindow::goNext);
+    connect(m_imageView, &ImageView::linkActivated, this,
+            [this](int page, const QString &uri) {
+                if (page > 0) {
+                    navigateDocumentPage(page);
+                } else if (!uri.isEmpty()) {
+                    openDocumentLinkUri(uri);
+                }
+            });
+
     connect(m_imageView, &ImageView::galleryReturnRequested,
             this, &MainWindow::returnFromImageMode);
     connect(m_imageView, &ImageView::cropModeChanged, this, [this](bool on) {
@@ -237,6 +246,24 @@ MainWindow::MainWindow(QWidget *parent)
     m_layoutDock->hide();
     connect(m_layoutPanel, &LayoutPanel::applyRequested,
             this, &MainWindow::applyWorkspaceLayoutFromPanel);
+
+    m_tocPanel = new TocPanel(this);
+    m_tocDock = new QDockWidget(tr("Contents"), this);
+    m_tocDock->setObjectName(QStringLiteral("TocDock"));
+    m_tocDock->setWidget(m_tocPanel);
+    m_tocDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_tocDock->setFeatures(QDockWidget::DockWidgetClosable
+                           | QDockWidget::DockWidgetMovable
+                           | QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::LeftDockWidgetArea, m_tocDock);
+    m_tocDock->hide();
+    connect(m_tocPanel, &TocPanel::navigateToPage, this, &MainWindow::navigateDocumentPage);
+    connect(m_tocPanel, &TocPanel::openExternalUri, this, &MainWindow::openDocumentLinkUri);
+    connect(m_tocDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (visible) {
+            updateTocPanel();
+        }
+    });
 
     createActions();
     createMenus();
@@ -1528,6 +1555,105 @@ void MainWindow::updateWindowTitle()
     }
 }
 
+
+void MainWindow::updateTocPanel()
+{
+    if (!m_tocPanel || !m_imageView) {
+        return;
+    }
+    const QString path = m_imageView->classicPath();
+    if (path.isEmpty() || (!PagePath::isPageRef(path) && !PagePath::isEpubLayoutOnly(path))) {
+        // Try session path at current index
+        QString sessionPath = path;
+        if (sessionPath.isEmpty() && m_currentIndex >= 0
+            && m_currentIndex < m_session.paths().size()) {
+            sessionPath = m_session.paths().at(m_currentIndex);
+        }
+        if (sessionPath.isEmpty()
+            || (!PagePath::isPageRef(sessionPath) && !PagePath::isEpubLayoutOnly(sessionPath)
+                && !PagePath::isPdfFile(sessionPath) && !PagePath::isDjvuFile(sessionPath)
+                && !PagePath::isEpubFile(sessionPath))) {
+            m_tocPanel->clear();
+            return;
+        }
+        const auto outline = ThumtooCache::ensureDocumentOutline(sessionPath);
+        m_tocPanel->setOutline(outline);
+        return;
+    }
+    const auto outline = ThumtooCache::ensureDocumentOutline(path);
+    m_tocPanel->setOutline(outline);
+}
+
+void MainWindow::navigateDocumentPage(int page_1based)
+{
+    if (page_1based < 1 || !m_imageView) {
+        return;
+    }
+    QString path = m_imageView->classicPath();
+    if (path.isEmpty() && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        path = m_session.paths().at(m_currentIndex);
+    }
+    if (path.isEmpty()) {
+        return;
+    }
+    // Prefer jumping within the session list.
+    const QString doc = PagePath::documentFilePath(path);
+    const QString layout = PagePath::epubLayoutParamsOf(path);
+    for (int i = 0; i < m_session.paths().size(); ++i) {
+        const QString &p = m_session.paths().at(i);
+        if (!PagePath::isPageRef(p)) {
+            continue;
+        }
+        if (PagePath::documentFilePath(p) == doc && PagePath::pageNumber(p) == page_1based) {
+            // Navigate session index — reuse existing go-to if any.
+            if (i != m_currentIndex) {
+                m_currentIndex = i;
+                m_imageView->loadImage(p);
+                updateStatus();
+                updateTocPanel();
+            }
+            return;
+        }
+    }
+    // Build a page path even if not in session.
+    QString target;
+    if (!layout.isEmpty() || path.contains(QLatin1String("//epub:"))) {
+        target = PagePath::makeEpubRef(doc, page_1based,
+                                       layout.isEmpty() ? PagePath::epubLayoutParamsOf(path)
+                                                        : layout);
+    } else {
+        target = PagePath::makeRef(doc, page_1based);
+    }
+    if (!target.isEmpty()) {
+        m_imageView->loadImage(target);
+        updateStatus();
+    }
+}
+
+void MainWindow::openDocumentLinkUri(const QString &uri)
+{
+    if (uri.isEmpty()) {
+        return;
+    }
+    // Internal-looking URIs may still be page jumps.
+    if (uri.startsWith(QLatin1Char('#'))) {
+        int page = 0;
+        if (QStringView{uri}.sliced(1).startsWith(QLatin1String("page="))) {
+            page = QStringView{uri}.sliced(6).toInt();
+        } else {
+            page = QStringView{uri}.sliced(1).toInt();
+        }
+        if (page > 0) {
+            navigateDocumentPage(page);
+            return;
+        }
+    }
+    const QUrl url(uri);
+    if (url.isValid()) {
+        QDesktopServices::openUrl(url);
+    }
+}
+
 void MainWindow::updateMetadataPanel()
 {
     if (!m_metadataPanel || !m_imageView) {
@@ -1629,6 +1755,10 @@ void MainWindow::applyWorkspaceLayoutFromPanel()
 
 void MainWindow::updateStatus()
 {
+    if (m_tocDock && m_tocDock->isVisible()) {
+        updateTocPanel();
+    }
+
     updateNavigationActions();
     updateMetadataPanel();
     updateAdjustmentsPanel();

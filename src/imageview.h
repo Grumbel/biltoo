@@ -800,6 +800,8 @@ signals:
     /** Image mode: user activated previous / next via edge click. */
     void navigatePreviousRequested();
     void navigateNextRequested();
+    /** Internal page (1-based) and/or external URI from a link region click. */
+    void linkActivated(int page_1based, const QString &uri);
     /** Image mode: user activated top-edge return (Gallery or Workspace). */
     void galleryReturnRequested();
     /** Image mode: double-click requests fullscreen toggle. */

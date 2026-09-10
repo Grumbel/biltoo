@@ -168,6 +168,8 @@ add_executable(biltoo
   src/coloradjust.cpp
   src/coloradjust.h
   src/layoutpanel.cpp
+  src/tocpanel.cpp
+  src/tocpanel.h
   src/layoutpanel.h
   src/defaultapps.cpp
   src/defaultapps.h
