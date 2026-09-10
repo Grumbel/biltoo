@@ -32,6 +32,7 @@
 #include <QPaintDevice>
 #include <QPainterPath>
 #include <QResizeEvent>
+#include <QShowEvent>
 #include <QStyle>
 #include <QThreadPool>
 #include <QScrollBar>
@@ -969,6 +970,12 @@ void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)
 }
 
 
+void ThumbnailBar::showEvent(QShowEvent *event)
+{
+    QListWidget::showEvent(event);
+    scheduleVisibleThumbnailLoads();
+}
+
 void ThumbnailBar::scheduleThumbnailLoads()
 {
     m_thumbLoadScheduled.clear();
@@ -995,20 +1002,20 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
     if (focus < 0) {
         focus = 0;
     }
-    // Prefer near-focus thumbs first; thumtoo PDF ladder builds are expensive.
-    // ~1 screen each side is enough — scrolling loads more.
-    constexpr int kMinRadius = 12;
+    // Prefetch about two screens around focus (or start of strip).
+    constexpr int kMinRadius = 24;
     int radius = kMinRadius;
     if (viewport()) {
         const int cell = qMax(1, m_thumbSize + 8);
         const int across = qMax(1, viewport()->width() / cell);
         const int down = qMax(1, viewport()->height() / cell);
-        radius = qMax(kMinRadius, across * down);
+        radius = qMax(kMinRadius, across * down * 2);
     }
     const int lo = qMax(0, focus - radius);
     const int hi = qMin(n, focus + radius + 1);
 
-    constexpr int kMaxConcurrentThumbLoads = 3;
+    // Pool jobs only — thumtoo pixel concurrency is separate (kMaxConcurrentPixelJobs).
+    constexpr int kMaxConcurrentThumbLoads = 12;
     int inFlight = 0;
     for (int idx : m_thumbLoadScheduled) {
         Q_UNUSED(idx);
@@ -1215,6 +1222,13 @@ void ThumbnailBar::setFiles(const QStringList &files)
 
     scheduleThumbnailLoads();
     updateCenteringMargins();
+    // Layout/visibility may not be final during setFiles — kick again next tick.
+    QTimer::singleShot(0, this, [this]() {
+        scheduleVisibleThumbnailLoads();
+    });
+    QTimer::singleShot(100, this, [this]() {
+        scheduleVisibleThumbnailLoads();
+    });
 }
 
 void ThumbnailBar::setCurrentIndex(int index)

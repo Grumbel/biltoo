@@ -100,7 +100,8 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
  * On success (GUI thread): Bridge::ladderReady (decode via ImageLoader).
  * No-op when isUnsupported(path).
  */
-void schedulePixels(const QString &path, int maxEdge);
+/** @return false if skipped (already in-flight, settled success, or unsupported). */
+bool schedulePixels(const QString &path, int maxEdge);
 
 /**
  * Prewarm **sizes** only for a session file list (thumtoo prepare / probe).

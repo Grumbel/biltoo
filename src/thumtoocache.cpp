@@ -144,7 +144,7 @@ struct PendingPixels {
 std::vector<PendingPixels> g_pixelsQueue;
 /** path#edge already finished (hit or miss) this process — no re-queue. */
 QSet<QString> g_pixelsSettled;
-constexpr int kMaxPixelQueue = 16;
+constexpr int kMaxPixelQueue = 48;
 
 #ifdef BILTOO_HAVE_THUMTOO
 
@@ -744,19 +744,19 @@ void startNextPixelJobsUnlocked()
 }
 #endif
 
-void schedulePixels(const QString &path, int maxEdge)
+bool schedulePixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
     if (maxEdge <= 0 || isUnsupported(path)) {
-        return;
+        return false;
     }
     init();
     const std::string uri = toThumtooUri(path);
     if (uri.empty()) {
-        return;
+        return false;
     }
-    // Dedup + settle + queue cap. PDF EnsurePixels (raster+JXL) is the CPU hog;
-    // gallery/filmstrip must not re-queue the same edge or flood the whole book.
+    // Dedup + settle. Soft queue soft-cap: still accept (no silent DROP) so
+    // filmstrip/gallery are not starved; concurrency remains limited.
     const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
     {
         std::lock_guard lock(g_mu);
@@ -766,14 +766,7 @@ void schedulePixels(const QString &path, int maxEdge)
                 thumtooDbg("schedulePixels SKIP path=%s edge=%d (inflight/settled)",
                            qPrintable(path), maxEdge);
             }
-            return;
-        }
-        if (int(g_pixelsQueue.size()) >= kMaxPixelQueue) {
-            if (thumtooDebugEnabled()) {
-                thumtooDbg("schedulePixels DROP path=%s edge=%d (queue full %d)",
-                           qPrintable(path), maxEdge, kMaxPixelQueue);
-            }
-            return;
+            return false;
         }
         g_pixelsInflight.insert(inflightKey);
         g_pixelsQueue.push_back(PendingPixels{path, maxEdge, inflightKey, uri});
@@ -784,9 +777,11 @@ void schedulePixels(const QString &path, int maxEdge)
         }
         startNextPixelJobsUnlocked();
     }
+    return true;
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
+    return false;
 #endif
 }
 

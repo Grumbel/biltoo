@@ -171,6 +171,7 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     QStringList mimeTypes() const override;
     QMimeData *mimeData(const QList<QListWidgetItem *> items) const;
     Qt::DropActions supportedDragActions() const;

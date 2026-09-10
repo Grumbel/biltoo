@@ -363,10 +363,16 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                         path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
                                    previewEdge));
                 } else if (ThumtooCache::isAvailable()) {
-                    // loadThumbnail already schedulePixels'd the higher step —
-                    // await ladderReady; do not record a short 'got' as settled
-                    // or we re-enter the schedule loop for the same need.
-                    host->m_galleryAwaitLadder.insert(path);
+                    // Request higher step explicitly; only await if accepted.
+                    const int want = ThumtooCache::ceilLadderEdge(previewEdge);
+                    if (ThumtooCache::schedulePixels(path, want)) {
+                        host->m_galleryAwaitLadder.insert(path);
+                    } else {
+                        // Settled/in-flight at this edge — stop spinning; keep soft.
+                        host->m_galleryLadderAttemptedEdge.insert(
+                            path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
+                                       want));
+                    }
                 } else {
                     host->m_galleryLadderAttemptedEdge.insert(
                         path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
@@ -375,8 +381,15 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 host->onImagePreviewLoaded(path, preview, gen,
                                            static_cast<int>(LoadAdd));
             } else if (ThumtooCache::isAvailable()) {
-                // loadThumbnail already schedulePixels; wait for ladderReady.
-                host->m_galleryAwaitLadder.insert(path);
+                const int want = ThumtooCache::ceilLadderEdge(previewEdge);
+                if (ThumtooCache::schedulePixels(path, want)) {
+                    host->m_galleryAwaitLadder.insert(path);
+                } else {
+                    host->m_galleryDecodeFailed.insert(path);
+                    host->m_galleryLadderAttemptedEdge.insert(
+                        path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
+                                   want));
+                }
             } else {
                 host->m_galleryDecodeFailed.insert(path);
                 host->m_galleryLadderAttemptedEdge.insert(
