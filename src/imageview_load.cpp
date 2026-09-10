@@ -923,6 +923,7 @@ bool ImageView::loadImage(const QString &path)
 {
     setClassicPath(path);
     clearTextSelection();
+    m_linkHoverTip.clear();
     if (m_showTextRegions || !m_textSearchQuery.isEmpty()) {
         refreshTextLayer();
     }

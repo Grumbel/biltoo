@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-363-links-and-toc** (links + TOC panel).
-Next bundle number: **364**.
+Latest agent handoff: **TODO.md → biltoo-364-link-hover-cursor** (link hover cursor/tip).
+Next bundle number: **365**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

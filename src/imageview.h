@@ -488,6 +488,8 @@ public:
     /** Copy selected text to the clipboard; returns false if nothing selected. */
     bool copySelectedText();
     void clearTextSelection();
+    /** Non-empty while the pointer is over a link region. */
+    QString linkHoverTip() const { return m_linkHoverTip; }
 
     bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
 
@@ -862,6 +864,9 @@ protected:
     [[nodiscard]] bool pageYUpForTextLayer() const;
     /** Map viewport rubber rect → image-pixel rect on primary item. */
     [[nodiscard]] QRectF textRubberBandImageRect() const;
+    /** Hit-test link region under view pos; sets page/uri outs. */
+    [[nodiscard]] bool hitTextLinkAt(const QPoint &viewPos, int *pageOut,
+                                    QString *uriOut) const;
 
     void drawBackground(QPainter *painter, const QRectF &rect) override;
     /** Scene-space canvas background (AppDefault or Workspace override). */
@@ -1142,6 +1147,7 @@ private:
     QPoint m_textRubberOrigin;  /**< viewport */
     QRect m_textRubberRect;     /**< viewport, normalized while dragging */
     QVector<int> m_textSelectedRegions;
+    QString m_linkHoverTip;
     bool m_hudVisible = false;
     int m_hudFontPointSize = 11;
     QColor m_hudTextColor{255, 255, 255};

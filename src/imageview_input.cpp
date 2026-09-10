@@ -520,33 +520,18 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         && event->button() == Qt::LeftButton
         && event->modifiers() == Qt::NoModifier
         && PagePath::isPageRef(classicPath())) {
-        ImageItem *item = primaryItem();
-        if (item && !item->contentRect().isEmpty()) {
-            if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
-                const bool hadShow = m_showTextRegions;
-                m_showTextRegions = true;
-                refreshTextLayer();
-                m_showTextRegions = hadShow;
-            }
-            const QPointF scene = mapToScene(event->pos());
-            const QPointF local = item->mapFromScene(scene);
-            const QRectF imgPt = QRectF(local - item->offset(), QSizeF(1, 1));
-            const QSize sz = item->imageSize();
-            if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBounds.isValid()) {
-                const bool pageYUp = pageYUpForTextLayer();
-                for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
-                    if (r.role != ThumtooCache::TextRegion::Role::Link) {
-                        continue;
-                    }
-                    const QRectF img = ThumtooCache::pageRectToImageRect(
-                        r.bbox, m_textLayer.pageBounds, sz, pageYUp);
-                    if (img.contains(local - item->offset())) {
-                        emit linkActivated(r.linkPage, r.linkUri);
-                        event->accept();
-                        return;
-                    }
-                }
-            }
+        if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
+            const bool hadShow = m_showTextRegions;
+            m_showTextRegions = true;
+            refreshTextLayer();
+            m_showTextRegions = hadShow;
+        }
+        int page = 0;
+        QString uri;
+        if (hitTextLinkAt(event->pos(), &page, &uri)) {
+            emit linkActivated(page, uri);
+            event->accept();
+            return;
         }
     }
 
@@ -831,6 +816,45 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+
+    // Link hover: pointing hand + status tip (Image mode page docs).
+    if (isImageMode() && !m_cropMode && !m_attentionMode && !m_textRubberbanding
+        && !m_panning && event->buttons() == Qt::NoButton
+        && PagePath::isPageRef(classicPath())) {
+        if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
+            const ThumtooCache::PageTextLayer cached =
+                ThumtooCache::cachedPageTextLayer(classicPath());
+            if (!cached.regions.isEmpty()) {
+                m_textLayer = cached;
+                m_textLayerPath = classicPath();
+            }
+        }
+        int page = 0;
+        QString uri;
+        QString tip;
+        if (hitTextLinkAt(event->pos(), &page, &uri)) {
+            setCursor(Qt::PointingHandCursor);
+            if (page > 0) {
+                tip = tr("Link → page %1").arg(page);
+            }
+            if (!uri.isEmpty()) {
+                tip = tip.isEmpty() ? uri : (tip + QStringLiteral(" · ") + uri);
+            }
+            if (tip.isEmpty()) {
+                tip = tr("Link");
+            }
+        } else if (m_hoverEdge == EdgeZone::None) {
+            setCursor(m_imageModeLeftDragPan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+        }
+        if (tip != m_linkHoverTip) {
+            m_linkHoverTip = tip;
+            emit statusChanged();
+        }
+    } else if (!m_linkHoverTip.isEmpty() && event->buttons() == Qt::NoButton) {
+        m_linkHoverTip.clear();
+        emit statusChanged();
+    }
+
 
     if (m_attentionMode && m_attentionRubberbanding && isImageMode()) {
         m_attentionRubberRect = QRect(m_attentionRubberOrigin, event->pos()).normalized();

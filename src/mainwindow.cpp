@@ -1758,6 +1758,9 @@ void MainWindow::updateStatus()
     if (m_tocDock && m_tocDock->isVisible()) {
         updateTocPanel();
     }
+    if (m_imageView && !m_imageView->linkHoverTip().isEmpty()) {
+        statusBar()->showMessage(m_imageView->linkHoverTip());
+    }
 
     updateNavigationActions();
     updateMetadataPanel();

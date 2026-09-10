@@ -1020,6 +1020,55 @@ int ImageView::setTextSearchQuery(const QString &query)
     return m_textSearchMatches.size();
 }
 
+
+bool ImageView::hitTextLinkAt(const QPoint &viewPos, int *pageOut, QString *uriOut) const
+{
+    if (pageOut) {
+        *pageOut = 0;
+    }
+    if (uriOut) {
+        uriOut->clear();
+    }
+    if (!isImageMode() || !PagePath::isPageRef(classicPath())) {
+        return false;
+    }
+    ImageItem *item = primaryItem();
+    if (!item || item->contentRect().isEmpty()) {
+        return false;
+    }
+    if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
+        return false;
+    }
+    const QSize sz = item->imageSize();
+    if (sz.width() <= 0 || sz.height() <= 0 || !m_textLayer.pageBounds.isValid()) {
+        return false;
+    }
+    const QPointF scene = mapToScene(viewPos);
+    const QPointF local = item->mapFromScene(scene);
+    if (!item->contentRect().contains(local)) {
+        return false;
+    }
+    const QPointF imgPt = local - item->offset();
+    const bool pageYUp = pageYUpForTextLayer();
+    for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
+        if (r.role != ThumtooCache::TextRegion::Role::Link) {
+            continue;
+        }
+        const QRectF img = ThumtooCache::pageRectToImageRect(
+            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+        if (img.contains(imgPt)) {
+            if (pageOut) {
+                *pageOut = r.linkPage;
+            }
+            if (uriOut) {
+                *uriOut = r.linkUri;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 bool ImageView::pageYUpForTextLayer() const
 {
     const QString docPath = PagePath::documentFilePath(classicPath());
