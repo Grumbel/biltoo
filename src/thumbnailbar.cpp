@@ -690,6 +690,16 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         } else if (m_delegate) {
             it->setSizeHint(m_delegate->cellSize(font()));
         }
+        // IconMode does not always repaint on setIcon until interaction — force it.
+        const QModelIndex idx = indexFromItem(it);
+        if (idx.isValid()) {
+            dataChanged(idx, idx, {Qt::DecorationRole, Qt::SizeHintRole,
+                                   ThumbnailDelegate::ThumbContentSizeRole,
+                                   ThumbnailDelegate::ThumbLoadedRole});
+        }
+        if (viewport()) {
+            viewport()->update(visualItemRect(it));
+        }
         scheduleLayoutRefresh();
     }
 }
@@ -703,6 +713,9 @@ void ThumbnailBar::scheduleLayoutRefresh()
         connect(m_layoutRefreshTimer, &QTimer::timeout, this, [this]() {
             doItemsLayout();
             updateCenteringMargins();
+            if (viewport()) {
+                viewport()->update();
+            }
         });
     }
     m_layoutRefreshTimer->start();

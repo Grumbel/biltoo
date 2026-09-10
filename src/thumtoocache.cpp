@@ -724,12 +724,16 @@ void startNextPixelJobsUnlocked()
                 {
                     std::lock_guard lock(g_mu);
                     g_pixelsInflight.remove(inflightKey);
-                    g_pixelsSettled.insert(inflightKey);
+                    // Settle only successful builds. Empty/fail may retry later
+                    // (e.g. after probe) without blocking a higher edge.
+                    const bool ok = px && !px->bytes.empty();
+                    if (ok) {
+                        g_pixelsSettled.insert(inflightKey);
+                    }
                     g_pixelsActive = qMax(0, g_pixelsActive - 1);
                     if (thumtooDebugEnabled()) {
                         thumtooDbg("request_pixels DONE path=%s edge=%d ok=%d active=%d queued=%zu",
-                                   qPrintable(pathCopy), edge,
-                                   (px && !px->bytes.empty()) ? 1 : 0,
+                                   qPrintable(pathCopy), edge, ok ? 1 : 0,
                                    g_pixelsActive, g_pixelsQueue.size());
                     }
                     startNextPixelJobsUnlocked();

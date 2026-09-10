@@ -269,14 +269,10 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item) const
     const qreal longPx =
         qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
     const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
-    // Cap soft decode: multipage document pages use filmstrip edge (256) so
-    // opening a PDF does not enqueue EnsurePixels(512) for every tile.
-    // Standalone images may use kGalleryLadderEdge (512).
-    int cap = ThumtooCache::kGalleryLadderEdge;
-    if (PagePath::isPageRef(item->path()) || PagePath::isPdfImageRef(item->path())) {
-        cap = ThumtooCache::kFilmstripLadderEdge;
-    }
-    return qMin(need, cap);
+    // Cap soft decode at gallery ladder (512). Zoom may raise need from 128/256
+    // to 512; each edge is settled once in ThumtooCache (no re-queue storms).
+    // Full native remains Image mode.
+    return qMin(need, ThumtooCache::kGalleryLadderEdge);
 }
 
 void ImageView::scheduleGalleryDecode(const QString &path)
