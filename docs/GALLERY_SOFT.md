@@ -47,3 +47,11 @@ Image mode only.
 
 At most `kMaxConcurrentGalleryDecodes` paths with `inflight != 0`. Visible paths
 first; small idle budget for off-screen placeholders.
+
+
+## Soft ladder cap (aligned with thumtoo)
+
+Durable soft previews stop at **512** (`kGalleryLadderEdge` / thumtoo
+`kMaxSoftLadderEdge`). Gallery must not call `request_pixels` for 1024/2048;
+those requests cannot grow past soft max and only burned CPU. Deep zoom is
+tiles (future) or Image mode full decode.

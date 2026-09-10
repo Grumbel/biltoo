@@ -57,7 +57,9 @@ void shutdown();
 constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048};
 constexpr int kFilmstripLadderEdge = 256;
 constexpr int kGalleryLadderEdge = 512;  // fallback when cell size unknown
-constexpr int kImageLadderEdge = 2048; // max soft step in Gallery when zoomed
+/** Max soft ladder for Gallery. Higher on-screen size scales the soft thumb;
+ *  true high-res is tiles / Image mode, not request_pixels(1024|2048). */
+constexpr int kImageLadderEdge = 512;
 
 /** Smallest ladder step ≥ displayLongEdge (px); max step if larger. */
 inline int ceilLadderEdge(int displayLongEdge)

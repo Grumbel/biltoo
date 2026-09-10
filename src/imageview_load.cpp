@@ -254,11 +254,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 
 int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const
 {
-    // Policy:
-    //   • Always keep a low-res soft thumb (≤ kGalleryLadderEdge / 512).
-    //   • Steps above 512 are on-demand only when the tile is visible and
-    //     allowHighRes is true (zoomed inspection).
-    //   • Full native remains Image mode.
+    // Soft ladder only (≤ kGalleryLadderEdge / 512). Zoomed inspection scales
+    // that preview; true high-res is tiles / Image mode — not request_pixels.
+    Q_UNUSED(allowHighRes);
     if (!item) {
         return ThumtooCache::kGalleryLadderEdge;
     }
@@ -271,9 +269,7 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
     const qreal longPx =
         qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
     const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
-    const int cap = allowHighRes ? ThumtooCache::kImageLadderEdge
-                                 : ThumtooCache::kGalleryLadderEdge;
-    return qMin(need, cap);
+    return qMin(need, ThumtooCache::kGalleryLadderEdge);
 }
 
 int ImageView::gallerySoftInflightCount() const
