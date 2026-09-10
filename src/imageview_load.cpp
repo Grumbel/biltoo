@@ -269,10 +269,10 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item) const
     const qreal longPx =
         qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
     const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
-    // Cap soft decode at gallery ladder (512). Zoom may raise need from 128/256
-    // to 512; each edge is settled once in ThumtooCache (no re-queue storms).
-    // Full native remains Image mode.
-    return qMin(need, ThumtooCache::kGalleryLadderEdge);
+    // Soft gallery may climb the ladder with zoom: 128 → 256 → 512 → 1024.
+    // Cap at kImageLadderEdge (1024), not the old fixed 512 overview tip.
+    // Full native still remains Image mode only.
+    return qMin(need, ThumtooCache::kImageLadderEdge);
 }
 
 void ImageView::scheduleGalleryDecode(const QString &path)
@@ -326,6 +326,21 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     m_galleryDecodeScheduled.insert(path);
     addPendingWorkspacePath(path);
     emit statusChanged();
+
+    if (const char *e = std::getenv("THUMTOO_DEBUG");
+        e && e[0] != '\0' && e[0] != '0') {
+        int haveLog = 0;
+        int att = m_galleryLadderAttemptedEdge.value(path, 0);
+        for (ImageItem *it : m_items) {
+            if (it && it->path() == path) {
+                haveLog = it->displayPixelLongEdge();
+                break;
+            }
+        }
+        fprintf(stderr,
+                "biltoo/gallery: scheduleDecode path need=%d have=%d attempted=%d\n",
+                previewEdge, haveLog, att);
+    }
 
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);

@@ -242,9 +242,23 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 void ImageView::wheelEvent(QWheelEvent *event)
 {
-    // Gallery: wheel only scrolls the packed scene. Zoom belongs to Image mode
-    // (and Workspace). Never scale the view from the wheel here — that felt
-    // random when overflow was small or Ctrl was held accidentally.
+    // Gallery: default wheel scrolls. Ctrl+wheel zooms the view (inspection)
+    // and refreshes the soft ladder for the new on-screen cell size.
+    if (isGalleryMode() && (event->modifiers() & Qt::ControlModifier)) {
+        const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
+        m_fitMode = false;
+        m_fillMode = false;
+        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+        scale(factor, factor);
+        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+        if (viewport()) {
+            viewport()->update();
+        }
+        updateGalleryDecodeWindow();
+        emit statusChanged();
+        event->accept();
+        return;
+    }
     if (isGalleryMode()) {
         QScrollBar *hBar = horizontalScrollBar();
         QScrollBar *vBar = verticalScrollBar();
