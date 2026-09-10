@@ -43,7 +43,7 @@
 // Layout model (single source of truth)
 //
 //   cell width  = thumbSize + 2 * kCellPadX
-//   cell height = thumbSize + labelBand
+//   cell height = kCellPadTop + thumbSize + labelBand
 //   labelBand   = QFontMetrics::height() + kLabelGap   (no style padding)
 //
 // Horizontal bar: thin axis is HEIGHT = cell height
@@ -80,7 +80,7 @@ void ThumbnailDelegate::setLabelsVisible(bool on)
 QSize ThumbnailDelegate::cellSize(const QFont &font) const
 {
     const int labelH = labelBandHeight(font);
-    return QSize(m_thumbSize + 2 * kCellPadX, m_thumbSize + labelH);
+    return QSize(m_thumbSize + 2 * kCellPadX, kCellPadTop + m_thumbSize + labelH);
 }
 
 QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
@@ -110,10 +110,12 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QFontMetrics fm(option.font);
     const int labelBand = labelBandHeight(option.font);
-    // Icon must leave room for the caption inside the allocated cell
-    const int iconSide = qBound(1, qMin(m_thumbSize, cell.height() - labelBand), cell.width());
+    // Icon must leave room for top pad + caption inside the allocated cell
+    const int iconSide = qBound(
+        1, qMin(m_thumbSize, cell.height() - labelBand - kCellPadTop), cell.width());
     const int iconX = cell.left() + (cell.width() - iconSide) / 2;
-    const int iconY = cell.top();
+    const int iconY = cell.top() + kCellPadTop;
+    const QRect iconRect(iconX, iconY, iconSide, iconSide);
 
     const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
     if (!icon.isNull()) {
@@ -127,12 +129,16 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         if (!pm.isNull()) {
             pm.setDevicePixelRatio(dpr);
             // Stretch into the square icon slot (source is already letterboxed).
-            painter->drawPixmap(QRect(iconX, iconY, iconSide, iconSide), pm);
+            painter->drawPixmap(iconRect, pm);
         } else {
-            icon.paint(painter, QRect(iconX, iconY, iconSide, iconSide), Qt::AlignCenter,
+            icon.paint(painter, iconRect, Qt::AlignCenter,
                        QIcon::Normal, selected ? QIcon::On : QIcon::Off);
         }
     }
+    // Black hairline so white page thumbs stay visible on a light strip.
+    painter->setPen(QPen(QColor(0, 0, 0), 1));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(iconRect.adjusted(0, 0, -1, -1));
 
     const QString text = index.data(Qt::DisplayRole).toString();
     if (m_labelsVisible && !text.isEmpty() && labelBand > 0 && cell.height() > iconSide) {
@@ -313,21 +319,26 @@ int ThumbnailBar::labelBandHeight() const
 int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
     // Approximate for callers without a live widget (default app font).
-    // Horizontal-bar height ≈ thumb + label; used as a generic default.
-    return thumbSize + ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
+    // Horizontal-bar height ≈ top pad + thumb + label; used as a generic default.
+    return ThumbnailDelegate::kCellPadTop + thumbSize
+        + ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
 }
 
 int ThumbnailBar::thumbSizeForExtent(int extent)
 {
     const int label = ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
-    return qBound(kMinThumbSize, extent - label, kMaxThumbSize);
+    return qBound(kMinThumbSize,
+                 extent - label - ThumbnailDelegate::kCellPadTop,
+                 kMaxThumbSize);
 }
 
 int ThumbnailBar::thumbSizeFromBarExtent(int extent) const
 {
     if (m_orientation == Qt::Horizontal) {
-        // extent is bar height = cell height = thumb + labelBand
-        return qBound(kMinThumbSize, extent - labelBandHeight(), kMaxThumbSize);
+        // extent is bar height = cell height = top pad + thumb + labelBand
+        return qBound(kMinThumbSize,
+                     extent - labelBandHeight() - ThumbnailDelegate::kCellPadTop,
+                     kMaxThumbSize);
     }
     // Vertical bar: extent is bar width ≈ cell width = thumb + 2*pad
     return qBound(kMinThumbSize,
