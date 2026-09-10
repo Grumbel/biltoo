@@ -550,7 +550,7 @@ void MainWindow::createActions()
 
     m_copyWorkspaceAct = new QAction(tr("&Copy"), this);
     m_copyWorkspaceAct->setShortcuts(QKeySequence::Copy);
-    m_copyWorkspaceAct->setStatusTip(tr("Copy selected Workspace tiles (appearance and placement)"));
+    m_copyWorkspaceAct->setStatusTip(tr("Copy selected Workspace tiles, or selected page text (Shift+drag regions)"));
     connect(m_copyWorkspaceAct, &QAction::triggered, this, &MainWindow::copyWorkspaceItems);
 
     m_cutWorkspaceAct = new QAction(tr("Cu&t"), this);

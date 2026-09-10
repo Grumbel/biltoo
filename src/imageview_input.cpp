@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "pagepath.h"
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
@@ -514,6 +515,23 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         // No handle hit — fall through to move/select / clear.
     }
 
+    // Image mode: Shift+left rubber-band select text on PDF/DjVu/EPUB pages.
+    if (isImageMode() && !m_cropMode && !m_attentionMode
+        && event->button() == Qt::LeftButton
+        && (event->modifiers() & Qt::ShiftModifier)
+        && !(event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))) {
+        if (PagePath::isPageRef(classicPath())) {
+            m_textRubberbanding = true;
+            m_textRubberOrigin = event->pos();
+            m_textRubberRect = QRect(event->pos(), QSize());
+            m_textSelectedRegions.clear();
+            setCursor(Qt::CrossCursor);
+            viewport()->update();
+            event->accept();
+            return;
+        }
+    }
+
     // Image mode: edge clicks — top returns to Gallery/Workspace; left/right navigate
     if (isImageMode() && event->button() == Qt::LeftButton
         && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
@@ -772,6 +790,13 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_textRubberbanding && (event->buttons() & Qt::LeftButton)) {
+        m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
+        viewport()->update();
+        event->accept();
+        return;
+    }
+
     if (m_attentionMode && m_attentionRubberbanding && isImageMode()) {
         m_attentionRubberRect = QRect(m_attentionRubberOrigin, event->pos()).normalized();
         viewport()->update();
@@ -1178,6 +1203,14 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_textRubberbanding && event->button() == Qt::LeftButton) {
+        m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
+        finishTextRubberBand();
+        unsetCursor();
+        event->accept();
+        return;
+    }
+
     if (m_attentionMode && event->button() == Qt::LeftButton) {
         if (m_attentionRubberbanding) {
             m_attentionRubberbanding = false;

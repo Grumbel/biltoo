@@ -481,6 +481,14 @@ public:
     QString textSearchQuery() const { return m_textSearchQuery; }
     int textSearchMatchCount() const { return m_textSearchMatches.size(); }
 
+    /** Selected region indices from Shift+drag rubber-band (Image mode page docs). */
+    int textSelectionCount() const { return m_textSelectedRegions.size(); }
+    /** Joined text of the selection in reading order; empty if none. */
+    QString selectedText() const;
+    /** Copy selected text to the clipboard; returns false if nothing selected. */
+    bool copySelectedText();
+    void clearTextSelection();
+
     bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
 
     void setBackgroundColor(const QColor &color);
@@ -848,6 +856,10 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void paintViewportOverlays(QPainter &painter);
     void recomputeTextSearchMatches();
+    void finishTextRubberBand();
+    [[nodiscard]] bool pageYUpForTextLayer() const;
+    /** Map viewport rubber rect → image-pixel rect on primary item. */
+    [[nodiscard]] QRectF textRubberBandImageRect() const;
 
     void drawBackground(QPainter *painter, const QRectF &rect) override;
     /** Scene-space canvas background (AppDefault or Workspace override). */
@@ -1124,6 +1136,10 @@ private:
     QString m_textSearchQuery;
     /** Indices into m_textLayer.regions that match the current query. */
     QVector<int> m_textSearchMatches;
+    bool m_textRubberbanding = false;
+    QPoint m_textRubberOrigin;  /**< viewport */
+    QRect m_textRubberRect;     /**< viewport, normalized while dragging */
+    QVector<int> m_textSelectedRegions;
     bool m_hudVisible = false;
     int m_hudFontPointSize = 11;
     QColor m_hudTextColor{255, 255, 255};

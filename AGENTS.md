@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-361-pdf-text-y-orient** (PDF text Y; DjVu-only flip).
-Next bundle number: **362**.
+Latest agent handoff: **TODO.md → biltoo-362-text-rubberband-copy** (Shift+drag select + Copy).
+Next bundle number: **363**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include <QClipboard>
+#include <QGuiApplication>
+#include <algorithm>
 #include "thumtoocache.h"
 #include "pagepath.h"
 #include <QFileInfo>
@@ -93,6 +96,17 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
 
 void ImageView::paintViewportOverlays(QPainter &painter)
 {
+    if (m_textRubberbanding && !m_textRubberRect.isEmpty()) {
+        painter.save();
+        QPen pen(QColor(40, 120, 220, 220));
+        pen.setStyle(Qt::DashLine);
+        pen.setWidth(1);
+        painter.setPen(pen);
+        painter.setBrush(QColor(60, 160, 255, 40));
+        painter.drawRect(m_textRubberRect.normalized());
+        painter.restore();
+    }
+
     // Viewport-device-pixel overlays (handles, HUD, slideshow cover). Called from
     // drawForeground with an identity transform so this works on both the
     // raster and QOpenGLWidget viewports — a second QPainter on the GL viewport
@@ -1006,6 +1020,130 @@ int ImageView::setTextSearchQuery(const QString &query)
     return m_textSearchMatches.size();
 }
 
+bool ImageView::pageYUpForTextLayer() const
+{
+    const QString docPath = PagePath::documentFilePath(classicPath());
+    return PagePath::isDjvuFile(docPath);
+}
+
+QRectF ImageView::textRubberBandImageRect() const
+{
+    ImageItem *item = primaryItem();
+    if (!item || m_textRubberRect.isEmpty()) {
+        return {};
+    }
+    const QRectF sceneRect = mapToScene(m_textRubberRect).boundingRect();
+    // Map scene corners to item local, then subtract offset → image pixels.
+    const QRectF local = item->mapFromScene(sceneRect).boundingRect();
+    return local.translated(-item->offset());
+}
+
+void ImageView::finishTextRubberBand()
+{
+    m_textRubberbanding = false;
+    const QRect viewRect = m_textRubberRect.normalized();
+    m_textRubberRect = {};
+    m_textSelectedRegions.clear();
+    if (viewRect.width() < 4 || viewRect.height() < 4) {
+        viewport()->update();
+        return;
+    }
+    // Ensure text layer (refreshTextLayer skips when neither search nor outlines).
+    if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
+        const bool hadShow = m_showTextRegions;
+        m_showTextRegions = true;
+        refreshTextLayer();
+        m_showTextRegions = hadShow;
+    }
+    ImageItem *item = primaryItem();
+    if (!item || m_textLayer.regions.isEmpty() || !m_textLayer.pageBounds.isValid()) {
+        viewport()->update();
+        return;
+    }
+    const QSize sz = item->imageSize();
+    if (sz.width() <= 0 || sz.height() <= 0) {
+        viewport()->update();
+        return;
+    }
+    // Recompute rubber from stored origin - use viewRect mapped to image.
+    m_textRubberRect = viewRect;
+    const QRectF imgRubber = textRubberBandImageRect();
+    m_textRubberRect = {};
+    if (imgRubber.isEmpty()) {
+        viewport()->update();
+        return;
+    }
+    const bool pageYUp = pageYUpForTextLayer();
+    for (int i = 0; i < m_textLayer.regions.size(); ++i) {
+        const auto &r = m_textLayer.regions.at(i);
+        if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {
+            continue;
+        }
+        const QRectF img = ThumtooCache::pageRectToImageRect(
+            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+        if (img.isEmpty()) {
+            continue;
+        }
+        if (img.intersects(imgRubber)) {
+            m_textSelectedRegions.push_back(i);
+        }
+    }
+    // Reading order: top-to-bottom, then left-to-right by image rect.
+    std::sort(m_textSelectedRegions.begin(), m_textSelectedRegions.end(),
+              [&](int a, int b) {
+                  const QRectF ra = ThumtooCache::pageRectToImageRect(
+                      m_textLayer.regions.at(a).bbox, m_textLayer.pageBounds, sz, pageYUp);
+                  const QRectF rb = ThumtooCache::pageRectToImageRect(
+                      m_textLayer.regions.at(b).bbox, m_textLayer.pageBounds, sz, pageYUp);
+                  if (qAbs(ra.top() - rb.top()) > 4.0) {
+                      return ra.top() < rb.top();
+                  }
+                  return ra.left() < rb.left();
+              });
+    viewport()->update();
+}
+
+QString ImageView::selectedText() const
+{
+    QStringList lines;
+    for (int idx : m_textSelectedRegions) {
+        if (idx < 0 || idx >= m_textLayer.regions.size()) {
+            continue;
+        }
+        const QString &tx = m_textLayer.regions.at(idx).text;
+        if (!tx.isEmpty()) {
+            lines.append(tx);
+        }
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+
+void ImageView::clearTextSelection()
+{
+    if (m_textSelectedRegions.isEmpty() && !m_textRubberbanding) {
+        return;
+    }
+    m_textSelectedRegions.clear();
+    m_textRubberbanding = false;
+    m_textRubberRect = {};
+    viewport()->update();
+}
+
+bool ImageView::copySelectedText()
+{
+    const QString text = selectedText();
+    if (text.isEmpty()) {
+        return false;
+    }
+    QClipboard *clip = QGuiApplication::clipboard();
+    if (!clip) {
+        return false;
+    }
+    clip->setText(text);
+    return true;
+}
+
+
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
     // Page guide outline above images so the frame stays visible when tiles
@@ -1039,13 +1177,8 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
             const QSize sz = item->imageSize();
             if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBounds.isValid()) {
                 painter->save();
-                // Coordinate systems (matched to what thumtoo returns vs raster):
-                // - DjVu: native bottom-left, Y-up → flip when mapping to the image
-                // - PDF (MuPDF stext): aligns with the pixmap as Y-down → no flip
-                // - EPUB (MuPDF reflow): top-left Y-down → no flip
-                const QString docPath = PagePath::documentFilePath(classicPath());
-                const bool pageYUp = PagePath::isDjvuFile(docPath);
-                // Search hits: filled yellow first (under outlines).
+                const bool pageYUp = pageYUpForTextLayer();
+                // Search hits: filled yellow first (under outlines / selection).
                 if (!m_textSearchMatches.isEmpty()) {
                     painter->setPen(Qt::NoPen);
                     painter->setBrush(QColor(255, 220, 40, 110));
@@ -1054,6 +1187,24 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                             continue;
                         }
                         const auto &r = m_textLayer.regions.at(idxMatch);
+                        const QRectF img = ThumtooCache::pageRectToImageRect(
+                            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+                        if (img.isEmpty()) {
+                            continue;
+                        }
+                        const QRectF local = img.translated(item->offset());
+                        painter->drawPolygon(item->mapToScene(local));
+                    }
+                }
+                // Rubber-band text selection (cyan).
+                if (!m_textSelectedRegions.isEmpty()) {
+                    painter->setPen(Qt::NoPen);
+                    painter->setBrush(QColor(60, 160, 255, 100));
+                    for (int idxSel : m_textSelectedRegions) {
+                        if (idxSel < 0 || idxSel >= m_textLayer.regions.size()) {
+                            continue;
+                        }
+                        const auto &r = m_textLayer.regions.at(idxSel);
                         const QRectF img = ThumtooCache::pageRectToImageRect(
                             r.bbox, m_textLayer.pageBounds, sz, pageYUp);
                         if (img.isEmpty()) {

@@ -2796,6 +2796,17 @@ void MainWindow::updatePasteActionEnabled()
 
 void MainWindow::copyWorkspaceItems()
 {
+    // Prefer page text selection in Image mode (Shift+drag regions).
+    if (m_imageView && m_imageView->isImageMode()
+        && m_imageView->textSelectionCount() > 0) {
+        if (m_imageView->copySelectedText()) {
+            statusBar()->showMessage(
+                tr("Copied %n text region(s)", "", m_imageView->textSelectionCount()),
+                3000);
+            return;
+        }
+    }
+
     if (!m_imageView || !isWorkspaceMode()) {
         return;
     }
