@@ -142,6 +142,9 @@ struct PendingPixels {
     std::string uri;
 };
 std::vector<PendingPixels> g_pixelsQueue;
+/** path#edge already finished (hit or miss) this process — no re-queue. */
+QSet<QString> g_pixelsSettled;
+constexpr int kMaxPixelQueue = 16;
 
 #ifdef BILTOO_HAVE_THUMTOO
 
@@ -721,12 +724,15 @@ void startNextPixelJobsUnlocked()
                 {
                     std::lock_guard lock(g_mu);
                     g_pixelsInflight.remove(inflightKey);
+                    g_pixelsSettled.insert(inflightKey);
                     g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                    if (thumtooDebugEnabled()) {
+                        thumtooDbg("request_pixels DONE path=%s edge=%d ok=%d active=%d queued=%zu",
+                                   qPrintable(pathCopy), edge,
+                                   (px && !px->bytes.empty()) ? 1 : 0,
+                                   g_pixelsActive, g_pixelsQueue.size());
+                    }
                     startNextPixelJobsUnlocked();
-                }
-                if (!px || px->bytes.empty()) {
-                    emit bridge()->ladderReady(pathCopy, edge);
-                    return;
                 }
                 emit bridge()->ladderReady(pathCopy, edge);
             });
@@ -745,12 +751,24 @@ void schedulePixels(const QString &path, int maxEdge)
     if (uri.empty()) {
         return;
     }
-    // Dedup + global concurrency cap. PDF page raster+JXL in thumtoo is costly;
-    // flooding request_pixels pegged a core even when the GUI was idle.
+    // Dedup + settle + queue cap. PDF EnsurePixels (raster+JXL) is the CPU hog;
+    // gallery/filmstrip must not re-queue the same edge or flood the whole book.
     const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
     {
         std::lock_guard lock(g_mu);
-        if (g_pixelsInflight.contains(inflightKey)) {
+        if (g_pixelsInflight.contains(inflightKey)
+            || g_pixelsSettled.contains(inflightKey)) {
+            if (thumtooDebugEnabled()) {
+                thumtooDbg("schedulePixels SKIP path=%s edge=%d (inflight/settled)",
+                           qPrintable(path), maxEdge);
+            }
+            return;
+        }
+        if (int(g_pixelsQueue.size()) >= kMaxPixelQueue) {
+            if (thumtooDebugEnabled()) {
+                thumtooDbg("schedulePixels DROP path=%s edge=%d (queue full %d)",
+                           qPrintable(path), maxEdge, kMaxPixelQueue);
+            }
             return;
         }
         g_pixelsInflight.insert(inflightKey);

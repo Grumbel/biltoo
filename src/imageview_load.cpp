@@ -269,8 +269,14 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item) const
     const qreal longPx =
         qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
     const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
-    // Cap soft decode at gallery ladder edge (512). Higher steps are for Image.
-    return qMin(need, ThumtooCache::kGalleryLadderEdge);
+    // Cap soft decode: multipage document pages use filmstrip edge (256) so
+    // opening a PDF does not enqueue EnsurePixels(512) for every tile.
+    // Standalone images may use kGalleryLadderEdge (512).
+    int cap = ThumtooCache::kGalleryLadderEdge;
+    if (PagePath::isPageRef(item->path()) || PagePath::isPdfImageRef(item->path())) {
+        cap = ThumtooCache::kFilmstripLadderEdge;
+    }
+    return qMin(need, cap);
 }
 
 void ImageView::scheduleGalleryDecode(const QString &path)
@@ -697,8 +703,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (ThumtooCache::isAvailable()
             && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
             ThumtooCache::scheduleProbe(path);
-            ThumtooCache::schedulePixels(
-                path, qMax(ThumtooCache::kGalleryLadderEdge, 512));
+            ThumtooCache::schedulePixels(path, ThumtooCache::kFilmstripLadderEdge);
             m_galleryAwaitLadder.insert(path);
             m_lastLoadError.clear();
             emit statusChanged();
