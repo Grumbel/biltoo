@@ -29,20 +29,16 @@ void ImageView::updateGalleryDecodeWindow()
 
     // Gallery soft-decode state machine (per path):
     //
-    //   need      = ladder step required for current on-screen cell size
-    //   have      = long edge of pixels currently on the item (0 = placeholder)
-    //   attempted = highest `need` we already finished trying (pool job done)
-    //   scheduled = pool job running now
-    //   await     = waiting for thumtoo ladderReady after schedulePixels
+    //   Soft band (≤512): keep a low-res thumb available (visible or idle).
+    //   High band (>512): only when the tile is visible (on-demand zoom).
     //
-    // Rules:
-    //   1. Full native decode → never soft-decode again.
-    //   2. scheduled or await → do not start another job.
-    //   3. Want work only if have < need AND attempted < need.
-    //      One finished attempt per need level. Zoom raises need above
-    //      attempted → one more try. If thumtoo only has a smaller level,
-    //      we still mark attempted=need so we do not spin.
-    auto needsDecodeOrUpgrade = [this](ImageItem *item) -> bool {
+    //   need      = ladder step for cell size, capped by soft/high policy
+    //   have      = long edge of pixels on the item (0 = placeholder)
+    //   attempted = highest need we already finished trying
+    //   scheduled / await = in-flight guards
+    //
+    //   Work only if have < need AND attempted < need (one try per need).
+    auto needsDecodeOrUpgrade = [this, &sceneVisible](ImageItem *item) -> bool {
         if (!item) {
             return false;
         }
@@ -57,7 +53,10 @@ void ImageView::updateGalleryDecodeWindow()
         if (item->hasDecodedPixels()) {
             return false;
         }
-        const int need = galleryDisplayEdgeForItem(item);
+        const QRectF tile = item->contentSceneRect();
+        const bool visible =
+            !tile.isNull() && tile.isValid() && sceneVisible.intersects(tile);
+        const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/visible);
         const int have = item->displayPixelLongEdge();
         if (have >= need) {
             return false;
@@ -91,7 +90,7 @@ void ImageView::updateGalleryDecodeWindow()
         scheduleGalleryDecode(path);
     }
 
-    // Background: fill off-screen when slots remain (idle / not scrolling hard).
+    // Background: fill off-screen soft thumbs only (≤512 via allowHighRes=false).
     // Cap idle concurrency so a PDF book cannot starve the viewport.
     const int freeSlots =
         kMaxConcurrentGalleryDecodes - m_galleryDecodeScheduled.size();

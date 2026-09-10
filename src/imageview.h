@@ -928,7 +928,7 @@ private:
     void updateGalleryDecodeWindow();
     void scheduleGalleryDecode(const QString &path);
     /** Ladder step for item cell size in device pixels. */
-    int galleryDisplayEdgeForItem(const ImageItem *item) const;
+    int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
     ImageItem *primaryItem() const;
     QList<ImageItem *> transformTargets() const;
     /** Apply session crop from @p state to a freshly decoded item (no-op if none). */

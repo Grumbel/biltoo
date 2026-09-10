@@ -252,27 +252,28 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 }
 
 
-int ImageView::galleryDisplayEdgeForItem(const ImageItem *item) const
+int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const
 {
-    // Soft Gallery previews only — never request full-page / 2k+ ladder steps
-    // for every tile (that saturates thumtoo and leaves the overview on the
-    // first small level for a long time). Image mode still does a full load.
+    // Policy:
+    //   • Always keep a low-res soft thumb (≤ kGalleryLadderEdge / 512).
+    //   • Steps above 512 are on-demand only when the tile is visible and
+    //     allowHighRes is true (zoomed inspection).
+    //   • Full native remains Image mode.
     if (!item) {
         return ThumtooCache::kGalleryLadderEdge;
     }
     const QRectF br = item->contentSceneRect();
     if (br.isEmpty()) {
-        return ThumtooCache::kGalleryLadderEdge;
+        return ThumtooCache::kFilmstripLadderEdge; // smallest useful soft step
     }
     const QPointF a = mapFromScene(br.topLeft());
     const QPointF b = mapFromScene(br.bottomRight());
     const qreal longPx =
         qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
     const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
-    // Soft gallery may climb the ladder with zoom: 128 → 256 → 512 → 1024.
-    // Cap at kImageLadderEdge (1024), not the old fixed 512 overview tip.
-    // Full native still remains Image mode only.
-    return qMin(need, ThumtooCache::kImageLadderEdge);
+    const int cap = allowHighRes ? ThumtooCache::kImageLadderEdge
+                                 : ThumtooCache::kGalleryLadderEdge;
+    return qMin(need, cap);
 }
 
 void ImageView::scheduleGalleryDecode(const QString &path)
@@ -301,8 +302,13 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         m_galleryAwaitLadder.remove(path);
     }
     // Need decode or a higher ladder step than the current preview.
+    // High-res (>512) only if at least one tile for this path is on-screen.
     bool needsPixels = false;
-    int previewEdge = ThumtooCache::kGalleryLadderEdge;
+    int previewEdge = ThumtooCache::kFilmstripLadderEdge;
+    const QRect viewRect = viewport()->rect().adjusted(
+        -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
+        kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
+    const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path) {
             continue;
@@ -310,7 +316,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         if (item->hasDecodedPixels()) {
             continue;
         }
-        previewEdge = galleryDisplayEdgeForItem(item);
+        const QRectF tile = item->contentSceneRect();
+        const bool visible =
+            !tile.isNull() && tile.isValid() && sceneVisible.intersects(tile);
+        previewEdge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/visible);
         const int have = item->displayPixelLongEdge();
         if (have <= 0 || have < previewEdge) {
             needsPixels = true;
