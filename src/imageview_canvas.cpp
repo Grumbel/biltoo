@@ -483,19 +483,13 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // the stack (filesDropped → handleDroppedUrls); re-entrant status/selection
     // updates were tripping Qt "destructor may have already run" asserts.
     {
+        // Workspace scene units are image pixels at scale 1. Use the real
+        // layout size so the placeholder footprint matches the decoded item
+        // (no jump when full pixels arrive).
         QSize sz(512, 512);
         const QSize cached = imageSizeForPath(path);
         if (cached.isValid() && cached.width() > 1 && cached.height() > 1) {
-            // Cap placeholder footprint so an unpainted native-size tile does
-            // not dominate the scene before pixels arrive.
-            const int longEdge = qMax(cached.width(), cached.height());
-            if (longEdge > 1024) {
-                const qreal f = 1024.0 / qreal(longEdge);
-                sz = QSize(qMax(1, int(cached.width() * f)),
-                           qMax(1, int(cached.height() * f)));
-            } else {
-                sz = cached;
-            }
+            sz = cached;
         }
         ImageItem *ph = new ImageItem(path, sz);
         ph->setPos(scenePos);

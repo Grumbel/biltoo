@@ -1000,11 +1000,28 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         ++have;
         if (!existing->hasDecodedPixels()) {
             const QSize before = existing->imageSize();
+            const qreal sx0 = existing->itemScaleX();
+            const qreal sy0 = existing->itemScaleY() > 0.0 ? existing->itemScaleY()
+                                                           : sx0;
+            const qreal footW = before.width() * sx0;
+            const qreal footH = before.height() * sy0;
             existing->setSourceImage(image);
             applyStoredAppearance(existing);
             const QSize after = existing->imageSize();
-            if (before.isValid() && after.isValid()
-                && (before.width() != after.width() || before.height() != after.height())) {
+            // Keep scene footprint stable when intrinsic grows (placeholder →
+            // full). Workspace is pixel-scaled: if the placeholder already had
+            // the native size, after==before and scale stays 1.
+            if (isWorkspaceMode() && m_layoutMode == LayoutMode::FreeForm
+                && before.isValid() && after.isValid()
+                && after.width() > 0 && after.height() > 0
+                && (before.width() != after.width()
+                    || before.height() != after.height())) {
+                existing->setItemScale(footW / qreal(after.width()),
+                                       footH / qreal(after.height()));
+                sizeChanged = true;
+            } else if (before.isValid() && after.isValid()
+                       && (before.width() != after.width()
+                           || before.height() != after.height())) {
                 sizeChanged = true;
             } else {
                 existing->update();
