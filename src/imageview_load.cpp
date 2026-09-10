@@ -276,154 +276,175 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
     return qMin(need, cap);
 }
 
+int ImageView::gallerySoftInflightCount() const
+{
+    int n = 0;
+    for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
+        if (it.value().inflight > 0) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+void ImageView::gallerySoftResetPath(const QString &path)
+{
+    m_gallerySoft.remove(path);
+}
+
+void ImageView::gallerySoftResetAll()
+{
+    m_gallerySoft.clear();
+}
+
+int ImageView::galleryWantEdgeForPath(const QString &path,
+                                      const QRectF &sceneVisible) const
+{
+    int want = ThumtooCache::kFilmstripLadderEdge;
+    bool anyVisible = false;
+    for (ImageItem *item : m_items) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        const QRectF tile = item->contentSceneRect();
+        if (tile.isNull() || !tile.isValid()) {
+            continue;
+        }
+        const bool visible = sceneVisible.intersects(tile);
+        const int edge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/visible);
+        want = qMax(want, edge);
+        anyVisible = anyVisible || visible;
+    }
+    if (!anyVisible) {
+        // Idle / off-screen: placeholder band only.
+        want = qMin(want, ThumtooCache::kGalleryLadderEdge);
+    }
+    return want;
+}
+
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
-    if (!isGalleryMode()) {
+    if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    if (path.isEmpty() || m_galleryDecodeFailed.contains(path)
-        || m_galleryDecodeScheduled.contains(path)) {
+    GallerySoftState &st = m_gallerySoft[path];
+    if (st.failed || st.inflight > 0) {
         return;
     }
-    // Soft-miss await: only skip if we still have no pixels (keep single in-flight
-    // ladder wait). Once a preview exists, updateGalleryDecodeWindow may clear
-    // await and request a higher edge.
-    if (m_galleryAwaitLadder.contains(path)) {
-        bool anyPreview = false;
-        for (ImageItem *item : m_items) {
-            if (item && item->path() == path && item->hasDisplayPixels()) {
-                anyPreview = true;
-                break;
-            }
-        }
-        if (!anyPreview) {
-            return;
-        }
-        m_galleryAwaitLadder.remove(path);
-    }
-    // Need decode or a higher ladder step than the current preview.
-    // High-res (>512) only if at least one tile for this path is on-screen.
-    bool needsPixels = false;
-    int previewEdge = ThumtooCache::kFilmstripLadderEdge;
+
     const QRect viewRect = viewport()->rect().adjusted(
         -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
         kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
     const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
+
+    int have = 0;
+    bool anyFull = false;
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path) {
             continue;
         }
         if (item->hasDecodedPixels()) {
-            continue;
+            anyFull = true;
         }
-        const QRectF tile = item->contentSceneRect();
-        const bool visible =
-            !tile.isNull() && tile.isValid() && sceneVisible.intersects(tile);
-        previewEdge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/visible);
-        const int have = item->displayPixelLongEdge();
-        if (have <= 0 || have < previewEdge) {
-            needsPixels = true;
-            break;
-        }
+        have = qMax(have, item->displayPixelLongEdge());
     }
-    if (!needsPixels) {
+    st.have = have;
+    if (anyFull) {
         return;
     }
-    if (m_galleryDecodeScheduled.size() >= kMaxConcurrentGalleryDecodes) {
-        return; // caller (updateGalleryDecodeWindow) will retry after a slot frees
+
+    const int want = galleryWantEdgeForPath(path, sceneVisible);
+    st.want = want;
+    if (have >= want) {
+        return;
     }
-    m_galleryDecodeScheduled.insert(path);
+    if (st.gaveUpWant >= want && have > 0) {
+        return;
+    }
+    if (gallerySoftInflightCount() >= kMaxConcurrentGalleryDecodes) {
+        return;
+    }
+
+    st.inflight = want;
     addPendingWorkspacePath(path);
     emit statusChanged();
 
-    if (const char *e = std::getenv("THUMTOO_DEBUG");
-        e && e[0] != '\0' && e[0] != '0') {
-        int haveLog = 0;
-        int att = m_galleryLadderAttemptedEdge.value(path, 0);
-        for (ImageItem *it : m_items) {
-            if (it && it->path() == path) {
-                haveLog = it->displayPixelLongEdge();
-                break;
-            }
-        }
+    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+        dbg && dbg[0] != '\0' && dbg[0] != '0') {
         fprintf(stderr,
-                "biltoo/gallery: scheduleDecode path need=%d have=%d attempted=%d\n",
-                previewEdge, haveLog, att);
+                "biltoo/gallery: soft request path need=%d have=%d gaveUp=%d\n",
+                want, have, st.gaveUpWant);
     }
 
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
-    QThreadPool::globalInstance()->start([guard, path, gen, previewEdge]() {
-        // Soft ladder decode only — never ImageLoader::load() full native.
-        {
-            const char *dbg = std::getenv("THUMTOO_DEBUG");
-            if (!(dbg && dbg[0] != '\0' && dbg[0] != '0')) {
-                dbg = std::getenv("BILTOO_THUMTOO_DEBUG");
-            }
-            if (dbg && dbg[0] != '\0' && dbg[0] != '0') {
-                fprintf(stderr, "biltoo/gallery: loadThumbnail path=%s edge=%d\n",
-                        qPrintable(path), previewEdge);
-            }
-        }
-        const QImage preview = ImageLoader::loadThumbnail(path, previewEdge);
+    const int requestEdge = want;
+    QThreadPool::globalInstance()->start([guard, path, gen, requestEdge]() {
+        // Soft only — loadThumbnail may schedulePixels once on miss; we never
+        // clear settle / re-queue the same edge in a loop.
+        const QImage preview = ImageLoader::loadThumbnail(path, requestEdge);
         if (!guard) {
             return;
         }
-        ImageView *view = guard.data();
-        if (!view) {
-            return;
-        }
-        QMetaObject::invokeMethod(view, [guard, path, preview, gen, previewEdge]() {
-            ImageView *const host = guard.data();
-            if (!host) {
-                return;
-            }
-            host->m_galleryDecodeScheduled.remove(path);
-            host->takePendingWorkspacePath(path);
-            // Finished one attempt at previewEdge unless we park on await.
-            auto markAttempted = [&]() {
-                host->m_galleryLadderAttemptedEdge.insert(
-                    path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                               previewEdge));
-            };
-            if (!preview.isNull()) {
-                host->m_galleryAwaitLadder.remove(path);
-                const int got = qMax(preview.width(), preview.height());
-                host->onImagePreviewLoaded(path, preview, gen,
-                                           static_cast<int>(LoadAdd));
-                if (got >= previewEdge * 9 / 10) {
-                    // Good enough for this need.
-                    markAttempted();
-                } else if (ThumtooCache::isAvailable()) {
-                    // loadThumbnail already called schedulePixels for shortfall.
-                    // Only await if a NEW build was accepted; otherwise stop.
-                    const int want = ThumtooCache::ceilLadderEdge(previewEdge);
-                    if (ThumtooCache::schedulePixels(path, want)) {
-                        host->m_galleryAwaitLadder.insert(path);
-                        // Do not markAttempted yet — ladderReady will.
+        QMetaObject::invokeMethod(
+            guard.data(),
+            [guard, path, preview, gen, requestEdge]() {
+                ImageView *const host = guard.data();
+                if (!host) {
+                    return;
+                }
+                auto it = host->m_gallerySoft.find(path);
+                if (it == host->m_gallerySoft.end()) {
+                    host->takePendingWorkspacePath(path);
+                    return;
+                }
+                GallerySoftState &st = it.value();
+                // Superseded request?
+                if (st.inflight != requestEdge) {
+                    host->takePendingWorkspacePath(path);
+                    if (host->isGalleryMode()) {
+                        host->updateGalleryDecodeWindow();
+                    }
+                    return;
+                }
+                st.inflight = 0;
+                host->takePendingWorkspacePath(path);
+
+                if (!preview.isNull()) {
+                    const int got = qMax(preview.width(), preview.height());
+                    host->onImagePreviewLoaded(path, preview, gen,
+                                               static_cast<int>(LoadAdd));
+                    st.have = qMax(st.have, got);
+                    if (got >= requestEdge * 9 / 10) {
+                        // Satisfied this want.
+                        if (st.gaveUpWant <= requestEdge) {
+                            st.gaveUpWant = 0;
+                        }
                     } else {
-                        markAttempted();
+                        // Best effort for this want — do not retry until want grows.
+                        st.gaveUpWant = qMax(st.gaveUpWant, requestEdge);
+                    }
+                } else if (ThumtooCache::isAvailable()) {
+                    // Miss: one background build; wait for ladderReady.
+                    if (ThumtooCache::schedulePixels(path, requestEdge)) {
+                        st.inflight = requestEdge; // keep waiting
+                    } else {
+                        // Already settled / cannot build — give up this want.
+                        st.gaveUpWant = qMax(st.gaveUpWant, requestEdge);
+                        if (st.have <= 0) {
+                            st.failed = true;
+                        }
                     }
                 } else {
-                    markAttempted();
+                    st.failed = true;
                 }
-            } else if (ThumtooCache::isAvailable()) {
-                const int want = ThumtooCache::ceilLadderEdge(previewEdge);
-                if (ThumtooCache::schedulePixels(path, want)) {
-                    host->m_galleryAwaitLadder.insert(path);
-                } else {
-                    // Miss and no build accepted → failed this need.
-                    markAttempted();
+
+                if (host->isGalleryMode()) {
+                    host->updateGalleryDecodeWindow();
                 }
-            } else {
-                host->m_galleryDecodeFailed.insert(path);
-                markAttempted();
-            }
-            if (host->isGalleryMode()) {
-                host->updateGalleryDecodeWindow();
-            }
-            emit host->statusChanged();
-        }, Qt::QueuedConnection);
+                emit host->statusChanged();
+            },
+            Qt::QueuedConnection);
     });
 }
 
@@ -708,7 +729,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
     // Duplicate paths are separate session images: fill every undecoded live
     // occurrence, then create until live count matches pathOrder occurrences.
-    m_galleryDecodeScheduled.remove(path);
+    gallerySoftResetPath(path);
     // Mode leave / empty Workspace bumps generation and clears pending paths.
     // Reject superseded gallery window decodes so they cannot spawn tiles on
     // Workspace after the user switched modes mid-decode.
@@ -735,8 +756,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (ThumtooCache::isAvailable()
             && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
             ThumtooCache::scheduleProbe(path);
-            ThumtooCache::schedulePixels(path, ThumtooCache::kFilmstripLadderEdge);
-            m_galleryAwaitLadder.insert(path);
+            // Soft state machine will request placeholder / higher steps.
             m_lastLoadError.clear();
             emit statusChanged();
             if (isGalleryMode()) {
@@ -745,7 +765,11 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             return;
         }
         qWarning("ImageView: decode failed for %s", qPrintable(path));
-        m_galleryDecodeFailed.insert(path);
+        if (isGalleryMode()) {
+            GallerySoftState &st = m_gallerySoft[path];
+            st.failed = true;
+            st.inflight = 0;
+        }
         m_lastLoadError = path;
         // Surface the error on any live placeholder for this path.
         for (ImageItem *item : m_items) {

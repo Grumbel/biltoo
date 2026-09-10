@@ -98,8 +98,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     }
 
     for (ImageItem *item : doomed) {
-        m_galleryDecodeScheduled.remove(item->path());
-        m_galleryDecodeFailed.remove(item->path());
+        gallerySoftResetPath(item->path());
         m_pendingWorkspacePaths.remove(item->path());
         destroyCanvasItem(item);
     }
@@ -165,9 +164,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
                     existing->clearDecodedPixels();
-                    m_galleryDecodeScheduled.remove(path);
+                    gallerySoftResetPath(path);
                     takePendingWorkspacePath(path);
-                    m_galleryDecodeFailed.remove(path);
+                    
                     PendingSessionBind b;
                     b.path = path;
                     b.id = sid;
@@ -287,8 +286,7 @@ void ImageView::removeWorkspacePath(const QString &path)
     }
     takePendingWorkspacePath(path);
     m_pendingScenePos.remove(path);
-    m_galleryDecodeScheduled.remove(path);
-    m_galleryDecodeFailed.remove(path);
+        gallerySoftResetPath(path);
     destroyCanvasItem(item);
     emit statusChanged();
     emit workspacePathsChanged();

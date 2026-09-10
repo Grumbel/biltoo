@@ -1301,23 +1301,29 @@ private:
     std::atomic<quint64> m_loadGeneration{0};
     /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
     QHash<QString, int> m_pendingWorkspacePaths;
-    /** Gallery virtualization: paths with an in-flight soft-decode pool job. */
-    QSet<QString> m_galleryDecodeScheduled;
-    /** Gallery: soft miss, waiting on thumtoo ladderReady (do not re-queue). */
-    QSet<QString> m_galleryAwaitLadder;
-    /** Paths that failed decode — do not spin forever on placeholders. */
-    QSet<QString> m_galleryDecodeFailed;
     /**
-     * Highest gallery soft *need* finished for a path (satisfied or given up).
-     * Only advance to the requested edge when delivery is ≥ ~90% of that edge
-     * or schedulePixels can no longer accept a build; never mark a high need
-     * satisfied when only a low-res thumb was installed (zoom upgrade stuck).
-     * Historical note: was advanced to the request edge on every ladderReady,
-     * only when the delivered level meets ~90% of the request or the attempt
-     * failed. Prevents schedulePixels/ladderReady CPU spin when thumtoo cannot
-     * grow the ladder further.
+     * Per-path Gallery soft-thumb state (see updateGalleryDecodeWindow).
+     *
+     * have      — long edge of soft pixels on the item (0 = none)
+     * want      — last computed target ladder step from visibility + zoom
+     * inflight  — edge currently requested (0 = idle); at most one per path
+     * gaveUpWant— highest want we finished without ~90% delivery; do not retry
+     *             the same want (stops schedulePixels/ladderReady storms)
+     * failed    — permanent hard failure
      */
-    QHash<QString, int> m_galleryLadderAttemptedEdge;
+    struct GallerySoftState {
+        int have = 0;
+        int want = 0;
+        int inflight = 0;
+        int gaveUpWant = 0;
+        bool failed = false;
+    };
+    QHash<QString, GallerySoftState> m_gallerySoft;
+
+    int gallerySoftInflightCount() const;
+    void gallerySoftResetPath(const QString &path);
+    void gallerySoftResetAll();
+    int galleryWantEdgeForPath(const QString &path, const QRectF &sceneVisible) const;
     static constexpr int kGalleryVirtualThreshold = 80;
     static constexpr int kGalleryDecodeOverscanPx = 400;
     static constexpr int kMaxConcurrentGalleryDecodes = 4;

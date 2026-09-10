@@ -81,70 +81,62 @@ ImageView::ImageView(QWidget *parent)
                 applyProbedImageSize(path, size);
             });
 
-    // Soft preview upgrade when thumtoo finishes a ladder level for a path.
+    // Soft preview: only finish GallerySoftState waits (no re-queue storms).
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int maxEdge) {
-                if (path.isEmpty()) {
+                if (path.isEmpty() || !isGalleryMode()) {
                     return;
                 }
-                const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;
+                auto it = m_gallerySoft.find(path);
+                if (it == m_gallerySoft.end() || it->inflight <= 0) {
+                    return;
+                }
+                const int edge = maxEdge > 0 ? maxEdge : it->inflight;
+                // Ignore completions for other edges while we wait on inflight.
+                if (edge < it->inflight && edge != it->inflight) {
+                    // Accept equal or larger builds for our request.
+                }
                 const QPointer<ImageView> guard(this);
-                QThreadPool::globalInstance()->start([guard, path, edge]() {
-                    const QImage preview = ImageLoader::loadThumbnail(path, edge);
-                    ImageView *const view = guard.data();
-                    if (!view) {
+                const int waitEdge = it->inflight;
+                QThreadPool::globalInstance()->start([guard, path, edge, waitEdge]() {
+                    const QImage preview = ImageLoader::loadThumbnail(path, waitEdge);
+                    if (!guard) {
                         return;
                     }
-                    QMetaObject::invokeMethod(view, [guard, path, preview, edge]() {
+                    QMetaObject::invokeMethod(guard.data(), [guard, path, preview, waitEdge]() {
                         ImageView *const host = guard.data();
                         if (!host) {
                             return;
                         }
-                        host->m_galleryAwaitLadder.remove(path);
-                        auto markAttempted = [&](int e) {
-                            host->m_galleryLadderAttemptedEdge.insert(
-                                path,
-                                qMax(host->m_galleryLadderAttemptedEdge.value(path, 0), e));
-                        };
-                        if (preview.isNull()) {
-                            // Empty delivery: do not treat `edge` as satisfied — only
-                            // block this need if we cannot re-queue a build.
-                            if (ThumtooCache::isAvailable()) {
-                                ThumtooCache::forgetPixelsSettled(path, edge);
-                                if (ThumtooCache::schedulePixels(path, edge)) {
-                                    host->m_galleryAwaitLadder.insert(path);
-                                } else {
-                                    markAttempted(edge);
-                                }
-                            } else {
-                                markAttempted(edge);
-                            }
-                            if (host->isGalleryMode()) {
-                                host->updateGalleryDecodeWindow();
-                            }
+                        auto it2 = host->m_gallerySoft.find(path);
+                        if (it2 == host->m_gallerySoft.end() || it2->inflight != waitEdge) {
                             return;
                         }
-                        const int got = qMax(preview.width(), preview.height());
-                        host->onImagePreviewLoaded(
-                            path, preview, 0,
-                            static_cast<int>(ImageView::LoadAdd));
-                        if (got >= edge * 9 / 10) {
-                            markAttempted(edge);
-                        } else if (ThumtooCache::isAvailable()) {
-                            // Under-delivery for this need: allow one more build
-                            // (clear settle) so zoom upgrades are not stuck on 512.
-                            ThumtooCache::forgetPixelsSettled(path, edge);
-                            if (ThumtooCache::schedulePixels(path, edge)) {
-                                host->m_galleryAwaitLadder.insert(path);
+                        GallerySoftState &st = it2.value();
+                        st.inflight = 0;
+                        if (!preview.isNull()) {
+                            const int got = qMax(preview.width(), preview.height());
+                            host->onImagePreviewLoaded(
+                                path, preview, 0,
+                                static_cast<int>(ImageView::LoadAdd));
+                            st.have = qMax(st.have, got);
+                            if (got >= waitEdge * 9 / 10) {
+                                if (st.gaveUpWant <= waitEdge) {
+                                    st.gaveUpWant = 0;
+                                }
                             } else {
-                                markAttempted(edge);
+                                st.gaveUpWant = qMax(st.gaveUpWant, waitEdge);
                             }
                         } else {
-                            markAttempted(qMax(got, 1));
+                            st.gaveUpWant = qMax(st.gaveUpWant, waitEdge);
+                            if (st.have <= 0) {
+                                st.failed = true;
+                            }
                         }
                         if (host->isGalleryMode()) {
                             host->updateGalleryDecodeWindow();
                         }
+                        emit host->statusChanged();
                     }, Qt::QueuedConnection);
                 });
             });
@@ -271,10 +263,7 @@ ImageView::~ImageView()
         m_scene->clear();
         m_items.clear();
         m_pendingWorkspacePaths.clear();
-        m_galleryDecodeScheduled.clear();
-        m_galleryAwaitLadder.clear();
-    m_galleryLadderAttemptedEdge.clear();
-        m_galleryDecodeFailed.clear();
+        gallerySoftResetAll();
         setScene(nullptr);
         delete m_scene;
         m_scene = nullptr;
@@ -464,7 +453,7 @@ void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
 
 int ImageView::pendingDecodeCount() const
 {
-    // m_galleryDecodeScheduled ⊆ m_pendingWorkspacePaths for gallery window loads;
+    // gallery soft inflight ⊆ m_pendingWorkspacePaths for gallery window loads;
     // do not double-count.
     {
         int pendingAdds = 0;

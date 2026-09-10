@@ -49,10 +49,8 @@ void ImageView::invalidateGalleryDecodes()
     // Drop scheduled markers and pending path counts so late LoadAdd results
     // cannot create tiles after leaving Gallery. Bump generation so in-flight
     // pool jobs are rejected in onImageLoaded.
-    m_galleryDecodeScheduled.clear();
-    m_galleryAwaitLadder.clear();
-    m_galleryLadderAttemptedEdge.clear();
-    m_pendingWorkspacePaths.clear();
+    gallerySoftResetAll();
+m_pendingWorkspacePaths.clear();
     ++m_loadGeneration;
 }
 
@@ -200,11 +198,8 @@ void ImageView::clearWorkspace()
     m_pendingSessionBinds.clear();
     m_pendingSessionIndexByPath.clear();
     m_pendingSelectSessionIds.clear();
-    m_galleryDecodeScheduled.clear();
-    m_galleryAwaitLadder.clear();
-    m_galleryLadderAttemptedEdge.clear();
-    m_galleryDecodeFailed.clear();
-    m_imageSizeByPath.clear();
+    gallerySoftResetAll();
+m_imageSizeByPath.clear();
     m_sizeProbeScheduled.clear();
     m_previewByPath.clear();
     ImageCache::clear();

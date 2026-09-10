@@ -13,87 +13,92 @@
 
 void ImageView::updateGalleryDecodeWindow()
 {
+    // -------------------------------------------------------------------------
+    // Gallery soft-thumb algorithm (viewport inspection)
+    //
+    // Zoom: Ctrl+wheel / toolbar scales the *view transform*. Pack cell size in
+    // scene space is unchanged; on-screen pixel size grows with zoom × DPR.
+    //
+    // Per path (GallerySoftState):
+    //   1. Placeholder — always want at least kFilmstripLadderEdge (256) so a
+    //      tile is never blank once soft data exists; idle tiles cap at
+    //      kGalleryLadderEdge (512).
+    //   2. want — for a *visible* tile: ceilLadder(on-screen long edge),
+    //      capped at kImageLadderEdge (2048). Off-screen: placeholder only.
+    //   3. If have >= want → idle (show whatever we have; sharper wins).
+    //   4. If inflight != 0 → wait (exactly one request per path).
+    //   5. If failed → stop.
+    //   6. If gaveUpWant >= want && have > 0 → stop (thumtoo will not grow).
+    //   7. Else request want once; on completion install if better; if delivery
+    //      < ~90% of want set gaveUpWant=want (no retry storm). Never
+    //      forgetPixelsSettled / re-queue the same want in a loop.
+    //
+    // Rendering always uses the best installed soft pixels; Image mode still
+    // does full native decode separately.
+    // -------------------------------------------------------------------------
     if (!isGalleryMode() || m_items.isEmpty()) {
         return;
     }
 
-    // Visible-first, then a small idle budget for off-screen tiles. Never
-    // treat null geometry as visible (that used to queue the entire session
-    // before pack). Never unload decoded tiles.
-    QStringList visible;
-    QStringList rest;
     const QRect viewRect = viewport()->rect().adjusted(
         -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
         kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
     const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
 
-    // Gallery soft-decode state machine (per path):
-    //
-    //   Soft band (≤512): keep a low-res thumb available (visible or idle).
-    //   High band (>512): only when the tile is visible (on-demand zoom).
-    //
-    //   need      = ladder step for cell size, capped by soft/high policy
-    //   have      = long edge of pixels on the item (0 = placeholder)
-    //   attempted = highest need we already finished trying
-    //   scheduled / await = in-flight guards
-    //
-    //   Work only if have < need AND attempted < need (one try per need).
-    auto needsDecodeOrUpgrade = [this, &sceneVisible](ImageItem *item) -> bool {
-        if (!item) {
-            return false;
-        }
-        const QString &path = item->path();
-        if (path.isEmpty() || m_galleryDecodeFailed.contains(path)
-            || m_galleryDecodeScheduled.contains(path)) {
-            return false;
-        }
-        if (m_galleryAwaitLadder.contains(path)) {
-            return false;
-        }
-        if (item->hasDecodedPixels()) {
-            return false;
-        }
-        const QRectF tile = item->contentSceneRect();
-        const bool visible =
-            !tile.isNull() && tile.isValid() && sceneVisible.intersects(tile);
-        const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/visible);
-        const int have = item->displayPixelLongEdge();
-        if (have >= need) {
-            return false;
-        }
-        if (m_galleryLadderAttemptedEdge.value(path, 0) >= need) {
-            return false;
-        }
-        return true;
-    };
+    QStringList visible;
+    QStringList rest;
+    QSet<QString> seen;
 
     for (ImageItem *item : m_items) {
-        if (!needsDecodeOrUpgrade(item)) {
+        if (!item) {
             continue;
         }
+        const QString &path = item->path();
+        if (path.isEmpty() || seen.contains(path)) {
+            continue;
+        }
+        seen.insert(path);
+
+        GallerySoftState &st = m_gallerySoft[path];
+        if (st.failed || st.inflight > 0) {
+            continue;
+        }
+
+        // Sync have from the item (preview or full).
+        st.have = item->displayPixelLongEdge();
+        if (item->hasDecodedPixels()) {
+            // Full decode already on the item — soft ladder not needed.
+            st.have = qMax(st.have, item->displayPixelLongEdge());
+            continue;
+        }
+
         const QRectF tile = item->contentSceneRect();
-        // No scene footprint yet (pre-pack): skip until layout assigns cells.
         if (tile.isNull() || !tile.isValid()) {
+            continue; // pre-pack
+        }
+
+        const int want = galleryWantEdgeForPath(path, sceneVisible);
+        st.want = want;
+        if (st.have >= want) {
             continue;
         }
+        if (st.gaveUpWant >= want && st.have > 0) {
+            continue;
+        }
+
         if (tile.intersects(sceneVisible)) {
-            visible.append(item->path());
+            visible.append(path);
         } else {
-            rest.append(item->path());
+            rest.append(path);
         }
     }
 
-    // Visible tiles first. Do *not* clear m_galleryAwaitLadder here — that
-    // forced re-schedule of every visible path on every decode-window pass and
-    // pegged the CPU while ladder builds were still in flight.
     for (const QString &path : visible) {
         scheduleGalleryDecode(path);
     }
 
-    // Background: fill off-screen soft thumbs only (≤512 via allowHighRes=false).
-    // Cap idle concurrency so a PDF book cannot starve the viewport.
     const int freeSlots =
-        kMaxConcurrentGalleryDecodes - m_galleryDecodeScheduled.size();
+        kMaxConcurrentGalleryDecodes - gallerySoftInflightCount();
     if (freeSlots > 0 && !rest.isEmpty()) {
         const int idleBudget = qMin(freeSlots, kMaxIdleGalleryDecodes);
         int started = 0;
@@ -101,15 +106,13 @@ void ImageView::updateGalleryDecodeWindow()
             if (started >= idleBudget) {
                 break;
             }
-            const int before = m_galleryDecodeScheduled.size();
+            const int before = gallerySoftInflightCount();
             scheduleGalleryDecode(path);
-            if (m_galleryDecodeScheduled.size() > before) {
+            if (gallerySoftInflightCount() > before) {
                 ++started;
             }
         }
     }
-    // Do not emit statusChanged unconditionally — this runs on every scroll tick
-    // and was driving full MainWindow::updateStatus work while decodes idle.
 }
 
 void ImageView::setLayoutMode(LayoutMode mode)
@@ -226,10 +229,9 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
         if (path.isEmpty()) {
             continue;
         }
-        m_galleryDecodeFailed.remove(path);
-        m_galleryDecodeScheduled.remove(path);
-        m_galleryLadderAttemptedEdge.remove(path);
-        m_galleryAwaitLadder.remove(path);
+        gallerySoftResetPath(path);
+        
+        
         takePendingWorkspacePath(path);
         item->clearDecodedPixels();
         PendingSessionBind b;
