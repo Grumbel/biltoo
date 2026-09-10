@@ -874,6 +874,29 @@ QImage load(const QString &path)
 #endif
 }
 
+QImage loadThumbnailFromBytes(const QByteArray &bytes, int maxEdge)
+{
+    if (bytes.isEmpty()) {
+        return {};
+    }
+#ifdef BILTOO_HAVE_VIPS
+    QImage decoded = loadWithVipsBuffer(bytes, maxEdge);
+    if (!decoded.isNull()) {
+        return decoded;
+    }
+#endif
+    QImage qt;
+    if (qt.loadFromData(bytes)) {
+        if (maxEdge > 0
+            && (qt.width() > maxEdge || qt.height() > maxEdge)) {
+            return qt.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
+                             Qt::SmoothTransformation);
+        }
+        return qt;
+    }
+    return {};
+}
+
 QImage loadThumbnail(const QString &path, int maxEdge)
 {
     if (maxEdge <= 0) {

@@ -73,6 +73,8 @@ QImage load(const QString &path);
  * Aspect ratio is preserved (not square-cropped).
  */
 QImage loadThumbnail(const QString &path, int maxEdge);
+/** Decode ladder/blob bytes (JXL etc.); maxEdge 0 = native decode. */
+QImage loadThumbnailFromBytes(const QByteArray &bytes, int maxEdge);
 
 /**
  * Thin wrappers around ImageCache (shared process-wide path → image store).

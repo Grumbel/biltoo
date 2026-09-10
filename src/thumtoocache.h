@@ -31,7 +31,7 @@ signals:
     /** Native size known for session path (may still lack ladder pixels). */
     void sizeReady(const QString &path, const QSize &size);
     /** Ladder level available; UI should reload soft preview for path. */
-    void ladderReady(const QString &path, int maxEdge);
+    void ladderReady(const QString &path, int maxEdge, const QImage &image);
 };
 
 /** Process-wide notifier (created on first use). */

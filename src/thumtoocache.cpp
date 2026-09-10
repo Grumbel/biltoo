@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumtoocache.h"
+#include "imageloader.h"
 
 #include "archivepath.h"
 #include "pagepath.h"
@@ -721,24 +722,42 @@ void startNextPixelJobsUnlocked()
             uri, edge,
             [pathCopy, edge, inflightKey](std::string, int,
                                           std::optional<thumtoo::PixelLevel> px) {
+                QImage decoded;
+                int pxW = 0;
+                int pxH = 0;
+                if (px && !px->bytes.empty()) {
+                    pxW = px->width;
+                    pxH = px->height;
+                    const QByteArray ba(
+                        reinterpret_cast<const char *>(px->bytes.data()),
+                        int(px->bytes.size()));
+                    // Decode the payload we actually received — do not re-query
+                    // get_pixels (can still see an older smaller level).
+                    decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
+                }
                 {
                     std::lock_guard lock(g_mu);
                     g_pixelsInflight.remove(inflightKey);
-                    // Settle only successful builds. Empty/fail may retry later
-                    // (e.g. after probe) without blocking a higher edge.
-                    const bool ok = px && !px->bytes.empty();
+                    // Settle only when pixels meet ~90% of the requested edge.
+                    const int got = decoded.isNull()
+                                        ? 0
+                                        : qMax(decoded.width(), decoded.height());
+                    const bool ok = got >= (edge * 9) / 10;
                     if (ok) {
                         g_pixelsSettled.insert(inflightKey);
                     }
                     g_pixelsActive = qMax(0, g_pixelsActive - 1);
                     if (thumtooDebugEnabled()) {
-                        thumtooDbg("request_pixels DONE path=%s edge=%d ok=%d active=%d queued=%zu",
-                                   qPrintable(pathCopy), edge, ok ? 1 : 0,
-                                   g_pixelsActive, g_pixelsQueue.size());
+                        thumtooDbg(
+                            "request_pixels DONE path=%s edge=%d ok=%d "
+                            "level=%dx%d decoded=%dx%d active=%d queued=%zu",
+                            qPrintable(pathCopy), edge, ok ? 1 : 0, pxW, pxH,
+                            decoded.width(), decoded.height(), g_pixelsActive,
+                            g_pixelsQueue.size());
                     }
                     startNextPixelJobsUnlocked();
                 }
-                emit bridge()->ladderReady(pathCopy, edge);
+                emit bridge()->ladderReady(pathCopy, edge, decoded);
             });
     }
 }

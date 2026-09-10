@@ -83,19 +83,18 @@ ImageView::ImageView(QWidget *parent)
 
     // Soft preview: install better ladder pixels; clear inflight when matched.
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
-            [this](const QString &path, int maxEdge) {
+            [this](const QString &path, int maxEdge, const QImage &image) {
                 if (path.isEmpty() || !isGalleryMode()) {
                     return;
                 }
                 const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;
+                // Prefer the decoded payload from request_pixels; fall back to cache.
+                QImage preview = image;
+                if (preview.isNull()) {
+                    preview = ImageLoader::loadThumbnail(path, edge);
+                }
                 const QPointer<ImageView> guard(this);
-                QThreadPool::globalInstance()->start([guard, path, edge]() {
-                    // Prefer exact edge; loadThumbnail returns best ≤ edge from cache.
-                    const QImage preview = ImageLoader::loadThumbnail(path, edge);
-                    if (!guard) {
-                        return;
-                    }
-                    QMetaObject::invokeMethod(guard.data(), [guard, path, preview, edge]() {
+                QMetaObject::invokeMethod(guard.data(), [guard, path, preview, edge]() {
                         ImageView *const host = guard.data();
                         if (!host || !host->isGalleryMode()) {
                             return;
@@ -137,7 +136,6 @@ ImageView::ImageView(QWidget *parent)
                         host->updateGalleryDecodeWindow();
                         emit host->statusChanged();
                     }, Qt::QueuedConnection);
-                });
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {

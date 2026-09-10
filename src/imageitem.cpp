@@ -154,6 +154,11 @@ void ImageItem::setPreviewImage(const QImage &preview)
     m_previewPixels = true;
     m_source = QImage();
     setPixmap(QPixmap());
+    // DeviceCoordinateCache keeps a blit of the previous paint; force rebuild.
+    if (cacheMode() == QGraphicsItem::DeviceCoordinateCache) {
+        setCacheMode(QGraphicsItem::NoCache);
+        setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    }
     // Intrinsic size is layout geometry (probe / full native size). Never adopt
     // the thumbnail's pixel dimensions for Gallery packs when size is known.
     // Seed or replace only the neutral 1000² / 1024² stand-in so Image-mode

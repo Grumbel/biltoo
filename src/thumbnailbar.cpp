@@ -331,7 +331,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
 
     // When thumtoo finishes a ladder level mid-session, refresh matching cells.
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
-            [this](const QString &path, int /*maxEdge*/) {
+            [this](const QString &path, int /*maxEdge*/, const QImage &) {
                 if (path.isEmpty() || m_files.isEmpty()) {
                     return;
                 }
