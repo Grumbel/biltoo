@@ -373,22 +373,22 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     // //page: / files). Soft ladder stays ≤ kGalleryLadderEdge.
     if (anyVisible && want > ThumtooCache::kGalleryLadderEdge) {
         st.fullInflight = true;
-        addPendingWorkspacePath(path);
-        const quint64 gen = m_loadGeneration.load();
+        // Do NOT use pending-workspace / onImageLoaded(LoadAdd): soft completion
+        // can takePending and drop the full result, and LoadAdd may relayout.
         const QPointer<ImageView> guard(this);
         if (ThumtooCache::debugTracingEnabled()) {
             qWarning("biltoo/gallery: full decode path need=%d have=%d", want, have);
         }
-        QThreadPool::globalInstance()->start([guard, path, gen]() {
+        QThreadPool::globalInstance()->start([guard, path]() {
             const QImage image = ImageLoader::load(path);
             if (!guard) {
                 return;
             }
             QMetaObject::invokeMethod(
                 guard.data(),
-                [guard, path, image, gen]() {
+                [guard, path, image]() {
                     ImageView *const host = guard.data();
-                    if (!host) {
+                    if (!host || !host->isGalleryMode()) {
                         return;
                     }
                     auto it = host->m_gallerySoft.find(path);
@@ -397,17 +397,35 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     }
                     if (image.isNull()) {
                         if (it != host->m_gallerySoft.end()) {
-                            // Keep soft preview; do not loop full decode.
                             it->gaveUpWant = qMax(it->gaveUpWant, it->want);
                         }
-                        host->takePendingWorkspacePath(path);
-                        if (host->isGalleryMode()) {
-                            host->updateGalleryDecodeWindow();
-                        }
+                        host->updateGalleryDecodeWindow();
                         return;
                     }
-                    host->onImageLoaded(path, image, gen,
-                                        static_cast<int>(LoadAdd));
+                    // Upgrade existing soft tiles in place — keep layout geometry.
+                    int got = 0;
+                    for (ImageItem *item : host->m_items) {
+                        if (!item || item->path() != path) {
+                            continue;
+                        }
+                        if (item->hasDecodedPixels()) {
+                            got = qMax(got, item->displayPixelLongEdge());
+                            continue;
+                        }
+                        item->setSourceImage(image);
+                        // Do not applyLayout: intrinsic size should already be
+                        // native from the size probe; only pixels upgraded.
+                        item->update();
+                        got = qMax(got, item->displayPixelLongEdge());
+                    }
+                    if (it != host->m_gallerySoft.end()) {
+                        it->have = qMax(it->have, got);
+                        if (got >= it->want * 9 / 10) {
+                            it->gaveUpWant = 0;
+                        }
+                    }
+                    emit host->statusChanged();
+                    host->updateGalleryDecodeWindow();
                 },
                 Qt::QueuedConnection);
         });

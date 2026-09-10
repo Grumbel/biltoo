@@ -70,3 +70,12 @@ Visible paths first; small idle budget for off-screen soft placeholders.
 
 `THUMTOO_DEBUG=1`: soft requests log `soft request path need=… have=…`; full
 decode logs `full decode path need=… have=…`.
+
+
+## Pitfalls fixed
+
+- Full upgrade must **not** go through `onImageLoaded(LoadAdd)` / pending paths:
+  soft completion can `takePending` and drop the full image.
+- Soft preview must **not** write intrinsic layout size (avoids zoom/pack jump
+  when full pixels arrive at native dimensions).
+- `schedulePixels` after page rasterize is clamped to soft max (512), not native.

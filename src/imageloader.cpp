@@ -204,7 +204,9 @@ QImage loadPageRef(const QString &path, int maxEdge)
     if (ThumtooCache::isAvailable()) {
         QImage img = ThumtooCache::rasterizePageRef(path, edge);
         if (!img.isNull()) {
-            ThumtooCache::schedulePixels(path, qMin(edge, 2048));
+            // Soft ladder only — do not schedulePixels at native edge (1584…).
+            ThumtooCache::schedulePixels(
+                path, qMin(edge, ThumtooCache::kGalleryLadderEdge));
             return scaleToMaxEdge(img, maxEdge);
         }
         ThumtooCache::schedulePixels(path, edge);
