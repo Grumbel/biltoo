@@ -340,20 +340,19 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             if (!preview.isNull()) {
                 host->m_galleryAwaitLadder.remove(path);
                 const int got = qMax(preview.width(), preview.height());
-                // Record what we actually have. If still short of the request,
-                // loadThumbnail already schedulePixels'd the higher step — await
-                // ladderReady instead of treating the request as settled.
                 if (got >= previewEdge * 9 / 10) {
                     host->m_galleryLadderAttemptedEdge.insert(
                         path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
                                    previewEdge));
+                } else if (ThumtooCache::isAvailable()) {
+                    // loadThumbnail already schedulePixels'd the higher step —
+                    // await ladderReady; do not record a short 'got' as settled
+                    // or we re-enter the schedule loop for the same need.
+                    host->m_galleryAwaitLadder.insert(path);
                 } else {
                     host->m_galleryLadderAttemptedEdge.insert(
                         path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                   got));
-                    if (ThumtooCache::isAvailable()) {
-                        host->m_galleryAwaitLadder.insert(path);
-                    }
+                                   previewEdge));
                 }
                 host->onImagePreviewLoaded(path, preview, gen,
                                            static_cast<int>(LoadAdd));

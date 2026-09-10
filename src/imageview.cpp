@@ -101,27 +101,18 @@ ImageView::ImageView(QWidget *parent)
                             return;
                         }
                         host->m_galleryAwaitLadder.remove(path);
+                        // Always settle the *requested* edge for this ladderReady.
+                        // Recording only the delivered size (when short) caused
+                        // updateGalleryDecodeWindow to re-schedule the same need
+                        // forever → 100% CPU.
+                        host->m_galleryLadderAttemptedEdge.insert(
+                            path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
+                                       edge));
                         if (preview.isNull()) {
-                            // Request finished with nothing decodable — settle this edge.
-                            host->m_galleryLadderAttemptedEdge.insert(
-                                path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                           edge));
                             if (host->isGalleryMode()) {
                                 host->updateGalleryDecodeWindow();
                             }
                             return;
-                        }
-                        const int got = qMax(preview.width(), preview.height());
-                        if (got >= edge * 9 / 10) {
-                            host->m_galleryLadderAttemptedEdge.insert(
-                                path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                           edge));
-                        } else {
-                            // Still short: remember delivered size; higher step may
-                            // still be building (loadThumbnail schedules it).
-                            host->m_galleryLadderAttemptedEdge.insert(
-                                path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                           got));
                         }
                         // LoadAdd: refresh gallery/workspace/image tiles that still
                         // show placeholders; do not fight a completed full decode.

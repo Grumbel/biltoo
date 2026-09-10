@@ -27,8 +27,11 @@ class ThumbnailDelegate : public QStyledItemDelegate
 public:
     static constexpr int kLabelGap = 2;
     static constexpr int kCellPadX = 2;
-    /** Space above the icon so thumbs are not flush with the strip edge. */
+    /** Space above/below the icon so thumbs are not flush with the strip edge. */
     static constexpr int kCellPadTop = 6;
+    static constexpr int kCellPadBottom = 6;
+    /** Tighter bottom gap when captions are hidden. */
+    static constexpr int kCellPadBottomCompact = 2;
 
     explicit ThumbnailDelegate(int thumbSize, QObject *parent = nullptr);
 
@@ -51,6 +54,8 @@ public:
     static int labelBandHeightForFont(const QFont &font);
 
 private:
+    int bottomPad() const;
+
     int m_thumbSize = 96;
     bool m_labelsVisible = true;
 };

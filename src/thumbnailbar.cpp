@@ -43,7 +43,7 @@
 // Layout model (single source of truth)
 //
 //   cell width  = thumbSize + 2 * kCellPadX
-//   cell height = kCellPadTop + thumbSize + labelBand
+//   cell height = kCellPadTop + thumbSize + bottomPad + labelBand
 //   labelBand   = QFontMetrics::height() + kLabelGap   (no style padding)
 //
 // Horizontal bar: thin axis is HEIGHT = cell height
@@ -77,10 +77,16 @@ void ThumbnailDelegate::setLabelsVisible(bool on)
     m_labelsVisible = on;
 }
 
+int ThumbnailDelegate::bottomPad() const
+{
+    return m_labelsVisible ? kCellPadBottom : kCellPadBottomCompact;
+}
+
 QSize ThumbnailDelegate::cellSize(const QFont &font) const
 {
     const int labelH = labelBandHeight(font);
-    return QSize(m_thumbSize + 2 * kCellPadX, kCellPadTop + m_thumbSize + labelH);
+    return QSize(m_thumbSize + 2 * kCellPadX,
+                 kCellPadTop + m_thumbSize + bottomPad() + labelH);
 }
 
 QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
@@ -110,9 +116,11 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QFontMetrics fm(option.font);
     const int labelBand = labelBandHeight(option.font);
-    // Icon must leave room for top pad + caption inside the allocated cell
+    // Icon must leave room for top/bottom pad + caption inside the allocated cell
+    const int botPad = bottomPad();
     const int iconSide = qBound(
-        1, qMin(m_thumbSize, cell.height() - labelBand - kCellPadTop), cell.width());
+        1, qMin(m_thumbSize, cell.height() - labelBand - kCellPadTop - botPad),
+        cell.width());
     const int iconX = cell.left() + (cell.width() - iconSide) / 2;
     const int iconY = cell.top() + kCellPadTop;
     const QRect iconRect(iconX, iconY, iconSide, iconSide);
@@ -336,8 +344,9 @@ int ThumbnailBar::labelBandHeight() const
 int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
     // Approximate for callers without a live widget (default app font).
-    // Horizontal-bar height ≈ top pad + thumb + label; used as a generic default.
+    // Horizontal-bar height ≈ pads + thumb + label; used as a generic default.
     return ThumbnailDelegate::kCellPadTop + thumbSize
+        + ThumbnailDelegate::kCellPadBottom
         + ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
 }
 
@@ -345,16 +354,19 @@ int ThumbnailBar::thumbSizeForExtent(int extent)
 {
     const int label = ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
     return qBound(kMinThumbSize,
-                 extent - label - ThumbnailDelegate::kCellPadTop,
+                 extent - label - ThumbnailDelegate::kCellPadTop
+                     - ThumbnailDelegate::kCellPadBottom,
                  kMaxThumbSize);
 }
 
 int ThumbnailBar::thumbSizeFromBarExtent(int extent) const
 {
     if (m_orientation == Qt::Horizontal) {
-        // extent is bar height = cell height = top pad + thumb + labelBand
+        // extent is bar height = cell height = pads + thumb + labelBand
+        const int bottom = m_labelsVisible ? ThumbnailDelegate::kCellPadBottom
+                                           : ThumbnailDelegate::kCellPadBottomCompact;
         return qBound(kMinThumbSize,
-                     extent - labelBandHeight() - ThumbnailDelegate::kCellPadTop,
+                     extent - labelBandHeight() - ThumbnailDelegate::kCellPadTop - bottom,
                      kMaxThumbSize);
     }
     // Vertical bar: extent is bar width ≈ cell width = thumb + 2*pad
@@ -451,10 +463,15 @@ void ThumbnailBar::applyThumbMetrics()
     setGridSize(cell);
 
     const int label = labelBandHeight();
+    const int vPad = ThumbnailDelegate::kCellPadTop
+        + (m_labelsVisible ? ThumbnailDelegate::kCellPadBottom
+                           : ThumbnailDelegate::kCellPadBottomCompact);
+    // Tighter inter-item gaps when captions are hidden.
+    setSpacing(m_labelsVisible ? 2 : 1);
     if (m_orientation == Qt::Horizontal) {
-        // Thin axis = height = thumb + label
-        setMinimumHeight(kMinThumbSize + label);
-        setMaximumHeight(kMaxThumbSize + label);
+        // Thin axis = height = pads + thumb + label
+        setMinimumHeight(kMinThumbSize + label + vPad);
+        setMaximumHeight(kMaxThumbSize + label + vPad);
         setMinimumWidth(0);
         setMaximumWidth(QWIDGETSIZE_MAX);
     } else {
@@ -485,7 +502,10 @@ QSize ThumbnailBar::sizeHint() const
 QSize ThumbnailBar::minimumSizeHint() const
 {
     if (m_orientation == Qt::Horizontal) {
-        return QSize(200, kMinThumbSize + labelBandHeight());
+        const int vPad = ThumbnailDelegate::kCellPadTop
+            + (m_labelsVisible ? ThumbnailDelegate::kCellPadBottom
+                               : ThumbnailDelegate::kCellPadBottomCompact);
+        return QSize(200, kMinThumbSize + labelBandHeight() + vPad);
     }
     return QSize(kMinThumbSize + 2 * ThumbnailDelegate::kCellPadX, 200);
 }
