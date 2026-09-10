@@ -38,6 +38,8 @@
 #include <QUrl>
 #include <QVariant>
 #include <algorithm>
+#include <cstdlib>
+#include <cstdio>
 
 // ---------------------------------------------------------------------------
 // Layout model (single source of truth)
@@ -1045,6 +1047,15 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             ThumbnailBar *bar = guard.data();
             if (!bar || gen != bar->m_generation.load()) {
                 return;
+            }
+            if (const char *e = std::getenv("THUMTOO_DEBUG");
+                e && e[0] != '\0' && e[0] != '0') {
+                fprintf(stderr, "biltoo/filmstrip: makeThumbnail row=%d edge=%d path=%s\n",
+                        i, decodeSize, qPrintable(path));
+            } else if (const char *e = std::getenv("BILTOO_THUMTOO_DEBUG");
+                       e && e[0] != '\0' && e[0] != '0') {
+                fprintf(stderr, "biltoo/filmstrip: makeThumbnail row=%d edge=%d path=%s\n",
+                        i, decodeSize, qPrintable(path));
             }
             const QImage image = bar->makeThumbnail(path, decodeSize);
             bar = guard.data();

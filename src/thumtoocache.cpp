@@ -15,6 +15,8 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <cstdio>
+#include <cstdarg>
 #include <filesystem>
 #include <functional>
 #include <mutex>
@@ -59,6 +61,35 @@
 namespace ThumtooCache {
 namespace {
 QSet<QString> g_pixelsInflight;
+
+/** THUMTOO_DEBUG or BILTOO_THUMTOO_DEBUG = non-empty non-0 → stderr traces. */
+bool thumtooDebugEnabled()
+{
+    static const int on = [] {
+        const char *e = std::getenv("THUMTOO_DEBUG");
+        if (e && e[0] != '\0' && e[0] != '0') {
+            return 1;
+        }
+        e = std::getenv("BILTOO_THUMTOO_DEBUG");
+        return (e && e[0] != '\0' && e[0] != '0') ? 1 : 0;
+    }();
+    return on != 0;
+}
+
+void thumtooDbg(const char *fmt, ...)
+{
+    if (!thumtooDebugEnabled()) {
+        return;
+    }
+    std::fputs("biltoo/thumtoo: ", stderr);
+    va_list ap;
+    va_start(ap, fmt);
+    std::vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    std::fputc('\n', stderr);
+    std::fflush(stderr);
+}
+
 /** Cap concurrent thumtoo request_pixels — PDF raster+encode is heavy. */
 constexpr int kMaxConcurrentPixelJobs = 3;
 int g_pixelsActive = 0;
@@ -548,6 +579,9 @@ void scheduleProbe(const QString &path)
         return;
     }
     const QString pathCopy = path;
+    if (thumtooDebugEnabled()) {
+        thumtooDbg("scheduleProbe path=%s", qPrintable(path));
+    }
     c->request_size(uri, [pathCopy](std::string, std::optional<thumtoo::Size> sz) {
         if (!sz) {
             return;
@@ -612,6 +646,11 @@ void startNextPixelJobsUnlocked()
         const int edge = job.maxEdge;
         const QString inflightKey = job.inflightKey;
         const std::string uri = job.uri;
+        if (thumtooDebugEnabled()) {
+            thumtooDbg("request_pixels DISPATCH path=%s edge=%d active=%d queued=%zu",
+                       qPrintable(pathCopy), edge, g_pixelsActive,
+                       g_pixelsQueue.size());
+        }
         c->request_pixels(
             uri, edge,
             [pathCopy, edge, inflightKey](std::string, int,
@@ -653,6 +692,11 @@ void schedulePixels(const QString &path, int maxEdge)
         }
         g_pixelsInflight.insert(inflightKey);
         g_pixelsQueue.push_back(PendingPixels{path, maxEdge, inflightKey, uri});
+        if (thumtooDebugEnabled()) {
+            thumtooDbg("schedulePixels queue path=%s edge=%d active=%d queued=%zu",
+                       qPrintable(path), maxEdge, g_pixelsActive,
+                       g_pixelsQueue.size());
+        }
         startNextPixelJobsUnlocked();
     }
 #else

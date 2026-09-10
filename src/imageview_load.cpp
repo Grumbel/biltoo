@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <cstdio>
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -327,6 +329,15 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen, previewEdge]() {
         // Soft ladder decode only — never ImageLoader::load() full native.
+        if (const char *e = std::getenv("THUMTOO_DEBUG");
+            e && e[0] != '\0' && e[0] != '0') {
+            fprintf(stderr, "biltoo/gallery: loadThumbnail path=%s edge=%d\n",
+                    qPrintable(path), previewEdge);
+        } else if (const char *e = std::getenv("BILTOO_THUMTOO_DEBUG");
+                   e && e[0] != '\0' && e[0] != '0') {
+            fprintf(stderr, "biltoo/gallery: loadThumbnail path=%s edge=%d\n",
+                    qPrintable(path), previewEdge);
+        }
         const QImage preview = ImageLoader::loadThumbnail(path, previewEdge);
         if (!guard) {
             return;
