@@ -1305,6 +1305,9 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
                 || m_imageView->classicPath() != path) {
                 m_imageView->loadImage(path);
             }
+        } else if (isGalleryMode() && m_imageView && ensureGalleryVisible) {
+            // Filmstrip re-click of the current row: still select the gallery tile.
+            m_imageView->focusSessionPath(m_session.paths().at(m_currentIndex));
         }
         return;
     }
@@ -1338,9 +1341,11 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     if (isImageMode()) {
         m_imageView->loadImage(path);
     } else if (isGalleryMode() && m_imageView) {
-        // Keyboard / programmatic nav may ask to scroll; mouse selection does not.
+        // Filmstrip / keyboard nav (ensureGalleryVisible): select the tile and
+        // scroll it into view. Gallery view clicks pass false — selection was
+        // already applied there; do not clear Ctrl/Shift multi-select.
         if (ensureGalleryVisible) {
-            m_imageView->revealGalleryPath(path);
+            m_imageView->focusSessionPath(path);
         }
     } else if (m_imageView) {
         m_imageView->focusSessionPath(path);

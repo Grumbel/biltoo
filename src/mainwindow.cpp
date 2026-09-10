@@ -390,7 +390,9 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
 
 void MainWindow::onThumbnailWorkspaceSelectionChanged()
 {
-    if (!isWorkspaceMode()) {
+    // Workspace multi-select and Gallery (when multi is enabled) share the same
+    // filmstrip → canvas selection path by session index.
+    if (!isWorkspaceMode() && !isGalleryMode()) {
         return;
     }
     const QList<int> sel = m_thumbnailBar->selectedIndices();
@@ -404,11 +406,15 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
             }
         }
     }
-    // Shared selection: filmstrip multi-select drives canvas selection by session slot.
+    // Shared selection: filmstrip drives canvas selection by session slot.
     if (!m_syncingSelection && m_imageView) {
         m_syncingSelection = true;
         m_imageView->selectBySessionIndices(sel);
         m_syncingSelection = false;
+        if (isGalleryMode() && !sel.isEmpty() && sel.last() >= 0
+            && sel.last() < m_session.paths().size()) {
+            m_imageView->revealGalleryPath(m_session.paths().at(sel.last()));
+        }
     }
     updateStatus();
 }
