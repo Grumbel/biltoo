@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-383-thumtoo-debug-trace** (THUMTOO_DEBUG traces).
-Next bundle number: **384**.
+Latest agent handoff: **TODO.md → biltoo-384-thumtoo-debug-visible** (debug banner).
+Next bundle number: **385**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

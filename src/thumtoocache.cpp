@@ -11,6 +11,7 @@
 #include <QFileInfo>
 #include <QMetaObject>
 #include <QSet>
+#include <QDebug>
 #include <QThreadPool>
 
 #include <chrono>
@@ -63,17 +64,21 @@ namespace {
 QSet<QString> g_pixelsInflight;
 
 /** THUMTOO_DEBUG or BILTOO_THUMTOO_DEBUG = non-empty non-0 → stderr traces. */
+bool envFlagOn(const char *name)
+{
+    const char *e = std::getenv(name);
+    if (!e || !e[0] || e[0] == '0') {
+        return false;
+    }
+    if (e[0] == 'f' || e[0] == 'F' || e[0] == 'n' || e[0] == 'N') {
+        return false;
+    }
+    return true;
+}
+
 bool thumtooDebugEnabled()
 {
-    static const int on = [] {
-        const char *e = std::getenv("THUMTOO_DEBUG");
-        if (e && e[0] != '\0' && e[0] != '0') {
-            return 1;
-        }
-        e = std::getenv("BILTOO_THUMTOO_DEBUG");
-        return (e && e[0] != '\0' && e[0] != '0') ? 1 : 0;
-    }();
-    return on != 0;
+    return envFlagOn("THUMTOO_DEBUG") || envFlagOn("BILTOO_THUMTOO_DEBUG");
 }
 
 void thumtooDbg(const char *fmt, ...)
@@ -481,6 +486,14 @@ Bridge *bridge()
 
 void init()
 {
+    static bool bannered = false;
+    if (!bannered && thumtooDebugEnabled()) {
+        bannered = true;
+        thumtooDbg("ThumtooCache init — debug traces ON (THUMTOO_DEBUG/BILTOO_THUMTOO_DEBUG)");
+        // Also go through Qt so it shows if stderr is swallowed by the launcher.
+        qWarning("biltoo/thumtoo: debug traces ON");
+    }
+
 #ifdef BILTOO_HAVE_THUMTOO
     std::lock_guard lock(g_mu);
     if (g_inited) {
