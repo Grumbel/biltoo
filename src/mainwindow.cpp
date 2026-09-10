@@ -2528,11 +2528,13 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         dbg && dbg[0] != '\0' && dbg[0] != '0') {
         fprintf(stderr,
                 "biltoo/drop: handle mode=W%d G%d I%d hasPos=%d scene=(%.1f,%.1f) "
-                "paths=%d sessionIds=%d internal=%d\n",
+                "paths=%lld sessionIds=%lld internal=%lld\n",
                 isWorkspaceMode() ? 1 : 0, isGalleryMode() ? 1 : 0,
                 (m_imageView && m_imageView->isImageMode()) ? 1 : 0,
                 hasScenePos ? 1 : 0, scenePos.x(), scenePos.y(),
-                paths.size(), sessionIds.size(), internalPaths.size());
+                static_cast<long long>(paths.size()),
+                static_cast<long long>(sessionIds.size()),
+                static_cast<long long>(internalPaths.size()));
     }
     if (isWorkspaceMode()) {
         const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
