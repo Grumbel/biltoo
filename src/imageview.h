@@ -1314,7 +1314,8 @@ private:
     struct GallerySoftState {
         int have = 0;
         int want = 0;
-        int inflight = 0;
+        int inflight = 0;       // soft ladder edge in flight
+        bool fullInflight = false; // ImageLoader::load (native) in flight
         int gaveUpWant = 0;
         bool failed = false;
     };

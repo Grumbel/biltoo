@@ -254,29 +254,32 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 
 int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const
 {
-    // Soft ladder only (≤ kGalleryLadderEdge / 512). Zoomed inspection scales
-    // that preview; true high-res is tiles / Image mode — not request_pixels.
-    Q_UNUSED(allowHighRes);
+    // On-screen long edge in device pixels (ladder step). Soft ladder covers up
+    // to kGalleryLadderEdge; beyond that visible tiles get a full decode
+    // (same ImageLoader::load path as Image mode).
     if (!item) {
         return ThumtooCache::kGalleryLadderEdge;
     }
     const QRectF br = item->contentSceneRect();
     if (br.isEmpty()) {
-        return ThumtooCache::kFilmstripLadderEdge; // smallest useful soft step
+        return ThumtooCache::kFilmstripLadderEdge;
     }
     const QPointF a = mapFromScene(br.topLeft());
     const QPointF b = mapFromScene(br.bottomRight());
     const qreal longPx =
         qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
     const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
-    return qMin(need, ThumtooCache::kGalleryLadderEdge);
+    if (!allowHighRes) {
+        return qMin(need, ThumtooCache::kGalleryLadderEdge);
+    }
+    return need; // may exceed soft max → full decode
 }
 
 int ImageView::gallerySoftInflightCount() const
 {
     int n = 0;
     for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
-        if (it.value().inflight > 0) {
+        if (it.value().inflight > 0 || it.value().fullInflight) {
             ++n;
         }
     }
@@ -324,7 +327,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
     GallerySoftState &st = m_gallerySoft[path];
-    if (st.failed || st.inflight > 0) {
+    if (st.failed || st.inflight > 0 || st.fullInflight) {
         return;
     }
 
@@ -335,6 +338,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
 
     int have = 0;
     bool anyFull = false;
+    bool anyVisible = false;
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path) {
             continue;
@@ -343,6 +347,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             anyFull = true;
         }
         have = qMax(have, item->displayPixelLongEdge());
+        const QRectF tile = item->contentSceneRect();
+        if (tile.isValid() && sceneVisible.intersects(tile)) {
+            anyVisible = true;
+        }
     }
     st.have = have;
     if (anyFull) {
@@ -361,7 +369,54 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
-    st.inflight = want;
+    // Zoomed past soft ladder: same full decode path as Image mode (works for
+    // //page: / files). Soft ladder stays ≤ kGalleryLadderEdge.
+    if (anyVisible && want > ThumtooCache::kGalleryLadderEdge) {
+        st.fullInflight = true;
+        addPendingWorkspacePath(path);
+        const quint64 gen = m_loadGeneration.load();
+        const QPointer<ImageView> guard(this);
+        if (ThumtooCache::debugTracingEnabled()) {
+            qWarning("biltoo/gallery: full decode path need=%d have=%d", want, have);
+        }
+        QThreadPool::globalInstance()->start([guard, path, gen]() {
+            const QImage image = ImageLoader::load(path);
+            if (!guard) {
+                return;
+            }
+            QMetaObject::invokeMethod(
+                guard.data(),
+                [guard, path, image, gen]() {
+                    ImageView *const host = guard.data();
+                    if (!host) {
+                        return;
+                    }
+                    auto it = host->m_gallerySoft.find(path);
+                    if (it != host->m_gallerySoft.end()) {
+                        it->fullInflight = false;
+                    }
+                    if (image.isNull()) {
+                        if (it != host->m_gallerySoft.end()) {
+                            // Keep soft preview; do not loop full decode.
+                            it->gaveUpWant = qMax(it->gaveUpWant, it->want);
+                        }
+                        host->takePendingWorkspacePath(path);
+                        if (host->isGalleryMode()) {
+                            host->updateGalleryDecodeWindow();
+                        }
+                        return;
+                    }
+                    host->onImageLoaded(path, image, gen,
+                                        static_cast<int>(LoadAdd));
+                },
+                Qt::QueuedConnection);
+        });
+        return;
+    }
+
+    // Soft ladder path (≤ kGalleryLadderEdge).
+    const int requestEdge = qMin(want, ThumtooCache::kGalleryLadderEdge);
+    st.inflight = requestEdge;
     addPendingWorkspacePath(path);
     emit statusChanged();
 
@@ -374,7 +429,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
 
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
-    const int requestEdge = want;
     QThreadPool::globalInstance()->start([guard, path, gen, requestEdge]() {
         // Soft only — loadThumbnail may schedulePixels once on miss; we never
         // clear settle / re-queue the same edge in a loop.
