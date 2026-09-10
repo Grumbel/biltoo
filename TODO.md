@@ -2,7 +2,7 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-355-pdfimage-soft-miss.** Requires **thumtoo ≥ 123** for `//pdfimage`
+**Tip: biltoo-355-pdfimage-soft-miss.** Next planning: **biltoo-356 semantic text layer** (see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
 locator registration + dict-size extract.
 
 ### Shipped
@@ -35,6 +35,188 @@ locator registration + dict-size extract.
 - Menu: “Open PDF as embedded images” (same as appending `//pdfimages`).
 - Pixel-filter pipes (`//crop:`, invert, …) — design notes in thumtoo TODO.
 - Full compile verification after human pulls both tips.
+
+
+## Plan / research — semantic text layer (biltoo-356+)
+
+**Goal:** Add a unified *semantic text layer* over page rasters for PDF, DjVu,
+and EPUB so the viewer can search, select/copy, highlight hits, follow links,
+and (later) navigate TOC / figures without becoming a full document editor.
+
+Biltoo remains an image/viewer app; text is an overlay + index, not a reflow
+editor (except EPUB layout already exists).
+
+### What each format can supply
+
+#### PDF (MuPDF primary in thumtoo; Poppler optional)
+
+- **Text + geometry:** Full hierarchy via `fz_stext` / page text page:
+  - blocks → lines → spans → (optional chars)
+  - each with axis-aligned bbox (page user space)
+  - span metadata: font name, size, colour, writing direction
+  - words as aggregate of spans/chars
+- **Links:** Link annotations / destinations (internal page+point, URI, named)
+  with rects; also structure-level Link tags in tagged PDFs.
+- **TOC / outline:** Document outline tree (`/Outlines`) — titles + destinations.
+  Independent of page content; cheap and always useful.
+- **Logical structure (tagged PDF):** Structure tree (H1–H6, P, Figure, Table,
+  Caption, TOC/TOCI, …). Figure can carry `/Alt` / actual text. MuPDF support
+  is partial; richer structure often needs Poppler or dedicated parsers.
+  Many real PDFs are *untagged* → structure is optional, not required.
+- **Images / figures:** Image blocks with bboxes (already partially used for
+  image-coverage heuristics in thumtoo). Alt text only when tagged.
+- **Limitations:** Scanned PDFs without OCR have no text layer. Some
+  producers emit garbage reading order; sorting by y then x helps.
+
+#### DjVu (djvulibre)
+
+- **Hidden text layer:** Usually OCR. Hierarchical zones:
+  page → column → region → para → line → word → char
+  with bounding rectangles. `djvutxt --detail=word` (or char) emits S-exprs.
+  API via `ddjvu` / DjVuTXT.
+- **Hyperlinks:** Annotation mapareas (rect/oval/poly) with URIs.
+- **TOC:** Limited; some files embed outline-like data, but not as rich as PDF
+  outlines. Rely on page list + optional bookmarks if present.
+- **Figures:** No strong semantic figure tags; images are in the IW44/JB2
+  layers. Text layer may describe them poorly.
+- **Limitations:** Quality = OCR quality. Older files may only have page- or
+  line-level detail.
+
+#### EPUB (MuPDF reflow in thumtoo)
+
+- **Text:** Native HTML/XHTML — highly semantic (headings, p, figure, figcaption,
+  a href, nav). Plain text + structure easy.
+- **Positions / rectangles:** *Not fixed.* Depend on current `//epub:` layout
+  (viewport size, font size, margins, columns, line-height, CSS). Bboxes only
+  exist *after* a layout/render pass for a given profile.
+- **TOC:** nav document (EPUB 3) or NCX (EPUB 2) — hierarchical, reliable.
+- **Links:** HTML hyperlinks (internal CFI/fragment or external).
+- **Figures:** `<figure>` / `<img alt="…">` + captions when present.
+- **Implication:** Text layer for EPUB must be tied to a concrete layout
+  snapshot (same params used for rasterization). Changing EPUB Layout invalidates
+  positions; text content + TOC remain valid.
+
+### Unified data model (proposed, thumtoo-owned)
+
+Expose from thumtoo (cacheable under content-hash + page + layout key):
+
+```text
+PageTextLayer {
+  page_index: u32
+  layout_key: optional string   // EPUB profile hash; empty for PDF/DjVu
+  blocks: [ TextBlock ]
+  links:  [ TextLink ]
+  // optional later: figures, structure nodes
+}
+
+TextBlock {
+  bbox: RectF          // page coordinates, top-left origin consistent with raster
+  text: string         // UTF-8, reading-order within block
+  kind: paragraph | line | heading | other
+  spans: optional [ TextSpan]   // finer grain for selection/search highlight
+}
+
+TextSpan {
+  bbox: RectF
+  text: string
+  font_size: f32
+  // font name / flags optional
+}
+
+TextLink {
+  bbox: RectF
+  target: Internal { page, x?, y? } | Uri { string } | Named { string }
+}
+
+DocumentOutline {
+  items: [ { level, title, dest: page or uri } ]  // flattened or tree
+}
+```
+
+Coordinates must match the same space used for page rasterization (MuPDF
+user space → biltoo page image pixels, accounting for rotation/scale already
+handled by the ladder).
+
+### Consumer features (biltoo, phased)
+
+1. **Index & search**
+   - Build per-document inverted index or simple page→text map.
+   - Find hits → list of (page, bbox) → scroll/highlight overlays on the
+     current page raster.
+2. **Selection / copy**
+   - Drag or word-click → map screen coords → page text spans → clipboard.
+3. **Link following**
+   - Clickable hit-testing on link rects; internal → jump page; URI → open.
+4. **TOC panel / Go menu**
+   - Outline tree → jump to page (or EPUB spine target).
+5. **Optional later**
+   - Figure alt-text tooltips / list
+   - Screen-reader friendly exposure (Qt accessibility)
+   - “Text view” side panel (plain reading order, no geometry)
+
+### Architecture notes
+
+- **thumtoo is the extractor and cache.** Biltoo only requests
+  `get_page_text_layer(uri_or_page_ref)` and `get_document_outline(doc)`.
+  Keep extraction off the GUI thread; durable cache keyed by content hash +
+  page + layout_key (EPUB).
+- **Do not** re-implement PDF parsers in biltoo.
+- **Scanned / empty text:** degrade gracefully (no layer, or optional OCR
+  pipeline later — out of scope for first cut).
+- **Identity:** Text layer is document-derived, not SessionImageId appearance.
+  Crop/flip of a page leaf does not rewrite the underlying page text; overlays
+  transform with the item if needed, or are disabled under heavy crop.
+- **Performance:** Lazy per-page; full-document text dump only on explicit
+  “Search in document”. Word-level is enough for search/select; char-level
+  only if selection precision demands it.
+- **EPUB special case:** Text content can be extracted without full layout
+  (spine HTML), but geometry requires the same MuPDF story/layout used for
+  pixels. Prefer one API that returns both when rasterizing, or a matching
+  layout_key.
+
+### Research / spike tasks (order)
+
+1. **thumtoo spike — PDF text**
+   - Confirm `fz_new_stext_page` / walk blocks-lines-spans with bboxes.
+   - Export C API: page text layer + outline + links for a `//page:N` ref.
+   - Unit test against a small fixture PDF (text + link + outline).
+2. **thumtoo spike — DjVu text**
+   - `ddjvu` text layer at word detail → map zones to TextBlock list.
+   - Mapareas → TextLink.
+3. **thumtoo spike — EPUB**
+   - Text from HTML (no geometry) + outline from nav.
+   - Geometry: after layout, extract positioned text from the same pass that
+     produces the page pixmap (if MuPDF exposes it).
+4. **Coordinate contract**
+   - Document origin, y-direction, rotation handling vs existing
+     `rasterizePageRef` output.
+5. **Biltoo thin client**
+   - Overlay painter for hit rects (debug first).
+   - Search dialog prototype (find next, highlight).
+6. **Docs**
+   - Extend DOMAIN.md / new TEXT.md with model + limitations.
+   - TODO handoff continues under biltoo-356+.
+
+### Non-goals (first cut)
+
+- Editing / OCR generation
+- Full tagged-PDF structure tree UI
+- Reflow of PDF/DjVu (only EPUB already reflows)
+- Multi-page continuous text selection across page boundaries (nice-to-have later)
+- Replacing the image canvas with a text widget
+
+### Depends on
+
+- thumtoo APIs not yet present → plan parallel thumtoo-NNN text-layer work.
+- Existing MuPDF / djvulibre linkage already in thumtoo.
+
+### Open questions for discussion
+
+- Word vs line vs span as the primary selectable unit?
+- Cache text layers in SQLite (like ladder) or compute on demand?
+- Should outline live at document level in the session model?
+- EPUB: invalidate text geometry on every layout change, or store multiple
+  layout keys?
 
 ---
 
