@@ -330,7 +330,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         if (!view) {
             return;
         }
-        QMetaObject::invokeMethod(view, [guard, path, preview, gen]() {
+        QMetaObject::invokeMethod(view, [guard, path, preview, gen, previewEdge]() {
             ImageView *const host = guard.data();
             if (!host) {
                 return;
@@ -339,6 +339,11 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             host->takePendingWorkspacePath(path);
             if (!preview.isNull()) {
                 host->m_galleryAwaitLadder.remove(path);
+                // Record the edge we aimed for so a shortfall (smaller ladder
+                // level than requested) does not re-enter the schedule loop.
+                host->m_galleryLadderAttemptedEdge.insert(
+                    path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
+                               previewEdge));
                 host->onImagePreviewLoaded(path, preview, gen,
                                            static_cast<int>(LoadAdd));
             } else if (ThumtooCache::isAvailable()) {
@@ -346,6 +351,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 host->m_galleryAwaitLadder.insert(path);
             } else {
                 host->m_galleryDecodeFailed.insert(path);
+                host->m_galleryLadderAttemptedEdge.insert(
+                    path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
+                               previewEdge));
             }
             if (host->isGalleryMode()) {
                 host->updateGalleryDecodeWindow();

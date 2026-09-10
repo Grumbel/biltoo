@@ -1307,6 +1307,12 @@ private:
     QSet<QString> m_galleryAwaitLadder;
     /** Paths that failed decode — do not spin forever on placeholders. */
     QSet<QString> m_galleryDecodeFailed;
+    /**
+     * Highest ladder edge we already completed a gallery soft-decode attempt for
+     * (success or settled shortfall). Prevents re-requesting the same/higher
+     * edge forever when thumtoo cannot supply a larger level.
+     */
+    QHash<QString, int> m_galleryLadderAttemptedEdge;
     static constexpr int kGalleryVirtualThreshold = 80;
     static constexpr int kGalleryDecodeOverscanPx = 400;
     static constexpr int kMaxConcurrentGalleryDecodes = 12;

@@ -49,8 +49,14 @@ void ImageView::updateGalleryDecodeWindow()
         }
         const int need = galleryDisplayEdgeForItem(item);
         const int have = item->displayPixelLongEdge();
+        // Already finished a soft attempt at this edge (or higher): settle even
+        // if still a placeholder — avoids schedulePixels/ladderReady CPU spin when
+        // the level never becomes decodable.
+        if (m_galleryLadderAttemptedEdge.value(path, 0) >= need) {
+            return false;
+        }
         if (have <= 0) {
-            return true; // placeholder
+            return true; // placeholder, not yet attempted at need
         }
         // Upgrade when on-screen need exceeds current preview long edge.
         return have < need;
@@ -215,6 +221,8 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
         }
         m_galleryDecodeFailed.remove(path);
         m_galleryDecodeScheduled.remove(path);
+        m_galleryLadderAttemptedEdge.remove(path);
+        m_galleryAwaitLadder.remove(path);
         takePendingWorkspacePath(path);
         item->clearDecodedPixels();
         PendingSessionBind b;

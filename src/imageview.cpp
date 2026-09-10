@@ -92,15 +92,28 @@ ImageView::ImageView(QWidget *parent)
                 QThreadPool::globalInstance()->start([guard, path, edge]() {
                     const QImage preview = ImageLoader::loadThumbnail(path, edge);
                     ImageView *const view = guard.data();
-                    if (!view || preview.isNull()) {
+                    if (!view) {
                         return;
                     }
-                    QMetaObject::invokeMethod(view, [guard, path, preview]() {
+                    QMetaObject::invokeMethod(view, [guard, path, preview, edge]() {
                         ImageView *const host = guard.data();
                         if (!host) {
                             return;
                         }
                         host->m_galleryAwaitLadder.remove(path);
+                        // Always record the edge we tried so a null/short decode
+                        // does not re-schedule the same request forever.
+                        host->m_galleryLadderAttemptedEdge.insert(
+                            path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
+                                       edge));
+                        if (preview.isNull()) {
+                            // Settled via m_galleryLadderAttemptedEdge — do not
+                            // re-queue. Reload clears the map for a retry.
+                            if (host->isGalleryMode()) {
+                                host->updateGalleryDecodeWindow();
+                            }
+                            return;
+                        }
                         // LoadAdd: refresh gallery/workspace/image tiles that still
                         // show placeholders; do not fight a completed full decode.
                         host->onImagePreviewLoaded(
@@ -215,6 +228,7 @@ ImageView::~ImageView()
         m_pendingWorkspacePaths.clear();
         m_galleryDecodeScheduled.clear();
         m_galleryAwaitLadder.clear();
+    m_galleryLadderAttemptedEdge.clear();
         m_galleryDecodeFailed.clear();
         setScene(nullptr);
         delete m_scene;

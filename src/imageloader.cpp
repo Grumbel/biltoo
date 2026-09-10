@@ -903,8 +903,13 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                 }
                 return qtImg;
             }
+            // Bytes exist but neither VIPS nor Qt could decode — do not call
+            // schedulePixels again (that re-emits ladderReady and spins the pool).
+            qWarning("ImageLoader: ladder payload undecodable for %s (maxEdge=%d, %d bytes)",
+                     qPrintable(path), maxEdge, ladder.size());
+            return {};
         }
-        // Miss: ask thumtoo to build the level in the background for next time.
+        // True miss: ask thumtoo to build the level in the background for next time.
         ThumtooCache::schedulePixels(path, maxEdge);
     }
 

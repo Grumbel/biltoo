@@ -51,6 +51,7 @@ void ImageView::invalidateGalleryDecodes()
     // pool jobs are rejected in onImageLoaded.
     m_galleryDecodeScheduled.clear();
     m_galleryAwaitLadder.clear();
+    m_galleryLadderAttemptedEdge.clear();
     m_pendingWorkspacePaths.clear();
     ++m_loadGeneration;
 }
@@ -201,6 +202,7 @@ void ImageView::clearWorkspace()
     m_pendingSelectSessionIds.clear();
     m_galleryDecodeScheduled.clear();
     m_galleryAwaitLadder.clear();
+    m_galleryLadderAttemptedEdge.clear();
     m_galleryDecodeFailed.clear();
     m_imageSizeByPath.clear();
     m_sizeProbeScheduled.clear();
