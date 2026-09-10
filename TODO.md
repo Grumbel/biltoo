@@ -2,7 +2,7 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-365-toc-includes-fix.** Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
+**Tip: biltoo-366-layout-fit-no-dual-scrollbars.** Pack overshoot correction so fitted axis does not force a useless scrollbar. Prior: 365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
 locator registration + dict-size extract.
 
 ### Shipped
@@ -6614,3 +6614,27 @@ Open path…//pdfimages expands to //pdfimage:N session leaves (native embeds).
 
 
 ## biltoo-353 — QImage::flipped, require Qt ≥ 6.9
+
+
+## Plan / work (2026-09-10) — bundle `biltoo-366-layout-fit-no-dual-scrollbars`
+
+### Problem
+Gallery (and Workspace selection) layout functions pack to `availW`/`availH`
+taken from the viewport (with AlwaysOn scrollbars in Gallery so size is stable).
+Floating-point cell/scale math (`(avail - gaps)/cols`, `h = ns * (availH/ns)`)
+leaves the *fitted* dimension a fraction of a pixel larger than the target.
+`sceneRect` then exceeds the viewport on both axes; both scrollbars appear even
+when only one axis has useful scroll range.
+
+### Change
+After placement in `GalleryLayout::pack`, measure content bounds (cell size when
+GridCrop, else scaled image size). If the fitted axis (width for Grid/Masonry/
+Flow/…, height for SideBySide/MasonryRows/…) overshoots the target by more than
+a tiny epsilon, apply a uniform shrink about the margin origin so content fits
+exactly. Re-run `afterEach` so gallery state snapshots see the corrected pose.
+
+### Done criteria
+- [x] No dual scrollbars from sub-pixel pack overshoot
+- [x] Gallery + Workspace layout paths both corrected (single pack implementation)
+- [x] Docs; next **367**
+

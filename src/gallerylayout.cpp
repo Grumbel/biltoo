@@ -6,6 +6,7 @@
 
 #include <QtMath>
 #include <cmath>
+#include <QRectF>
 #include <QVector>
 
 namespace GalleryLayout {
@@ -420,6 +421,86 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 i += 1;
             }
             y += rowH + gap;
+        }
+    }
+
+    // Floating-point packing (cellW = (avail - gaps)/cols, scale = avail/h, etc.)
+    // can leave the fitted dimension a fraction of a pixel over the target.
+    // That makes sceneRect slightly larger than the viewport on both axes when
+    // only one should scroll, so both scrollbars appear with a useless range on
+    // the fitted axis. Correct any small overshoot by a uniform shrink about the
+    // margin origin so content fits the intended avail box exactly.
+    qreal targetW = -1.0;
+    qreal targetH = -1.0;
+    switch (params.mode) {
+    case Mode::SideBySide:
+    case Mode::MasonryRows:
+    case Mode::MasonryRowsFill:
+        targetH = availH;
+        break;
+    case Mode::Vertical:
+    case Mode::Grid:
+    case Mode::GridCrop:
+    case Mode::Masonry:
+    case Mode::MasonryFill:
+    case Mode::Flow:
+    case Mode::FlowFill:
+    case Mode::Facing:
+        targetW = availW;
+        break;
+    }
+    if (targetW > 0.0 || targetH > 0.0) {
+        QRectF content;
+        for (ImageItem *item : items) {
+            if (!item) {
+                continue;
+            }
+            QSizeF sz = item->galleryCellSize();
+            if (sz.isEmpty()) {
+                const QSizeF ns = layoutSize(item);
+                sz = QSizeF(ns.width() * item->itemScaleX(),
+                            ns.height() * item->itemScaleY());
+            }
+            if (sz.isEmpty()) {
+                continue;
+            }
+            const QPointF c = item->pos();
+            content = content.united(QRectF(c.x() - sz.width() / 2.0,
+                                            c.y() - sz.height() / 2.0,
+                                            sz.width(), sz.height()));
+        }
+        if (!content.isEmpty()) {
+            qreal s = 1.0;
+            if (targetW > 0.0 && content.width() > targetW + 1e-4) {
+                s = qMin(s, targetW / content.width());
+            }
+            if (targetH > 0.0 && content.height() > targetH + 1e-4) {
+                s = qMin(s, targetH / content.height());
+            }
+            if (s < 1.0) {
+                const QPointF origin(margin, margin);
+                for (ImageItem *item : items) {
+                    if (!item) {
+                        continue;
+                    }
+                    const QPointF p = item->pos();
+                    item->setPos(origin + (p - origin) * s);
+                    item->setItemScale(item->itemScaleX() * s,
+                                       item->itemScaleY() * s);
+                    if (!item->galleryCellSize().isEmpty()) {
+                        const QSizeF cs = item->galleryCellSize();
+                        item->setGalleryCellSize(QSizeF(cs.width() * s, cs.height() * s));
+                    }
+                }
+                // Re-snapshot after correction (callers use afterEach for state).
+                if (afterEach) {
+                    for (ImageItem *item : items) {
+                        if (item) {
+                            afterEach(item);
+                        }
+                    }
+                }
+            }
         }
     }
 
