@@ -1102,7 +1102,7 @@ QByteArray readArchiveMemberBytes(const QString &archiveRefPath)
 
 
 QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
-                           const QSize &imageSize)
+                           const QSize &imageSize, bool pageYUp)
 {
     const qreal pw = pageBounds.width();
     const qreal ph = pageBounds.height();
@@ -1111,9 +1111,17 @@ QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
     }
     const qreal nx0 = (pageRect.left() - pageBounds.left()) / pw;
     const qreal nx1 = (pageRect.right() - pageBounds.left()) / pw;
-    // Page space Y increases upward; image Y increases downward.
-    const qreal ny0 = (pageBounds.bottom() - pageRect.bottom()) / ph;
-    const qreal ny1 = (pageBounds.bottom() - pageRect.top()) / ph;
+    qreal ny0;
+    qreal ny1;
+    if (pageYUp) {
+        // PDF/DjVu: page Y increases upward; image Y increases downward.
+        ny0 = (pageBounds.bottom() - pageRect.bottom()) / ph;
+        ny1 = (pageBounds.bottom() - pageRect.top()) / ph;
+    } else {
+        // EPUB (MuPDF reflow): page Y already increases downward (top-left).
+        ny0 = (pageRect.top() - pageBounds.top()) / ph;
+        ny1 = (pageRect.bottom() - pageBounds.top()) / ph;
+    }
     return QRectF(nx0 * imageSize.width(), ny0 * imageSize.height(),
                   (nx1 - nx0) * imageSize.width(), (ny1 - ny0) * imageSize.height());
 }

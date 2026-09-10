@@ -1039,6 +1039,9 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
             const QSize sz = item->imageSize();
             if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBounds.isValid()) {
                 painter->save();
+                // EPUB layout_key is non-empty; MuPDF reflow page space is Y-down.
+                // PDF/DjVu page space is Y-up (bottom-left origin).
+                const bool pageYUp = m_textLayer.layoutKey.isEmpty();
                 // Search hits: filled yellow first (under outlines).
                 if (!m_textSearchMatches.isEmpty()) {
                     painter->setPen(Qt::NoPen);
@@ -1049,7 +1052,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                         }
                         const auto &r = m_textLayer.regions.at(idxMatch);
                         const QRectF img = ThumtooCache::pageRectToImageRect(
-                            r.bbox, m_textLayer.pageBounds, sz);
+                            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
                         if (img.isEmpty()) {
                             continue;
                         }
@@ -1061,7 +1064,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                     painter->setBrush(Qt::NoBrush);
                     for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
                         const QRectF img = ThumtooCache::pageRectToImageRect(
-                            r.bbox, m_textLayer.pageBounds, sz);
+                            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
                         if (img.isEmpty()) {
                             continue;
                         }
