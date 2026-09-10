@@ -2,7 +2,7 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-366-layout-fit-no-dual-scrollbars.** Pack overshoot correction so fitted axis does not force a useless scrollbar. Prior: 365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
+**Tip: biltoo-367-gallery-scrollbar-policy-before-pack.** Set AlwaysOn before first gallery pack so startup/load does not oversize. Prior: 366. Pack overshoot correction. Prior: 365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
 locator registration + dict-size extract.
 
 ### Shipped
@@ -6637,4 +6637,25 @@ exactly. Re-run `afterEach` so gallery state snapshots see the corrected pose.
 - [x] No dual scrollbars from sub-pixel pack overshoot
 - [x] Gallery + Workspace layout paths both corrected (single pack implementation)
 - [x] Docs; next **367**
+
+
+## Plan / work (2026-09-10) — bundle `biltoo-367-gallery-scrollbar-policy-before-pack`
+
+### Problem
+Dual scrollbars on Gallery startup / load of a new multi-image session. Toggling
+scrollbars made the useless bar go away. Not (only) FP overshoot: packing ran
+while policy was still AlwaysOff, so availW/H used the larger viewport; then
+`updateScrollBarPolicyForMode` switched to AlwaysOn and shrank the viewport,
+leaving content slightly too large on both axes.
+
+### Change
+In `enterGalleryMode`, call `updateScrollBarPolicyForMode()` after
+`enterGallery` (mode is Gallery) and **before** `populateGalleryCanvas()` so
+the pack that builds the overview sees the final viewport size with bars
+reserved. Prior 366 overshoot shrink remains as defense in depth.
+
+### Done criteria
+- [x] First gallery pack after load uses AlwaysOn viewport size
+- [x] No dual scrollbars from policy-after-pack ordering
+- [x] Docs; next **368**
 

@@ -46,6 +46,12 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
     // paths are actually scheduled; otherwise the first open after startup only
     // shows the single Image-mode item until Gallery is chosen again.
     m_imageView->enterGallery(layout);
+    // AlwaysOn must be applied *before* packing. Packing reads viewport size;
+    // if bars are still AlwaysOff the avail box is too large, then switching
+    // to AlwaysOn shrinks the viewport and both scrollbars appear (fitted axis
+    // has only a useless sub-pixel range). updateWorkspaceActionVisibility
+    // below would set the same policy too late.
+    updateScrollBarPolicyForMode();
     populateGalleryCanvas();
 
     syncGalleryLayoutUi(layout);
