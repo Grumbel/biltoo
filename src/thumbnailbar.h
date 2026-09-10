@@ -26,12 +26,10 @@ class ThumbnailDelegate : public QStyledItemDelegate
     Q_OBJECT
 public:
     static constexpr int kLabelGap = 2;
-    static constexpr int kCellPadX = 6;  // match top/bottom pad
-    /** Space above/below the icon (same amount — strip edge breathing room). */
-    static constexpr int kCellPadTop = 6;
-    static constexpr int kCellPadBottom = 6;
     /** Qt::UserRole for content pixel size of the prepared thumb (letterbox). */
     static constexpr int ThumbContentSizeRole = Qt::UserRole + 42;
+    /** Adaptive pad (~thumb/16, clamped) — equal on all sides of the icon. */
+    int cellPad() const;
 
     explicit ThumbnailDelegate(int thumbSize, QObject *parent = nullptr);
 
@@ -56,7 +54,6 @@ public:
     static int labelBandHeightForFont(const QFont &font);
 
 private:
-    int bottomPad() const;
 
     int m_thumbSize = 96;
     bool m_labelsVisible = true;
@@ -125,6 +122,9 @@ public:
     bool cropToSquare() const { return m_cropToSquare; }
     /** Match filmstrip fill to the ImageView/Gallery canvas background. */
     void setStripBackground(const QColor &color);
+    /** Rows waiting on pool decode or ladder (for status / busy chrome). */
+    int pendingLoadCount() const;
+    bool isRowLoading(int row) const;
 
     /** Session rows currently on the Workspace canvas (membership badge). */
     void setOnCanvasIndices(const QSet<int> &indices);
@@ -151,6 +151,8 @@ signals:
     /** Double-click: toggle this session index on/off the Workspace canvas. */
     void canvasMembershipToggled(int index);
     void removeIndicesRequested(const QList<int> &indices);
+    /** Pending filmstrip decode count changed (status bar / indicators). */
+    void loadsChanged();
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -197,6 +199,8 @@ private:
     QSet<int> m_thumbLoadScheduled;
     /** Soft miss waiting on thumtoo ladderReady (row index). */
     QSet<int> m_thumbAwaitLadder;
+    /** Soft-miss settled for this generation — do not re-queue (CPU spin). */
+    QSet<int> m_thumbFailed;
     bool m_multiSelect = false;
     int m_selectionAnchor = -1;
     bool m_centeringGuard = false;

@@ -42,8 +42,8 @@
 // ---------------------------------------------------------------------------
 // Layout model (single source of truth)
 //
-//   cell width  = thumbSize + 2 * kCellPadX
-//   cell height = kCellPadTop + thumbSize + bottomPad + labelBand
+//   cell width  = thumbSize + 2 * cellPad()
+//   cell height = cellPad() + thumbSize + cellPad() + labelBand
 //   labelBand   = QFontMetrics::height() + kLabelGap   (no style padding)
 //
 // Horizontal bar: thin axis is HEIGHT = cell height
@@ -62,6 +62,12 @@ void ThumbnailDelegate::setThumbSize(int pixels)
     m_thumbSize = pixels;
 }
 
+int ThumbnailDelegate::cellPad() const
+{
+    // Scale with thumb size so tiny cells are not mostly margin.
+    return qBound(2, m_thumbSize / 16, 8);
+}
+
 int ThumbnailDelegate::labelBandHeightForFont(const QFont &font)
 {
     return QFontMetrics(font).height() + kLabelGap;
@@ -77,21 +83,17 @@ void ThumbnailDelegate::setLabelsVisible(bool on)
     m_labelsVisible = on;
 }
 
-int ThumbnailDelegate::bottomPad() const
-{
-    return kCellPadBottom;
-}
-
 QSize ThumbnailDelegate::cellSize(const QFont &font) const
 {
     const int labelH = labelBandHeight(font);
-    return QSize(m_thumbSize + 2 * kCellPadX,
-                 kCellPadTop + m_thumbSize + bottomPad() + labelH);
+    const int pad = cellPad();
+    return QSize(m_thumbSize + 2 * pad, pad + m_thumbSize + pad + labelH);
 }
 
 QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentPx) const
 {
     const int labelH = labelBandHeight(font);
+    const int pad = cellPad();
     int iw = m_thumbSize;
     int ih = m_thumbSize;
     if (contentPx.width() > 0 && contentPx.height() > 0) {
@@ -99,7 +101,7 @@ QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentPx) 
         iw = qMax(1, fitted.width());
         ih = qMax(1, fitted.height());
     }
-    return QSize(iw + 2 * kCellPadX, kCellPadTop + ih + bottomPad() + labelH);
+    return QSize(iw + 2 * pad, pad + ih + pad + labelH);
 }
 
 QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
@@ -138,13 +140,12 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QFontMetrics fm(option.font);
     const int labelBand = labelBandHeight(option.font);
-    // Content box inside the cell (pads + optional caption). Not forced square —
-    // letterbox cells are only as wide/tall as the thumb + horizontal pad.
-    const int botPad = bottomPad();
-    const int boxW = qMax(1, cell.width() - 2 * kCellPadX);
-    const int boxH = qMax(1, cell.height() - labelBand - kCellPadTop - botPad);
-    const int iconX = cell.left() + kCellPadX;
-    const int iconY = cell.top() + kCellPadTop;
+    // Content box inside the cell (adaptive pad + optional caption).
+    const int pad = cellPad();
+    const int boxW = qMax(1, cell.width() - 2 * pad);
+    const int boxH = qMax(1, cell.height() - labelBand - 2 * pad);
+    const int iconX = cell.left() + pad;
+    const int iconY = cell.top() + pad;
     const QRect iconRect(iconX, iconY, boxW, boxH);
 
     // Destination of the *image* inside the square slot (may be letterboxed).
@@ -181,17 +182,31 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         }
     }
     // Black hairline tight to the thumbnail image (crop fills slot; letterbox is inset).
-    if (contentRect.width() > 0 && contentRect.height() > 0) {
+    if (!icon.isNull() && contentRect.width() > 0 && contentRect.height() > 0) {
         painter->setPen(QPen(QColor(0, 0, 0), 1));
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(contentRect.adjusted(0, 0, -1, -1));
+    } else if (icon.isNull()) {
+        // Loading / pending placeholder — subtle frame + busy mark.
+        painter->setPen(QPen(QColor(128, 128, 128, 160), 1, Qt::DashLine));
+        painter->setBrush(QColor(0, 0, 0, 40));
+        painter->drawRect(iconRect.adjusted(0, 0, -1, -1));
+        const ThumbnailBar *bar = qobject_cast<const ThumbnailBar *>(parent());
+        if (bar && bar->isRowLoading(index.row())) {
+            const int s = qBound(6, qMin(iconRect.width(), iconRect.height()) / 4, 18);
+            const QRect pip(iconRect.center().x() - s / 2,
+                            iconRect.center().y() - s / 2, s, s);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(180, 180, 180, 200));
+            painter->drawEllipse(pip);
+        }
     }
 
     const QString text = index.data(Qt::DisplayRole).toString();
     if (m_labelsVisible && !text.isEmpty() && labelBand > 0) {
-        const QRect textRect(cell.left() + kCellPadX,
+        const QRect textRect(cell.left() + pad,
                              cell.bottom() - labelBand + kLabelGap,
-                             qMax(1, cell.width() - 2 * kCellPadX),
+                             qMax(1, cell.width() - 2 * pad),
                              fm.height());
         const QColor textColor = selected
             ? option.palette.color(QPalette::HighlightedText)
@@ -330,7 +345,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                         }
                         const QImage image = bar->makeThumbnail(path, decodeSize);
                         bar = guard.data();
-                        if (!bar || image.isNull() || gen != bar->m_generation.load()) {
+                        if (!bar || gen != bar->m_generation.load()) {
                             return;
                         }
                         QMetaObject::invokeMethod(bar, [guard, i, path, gen, image]() {
@@ -342,7 +357,19 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                                 || host->m_files.at(i) != path) {
                                 return;
                             }
+                            if (image.isNull()) {
+                                // Ladder finished but still undecodable — settle so we
+                                // do not re-enter scheduleVisible → pool forever.
+                                host->m_thumbFailed.insert(i);
+                                host->m_thumbAwaitLadder.remove(i);
+                                host->m_thumbLoadScheduled.remove(i);
+                                host->viewport()->update();
+                                emit host->loadsChanged();
+                                return;
+                            }
+                            host->m_thumbFailed.remove(i);
                             host->setThumbnailIcon(i, image);
+                            emit host->loadsChanged();
                         }, Qt::QueuedConnection);
                     });
                 }
@@ -365,33 +392,35 @@ int ThumbnailBar::labelBandHeight() const
 int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
     // Approximate for callers without a live widget (default app font).
-    // Horizontal-bar height ≈ pads + thumb + label; used as a generic default.
-    return ThumbnailDelegate::kCellPadTop + thumbSize
-        + ThumbnailDelegate::kCellPadBottom
+    const int pad = qBound(2, thumbSize / 16, 8);
+    return 2 * pad + thumbSize
         + ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
 }
 
 int ThumbnailBar::thumbSizeForExtent(int extent)
 {
     const int label = ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
-    return qBound(kMinThumbSize,
-                 extent - label - ThumbnailDelegate::kCellPadTop
-                     - ThumbnailDelegate::kCellPadBottom,
-                 kMaxThumbSize);
+    // Inverse of extentForThumbSize with pad ≈ thumb/16 — iterate a step.
+    int thumb = extent - label;
+    for (int i = 0; i < 3; ++i) {
+        const int pad = qBound(2, thumb / 16, 8);
+        thumb = qBound(kMinThumbSize, extent - label - 2 * pad, kMaxThumbSize);
+    }
+    return thumb;
 }
 
 int ThumbnailBar::thumbSizeFromBarExtent(int extent) const
 {
     if (m_orientation == Qt::Horizontal) {
         // extent is bar height = cell height = pads + thumb + labelBand
+        const int pad = m_delegate ? m_delegate->cellPad() : qBound(2, m_thumbSize / 16, 8);
         return qBound(kMinThumbSize,
-                     extent - labelBandHeight() - ThumbnailDelegate::kCellPadTop
-                         - ThumbnailDelegate::kCellPadBottom,
+                     extent - labelBandHeight() - 2 * pad,
                      kMaxThumbSize);
     }
     // Vertical bar: extent is bar width ≈ cell width = thumb + 2*pad
     return qBound(kMinThumbSize,
-                 extent - 2 * ThumbnailDelegate::kCellPadX,
+                 extent - 2 * (m_delegate ? m_delegate->cellPad() : 4),
                  kMaxThumbSize);
 }
 
@@ -490,9 +519,10 @@ void ThumbnailBar::applyThumbMetrics()
     }
 
     const int label = labelBandHeight();
-    const int vPad = ThumbnailDelegate::kCellPadTop + ThumbnailDelegate::kCellPadBottom;
-    // Small gap between cells; per-thumb pad is already in sizeHint (equal sides).
-    setSpacing(2);
+    const int pad = m_delegate ? m_delegate->cellPad() : qBound(2, m_thumbSize / 16, 8);
+    const int vPad = 2 * pad;
+    // Gap between cells scales slightly with size; pad is already in sizeHint.
+    setSpacing(qBound(1, pad / 2, 4));
     if (m_orientation == Qt::Horizontal) {
         // Thin axis = height = pads + thumb + label (stable bar height).
         setMinimumHeight(kMinThumbSize + label + vPad);
@@ -500,8 +530,8 @@ void ThumbnailBar::applyThumbMetrics()
         setMinimumWidth(0);
         setMaximumWidth(QWIDGETSIZE_MAX);
     } else {
-        setMinimumWidth(kMinThumbSize + 2 * ThumbnailDelegate::kCellPadX);
-        setMaximumWidth(kMaxThumbSize + 2 * ThumbnailDelegate::kCellPadX);
+        setMinimumWidth(kMinThumbSize + 2 * pad);
+        setMaximumWidth(kMaxThumbSize + 2 * pad);
         setMinimumHeight(0);
         setMaximumHeight(QWIDGETSIZE_MAX);
     }
@@ -535,10 +565,11 @@ QSize ThumbnailBar::sizeHint() const
 QSize ThumbnailBar::minimumSizeHint() const
 {
     if (m_orientation == Qt::Horizontal) {
-        const int vPad = ThumbnailDelegate::kCellPadTop + ThumbnailDelegate::kCellPadBottom;
-        return QSize(200, kMinThumbSize + labelBandHeight() + vPad);
+        const int pad = m_delegate ? m_delegate->cellPad() : 4;
+        return QSize(200, kMinThumbSize + labelBandHeight() + 2 * pad);
     }
-    return QSize(kMinThumbSize + 2 * ThumbnailDelegate::kCellPadX, 200);
+    const int pad = m_delegate ? m_delegate->cellPad() : 4;
+    return QSize(kMinThumbSize + 2 * pad, 200);
 }
 
 void ThumbnailBar::setThumbSize(int pixels)
@@ -568,11 +599,23 @@ void ThumbnailBar::setLabelsVisible(bool on)
     updateGeometry();
 }
 
+int ThumbnailBar::pendingLoadCount() const
+{
+    return m_thumbLoadScheduled.size() + m_thumbAwaitLadder.size();
+}
+
+bool ThumbnailBar::isRowLoading(int row) const
+{
+    return m_thumbLoadScheduled.contains(row) || m_thumbAwaitLadder.contains(row);
+}
+
 void ThumbnailBar::cancelPendingLoads()
 {
     m_thumbLoadScheduled.clear();
     m_thumbAwaitLadder.clear();
+    m_thumbFailed.clear();
     ++m_generation;
+    emit loadsChanged();
 }
 
 void ThumbnailBar::resizeEvent(QResizeEvent *event)
@@ -852,7 +895,10 @@ void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)
 void ThumbnailBar::scheduleThumbnailLoads()
 {
     m_thumbLoadScheduled.clear();
+    m_thumbAwaitLadder.clear();
+    m_thumbFailed.clear();
     scheduleVisibleThumbnailLoads();
+    emit loadsChanged();
 }
 
 void ThumbnailBar::scheduleVisibleThumbnailLoads()
@@ -884,11 +930,26 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
     const int lo = qMax(0, focus - radius);
     const int hi = qMin(n, focus + radius + 1);
 
+    constexpr int kMaxConcurrentThumbLoads = 6;
+    int inFlight = 0;
+    for (int idx : m_thumbLoadScheduled) {
+        Q_UNUSED(idx);
+        ++inFlight;
+    }
     for (int i = lo; i < hi; ++i) {
-        if (m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i)) {
+        if (m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i)
+            || m_thumbFailed.contains(i)) {
             continue;
         }
-        m_thumbLoadScheduled.insert(i);
+        // Already has a real icon — skip.
+        if (QListWidgetItem *it = item(i)) {
+            if (!it->icon().isNull()) {
+                continue;
+            }
+        }
+        if (inFlight >= kMaxConcurrentThumbLoads) {
+            break;
+        }
         const QString path = m_files.at(i);
         // Prefer per-session-image override (stable id). Path-level override is
         // legacy only for unbound rows — never paint a path crop onto a bound
@@ -914,6 +975,8 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             }
             continue;
         }
+        m_thumbLoadScheduled.insert(i);
+        ++inFlight;
         // QPointer: bar may be destroyed while pool jobs still run.
         const QPointer<ThumbnailBar> guard(this);
         QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
@@ -937,7 +1000,11 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     host->m_thumbLoadScheduled.remove(i);
                     if (ThumtooCache::isAvailable()) {
                         host->m_thumbAwaitLadder.insert(i);
+                    } else {
+                        host->m_thumbFailed.insert(i);
                     }
+                    host->viewport()->update();
+                    emit host->loadsChanged();
                 }, Qt::QueuedConnection);
                 return;
             }
@@ -966,7 +1033,12 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 if (i < 0 || i >= host->m_files.size() || host->m_files.at(i) != path) {
                     return;
                 }
+                host->m_thumbLoadScheduled.remove(i);
+                host->m_thumbFailed.remove(i);
                 host->setThumbnailIcon(i, image);
+                emit host->loadsChanged();
+                // Free slot may allow more visible rows to start.
+                host->scheduleVisibleThumbnailLoads();
             }, Qt::QueuedConnection);
         });
     }

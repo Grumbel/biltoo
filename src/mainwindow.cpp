@@ -152,6 +152,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onThumbnailCanvasMembershipToggled);
     connect(m_thumbnailBar, &ThumbnailBar::removeIndicesRequested,
             this, &MainWindow::removeSessionIndices);
+    connect(m_thumbnailBar, &ThumbnailBar::loadsChanged,
+            this, &MainWindow::updateStatus);
     connect(m_imageView, &ImageView::workspacePathsChanged,
             this, &MainWindow::onWorkspacePathsChanged);
     connect(m_imageView, &ImageView::canvasSelectionChanged, this, [this]() {
@@ -1786,12 +1788,15 @@ void MainWindow::updateStatus()
             statusBar()->showMessage(
                 tr("Could not load “%1”").arg(PagePath::displayName(err)), 5000);
         }
-        // Drag/open decode progress (also covers Gallery virtualization window).
+        // Drag/open decode progress (Gallery virtualization + filmstrip ladder).
         // Use m_decodeStatusActive — do not match message text (breaks under i18n).
-        const int pending = m_imageView->pendingDecodeCount();
+        int pending = m_imageView->pendingDecodeCount();
+        if (m_thumbnailBar) {
+            pending += m_thumbnailBar->pendingLoadCount();
+        }
         if (pending > 0 && statusBar()) {
             statusBar()->showMessage(
-                tr("Decoding %n image…", "decode progress", pending), 0);
+                tr("Loading %n thumbnail…", "thumb/decode progress", pending), 0);
             m_decodeStatusActive = true;
         } else if (m_decodeStatusActive && statusBar()) {
             statusBar()->clearMessage();

@@ -2,7 +2,7 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-378-filmstrip-canvas-bg.** Filmstrip background matches gallery canvas. Prior: 377–365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
+**Tip: biltoo-379-filmstrip-loading-adaptive-pad.** Adaptive pad; loading indicator; fix thumb queue stall/CPU. Prior: 378–365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
 locator registration + dict-size extract.
 
 ### Shipped
