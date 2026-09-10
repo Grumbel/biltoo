@@ -530,7 +530,9 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         host->scheduleImageLoad(pathCopy, LoadAdd);
         host->updateWorkspaceSceneRect();
         emit host->statusChanged();
-        emit host->workspacePathsChanged();
+        // Do not emit workspacePathsChanged here: MainWindow defers
+        // syncThumbnailCanvasMembership after the drop; a second rebind race
+        // was implicated in Qt type/destructor asserts.
     });
     return true;
 }

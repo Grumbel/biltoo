@@ -2612,12 +2612,20 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             }
             ++i;
         }
-        syncThumbnailCanvasMembership();
-        if (m_session.paths().size() > 1 && !m_thumbnailBar->isVisible()) {
-            m_toggleThumbnailBarAct->setChecked(true);
-            m_thumbnailBar->setVisible(true);
-        }
-        updateStatus();
+        // Defer membership sync — rebind during the drop stack asserted under
+        // Qt 6.11 ("destructor may have already run" / wrong type).
+        QTimer::singleShot(0, this, [this]() {
+            if (!isWorkspaceMode()) {
+                return;
+            }
+            syncThumbnailCanvasMembership();
+            if (m_session.paths().size() > 1 && m_thumbnailBar
+                && !m_thumbnailBar->isVisible()) {
+                m_toggleThumbnailBarAct->setChecked(true);
+                m_thumbnailBar->setVisible(true);
+            }
+            updateStatus();
+        });
         return;
     }
 

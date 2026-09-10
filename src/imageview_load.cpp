@@ -17,6 +17,7 @@
 #include <QFileInfo>
 #include <QScrollBar>
 #include <QThreadPool>
+#include <QTimer>
 #include <QPointer>
 #include <QMetaObject>
 #include <QtMath>
@@ -220,17 +221,15 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         if (!guard || preview.isNull()) {
             return;
         }
-        ImageView *view = guard.data();
-        if (!view) {
-            return;
-        }
-        // Functor invoke avoids string/slot lookup and Q_ARG metatype issues.
-        QMetaObject::invokeMethod(view, [guard, path, preview, gen, role]() {
+        // QTimer::singleShot(context, functor) is safer than
+        // QMetaObject::invokeMethod(context, functor) under Qt 6.11 — the latter
+        // asserted "Called object is not of the correct type" during drop loads.
+        QTimer::singleShot(0, guard.data(), [guard, path, preview, gen, role]() {
             if (!guard) {
                 return;
             }
             guard->onImagePreviewLoaded(path, preview, gen, static_cast<int>(role));
-        }, Qt::QueuedConnection);
+        });
     }, 2);
 
     QThreadPool::globalInstance()->start([guard, path, role, gen]() {
@@ -238,16 +237,12 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         if (!guard) {
             return;
         }
-        ImageView *view = guard.data();
-        if (!view) {
-            return;
-        }
-        QMetaObject::invokeMethod(view, [guard, path, image, gen, role]() {
+        QTimer::singleShot(0, guard.data(), [guard, path, image, gen, role]() {
             if (!guard) {
                 return;
             }
             guard->onImageLoaded(path, image, gen, static_cast<int>(role));
-        }, Qt::QueuedConnection);
+        });
     }, 1);
 }
 
