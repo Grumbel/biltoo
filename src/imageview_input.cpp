@@ -38,6 +38,7 @@
 #include <QtMath>
 #include <cmath>
 #include <algorithm>
+#include <cstdio>
 #include <cmath>
 
 int ImageView::edgeZoneWidth() const
@@ -176,6 +177,14 @@ void ImageView::dropEvent(QDropEvent *event)
     QStringList internalPaths;
     if (hasInternal) {
         internalPaths = QString::fromUtf8(pathBytes).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    }
+    if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+        dbg && dbg[0] != '\0' && dbg[0] != '0') {
+        fprintf(stderr,
+                "biltoo/drop: ImageView::dropEvent viewPos=(%d,%d) scene=(%.1f,%.1f) "
+                "mode=W%d G%d\n",
+                viewPos.x(), viewPos.y(), scenePos.x(), scenePos.y(),
+                isWorkspaceMode() ? 1 : 0, isGalleryMode() ? 1 : 0);
     }
     emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos,
                       /*hasScenePos=*/true, sessionIds, internalPaths);

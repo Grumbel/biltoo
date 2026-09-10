@@ -188,17 +188,21 @@ void GalleryController::onLeave(int nextMode)
     // Gallery → Image: keep scroll/centre snapshot from snapshotViewport()
     // (called just before setViewMode) so return-to-Gallery can restore it.
     // Any other leave path drops the snapshot.
-    if (next != ImageView::ViewMode::Image) {
-        m_haveScroll = false;
-        m_haveViewCenter = false;
-        // Gallery → Workspace (or any non-Image leave): cancel background
-        // decode-window jobs. Otherwise LoadAdd completions land on the new
-        // mode and spawn free-form tiles from gallery pathOrder.
-        m_view->invalidateGalleryDecodes();
-    } else {
+    if (next == ImageView::ViewMode::Image) {
         // Keep tiles + decoded pixels for a fast return to Gallery.
         // Pending LoadAdds may still fill stashed placeholders in Image mode.
         stashItems();
+    } else {
+        m_haveScroll = false;
+        m_haveViewCenter = false;
+        // Gallery → Workspace / leave: cancel decode-window jobs AND remove
+        // packed live tiles. Leaving them caused drops to "move" grid tiles
+        // (same SessionImageId) or keep gallery scale/cell size on the
+        // free-form canvas.
+        m_view->invalidateGalleryDecodes();
+        m_view->clearLiveCanvas();
+        m_view->pathOrder().clear();
+        m_view->sessionIdOrder().clear();
     }
 }
 

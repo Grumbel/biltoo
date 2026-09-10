@@ -2524,6 +2524,16 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     // Workspace mode: place each drop as a canvas instance at the drop point.
     // Paths already on the canvas are *duplicated* (not moved); a new session
     // slot is appended so the filmstrip can address the copy independently.
+    if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+        dbg && dbg[0] != '\0' && dbg[0] != '0') {
+        fprintf(stderr,
+                "biltoo/drop: handle mode=W%d G%d I%d hasPos=%d scene=(%.1f,%.1f) "
+                "paths=%d sessionIds=%d internal=%d\n",
+                isWorkspaceMode() ? 1 : 0, isGalleryMode() ? 1 : 0,
+                (m_imageView && m_imageView->isImageMode()) ? 1 : 0,
+                hasScenePos ? 1 : 0, scenePos.x(), scenePos.y(),
+                paths.size(), sessionIds.size(), internalPaths.size());
+    }
     if (isWorkspaceMode()) {
         const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
         if (expanded.isEmpty()) {
@@ -2576,11 +2586,26 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             }
             if (hasScenePos) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
+                if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+                    dbg && dbg[0] != '\0' && dbg[0] != '0') {
+                    fprintf(stderr,
+                            "biltoo/drop: placeOrMove path=%s sid=%lld slot=%d "
+                            "pos=(%.1f,%.1f) alreadyOnCanvas=%d\n",
+                            qPrintable(img), static_cast<long long>(sid), slot,
+                            pos.x(), pos.y(), alreadyOnCanvas ? 1 : 0);
+                }
                 // placeOrMoveImageAt owns identity via PendingSessionBind / move-by-id.
                 // Do NOT bindSelectedSessionIds here — that stamped sid onto every
                 // currently selected tile and created duplicate SessionImageIds.
                 m_imageView->placeOrMoveImageAt(img, pos, sid, slot);
             } else {
+                if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+                    dbg && dbg[0] != '\0' && dbg[0] != '0') {
+                    fprintf(stderr,
+                            "biltoo/drop: NO scene pos — addImageForSession path=%s "
+                            "sid=%lld (appearance may restore old pose)\n",
+                            qPrintable(img), static_cast<long long>(sid));
+                }
                 m_imageView->addImageForSession(img, sid, slot);
             }
             ++i;
@@ -2692,6 +2717,11 @@ void MainWindow::dropEvent(QDropEvent *event)
             scenePos = m_imageView->mapToScene(viewPos);
             hasScenePos = true;
         }
+    }
+    if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+        dbg && dbg[0] != '\0' && dbg[0] != '0') {
+        fprintf(stderr, "biltoo/drop: MainWindow::dropEvent hasPos=%d scene=(%.1f,%.1f)\n",
+                hasScenePos ? 1 : 0, scenePos.x(), scenePos.y());
     }
     handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), scenePos,
                       hasScenePos, sessionIds, internalPaths);

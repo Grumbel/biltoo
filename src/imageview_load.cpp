@@ -921,12 +921,19 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         // Explicit drop position wins over restored gallery/workspace pose.
         if (bound.hasScenePos) {
+            existing->setGalleryCellSize({});
             existing->setPos(bound.scenePos);
             existing->setItemScale(1.0);
             existing->setItemRotation(0.0);
+            existing->setItemShear(0.0);
             existing->setItemOpacity(1.0);
             existing->setStackZ(m_items.size() - 1);
+            if (isWorkspaceMode()) {
+                existing->setInteractive(true);
+                existing->setScaleHandlesEnabled(true);
+            }
             m_pendingScenePos.remove(path);
+            rememberItemState(existing);
         }
         if (bound.id != kInvalidSessionImageId) {
             const QImage appearance = sessionAppearanceImage(existing);
@@ -1037,12 +1044,19 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             item->setItemOpacity(1.0);
         } else if (haveBound && bound.hasScenePos) {
             // Explicit drop: place at the drop point (new placement).
+            item->setGalleryCellSize({});
             item->setPos(bound.scenePos);
             item->setItemScale(1.0);
             item->setItemRotation(0.0);
+            item->setItemShear(0.0);
             item->setItemOpacity(1.0);
             item->setStackZ(m_items.size() - 1);
+            if (isWorkspaceMode()) {
+                item->setInteractive(true);
+                item->setScaleHandlesEnabled(true);
+            }
             m_pendingScenePos.remove(path);
+            rememberItemState(item);
         } else if (haveBound && bound.id != kInvalidSessionImageId
                    && m_appearance.get(bound.id)) {
             // Thumbnail membership toggle: restore last Workspace pose for this

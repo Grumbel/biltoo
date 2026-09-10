@@ -413,11 +413,24 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     if (sessionId != kInvalidSessionImageId) {
         if (ImageItem *existing = findItemBySessionId(sessionId)) {
             if (existing->scene() == m_scene) {
+                // Drop out of gallery pack geometry (cell size + pack scale).
+                existing->setGalleryCellSize({});
+                existing->setItemScale(1.0);
+                existing->setItemRotation(0.0);
+                existing->setItemShear(0.0);
+                existing->setItemOpacity(1.0);
                 existing->setPos(scenePos);
+                if (isWorkspaceMode()) {
+                    existing->setInteractive(true);
+                    existing->setScaleHandlesEnabled(true);
+                }
                 if (m_scene) {
                     m_scene->clearSelection();
                 }
                 existing->setSelected(true);
+                // Persist free-form pose so a later appearance restore cannot
+                // revive gallery pack coordinates.
+                rememberItemState(existing);
                 updateWorkspaceSceneRect();
                 ensureVisibleItem(existing);
                 emit statusChanged();
