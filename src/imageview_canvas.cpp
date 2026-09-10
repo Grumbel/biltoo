@@ -477,11 +477,23 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
 
     // Immediate placeholder at the drop point so placement does not depend on
     // async decode ordering (and so archive ladder delays still show a tile).
+    // Avoid rememberItemState / selection signals here — dropEvent is still on
+    // the stack (filesDropped → handleDroppedUrls); re-entrant status/selection
+    // updates were tripping Qt "destructor may have already run" asserts.
     {
         QSize sz(512, 512);
         const QSize cached = imageSizeForPath(path);
         if (cached.isValid() && cached.width() > 1 && cached.height() > 1) {
-            sz = cached;
+            // Cap placeholder footprint so an unpainted native-size tile does
+            // not dominate the scene before pixels arrive.
+            const int longEdge = qMax(cached.width(), cached.height());
+            if (longEdge > 1024) {
+                const qreal f = 1024.0 / qreal(longEdge);
+                sz = QSize(qMax(1, int(cached.width() * f)),
+                           qMax(1, int(cached.height() * f)));
+            } else {
+                sz = cached;
+            }
         }
         ImageItem *ph = new ImageItem(path, sz);
         ph->setPos(scenePos);
@@ -501,11 +513,6 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         }
         m_items.append(ph);
         applyItemModeFlags(ph);
-        rememberItemState(ph);
-        if (m_scene) {
-            m_scene->clearSelection();
-        }
-        ph->setSelected(true);
         if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
             dbg && dbg[0] != '\0' && dbg[0] != '0') {
             fprintf(stderr,
@@ -516,10 +523,19 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         }
     }
 
-    scheduleImageLoad(path, LoadAdd);
-    updateWorkspaceSceneRect();
-    emit statusChanged();
-    emit workspacePathsChanged();
+    // Defer decode + UI signals until after the drop event stack unwinds.
+    const QString pathCopy = path;
+    QPointer<ImageView> guard(this);
+    QTimer::singleShot(0, this, [guard, pathCopy]() {
+        ImageView *const host = guard.data();
+        if (!host || !host->isWorkspaceMode()) {
+            return;
+        }
+        host->scheduleImageLoad(pathCopy, LoadAdd);
+        host->updateWorkspaceSceneRect();
+        emit host->statusChanged();
+        emit host->workspacePathsChanged();
+    });
     return true;
 }
 
