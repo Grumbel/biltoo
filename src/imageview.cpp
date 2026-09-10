@@ -189,13 +189,35 @@ ImageView::ImageView(QWidget *parent)
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
         if (isGalleryMode()) {
-            updateGalleryDecodeWindow();
+            // Debounce: every scroll pixel used to scan all tiles + start pool
+            // work and could peg a core while the user was only panning.
+            if (!m_galleryDecodeScrollTimer) {
+                m_galleryDecodeScrollTimer = new QTimer(this);
+                m_galleryDecodeScrollTimer->setSingleShot(true);
+                m_galleryDecodeScrollTimer->setInterval(80);
+                connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
+                    if (isGalleryMode()) {
+                        updateGalleryDecodeWindow();
+                    }
+                });
+            }
+            m_galleryDecodeScrollTimer->start();
         }
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
         if (isGalleryMode()) {
-            updateGalleryDecodeWindow();
+            if (!m_galleryDecodeScrollTimer) {
+                m_galleryDecodeScrollTimer = new QTimer(this);
+                m_galleryDecodeScrollTimer->setSingleShot(true);
+                m_galleryDecodeScrollTimer->setInterval(80);
+                connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
+                    if (isGalleryMode()) {
+                        updateGalleryDecodeWindow();
+                    }
+                });
+            }
+            m_galleryDecodeScrollTimer->start();
         }
     });
 }

@@ -104,6 +104,15 @@ QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentPx) 
     return QSize(iw + 2 * pad, pad + ih + pad + labelH);
 }
 
+QSize ThumbnailDelegate::provisionalContentSize() const
+{
+    // Typical document page portrait (~3:4). Same for every unloaded cell so the
+    // strip does not mix square placeholders with tight real thumbs.
+    const int h = m_thumbSize;
+    const int w = qMax(1, int(qRound(m_thumbSize * 0.75)));
+    return QSize(w, h);
+}
+
 QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
                                  const QModelIndex &index) const
 {
@@ -116,6 +125,7 @@ QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
         if (content.width() > 0 && content.height() > 0) {
             return cellSizeForContent(option.font, content);
         }
+        return cellSizeForContent(option.font, provisionalContentSize());
     }
     return cellSize(option.font);
 }
@@ -543,8 +553,11 @@ void ThumbnailBar::applyThumbMetrics()
                     it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
                 if (content.width() > 0 && content.height() > 0) {
                     it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
-                    continue;
+                } else {
+                    it->setSizeHint(m_delegate->cellSizeForContent(
+                        font(), m_delegate->provisionalContentSize()));
                 }
+                continue;
             }
             it->setSizeHint(squareCell);
         }
@@ -748,9 +761,18 @@ void ThumbnailBar::setStripBackground(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    // Paint the canvas colour only on the viewport — not the widget chrome —
-    // so scrollbars keep the normal window palette (no colour bleed).
-    setAutoFillBackground(false);
+    // Filmstrip body = canvas colour; scrollbars = application window chrome
+    // (not the canvas colour).
+    const QColor chrome = QApplication::palette().color(QPalette::Window);
+    const QColor mid = QApplication::palette().color(QPalette::Mid);
+    const QColor text = (color.lightness() < 128) ? QColor(Qt::white) : QColor(Qt::black);
+
+    setAutoFillBackground(true);
+    QPalette pal = palette();
+    pal.setColor(QPalette::Base, color);
+    pal.setColor(QPalette::Window, color);
+    pal.setColor(QPalette::Text, text);
+    setPalette(pal);
     if (viewport()) {
         viewport()->setAutoFillBackground(true);
         QPalette vp = viewport()->palette();
@@ -758,14 +780,30 @@ void ThumbnailBar::setStripBackground(const QColor &color)
         vp.setColor(QPalette::Window, color);
         viewport()->setPalette(vp);
     }
-    const QColor text = (color.lightness() < 128) ? QColor(Qt::white) : QColor(Qt::black);
-    QPalette pal = palette();
-    pal.setColor(QPalette::Text, text);
-    setPalette(pal);
-    // Transparent widget chrome; item area uses viewport palette.
+
     setStyleSheet(QStringLiteral(
-        "ThumbnailBar { background: transparent; border: none; }"
-        "ThumbnailBar::item { background: transparent; }"));
+        "ThumbnailBar { background-color: %1; border: none; }"
+        "ThumbnailBar::item { background: transparent; }"
+        "QScrollBar:horizontal {"
+        "  background: %2; height: 12px; margin: 0;"
+        "}"
+        "QScrollBar:vertical {"
+        "  background: %2; width: 12px; margin: 0;"
+        "}"
+        "QScrollBar::handle:horizontal, QScrollBar::handle:vertical {"
+        "  background: %3; border-radius: 3px;"
+        "  min-width: 20px; min-height: 20px;"
+        "}"
+        "QScrollBar::add-line, QScrollBar::sub-line {"
+        "  width: 0; height: 0; background: none;"
+        "}"
+        "QScrollBar::add-page, QScrollBar::sub-page {"
+        "  background: %2;"
+        "}"
+    ).arg(color.name(QColor::HexRgb),
+          chrome.name(QColor::HexRgb),
+          mid.name(QColor::HexRgb)));
+
     if (viewport()) {
         viewport()->update();
     }
@@ -1116,8 +1154,12 @@ void ThumbnailBar::setFiles(const QStringList &files)
         m_sessionImageOverrides.swap(kept);
     }
 
-    const QSize cell = m_delegate ? m_delegate->cellSize(font())
-                                  : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight());
+    // Letterbox: uniform provisional portrait cells so packing is tight before
+    // decode; real aspect replaces this in setThumbnailIcon.
+    const QSize cell = (m_delegate && !m_cropToSquare)
+        ? m_delegate->cellSizeForContent(font(), m_delegate->provisionalContentSize())
+        : (m_delegate ? m_delegate->cellSize(font())
+                      : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
     // Bulk insert: avoid per-item repaints (large archives can have thousands of rows).
     setUpdatesEnabled(false);
     for (int i = 0; i < files.size(); ++i) {

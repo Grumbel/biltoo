@@ -51,6 +51,8 @@ public:
     QSize cellSize(const QFont &font) const;
     /** Cell size for a content pixmap size (letterbox: hug aspect + pads). */
     QSize cellSizeForContent(const QFont &font, QSize contentPx) const;
+    /** Uniform letterbox size before real aspect is known (portrait-ish). */
+    QSize provisionalContentSize() const;
 
     /** Caption band under the icon (0 when labels hidden). */
     int labelBandHeight(const QFont &font) const;

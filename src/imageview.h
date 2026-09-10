@@ -1414,6 +1414,7 @@ private:
     bool m_applyingLayout = false;
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     int m_galleryRelayoutSuppressCount = 0;
+    QTimer *m_galleryDecodeScrollTimer = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;
     GalleryPackReason m_debouncedPackReason = GalleryPackReason::ContentChange;
 };
