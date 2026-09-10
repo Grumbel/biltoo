@@ -391,6 +391,10 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
 
 ThumbnailBar::~ThumbnailBar()
 {
+    // cancelPendingLoads() emits loadsChanged → MainWindow::updateStatus.
+    // At shutdown MainWindow is already being destroyed (we are a child of the
+    // central splitter); delivering that slot asserts under Qt 6.11.
+    blockSignals(true);
     cancelPendingLoads();
 }
 
