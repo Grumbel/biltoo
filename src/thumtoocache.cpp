@@ -58,6 +58,7 @@
 
 namespace ThumtooCache {
 namespace {
+QSet<QString> g_pixelsInflight;
 
 #ifdef BILTOO_HAVE_THUMTOO
 
@@ -593,20 +594,35 @@ void schedulePixels(const QString &path, int maxEdge)
     if (uri.empty()) {
         return;
     }
+    // Dedup in-flight requests (path + edge). loadThumbnail shortfall and
+    // filmstrip ladderReady used to re-queue the same edge until CPU saturated.
+    const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
     thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);
+        if (g_pixelsInflight.contains(inflightKey)) {
+            return;
+        }
+        g_pixelsInflight.insert(inflightKey);
         c = clientUnlocked();
     }
     if (!c) {
+        std::lock_guard lock(g_mu);
+        g_pixelsInflight.remove(inflightKey);
         return;
     }
     const QString pathCopy = path;
     const int edge = maxEdge;
     c->request_pixels(
         uri, maxEdge,
-        [pathCopy, edge](std::string, int, std::optional<thumtoo::PixelLevel> px) {
+        [pathCopy, edge, inflightKey](std::string, int, std::optional<thumtoo::PixelLevel> px) {
+            {
+                std::lock_guard lock(g_mu);
+                g_pixelsInflight.remove(inflightKey);
+            }
             if (!px || px->bytes.empty()) {
+                // Still notify so gallery await can settle (null path).
+                emit bridge()->ladderReady(pathCopy, edge);
                 return;
             }
             // Decode happens in ThumbnailBar/ImageLoader (vips) on ladderReady.

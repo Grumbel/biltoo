@@ -897,11 +897,16 @@ QImage loadThumbnail(const QString &path, int maxEdge)
             }
             if (!decoded.isNull()) {
                 const int got = qMax(decoded.width(), decoded.height());
-                // get_pixels returns the largest level ≤ maxEdge. If that is still
-                // well below the request, ask thumtoo for the higher step (async);
-                // return the current best so the UI is not blank while it builds.
+                // get_pixels returns the largest level ≤ maxEdge. Only ask for a
+                // *higher ladder step* than we already have — not on every paint
+                // when the request sits between steps (that re-fired schedulePixels
+                // / ladderReady and pegged CPU).
                 if (got < maxEdge * 9 / 10) {
-                    ThumtooCache::schedulePixels(path, maxEdge);
+                    const int haveStep = ThumtooCache::ceilLadderEdge(got);
+                    const int wantStep = ThumtooCache::ceilLadderEdge(maxEdge);
+                    if (wantStep > haveStep) {
+                        ThumtooCache::schedulePixels(path, wantStep);
+                    }
                 }
                 if (decoded.width() > maxEdge || decoded.height() > maxEdge) {
                     decoded = decoded.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,

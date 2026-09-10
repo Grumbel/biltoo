@@ -26,7 +26,7 @@ class ThumbnailDelegate : public QStyledItemDelegate
     Q_OBJECT
 public:
     static constexpr int kLabelGap = 2;
-    static constexpr int kCellPadX = 2;
+    static constexpr int kCellPadX = 6;  // match top/bottom pad
     /** Space above/below the icon (same amount — strip edge breathing room). */
     static constexpr int kCellPadTop = 6;
     static constexpr int kCellPadBottom = 6;

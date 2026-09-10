@@ -307,8 +307,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                 if (path.isEmpty() || m_files.isEmpty()) {
                     return;
                 }
-                const int decodeSize =
-                    qMax(thumbDecodePixels(), ThumtooCache::kFilmstripLadderEdge);
+                const int decodeSize = ThumtooCache::kFilmstripLadderEdge;
                 const quint64 gen = m_generation.load();
                 for (int i = 0; i < m_files.size(); ++i) {
                     if (m_files.at(i) != path) {
@@ -478,29 +477,29 @@ void ThumbnailBar::applyThumbMetrics()
         m_delegate->setThumbSize(m_thumbSize);
     }
 
-    const QSize cell = m_delegate ? m_delegate->cellSize(font())
-                                  : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight());
-    // Crop mode: uniform squares. Letterbox: per-item sizeHint hugs content.
+    const QSize squareCell = m_delegate ? m_delegate->cellSize(font())
+                                        : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight());
+    // Crop mode: uniform squares. Letterbox: no gridSize — QListWidget IconMode
+    // uses sizeHint per item (gridSize would force equal square slots and large
+    // gaps between portrait pages).
     setUniformItemSizes(m_cropToSquare);
     if (m_cropToSquare) {
-        setGridSize(cell);
+        setGridSize(squareCell);
     } else {
-        // Max cell so IconMode layout still has a bound; items use sizeHint.
-        setGridSize(cell);
+        setGridSize(QSize());
     }
 
     const int label = labelBandHeight();
     const int vPad = ThumbnailDelegate::kCellPadTop + ThumbnailDelegate::kCellPadBottom;
-    setSpacing(m_labelsVisible ? 2 : 1);
+    // Small gap between cells; per-thumb pad is already in sizeHint (equal sides).
+    setSpacing(2);
     if (m_orientation == Qt::Horizontal) {
-        // Thin axis = height = pads + thumb + label (square slot; letterbox items
-        // may be shorter but bar height stays stable).
+        // Thin axis = height = pads + thumb + label (stable bar height).
         setMinimumHeight(kMinThumbSize + label + vPad);
         setMaximumHeight(kMaxThumbSize + label + vPad);
         setMinimumWidth(0);
         setMaximumWidth(QWIDGETSIZE_MAX);
     } else {
-        // Thin axis = width = thumb + horizontal pad (label is under the icon)
         setMinimumWidth(kMinThumbSize + 2 * ThumbnailDelegate::kCellPadX);
         setMaximumWidth(kMaxThumbSize + 2 * ThumbnailDelegate::kCellPadX);
         setMinimumHeight(0);
@@ -509,9 +508,18 @@ void ThumbnailBar::applyThumbMetrics()
 
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
-            it->setSizeHint(cell);
+            if (!m_cropToSquare && m_delegate) {
+                const QSize content =
+                    it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+                if (content.width() > 0 && content.height() > 0) {
+                    it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
+                    continue;
+                }
+            }
+            it->setSizeHint(squareCell);
         }
     }
+    doItemsLayout();
 }
 
 QSize ThumbnailBar::sizeHint() const
@@ -834,8 +842,9 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
     }
     const quint64 gen = m_generation.load();
     // Never request below thumtoo's smallest ladder edge (find_best used to miss).
-    const int decodeSize =
-        qMax(thumbDecodePixels(), ThumtooCache::kFilmstripLadderEdge);
+    // Filmstrip only needs the small ladder step; higher edges are Gallery/Image.
+    // Requesting device pixels above 256 caused schedulePixels(512) storms.
+    const int decodeSize = ThumtooCache::kFilmstripLadderEdge;
     m_decodedSize = decodeSize;
 
     const int n = m_files.size();
