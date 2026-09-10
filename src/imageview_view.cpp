@@ -303,6 +303,7 @@ void ImageView::zoomFit()
                 fitInView(bounds, Qt::KeepAspectRatio);
             }
             updateGalleryDecodeWindow();
+            updateGeometries(); // refresh AsNeeded bar visibility after fit
             emit statusChanged();
         }
         return;
@@ -311,6 +312,7 @@ void ImageView::zoomFit()
         if (!m_items.isEmpty()) {
             fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
                       Qt::KeepAspectRatio);
+            updateGeometries();
             emit statusChanged();
         }
         return;
@@ -318,9 +320,11 @@ void ImageView::zoomFit()
     if (ImageItem *item = targetItem()) {
         item->setItemScale(1.0);
         fitItem(item, Qt::KeepAspectRatio);
+        updateGeometries();
         emit statusChanged();
     } else if (m_items.size() > 1) {
         fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatio);
+        updateGeometries();
         emit statusChanged();
     }
 }
@@ -337,6 +341,7 @@ void ImageView::zoomFill()
                 fitInView(bounds, Qt::KeepAspectRatioByExpanding);
             }
             updateGalleryDecodeWindow();
+            updateGeometries(); // refresh AsNeeded bar visibility after fill
             emit statusChanged();
         }
         return;
@@ -345,6 +350,7 @@ void ImageView::zoomFill()
         if (!m_items.isEmpty()) {
             fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
                       Qt::KeepAspectRatioByExpanding);
+            updateGeometries();
             emit statusChanged();
         }
         return;
@@ -352,9 +358,11 @@ void ImageView::zoomFill()
     if (ImageItem *item = targetItem()) {
         item->setItemScale(1.0);
         fitItem(item, Qt::KeepAspectRatioByExpanding);
+        updateGeometries();
         emit statusChanged();
     } else if (m_items.size() > 1) {
         fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatioByExpanding);
+        updateGeometries();
         emit statusChanged();
     }
 }

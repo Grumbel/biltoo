@@ -2,7 +2,7 @@
 
 ## Status (2026-09-09, session end)
 
-**Tip: biltoo-367-gallery-scrollbar-policy-before-pack.** Set AlwaysOn before first gallery pack so startup/load does not oversize. Prior: 366. Pack overshoot correction. Prior: 365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
+**Tip: biltoo-368-gallery-scrollbars-asneeded-after-pack.** Gallery follows scrollbar preference; pack reserves bar space temporarily; zoom Fit/Fill refreshes bar geometry. Prior: 367. Prior: 366. Prior: 365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
 locator registration + dict-size extract.
 
 ### Shipped

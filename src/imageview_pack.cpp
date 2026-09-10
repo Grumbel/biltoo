@@ -282,6 +282,18 @@ void ImageView::applyLayout(GalleryPackReason reason)
         centerOn(0, 0);
     }
 
+    // Reserve scrollbar space for the pack measurement. AsNeeded would let the
+    // first bar appear, shrink the viewport, and leave the fitted axis slightly
+    // oversized (dual bars). AlwaysOn only for this critical section; policy is
+    // restored after sceneRect is set so Zoom Fit/Fill can hide unused bars.
+    // m_applyingLayout is already true — resizeEvent will not re-enter pack.
+    const auto savedHBar = horizontalScrollBarPolicy();
+    const auto savedVBar = verticalScrollBarPolicy();
+    if (savedHBar != Qt::ScrollBarAlwaysOn || savedVBar != Qt::ScrollBarAlwaysOn) {
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    }
+
     const qreal margin = 16.0;
     const qreal gap = 12.0;
     const qreal availW = qMax(32.0, static_cast<qreal>(viewport()->width()) - 2.0 * margin);
@@ -339,10 +351,17 @@ void ImageView::applyLayout(GalleryPackReason reason)
     });
 
     const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-margin, -margin, margin, margin);
-    // Never call setHorizontalScrollBarPolicy here — it resizes the viewport and
-    // re-enters via resizeEvent (stack overflow). Policy is owned by MainWindow.
     if (m_scene->sceneRect() != bounds) {
         m_scene->setSceneRect(bounds);
+    }
+    // Restore caller policy (AsNeeded/Off). With overshoot correction the packed
+    // fitted axis should not need a bar; AsNeeded can hide it. Still under
+    // m_applyingLayout so a policy-driven resize does not repack.
+    if (horizontalScrollBarPolicy() != savedHBar) {
+        setHorizontalScrollBarPolicy(savedHBar);
+    }
+    if (verticalScrollBarPolicy() != savedVBar) {
+        setVerticalScrollBarPolicy(savedVBar);
     }
     m_fitMode = true;
     // Keep the guard until after statusChanged so slots cannot re-enter layout.

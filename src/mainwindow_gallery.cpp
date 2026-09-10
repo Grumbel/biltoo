@@ -46,11 +46,9 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
     // paths are actually scheduled; otherwise the first open after startup only
     // shows the single Image-mode item until Gallery is chosen again.
     m_imageView->enterGallery(layout);
-    // AlwaysOn must be applied *before* packing. Packing reads viewport size;
-    // if bars are still AlwaysOff the avail box is too large, then switching
-    // to AlwaysOn shrinks the viewport and both scrollbars appear (fitted axis
-    // has only a useless sub-pixel range). updateWorkspaceActionVisibility
-    // below would set the same policy too late.
+    // Apply mode policy before populate. Packing itself temporarily forces
+    // AlwaysOn while measuring avail (see ImageView::applyLayout) so AsNeeded
+    // does not shrink the viewport mid-pack.
     updateScrollBarPolicyForMode();
     populateGalleryCanvas();
 
@@ -440,12 +438,10 @@ void MainWindow::updateScrollBarPolicyForMode()
     }
     Qt::ScrollBarPolicy h = Qt::ScrollBarAlwaysOff;
     Qt::ScrollBarPolicy v = Qt::ScrollBarAlwaysOff;
-    if (m_imageView->isGalleryMode()) {
-        // AlwaysOn keeps the viewport size stable so gallery packing does not
-        // oscillate when AsNeeded scrollbars appear/disappear.
-        h = Qt::ScrollBarAlwaysOn;
-        v = Qt::ScrollBarAlwaysOn;
-    } else if (m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked()) {
+    // Gallery no longer forces AlwaysOn: that left both bars visible after
+    // Zoom Fit/Fill with nothing useful to scroll. Packing reserves bar space
+    // temporarily inside ImageView::applyLayout instead (stable avail box).
+    if (m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked()) {
         h = Qt::ScrollBarAsNeeded;
         v = Qt::ScrollBarAsNeeded;
     }

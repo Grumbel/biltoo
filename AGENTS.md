@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-367-gallery-scrollbar-policy-before-pack** (policy before pack).
-Next bundle number: **368**.
+Latest agent handoff: **TODO.md → biltoo-368-gallery-scrollbars-asneeded-after-pack** (AsNeeded after pack + zoom refresh).
+Next bundle number: **369**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
