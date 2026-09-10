@@ -919,6 +919,15 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (bound.id != kInvalidSessionImageId && m_appearance.get(bound.id)) {
             applyState(existing, *m_appearance.get(bound.id));
         }
+        // Explicit drop position wins over restored gallery/workspace pose.
+        if (bound.hasScenePos) {
+            existing->setPos(bound.scenePos);
+            existing->setItemScale(1.0);
+            existing->setItemRotation(0.0);
+            existing->setItemOpacity(1.0);
+            existing->setStackZ(m_items.size() - 1);
+            m_pendingScenePos.remove(path);
+        }
         if (bound.id != kInvalidSessionImageId) {
             const QImage appearance = sessionAppearanceImage(existing);
             if (!appearance.isNull()) {

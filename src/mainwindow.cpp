@@ -2681,8 +2681,19 @@ void MainWindow::dropEvent(QDropEvent *event)
     if (hasInternal) {
         internalPaths = QString::fromUtf8(pathBytes).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     }
-    // Window-level drop has no reliable scene position — empty-space placement
-    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), QPointF(),
-                      /*hasScenePos=*/false, sessionIds, internalPaths);
+    // Prefer mapping through the canvas when the cursor is over ImageView —
+    // filmstrip→Workspace drops often land on MainWindow if the OpenGL
+    // viewport does not deliver Drop to ImageView::dropEvent.
+    QPointF scenePos;
+    bool hasScenePos = false;
+    if (m_imageView && m_imageView->viewport()) {
+        const QPoint viewPos = m_imageView->viewport()->mapFromGlobal(QCursor::pos());
+        if (m_imageView->viewport()->rect().contains(viewPos)) {
+            scenePos = m_imageView->mapToScene(viewPos);
+            hasScenePos = true;
+        }
+    }
+    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), scenePos,
+                      hasScenePos, sessionIds, internalPaths);
     event->acceptProposedAction();
 }
