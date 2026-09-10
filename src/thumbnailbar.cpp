@@ -1112,12 +1112,11 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             if (!bar || gen != bar->m_generation.load()) {
                 return;
             }
-            if (const char *e = std::getenv("THUMTOO_DEBUG");
-                e && e[0] != '\0' && e[0] != '0') {
-                fprintf(stderr, "biltoo/filmstrip: makeThumbnail row=%d edge=%d path=%s\n",
-                        i, decodeSize, qPrintable(path));
-            } else if (const char *e = std::getenv("BILTOO_THUMTOO_DEBUG");
-                       e && e[0] != '\0' && e[0] != '0') {
+            const char *dbg = std::getenv("THUMTOO_DEBUG");
+            if (!dbg || dbg[0] == '\0' || dbg[0] == '0') {
+                dbg = std::getenv("BILTOO_THUMTOO_DEBUG");
+            }
+            if (dbg && dbg[0] != '\0' && dbg[0] != '0') {
                 fprintf(stderr, "biltoo/filmstrip: makeThumbnail row=%d edge=%d path=%s\n",
                         i, decodeSize, qPrintable(path));
             }

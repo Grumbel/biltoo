@@ -466,9 +466,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     host->takePendingWorkspacePath(path);
                     return;
                 }
-                GallerySoftState &st = it.value();
+                GallerySoftState &soft = it.value();
                 // Superseded request?
-                if (st.inflight != requestEdge) {
+                if (soft.inflight != requestEdge) {
                     host->takePendingWorkspacePath(path);
                     if (host->isGalleryMode()) {
                         host->updateGalleryDecodeWindow();
@@ -486,32 +486,23 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 if (!preview.isNull()) {
                     host->onImagePreviewLoaded(path, preview, gen,
                                                static_cast<int>(LoadAdd));
-                    st.have = qMax(st.have, got);
+                    soft.have = qMax(soft.have, got);
                 }
                 if (got >= requestEdge * 9 / 10) {
-                    st.inflight = 0;
-                    if (st.gaveUpWant <= requestEdge) {
-                        st.gaveUpWant = 0;
+                    soft.inflight = 0;
+                    if (soft.gaveUpWant <= requestEdge) {
+                        soft.gaveUpWant = 0;
                     }
                 } else if (ThumtooCache::isAvailable()) {
-                    // Keep waiting if a build is running OR we can start one.
-                    // Do not treat "settled" as final until ladderReady has had
-                    // a chance to deliver (settled + still short → wait once more
-                    // via ladderReady path by leaving inflight if was set).
-                    if (ThumtooCache::isPixelsInflight(path, requestEdge)
-                        || ThumtooCache::schedulePixels(path, requestEdge)) {
-                        st.inflight = requestEdge;
-                    } else {
-                        // Settled and not inflight: ladderReady may already be
-                        // queued — leave a short wait marker so that handler can
-                        // still match (inflight == requestEdge).
-                        st.inflight = requestEdge;
-                    }
+                    // Keep waiting for ladderReady: start a build if needed, or
+                    // leave inflight so a queued ladderReady can still match.
+                    (void)ThumtooCache::schedulePixels(path, requestEdge);
+                    soft.inflight = requestEdge;
                 } else {
-                    st.inflight = 0;
-                    st.gaveUpWant = qMax(st.gaveUpWant, requestEdge);
-                    if (st.have <= 0) {
-                        st.failed = true;
+                    soft.inflight = 0;
+                    soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
+                    if (soft.have <= 0) {
+                        soft.failed = true;
                     }
                 }
 
