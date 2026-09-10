@@ -1,5 +1,3 @@
-#include "archivepath.h"
-#include "pagepath.h"
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -1638,10 +1636,10 @@ void MainWindow::openDocumentLinkUri(const QString &uri)
     // Internal-looking URIs may still be page jumps.
     if (uri.startsWith(QLatin1Char('#'))) {
         int page = 0;
-        if (QStringView{uri}.sliced(1).startsWith(QLatin1String("page="))) {
-            page = QStringView{uri}.sliced(6).toInt();
+        if (uri.mid(1).startsWith(QLatin1String("page="))) {
+            page = uri.mid(6).toInt();
         } else {
-            page = QStringView{uri}.sliced(1).toInt();
+            page = uri.mid(1).toInt();
         }
         if (page > 0) {
             navigateDocumentPage(page);

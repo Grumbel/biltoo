@@ -17,6 +17,9 @@
 #include "metadatapanel.h"
 #include "adjustmentspanel.h"
 #include "layoutpanel.h"
+#include "tocpanel.h"
+#include "thumtoocache.h"
+#include "pagepath.h"
 
 #include <QAbstractButton>
 #include <QAction>
@@ -28,6 +31,7 @@
 #include <QColorDialog>
 #include <QCollator>
 #include <QCursor>
+#include <QDesktopServices>
 #include <QDir>
 #include <QDirIterator>
 #include <QDockWidget>
