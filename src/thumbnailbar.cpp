@@ -117,28 +117,45 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     const int iconY = cell.top() + kCellPadTop;
     const QRect iconRect(iconX, iconY, iconSide, iconSide);
 
+    // Destination of the *image* inside the square slot (may be letterboxed).
+    // Outline follows this rect, not the full cell, so white pages get a tight edge.
+    QRect contentRect = iconRect;
+
     const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
     if (!icon.isNull()) {
-        // Prefer an explicit pixmap draw into the icon rect. QIcon::paint can
-        // leave a small source pixmap centered without upscaling (HiDPI / tiny
-        // files), which looked like square thumbs "not filling" the cell.
+        // Prefer an explicit pixmap draw. QIcon::paint can leave a small source
+        // pixmap centered without upscaling (HiDPI / tiny files).
         const qreal dpr = qMax<qreal>(
             1.0, painter->device() ? painter->device()->devicePixelRatioF() : 1.0);
         const int phys = qMax(1, qRound(iconSide * dpr));
+        // Crop thumbs are square; letterbox thumbs keep native aspect (no pad).
         QPixmap pm = icon.pixmap(QSize(phys, phys));
+        if (pm.isNull()) {
+            pm = icon.pixmap(QSize(phys, qMax(1, phys / 2)));
+        }
         if (!pm.isNull()) {
             pm.setDevicePixelRatio(dpr);
-            // Stretch into the square icon slot (source is already letterboxed).
-            painter->drawPixmap(iconRect, pm);
+            const QSize logical = pm.deviceIndependentSize().toSize();
+            if (logical.width() > 0 && logical.height() > 0) {
+                const QSize fitted = logical.scaled(iconRect.size(), Qt::KeepAspectRatio);
+                contentRect = QRect(
+                    iconRect.x() + (iconRect.width() - fitted.width()) / 2,
+                    iconRect.y() + (iconRect.height() - fitted.height()) / 2,
+                    fitted.width(),
+                    fitted.height());
+            }
+            painter->drawPixmap(contentRect, pm);
         } else {
             icon.paint(painter, iconRect, Qt::AlignCenter,
                        QIcon::Normal, selected ? QIcon::On : QIcon::Off);
         }
     }
-    // Black hairline so white page thumbs stay visible on a light strip.
-    painter->setPen(QPen(QColor(0, 0, 0), 1));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(iconRect.adjusted(0, 0, -1, -1));
+    // Black hairline tight to the thumbnail image (crop fills slot; letterbox is inset).
+    if (contentRect.width() > 0 && contentRect.height() > 0) {
+        painter->setPen(QPen(QColor(0, 0, 0), 1));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRect(contentRect.adjusted(0, 0, -1, -1));
+    }
 
     const QString text = index.data(Qt::DisplayRole).toString();
     if (m_labelsVisible && !text.isEmpty() && labelBand > 0 && cell.height() > iconSide) {
@@ -167,9 +184,9 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             bar = qobject_cast<const ThumbnailBar *>(option.widget->parentWidget());
         }
     }
-    if (bar && bar->isOnCanvas(index.row()) && iconSide > 8) {
-            const int fold = qBound(10, iconSide / 4, 28);
-            const QPoint topRight(iconX + iconSide, iconY);
+    if (bar && bar->isOnCanvas(index.row()) && contentRect.width() > 8) {
+            const int fold = qBound(10, contentRect.width() / 4, 28);
+            const QPoint topRight(contentRect.right() + 1, contentRect.top());
             const QPoint left(topRight.x() - fold, topRight.y());
             const QPoint bottom(topRight.x(), topRight.y() + fold);
 
@@ -578,10 +595,9 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         }
         return square;
     }
-    // Fit full image into the square cell (letterbox) so aspect ratio is visible.
-    // Letterbox must be transparent — a solid plate looked like a forced square
-    // frame and did not match the ThumbnailBar background.
-    // Always scale so the longer edge is exactly maxSize (upscale small files).
+    // Keep aspect: return the fitted image only (not padded into a transparent
+    // square). The delegate centers it in the cell and draws the outline tight
+    // around this pixmap so letterboxed thumbs are not framed as empty squares.
     QImage fitted = image.scaled(maxSize, maxSize, Qt::KeepAspectRatio,
                                  Qt::SmoothTransformation);
     if (fitted.isNull()) {
@@ -594,15 +610,7 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         fitted = image.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio,
                               Qt::SmoothTransformation);
     }
-    QImage cell(maxSize, maxSize, QImage::Format_ARGB32_Premultiplied);
-    cell.fill(Qt::transparent);
-    QPainter painter(&cell);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-    const int ox = (maxSize - fitted.width()) / 2;
-    const int oy = (maxSize - fitted.height()) / 2;
-    painter.drawImage(ox, oy, fitted);
-    painter.end();
-    return cell;
+    return fitted;
 }
 
 void ThumbnailBar::setCropToSquare(bool on)

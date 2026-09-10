@@ -28,7 +28,7 @@ public:
     static constexpr int kLabelGap = 2;
     static constexpr int kCellPadX = 2;
     /** Space above the icon so thumbs are not flush with the strip edge. */
-    static constexpr int kCellPadTop = 3;
+    static constexpr int kCellPadTop = 6;
 
     explicit ThumbnailDelegate(int thumbSize, QObject *parent = nullptr);
 
