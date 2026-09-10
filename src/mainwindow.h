@@ -363,7 +363,7 @@ private:
     void setExpandProgress(int current, int total, const QString &message);
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
     void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                           const QPointF &scenePos = QPointF(),
+                           const QPointF &scenePos, bool hasScenePos,
                            const QList<qint64> &sessionIds = {},
                            const QStringList &internalPaths = {});
     static bool isImageFile(const QString &path);
