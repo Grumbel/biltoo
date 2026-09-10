@@ -100,7 +100,8 @@ void ImageView::updateGalleryDecodeWindow()
             }
         }
     }
-    emit statusChanged();
+    // Do not emit statusChanged unconditionally — this runs on every scroll tick
+    // and was driving full MainWindow::updateStatus work while decodes idle.
 }
 
 void ImageView::setLayoutMode(LayoutMode mode)

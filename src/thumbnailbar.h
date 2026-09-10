@@ -14,6 +14,7 @@
 #include <QPoint>
 #include <QStringList>
 #include <QStyledItemDelegate>
+#include <QTimer>
 #include <atomic>
 
 /**
@@ -28,6 +29,8 @@ public:
     static constexpr int kLabelGap = 2;
     /** Qt::UserRole for content pixel size of the prepared thumb (letterbox). */
     static constexpr int ThumbContentSizeRole = Qt::UserRole + 42;
+    /** True once a real decoded thumb is installed (not a placeholder). */
+    static constexpr int ThumbLoadedRole = Qt::UserRole + 43;
     /** Adaptive pad (~thumb/16, clamped) — equal on all sides of the icon. */
     int cellPad() const;
 
@@ -201,6 +204,8 @@ private:
     QSet<int> m_thumbAwaitLadder;
     /** Soft-miss settled for this generation — do not re-queue (CPU spin). */
     QSet<int> m_thumbFailed;
+    QTimer *m_layoutRefreshTimer = nullptr;
+    void scheduleLayoutRefresh();
     bool m_multiSelect = false;
     int m_selectionAnchor = -1;
     bool m_centeringGuard = false;

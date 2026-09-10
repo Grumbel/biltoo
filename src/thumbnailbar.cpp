@@ -65,7 +65,7 @@ void ThumbnailDelegate::setThumbSize(int pixels)
 int ThumbnailDelegate::cellPad() const
 {
     // Scale with thumb size so tiny cells are not mostly margin.
-    return qBound(2, m_thumbSize / 16, 8);
+    return qBound(1, m_thumbSize / 20, 6);
 }
 
 int ThumbnailDelegate::labelBandHeightForFont(const QFont &font)
@@ -392,7 +392,7 @@ int ThumbnailBar::labelBandHeight() const
 int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
     // Approximate for callers without a live widget (default app font).
-    const int pad = qBound(2, thumbSize / 16, 8);
+    const int pad = qBound(1, thumbSize / 20, 6);
     return 2 * pad + thumbSize
         + ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
 }
@@ -403,7 +403,7 @@ int ThumbnailBar::thumbSizeForExtent(int extent)
     // Inverse of extentForThumbSize with pad ≈ thumb/16 — iterate a step.
     int thumb = extent - label;
     for (int i = 0; i < 3; ++i) {
-        const int pad = qBound(2, thumb / 16, 8);
+        const int pad = qBound(1, thumb / 20, 6);
         thumb = qBound(kMinThumbSize, extent - label - 2 * pad, kMaxThumbSize);
     }
     return thumb;
@@ -413,7 +413,7 @@ int ThumbnailBar::thumbSizeFromBarExtent(int extent) const
 {
     if (m_orientation == Qt::Horizontal) {
         // extent is bar height = cell height = pads + thumb + labelBand
-        const int pad = m_delegate ? m_delegate->cellPad() : qBound(2, m_thumbSize / 16, 8);
+        const int pad = m_delegate ? m_delegate->cellPad() : qBound(1, m_thumbSize / 16, 6);
         return qBound(kMinThumbSize,
                      extent - labelBandHeight() - 2 * pad,
                      kMaxThumbSize);
@@ -519,7 +519,7 @@ void ThumbnailBar::applyThumbMetrics()
     }
 
     const int label = labelBandHeight();
-    const int pad = m_delegate ? m_delegate->cellPad() : qBound(2, m_thumbSize / 16, 8);
+    const int pad = m_delegate ? m_delegate->cellPad() : qBound(1, m_thumbSize / 16, 6);
     const int vPad = 2 * pad;
     // Gap between cells scales slightly with size; pad is already in sizeHint.
     setSpacing(qBound(1, pad / 2, 4));
@@ -669,12 +669,28 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         const QSize logical(qMax(1, int(qRound(pm.width() / dpr))),
                             qMax(1, int(qRound(pm.height() / dpr))));
         it->setData(ThumbnailDelegate::ThumbContentSizeRole, logical);
+        it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
         if (m_delegate && !m_cropToSquare) {
             it->setSizeHint(m_delegate->cellSizeForContent(font(), logical));
         } else if (m_delegate) {
             it->setSizeHint(m_delegate->cellSize(font()));
         }
+        scheduleLayoutRefresh();
     }
+}
+
+void ThumbnailBar::scheduleLayoutRefresh()
+{
+    if (!m_layoutRefreshTimer) {
+        m_layoutRefreshTimer = new QTimer(this);
+        m_layoutRefreshTimer->setSingleShot(true);
+        m_layoutRefreshTimer->setInterval(32);
+        connect(m_layoutRefreshTimer, &QTimer::timeout, this, [this]() {
+            doItemsLayout();
+            updateCenteringMargins();
+        });
+    }
+    m_layoutRefreshTimer->start();
 }
 
 QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize) const
@@ -732,19 +748,27 @@ void ThumbnailBar::setStripBackground(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    setAutoFillBackground(true);
-    QPalette pal = palette();
-    pal.setColor(QPalette::Base, color);
-    pal.setColor(QPalette::Window, color);
-    // Unselected text stays readable on dark or light canvas colours.
-    const QColor text = (color.lightness() < 128) ? QColor(Qt::white) : QColor(Qt::black);
-    pal.setColor(QPalette::Text, text);
-    setPalette(pal);
+    // Paint the canvas colour only on the viewport — not the widget chrome —
+    // so scrollbars keep the normal window palette (no colour bleed).
+    setAutoFillBackground(false);
     if (viewport()) {
         viewport()->setAutoFillBackground(true);
-        viewport()->setPalette(pal);
+        QPalette vp = viewport()->palette();
+        vp.setColor(QPalette::Base, color);
+        vp.setColor(QPalette::Window, color);
+        viewport()->setPalette(vp);
     }
-    viewport()->update();
+    const QColor text = (color.lightness() < 128) ? QColor(Qt::white) : QColor(Qt::black);
+    QPalette pal = palette();
+    pal.setColor(QPalette::Text, text);
+    setPalette(pal);
+    // Transparent widget chrome; item area uses viewport palette.
+    setStyleSheet(QStringLiteral(
+        "ThumbnailBar { background: transparent; border: none; }"
+        "ThumbnailBar::item { background: transparent; }"));
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
@@ -941,9 +965,9 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             || m_thumbFailed.contains(i)) {
             continue;
         }
-        // Already has a real icon — skip.
+        // Already has a real decoded thumb — skip.
         if (QListWidgetItem *it = item(i)) {
-            if (!it->icon().isNull()) {
+            if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()) {
                 continue;
             }
         }
@@ -977,7 +1001,6 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         }
         m_thumbLoadScheduled.insert(i);
         ++inFlight;
-        // QPointer: bar may be destroyed while pool jobs still run.
         const QPointer<ThumbnailBar> guard(this);
         QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
             ThumbnailBar *bar = guard.data();
@@ -1042,6 +1065,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             }, Qt::QueuedConnection);
         });
     }
+    emit loadsChanged();
 }
 
 void ThumbnailBar::clearPressState()
@@ -1106,7 +1130,10 @@ void ThumbnailBar::setFiles(const QStringList &files)
                                                             : kInvalidSessionImageId;
         item->setData(RoleSessionId, QVariant::fromValue(static_cast<qint64>(sid)));
         item->setSizeHint(cell);
-        item->setIcon(QIcon::fromTheme(QStringLiteral("image-x-generic")));
+        // No theme placeholder — empty icon shows loading chrome and allows
+        // scheduleVisibleThumbnailLoads to pick the row up (non-null icons were
+        // treated as already loaded).
+        item->setData(ThumbnailDelegate::ThumbLoadedRole, false);
     }
     setUpdatesEnabled(true);
 
