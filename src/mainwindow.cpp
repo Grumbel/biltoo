@@ -139,6 +139,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_thumbnailBar = new ThumbnailBar(m_centralSplitter);
     m_thumbnailBar->setAccessibleName(tr("Thumbnails"));
+    if (m_imageView) {
+        m_thumbnailBar->setStripBackground(m_imageView->backgroundColor());
+    }
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
     connect(m_thumbnailBar, &ThumbnailBar::indexAddToWorkspace,
@@ -1489,6 +1492,9 @@ void MainWindow::showPreferences()
     m_imageView->setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
     m_imageView->setBackgroundColor(dlg.backgroundColor());
     m_imageView->setBackgroundColorAlt(dlg.backgroundColorAlt());
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setStripBackground(dlg.backgroundColor());
+    }
     m_imageView->setBackgroundPattern(
         dlg.backgroundPatternIndex() == 1 ? ImageView::BackgroundPattern::Checkerboard
                                           : ImageView::BackgroundPattern::Solid);
@@ -2210,6 +2216,9 @@ void MainWindow::readSettings()
                                                 QStringLiteral("#2a2a2a")).toString());
         if (bg.isValid()) {
             m_imageView->setBackgroundColor(bg);
+            if (m_thumbnailBar) {
+                m_thumbnailBar->setStripBackground(bg);
+            }
         }
         const QColor bgAlt = QColor(settings.value(QStringLiteral("backgroundColorAlt"),
                                                    QStringLiteral("#303030")).toString());

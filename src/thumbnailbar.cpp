@@ -684,6 +684,26 @@ void ThumbnailBar::setCropToSquare(bool on)
     scheduleThumbnailLoads();
 }
 
+void ThumbnailBar::setStripBackground(const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    setAutoFillBackground(true);
+    QPalette pal = palette();
+    pal.setColor(QPalette::Base, color);
+    pal.setColor(QPalette::Window, color);
+    // Unselected text stays readable on dark or light canvas colours.
+    const QColor text = (color.lightness() < 128) ? QColor(Qt::white) : QColor(Qt::black);
+    pal.setColor(QPalette::Text, text);
+    setPalette(pal);
+    if (viewport()) {
+        viewport()->setAutoFillBackground(true);
+        viewport()->setPalette(pal);
+    }
+    viewport()->update();
+}
+
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
 {
     // Prefer a ready cache hit already large enough for the cell.

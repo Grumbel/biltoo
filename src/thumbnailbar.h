@@ -123,6 +123,8 @@ public:
      */
     void setCropToSquare(bool on);
     bool cropToSquare() const { return m_cropToSquare; }
+    /** Match filmstrip fill to the ImageView/Gallery canvas background. */
+    void setStripBackground(const QColor &color);
 
     /** Session rows currently on the Workspace canvas (membership badge). */
     void setOnCanvasIndices(const QSet<int> &indices);
