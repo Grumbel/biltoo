@@ -136,7 +136,10 @@ void ImageView::dropEvent(QDropEvent *event)
         event->ignore();
         return;
     }
-    const QPointF scenePos = mapToScene(event->position().toPoint());
+    // position() is relative to this QGraphicsView widget; mapToScene expects
+    // viewport coordinates (frame/scrollbar chrome is outside the viewport).
+    const QPoint viewPos = viewport()->mapFrom(this, event->position().toPoint());
+    const QPointF scenePos = mapToScene(viewPos);
     QList<qint64> sessionIds;
     const QByteArray idBytes =
         event->mimeData()->data(QStringLiteral("application/x-biltoo-session-ids"));
