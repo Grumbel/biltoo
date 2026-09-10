@@ -27,6 +27,21 @@ void ImageView::updateGalleryDecodeWindow()
         kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
     const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
 
+    // Gallery soft-decode state machine (per path):
+    //
+    //   need      = ladder step required for current on-screen cell size
+    //   have      = long edge of pixels currently on the item (0 = placeholder)
+    //   attempted = highest `need` we already finished trying (pool job done)
+    //   scheduled = pool job running now
+    //   await     = waiting for thumtoo ladderReady after schedulePixels
+    //
+    // Rules:
+    //   1. Full native decode → never soft-decode again.
+    //   2. scheduled or await → do not start another job.
+    //   3. Want work only if have < need AND attempted < need.
+    //      One finished attempt per need level. Zoom raises need above
+    //      attempted → one more try. If thumtoo only has a smaller level,
+    //      we still mark attempted=need so we do not spin.
     auto needsDecodeOrUpgrade = [this](ImageItem *item) -> bool {
         if (!item) {
             return false;
@@ -36,30 +51,21 @@ void ImageView::updateGalleryDecodeWindow()
             || m_galleryDecodeScheduled.contains(path)) {
             return false;
         }
-        // Waiting on an in-flight ladder build (possibly while showing a smaller
-        // preview). Do not start another pool job until ladderReady settles.
         if (m_galleryAwaitLadder.contains(path)) {
             return false;
         }
         if (item->hasDecodedPixels()) {
-            return false; // full decode
+            return false;
         }
         const int need = galleryDisplayEdgeForItem(item);
         const int have = item->displayPixelLongEdge();
-        // Upgrade path: on-screen need exceeds pixels we have (zoom in).
-        // Do not block upgrades with attemptedEdge — that map only stops
-        // repeated attempts for empty placeholders at the same need.
-        if (have > 0 && have < need) {
-            return true;
+        if (have >= need) {
+            return false;
         }
-        if (have <= 0) {
-            // Placeholder: skip if we already attempted this need (or higher).
-            if (m_galleryLadderAttemptedEdge.value(path, 0) >= need) {
-                return false;
-            }
-            return true;
+        if (m_galleryLadderAttemptedEdge.value(path, 0) >= need) {
+            return false;
         }
-        return false;
+        return true;
     };
 
     for (ImageItem *item : m_items) {

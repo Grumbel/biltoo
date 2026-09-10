@@ -101,22 +101,16 @@ ImageView::ImageView(QWidget *parent)
                             return;
                         }
                         host->m_galleryAwaitLadder.remove(path);
+                        // Attempt at `edge` is finished (success or empty).
+                        host->m_galleryLadderAttemptedEdge.insert(
+                            path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
+                                       edge));
                         if (preview.isNull()) {
-                            // This edge produced nothing — do not retry same edge.
-                            host->m_galleryLadderAttemptedEdge.insert(
-                                path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                           edge));
                             if (host->isGalleryMode()) {
                                 host->updateGalleryDecodeWindow();
                             }
                             return;
                         }
-                        const int got = qMax(preview.width(), preview.height());
-                        // Record delivered step only (not a larger requested edge we
-                        // failed to meet) so zoom can still ask for a higher step.
-                        host->m_galleryLadderAttemptedEdge.insert(
-                            path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                       ThumtooCache::ceilLadderEdge(got)));
                         host->onImagePreviewLoaded(
                             path, preview, 0,
                             static_cast<int>(ImageView::LoadAdd));

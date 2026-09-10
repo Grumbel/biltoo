@@ -355,46 +355,44 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             }
             host->m_galleryDecodeScheduled.remove(path);
             host->takePendingWorkspacePath(path);
+            // Finished one attempt at previewEdge unless we park on await.
+            auto markAttempted = [&]() {
+                host->m_galleryLadderAttemptedEdge.insert(
+                    path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
+                               previewEdge));
+            };
             if (!preview.isNull()) {
                 host->m_galleryAwaitLadder.remove(path);
                 const int got = qMax(preview.width(), preview.height());
+                host->onImagePreviewLoaded(path, preview, gen,
+                                           static_cast<int>(LoadAdd));
                 if (got >= previewEdge * 9 / 10) {
-                    host->m_galleryLadderAttemptedEdge.insert(
-                        path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                   previewEdge));
+                    // Good enough for this need.
+                    markAttempted();
                 } else if (ThumtooCache::isAvailable()) {
-                    // Request higher step explicitly; only await if accepted.
+                    // loadThumbnail already called schedulePixels for shortfall.
+                    // Only await if a NEW build was accepted; otherwise stop.
                     const int want = ThumtooCache::ceilLadderEdge(previewEdge);
                     if (ThumtooCache::schedulePixels(path, want)) {
                         host->m_galleryAwaitLadder.insert(path);
+                        // Do not markAttempted yet — ladderReady will.
                     } else {
-                        // Settled/in-flight at this edge — stop spinning; keep soft.
-                        host->m_galleryLadderAttemptedEdge.insert(
-                            path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                       want));
+                        markAttempted();
                     }
                 } else {
-                    host->m_galleryLadderAttemptedEdge.insert(
-                        path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                   previewEdge));
+                    markAttempted();
                 }
-                host->onImagePreviewLoaded(path, preview, gen,
-                                           static_cast<int>(LoadAdd));
             } else if (ThumtooCache::isAvailable()) {
                 const int want = ThumtooCache::ceilLadderEdge(previewEdge);
                 if (ThumtooCache::schedulePixels(path, want)) {
                     host->m_galleryAwaitLadder.insert(path);
                 } else {
-                    host->m_galleryDecodeFailed.insert(path);
-                    host->m_galleryLadderAttemptedEdge.insert(
-                        path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                                   want));
+                    // Miss and no build accepted → failed this need.
+                    markAttempted();
                 }
             } else {
                 host->m_galleryDecodeFailed.insert(path);
-                host->m_galleryLadderAttemptedEdge.insert(
-                    path, qMax(host->m_galleryLadderAttemptedEdge.value(path, 0),
-                               previewEdge));
+                markAttempted();
             }
             if (host->isGalleryMode()) {
                 host->updateGalleryDecodeWindow();

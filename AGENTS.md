@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-389-viewport-filmstrip-gallery-upgrade** (viewport filmstrip).
-Next bundle number: **390**.
+Latest agent handoff: **TODO.md → biltoo-390-gallery-decode-state-machine** (gallery state machine).
+Next bundle number: **391**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
