@@ -170,6 +170,9 @@ ImageView::ImageView(QWidget *parent)
     // OpenGL viewport — overlays must use drawForeground (see paintEvent).
     setViewport(new QOpenGLWidget);
     setAcceptDrops(true);
+    if (viewport()) {
+        viewport()->setAcceptDrops(true);
+    }
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);

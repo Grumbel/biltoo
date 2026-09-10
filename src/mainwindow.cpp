@@ -2502,7 +2502,8 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 }
 
 void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                                   const QPointF &scenePos, const QList<qint64> &sessionIds,
+                                   const QPointF &scenePos, bool hasScenePos,
+                                   const QList<qint64> &sessionIds,
                                    const QStringList &internalPaths)
 {
     // Prefer explicit internal paths from the filmstrip (exact selection,
@@ -2573,7 +2574,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
                 slot = m_session.lastIndexOfPath(img);
                 sid = sessionIdAt(slot);
             }
-            if (!scenePos.isNull()) {
+            if (hasScenePos) {
                 const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
                 // placeOrMoveImageAt owns identity via PendingSessionBind / move-by-id.
                 // Do NOT bindSelectedSessionIds here — that stamped sid onto every
@@ -2648,10 +2649,11 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
 }
 
 void MainWindow::onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                                const QPointF &scenePos, const QList<qint64> &sessionIds,
+                                const QPointF &scenePos, bool hasScenePos,
+                                const QList<qint64> &sessionIds,
                                 const QStringList &internalPaths)
 {
-    handleDroppedUrls(urls, modifiers, scenePos, sessionIds, internalPaths);
+    handleDroppedUrls(urls, modifiers, scenePos, hasScenePos, sessionIds, internalPaths);
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
@@ -2680,7 +2682,7 @@ void MainWindow::dropEvent(QDropEvent *event)
         internalPaths = QString::fromUtf8(pathBytes).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     }
     // Window-level drop has no reliable scene position — empty-space placement
-    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), QPointF(), sessionIds,
-                      internalPaths);
+    handleDroppedUrls(event->mimeData()->urls(), event->modifiers(), QPointF(),
+                      /*hasScenePos=*/false, sessionIds, internalPaths);
     event->acceptProposedAction();
 }

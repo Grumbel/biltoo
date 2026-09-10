@@ -136,9 +136,10 @@ void ImageView::dropEvent(QDropEvent *event)
         event->ignore();
         return;
     }
-    // position() is relative to this QGraphicsView widget; mapToScene expects
-    // viewport coordinates (frame/scrollbar chrome is outside the viewport).
-    const QPoint viewPos = viewport()->mapFrom(this, event->position().toPoint());
+    // Prefer global→viewport→scene. Drop events may land on the view or the
+    // viewport child; widget-local position() is then wrong for mapToScene.
+    // globalPosition matches the cursor regardless of which widget got the event.
+    const QPoint viewPos = viewport()->mapFromGlobal(event->globalPosition().toPoint());
     const QPointF scenePos = mapToScene(viewPos);
     QList<qint64> sessionIds;
     const QByteArray idBytes =
@@ -154,8 +155,8 @@ void ImageView::dropEvent(QDropEvent *event)
     if (hasInternal) {
         internalPaths = QString::fromUtf8(pathBytes).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     }
-    emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos, sessionIds,
-                      internalPaths);
+    emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos,
+                      /*hasScenePos=*/true, sessionIds, internalPaths);
     event->acceptProposedAction();
 }
 

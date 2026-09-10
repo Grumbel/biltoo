@@ -246,7 +246,8 @@ private slots:
     void showEpubLayoutDialog();
     void showSlideshowSettings();
     void onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
-                        const QPointF &scenePos, const QList<qint64> &sessionIds = {},
+                        const QPointF &scenePos, bool hasScenePos,
+                        const QList<qint64> &sessionIds = {},
                         const QStringList &internalPaths = {});
     void toggleScrollBars();
     void toggleWorkspaceMode();
