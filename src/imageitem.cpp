@@ -433,11 +433,10 @@ void ImageItem::setGallerySelectable(bool on)
     }
     if (on) {
         setAcceptHoverEvents(true);
-        // Gallery packs many tiles: FastTransformation + device cache so
-        // selection only invalidates the two tiles that change, not a
-        // full re-scale of every pixmap (OpenGL still redraws the view,
-        // but cached tiles are cheap blits).
-        setTransformationMode(Qt::FastTransformation);
+        // Gallery: smooth scale (bilinear) so soft thumbs look less blocky when
+        // the view zoom is not 1:1. DeviceCoordinateCache still limits work to
+        // tiles that actually change (selection / new pixels).
+        setTransformationMode(Qt::SmoothTransformation);
         setCacheMode(QGraphicsItem::DeviceCoordinateCache);
         setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
     } else {
