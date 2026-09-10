@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <cstdio>
+#include <cstdlib>
 #include "imageview.h"
 #include "imageitem.h"
 #include "imageloader.h"
@@ -472,8 +474,52 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     }
     // Legacy path-keyed pos kept as fallback when a bind is missing.
     m_pendingScenePos.insert(path, scenePos);
+
+    // Immediate placeholder at the drop point so placement does not depend on
+    // async decode ordering (and so archive ladder delays still show a tile).
+    {
+        QSize sz(512, 512);
+        const QSize cached = imageSizeForPath(path);
+        if (cached.isValid() && cached.width() > 1 && cached.height() > 1) {
+            sz = cached;
+        }
+        ImageItem *ph = new ImageItem(path, sz);
+        ph->setPos(scenePos);
+        ph->setGalleryCellSize({});
+        ph->setItemScale(1.0);
+        ph->setItemRotation(0.0);
+        ph->setItemShear(0.0);
+        ph->setItemOpacity(1.0);
+        if (sessionId != kInvalidSessionImageId) {
+            ph->setSessionId(sessionId);
+        }
+        if (sessionIndex >= 0) {
+            ph->setSessionIndex(sessionIndex);
+        }
+        if (m_scene) {
+            m_scene->addItem(ph);
+        }
+        m_items.append(ph);
+        applyItemModeFlags(ph);
+        rememberItemState(ph);
+        if (m_scene) {
+            m_scene->clearSelection();
+        }
+        ph->setSelected(true);
+        if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+            dbg && dbg[0] != '\0' && dbg[0] != '0') {
+            fprintf(stderr,
+                    "biltoo/drop: placeholder path=%s sid=%lld pos=(%.1f,%.1f) "
+                    "size=%dx%d\n",
+                    qPrintable(path), static_cast<long long>(sessionId),
+                    scenePos.x(), scenePos.y(), sz.width(), sz.height());
+        }
+    }
+
     scheduleImageLoad(path, LoadAdd);
+    updateWorkspaceSceneRect();
     emit statusChanged();
+    emit workspacePathsChanged();
     return true;
 }
 

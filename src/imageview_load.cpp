@@ -863,6 +863,44 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         return;
     }
 
+    // Drop placeholders created in placeOrMoveImageAt already sit at scenePos;
+    // re-assert hasScenePos binds so nothing later drifts them, and so a bind
+    // still pairs with the pre-created tile.
+    for (ImageItem *item : m_items) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
+            const PendingSessionBind &b = m_pendingSessionBinds.at(bi);
+            if (b.path != path) {
+                continue;
+            }
+            if (b.id != kInvalidSessionImageId && item->sessionId() != kInvalidSessionImageId
+                && b.id != item->sessionId()) {
+                continue;
+            }
+            if (b.hasScenePos) {
+                item->setGalleryCellSize({});
+                item->setPos(b.scenePos);
+                item->setItemScale(1.0);
+                item->setItemRotation(0.0);
+                item->setItemShear(0.0);
+                item->setItemOpacity(1.0);
+                if (isWorkspaceMode()) {
+                    item->setInteractive(true);
+                    item->setScaleHandlesEnabled(true);
+                }
+            }
+            if (b.id != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
+                item->setSessionId(b.id);
+            }
+            if (b.index >= 0 && item->sessionIndex() < 0) {
+                item->setSessionIndex(b.index);
+            }
+            break;
+        }
+    }
+
     int pathOrderCount = 0;
     for (const QString &p : m_pathOrder) {
         if (p == path) {
