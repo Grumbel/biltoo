@@ -52,14 +52,15 @@ void shutdown();
 /**
  * Soft ladder long-edge targets (see thumtoo kMaxSoftLadderEdge = 512).
  * get_pixels / cachedLadderBytes return the largest soft level ≤ request.
- * Gallery must not request_pixels above kGalleryLadderEdge; zoom uses full decode.
- * docs/GALLERY_SOFT.md
+ * Durable soft levels stop at kGalleryLadderEdge. Gallery display edges may be
+ * higher: loadThumbnail shrink-on-decode at the on-screen ladder step (never
+ * native full decode). docs/GALLERY_SOFT.md
  */
 constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048};
 constexpr int kFilmstripLadderEdge = 256;
-constexpr int kGalleryLadderEdge = 512;  // soft max (thumtoo kMaxSoftLadderEdge)
-/** Soft cap only; name kept for call sites. Zoomed Gallery uses ImageLoader::load. */
-constexpr int kImageLadderEdge = 512;
+constexpr int kGalleryLadderEdge = 512;  // durable soft max (thumtoo kMaxSoftLadderEdge)
+/** Highest ladder step used for display-edge snap (not a soft durable level). */
+constexpr int kImageLadderEdge = 2048;
 
 /** Smallest ladder step ≥ displayLongEdge (px); max step if larger. */
 inline int ceilLadderEdge(int displayLongEdge)

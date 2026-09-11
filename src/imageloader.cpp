@@ -923,46 +923,60 @@ QImage loadThumbnail(const QString &path, int maxEdge)
             if (!decoded.isNull()) {
                 const int got = qMax(decoded.width(), decoded.height());
                 // get_pixels returns the largest level ≤ maxEdge. Only ask for a
-                // *higher ladder step* than we already have — not on every paint
-                // when the request sits between steps (that re-fired schedulePixels
-                // / ladderReady and pegged CPU).
+                // *higher soft ladder step* than we already have — not on every
+                // paint when the request sits between steps (that re-fired
+                // schedulePixels / ladderReady and pegged CPU). Soft ladder max
+                // is kGalleryLadderEdge; higher display edges use shrink-on-decode
+                // below, not durable soft levels that do not exist.
                 if (got < maxEdge * 9 / 10) {
                     const int haveStep = ThumtooCache::ceilLadderEdge(got);
-                    const int wantStep = ThumtooCache::ceilLadderEdge(maxEdge);
-                    if (wantStep > haveStep) {
-                        ThumtooCache::schedulePixels(path, wantStep);
+                    const int softWant = qMin(ThumtooCache::ceilLadderEdge(maxEdge),
+                                              ThumtooCache::kGalleryLadderEdge);
+                    if (softWant > haveStep) {
+                        ThumtooCache::schedulePixels(path, softWant);
                     }
                 }
                 if (decoded.width() > maxEdge || decoded.height() > maxEdge) {
                     decoded = decoded.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
                                              Qt::SmoothTransformation);
                 }
-                return decoded;
+                // Soft payload is enough when it meets the request, or when the
+                // request is within soft max (caller may still upgrade later).
+                if (got >= maxEdge * 9 / 10
+                    || maxEdge <= ThumtooCache::kGalleryLadderEdge) {
+                    return decoded;
+                }
+                // Fall through: need a larger *display* edge than soft can give.
+            } else {
+                // Bytes exist but neither VIPS nor Qt could decode — do not call
+                // schedulePixels again (that re-emits ladderReady and spins the pool).
+                qWarning("ImageLoader: ladder payload undecodable for %s (maxEdge=%d, %lld bytes)",
+                         qPrintable(path), maxEdge, static_cast<long long>(ladder.size()));
+                return {};
             }
-            // Bytes exist but neither VIPS nor Qt could decode — do not call
-            // schedulePixels again (that re-emits ladderReady and spins the pool).
-            qWarning("ImageLoader: ladder payload undecodable for %s (maxEdge=%d, %lld bytes)",
-                     qPrintable(path), maxEdge, static_cast<long long>(ladder.size()));
-            return {};
         }
-        // True miss: ask thumtoo to build the level in the background for next time.
-        ThumtooCache::schedulePixels(path, maxEdge);
+        // True miss: build soft ladder only (≤ soft max) for next time.
+        ThumtooCache::schedulePixels(
+            path, qMin(maxEdge, ThumtooCache::kGalleryLadderEdge));
     }
 
     if (PagePath::isPageRef(path) || PagePath::isPdfImageRef(path)) {
-        // //page: and //pdfimage: — with thumtoo, wait for ladderReady; no sync decode.
-        if (ThumtooCache::isAvailable()) {
+        // Soft band: wait for ladderReady when thumtoo is available.
+        // Larger display edges: rasterize at maxEdge (not native full page).
+        if (ThumtooCache::isAvailable()
+            && maxEdge <= ThumtooCache::kGalleryLadderEdge) {
             return {};
         }
-        if (PagePath::isPdfImageRef(path)) {
+        if (PagePath::isPdfImageRef(path) && !ThumtooCache::isAvailable()) {
             return {}; // no non-thumtoo path for embedded images
         }
         return loadPageRef(path, maxEdge);
     }
     if (ArchivePath::isArchiveRef(path)) {
-        // With thumtoo: do not extract+decode here (doubles work with schedulePixels).
-        // ladderReady / a later pass fills the filmstrip cell from the durable ladder.
-        if (ThumtooCache::isAvailable()) {
+        // Soft band: prefer durable ladder (schedulePixels already nudged).
+        // Display edges above soft max: extract + shrink-on-decode once.
+        if (ThumtooCache::isAvailable()
+            && maxEdge <= ThumtooCache::kGalleryLadderEdge) {
             return {};
         }
         return loadArchiveRef(path, maxEdge);

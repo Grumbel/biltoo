@@ -359,11 +359,11 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 
 int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const
 {
-    // On-screen long edge in device pixels (ladder step). Soft ladder covers up
-    // to kGalleryLadderEdge; beyond that visible tiles get a full decode
-    // (same ImageLoader::load path as Image mode).
+    // On-screen long edge in device pixels, snapped to a ladder step.
+    // Visible tiles request that edge (no soft-max cliff, no native full dump).
+    // Off-screen / idle placeholders stay in the soft band to limit work.
     if (!item) {
-        return ThumtooCache::kGalleryLadderEdge;
+        return ThumtooCache::kFilmstripLadderEdge;
     }
     const QRectF br = item->contentSceneRect();
     if (br.isEmpty()) {
@@ -377,7 +377,7 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
     if (!allowHighRes) {
         return qMin(need, ThumtooCache::kGalleryLadderEdge);
     }
-    return need; // may exceed soft max → full decode
+    return need;
 }
 
 int ImageView::gallerySoftInflightCount() const
@@ -431,9 +431,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    // Size-first still probes in the background, but never blocks soft/full
-    // decode: provisional 1000×1000 or LQIP-only layout must still upgrade to
-    // the zoom-appropriate ladder edge (or full decode past soft max).
+    // Size-first still probes in the background, but never blocks decode:
+    // provisional 1000×1000 or LQIP-only layout must still upgrade to the
+    // zoom-appropriate ladder edge (display-sized, not native full).
     if (isProvisionalImageSize(path)) {
         scheduleImageSizeProbe(path);
     }
@@ -484,78 +484,11 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
-    // Zoomed past soft ladder: full decode only *after* soft is on screen.
-    // Cold start with want=1024 (large cells / high DPR) used to jump straight
-    // to ImageLoader::load and skip the soft ladder — Gallery felt stuck while
-    // filmstrip already showed 256px thumbs. Soft ladder stays ≤ kGalleryLadderEdge;
-    // full decode upgrades visible tiles once soft is present.
-    const int softCap = ThumtooCache::kGalleryLadderEdge;
-    if (anyVisible && want > softCap && have >= softCap * 9 / 10) {
-        st.fullInflight = true;
-        // Do NOT use pending-workspace / onImageLoaded(LoadAdd): soft completion
-        // can takePending and drop the full result, and LoadAdd may relayout.
-        const QPointer<ImageView> guard(this);
-        if (ThumtooCache::debugTracingEnabled()) {
-            qWarning("biltoo/gallery: full decode path need=%d have=%d", want, have);
-        }
-        QThreadPool::globalInstance()->start([guard, path]() {
-            const QImage image = ImageLoader::load(path);
-            if (!guard) {
-                return;
-            }
-            QMetaObject::invokeMethod(
-                guard.data(),
-                [guard, path, image]() {
-                    ImageView *const host = guard.data();
-                    if (!host || !host->isGalleryMode()) {
-                        return;
-                    }
-                    auto it = host->m_gallerySoft.find(path);
-                    if (it != host->m_gallerySoft.end()) {
-                        it->fullInflight = false;
-                    }
-                    if (image.isNull()) {
-                        if (it != host->m_gallerySoft.end()) {
-                            it->gaveUpWant = qMax(it->gaveUpWant, it->want);
-                        }
-                        host->updateGalleryDecodeWindow();
-                        return;
-                    }
-                    // Upgrade existing soft tiles in place — keep layout geometry.
-                    // Raw full pixels go through the single appearance gate.
-                    int got = 0;
-                    for (ImageItem *item : host->m_items) {
-                        if (!item || item->path() != path) {
-                            continue;
-                        }
-                        if (item->hasDecodedPixels()) {
-                            got = qMax(got, item->displayPixelLongEdge());
-                            continue;
-                        }
-                        host->installDisplayPixels(
-                            item, image, SessionAppearance::PixelKind::FullSource,
-                            item->sessionId());
-                        // Do not applyLayout: intrinsic size should already be
-                        // native from the size probe; only pixels upgraded.
-                        item->update();
-                        got = qMax(got, item->displayPixelLongEdge());
-                    }
-                    if (it != host->m_gallerySoft.end()) {
-                        it->have = qMax(it->have, got);
-                        if (got >= it->want * 9 / 10) {
-                            it->gaveUpWant = 0;
-                        }
-                    }
-                    emit host->statusChanged();
-                    host->updateGalleryDecodeWindow();
-                },
-                Qt::QueuedConnection);
-        });
-        return;
-    }
+    // Display-sized decode only — never ImageLoader::load (native).
+    // requestEdge tracks on-screen need (ladder step). Soft durable levels are
+    // ≤ kGalleryLadderEdge; larger edges shrink-on-decode via loadThumbnail.
+    const int requestEdge = want;
 
-    // Soft ladder path (≤ kGalleryLadderEdge).
-    const int requestEdge = qMin(want, ThumtooCache::kGalleryLadderEdge);
     st.inflight = requestEdge;
     addPendingWorkspacePath(path);
     emit statusChanged();
@@ -615,11 +548,17 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     if (soft.gaveUpWant <= requestEdge) {
                         soft.gaveUpWant = 0;
                     }
-                } else if (ThumtooCache::isAvailable()) {
-                    // Keep waiting for ladderReady: start a build if needed, or
-                    // leave inflight so a queued ladderReady can still match.
+                } else if (ThumtooCache::isAvailable()
+                           && requestEdge <= ThumtooCache::kGalleryLadderEdge) {
+                    // Soft band: wait for ladderReady / build durable soft level.
                     (void)ThumtooCache::schedulePixels(path, requestEdge);
                     soft.inflight = requestEdge;
+                } else if (ThumtooCache::isAvailable()
+                           && requestEdge > ThumtooCache::kGalleryLadderEdge) {
+                    // Display edge above soft max: durable soft will not grow.
+                    // loadThumbnail already tried shrink-on-decode; stop retrying.
+                    soft.inflight = 0;
+                    soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
                 } else {
                     soft.inflight = 0;
                     soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);

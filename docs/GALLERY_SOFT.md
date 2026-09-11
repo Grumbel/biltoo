@@ -28,7 +28,8 @@ stuck full-res tiles, or permanent soft-ladder skip (`hasDecodedPixels()`).
 | **Embedded / EXIF thumb** | often ≤160–320 | JPEG APP1, some codecs | Fastest stand-in; may be wrong colours/aspect; never treat as soft ladder |
 | **Fast-path decode** | requested `maxEdge` | `QImageReader::setScaledSize`, `vips_thumbnail` | Shrink-on-decode without full raster; good cold start |
 | **Soft ladder** | 128 / 256 / **512** max | thumtoo `get_pixels` / JXL ladder | Durable overview; `PixelKind::SoftPreview`; `setPreviewImage` |
-| **Full decode** | native | `ImageLoader::load` | Image mode + Gallery only when **visible**, `want > 512`, and soft is already on the tile (~≥460 long edge) |
+| **Display-sized** | on-screen ladder step (≤2048) | `loadThumbnail` / archive·page shrink-on-decode | Gallery visible tiles when need > soft max — **not** native `ImageLoader::load` |
+| **Full decode** | native | `ImageLoader::load` | **Image mode only** |
 
 ### Rules
 
@@ -37,7 +38,7 @@ stuck full-res tiles, or permanent soft-ladder skip (`hasDecodedPixels()`).
 3. **Reset Content Appearance** in Gallery must reinstall **soft** (or clear + reschedule), never `ImageLoader::load` into the tile.
 4. Filmstrip overrides should follow the same edge budget as filmstrip (`kFilmstripLadderEdge` / prepared thumb), not a native dump from Gallery full decode.
 5. Do not ask thumtoo soft ladder for 1024/2048 — those levels are not soft; use full decode when needed.
-6. Gallery **must soft-fill first**. A visible tile with `want > 512` and `have == 0` schedules soft (≤512), never a cold full decode. Full decode is an upgrade step after soft is present.
+6. Gallery requests the **on-screen** ladder edge (no soft-max cliff, no native full). Durable soft levels stay ≤512; larger cells use shrink-on-decode. Image mode alone does `ImageLoader::load`.
 
 ### Related APIs
 
@@ -64,17 +65,16 @@ never confuse EXIF stand-ins with a completed soft level.
 
 | Path | When | Mechanism |
 |------|------|-----------|
-| **Soft ladder** | Always first until soft is present; overview / off-screen; on-screen need ≤ **512** | `request_pixels` / `loadThumbnail` (thumtoo soft max = `kMaxSoftLadderEdge`) |
-| **Full decode** | **Visible**, need **> 512**, and soft already on the tile (~≥90% of soft max) | `ImageLoader::load` — same path as Image mode |
+| **Soft ladder** | Overview / off-screen; on-screen need ≤ **512** | `request_pixels` / `loadThumbnail` (thumtoo soft max = `kMaxSoftLadderEdge`) |
+| **Display-sized** | Visible tile, on-screen need **> 512** | `loadThumbnail` → archive/page shrink-on-decode at that edge |
+| **Full decode** | Image mode only | `ImageLoader::load` — native |
 
-Soft ladder is **not** asked for 1024/2048. Those requests do not create larger
-durable levels in thumtoo; they only returned the existing 256-level and left
-the UI stuck. Cold `want > 512` with `have == 0` still takes the soft path first
-so large cells / high DPR do not block on native comic/PDF pages.
+Soft ladder is **not** asked for 1024/2048 durable levels. Gallery still
+requests those *display* edges: shrink-on-decode to the cell size, not a
+native full-page dump.
 
-High resolution in Gallery when zoomed is **on demand** for visible tiles
-(bounded by `kMaxConcurrentGalleryDecodes`), not a permanent full-res cache
-for every page.
+Display-sized work is **on demand** for visible tiles (bounded by
+`kMaxConcurrentGalleryDecodes`), not a permanent full-res cache for every page.
 
 ## Per-path state (`GallerySoftState`)
 
