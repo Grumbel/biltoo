@@ -151,8 +151,6 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onThumbnailAddToWorkspace);
     connect(m_thumbnailBar, &ThumbnailBar::workspaceSelectionChanged,
             this, &MainWindow::onThumbnailWorkspaceSelectionChanged);
-    connect(m_thumbnailBar, &ThumbnailBar::canvasMembershipToggled,
-            this, &MainWindow::onThumbnailCanvasMembershipToggled);
     connect(m_thumbnailBar, &ThumbnailBar::removeIndicesRequested,
             this, &MainWindow::removeSessionIndices);
     connect(m_thumbnailBar, &ThumbnailBar::loadsChanged,
@@ -470,36 +468,6 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
     updateStatus();
 }
 
-void MainWindow::onThumbnailCanvasMembershipToggled(int index)
-{
-    if (index < 0 || index >= m_session.paths().size() || !m_imageView) {
-        return;
-    }
-    if (!isWorkspaceMode()) {
-        m_workspaceModeAct->setChecked(true);
-        m_imageView->setViewMode(ImageView::ViewMode::Workspace);
-        m_thumbnailBar->setMultiSelectEnabled(true);
-        if (m_imageView->canvasScene()) {
-            m_imageView->canvasScene()->clearSelection();
-        }
-        m_thumbnailBar->selectNoneThumbs();
-        updateWorkspaceActionVisibility();
-    }
-    const QString path = m_session.paths().at(index);
-    const SessionImageId sid = sessionIdAt(index);
-    // Identity is SessionImageId only — never path / occurrence (duplicates).
-    if (sid != kInvalidSessionImageId && m_imageView->findItemBySessionId(sid)) {
-        m_imageView->detachCanvasSessionId(sid);
-    } else if (sid == kInvalidSessionImageId
-               && m_imageView->hasWorkspaceSessionIndex(index)) {
-        m_imageView->removeWorkspaceSessionIndex(index);
-    } else {
-        m_imageView->addImageForSession(path, sid, index);
-    }
-    markWorkspaceDirty();
-    syncThumbnailCanvasMembership();
-    updateStatus();
-}
 
 void MainWindow::onWorkspacePathsChanged()
 {

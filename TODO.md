@@ -2,6 +2,21 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-472-filmstrip-no-dblclick-workspace.** Filmstrip double-click no longer places on Workspace.
+Prior: **471**.
+
+### Change
+Double-click always opens/activates (`indexActivated`). Canvas membership is
+drag-drop only; removed `canvasMembershipToggled` signal/slot.
+
+### Done criteria
+- [x] No double-click → Workspace toggle
+- [x] Bundle **472**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-471-filmstrip-uncap-decode.** Filmstrip decode tracks display ladder; soft is placeholder.
 Prior: **470**.
 

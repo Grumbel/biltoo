@@ -308,7 +308,6 @@ private slots:
     void onThumbnailActivated(int index);
     void onThumbnailAddToWorkspace(int index);
     void onThumbnailWorkspaceSelectionChanged();
-    void onThumbnailCanvasMembershipToggled(int index);
     void onWorkspacePathsChanged();
     void removeSessionIndices(const QList<int> &indices);
     SessionImageId sessionIdAt(int index) const;

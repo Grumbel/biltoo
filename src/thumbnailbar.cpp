@@ -367,7 +367,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setDefaultDropAction(Qt::CopyAction);
     setStatusTip(tr("Drag thumbnails onto the Workspace canvas to place them; "
                     "double-click or Enter opens the image"));
-    setToolTip(tr("Drag to Workspace · double-click to open"));
+    setToolTip(tr("Drag to Workspace · double-click opens image"));
 
     QFont captionFont = font();
     if (captionFont.pointSizeF() > 0) {
@@ -2071,7 +2071,7 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
 
     // Image / Gallery session strip: Ctrl/Shift multi-select for bulk session
     // ops (remove, etc.). Does not enter Workspace — that is explicit (mode
-    // toggle, double-click membership, or drag onto the canvas).
+    // toggle mode, or drag onto the canvas).
     if (!m_multiSelect) {
         if (hit && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier
                                           | Qt::MetaModifier))) {
@@ -2089,7 +2089,7 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
     }
 
     // Workspace mode: selection is normal multi-select (applied on release if
-    // the gesture is not a drag). Canvas membership is double-click / drop.
+    // the gesture is not a drag). Canvas membership is drag-drop only.
     // Do not change selection on press — that fought drag-and-drop.
     event->accept();
 }
@@ -2207,14 +2207,8 @@ void ThumbnailBar::mouseDoubleClickEvent(QMouseEvent *event)
         event->accept();
         return;
     }
-    const int r = row(hit);
-    if (m_multiSelect) {
-        // Toggle canvas membership for this session image.
-        emit canvasMembershipToggled(r);
-        event->accept();
-        return;
-    }
-    // Image mode: activate (navigate) — same as single click path.
-    emit indexActivated(r);
+    // Open / navigate only — never toggle Workspace canvas membership.
+    // Place on Workspace via drag-drop (or explicit Workspace selection).
+    emit indexActivated(row(hit));
     event->accept();
 }

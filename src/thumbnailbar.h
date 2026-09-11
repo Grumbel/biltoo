@@ -169,8 +169,6 @@ signals:
     void indexAddToWorkspace(int index);
     /** Multi-select changed (selection only — does not drive canvas membership). */
     void workspaceSelectionChanged();
-    /** Double-click: toggle this session index on/off the Workspace canvas. */
-    void canvasMembershipToggled(int index);
     void removeIndicesRequested(const QList<int> &indices);
     /** Pending filmstrip decode count changed (status bar / indicators). */
     void loadsChanged();
