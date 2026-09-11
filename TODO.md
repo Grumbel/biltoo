@@ -2,6 +2,18 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-456-grade-invert-guard.** Guard grade_invert behind
+THUMTOO_APPEARANCE_GRADE_INVERT so build works if thumtoo tip lacks the field.
+Prior: **455**. Prefer **thumtoo-155**.
+
+### Done criteria
+- [x] Compile without grade_invert member when macro absent
+- [ ] Bundle **456**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-455-find-extract-log.** Log text-layer ensure URI/result for Find.
 Prior: **454**. Pair with **thumtoo-154** (PDF text always via MuPDF).
 

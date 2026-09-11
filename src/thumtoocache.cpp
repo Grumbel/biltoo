@@ -1827,15 +1827,20 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
         out->cropRotation = got->crop_rotation;
     }
     if (got->grade_brightness || got->grade_contrast || got->grade_saturation
-        || got->grade_hue || got->grade_gamma) {
-                out->hasGrade = true;
+        || got->grade_hue || got->grade_gamma
+#if defined(THUMTOO_APPEARANCE_GRADE_INVERT)
+        || got->grade_invert
+#endif
+    ) {
+        out->hasGrade = true;
         out->gradeBrightness = got->grade_brightness.value_or(0);
         out->gradeContrast = got->grade_contrast.value_or(0);
         out->gradeSaturation = got->grade_saturation.value_or(0);
         out->gradeHue = got->grade_hue.value_or(0);
         out->gradeGamma = got->grade_gamma.value_or(0);
+#if defined(THUMTOO_APPEARANCE_GRADE_INVERT)
         out->gradeInvert = got->grade_invert.value_or(0) != 0;
-
+#endif
     }
     return !out->isIdentity();
 }
@@ -1880,9 +1885,11 @@ void saveContentAppearance(const QString &path, const StoredContentAppearance &a
         a.grade_saturation = app.gradeSaturation;
         a.grade_hue = app.gradeHue;
         a.grade_gamma = app.gradeGamma;
+#if defined(THUMTOO_APPEARANCE_GRADE_INVERT)
         if (app.gradeInvert) {
             a.grade_invert = 1;
         }
+#endif
     }
     if (appearanceDebug()) {
         appearanceLog(
