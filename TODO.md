@@ -18,7 +18,7 @@ defence that still lost the race in practice.
 
 ### Done criteria
 - [x] ShortcutOverride claims Esc
-- [ ] Bundle **462**
+- [x] Bundle **462**
 
 ---
 
