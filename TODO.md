@@ -20,6 +20,7 @@ cell/zoom size, not stop at 512 or jump to native.
 - [x] Display-sized Gallery decode
 - [x] No native full path in Gallery
 - [x] Docs
+- [x] Drop unused `anyVisible` warning
 - [x] Bundle **467**
 
 ---
