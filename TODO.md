@@ -2,6 +2,22 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-443-filmstrip-layout-sync.** Final filmstrip path sync.
+Prior: **442**.
+
+### Fixes
+- `setThumbnailIcon` always `doItemsLayout` (option.rect matches sizeHint)
+- `refreshAllItemGeometry` prefers pixmap aspect when loaded
+- All override prepares use `filmstripDecodeEdge()` (same as pool)
+
+### Done criteria
+- [x] Path sync
+- [ ] Bundle **443**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-442-filmstrip-invariants.** Harden unified filmstrip contract.
 Prior: **441**.
 

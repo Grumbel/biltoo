@@ -752,15 +752,11 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
                                ThumbnailDelegate::ThumbLoadedRole,
                                ThumbnailDelegate::ThumbPixmapRole});
     }
-    // Visible rows: layout immediately so option.rect matches sizeHint.
+    // Layout immediately so the next paint gets option.rect matching sizeHint.
+    // Debounce only centering margins (cheaper secondary pass).
+    doItemsLayout();
     scheduleLayoutRefresh();
     if (viewport()) {
-        const QRect vis = visualItemRect(it);
-        if (vis.intersects(viewport()->rect().adjusted(-m_thumbSize, -m_thumbSize,
-                                                       m_thumbSize, m_thumbSize))) {
-            doItemsLayout();
-            updateCenteringMargins();
-        }
         viewport()->update(visualItemRect(it));
     }
 }
@@ -933,7 +929,7 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
         return;
     }
     m_sessionImageOverrides.insert(path, image);
-    const QImage thumb = prepareThumbnailFromImage(image, thumbDecodePixels());
+    const QImage thumb = prepareThumbnailFromImage(image, filmstripDecodeEdge());
     if (thumb.isNull()) {
         return;
     }
@@ -991,7 +987,7 @@ void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
         if (it == m_sessionIdImageOverrides.cend()) {
             continue;
         }
-        const QImage thumb = prepareThumbnailFromImage(it.value(), thumbDecodePixels());
+        const QImage thumb = prepareThumbnailFromImage(it.value(), filmstripDecodeEdge());
         if (!thumb.isNull()) {
             setThumbnailIcon(row, thumb);
         }
@@ -1010,7 +1006,7 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
         return;
     }
     m_sessionIdImageOverrides.insert(sessionId, image);
-    const QImage thumb = prepareThumbnailFromImage(image, thumbDecodePixels());
+    const QImage thumb = prepareThumbnailFromImage(image, filmstripDecodeEdge());
     if (thumb.isNull()) {
         return;
     }
@@ -1087,14 +1083,19 @@ void ThumbnailBar::refreshAllItemGeometry()
             it->setSizeHint(m_delegate->cellSize(font()));
             continue;
         }
-        QSize aspect = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
-        if (aspect.width() < 1 || aspect.height() < 1) {
-            const QPixmap pm = qvariant_cast<QPixmap>(
-                it->data(ThumbnailDelegate::ThumbPixmapRole));
-            aspect = pm.isNull() ? m_delegate->provisionalContentSize() : pm.size();
+        // Prefer pixmap aspect when loaded — role may be provisional square
+        // from before decode or after thumbSize-only refresh of empty cells.
+        QSize aspect;
+        const QPixmap pm = qvariant_cast<QPixmap>(
+            it->data(ThumbnailDelegate::ThumbPixmapRole));
+        if (!pm.isNull() && pm.width() > 0 && pm.height() > 0) {
+            aspect = pm.size();
+        } else {
+            aspect = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+            if (aspect.width() < 1 || aspect.height() < 1) {
+                aspect = m_delegate->provisionalContentSize();
+            }
         }
-        // Role may already be logical; letterboxContentSize is idempotent when
-        // cross-axis already equals thumbSize.
         const QSize content = m_delegate->letterboxContentSize(aspect);
         it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
         it->setSizeHint(m_delegate->cellSizeForContent(font(), content));

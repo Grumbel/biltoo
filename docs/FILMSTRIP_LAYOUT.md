@@ -43,6 +43,10 @@ Logical pixels along the strip **cross-axis** (thin axis of the bar).
 
 ## Prepare (`prepareThumbnailFromImage`)
 
+Every install path (pool worker, session override, ladder) must call
+`prepareThumbnailFromImage(src, filmstripDecodeEdge())` before
+`setThumbnailIcon`. No other maxSize.
+
 - **Crop:** center-crop square → `scaled(max, max, KeepAspectRatio)`.
 - **Letterbox:** `scaled(max, max, KeepAspectRatio)` (longest edge → max).
 - **Never** `IgnoreAspectRatio`.
