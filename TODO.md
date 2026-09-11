@@ -29,7 +29,7 @@ diverge until a reload reapplies state (same as pixel reload contract).
 - [x] Shared mapper in SessionAppearance
 - [x] Native source size for page mapping
 - [x] Crop uses applyContent scale rules
-- [ ] Bundle **423**
+- [x] Bundle **423**
 
 ---
 
