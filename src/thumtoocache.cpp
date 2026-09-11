@@ -1597,20 +1597,33 @@ std::string pathContentId(const QString &path)
     if (local.startsWith(QStringLiteral("file:"))) {
         local = QUrl(local).toLocalFile();
     }
-    // Page / archive session refs are not plain files (markers contain "//").
-    if (PagePath::isPageRef(local) || PagePath::isPdfImageRef(local)
-        || local.contains(QStringLiteral("//"))) {
+    // PDF/EPUB/DjVu page refs: hash outer file + ":page:N" suffix.
+    // Other compound URIs (archives, pdfimage) still unsupported in v1.
+    QString fileForHash = local;
+    int page1 = 0;
+    if (PagePath::isPageRef(local)) {
+        const PagePath::Ref ref = PagePath::parse(local);
+        if (!ref.valid || ref.page < 1 || ref.pdfPath.isEmpty()) {
+            if (appearanceDebug()) {
+                appearanceLog(QStringLiteral("pathContentId reject: invalid page ref path=%1")
+                                  .arg(path));
+            }
+            return {};
+        }
+        fileForHash = ref.pdfPath;
+        page1 = ref.page;
+    } else if (PagePath::isPdfImageRef(local) || local.contains(QStringLiteral("//"))) {
         if (appearanceDebug()) {
-            appearanceLog(QStringLiteral("pathContentId reject: compound/page ref path=%1")
+            appearanceLog(QStringLiteral("pathContentId reject: compound/non-page ref path=%1")
                               .arg(path));
         }
         return {};
     }
-    const QFileInfo fi(local);
+    const QFileInfo fi(fileForHash);
     if (!fi.exists() || !fi.isFile()) {
         if (appearanceDebug()) {
             appearanceLog(QStringLiteral("pathContentId reject: not a file path=%1 exists=%2 isFile=%3")
-                              .arg(local)
+                              .arg(fileForHash)
                               .arg(fi.exists())
                               .arg(fi.isFile()));
         }
@@ -1620,6 +1633,10 @@ std::string pathContentId(const QString &path)
                                                          : fi.canonicalFilePath();
     const qint64 size = fi.size();
     const QDateTime mtime = fi.lastModified();
+    // Cache key includes page so //page:1 and //page:2 do not collide.
+    const QString cacheKey = page1 > 0
+        ? (abs + QStringLiteral("#page=") + QString::number(page1))
+        : abs;
     // Cache sha256 by path+size+mtime — hashing multi‑MB images on every
     // seed/save would stall the UI thread.
     struct CacheEntry {
@@ -1631,7 +1648,7 @@ std::string pathContentId(const QString &path)
     static std::mutex cacheMu;
     {
         std::lock_guard lock(cacheMu);
-        const auto it = cache.constFind(abs);
+        const auto it = cache.constFind(cacheKey);
         if (it != cache.cend() && it->size == size && it->mtime == mtime
             && !it->id.empty()) {
             return it->id;
@@ -1662,19 +1679,26 @@ std::string pathContentId(const QString &path)
             }
         }
     }
+    // Page session ref: sha256:<filehex>:page:<n>
+    if (!id.empty() && page1 > 0) {
+        id += ":page:";
+        id += std::to_string(page1);
+        id = thumtoo::normalize_content_id(id);
+    }
     if (!id.empty()) {
         std::lock_guard lock(cacheMu);
         CacheEntry e;
         e.size = size;
         e.mtime = mtime;
         e.id = id;
-        cache.insert(abs, e);
+        cache.insert(cacheKey, e);
     }
     if (appearanceDebug()) {
         if (id.empty()) {
-            appearanceLog(QStringLiteral("pathContentId EMPTY path=%1 abs=%2 size=%3")
+            appearanceLog(QStringLiteral("pathContentId EMPTY path=%1 abs=%2 size=%3 page=%4")
                               .arg(path, abs)
-                              .arg(size));
+                              .arg(size)
+                              .arg(page1));
         } else {
             appearanceLog(QStringLiteral("pathContentId ok path=%1 id=%2")
                               .arg(path, QString::fromStdString(id)));

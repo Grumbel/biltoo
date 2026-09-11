@@ -2,6 +2,24 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-408-page-content-id.** Persist appearance for `//page:N` session
+paths (PDF/EPUB/DjVu). Prior: **407**. Needs **thumtoo ≥ 148**.
+
+### Cause of empty DB (user log)
+path was `…pdf//page:1` — v1 rejected compound paths, so every save skipped.
+
+### Fix
+`pathContentId` → `sha256:<hash of outer file>:page:<n>`
+
+### Done criteria
+- [x] Page refs get content ids
+- [ ] Human: rotate PDF page → row in appearance.sqlite3
+- [ ] Bundle **408**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-407-appearance-debug.** Debug logging for empty appearance DB.
 Prior: **406**.
 
