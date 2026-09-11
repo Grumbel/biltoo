@@ -15,7 +15,7 @@ bake orders/paths. Centralize on `materializeDisplay`. Prior: **437**.
 ### Done criteria
 - [x] materializeDisplay
 - [x] install unified
-- [ ] Bundle **438**
+- [x] Bundle **438**
 
 ---
 
