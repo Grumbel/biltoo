@@ -790,12 +790,15 @@ void MainWindow::exportDocumentText()
     }
     QApplication::restoreOverrideCursor();
     QFile f(outPath);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         QMessageBox::warning(this, tr("Export Text"),
                              tr("Could not write %1").arg(outPath));
         return;
     }
+    // UTF-8 with BOM — helps Windows Notepad; Linux editors ignore it.
     const QByteArray utf8 = blocks.join(QLatin1Char('\n')).toUtf8();
+    static const char bom[] = "\xEF\xBB\xBF";
+    f.write(bom, 3);
     f.write(utf8);
     f.close();
     qWarning().noquote()

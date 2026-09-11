@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md). Content orient/crop/text spaces: [docs/CONTENT_COORDINATES.md](docs/CONTENT_COORDINATES.md). Filmstrip: [docs/FILMSTRIP_LAYOUT.md](docs/FILMSTRIP_LAYOUT.md). Content pixels: [docs/CONTENT_PIPELINE.md](docs/CONTENT_PIPELINE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-458-gallery-size-first**.
-Next bundle number: **459**.
+Latest agent handoff: **TODO.md → biltoo-459-export-text-utf8**.
+Next bundle number: **460**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

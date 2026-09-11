@@ -1499,7 +1499,8 @@ TextRegion convertRegion(const thumtoo::TextRegion &r)
     out.bbox = QRectF(r.bbox.x0, r.bbox.y0, r.bbox.width(), r.bbox.height());
     out.role = (r.role == thumtoo::TextRegionRole::Link) ? TextRegion::Role::Link
                                                          : TextRegion::Role::Text;
-    out.text = QString::fromStdString(r.text);
+    // Text layers are UTF-8 (MuPDF codepoints encoded in thumtoo).
+    out.text = QString::fromUtf8(r.text.data(), int(r.text.size()));
     if (r.target.kind == thumtoo::TextLinkTargetKind::InternalPage) {
         out.linkPage = r.target.page_1based;
     } else if (r.target.kind == thumtoo::TextLinkTargetKind::Uri) {

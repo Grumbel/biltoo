@@ -2,6 +2,21 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-459-export-text-utf8.** Export text as binary UTF-8 + BOM;
+fromUtf8 for layers. Prior: **458**.
+
+### Change
+- `QString::fromUtf8` for region text
+- Export without `QIODevice::Text`; write UTF-8 BOM
+
+### Done criteria
+- [x] UTF-8 export path
+- [x] Bundle **459**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-458-gallery-size-first.** Gallery open: cache sizes + LQIP, pack,
 then soft decode. Prior: **457**.
 
