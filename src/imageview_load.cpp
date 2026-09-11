@@ -126,14 +126,17 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         setUpdatesEnabled(true);
         return;
     }
-    if (!pixels.isNull()) {
-        item->setPreviewImage(pixels);
-    }
     if (m_currentSessionId != kInvalidSessionImageId) {
         item->setSessionId(m_currentSessionId);
     }
     if (m_sessionIndex >= 0) {
         item->setSessionIndex(m_sessionIndex);
+    }
+    if (!pixels.isNull()) {
+        item->setPreviewImage(pixels);
+        // Ladder/cache pixels are unflipped; bake session content so rapid
+        // next/prev and slideshow placeholders match the edited appearance.
+        applyContentAppearanceAfterDecode(item);
     }
     item->setInteractive(false);
     item->setScaleHandlesEnabled(false);
@@ -544,6 +547,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                         && image.width() > 0 && image.height() > 0) {
                         cur->setIntrinsicSize(image.size());
                         cur->setPreviewImage(image);
+                        applyContentAppearanceAfterDecode(cur);
                         if (!m_slideshowProgressActive) {
                             fitItem(cur, currentFitAspectMode());
                         } else {
@@ -556,6 +560,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                     } else {
                         // Pixels only — intrinsic size stays native (probe/cache).
                         cur->setPreviewImage(image);
+                        applyContentAppearanceAfterDecode(cur);
                     }
                     if (viewport()) {
                         viewport()->update();
@@ -589,6 +594,8 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
             item->setIntrinsicSize(image.size());
         }
         item->setPreviewImage(image);
+        // Disk/ladder preview is untransformed; re-bake session content flips.
+        applyContentAppearanceAfterDecode(item);
         if (item->imageSize() != before) {
             gallerySizeChanged = true;
         }

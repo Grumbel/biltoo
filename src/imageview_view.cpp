@@ -1461,6 +1461,7 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
                 img = img.scaled(fullSz, Qt::IgnoreAspectRatio,
                                  Qt::FastTransformation);
             }
+            // Appearance bake happens in startLiveTransitionWithImage (all entry paths).
             qCDebug(lcSlideshow).nospace()
                 << "[slideshow] beginLive cache-hit "
                 << QFileInfo(nextPath).fileName()
@@ -2117,7 +2118,24 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         emit slideshowLiveTransitionFinished();
         return;
     }
-    m_liveTransitionSourceImage = nextImage;
+    // Preload/full handoff is usually unbaked disk pixels — apply session
+    // content once here so all live-transition entry paths stay consistent.
+    {
+        SessionImageId sid = m_currentSessionId;
+        if (sid == kInvalidSessionImageId) {
+            for (int i = 0; i < m_pathOrder.size() && i < m_sessionIdOrder.size(); ++i) {
+                if (m_pathOrder.at(i) == m_liveTransitionNextPath) {
+                    sid = m_sessionIdOrder.at(i);
+                    break;
+                }
+            }
+        }
+        m_liveTransitionSourceImage =
+            imageWithSessionAppearance(nextImage, sid, m_liveTransitionNextPath);
+    }
+    if (m_liveTransitionSourceImage.isNull()) {
+        m_liveTransitionSourceImage = nextImage;
+    }
     m_liveTransitionPathHash = qHash(m_liveTransitionNextPath);
 
     // Incoming path biases only — never overwrite dwell m_motionBiasA/B.

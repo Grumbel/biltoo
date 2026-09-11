@@ -214,6 +214,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 ph->setSessionIndex(i);
                 if (!hint.isNull()) {
                     ph->setPreviewImage(hint);
+                    applyContentAppearanceAfterDecode(ph);
                 }
                 claimed.insert(ph);
             }

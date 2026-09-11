@@ -750,6 +750,13 @@ public:
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     QImage sessionAppearanceImage(const ImageItem *item) const;
+    /**
+     * Bake stored content flips/rotates (and grade) onto a decode of @p path
+     * for session @p sid. Used for soft placeholders and slideshow cache blits.
+     * Crop is skipped without full-source geometry (flip/rotate only).
+     */
+    QImage imageWithSessionAppearance(const QImage &src, SessionImageId sid,
+                                      const QString &path = QString()) const;
     /** Copy of stored appearance for @p id (empty/default if none). */
     WorkspaceItemState sessionAppearanceValue(SessionImageId id) const;
     bool hasSessionAppearance(SessionImageId id) const;

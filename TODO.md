@@ -2,12 +2,16 @@
 
 ## Status (2026-09-11)
 
-**Tip: biltoo-397-filmstrip-content-appearance.** Filmstrip stayed on unflipped
-pixels after Gallery soft flip/rotate. Prior: **396**. Next: **398**.
+**Tip: biltoo-398-soft-preview-content-appearance.** Soft/ladder placeholders and
+slideshow cache transitions ignored session flip/rotate. Prior: **397**. Next: **399**.
 
-- `sessionAppearanceImage` used only `sourceImage()`; soft tiles have preview
-  only → null → no `sessionAppearanceChanged` → filmstrip never got an override.
-- Now uses `displayImage()` (source else preview). Peer soft sync copies preview.
+- After every `setPreviewImage` install (Image pending, in-place upgrade, Gallery
+  soft fill, placeholder hints): `applyContentAppearanceAfterDecode`.
+- `imageWithSessionAppearance` for pure QImage bake (flip/rotate/grade).
+- Slideshow `startLiveTransitionWithImage` bakes incoming cache/preload pixels
+  so rapid cycles do not flash the untransformed thumb.
+
+---
 
 ---
 

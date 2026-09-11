@@ -221,6 +221,59 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     return img;
 }
 
+QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId sid,
+                                             const QString &path) const
+{
+    if (src.isNull()) {
+        return {};
+    }
+    const WorkspaceItemState *app = nullptr;
+    WorkspaceItemState fallback;
+    if (sid != kInvalidSessionImageId) {
+        app = m_appearance.get(sid);
+    } else if (!path.isEmpty()) {
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.cend()) {
+            fallback = *it;
+            app = &fallback;
+        }
+    }
+    if (!app || !SessionAppearance::hasContentAppearance(*app)) {
+        return src;
+    }
+    // Soft/cache path: flip + quarter-turns + grade only (crop needs full source).
+    QImage img = src;
+    if (app->contentHFlip || app->contentVFlip) {
+        Qt::Orientations axes;
+        if (app->contentHFlip) {
+            axes |= Qt::Horizontal;
+        }
+        if (app->contentVFlip) {
+            axes |= Qt::Vertical;
+        }
+        if (axes) {
+            img = img.flipped(axes);
+        }
+    }
+    if (app->contentQuarterTurns != 0) {
+        int turns = app->contentQuarterTurns % 4;
+        if (turns < 0) {
+            turns += 4;
+        }
+        if (turns != 0) {
+            QTransform xform;
+            xform.rotate(90.0 * turns);
+            img = img.transformed(xform, Qt::SmoothTransformation);
+        }
+    }
+    if (!app->colorAdjust.isIdentity()) {
+        img = applyColorAdjustments(img, app->colorAdjust);
+    }
+    return img;
+}
+
+
+
 
 
 WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
