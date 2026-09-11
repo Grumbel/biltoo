@@ -2,6 +2,30 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-467-gallery-display-sized.** Gallery matches on-screen edge; no soft-max cliff, no native full.
+Prior: **466**.
+
+### Cause
+`want > 512` took `ImageLoader::load` (native). Soft-before-full (466) only
+delayed that. A soft-max *cap* was also wrong: Gallery should decode at the
+cell/zoom size, not stop at 512 or jump to native.
+
+### Fix
+- `requestEdge = want` (ceilLadder of on-screen long edge × DPR)
+- Always `loadThumbnail` / shrink-on-decode — never `ImageLoader::load` in Gallery
+- Durable soft `schedulePixels` stays ≤ `kGalleryLadderEdge`
+- Archive/page above soft max: extract or rasterize at `maxEdge`
+
+### Done criteria
+- [x] Display-sized Gallery decode
+- [x] No native full path in Gallery
+- [x] Docs
+- [x] Bundle **467**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-466-gallery-soft-before-full.** Gallery soft-fills before full decode.
 Prior: **465**.
 
