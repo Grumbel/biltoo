@@ -22,7 +22,7 @@ unoriented; later slides OK after 426. Prior: **426**.
 - [x] First-frame orient paths
 - [x] Soft→full orient
 - [x] Durable fallback
-- [ ] Bundle **427**
+- [x] Bundle **427**
 
 ---
 
