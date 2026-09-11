@@ -837,6 +837,19 @@ int ImageView::resetContentAppearanceForTargets()
             // Keep color grade / pose if present.
             m_appearance.set(sid, slot);
         }
+        // Path map still holds content turns from prior bake/pack; captureState
+        // re-merges turns==0 from m_itemStates and can resurrect orientation.
+        if (m_itemStates.contains(path)) {
+            WorkspaceItemState pathSlot = m_itemStates.value(path);
+            pathSlot.contentHFlip = false;
+            pathSlot.contentVFlip = false;
+            pathSlot.contentQuarterTurns = 0;
+            pathSlot.hasCrop = false;
+            pathSlot.cropRect = QRect();
+            pathSlot.cropSourceSize = QSize();
+            pathSlot.cropRotation = 0.0;
+            m_itemStates.insert(path, pathSlot);
+        }
 
         item->setContentHFlip(false);
         item->setContentVFlip(false);
@@ -866,18 +879,23 @@ int ImageView::resetContentAppearanceForTargets()
         //
         //   Gallery  → soft ladder (≤ kGalleryLadderEdge), reset soft state
         //   Image / Workspace → full on-disk decode (user is inspecting / placing)
+        //
+        // Gallery focused tiles often already hold a *full* oriented decode
+        // (Image-mode visit or soft→full upgrade). setPreviewImage no-ops when
+        // full source is present, so identity soft would never replace the
+        // oriented pixels — Gallery + filmstrip stayed flipped while Image mode
+        // (FullSource install) looked correct. Always drop pixels first.
         if (isGalleryMode()) {
             gallerySoftResetPath(path);
+            item->clearDecodedPixels();
             const int softEdge = ThumtooCache::kGalleryLadderEdge;
             QImage soft = ImageLoader::loadThumbnail(path, softEdge);
             if (!soft.isNull()) {
                 // Identity appearance: SoftPreview install without content bake.
                 installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
                                      sid);
-            } else {
-                // Drop any previous full/oriented pixels; decode window will refill.
-                item->clearDecodedPixels();
             }
+            // else: decode window will refill after soft state reset
         } else {
             const QImage full = ImageLoader::load(path);
             if (!full.isNull()) {

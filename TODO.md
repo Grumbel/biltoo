@@ -2,6 +2,29 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-445-reset-gallery-full-clear.** Reset Content Appearance failed on
+Gallery tiles that already held a full decode (often the focused/first image).
+Prior: **444**.
+
+### Cause
+- Gallery reset path only `setPreviewImage` (SoftPreview)
+- `ImageItem::setPreviewImage` no-ops when full source is present
+- Oriented full pixels stayed → Gallery + filmstrip override stayed oriented
+- Image mode FullSource install looked correct
+
+### Fix
+- `clearDecodedPixels()` before soft reinstall on Gallery reset
+- Clear content orientation fields on path `m_itemStates` so `captureState`
+  cannot resurrect turns after pack
+
+### Done criteria
+- [x] Gallery + filmstrip update on Reset after full-res tile
+- [ ] Bundle **445**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-444-filmstrip-inter-pad.** Match inter-thumb gap to cross-axis pad.
 Prior: **443**.
 
