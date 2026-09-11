@@ -19,7 +19,7 @@ Prior: **439**.
 
 ### Done criteria
 - [x] Center + size
-- [ ] Bundle **440**
+- [x] Bundle **440**
 
 ---
 
