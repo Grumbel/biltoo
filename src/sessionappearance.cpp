@@ -6,6 +6,8 @@
 #include "coloradjust.h"
 
 #include <QtMath>
+#include <QImage>
+#include <QTransform>
 #include <QPolygonF>
 
 namespace SessionAppearance {
@@ -78,12 +80,21 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns)
                    state.cropRect.y() + state.cropRect.height());
     }
     QRect r = state.cropRect.normalized();
-    for (int i = 0; i < quarterTurns; ++i) {
-        // 90° CW in top-left image coordinates (matches QImage bakeRotate90).
-        r = QRect(sz.height() - r.y() - r.height(), r.x(), r.height(), r.width());
-        sz = QSize(sz.height(), sz.width());
-        state.cropRotation -= 90.0;
+    // Same matrix as bakeRotate90 / mapSourceRectToContentDisplay (absolute steps).
+    QTransform rot;
+    rot.rotate(90.0 * quarterTurns);
+    const QTransform mat = QImage::trueMatrix(rot, sz.width(), sz.height());
+    r = mat.mapRect(QRectF(r)).toRect().normalized();
+    if (r.width() < 1) {
+        r.setWidth(1);
     }
+    if (r.height() < 1) {
+        r.setHeight(1);
+    }
+    if ((quarterTurns % 2) != 0) {
+        sz = QSize(sz.height(), sz.width());
+    }
+    state.cropRotation -= 90.0 * quarterTurns;
     normalizeCropRotation(state.cropRotation);
     state.cropRect = r;
     state.cropSourceSize = sz;
@@ -101,14 +112,9 @@ static int normalizeQuarterTurns(int quarterTurns)
 QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sourceSize,
                                      const WorkspaceItemState &state)
 {
-    // Coordinate spaces (see docs/CONTENT_COORDINATES.md):
-    //   source  — full unoriented page raster (page text lives here)
-    //   oriented — after contentHFlip/VFlip + contentQuarterTurns (QImage bake)
-    //   display — oriented, then crop-local if hasCrop (what ImageItem paints)
-    //
-    // Live incremental path: bakeFlip / bakeRotate90 on current pixels, then
-    // mapCropThrough* so cropRect stays in post-bake space. Overlays must use
-    // the same order: flip → CW quarter-turns → crop translate.
+    // Spaces: docs/CONTENT_COORDINATES.md
+    // Order matches ImageItem bake path: flip pixels, then QImage::transformed
+    // with QTransform::rotate(90 * turns). Crop is post-bake (display space).
     if (sourceSize.width() < 1 || sourceSize.height() < 1 || sourceRect.isEmpty()) {
         return {};
     }
@@ -116,39 +122,28 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
     QRectF r = sourceRect.normalized();
     QSize work = sourceSize;
 
-    // Map a point through one 90° *clockwise* step in top-left image coords.
-    // Matches ImageItem::bakeRotate90 → QTransform::rotate(+90) + QImage::transformed
-    // (Qt rotates the coordinate system CCW; with Y-down that is CW on pixels).
-    auto mapPtCw90 = [](QPointF p, const QSize &sz) -> QPointF {
-        return QPointF(qreal(sz.height()) - p.y(), p.x());
-    };
-    auto mapRectCw90 = [&](QRectF rect, const QSize &sz) -> QRectF {
-        QPolygonF poly;
-        poly << mapPtCw90(rect.topLeft(), sz)
-             << mapPtCw90(rect.topRight(), sz)
-             << mapPtCw90(rect.bottomRight(), sz)
-             << mapPtCw90(rect.bottomLeft(), sz);
-        return poly.boundingRect();
-    };
-
-    // 1) Content flips about the full source size (before turns).
+    // 1) Content flips (same as QImage::flipped before rotate).
     if (state.contentHFlip) {
-        r = QRectF(work.width() - r.x() - r.width(), r.y(), r.width(), r.height());
+        r = QRectF(qreal(work.width()) - r.x() - r.width(), r.y(), r.width(), r.height());
     }
     if (state.contentVFlip) {
-        r = QRectF(r.x(), work.height() - r.y() - r.height(), r.width(), r.height());
+        r = QRectF(r.x(), qreal(work.height()) - r.y() - r.height(), r.width(), r.height());
     }
 
-    // 2) Content quarter-turns as +90° CW steps (contentQuarterTurns is absolute
-    //    0..3, same accumulator bakeItemRotate90 writes).
+    // 2) Quarter-turns: EXACT transform QImage uses (trueMatrix + rotate).
+    //    Do not hand-roll CW/CCW formulas — they drift from Qt's adjusted matrix.
     const int turns = normalizeQuarterTurns(state.contentQuarterTurns);
-    for (int i = 0; i < turns; ++i) {
-        r = mapRectCw90(r, work);
-        work = QSize(work.height(), work.width());
+    if (turns != 0) {
+        QTransform rot;
+        rot.rotate(90.0 * turns);
+        const QTransform mat = QImage::trueMatrix(rot, work.width(), work.height());
+        r = mat.mapRect(r).normalized();
+        if ((turns % 2) != 0) {
+            work = QSize(work.height(), work.width());
+        }
     }
 
-    // 3) Crop in post-orientation space (cropRect from recordSessionCrop /
-    //    mapCropThroughContentRotate90 — same space as post-bake full image).
+    // 3) Crop in post-orientation space.
     if (state.hasCrop && !state.cropRect.isEmpty()) {
         QRect crop = state.cropRect.normalized();
         QSize basis = state.cropSourceSize;
@@ -176,10 +171,8 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
             return {};
         }
         r = r.translated(-qreal(crop.x()), -qreal(crop.y()));
-        work = QSize(crop.width(), crop.height());
     }
 
-    Q_UNUSED(work);
     return r;
 }
 

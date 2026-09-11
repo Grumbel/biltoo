@@ -18,8 +18,8 @@ API.
 `mapSourceRectToContentDisplay` maps **source → display**:
 
 1. horizontal / vertical **content flips** about the full source size  
-2. **quarter-turns** as repeated **+90° clockwise** steps in Y-down image coords  
-   (same visual as `QTransform::rotate(+90)` + `QImage::transformed`)  
+2. **quarter-turns** via `QImage::trueMatrix(QTransform::rotate(90*turns), w, h)`  
+   — the same matrix `QImage::transformed` / `bakeRotate90` use  
 3. **crop**: intersect with `cropRect` (post-bake space), translate so crop
    top-left is `(0,0)`
 

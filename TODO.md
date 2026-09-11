@@ -2,6 +2,23 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-434-text-rotate-trueMatrix.** Text rotation still wrong (flip OK).
+Map turns with `QImage::trueMatrix` — same matrix as `bakeRotate90`.
+Prior: **433**.
+
+### Fix
+- `mapSourceRectToContentDisplay` / `mapCropThroughContentRotate90` use
+  `QImage::trueMatrix(rotate(90*turns), w, h)` instead of hand-rolled CW
+- Text appearance: durable XDG fallback when session slot empty
+
+### Done criteria
+- [x] trueMatrix path
+- [ ] Bundle **434**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-433-filmstrip-layout-contract.** Clean filmstrip letterbox design:
 thumbSize = cross-axis; layout logical-only; decode separate.
 Prior: **432**.

@@ -1113,10 +1113,27 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     }
 
     WorkspaceItemState st;
-    if (item->sessionId() != kInvalidSessionImageId) {
-        st = sessionAppearanceValue(item->sessionId());
-    } else if (isImageMode() && m_currentSessionId != kInvalidSessionImageId) {
-        st = sessionAppearanceValue(m_currentSessionId);
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_currentSessionId;
+    }
+    if (sid != kInvalidSessionImageId) {
+        st = sessionAppearanceValue(sid);
+    }
+    // Durable XDG row when session slot is empty (same as imageWithSessionAppearance).
+    if (!SessionAppearance::hasContentAppearance(st) && !path.isEmpty()) {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored)
+            && (stored.contentHFlip || stored.contentVFlip
+                || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+            st.contentHFlip = stored.contentHFlip;
+            st.contentVFlip = stored.contentVFlip;
+            st.contentQuarterTurns = stored.contentQuarterTurns;
+            st.hasCrop = stored.hasCrop;
+            st.cropRect = stored.cropRect;
+            st.cropSourceSize = stored.cropSourceSize;
+            st.cropRotation = stored.cropRotation;
+        }
     }
 
     const bool pageYUp = pageYUpForTextLayer();
