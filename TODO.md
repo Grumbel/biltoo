@@ -19,7 +19,7 @@ sizing is the product rule. No more ad-hoc aspect flips without tests.
 
 ### Done criteria
 - [x] Revert 428 filmstrip sizing
-- [ ] Bundle **430**
+- [x] Bundle **430**
 
 ---
 
