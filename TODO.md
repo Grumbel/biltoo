@@ -8,7 +8,7 @@ Prior: **455**. Prefer **thumtoo-155**.
 
 ### Done criteria
 - [x] Compile without grade_invert member when macro absent
-- [ ] Bundle **456**
+- [x] Bundle **456**
 
 ---
 
