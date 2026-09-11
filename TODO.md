@@ -2,6 +2,30 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-469-filmstrip-resize-scroll.** Filmstrip resize keeps scroll; debounced reload.
+Prior: **468**.
+
+### Symptoms
+Dragging the filmstrip resize handle jumped scroll position. Some thumbs only
+appeared after scrolling (loads wiped each resize pixel; concurrent window
+too tight for letterbox).
+
+### Fix
+- Scroll anchor capture/restore around `setThumbSize`
+- Geometry update every step; **debounced** full reload (120ms) when sharper
+- Visible overscan ×2; concurrent thumb loads default 24 (`BILTOO_FILMSTRIP_THUMB_LOADS`)
+- Docs in `FILMSTRIP_LAYOUT.md`
+
+### Done criteria
+- [x] Scroll stable on resize
+- [x] Debounced invalidate
+- [x] Wider load window
+- [x] Bundle **469**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-468-gallery-soft-first-limits.** Soft-first Gallery; LQIP on sizeReady; document/env limits.
 Prior: **467**.
 
