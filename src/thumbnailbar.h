@@ -219,7 +219,7 @@ private:
     int m_selectionAnchor = -1;
     bool m_centeringGuard = false;
     bool m_labelsVisible = true;
-    bool m_cropToSquare = true;
+    bool m_cropToSquare = false; // letterbox; crop is opt-in
     int m_thumbSize = kDefaultThumbSize;
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;

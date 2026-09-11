@@ -18,13 +18,13 @@ cross-axis slot tracks the bar.
 
 ## Modes
 
-### Crop-to-square (default)
+### Crop-to-square (opt-in)
 
 - Source is center-cropped to a square, then scaled to `thumbSize × thumbSize`.
 - Every cell is identical: `thumbSize + 2·pad` by `pad + thumbSize + pad + label`.
 - The image fills the icon slot edge-to-edge.
 
-### Letterbox (crop off)
+### Letterbox (default)
 
 - The whole image is kept; aspect is preserved.
 - The image is scaled so its **cross-axis edge equals `thumbSize`**:

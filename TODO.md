@@ -2,6 +2,24 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-436-filmstrip-letterbox-default.** Thumbs still looked square-
+stretched: crop-to-square was **default on**, and paint could still stretch.
+Prior: **435**.
+
+### Fix
+- Default **letterbox** (crop-to-square opt-in; settings/UI default false)
+- Paint dest size from **pixmap aspect only** + KeepAspectRatio (never stretch)
+- Remove IgnoreAspectRatio near-square snap in prepare
+
+### Done criteria
+- [x] Letterbox default
+- [x] No stretch paint
+- [ ] Bundle **436**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-435-filmstrip-no-stretch.** Letterbox thumbs were stretched into
 squares via `QIcon::pixmap(w,h)`. Paint from `ThumbPixmapRole` with
 KeepAspectRatio. Prior: **434**.

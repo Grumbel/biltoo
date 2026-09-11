@@ -172,11 +172,6 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     const int boxH = qMax(1, cell.height() - labelBand - 2 * pad);
     const QRect iconRect(cell.left() + pad, cell.top() + pad, boxW, boxH);
 
-    bool crop = false;
-    if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
-        crop = bar->cropToSquare();
-    }
-
     // Prepared pixmap (correct aspect). Never QIcon::pixmap(w,h) — that resamples
     // the only available size into the request and stretches letterbox thumbs.
     QPixmap pm = qvariant_cast<QPixmap>(index.data(ThumbPixmapRole));
@@ -192,36 +187,19 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     QRect contentRect;
     if (!pm.isNull()) {
-        const QSize logical = pm.deviceIndependentSize().toSize();
-        if (crop) {
-            // Square prepare: fill icon slot (may letterbox 1px rounding only).
-            contentRect = iconRect;
-            painter->drawPixmap(contentRect, pm);
-        } else {
-            // Letterbox: fit pixmap aspect into iconRect; never stretch to square.
-            QSize aspect = index.data(ThumbContentSizeRole).toSize();
-            if (aspect.width() < 1 || aspect.height() < 1) {
-                aspect = logical;
-            }
-            if (aspect.width() < 1 || aspect.height() < 1) {
-                aspect = iconRect.size();
-            }
-            const QSize fitted = aspect.scaled(iconRect.size(), Qt::KeepAspectRatio);
-            contentRect = QRect(
-                iconRect.x() + (iconRect.width() - fitted.width()) / 2,
-                iconRect.y() + (iconRect.height() - fitted.height()) / 2,
-                qMax(1, fitted.width()),
-                qMax(1, fitted.height()));
-            // Draw with KeepAspectRatio inside contentRect (same aspect as pm).
-            const QSize pmFit = logical.scaled(contentRect.size(), Qt::KeepAspectRatio);
-            const QRect dest(
-                contentRect.x() + (contentRect.width() - pmFit.width()) / 2,
-                contentRect.y() + (contentRect.height() - pmFit.height()) / 2,
-                qMax(1, pmFit.width()),
-                qMax(1, pmFit.height()));
-            painter->drawPixmap(dest, pm);
-            contentRect = dest;
+        // Dest size follows the *pixmap* aspect only. Never force a role size that
+        // disagrees with the pixels (that stretches). Role is for sizeHint only.
+        QSize pmAspect = pm.deviceIndependentSize().toSize();
+        if (pmAspect.width() < 1 || pmAspect.height() < 1) {
+            pmAspect = pm.size();
         }
+        const QSize fitted = pmAspect.scaled(iconRect.size(), Qt::KeepAspectRatio);
+        contentRect = QRect(
+            iconRect.x() + (iconRect.width() - fitted.width()) / 2,
+            iconRect.y() + (iconRect.height() - fitted.height()) / 2,
+            qMax(1, fitted.width()),
+            qMax(1, fitted.height()));
+        painter->drawPixmap(contentRect, pm);
     }
 
     // Hairline on the image bounds (not the full cell).
@@ -801,7 +779,9 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         QImage square = image.copy(x, y, side, side);
         // Always scale (including upscale) so small sources fill the cell.
         if (square.width() != maxSize || square.height() != maxSize) {
-            square = square.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio,
+            // Source is already square; KeepAspectRatio avoids accidental stretch
+            // if copy/rounding left a 1px mismatch.
+            square = square.scaled(maxSize, maxSize, Qt::KeepAspectRatio,
                                    Qt::SmoothTransformation);
         }
         return square;
@@ -834,12 +814,7 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
     if (fitted.isNull()) {
         return QImage();
     }
-    // Near-square: snap to filled square so density matches crop mode.
-    if (fitted.width() >= maxSize - 1 && fitted.height() >= maxSize - 1
-        && (fitted.width() != maxSize || fitted.height() != maxSize)) {
-        fitted = image.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio,
-                              Qt::SmoothTransformation);
-    }
+    // Do not IgnoreAspectRatio-snap near-square sources — that stretches.
     return fitted;
 }
 

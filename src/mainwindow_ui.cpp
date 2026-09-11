@@ -285,7 +285,7 @@ void MainWindow::createActions()
 
     m_cropThumbnailsAct = new QAction(tr("&Crop Thumbnails to Square"), this);
     m_cropThumbnailsAct->setCheckable(true);
-    m_cropThumbnailsAct->setChecked(true);
+    m_cropThumbnailsAct->setChecked(false); // letterbox by default — preserve aspect
     m_cropThumbnailsAct->setStatusTip(
         tr("When checked, thumbnails are center-cropped to a square; uncheck to show full aspect ratio"));
     connect(m_cropThumbnailsAct, &QAction::triggered, this, &MainWindow::toggleThumbnailCrop);

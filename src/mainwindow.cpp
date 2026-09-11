@@ -2190,7 +2190,7 @@ void MainWindow::readSettings()
         const int thumbSize = settings.value(QStringLiteral("thumbnailSize"),
                                              ThumbnailBar::kDefaultThumbSize).toInt();
         m_thumbnailBar->setThumbSize(thumbSize);
-        const bool cropThumbs = settings.value(QStringLiteral("thumbnailCropToSquare"), true).toBool();
+        const bool cropThumbs = settings.value(QStringLiteral("thumbnailCropToSquare"), false).toBool();
         m_thumbnailBar->setCropToSquare(cropThumbs);
         if (m_cropThumbnailsAct) {
             m_cropThumbnailsAct->setChecked(cropThumbs);
