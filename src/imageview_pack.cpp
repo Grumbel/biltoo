@@ -23,15 +23,16 @@ void ImageView::updateGalleryDecodeWindow()
     //   1. Placeholder — always want at least kFilmstripLadderEdge (256) so a
     //      tile is never blank once soft data exists; idle tiles cap at
     //      kGalleryLadderEdge (512).
-    //   2. want — for a *visible* tile: ceilLadder(on-screen long edge),
-    //      capped at kImageLadderEdge (2048). Off-screen: placeholder only.
+    //   2. want — for a *visible* tile: ceilLadder(on-screen long edge).
+    //      Off-screen: placeholder band only (≤ soft max).
     //   3. If have >= want → idle (show whatever we have; sharper wins).
-    //   4. If inflight != 0 → wait (exactly one request per path).
+    //   4. If inflight / fullInflight → wait (exactly one request per path).
     //   5. If failed → stop.
     //   6. If gaveUpWant >= want && have > 0 → stop (thumtoo will not grow).
-    //   7. Else request want once; on completion install if better; if delivery
-    //      < ~90% of want set gaveUpWant=want (no retry storm). Never
-    //      forgetPixelsSettled / re-queue the same want in a loop.
+    //   7. Soft first: request min(want, kGalleryLadderEdge) until soft is
+    //      ~90% of the soft max. Never jump to full decode with have=0.
+    //   8. Full decode only when visible, want > soft max, and soft is already
+    //      present (same ImageLoader::load path as Image mode).
     //
     // Rendering always uses the best installed soft pixels; Image mode still
     // does full native decode separately.

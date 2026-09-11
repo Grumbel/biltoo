@@ -484,9 +484,13 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
-    // Zoomed past soft ladder: same full decode path as Image mode (works for
-    // //page: / files). Soft ladder stays ≤ kGalleryLadderEdge.
-    if (anyVisible && want > ThumtooCache::kGalleryLadderEdge) {
+    // Zoomed past soft ladder: full decode only *after* soft is on screen.
+    // Cold start with want=1024 (large cells / high DPR) used to jump straight
+    // to ImageLoader::load and skip the soft ladder — Gallery felt stuck while
+    // filmstrip already showed 256px thumbs. Soft ladder stays ≤ kGalleryLadderEdge;
+    // full decode upgrades visible tiles once soft is present.
+    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    if (anyVisible && want > softCap && have >= softCap * 9 / 10) {
         st.fullInflight = true;
         // Do NOT use pending-workspace / onImageLoaded(LoadAdd): soft completion
         // can takePending and drop the full result, and LoadAdd may relayout.
