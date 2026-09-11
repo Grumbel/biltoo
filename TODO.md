@@ -2,6 +2,29 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-450-document-search.** Document-wide Find + optional fuzzy.
+Prior: **449**.
+
+### Shipped
+- Debounced (~280ms) async scan of all pages of the current document
+  (session rows for that file, else expand PDF/EPUB/DjVu)
+- Match label: pages with hits + on-page count; Searching… while scan runs
+- Prev/Next (toolbar + F3 / Shift+F3) jump to pages that have matches
+- **Fuzzy** checkbox (default on): alnum-only match + 1-char edit tolerance
+  for queries ≥ 4 characters (OCR noise)
+
+### Still open
+- EPUB ToC / link resolve to page numbers (MuPDF `fz_resolve_link` for spine URIs)
+- Richer hit list (region-level navigation within a page)
+
+### Done criteria
+- [x] Document-wide scan + navigation + fuzzy
+- [ ] Bundle **450**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-449-search-toolbar.** Incremental Find toolbar (like Location).
 Prior: **448**.
 

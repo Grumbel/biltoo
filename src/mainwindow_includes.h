@@ -49,6 +49,7 @@
 #include <QIcon>
 #include <QKeyEvent>
 #include <QKeySequence>
+#include <QCheckBox>
 #include <QLabel>
 #include <QProgressBar>
 #include <QMenu>
@@ -64,6 +65,8 @@
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStyle>
+#include <QPointer>
+#include <QThreadPool>
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>

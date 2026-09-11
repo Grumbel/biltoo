@@ -484,6 +484,11 @@ public:
     int setTextSearchQuery(const QString &query);
     QString textSearchQuery() const { return m_textSearchQuery; }
     int textSearchMatchCount() const { return m_textSearchMatches.size(); }
+    /** Soft match for OCR noise (alnum-only + light edit distance). Default on. */
+    void setTextSearchFuzzy(bool on);
+    bool textSearchFuzzy() const { return m_textSearchFuzzy; }
+    /** True if @p regionText matches @p query under the same rules as Find. */
+    static bool textMatchesQuery(const QString &regionText, const QString &query, bool fuzzy);
 
     /** Selected region indices from Shift+drag rubber-band (Image mode page docs). */
     int textSelectionCount() const { return m_textSelectedRegions.size(); }
@@ -1214,6 +1219,7 @@ private:
     ThumtooCache::PageTextLayer m_textLayer;
     QString m_textLayerPath;
     QString m_textSearchQuery;
+    bool m_textSearchFuzzy = true;
     /** Indices into m_textLayer.regions that match the current query. */
     QVector<int> m_textSearchMatches;
     bool m_textRubberbanding = false;

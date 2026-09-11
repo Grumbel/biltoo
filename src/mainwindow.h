@@ -165,7 +165,15 @@ private slots:
     void commitSearchBar();
     void setSearchBarPinned(bool pinned);
     void onSearchTextChanged(const QString &text);
-    void updateSearchMatchLabel(int matchCount);
+    void updateSearchMatchLabel();
+    void scheduleDocumentSearch(const QString &query);
+    void startDocumentSearch(const QString &query);
+    void onDocumentSearchFinished(quint64 generation, const QString &query,
+                                  const QVector<int> &hitPages, int pageHits);
+    void findNextMatch();
+    void findPreviousMatch();
+    void goToSearchHit(int index);
+    QStringList documentPagePathsForSearch() const;
     void toggleHud();
     void toggleThumbnailLabels();
     void toggleThumbnailCrop();
@@ -429,7 +437,18 @@ private:
     QToolBar *m_searchBar = nullptr;
     QLineEdit *m_searchEdit = nullptr;
     QLabel *m_searchMatchLabel = nullptr;
+    QCheckBox *m_searchFuzzyCheck = nullptr;
+    QToolButton *m_searchPrevBtn = nullptr;
+    QToolButton *m_searchNextBtn = nullptr;
     bool m_searchBarPinned = false;
+    QTimer *m_docSearchDebounce = nullptr;
+    quint64 m_docSearchGeneration = 0;
+    QString m_docSearchQuery;
+    /** 1-based page numbers with ≥1 match (document-wide scan). */
+    QVector<int> m_docSearchHitPages;
+    int m_docSearchHitIndex = -1;
+    int m_docSearchPageMatchCount = 0;
+    bool m_docSearchRunning = false;
     QAction *m_quitAct = nullptr;
     QAction *m_printAct = nullptr;
     QAction *m_printPreviewAct = nullptr;

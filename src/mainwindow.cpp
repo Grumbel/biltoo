@@ -743,8 +743,12 @@ void MainWindow::openSearchBar()
     if (m_imageView && m_searchEdit->text() != m_imageView->textSearchQuery()) {
         QSignalBlocker block(m_searchEdit);
         m_searchEdit->setText(m_imageView->textSearchQuery());
-        updateSearchMatchLabel(m_imageView->textSearchMatchCount());
     }
+    if (m_searchFuzzyCheck && m_imageView) {
+        QSignalBlocker block(m_searchFuzzyCheck);
+        m_searchFuzzyCheck->setChecked(m_imageView->textSearchFuzzy());
+    }
+    updateSearchMatchLabel();
     m_searchBar->setVisible(true);
     m_searchEdit->setFocus(Qt::ShortcutFocusReason);
     m_searchEdit->selectAll();
@@ -763,10 +767,7 @@ void MainWindow::cancelSearchBar()
 
 void MainWindow::commitSearchBar()
 {
-    // Enter: keep focus for further typing; incremental search already ran.
-    if (m_searchEdit) {
-        m_searchEdit->selectAll();
-    }
+    findNextMatch();
 }
 
 void MainWindow::setSearchBarPinned(bool pinned)
@@ -784,7 +785,7 @@ void MainWindow::setSearchBarPinned(bool pinned)
         if (m_searchEdit && m_imageView) {
             QSignalBlocker block(m_searchEdit);
             m_searchEdit->setText(m_imageView->textSearchQuery());
-            updateSearchMatchLabel(m_imageView->textSearchMatchCount());
+            updateSearchMatchLabel();
         }
     } else if (m_searchEdit && !m_searchEdit->hasFocus()) {
         m_searchBar->setVisible(false);
@@ -796,32 +797,270 @@ void MainWindow::onSearchTextChanged(const QString &text)
     if (!m_imageView) {
         return;
     }
-    const int n = m_imageView->setTextSearchQuery(text);
-    updateSearchMatchLabel(n);
-    if (text.trimmed().isEmpty()) {
-        if (statusBar()) {
-            statusBar()->showMessage(tr("Text search cleared"), 2000);
-        }
-    } else if (statusBar()) {
-        if (n == 0) {
-            statusBar()->showMessage(tr("No matches on this page"), 2000);
-        } else {
-            statusBar()->showMessage(tr("%n match(es) on this page", "", n), 2000);
-        }
-    }
+    const bool fuzzy = !m_searchFuzzyCheck || m_searchFuzzyCheck->isChecked();
+    m_imageView->setTextSearchFuzzy(fuzzy);
+    m_docSearchPageMatchCount = m_imageView->setTextSearchQuery(text);
+    m_docSearchHitPages.clear();
+    m_docSearchHitIndex = -1;
+    m_docSearchQuery = text.trimmed();
+    updateSearchMatchLabel();
+    scheduleDocumentSearch(text);
 }
 
-void MainWindow::updateSearchMatchLabel(int matchCount)
+void MainWindow::updateSearchMatchLabel()
 {
     if (!m_searchMatchLabel) {
         return;
     }
     if (!m_searchEdit || m_searchEdit->text().trimmed().isEmpty()) {
         m_searchMatchLabel->clear();
+        if (m_searchPrevBtn) {
+            m_searchPrevBtn->setEnabled(false);
+        }
+        if (m_searchNextBtn) {
+            m_searchNextBtn->setEnabled(false);
+        }
         return;
     }
-    m_searchMatchLabel->setText(tr("%n match(es)", "", matchCount));
+    const int pageHits = m_docSearchPageMatchCount;
+    const int pagesWith = m_docSearchHitPages.size();
+    QString text;
+    if (m_docSearchRunning) {
+        text = tr("Searching…");
+        if (pageHits > 0) {
+            text += tr(" · %n on page", "", pageHits);
+        }
+    } else if (pagesWith > 0) {
+        const int cur = m_docSearchHitIndex >= 0 ? m_docSearchHitIndex + 1 : 0;
+        text = tr("%1/%2 pages").arg(cur).arg(pagesWith);
+        if (pageHits > 0) {
+            text += tr(" · %n on page", "", pageHits);
+        }
+    } else if (pageHits > 0) {
+        text = tr("%n on page", "", pageHits);
+    } else {
+        text = tr("No matches");
+    }
+    m_searchMatchLabel->setText(text);
+    const bool nav = pagesWith > 0 || pageHits > 0;
+    if (m_searchPrevBtn) {
+        m_searchPrevBtn->setEnabled(nav);
+    }
+    if (m_searchNextBtn) {
+        m_searchNextBtn->setEnabled(nav);
+    }
 }
+
+QStringList MainWindow::documentPagePathsForSearch() const
+{
+    QStringList out;
+    if (!m_imageView) {
+        return out;
+    }
+    QString path = m_imageView->classicPath();
+    if (path.isEmpty() && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        path = m_session.paths().at(m_currentIndex);
+    }
+    if (path.isEmpty() || !PagePath::isPageRef(path)) {
+        return out;
+    }
+    const QString doc = PagePath::documentFilePath(path);
+    if (doc.isEmpty()) {
+        return out;
+    }
+    // Prefer already-expanded session rows for this document (stable paths).
+    for (const QString &p : m_session.paths()) {
+        if (PagePath::isPageRef(p) && PagePath::documentFilePath(p) == doc) {
+            out.append(p);
+        }
+    }
+    if (!out.isEmpty()) {
+        return out;
+    }
+    // Fall back to expand helpers.
+    const QString layout = PagePath::epubLayoutParamsOf(path);
+    if (!layout.isEmpty() || path.contains(QLatin1String("//epub:"))) {
+        return ThumtooCache::expandEpubToPageRefs(doc);
+    }
+    if (PagePath::isEpubFile(doc)) {
+        return ThumtooCache::expandEpubToPageRefs(doc);
+    }
+    // PDF / DjVu page refs share makeRef form; try both expanders.
+    QStringList pdf = ThumtooCache::expandPdfToPageRefs(doc);
+    if (!pdf.isEmpty()) {
+        return pdf;
+    }
+    return ThumtooCache::expandDjvuToPageRefs(doc);
+}
+
+void MainWindow::scheduleDocumentSearch(const QString &query)
+{
+    const QString trimmed = query.trimmed();
+    if (trimmed.isEmpty()) {
+        ++m_docSearchGeneration;
+        m_docSearchRunning = false;
+        m_docSearchHitPages.clear();
+        m_docSearchHitIndex = -1;
+        m_docSearchQuery.clear();
+        updateSearchMatchLabel();
+        return;
+    }
+    if (!m_docSearchDebounce) {
+        m_docSearchDebounce = new QTimer(this);
+        m_docSearchDebounce->setSingleShot(true);
+        connect(m_docSearchDebounce, &QTimer::timeout, this, [this]() {
+            startDocumentSearch(m_docSearchQuery);
+        });
+    }
+    m_docSearchQuery = trimmed;
+    m_docSearchDebounce->start(280);
+}
+
+void MainWindow::startDocumentSearch(const QString &query)
+{
+    const QString trimmed = query.trimmed();
+    if (trimmed.isEmpty()) {
+        return;
+    }
+    const QStringList pages = documentPagePathsForSearch();
+    if (pages.isEmpty()) {
+        // Single-page / non-document: page-local search only.
+        m_docSearchRunning = false;
+        m_docSearchHitPages.clear();
+        updateSearchMatchLabel();
+        return;
+    }
+    const quint64 gen = ++m_docSearchGeneration;
+    m_docSearchRunning = true;
+    updateSearchMatchLabel();
+
+    const bool fuzzy = !m_searchFuzzyCheck || m_searchFuzzyCheck->isChecked();
+    const QPointer<MainWindow> guard(this);
+    QThreadPool::globalInstance()->start([guard, pages, trimmed, fuzzy, gen]() {
+        QVector<int> hitPages;
+        hitPages.reserve(64);
+        for (const QString &pagePath : pages) {
+            if (!guard) {
+                return;
+            }
+            ThumtooCache::PageTextLayer layer = ThumtooCache::cachedPageTextLayer(pagePath);
+            if (layer.regions.isEmpty()) {
+                layer = ThumtooCache::ensurePageTextLayer(pagePath);
+            }
+            int matches = 0;
+            for (const ThumtooCache::TextRegion &r : layer.regions) {
+                if (r.text.isEmpty()) {
+                    continue;
+                }
+                if (ImageView::textMatchesQuery(r.text, trimmed, fuzzy)) {
+                    ++matches;
+                }
+            }
+            if (matches > 0) {
+                const int page = PagePath::pageNumber(pagePath);
+                if (page > 0) {
+                    hitPages.append(page);
+                }
+            }
+        }
+        if (!guard) {
+            return;
+        }
+        // Generation checked only on the GUI thread (no data race on the counter).
+        QMetaObject::invokeMethod(
+            guard.data(),
+            [guard, gen, trimmed, hitPages]() {
+                MainWindow *host = guard.data();
+                if (!host || gen != host->m_docSearchGeneration) {
+                    return;
+                }
+                host->onDocumentSearchFinished(gen, trimmed, hitPages, 0);
+            },
+            Qt::QueuedConnection);
+    });
+}
+
+void MainWindow::onDocumentSearchFinished(quint64 generation, const QString &query,
+                                          const QVector<int> &hitPages, int /*pageHits*/)
+{
+    if (generation != m_docSearchGeneration) {
+        return;
+    }
+    m_docSearchRunning = false;
+    m_docSearchQuery = query;
+    m_docSearchHitPages = hitPages;
+    // Point at the hit for the current page when possible.
+    m_docSearchHitIndex = -1;
+    if (m_imageView && !hitPages.isEmpty()) {
+        const int cur = PagePath::pageNumber(m_imageView->classicPath());
+        for (int i = 0; i < hitPages.size(); ++i) {
+            if (hitPages.at(i) == cur) {
+                m_docSearchHitIndex = i;
+                break;
+            }
+        }
+        if (m_docSearchHitIndex < 0) {
+            m_docSearchHitIndex = 0;
+        }
+    }
+    if (m_imageView) {
+        m_docSearchPageMatchCount = m_imageView->textSearchMatchCount();
+    }
+    updateSearchMatchLabel();
+    if (statusBar()) {
+        if (hitPages.isEmpty()) {
+            statusBar()->showMessage(tr("No matches in document"), 3000);
+        } else {
+            statusBar()->showMessage(
+                tr("%n page(s) with matches", "", hitPages.size()), 3000);
+        }
+    }
+}
+
+void MainWindow::goToSearchHit(int index)
+{
+    if (index < 0 || index >= m_docSearchHitPages.size()) {
+        return;
+    }
+    m_docSearchHitIndex = index;
+    const int page = m_docSearchHitPages.at(index);
+    navigateDocumentPage(page);
+    // Re-apply query so highlights load for the new page.
+    if (m_imageView && !m_docSearchQuery.isEmpty()) {
+        m_docSearchPageMatchCount = m_imageView->setTextSearchQuery(m_docSearchQuery);
+    }
+    updateSearchMatchLabel();
+}
+
+void MainWindow::findNextMatch()
+{
+    if (m_docSearchHitPages.isEmpty()) {
+        // Only page-local matches — nothing to navigate.
+        if (m_docSearchPageMatchCount > 0 && statusBar()) {
+            statusBar()->showMessage(
+                tr("%n match(es) on this page", "", m_docSearchPageMatchCount), 2000);
+        }
+        return;
+    }
+    int next = m_docSearchHitIndex + 1;
+    if (next >= m_docSearchHitPages.size()) {
+        next = 0;
+    }
+    goToSearchHit(next);
+}
+
+void MainWindow::findPreviousMatch()
+{
+    if (m_docSearchHitPages.isEmpty()) {
+        return;
+    }
+    int prev = m_docSearchHitIndex - 1;
+    if (prev < 0) {
+        prev = m_docSearchHitPages.size() - 1;
+    }
+    goToSearchHit(prev);
+}
+
 
 void MainWindow::toggleHud()
 {

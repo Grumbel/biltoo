@@ -1139,24 +1139,61 @@ void MainWindow::createToolBar()
     m_searchEdit = new QLineEdit(m_searchBar);
     m_searchEdit->setObjectName(QStringLiteral("SearchEdit"));
     m_searchEdit->setClearButtonEnabled(true);
-    m_searchEdit->setPlaceholderText(tr("Find in page…"));
+    m_searchEdit->setPlaceholderText(tr("Find in document…"));
     m_searchEdit->setMinimumWidth(160);
     m_searchEdit->installEventFilter(this);
     connect(m_searchEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
-    connect(m_searchEdit, &QLineEdit::returnPressed, this, &MainWindow::commitSearchBar);
+    connect(m_searchEdit, &QLineEdit::returnPressed, this, &MainWindow::findNextMatch);
     m_searchMatchLabel = new QLabel(m_searchBar);
     m_searchMatchLabel->setObjectName(QStringLiteral("SearchMatchLabel"));
-    m_searchMatchLabel->setMinimumWidth(72);
-    m_searchMatchLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_searchMatchLabel->setMinimumWidth(120);
+    m_searchMatchLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    m_searchFuzzyCheck = new QCheckBox(tr("Fuzzy"), m_searchBar);
+    m_searchFuzzyCheck->setChecked(true);
+    m_searchFuzzyCheck->setToolTip(
+        tr("Tolerate OCR noise (punctuation, spacing, single-character slips)"));
+    connect(m_searchFuzzyCheck, &QCheckBox::toggled, this, [this](bool on) {
+        if (m_imageView) {
+            m_imageView->setTextSearchFuzzy(on);
+        }
+        if (m_searchEdit) {
+            scheduleDocumentSearch(m_searchEdit->text());
+        }
+        updateSearchMatchLabel();
+    });
+    m_searchPrevBtn = new QToolButton(m_searchBar);
+    m_searchPrevBtn->setText(tr("◀"));
+    m_searchPrevBtn->setToolTip(tr("Previous match (Shift+F3)"));
+    m_searchPrevBtn->setAutoRaise(true);
+    connect(m_searchPrevBtn, &QToolButton::clicked, this, &MainWindow::findPreviousMatch);
+    m_searchNextBtn = new QToolButton(m_searchBar);
+    m_searchNextBtn->setText(tr("▶"));
+    m_searchNextBtn->setToolTip(tr("Next match (F3)"));
+    m_searchNextBtn->setAutoRaise(true);
+    connect(m_searchNextBtn, &QToolButton::clicked, this, &MainWindow::findNextMatch);
     auto *searchHost = new QWidget(m_searchBar);
     auto *searchLay = new QHBoxLayout(searchHost);
     searchLay->setContentsMargins(4, 0, 4, 0);
     searchLay->setSpacing(6);
     searchLay->addWidget(new QLabel(tr("Find:"), searchHost));
     searchLay->addWidget(m_searchEdit, 1);
+    searchLay->addWidget(m_searchPrevBtn);
+    searchLay->addWidget(m_searchNextBtn);
     searchLay->addWidget(m_searchMatchLabel);
+    searchLay->addWidget(m_searchFuzzyCheck);
     m_searchBar->addWidget(searchHost);
     m_searchBar->setVisible(false);
+
+    auto *findNextAct = new QAction(tr("Find &Next"), this);
+    findNextAct->setShortcut(Qt::Key_F3);
+    findNextAct->setShortcutContext(Qt::WindowShortcut);
+    connect(findNextAct, &QAction::triggered, this, &MainWindow::findNextMatch);
+    addAction(findNextAct);
+    auto *findPrevAct = new QAction(tr("Find &Previous"), this);
+    findPrevAct->setShortcut(Qt::SHIFT | Qt::Key_F3);
+    findPrevAct->setShortcutContext(Qt::WindowShortcut);
+    connect(findPrevAct, &QAction::triggered, this, &MainWindow::findPreviousMatch);
+    addAction(findPrevAct);
 }
 
 
