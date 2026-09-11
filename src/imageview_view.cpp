@@ -2567,7 +2567,11 @@ QString ImageView::hudFileName() const
         item = primaryItem();
     }
     if (item) {
-        return PagePath::displayName(item->path());
+        QString name = PagePath::displayName(item->path());
+        if (targetHasContentAppearance()) {
+            name += tr(" · modified");
+        }
+        return name;
     }
     if (hasClassicPath() && isImageMode()) {
         return PagePath::displayName(classicPath());
@@ -2641,6 +2645,9 @@ QString ImageView::statusText() const
                             .arg(it->cropRect.height());
             }
         }
+        if (targetHasContentAppearance()) {
+            text += tr("  |  Modified");
+        }
         return text;
     }
 
@@ -2674,6 +2681,9 @@ QString ImageView::statusText() const
                         .arg(it->cropRect.width())
                         .arg(it->cropRect.height());
         }
+    }
+    if (targetHasContentAppearance()) {
+        text += tr("  |  Modified");
     }
     return text;
 }

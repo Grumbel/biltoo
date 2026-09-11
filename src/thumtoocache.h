@@ -251,6 +251,12 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out);
 /** Persist content appearance for path's content id (identity deletes the row). */
 void saveContentAppearance(const QString &path, const StoredContentAppearance &app);
 
+/** True when durable state has non-identity content appearance for @p path. */
+bool hasContentAppearance(const QString &path);
+
+/** Remove durable content appearance for @p path (identity). */
+void clearContentAppearance(const QString &path);
+
 } // namespace ThumtooCache
 
 #endif

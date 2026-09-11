@@ -1678,6 +1678,10 @@ void MainWindow::updateNavigationActions()
             act->setEnabled(canTransform);
         }
     }
+    if (m_resetContentAppearanceAct) {
+        m_resetContentAppearanceAct->setEnabled(
+            canTransform && m_imageView && m_imageView->targetHasContentAppearance());
+    }
     // Crop: Image mode, or exactly one Gallery/Workspace selection.
     if (m_cropAct) {
         const bool canCrop = m_imageView && m_imageView->hasSingleCropTarget();

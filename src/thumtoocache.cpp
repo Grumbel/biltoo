@@ -1667,6 +1667,17 @@ void saveContentAppearance(const QString &path, const StoredContentAppearance &a
     appearanceStore().put(id, a);
 }
 
+bool hasContentAppearance(const QString &path)
+{
+    StoredContentAppearance app;
+    return loadContentAppearance(path, &app);
+}
+
+void clearContentAppearance(const QString &path)
+{
+    saveContentAppearance(path, StoredContentAppearance{});
+}
+
 #else // no thumtoo appearance
 
 QString contentIdForPath(const QString &)
@@ -1683,6 +1694,15 @@ bool loadContentAppearance(const QString &, StoredContentAppearance *out)
 }
 
 void saveContentAppearance(const QString &, const StoredContentAppearance &)
+{
+}
+
+bool hasContentAppearance(const QString &)
+{
+    return false;
+}
+
+void clearContentAppearance(const QString &)
 {
 }
 

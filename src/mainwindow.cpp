@@ -608,6 +608,37 @@ void MainWindow::flipVertical()
     m_imageView->flipVertical();
 }
 
+void MainWindow::resetContentAppearance()
+{
+    if (!m_imageView || !m_imageView->targetHasContentAppearance()) {
+        return;
+    }
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle(tr("Reset content appearance?"));
+    box.setText(tr("Discard flip, rotation, and crop for the selected image(s)?"));
+    box.setInformativeText(
+        tr("The original files are never modified. This clears the local "
+           "orientation saved for those files and restores the on-disk pixels "
+           "in this session."));
+    QPushButton *resetBtn = box.addButton(tr("Reset"), QMessageBox::DestructiveRole);
+    QPushButton *cancelBtn = box.addButton(QMessageBox::Cancel);
+    box.setDefaultButton(cancelBtn);
+    box.exec();
+    if (box.clickedButton() != resetBtn) {
+        return;
+    }
+    const int n = m_imageView->resetContentAppearanceForTargets();
+    if (n > 0) {
+        updateStatus();
+        updateMetadataPanel();
+        if (statusBar()) {
+            statusBar()->showMessage(
+                tr("Content appearance reset for %n image(s)", "", n), 4000);
+        }
+    }
+}
+
 void MainWindow::toggleCropMode()
 {
     if (!m_imageView) {
@@ -1888,6 +1919,9 @@ void MainWindow::showContextMenu(const QPoint &pos)
     menu.addAction(m_rotateRightAct);
     menu.addAction(m_flipHAct);
     menu.addAction(m_flipVAct);
+    if (m_resetContentAppearanceAct) {
+        menu.addAction(m_resetContentAppearanceAct);
+    }
     if (isWorkspaceMode()) {
         menu.addAction(m_resetScaleAct);
         if (m_resetShearAct) {

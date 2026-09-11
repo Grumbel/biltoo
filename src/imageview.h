@@ -798,6 +798,19 @@ public:
                               SessionAppearance::PixelKind kind,
                               SessionImageId sid);
 
+    /**
+     * True when the primary transform target has non-identity content
+     * appearance (session store and/or durable XDG state for its path).
+     */
+    bool targetHasContentAppearance() const;
+
+    /**
+     * Clear content appearance (flip / quarter-turns / crop) for transform
+     * targets: durable state, session store, and reload full on-disk pixels.
+     * Does not touch Workspace placement. Returns number of items reset.
+     */
+    int resetContentAppearanceForTargets();
+
     QString statusText() const;
     /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */
     QString sessionBadgeText() const;

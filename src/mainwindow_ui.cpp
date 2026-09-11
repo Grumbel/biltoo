@@ -211,6 +211,14 @@ void MainWindow::createActions()
     m_flipVAct->setStatusTip(tr("Flip image vertically"));
     connect(m_flipVAct, &QAction::triggered, this, &MainWindow::flipVertical);
 
+    m_resetContentAppearanceAct = new QAction(tr("Reset Content &Appearance…"), this);
+    m_resetContentAppearanceAct->setStatusTip(
+        tr("Discard flip, rotation, and crop for the current image(s) and forget "
+           "saved orientation for those files"));
+    m_resetContentAppearanceAct->setToolTip(tr("Reset content appearance"));
+    connect(m_resetContentAppearanceAct, &QAction::triggered, this,
+            &MainWindow::resetContentAppearance);
+
     m_cropAct = new QAction(tr("&Crop"), this);
     m_cropAct->setCheckable(true);
     m_cropAct->setShortcut(Qt::Key_C);
@@ -810,6 +818,7 @@ void MainWindow::createMenus()
     m_imageMenu->addSeparator();
     m_imageMenu->addAction(m_flipHAct);
     m_imageMenu->addAction(m_flipVAct);
+    m_imageMenu->addAction(m_resetContentAppearanceAct);
     m_imageMenu->addSeparator();
     m_imageMenu->addAction(m_cropAct);
     m_imageMenu->addAction(m_attentionAct);

@@ -157,6 +157,7 @@ private slots:
     void rotateRight();
     void flipHorizontal();
     void flipVertical();
+    void resetContentAppearance();
     void toggleCropMode();
     void toggleAttentionMode();
     void findOnPage();
@@ -437,6 +438,7 @@ private:
     QAction *m_rotateRightAct = nullptr;
     QAction *m_flipHAct = nullptr;
     QAction *m_flipVAct = nullptr;
+    QAction *m_resetContentAppearanceAct = nullptr;
     QAction *m_cropAct = nullptr;
     QAction *m_attentionAct = nullptr;
     QAction *m_toggleHudAct = nullptr;

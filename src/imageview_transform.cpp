@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "thumtoocache.h"
+#include "imageloader.h"
+#include "sessionappearance.h"
 #include "imageitem.h"
 
 #include <QUndoCommand>
@@ -167,6 +170,7 @@ void ImageView::flipHorizontal()
     if (isGalleryMode()) {
         applyLayout(GalleryPackReason::ContentChange);
     }
+    emit statusChanged();
 }
 
 void ImageView::flipVertical()
@@ -184,6 +188,7 @@ void ImageView::flipVertical()
     if (isGalleryMode()) {
         applyLayout(GalleryPackReason::ContentChange);
     }
+    emit statusChanged();
 }
 
 void ImageView::rotateLeft()
@@ -219,8 +224,8 @@ void ImageView::rotateLeft()
         applyLayout(GalleryPackReason::ContentChange);
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
-        emit statusChanged();
     }
+    emit statusChanged();
 }
 
 void ImageView::rotateRight()
@@ -254,8 +259,8 @@ void ImageView::rotateRight()
         applyLayout(GalleryPackReason::ContentChange);
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
-        emit statusChanged();
     }
+    emit statusChanged();
 }
 
 void ImageView::raiseItem(ImageItem *item)
@@ -764,3 +769,105 @@ void ImageView::placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
     emit workspacePathsChanged();
     viewport()->update();
 }
+
+
+bool ImageView::targetHasContentAppearance() const
+{
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return false;
+    }
+    for (const ImageItem *item : targets) {
+        if (!item) {
+            continue;
+        }
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId && isImageMode()) {
+            sid = m_currentSessionId;
+        }
+        if (sid != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+                if (SessionAppearance::hasContentAppearance(*app)) {
+                    return true;
+                }
+            }
+        }
+        if (item->sessionHasCrop() || item->contentHFlip() || item->contentVFlip()) {
+            return true;
+        }
+        if (ThumtooCache::hasContentAppearance(item->path())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int ImageView::resetContentAppearanceForTargets()
+{
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return 0;
+    }
+    int n = 0;
+    for (ImageItem *item : targets) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId && isImageMode()) {
+            sid = m_currentSessionId;
+        }
+
+        // 1) Drop durable XDG state for this content.
+        ThumtooCache::clearContentAppearance(path);
+
+        // 2) Clear session appearance content fields (keep placement).
+        if (sid != kInvalidSessionImageId) {
+            WorkspaceItemState slot = m_appearance.value(sid);
+            slot.sessionId = sid;
+            slot.path = path;
+            slot.contentHFlip = false;
+            slot.contentVFlip = false;
+            slot.contentQuarterTurns = 0;
+            slot.hasCrop = false;
+            slot.cropRect = QRect();
+            slot.cropSourceSize = QSize();
+            slot.cropRotation = 0.0;
+            // Keep color grade / pose if present.
+            m_appearance.set(sid, slot);
+        }
+
+        // 3) Reload full on-disk pixels and strip content chrome.
+        const QImage full = ImageLoader::load(path);
+        if (!full.isNull()) {
+            item->setSourceImage(full);
+        }
+        item->setContentHFlip(false);
+        item->setContentVFlip(false);
+        item->setSessionCrop(false, QRect());
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+
+        if (isImageMode() && m_fitMode) {
+            fitItem(item, currentFitAspectMode());
+        }
+
+        // Filmstrip / peers: emit identity appearance.
+        if (sid != kInvalidSessionImageId) {
+            const QImage appearance = sessionAppearanceImage(item);
+            if (!appearance.isNull()) {
+                emit sessionAppearanceChanged(sid, path, appearance);
+            }
+        }
+        ++n;
+    }
+    if (n > 0 && isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+    }
+    if (n > 0) {
+        emit statusChanged();
+    }
+    return n;
+}
+

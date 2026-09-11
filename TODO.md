@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-402-content-appearance-ui.** UI for local content appearance:
+status/HUD “Modified”, Image menu **Reset Content Appearance…** with
+confirmation. Prior: **401**.
+
+### Change
+- HUD filename: `· modified` when target has content appearance
+- Status line: `| Modified`
+- Image menu + context menu: Reset Content Appearance…
+- Confirm dialog; clears XDG state + session content fields + reloads pixels
+- Action enabled only when target has content appearance
+
+### Done criteria
+- [x] Indicator + reset + confirm
+- [ ] Human: rotate → see Modified → Reset → confirm → clean
+- [ ] Bundle **402**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-401-appearance-state-seed.** Seed durable orientation on Image-mode
 full decode and soft install; shared helper. Prior: **400**. Needs **thumtoo ≥ 144**.
 
