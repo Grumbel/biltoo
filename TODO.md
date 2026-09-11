@@ -16,7 +16,7 @@ Prior: **453**. Pair with **thumtoo-153** for durable invert.
 - [x] Export Text
 - [x] Find debug
 - [x] Negative invert end-to-end
-- [ ] Bundle **454**
+- [x] Bundle **454**
 
 ---
 
