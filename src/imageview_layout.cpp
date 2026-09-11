@@ -385,6 +385,8 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         m_appearance.set(sid, s);
         // Persist immediately with the known turns (do not wait for commit's
         // captureState — that path previously wiped the DB with identity).
+        // When the user rotates back to identity, clear the durable row so a
+        // full 360° cycle does not leave a stale quarter-turns value.
         if (turns != 0 || s.contentHFlip || s.contentVFlip
             || (s.hasCrop && !s.cropRect.isEmpty())) {
             ThumtooCache::StoredContentAppearance stored;
@@ -398,6 +400,8 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
                 stored.cropRotation = s.cropRotation;
             }
             ThumtooCache::saveContentAppearance(item->path(), stored);
+        } else {
+            ThumtooCache::clearContentAppearance(item->path());
         }
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);
@@ -411,6 +415,8 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         ThumtooCache::StoredContentAppearance stored;
         stored.contentQuarterTurns = turns;
         ThumtooCache::saveContentAppearance(item->path(), stored);
+    } else {
+        ThumtooCache::clearContentAppearance(item->path());
     }
     commitItemSessionEdit(item);
 
@@ -502,6 +508,8 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
                 stored.cropRotation = s.cropRotation;
             }
             ThumtooCache::saveContentAppearance(item->path(), stored);
+        } else {
+            ThumtooCache::clearContentAppearance(item->path());
         }
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);

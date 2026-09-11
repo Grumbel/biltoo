@@ -2,6 +2,21 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-406-persist-verify.** Full check-out of appearance persist. Prior: **405**.
+
+### Verified
+- [x] thumtoo unit tests PASS
+- [x] Simulated biltoo commit policy (no identity wipe) PASS
+- [x] Static audit: seed/save/clear/UTF-8/lazy-open/feature-detect
+- [x] Full 360° rotate clears durable row (no stale turns)
+
+### Done criteria
+- [x] Bundle **406**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-405-persist-hard-save.** Deeper persist investigation. Prior: **404**.
 
 ### Further findings
