@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-451-unresolved-link-guard.** Do not open spine `.xhtml` links in
+the browser. Pair with **thumtoo-152** (resolve internal links → page).
+Prior: **450**.
+
+### Change
+- `openDocumentLinkUri`: relative / `.xhtml`/`.html`/`.xml` paths show a status
+  message instead of `QDesktopServices::openUrl`
+- Real navigation still comes from `page_1based` after thumtoo-152 extract
+
+### Requires
+Rebuild biltoo against **thumtoo-152** so outline/link extract fills pages.
+
+### Done criteria
+- [x] Guard unresolved spine URIs
+- [ ] Bundle **451**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-450-document-search.** Document-wide Find + optional fuzzy.
 Prior: **449**.
 

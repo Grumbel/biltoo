@@ -2053,7 +2053,27 @@ void MainWindow::openDocumentLinkUri(const QString &uri)
         }
     }
     const QUrl url(uri);
-    if (url.isValid()) {
+    // Spine-relative EPUB paths (…xhtml / …html / …xml) are not web URLs —
+    // thumtoo should have resolved them to page numbers. Do not hand them to
+    // the desktop browser (opens nothing useful).
+    const QString lower = uri.toLower();
+    const bool looksInternalPath =
+        url.scheme().isEmpty()
+        || url.isRelative()
+        || lower.endsWith(QLatin1String(".xhtml"))
+        || lower.endsWith(QLatin1String(".html"))
+        || lower.endsWith(QLatin1String(".htm"))
+        || lower.endsWith(QLatin1String(".xml"))
+        || lower.contains(QLatin1String(".xhtml#"))
+        || lower.contains(QLatin1String(".html#"));
+    if (looksInternalPath) {
+        if (statusBar()) {
+            statusBar()->showMessage(
+                tr("Unresolved document link: %1").arg(uri), 5000);
+        }
+        return;
+    }
+    if (url.isValid() && !url.scheme().isEmpty()) {
         QDesktopServices::openUrl(url);
     }
 }
