@@ -269,25 +269,30 @@ void ImageItem::bakeRotate90(int quarterTurns)
     xform.rotate(90.0 * quarterTurns);
     if (!m_source.isNull()) {
         m_source = m_source.transformed(xform, Qt::SmoothTransformation);
-        // Intrinsic tracks native geometry; only adopt rotated size when this
-        // is a real full decode (not a soft stand-in).
-        if (!m_previewPixels) {
-            m_intrinsicSize = m_source.size();
-            setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
-        }
     }
     if (!m_preview.isNull()) {
         m_preview = m_preview.transformed(xform, Qt::SmoothTransformation);
     }
-    if (m_source.isNull() && !m_preview.isNull()) {
-        // Soft-only: keep layout geometry (probe size); only the stand-in rotates.
+    // Layout / imageSize / contentRect must follow content orientation. Odd
+    // 90° steps swap axes — including soft-only tiles (probe intrinsic).
+    // Leaving intrinsic in the pre-rotate aspect made Gallery pack and the
+    // selection AABB keep the old bounding box while pixels looked rotated.
+    const bool swapAxes = (quarterTurns % 2) != 0;
+    if (!m_source.isNull() && !m_previewPixels) {
+        m_intrinsicSize = m_source.size();
+        setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+    } else {
+        if (swapAxes && m_intrinsicSize.isValid()
+            && m_intrinsicSize.width() > 0 && m_intrinsicSize.height() > 0) {
+            m_intrinsicSize.transpose();
+        }
         const QSize s = imageSize();
         setOffset(-s.width() / 2.0, -s.height() / 2.0);
     }
     // Flips stay as flags or already baked; keep placement angle.
     updateDisplayedPixmap();
     applyLocalTransform();
-    update();
+    invalidateDeviceCache();
 }
 
 void ImageItem::bakeFlip(bool horizontal, bool vertical)
@@ -331,6 +336,8 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
     }
     m_hFlip = false;
     m_vFlip = false;
+    // Flip keeps width/height; still re-sync offset to current display size so
+    // QGraphicsPixmapItem AABB and contentRect stay aligned after the bake.
     if (!m_source.isNull() && !m_previewPixels) {
         m_intrinsicSize = m_source.size();
         setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
@@ -340,7 +347,7 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
     }
     updateDisplayedPixmap();
     applyLocalTransform();
-    update();
+    invalidateDeviceCache();
 }
 
 void ImageItem::rotateOrientationBy(qreal degrees)

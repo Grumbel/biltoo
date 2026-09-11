@@ -193,13 +193,33 @@ void ImageView::rotateLeft()
         return;
     }
     for (ImageItem *item : targets) {
+        // Workspace: keep scene footprint when content axes swap (90°).
+        // Gallery: applyLayout re-packs from the new imageSize().
+        const QSize before = item->imageSize();
+        const qreal sx0 = item->itemScaleX();
+        const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
+        const qreal footW = before.width() * sx0;
+        const qreal footH = before.height() * sy0;
         bakeItemRotate90(item, -1);
+        if (isWorkspaceMode() && before.isValid() && before.width() > 0
+            && before.height() > 0) {
+            const QSize after = item->imageSize();
+            if (after.isValid() && after.width() > 0 && after.height() > 0
+                && (after.width() != before.width()
+                    || after.height() != before.height())) {
+                item->setItemScale(footW / qreal(after.width()),
+                                   footH / qreal(after.height()));
+            }
+        }
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
     }
     if (isGalleryMode()) {
         applyLayout(GalleryPackReason::ContentChange);
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+        emit statusChanged();
     }
 }
 
@@ -210,13 +230,31 @@ void ImageView::rotateRight()
         return;
     }
     for (ImageItem *item : targets) {
+        const QSize before = item->imageSize();
+        const qreal sx0 = item->itemScaleX();
+        const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
+        const qreal footW = before.width() * sx0;
+        const qreal footH = before.height() * sy0;
         bakeItemRotate90(item, 1);
+        if (isWorkspaceMode() && before.isValid() && before.width() > 0
+            && before.height() > 0) {
+            const QSize after = item->imageSize();
+            if (after.isValid() && after.width() > 0 && after.height() > 0
+                && (after.width() != before.width()
+                    || after.height() != before.height())) {
+                item->setItemScale(footW / qreal(after.width()),
+                                   footH / qreal(after.height()));
+            }
+        }
         if (m_fitMode && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
     }
     if (isGalleryMode()) {
         applyLayout(GalleryPackReason::ContentChange);
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+        emit statusChanged();
     }
 }
 

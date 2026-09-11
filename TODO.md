@@ -2,18 +2,17 @@
 
 ## Status (2026-09-11)
 
-**Tip: biltoo-395-gallery-multiselect-actually-works.** Gallery Ctrl/Shift/rubber-band
-selection was present in code but ineffective in practice. Prior: **394**. Next: **396**.
+**Tip: biltoo-396-content-bake-geometry.** After content flip/rotate, item AABB /
+layout size stayed on the pre-bake aspect (esp. soft Gallery tiles + Workspace
+90°). Prior: **395**. Next: **397**.
 
-Root causes + fixes:
-- Filmstrip multi-select was **disabled** on enter Gallery (`setMultiSelectEnabled(false)`);
-  only Workspace had it. Now **enabled** for Gallery so Ctrl/Shift work on the strip too,
-  and filmstrip↔canvas selection can stay in sync.
-- Gallery tiles use **DeviceCoordinateCache**; selection frame is drawn in `paint()`.
-  Selection changes under blocked signals left chrome frozen. Added
-  `ImageItem::invalidateDeviceCache()` and call it on Gallery selection mutations /
-  `selectionChanged`.
-- Defensive re-`setGallerySelectable` when `ItemIsSelectable` was missing on a tile.
+- `bakeRotate90`: always swap `m_intrinsicSize` on odd quarter-turns (including
+  soft-only); sync offset; `invalidateDeviceCache`.
+- `bakeFlip`: re-sync offset to current display size + invalidate cache.
+- Workspace rotate L/R: preserve scene footprint when axes swap; Gallery still
+  re-packs via `applyLayout(ContentChange)`.
+
+---
 
 ---
 
