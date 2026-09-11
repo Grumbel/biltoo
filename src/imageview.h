@@ -416,6 +416,8 @@ public:
     void zoomIn();
     void zoomOut();
     void zoomReset();
+    /** View scale ≈41% (four ×0.8 zoom-out steps) for Workspace overview. */
+    void setWorkspaceDefaultViewScale();
     void zoomFit();
     /** Cover the viewport (may crop); uses KeepAspectRatioByExpanding. */
     void zoomFill();

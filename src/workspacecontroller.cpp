@@ -273,14 +273,18 @@ void WorkspaceController::enter(int previousMode)
     const auto previous = static_cast<ImageView::ViewMode>(previousMode);
     m_view->setActiveMode(ImageView::ViewMode::Workspace, ImageView::LayoutMode::FreeForm);
     m_view->applyToolDragMode();
+    bool keepViewTransform = false;
     if (previous == ImageView::ViewMode::Image && !m_stashedItems.isEmpty()) {
         // Fast path: reattach live items (no re-decode).
         restoreStashedItems();
+        keepViewTransform = true; // stashed view includes user zoom
     } else if (!m_savedItems.isEmpty()) {
         // Durable snapshot — permanent Workspace across Gallery↔Workspace and
         // when the Image-mode stash was discarded. Never adopt Gallery packing
         // as the free-form canvas (that silently overwrote user arrangement).
+        const bool hadSavedView = m_hasSavedView;
         restore();
+        keepViewTransform = hadSavedView;
     } else {
         // Empty permanent Workspace. Never adopt whatever Image/Gallery is
         // currently showing — only filmstrip drop / double-click / project
@@ -298,6 +302,10 @@ void WorkspaceController::enter(int previousMode)
     // selected flags, which MainWindow would mirror onto every filmstrip row.
     if (m_view->canvasScene()) {
         m_view->canvasScene()->clearSelection();
+    }
+    // Fresh Workspace (no stashed/saved camera): overview scale, not 1:1.
+    if (!keepViewTransform) {
+        m_view->setWorkspaceDefaultViewScale();
     }
     m_view->updateWorkspaceSceneRect();
     emit m_view->statusChanged();

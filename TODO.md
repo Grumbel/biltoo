@@ -2,6 +2,22 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-412-workspace-default-zoom.** Workspace default view scale ≈41%
+(four zoom-out steps of 1/1.25). Prior: **411**.
+
+### Change
+- `ImageView::setWorkspaceDefaultViewScale()` — `(1/1.25)^4 ≈ 0.4096`
+- Applied on Workspace enter when there is no stashed/saved view transform
+- Returning to a stashed or snapshot camera keeps the user’s zoom
+
+### Done criteria
+- [x] Default overview zoom
+- [ ] Bundle **412**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-411-content-layout-sync.** Central layout sync after content
 appearance so Gallery AABB, Workspace footprint, and filmstrip stay aligned.
 Prior: **410**.
