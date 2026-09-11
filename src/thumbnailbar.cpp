@@ -65,10 +65,17 @@ void ThumbnailDelegate::setThumbSize(int pixels)
 
 int ThumbnailDelegate::cellPad() const
 {
-    // Absolute filmstrip logical pixels (same for every cell). Not image-relative
-    // and not scaled by aspect — only tracks thumbSize so large thumbs keep a
-    // visible margin.
+    // Cross-axis margin (top/bottom on a horizontal bar, left/right on vertical).
+    // Absolute filmstrip logical pixels — tracks thumbSize so large thumbs keep
+    // a visible margin against the bar edge.
     return qBound(2, m_thumbSize / 24, 6);
+}
+
+int ThumbnailDelegate::flowPad() const
+{
+    // Half of cellPad on each flow-axis side so adjacent cells contribute
+    // ~cellPad of empty space between image contents (plus item spacing 0/1).
+    return cellPad() / 2;
 }
 
 int ThumbnailDelegate::labelBandHeightForFont(const QFont &font)
@@ -88,9 +95,18 @@ void ThumbnailDelegate::setLabelsVisible(bool on)
 
 QSize ThumbnailDelegate::cellSize(const QFont &font) const
 {
+    // Crop cells: same orientation-aware pad model as letterbox.
     const int labelH = labelBandHeight(font);
-    const int pad = cellPad();
-    return QSize(m_thumbSize + 2 * pad, pad + m_thumbSize + pad + labelH);
+    const int cross = cellPad();
+    const int flow = flowPad();
+    Qt::Orientation orient = Qt::Horizontal;
+    if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
+        orient = bar->barOrientation();
+    }
+    if (orient == Qt::Horizontal) {
+        return QSize(m_thumbSize + 2 * flow, cross + m_thumbSize + cross + labelH);
+    }
+    return QSize(cross + m_thumbSize + cross, flow + m_thumbSize + flow + labelH);
 }
 
 QSize ThumbnailDelegate::letterboxContentSize(QSize aspect) const
@@ -117,12 +133,22 @@ QSize ThumbnailDelegate::letterboxContentSize(QSize aspect) const
 
 QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentAspect) const
 {
-    // Hug logical letterbox content with the same pad on every side.
+    // Hug logical letterbox content. Cross-axis uses full cellPad (matches bar
+    // edge margin); flow-axis uses flowPad so inter-image gap ≈ cellPad.
     const QSize content = letterboxContentSize(contentAspect);
     const int labelH = labelBandHeight(font);
-    const int pad = cellPad();
-    return QSize(content.width() + 2 * pad,
-                 pad + content.height() + pad + labelH);
+    const int cross = cellPad();
+    const int flow = flowPad();
+    Qt::Orientation orient = Qt::Horizontal;
+    if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
+        orient = bar->barOrientation();
+    }
+    if (orient == Qt::Horizontal) {
+        return QSize(content.width() + 2 * flow,
+                     cross + content.height() + cross + labelH);
+    }
+    return QSize(cross + content.width() + cross,
+                 flow + content.height() + flow + labelH);
 }
 
 QSize ThumbnailDelegate::provisionalContentSize() const
@@ -191,7 +217,12 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QFontMetrics fm(option.font);
     const int labelBand = labelBandHeight(option.font);
-    const int pad = cellPad(); // absolute filmstrip px — identical on every cell
+    const int cross = cellPad();
+    const int flow = flowPad();
+    Qt::Orientation orient = Qt::Horizontal;
+    if (const auto *barOrient = qobject_cast<const ThumbnailBar *>(parent())) {
+        orient = barOrient->barOrientation();
+    }
 
     // Prepared pixmap (correct aspect). Never QIcon::pixmap(w,h) — stretches.
     QPixmap pm = qvariant_cast<QPixmap>(index.data(ThumbPixmapRole));
@@ -205,8 +236,13 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         }
     }
 
-    // Image area inside the cell (absolute pad on every side).
-    const QRect inner = cell.adjusted(pad, pad, -pad, -(pad + labelBand));
+    // Image area: full cellPad on cross-axis, flowPad on flow-axis (label under).
+    QRect inner;
+    if (orient == Qt::Horizontal) {
+        inner = cell.adjusted(flow, cross, -flow, -(cross + labelBand));
+    } else {
+        inner = cell.adjusted(cross, flow, -cross, -(flow + labelBand));
+    }
 
     QRect contentRect;
     if (!pm.isNull() && inner.width() > 0 && inner.height() > 0) {
@@ -228,7 +264,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         painter->drawRect(contentRect.adjusted(0, 0, -1, -1));
     } else if (pm.isNull()) {
         // Loading / pending placeholder — subtle frame + busy mark.
-        const QRect slot = cell.adjusted(pad, pad, -pad, -(pad + labelBand));
+        const QRect slot = inner;
         painter->setPen(QPen(QColor(128, 128, 128, 160), 1, Qt::DashLine));
         painter->setBrush(QColor(0, 0, 0, 40));
         painter->drawRect(slot.adjusted(0, 0, -1, -1));
@@ -245,9 +281,11 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QString text = index.data(Qt::DisplayRole).toString();
     if (m_labelsVisible && !text.isEmpty() && labelBand > 0) {
-        const QRect textRect(cell.left() + pad,
+        // Label uses flow-axis side inset on horizontal bars; cross on vertical.
+        const int labelInset = (orient == Qt::Horizontal) ? flow : cross;
+        const QRect textRect(cell.left() + labelInset,
                              cell.bottom() - labelBand + kLabelGap,
-                             qMax(1, cell.width() - 2 * pad),
+                             qMax(1, cell.width() - 2 * labelInset),
                              fm.height());
         const QColor textColor = selected
             ? option.palette.color(QPalette::HighlightedText)
@@ -316,7 +354,8 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setViewMode(QListWidget::IconMode);
     setResizeMode(QListWidget::Adjust);
     setMovement(QListWidget::Static);
-    setSpacing(2);
+    // Final spacing set in applyThumbMetrics once delegate exists (cellPad % 2).
+    setSpacing(0);
     setUniformItemSizes(true);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setFocusPolicy(Qt::ClickFocus);
@@ -579,19 +618,19 @@ void ThumbnailBar::applyThumbMetrics()
     }
 
     const int label = labelBandHeight();
-    const int pad = m_delegate ? m_delegate->cellPad() : qBound(1, m_thumbSize / 16, 6);
-    const int vPad = 2 * pad;
-    // Gap between cells: absolute filmstrip pixels (pad is only inside the cell).
-    setSpacing(2);
+    const int cross = m_delegate ? m_delegate->cellPad() : qBound(2, m_thumbSize / 24, 6);
+    const int flow = m_delegate ? m_delegate->flowPad() : cross / 2;
+    // Inter-image gap = 2·flowPad + spacing ≈ cellPad (matches cross-axis margin).
+    setSpacing(cross - 2 * flow);
     if (m_orientation == Qt::Horizontal) {
-        // Cross-axis extent = pads + thumbSize + label (letterbox and crop share this).
-        setMinimumHeight(kMinThumbSize + label + vPad);
-        setMaximumHeight(kMaxThumbSize + label + vPad);
+        // Cross-axis extent = cross pads + thumbSize + label.
+        setMinimumHeight(kMinThumbSize + label + 2 * cross);
+        setMaximumHeight(kMaxThumbSize + label + 2 * cross);
         setMinimumWidth(0);
         setMaximumWidth(QWIDGETSIZE_MAX);
     } else {
-        setMinimumWidth(kMinThumbSize + 2 * pad);
-        setMaximumWidth(kMaxThumbSize + 2 * pad);
+        setMinimumWidth(kMinThumbSize + 2 * cross);
+        setMaximumWidth(kMaxThumbSize + 2 * cross);
         setMinimumHeight(0);
         setMaximumHeight(QWIDGETSIZE_MAX);
     }

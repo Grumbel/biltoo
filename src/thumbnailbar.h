@@ -33,8 +33,10 @@ public:
     static constexpr int ThumbLoadedRole = Qt::UserRole + 43;
     /** Prepared thumb pixmap (correct aspect + DPR). Prefer over DecorationRole. */
     static constexpr int ThumbPixmapRole = Qt::UserRole + 44;
-    /** Adaptive pad (~thumb/16, clamped) — equal on all sides of the icon. */
+    /** Cross-axis pad (~thumb/24, clamped). Top/bottom on horizontal bar. */
     int cellPad() const;
+    /** Flow-axis pad per side so 2·flowPad + spacing ≈ cellPad between images. */
+    int flowPad() const;
 
     explicit ThumbnailDelegate(int thumbSize, QObject *parent = nullptr);
 
@@ -51,7 +53,7 @@ public:
 
     /** Cell size for the current thumb size and font (square slot). */
     QSize cellSize(const QFont &font) const;
-    /** Letterbox cell: hug logical content + cellPad on every side + label. */
+    /** Letterbox cell: content + cross/flow pads + label (orientation-aware). */
     QSize cellSizeForContent(const QFont &font, QSize contentAspect) const;
     /** Logical letterbox content size (cross-axis = thumbSize) from any aspect. */
     QSize letterboxContentSize(QSize aspect) const;

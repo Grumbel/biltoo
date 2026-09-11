@@ -2,6 +2,25 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-444-filmstrip-inter-pad.** Match inter-thumb gap to cross-axis pad.
+Prior: **443**.
+
+### Change
+- `flowPad()` = `cellPad()/2` on the strip flow axis
+- Item spacing = `cellPad - 2·flowPad` (0 or 1)
+- Inter-image empty space ≈ `cellPad` (same as top/bottom on horizontal,
+  left/right on vertical)
+- sizeHint + paint orientation-aware; docs updated
+
+### Done criteria
+- [x] Gap matches cross-axis margin
+- [x] Horizontal and vertical
+- [ ] Bundle **444**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-443-filmstrip-layout-sync.** Final filmstrip path sync.
 Prior: **442**.
 

@@ -22,7 +22,9 @@ Logical pixels along the strip **cross-axis** (thin axis of the bar).
 2. **Logical content** = `letterboxContentSize(aspect)`:
    - horizontal: `(thumbSize * w/h, thumbSize)`
    - vertical: `(thumbSize, thumbSize * h/w)`
-3. **Cell** = content + `2·cellPad` (+ optional label band under the image).
+3. **Cell** = content + cross/flow pads (+ optional label band under the image).
+   - Cross-axis: full `cellPad` (matches bar-edge margin).
+   - Flow-axis: `flowPad` (= `cellPad/2`) per side so inter-image gap ≈ `cellPad`.
 4. Paint **centers** content in the padded inner box (fills when sizeHint matches).
 
 ### Crop-to-square (opt-in)
@@ -64,8 +66,12 @@ Every install path (pool worker, session override, ladder) must call
 
 ## Pad / spacing
 
-- `cellPad()`: absolute filmstrip px (`~thumbSize/24`, clamped). Same every cell.
-- Cell spacing: fixed 2px between items.
+- `cellPad()`: cross-axis margin (`~thumbSize/24`, clamped). Top/bottom on a
+  horizontal bar; left/right on vertical.
+- `flowPad()`: `cellPad()/2` on each flow-axis side of the cell.
+- Item spacing: `cellPad - 2·flowPad` (0 or 1). Together with the two flow pads,
+  the empty gap between adjacent image contents equals `cellPad` — same as the
+  cross-axis margin against the bar edge.
 - Selection/hover fills the **full cell**.
 
 ## Consistency checks
@@ -82,8 +88,10 @@ logical content, sizeHint, crop flag).
 
 ## Invariants (must always hold)
 
-1. `sizeHint(index).width() >= logicalContentSize(index).width() + 2·cellPad`
-2. `sizeHint(index).height() >= logicalContentSize(index).height() + 2·cellPad + label`
+1. Horizontal: `sizeHint.width >= content.width + 2·flowPad`;
+   `sizeHint.height >= content.height + 2·cellPad + label`
+2. Vertical: `sizeHint.width >= content.width + 2·cellPad`;
+   `sizeHint.height >= content.height + 2·flowPad + label`
 3. Paint dest aspect equals `logicalContentSize` aspect (KeepAspectRatio)
 4. `ThumbLoadedRole == true` iff `ThumbPixmapRole` holds a non-null pixmap
 5. After `invalidateThumbPixels`, every row has `ThumbLoadedRole == false`
