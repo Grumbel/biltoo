@@ -16,7 +16,7 @@ extract fixes. Prior: **452**.
 ### Done criteria
 - [x] Clearer empty-layer vs no-match
 - [x] Mutex not held during extract
-- [ ] Bundle **453**
+- [x] Bundle **453**
 
 ---
 
