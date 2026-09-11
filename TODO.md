@@ -15,7 +15,7 @@ decode pixels.
 ### Done criteria
 - [x] prepareThumbnail cross-axis fill
 - [x] cellSizeForContent hugs content
-- [ ] Bundle **428**
+- [x] Bundle **428**
 
 ---
 
