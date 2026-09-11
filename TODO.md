@@ -2,6 +2,17 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-439-filmstrip-iconRect-fix.** Compile fix: placeholder paint
+used removed `iconRect`. Prior: **438**.
+
+### Done criteria
+- [x] Build fix
+- [ ] Bundle **439**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-438-content-pipeline.** Gallery→Image wrong rotation: multiple
 bake orders/paths. Centralize on `materializeDisplay`. Prior: **437**.
 

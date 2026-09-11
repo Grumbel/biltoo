@@ -220,14 +220,15 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         painter->drawRect(contentRect.adjusted(0, 0, -1, -1));
     } else if (pm.isNull()) {
         // Loading / pending placeholder — subtle frame + busy mark.
+        const QRect slot = cell.adjusted(pad, pad, -pad, -(pad + labelBand));
         painter->setPen(QPen(QColor(128, 128, 128, 160), 1, Qt::DashLine));
         painter->setBrush(QColor(0, 0, 0, 40));
-        painter->drawRect(iconRect.adjusted(0, 0, -1, -1));
+        painter->drawRect(slot.adjusted(0, 0, -1, -1));
         const ThumbnailBar *bar = qobject_cast<const ThumbnailBar *>(parent());
         if (bar && bar->isRowLoading(index.row())) {
-            const int s = qBound(6, qMin(iconRect.width(), iconRect.height()) / 4, 18);
-            const QRect pip(iconRect.center().x() - s / 2,
-                            iconRect.center().y() - s / 2, s, s);
+            const int s = qBound(6, qMin(slot.width(), slot.height()) / 4, 18);
+            const QRect pip(slot.center().x() - s / 2,
+                            slot.center().y() - s / 2, s, s);
             painter->setPen(Qt::NoPen);
             painter->setBrush(QColor(180, 180, 180, 200));
             painter->drawEllipse(pip);
