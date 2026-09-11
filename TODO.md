@@ -19,7 +19,7 @@ Prior: **432**.
 ### Done criteria
 - [x] Design doc
 - [x] letterboxContentSize + prepare + sizeHint
-- [ ] Bundle **433**
+- [x] Bundle **433**
 
 ---
 
