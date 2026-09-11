@@ -502,6 +502,8 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         if (sid == kInvalidSessionImageId && isImageMode()) {
             sid = m_currentSessionId;
         }
+        WorkspaceItemState contentSlot;
+        bool haveContentSlot = false;
         if (sid != kInvalidSessionImageId) {
             if (item->sessionId() == kInvalidSessionImageId) {
                 item->setSessionId(sid);
@@ -517,22 +519,34 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
                 }
             }
             m_appearance.set(sid, slot);
+            contentSlot = slot;
+            haveContentSlot = true;
+        } else {
+            // Unbound tile: still persist content-hash state for the file.
+            contentSlot = captureState(item);
+            contentSlot.contentHFlip = item->contentHFlip();
+            contentSlot.contentVFlip = item->contentVFlip();
+            contentSlot.hasCrop = item->sessionHasCrop();
+            contentSlot.cropRect = item->sessionCropRect();
+            haveContentSlot = true;
+        }
+        if (haveContentSlot) {
             // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
             // Does not touch source files; project files remain the portable doc.
-            {
-                // v1: flip / quarter-turns / crop only (grade stays session/project).
-                ThumtooCache::StoredContentAppearance stored;
-                stored.contentHFlip = slot.contentHFlip;
-                stored.contentVFlip = slot.contentVFlip;
-                stored.contentQuarterTurns = slot.contentQuarterTurns;
-                stored.hasCrop = slot.hasCrop && !slot.cropRect.isEmpty();
-                if (stored.hasCrop) {
-                    stored.cropRect = slot.cropRect;
-                    stored.cropSourceSize = slot.cropSourceSize;
-                    stored.cropRotation = slot.cropRotation;
-                }
-                ThumtooCache::saveContentAppearance(item->path(), stored);
+            // v1: flip / quarter-turns / crop only (grade stays session/project).
+            ThumtooCache::StoredContentAppearance stored;
+            stored.contentHFlip = contentSlot.contentHFlip;
+            stored.contentVFlip = contentSlot.contentVFlip;
+            stored.contentQuarterTurns = contentSlot.contentQuarterTurns;
+            stored.hasCrop = contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
+            if (stored.hasCrop) {
+                stored.cropRect = contentSlot.cropRect;
+                stored.cropSourceSize = contentSlot.cropSourceSize;
+                stored.cropRotation = contentSlot.cropRotation;
             }
+            ThumtooCache::saveContentAppearance(item->path(), stored);
+        }
+        if (sid != kInvalidSessionImageId) {
             // Bound: do not last-write appearance onto the path map (duplicates
             // share a path). Placement remains in m_itemStates from Workspace
             // rememberItemState / snapshot only.

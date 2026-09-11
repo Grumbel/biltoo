@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-403-appearance-persist-audit.** Load/save audit + fixes. Prior: **402**.
+
+### Audit findings
+- Save path: `commitItemSessionEdit` → `ThumtooCache::saveContentAppearance` (flip/turns/crop)
+- Load path: `seedSessionAppearanceFromState` → `loadContentAppearance` on install/create/afterDecode
+- Project still wins: seed only when session id has no appearance entry
+- Feature gate: `__has_include("thumtoo/appearance.hpp")` when BILTOO_HAVE_THUMTOO
+
+### Fixes
+- Durable save also for **unbound** tiles (was only when SessionImageId present)
+- **Content-id cache** (path + size + mtime) so seed/save do not re-hash large files
+
+### Done criteria
+- [x] Audit + fixes
+- [ ] Bundle **403**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-402-content-appearance-ui.** UI for local content appearance:
 status/HUD “Modified”, Image menu **Reset Content Appearance…** with
 confirmation. Prior: **401**.

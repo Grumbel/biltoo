@@ -11,6 +11,8 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QUrl>
+#include <QHash>
+#include <QDateTime>
 #include <QRect>
 #include <QMetaObject>
 #include <QSet>
@@ -1576,16 +1578,45 @@ std::string pathContentId(const QString &path)
     if (!fi.isFile()) {
         return {};
     }
+    const QString abs = fi.absoluteFilePath();
+    const qint64 size = fi.size();
+    const QDateTime mtime = fi.lastModified();
+    // Cache sha256 by path+size+mtime — hashing multi‑MB images on every
+    // seed/save would stall the UI thread.
+    struct CacheEntry {
+        qint64 size = -1;
+        QDateTime mtime;
+        std::string id;
+    };
+    static QHash<QString, CacheEntry> cache;
+    static std::mutex cacheMu;
+    {
+        std::lock_guard lock(cacheMu);
+        const auto it = cache.constFind(abs);
+        if (it != cache.cend() && it->size == size && it->mtime == mtime
+            && !it->id.empty()) {
+            return it->id;
+        }
+    }
+    std::string id;
     try {
         const std::string hex = thumtoo::sha256_file_hex(
-            std::filesystem::path(fi.absoluteFilePath().toStdString()));
-        if (hex.empty()) {
-            return {};
+            std::filesystem::path(abs.toStdString()));
+        if (!hex.empty()) {
+            id = thumtoo::normalize_content_id(hex);
         }
-        return thumtoo::normalize_content_id(hex);
     } catch (...) {
-        return {};
+        id.clear();
     }
+    if (!id.empty()) {
+        std::lock_guard lock(cacheMu);
+        CacheEntry e;
+        e.size = size;
+        e.mtime = mtime;
+        e.id = id;
+        cache.insert(abs, e);
+    }
+    return id;
 }
 
 } // namespace
