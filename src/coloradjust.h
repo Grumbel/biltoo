@@ -13,11 +13,13 @@ struct ColorAdjustments {
     int saturation = 100;
     int hue = 0;
     double gamma = 1.0;
+    /** Photographic negative: invert RGB after other grade ops. */
+    bool invert = false;
 
     bool isIdentity() const
     {
         return brightness == 0 && contrast == 100 && saturation == 100
-               && hue == 0 && qFuzzyCompare(gamma, 1.0);
+               && hue == 0 && qFuzzyCompare(gamma, 1.0) && !invert;
     }
 };
 

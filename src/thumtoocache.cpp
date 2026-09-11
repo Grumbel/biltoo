@@ -1813,12 +1813,14 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
     }
     if (got->grade_brightness || got->grade_contrast || got->grade_saturation
         || got->grade_hue || got->grade_gamma) {
-        out->hasGrade = true;
+                out->hasGrade = true;
         out->gradeBrightness = got->grade_brightness.value_or(0);
         out->gradeContrast = got->grade_contrast.value_or(0);
         out->gradeSaturation = got->grade_saturation.value_or(0);
         out->gradeHue = got->grade_hue.value_or(0);
         out->gradeGamma = got->grade_gamma.value_or(0);
+        out->gradeInvert = got->grade_invert.value_or(0) != 0;
+
     }
     return !out->isIdentity();
 }
@@ -1863,6 +1865,9 @@ void saveContentAppearance(const QString &path, const StoredContentAppearance &a
         a.grade_saturation = app.gradeSaturation;
         a.grade_hue = app.gradeHue;
         a.grade_gamma = app.gradeGamma;
+        if (app.gradeInvert) {
+            a.grade_invert = 1;
+        }
     }
     if (appearanceDebug()) {
         appearanceLog(

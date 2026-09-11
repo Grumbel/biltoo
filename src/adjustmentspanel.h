@@ -7,6 +7,7 @@
 class QLabel;
 class QSlider;
 class QPushButton;
+class QCheckBox;
 class ImageHistogramWidget;
 class VectorScopeWidget;
 class AdjustmentsPanel : public QWidget {
@@ -34,6 +35,7 @@ private:
     QLabel *m_saturationVal = nullptr;
     QLabel *m_hueVal = nullptr;
     QLabel *m_gammaVal = nullptr;
+    QCheckBox *m_invertCheck = nullptr;
     QPushButton *m_resetBtn = nullptr;
     ImageHistogramWidget *m_histogram = nullptr;
     VectorScopeWidget *m_scope = nullptr;

@@ -941,6 +941,7 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
             st.colorAdjust.saturation = stored.gradeSaturation;
             st.colorAdjust.hue = stored.gradeHue;
             st.colorAdjust.gamma = stored.gradeGamma;
+            st.colorAdjust.invert = stored.gradeInvert;
         }
         image = SessionAppearance::applyContentToImage(
             image, st, SessionAppearance::PixelKind::SoftPreview);

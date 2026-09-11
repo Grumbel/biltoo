@@ -1963,6 +1963,23 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
         slot.path = item->path();
         slot.colorAdjust = adj;
         m_appearance.set(sid, slot);
+        // Persist colour grade (incl. Negative) to durable content appearance.
+        {
+            ThumtooCache::StoredContentAppearance stored;
+            ThumtooCache::loadContentAppearance(item->path(), &stored);
+            stored.hasGrade = !adj.isIdentity();
+            stored.gradeBrightness = adj.brightness;
+            stored.gradeContrast = adj.contrast;
+            stored.gradeSaturation = adj.saturation;
+            stored.gradeHue = adj.hue;
+            stored.gradeGamma = int(adj.gamma * 100.0 + 0.5);
+            stored.gradeInvert = adj.invert;
+            if (stored.isIdentity()) {
+                ThumtooCache::clearContentAppearance(item->path());
+            } else {
+                ThumtooCache::saveContentAppearance(item->path(), stored);
+            }
+        }
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
             emit sessionAppearanceChanged(sid, item->path(), appearance);

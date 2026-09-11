@@ -79,6 +79,11 @@ QImage applyColorAdjustments(const QImage &src, const ColorAdjustments &adj)
             if (!qFuzzyCompare(gamma, 1.f)) {
                 r = gammaLut[r]; g = gammaLut[g]; b = gammaLut[b];
             }
+            if (adj.invert) {
+                r = 255 - r;
+                g = 255 - g;
+                b = 255 - b;
+            }
             line[x] = qRgba(r, g, b, a);
         }
     }

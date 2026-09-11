@@ -122,6 +122,7 @@ public:
     void printPreview();
     void pageSetup();
     void exportPdf();
+    void exportDocumentText();
     void exportPng();
     void togglePageGuide();
     void fitPageGuideToContent();
@@ -456,6 +457,7 @@ private:
     QAction *m_printPreviewAct = nullptr;
     QAction *m_pageSetupAct = nullptr;
     QAction *m_exportPdfAct = nullptr;
+    QAction *m_exportTextAct = nullptr;
     QAction *m_exportPngAct = nullptr;
     QAction *m_pageGuideAct = nullptr;
     QAction *m_fitPageGuideAct = nullptr;

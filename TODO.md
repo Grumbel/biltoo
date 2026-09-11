@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-454-export-text-invert.** Export Text, Find debug, Negative grade.
+Prior: **453**. Pair with **thumtoo-153** for durable invert.
+
+### Shipped
+- File → **Export Text…** — all document pages → UTF-8 `.txt` (page markers)
+- Find: `qWarning` `[find]` lines (query, path, layer, matches, doc scan)
+- Clearer status when layer empty vs zero hits
+- Colour panel **Negative** checkbox; `ColorAdjustments::invert` in apply path
+- Session + durable grade (hasGrade / gradeInvert); filmstrip + seed load
+
+### Done criteria
+- [x] Export Text
+- [x] Find debug
+- [x] Negative invert end-to-end
+- [ ] Bundle **454**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-453-find-no-matches.** Find stuck on "No matches" — diagnostics +
 extract fixes. Prior: **452**.
 

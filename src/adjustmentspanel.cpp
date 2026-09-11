@@ -9,6 +9,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QScrollArea>
 #include <QSlider>
 #include <QVBoxLayout>
@@ -129,6 +130,12 @@ void AdjustmentsPanel::buildUi()
         m_gammaVal->setText(QString::number(v / 100.0, 'f', 2));
         emitIfChanged();
     });
+    m_invertCheck = new QCheckBox(tr("Negative"), gradeBox);
+    m_invertCheck->setToolTip(tr("Invert colours (photographic negative)"));
+    form->addRow(QString(), m_invertCheck);
+    connect(m_invertCheck, &QCheckBox::toggled, this, [this](bool) {
+        emitIfChanged();
+    });
     m_resetBtn = new QPushButton(tr("Reset"), gradeBox);
     form->addRow(QString(), m_resetBtn);
     connect(m_resetBtn, &QPushButton::clicked, this, [this]() {
@@ -162,6 +169,7 @@ ColorAdjustments AdjustmentsPanel::adjustments() const
     a.saturation = m_saturation ? m_saturation->value() : 100;
     a.hue = m_hue ? m_hue->value() : 0;
     a.gamma = m_gamma ? (m_gamma->value() / 100.0) : 1.0;
+    a.invert = m_invertCheck && m_invertCheck->isChecked();
     return a;
 }
 
@@ -173,6 +181,7 @@ void AdjustmentsPanel::setAdjustments(const ColorAdjustments &adj)
     if (m_saturation) m_saturation->setValue(adj.saturation);
     if (m_hue) m_hue->setValue(adj.hue);
     if (m_gamma) m_gamma->setValue(int(qBound(10.0, adj.gamma * 100.0, 300.0)));
+    if (m_invertCheck) m_invertCheck->setChecked(adj.invert);
     m_block = false;
 }
 

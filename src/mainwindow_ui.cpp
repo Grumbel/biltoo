@@ -96,6 +96,11 @@ void MainWindow::createActions()
         tr("Write a PDF using the app page size (not the physical printer tray)"));
     connect(m_exportPdfAct, &QAction::triggered, this, &MainWindow::exportPdf);
 
+    m_exportTextAct = new QAction(tr("Export Te&xt…"), this);
+    m_exportTextAct->setStatusTip(
+        tr("Export extracted text from the current document (all pages) as a .txt file"));
+    connect(m_exportTextAct, &QAction::triggered, this, &MainWindow::exportDocumentText);
+
     m_pageGuideAct = new QAction(tr("Print &Page Guide"), this);
     m_pageGuideAct->setCheckable(true);
     m_pageGuideAct->setIcon(resourceIcon(QStringLiteral("print-page-guide")));
@@ -794,6 +799,7 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_pageSetupAct);
     m_fileMenu->addAction(m_exportPngAct);
     m_fileMenu->addAction(m_exportPdfAct);
+    m_fileMenu->addAction(m_exportTextAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 

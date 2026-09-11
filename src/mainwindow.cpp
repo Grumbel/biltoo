@@ -735,6 +735,88 @@ void MainWindow::findOnPage()
     openSearchBar();
 }
 
+void MainWindow::exportDocumentText()
+{
+    const QStringList pages = documentPagePathsForSearch();
+    if (pages.isEmpty()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("No document pages to export text from"), 5000);
+        }
+        return;
+    }
+    QString suggested = QStringLiteral("document.txt");
+    if (m_imageView) {
+        const QString path = m_imageView->classicPath();
+        if (!path.isEmpty()) {
+            const QString doc = PagePath::documentFilePath(path);
+            if (!doc.isEmpty()) {
+                suggested = QFileInfo(doc).completeBaseName() + QStringLiteral(".txt");
+            }
+        }
+    }
+    const QString outPath = QFileDialog::getSaveFileName(
+        this, tr("Export Text"), suggested, tr("Text files (*.txt);;All files (*)"));
+    if (outPath.isEmpty()) {
+        return;
+    }
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Exporting text from %n page(s)…", "", pages.size()), 0);
+    }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    QStringList blocks;
+    blocks.reserve(pages.size());
+    int pagesWithText = 0;
+    int totalRegions = 0;
+    for (const QString &pagePath : pages) {
+        ThumtooCache::PageTextLayer layer = ThumtooCache::cachedPageTextLayer(pagePath);
+        if (layer.regions.isEmpty()) {
+            layer = ThumtooCache::ensurePageTextLayer(pagePath);
+        }
+        QStringList lines;
+        for (const ThumtooCache::TextRegion &r : layer.regions) {
+            if (r.role != ThumtooCache::TextRegion::Role::Text || r.text.isEmpty()) {
+                continue;
+            }
+            lines.append(r.text);
+            ++totalRegions;
+        }
+        if (!lines.isEmpty()) {
+            ++pagesWithText;
+            const int pageNo = PagePath::pageNumber(pagePath);
+            blocks.append(QStringLiteral("----- page %1 -----").arg(pageNo));
+            blocks.append(lines.join(QLatin1Char('\n')));
+            blocks.append(QString());
+        }
+    }
+    QApplication::restoreOverrideCursor();
+    QFile f(outPath);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Export Text"),
+                             tr("Could not write %1").arg(outPath));
+        return;
+    }
+    const QByteArray utf8 = blocks.join(QLatin1Char('\n')).toUtf8();
+    f.write(utf8);
+    f.close();
+    qWarning().noquote()
+        << QStringLiteral("[find] exportText path=%1 pages=%2 withText=%3 regions=%4 bytes=%5")
+               .arg(outPath)
+               .arg(pages.size())
+               .arg(pagesWithText)
+               .arg(totalRegions)
+               .arg(utf8.size());
+    if (statusBar()) {
+        statusBar()->showMessage(
+            tr("Exported text from %1/%2 pages (%3 regions) → %4")
+                .arg(pagesWithText)
+                .arg(pages.size())
+                .arg(totalRegions)
+                .arg(QFileInfo(outPath).fileName()),
+            8000);
+    }
+}
+
+
 void MainWindow::openSearchBar()
 {
     if (!m_searchBar || !m_searchEdit) {
@@ -799,20 +881,39 @@ void MainWindow::onSearchTextChanged(const QString &text)
     }
     const bool fuzzy = !m_searchFuzzyCheck || m_searchFuzzyCheck->isChecked();
     m_imageView->setTextSearchFuzzy(fuzzy);
+    const QString path = m_imageView->classicPath();
     m_docSearchPageMatchCount = m_imageView->setTextSearchQuery(text);
     m_docSearchHitPages.clear();
     m_docSearchHitIndex = -1;
     m_docSearchQuery = text.trimmed();
     updateSearchMatchLabel();
+    qWarning().noquote()
+        << QStringLiteral(
+               "[find] query=%1 fuzzy=%2 path=%3 pageRef=%4 hasLayer=%5 regions=%6 matches=%7 mode=%8")
+               .arg(text.trimmed())
+               .arg(fuzzy)
+               .arg(path)
+               .arg(PagePath::isPageRef(path))
+               .arg(m_imageView->hasTextLayer())
+               .arg(m_imageView->textLayerRegionCount())
+               .arg(m_docSearchPageMatchCount)
+               .arg(m_imageView->isImageMode()
+                        ? QStringLiteral("image")
+                        : (m_imageView->isGalleryMode() ? QStringLiteral("gallery")
+                                                        : QStringLiteral("workspace")));
     if (!text.trimmed().isEmpty() && statusBar()) {
-        if (!PagePath::isPageRef(m_imageView->classicPath())) {
+        if (!PagePath::isPageRef(path)) {
             statusBar()->showMessage(
                 tr("Find works on PDF / DjVu / EPUB pages"), 4000);
         } else if (!m_imageView->hasTextLayer()) {
             statusBar()->showMessage(
-                tr("No extractable text on this page (scanned image?)"), 4000);
+                tr("No extractable text on this page (scanned image?) — try File → Export Text"),
+                5000);
         } else if (m_docSearchPageMatchCount == 0) {
-            statusBar()->showMessage(tr("No matches on this page"), 2000);
+            statusBar()->showMessage(
+                tr("No matches on this page (%n text region(s))", "",
+                   m_imageView->textLayerRegionCount()),
+                3000);
         }
     }
     scheduleDocumentSearch(text);
@@ -1026,6 +1127,11 @@ void MainWindow::onDocumentSearchFinished(quint64 generation, const QString &que
         m_docSearchPageMatchCount = m_imageView->textSearchMatchCount();
     }
     updateSearchMatchLabel();
+    qWarning().noquote()
+        << QStringLiteral("[find] docScan done query=%1 pagesWithHits=%2 pageMatches=%3")
+               .arg(query)
+               .arg(hitPages.size())
+               .arg(m_docSearchPageMatchCount);
     if (statusBar()) {
         if (hitPages.isEmpty()) {
             statusBar()->showMessage(tr("No matches in document"), 3000);

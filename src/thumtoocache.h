@@ -239,6 +239,7 @@ struct StoredContentAppearance {
     int gradeSaturation = 0;
     int gradeHue = 0;
     int gradeGamma = 0;
+    bool gradeInvert = false;
     bool isIdentity() const;
 };
 
