@@ -2,6 +2,25 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-461-location-esc.** Esc dismisses Location (and Find) bar.
+Prior: **460**.
+
+### Cause
+Window-level `QShortcut(Escape)` stole Esc before the line-edit event filter
+could call `cancelLocationBar`.
+
+### Fix
+- `WidgetWithChildrenShortcut` on location + search edits
+- Window Esc and `keyPressEvent` dismiss focused location/search first
+
+### Done criteria
+- [x] Esc hides unpinned Location bar
+- [ ] Bundle **461**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-460-gallery-zoom-edge.** Restore zoom-appropriate gallery ladder
 requests. Prior: **459**.
 

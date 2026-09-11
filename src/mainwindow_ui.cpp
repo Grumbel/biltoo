@@ -1123,6 +1123,13 @@ void MainWindow::createToolBar()
     m_locationEdit->setPlaceholderText(tr("Path or URI…"));
     m_locationEdit->setMinimumWidth(200);
     m_locationEdit->installEventFilter(this);
+    {
+        // WidgetWithChildrenShortcut so Esc is not eaten by the window-level
+        // Escape handler (fullscreen / leave Image) while typing a path.
+        auto *locEsc = new QShortcut(Qt::Key_Escape, m_locationEdit);
+        locEsc->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(locEsc, &QShortcut::activated, this, &MainWindow::cancelLocationBar);
+    }
     connect(m_locationEdit, &QLineEdit::returnPressed, this, &MainWindow::commitLocationBar);
     auto *locHost = new QWidget(m_locationBar);
     auto *locLay = new QHBoxLayout(locHost);
@@ -1148,6 +1155,11 @@ void MainWindow::createToolBar()
     m_searchEdit->setPlaceholderText(tr("Find in document…"));
     m_searchEdit->setMinimumWidth(160);
     m_searchEdit->installEventFilter(this);
+    {
+        auto *findEsc = new QShortcut(Qt::Key_Escape, m_searchEdit);
+        findEsc->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(findEsc, &QShortcut::activated, this, &MainWindow::cancelSearchBar);
+    }
     connect(m_searchEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
     connect(m_searchEdit, &QLineEdit::returnPressed, this, &MainWindow::findNextMatch);
     m_searchMatchLabel = new QLabel(m_searchBar);

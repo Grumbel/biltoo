@@ -303,6 +303,15 @@ MainWindow::MainWindow(QWidget *parent)
     auto *escShortcut = new QShortcut(Qt::Key_Escape, this);
     escShortcut->setContext(Qt::WindowShortcut);
     connect(escShortcut, &QShortcut::activated, this, [this]() {
+        // Location / Find bars steal Esc before crop / mode navigation.
+        if (m_locationEdit && m_locationEdit->hasFocus()) {
+            cancelLocationBar();
+            return;
+        }
+        if (m_searchEdit && m_searchEdit->hasFocus()) {
+            cancelSearchBar();
+            return;
+        }
         if (m_imageView && m_imageView->isCropMode()) {
             m_imageView->cancelCrop();
             return;
@@ -2942,6 +2951,16 @@ void MainWindow::writeSettings()
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape) {
+        if (m_locationEdit && m_locationEdit->hasFocus()) {
+            cancelLocationBar();
+            event->accept();
+            return;
+        }
+        if (m_searchEdit && m_searchEdit->hasFocus()) {
+            cancelSearchBar();
+            event->accept();
+            return;
+        }
         if (m_imageView && m_imageView->isCropMode()) {
             m_imageView->cancelCrop();
             event->accept();
