@@ -160,6 +160,12 @@ private slots:
     void toggleCropMode();
     void toggleAttentionMode();
     void findOnPage();
+    void openSearchBar();
+    void cancelSearchBar();
+    void commitSearchBar();
+    void setSearchBarPinned(bool pinned);
+    void onSearchTextChanged(const QString &text);
+    void updateSearchMatchLabel(int matchCount);
     void toggleHud();
     void toggleThumbnailLabels();
     void toggleThumbnailCrop();
@@ -420,6 +426,10 @@ private:
     QToolBar *m_locationBar = nullptr;
     QLineEdit *m_locationEdit = nullptr;
     bool m_locationBarPinned = false;
+    QToolBar *m_searchBar = nullptr;
+    QLineEdit *m_searchEdit = nullptr;
+    QLabel *m_searchMatchLabel = nullptr;
+    bool m_searchBarPinned = false;
     QAction *m_quitAct = nullptr;
     QAction *m_printAct = nullptr;
     QAction *m_printPreviewAct = nullptr;
@@ -445,6 +455,7 @@ private:
     QAction *m_toggleHudAct = nullptr;
     QAction *m_showTextRegionsAct = nullptr;
     QAction *m_findOnPageAct = nullptr;
+    QAction *m_showSearchBarAct = nullptr;
     QAction *m_hideThumbLabelsAct = nullptr;
     QAction *m_cropThumbnailsAct = nullptr;
     QAction *m_previousAct = nullptr;

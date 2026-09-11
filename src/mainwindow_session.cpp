@@ -2463,6 +2463,13 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
             return true;
         }
     }
+    if (watched == m_searchEdit && event->type() == QEvent::KeyPress) {
+        const auto *ke = static_cast<QKeyEvent *>(event);
+        if (ke->key() == Qt::Key_Escape) {
+            cancelSearchBar();
+            return true;
+        }
+    }
     if (isSlideshowSession()) {
         switch (event->type()) {
         case QEvent::MouseMove:

@@ -159,7 +159,8 @@ void MainWindow::createActions()
     connect(m_zoomFitAct, &QAction::triggered, this, &MainWindow::zoomFit);
 
     m_zoomFillAct = new QAction(tr("Zoom to F&ill"), this);
-    m_zoomFillAct->setShortcut(Qt::CTRL | Qt::Key_F);
+    // Ctrl+F is Find (search toolbar). Fill keeps a chord that does not steal Find.
+    m_zoomFillAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_0);
     m_zoomFillAct->setIcon(themeIcon(QStringLiteral("zoom-fit-best"), QStyle::SP_TitleBarMaxButton));
     m_zoomFillAct->setStatusTip(tr("Fill the window (may crop the image)"));
     connect(m_zoomFillAct, &QAction::triggered, this, &MainWindow::zoomFill);
@@ -272,11 +273,19 @@ void MainWindow::createActions()
             m_imageView->setShowTextRegions(on);
         }
     });
-    m_findOnPageAct = new QAction(tr("&Find on Page…"), this);
-    m_findOnPageAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_F);
+    m_findOnPageAct = new QAction(tr("&Find…"), this);
+    m_findOnPageAct->setShortcut(QKeySequence::Find); // Ctrl+F
+    m_findOnPageAct->setShortcutContext(Qt::WindowShortcut);
     m_findOnPageAct->setStatusTip(
-        tr("Search text on the current document page and highlight matching regions"));
-    connect(m_findOnPageAct, &QAction::triggered, this, &MainWindow::findOnPage);
+        tr("Open the search toolbar (incremental text search on the current page)"));
+    connect(m_findOnPageAct, &QAction::triggered, this, &MainWindow::openSearchBar);
+
+    m_showSearchBarAct = new QAction(tr("Show &Search Bar"), this);
+    m_showSearchBarAct->setCheckable(true);
+    m_showSearchBarAct->setChecked(false);
+    m_showSearchBarAct->setStatusTip(
+        tr("Keep the search bar visible (otherwise it opens with Ctrl+F and hides on Esc)"));
+    connect(m_showSearchBarAct, &QAction::toggled, this, &MainWindow::setSearchBarPinned);
 
     m_hideThumbLabelsAct = new QAction(tr("Hide Thumbnail &Filenames"), this);
     m_hideThumbLabelsAct->setCheckable(true);
@@ -840,6 +849,7 @@ void MainWindow::createMenus()
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_showLocationBarAct);
+    m_viewMenu->addAction(m_showSearchBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
     m_viewMenu->addAction(m_toggleTocAct);
     if (m_toggleAdjustmentsAct) {
@@ -1118,6 +1128,35 @@ void MainWindow::createToolBar()
     m_locationBar->addWidget(locHost);
     // Transient by default (Ctrl+L shows it); pin via View menu.
     m_locationBar->setVisible(false);
+
+    // Search bar (same pattern as Location): Ctrl+F shows; pin via View menu.
+    addToolBarBreak(Qt::TopToolBarArea);
+    m_searchBar = addToolBar(tr("Search"));
+    m_searchBar->setObjectName(QStringLiteral("SearchBar"));
+    m_searchBar->setMovable(false);
+    m_searchBar->setFloatable(false);
+    m_searchBar->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);
+    m_searchEdit = new QLineEdit(m_searchBar);
+    m_searchEdit->setObjectName(QStringLiteral("SearchEdit"));
+    m_searchEdit->setClearButtonEnabled(true);
+    m_searchEdit->setPlaceholderText(tr("Find in page…"));
+    m_searchEdit->setMinimumWidth(160);
+    m_searchEdit->installEventFilter(this);
+    connect(m_searchEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
+    connect(m_searchEdit, &QLineEdit::returnPressed, this, &MainWindow::commitSearchBar);
+    m_searchMatchLabel = new QLabel(m_searchBar);
+    m_searchMatchLabel->setObjectName(QStringLiteral("SearchMatchLabel"));
+    m_searchMatchLabel->setMinimumWidth(72);
+    m_searchMatchLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    auto *searchHost = new QWidget(m_searchBar);
+    auto *searchLay = new QHBoxLayout(searchHost);
+    searchLay->setContentsMargins(4, 0, 4, 0);
+    searchLay->setSpacing(6);
+    searchLay->addWidget(new QLabel(tr("Find:"), searchHost));
+    searchLay->addWidget(m_searchEdit, 1);
+    searchLay->addWidget(m_searchMatchLabel);
+    m_searchBar->addWidget(searchHost);
+    m_searchBar->setVisible(false);
 }
 
 

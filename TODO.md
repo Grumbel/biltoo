@@ -2,6 +2,35 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-449-search-toolbar.** Incremental Find toolbar (like Location).
+Prior: **448**.
+
+### Shipped
+- Search toolbar (`SearchBar` / `SearchEdit`): Ctrl+F opens, Esc closes (unless pinned)
+- View → Show Search Bar pins it
+- Incremental search on every keystroke via `setTextSearchQuery`
+- Zoom Fill remapped to **Ctrl+Shift+0** (was Ctrl+F)
+- Match count label on the bar
+
+### Still page-local
+Document-wide search (all pages) + optional fuzzy for OCR noise — next tips.
+
+### Next (planned)
+1. **Document-wide search** — index/ensure text layers across pages; jump to match page
+2. **Optional fuzzy** — soft match for OCR errors
+3. **EPUB ToC/link resolve** — MuPDF `fz_resolve_link` already used for `#` PDF
+   targets; EPUB outline often stores spine `.xhtml` URIs without page —
+   need thumtoo to resolve internal dests to `page_1based` (extend outline
+   extract / link targets)
+
+### Done criteria
+- [x] Toolbar + Ctrl+F + incremental
+- [ ] Bundle **449**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-448-filmstrip-dock.** Filmstrip is a QDockWidget (not splitter).
 Prior: **445**. Scrollbar-side experiments (446–447) abandoned.
 

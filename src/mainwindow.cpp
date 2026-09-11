@@ -731,26 +731,96 @@ void MainWindow::toggleCropMode()
 
 void MainWindow::findOnPage()
 {
+    // Legacy entry point — same as Ctrl+F.
+    openSearchBar();
+}
+
+void MainWindow::openSearchBar()
+{
+    if (!m_searchBar || !m_searchEdit) {
+        return;
+    }
+    if (m_imageView && m_searchEdit->text() != m_imageView->textSearchQuery()) {
+        QSignalBlocker block(m_searchEdit);
+        m_searchEdit->setText(m_imageView->textSearchQuery());
+        updateSearchMatchLabel(m_imageView->textSearchMatchCount());
+    }
+    m_searchBar->setVisible(true);
+    m_searchEdit->setFocus(Qt::ShortcutFocusReason);
+    m_searchEdit->selectAll();
+}
+
+void MainWindow::cancelSearchBar()
+{
+    if (!m_searchBar || !m_searchEdit) {
+        return;
+    }
+    m_searchEdit->clearFocus();
+    if (!m_searchBarPinned) {
+        m_searchBar->setVisible(false);
+    }
+}
+
+void MainWindow::commitSearchBar()
+{
+    // Enter: keep focus for further typing; incremental search already ran.
+    if (m_searchEdit) {
+        m_searchEdit->selectAll();
+    }
+}
+
+void MainWindow::setSearchBarPinned(bool pinned)
+{
+    m_searchBarPinned = pinned;
+    if (m_showSearchBarAct && m_showSearchBarAct->isChecked() != pinned) {
+        QSignalBlocker block(m_showSearchBarAct);
+        m_showSearchBarAct->setChecked(pinned);
+    }
+    if (!m_searchBar) {
+        return;
+    }
+    if (pinned) {
+        m_searchBar->setVisible(true);
+        if (m_searchEdit && m_imageView) {
+            QSignalBlocker block(m_searchEdit);
+            m_searchEdit->setText(m_imageView->textSearchQuery());
+            updateSearchMatchLabel(m_imageView->textSearchMatchCount());
+        }
+    } else if (m_searchEdit && !m_searchEdit->hasFocus()) {
+        m_searchBar->setVisible(false);
+    }
+}
+
+void MainWindow::onSearchTextChanged(const QString &text)
+{
     if (!m_imageView) {
         return;
     }
-    bool ok = false;
-    const QString query = QInputDialog::getText(
-        this, tr("Find on Page"),
-        tr("Search text on the current page (PDF / DjVu / EPUB):"),
-        QLineEdit::Normal, m_imageView->textSearchQuery(), &ok);
-    if (!ok) {
+    const int n = m_imageView->setTextSearchQuery(text);
+    updateSearchMatchLabel(n);
+    if (text.trimmed().isEmpty()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Text search cleared"), 2000);
+        }
+    } else if (statusBar()) {
+        if (n == 0) {
+            statusBar()->showMessage(tr("No matches on this page"), 2000);
+        } else {
+            statusBar()->showMessage(tr("%n match(es) on this page", "", n), 2000);
+        }
+    }
+}
+
+void MainWindow::updateSearchMatchLabel(int matchCount)
+{
+    if (!m_searchMatchLabel) {
         return;
     }
-    const int n = m_imageView->setTextSearchQuery(query);
-    if (query.trimmed().isEmpty()) {
-        statusBar()->showMessage(tr("Text search cleared"), 3000);
-    } else if (n == 0) {
-        statusBar()->showMessage(tr("No matches for “%1” on this page").arg(query.trimmed()), 5000);
-    } else {
-        statusBar()->showMessage(
-            tr("%n match(es) for “%1”", "", n).arg(query.trimmed()), 5000);
+    if (!m_searchEdit || m_searchEdit->text().trimmed().isEmpty()) {
+        m_searchMatchLabel->clear();
+        return;
     }
+    m_searchMatchLabel->setText(tr("%n match(es)", "", matchCount));
 }
 
 void MainWindow::toggleHud()
@@ -1407,7 +1477,7 @@ void MainWindow::showKeyboardShortcuts()
         "H — toggle HUD (filename / session index; dwell progress while slideshow runs)<br/>"
         "F5 — reload from disk (current image / gallery tiles)<br/>"
         "Ctrl+0 — zoom 1:1 · Ctrl++ / Ctrl+- — zoom<br/>"
-        "Ctrl+F — fill · Fit — fit to window · Z — zoom to region (one-shot)<br/>"
+        "Ctrl+F — find · Ctrl+Shift+0 — fill · Fit — fit to window · Z — zoom region<br/>"
         "Ctrl+T — toolbar · Ctrl+M — thumbnails · Ctrl+E — metadata<br/>"
         "Ctrl+U — colour adjustments · F1 — this list</p>"
         "<p><b>Image</b><br/>"
@@ -2122,7 +2192,9 @@ void MainWindow::readSettings()
         settings.value(QStringLiteral("toolBarVisible"), true).toBool();
     {
         const bool pinned = settings.value(QStringLiteral("locationBarPinned"), false).toBool();
+        const bool searchPinned = settings.value(QStringLiteral("searchBarPinned"), false).toBool();
         setLocationBarPinned(pinned);
+        setSearchBarPinned(searchPinned);
     }
 
     // restoreState can put the location bar back on the same row as the main
@@ -2133,6 +2205,10 @@ void MainWindow::readSettings()
     if (m_locationBar) {
         insertToolBarBreak(m_locationBar);
         m_locationBar->setVisible(m_locationBarPinned);
+    }
+    if (m_searchBar) {
+        insertToolBarBreak(m_searchBar);
+        m_searchBar->setVisible(m_searchBarPinned);
     }
 
     m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
@@ -2377,6 +2453,7 @@ void MainWindow::writeSettings()
                       isFullScreen() ? m_toolBarVisibleBeforeFullscreen
                                      : m_toolBar->isVisible());
     settings.setValue(QStringLiteral("locationBarPinned"), m_locationBarPinned);
+    settings.setValue(QStringLiteral("searchBarPinned"), m_searchBarPinned);
     QString sortKey = QStringLiteral("name");
     switch (m_sortMode) {
     case SortMode::MTime: sortKey = QStringLiteral("mtime"); break;
