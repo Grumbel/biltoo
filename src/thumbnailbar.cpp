@@ -7,6 +7,7 @@
 #include "imagecache.h"
 #include "imageloader.h"
 #include "thumtoocache.h"
+#include "sessionappearance.h"
 
 #include <QAction>
 #include <QApplication>
@@ -860,6 +861,29 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
     }
     if (image.isNull()) {
         return {};
+    }
+    // Durable content appearance (XDG state) — filmstrip owns its own bake.
+    // Do not rely on Gallery soft install emitting overrides (that coupled
+    // selection to the strip). Session-id overrides still win in the scheduler.
+    ThumtooCache::StoredContentAppearance stored;
+    if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+        WorkspaceItemState st;
+        st.contentHFlip = stored.contentHFlip;
+        st.contentVFlip = stored.contentVFlip;
+        st.contentQuarterTurns = stored.contentQuarterTurns;
+        st.hasCrop = stored.hasCrop;
+        st.cropRect = stored.cropRect;
+        st.cropSourceSize = stored.cropSourceSize;
+        st.cropRotation = stored.cropRotation;
+        if (stored.hasGrade) {
+            st.colorAdjust.brightness = stored.gradeBrightness;
+            st.colorAdjust.contrast = stored.gradeContrast;
+            st.colorAdjust.saturation = stored.gradeSaturation;
+            st.colorAdjust.hue = stored.gradeHue;
+            st.colorAdjust.gamma = stored.gradeGamma;
+        }
+        image = SessionAppearance::applyContentToImage(
+            image, st, SessionAppearance::PixelKind::SoftPreview);
     }
     return prepareThumbnailFromImage(image, maxSize);
 }

@@ -2,6 +2,23 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-418-filmstrip-appearance.** Filmstrip bakes durable content
+appearance in `makeThumbnail`. Prior: **417**.
+
+### Policy
+- Filmstrip decode path loads `ThumtooCache::loadContentAppearance` and applies
+  `SessionAppearance::applyContentToImage` (SoftPreview)
+- Not driven by Gallery soft install / selection
+- User edits still push overrides via `sessionAppearanceChanged`
+
+### Done criteria
+- [x] makeThumbnail applies persisted flip/rotate/crop
+- [ ] Bundle **418**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-417-filmstrip-no-ladder-refresh.** Filmstrip thumb still changed
 on click via ladderReady + residual decode emits. Prior: **416**.
 
