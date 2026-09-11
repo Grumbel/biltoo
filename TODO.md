@@ -15,7 +15,7 @@ fills existing items. Filmstrip/ImageView unaffected.
 
 ### Done criteria
 - [x] Always virtualize
-- [ ] Bundle **465**
+- [x] Bundle **465**
 
 ---
 
