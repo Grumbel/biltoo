@@ -7,11 +7,11 @@ Guidance for humans and automated agents working on this codebase.
 Biltoo is a classic Qt (C++) image viewer with three presentation modes
 (Image, Gallery, Workspace) on one canvas. Users browse a session, overview it
 in packed layouts, or arrange several images freely for comparison. It is
-*not* an image editor. See [DOMAIN.md](DOMAIN.md).
+*not* an image editor. See [DOMAIN.md](DOMAIN.md). Content orient/crop/text spaces: [docs/CONTENT_COORDINATES.md](docs/CONTENT_COORDINATES.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-431-sessionappearance-warnings**.
-Next bundle number: **432**.
+Latest agent handoff: **TODO.md → biltoo-432-text-region-rotation-coords**.
+Next bundle number: **433**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

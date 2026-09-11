@@ -6,6 +6,7 @@
 #include "coloradjust.h"
 
 #include <QtMath>
+#include <QPolygonF>
 
 namespace SessionAppearance {
 
@@ -100,6 +101,14 @@ static int normalizeQuarterTurns(int quarterTurns)
 QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sourceSize,
                                      const WorkspaceItemState &state)
 {
+    // Coordinate spaces (see docs/CONTENT_COORDINATES.md):
+    //   source  — full unoriented page raster (page text lives here)
+    //   oriented — after contentHFlip/VFlip + contentQuarterTurns (QImage bake)
+    //   display — oriented, then crop-local if hasCrop (what ImageItem paints)
+    //
+    // Live incremental path: bakeFlip / bakeRotate90 on current pixels, then
+    // mapCropThrough* so cropRect stays in post-bake space. Overlays must use
+    // the same order: flip → CW quarter-turns → crop translate.
     if (sourceSize.width() < 1 || sourceSize.height() < 1 || sourceRect.isEmpty()) {
         return {};
     }
@@ -107,17 +116,22 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
     QRectF r = sourceRect.normalized();
     QSize work = sourceSize;
 
-    // Content appearance on the item is: orient (flip + quarter-turns) the full
-    // raster, then crop in that post-bake pixel space.
-    //
-    // Evidence: recordSessionCrop / enterCropMode store cropRect against the
-    // *current* imageSize after content bakes ("post-content-bake image"), and
-    // crop re-entry explicitly does not re-mirror for contentHFlip/VFlip.
-    // applyContentToItem still does crop-then-orient for historical reasons;
-    // geometry for overlays must follow the live post-bake + cropToLocalRect
-    // space the user sees.
+    // Map a point through one 90° *clockwise* step in top-left image coords.
+    // Matches ImageItem::bakeRotate90 → QTransform::rotate(+90) + QImage::transformed
+    // (Qt rotates the coordinate system CCW; with Y-down that is CW on pixels).
+    auto mapPtCw90 = [](QPointF p, const QSize &sz) -> QPointF {
+        return QPointF(qreal(sz.height()) - p.y(), p.x());
+    };
+    auto mapRectCw90 = [&](QRectF rect, const QSize &sz) -> QRectF {
+        QPolygonF poly;
+        poly << mapPtCw90(rect.topLeft(), sz)
+             << mapPtCw90(rect.topRight(), sz)
+             << mapPtCw90(rect.bottomRight(), sz)
+             << mapPtCw90(rect.bottomLeft(), sz);
+        return poly.boundingRect();
+    };
 
-    // 1) Content flips about the full source size.
+    // 1) Content flips about the full source size (before turns).
     if (state.contentHFlip) {
         r = QRectF(work.width() - r.x() - r.width(), r.y(), r.width(), r.height());
     }
@@ -125,27 +139,25 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
         r = QRectF(r.x(), work.height() - r.y() - r.height(), r.width(), r.height());
     }
 
-    // 2) Content quarter-turns CW — same matrix as mapCropThroughContentRotate90
-    //    and ImageItem::bakeRotate90.
+    // 2) Content quarter-turns as +90° CW steps (contentQuarterTurns is absolute
+    //    0..3, same accumulator bakeItemRotate90 writes).
     const int turns = normalizeQuarterTurns(state.contentQuarterTurns);
     for (int i = 0; i < turns; ++i) {
-        r = QRectF(work.height() - r.y() - r.height(), r.x(), r.height(), r.width());
+        r = mapRectCw90(r, work);
         work = QSize(work.height(), work.width());
     }
 
-    // 3) Crop in post-orientation space (cropRect / cropSourceSize from
-    //    recordSessionCrop — same space as the post-bake full image).
+    // 3) Crop in post-orientation space (cropRect from recordSessionCrop /
+    //    mapCropThroughContentRotate90 — same space as post-bake full image).
     if (state.hasCrop && !state.cropRect.isEmpty()) {
         QRect crop = state.cropRect.normalized();
         QSize basis = state.cropSourceSize;
         if (basis.width() < 1 || basis.height() < 1) {
             basis = work;
         }
-        // Scale crop into the oriented full-page size we just produced.
         if (basis != work) {
             crop = scaleCropRect(crop, basis, work);
-            // Legacy: crop recorded against orientation-swapped dimensions only.
-            if ((crop.right() >= work.width() || crop.bottom() >= work.height())) {
+            if (crop.right() >= work.width() || crop.bottom() >= work.height()) {
                 const QSize swapped(basis.height(), basis.width());
                 if (swapped != basis && swapped.width() > 0 && swapped.height() > 0) {
                     const QRect alt = scaleCropRect(state.cropRect.normalized(), swapped, work);
@@ -159,15 +171,15 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
         if (crop.width() < 1 || crop.height() < 1) {
             return {};
         }
-        // Clip to crop; regions wholly outside vanish (empty).
         r = r.intersected(QRectF(crop));
         if (r.isEmpty()) {
             return {};
         }
-        // Crop-local coordinates (0,0) = crop top-left in oriented full page.
         r = r.translated(-qreal(crop.x()), -qreal(crop.y()));
+        work = QSize(crop.width(), crop.height());
     }
 
+    Q_UNUSED(work);
     return r;
 }
 

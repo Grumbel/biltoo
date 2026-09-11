@@ -2,6 +2,28 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-432-text-region-rotation-coords.** Rotation still broke text
+overlays; document coordinate spaces and harden CW mapping. Prior: **431**.
+
+### Diagnosis
+Coordinate-space confusion (source vs oriented vs display). Flip/crop improved
+after 429; pure rotation still wrong when size recovery / transform chain
+drifted from `bakeRotate90`.
+
+### Fix
+- Corner-based **CW** point map matching `QImage` +90° bake
+- Always scale mapped rect into live display pixels (full or soft)
+- **docs/CONTENT_COORDINATES.md** — single source of truth for spaces
+
+### Done criteria
+- [x] Docs
+- [x] Mapper / textRegion harden
+- [ ] Bundle **432**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-431-sessionappearance-warnings.** Silence unused-param /
 duplicated-branches warnings in `syncItemLayoutToContentOrientation`.
 Prior: **430**.
