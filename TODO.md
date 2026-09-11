@@ -19,7 +19,7 @@ Prior: **449**.
 
 ### Done criteria
 - [x] Document-wide scan + navigation + fuzzy
-- [ ] Bundle **450**
+- [x] Bundle **450**
 
 ---
 
