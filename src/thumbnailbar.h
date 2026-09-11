@@ -211,10 +211,10 @@ private:
     void invalidateThumbPixels();
     /** Recompute ThumbContentSizeRole + sizeHint from aspect at current thumbSize. */
     void refreshAllItemGeometry();
-    /** Capture / restore flow-axis scroll so thumbSize changes do not jump. */
+    /** Capture / restore: keep the viewport-centre image centred across thumbSize changes. */
     struct ScrollAnchor {
         int row = -1;
-        int offsetInViewport = 0; // pixels from viewport origin to item origin
+        int offsetInViewport = 0; // unused (centre restore)
         bool valid = false;
     };
     ScrollAnchor captureScrollAnchor() const;

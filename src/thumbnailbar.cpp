@@ -711,26 +711,31 @@ ThumbnailBar::ScrollAnchor ThumbnailBar::captureScrollAnchor() const
     if (!viewport() || count() <= 0) {
         return a;
     }
-    // Prefer current row; else item under the flow-axis start of the viewport.
-    int row = currentRow();
-    if (row < 0 || !item(row)) {
-        const QPoint probe = (m_orientation == Qt::Horizontal)
-            ? QPoint(qMin(24, viewport()->width() / 2), viewport()->height() / 2)
-            : QPoint(viewport()->width() / 2, qMin(24, viewport()->height() / 2));
-        const QModelIndex idx = indexAt(probe);
-        if (idx.isValid()) {
-            row = idx.row();
+    // Always the item under the *viewport centre* — resize must keep that
+    // image centred, not selection or the strip start.
+    const QPoint centre = viewport()->rect().center();
+    QModelIndex idx = indexAt(centre);
+    if (!idx.isValid()) {
+        // Gaps between letterbox cells: probe a few offsets around centre.
+        const QPoint probes[] = {
+            centre,
+            centre + QPoint(-8, 0),
+            centre + QPoint(8, 0),
+            centre + QPoint(0, -8),
+            centre + QPoint(0, 8),
+        };
+        for (const QPoint &pt : probes) {
+            idx = indexAt(pt);
+            if (idx.isValid()) {
+                break;
+            }
         }
     }
-    if (row < 0 || !item(row)) {
+    if (!idx.isValid()) {
         return a;
     }
-    const QRect vr = visualItemRect(item(row));
-    if (!vr.isValid()) {
-        return a;
-    }
-    a.row = row;
-    a.offsetInViewport = (m_orientation == Qt::Horizontal) ? vr.left() : vr.top();
+    a.row = idx.row();
+    a.offsetInViewport = 0; // unused — restore centres the row
     a.valid = true;
     return a;
 }
@@ -740,22 +745,34 @@ void ThumbnailBar::restoreScrollAnchor(const ScrollAnchor &anchor)
     if (!anchor.valid || anchor.row < 0 || anchor.row >= count() || !item(anchor.row)) {
         return;
     }
-    // Layout must be current (refreshAllItemGeometry already doItemsLayout).
     QScrollBar *bar = (m_orientation == Qt::Horizontal) ? horizontalScrollBar()
                                                           : verticalScrollBar();
-    if (!bar) {
+    if (!bar || !viewport()) {
         return;
     }
-    // First bring the row into a known place, then correct pixel offset.
-    scrollToItem(item(anchor.row), QAbstractItemView::EnsureVisible);
+    // Centre the anchored row in the viewport (flow axis).
+    scrollToItem(item(anchor.row), QAbstractItemView::PositionAtCenter);
+    // PositionAtCenter can be approximate with variable letterbox sizeHints —
+    // fine-tune so the item's centre matches the viewport centre.
     const QRect vr = visualItemRect(item(anchor.row));
     if (!vr.isValid()) {
         return;
     }
-    const int now = (m_orientation == Qt::Horizontal) ? vr.left() : vr.top();
-    const int delta = now - anchor.offsetInViewport;
-    if (delta != 0) {
-        bar->setValue(bar->value() + delta);
+    const QRect vp = viewport()->rect();
+    if (m_orientation == Qt::Horizontal) {
+        const int itemMid = vr.left() + vr.width() / 2;
+        const int viewMid = vp.width() / 2;
+        const int delta = itemMid - viewMid;
+        if (delta != 0) {
+            bar->setValue(bar->value() + delta);
+        }
+    } else {
+        const int itemMid = vr.top() + vr.height() / 2;
+        const int viewMid = vp.height() / 2;
+        const int delta = itemMid - viewMid;
+        if (delta != 0) {
+            bar->setValue(bar->value() + delta);
+        }
     }
 }
 

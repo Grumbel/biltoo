@@ -106,8 +106,8 @@ Dragging the filmstrip dock/splitter changes `thumbSize` via `resizeEvent` →
 
 1. **Geometry immediately** — `applyThumbMetrics` + `refreshAllItemGeometry`
    (sizeHints / content roles at the new `thumbSize`).
-2. **Scroll anchor** — capture the current (or first visible) row and its offset
-   in the viewport; after layout, restore so the strip does not jump.
+2. **Scroll anchor** — capture the row under the **viewport centre**; after
+   layout, keep that image centred (`PositionAtCenter` + pixel fine-tune).
 3. **Decode debounce (120ms)** — sharper pixels only after the size stops
    changing. A full `invalidateThumbPixels` on every drag step cancelled
    in-flight loads and left holes until scroll.
