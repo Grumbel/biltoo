@@ -14,7 +14,7 @@ Prior: **441**.
 
 ### Done criteria
 - [x] Hardening
-- [ ] Bundle **442**
+- [x] Bundle **442**
 
 ---
 
