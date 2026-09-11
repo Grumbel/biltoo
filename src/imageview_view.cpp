@@ -702,6 +702,8 @@ void ImageView::releaseLiveTransitionHold()
                     && (m_dwellSourceImage.isNull()
                         || (item->sourceImage().width() * item->sourceImage().height()
                             > m_dwellSourceImage.width() * m_dwellSourceImage.height()))) {
+                    // Item source is content-baked by installDisplayPixels; path
+                    // orient is for unbaked caches only — prefer larger item pixels.
                     m_dwellSourceImage = item->sourceImage();
                     ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                                       &m_dwellAtlasVw, &m_dwellAtlasVh);
@@ -1323,8 +1325,10 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             && (m_ssFromImage.isNull()
                 || full.width() * full.height()
                     > m_ssFromImage.width() * m_ssFromImage.height())) {
-            m_ssFromImage = full;
-            m_dwellSourceImage = full;
+            // full cache is unbaked disk pixels — orient for paint buffers.
+            const QImage oriented = orientSlideshowImage(full, fromPath);
+            m_ssFromImage = oriented;
+            m_dwellSourceImage = oriented;
             ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                               &m_dwellAtlasVw, &m_dwellAtlasVh);
         }
@@ -1368,7 +1372,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             && (m_ssToImage.isNull()
                 || full.width() * full.height()
                     > m_ssToImage.width() * m_ssToImage.height())) {
-            m_ssToImage = full;
+            m_ssToImage = orientSlideshowImage(full, toPath);
         }
     }
     if (m_ssToMotionClockRunning && pathMs > 0) {
@@ -1616,11 +1620,12 @@ void ImageView::preloadSlideshowImage(const QString &path)
             view->rememberImageSize(loadPath, img.size());
             if (view->m_slideshowProgressActive) {
                 if (loadPath == view->m_ssFromPath) {
-                    view->m_ssFromImage = img;
-                    view->m_dwellSourceImage = img;
+                    const QImage oriented = view->orientSlideshowImage(img, loadPath);
+                    view->m_ssFromImage = oriented;
+                    view->m_dwellSourceImage = oriented;
                 }
                 if (loadPath == view->m_ssToPath) {
-                    view->m_ssToImage = img;
+                    view->m_ssToImage = view->orientSlideshowImage(img, loadPath);
                 }
                 if (view->viewport()) {
                     view->viewport()->update();
@@ -1630,12 +1635,13 @@ void ImageView::preloadSlideshowImage(const QString &path)
             if (view->m_liveTransitionNextPath == loadPath
                 && (view->m_liveTransitionActive || view->m_liveTransitionHold
                     || view->m_liveTransitionAwaitingLoad)) {
-                view->m_liveTransitionSourceImage = img;
+                const QImage oriented = view->orientSlideshowImage(img, loadPath);
+                view->m_liveTransitionSourceImage = oriented;
                 view->m_handoffPath = loadPath;
-                view->m_handoffImage = img;
+                view->m_handoffImage = img; // keep unbaked for paths that orient on start
                 view->m_preloadPath.clear();
                 view->m_preloadImage = QImage();
-                view->ensureMotionAtlas(img, &view->m_liveToAtlas,
+                view->ensureMotionAtlas(oriented, &view->m_liveToAtlas,
                                         &view->m_liveToAtlasScale,
                                         &view->m_liveToAtlasVw,
                                         &view->m_liveToAtlasVh);
@@ -2279,7 +2285,17 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     }
 
     // Ken Burns moves the *image* via blit, not the QGraphicsView camera.
-    m_dwellSourceImage = item->sourceImage();
+    // Prefer path-oriented slideshow pixels (unbaked cache + appearance). Item
+    // source may lag durable orientation on the first frame before a full
+    // install, or be unbaked soft-only.
+    {
+        const QString path = item->path();
+        QImage dwell = slideshowPixelsForPath(path);
+        if (dwell.isNull()) {
+            dwell = orientSlideshowImage(item->sourceImage(), path);
+        }
+        m_dwellSourceImage = dwell;
+    }
     if (m_dwellSourceImage.isNull()) {
         return;
     }
@@ -2381,15 +2397,16 @@ void ImageView::tickSlideshowMotion()
         if (m_ssToMotionClockRunning) {
             m_ssToMotionT = qBound(0.0, qreal(m_ssToMotionClock.elapsed()) / qreal(pathMs), 1.0);
         }
-        // Upgrade only from full buffers (preload/item) — no soft scale per tick.
+        // Upgrade only from full buffers (preload) — orient unbaked disk pixels.
         if (!m_ssFromPath.isEmpty()) {
             const QImage full = slideshowFullIfReady(m_ssFromPath);
             if (!full.isNull()
                 && (m_ssFromImage.isNull()
                     || full.width() * full.height()
                         > m_ssFromImage.width() * m_ssFromImage.height())) {
-                m_ssFromImage = full;
-                m_dwellSourceImage = full;
+                const QImage oriented = orientSlideshowImage(full, m_ssFromPath);
+                m_ssFromImage = oriented;
+                m_dwellSourceImage = oriented;
             }
         }
         if (!m_ssToPath.isEmpty()) {
@@ -2398,7 +2415,7 @@ void ImageView::tickSlideshowMotion()
                 && (m_ssToImage.isNull()
                     || full.width() * full.height()
                         > m_ssToImage.width() * m_ssToImage.height())) {
-                m_ssToImage = full;
+                m_ssToImage = orientSlideshowImage(full, m_ssToPath);
             }
         }
         viewport()->update();

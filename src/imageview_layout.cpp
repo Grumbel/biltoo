@@ -242,10 +242,31 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     WorkspaceItemState fallback;
     if (sid != kInvalidSessionImageId) {
         app = m_appearance.get(sid);
-    } else if (!path.isEmpty()) {
+    }
+    if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
         const auto it = m_itemStates.constFind(path);
         if (it != m_itemStates.cend()) {
             fallback = *it;
+            app = &fallback;
+        }
+    }
+    // Durable XDG appearance when session store is empty (slideshow may paint a
+    // path before installDisplayPixels seeds m_appearance for that id).
+    if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored)
+            && (stored.contentHFlip || stored.contentVFlip
+                || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+            fallback = {};
+            fallback.path = path;
+            fallback.sessionId = sid;
+            fallback.contentHFlip = stored.contentHFlip;
+            fallback.contentVFlip = stored.contentVFlip;
+            fallback.contentQuarterTurns = stored.contentQuarterTurns;
+            fallback.hasCrop = stored.hasCrop;
+            fallback.cropRect = stored.cropRect;
+            fallback.cropSourceSize = stored.cropSourceSize;
+            fallback.cropRotation = stored.cropRotation;
             app = &fallback;
         }
     }

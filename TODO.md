@@ -2,6 +2,32 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-427-slideshow-first-frame-orient.** First slideshow frame still
+unoriented; later slides OK after 426. Prior: **426**.
+
+### Cause
+- Soft→full upgrades wrote **unbaked** disk pixels into `m_ssFromImage` /
+  `m_dwellSourceImage` / `m_ssToImage`, wiping any oriented soft paint.
+- First dwell often started from `item->sourceImage()` or cache before
+  `m_appearance` was seeded for that path.
+- `imageWithSessionAppearance` ignored durable Thumtoo appearance when the
+  session store had no entry yet.
+
+### Fix
+- Orient every soft→full upgrade and preload paint-buffer assign.
+- First dwell: `slideshowPixelsForPath` then orient item fallback.
+- Durable XDG appearance fallback in `imageWithSessionAppearance`.
+
+### Done criteria
+- [x] First-frame orient paths
+- [x] Soft→full orient
+- [x] Durable fallback
+- [ ] Bundle **427**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-426-slideshow-content-orientation.** Slideshow painted next slides
 with the *current* image's rotation. Prior: **425**.
 
