@@ -248,7 +248,7 @@ void ImageItem::setItemRotation(qreal degrees)
 
 void ImageItem::bakeRotate90(int quarterTurns)
 {
-    if (m_source.isNull() || quarterTurns == 0) {
+    if (quarterTurns == 0) {
         return;
     }
     quarterTurns %= 4;
@@ -258,12 +258,32 @@ void ImageItem::bakeRotate90(int quarterTurns)
     if (quarterTurns == 0) {
         return;
     }
+    // Gallery soft tiles often have only m_preview (m_source null). Bake must
+    // still transform displayed pixels so content rotate is visible before a
+    // full decode arrives; applyContentBakes will re-bake the full source later.
+    if (m_source.isNull() && m_preview.isNull()) {
+        return;
+    }
     prepareGeometryChange();
     QTransform xform;
     xform.rotate(90.0 * quarterTurns);
-    m_source = m_source.transformed(xform, Qt::SmoothTransformation);
-    m_intrinsicSize = m_source.size();
-    setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+    if (!m_source.isNull()) {
+        m_source = m_source.transformed(xform, Qt::SmoothTransformation);
+        // Intrinsic tracks native geometry; only adopt rotated size when this
+        // is a real full decode (not a soft stand-in).
+        if (!m_previewPixels) {
+            m_intrinsicSize = m_source.size();
+            setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+        }
+    }
+    if (!m_preview.isNull()) {
+        m_preview = m_preview.transformed(xform, Qt::SmoothTransformation);
+    }
+    if (m_source.isNull() && !m_preview.isNull()) {
+        // Soft-only: keep layout geometry (probe size); only the stand-in rotates.
+        const QSize s = imageSize();
+        setOffset(-s.width() / 2.0, -s.height() / 2.0);
+    }
     // Flips stay as flags or already baked; keep placement angle.
     updateDisplayedPixmap();
     applyLocalTransform();
@@ -272,37 +292,52 @@ void ImageItem::bakeRotate90(int quarterTurns)
 
 void ImageItem::bakeFlip(bool horizontal, bool vertical)
 {
-    if (m_source.isNull() || (!horizontal && !vertical)) {
+    if (!horizontal && !vertical) {
+        return;
+    }
+    // Soft Gallery tiles: m_source is empty, paint draws m_preview. Transform
+    // both so the user sees the flip immediately; full decode re-applies from
+    // appearance content flags via applyContentBakes.
+    if (m_source.isNull() && m_preview.isNull()) {
         return;
     }
     prepareGeometryChange();
-    {
+    auto axesFrom = [](bool h, bool v) {
         Qt::Orientations axes;
-        if (horizontal) {
+        if (h) {
             axes |= Qt::Horizontal;
         }
-        if (vertical) {
+        if (v) {
             axes |= Qt::Vertical;
         }
-        if (axes) {
-            m_source = m_source.flipped(axes);
-        }
+        return axes;
+    };
+    const Qt::Orientations axes = axesFrom(horizontal, vertical);
+    if (!m_source.isNull() && axes) {
+        m_source = m_source.flipped(axes);
+    }
+    if (!m_preview.isNull() && axes) {
+        m_preview = m_preview.flipped(axes);
     }
     // Bake any pending display flips into the same op.
     if (m_hFlip || m_vFlip) {
-        Qt::Orientations axes2;
-        if (m_hFlip) {
-            axes2 |= Qt::Horizontal;
+        const Qt::Orientations axes2 = axesFrom(m_hFlip, m_vFlip);
+        if (!m_source.isNull() && axes2) {
+            m_source = m_source.flipped(axes2);
         }
-        if (m_vFlip) {
-            axes2 |= Qt::Vertical;
+        if (!m_preview.isNull() && axes2) {
+            m_preview = m_preview.flipped(axes2);
         }
-        m_source = m_source.flipped(axes2);
     }
     m_hFlip = false;
     m_vFlip = false;
-    m_intrinsicSize = m_source.size();
-    setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+    if (!m_source.isNull() && !m_previewPixels) {
+        m_intrinsicSize = m_source.size();
+        setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
+    } else {
+        const QSize s = imageSize();
+        setOffset(-s.width() / 2.0, -s.height() / 2.0);
+    }
     updateDisplayedPixmap();
     applyLocalTransform();
     update();

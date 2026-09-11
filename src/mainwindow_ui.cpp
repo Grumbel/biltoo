@@ -378,7 +378,7 @@ void MainWindow::createActions()
     m_selectAllAct->setShortcut(QKeySequence::SelectAll);
     m_selectAllAct->setIcon(themeIcon(QStringLiteral("edit-select-all"), QStyle::SP_DialogApplyButton));
     m_selectAllAct->setStatusTip(
-        tr("Select all thumbnails (in workspace mode: show all on the canvas)"));
+        tr("Select all: Gallery/Workspace tiles, or all filmstrip rows in Image mode"));
     connect(m_selectAllAct, &QAction::triggered, this, &MainWindow::selectAllThumbnails);
 
     m_layoutFreeFormAct = new QAction(tr("&Free Form Layout"), this);

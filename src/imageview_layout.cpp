@@ -1559,6 +1559,35 @@ QList<int> ImageView::selectedSessionIndices() const
     return out;
 }
 
+void ImageView::selectAllCanvasItems()
+{
+    if (!m_scene || isImageMode() || m_items.isEmpty()) {
+        return;
+    }
+    m_scene->blockSignals(true);
+    for (ImageItem *item : m_items) {
+        if (item) {
+            item->setSelected(true);
+        }
+    }
+    m_scene->blockSignals(false);
+    if (!m_items.isEmpty()) {
+        m_gallery.setSelectionAnchor(m_items.first());
+    }
+    emit canvasSelectionChanged();
+    emit statusChanged();
+}
+
+void ImageView::clearCanvasSelection()
+{
+    if (!m_scene) {
+        return;
+    }
+    m_scene->clearSelection();
+    emit canvasSelectionChanged();
+    emit statusChanged();
+}
+
 
 
 

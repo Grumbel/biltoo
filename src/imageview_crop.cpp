@@ -715,6 +715,32 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     SessionAppearance::applyContentToItem(item, *app);
 }
 
+void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    const WorkspaceItemState *app = nullptr;
+    WorkspaceItemState fallback;
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+            app = &(*it);
+        }
+    } else {
+        const auto it = m_itemStates.constFind(item->path());
+        if (it != m_itemStates.cend()) {
+            fallback = *it;
+            app = &fallback;
+        }
+    }
+    if (!app || !SessionAppearance::hasContentAppearance(*app)) {
+        return;
+    }
+    // Caller just installed full on-disk pixels; do not load again.
+    SessionAppearance::applyContentToItem(item, *app);
+}
+
 void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &state)
 {
     SessionAppearance::applyCrop(item, state);

@@ -790,6 +790,10 @@ public:
     QStringList itemPaths() const;
     /** Paths of selected canvas items (Gallery/Workspace). Image mode: current path. */
     QStringList selectedPaths() const;
+    /** Select every live canvas tile (Gallery / Workspace). No-op in Image mode. */
+    void selectAllCanvasItems();
+    /** Clear canvas selection. */
+    void clearCanvasSelection();
     /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */
     int pendingDecodeCount() const;
 
@@ -940,6 +944,12 @@ private:
      * session id / index / unbound path. Pixels must be the full on-disk image.
      */
     void applyStoredAppearance(ImageItem *item);
+    /**
+     * After installing full on-disk pixels (soft→full), re-apply crop / content
+     * flip / quarter-turn / grade from the item's session appearance without a
+     * second disk load. No-op when no appearance is stored.
+     */
+    void applyContentAppearanceAfterDecode(ImageItem *item);
     /**
      * Map item-local draft rect to source pixel rect of the *current* pixmap,
      * then compose into original on-disk coordinates in @p state.

@@ -761,6 +761,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             if (hit->isSelected()) {
                 m_gallery.setSelectionAnchor(hit);
             }
+            emit canvasSelectionChanged();
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
             } else if (!hit->path().isEmpty()) {
@@ -813,6 +814,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         // Empty space: clear selection (keep Ctrl-additive empty no-ops).
         if (!ctrl) {
             m_scene->clearSelection();
+            emit canvasSelectionChanged();
             emit statusChanged();
         }
         // Allow rubber-band start via base class when drag mode is RubberBandDrag.
@@ -1611,6 +1613,16 @@ void ImageView::keyPressEvent(QKeyEvent *event)
 
     if (event->key() == Qt::Key_Escape && (m_zoomRegionArmed || m_zoomRegionDragging)) {
         cancelZoomRegion();
+        event->accept();
+        return;
+    }
+
+    // Gallery / Workspace: Ctrl+A selects every live tile (standard multi-select).
+    if ((isGalleryMode() || isWorkspaceMode())
+        && event->key() == Qt::Key_A
+        && (event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
+        && !(event->modifiers() & (Qt::ShiftModifier | Qt::AltModifier))) {
+        selectAllCanvasItems();
         event->accept();
         return;
     }

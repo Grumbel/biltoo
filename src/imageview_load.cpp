@@ -408,6 +408,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                             continue;
                         }
                         item->setSourceImage(image);
+                        // Soft may already carry content flips/rotates baked into
+                        // the preview (Gallery flip/rotate). Full ladder bytes are
+                        // unflipped; re-apply session appearance onto the new source.
+                        host->applyContentAppearanceAfterDecode(item);
                         // Do not applyLayout: intrinsic size should already be
                         // native from the size probe; only pixels upgraded.
                         item->update();

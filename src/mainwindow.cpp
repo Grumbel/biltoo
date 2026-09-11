@@ -164,6 +164,12 @@ MainWindow::MainWindow(QWidget *parent)
                     return;
                 }
                 updateNavigationActions();
+                // Mirror Gallery multi-select onto the filmstrip (same as Workspace).
+                if (!m_syncingSelection && m_thumbnailBar && m_imageView) {
+                    m_syncingSelection = true;
+                    m_thumbnailBar->setSelectedIndices(m_imageView->selectedSessionIndices());
+                    m_syncingSelection = false;
+                }
             });
             return;
         }
@@ -1549,10 +1555,19 @@ void MainWindow::showPreferences()
 
 void MainWindow::selectAllThumbnails()
 {
-    if (!m_thumbnailBar || m_session.paths().isEmpty()) {
+    if (m_session.paths().isEmpty()) {
         return;
     }
-    // Session multi-select only — do not enter Workspace mode.
+    // Gallery / Workspace: select every live canvas tile (Ctrl+A also handled
+    // in ImageView). Filmstrip Select All remains the session multi-select when
+    // focus is on the strip or we are in Image mode.
+    if (m_imageView && (isGalleryMode() || isWorkspaceMode())) {
+        m_imageView->selectAllCanvasItems();
+        return;
+    }
+    if (!m_thumbnailBar) {
+        return;
+    }
     m_thumbnailBar->selectAllThumbs();
 }
 

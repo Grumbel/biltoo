@@ -58,6 +58,19 @@ ImageView::ImageView(QWidget *parent)
     m_scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     setScene(m_scene);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, [this]() {
+        // Rubber-band / programmatic selects: keep Gallery Shift-range anchor
+        // on a still-selected tile when the previous anchor was dropped.
+        if (isGalleryMode() && m_gallery.selectionAnchor()
+            && !m_gallery.selectionAnchor()->isSelected()) {
+            ImageItem *next = nullptr;
+            for (QGraphicsItem *gi : m_scene->selectedItems()) {
+                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    next = ii;
+                    break;
+                }
+            }
+            m_gallery.setSelectionAnchor(next);
+        }
         emit statusChanged();
         emit canvasSelectionChanged();
     });

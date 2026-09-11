@@ -2,11 +2,22 @@
 
 ## Status (2026-09-11)
 
-**Tip: biltoo-393-content-variant-identity.** Design note only: content id vs
-variant id (`SessionImageId`). New [CONTENT-VARIANT.md](CONTENT-VARIANT.md);
-IDENTITY.md §15 pointer; AGENTS handoff bumped. No code.
+**Tip: biltoo-394-gallery-multiselect-content-bake.** Gallery multi-select polish
++ flip/rotate on soft tiles. Prior: **393** content-variant note. Next: **395**.
 
-Prior tip: biltoo-392-gallery-soft-vs-ondemand. Next bundle: **394**.
+Shipped:
+- Ctrl/Shift-click multi-select already present; emit `canvasSelectionChanged` on
+  Ctrl-toggle and empty-space clear; rubber-band refreshes selection anchor.
+- Ctrl+A / Edit→Select All selects all Gallery/Workspace canvas tiles (filmstrip
+  Select All remains in Image mode).
+- Filmstrip mirrors Gallery multi-select (same as Workspace).
+- **Root cause:** Gallery soft tiles only had `m_preview`; `bakeFlip`/`bakeRotate90`
+  no-op’d on null `m_source` → layout ran, pixels unchanged. Bake now transforms
+  preview; soft→full re-applies appearance via `applyContentAppearanceAfterDecode`.
+- Rotate/flip already looped `transformTargets()` (selection); multi-select now
+  works end-to-end for content ops.
+
+---
 
 ---
 
