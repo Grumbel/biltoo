@@ -37,35 +37,6 @@ when not going through the gate.
 
 ---
 
-
-### On top of upstream 398
-Upstream already applied content after soft installs via
-`applyContentAppearanceAfterDecode` and `imageWithSessionAppearance` for
-slideshow blits. This tip centralizes raw attaches:
-
-- `SessionAppearance::PixelKind` { FullSource, SoftPreview }
-- `SessionAppearance::applyContentToImage` / `contentSwapsAspect`
-- `ImageView::installDisplayPixels` — single gate for raw disk/ladder/cache pixels
-- Soft path bakes into the preview image; Image mode refits when content
-  orientation swaps aspect (avoids letterboxed smaller thumb on rapid flip)
-- Migrated: pending tile, preview load, Gallery soft→full, LoadAdd fills,
-  canvas soft hints
-
-Keep `imageWithSessionAppearance` for pure-QImage slideshow transitions.
-`applyContentAppearanceAfterDecode` remains for post-source-install re-bake
-when not going through the gate (e.g. crop paths).
-
-### Done criteria
-- [x] Rebased onto d4dc82b
-- [x] installDisplayPixels is the preferred raw install path
-- [ ] Human verify rapid Image flip + slideshow with content 90°
-- [ ] Bundle **399**
-
----
-
-
----
-
 ## Status (2026-09-09, session end)
 
 **Tip: biltoo-392-gallery-soft-vs-ondemand.** Soft ≤512 always; >512 visible-only. Prior: 391–365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
