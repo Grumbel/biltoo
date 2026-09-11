@@ -25,7 +25,7 @@ Document-wide search (all pages) + optional fuzzy for OCR noise — next tips.
 
 ### Done criteria
 - [x] Toolbar + Ctrl+F + incremental
-- [ ] Bundle **449**
+- [x] Bundle **449**
 
 ---
 
