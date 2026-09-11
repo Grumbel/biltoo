@@ -2,6 +2,37 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-421-filmstrip-model.** Restored clear crop vs letterbox filmstrip
+geometry. Prior: **420**.
+
+### Filmstrip modes (plain English)
+
+**thumbSize** — long edge of the image slot in logical pixels (user control).
+
+**Crop to square (default on)**  
+- Decode is center-cropped to a square, then scaled to thumbSize×thumbSize.  
+- Every cell is the same size (square image + pad + optional filename).  
+- Paint **fills** the image slot edge-to-edge (no empty bands).
+
+**Letterbox (crop off)**  
+- Decode keeps aspect ratio; longest edge is thumbSize (after appearance bake).  
+- Each cell’s width/height follows that aspect.  
+- Paint **centers** the image in the slot; outline hugs the image.
+
+**Selection** always highlights the full cell (pad + label included).
+
+**Content appearance** (flip/rotate from XDG) is baked in `makeThumbnail`
+before crop/letterbox prepare.
+
+### Done criteria
+- [x] Crop fills slot
+- [x] Letterbox centers in aspect-sized cell
+- [ ] Bundle **421**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-420-filmstrip-tight-chrome.** Selection/hover and cell sizeHint
 follow oriented content footprint. Prior: **419**.
 
