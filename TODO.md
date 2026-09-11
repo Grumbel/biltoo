@@ -14,8 +14,9 @@ full decode and soft install; shared helper. Prior: **400**. Needs **thumtoo ≥
 
 ### Done criteria
 - [x] Image-mode LoadReplace seeds before bake
+- [x] Code review: captureState/commit turns path; seed before bake
 - [ ] Human: rotate, quit, reopen — orientation restored in Image mode
-- [ ] Bundle **401**
+- [x] Bundle **401**
 
 ---
 
