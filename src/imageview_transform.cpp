@@ -838,22 +838,62 @@ int ImageView::resetContentAppearanceForTargets()
             m_appearance.set(sid, slot);
         }
 
-        // 3) Reload full on-disk pixels and strip content chrome.
-        const QImage full = ImageLoader::load(path);
-        if (!full.isNull()) {
-            item->setSourceImage(full);
-        }
         item->setContentHFlip(false);
         item->setContentVFlip(false);
         item->setSessionCrop(false, QRect());
         item->setItemHFlip(false);
         item->setItemVFlip(false);
 
+        // Restore layout geometry to the unoriented native size (content
+        // rotate may have transposed intrinsic).
+        {
+            QSize native = ThumtooCache::cachedSize(path);
+            if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+                const auto it = m_imageSizeByPath.constFind(path);
+                if (it != m_imageSizeByPath.cend()) {
+                    native = it.value();
+                }
+            }
+            if (native.isValid() && native.width() > 1 && native.height() > 1
+                && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
+                item->setIntrinsicSize(native);
+            }
+        }
+
+        // 3) Reinstall *mode-appropriate* pixels — never promote a full decode
+        // into Gallery soft tiles (that stuck tiles on native res and skipped
+        // the soft ladder forever via hasDecodedPixels()).
+        //
+        //   Gallery  → soft ladder (≤ kGalleryLadderEdge), reset soft state
+        //   Image / Workspace → full on-disk decode (user is inspecting / placing)
+        if (isGalleryMode()) {
+            gallerySoftResetPath(path);
+            const int softEdge = ThumtooCache::kGalleryLadderEdge;
+            QImage soft = ImageLoader::loadThumbnail(path, softEdge);
+            if (!soft.isNull()) {
+                // Identity appearance: SoftPreview install without content bake.
+                installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
+                                     sid);
+            } else {
+                // Drop any previous full/oriented pixels; decode window will refill.
+                item->clearDecodedPixels();
+            }
+        } else {
+            const QImage full = ImageLoader::load(path);
+            if (!full.isNull()) {
+                installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
+                                     sid);
+            } else {
+                item->clearDecodedPixels();
+            }
+        }
+
         if (isImageMode() && m_fitMode) {
             fitItem(item, currentFitAspectMode());
         }
 
-        // Filmstrip / peers: emit identity appearance.
+        // Filmstrip: emit current *display* pixels (soft in Gallery, full in Image).
+        // Do not emit a separate full decode for Gallery filmstrip overrides.
         if (sid != kInvalidSessionImageId) {
             const QImage appearance = sessionAppearanceImage(item);
             if (!appearance.isNull()) {
@@ -864,6 +904,8 @@ int ImageView::resetContentAppearanceForTargets()
     }
     if (n > 0 && isGalleryMode()) {
         applyLayout(GalleryPackReason::ContentChange);
+        // Soft state was reset; kick the ladder for visible tiles.
+        updateGalleryDecodeWindow();
     }
     if (n > 0) {
         emit statusChanged();

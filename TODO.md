@@ -2,6 +2,37 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-425-reset-appearance-gallery-soft.** Reset Content Appearance
+installed full-res pixels into Gallery tiles. Prior: **424**.
+
+### Bug
+`resetContentAppearanceForTargets` always did `ImageLoader::load` +
+`setSourceImage`. In Gallery that set `hasDecodedPixels()`, so the soft ladder
+skipped the path forever and tiles stayed on native resolution.
+
+### Fix
+- **Gallery:** `gallerySoftResetPath`, reinstall `SoftPreview` via
+  `loadThumbnail(…, kGalleryLadderEdge)` / `clearDecodedPixels`, then
+  `updateGalleryDecodeWindow`.
+- **Image / Workspace:** full decode via `installDisplayPixels(FullSource)`.
+- Restore unoriented native intrinsic after content reset.
+- Document pixel quality layers in `docs/GALLERY_SOFT.md` (EXIF / fast-path /
+  soft ladder / full) and the no-mix rules.
+
+### Follow-up (thumtoo)
+Optional API to tag embedded/EXIF thumbs vs completed soft ladder levels so
+hosts cannot confuse them.
+
+### Done criteria
+- [x] Gallery reset uses soft, not full
+- [x] Soft state reset + decode window refresh
+- [x] GALLERY_SOFT.md layer table
+- [ ] Bundle **425**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-424-text-map-orient-then-crop.** Fix flip/crop math for text
 regions. Prior: **423**.
 
