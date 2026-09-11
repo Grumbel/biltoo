@@ -13,7 +13,7 @@ Prior: **433**.
 
 ### Done criteria
 - [x] trueMatrix path
-- [ ] Bundle **434**
+- [x] Bundle **434**
 
 ---
 
