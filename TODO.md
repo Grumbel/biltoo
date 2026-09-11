@@ -13,7 +13,7 @@ Prior: **463**.
 
 ### Done criteria
 - [x] Size supply path
-- [ ] Bundle **464**
+- [x] Bundle **464**
 
 ---
 
