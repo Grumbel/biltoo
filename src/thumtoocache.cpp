@@ -1706,12 +1706,26 @@ std::string pathContentId(const QString &path)
             }
         }
     }
-    // Page session ref: sha256:<filehex>:page:<n>
-    // Append only — do NOT re-run normalize_content_id on the full string.
-    // Older thumtoo normalize rejects ":page:N" and would clear a good file id.
+    // Page session ref: fold into a plain sha256:<64hex> so AppearanceStore::put
+    // (which always normalize_content_id's the key) accepts it even when the
+    // linked thumtoo only allows bare file hashes. Material:
+    //   utf8( "<file_content_id>:page:<n>" ) → SHA-256 → sha256:<hex>
     if (!id.empty() && page1 > 0) {
-        id += ":page:";
-        id += std::to_string(page1);
+        const QByteArray material =
+            QByteArray::fromStdString(id) + ":page:" + QByteArray::number(page1);
+        QCryptographicHash h(QCryptographicHash::Sha256);
+        h.addData(material);
+        const QByteArray dig = h.result().toHex();
+        const std::string pageId = thumtoo::normalize_content_id(
+            std::string(dig.constData(), static_cast<size_t>(dig.size())));
+        if (appearanceDebug()) {
+            appearanceLog(
+                QStringLiteral("pathContentId page-fold file_id=%1 page=%2 → %3")
+                    .arg(QString::fromStdString(id))
+                    .arg(page1)
+                    .arg(QString::fromStdString(pageId)));
+        }
+        id = pageId;
     }
     if (!id.empty()) {
         std::lock_guard lock(cacheMu);

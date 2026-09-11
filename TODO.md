@@ -2,6 +2,25 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-410-page-id-derived-hash.** Page content ids folded to plain
+`sha256:<64hex>` so put/get normalize always accepts them. Prior: **409**.
+
+### Cause (user log)
+`save PUT … identity=0` then `AFTER put row_present=0` — put() ran
+`normalize_content_id("sha256:…:page:N")`, got empty, returned without INSERT.
+
+### Fix
+Page key = SHA-256 of `"<file_content_id>:page:<n>"` → plain `sha256:<hex>`.
+
+### Done criteria
+- [x] Derived page ids
+- [ ] Human: rotate PDF page → row_present=1
+- [ ] Bundle **410**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-409-page-id-hash-fix.** Page content id was cleared by re-normalize.
 Prior: **408**.
 
