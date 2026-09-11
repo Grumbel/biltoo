@@ -14,7 +14,7 @@ Prior: **435**.
 ### Done criteria
 - [x] Letterbox default
 - [x] No stretch paint
-- [ ] Bundle **436**
+- [x] Bundle **436**
 
 ---
 
