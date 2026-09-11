@@ -16,7 +16,7 @@ Rebuild biltoo against **thumtoo-152** so outline/link extract fills pages.
 
 ### Done criteria
 - [x] Guard unresolved spine URIs
-- [ ] Bundle **451**
+- [x] Bundle **451**
 
 ---
 
