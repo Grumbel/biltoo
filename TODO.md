@@ -2,6 +2,23 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-471-filmstrip-uncap-decode.** Filmstrip decode tracks display ladder; soft is placeholder.
+Prior: **470**.
+
+### Change
+- `filmstripDecodeEdge` = `ceilLadderEdge(thumbSize×DPR)` — no soft-max clamp
+- `ThumbDecodeEdgeRole` — soft installs stay visible; scheduler upgrades to want
+- `kMaxThumbSize` raised to **1024** (power-of-two ladder top)
+
+### Done criteria
+- [x] No soft-only decode cap
+- [x] Soft → sharp upgrade path
+- [x] Bundle **471**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-470-filmstrip-center-anchor.** Resize keeps the centre thumb centred.
 Prior: **469**.
 
