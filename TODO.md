@@ -12,7 +12,7 @@ then soft decode. Prior: **457**.
 
 ### Done criteria
 - [x] Size-first gallery open
-- [ ] Bundle **458**
+- [x] Bundle **458**
 
 ---
 
