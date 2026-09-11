@@ -22,7 +22,7 @@ path-keyed appearance at all.
 ### Done criteria
 - [x] Path-keyed orientation for live transition
 - [x] Path-keyed orientation for phase pixels
-- [ ] Bundle **426**
+- [x] Bundle **426**
 
 ---
 
