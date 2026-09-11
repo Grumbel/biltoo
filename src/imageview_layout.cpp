@@ -383,6 +383,22 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.contentVFlip = item->contentVFlip();
     s.colorAdjust = item->colorAdjustments();
         m_appearance.set(sid, s);
+        // Persist immediately with the known turns (do not wait for commit's
+        // captureState — that path previously wiped the DB with identity).
+        if (turns != 0 || s.contentHFlip || s.contentVFlip
+            || (s.hasCrop && !s.cropRect.isEmpty())) {
+            ThumtooCache::StoredContentAppearance stored;
+            stored.contentHFlip = s.contentHFlip;
+            stored.contentVFlip = s.contentVFlip;
+            stored.contentQuarterTurns = turns;
+            stored.hasCrop = s.hasCrop && !s.cropRect.isEmpty();
+            if (stored.hasCrop) {
+                stored.cropRect = s.cropRect;
+                stored.cropSourceSize = s.cropSourceSize;
+                stored.cropRotation = s.cropRotation;
+            }
+            ThumtooCache::saveContentAppearance(item->path(), stored);
+        }
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);
         s.hasCrop = true;
@@ -390,6 +406,11 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.cropRotation = cropMap.cropRotation;
         s.cropSourceSize = cropMap.cropSourceSize;
         m_itemStates.insert(item->path(), s);
+    } else if (turns != 0) {
+        // Unbound tile with orientation only.
+        ThumtooCache::StoredContentAppearance stored;
+        stored.contentQuarterTurns = turns;
+        ThumtooCache::saveContentAppearance(item->path(), stored);
     }
     commitItemSessionEdit(item);
 
@@ -468,6 +489,20 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         s.contentVFlip = v;
         s.contentQuarterTurns = cropMap.contentQuarterTurns;
         m_appearance.set(sid, s);
+        if (h || v || s.contentQuarterTurns != 0
+            || (s.hasCrop && !s.cropRect.isEmpty())) {
+            ThumtooCache::StoredContentAppearance stored;
+            stored.contentHFlip = h;
+            stored.contentVFlip = v;
+            stored.contentQuarterTurns = s.contentQuarterTurns;
+            stored.hasCrop = s.hasCrop && !s.cropRect.isEmpty();
+            if (stored.hasCrop) {
+                stored.cropRect = s.cropRect;
+                stored.cropSourceSize = s.cropSourceSize;
+                stored.cropRotation = s.cropRotation;
+            }
+            ThumtooCache::saveContentAppearance(item->path(), stored);
+        }
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);
         s.hasCrop = true;

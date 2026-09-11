@@ -2,6 +2,29 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-405-persist-hard-save.** Deeper persist investigation. Prior: **404**.
+
+### Further findings
+- Empty DB also happens when `pathContentId` fails (save no-ops) while
+  `AppearanceStore::open` still runs from has/load checks → schema only.
+- `QString::toStdString()` is locale-coded; non-ASCII paths can make
+  `sha256_file_hex` fail silently.
+- Bake → commit relied on captureState; now **direct save from bake** with known turns/flips.
+
+### Fixes
+- UTF-8 path to hasher; Qt `QCryptographicHash` fallback
+- Content-id **before** opening the store (no empty DB from failed id)
+- `saveContentAppearance` immediately in `bakeItemRotate90` / `bakeItemFlip`
+
+### Done criteria
+- [x] Harder save path
+- [ ] Human: rotate → `SELECT * FROM content_appearance` shows a row
+- [ ] Bundle **405**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-404-empty-db-fix.** Empty appearance.sqlite3: identity writes on
 every commit were deleting good rows when captureState dropped turns. Prior: **403**.
 

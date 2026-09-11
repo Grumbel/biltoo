@@ -11,6 +11,8 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QUrl>
+#include <QFile>
+#include <QCryptographicHash>
 #include <QHash>
 #include <QDateTime>
 #include <QRect>
@@ -1571,7 +1573,9 @@ std::string pathContentId(const QString &path)
     if (local.startsWith(QStringLiteral("file:"))) {
         local = QUrl(local).toLocalFile();
     }
-    if (local.contains(QStringLiteral("//"))) {
+    // Page / archive session refs are not plain files (markers contain "//").
+    if (PagePath::isPageRef(local) || PagePath::isPdfImageRef(local)
+        || local.contains(QStringLiteral("//"))) {
         return {};
     }
     const QFileInfo fi(local);
@@ -1600,14 +1604,29 @@ std::string pathContentId(const QString &path)
         }
     }
     std::string id;
+    // Prefer thumtoo hasher; path must be UTF-8 (not QString::toStdString locale).
     try {
+        const QByteArray utf8 = abs.toUtf8();
         const std::string hex = thumtoo::sha256_file_hex(
-            std::filesystem::path(abs.toStdString()));
+            std::filesystem::path(std::string(utf8.constData(),
+                                              static_cast<size_t>(utf8.size()))));
         if (!hex.empty()) {
             id = thumtoo::normalize_content_id(hex);
         }
     } catch (...) {
         id.clear();
+    }
+    // Fallback: Qt hash if ifstream path encoding failed.
+    if (id.empty()) {
+        QFile f(abs);
+        if (f.open(QIODevice::ReadOnly)) {
+            QCryptographicHash h(QCryptographicHash::Sha256);
+            if (h.addData(&f)) {
+                const QByteArray dig = h.result().toHex();
+                id = thumtoo::normalize_content_id(
+                    std::string(dig.constData(), static_cast<size_t>(dig.size())));
+            }
+        }
     }
     if (!id.empty()) {
         std::lock_guard lock(cacheMu);
@@ -1634,11 +1653,11 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
         return false;
     }
     *out = StoredContentAppearance{};
-    if (!appearanceStore().valid()) {
-        return false;
-    }
     const std::string id = pathContentId(path);
     if (id.empty()) {
+        return false;
+    }
+    if (!appearanceStore().valid()) {
         return false;
     }
     const auto got = appearanceStore().get(id);
@@ -1668,11 +1687,11 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
 
 void saveContentAppearance(const QString &path, const StoredContentAppearance &app)
 {
-    if (!appearanceStore().valid()) {
-        return;
-    }
     const std::string id = pathContentId(path);
     if (id.empty()) {
+        return;
+    }
+    if (!appearanceStore().valid()) {
         return;
     }
     thumtoo::ContentAppearance a;
