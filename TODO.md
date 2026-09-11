@@ -7,7 +7,7 @@ mainwindow.h (header is included before widgets headers). Prior: **451**.
 
 ### Done criteria
 - [x] Compile fix
-- [ ] Bundle **452**
+- [x] Bundle **452**
 
 ---
 
