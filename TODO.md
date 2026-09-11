@@ -2,24 +2,35 @@
 
 ## Status (2026-09-11)
 
-**Tip: biltoo-398-soft-preview-content-appearance.** Soft/ladder placeholders and
-slideshow cache transitions ignored session flip/rotate. Prior: **397**. Next: **399**.
+**Tip: biltoo-399-install-display-pixels.** Central raw-pixel install gate
+rebased onto d4dc82b (soft preview content appearance / slideshow). Prior: **398**.
+Next: **400**.
 
-- After every `setPreviewImage` install (Image pending, in-place upgrade, Gallery
-  soft fill, placeholder hints): `applyContentAppearanceAfterDecode`.
-- `imageWithSessionAppearance` for pure QImage bake (flip/rotate/grade).
-- Slideshow `startLiveTransitionWithImage` bakes incoming cache/preload pixels
-  so rapid cycles do not flash the untransformed thumb.
+### On top of upstream 398
+Upstream already applied content after soft installs via
+`applyContentAppearanceAfterDecode` and `imageWithSessionAppearance` for
+slideshow blits. This tip centralizes raw attaches:
+
+- `SessionAppearance::PixelKind` { FullSource, SoftPreview }
+- `SessionAppearance::applyContentToImage` / `contentSwapsAspect`
+- `ImageView::installDisplayPixels` — single gate for raw disk/ladder/cache pixels
+- Soft path bakes into the preview image; Image mode refits when content
+  orientation swaps aspect (avoids letterboxed smaller thumb on rapid flip)
+- Migrated: pending tile, preview load, Gallery soft→full, LoadAdd fills,
+  canvas soft hints
+
+Keep `imageWithSessionAppearance` for pure-QImage slideshow transitions.
+`applyContentAppearanceAfterDecode` remains for post-source-install re-bake
+when not going through the gate (e.g. crop paths).
+
+### Done criteria
+- [x] Rebased onto d4dc82b
+- [x] installDisplayPixels is the preferred raw install path
+- [ ] Human verify rapid Image flip + slideshow with content 90°
+- [ ] Bundle **399**
 
 ---
 
----
-
----
-
----
-
----
 
 ---
 

@@ -213,8 +213,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 }
                 ph->setSessionIndex(i);
                 if (!hint.isNull()) {
-                    ph->setPreviewImage(hint);
-                    applyContentAppearanceAfterDecode(ph);
+                    installDisplayPixels(ph, hint,
+                                         SessionAppearance::PixelKind::SoftPreview,
+                                         sid);
                 }
                 claimed.insert(ph);
             }

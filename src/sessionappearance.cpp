@@ -3,6 +3,7 @@
 
 #include "sessionappearance.h"
 #include "imageitem.h"
+#include "coloradjust.h"
 
 #include <QtMath>
 
@@ -123,6 +124,15 @@ bool hasContentAppearance(const WorkspaceItemState &state)
            || state.contentQuarterTurns != 0 || !state.colorAdjust.isIdentity();
 }
 
+bool contentSwapsAspect(const WorkspaceItemState &state)
+{
+    int turns = state.contentQuarterTurns % 4;
+    if (turns < 0) {
+        turns += 4;
+    }
+    return turns == 1 || turns == 3;
+}
+
 void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
 {
     if (!item) {
@@ -147,6 +157,74 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     item->setSessionCrop(state.hasCrop, state.cropRect);
     // 4) Non-destructive colour grade (display path in ImageItem).
     item->setColorAdjustments(state.colorAdjust);
+}
+
+QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,
+                           PixelKind kind)
+{
+    if (src.isNull() || !hasContentAppearance(state)) {
+        return src;
+    }
+
+    QImage out = src;
+
+    // 1) Crop (scaled into soft pixel space when SoftPreview).
+    if (state.hasCrop && !state.cropRect.isEmpty()) {
+        const QSize live = out.size();
+        QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, live);
+        if (state.cropSourceSize.isEmpty()
+            && (crop.right() >= live.width() || crop.bottom() >= live.height())) {
+            const QSize swapped(live.height(), live.width());
+            if (swapped.width() > 0 && swapped.height() > 0
+                && crop.right() < swapped.width() && crop.bottom() < swapped.height()
+                && swapped != live) {
+                crop = scaleCropRect(state.cropRect, swapped, live);
+            }
+        }
+        if (crop.width() >= 1 && crop.height() >= 1) {
+            // Soft path: approximate axis-aligned crop only (no pad / fine rotation).
+            // FullSource path prefers applyContentToItem + cropToLocalRect when
+            // cropRotation is non-zero; here we still crop the AABB for blits.
+            const QRect bounds(0, 0, out.width(), out.height());
+            const QRect srcRect = crop.intersected(bounds);
+            if (srcRect.width() >= 1 && srcRect.height() >= 1) {
+                out = out.copy(srcRect);
+            }
+        }
+        Q_UNUSED(kind);
+    }
+
+    // 2) Content flips then quarter turns (same order as bakeFlip / bakeRotate90).
+    if (state.contentHFlip || state.contentVFlip) {
+        Qt::Orientations axes;
+        if (state.contentHFlip) {
+            axes |= Qt::Horizontal;
+        }
+        if (state.contentVFlip) {
+            axes |= Qt::Vertical;
+        }
+        if (axes) {
+            out = out.flipped(axes);
+        }
+    }
+    if (state.contentQuarterTurns != 0) {
+        int turns = state.contentQuarterTurns % 4;
+        if (turns < 0) {
+            turns += 4;
+        }
+        if (turns != 0) {
+            QTransform xform;
+            xform.rotate(90.0 * turns);
+            out = out.transformed(xform, Qt::SmoothTransformation);
+        }
+    }
+
+    // 3) Colour grade (baked into the returned image for blits / soft stand-ins).
+    if (!state.colorAdjust.isIdentity()) {
+        out = applyColorAdjustments(out, state.colorAdjust);
+    }
+
+    return out;
 }
 
 } // namespace SessionAppearance

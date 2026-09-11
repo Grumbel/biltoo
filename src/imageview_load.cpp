@@ -70,6 +70,70 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     return item;
 }
 
+void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
+                                     SessionAppearance::PixelKind kind,
+                                     SessionImageId sid)
+{
+    if (!item || pixels.isNull()) {
+        return;
+    }
+
+    const WorkspaceItemState *app = nullptr;
+    WorkspaceItemState pathFallback;
+    if (sid != kInvalidSessionImageId) {
+        app = m_appearance.get(sid);
+    } else if (isImageMode() && m_currentSessionId != kInvalidSessionImageId) {
+        app = m_appearance.get(m_currentSessionId);
+        sid = m_currentSessionId;
+    } else if (sid == kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
+        // Unbound tile only: path map is legacy fallback (IDENTITY.md).
+        const auto it = m_itemStates.constFind(item->path());
+        if (it != m_itemStates.cend()) {
+            pathFallback = *it;
+            app = &pathFallback;
+        }
+    }
+
+    if (kind == SessionAppearance::PixelKind::FullSource) {
+        item->setSourceImage(pixels);
+        if (app) {
+            SessionAppearance::applyContentToItem(item, *app);
+        }
+        return;
+    }
+
+    // SoftPreview: bake into a stand-in image; never adopt soft size as layout.
+    QImage display = pixels;
+    if (app && SessionAppearance::hasContentAppearance(*app)) {
+        display = SessionAppearance::applyContentToImage(
+            pixels, *app, SessionAppearance::PixelKind::SoftPreview);
+        item->setContentHFlip(app->contentHFlip);
+        item->setContentVFlip(app->contentVFlip);
+        item->setSessionCrop(app->hasCrop, app->cropRect);
+        item->setColorAdjustments(app->colorAdjust);
+    }
+    item->setPreviewImage(display);
+
+    // Image mode: oriented soft must frame with content aspect, not unrotated
+    // native box — otherwise a 90°-rotated thumb is letterboxed and looks small
+    // during rapid next/prev until the full decode arrives.
+    if (isImageMode() && app
+        && SessionAppearance::contentSwapsAspect(*app)
+        && display.width() > 0 && display.height() > 0) {
+        const QSize oriented = display.size();
+        const QSize layout = item->imageSize();
+        // Only adjust temporary fit geometry when layout aspect disagrees with
+        // oriented soft. Full decode will replace with baked native size.
+        if (layout.width() > 0 && layout.height() > 0) {
+            const bool layoutLandscape = layout.width() >= layout.height();
+            const bool orientedLandscape = oriented.width() >= oriented.height();
+            if (layoutLandscape != orientedLandscape) {
+                item->setIntrinsicSize(oriented);
+            }
+        }
+    }
+}
+
 ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
 {
     auto *item = new ImageItem(path, intrinsicSize);
@@ -133,10 +197,8 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         item->setSessionIndex(m_sessionIndex);
     }
     if (!pixels.isNull()) {
-        item->setPreviewImage(pixels);
-        // Ladder/cache pixels are unflipped; bake session content so rapid
-        // next/prev and slideshow placeholders match the edited appearance.
-        applyContentAppearanceAfterDecode(item);
+        installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
+                             m_currentSessionId);
     }
     item->setInteractive(false);
     item->setScaleHandlesEnabled(false);
@@ -401,6 +463,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                         return;
                     }
                     // Upgrade existing soft tiles in place — keep layout geometry.
+                    // Raw full pixels go through the single appearance gate.
                     int got = 0;
                     for (ImageItem *item : host->m_items) {
                         if (!item || item->path() != path) {
@@ -410,11 +473,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                             got = qMax(got, item->displayPixelLongEdge());
                             continue;
                         }
-                        item->setSourceImage(image);
-                        // Soft may already carry content flips/rotates baked into
-                        // the preview (Gallery flip/rotate). Full ladder bytes are
-                        // unflipped; re-apply session appearance onto the new source.
-                        host->applyContentAppearanceAfterDecode(item);
+                        host->installDisplayPixels(
+                            item, image, SessionAppearance::PixelKind::FullSource,
+                            item->sessionId());
                         // Do not applyLayout: intrinsic size should already be
                         // native from the size probe; only pixels upgraded.
                         item->update();
@@ -546,21 +607,28 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                     if (isProvisionalImageSize(path)
                         && image.width() > 0 && image.height() > 0) {
                         cur->setIntrinsicSize(image.size());
-                        cur->setPreviewImage(image);
-                        applyContentAppearanceAfterDecode(cur);
-                        if (!m_slideshowProgressActive) {
-                            fitItem(cur, currentFitAspectMode());
-                        } else {
-                            applySlideshowZoomFraming(cur);
-                        }
-                        if (m_scene) {
-                            m_scene->setSceneRect(
-                                cur->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-                        }
+                    }
+                    // Soft install gate: bake session appearance; Image mode
+                    // refits oriented soft when content swaps aspect.
+                    {
+                        const SessionImageId sid =
+                            cur->sessionId() != kInvalidSessionImageId
+                                ? cur->sessionId()
+                                : m_currentSessionId;
+                        installDisplayPixels(cur, image,
+                                             SessionAppearance::PixelKind::SoftPreview,
+                                             sid);
+                    }
+                    // Always re-frame: provisional size adopt and/or content
+                    // orientation swap can change the fit box.
+                    if (!m_slideshowProgressActive) {
+                        fitItem(cur, currentFitAspectMode());
                     } else {
-                        // Pixels only — intrinsic size stays native (probe/cache).
-                        cur->setPreviewImage(image);
-                        applyContentAppearanceAfterDecode(cur);
+                        applySlideshowZoomFraming(cur);
+                    }
+                    if (m_scene) {
+                        m_scene->setSceneRect(
+                            cur->sceneBoundingRect().adjusted(-8, -8, 8, 8));
                     }
                     if (viewport()) {
                         viewport()->update();
@@ -593,9 +661,11 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
             && before != image.size()) {
             item->setIntrinsicSize(image.size());
         }
-        item->setPreviewImage(image);
-        // Disk/ladder preview is untransformed; re-bake session content flips.
-        applyContentAppearanceAfterDecode(item);
+        {
+            const SessionImageId sid = item->sessionId();
+            installDisplayPixels(item, image,
+                                 SessionAppearance::PixelKind::SoftPreview, sid);
+        }
         if (item->imageSize() != before) {
             gallerySizeChanged = true;
         }
@@ -1011,8 +1081,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                                                            : sx0;
             const qreal footW = before.width() * sx0;
             const qreal footH = before.height() * sy0;
-            existing->setSourceImage(image);
-            applyStoredAppearance(existing);
+            installDisplayPixels(existing, image,
+                                 SessionAppearance::PixelKind::FullSource,
+                                 existing->sessionId());
             const QSize after = existing->imageSize();
             // Keep scene footprint stable when intrinsic grows (placeholder →
             // full). Workspace is pixel-scaled: if the placeholder already had
@@ -1036,8 +1107,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     }
     for (ImageItem *cand : m_gallery.stashedItems()) {
         if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
-            cand->setSourceImage(image);
-            applyStoredAppearance(cand);
+            installDisplayPixels(cand, image,
+                                 SessionAppearance::PixelKind::FullSource,
+                                 cand->sessionId());
         }
     }
 

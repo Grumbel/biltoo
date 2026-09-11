@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-398-soft-preview-content-appearance** (slideshow soft thumbs).
-Next bundle number: **399**.
+Latest agent handoff: **TODO.md → biltoo-399-install-display-pixels** (central gate on d4dc82b).
+Next bundle number: **400**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

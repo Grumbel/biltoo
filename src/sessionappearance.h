@@ -7,6 +7,7 @@
 #include "imageview_types.h"
 
 #include <QHash>
+#include <QImage>
 #include <QRect>
 #include <QSize>
 
@@ -30,8 +31,26 @@ enum class GalleryPackReason {
  *
  * cropRect is top-left origin in the coordinate space of cropSourceSize
  * (or the live image size when cropSourceSize is empty).
+ *
+ * ## Install contract (raw vs baked)
+ *
+ * Raw decode pixels (disk / ladder / cache / probe) must pass through one gate
+ * before they are attached to a session image for display:
+ *
+ *   - ImageItem path: ImageView::installDisplayPixels(...)
+ *   - QImage-only path (filmstrip override, slideshow blit): applyContentToImage
+ *
+ * Already-baked pixels (peer display copy, undo after-image) must not be
+ * re-baked. Callers that only have pixels use applyContentToImage when the
+ * source is known raw.
  */
 namespace SessionAppearance {
+
+/** Whether @p pixels are a full on-disk decode or a soft ladder stand-in. */
+enum class PixelKind {
+    FullSource,  /**< Full (or post-crop) on-disk pixels; crop uses native space */
+    SoftPreview, /**< Soft ladder / thumbnail; crop scaled; no layout size write */
+};
 
 /** Map a crop rect from @p recorded size into @p live size (identity if equal). */
 QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live);
@@ -65,11 +84,36 @@ void applyCrop(ImageItem *item, const WorkspaceItemState &state);
  *
  * Does **not** touch placement (pos / scale / free tilt / opacity / z / item flips).
  * Callers must have already set full (or post-decode) source pixels on @p item.
+ *
+ * Prefer ImageView::installDisplayPixels for new install sites so raw vs baked
+ * stays explicit.
  */
 void applyContentToItem(ImageItem *item, const WorkspaceItemState &state);
 
+/**
+ * Bake session content appearance into a QImage (no ImageItem).
+ *
+ * Same order as applyContentToItem. Used for filmstrip overrides, slideshow
+ * handoff blits, and SoftPreview pixel prep before setPreviewImage.
+ *
+ * SoftPreview: crop is scaled into the soft pixel space; result aspect follows
+ * content quarter-turns (odd turns swap width/height). Does not touch layout.
+ * FullSource: crop uses cropSourceSize → image size mapping.
+ *
+ * Returns @p src unchanged when state is identity or src is null.
+ */
+QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,
+                           PixelKind kind);
+
 /** True when any content field differs from identity (crop / bake / grade). */
 bool hasContentAppearance(const WorkspaceItemState &state);
+
+/**
+ * True when content orientation changes the display aspect relative to the
+ * on-disk / probe size (odd quarter-turns). Used by soft install to fit Image
+ * mode without adopting soft dimensions into permanent layout geometry.
+ */
+bool contentSwapsAspect(const WorkspaceItemState &state);
 
 } // namespace SessionAppearance
 
@@ -79,7 +123,8 @@ bool hasContentAppearance(const WorkspaceItemState &state);
  *
  * Apply content onto a decoded ImageItem only via
  * SessionAppearance::applyContentToItem — do not fork crop/bake/grade order
- * at call sites.
+ * at call sites. Prefer ImageView::installDisplayPixels when attaching raw
+ * decode pixels so SoftPreview vs FullSource stays consistent.
  *
  * Path-keyed maps on ImageView remain legacy fallbacks for unbound tiles only.
  */
