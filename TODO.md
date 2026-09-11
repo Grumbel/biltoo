@@ -2,6 +2,22 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-470-filmstrip-center-anchor.** Resize keeps the centre thumb centred.
+Prior: **469**.
+
+### Change
+Scroll anchor is the item under the viewport centre (not selection / strip
+start). Restore uses `PositionAtCenter` plus a pixel fine-tune so letterbox
+variable widths stay centred.
+
+### Done criteria
+- [x] Centre image stays centred on resize
+- [x] Bundle **470**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-469-filmstrip-resize-scroll.** Filmstrip resize keeps scroll; debounced reload.
 Prior: **468**.
 
