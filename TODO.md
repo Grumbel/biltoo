@@ -2,6 +2,23 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-464-filmstrip-size-supply.** Filmstrip uses cache sizes like Gallery.
+Prior: **463**.
+
+### Change
+- `setFiles`: `ThumtooCache::cachedSize` → letterbox sizeHint when known
+- else provisional + `scheduleProbe`
+- `Bridge::sizeReady` updates unloaded rows
+- `primeGeometryFromCache` on next tick (late prepare)
+
+### Done criteria
+- [x] Size supply path
+- [ ] Bundle **464**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-463-slideshow-click-pause.** Centre click pauses/resumes slideshow.
 Prior: **462**.
 

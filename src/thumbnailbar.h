@@ -202,6 +202,11 @@ private:
     void scheduleThumbnailLoads();
     /** Queue decode jobs for rows near the viewport / current index only. */
     void scheduleVisibleThumbnailLoads();
+    /** Apply native pixel size as letterbox aspect on a row (sizeHint + role). */
+    void applyNativeAspect(QListWidgetItem *item, const QSize &native);
+    /** Cache-first sizes for all rows; scheduleProbe for misses. */
+    void primeGeometryFromCache();
+
     /** Clear pixmaps + loaded flags (rows stay). Used before full reload. */
     void invalidateThumbPixels();
     /** Recompute ThumbContentSizeRole + sizeHint from aspect at current thumbSize. */

@@ -58,7 +58,8 @@ Every install path (pool worker, session override, ladder) must call
 
 | Event | Action |
 |-------|--------|
-| `setFiles` | Provisional square content + sizeHint; `ThumbLoaded=false` |
+| `setFiles` | `ThumtooCache::cachedSize` aspect when known; else provisional square + `scheduleProbe`; `ThumbLoaded=false` |
+| `sizeReady` | Updates letterbox sizeHint for unloaded rows (same supply path as Gallery) |
 | decode done | `setThumbnailIcon`: pixmap, content, sizeHint, layout visible rows |
 | `setThumbSize` | `refreshAllItemGeometry` or full `scheduleThumbnailLoads` if sharper needed |
 | `setCropToSquare` | `scheduleThumbnailLoads` → `invalidateThumbPixels` + reload |

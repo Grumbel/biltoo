@@ -400,6 +400,33 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     // still waiting for a first thumb. Gallery/Image ladder growth for the same
     // path must not rewrite an already-settled filmstrip icon (selection focus
     // upgrades soft ladder and would otherwise "sharpen" the strip on click).
+    connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::sizeReady, this,
+            [this](const QString &path, const QSize &size) {
+                if (path.isEmpty() || m_cropToSquare || !m_delegate
+                    || !size.isValid() || size.width() < 1 || size.height() < 1) {
+                    return;
+                }
+                bool any = false;
+                for (int i = 0; i < m_files.size(); ++i) {
+                    if (m_files.at(i) != path) {
+                        continue;
+                    }
+                    QListWidgetItem *it = item(i);
+                    if (!it) {
+                        continue;
+                    }
+                    // Loaded thumb already fixed aspect from pixels.
+                    if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()) {
+                        continue;
+                    }
+                    applyNativeAspect(it, size);
+                    any = true;
+                }
+                if (any) {
+                    doItemsLayout();
+                    updateCenteringMargins();
+                }
+            });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int /*maxEdge*/, const QImage &) {
                 if (path.isEmpty() || m_files.isEmpty()) {
@@ -1361,6 +1388,53 @@ void ThumbnailBar::clearPressState()
     m_dragStarted = false;
 }
 
+
+void ThumbnailBar::applyNativeAspect(QListWidgetItem *item, const QSize &native)
+{
+    if (!item || !m_delegate || m_cropToSquare) {
+        return;
+    }
+    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+        return;
+    }
+    const QSize content = m_delegate->letterboxContentSize(native);
+    item->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
+    item->setSizeHint(m_delegate->cellSizeForContent(font(), content));
+}
+
+void ThumbnailBar::primeGeometryFromCache()
+{
+    if (!m_delegate || m_cropToSquare || m_files.isEmpty()) {
+        return;
+    }
+    bool any = false;
+    for (int i = 0; i < count(); ++i) {
+        QListWidgetItem *it = item(i);
+        if (!it || i >= m_files.size()) {
+            continue;
+        }
+        // Already have a real thumb — setThumbnailIcon owns aspect.
+        if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()) {
+            continue;
+        }
+        const QString &path = m_files.at(i);
+        if (path.isEmpty()) {
+            continue;
+        }
+        if (const QSize cached = ThumtooCache::cachedSize(path);
+            cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+            applyNativeAspect(it, cached);
+            any = true;
+        } else if (ThumtooCache::isAvailable() && !ThumtooCache::isUnsupported(path)) {
+            ThumtooCache::scheduleProbe(path);
+        }
+    }
+    if (any) {
+        doItemsLayout();
+        updateCenteringMargins();
+    }
+}
+
 void ThumbnailBar::setSession(const QStringList &files, const QVector<SessionImageId> &ids)
 {
     // Install ids first so scheduleThumbnailLoads (from setFiles) sees the
@@ -1402,8 +1476,10 @@ void ThumbnailBar::setFiles(const QStringList &files)
         m_sessionImageOverrides.swap(kept);
     }
 
-    // Provisional square cells (cross-axis = thumbSize) until decode.
-    const QSize cell = (m_delegate && !m_cropToSquare)
+    // Provisional square only when size is unknown. Prefer durable cache size
+    // (same path as Gallery::primeGalleryGeometryFromCache) so PDF pages layout
+    // with real aspect before ladder pixels arrive.
+    const QSize provCell = (m_delegate && !m_cropToSquare)
         ? m_delegate->cellSizeForContent(font(), m_delegate->provisionalContentSize())
         : (m_delegate ? m_delegate->cellSize(font())
                       : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
@@ -1418,18 +1494,34 @@ void ThumbnailBar::setFiles(const QStringList &files)
         const SessionImageId sid = (i < m_sessionIds.size()) ? m_sessionIds.at(i)
                                                             : kInvalidSessionImageId;
         item->setData(RoleSessionId, QVariant::fromValue(static_cast<qint64>(sid)));
-        item->setSizeHint(cell);
         // No theme placeholder — empty icon shows loading chrome and allows
         // scheduleVisibleThumbnailLoads to pick the row up (non-null icons were
         // treated as already loaded).
         item->setData(ThumbnailDelegate::ThumbLoadedRole, false);
-        if (m_delegate && !m_cropToSquare) {
+        QSize native;
+        if (!m_cropToSquare && !path.isEmpty()) {
+            native = ThumtooCache::cachedSize(path);
+        }
+        if (m_delegate && !m_cropToSquare && native.isValid()
+            && native.width() > 0 && native.height() > 0) {
+            const QSize content = m_delegate->letterboxContentSize(native);
+            item->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
+            item->setSizeHint(m_delegate->cellSizeForContent(font(), content));
+        } else if (m_delegate && !m_cropToSquare) {
             const QSize prov = m_delegate->letterboxContentSize(
                 m_delegate->provisionalContentSize());
             item->setData(ThumbnailDelegate::ThumbContentSizeRole, prov);
+            item->setSizeHint(provCell);
+            if (!path.isEmpty() && ThumtooCache::isAvailable()
+                && !ThumtooCache::isUnsupported(path)) {
+                ThumtooCache::scheduleProbe(path);
+            }
         } else if (m_delegate) {
             item->setData(ThumbnailDelegate::ThumbContentSizeRole,
                           QSize(m_thumbSize, m_thumbSize));
+            item->setSizeHint(provCell);
+        } else {
+            item->setSizeHint(provCell);
         }
     }
     setUpdatesEnabled(true);
@@ -1447,6 +1539,8 @@ void ThumbnailBar::setFiles(const QStringList &files)
     updateCenteringMargins();
     // Layout/visibility may not be final during setFiles — kick again next tick.
     QTimer::singleShot(0, this, [this]() {
+        // Re-read cache in case prepare finished between loop and now.
+        primeGeometryFromCache();
         scheduleVisibleThumbnailLoads();
     });
     QTimer::singleShot(100, this, [this]() {
