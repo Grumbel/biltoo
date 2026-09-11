@@ -18,7 +18,7 @@ drifted from `bakeRotate90`.
 ### Done criteria
 - [x] Docs
 - [x] Mapper / textRegion harden
-- [ ] Bundle **432**
+- [x] Bundle **432**
 
 ---
 
