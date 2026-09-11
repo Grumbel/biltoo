@@ -14,7 +14,7 @@ Prior: **436**.
 
 ### Done criteria
 - [x] Absolute pad + tight paint
-- [ ] Bundle **437**
+- [x] Bundle **437**
 
 ---
 
