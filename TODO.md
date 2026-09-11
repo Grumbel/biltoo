@@ -27,7 +27,7 @@ hosts cannot confuse them.
 - [x] Gallery reset uses soft, not full
 - [x] Soft state reset + decode window refresh
 - [x] GALLERY_SOFT.md layer table
-- [ ] Bundle **425**
+- [x] Bundle **425**
 
 ---
 
