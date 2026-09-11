@@ -2,6 +2,22 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-431-sessionappearance-warnings.** Silence unused-param /
+duplicated-branches warnings in `syncItemLayoutToContentOrientation`.
+Prior: **430**.
+
+### Fix
+- `Q_UNUSED(state)` — layout follows installed pixels; param kept for API symmetry
+- Collapse identical `setIntrinsicSize(display)` branches
+
+### Done criteria
+- [x] Warnings fixed
+- [ ] Bundle **431**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-430-revert-filmstrip-428.** Revert biltoo-428 filmstrip letterbox
 cross-axis sizing (broke thumb sizes). Prior: **429** (text crop kept).
 

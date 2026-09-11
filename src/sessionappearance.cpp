@@ -247,12 +247,15 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
 void syncItemLayoutToContentOrientation(ImageItem *item,
                                         const WorkspaceItemState &state)
 {
+    Q_UNUSED(state);
     if (!item) {
         return;
     }
     // Oriented display pixels (full source or soft preview). setPreviewImage
     // clears the QPixmap — never use pixmap() here or soft path falls through
     // to a blind transpose that toggles aspect on every reinstall (focus/click).
+    // `state` is kept in the signature for call-site symmetry with apply paths;
+    // layout follows installed pixels, not a second decode of appearance flags.
     QSize display = item->sourceImage().size();
     if (display.width() < 1 || display.height() < 1) {
         display = item->previewImage().size();
@@ -266,13 +269,9 @@ void syncItemLayoutToContentOrientation(ImageItem *item,
     }
 
     if (layout.width() < 1 || layout.height() < 1) {
-        // Soft magnitude is not native — only seed aspect family via display
-        // when layout is still unknown; full source may adopt pixel size.
-        if (!item->sourceImage().isNull()) {
-            item->setIntrinsicSize(display);
-        } else {
-            item->setIntrinsicSize(display);
-        }
+        // Layout still unknown: seed aspect/magnitude from whatever pixels we
+        // have (full source or soft preview).
+        item->setIntrinsicSize(display);
         return;
     }
 
