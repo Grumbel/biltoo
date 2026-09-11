@@ -60,16 +60,28 @@ ImageView::ImageView(QWidget *parent)
     connect(m_scene, &QGraphicsScene::selectionChanged, this, [this]() {
         // Rubber-band / programmatic selects: keep Gallery Shift-range anchor
         // on a still-selected tile when the previous anchor was dropped.
-        if (isGalleryMode() && m_gallery.selectionAnchor()
-            && !m_gallery.selectionAnchor()->isSelected()) {
-            ImageItem *next = nullptr;
-            for (QGraphicsItem *gi : m_scene->selectedItems()) {
-                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    next = ii;
-                    break;
+        if (isGalleryMode()) {
+            if (m_gallery.selectionAnchor()
+                && !m_gallery.selectionAnchor()->isSelected()) {
+                ImageItem *next = nullptr;
+                for (QGraphicsItem *gi : m_scene->selectedItems()) {
+                    if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                        next = ii;
+                        break;
+                    }
+                }
+                m_gallery.setSelectionAnchor(next);
+            }
+            // Gallery tiles use DeviceCoordinateCache; selection chrome is drawn
+            // in paint() and stays frozen until the cache is rebuilt.
+            for (ImageItem *item : m_items) {
+                if (item) {
+                    item->invalidateDeviceCache();
                 }
             }
-            m_gallery.setSelectionAnchor(next);
+            if (viewport()) {
+                viewport()->update();
+            }
         }
         emit statusChanged();
         emit canvasSelectionChanged();

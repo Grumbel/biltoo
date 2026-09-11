@@ -484,6 +484,18 @@ void ImageItem::setGallerySelectable(bool on)
     update();
 }
 
+void ImageItem::invalidateDeviceCache()
+{
+    // DeviceCoordinateCache freezes paint() output (including the Gallery
+    // selection frame). Toggle cache mode so the next paint sees current
+    // QStyle::State_Selected.
+    if (cacheMode() == QGraphicsItem::DeviceCoordinateCache) {
+        setCacheMode(QGraphicsItem::NoCache);
+        setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    }
+    update();
+}
+
 void ImageItem::setGalleryCellSize(const QSizeF &sceneSize)
 {
     if (m_galleryCellSize == sceneSize) {

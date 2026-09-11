@@ -2,20 +2,20 @@
 
 ## Status (2026-09-11)
 
-**Tip: biltoo-394-gallery-multiselect-content-bake.** Gallery multi-select polish
-+ flip/rotate on soft tiles. Prior: **393** content-variant note. Next: **395**.
+**Tip: biltoo-395-gallery-multiselect-actually-works.** Gallery Ctrl/Shift/rubber-band
+selection was present in code but ineffective in practice. Prior: **394**. Next: **396**.
 
-Shipped:
-- Ctrl/Shift-click multi-select already present; emit `canvasSelectionChanged` on
-  Ctrl-toggle and empty-space clear; rubber-band refreshes selection anchor.
-- Ctrl+A / Edit→Select All selects all Gallery/Workspace canvas tiles (filmstrip
-  Select All remains in Image mode).
-- Filmstrip mirrors Gallery multi-select (same as Workspace).
-- **Root cause:** Gallery soft tiles only had `m_preview`; `bakeFlip`/`bakeRotate90`
-  no-op’d on null `m_source` → layout ran, pixels unchanged. Bake now transforms
-  preview; soft→full re-applies appearance via `applyContentAppearanceAfterDecode`.
-- Rotate/flip already looped `transformTargets()` (selection); multi-select now
-  works end-to-end for content ops.
+Root causes + fixes:
+- Filmstrip multi-select was **disabled** on enter Gallery (`setMultiSelectEnabled(false)`);
+  only Workspace had it. Now **enabled** for Gallery so Ctrl/Shift work on the strip too,
+  and filmstrip↔canvas selection can stay in sync.
+- Gallery tiles use **DeviceCoordinateCache**; selection frame is drawn in `paint()`.
+  Selection changes under blocked signals left chrome frozen. Added
+  `ImageItem::invalidateDeviceCache()` and call it on Gallery selection mutations /
+  `selectionChanged`.
+- Defensive re-`setGallerySelectable` when `ItemIsSelectable` was missing on a tile.
+
+---
 
 ---
 

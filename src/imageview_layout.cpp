@@ -1567,10 +1567,24 @@ void ImageView::selectAllCanvasItems()
     m_scene->blockSignals(true);
     for (ImageItem *item : m_items) {
         if (item) {
+            if (isGalleryMode()
+                && !(item->flags() & QGraphicsItem::ItemIsSelectable)) {
+                item->setGallerySelectable(true);
+            }
             item->setSelected(true);
         }
     }
     m_scene->blockSignals(false);
+    if (isGalleryMode()) {
+        for (ImageItem *item : m_items) {
+            if (item) {
+                item->invalidateDeviceCache();
+            }
+        }
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
     if (!m_items.isEmpty()) {
         m_gallery.setSelectionAnchor(m_items.first());
     }

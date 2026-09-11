@@ -38,7 +38,8 @@ void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
         m_workspaceModeAct->setChecked(false);
     }
     if (m_thumbnailBar) {
-        m_thumbnailBar->setMultiSelectEnabled(false);
+        // Same multi-select as Workspace: Ctrl/Shift on filmstrip + canvas.
+        m_thumbnailBar->setMultiSelectEnabled(true);
         m_thumbnailBar->selectNoneThumbs();
     }
     m_galleryReturnLayout = layout;
@@ -292,7 +293,7 @@ void MainWindow::returnToGallery()
         m_workspaceModeAct->setChecked(false);
     }
     if (m_thumbnailBar) {
-        m_thumbnailBar->setMultiSelectEnabled(false);
+        m_thumbnailBar->setMultiSelectEnabled(true);
         m_thumbnailBar->selectNoneThumbs();
     }
 

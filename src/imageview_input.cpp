@@ -743,6 +743,15 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 m_items.at(i)->setSelected(true);
             }
             m_scene->blockSignals(false);
+            // Signals were blocked: selectionChanged did not refresh DeviceCoordinateCache.
+            for (ImageItem *item : m_items) {
+                if (item) {
+                    item->invalidateDeviceCache();
+                }
+            }
+            if (viewport()) {
+                viewport()->update();
+            }
             emit canvasSelectionChanged();
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
@@ -757,10 +766,15 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
 
         if (hit && ctrl) {
+            // Defensive: soft/late tiles may have lost ItemIsSelectable.
+            if (!(hit->flags() & QGraphicsItem::ItemIsSelectable)) {
+                hit->setGallerySelectable(true);
+            }
             hit->setSelected(!hit->isSelected());
             if (hit->isSelected()) {
                 m_gallery.setSelectionAnchor(hit);
             }
+            hit->invalidateDeviceCache();
             emit canvasSelectionChanged();
             if (hit->sessionId() != kInvalidSessionImageId) {
                 emit sessionImageFocused(hit->sessionId());
@@ -777,6 +791,9 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         if (hit) {
             // One selectionChanged: clear+select under blocked signals so
             // MainWindow does not run navigation/layout work twice per click.
+            if (!(hit->flags() & QGraphicsItem::ItemIsSelectable)) {
+                hit->setGallerySelectable(true);
+            }
             const bool already = hit->isSelected()
                 && m_scene->selectedItems().size() == 1;
             if (already) {
@@ -795,11 +812,11 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             m_scene->clearSelection();
             hit->setSelected(true);
             m_scene->blockSignals(false);
-            // Only the two tiles need a repaint; avoid viewport()->update().
+            // DeviceCoordinateCache + blocked signals: force selection chrome.
             if (prev && prev != hit) {
-                prev->update();
+                prev->invalidateDeviceCache();
             }
-            hit->update();
+            hit->invalidateDeviceCache();
             emit canvasSelectionChanged();
             m_gallery.setSelectionAnchor(hit);
             if (hit->sessionId() != kInvalidSessionImageId) {

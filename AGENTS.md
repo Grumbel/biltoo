@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-394-gallery-multiselect-content-bake** (Gallery multi-select + soft bake).
-Next bundle number: **395**.
+Latest agent handoff: **TODO.md → biltoo-395-gallery-multiselect-actually-works** (Gallery Ctrl/Shift selection).
+Next bundle number: **396**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

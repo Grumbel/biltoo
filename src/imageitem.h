@@ -196,6 +196,8 @@ public:
      * Free-form workspace uses setInteractive(true) instead.
      */
     void setGallerySelectable(bool on);
+    /** Force DeviceCoordinateCache rebuild (selection frame, new pixels). */
+    void invalidateDeviceCache();
 
     /**
      * Gallery Grid-Crop: visible area is a centred cell of this size in *scene*
