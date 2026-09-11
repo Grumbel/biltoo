@@ -11,7 +11,7 @@ Prior: **454**. Pair with **thumtoo-154** (PDF text always via MuPDF).
 
 ### Done criteria
 - [x] Ensure path logs
-- [ ] Bundle **455**
+- [x] Bundle **455**
 
 ---
 
