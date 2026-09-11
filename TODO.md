@@ -2,6 +2,36 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-422-text-regions-and-filmstrip-decode.** Rebased on current
+master (after upstream 418–421 filmstrip model). Prior tip on master: **421**.
+
+### Changes
+1. **Text regions follow content orientation**  
+   Overlays used `pageRectToImageRect` into `imageSize()` without applying
+   session `contentHFlip` / `contentVFlip` / `contentQuarterTurns`.  
+   `textRegionImageRect()` maps page → pre-orientation size, optional crop
+   local, then flips + 90° CW (same math as SessionAppearance crop mapping).
+   Paint, search, rubber-band, link hit-test, reading-order all use it.
+
+2. **Filmstrip decode tracks visual size**  
+   Jobs used fixed `kFilmstripLadderEdge` (256). Now
+   `filmstripDecodeEdge()` = `ceilLadderEdge(min(thumbDecodePixels(), 512))`.
+
+3. **Letterbox cross-axis stays uniform**  
+   Horizontal bar: cell height fixed to thumbSize band; only width follows
+   aspect (avoids QListWidget top-aligning short landscape cells → empty
+   bottom of the strip). Vertical bar: width fixed; height follows aspect.
+
+### Done criteria
+- [x] Text outlines / hits follow content rotate/flip
+- [x] Filmstrip decode ≤512 follows thumbSize × DPR
+- [x] Horizontal letterbox: stable bar height
+- [ ] Bundle **422**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-421-filmstrip-model.** Restored clear crop vs letterbox filmstrip
 geometry. Prior: **420**.
 

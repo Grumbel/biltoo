@@ -199,6 +199,8 @@ private:
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
     /** Physical pixel edge for decode/prepare (logical thumb × devicePixelRatio). */
     int thumbDecodePixels() const;
+    /** Soft-ladder edge actually used for filmstrip jobs (≤512, ≥ visual demand). */
+    int filmstripDecodeEdge() const;
 
     std::atomic<quint64> m_generation{0};
     /** Row indices that already have a pool job (or finished) this generation. */

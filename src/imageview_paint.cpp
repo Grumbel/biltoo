@@ -1049,13 +1049,11 @@ bool ImageView::hitTextLinkAt(const QPoint &viewPos, int *pageOut, QString *uriO
         return false;
     }
     const QPointF imgPt = local - item->offset();
-    const bool pageYUp = pageYUpForTextLayer();
     for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
         if (r.role != ThumtooCache::TextRegion::Role::Link) {
             continue;
         }
-        const QRectF img = ThumtooCache::pageRectToImageRect(
-            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+        const QRectF img = textRegionImageRect(r);
         if (img.contains(imgPt)) {
             if (pageOut) {
                 *pageOut = r.linkPage;
@@ -1073,6 +1071,95 @@ bool ImageView::pageYUpForTextLayer() const
 {
     const QString docPath = PagePath::documentFilePath(classicPath());
     return PagePath::isDjvuFile(docPath);
+}
+
+namespace {
+
+/** Map image-pixel rect through content flips then 90° CW quarter turns.
+ *  Matches SessionAppearance bake order (flip → rotate) and mapCropThrough*. */
+QRectF mapRectThroughContentOrientation(QRectF r, QSize sz,
+                                        bool hFlip, bool vFlip, int quarterTurns)
+{
+    if (sz.width() < 1 || sz.height() < 1 || r.isEmpty()) {
+        return r;
+    }
+    r = r.normalized();
+    if (hFlip) {
+        r = QRectF(sz.width() - r.x() - r.width(), r.y(), r.width(), r.height());
+    }
+    if (vFlip) {
+        r = QRectF(r.x(), sz.height() - r.y() - r.height(), r.width(), r.height());
+    }
+    quarterTurns %= 4;
+    if (quarterTurns < 0) {
+        quarterTurns += 4;
+    }
+    for (int i = 0; i < quarterTurns; ++i) {
+        // 90° CW in top-left image coordinates (matches QImage / bakeRotate90).
+        r = QRectF(sz.height() - r.y() - r.height(), r.x(), r.height(), r.width());
+        sz = QSize(sz.height(), sz.width());
+    }
+    return r;
+}
+
+} // namespace
+
+QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) const
+{
+    ImageItem *item = primaryItem();
+    if (!item || !m_textLayer.pageBounds.isValid()) {
+        return {};
+    }
+    const QSize displaySz = item->imageSize();
+    if (displaySz.width() < 1 || displaySz.height() < 1) {
+        return {};
+    }
+
+    WorkspaceItemState st;
+    if (item->sessionId() != kInvalidSessionImageId) {
+        st = sessionAppearanceValue(item->sessionId());
+    }
+
+    // Page text is authored in the pre-orientation page raster. Recover that
+    // size from the display size when there is no session crop (cropped pages
+    // would need the full-page raster size, which we do not store here).
+    QSize srcSz = displaySz;
+    if (!st.hasCrop && (st.contentQuarterTurns % 2) != 0) {
+        srcSz.transpose();
+    }
+
+    const bool pageYUp = pageYUpForTextLayer();
+    QRectF img = ThumtooCache::pageRectToImageRect(
+        region.bbox, m_textLayer.pageBounds, srcSz, pageYUp);
+    if (img.isEmpty()) {
+        return {};
+    }
+
+    // Optional crop: text is full-page; shift into crop-local space before bake.
+    if (st.hasCrop && !st.cropRect.isEmpty()) {
+        const QRect crop = st.cropRect.normalized();
+        QSize cropBasis = st.cropSourceSize;
+        if (cropBasis.width() < 1 || cropBasis.height() < 1) {
+            cropBasis = srcSz;
+        }
+        // Scale page-mapped rect if crop was recorded at a different size.
+        if (cropBasis != srcSz && cropBasis.width() > 0 && cropBasis.height() > 0
+            && srcSz.width() > 0 && srcSz.height() > 0) {
+            const qreal sx = qreal(srcSz.width()) / qreal(cropBasis.width());
+            const qreal sy = qreal(srcSz.height()) / qreal(cropBasis.height());
+            img = QRectF(img.x() * sx, img.y() * sy, img.width() * sx, img.height() * sy);
+        }
+        img = img.translated(-crop.topLeft());
+        const QRectF cropLocal(0, 0, crop.width(), crop.height());
+        img = img.intersected(cropLocal);
+        if (img.isEmpty()) {
+            return {};
+        }
+        srcSz = crop.size();
+    }
+
+    return mapRectThroughContentOrientation(
+        img, srcSz, st.contentHFlip, st.contentVFlip, st.contentQuarterTurns);
 }
 
 QRectF ImageView::textRubberBandImageRect() const
@@ -1122,14 +1209,12 @@ void ImageView::finishTextRubberBand()
         viewport()->update();
         return;
     }
-    const bool pageYUp = pageYUpForTextLayer();
     for (int i = 0; i < m_textLayer.regions.size(); ++i) {
         const auto &r = m_textLayer.regions.at(i);
         if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {
             continue;
         }
-        const QRectF img = ThumtooCache::pageRectToImageRect(
-            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+        const QRectF img = textRegionImageRect(r);
         if (img.isEmpty()) {
             continue;
         }
@@ -1140,10 +1225,8 @@ void ImageView::finishTextRubberBand()
     // Reading order: top-to-bottom, then left-to-right by image rect.
     std::sort(m_textSelectedRegions.begin(), m_textSelectedRegions.end(),
               [&](int a, int b) {
-                  const QRectF ra = ThumtooCache::pageRectToImageRect(
-                      m_textLayer.regions.at(a).bbox, m_textLayer.pageBounds, sz, pageYUp);
-                  const QRectF rb = ThumtooCache::pageRectToImageRect(
-                      m_textLayer.regions.at(b).bbox, m_textLayer.pageBounds, sz, pageYUp);
+                  const QRectF ra = textRegionImageRect(m_textLayer.regions.at(a));
+                  const QRectF rb = textRegionImageRect(m_textLayer.regions.at(b));
                   if (qAbs(ra.top() - rb.top()) > 4.0) {
                       return ra.top() < rb.top();
                   }
@@ -1226,7 +1309,6 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
             const QSize sz = item->imageSize();
             if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBounds.isValid()) {
                 painter->save();
-                const bool pageYUp = pageYUpForTextLayer();
                 // Search hits: filled yellow first (under outlines / selection).
                 if (!m_textSearchMatches.isEmpty()) {
                     painter->setPen(Qt::NoPen);
@@ -1236,8 +1318,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                             continue;
                         }
                         const auto &r = m_textLayer.regions.at(idxMatch);
-                        const QRectF img = ThumtooCache::pageRectToImageRect(
-                            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+                        const QRectF img = textRegionImageRect(r);
                         if (img.isEmpty()) {
                             continue;
                         }
@@ -1254,8 +1335,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                             continue;
                         }
                         const auto &r = m_textLayer.regions.at(idxSel);
-                        const QRectF img = ThumtooCache::pageRectToImageRect(
-                            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+                        const QRectF img = textRegionImageRect(r);
                         if (img.isEmpty()) {
                             continue;
                         }
@@ -1266,8 +1346,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                 if (m_showTextRegions) {
                     painter->setBrush(Qt::NoBrush);
                     for (const ThumtooCache::TextRegion &r : m_textLayer.regions) {
-                        const QRectF img = ThumtooCache::pageRectToImageRect(
-                            r.bbox, m_textLayer.pageBounds, sz, pageYUp);
+                        const QRectF img = textRegionImageRect(r);
                         if (img.isEmpty()) {
                             continue;
                         }

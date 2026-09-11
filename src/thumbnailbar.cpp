@@ -105,6 +105,10 @@ QSize ThumbnailDelegate::cellSize(const QFont &font) const
 
 QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentPx) const
 {
+    // Letterbox: long edge of the *image* is thumbSize; the strip's cross-axis
+    // stays uniform so a horizontal bar does not top-align short landscape
+    // cells (empty band at the bottom of the strip). Only the along-strip
+    // dimension follows aspect (wider landscape / narrower portrait).
     const int labelH = labelBandHeight(font);
     const int pad = cellPad();
     int iw = m_thumbSize;
@@ -114,7 +118,16 @@ QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentPx) 
         iw = qMax(1, fitted.width());
         ih = qMax(1, fitted.height());
     }
-    return QSize(iw + 2 * pad, pad + ih + pad + labelH);
+    Qt::Orientation orient = Qt::Horizontal;
+    if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
+        orient = bar->barOrientation();
+    }
+    if (orient == Qt::Horizontal) {
+        // Stable bar height = square cell height; only width follows aspect.
+        return QSize(iw + 2 * pad, pad + m_thumbSize + pad + labelH);
+    }
+    // Vertical bar: stable width; height follows aspect.
+    return QSize(m_thumbSize + 2 * pad, pad + ih + pad + labelH);
 }
 
 QSize ThumbnailDelegate::provisionalContentSize() const
@@ -373,7 +386,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                 if (path.isEmpty() || m_files.isEmpty()) {
                     return;
                 }
-                const int decodeSize = ThumtooCache::kFilmstripLadderEdge;
+                const int decodeSize = filmstripDecodeEdge();
                 const quint64 gen = m_generation.load();
                 for (int i = 0; i < m_files.size(); ++i) {
                     if (m_files.at(i) != path) {
@@ -701,6 +714,14 @@ int ThumbnailBar::thumbDecodePixels() const
     // Decode at device pixels so HiDPI does not show a half-size centered icon.
     const qreal dpr = qMax<qreal>(1.0, devicePixelRatioF());
     return qMax(1, qRound(m_thumbSize * dpr));
+}
+
+int ThumbnailBar::filmstripDecodeEdge() const
+{
+    // Match visual demand (logical thumb × DPR), but stay within the soft
+    // ladder so we do not kick full-size decodes. ceilLadderEdge picks 256/512.
+    const int want = thumbDecodePixels();
+    return ThumtooCache::ceilLadderEdge(qMin(want, ThumtooCache::kGalleryLadderEdge));
 }
 
 
@@ -1071,8 +1092,8 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         return;
     }
     const quint64 gen = m_generation.load();
-    // Filmstrip only needs the small ladder step; higher edges are Gallery/Image.
-    const int decodeSize = ThumtooCache::kFilmstripLadderEdge;
+    // Decode at (or just above) visual demand; soft ladder max 512.
+    const int decodeSize = filmstripDecodeEdge();
     m_decodedSize = decodeSize;
 
     const int n = m_files.size();
