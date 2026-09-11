@@ -692,14 +692,91 @@ void ThumbnailBar::setThumbSize(int pixels)
     if (clamped == m_thumbSize) {
         return;
     }
+    // Dragging the dock/splitter fires resize every pixel. Keep scroll anchored
+    // and only *geometry*-update immediately; debounced reload when sharper
+    // pixels are needed (full invalidate on every step wiped in-flight thumbs).
+    const ScrollAnchor anchor = captureScrollAnchor();
     m_thumbSize = clamped;
     applyThumbMetrics();
-    // Geometry always tracks thumbSize. Re-decode when we need sharper pixels.
+    refreshAllItemGeometry();
+    restoreScrollAnchor(anchor);
     if (thumbDecodePixels() > m_decodedSize && !m_files.isEmpty()) {
-        scheduleThumbnailLoads();
-    } else {
-        refreshAllItemGeometry();
+        scheduleDebouncedThumbReload();
     }
+}
+
+ThumbnailBar::ScrollAnchor ThumbnailBar::captureScrollAnchor() const
+{
+    ScrollAnchor a;
+    if (!viewport() || count() <= 0) {
+        return a;
+    }
+    // Prefer current row; else item under the flow-axis start of the viewport.
+    int row = currentRow();
+    if (row < 0 || !item(row)) {
+        const QPoint probe = (m_orientation == Qt::Horizontal)
+            ? QPoint(qMin(24, viewport()->width() / 2), viewport()->height() / 2)
+            : QPoint(viewport()->width() / 2, qMin(24, viewport()->height() / 2));
+        const QModelIndex idx = indexAt(probe);
+        if (idx.isValid()) {
+            row = idx.row();
+        }
+    }
+    if (row < 0 || !item(row)) {
+        return a;
+    }
+    const QRect vr = visualItemRect(item(row));
+    if (!vr.isValid()) {
+        return a;
+    }
+    a.row = row;
+    a.offsetInViewport = (m_orientation == Qt::Horizontal) ? vr.left() : vr.top();
+    a.valid = true;
+    return a;
+}
+
+void ThumbnailBar::restoreScrollAnchor(const ScrollAnchor &anchor)
+{
+    if (!anchor.valid || anchor.row < 0 || anchor.row >= count() || !item(anchor.row)) {
+        return;
+    }
+    // Layout must be current (refreshAllItemGeometry already doItemsLayout).
+    QScrollBar *bar = (m_orientation == Qt::Horizontal) ? horizontalScrollBar()
+                                                          : verticalScrollBar();
+    if (!bar) {
+        return;
+    }
+    // First bring the row into a known place, then correct pixel offset.
+    scrollToItem(item(anchor.row), QAbstractItemView::EnsureVisible);
+    const QRect vr = visualItemRect(item(anchor.row));
+    if (!vr.isValid()) {
+        return;
+    }
+    const int now = (m_orientation == Qt::Horizontal) ? vr.left() : vr.top();
+    const int delta = now - anchor.offsetInViewport;
+    if (delta != 0) {
+        bar->setValue(bar->value() + delta);
+    }
+}
+
+void ThumbnailBar::scheduleDebouncedThumbReload()
+{
+    if (!m_thumbSizeReloadTimer) {
+        m_thumbSizeReloadTimer = new QTimer(this);
+        m_thumbSizeReloadTimer->setSingleShot(true);
+        connect(m_thumbSizeReloadTimer, &QTimer::timeout, this, [this]() {
+            if (m_files.isEmpty()) {
+                return;
+            }
+            if (thumbDecodePixels() <= m_decodedSize) {
+                return;
+            }
+            scheduleThumbnailLoads();
+        });
+    }
+    // ~1 frame of continuous drag still coalesces; long enough to ride out
+    // splitter move bursts without feeling laggy after release.
+    m_thumbSizeReloadTimer->start(120);
 }
 
 void ThumbnailBar::setLabelsVisible(bool on)
@@ -1241,10 +1318,12 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         }
         if (maxRow >= 0) {
             // Extra overscan in index space (~half a screen of cells).
+            // Letterbox cells are often wider than thumbSize; under-counting
+            // across left off-screen neighbours unloaded until scroll.
             const int cell = qMax(1, m_thumbSize + 8);
             const int across = qMax(1, viewport()->width() / cell);
             const int down = qMax(1, viewport()->height() / cell);
-            const int over = qMax(8, across * down);
+            const int over = qMax(16, across * down * 2);
             lo = qMax(0, minRow - over);
             hi = qMin(n, maxRow + over + 1);
         } else {
@@ -1259,7 +1338,18 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
     }
 
     // Pool jobs only — thumtoo pixel concurrency is separate (kMaxConcurrentPixelJobs).
-    constexpr int kMaxConcurrentThumbLoads = 12;
+    // Default 24: 12 left gaps when soft misses parked many rows in AwaitLadder
+    // and only a narrow visible band was filled before the concurrent cap.
+    static const int kMaxConcurrentThumbLoads = []() {
+        int v = 24;
+        if (const char *e = std::getenv("BILTOO_FILMSTRIP_THUMB_LOADS")) {
+            const int parsed = QString::fromLocal8Bit(e).toInt();
+            if (parsed >= 1 && parsed <= 64) {
+                v = parsed;
+            }
+        }
+        return v;
+    }();
     int inFlight = 0;
     for (int idx : m_thumbLoadScheduled) {
         Q_UNUSED(idx);

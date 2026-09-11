@@ -211,6 +211,16 @@ private:
     void invalidateThumbPixels();
     /** Recompute ThumbContentSizeRole + sizeHint from aspect at current thumbSize. */
     void refreshAllItemGeometry();
+    /** Capture / restore flow-axis scroll so thumbSize changes do not jump. */
+    struct ScrollAnchor {
+        int row = -1;
+        int offsetInViewport = 0; // pixels from viewport origin to item origin
+        bool valid = false;
+    };
+    ScrollAnchor captureScrollAnchor() const;
+    void restoreScrollAnchor(const ScrollAnchor &anchor);
+    /** Debounced soft reload after thumbSize grow (avoid wipe on every drag pixel). */
+    void scheduleDebouncedThumbReload();
     void requestRemoveSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
     /** Centre icons when the row/column is shorter than the viewport. */
@@ -232,6 +242,7 @@ private:
     /** Soft-miss settled for this generation — do not re-queue (CPU spin). */
     QSet<int> m_thumbFailed;
     QTimer *m_layoutRefreshTimer = nullptr;
+    QTimer *m_thumbSizeReloadTimer = nullptr;
     void scheduleLayoutRefresh();
     bool m_multiSelect = false;
     int m_selectionAnchor = -1;

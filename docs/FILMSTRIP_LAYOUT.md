@@ -97,3 +97,24 @@ logical content, sizeHint, crop flag).
 4. `ThumbLoadedRole == true` iff `ThumbPixmapRole` holds a non-null pixmap
 5. After `invalidateThumbPixels`, every row has `ThumbLoadedRole == false`
 6. `iconSize` is never larger than needed for letterbox width (sizeHint owns width)
+
+
+## Resize / scroll
+
+Dragging the filmstrip dock/splitter changes `thumbSize` via `resizeEvent` →
+`setThumbSize` on every pixel. Behaviour:
+
+1. **Geometry immediately** — `applyThumbMetrics` + `refreshAllItemGeometry`
+   (sizeHints / content roles at the new `thumbSize`).
+2. **Scroll anchor** — capture the current (or first visible) row and its offset
+   in the viewport; after layout, restore so the strip does not jump.
+3. **Decode debounce (120ms)** — sharper pixels only after the size stops
+   changing. A full `invalidateThumbPixels` on every drag step cancelled
+   in-flight loads and left holes until scroll.
+
+### Load window
+
+`scheduleVisibleThumbnailLoads` uses viewport samples + overscan (~2× visible
+cells, minimum 16 rows). Concurrent pool jobs default to **24**
+(`BILTOO_FILMSTRIP_THUMB_LOADS`, 1–64). Soft misses wait on `ladderReady` via
+`m_thumbAwaitLadder` (not permanent fail).
