@@ -22,7 +22,7 @@ regions. Prior: **423**.
 ### Done criteria
 - [x] Orient-then-crop mapper
 - [x] Flip flag conjugation for odd turns
-- [ ] Bundle **424**
+- [x] Bundle **424**
 
 ---
 
