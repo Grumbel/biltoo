@@ -127,8 +127,10 @@ QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentAspe
 
 QSize ThumbnailDelegate::provisionalContentSize() const
 {
-    // Portrait ~3:4 placeholder aspect (same for every unloaded cell).
-    return QSize(3, 4);
+    // Square placeholder: same cross-axis as letterbox (thumbSize). A tall
+    // provisional (e.g. 3:4) made narrow cells; when landscape content loaded
+    // paint intersected into that narrow slot and thumbs looked tiny.
+    return QSize(1, 1);
 }
 
 QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
@@ -183,9 +185,12 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         }
     }
 
+    // Image area inside the cell (absolute pad on every side).
+    const QRect inner = cell.adjusted(pad, pad, -pad, -(pad + labelBand));
+
     QRect contentRect;
-    if (!pm.isNull()) {
-        // Layout content size (what sizeHint used). Fall back to pixmap aspect.
+    if (!pm.isNull() && inner.width() > 0 && inner.height() > 0) {
+        // Prefer layout content size (letterbox at thumbSize); else pixmap aspect.
         QSize contentSz = index.data(ThumbContentSizeRole).toSize();
         if (contentSz.width() < 1 || contentSz.height() < 1) {
             QSize pmAspect = pm.deviceIndependentSize().toSize();
@@ -194,23 +199,15 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             }
             contentSz = letterboxContentSize(pmAspect);
         }
-        // Tight box: pad from cell edges, then exact content size — no centering
-        // inside a larger iconRect (that looked like bigger L/R pad on wide cells).
-        QRect slot(cell.left() + pad, cell.top() + pad,
-                   qMax(1, contentSz.width()), qMax(1, contentSz.height()));
-        const QRect inner = cell.adjusted(pad, pad, -pad, -(pad + labelBand));
-        slot = slot.intersected(inner);
-        // Fit pixmap into the layout slot without stretch (aspect from pixels).
-        QSize pmAspect = pm.deviceIndependentSize().toSize();
-        if (pmAspect.width() < 1 || pmAspect.height() < 1) {
-            pmAspect = pm.size();
-        }
-        const QSize fitted = pmAspect.scaled(slot.size(), Qt::KeepAspectRatio);
-        contentRect = QRect(slot.left(), slot.top(),
-                            qMax(1, fitted.width()), qMax(1, fitted.height()));
-        if (contentRect.width() > 0 && contentRect.height() > 0) {
-            painter->drawPixmap(contentRect, pm);
-        }
+        // Fit into the cell's inner area without stretch; center in the cell.
+        // When sizeHint matches content, this fills the inner box exactly.
+        const QSize fitted = contentSz.scaled(inner.size(), Qt::KeepAspectRatio);
+        contentRect = QRect(
+            inner.x() + (inner.width() - fitted.width()) / 2,
+            inner.y() + (inner.height() - fitted.height()) / 2,
+            qMax(1, fitted.width()),
+            qMax(1, fitted.height()));
+        painter->drawPixmap(contentRect, pm);
     }
 
     // Hairline on the image bounds (not the full cell).
@@ -724,12 +721,10 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         return;
     }
     if (QListWidgetItem *it = item(row)) {
-        QPixmap pm = QPixmap::fromImage(image);
-        const qreal dpr = qMax<qreal>(1.0, devicePixelRatioF());
-        // Prepared images are in logical pixels matching thumbSize; tag DPR for HiDPI.
-        if (dpr > 1.0) {
-            pm.setDevicePixelRatio(dpr);
-        }
+        // Decode-edge pixels are already denser than the logical cell for
+        // sharpness. Do not setDevicePixelRatio — that would shrink the logical
+        // size and fight letterboxContentSize / sizeHint.
+        const QPixmap pm = QPixmap::fromImage(image);
         // Store the prepared pixmap for painting (aspect preserved). DecorationRole
         // is kept for “has icon?” checks only — paint uses ThumbPixmapRole.
         it->setData(ThumbnailDelegate::ThumbPixmapRole, pm);
@@ -759,10 +754,18 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
                                    ThumbnailDelegate::ThumbLoadedRole,
                                    ThumbnailDelegate::ThumbPixmapRole});
         }
+        // Layout must run before the next paint or option.rect stays on the
+        // provisional cell and the thumb is clipped tiny in a narrow slot.
+        scheduleLayoutRefresh();
         if (viewport()) {
+            const QRect vis = visualItemRect(it);
+            if (vis.intersects(viewport()->rect().adjusted(-m_thumbSize, -m_thumbSize,
+                                                           m_thumbSize, m_thumbSize))) {
+                doItemsLayout();
+                updateCenteringMargins();
+            }
             viewport()->update(visualItemRect(it));
         }
-        scheduleLayoutRefresh();
     }
 }
 

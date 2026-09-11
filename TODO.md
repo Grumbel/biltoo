@@ -2,6 +2,29 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-440-filmstrip-center-size.** First ~14 thumbs tiny + left-aligned.
+Prior: **439**.
+
+### Causes
+- Provisional 3:4 cells stayed narrow; landscape content painted into clipped
+  slot → tiny
+- Paint top-left aligned after 437
+- Layout refresh debounced only — paint used stale sizeHint
+
+### Fix
+- Provisional content square (1:1)
+- Center image in padded inner box
+- doItemsLayout immediately for visible rows on icon install
+- Stop tagging decode-edge pixmaps with devicePixelRatio
+
+### Done criteria
+- [x] Center + size
+- [ ] Bundle **440**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-439-filmstrip-iconRect-fix.** Compile fix: placeholder paint
 used removed `iconRect`. Prior: **438**.
 
