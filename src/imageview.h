@@ -652,6 +652,14 @@ public:
     QImage slideshowPixelsForPath(const QString &path);
     QImage slideshowFullIfReady(const QString &path) const;
     QImage slideshowSoftPlaceholder(const QString &path);
+    /** SessionImageId for a session path (path order), or invalid. */
+    SessionImageId sessionIdForPath(const QString &path) const;
+    /**
+     * Apply path-keyed content appearance (flip / quarter-turns / grade) to
+     * unbaked disk pixels for slideshow paint. Never use m_currentSessionId —
+     * that is the *dwell* image during a live transition to another path.
+     */
+    QImage orientSlideshowImage(const QImage &raw, const QString &path) const;
     /**
      * Drop any held live-transition overlay once the next slide is fitted.
      * Called from the LoadReplace path so the incoming frame is not cleared

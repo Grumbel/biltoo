@@ -2,6 +2,32 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-426-slideshow-content-orientation.** Slideshow painted next slides
+with the *current* image's rotation. Prior: **425**.
+
+### Bug
+`startLiveTransitionWithImage` preferred `m_currentSessionId` (still the dwell
+"from" image) when baking content appearance onto the incoming frame. Next
+slides inherited the previous slide's quarter-turns / flips.
+
+`slideshowPixelsForPath` / phase paint used unbaked disk pixels with no
+path-keyed appearance at all.
+
+### Fix
+- `sessionIdForPath` + `orientSlideshowImage` (path-keyed `imageWithSessionAppearance`)
+- Live transition always orients with **next path** id, never `m_currentSessionId`
+- Phase/dwell pixels oriented on read
+- Drop `item->sourceImage()` from slideshow full cache (avoids double-bake)
+
+### Done criteria
+- [x] Path-keyed orientation for live transition
+- [x] Path-keyed orientation for phase pixels
+- [ ] Bundle **426**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-425-reset-appearance-gallery-soft.** Reset Content Appearance
 installed full-res pixels into Gallery tiles. Prior: **424**.
 

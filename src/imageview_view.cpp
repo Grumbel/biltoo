@@ -1172,6 +1172,9 @@ QImage ImageView::slideshowFullIfReady(const QString &path) const
     if (path.isEmpty()) {
         return QImage();
     }
+    // Only unbaked disk / preload pixels. Do not return item->sourceImage():
+    // that may already have content orientation baked in, and orientSlideshowImage
+    // would apply it a second time.
     const auto fullIt = m_ssFullByPath.constFind(path);
     if (fullIt != m_ssFullByPath.cend() && !fullIt->isNull()) {
         return *fullIt;
@@ -1181,11 +1184,6 @@ QImage ImageView::slideshowFullIfReady(const QString &path) const
     }
     if (path == m_handoffPath && !m_handoffImage.isNull()) {
         return m_handoffImage;
-    }
-    for (ImageItem *item : m_items) {
-        if (item && item->path() == path && !item->sourceImage().isNull()) {
-            return item->sourceImage();
-        }
     }
     return QImage();
 }
@@ -1222,13 +1220,35 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
     return soft;
 }
 
+SessionImageId ImageView::sessionIdForPath(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return kInvalidSessionImageId;
+    }
+    for (int i = 0; i < m_pathOrder.size() && i < m_sessionIdOrder.size(); ++i) {
+        if (m_pathOrder.at(i) == path) {
+            return m_sessionIdOrder.at(i);
+        }
+    }
+    return kInvalidSessionImageId;
+}
+
+QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) const
+{
+    if (raw.isNull() || path.isEmpty()) {
+        return raw;
+    }
+    QImage oriented = imageWithSessionAppearance(raw, sessionIdForPath(path), path);
+    return oriented.isNull() ? raw : oriented;
+}
+
 QImage ImageView::slideshowPixelsForPath(const QString &path)
 {
     const QImage full = slideshowFullIfReady(path);
     if (!full.isNull()) {
-        return full;
+        return orientSlideshowImage(full, path);
     }
-    return slideshowSoftPlaceholder(path);
+    return orientSlideshowImage(slideshowSoftPlaceholder(path), path);
 }
 
 void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
@@ -2136,20 +2156,13 @@ void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
         emit slideshowLiveTransitionFinished();
         return;
     }
-    // Preload/full handoff is usually unbaked disk pixels — apply session
-    // content once here so all live-transition entry paths stay consistent.
+    // Preload/full handoff is usually unbaked disk pixels — apply *next path*
+    // session content once here. Never use m_currentSessionId: that is still
+    // the dwell ("from") image while the transition loads the next path, so
+    // using it painted the incoming frame with the previous slide's rotation.
     {
-        SessionImageId sid = m_currentSessionId;
-        if (sid == kInvalidSessionImageId) {
-            for (int i = 0; i < m_pathOrder.size() && i < m_sessionIdOrder.size(); ++i) {
-                if (m_pathOrder.at(i) == m_liveTransitionNextPath) {
-                    sid = m_sessionIdOrder.at(i);
-                    break;
-                }
-            }
-        }
         m_liveTransitionSourceImage =
-            imageWithSessionAppearance(nextImage, sid, m_liveTransitionNextPath);
+            orientSlideshowImage(nextImage, m_liveTransitionNextPath);
     }
     if (m_liveTransitionSourceImage.isNull()) {
         m_liveTransitionSourceImage = nextImage;
