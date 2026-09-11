@@ -449,7 +449,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
 
     int have = 0;
     bool anyFull = false;
-    bool anyVisible = false;
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path) {
             continue;
@@ -458,10 +457,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             anyFull = true;
         }
         have = qMax(have, item->displayPixelLongEdge());
-        const QRectF tile = item->contentSceneRect();
-        if (tile.isValid() && sceneVisible.intersects(tile)) {
-            anyVisible = true;
-        }
     }
     st.have = have;
     if (anyFull) {
