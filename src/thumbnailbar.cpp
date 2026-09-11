@@ -144,14 +144,6 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     const bool selected = option.state & QStyle::State_Selected;
     const bool hovered = option.state & QStyle::State_MouseOver;
 
-    if (selected) {
-        painter->fillRect(cell, option.palette.brush(QPalette::Highlight));
-    } else if (hovered) {
-        QColor c = option.palette.color(QPalette::Highlight);
-        c.setAlpha(48);
-        painter->fillRect(cell, c);
-    }
-
     const QFontMetrics fm(option.font);
     const int labelBand = labelBandHeight(option.font);
     // Content box inside the cell (adaptive pad + optional caption).
@@ -162,28 +154,32 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     const int iconY = cell.top() + pad;
     const QRect iconRect(iconX, iconY, boxW, boxH);
 
-    // Destination of the *image* inside the square slot (may be letterboxed).
-    // Outline follows this rect, not the full cell, so white pages get a tight edge.
-    QRect contentRect = iconRect;
+    // Oriented content aspect from the prepared thumb (post flip/rotate bake).
+    QSize aspectHint = index.data(ThumbContentSizeRole).toSize();
+    if (aspectHint.width() < 1 || aspectHint.height() < 1) {
+        aspectHint = iconRect.size();
+    }
+    const QSize slotFit = aspectHint.scaled(iconRect.size(), Qt::KeepAspectRatio);
+    QRect contentRect(
+        iconRect.x() + (iconRect.width() - slotFit.width()) / 2,
+        iconRect.y() + (iconRect.height() - slotFit.height()) / 2,
+        slotFit.width(),
+        slotFit.height());
+
+    // Selection / hover follow the image footprint, not a stale oversized cell.
+    const QRect chrome = contentRect.adjusted(-pad, -pad, pad, pad);
+    if (selected) {
+        painter->fillRect(chrome, option.palette.brush(QPalette::Highlight));
+    } else if (hovered) {
+        QColor c = option.palette.color(QPalette::Highlight);
+        c.setAlpha(48);
+        painter->fillRect(chrome, c);
+    }
 
     const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
     if (!icon.isNull()) {
-        // Prefer an explicit pixmap draw. QIcon::paint can leave a small source
-        // pixmap centered without upscaling (HiDPI / tiny files).
         const qreal dpr = qMax<qreal>(
             1.0, painter->device() ? painter->device()->devicePixelRatioF() : 1.0);
-        // Tight frame follows content aspect (post content-rotate), not a square
-        // icon request — QIcon::pixmap(QSize(n,n)) was forcing a square bbox.
-        QSize aspectHint = index.data(ThumbContentSizeRole).toSize();
-        if (aspectHint.width() < 1 || aspectHint.height() < 1) {
-            aspectHint = iconRect.size();
-        }
-        const QSize slotFit = aspectHint.scaled(iconRect.size(), Qt::KeepAspectRatio);
-        contentRect = QRect(
-            iconRect.x() + (iconRect.width() - slotFit.width()) / 2,
-            iconRect.y() + (iconRect.height() - slotFit.height()) / 2,
-            slotFit.width(),
-            slotFit.height());
         const int physW = qMax(1, qRound(contentRect.width() * dpr));
         const int physH = qMax(1, qRound(contentRect.height() * dpr));
         QPixmap pm = icon.pixmap(QSize(physW, physH));
@@ -702,19 +698,25 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
             pm.setDevicePixelRatio(dpr);
         }
         it->setIcon(QIcon(pm));
-        // Logical content size from the prepared image (already content-oriented).
-        // Prefer image pixels over pixmap/DPR rounding so 90° thumbs get the
-        // correct cell aspect for sizeHint and the paint outline.
-        const QSize logical(qMax(1, image.width()), qMax(1, image.height()));
-        // If the image is physical pixels for a HiDPI cell, sizeHint still wants
-        // logical; prepareThumbnailFromImage returns logical-sized images.
+        // Content size at filmstrip thumb scale (oriented aspect after bake).
+        QSize content(qMax(1, image.width()), qMax(1, image.height()));
+        if (m_delegate && content.width() > 0 && content.height() > 0) {
+            content = content.scaled(m_thumbSize, m_thumbSize, Qt::KeepAspectRatio);
+            content.setWidth(qMax(1, content.width()));
+            content.setHeight(qMax(1, content.height()));
+        }
         Q_UNUSED(dpr);
-        it->setData(ThumbnailDelegate::ThumbContentSizeRole, logical);
+        it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
         it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
         if (m_delegate && !m_cropToSquare) {
-            it->setSizeHint(m_delegate->cellSizeForContent(font(), logical));
+            it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
         } else if (m_delegate) {
             it->setSizeHint(m_delegate->cellSize(font()));
+        }
+        // Letterbox: never keep a uniform/grid layout that freezes square slots.
+        if (!m_cropToSquare && uniformItemSizes()) {
+            setUniformItemSizes(false);
+            setGridSize(QSize());
         }
         // IconMode does not always repaint on setIcon until interaction — force it.
         const QModelIndex idx = indexFromItem(it);

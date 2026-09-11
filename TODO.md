@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-420-filmstrip-tight-chrome.** Selection/hover and cell sizeHint
+follow oriented content footprint. Prior: **419**.
+
+### Changes
+- Paint: compute contentRect first; selection/hover on tight chrome, not full cell
+- setThumbnailIcon: store content size scaled to thumbSize; clear uniform grid in letterbox
+- sizeHint from that content size
+
+### Note
+Default `thumbnailCropToSquare` is still **true** (square cells). Letterbox mode
+(View menu / prefs) is required for aspect-aware filmstrip cells.
+
+### Done criteria
+- [x] Tight chrome
+- [ ] Bundle **420**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-419-filmstrip-bbox.** Filmstrip outline/bbox follows oriented
 content size, not square QIcon pixmap. Prior: **418**.
 
