@@ -1731,10 +1731,14 @@ void MainWindow::updateNavigationActions()
 
 void MainWindow::onThumbnailActivated(int index)
 {
-    // Filmstrip currentRowChanged also fires when setCurrentIndex syncs the bar
-    // after Left/Right — that must not end a running slideshow. Treat bar
-    // activation like session navigation: stay playing/paused, restart dwell.
-    setCurrentIndex(index);
+    // Double-click / Enter on the filmstrip — same as Gallery tile open:
+    // switch to Image mode on that session index (not Workspace membership).
+    // setCurrentIndex alone only moves the session cursor and left the user
+    // in Gallery/Workspace.
+    if (index < 0 || index >= m_session.size()) {
+        return;
+    }
+    openSessionIndexInImageMode(index);
     onSlideshowUserNavigated();
 }
 

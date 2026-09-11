@@ -2,6 +2,20 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-473-filmstrip-dblclick-image.** Filmstrip double-click opens Image mode.
+Prior: **472**.
+
+### Change
+`onThumbnailActivated` → `openSessionIndexInImageMode` (same path as Gallery).
+
+### Done criteria
+- [x] Double-click opens ImageView
+- [x] Bundle **473**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-472-filmstrip-no-dblclick-workspace.** Filmstrip double-click no longer places on Workspace.
 Prior: **471**.
 
