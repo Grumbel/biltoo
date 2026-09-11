@@ -26,7 +26,7 @@ master (after upstream 418–421 filmstrip model). Prior tip on master: **421**.
 - [x] Text outlines / hits follow content rotate/flip
 - [x] Filmstrip decode ≤512 follows thumbSize × DPR
 - [x] Horizontal letterbox: stable bar height
-- [ ] Bundle **422**
+- [x] Bundle **422**
 
 ---
 
