@@ -44,24 +44,12 @@
 #include <cstdio>
 
 // ---------------------------------------------------------------------------
-// Filmstrip layout model (single source of truth)
+// Filmstrip layout — see docs/FILMSTRIP_LAYOUT.md (authoritative).
 //
-// Two display modes (ThumbnailBar::cropToSquare):
-//
-// 1) Crop-to-square (default)
-//    - prepareThumbnailFromImage center-crops source to a square, scales to
-//      thumbSize×thumbSize so the pixmap fills the icon slot edge-to-edge.
-//    - Every cell is the same size: thumbSize + pads (+ label band).
-//    - Paint draws the square pixmap into the full icon slot (no letterbox).
-//
-// 2) Letterbox (fit whole image)
-//    - prepareThumbnailFromImage scales with KeepAspectRatio so max edge is
-//      thumbSize (after durable content appearance bake in makeThumbnail).
-//    - Cell size follows that prepared aspect (cellSizeForContent).
-//    - Paint centers the pixmap in the icon slot; hairline hugs the image.
-//
-// Selection/hover always fill the full cell (including pad + label band).
-// Horizontal bar: thin axis is HEIGHT. Vertical bar: thin axis is WIDTH.
+// thumbSize = logical length of the image on the strip *cross-axis*.
+// Crop: square thumbSize². Letterbox: cross-axis edge = thumbSize, other edge
+// from aspect (landscape wider on a horizontal bar). Layout uses logical sizes
+// only; decode ladder edge is for sharpness, never for sizeHint.
 // ---------------------------------------------------------------------------
 
 ThumbnailDelegate::ThumbnailDelegate(int thumbSize, QObject *parent)
@@ -103,40 +91,42 @@ QSize ThumbnailDelegate::cellSize(const QFont &font) const
     return QSize(m_thumbSize + 2 * pad, pad + m_thumbSize + pad + labelH);
 }
 
-QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentPx) const
+QSize ThumbnailDelegate::letterboxContentSize(QSize aspect) const
 {
-    // Letterbox: long edge of the *image* is thumbSize; the strip's cross-axis
-    // stays uniform so a horizontal bar does not top-align short landscape
-    // cells (empty band at the bottom of the strip). Only the along-strip
-    // dimension follows aspect (wider landscape / narrower portrait).
-    const int labelH = labelBandHeight(font);
-    const int pad = cellPad();
-    int iw = m_thumbSize;
-    int ih = m_thumbSize;
-    if (contentPx.width() > 0 && contentPx.height() > 0) {
-        const QSize fitted = contentPx.scaled(m_thumbSize, m_thumbSize, Qt::KeepAspectRatio);
-        iw = qMax(1, fitted.width());
-        ih = qMax(1, fitted.height());
+    // Logical content size: cross-axis = thumbSize, other edge from aspect.
+    if (aspect.width() < 1 || aspect.height() < 1) {
+        return QSize(m_thumbSize, m_thumbSize);
     }
     Qt::Orientation orient = Qt::Horizontal;
     if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
         orient = bar->barOrientation();
     }
     if (orient == Qt::Horizontal) {
-        // Stable bar height = square cell height; only width follows aspect.
-        return QSize(iw + 2 * pad, pad + m_thumbSize + pad + labelH);
+        const int h = m_thumbSize;
+        const int w = qMax(1, int(qRound(qreal(m_thumbSize) * qreal(aspect.width())
+                                         / qreal(aspect.height()))));
+        return QSize(w, h);
     }
-    // Vertical bar: stable width; height follows aspect.
-    return QSize(m_thumbSize + 2 * pad, pad + ih + pad + labelH);
+    const int w = m_thumbSize;
+    const int h = qMax(1, int(qRound(qreal(m_thumbSize) * qreal(aspect.height())
+                                     / qreal(aspect.width()))));
+    return QSize(w, h);
+}
+
+QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentAspect) const
+{
+    // Hug logical letterbox content with the same pad on every side.
+    const QSize content = letterboxContentSize(contentAspect);
+    const int labelH = labelBandHeight(font);
+    const int pad = cellPad();
+    return QSize(content.width() + 2 * pad,
+                 pad + content.height() + pad + labelH);
 }
 
 QSize ThumbnailDelegate::provisionalContentSize() const
 {
-    // Typical document page portrait (~3:4). Same for every unloaded cell so the
-    // strip does not mix square placeholders with tight real thumbs.
-    const int h = m_thumbSize;
-    const int w = qMax(1, int(qRound(m_thumbSize * 0.75)));
-    return QSize(w, h);
+    // Portrait ~3:4 placeholder aspect (same for every unloaded cell).
+    return QSize(3, 4);
 }
 
 QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
@@ -601,7 +591,7 @@ void ThumbnailBar::applyThumbMetrics()
     // Gap between cells scales slightly with size; pad is already in sizeHint.
     setSpacing(qBound(1, pad / 2, 4));
     if (m_orientation == Qt::Horizontal) {
-        // Thin axis = height = pads + thumb + label (stable bar height).
+        // Cross-axis extent = pads + thumbSize + label (letterbox and crop share this).
         setMinimumHeight(kMinThumbSize + label + vPad);
         setMaximumHeight(kMaxThumbSize + label + vPad);
         setMinimumWidth(0);
@@ -718,8 +708,7 @@ int ThumbnailBar::thumbDecodePixels() const
 
 int ThumbnailBar::filmstripDecodeEdge() const
 {
-    // Match visual demand (logical thumb × DPR), but stay within the soft
-    // ladder so we do not kick full-size decodes. ceilLadderEdge picks 256/512.
+    // Sharpness only — never a layout size. Logical cells use thumbSize.
     const int want = thumbDecodePixels();
     return ThumtooCache::ceilLadderEdge(qMin(want, ThumtooCache::kGalleryLadderEdge));
 }
@@ -753,19 +742,19 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         }
         it->setIcon(QIcon(pm));
 
-        // image is already prepared:
-        //   crop mode  → square maxSize×maxSize
-        //   letterbox  → max edge = maxSize, aspect preserved (after appearance bake)
-        const QSize content(qMax(1, image.width()), qMax(1, image.height()));
+        // Layout size is always logical (thumbSize scale). Never use decode
+        // pixel dimensions — filmstripDecodeEdge may be 256/512 for sharpness.
+        QSize content(m_thumbSize, m_thumbSize);
+        if (!m_cropToSquare && m_delegate && image.width() > 0 && image.height() > 0) {
+            content = m_delegate->letterboxContentSize(image.size());
+        }
         it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
         it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
 
         if (m_delegate) {
             if (m_cropToSquare) {
-                // Uniform square cells (thumbSize + pad + label).
                 it->setSizeHint(m_delegate->cellSize(font()));
             } else {
-                // Cell matches prepared content aspect.
                 it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
             }
         }
@@ -821,16 +810,35 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         }
         return square;
     }
-    // Keep aspect: return the fitted image only (not padded into a transparent
-    // square). The delegate centers it in the cell and draws the outline tight
-    // around this pixmap so letterboxed thumbs are not framed as empty squares.
-    QImage fitted = image.scaled(maxSize, maxSize, Qt::KeepAspectRatio,
-                                 Qt::SmoothTransformation);
+    // Letterbox: cross-axis of the *strip* equals maxSize (logical or physical
+    // request from caller). Horizontal bar → height = maxSize; vertical → width.
+    // Return fitted pixels only — cell layout uses logical letterboxContentSize,
+    // not these pixel dimensions.
+    const bool horizontal = (m_orientation == Qt::Horizontal);
+    QImage fitted;
+    if (horizontal) {
+        const int boxW = qMax(maxSize, int(qRound(qreal(maxSize) * qreal(qMax(1, image.width()))
+                                                  / qreal(qMax(1, image.height())))) + 2);
+        fitted = image.scaled(boxW, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        if (!fitted.isNull() && fitted.height() != maxSize && fitted.height() >= maxSize - 1) {
+            const int w = qMax(1, int(qRound(qreal(maxSize) * qreal(fitted.width())
+                                             / qreal(qMax(1, fitted.height())))));
+            fitted = image.scaled(w, maxSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        }
+    } else {
+        const int boxH = qMax(maxSize, int(qRound(qreal(maxSize) * qreal(qMax(1, image.height()))
+                                                  / qreal(qMax(1, image.width())))) + 2);
+        fitted = image.scaled(maxSize, boxH, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        if (!fitted.isNull() && fitted.width() != maxSize && fitted.width() >= maxSize - 1) {
+            const int h = qMax(1, int(qRound(qreal(maxSize) * qreal(fitted.height())
+                                             / qreal(qMax(1, fitted.width())))));
+            fitted = image.scaled(maxSize, h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        }
+    }
     if (fitted.isNull()) {
         return QImage();
     }
-    // Near-square sources can land 1px short from integer rounding — snap to
-    // fill so square images never sit in a visible empty margin.
+    // Near-square: snap to filled square so density matches crop mode.
     if (fitted.width() >= maxSize - 1 && fitted.height() >= maxSize - 1
         && (fitted.width() != maxSize || fitted.height() != maxSize)) {
         fitted = image.scaled(maxSize, maxSize, Qt::IgnoreAspectRatio,
@@ -1330,8 +1338,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
         m_sessionImageOverrides.swap(kept);
     }
 
-    // Letterbox: uniform provisional portrait cells so packing is tight before
-    // decode; real aspect replaces this in setThumbnailIcon.
+    // Letterbox: provisional ~3:4 cells (cross-axis = thumbSize) until decode.
     const QSize cell = (m_delegate && !m_cropToSquare)
         ? m_delegate->cellSizeForContent(font(), m_delegate->provisionalContentSize())
         : (m_delegate ? m_delegate->cellSize(font())

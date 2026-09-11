@@ -49,9 +49,11 @@ public:
 
     /** Cell size for the current thumb size and font (square slot). */
     QSize cellSize(const QFont &font) const;
-    /** Cell size for a content pixmap size (letterbox: hug aspect + pads). */
-    QSize cellSizeForContent(const QFont &font, QSize contentPx) const;
-    /** Uniform letterbox size before real aspect is known (portrait-ish). */
+    /** Letterbox cell: hug logical content + cellPad on every side + label. */
+    QSize cellSizeForContent(const QFont &font, QSize contentAspect) const;
+    /** Logical letterbox content size (cross-axis = thumbSize) from any aspect. */
+    QSize letterboxContentSize(QSize aspect) const;
+    /** Provisional letterbox aspect before decode (portrait ~3:4). */
     QSize provisionalContentSize() const;
 
     /** Caption band under the icon (0 when labels hidden). */
@@ -120,8 +122,8 @@ public:
     bool labelsVisible() const { return m_labelsVisible; }
 
     /**
-     * When true (default), center-crop to a square cell. When false, fit the
-     * full image with letterboxing so aspect ratio is visible.
+     * When true (default), center-crop to a square thumbSize cell. When false,
+     * letterbox: whole image, cross-axis = thumbSize (see docs/FILMSTRIP_LAYOUT.md).
      */
     void setCropToSquare(bool on);
     bool cropToSquare() const { return m_cropToSquare; }
@@ -199,7 +201,7 @@ private:
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
     /** Physical pixel edge for decode/prepare (logical thumb × devicePixelRatio). */
     int thumbDecodePixels() const;
-    /** Soft-ladder edge actually used for filmstrip jobs (≤512, ≥ visual demand). */
+    /** Decode ladder edge for sharp icons (≥ thumb×DPR, ≤ gallery soft max). Layout ignores this. */
     int filmstripDecodeEdge() const;
 
     std::atomic<quint64> m_generation{0};

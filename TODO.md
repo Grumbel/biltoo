@@ -2,6 +2,29 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-433-filmstrip-layout-contract.** Clean filmstrip letterbox design:
+thumbSize = cross-axis; layout logical-only; decode separate.
+Prior: **432**.
+
+### Contract (docs/FILMSTRIP_LAYOUT.md)
+- `thumbSize` = image edge on the strip **cross-axis**
+- Letterbox horizontal: **height** = thumbSize, width from aspect (landscape fills bar height)
+- Cell hugs content + same pad all sides
+- `ThumbContentSizeRole` / sizeHint never use decode pixel sizes
+
+### Cleanup
+- Removed long-edge = thumbSize letterbox + “uniform height with empty band” hack
+- prepare scales to cross-axis; setThumbnailIcon stores logical size only
+
+### Done criteria
+- [x] Design doc
+- [x] letterboxContentSize + prepare + sizeHint
+- [ ] Bundle **433**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-432-text-region-rotation-coords.** Rotation still broke text
 overlays; document coordinate spaces and harden CW mapping. Prior: **431**.
 
