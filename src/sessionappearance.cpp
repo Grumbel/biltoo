@@ -157,6 +157,62 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     item->setSessionCrop(state.hasCrop, state.cropRect);
     // 4) Non-destructive colour grade (display path in ImageItem).
     item->setColorAdjustments(state.colorAdjust);
+    // 5) Layout geometry must match content orientation (all view modes).
+    syncItemLayoutToContentOrientation(item, state);
+}
+
+void syncItemLayoutToContentOrientation(ImageItem *item,
+                                        const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    // Prefer live full-source size after bake; else soft preview size.
+    QSize content = item->sourceImage().size();
+    if (content.width() < 1 || content.height() < 1) {
+        content = item->pixmap().size();
+    }
+    if (content.width() < 1 || content.height() < 1) {
+        // Flags only (no pixels yet): transpose intrinsic for odd turns.
+        if (!contentSwapsAspect(state)) {
+            return;
+        }
+        const QSize layout = item->imageSize();
+        if (layout.width() > 0 && layout.height() > 0) {
+            item->setIntrinsicSize(QSize(layout.height(), layout.width()));
+        }
+        return;
+    }
+
+    const QSize layout = item->imageSize();
+    if (layout.width() < 1 || layout.height() < 1) {
+        item->setIntrinsicSize(content);
+        return;
+    }
+
+    // Content pixels define orientation. If layout aspect disagrees, fix layout
+    // without adopting ladder soft dimensions when full source is present.
+    const bool contentLandscape = content.width() >= content.height();
+    const bool layoutLandscape = layout.width() >= layout.height();
+    if (contentLandscape == layoutLandscape) {
+        // Same aspect family — still prefer full-source pixel size when we have it
+        // and it is larger (native), or matches after a content bake.
+        if (!item->sourceImage().isNull()
+            && content.width() * content.height()
+                >= layout.width() * layout.height()) {
+            item->setIntrinsicSize(content);
+        }
+        return;
+    }
+
+    // Aspect mismatch (typical: 90° content, unrotated probe intrinsic).
+    if (!item->sourceImage().isNull()) {
+        // Full pixels are authoritative (already content-baked).
+        item->setIntrinsicSize(content);
+    } else {
+        // Soft-only: transpose layout (keep probe magnitude, swap axes).
+        item->setIntrinsicSize(QSize(layout.height(), layout.width()));
+    }
 }
 
 QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,

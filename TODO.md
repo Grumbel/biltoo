@@ -2,6 +2,30 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-411-content-layout-sync.** Central layout sync after content
+appearance so Gallery AABB, Workspace footprint, and filmstrip stay aligned.
+Prior: **410**.
+
+### Problem
+Save worked; load baked pixels but left unrotated intrinsic → Gallery cells /
+Workspace boxes stretched; filmstrip never got sessionAppearanceChanged on seed.
+
+### Change
+- `SessionAppearance::syncItemLayoutToContentOrientation` — single geometry gate
+- Called from `applyContentToItem` and soft `installDisplayPixels` (all modes)
+- `installDisplayPixels` emits `sessionAppearanceChanged` when content applied
+- Image LoadReplace emits after session bind
+- Gallery reflow via `requestDebouncedGalleryPack`
+
+### Done criteria
+- [x] Central sync
+- [ ] Human: reopen rotated PDF page — Gallery/Workspace/filmstrip match
+- [ ] Bundle **411**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-410-page-id-derived-hash.** Page content ids folded to plain
 `sha256:<64hex>` so put/get normalize always accepts them. Prior: **409**.
 

@@ -91,6 +91,17 @@ void applyCrop(ImageItem *item, const WorkspaceItemState &state);
 void applyContentToItem(ImageItem *item, const WorkspaceItemState &state);
 
 /**
+ * After content orientation is applied (pixels and/or flags), ensure layout
+ * geometry (intrinsic size / offset) matches content aspect. Odd quarter-turns
+ * transpose intrinsic when it still has the pre-rotate aspect — Gallery pack,
+ * selection AABB, and Workspace footprint stay aligned with the pixels.
+ *
+ * Does not change placement scale/pos; only imageSize() basis.
+ */
+void syncItemLayoutToContentOrientation(ImageItem *item,
+                                        const WorkspaceItemState &state);
+
+/**
  * Bake session content appearance into a QImage (no ImageItem).
  *
  * Same order as applyContentToItem. Used for filmstrip overrides, slideshow

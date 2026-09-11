@@ -128,43 +128,46 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         }
     }
 
+    bool appliedContent = false;
     if (kind == SessionAppearance::PixelKind::FullSource) {
         item->setSourceImage(pixels);
-        if (app) {
+        if (app && SessionAppearance::hasContentAppearance(*app)) {
+            SessionAppearance::applyContentToItem(item, *app);
+            appliedContent = true;
+        } else if (app) {
+            // Grade-only / empty content still sync chrome.
             SessionAppearance::applyContentToItem(item, *app);
         }
-        return;
-    }
-
-    // SoftPreview: bake into a stand-in image; never adopt soft size as layout.
-    QImage display = pixels;
-    if (app && SessionAppearance::hasContentAppearance(*app)) {
-        display = SessionAppearance::applyContentToImage(
-            pixels, *app, SessionAppearance::PixelKind::SoftPreview);
-        item->setContentHFlip(app->contentHFlip);
-        item->setContentVFlip(app->contentVFlip);
-        item->setSessionCrop(app->hasCrop, app->cropRect);
-        item->setColorAdjustments(app->colorAdjust);
-    }
-    item->setPreviewImage(display);
-
-    // Image mode: oriented soft must frame with content aspect, not unrotated
-    // native box — otherwise a 90°-rotated thumb is letterboxed and looks small
-    // during rapid next/prev until the full decode arrives.
-    if (isImageMode() && app
-        && SessionAppearance::contentSwapsAspect(*app)
-        && display.width() > 0 && display.height() > 0) {
-        const QSize oriented = display.size();
-        const QSize layout = item->imageSize();
-        // Only adjust temporary fit geometry when layout aspect disagrees with
-        // oriented soft. Full decode will replace with baked native size.
-        if (layout.width() > 0 && layout.height() > 0) {
-            const bool layoutLandscape = layout.width() >= layout.height();
-            const bool orientedLandscape = oriented.width() >= oriented.height();
-            if (layoutLandscape != orientedLandscape) {
-                item->setIntrinsicSize(oriented);
-            }
+    } else {
+        // SoftPreview: bake into a stand-in image; never adopt soft size as
+        // native layout magnitude — only fix aspect via sync helper.
+        QImage display = pixels;
+        if (app && SessionAppearance::hasContentAppearance(*app)) {
+            display = SessionAppearance::applyContentToImage(
+                pixels, *app, SessionAppearance::PixelKind::SoftPreview);
+            item->setContentHFlip(app->contentHFlip);
+            item->setContentVFlip(app->contentVFlip);
+            item->setSessionCrop(app->hasCrop, app->cropRect);
+            item->setColorAdjustments(app->colorAdjust);
+            appliedContent = true;
         }
+        item->setPreviewImage(display);
+        if (app) {
+            SessionAppearance::syncItemLayoutToContentOrientation(item, *app);
+        }
+    }
+
+    // Filmstrip / peers: one place emits oriented pixels after raw install.
+    if (appliedContent && sid != kInvalidSessionImageId) {
+        const QImage appearance = sessionAppearanceImage(item);
+        if (!appearance.isNull()) {
+            emit sessionAppearanceChanged(sid, item->path(), appearance);
+        }
+    }
+
+    // Gallery must reflow when orientation changes cell aspect (debounced).
+    if (appliedContent && isGalleryMode()) {
+        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
 }
 
@@ -774,6 +777,18 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             }
             if (m_sessionIndex >= 0) {
                 item->setSessionIndex(m_sessionIndex);
+            }
+            // Filmstrip: seed+bake may have applied content before the item was bound.
+            if (m_currentSessionId != kInvalidSessionImageId) {
+                if (const WorkspaceItemState *app = m_appearance.get(m_currentSessionId)) {
+                    if (SessionAppearance::hasContentAppearance(*app)) {
+                        const QImage appearance = sessionAppearanceImage(item);
+                        if (!appearance.isNull()) {
+                            emit sessionAppearanceChanged(
+                                m_currentSessionId, path, appearance);
+                        }
+                    }
+                }
             }
             // Never inherit Gallery/Workspace placement or scale.
             // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
