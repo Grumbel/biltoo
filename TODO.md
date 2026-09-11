@@ -2,6 +2,17 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-416-unused-var.** Drop unused `appliedContent` after filmstrip
+emit removal. Prior: **415**.
+
+### Done criteria
+- [x] Warning fixed
+- [ ] Bundle **416**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-415-no-filmstrip-on-decode.** Selection/soft install must not
 rewrite filmstrip thumbs. Prior: **414**.
 

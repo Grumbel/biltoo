@@ -129,14 +129,10 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         }
     }
 
-    bool appliedContent = false;
     if (kind == SessionAppearance::PixelKind::FullSource) {
         item->setSourceImage(pixels);
-        if (app && SessionAppearance::hasContentAppearance(*app)) {
-            SessionAppearance::applyContentToItem(item, *app);
-            appliedContent = true;
-        } else if (app) {
-            // Grade-only / empty content still sync chrome.
+        if (app) {
+            // Content bake + chrome (grade-only is a no-op on pixels).
             SessionAppearance::applyContentToItem(item, *app);
         }
     } else {
@@ -150,7 +146,6 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             item->setContentVFlip(app->contentVFlip);
             item->setSessionCrop(app->hasCrop, app->cropRect);
             item->setColorAdjustments(app->colorAdjust);
-            appliedContent = true;
         }
         item->setPreviewImage(display);
         if (app) {
