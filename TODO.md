@@ -12,7 +12,7 @@ Prior: **442**.
 
 ### Done criteria
 - [x] Path sync
-- [ ] Bundle **443**
+- [x] Bundle **443**
 
 ---
 
