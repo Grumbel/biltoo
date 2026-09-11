@@ -764,18 +764,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             if (m_sessionIndex >= 0) {
                 item->setSessionIndex(m_sessionIndex);
             }
-            // Filmstrip: seed+bake may have applied content before the item was bound.
-            if (m_currentSessionId != kInvalidSessionImageId) {
-                if (const WorkspaceItemState *app = m_appearance.get(m_currentSessionId)) {
-                    if (SessionAppearance::hasContentAppearance(*app)) {
-                        const QImage appearance = sessionAppearanceImage(item);
-                        if (!appearance.isNull()) {
-                            emit sessionAppearanceChanged(
-                                m_currentSessionId, path, appearance);
-                        }
-                    }
-                }
-            }
+            // Filmstrip overrides are not driven by decode (selection/nav).
             // Never inherit Gallery/Workspace placement or scale.
             // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
             // Arbitrary Workspace rotation stays on the free-form item only.
@@ -1089,10 +1078,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             rememberItemState(existing);
         }
         if (bound.id != kInvalidSessionImageId) {
-            const QImage appearance = sessionAppearanceImage(existing);
-            if (!appearance.isNull()) {
-                emit sessionAppearanceChanged(bound.id, existing->path(), appearance);
-            }
+            // Decode must not rewrite filmstrip (sessionAppearanceChanged).
             if (m_pendingSelectSessionIds.remove(bound.id)) {
                 existing->setSelected(true);
             }
@@ -1197,12 +1183,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             break;
         }
         applyStoredAppearance(item);
-        // Keep filmstrip overrides in sync (crop / grade) after drop or add.
+        // Decode/membership must not rewrite filmstrip; user edits emit overrides.
         if (haveBound && bound.id != kInvalidSessionImageId) {
-            const QImage appearance = sessionAppearanceImage(item);
-            if (!appearance.isNull()) {
-                emit sessionAppearanceChanged(bound.id, item->path(), appearance);
-            }
             // Paste: select tiles as they finish decoding.
             if (m_pendingSelectSessionIds.remove(bound.id)) {
                 item->setSelected(true);

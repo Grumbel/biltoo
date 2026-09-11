@@ -329,7 +329,10 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                 &ThumbnailBar::scheduleVisibleThumbnailLoads);
     }
 
-    // When thumtoo finishes a ladder level mid-session, refresh matching cells.
+    // When thumtoo finishes a ladder level, only fill filmstrip rows that were
+    // still waiting for a first thumb. Gallery/Image ladder growth for the same
+    // path must not rewrite an already-settled filmstrip icon (selection focus
+    // upgrades soft ladder and would otherwise "sharpen" the strip on click).
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int /*maxEdge*/, const QImage &) {
                 if (path.isEmpty() || m_files.isEmpty()) {
@@ -341,8 +344,6 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     if (m_files.at(i) != path) {
                         continue;
                     }
-                    m_thumbAwaitLadder.remove(i);
-                    m_thumbLoadScheduled.remove(i);
                     if (i < m_sessionIds.size()) {
                         const SessionImageId sid = m_sessionIds.at(i);
                         if (sid != kInvalidSessionImageId
@@ -350,6 +351,17 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                             continue;
                         }
                     }
+                    const bool wasAwaiting = m_thumbAwaitLadder.contains(i);
+                    bool alreadyLoaded = false;
+                    if (QListWidgetItem *it = item(i)) {
+                        alreadyLoaded =
+                            it->data(ThumbnailDelegate::ThumbLoadedRole).toBool();
+                    }
+                    if (alreadyLoaded && !wasAwaiting) {
+                        continue;
+                    }
+                    m_thumbAwaitLadder.remove(i);
+                    m_thumbLoadScheduled.remove(i);
                     const QPointer<ThumbnailBar> guard(this);
                     QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
                         ThumbnailBar *bar = guard.data();

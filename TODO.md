@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-417-filmstrip-no-ladder-refresh.** Filmstrip thumb still changed
+on click via ladderReady + residual decode emits. Prior: **416**.
+
+### Cause
+Gallery focus schedules a higher soft ladder for the path. `ladderReady`
+re-ran `makeThumbnail` for **already-loaded** filmstrip rows → sharper icon.
+Also LoadAdd/LoadReplace still emitted appearance overrides from decode.
+
+### Fix
+- ladderReady: only refresh rows awaiting first thumb (or not yet loaded)
+- Remove remaining decode→filmstrip emits from imageview_load
+
+### Done criteria
+- [x] Settled filmstrip icons stable across selection
+- [ ] Bundle **417**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-416-unused-var.** Drop unused `appliedContent` after filmstrip
 emit removal. Prior: **415**.
 
