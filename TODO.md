@@ -2,6 +2,32 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-468-gallery-soft-first-limits.** Soft-first Gallery; LQIP on sizeReady; document/env limits.
+Prior: **467**.
+
+### Symptoms
+First few tiles fast; rest slow. Logs showed `need=1024 have=0` while thumtoo
+built soft 512; `inflight=1024` blocked ladderReady (edge=512) from clearing.
+LQIP missing on cold open after probe. Caps undocumented.
+
+### Fix
+- Progressive soft-first: `requestEdge = min(want, 512)` until soft present
+- ladderReady clears inflight on useful soft delivery even if edge < inflight
+- sizeReady installs LQIP when tiles still blank
+- Document limits in `docs/GALLERY_SOFT.md`
+- Env: `BILTOO_GALLERY_DECODE_CONCURRENCY`, `BILTOO_THUMTOO_PIXEL_JOBS`
+
+### Done criteria
+- [x] Soft-first
+- [x] ladderReady unlock
+- [x] LQIP on sizeReady
+- [x] Limits docs + env
+- [x] Bundle **468**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-467-gallery-display-sized.** Gallery matches on-screen edge; no soft-max cliff, no native full.
 Prior: **466**.
 
