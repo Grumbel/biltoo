@@ -446,12 +446,13 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                         }
                     }
                     const bool wasAwaiting = m_thumbAwaitLadder.contains(i);
-                    bool alreadyLoaded = false;
+                    int haveEdge = 0;
                     if (QListWidgetItem *it = item(i)) {
-                        alreadyLoaded =
-                            it->data(ThumbnailDelegate::ThumbLoadedRole).toBool();
+                        haveEdge =
+                            it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
                     }
-                    if (alreadyLoaded && !wasAwaiting) {
+                    // Soft stand-in still upgrades when display edge is higher.
+                    if (haveEdge >= decodeSize * 9 / 10 && !wasAwaiting) {
                         continue;
                     }
                     m_thumbAwaitLadder.remove(i);
@@ -849,8 +850,9 @@ int ThumbnailBar::thumbDecodePixels() const
 int ThumbnailBar::filmstripDecodeEdge() const
 {
     // Sharpness only — never a layout size. Logical cells use thumbSize.
-    const int want = thumbDecodePixels();
-    return ThumtooCache::ceilLadderEdge(qMin(want, ThumtooCache::kGalleryLadderEdge));
+    // Power-of-two ladder step for thumbSize×DPR — no soft-max clamp. Soft
+    // ladder is a placeholder until this edge is installed (ThumbDecodeEdgeRole).
+    return ThumtooCache::ceilLadderEdge(thumbDecodePixels());
 }
 
 
@@ -889,6 +891,8 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         : m_delegate->letterboxContentSize(image.size());
     it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
     it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
+    it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole,
+                qMax(image.width(), image.height()));
 
     const QSize hint = m_cropToSquare
         ? m_delegate->cellSize(font())
@@ -1213,6 +1217,7 @@ void ThumbnailBar::invalidateThumbPixels()
             it->setIcon(QIcon());
             it->setData(ThumbnailDelegate::ThumbPixmapRole, QVariant());
             it->setData(ThumbnailDelegate::ThumbLoadedRole, false);
+            it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole, 0);
             if (m_delegate) {
                 if (m_cropToSquare) {
                     it->setData(ThumbnailDelegate::ThumbContentSizeRole,
@@ -1377,9 +1382,11 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             || m_thumbFailed.contains(i)) {
             continue;
         }
-        // Already has a real decoded thumb — skip.
+        // Soft placeholder is fine until long edge meets the display ladder step.
         if (QListWidgetItem *it = item(i)) {
-            if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()) {
+            const int haveEdge =
+                it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+            if (haveEdge >= decodeSize * 9 / 10) {
                 continue;
             }
         }

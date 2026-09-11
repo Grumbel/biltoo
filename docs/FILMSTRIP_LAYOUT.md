@@ -43,6 +43,15 @@ Logical pixels along the strip **cross-axis** (thin axis of the bar).
 
 `logicalContentSize(index)` is the **only** way paint and sizeHint read content size.
 
+## Decode edge (no soft-only clamp)
+
+`filmstripDecodeEdge()` = `ceilLadderEdge(thumbSize × DPR)` on the power-of-two
+ladder `{128, 256, 512, 1024, 2048}`. Soft durable levels (≤512) are a
+**placeholder**; `ThumbDecodeEdgeRole` tracks installed long edge and the
+scheduler upgrades until `have ≥ ~90%` of the display step.
+
+`kMaxThumbSize` is **1024** (layout max, matches highest ladder step).
+
 ## Prepare (`prepareThumbnailFromImage`)
 
 Every install path (pool worker, session override, ladder) must call

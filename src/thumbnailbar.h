@@ -33,6 +33,8 @@ public:
     static constexpr int ThumbLoadedRole = Qt::UserRole + 43;
     /** Prepared thumb pixmap (correct aspect + DPR). Prefer over DecorationRole. */
     static constexpr int ThumbPixmapRole = Qt::UserRole + 44;
+    /** Long edge of installed pixmap (device px). Soft placeholder until >= want. */
+    static constexpr int ThumbDecodeEdgeRole = Qt::UserRole + 45;
     /** Cross-axis pad (~thumb/24, clamped). Top/bottom on horizontal bar. */
     int cellPad() const;
     /** Flow-axis pad per side so 2·flowPad + spacing ≈ cellPad between images. */
@@ -156,7 +158,8 @@ public:
 
     static constexpr int kDefaultThumbSize = 96;
     static constexpr int kMinThumbSize = 48;
-    static constexpr int kMaxThumbSize = 256;
+    /** Layout max matches highest ladder step (power-of-two). No soft-only clamp. */
+    static constexpr int kMaxThumbSize = 1024;
 
     static int heightForThumbSize(int thumbSize) { return extentForThumbSize(thumbSize); }
     static int thumbSizeForHeight(int height) { return thumbSizeForExtent(height); }
