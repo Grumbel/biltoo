@@ -484,6 +484,8 @@ public:
     int setTextSearchQuery(const QString &query);
     QString textSearchQuery() const { return m_textSearchQuery; }
     int textSearchMatchCount() const { return m_textSearchMatches.size(); }
+    bool hasTextLayer() const;
+    int textLayerRegionCount() const;
     /** Soft match for OCR noise (alnum-only + light edit distance). Default on. */
     void setTextSearchFuzzy(bool on);
     bool textSearchFuzzy() const { return m_textSearchFuzzy; }

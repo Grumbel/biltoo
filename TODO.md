@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-453-find-no-matches.** Find stuck on "No matches" — diagnostics +
+extract fixes. Prior: **452**.
+
+### Cause / fixes
+- Text-layer refresh no longer requires pure Image mode (page-ref is enough)
+- `ensurePageTextLayer` no longer holds `g_mu` across MuPDF extract (GUI +
+  document-search worker could block each other)
+- Label distinguishes **No text** / **Not a document page** / **No matches**
+- Status bar explains empty text layer vs no hits
+- Doc scan always includes current page path when session expand is empty
+
+### Done criteria
+- [x] Clearer empty-layer vs no-match
+- [x] Mutex not held during extract
+- [ ] Bundle **453**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-452-qcheckbox-fwd.** Forward-declare QCheckBox/QToolButton in
 mainwindow.h (header is included before widgets headers). Prior: **451**.
 

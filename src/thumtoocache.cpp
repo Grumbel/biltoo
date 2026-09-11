@@ -1475,8 +1475,11 @@ PageTextLayer convertLayer(const thumtoo::PageTextLayer &layer)
 PageTextLayer cachedPageTextLayer(const QString &sessionPath)
 {
     init();
-    std::lock_guard lock(g_mu);
-    thumtoo::Client *c = clientUnlocked();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
     if (!c) {
         return {};
     }
@@ -1484,6 +1487,7 @@ PageTextLayer cachedPageTextLayer(const QString &sessionPath)
     if (uri.empty()) {
         return {};
     }
+    // Client DB reads are internally synchronized; do not hold g_mu across I/O.
     auto layer = c->get_page_text_layer(uri);
     if (!layer) {
         return {};
@@ -1494,8 +1498,11 @@ PageTextLayer cachedPageTextLayer(const QString &sessionPath)
 PageTextLayer ensurePageTextLayer(const QString &sessionPath)
 {
     init();
-    std::lock_guard lock(g_mu);
-    thumtoo::Client *c = clientUnlocked();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
     if (!c) {
         return {};
     }
@@ -1503,6 +1510,8 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath)
     if (uri.empty()) {
         return {};
     }
+    // Extract/MuPDF must not run under g_mu — document search runs this on a
+    // worker while the GUI may also refresh the current page.
     auto layer = c->ensure_page_text_layer(uri);
     if (!layer) {
         return {};

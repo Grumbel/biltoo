@@ -804,6 +804,17 @@ void MainWindow::onSearchTextChanged(const QString &text)
     m_docSearchHitIndex = -1;
     m_docSearchQuery = text.trimmed();
     updateSearchMatchLabel();
+    if (!text.trimmed().isEmpty() && statusBar()) {
+        if (!PagePath::isPageRef(m_imageView->classicPath())) {
+            statusBar()->showMessage(
+                tr("Find works on PDF / DjVu / EPUB pages"), 4000);
+        } else if (!m_imageView->hasTextLayer()) {
+            statusBar()->showMessage(
+                tr("No extractable text on this page (scanned image?)"), 4000);
+        } else if (m_docSearchPageMatchCount == 0) {
+            statusBar()->showMessage(tr("No matches on this page"), 2000);
+        }
+    }
     scheduleDocumentSearch(text);
 }
 
@@ -838,6 +849,11 @@ void MainWindow::updateSearchMatchLabel()
         }
     } else if (pageHits > 0) {
         text = tr("%n on page", "", pageHits);
+    } else if (m_imageView && !m_imageView->hasTextLayer()
+               && PagePath::isPageRef(m_imageView->classicPath())) {
+        text = tr("No text");
+    } else if (m_imageView && !PagePath::isPageRef(m_imageView->classicPath())) {
+        text = tr("Not a document page");
     } else {
         text = tr("No matches");
     }
@@ -873,6 +889,9 @@ QStringList MainWindow::documentPagePathsForSearch() const
         if (PagePath::isPageRef(p) && PagePath::documentFilePath(p) == doc) {
             out.append(p);
         }
+    }
+    if (out.isEmpty() && PagePath::isPageRef(path)) {
+        out.append(path);
     }
     if (!out.isEmpty()) {
         return out;

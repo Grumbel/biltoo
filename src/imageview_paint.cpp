@@ -899,9 +899,11 @@ void ImageView::refreshTextLayer()
     m_textLayerPath.clear();
     m_textSearchMatches.clear();
     const bool needLayer = m_showTextRegions || !m_textSearchQuery.isEmpty();
-    if (!needLayer || !isImageMode()) {
+    if (!needLayer) {
         return;
     }
+    // Search/outlines need a page ref; allow extract outside pure Image mode
+    // (e.g. user opened Find while still on a page path).
     const QString path = classicPath();
     if (path.isEmpty() || !PagePath::isPageRef(path)) {
         return;
@@ -1086,6 +1088,19 @@ int ImageView::setTextSearchQuery(const QString &query)
     }
     viewport()->update();
     return m_textSearchMatches.size();
+}
+
+bool ImageView::hasTextLayer() const
+{
+    return !m_textLayer.regions.isEmpty() && m_textLayerPath == classicPath();
+}
+
+int ImageView::textLayerRegionCount() const
+{
+    if (!hasTextLayer()) {
+        return 0;
+    }
+    return m_textLayer.regions.size();
 }
 
 
