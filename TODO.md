@@ -16,7 +16,7 @@ Prior: **445**. Scrollbar-side experiments (446–447) abandoned.
 
 ### Done criteria
 - [x] Filmstrip dockable on all four edges
-- [ ] Bundle **448**
+- [x] Bundle **448**
 
 ---
 
