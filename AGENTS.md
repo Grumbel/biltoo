@@ -10,8 +10,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-396-content-bake-geometry** (AABB after flip/rotate).
-Next bundle number: **397**.
+Latest agent handoff: **TODO.md → biltoo-397-filmstrip-content-appearance** (filmstrip after flip).
+Next bundle number: **398**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,

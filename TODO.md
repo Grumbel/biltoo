@@ -2,15 +2,14 @@
 
 ## Status (2026-09-11)
 
-**Tip: biltoo-396-content-bake-geometry.** After content flip/rotate, item AABB /
-layout size stayed on the pre-bake aspect (esp. soft Gallery tiles + Workspace
-90°). Prior: **395**. Next: **397**.
+**Tip: biltoo-397-filmstrip-content-appearance.** Filmstrip stayed on unflipped
+pixels after Gallery soft flip/rotate. Prior: **396**. Next: **398**.
 
-- `bakeRotate90`: always swap `m_intrinsicSize` on odd quarter-turns (including
-  soft-only); sync offset; `invalidateDeviceCache`.
-- `bakeFlip`: re-sync offset to current display size + invalidate cache.
-- Workspace rotate L/R: preserve scene footprint when axes swap; Gallery still
-  re-packs via `applyLayout(ContentChange)`.
+- `sessionAppearanceImage` used only `sourceImage()`; soft tiles have preview
+  only → null → no `sessionAppearanceChanged` → filmstrip never got an override.
+- Now uses `displayImage()` (source else preview). Peer soft sync copies preview.
+
+---
 
 ---
 

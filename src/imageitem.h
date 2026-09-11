@@ -87,6 +87,12 @@ public:
      */
     void setIntrinsicSize(const QSize &size);
     const QImage &sourceImage() const { return m_source; }
+    /** Best pixels for display / filmstrip override: full source, else soft preview. */
+    const QImage &displayImage() const
+    {
+        return !m_source.isNull() ? m_source : m_preview;
+    }
+    const QImage &previewImage() const { return m_preview; }
     /**
      * True when a full (non-preview) decode is present. Provisional thumbnail
      * pixels do not count — gallery still schedules a full load.

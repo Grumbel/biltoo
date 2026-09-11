@@ -194,10 +194,12 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     if (!item) {
         return {};
     }
-    // Content 90°/flip/crop are baked into source pixels. Placement rotation is not.
-    // Colour grade is non-destructive (applied on display) — include it so
-    // ThumbnailBar overrides and drop-duplicate thumbs match the live tile.
-    QImage img = item->sourceImage();
+    // Content 90°/flip/crop are baked into source *or* soft-preview pixels.
+    // Gallery soft tiles often have only m_preview — using sourceImage alone
+    // left the filmstrip on the unflipped ladder after Gallery flip/rotate.
+    // Placement rotation is not included. Colour grade is non-destructive
+    // (applied on display) — include it so ThumbnailBar overrides match the tile.
+    QImage img = item->displayImage();
     if (img.isNull()) {
         return {};
     }
@@ -523,6 +525,9 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         }
         if (!src.isNull()) {
             other->setSourceImage(src);
+        } else if (!item->previewImage().isNull()) {
+            // Soft Gallery: content bake lives on the preview; peers must match.
+            other->setPreviewImage(item->previewImage());
         }
         other->setItemHFlip(hFlip);
         other->setItemVFlip(vFlip);
