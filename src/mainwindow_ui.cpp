@@ -1140,6 +1140,7 @@ void MainWindow::createToolBar()
     locLay->addWidget(m_locationEdit, 1);
     m_locationBar->addWidget(locHost);
     // Transient by default (Ctrl+L shows it); pin via View menu.
+    m_locationBar->installEventFilter(this);
     m_locationBar->setVisible(false);
 
     // Search bar (same pattern as Location): Ctrl+F shows; pin via View menu.
@@ -1200,6 +1201,7 @@ void MainWindow::createToolBar()
     searchLay->addWidget(m_searchMatchLabel);
     searchLay->addWidget(m_searchFuzzyCheck);
     m_searchBar->addWidget(searchHost);
+    m_searchBar->installEventFilter(this);
     m_searchBar->setVisible(false);
 
     auto *findNextAct = new QAction(tr("Find &Next"), this);

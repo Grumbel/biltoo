@@ -2456,16 +2456,43 @@ void MainWindow::stopSlideshow()
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == m_locationEdit && event->type() == QEvent::KeyPress) {
+    // Escape is also a WindowShortcut (fullscreen / leave Image). QLineEdit does
+    // not accept ShortcutOverride for Esc, so the window shortcut wins unless we
+    // claim it here first — KeyPress alone never runs.
+    auto under = [](QWidget *root, QObject *obj) -> bool {
+        if (!root || !obj) {
+            return false;
+        }
+        if (obj == root) {
+            return true;
+        }
+        if (auto *w = qobject_cast<QWidget *>(obj)) {
+            return root->isAncestorOf(w);
+        }
+        return false;
+    };
+    const bool locWatch = under(m_locationBar, watched) || watched == m_locationEdit;
+    const bool searchWatch = under(m_searchBar, watched) || watched == m_searchEdit;
+    if (locWatch
+        && (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress)) {
         const auto *ke = static_cast<QKeyEvent *>(event);
         if (ke->key() == Qt::Key_Escape) {
+            if (event->type() == QEvent::ShortcutOverride) {
+                event->accept();
+                return true;
+            }
             cancelLocationBar();
             return true;
         }
     }
-    if (watched == m_searchEdit && event->type() == QEvent::KeyPress) {
+    if (searchWatch
+        && (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress)) {
         const auto *ke = static_cast<QKeyEvent *>(event);
         if (ke->key() == Qt::Key_Escape) {
+            if (event->type() == QEvent::ShortcutOverride) {
+                event->accept();
+                return true;
+            }
             cancelSearchBar();
             return true;
         }

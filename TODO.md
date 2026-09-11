@@ -2,6 +2,28 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-462-location-esc-override.** Esc on Location via ShortcutOverride.
+Prior: **461**.
+
+### Cause
+Window-level Escape is a `QShortcut`. QLineEdit never accepts
+`QEvent::ShortcutOverride` for Esc, so the shortcut fires and KeyPress on the
+edit never runs — `hasFocus()` checks in the shortcut were a second line of
+defence that still lost the race in practice.
+
+### Fix
+- eventFilter: accept **ShortcutOverride** + handle **KeyPress** for Esc under
+  Location/Search bar (including toolbar children)
+- Window Esc: `focusWidget` ancestry under the bars
+
+### Done criteria
+- [x] ShortcutOverride claims Esc
+- [ ] Bundle **462**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-461-location-esc.** Esc dismisses Location (and Find) bar.
 Prior: **460**.
 

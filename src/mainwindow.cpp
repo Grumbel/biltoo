@@ -303,12 +303,20 @@ MainWindow::MainWindow(QWidget *parent)
     auto *escShortcut = new QShortcut(Qt::Key_Escape, this);
     escShortcut->setContext(Qt::WindowShortcut);
     connect(escShortcut, &QShortcut::activated, this, [this]() {
-        // Location / Find bars steal Esc before crop / mode navigation.
-        if (m_locationEdit && m_locationEdit->hasFocus()) {
+        // Prefer focusWidget ancestry: hasFocus() can be false for clear-button
+        // children or right after ShortcutOverride races.
+        auto focusIn = [](QWidget *root) -> bool {
+            if (!root || !root->isVisible()) {
+                return false;
+            }
+            QWidget *f = QApplication::focusWidget();
+            return f && (f == root || root->isAncestorOf(f));
+        };
+        if (focusIn(m_locationBar) || (m_locationEdit && m_locationEdit->hasFocus())) {
             cancelLocationBar();
             return;
         }
-        if (m_searchEdit && m_searchEdit->hasFocus()) {
+        if (focusIn(m_searchBar) || (m_searchEdit && m_searchEdit->hasFocus())) {
             cancelSearchBar();
             return;
         }
