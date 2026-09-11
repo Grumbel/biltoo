@@ -2,6 +2,30 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-429-text-regions-crop.** Text overlays wrong after session crop.
+Prior: **428**.
+
+### Cause
+1. `setSourceImage` refused to shrink intrinsic size (ladder guard), so after
+   `cropToLocalRect` the item kept pre-crop native intrinsic / offset while
+   pixels were crop-sized — text crop-local coords and hit tests drifted.
+2. Crop mapping scaled crop→work loosely; no final scale into live
+   `sourceImage()` pixel size when it differed from the crop AABB.
+
+### Fix
+- Full/post-crop `setSourceImage` always adopts source size as intrinsic + offset.
+- Harden orient-then-crop in `mapSourceRectToContentDisplay`.
+- After map, scale crop-local rect into live display pixel size when needed.
+
+### Done criteria
+- [x] Intrinsic shrink on crop
+- [x] Text crop map → display pixels
+- [ ] Bundle **429**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-428-filmstrip-letterbox-cross-axis.** Landscape letterbox thumbs
 fill strip height (cross-axis = thumbSize); cell hugs + pad. Prior: **427**.
 

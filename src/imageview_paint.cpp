@@ -1126,8 +1126,41 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
         return {};
     }
 
-    // Crop → flip → quarter-turn (identical to applyContentToImage geometry).
-    return SessionAppearance::mapSourceRectToContentDisplay(inSource, sourceSize, st);
+    // Flip → quarter-turn → crop (live post-bake + cropToLocalRect space).
+    QRectF mapped = SessionAppearance::mapSourceRectToContentDisplay(inSource, sourceSize, st);
+    if (mapped.isEmpty()) {
+        return {};
+    }
+    // Live pixels may differ in magnitude from the crop AABB (DPR, soft stand-in,
+    // or setSourceImage before intrinsic sync). Scale crop-local → display pixels.
+    if (st.hasCrop && !st.cropRect.isEmpty() && !item->sourceImage().isNull()) {
+        const QSize disp = item->sourceImage().size();
+        if (disp.width() > 0 && disp.height() > 0) {
+            // Expected crop-local size from the same mapping basis as the mapper.
+            QSize work = sourceSize;
+            const int turns = st.contentQuarterTurns % 4;
+            const int tnorm = turns < 0 ? turns + 4 : turns;
+            if ((tnorm % 2) != 0) {
+                work.transpose();
+            }
+            QRect crop = st.cropRect.normalized();
+            QSize basis = st.cropSourceSize;
+            if (basis.width() < 1 || basis.height() < 1) {
+                basis = work;
+            }
+            if (basis != work) {
+                crop = SessionAppearance::scaleCropRect(crop, basis, work);
+            }
+            if (crop.width() > 0 && crop.height() > 0
+                && (crop.width() != disp.width() || crop.height() != disp.height())) {
+                const qreal sx = qreal(disp.width()) / qreal(crop.width());
+                const qreal sy = qreal(disp.height()) / qreal(crop.height());
+                mapped = QRectF(mapped.x() * sx, mapped.y() * sy,
+                                mapped.width() * sx, mapped.height() * sy);
+            }
+        }
+    }
+    return mapped;
 }
 
 QRectF ImageView::textRubberBandImageRect() const

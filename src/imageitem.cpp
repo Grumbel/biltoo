@@ -110,15 +110,18 @@ void ImageItem::setSourceImage(const QImage &image)
             && m_intrinsicSize.height() > 1
             && m_intrinsicSize != QSize(1000, 1000)
             && m_intrinsicSize != QSize(1024, 1024);
-        // Grow intrinsic when a larger full decode arrives; never shrink to a
-        // ladder step (that made HUD show 1024×… instead of native page size).
+        // Full / post-crop pixels always define layout geometry. Grow when a
+        // larger decode arrives; also shrink when session crop replaces a larger
+        // intrinsic (never leave pre-crop native size with cropped pixels — that
+        // skews offset and text-region mapping). Soft ladder uses setPreviewImage
+        // and does not touch intrinsic.
         if (!intrinsicKnown
             || (qint64(src.width()) * src.height()
-                > qint64(m_intrinsicSize.width()) * m_intrinsicSize.height())) {
+                != qint64(m_intrinsicSize.width()) * m_intrinsicSize.height())
+            || src != m_intrinsicSize) {
             m_intrinsicSize = src;
         }
-        const QSize s = imageSize();
-        setOffset(-s.width() / 2.0, -s.height() / 2.0);
+        setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
         updateDisplayedPixmap();
     } else {
         setPixmap(QPixmap());

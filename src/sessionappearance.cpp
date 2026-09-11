@@ -133,25 +133,38 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
         work = QSize(work.height(), work.width());
     }
 
-    // 3) Crop in post-orientation space (cropSourceSize is that space's size).
+    // 3) Crop in post-orientation space (cropRect / cropSourceSize from
+    //    recordSessionCrop — same space as the post-bake full image).
     if (state.hasCrop && !state.cropRect.isEmpty()) {
-        QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, work);
-        if (state.cropSourceSize.isEmpty()
-            && (crop.right() >= work.width() || crop.bottom() >= work.height())) {
-            const QSize swapped(work.height(), work.width());
-            if (swapped.width() > 0 && swapped.height() > 0
-                && crop.right() < swapped.width() && crop.bottom() < swapped.height()
-                && swapped != work) {
-                crop = scaleCropRect(state.cropRect, swapped, work);
+        QRect crop = state.cropRect.normalized();
+        QSize basis = state.cropSourceSize;
+        if (basis.width() < 1 || basis.height() < 1) {
+            basis = work;
+        }
+        // Scale crop into the oriented full-page size we just produced.
+        if (basis != work) {
+            crop = scaleCropRect(crop, basis, work);
+            // Legacy: crop recorded against orientation-swapped dimensions only.
+            if ((crop.right() >= work.width() || crop.bottom() >= work.height())) {
+                const QSize swapped(basis.height(), basis.width());
+                if (swapped != basis && swapped.width() > 0 && swapped.height() > 0) {
+                    const QRect alt = scaleCropRect(state.cropRect.normalized(), swapped, work);
+                    if (alt.right() < work.width() && alt.bottom() < work.height()
+                        && alt.width() >= 1 && alt.height() >= 1) {
+                        crop = alt;
+                    }
+                }
             }
         }
         if (crop.width() < 1 || crop.height() < 1) {
             return {};
         }
+        // Clip to crop; regions wholly outside vanish (empty).
         r = r.intersected(QRectF(crop));
         if (r.isEmpty()) {
             return {};
         }
+        // Crop-local coordinates (0,0) = crop top-left in oriented full page.
         r = r.translated(-qreal(crop.x()), -qreal(crop.y()));
     }
 
