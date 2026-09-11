@@ -17,7 +17,7 @@ drag requested square (or arbitrary) sizes → landscape stretched to square.
 
 ### Done criteria
 - [x] ThumbPixmapRole paint path
-- [ ] Bundle **435**
+- [x] Bundle **435**
 
 ---
 
