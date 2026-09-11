@@ -10,12 +10,13 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-392-gallery-soft-vs-ondemand** (soft vs on-demand).
-Next bundle number: **393**.
+Latest agent handoff: **TODO.md → biltoo-393-content-variant-identity** (content vs variant id note).
+Next bundle number: **394**.
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
 only appearance/crop key. Path is decode source only. Before any crop, flip,
 drop, or filmstrip change, read §0, §13 (crop lock), and §14 (id allocation).
+Content vs variant layers: [CONTENT-VARIANT.md](CONTENT-VARIANT.md).
 
 **Slideshow:** [SLIDESHOW.md](SLIDESHOW.md) — pure-clock vs live fade, handoff/preload rules, anti-patterns (read before touching transitions).
 

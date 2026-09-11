@@ -497,3 +497,18 @@ appearance map / canvas bind that could still hold old ids.
 - Legacy `m_itemStates` for *unbound* tiles (no SessionImageId yet)
 
 **Do not add** new path-keyed identity, appearance, or selection APIs.
+
+
+---
+
+## 15. Content id vs variant id (design note)
+
+SessionImageId is the **variant** layer (one concrete edited instance). The
+**content** layer is the source bytes (thumtoo `content_id` / SHA-256, or path
+until hashed).
+
+Do not mix them: non-destructive crop/flip/grade must not invent a new content
+hash; export of a derivative may. Filmstrip, appearance, and canvas bind stay
+on SessionImageId; “same file / duplicates / tags” stay on content id.
+
+Full brainstorm, schemes, and rules of thumb: [CONTENT-VARIANT.md](CONTENT-VARIANT.md).

@@ -1,5 +1,15 @@
 # TODO / agent handoff
 
+## Status (2026-09-11)
+
+**Tip: biltoo-393-content-variant-identity.** Design note only: content id vs
+variant id (`SessionImageId`). New [CONTENT-VARIANT.md](CONTENT-VARIANT.md);
+IDENTITY.md §15 pointer; AGENTS handoff bumped. No code.
+
+Prior tip: biltoo-392-gallery-soft-vs-ondemand. Next bundle: **394**.
+
+---
+
 ## Status (2026-09-09, session end)
 
 **Tip: biltoo-392-gallery-soft-vs-ondemand.** Soft ≤512 always; >512 visible-only. Prior: 391–365. Include TocPanel + QDesktopServices. Prior: 364. Link pointing-hand + status tip. Prior: 363. Link clicks + Contents dock (TOC). Prior: 362. Shift+drag text select + Copy. Prior: 361. PDF text: no Y-flip (DjVu only). Prior: 360. EPUB text regions: no Y-flip (reflow is Y-down). Prior: 359. Find on Page + region highlight (needs thumtoo ≥ 131/136). Prior: 358. Text region debug overlay (needs thumtoo ≥ 131). Prior plan: biltoo-357. (regions, search, rubberband, cache always; see plan below). Requires **thumtoo ≥ 123** for `//pdfimage`
