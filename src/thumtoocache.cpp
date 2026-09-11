@@ -10,6 +10,7 @@
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QUrl>
 #include <QRect>
 #include <QMetaObject>
 #include <QSet>
@@ -1552,6 +1553,7 @@ namespace {
 
 thumtoo::AppearanceStore &appearanceStore()
 {
+    // Non-throwing open; invalid store → load/save become no-ops.
     static thumtoo::AppearanceStore store = thumtoo::AppearanceStore::open();
     return store;
 }
@@ -1562,10 +1564,15 @@ std::string pathContentId(const QString &path)
         return {};
     }
     // Regular local files only for v1 (no //page: / archive members yet).
-    if (path.contains(QStringLiteral("//"))) {
+    // Allow "file:///..." but reject thumtoo compound URIs (…//page:, //rar:…).
+    QString local = path;
+    if (local.startsWith(QStringLiteral("file:"))) {
+        local = QUrl(local).toLocalFile();
+    }
+    if (local.contains(QStringLiteral("//"))) {
         return {};
     }
-    const QFileInfo fi(path);
+    const QFileInfo fi(local);
     if (!fi.isFile()) {
         return {};
     }

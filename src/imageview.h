@@ -975,6 +975,11 @@ private:
      */
     void applyContentAppearanceAfterDecode(ImageItem *item);
     /**
+     * If @p sid has no m_appearance entry, load durable content-hash state for
+     * @p path into the store (no-op when missing / thumtoo off).
+     */
+    void seedSessionAppearanceFromState(SessionImageId sid, const QString &path);
+    /**
      * Map item-local draft rect to source pixel rect of the *current* pixmap,
      * then compose into original on-disk coordinates in @p state.
      */

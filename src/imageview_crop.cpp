@@ -729,6 +729,7 @@ void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
     WorkspaceItemState fallback;
     const SessionImageId sid = item->sessionId();
     if (sid != kInvalidSessionImageId) {
+        seedSessionAppearanceFromState(sid, item->path());
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             app = &(*it);
         }

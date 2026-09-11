@@ -2,6 +2,25 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-401-appearance-state-seed.** Seed durable orientation on Image-mode
+full decode and soft install; shared helper. Prior: **400**. Needs **thumtoo ≥ 144**.
+
+### Change
+- `seedSessionAppearanceFromState` — single helper
+- Seed in `createItemFromImage` (Image mode), `installDisplayPixels`, 
+  `applyContentAppearanceAfterDecode`
+- Resolve session id before seed (soft path often had invalid sid)
+- `file://` paths accepted for content id; AppearanceStore open is non-throwing
+
+### Done criteria
+- [x] Image-mode LoadReplace seeds before bake
+- [ ] Human: rotate, quit, reopen — orientation restored in Image mode
+- [ ] Bundle **401**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-400-content-appearance-state.** Persist flip/rotate/crop in
 `$XDG_STATE_HOME/thumtoo` via thumtoo AppearanceStore (content sha256). Prior: **399**.
 Requires **thumtoo ≥ 143**.

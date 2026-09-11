@@ -48,6 +48,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         WorkspaceItemState pathFallback;
         if (isImageMode()) {
             if (m_currentSessionId != kInvalidSessionImageId) {
+                seedSessionAppearanceFromState(m_currentSessionId, path);
                 if (const WorkspaceItemState *sit = m_appearance.get(m_currentSessionId)) {
                     app = &(*sit);
                 }
@@ -70,6 +71,32 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     return item;
 }
 
+
+void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString &path)
+{
+    if (sid == kInvalidSessionImageId || path.isEmpty()) {
+        return;
+    }
+    if (m_appearance.contains(sid)) {
+        return;
+    }
+    ThumtooCache::StoredContentAppearance stored;
+    if (!ThumtooCache::loadContentAppearance(path, &stored)) {
+        return;
+    }
+    WorkspaceItemState seed;
+    seed.sessionId = sid;
+    seed.path = path;
+    seed.contentHFlip = stored.contentHFlip;
+    seed.contentVFlip = stored.contentVFlip;
+    seed.contentQuarterTurns = stored.contentQuarterTurns;
+    seed.hasCrop = stored.hasCrop;
+    seed.cropRect = stored.cropRect;
+    seed.cropSourceSize = stored.cropSourceSize;
+    seed.cropRotation = stored.cropRotation;
+    m_appearance.set(sid, seed);
+}
+
 void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
                                      SessionAppearance::PixelKind kind,
                                      SessionImageId sid)
@@ -78,39 +105,20 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         return;
     }
 
-    // Seed session appearance from durable content-hash state when this
-    // session id has no entry yet (new open / new session image).
-    if (sid != kInvalidSessionImageId && !m_appearance.contains(sid)) {
-        ThumtooCache::StoredContentAppearance stored;
-        if (ThumtooCache::loadContentAppearance(item->path(), &stored)) {
-            WorkspaceItemState seed;
-            seed.sessionId = sid;
-            seed.path = item->path();
-            seed.contentHFlip = stored.contentHFlip;
-            seed.contentVFlip = stored.contentVFlip;
-            seed.contentQuarterTurns = stored.contentQuarterTurns;
-            seed.hasCrop = stored.hasCrop;
-            seed.cropRect = stored.cropRect;
-            seed.cropSourceSize = stored.cropSourceSize;
-            seed.cropRotation = stored.cropRotation;
-            if (stored.hasGrade) {
-                seed.colorAdjust.brightness = stored.gradeBrightness;
-                seed.colorAdjust.contrast = stored.gradeContrast;
-                seed.colorAdjust.saturation = stored.gradeSaturation;
-                seed.colorAdjust.hue = stored.gradeHue;
-                seed.colorAdjust.gamma = stored.gradeGamma;
-            }
-            m_appearance.set(sid, seed);
+    // Resolve session id before seed (Image-mode soft path often passes invalid sid).
+    if (sid == kInvalidSessionImageId) {
+        if (item->sessionId() != kInvalidSessionImageId) {
+            sid = item->sessionId();
+        } else if (isImageMode() && m_currentSessionId != kInvalidSessionImageId) {
+            sid = m_currentSessionId;
         }
     }
+    seedSessionAppearanceFromState(sid, item->path());
 
     const WorkspaceItemState *app = nullptr;
     WorkspaceItemState pathFallback;
     if (sid != kInvalidSessionImageId) {
         app = m_appearance.get(sid);
-    } else if (isImageMode() && m_currentSessionId != kInvalidSessionImageId) {
-        app = m_appearance.get(m_currentSessionId);
-        sid = m_currentSessionId;
     } else if (sid == kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
         // Unbound tile only: path map is legacy fallback (IDENTITY.md).
         const auto it = m_itemStates.constFind(item->path());
