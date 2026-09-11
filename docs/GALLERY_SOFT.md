@@ -122,3 +122,7 @@ decode logs `full decode path need=… have=…`.
 - Soft preview must **not** write intrinsic layout size (avoids zoom/pack jump
   when full pixels arrive at native dimensions).
 - `schedulePixels` after page rasterize is clamped to soft max (512), not native.
+
+## Placeholders
+
+Gallery always creates soft placeholders for every session path (no size threshold). Full `LoadAdd` is not used to *create* tiles — it cannot for `//page:` under thumtoo.

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-465-gallery-always-virtual.** Gallery always creates soft placeholders.
+Prior: **464**.
+
+### Cause
+`virtualize` required `paths.size() >= 80`. Smaller multipage sessions got
+**no tiles**: full `LoadAdd` is null for `//page:` under thumtoo; soft only
+fills existing items. Filmstrip/ImageView unaffected.
+
+### Fix
+`const bool virtualize = isGalleryMode();` — always placeholders + soft ladder.
+
+### Done criteria
+- [x] Always virtualize
+- [ ] Bundle **465**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-464-filmstrip-size-supply.** Filmstrip uses cache sizes like Gallery.
 Prior: **463**.
 

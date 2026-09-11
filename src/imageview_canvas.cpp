@@ -122,7 +122,12 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         m_sessionIdOrder.removeLast();
     }
 
-    const bool virtualize = isGalleryMode() && paths.size() >= kGalleryVirtualThreshold;
+    // Gallery always virtualizes: placeholders + soft/full ladder. The old
+    // threshold (80) left smaller PDF/DjVu sessions with *no* tiles — LoadAdd
+    // full decode is null for //page: under thumtoo, and soft only upgrades
+    // existing items. ImageView/filmstrip still load because they do not depend
+    // on this path.
+    const bool virtualize = isGalleryMode();
 
     // --- Ensure one live tile per session row (duplicates = separate items) ---
     QSet<ImageItem *> claimed;

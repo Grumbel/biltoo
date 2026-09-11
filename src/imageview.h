@@ -1413,7 +1413,8 @@ private:
     void gallerySoftResetPath(const QString &path);
     void gallerySoftResetAll();
     int galleryWantEdgeForPath(const QString &path, const QRectF &sceneVisible) const;
-    static constexpr int kGalleryVirtualThreshold = 80;
+    /** @deprecated Gallery always virtualizes; kept for ABI/docs only. */
+    static constexpr int kGalleryVirtualThreshold = 1;
     static constexpr int kGalleryDecodeOverscanPx = 400;
     static constexpr int kMaxConcurrentGalleryDecodes = 4;
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
