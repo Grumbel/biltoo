@@ -220,6 +220,37 @@ DocumentOutline ensureDocumentOutline(const QString &sessionOrFilePath);
 QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
                            const QSize &imageSize, bool pageYUp = true);
 
+/**
+ * Local content-appearance state (XDG_STATE_HOME/thumtoo) — not the pixel cache.
+ * Keyed by content sha256; never writes next to source files.
+ * @see thumtoo docs/APPEARANCE.md
+ */
+struct StoredContentAppearance {
+    bool contentHFlip = false;
+    bool contentVFlip = false;
+    int contentQuarterTurns = 0;
+    bool hasCrop = false;
+    QRect cropRect;
+    QSize cropSourceSize;
+    qreal cropRotation = 0.0;
+    bool hasGrade = false;
+    int gradeBrightness = 0;
+    int gradeContrast = 0;
+    int gradeSaturation = 0;
+    int gradeHue = 0;
+    int gradeGamma = 0;
+    bool isIdentity() const;
+};
+
+/** sha256:<hex> for a regular local file path; empty if unavailable / non-file. */
+QString contentIdForPath(const QString &path);
+
+/** Load durable content appearance for path's content id (if any). */
+bool loadContentAppearance(const QString &path, StoredContentAppearance *out);
+
+/** Persist content appearance for path's content id (identity deletes the row). */
+void saveContentAppearance(const QString &path, const StoredContentAppearance &app);
+
 } // namespace ThumtooCache
 
 #endif

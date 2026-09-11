@@ -2,6 +2,30 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-400-content-appearance-state.** Persist flip/rotate/crop in
+`$XDG_STATE_HOME/thumtoo` via thumtoo AppearanceStore (content sha256). Prior: **399**.
+Requires **thumtoo ≥ 143**.
+
+### Rules
+- Source files and directories never modified
+- Key = content `sha256:` (not SessionImageId, not path alone)
+- Project (`.biltoo`) still wins when present
+- Seed on first install for a session id; save on `commitItemSessionEdit`
+
+### Change
+- `ThumtooCache::StoredContentAppearance` / `contentIdForPath` / load / save
+- Seed in `installDisplayPixels` when session id has no appearance yet
+- Save content fields from `commitItemSessionEdit`
+
+### Done criteria
+- [x] Paired with thumtoo-143
+- [ ] Human: rotate image, quit, reopen same file — orientation restored
+- [ ] Bundle **400**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-399-install-display-pixels.** Central raw-pixel install gate
 rebased onto d4dc82b (soft preview content appearance / slideshow). Prior: **398**.
 Next: **400**.

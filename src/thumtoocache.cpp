@@ -10,6 +10,7 @@
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QRect>
 #include <QMetaObject>
 #include <QSet>
 #include <QDebug>
@@ -47,6 +48,10 @@
 #if __has_include("thumtoo/expand.hpp")
 #include "thumtoo/expand.hpp"
 #define BILTOO_HAVE_THUMTOO_EXPAND 1
+#endif
+#if __has_include("thumtoo/appearance.hpp")
+#include "thumtoo/appearance.hpp"
+#define BILTOO_HAVE_THUMTOO_APPEARANCE 1
 #endif
 #if __has_include("thumtoo/text.hpp")
 #include "thumtoo/text.hpp"
@@ -1521,6 +1526,157 @@ PageTextLayer cachedPageTextLayer(const QString &)
 PageTextLayer ensurePageTextLayer(const QString &)
 {
     return {};
+}
+
+#endif
+
+
+
+bool StoredContentAppearance::isIdentity() const
+{
+    if (contentHFlip || contentVFlip || contentQuarterTurns != 0) {
+        return false;
+    }
+    if (hasCrop && !cropRect.isEmpty()) {
+        return false;
+    }
+    if (hasGrade) {
+        return false;
+    }
+    return true;
+}
+
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_APPEARANCE)
+
+namespace {
+
+thumtoo::AppearanceStore &appearanceStore()
+{
+    static thumtoo::AppearanceStore store = thumtoo::AppearanceStore::open();
+    return store;
+}
+
+std::string pathContentId(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    // Regular local files only for v1 (no //page: / archive members yet).
+    if (path.contains(QStringLiteral("//"))) {
+        return {};
+    }
+    const QFileInfo fi(path);
+    if (!fi.isFile()) {
+        return {};
+    }
+    try {
+        const std::string hex = thumtoo::sha256_file_hex(
+            std::filesystem::path(fi.absoluteFilePath().toStdString()));
+        if (hex.empty()) {
+            return {};
+        }
+        return thumtoo::normalize_content_id(hex);
+    } catch (...) {
+        return {};
+    }
+}
+
+} // namespace
+
+QString contentIdForPath(const QString &path)
+{
+    const std::string id = pathContentId(path);
+    return id.empty() ? QString() : QString::fromStdString(id);
+}
+
+bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
+{
+    if (!out) {
+        return false;
+    }
+    *out = StoredContentAppearance{};
+    if (!appearanceStore().valid()) {
+        return false;
+    }
+    const std::string id = pathContentId(path);
+    if (id.empty()) {
+        return false;
+    }
+    const auto got = appearanceStore().get(id);
+    if (!got) {
+        return false;
+    }
+    out->contentHFlip = got->content_h_flip;
+    out->contentVFlip = got->content_v_flip;
+    out->contentQuarterTurns = got->content_quarter_turns;
+    out->hasCrop = got->has_crop;
+    if (got->has_crop) {
+        out->cropRect = QRect(got->crop_x, got->crop_y, got->crop_w, got->crop_h);
+        out->cropSourceSize = QSize(got->crop_source_w, got->crop_source_h);
+        out->cropRotation = got->crop_rotation;
+    }
+    if (got->grade_brightness || got->grade_contrast || got->grade_saturation
+        || got->grade_hue || got->grade_gamma) {
+        out->hasGrade = true;
+        out->gradeBrightness = got->grade_brightness.value_or(0);
+        out->gradeContrast = got->grade_contrast.value_or(0);
+        out->gradeSaturation = got->grade_saturation.value_or(0);
+        out->gradeHue = got->grade_hue.value_or(0);
+        out->gradeGamma = got->grade_gamma.value_or(0);
+    }
+    return !out->isIdentity();
+}
+
+void saveContentAppearance(const QString &path, const StoredContentAppearance &app)
+{
+    if (!appearanceStore().valid()) {
+        return;
+    }
+    const std::string id = pathContentId(path);
+    if (id.empty()) {
+        return;
+    }
+    thumtoo::ContentAppearance a;
+    a.content_h_flip = app.contentHFlip;
+    a.content_v_flip = app.contentVFlip;
+    a.content_quarter_turns = app.contentQuarterTurns;
+    a.has_crop = app.hasCrop && !app.cropRect.isEmpty();
+    if (a.has_crop) {
+        a.crop_x = app.cropRect.x();
+        a.crop_y = app.cropRect.y();
+        a.crop_w = app.cropRect.width();
+        a.crop_h = app.cropRect.height();
+        a.crop_source_w = app.cropSourceSize.width();
+        a.crop_source_h = app.cropSourceSize.height();
+        a.crop_rotation = app.cropRotation;
+    }
+    if (app.hasGrade) {
+        a.grade_brightness = app.gradeBrightness;
+        a.grade_contrast = app.gradeContrast;
+        a.grade_saturation = app.gradeSaturation;
+        a.grade_hue = app.gradeHue;
+        a.grade_gamma = app.gradeGamma;
+    }
+    appearanceStore().put(id, a);
+}
+
+#else // no thumtoo appearance
+
+QString contentIdForPath(const QString &)
+{
+    return {};
+}
+
+bool loadContentAppearance(const QString &, StoredContentAppearance *out)
+{
+    if (out) {
+        *out = StoredContentAppearance{};
+    }
+    return false;
+}
+
+void saveContentAppearance(const QString &, const StoredContentAppearance &)
+{
 }
 
 #endif

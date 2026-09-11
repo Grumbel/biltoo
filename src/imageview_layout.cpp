@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "thumtoocache.h"
 
 #include <QDebug>
 #include "gallerylayout.h"
@@ -516,6 +517,22 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
                 }
             }
             m_appearance.set(sid, slot);
+            // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
+            // Does not touch source files; project files remain the portable doc.
+            {
+                // v1: flip / quarter-turns / crop only (grade stays session/project).
+                ThumtooCache::StoredContentAppearance stored;
+                stored.contentHFlip = slot.contentHFlip;
+                stored.contentVFlip = slot.contentVFlip;
+                stored.contentQuarterTurns = slot.contentQuarterTurns;
+                stored.hasCrop = slot.hasCrop && !slot.cropRect.isEmpty();
+                if (stored.hasCrop) {
+                    stored.cropRect = slot.cropRect;
+                    stored.cropSourceSize = slot.cropSourceSize;
+                    stored.cropRotation = slot.cropRotation;
+                }
+                ThumtooCache::saveContentAppearance(item->path(), stored);
+            }
             // Bound: do not last-write appearance onto the path map (duplicates
             // share a path). Placement remains in m_itemStates from Workspace
             // rememberItemState / snapshot only.

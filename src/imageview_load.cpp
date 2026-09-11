@@ -78,6 +78,32 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         return;
     }
 
+    // Seed session appearance from durable content-hash state when this
+    // session id has no entry yet (new open / new session image).
+    if (sid != kInvalidSessionImageId && !m_appearance.contains(sid)) {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(item->path(), &stored)) {
+            WorkspaceItemState seed;
+            seed.sessionId = sid;
+            seed.path = item->path();
+            seed.contentHFlip = stored.contentHFlip;
+            seed.contentVFlip = stored.contentVFlip;
+            seed.contentQuarterTurns = stored.contentQuarterTurns;
+            seed.hasCrop = stored.hasCrop;
+            seed.cropRect = stored.cropRect;
+            seed.cropSourceSize = stored.cropSourceSize;
+            seed.cropRotation = stored.cropRotation;
+            if (stored.hasGrade) {
+                seed.colorAdjust.brightness = stored.gradeBrightness;
+                seed.colorAdjust.contrast = stored.gradeContrast;
+                seed.colorAdjust.saturation = stored.gradeSaturation;
+                seed.colorAdjust.hue = stored.gradeHue;
+                seed.colorAdjust.gamma = stored.gradeGamma;
+            }
+            m_appearance.set(sid, seed);
+        }
+    }
+
     const WorkspaceItemState *app = nullptr;
     WorkspaceItemState pathFallback;
     if (sid != kInvalidSessionImageId) {
