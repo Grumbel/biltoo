@@ -2,6 +2,28 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-466-gallery-soft-before-full.** Gallery soft-fills before full decode.
+Prior: **465**.
+
+### Cause
+Visible tiles with on-screen need > 512 (large cells / high DPR) took the
+full `ImageLoader::load` path while `have == 0`. Soft ladder never started for
+those paths (`fullInflight` blocked soft). Filmstrip already showed 256px
+thumbs; Gallery waited on native comic/PDF pages.
+
+### Fix
+`scheduleGalleryDecode`: full decode only when visible, `want > softCap`, and
+`have >= softCap * 9/10`. Cold / partial soft still requests ≤ `kGalleryLadderEdge`.
+
+### Done criteria
+- [x] Soft before full
+- [x] Docs (`GALLERY_SOFT.md`)
+- [x] Bundle **466**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-465-gallery-always-virtual.** Gallery always creates soft placeholders.
 Prior: **464**.
 
