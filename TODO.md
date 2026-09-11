@@ -14,7 +14,7 @@ defaults so tiles are not blanked. Prior: **456**.
 ### Done criteria
 - [x] Grade defaults 100 for contrast/sat; gamma percent
 - [x] Deferred decode window after setWorkspacePaths
-- [ ] Bundle **457**
+- [x] Bundle **457**
 
 ---
 
