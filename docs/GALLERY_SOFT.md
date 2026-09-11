@@ -128,3 +128,29 @@ decode logs `full decode path need=… have=…`.
 ## Placeholders
 
 Gallery always creates soft placeholders for every session path (no size threshold). Full `LoadAdd` is not used to *create* tiles — it cannot for `//page:` under thumtoo.
+
+
+## Limits and concurrency
+
+| Limit | Default | Where | Purpose |
+|-------|---------|-------|---------|
+| `kGalleryLadderEdge` | **512** | `thumtoocache.h` | Durable soft max (`thumtoo` `kMaxSoftLadderEdge`). `schedulePixels` never asks higher. |
+| `kFilmstripLadderEdge` | **256** | `thumtoocache.h` | Filmstrip / idle placeholder band. |
+| `kLadderEdges` | 128…2048 | `thumtoocache.h` | Display-edge snap steps (`ceilLadderEdge`). |
+| `kMaxConcurrentGalleryDecodes` | **4** | `imageview.h` | Soft + display-sized workers on the Qt pool (Gallery). |
+| `kMaxIdleGalleryDecodes` | **2** | `imageview.h` | Off-screen soft prefetch per window update. |
+| `kGalleryDecodeOverscanPx` | **400** | `imageview.h` | Viewport inflate for “visible” decode. |
+| `kMaxConcurrentPixelJobs` | **3** | `thumtoocache.cpp` | Concurrent `thumtoo` `request_pixels` (PDF/archive encode). |
+| `kMaxPixelQueue` | **48** | `thumtoocache.cpp` | Pending `schedulePixels` queue depth. |
+| `kMaxConcurrentThumbLoads` | **12** | `thumbnailbar.cpp` | Filmstrip pool jobs (separate from thumtoo pixels). |
+
+### Progressive Gallery requests
+
+1. While `have < ~90%` of soft max → request **min(want, 512)** via thumtoo soft ladder.
+2. After soft is present, if on-screen `want` is higher → display-sized shrink-on-decode.
+3. Never `ImageLoader::load` (native) in Gallery.
+
+Optional overrides (process env, read once at first use):
+
+- `BILTOO_GALLERY_DECODE_CONCURRENCY` — overrides `kMaxConcurrentGalleryDecodes` (1–32).
+- `BILTOO_THUMTOO_PIXEL_JOBS` — overrides `kMaxConcurrentPixelJobs` (1–16).

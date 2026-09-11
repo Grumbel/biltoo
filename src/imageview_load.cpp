@@ -380,6 +380,22 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
     return need;
 }
 
+
+int ImageView::galleryDecodeConcurrency()
+{
+    static int n = []() {
+        int v = kMaxConcurrentGalleryDecodes;
+        if (const char *e = std::getenv("BILTOO_GALLERY_DECODE_CONCURRENCY")) {
+            const int parsed = QString::fromLocal8Bit(e).toInt();
+            if (parsed >= 1 && parsed <= 32) {
+                v = parsed;
+            }
+        }
+        return v;
+    }();
+    return n;
+}
+
 int ImageView::gallerySoftInflightCount() const
 {
     int n = 0;
@@ -475,14 +491,19 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (st.gaveUpWant >= want && have > 0) {
         return;
     }
-    if (gallerySoftInflightCount() >= kMaxConcurrentGalleryDecodes) {
+    if (gallerySoftInflightCount() >= galleryDecodeConcurrency()) {
         return;
     }
 
-    // Display-sized decode only — never ImageLoader::load (native).
-    // requestEdge tracks on-screen need (ladder step). Soft durable levels are
-    // ≤ kGalleryLadderEdge; larger edges shrink-on-decode via loadThumbnail.
-    const int requestEdge = want;
+    // Progressive: soft ladder first (thumtoo request_pixels, fast), then
+    // display-sized shrink-on-decode only after soft is on the tile. Asking for
+    // want=1024 with have=0 used to extract archive members on the UI pool and
+    // leave inflight stuck while soft 512 finished in thumtoo.
+    // Never ImageLoader::load (native) in Gallery.
+    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    const int requestEdge = (have < softCap * 9 / 10)
+                                ? qMin(want, softCap)
+                                : want;
 
     st.inflight = requestEdge;
     addPendingWorkspacePath(path);

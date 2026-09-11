@@ -100,10 +100,30 @@ ImageView::ImageView(QWidget *parent)
                 m_sizeProbeScheduled.remove(path);
                 // Prefer a size already learned from a full decode.
                 if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
-                    return;
+                    // Still try LQIP if tiles are blank (probe may have written LQIP).
+                } else {
+                    rememberImageSize(path, size);
+                    applyProbedImageSize(path, size);
                 }
-                rememberImageSize(path, size);
-                applyProbedImageSize(path, size);
+                // LQIP often arrives with the size probe — install as soft stand-in
+                // when the tile still has no pixels (cold open).
+                if (isGalleryMode() && !m_previewByPath.contains(path)) {
+                    const QImage lqip = ThumtooCache::cachedLqipImage(path);
+                    if (!lqip.isNull()) {
+                        m_previewByPath.insert(path, lqip);
+                        for (ImageItem *item : m_items) {
+                            if (!item || item->path() != path) {
+                                continue;
+                            }
+                            if (item->hasDisplayPixels()) {
+                                continue;
+                            }
+                            installDisplayPixels(item, lqip,
+                                                 SessionAppearance::PixelKind::SoftPreview,
+                                                 item->sessionId());
+                        }
+                    }
+                }
             });
 
     // Soft preview: install better ladder pixels; clear inflight when matched.
@@ -138,7 +158,12 @@ ImageView::ImageView(QWidget *parent)
                             if (got > 0) {
                                 st.have = qMax(st.have, got);
                             }
-                            if (st.inflight > 0 && edge >= st.inflight) {
+                            // Soft ladder delivery unblocks even when inflight
+                            // was a higher display edge (partial → climb again).
+                            if (st.inflight > 0
+                                && (edge >= st.inflight
+                                    || (got > 0
+                                        && edge >= ThumtooCache::kFilmstripLadderEdge))) {
                                 st.inflight = 0;
                             }
                             // Always record shortfall for this edge so we do not

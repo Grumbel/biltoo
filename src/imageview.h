@@ -1416,9 +1416,11 @@ private:
     /** @deprecated Gallery always virtualizes; kept for ABI/docs only. */
     static constexpr int kGalleryVirtualThreshold = 1;
     static constexpr int kGalleryDecodeOverscanPx = 400;
+    /** Default Gallery soft/display worker slots; override BILTOO_GALLERY_DECODE_CONCURRENCY. */
     static constexpr int kMaxConcurrentGalleryDecodes = 4;
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
     static constexpr int kMaxIdleGalleryDecodes = 2;
+    static int galleryDecodeConcurrency();
     /** Queue of workspace restores still waiting for decode (supports same path twice). */
     QList<WorkspaceItemState> m_pendingRestoreStates;
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */

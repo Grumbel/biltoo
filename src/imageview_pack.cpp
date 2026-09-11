@@ -30,8 +30,9 @@ void ImageView::updateGalleryDecodeWindow()
     //   4. If inflight → wait (exactly one request per path).
     //   5. If failed → stop.
     //   6. If gaveUpWant >= want && have > 0 → stop (will not grow further).
-    //   7. Request display-sized edge via loadThumbnail (soft ladder when
-    //      ≤ soft max; shrink-on-decode for larger cells). Never ImageLoader::load.
+    //   7. Soft first: request min(want, 512) until soft is present (thumtoo
+    //      request_pixels). Then display-sized edge if want is higher.
+    //      Never ImageLoader::load.
     //
     // Image mode still does full native decode separately.
     // -------------------------------------------------------------------------
@@ -97,7 +98,7 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     const int freeSlots =
-        kMaxConcurrentGalleryDecodes - gallerySoftInflightCount();
+        galleryDecodeConcurrency() - gallerySoftInflightCount();
     if (freeSlots > 0 && !rest.isEmpty()) {
         const int idleBudget = qMin(freeSlots, kMaxIdleGalleryDecodes);
         int started = 0;

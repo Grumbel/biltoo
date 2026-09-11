@@ -149,8 +149,24 @@ void thumtooDbg(const char *fmt, ...)
     }
 }
 
-/** Cap concurrent thumtoo request_pixels — PDF raster+encode is heavy. */
-constexpr int kMaxConcurrentPixelJobs = 3;
+/** Cap concurrent thumtoo request_pixels — PDF raster+encode is heavy.
+ *  Override with BILTOO_THUMTOO_PIXEL_JOBS (1–16). */
+constexpr int kMaxConcurrentPixelJobsDefault = 3;
+int maxConcurrentPixelJobs()
+{
+    static int n = []() {
+        int v = kMaxConcurrentPixelJobsDefault;
+        if (const char *e = std::getenv("BILTOO_THUMTOO_PIXEL_JOBS")) {
+            char *end = nullptr;
+            const long parsed = std::strtol(e, &end, 10);
+            if (end != e && parsed >= 1 && parsed <= 16) {
+                v = int(parsed);
+            }
+        }
+        return v;
+    }();
+    return n;
+}
 int g_pixelsActive = 0;
 struct PendingPixels {
     QString path;
@@ -763,7 +779,7 @@ void startNextPixelJobsUnlocked()
     if (!c) {
         return;
     }
-    while (g_pixelsActive < kMaxConcurrentPixelJobs && !g_pixelsQueue.empty()) {
+    while (g_pixelsActive < maxConcurrentPixelJobs() && !g_pixelsQueue.empty()) {
         PendingPixels job = std::move(g_pixelsQueue.front());
         g_pixelsQueue.erase(g_pixelsQueue.begin());
         // May have been completed by another path; skip stale keys.
