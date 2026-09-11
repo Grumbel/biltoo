@@ -620,6 +620,21 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             event->accept();
             return;
         }
+        // Slideshow: centre click pauses / resumes. Edges stay navigation above.
+        // Ignore the second press of a double-click so we do not toggle twice.
+        if ((m_slideshowProgressActive || m_slideshowPausedHud)
+            && zone == EdgeZone::None) {
+            if (m_lastSlideshowCenterClick.isValid()
+                && m_lastSlideshowCenterClick.elapsed()
+                    < QApplication::doubleClickInterval()) {
+                event->accept();
+                return;
+            }
+            m_lastSlideshowCenterClick.start();
+            emit slideshowTogglePauseRequested();
+            event->accept();
+            return;
+        }
     }
 
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.

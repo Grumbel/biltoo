@@ -2,6 +2,22 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-463-slideshow-click-pause.** Centre click pauses/resumes slideshow.
+Prior: **462**.
+
+### Change
+- Left-click **centre** (EdgeZone::None) while slideshow is active → toggle pause
+- Left/right/top **edges unchanged** (prev / next / return)
+- Double-click second press ignored (no double toggle)
+
+### Done criteria
+- [x] Centre click pause
+- [ ] Bundle **463**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-462-location-esc-override.** Esc on Location via ShortcutOverride.
 Prior: **461**.
 

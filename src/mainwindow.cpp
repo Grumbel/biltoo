@@ -28,6 +28,14 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::showContextMenu);
     connect(m_imageView, &ImageView::mouseInfoChanged,
             this, &MainWindow::onMouseInfoChanged);
+    connect(m_imageView, &ImageView::slideshowTogglePauseRequested, this,
+            [this]() {
+                if (m_slideshowPaused) {
+                    resumeSlideshow();
+                } else if (m_slideshowClockRunning) {
+                    pauseSlideshow();
+                }
+            });
     connect(m_imageView, &ImageView::navigatePreviousRequested,
             this, &MainWindow::goPrevious);
     connect(m_imageView, &ImageView::navigateNextRequested,
@@ -1847,6 +1855,7 @@ void MainWindow::showKeyboardShortcuts()
         "<h3>Keyboard shortcuts</h3>"
         "<p><b>Navigation</b><br/>"
         "←/→ or edge click — previous / next<br/>"
+        "Click centre — pause / resume slideshow<br/>"
         "Home / End — first / last<br/>"
         "Space — start/stop slideshow<br/>"
         "[ / ] — slower / faster slideshow (dwell interval)<br/>"

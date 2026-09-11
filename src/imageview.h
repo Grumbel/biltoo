@@ -861,6 +861,8 @@ signals:
     void canvasSelectionChanged();
     /** Image mode: user activated previous / next via edge click. */
     void navigatePreviousRequested();
+    /** Slideshow: left-click centre (not edge zones) toggles pause. */
+    void slideshowTogglePauseRequested();
     void navigateNextRequested();
     /** Internal page (1-based) and/or external URI from a link region click. */
     void linkActivated(int page_1based, const QString &uri);
@@ -1245,6 +1247,7 @@ private:
     QString m_lastLoadError;
     bool m_hudFlashVisible = false;
     /** Persistent slideshow-paused cue (top-left); not cleared by flash timer. */
+    QElapsedTimer m_lastSlideshowCenterClick;
     bool m_slideshowPausedHud = false;
     /** Filename + index shown briefly after navigation / flash (not only when pinned). */
     bool m_hudIdentityPulse = false;
