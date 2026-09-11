@@ -12,7 +12,7 @@ Prior: **430**.
 
 ### Done criteria
 - [x] Warnings fixed
-- [ ] Bundle **431**
+- [x] Bundle **431**
 
 ---
 
