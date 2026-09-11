@@ -172,26 +172,30 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         // pixmap centered without upscaling (HiDPI / tiny files).
         const qreal dpr = qMax<qreal>(
             1.0, painter->device() ? painter->device()->devicePixelRatioF() : 1.0);
-        const int phys = qMax(1, qRound(qMax(iconRect.width(), iconRect.height()) * dpr));
-        // Crop thumbs are square; letterbox thumbs keep native aspect (no pad).
-        QPixmap pm = icon.pixmap(QSize(phys, phys));
+        // Tight frame follows content aspect (post content-rotate), not a square
+        // icon request — QIcon::pixmap(QSize(n,n)) was forcing a square bbox.
+        QSize aspectHint = index.data(ThumbContentSizeRole).toSize();
+        if (aspectHint.width() < 1 || aspectHint.height() < 1) {
+            aspectHint = iconRect.size();
+        }
+        const QSize slotFit = aspectHint.scaled(iconRect.size(), Qt::KeepAspectRatio);
+        contentRect = QRect(
+            iconRect.x() + (iconRect.width() - slotFit.width()) / 2,
+            iconRect.y() + (iconRect.height() - slotFit.height()) / 2,
+            slotFit.width(),
+            slotFit.height());
+        const int physW = qMax(1, qRound(contentRect.width() * dpr));
+        const int physH = qMax(1, qRound(contentRect.height() * dpr));
+        QPixmap pm = icon.pixmap(QSize(physW, physH));
         if (pm.isNull()) {
-            pm = icon.pixmap(QSize(phys, qMax(1, phys / 2)));
+            pm = icon.pixmap(QSize(physW, physH), QIcon::Normal,
+                             selected ? QIcon::On : QIcon::Off);
         }
         if (!pm.isNull()) {
             pm.setDevicePixelRatio(dpr);
-            const QSize logical = pm.deviceIndependentSize().toSize();
-            if (logical.width() > 0 && logical.height() > 0) {
-                const QSize fitted = logical.scaled(iconRect.size(), Qt::KeepAspectRatio);
-                contentRect = QRect(
-                    iconRect.x() + (iconRect.width() - fitted.width()) / 2,
-                    iconRect.y() + (iconRect.height() - fitted.height()) / 2,
-                    fitted.width(),
-                    fitted.height());
-            }
             painter->drawPixmap(contentRect, pm);
         } else {
-            icon.paint(painter, iconRect, Qt::AlignCenter,
+            icon.paint(painter, contentRect, Qt::AlignCenter,
                        QIcon::Normal, selected ? QIcon::On : QIcon::Off);
         }
     }
@@ -698,9 +702,13 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
             pm.setDevicePixelRatio(dpr);
         }
         it->setIcon(QIcon(pm));
-        // Logical content size for aspect-aware cells (letterbox mode).
-        const QSize logical(qMax(1, int(qRound(pm.width() / dpr))),
-                            qMax(1, int(qRound(pm.height() / dpr))));
+        // Logical content size from the prepared image (already content-oriented).
+        // Prefer image pixels over pixmap/DPR rounding so 90° thumbs get the
+        // correct cell aspect for sizeHint and the paint outline.
+        const QSize logical(qMax(1, image.width()), qMax(1, image.height()));
+        // If the image is physical pixels for a HiDPI cell, sizeHint still wants
+        // logical; prepareThumbnailFromImage returns logical-sized images.
+        Q_UNUSED(dpr);
         it->setData(ThumbnailDelegate::ThumbContentSizeRole, logical);
         it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
         if (m_delegate && !m_cropToSquare) {

@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-419-filmstrip-bbox.** Filmstrip outline/bbox follows oriented
+content size, not square QIcon pixmap. Prior: **418**.
+
+### Cause
+Delegate requested `icon.pixmap(QSize(phys, phys))` (square); outline derived
+from that pixmap while pixels were already content-rotated.
+
+### Fix
+- `ThumbContentSizeRole` drives tight frame + cell aspect
+- Request non-square pixmap matching content aspect
+- `setThumbnailIcon` stores logical size from prepared image
+
+### Done criteria
+- [x] Oriented filmstrip bbox
+- [ ] Bundle **419**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-418-filmstrip-appearance.** Filmstrip bakes durable content
 appearance in `makeThumbnail`. Prior: **417**.
 
