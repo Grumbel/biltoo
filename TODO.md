@@ -2,6 +2,29 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-430-revert-filmstrip-428.** Revert biltoo-428 filmstrip letterbox
+cross-axis sizing (broke thumb sizes). Prior: **429** (text crop kept).
+
+### Action
+Restore `thumbnailbar.cpp` / `.h` to pre-428 (tip **427** / `c8eb4ce`) model:
+- Letterbox: **long edge = thumbSize**
+- Horizontal bar: uniform cell height (`pad + thumbSize + pad + label`);
+  width follows aspect
+- prepareThumbnail: `scaled(maxSize, maxSize, KeepAspectRatio)`
+
+### Follow-up (do not rush)
+Tight landscape-in-strip height needs a **designed** change: either scale
+cross-axis to fill with a stable layout contract, or document why long-edge
+sizing is the product rule. No more ad-hoc aspect flips without tests.
+
+### Done criteria
+- [x] Revert 428 filmstrip sizing
+- [ ] Bundle **430**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-429-text-regions-crop.** Text overlays wrong after session crop.
 Prior: **428**.
 
