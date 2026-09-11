@@ -1655,6 +1655,7 @@ std::string pathContentId(const QString &path)
         }
     }
     std::string id;
+    QString hashStage;
     // Prefer thumtoo hasher; path must be UTF-8 (not QString::toStdString locale).
     try {
         const QByteArray utf8 = abs.toUtf8();
@@ -1663,27 +1664,54 @@ std::string pathContentId(const QString &path)
                                               static_cast<size_t>(utf8.size()))));
         if (!hex.empty()) {
             id = thumtoo::normalize_content_id(hex);
+            hashStage = id.empty() ? QStringLiteral("thumtoo-hex-normalize-fail")
+                                   : QStringLiteral("thumtoo");
+        } else {
+            hashStage = QStringLiteral("thumtoo-hex-empty");
         }
     } catch (...) {
         id.clear();
+        hashStage = QStringLiteral("thumtoo-exception");
     }
-    // Fallback: Qt hash if ifstream path encoding failed.
+    // Fallback: chunked Qt SHA-256 (do not rely on addData(QIODevice*), which
+    // can fail or behave differently across Qt builds).
     if (id.empty()) {
         QFile f(abs);
-        if (f.open(QIODevice::ReadOnly)) {
+        if (!f.open(QIODevice::ReadOnly)) {
+            hashStage += QStringLiteral("+qt-open-fail:");
+            hashStage += f.errorString();
+        } else {
             QCryptographicHash h(QCryptographicHash::Sha256);
-            if (h.addData(&f)) {
+            QByteArray buf;
+            buf.resize(256 * 1024);
+            bool ok = true;
+            while (!f.atEnd()) {
+                const qint64 n = f.read(buf.data(), buf.size());
+                if (n < 0) {
+                    ok = false;
+                    hashStage += QStringLiteral("+qt-read-fail");
+                    break;
+                }
+                if (n == 0) {
+                    break;
+                }
+                h.addData(QByteArray(buf.constData(), int(n)));
+            }
+            if (ok) {
                 const QByteArray dig = h.result().toHex();
                 id = thumtoo::normalize_content_id(
                     std::string(dig.constData(), static_cast<size_t>(dig.size())));
+                hashStage = id.empty() ? QStringLiteral("qt-normalize-fail")
+                                       : QStringLiteral("qt");
             }
         }
     }
     // Page session ref: sha256:<filehex>:page:<n>
+    // Append only — do NOT re-run normalize_content_id on the full string.
+    // Older thumtoo normalize rejects ":page:N" and would clear a good file id.
     if (!id.empty() && page1 > 0) {
         id += ":page:";
         id += std::to_string(page1);
-        id = thumtoo::normalize_content_id(id);
     }
     if (!id.empty()) {
         std::lock_guard lock(cacheMu);
@@ -1695,13 +1723,15 @@ std::string pathContentId(const QString &path)
     }
     if (appearanceDebug()) {
         if (id.empty()) {
-            appearanceLog(QStringLiteral("pathContentId EMPTY path=%1 abs=%2 size=%3 page=%4")
-                              .arg(path, abs)
-                              .arg(size)
-                              .arg(page1));
+            appearanceLog(
+                QStringLiteral("pathContentId EMPTY path=%1 abs=%2 size=%3 page=%4 stage=%5")
+                    .arg(path, abs)
+                    .arg(size)
+                    .arg(page1)
+                    .arg(hashStage));
         } else {
-            appearanceLog(QStringLiteral("pathContentId ok path=%1 id=%2")
-                              .arg(path, QString::fromStdString(id)));
+            appearanceLog(QStringLiteral("pathContentId ok path=%1 id=%2 stage=%3")
+                              .arg(path, QString::fromStdString(id), hashStage));
         }
     }
     return id;

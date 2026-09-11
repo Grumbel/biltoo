@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-409-page-id-hash-fix.** Page content id was cleared by re-normalize.
+Prior: **408**.
+
+### Cause (user log)
+`pathContentId EMPTY` with valid abs/size/page — file hash likely succeeded then
+`normalize_content_id(id + ":page:N")` wiped it (old normalize or strict reject).
+
+### Fix
+- Append `:page:N` without re-normalize
+- Chunked Qt SHA-256 fallback
+- Debug `stage=` shows which hasher ran
+
+### Done criteria
+- [x] Fix
+- [ ] Bundle **409**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-408-page-content-id.** Persist appearance for `//page:N` session
 paths (PDF/EPUB/DjVu). Prior: **407**. Needs **thumtoo ≥ 148**.
 
