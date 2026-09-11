@@ -49,7 +49,7 @@ public:
 
     /** Cell size for the current thumb size and font (square slot). */
     QSize cellSize(const QFont &font) const;
-    /** Cell size for a content pixmap size (letterbox: hug aspect + pads). */
+    /** Cell size for letterbox content (hug pixmap + cellPad on every side). */
     QSize cellSizeForContent(const QFont &font, QSize contentPx) const;
     /** Uniform letterbox size before real aspect is known (portrait-ish). */
     QSize provisionalContentSize() const;

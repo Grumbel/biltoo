@@ -2,6 +2,25 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-428-filmstrip-letterbox-cross-axis.** Landscape letterbox thumbs
+fill strip height (cross-axis = thumbSize); cell hugs + pad. Prior: **427**.
+
+### Change
+Letterbox previously set *long edge* = thumbSize, so landscape sat short in a
+tall cell. Now the **strip cross-axis** is thumbSize (horizontal → image
+height; vertical → width). Cell size hugs the prepared pixmap with the same
+`cellPad` on every side. Content-size role stores logical layout size, not
+decode pixels.
+
+### Done criteria
+- [x] prepareThumbnail cross-axis fill
+- [x] cellSizeForContent hugs content
+- [ ] Bundle **428**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-427-slideshow-first-frame-orient.** First slideshow frame still
 unoriented; later slides OK after 426. Prior: **426**.
 
