@@ -400,8 +400,20 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
                 stored.cropRotation = s.cropRotation;
             }
             ThumtooCache::saveContentAppearance(item->path(), stored);
+            if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+                qWarning().noquote()
+                    << QStringLiteral("[appearance] bakeRotate90 save path=%1 turns=%2 sid=%3")
+                           .arg(item->path())
+                           .arg(turns)
+                           .arg(sid);
+            }
         } else {
             ThumtooCache::clearContentAppearance(item->path());
+            if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+                qWarning().noquote()
+                    << QStringLiteral("[appearance] bakeRotate90 clear (identity) path=%1")
+                           .arg(item->path());
+            }
         }
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);
@@ -508,8 +520,21 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
                 stored.cropRotation = s.cropRotation;
             }
             ThumtooCache::saveContentAppearance(item->path(), stored);
+            if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+                qWarning().noquote()
+                    << QStringLiteral("[appearance] bakeFlip save path=%1 h=%2 v=%3 turns=%4")
+                           .arg(item->path())
+                           .arg(h)
+                           .arg(v)
+                           .arg(s.contentQuarterTurns);
+            }
         } else {
             ThumtooCache::clearContentAppearance(item->path());
+            if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+                qWarning().noquote()
+                    << QStringLiteral("[appearance] bakeFlip clear (identity) path=%1")
+                           .arg(item->path());
+            }
         }
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);

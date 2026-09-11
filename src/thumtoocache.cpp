@@ -1555,16 +1555,40 @@ bool StoredContentAppearance::isIdentity() const
 
 namespace {
 
+bool appearanceDebug()
+{
+    static const bool on = qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE");
+    return on;
+}
+
+void appearanceLog(const QString &msg)
+{
+    // Always use qWarning so it shows without QT_LOGGING_RULES tweaks.
+    qWarning().noquote() << QStringLiteral("[appearance]") << msg;
+}
+
 thumtoo::AppearanceStore &appearanceStore()
 {
     // Non-throwing open; invalid store → load/save become no-ops.
-    static thumtoo::AppearanceStore store = thumtoo::AppearanceStore::open();
+    static thumtoo::AppearanceStore store = []() {
+        auto s = thumtoo::AppearanceStore::open();
+        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+            qWarning().noquote() << QStringLiteral("[appearance] store open valid=")
+                                 << s.valid()
+                                 << QStringLiteral("db=")
+                                 << QString::fromStdString(s.db_path().string());
+        }
+        return s;
+    }();
     return store;
 }
 
 std::string pathContentId(const QString &path)
 {
     if (path.isEmpty()) {
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("pathContentId reject: empty path"));
+        }
         return {};
     }
     // Regular local files only for v1 (no //page: / archive members yet).
@@ -1576,10 +1600,20 @@ std::string pathContentId(const QString &path)
     // Page / archive session refs are not plain files (markers contain "//").
     if (PagePath::isPageRef(local) || PagePath::isPdfImageRef(local)
         || local.contains(QStringLiteral("//"))) {
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("pathContentId reject: compound/page ref path=%1")
+                              .arg(path));
+        }
         return {};
     }
     const QFileInfo fi(local);
     if (!fi.exists() || !fi.isFile()) {
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("pathContentId reject: not a file path=%1 exists=%2 isFile=%3")
+                              .arg(local)
+                              .arg(fi.exists())
+                              .arg(fi.isFile()));
+        }
         return {};
     }
     const QString abs = fi.canonicalFilePath().isEmpty() ? fi.absoluteFilePath()
@@ -1636,6 +1670,16 @@ std::string pathContentId(const QString &path)
         e.id = id;
         cache.insert(abs, e);
     }
+    if (appearanceDebug()) {
+        if (id.empty()) {
+            appearanceLog(QStringLiteral("pathContentId EMPTY path=%1 abs=%2 size=%3")
+                              .arg(path, abs)
+                              .arg(size));
+        } else {
+            appearanceLog(QStringLiteral("pathContentId ok path=%1 id=%2")
+                              .arg(path, QString::fromStdString(id)));
+        }
+    }
     return id;
 }
 
@@ -1655,14 +1699,31 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
     *out = StoredContentAppearance{};
     const std::string id = pathContentId(path);
     if (id.empty()) {
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("load SKIP: no content id path=%1").arg(path));
+        }
         return false;
     }
     if (!appearanceStore().valid()) {
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("load SKIP: store invalid"));
+        }
         return false;
     }
     const auto got = appearanceStore().get(id);
     if (!got) {
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("load MISS id=%1 path=%2")
+                              .arg(QString::fromStdString(id), path));
+        }
         return false;
+    }
+    if (appearanceDebug()) {
+        appearanceLog(QStringLiteral("load HIT id=%1 turns=%2 h=%3 v=%4")
+                          .arg(QString::fromStdString(id))
+                          .arg(got->content_quarter_turns)
+                          .arg(got->content_h_flip)
+                          .arg(got->content_v_flip));
     }
     out->contentHFlip = got->content_h_flip;
     out->contentVFlip = got->content_v_flip;
@@ -1689,9 +1750,20 @@ void saveContentAppearance(const QString &path, const StoredContentAppearance &a
 {
     const std::string id = pathContentId(path);
     if (id.empty()) {
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("save SKIP: no content id for path=%1 (h=%2 v=%3 turns=%4 crop=%5)")
+                              .arg(path)
+                              .arg(app.contentHFlip)
+                              .arg(app.contentVFlip)
+                              .arg(app.contentQuarterTurns)
+                              .arg(app.hasCrop));
+        }
         return;
     }
     if (!appearanceStore().valid()) {
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("save SKIP: store invalid path=%1").arg(path));
+        }
         return;
     }
     thumtoo::ContentAppearance a;
@@ -1715,7 +1787,24 @@ void saveContentAppearance(const QString &path, const StoredContentAppearance &a
         a.grade_hue = app.gradeHue;
         a.grade_gamma = app.gradeGamma;
     }
+    if (appearanceDebug()) {
+        appearanceLog(
+            QStringLiteral("save PUT id=%1 h=%2 v=%3 turns=%4 crop=%5 identity=%6 db=%7")
+                .arg(QString::fromStdString(id))
+                .arg(a.content_h_flip)
+                .arg(a.content_v_flip)
+                .arg(a.content_quarter_turns)
+                .arg(a.has_crop)
+                .arg(a.is_identity())
+                .arg(QString::fromStdString(appearanceStore().db_path().string())));
+    }
     appearanceStore().put(id, a);
+    if (appearanceDebug()) {
+        const auto got = appearanceStore().get(id);
+        appearanceLog(QStringLiteral("save AFTER put row_present=%1 turns=%2")
+                          .arg(got.has_value())
+                          .arg(got ? got->content_quarter_turns : -1));
+    }
 }
 
 bool hasContentAppearance(const QString &path)
@@ -1731,8 +1820,19 @@ void clearContentAppearance(const QString &path)
 
 #else // no thumtoo appearance
 
+// Compile-time: thumtoo/appearance.hpp not found — all persistence is a no-op.
+// If the DB file exists from an older build, this binary will not write to it.
+
 QString contentIdForPath(const QString &)
 {
+    static const bool once = []() {
+        qWarning().noquote()
+            << QStringLiteral("[appearance] DISABLED at compile time "
+                              "(BILTOO_HAVE_THUMTOO_APPEARANCE not set — "
+                              "rebuild biltoo against thumtoo with appearance.hpp)");
+        return true;
+    }();
+    Q_UNUSED(once);
     return {};
 }
 

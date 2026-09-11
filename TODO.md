@@ -2,6 +2,29 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-407-appearance-debug.** Debug logging for empty appearance DB.
+Prior: **406**.
+
+### When save runs
+1. User **Rotate** / **Flip** (Image menu or keys) → `bakeItemRotate90` /
+   `bakeItemFlip` → `ThumtooCache::saveContentAppearance` (direct)
+2. Crop accept → `commitItemSessionEdit` (non-identity only)
+3. Reset / bake-to-identity → `clearContentAppearance`
+
+### Debug
+```bash
+BILTOO_DEBUG_APPEARANCE=1 biltoo /path/to/photo.jpg
+# rotate once; stderr should show [appearance] bakeRotate90 / save PUT / AFTER put
+```
+
+### Done criteria
+- [x] Debug logs behind BILTOO_DEBUG_APPEARANCE
+- [ ] Bundle **407**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-406-persist-verify.** Full check-out of appearance persist. Prior: **405**.
 
 ### Verified
