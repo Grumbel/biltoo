@@ -1073,36 +1073,6 @@ bool ImageView::pageYUpForTextLayer() const
     return PagePath::isDjvuFile(docPath);
 }
 
-namespace {
-
-/** Map image-pixel rect through content flips then 90° CW quarter turns.
- *  Matches SessionAppearance bake order (flip → rotate) and mapCropThrough*. */
-QRectF mapRectThroughContentOrientation(QRectF r, QSize sz,
-                                        bool hFlip, bool vFlip, int quarterTurns)
-{
-    if (sz.width() < 1 || sz.height() < 1 || r.isEmpty()) {
-        return r;
-    }
-    r = r.normalized();
-    if (hFlip) {
-        r = QRectF(sz.width() - r.x() - r.width(), r.y(), r.width(), r.height());
-    }
-    if (vFlip) {
-        r = QRectF(r.x(), sz.height() - r.y() - r.height(), r.width(), r.height());
-    }
-    quarterTurns %= 4;
-    if (quarterTurns < 0) {
-        quarterTurns += 4;
-    }
-    for (int i = 0; i < quarterTurns; ++i) {
-        // 90° CW in top-left image coordinates (matches QImage / bakeRotate90).
-        r = QRectF(sz.height() - r.y() - r.height(), r.x(), r.height(), r.width());
-        sz = QSize(sz.height(), sz.width());
-    }
-    return r;
-}
-
-} // namespace
 
 QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) const
 {
@@ -1110,56 +1080,54 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     if (!item || !m_textLayer.pageBounds.isValid()) {
         return {};
     }
-    const QSize displaySz = item->imageSize();
-    if (displaySz.width() < 1 || displaySz.height() < 1) {
+
+    // Full unoriented page raster size — never recover from oriented imageSize().
+    // Display size after 1–3 turns is swapped; after 4 turns QImage may drift by
+    // a pixel; crop also changes imageSize(). Page text is authored against the
+    // native page raster.
+    const QString path = classicPath();
+    QSize sourceSize = ThumtooCache::cachedSize(path);
+    if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
+        const auto it = m_imageSizeByPath.constFind(path);
+        if (it != m_imageSizeByPath.cend()) {
+            sourceSize = it.value();
+        }
+    }
+    if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
+        // Last resort: invert orientation from the live item (no crop only).
+        sourceSize = item->imageSize();
+        WorkspaceItemState stGuess;
+        if (item->sessionId() != kInvalidSessionImageId) {
+            stGuess = sessionAppearanceValue(item->sessionId());
+        }
+        int turns = stGuess.contentQuarterTurns % 4;
+        if (turns < 0) {
+            turns += 4;
+        }
+        if (!stGuess.hasCrop && (turns % 2) != 0) {
+            sourceSize.transpose();
+        }
+    }
+    if (sourceSize.width() < 1 || sourceSize.height() < 1) {
         return {};
     }
 
     WorkspaceItemState st;
     if (item->sessionId() != kInvalidSessionImageId) {
         st = sessionAppearanceValue(item->sessionId());
-    }
-
-    // Page text is authored in the pre-orientation page raster. Recover that
-    // size from the display size when there is no session crop (cropped pages
-    // would need the full-page raster size, which we do not store here).
-    QSize srcSz = displaySz;
-    if (!st.hasCrop && (st.contentQuarterTurns % 2) != 0) {
-        srcSz.transpose();
+    } else if (isImageMode() && m_currentSessionId != kInvalidSessionImageId) {
+        st = sessionAppearanceValue(m_currentSessionId);
     }
 
     const bool pageYUp = pageYUpForTextLayer();
-    QRectF img = ThumtooCache::pageRectToImageRect(
-        region.bbox, m_textLayer.pageBounds, srcSz, pageYUp);
-    if (img.isEmpty()) {
+    const QRectF inSource = ThumtooCache::pageRectToImageRect(
+        region.bbox, m_textLayer.pageBounds, sourceSize, pageYUp);
+    if (inSource.isEmpty()) {
         return {};
     }
 
-    // Optional crop: text is full-page; shift into crop-local space before bake.
-    if (st.hasCrop && !st.cropRect.isEmpty()) {
-        const QRect crop = st.cropRect.normalized();
-        QSize cropBasis = st.cropSourceSize;
-        if (cropBasis.width() < 1 || cropBasis.height() < 1) {
-            cropBasis = srcSz;
-        }
-        // Scale page-mapped rect if crop was recorded at a different size.
-        if (cropBasis != srcSz && cropBasis.width() > 0 && cropBasis.height() > 0
-            && srcSz.width() > 0 && srcSz.height() > 0) {
-            const qreal sx = qreal(srcSz.width()) / qreal(cropBasis.width());
-            const qreal sy = qreal(srcSz.height()) / qreal(cropBasis.height());
-            img = QRectF(img.x() * sx, img.y() * sy, img.width() * sx, img.height() * sy);
-        }
-        img = img.translated(-crop.topLeft());
-        const QRectF cropLocal(0, 0, crop.width(), crop.height());
-        img = img.intersected(cropLocal);
-        if (img.isEmpty()) {
-            return {};
-        }
-        srcSz = crop.size();
-    }
-
-    return mapRectThroughContentOrientation(
-        img, srcSz, st.contentHFlip, st.contentVFlip, st.contentQuarterTurns);
+    // Crop → flip → quarter-turn (identical to applyContentToImage geometry).
+    return SessionAppearance::mapSourceRectToContentDisplay(inSource, sourceSize, st);
 }
 
 QRectF ImageView::textRubberBandImageRect() const

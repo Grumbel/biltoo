@@ -2,6 +2,39 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-423-text-region-content-map.** Clean rewrite of text→display
+mapping. Prior: **422**.
+
+### Problems with 422 mapping
+- Recovered source size from oriented `imageSize()` + optional transpose: fails
+  on 4th 90° (turns=0 with drifted pixels), CCW, and any crop.
+- Crop path scaled inconsistently vs `applyContentToImage`.
+- Flip/rotate used an ad-hoc helper instead of the SessionAppearance contract.
+
+### Rewrite
+- `SessionAppearance::mapSourceRectToContentDisplay` — single pipeline:
+  crop (same scaleCropRect rules as applyContentToImage) → content flips →
+  quarter-turns CW (same matrix as `mapCropThroughContentRotate90` /
+  `bakeRotate90`).
+- `textRegionImageRect` resolves **native** page size from
+  `ThumtooCache::cachedSize` / `m_imageSizeByPath` only (not oriented display),
+  maps page→source, then runs the shared mapper.
+
+### Contract
+Text overlays follow the **applyContent** order (flip then rotate on source).
+That matches session reload. Live rotate-then-flip without re-decode can still
+diverge until a reload reapplies state (same as pixel reload contract).
+
+### Done criteria
+- [x] Shared mapper in SessionAppearance
+- [x] Native source size for page mapping
+- [x] Crop uses applyContent scale rules
+- [ ] Bundle **423**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-422-text-regions-and-filmstrip-decode.** Rebased on current
 master (after upstream 418–421 filmstrip model). Prior tip on master: **421**.
 

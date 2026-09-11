@@ -88,6 +88,67 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns)
     state.cropSourceSize = sz;
 }
 
+static int normalizeQuarterTurns(int quarterTurns)
+{
+    quarterTurns %= 4;
+    if (quarterTurns < 0) {
+        quarterTurns += 4;
+    }
+    return quarterTurns;
+}
+
+QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sourceSize,
+                                     const WorkspaceItemState &state)
+{
+    if (sourceSize.width() < 1 || sourceSize.height() < 1 || sourceRect.isEmpty()) {
+        return {};
+    }
+
+    QRectF r = sourceRect.normalized();
+    QSize work = sourceSize;
+
+    // 1) Crop in full-source space (same scaling rules as applyContentToImage).
+    if (state.hasCrop && !state.cropRect.isEmpty()) {
+        QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, work);
+        if (state.cropSourceSize.isEmpty()
+            && (crop.right() >= work.width() || crop.bottom() >= work.height())) {
+            const QSize swapped(work.height(), work.width());
+            if (swapped.width() > 0 && swapped.height() > 0
+                && crop.right() < swapped.width() && crop.bottom() < swapped.height()
+                && swapped != work) {
+                crop = scaleCropRect(state.cropRect, swapped, work);
+            }
+        }
+        if (crop.width() < 1 || crop.height() < 1) {
+            return {};
+        }
+        r = r.intersected(QRectF(crop));
+        if (r.isEmpty()) {
+            return {};
+        }
+        r = r.translated(-qreal(crop.x()), -qreal(crop.y()));
+        work = crop.size();
+    }
+
+    // 2) Content flips about the post-crop working size.
+    if (state.contentHFlip) {
+        r = QRectF(work.width() - r.x() - r.width(), r.y(), r.width(), r.height());
+    }
+    if (state.contentVFlip) {
+        r = QRectF(r.x(), work.height() - r.y() - r.height(), r.width(), r.height());
+    }
+
+    // 3) Content quarter-turns CW — same convention as mapCropThroughContentRotate90
+    //    and ImageItem::bakeRotate90 / QImage::transformed(rotate(90*n)).
+    const int turns = normalizeQuarterTurns(state.contentQuarterTurns);
+    for (int i = 0; i < turns; ++i) {
+        r = QRectF(work.height() - r.y() - r.height(), r.x(), r.height(), r.width());
+        work = QSize(work.height(), work.width());
+    }
+
+    return r;
+}
+
 void applyCrop(ImageItem *item, const WorkspaceItemState &state)
 {
     if (!item || !state.hasCrop || state.cropRect.isEmpty()) {

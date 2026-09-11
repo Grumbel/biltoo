@@ -68,6 +68,21 @@ void mapCropThroughContentFlip(WorkspaceItemState &state, bool horizontal, bool 
 void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns);
 
 /**
+ * Map a rectangle from full on-disk (pre-content) image pixel space into the
+ * post-content display pixel space used by the baked item.
+ *
+ * Order matches applyContentToItem / applyContentToImage:
+ *   1. Session crop (cropRect in cropSourceSize → @p sourceSize)
+ *   2. Content horizontal / vertical flip about the working size
+ *   3. Content quarter-turns clockwise (0..3), same matrix as bakeRotate90
+ *
+ * @p sourceSize is the unoriented full-page raster size (native / probe).
+ * Returns empty if the rect misses the crop or sizes are invalid.
+ */
+QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sourceSize,
+                                     const WorkspaceItemState &state);
+
+/**
  * Apply state.hasCrop / cropRect onto @p item's full source pixels.
  * Does not apply content flips or quarter turns.
  */
