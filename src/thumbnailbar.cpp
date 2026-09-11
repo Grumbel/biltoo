@@ -135,17 +135,24 @@ QSize ThumbnailDelegate::provisionalContentSize() const
 
 QSize ThumbnailDelegate::logicalContentSize(const QModelIndex &index) const
 {
-    // Single source for paint + sizeHint.
+    // Single source for paint + sizeHint (see docs/FILMSTRIP_LAYOUT.md).
+    bool crop = false;
+    if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
+        crop = bar->cropToSquare();
+    }
+    if (crop) {
+        return QSize(m_thumbSize, m_thumbSize);
+    }
+    // Prefer stored logical size (already at thumbSize cross-axis). Re-run
+    // letterboxContentSize so a thumbSize change still scales correctly when
+    // only the aspect ratio in the role is reliable.
     const QSize role = index.data(ThumbContentSizeRole).toSize();
     if (role.width() > 0 && role.height() > 0) {
         return letterboxContentSize(role);
     }
     const QPixmap pm = qvariant_cast<QPixmap>(index.data(ThumbPixmapRole));
-    if (!pm.isNull()) {
-        QSize a = pm.size();
-        if (a.width() > 0 && a.height() > 0) {
-            return letterboxContentSize(a);
-        }
+    if (!pm.isNull() && pm.width() > 0 && pm.height() > 0) {
+        return letterboxContentSize(pm.size());
     }
     return letterboxContentSize(provisionalContentSize());
 }
@@ -551,15 +558,10 @@ void ThumbnailBar::setBarOrientation(Qt::Orientation orientation)
 
 void ThumbnailBar::applyThumbMetrics()
 {
-    // IconSize is a floor for some IconMode paths. Letterbox uses per-item
-    // sizeHint; keep iconSize on the cross-axis only so width is not forced square.
-    if (m_cropToSquare) {
-        setIconSize(QSize(m_thumbSize, m_thumbSize));
-    } else if (m_orientation == Qt::Horizontal) {
-        setIconSize(QSize(m_thumbSize * 2, m_thumbSize));
-    } else {
-        setIconSize(QSize(m_thumbSize, m_thumbSize * 2));
-    }
+    // iconSize is only a floor for IconMode chrome. Letterbox cell width comes
+    // exclusively from sizeHint / ThumbContentSizeRole — never inflate iconSize
+    // or portrait cells pick up a wide minimum and look over-padded.
+    setIconSize(QSize(m_thumbSize, m_thumbSize));
     if (m_delegate) {
         m_delegate->setThumbSize(m_thumbSize);
     }
@@ -721,15 +723,27 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     it->setIcon(QIcon(pm));
 
     // Logical content at thumbSize (crop = square; letterbox = cross-axis fit).
+    // image.size() is aspect only — never use decode pixels as layout size.
     const QSize content = m_cropToSquare
         ? QSize(m_thumbSize, m_thumbSize)
         : m_delegate->letterboxContentSize(image.size());
     it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
     it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
 
-    it->setSizeHint(m_cropToSquare
-                        ? m_delegate->cellSize(font())
-                        : m_delegate->cellSizeForContent(font(), content));
+    const QSize hint = m_cropToSquare
+        ? m_delegate->cellSize(font())
+        : m_delegate->cellSizeForContent(font(), content);
+    it->setSizeHint(hint);
+
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FILMSTRIP")) {
+        qWarning().noquote()
+            << QStringLiteral("[filmstrip] icon row=%1 img=%2x%3 content=%4x%5 hint=%6x%7 crop=%8")
+                   .arg(row)
+                   .arg(image.width()).arg(image.height())
+                   .arg(content.width()).arg(content.height())
+                   .arg(hint.width()).arg(hint.height())
+                   .arg(m_cropToSquare);
+    }
 
     const QModelIndex idx = indexFromItem(it);
     if (idx.isValid()) {
@@ -795,8 +809,8 @@ void ThumbnailBar::setCropToSquare(bool on)
         return;
     }
     m_cropToSquare = on;
-    ++m_generation;
     applyThumbMetrics();
+    // scheduleThumbnailLoads → invalidateThumbPixels bumps generation + clears.
     scheduleThumbnailLoads();
 }
 
@@ -1030,6 +1044,9 @@ void ThumbnailBar::showEvent(QShowEvent *event)
 void ThumbnailBar::invalidateThumbPixels()
 {
     // Drop prepared pixels so scheduleVisible reloads. Rows/paths stay.
+    // Bump generation so in-flight pool jobs cannot reinstall after a mode/size
+    // change that already cleared the strip.
+    ++m_generation;
     for (int i = 0; i < count(); ++i) {
         if (QListWidgetItem *it = item(i)) {
             it->setIcon(QIcon());
@@ -1340,7 +1357,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
         m_sessionImageOverrides.swap(kept);
     }
 
-    // Letterbox: provisional ~3:4 cells (cross-axis = thumbSize) until decode.
+    // Provisional square cells (cross-axis = thumbSize) until decode.
     const QSize cell = (m_delegate && !m_cropToSquare)
         ? m_delegate->cellSizeForContent(font(), m_delegate->provisionalContentSize())
         : (m_delegate ? m_delegate->cellSize(font())

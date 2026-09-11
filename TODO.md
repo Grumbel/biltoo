@@ -2,6 +2,24 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-442-filmstrip-invariants.** Harden unified filmstrip contract.
+Prior: **441**.
+
+### Fixes
+- `logicalContentSize` crop-aware (always square when crop on)
+- `iconSize` stays `(thumb,thumb)` — sizeHint owns letterbox width
+- `invalidateThumbPixels` bumps generation (stale pool jobs cannot reinstall)
+- `BILTOO_DEBUG_FILMSTRIP` logs icon installs
+- Layout doc: invariants + debug
+
+### Done criteria
+- [x] Hardening
+- [ ] Bundle **442**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-441-filmstrip-unified.** End-to-end filmstrip geometry/paint/reload
 unification. Prior: **440**.
 

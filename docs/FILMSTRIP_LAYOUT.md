@@ -70,3 +70,17 @@ Logical pixels along the strip **cross-axis** (thin axis of the bar).
 2. sizeHint cell hugs that content + pad.
 3. No path may attach a pixmap without updating `ThumbContentSizeRole` + sizeHint.
 4. No path may leave `ThumbLoadedRole=true` after a mode/size invalidate without reload.
+
+## Debug
+
+Set `BILTOO_DEBUG_FILMSTRIP=1` to log each `setThumbnailIcon` (row, source size,
+logical content, sizeHint, crop flag).
+
+## Invariants (must always hold)
+
+1. `sizeHint(index).width() >= logicalContentSize(index).width() + 2·cellPad`
+2. `sizeHint(index).height() >= logicalContentSize(index).height() + 2·cellPad + label`
+3. Paint dest aspect equals `logicalContentSize` aspect (KeepAspectRatio)
+4. `ThumbLoadedRole == true` iff `ThumbPixmapRole` holds a non-null pixmap
+5. After `invalidateThumbPixels`, every row has `ThumbLoadedRole == false`
+6. `iconSize` is never larger than needed for letterbox width (sizeHint owns width)
