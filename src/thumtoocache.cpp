@@ -29,6 +29,7 @@
 #include <functional>
 #include <mutex>
 #include <string>
+#include <span>
 
 #ifdef BILTOO_HAVE_THUMTOO
 #include "thumtoo/archive.hpp"
@@ -62,11 +63,16 @@
 #include "thumtoo/text.hpp"
 #define BILTOO_HAVE_THUMTOO_TEXT 1
 #endif
+#if __has_include("thumtoo/lqip.hpp")
+#include "thumtoo/lqip.hpp"
+#define BILTOO_HAVE_THUMTOO_LQIP 1
+#endif
 
 #include <condition_variable>
 #include <list>
 #include <memory>
 #include <string>
+#include <span>
 #include <unordered_map>
 #include <vector>
 #endif
@@ -607,6 +613,52 @@ QSize cachedSize(const QString &path)
 #endif
     return {};
 }
+
+QImage cachedLqipImage(const QString &path)
+{
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_LQIP)
+    if (path.isEmpty()) {
+        return {};
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return {};
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return {};
+    }
+    auto blob = c->get_lqip(uri);
+    if (!blob || blob->empty()) {
+        return {};
+    }
+    auto rgba = thumtoo::lqip_decode_rgba(
+        std::span<const std::uint8_t>(blob->data(), blob->size()));
+    if (!rgba || rgba->width < 1 || rgba->height < 1
+        || rgba->rgba.size() < size_t(rgba->width) * size_t(rgba->height) * 4) {
+        return {};
+    }
+    QImage img(rgba->width, rgba->height, QImage::Format_RGBA8888);
+    if (img.isNull()) {
+        return {};
+    }
+    const int rowBytes = rgba->width * 4;
+    for (int y = 0; y < rgba->height; ++y) {
+        memcpy(img.scanLine(y), rgba->rgba.data() + size_t(y) * size_t(rowBytes),
+               size_t(rowBytes));
+    }
+    return img;
+#else
+    Q_UNUSED(path);
+    return {};
+#endif
+}
+
 
 bool isUnsupported(const QString &path)
 {

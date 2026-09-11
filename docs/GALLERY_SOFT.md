@@ -53,6 +53,12 @@ Future thumtoo work: tag ladder payloads vs embedded thumbs explicitly so hosts
 never confuse EXIF stand-ins with a completed soft level.
 
 
+## Open sequence (size-first)
+
+1. **`primeGalleryGeometryFromCache`** — durable `cachedSize` + LQIP only (no ladder encode).
+2. **Placeholders + pack** — layout uses known aspects; provisional cells wait for `sizeReady`.
+3. **`updateGalleryDecodeWindow`** — soft/full ladder only after size is known (non-provisional).
+
 ## Two paths (aligned with thumtoo)
 
 | Path | When | Mechanism |

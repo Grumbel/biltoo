@@ -79,6 +79,12 @@ inline int ceilLadderEdge(int displayLongEdge)
 QSize cachedSize(const QString &path);
 
 /**
+ * Cache-only LQIP (Handsum/ThumbHash) as a small QImage.
+ * Empty if missing from the durable index — does not schedule encode.
+ */
+QImage cachedLqipImage(const QString &path);
+
+/**
  * Cache-only: thumtoo reported ContentStatus::Unsupported for this locator.
  * Callers should stop scheduling probes/pixels (Failed remains retryable).
  */

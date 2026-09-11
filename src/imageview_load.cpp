@@ -431,6 +431,12 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
+    // Size-first: do not burn ladder slots on provisional 1000×1000 cells.
+    // Probe (or sizeReady) will repack and call updateGalleryDecodeWindow.
+    if (isProvisionalImageSize(path)) {
+        scheduleImageSizeProbe(path);
+        return;
+    }
     GallerySoftState &st = m_gallerySoft[path];
     if (st.failed || st.inflight > 0 || st.fullInflight) {
         return;

@@ -987,6 +987,12 @@ private:
      * (neutral 1000×1000 made portrait/landscape images look letterboxed).
      */
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
+    /**
+     * Cache-only pass before Gallery pack: fill m_imageSizeByPath from
+     * ThumtooCache::cachedSize and m_previewByPath from LQIP when present.
+     * Does not schedule ladder encode or source I/O.
+     */
+    void primeGalleryGeometryFromCache(const QStringList &paths);
     bool isProvisionalImageSize(const QString &path) const;
     /** Remember native size after a successful full decode (or async probe). */
     void rememberImageSize(const QString &path, const QSize &size);

@@ -373,6 +373,30 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     return imageSizeForPath(path);
 }
 
+
+void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
+{
+    for (const QString &path : paths) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        // Native size from durable index (no probe I/O).
+        if (!m_imageSizeByPath.contains(path) || isProvisionalImageSize(path)) {
+            if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()
+                && cached.width() > 0 && cached.height() > 0) {
+                rememberImageSize(path, cached);
+            }
+        }
+        // LQIP as soft stand-in until ladder/full arrives.
+        if (!m_previewByPath.contains(path)) {
+            const QImage lqip = ThumtooCache::cachedLqipImage(path);
+            if (!lqip.isNull()) {
+                m_previewByPath.insert(path, lqip);
+            }
+        }
+    }
+}
+
 void ImageView::scheduleImageSizeProbe(const QString &path)
 {
     if (path.isEmpty()) {

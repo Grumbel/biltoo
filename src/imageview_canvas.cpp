@@ -25,6 +25,11 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         return;
     }
 
+    // Phase 1: cache-only sizes + LQIP so the first pack uses real aspects.
+    if (isGalleryMode() && !paths.isEmpty()) {
+        primeGalleryGeometryFromCache(paths);
+    }
+
     const bool haveIds = !sessionIds.isEmpty();
 
     // --- Remove tiles that are not part of the new session -------------------

@@ -2,6 +2,22 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-458-gallery-size-first.** Gallery open: cache sizes + LQIP, pack,
+then soft decode. Prior: **457**.
+
+### Change
+- `ThumtooCache::cachedLqipImage` (cache-only Handsum/ThumbHash)
+- `ImageView::primeGalleryGeometryFromCache` before tile create/pack
+- `scheduleGalleryDecode` skips provisional sizes (probe first)
+
+### Done criteria
+- [x] Size-first gallery open
+- [ ] Bundle **458**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-457-gallery-soft-startup.** Gallery soft-decode on open + grade
 defaults so tiles are not blanked. Prior: **456**.
 
