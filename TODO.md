@@ -19,7 +19,7 @@ Prior: **444**.
 
 ### Done criteria
 - [x] Gallery + filmstrip update on Reset after full-res tile
-- [ ] Bundle **445**
+- [x] Bundle **445**
 
 ---
 
