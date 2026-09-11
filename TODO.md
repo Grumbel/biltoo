@@ -2,6 +2,27 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-435-filmstrip-no-stretch.** Letterbox thumbs were stretched into
+squares via `QIcon::pixmap(w,h)`. Paint from `ThumbPixmapRole` with
+KeepAspectRatio. Prior: **434**.
+
+### Cause
+QIcon stores one size; `pixmap(request)` resamples into the request. Paint and
+drag requested square (or arbitrary) sizes → landscape stretched to square.
+
+### Fix
+- Store prepared pixmap in `ThumbPixmapRole`
+- Paint/drag use that pixmap + KeepAspectRatio only
+- Document in FILMSTRIP_LAYOUT.md
+
+### Done criteria
+- [x] ThumbPixmapRole paint path
+- [ ] Bundle **435**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-434-text-rotate-trueMatrix.** Text rotation still wrong (flip OK).
 Map turns with `QImage::trueMatrix` — same matrix as `bakeRotate90`.
 Prior: **433**.

@@ -18,19 +18,21 @@
 #include <atomic>
 
 /**
- * Paints a square thumbnail with a single-line caption directly under it.
- * Avoids QListWidget IconMode style padding and keeps label colour correct
- * when the item is selected.
+ * Paints filmstrip cells (crop-square or letterbox). See docs/FILMSTRIP_LAYOUT.md.
+ * Draws the prepared pixmap from ThumbPixmapRole — never QIcon::pixmap(square),
+ * which stretches non-square thumbs.
  */
 class ThumbnailDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
     static constexpr int kLabelGap = 2;
-    /** Qt::UserRole for content pixel size of the prepared thumb (letterbox). */
+    /** Logical content size at thumbSize scale (aspect for letterbox). */
     static constexpr int ThumbContentSizeRole = Qt::UserRole + 42;
     /** True once a real decoded thumb is installed (not a placeholder). */
     static constexpr int ThumbLoadedRole = Qt::UserRole + 43;
+    /** Prepared thumb pixmap (correct aspect + DPR). Prefer over DecorationRole. */
+    static constexpr int ThumbPixmapRole = Qt::UserRole + 44;
     /** Adaptive pad (~thumb/16, clamped) — equal on all sides of the icon. */
     int cellPad() const;
 

@@ -177,67 +177,59 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         crop = bar->cropToSquare();
     }
 
-    // Where the image is drawn and outlined.
-    // Crop mode: fill the whole icon slot (source is already a square).
-    // Letterbox: fit oriented content inside the slot, centered both axes.
-    QRect contentRect = iconRect;
-
-    const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
-    if (!icon.isNull()) {
-        const qreal dpr = qMax<qreal>(
-            1.0, painter->device() ? painter->device()->devicePixelRatioF() : 1.0);
-
-        if (crop) {
-            // Square thumb fills iconRect edge-to-edge.
-            contentRect = iconRect;
-            const int phys = qMax(1, qRound(qMax(iconRect.width(), iconRect.height()) * dpr));
-            QPixmap pm = icon.pixmap(QSize(phys, phys));
-            if (!pm.isNull()) {
-                pm.setDevicePixelRatio(dpr);
-                painter->drawPixmap(contentRect, pm);
-            } else {
-                icon.paint(painter, contentRect, Qt::AlignCenter,
-                           QIcon::Normal, selected ? QIcon::On : QIcon::Off);
-            }
-        } else {
-            // Letterbox: use stored content aspect (post appearance bake).
-            QSize aspectHint = index.data(ThumbContentSizeRole).toSize();
-            if (aspectHint.width() < 1 || aspectHint.height() < 1) {
-                // Fall back to icon pixmap aspect if role missing.
-                const int phys = qMax(1, qRound(qMax(iconRect.width(), iconRect.height()) * dpr));
-                QPixmap probe = icon.pixmap(QSize(phys, phys));
-                if (!probe.isNull()) {
-                    probe.setDevicePixelRatio(dpr);
-                    aspectHint = probe.deviceIndependentSize().toSize();
-                } else {
-                    aspectHint = iconRect.size();
-                }
-            }
-            const QSize fitted = aspectHint.scaled(iconRect.size(), Qt::KeepAspectRatio);
-            contentRect = QRect(
-                iconRect.x() + (iconRect.width() - fitted.width()) / 2,
-                iconRect.y() + (iconRect.height() - fitted.height()) / 2,
-                fitted.width(),
-                fitted.height());
-            const int physW = qMax(1, qRound(contentRect.width() * dpr));
-            const int physH = qMax(1, qRound(contentRect.height() * dpr));
-            QPixmap pm = icon.pixmap(QSize(physW, physH));
-            if (!pm.isNull()) {
-                pm.setDevicePixelRatio(dpr);
-                painter->drawPixmap(contentRect, pm);
-            } else {
-                icon.paint(painter, contentRect, Qt::AlignCenter,
-                           QIcon::Normal, selected ? QIcon::On : QIcon::Off);
+    // Prepared pixmap (correct aspect). Never QIcon::pixmap(w,h) — that resamples
+    // the only available size into the request and stretches letterbox thumbs.
+    QPixmap pm = qvariant_cast<QPixmap>(index.data(ThumbPixmapRole));
+    if (pm.isNull()) {
+        const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
+        if (!icon.isNull()) {
+            const QList<QSize> sizes = icon.availableSizes();
+            if (!sizes.isEmpty()) {
+                pm = icon.pixmap(sizes.constFirst());
             }
         }
     }
 
-// Black hairline tight to the thumbnail image (crop fills slot; letterbox is inset).
-    if (!icon.isNull() && contentRect.width() > 0 && contentRect.height() > 0) {
+    QRect contentRect;
+    if (!pm.isNull()) {
+        const QSize logical = pm.deviceIndependentSize().toSize();
+        if (crop) {
+            // Square prepare: fill icon slot (may letterbox 1px rounding only).
+            contentRect = iconRect;
+            painter->drawPixmap(contentRect, pm);
+        } else {
+            // Letterbox: fit pixmap aspect into iconRect; never stretch to square.
+            QSize aspect = index.data(ThumbContentSizeRole).toSize();
+            if (aspect.width() < 1 || aspect.height() < 1) {
+                aspect = logical;
+            }
+            if (aspect.width() < 1 || aspect.height() < 1) {
+                aspect = iconRect.size();
+            }
+            const QSize fitted = aspect.scaled(iconRect.size(), Qt::KeepAspectRatio);
+            contentRect = QRect(
+                iconRect.x() + (iconRect.width() - fitted.width()) / 2,
+                iconRect.y() + (iconRect.height() - fitted.height()) / 2,
+                qMax(1, fitted.width()),
+                qMax(1, fitted.height()));
+            // Draw with KeepAspectRatio inside contentRect (same aspect as pm).
+            const QSize pmFit = logical.scaled(contentRect.size(), Qt::KeepAspectRatio);
+            const QRect dest(
+                contentRect.x() + (contentRect.width() - pmFit.width()) / 2,
+                contentRect.y() + (contentRect.height() - pmFit.height()) / 2,
+                qMax(1, pmFit.width()),
+                qMax(1, pmFit.height()));
+            painter->drawPixmap(dest, pm);
+            contentRect = dest;
+        }
+    }
+
+    // Hairline on the image bounds (not the full cell).
+    if (!pm.isNull() && contentRect.width() > 0 && contentRect.height() > 0) {
         painter->setPen(QPen(QColor(0, 0, 0), 1));
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(contentRect.adjusted(0, 0, -1, -1));
-    } else if (icon.isNull()) {
+    } else if (pm.isNull()) {
         // Loading / pending placeholder — subtle frame + busy mark.
         painter->setPen(QPen(QColor(128, 128, 128, 160), 1, Qt::DashLine));
         painter->setBrush(QColor(0, 0, 0, 40));
@@ -740,6 +732,9 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         if (dpr > 1.0) {
             pm.setDevicePixelRatio(dpr);
         }
+        // Store the prepared pixmap for painting (aspect preserved). DecorationRole
+        // is kept for “has icon?” checks only — paint uses ThumbPixmapRole.
+        it->setData(ThumbnailDelegate::ThumbPixmapRole, pm);
         it->setIcon(QIcon(pm));
 
         // Layout size is always logical (thumbSize scale). Never use decode
@@ -763,7 +758,8 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         if (idx.isValid()) {
             dataChanged(idx, idx, {Qt::DecorationRole, Qt::SizeHintRole,
                                    ThumbnailDelegate::ThumbContentSizeRole,
-                                   ThumbnailDelegate::ThumbLoadedRole});
+                                   ThumbnailDelegate::ThumbLoadedRole,
+                                   ThumbnailDelegate::ThumbPixmapRole});
         }
         if (viewport()) {
             viewport()->update(visualItemRect(it));
@@ -1751,13 +1747,23 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
     drag->setMimeData(mime);
 
     if (QListWidgetItem *first = items.first()) {
-        const QIcon icon = first->icon();
-        if (!icon.isNull()) {
-            const QPixmap pix = icon.pixmap(iconSize());
-            if (!pix.isNull()) {
-                drag->setPixmap(pix);
-                drag->setHotSpot(QPoint(pix.width() / 2, pix.height() / 2));
+        QPixmap pix = qvariant_cast<QPixmap>(
+            first->data(ThumbnailDelegate::ThumbPixmapRole));
+        if (pix.isNull()) {
+            const QIcon icon = first->icon();
+            const QList<QSize> sizes = icon.availableSizes();
+            if (!sizes.isEmpty()) {
+                pix = icon.pixmap(sizes.constFirst());
             }
+        }
+        if (!pix.isNull()) {
+            // Keep aspect for the drag preview (iconSize() is square).
+            const QSize target = iconSize();
+            if (target.width() > 0 && target.height() > 0) {
+                pix = pix.scaled(target, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            }
+            drag->setPixmap(pix);
+            drag->setHotSpot(QPoint(pix.width() / 2, pix.height() / 2));
         }
     }
 

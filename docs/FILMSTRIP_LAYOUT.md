@@ -62,9 +62,12 @@ still 96px tall on the cross-axis — not 512.
 ## Paint
 
 - Selection/hover fill the **full cell** (pad + image + label).
-- Crop: pixmap fills `iconRect` edge-to-edge.
-- Letterbox: pixmap fills `iconRect` (aspect matches by layout); hairline on
-  the image bounds.
+- The prepared image is stored as `ThumbPixmapRole` (QPixmap with correct aspect
+  and DPR). Paint draws that pixmap with **KeepAspectRatio** — never
+  `QIcon::pixmap(w,h)`, which resamples a single size into the request and can
+  stretch landscape into a square.
+- Crop: pixmap fills `iconRect`.
+- Letterbox: pixmap fitted inside `iconRect`; hairline on the image bounds.
 
 ## What not to do
 
