@@ -16,7 +16,7 @@ Size-first tip blocked `scheduleGalleryDecode` while size was provisional
 
 ### Done criteria
 - [x] Zoom edge budget can request again
-- [ ] Bundle **460**
+- [x] Bundle **460**
 
 ---
 
