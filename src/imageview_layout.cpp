@@ -97,8 +97,18 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         if (const WorkspaceItemState *app = m_appearance.get(sid)) {
             s.cropRotation = app->cropRotation;
             s.cropSourceSize = app->cropSourceSize;
-            if (s.contentQuarterTurns == 0 && app->contentQuarterTurns != 0) {
-                s.contentQuarterTurns = app->contentQuarterTurns;
+            // Appearance store is authoritative for content orientation meta.
+            s.contentQuarterTurns = app->contentQuarterTurns;
+            // Prefer live item flags; fall back to store if item not yet tagged.
+            if (!s.contentHFlip && app->contentHFlip) {
+                s.contentHFlip = true;
+            }
+            if (!s.contentVFlip && app->contentVFlip) {
+                s.contentVFlip = true;
+            }
+            if (!s.hasCrop && app->hasCrop) {
+                s.hasCrop = app->hasCrop;
+                s.cropRect = app->cropRect;
             }
         }
     }
@@ -534,17 +544,28 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
             // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
             // Does not touch source files; project files remain the portable doc.
             // v1: flip / quarter-turns / crop only (grade stays session/project).
-            ThumtooCache::StoredContentAppearance stored;
-            stored.contentHFlip = contentSlot.contentHFlip;
-            stored.contentVFlip = contentSlot.contentVFlip;
-            stored.contentQuarterTurns = contentSlot.contentQuarterTurns;
-            stored.hasCrop = contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
-            if (stored.hasCrop) {
-                stored.cropRect = contentSlot.cropRect;
-                stored.cropSourceSize = contentSlot.cropSourceSize;
-                stored.cropRotation = contentSlot.cropRotation;
+            //
+            // Only *write* non-identity rows here. Writing identity deletes the
+            // SQLite row — a later commit whose captureState dropped quarter-turns
+            // was wiping a good row and leaving an empty database. Intentional
+            // clear goes through clearContentAppearance (Reset / undo-to-identity).
+            const bool contentful =
+                contentSlot.contentHFlip || contentSlot.contentVFlip
+                || contentSlot.contentQuarterTurns != 0
+                || (contentSlot.hasCrop && !contentSlot.cropRect.isEmpty());
+            if (contentful) {
+                ThumtooCache::StoredContentAppearance stored;
+                stored.contentHFlip = contentSlot.contentHFlip;
+                stored.contentVFlip = contentSlot.contentVFlip;
+                stored.contentQuarterTurns = contentSlot.contentQuarterTurns;
+                stored.hasCrop = contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
+                if (stored.hasCrop) {
+                    stored.cropRect = contentSlot.cropRect;
+                    stored.cropSourceSize = contentSlot.cropSourceSize;
+                    stored.cropRotation = contentSlot.cropRotation;
+                }
+                ThumtooCache::saveContentAppearance(item->path(), stored);
             }
-            ThumtooCache::saveContentAppearance(item->path(), stored);
         }
         if (sid != kInvalidSessionImageId) {
             // Bound: do not last-write appearance onto the path map (duplicates

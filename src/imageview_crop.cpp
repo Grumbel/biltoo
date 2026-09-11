@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "thumtoocache.h"
+#include "sessionappearance.h"
 
 #include <QGuiApplication>
 #include "imageitem.h"
@@ -602,6 +604,11 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
     // Do not write crop state into the path map for bound tiles.
     commitItemSessionEdit(item);
+    // Undo back to identity: commit no longer writes identity (avoids wiping
+    // good rows on noisy commits), so clear durable state explicitly.
+    if (!SessionAppearance::hasContentAppearance(state)) {
+        ThumtooCache::clearContentAppearance(item->path());
+    }
     if (isImageMode()) {
         m_fitMode = true;
         fitItem(item, currentFitAspectMode());

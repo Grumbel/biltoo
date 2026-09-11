@@ -2,6 +2,28 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-404-empty-db-fix.** Empty appearance.sqlite3: identity writes on
+every commit were deleting good rows when captureState dropped turns. Prior: **403**.
+
+### Root cause
+`commitItemSessionEdit` always called `saveContentAppearance`. Identity
+payload → `AppearanceStore::put` **deletes** the row. A later commit whose
+`contentQuarterTurns` was not captured wiped the database (schema remained).
+
+### Fix
+- Durable save only for **non-identity** content from commit
+- Intentional clear: Reset UI + undo-to-identity via `clearContentAppearance`
+- captureState always takes orientation meta from `m_appearance`
+
+### Done criteria
+- [x] Root cause fixed
+- [ ] Human: rotate → row appears in appearance.sqlite3 and survives further edits
+- [ ] Bundle **404**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-403-appearance-persist-audit.** Load/save audit + fixes. Prior: **402**.
 
 ### Audit findings

@@ -1575,10 +1575,11 @@ std::string pathContentId(const QString &path)
         return {};
     }
     const QFileInfo fi(local);
-    if (!fi.isFile()) {
+    if (!fi.exists() || !fi.isFile()) {
         return {};
     }
-    const QString abs = fi.absoluteFilePath();
+    const QString abs = fi.canonicalFilePath().isEmpty() ? fi.absoluteFilePath()
+                                                         : fi.canonicalFilePath();
     const qint64 size = fi.size();
     const QDateTime mtime = fi.lastModified();
     // Cache sha256 by path+size+mtime — hashing multi‑MB images on every
