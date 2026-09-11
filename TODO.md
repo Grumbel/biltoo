@@ -2,6 +2,24 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-437-filmstrip-absolute-pad.** Side gaps on landscape looked larger
+than portrait — centering slack in oversized slots, not scaled pad.
+Prior: **436**.
+
+### Fix
+- `cellPad` documented/used as absolute filmstrip px (same every cell)
+- Paint at `(pad,pad)` with layout content size — no center-in-slot extra margin
+- Cell spacing fixed 2px (not pad-derived)
+- Letterbox `iconSize` not forced square
+
+### Done criteria
+- [x] Absolute pad + tight paint
+- [ ] Bundle **437**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-436-filmstrip-letterbox-default.** Thumbs still looked square-
 stretched: crop-to-square was **default on**, and paint could still stretch.
 Prior: **435**.

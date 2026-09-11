@@ -65,8 +65,10 @@ void ThumbnailDelegate::setThumbSize(int pixels)
 
 int ThumbnailDelegate::cellPad() const
 {
-    // Scale with thumb size so tiny cells are not mostly margin.
-    return qBound(1, m_thumbSize / 20, 6);
+    // Absolute filmstrip logical pixels (same for every cell). Not image-relative
+    // and not scaled by aspect — only tracks thumbSize so large thumbs keep a
+    // visible margin.
+    return qBound(2, m_thumbSize / 24, 6);
 }
 
 int ThumbnailDelegate::labelBandHeightForFont(const QFont &font)
@@ -167,13 +169,9 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QFontMetrics fm(option.font);
     const int labelBand = labelBandHeight(option.font);
-    const int pad = cellPad();
-    const int boxW = qMax(1, cell.width() - 2 * pad);
-    const int boxH = qMax(1, cell.height() - labelBand - 2 * pad);
-    const QRect iconRect(cell.left() + pad, cell.top() + pad, boxW, boxH);
+    const int pad = cellPad(); // absolute filmstrip px — identical on every cell
 
-    // Prepared pixmap (correct aspect). Never QIcon::pixmap(w,h) — that resamples
-    // the only available size into the request and stretches letterbox thumbs.
+    // Prepared pixmap (correct aspect). Never QIcon::pixmap(w,h) — stretches.
     QPixmap pm = qvariant_cast<QPixmap>(index.data(ThumbPixmapRole));
     if (pm.isNull()) {
         const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
@@ -187,19 +185,32 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     QRect contentRect;
     if (!pm.isNull()) {
-        // Dest size follows the *pixmap* aspect only. Never force a role size that
-        // disagrees with the pixels (that stretches). Role is for sizeHint only.
+        // Layout content size (what sizeHint used). Fall back to pixmap aspect.
+        QSize contentSz = index.data(ThumbContentSizeRole).toSize();
+        if (contentSz.width() < 1 || contentSz.height() < 1) {
+            QSize pmAspect = pm.deviceIndependentSize().toSize();
+            if (pmAspect.width() < 1 || pmAspect.height() < 1) {
+                pmAspect = pm.size();
+            }
+            contentSz = letterboxContentSize(pmAspect);
+        }
+        // Tight box: pad from cell edges, then exact content size — no centering
+        // inside a larger iconRect (that looked like bigger L/R pad on wide cells).
+        QRect slot(cell.left() + pad, cell.top() + pad,
+                   qMax(1, contentSz.width()), qMax(1, contentSz.height()));
+        const QRect inner = cell.adjusted(pad, pad, -pad, -(pad + labelBand));
+        slot = slot.intersected(inner);
+        // Fit pixmap into the layout slot without stretch (aspect from pixels).
         QSize pmAspect = pm.deviceIndependentSize().toSize();
         if (pmAspect.width() < 1 || pmAspect.height() < 1) {
             pmAspect = pm.size();
         }
-        const QSize fitted = pmAspect.scaled(iconRect.size(), Qt::KeepAspectRatio);
-        contentRect = QRect(
-            iconRect.x() + (iconRect.width() - fitted.width()) / 2,
-            iconRect.y() + (iconRect.height() - fitted.height()) / 2,
-            qMax(1, fitted.width()),
-            qMax(1, fitted.height()));
-        painter->drawPixmap(contentRect, pm);
+        const QSize fitted = pmAspect.scaled(slot.size(), Qt::KeepAspectRatio);
+        contentRect = QRect(slot.left(), slot.top(),
+                            qMax(1, fitted.width()), qMax(1, fitted.height()));
+        if (contentRect.width() > 0 && contentRect.height() > 0) {
+            painter->drawPixmap(contentRect, pm);
+        }
     }
 
     // Hairline on the image bounds (not the full cell).
@@ -538,7 +549,15 @@ void ThumbnailBar::setBarOrientation(Qt::Orientation orientation)
 
 void ThumbnailBar::applyThumbMetrics()
 {
-    setIconSize(QSize(m_thumbSize, m_thumbSize));
+    // IconSize is a floor for some IconMode paths. Letterbox uses per-item
+    // sizeHint; keep iconSize on the cross-axis only so width is not forced square.
+    if (m_cropToSquare) {
+        setIconSize(QSize(m_thumbSize, m_thumbSize));
+    } else if (m_orientation == Qt::Horizontal) {
+        setIconSize(QSize(m_thumbSize * 2, m_thumbSize));
+    } else {
+        setIconSize(QSize(m_thumbSize, m_thumbSize * 2));
+    }
     if (m_delegate) {
         m_delegate->setThumbSize(m_thumbSize);
     }
@@ -558,8 +577,8 @@ void ThumbnailBar::applyThumbMetrics()
     const int label = labelBandHeight();
     const int pad = m_delegate ? m_delegate->cellPad() : qBound(1, m_thumbSize / 16, 6);
     const int vPad = 2 * pad;
-    // Gap between cells scales slightly with size; pad is already in sizeHint.
-    setSpacing(qBound(1, pad / 2, 4));
+    // Gap between cells: absolute filmstrip pixels (pad is only inside the cell).
+    setSpacing(2);
     if (m_orientation == Qt::Horizontal) {
         // Cross-axis extent = pads + thumbSize + label (letterbox and crop share this).
         setMinimumHeight(kMinThumbSize + label + vPad);

@@ -41,7 +41,12 @@ cross-axis slot tracks the bar.
 
 ## Pad and label
 
-- `cellPad()` = `clamp(1, thumbSize/20, 6)` — identical on all four sides.
+- `cellPad()` is **absolute filmstrip logical pixels** (tracks `thumbSize` only:
+  about `thumbSize/24`, clamped). Same value on every cell and every side — not
+  proportional to image width/height and not baked into the pixmap.
+- Cell size = content + `2·cellPad` (+ label). Paint places the image at
+  `(pad, pad)` with the content size — no extra centering slack inside the cell.
+- Spacing between cells is a separate absolute gap (2px), not part of `cellPad`.
 - Label band (optional) sits under the image only; it does not change crop vs
   letterbox geometry.
 
