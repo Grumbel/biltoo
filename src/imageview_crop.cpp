@@ -440,6 +440,8 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const QRect priorCrop = (haveApp && app.hasCrop) ? app.cropRect : QRect();
     const bool hadCrop = haveApp && app.hasCrop && !priorCrop.isEmpty();
 
+    // Intentional: not installDisplayPixels. Crop mode needs the full on-disk
+    // frame with content bakes only — crop is drafted on top, not baked yet.
     item->setSourceImage(full);
     // Always axis-aligned while cropping (placement was stashed in setCropMode).
     item->setItemRotation(0.0);
@@ -573,6 +575,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     if (!item) {
         return;
     }
+    // Undo/redo after-image: pixels are already content-baked — do not re-bake.
     if (!src.isNull()) {
         item->setSourceImage(src);
     }
@@ -708,10 +711,12 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     if (needsFullSource) {
         const QImage full = ImageLoader::load(item->path());
         if (!full.isNull()) {
-            item->setSourceImage(full);
+            installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
+                                 sid);
+            return;
         }
     }
-    // Single content path: crop → content bakes → chrome flags → colour grade.
+    // Grade-only or reload failed: chrome + grade on current pixels.
     SessionAppearance::applyContentToItem(item, *app);
 }
 

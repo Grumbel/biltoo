@@ -17,6 +17,38 @@ slideshow blits. This tip centralizes raw attaches:
 - Soft path bakes into the preview image; Image mode refits when content
   orientation swaps aspect (avoids letterboxed smaller thumb on rapid flip)
 - Migrated: pending tile, preview load, Gallery soft→full, LoadAdd fills,
+  canvas soft hints, applyStoredAppearance reload, Workspace restore
+
+Keep `imageWithSessionAppearance` for pure-QImage slideshow transitions.
+`applyContentAppearanceAfterDecode` remains for post-source-install re-bake
+when not going through the gate.
+
+### Intentional non-gate sites
+- Peer sync (`commitItemSessionEdit`): already-baked display pixels
+- Crop enter: full frame + `applyContentBakes` without crop (draft space)
+- `applyCropAppearance`: undo after-image (already baked)
+
+### Done criteria
+- [x] Rebased onto d4dc82b
+- [x] installDisplayPixels is the preferred raw install path
+- [x] Remaining raw full-decode attaches audited
+- [ ] Human verify rapid Image flip + slideshow with content 90°
+- [ ] Bundle **399**
+
+---
+
+
+### On top of upstream 398
+Upstream already applied content after soft installs via
+`applyContentAppearanceAfterDecode` and `imageWithSessionAppearance` for
+slideshow blits. This tip centralizes raw attaches:
+
+- `SessionAppearance::PixelKind` { FullSource, SoftPreview }
+- `SessionAppearance::applyContentToImage` / `contentSwapsAspect`
+- `ImageView::installDisplayPixels` — single gate for raw disk/ladder/cache pixels
+- Soft path bakes into the preview image; Image mode refits when content
+  orientation swaps aspect (avoids letterboxed smaller thumb on rapid flip)
+- Migrated: pending tile, preview load, Gallery soft→full, LoadAdd fills,
   canvas soft hints
 
 Keep `imageWithSessionAppearance` for pure-QImage slideshow transitions.

@@ -203,10 +203,17 @@ void WorkspaceController::restoreStashedItems()
         if (needsFullSource) {
             const QImage full = ImageLoader::load(item->path());
             if (!full.isNull()) {
-                item->setSourceImage(full);
+                // Raw on-disk reload → single gate (avoids double-bake on cycle).
+                m_view->installDisplayPixels(
+                    item, full, SessionAppearance::PixelKind::FullSource,
+                    item->sessionId());
+            } else {
+                SessionAppearance::applyContentToItem(item, *app);
             }
+        } else {
+            // Grade-only / already full: chrome + grade without pixel reload.
+            SessionAppearance::applyContentToItem(item, *app);
         }
-        SessionAppearance::applyContentToItem(item, *app);
     }
     m_view->clearFitFillModes();
     // Order: zoom → expand sceneRect for the new scale → pan to saved centre.

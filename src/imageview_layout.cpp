@@ -576,6 +576,8 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         if (!shouldSync(other)) {
             return;
         }
+        // Already-baked display pixels from the edited peer — do not re-run
+        // installDisplayPixels / applyContentToItem (would double-crop).
         if (!src.isNull()) {
             other->setSourceImage(src);
         } else if (!item->previewImage().isNull()) {

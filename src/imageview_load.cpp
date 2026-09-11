@@ -931,8 +931,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         // Fill stashed Gallery placeholders while user is in Image mode.
         for (ImageItem *cand : m_gallery.stashedItems()) {
             if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
-                cand->setSourceImage(image);
-                applyStoredAppearance(cand);
+                installDisplayPixels(cand, image,
+                                     SessionAppearance::PixelKind::FullSource,
+                                     cand->sessionId());
             }
         }
         emit statusChanged();
@@ -1026,10 +1027,13 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (bound.index >= 0 && bound.id != kInvalidSessionImageId) {
             existing->setSessionIndex(bound.index);
         }
-        // Full source pixels so applyStoredAppearance can crop/bake safely
-        // (seed tiles may already have decoded defaults without content ops).
-        existing->setSourceImage(image);
-        applyStoredAppearance(existing);
+        // Raw full decode → single appearance gate (seed tiles may already
+        // have decoded defaults without content ops).
+        installDisplayPixels(existing, image,
+                             SessionAppearance::PixelKind::FullSource,
+                             bound.id != kInvalidSessionImageId
+                                 ? bound.id
+                                 : existing->sessionId());
         if (bound.id != kInvalidSessionImageId && m_appearance.get(bound.id)) {
             applyState(existing, *m_appearance.get(bound.id));
         }
