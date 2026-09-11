@@ -167,50 +167,49 @@ void syncItemLayoutToContentOrientation(ImageItem *item,
     if (!item) {
         return;
     }
-    // Prefer live full-source size after bake; else soft preview size.
-    QSize content = item->sourceImage().size();
-    if (content.width() < 1 || content.height() < 1) {
-        content = item->pixmap().size();
-    }
-    if (content.width() < 1 || content.height() < 1) {
-        // Flags only (no pixels yet): transpose intrinsic for odd turns.
-        if (!contentSwapsAspect(state)) {
-            return;
-        }
-        const QSize layout = item->imageSize();
-        if (layout.width() > 0 && layout.height() > 0) {
-            item->setIntrinsicSize(QSize(layout.height(), layout.width()));
-        }
-        return;
+    // Oriented display pixels (full source or soft preview). setPreviewImage
+    // clears the QPixmap — never use pixmap() here or soft path falls through
+    // to a blind transpose that toggles aspect on every reinstall (focus/click).
+    QSize display = item->sourceImage().size();
+    if (display.width() < 1 || display.height() < 1) {
+        display = item->previewImage().size();
     }
 
     const QSize layout = item->imageSize();
-    if (layout.width() < 1 || layout.height() < 1) {
-        item->setIntrinsicSize(content);
+    if (display.width() < 1 || display.height() < 1) {
+        // No pixels yet: do not guess. Blind transpose is not idempotent and
+        // corrupts an already-oriented cell when soft/probe runs again.
         return;
     }
 
-    // Content pixels define orientation. If layout aspect disagrees, fix layout
-    // without adopting ladder soft dimensions when full source is present.
-    const bool contentLandscape = content.width() >= content.height();
-    const bool layoutLandscape = layout.width() >= layout.height();
-    if (contentLandscape == layoutLandscape) {
-        // Same aspect family — still prefer full-source pixel size when we have it
-        // and it is larger (native), or matches after a content bake.
-        if (!item->sourceImage().isNull()
-            && content.width() * content.height()
-                >= layout.width() * layout.height()) {
-            item->setIntrinsicSize(content);
+    if (layout.width() < 1 || layout.height() < 1) {
+        // Soft magnitude is not native — only seed aspect family via display
+        // when layout is still unknown; full source may adopt pixel size.
+        if (!item->sourceImage().isNull()) {
+            item->setIntrinsicSize(display);
+        } else {
+            item->setIntrinsicSize(display);
         }
         return;
     }
 
-    // Aspect mismatch (typical: 90° content, unrotated probe intrinsic).
+    const bool displayLandscape = display.width() >= display.height();
+    const bool layoutLandscape = layout.width() >= layout.height();
+    if (displayLandscape == layoutLandscape) {
+        // Already matching. Full decode may still promote magnitude.
+        if (!item->sourceImage().isNull()
+            && display.width() * display.height()
+                >= layout.width() * layout.height()) {
+            item->setIntrinsicSize(display);
+        }
+        return;
+    }
+
+    // Aspect mismatch: align layout to oriented display without adopting soft
+    // ladder magnitude (keeps probe/native scale used at pack time).
     if (!item->sourceImage().isNull()) {
-        // Full pixels are authoritative (already content-baked).
-        item->setIntrinsicSize(content);
+        item->setIntrinsicSize(display);
     } else {
-        // Soft-only: transpose layout (keep probe magnitude, swap axes).
         item->setIntrinsicSize(QSize(layout.height(), layout.width()));
     }
 }

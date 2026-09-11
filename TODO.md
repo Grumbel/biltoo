@@ -2,6 +2,29 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-414-sync-idempotent.** Root cause of click AABB flip. Prior: **413**.
+
+### Root cause
+`syncItemLayoutToContentOrientation` used `pixmap()` after `setPreviewImage`
+(clears pixmap). Soft path fell into “flags only → transpose layout”. Every
+soft reinstall (focus ladder upgrade) **toggled** aspect — selection looked
+like it “broke” the cell.
+
+### Fix
+- Use `previewImage()` / `sourceImage()` for oriented display size
+- Idempotent: only change layout when aspect disagrees with display
+- No blind transpose without pixels
+
+Selection still only invalidates device cache for chrome; layout stays put.
+
+### Done criteria
+- [x] Idempotent sync
+- [ ] Bundle **414**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-413-gallery-click-layout.** Click must not reflow Gallery or reset
 content-oriented AABB. Prior: **412**.
 
