@@ -15,7 +15,7 @@ Prior: **443**.
 ### Done criteria
 - [x] Gap matches cross-axis margin
 - [x] Horizontal and vertical
-- [ ] Bundle **444**
+- [x] Bundle **444**
 
 ---
 
