@@ -221,31 +221,102 @@ bool contentSwapsAspect(const WorkspaceItemState &state)
     return turns == 1 || turns == 3;
 }
 
+QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
+                          PixelKind kind)
+{
+    if (raw.isNull()) {
+        return {};
+    }
+    if (!hasContentAppearance(state) && state.colorAdjust.isIdentity()) {
+        return raw;
+    }
+
+    QImage out = raw;
+
+    // 1) Content flips (source space), same as ImageItem::bakeFlip axes.
+    if (state.contentHFlip || state.contentVFlip) {
+        Qt::Orientations axes;
+        if (state.contentHFlip) {
+            axes |= Qt::Horizontal;
+        }
+        if (state.contentVFlip) {
+            axes |= Qt::Vertical;
+        }
+        if (axes) {
+            out = out.flipped(axes);
+        }
+    }
+
+    // 2) Quarter-turns — same matrix as bakeRotate90 / QImage::transformed.
+    int turns = state.contentQuarterTurns % 4;
+    if (turns < 0) {
+        turns += 4;
+    }
+    if (turns != 0) {
+        QTransform rot;
+        rot.rotate(90.0 * turns);
+        out = out.transformed(rot, Qt::SmoothTransformation);
+    }
+
+    // 3) Crop in *post-orient* space (cropRect after mapCropThrough*).
+    if (state.hasCrop && !state.cropRect.isEmpty()) {
+        const QSize live = out.size();
+        QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, live);
+        if (state.cropSourceSize.isEmpty()
+            && (crop.right() >= live.width() || crop.bottom() >= live.height())) {
+            const QSize swapped(live.height(), live.width());
+            if (swapped.width() > 0 && swapped.height() > 0
+                && crop.right() < swapped.width() && crop.bottom() < swapped.height()
+                && swapped != live) {
+                crop = scaleCropRect(state.cropRect, swapped, live);
+            }
+        }
+        if (crop.width() >= 1 && crop.height() >= 1) {
+            const QRect bounds(0, 0, out.width(), out.height());
+            const QRect srcRect = crop.intersected(bounds);
+            if (srcRect.width() >= 1 && srcRect.height() >= 1) {
+                out = out.copy(srcRect);
+            }
+        }
+        Q_UNUSED(kind);
+    }
+
+    // 4) Colour grade baked into returned pixels for soft/blit paths.
+    if (!state.colorAdjust.isIdentity()) {
+        out = applyColorAdjustments(out, state.colorAdjust);
+    }
+    return out;
+}
+
 void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
 {
     if (!item) {
         return;
     }
-    // Contract: for crop / content flip / quarter-turns, @p item must hold the
-    // full on-disk pixels (not a previously baked result). Callers that may
-    // re-apply (applyStoredAppearance, workspace restore) reload first.
-    // Colour grade alone is non-destructive and safe on any current source.
-    // 1) Crop from current source.
-    applyCrop(item, state);
-    // 2) Content bakes — order matches live bakeFlip / bakeRotate90.
-    if (state.contentHFlip || state.contentVFlip) {
-        item->bakeFlip(state.contentHFlip, state.contentVFlip);
+    // Contract: @p item holds *raw* full pixels. Sole bake for install from disk.
+    // Live bakeFlip/bakeRotate90 mutate display pixels and update session state.
+    QImage raw = item->sourceImage();
+    if (raw.isNull()) {
+        raw = item->previewImage();
     }
-    if (state.contentQuarterTurns != 0) {
-        item->bakeRotate90(state.contentQuarterTurns);
+    if (raw.isNull()) {
+        return;
     }
-    // 3) Chrome / session meta for crop + content orientation.
+
+    if (state.hasCrop && !state.cropRect.isEmpty()
+        && qAbs(state.cropRotation) > 0.05) {
+        WorkspaceItemState orientOnly = state;
+        orientOnly.hasCrop = false;
+        item->setSourceImage(materializeDisplay(raw, orientOnly, PixelKind::FullSource));
+        applyCrop(item, state);
+    } else {
+        item->setSourceImage(materializeDisplay(raw, state, PixelKind::FullSource));
+    }
+
     item->setContentHFlip(state.contentHFlip);
     item->setContentVFlip(state.contentVFlip);
     item->setSessionCrop(state.hasCrop, state.cropRect);
-    // 4) Non-destructive colour grade (display path in ImageItem).
     item->setColorAdjustments(state.colorAdjust);
-    // 5) Layout geometry must match content orientation (all view modes).
     syncItemLayoutToContentOrientation(item, state);
 }
 
@@ -304,69 +375,7 @@ void syncItemLayoutToContentOrientation(ImageItem *item,
 QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,
                            PixelKind kind)
 {
-    if (src.isNull() || !hasContentAppearance(state)) {
-        return src;
-    }
-
-    QImage out = src;
-
-    // 1) Crop (scaled into soft pixel space when SoftPreview).
-    if (state.hasCrop && !state.cropRect.isEmpty()) {
-        const QSize live = out.size();
-        QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, live);
-        if (state.cropSourceSize.isEmpty()
-            && (crop.right() >= live.width() || crop.bottom() >= live.height())) {
-            const QSize swapped(live.height(), live.width());
-            if (swapped.width() > 0 && swapped.height() > 0
-                && crop.right() < swapped.width() && crop.bottom() < swapped.height()
-                && swapped != live) {
-                crop = scaleCropRect(state.cropRect, swapped, live);
-            }
-        }
-        if (crop.width() >= 1 && crop.height() >= 1) {
-            // Soft path: approximate axis-aligned crop only (no pad / fine rotation).
-            // FullSource path prefers applyContentToItem + cropToLocalRect when
-            // cropRotation is non-zero; here we still crop the AABB for blits.
-            const QRect bounds(0, 0, out.width(), out.height());
-            const QRect srcRect = crop.intersected(bounds);
-            if (srcRect.width() >= 1 && srcRect.height() >= 1) {
-                out = out.copy(srcRect);
-            }
-        }
-        Q_UNUSED(kind);
-    }
-
-    // 2) Content flips then quarter turns (same order as bakeFlip / bakeRotate90).
-    if (state.contentHFlip || state.contentVFlip) {
-        Qt::Orientations axes;
-        if (state.contentHFlip) {
-            axes |= Qt::Horizontal;
-        }
-        if (state.contentVFlip) {
-            axes |= Qt::Vertical;
-        }
-        if (axes) {
-            out = out.flipped(axes);
-        }
-    }
-    if (state.contentQuarterTurns != 0) {
-        int turns = state.contentQuarterTurns % 4;
-        if (turns < 0) {
-            turns += 4;
-        }
-        if (turns != 0) {
-            QTransform xform;
-            xform.rotate(90.0 * turns);
-            out = out.transformed(xform, Qt::SmoothTransformation);
-        }
-    }
-
-    // 3) Colour grade (baked into the returned image for blits / soft stand-ins).
-    if (!state.colorAdjust.isIdentity()) {
-        out = applyColorAdjustments(out, state.colorAdjust);
-    }
-
-    return out;
+    return materializeDisplay(src, state, kind);
 }
 
 } // namespace SessionAppearance

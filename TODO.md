@@ -2,6 +2,25 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-438-content-pipeline.** Gallery→Image wrong rotation: multiple
+bake orders/paths. Centralize on `materializeDisplay`. Prior: **437**.
+
+### Architecture
+- `SessionAppearance::materializeDisplay` = sole raw→display pipeline
+  (flip → turn → crop → grade)
+- `installDisplayPixels` / `applyContentToImage` / `applyContentToItem` all use it
+- Seed durable appearance when session slot lacks content ops
+- Docs: `docs/CONTENT_PIPELINE.md`
+
+### Done criteria
+- [x] materializeDisplay
+- [x] install unified
+- [ ] Bundle **438**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-437-filmstrip-absolute-pad.** Side gaps on landscape looked larger
 than portrait — centering slack in oversized slots, not scaled pad.
 Prior: **436**.

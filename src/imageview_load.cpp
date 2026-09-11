@@ -78,7 +78,13 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
         return;
     }
     if (m_appearance.contains(sid)) {
-        return;
+        // Keep a non-identity entry; refill only if the slot is still empty of
+        // content ops so Gallery→Image cannot miss durable orientation.
+        if (const WorkspaceItemState *cur = m_appearance.get(sid)) {
+            if (SessionAppearance::hasContentAppearance(*cur)) {
+                return;
+            }
+        }
     }
     ThumtooCache::StoredContentAppearance stored;
     if (!ThumtooCache::loadContentAppearance(path, &stored)) {
@@ -129,29 +135,24 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         }
     }
 
-    if (kind == SessionAppearance::PixelKind::FullSource) {
-        item->setSourceImage(pixels);
-        if (app) {
-            // Content bake + chrome (grade-only is a no-op on pixels).
-            SessionAppearance::applyContentToItem(item, *app);
-        }
-    } else {
-        // SoftPreview: bake into a stand-in image; never adopt soft size as
-        // native layout magnitude — only fix aspect via sync helper.
-        QImage display = pixels;
-        if (app && SessionAppearance::hasContentAppearance(*app)) {
-            display = SessionAppearance::applyContentToImage(
-                pixels, *app, SessionAppearance::PixelKind::SoftPreview);
-            item->setContentHFlip(app->contentHFlip);
-            item->setContentVFlip(app->contentVFlip);
-            item->setSessionCrop(app->hasCrop, app->cropRect);
-            item->setColorAdjustments(app->colorAdjust);
-        }
-        item->setPreviewImage(display);
-        if (app) {
-            SessionAppearance::syncItemLayoutToContentOrientation(item, *app);
-        }
+    // Single pipeline: raw pixels → materializeDisplay → attach. Never bake
+    // twice. Gallery soft and Image full use the same function + session state.
+    WorkspaceItemState appearance;
+    if (app) {
+        appearance = *app;
     }
+    const QImage display = SessionAppearance::materializeDisplay(pixels, appearance, kind);
+
+    if (kind == SessionAppearance::PixelKind::FullSource) {
+        item->setSourceImage(display);
+    } else {
+        item->setPreviewImage(display);
+    }
+    item->setContentHFlip(appearance.contentHFlip);
+    item->setContentVFlip(appearance.contentVFlip);
+    item->setSessionCrop(appearance.hasCrop, appearance.cropRect);
+    item->setColorAdjustments(appearance.colorAdjust);
+    SessionAppearance::syncItemLayoutToContentOrientation(item, appearance);
 
     // Do NOT emit sessionAppearanceChanged from decode/install.
     // Soft ladder upgrades (including after Gallery focus) must not rewrite the

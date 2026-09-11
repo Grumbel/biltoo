@@ -52,6 +52,23 @@ enum class PixelKind {
     SoftPreview, /**< Soft ladder / thumbnail; crop scaled; no layout size write */
 };
 
+/**
+ * Sole pixel pipeline: raw decode → display pixels.
+ *
+ * Order (matches live bakeFlip / bakeRotate90, then crop in post-bake space):
+ *   1. contentHFlip / contentVFlip
+ *   2. contentQuarterTurns (QImage::trueMatrix + rotate)
+ *   3. cropRect (post-orient space; scaled via cropSourceSize)
+ *   4. color grade
+ *
+ * Call this for every QImage that came from disk/ladder/cache before display.
+ * Never call twice on the same pixels. Live incremental bakeFlip/bakeRotate90
+ * still mutate an already-materialized item and update session state; the next
+ * install from raw uses this function with the updated absolute state.
+ */
+QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
+                          PixelKind kind);
+
 /** Map a crop rect from @p recorded size into @p live size (identity if equal). */
 QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live);
 
