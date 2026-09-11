@@ -1834,10 +1834,13 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
     ) {
         out->hasGrade = true;
         out->gradeBrightness = got->grade_brightness.value_or(0);
-        out->gradeContrast = got->grade_contrast.value_or(0);
-        out->gradeSaturation = got->grade_saturation.value_or(0);
+        // ColorAdjustments uses contrast/saturation 100 = identity. Missing
+        // optional fields must not collapse to 0 (which blacks out tiles).
+        out->gradeContrast = got->grade_contrast.value_or(100);
+        out->gradeSaturation = got->grade_saturation.value_or(100);
         out->gradeHue = got->grade_hue.value_or(0);
-        out->gradeGamma = got->grade_gamma.value_or(0);
+        // Stored as percent ×100 of gamma (100 → 1.0).
+        out->gradeGamma = got->grade_gamma.value_or(100);
 #if defined(THUMTOO_APPEARANCE_GRADE_INVERT)
         out->gradeInvert = got->grade_invert.value_or(0) != 0;
 #endif

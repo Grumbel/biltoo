@@ -2,6 +2,24 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-457-gallery-soft-startup.** Gallery soft-decode on open + grade
+defaults so tiles are not blanked. Prior: **456**.
+
+### Cause / fixes
+1. Durable grade load used `value_or(0)` for contrast/saturation → 0 contrast
+   in `applyColorAdjustments` collapses pixels to mid-grey (looks unloaded).
+2. Gallery pack could run before the viewport had a real size; deferred
+   `updateGalleryDecodeWindow` after pack.
+
+### Done criteria
+- [x] Grade defaults 100 for contrast/sat; gamma percent
+- [x] Deferred decode window after setWorkspacePaths
+- [ ] Bundle **457**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-456-grade-invert-guard.** Guard grade_invert behind
 THUMTOO_APPEARANCE_GRADE_INVERT so build works if thumtoo tip lacks the field.
 Prior: **455**. Prefer **thumtoo-155**.

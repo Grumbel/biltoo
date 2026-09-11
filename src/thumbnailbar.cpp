@@ -937,10 +937,14 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
         st.cropRotation = stored.cropRotation;
         if (stored.hasGrade) {
             st.colorAdjust.brightness = stored.gradeBrightness;
-            st.colorAdjust.contrast = stored.gradeContrast;
-            st.colorAdjust.saturation = stored.gradeSaturation;
+            st.colorAdjust.contrast =
+                stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+            st.colorAdjust.saturation =
+                stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
             st.colorAdjust.hue = stored.gradeHue;
-            st.colorAdjust.gamma = stored.gradeGamma;
+            st.colorAdjust.gamma = stored.gradeGamma <= 0
+                ? 1.0
+                : (stored.gradeGamma / 100.0);
             st.colorAdjust.invert = stored.gradeInvert;
         }
         image = SessionAppearance::applyContentToImage(

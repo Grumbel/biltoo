@@ -102,12 +102,15 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
     seed.cropRotation = stored.cropRotation;
     if (stored.hasGrade) {
         seed.colorAdjust.brightness = stored.gradeBrightness;
-        seed.colorAdjust.contrast = stored.gradeContrast;
-        seed.colorAdjust.saturation = stored.gradeSaturation;
+        seed.colorAdjust.contrast =
+            stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+        seed.colorAdjust.saturation =
+            stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
         seed.colorAdjust.hue = stored.gradeHue;
-        seed.colorAdjust.gamma = stored.gradeGamma > 3
-            ? (stored.gradeGamma / 100.0)
-            : (stored.gradeGamma == 0 ? 1.0 : double(stored.gradeGamma));
+        // Durable gradeGamma is percent (100 = 1.0); treat 0 as identity.
+        seed.colorAdjust.gamma = stored.gradeGamma <= 0
+            ? 1.0
+            : (stored.gradeGamma / 100.0);
         seed.colorAdjust.invert = stored.gradeInvert;
     }
     m_appearance.set(sid, seed);

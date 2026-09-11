@@ -240,6 +240,14 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     if (isGalleryMode() && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::EnterGallery);
         updateGalleryDecodeWindow();
+        // First open can pack while the view is still 0×0 (dock/layout settling).
+        // Retry once the event loop has assigned a real viewport size so soft
+        // decodes for on-screen tiles actually start.
+        QTimer::singleShot(0, this, [this]() {
+            if (isGalleryMode() && !m_items.isEmpty()) {
+                updateGalleryDecodeWindow();
+            }
+        });
     }
 
     validateUniqueLiveSessionIds("setWorkspacePaths");
