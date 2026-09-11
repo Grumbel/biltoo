@@ -2,6 +2,32 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-424-text-map-orient-then-crop.** Fix flip/crop math for text
+regions. Prior: **423**.
+
+### What was wrong
+1. **Crop space:** `recordSessionCrop` / crop re-entry store `cropRect` in
+   *post-content-bake* pixel space. Mapper did crop-then-orient (applyContent
+   order), so overlays missed the crop frame after orientation.
+2. **Flip + turns:** `bakeItemFlip` toggled source `contentHFlip`/`VFlip` using
+   *display* axes even when `contentQuarterTurns` was 1 or 3. Display H after
+   90° CW is source V; state diverged from pixels and text mapping.
+
+### Fix
+- `mapSourceRectToContentDisplay`: **flip → quarter-turn → crop** (crop in
+  oriented space, matching live `cropToLocalRect`).
+- `bakeItemFlip`: conjugate display flip into source flags when turns is odd
+  (H↔V); crop still mapped with display axes.
+
+### Done criteria
+- [x] Orient-then-crop mapper
+- [x] Flip flag conjugation for odd turns
+- [ ] Bundle **424**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-423-text-region-content-map.** Clean rewrite of text→display
 mapping. Prior: **422**.
 

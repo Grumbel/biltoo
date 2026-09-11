@@ -107,7 +107,33 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
     QRectF r = sourceRect.normalized();
     QSize work = sourceSize;
 
-    // 1) Crop in full-source space (same scaling rules as applyContentToImage).
+    // Content appearance on the item is: orient (flip + quarter-turns) the full
+    // raster, then crop in that post-bake pixel space.
+    //
+    // Evidence: recordSessionCrop / enterCropMode store cropRect against the
+    // *current* imageSize after content bakes ("post-content-bake image"), and
+    // crop re-entry explicitly does not re-mirror for contentHFlip/VFlip.
+    // applyContentToItem still does crop-then-orient for historical reasons;
+    // geometry for overlays must follow the live post-bake + cropToLocalRect
+    // space the user sees.
+
+    // 1) Content flips about the full source size.
+    if (state.contentHFlip) {
+        r = QRectF(work.width() - r.x() - r.width(), r.y(), r.width(), r.height());
+    }
+    if (state.contentVFlip) {
+        r = QRectF(r.x(), work.height() - r.y() - r.height(), r.width(), r.height());
+    }
+
+    // 2) Content quarter-turns CW — same matrix as mapCropThroughContentRotate90
+    //    and ImageItem::bakeRotate90.
+    const int turns = normalizeQuarterTurns(state.contentQuarterTurns);
+    for (int i = 0; i < turns; ++i) {
+        r = QRectF(work.height() - r.y() - r.height(), r.x(), r.height(), r.width());
+        work = QSize(work.height(), work.width());
+    }
+
+    // 3) Crop in post-orientation space (cropSourceSize is that space's size).
     if (state.hasCrop && !state.cropRect.isEmpty()) {
         QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, work);
         if (state.cropSourceSize.isEmpty()
@@ -127,23 +153,6 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
             return {};
         }
         r = r.translated(-qreal(crop.x()), -qreal(crop.y()));
-        work = crop.size();
-    }
-
-    // 2) Content flips about the post-crop working size.
-    if (state.contentHFlip) {
-        r = QRectF(work.width() - r.x() - r.width(), r.y(), r.width(), r.height());
-    }
-    if (state.contentVFlip) {
-        r = QRectF(r.x(), work.height() - r.y() - r.height(), r.width(), r.height());
-    }
-
-    // 3) Content quarter-turns CW — same convention as mapCropThroughContentRotate90
-    //    and ImageItem::bakeRotate90 / QImage::transformed(rotate(90*n)).
-    const int turns = normalizeQuarterTurns(state.contentQuarterTurns);
-    for (int i = 0; i < turns; ++i) {
-        r = QRectF(work.height() - r.y() - r.height(), r.x(), r.height(), r.width());
-        work = QSize(work.height(), work.width());
     }
 
     return r;

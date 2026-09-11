@@ -71,10 +71,11 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns);
  * Map a rectangle from full on-disk (pre-content) image pixel space into the
  * post-content display pixel space used by the baked item.
  *
- * Order matches applyContentToItem / applyContentToImage:
- *   1. Session crop (cropRect in cropSourceSize → @p sourceSize)
- *   2. Content horizontal / vertical flip about the working size
- *   3. Content quarter-turns clockwise (0..3), same matrix as bakeRotate90
+ * Order matches the *live* post-bake image the user sees (crop UI stores
+ * cropRect in post-content space; see enterCropMode / recordSessionCrop):
+ *   1. Content horizontal / vertical flip about @p sourceSize
+ *   2. Content quarter-turns clockwise (0..3), same matrix as bakeRotate90
+ *   3. Session crop (cropRect in cropSourceSize → oriented size)
  *
  * @p sourceSize is the unoriented full-page raster size (native / probe).
  * Returns empty if the rect misses the crop or sizes are invalid.

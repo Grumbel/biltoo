@@ -469,14 +469,27 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     }
 
     item->bakeFlip(horizontal, vertical);
-    // Toggle against this item's content flags only — never path-keyed state
-    // (duplicates sharing a path would otherwise share one flip bit).
+    // Toggle content flags in *source* space so applyContent / text mapping
+    // (flip then quarter-turn on the full raster) stay consistent with the
+    // display-space flip just applied to the oriented pixels.
+    //
+    // With quarter-turns t: display H/V axes map to source axes as
+    //   t=0,2: same axes;  t=1,3: H↔V  (conjugation through 90°/270° CW).
+    // Crop stays in post-content space, so mapCropThroughContentFlip below
+    // still uses the display axes the user pressed.
     bool h = item->contentHFlip();
     bool v = item->contentVFlip();
-    if (horizontal) {
+    int turns = beforeSt.contentQuarterTurns % 4;
+    if (turns < 0) {
+        turns += 4;
+    }
+    const bool swapAxes = (turns == 1 || turns == 3);
+    const bool srcH = swapAxes ? vertical : horizontal;
+    const bool srcV = swapAxes ? horizontal : vertical;
+    if (srcH) {
         h = !h;
     }
-    if (vertical) {
+    if (srcV) {
         v = !v;
     }
     item->setContentHFlip(h);
