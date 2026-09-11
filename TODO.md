@@ -2,6 +2,21 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-455-find-extract-log.** Log text-layer ensure URI/result for Find.
+Prior: **454**. Pair with **thumtoo-154** (PDF text always via MuPDF).
+
+### Change
+- `[find] ensurePageTextLayer:` logs client/URI failure or region count
+- Root cause of empty Find on PDF was thumtoo-154 (text only when backend==MuPDF)
+
+### Done criteria
+- [x] Ensure path logs
+- [ ] Bundle **455**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-454-export-text-invert.** Export Text, Find debug, Negative grade.
 Prior: **453**. Pair with **thumtoo-153** for durable invert.
 

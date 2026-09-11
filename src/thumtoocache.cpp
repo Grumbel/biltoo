@@ -1504,18 +1504,33 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath)
         c = clientUnlocked();
     }
     if (!c) {
+        qWarning().noquote()
+            << QStringLiteral("[find] ensurePageTextLayer: no thumtoo client path=%1")
+                   .arg(sessionPath);
         return {};
     }
     const std::string uri = toThumtooUri(sessionPath);
     if (uri.empty()) {
+        qWarning().noquote()
+            << QStringLiteral("[find] ensurePageTextLayer: empty URI path=%1")
+                   .arg(sessionPath);
         return {};
     }
     // Extract/MuPDF must not run under g_mu — document search runs this on a
     // worker while the GUI may also refresh the current page.
     auto layer = c->ensure_page_text_layer(uri);
     if (!layer) {
+        qWarning().noquote()
+            << QStringLiteral("[find] ensurePageTextLayer: extract failed path=%1 uri=%2")
+                   .arg(sessionPath)
+                   .arg(QString::fromStdString(uri));
         return {};
     }
+    qWarning().noquote()
+        << QStringLiteral("[find] ensurePageTextLayer: ok path=%1 uri=%2 regions=%3")
+               .arg(sessionPath)
+               .arg(QString::fromStdString(uri))
+               .arg(static_cast<int>(layer->regions.size()));
     return convertLayer(*layer);
 }
 
