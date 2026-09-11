@@ -431,11 +431,11 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    // Size-first: do not burn ladder slots on provisional 1000×1000 cells.
-    // Probe (or sizeReady) will repack and call updateGalleryDecodeWindow.
+    // Size-first still probes in the background, but never blocks soft/full
+    // decode: provisional 1000×1000 or LQIP-only layout must still upgrade to
+    // the zoom-appropriate ladder edge (or full decode past soft max).
     if (isProvisionalImageSize(path)) {
         scheduleImageSizeProbe(path);
-        return;
     }
     GallerySoftState &st = m_gallerySoft[path];
     if (st.failed || st.inflight > 0 || st.fullInflight) {
@@ -472,6 +472,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     st.want = want;
     if (have >= want) {
         return;
+    }
+    // Higher zoom/need than a prior soft shortfall — retry the new edge.
+    if (st.gaveUpWant > 0 && want > st.gaveUpWant) {
+        st.gaveUpWant = 0;
     }
     if (st.gaveUpWant >= want && have > 0) {
         return;

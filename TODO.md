@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-460-gallery-zoom-edge.** Restore zoom-appropriate gallery ladder
+requests. Prior: **459**.
+
+### Cause
+Size-first tip blocked `scheduleGalleryDecode` while size was provisional
+(including LQIP-only layout), so soft never upgraded past the placeholder.
+
+### Fix
+- Provisional still schedules probe but **does not** block soft/full decode
+- LQIP layout size normalized to ~1024 long edge (aspect preserved)
+- Clear `gaveUpWant` when want grows past a prior soft shortfall
+
+### Done criteria
+- [x] Zoom edge budget can request again
+- [ ] Bundle **460**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-459-export-text-utf8.** Export text as binary UTF-8 + BOM;
 fromUtf8 for layers. Prior: **458**.
 

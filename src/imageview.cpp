@@ -363,12 +363,20 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     if (it != m_imageSizeByPath.cend()) {
         return it.value();
     }
-    // Aspect from preview so fitInView frames the window correctly; magnitude
-    // only needs to be stable (view scale absorbs absolute size).
+    // Aspect from preview so pack/fit frames correctly. LQIP is often ~32px —
+    // normalize magnitude so cells are not tiny in scene space (view scale
+    // still absorbs absolute size; keeps on-screen edge budgets sane).
     if (!previewHint.isNull() && previewHint.width() > 0 && previewHint.height() > 0) {
         scheduleImageSizeProbe(path);
         m_provisionalSizePaths.insert(path);
-        return previewHint.size();
+        const QSize h = previewHint.size();
+        const int longEdge = qMax(h.width(), h.height());
+        if (longEdge > 0 && longEdge < 256) {
+            const qreal s = 1024.0 / qreal(longEdge);
+            return QSize(qMax(1, int(h.width() * s + 0.5)),
+                         qMax(1, int(h.height() * s + 0.5)));
+        }
+        return h;
     }
     return imageSizeForPath(path);
 }

@@ -57,7 +57,7 @@ never confuse EXIF stand-ins with a completed soft level.
 
 1. **`primeGalleryGeometryFromCache`** — durable `cachedSize` + LQIP only (no ladder encode).
 2. **Placeholders + pack** — layout uses known aspects; provisional cells wait for `sizeReady`.
-3. **`updateGalleryDecodeWindow`** — soft/full ladder only after size is known (non-provisional).
+3. **`updateGalleryDecodeWindow`** — soft/full ladder by on-screen edge; size probe runs in parallel (provisional no longer blocks decode).
 
 ## Two paths (aligned with thumtoo)
 
