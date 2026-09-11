@@ -158,13 +158,10 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         }
     }
 
-    // Filmstrip / peers: one place emits oriented pixels after raw install.
-    if (appliedContent && sid != kInvalidSessionImageId) {
-        const QImage appearance = sessionAppearanceImage(item);
-        if (!appearance.isNull()) {
-            emit sessionAppearanceChanged(sid, item->path(), appearance);
-        }
-    }
+    // Do NOT emit sessionAppearanceChanged from decode/install.
+    // Soft ladder upgrades (including after Gallery focus) must not rewrite the
+    // filmstrip — that is selection-coupled and wrong. Filmstrip overrides are
+    // emitted only from user content edits (commit / bake / crop accept).
 
     // Gallery reflow only when layout geometry actually changed — soft ladder
     // upgrades on focus must not repack the whole grid (click should not move tiles).

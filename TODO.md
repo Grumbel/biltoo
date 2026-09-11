@@ -2,6 +2,27 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-415-no-filmstrip-on-decode.** Selection/soft install must not
+rewrite filmstrip thumbs. Prior: **414**.
+
+### Cause
+`installDisplayPixels` emitted `sessionAppearanceChanged` whenever content was
+baked into soft/full pixels. Gallery focus upgrades soft → emit → filmstrip
+override looks like a higher-res thumb on selection.
+
+### Policy
+- Filmstrip override emit: **user content edits only** (commit/bake/crop)
+- Soft/full decode: update canvas only; filmstrip keeps its own ladder
+- Higher-res filmstrip: filmstrip scheduler / ladderReady, not selection
+
+### Done criteria
+- [x] Remove decode→filmstrip emit
+- [ ] Bundle **415**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-414-sync-idempotent.** Root cause of click AABB flip. Prior: **413**.
 
 ### Root cause
