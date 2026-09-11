@@ -7,7 +7,7 @@ used removed `iconRect`. Prior: **438**.
 
 ### Done criteria
 - [x] Build fix
-- [ ] Bundle **439**
+- [x] Bundle **439**
 
 ---
 
