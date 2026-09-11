@@ -15,7 +15,7 @@ could call `cancelLocationBar`.
 
 ### Done criteria
 - [x] Esc hides unpinned Location bar
-- [ ] Bundle **461**
+- [x] Bundle **461**
 
 ---
 
