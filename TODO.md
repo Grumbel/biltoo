@@ -12,7 +12,7 @@ Prior: **462**.
 
 ### Done criteria
 - [x] Centre click pause
-- [ ] Bundle **463**
+- [x] Bundle **463**
 
 ---
 
