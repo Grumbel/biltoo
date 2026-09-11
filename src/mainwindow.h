@@ -26,7 +26,6 @@ class AdjustmentsPanel;
 class LayoutPanel;
 class TocPanel;
 class QDockWidget;
-class QSplitter;
 class QToolBar;
 class QAction;
 class QActionGroup;
@@ -321,6 +320,7 @@ private:
     void applyThumbnailVisibility();
     enum class ThumbnailEdge { Bottom, Top, Left, Right };
     void setThumbnailBarPosition(ThumbnailEdge edge);
+    void onThumbnailDockLocationChanged(Qt::DockWidgetArea area);
     void updateThumbnailEdgeActions();
     void sortFileList();
     /** Name / mtime / file size — no image I/O. */
@@ -371,8 +371,9 @@ private:
 
     ImageView *m_imageView = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
+    QDockWidget *m_thumbnailDock = nullptr;
+    bool m_dockLocationGuard = false;
     bool m_syncingSelection = false;
-    QSplitter *m_centralSplitter = nullptr;
     MetadataPanel *m_metadataPanel = nullptr;
     AdjustmentsPanel *m_adjustmentsPanel = nullptr;
     QDockWidget *m_adjustmentsDock = nullptr;

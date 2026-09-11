@@ -16,12 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     resize(1024, 768);
     setAcceptDrops(true);
 
-    m_centralSplitter = new QSplitter(Qt::Vertical, this);
-    m_centralSplitter->setObjectName(QStringLiteral("CentralSplitter"));
-    m_centralSplitter->setChildrenCollapsible(false);
-    m_centralSplitter->setHandleWidth(6);
-
-    m_imageView = new ImageView(m_centralSplitter);
+    m_imageView = new ImageView(this);
     m_imageView->setAccessibleName(tr("Image view"));
     m_imageView->setAccessibleDescription(
         tr("Shows the current image. In image mode, click the left or right edge "
@@ -137,7 +132,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::filesDropped,
             this, &MainWindow::onFilesDropped);
 
-    m_thumbnailBar = new ThumbnailBar(m_centralSplitter);
+    m_thumbnailBar = new ThumbnailBar(this);
     m_thumbnailBar->setAccessibleName(tr("Thumbnails"));
     if (m_imageView) {
         m_thumbnailBar->setStripBackground(m_imageView->backgroundColor());
@@ -186,12 +181,28 @@ MainWindow::MainWindow(QWidget *parent)
         m_syncingSelection = false;
     });
 
-    m_centralSplitter->addWidget(m_imageView);
-    m_centralSplitter->addWidget(m_thumbnailBar);
-    m_centralSplitter->setStretchFactor(0, 1);
-    m_centralSplitter->setStretchFactor(1, 0);
     m_imageView->setMinimumHeight(120);
-    setCentralWidget(m_centralSplitter);
+    setCentralWidget(m_imageView);
+
+    m_thumbnailDock = new QDockWidget(tr("Filmstrip"), this);
+    m_thumbnailDock->setObjectName(QStringLiteral("ThumbnailDock"));
+    m_thumbnailDock->setWidget(m_thumbnailBar);
+    m_thumbnailDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea
+                                     | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+    m_thumbnailDock->setFeatures(QDockWidget::DockWidgetClosable
+                                 | QDockWidget::DockWidgetMovable
+                                 | QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::BottomDockWidgetArea, m_thumbnailDock);
+    connect(m_thumbnailDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (m_toggleThumbnailBarAct && m_toggleThumbnailBarAct->isChecked() != visible) {
+            m_toggleThumbnailBarAct->setChecked(visible);
+        }
+        if (!isFullScreen()) {
+            m_thumbnailBarVisibleBeforeFullscreen = visible;
+        }
+    });
+    connect(m_thumbnailDock, &QDockWidget::dockLocationChanged, this,
+            &MainWindow::onThumbnailDockLocationChanged);
 
     m_metadataPanel = new MetadataPanel(this);
     m_metadataDock = new QDockWidget(tr("Metadata"), this);
@@ -356,7 +367,11 @@ MainWindow::MainWindow(QWidget *parent)
     m_cursorHideTimer->setInterval(1000);
     connect(m_cursorHideTimer, &QTimer::timeout, this, &MainWindow::hideSlideshowCursor);
 
-    m_thumbnailBar->setVisible(false);
+    if (m_thumbnailDock) {
+        m_thumbnailDock->setVisible(false);
+    } else {
+        m_thumbnailBar->setVisible(false);
+    }
     updateNavigationActions();
     readSettings();
     updateWorkspaceActionVisibility();
@@ -802,9 +817,14 @@ void MainWindow::ensureMultiImageMode()
         m_imageView->addImage(m_session.paths().at(m_currentIndex));
     }
     syncThumbnailWorkspaceSelection();
-    if (m_session.paths().size() > 1 && !m_thumbnailBar->isVisible()) {
+    if (m_session.paths().size() > 1
+        && !(m_thumbnailDock ? m_thumbnailDock->isVisible() : m_thumbnailBar->isVisible())) {
         m_toggleThumbnailBarAct->setChecked(true);
-        m_thumbnailBar->setVisible(true);
+        if (m_thumbnailDock) {
+            m_thumbnailDock->setVisible(true);
+        } else {
+            m_thumbnailBar->setVisible(true);
+        }
     }
     updateWorkspaceActionVisibility();
 }
@@ -1227,7 +1247,11 @@ void MainWindow::toggleToolBar()
 void MainWindow::toggleThumbnailBar()
 {
     const bool visible = m_toggleThumbnailBarAct->isChecked();
-    m_thumbnailBar->setVisible(visible);
+    if (m_thumbnailDock) {
+        m_thumbnailDock->setVisible(visible);
+    } else if (m_thumbnailBar) {
+        m_thumbnailBar->setVisible(visible);
+    }
     // Remember preference for the mode the user is currently in so Gallery and
     // Workspace stay independent. Image mode still uses the force flags so
     // applyThumbnailVisibility keeps working after load/sort.
@@ -1250,75 +1274,88 @@ void MainWindow::toggleThumbnailBar()
 
 void MainWindow::setThumbnailBarPosition(ThumbnailEdge edge)
 {
+    if (!m_thumbnailBar || !m_thumbnailDock) {
+        m_thumbnailEdge = edge;
+        return;
+    }
     m_thumbnailEdge = edge;
     const bool horizontalBar =
         (edge == ThumbnailEdge::Bottom || edge == ThumbnailEdge::Top);
-    const bool barFirst =
-        (edge == ThumbnailEdge::Top || edge == ThumbnailEdge::Left);
-
     const Qt::Orientation barOrientation =
         horizontalBar ? Qt::Horizontal : Qt::Vertical;
-    const Qt::Orientation splitOrientation =
-        horizontalBar ? Qt::Vertical : Qt::Horizontal;
 
-    if (m_thumbnailBar->barOrientation() == barOrientation
-        && m_centralSplitter->orientation() == splitOrientation) {
-        // May still need to swap widget order (top vs bottom, left vs right)
-        const bool imageFirst = (m_centralSplitter->widget(0) == m_imageView);
-        if ((barFirst && !imageFirst) || (!barFirst && imageFirst)) {
-            // already correct order
-            updateThumbnailEdgeActions();
-            return;
-        }
-    }
-
-    const int thumbSize = m_thumbnailBar->thumbSize();
-    const bool barVisible = m_thumbnailBar->isVisible();
-
+    m_dockLocationGuard = true;
     m_thumbnailBar->setBarOrientation(barOrientation);
 
-    m_imageView->setParent(nullptr);
-    m_thumbnailBar->setParent(nullptr);
-    while (m_centralSplitter->count() > 0) {
-        m_centralSplitter->widget(0)->setParent(nullptr);
+    Qt::DockWidgetArea area = Qt::BottomDockWidgetArea;
+    switch (edge) {
+    case ThumbnailEdge::Top:
+        area = Qt::TopDockWidgetArea;
+        break;
+    case ThumbnailEdge::Left:
+        area = Qt::LeftDockWidgetArea;
+        break;
+    case ThumbnailEdge::Right:
+        area = Qt::RightDockWidgetArea;
+        break;
+    case ThumbnailEdge::Bottom:
+    default:
+        area = Qt::BottomDockWidgetArea;
+        break;
     }
+    addDockWidget(area, m_thumbnailDock);
 
-    m_centralSplitter->setOrientation(splitOrientation);
-    if (barFirst) {
-        m_centralSplitter->addWidget(m_thumbnailBar);
-        m_centralSplitter->addWidget(m_imageView);
-        m_centralSplitter->setStretchFactor(0, 0);
-        m_centralSplitter->setStretchFactor(1, 1);
-    } else {
-        m_centralSplitter->addWidget(m_imageView);
-        m_centralSplitter->addWidget(m_thumbnailBar);
-        m_centralSplitter->setStretchFactor(0, 1);
-        m_centralSplitter->setStretchFactor(1, 0);
-    }
-
+    const int thumbSize = m_thumbnailBar->thumbSize();
     const int barExtent = ThumbnailBar::extentForThumbSize(thumbSize);
+    // Let the user resize the dock; seed a sensible default extent.
     if (horizontalBar) {
-        m_imageView->setMinimumHeight(120);
-        m_imageView->setMinimumWidth(0);
-        const int img = qMax(200, height() - barExtent - 80);
-        if (barFirst) {
-            m_centralSplitter->setSizes({barExtent, img});
-        } else {
-            m_centralSplitter->setSizes({img, barExtent});
-        }
+        m_thumbnailBar->setMinimumHeight(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize));
+        m_thumbnailBar->setMaximumHeight(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize));
+        m_thumbnailBar->setMinimumWidth(0);
+        m_thumbnailBar->setMaximumWidth(QWIDGETSIZE_MAX);
+        resizeDocks({m_thumbnailDock}, {barExtent}, Qt::Vertical);
     } else {
-        m_imageView->setMinimumWidth(120);
-        m_imageView->setMinimumHeight(0);
-        const int img = qMax(200, width() - barExtent - 40);
-        if (barFirst) {
-            m_centralSplitter->setSizes({barExtent, img});
-        } else {
-            m_centralSplitter->setSizes({img, barExtent});
-        }
+        m_thumbnailBar->setMinimumWidth(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize));
+        m_thumbnailBar->setMaximumWidth(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize));
+        m_thumbnailBar->setMinimumHeight(0);
+        m_thumbnailBar->setMaximumHeight(QWIDGETSIZE_MAX);
+        resizeDocks({m_thumbnailDock}, {barExtent}, Qt::Horizontal);
     }
-
     m_thumbnailBar->setThumbSize(thumbSize);
-    m_thumbnailBar->setVisible(barVisible);
+    m_dockLocationGuard = false;
+    updateThumbnailEdgeActions();
+}
+
+void MainWindow::onThumbnailDockLocationChanged(Qt::DockWidgetArea area)
+{
+    if (m_dockLocationGuard || !m_thumbnailBar) {
+        return;
+    }
+    ThumbnailEdge edge = m_thumbnailEdge;
+    switch (area) {
+    case Qt::LeftDockWidgetArea:
+        edge = ThumbnailEdge::Left;
+        break;
+    case Qt::RightDockWidgetArea:
+        edge = ThumbnailEdge::Right;
+        break;
+    case Qt::TopDockWidgetArea:
+        edge = ThumbnailEdge::Top;
+        break;
+    case Qt::BottomDockWidgetArea:
+        edge = ThumbnailEdge::Bottom;
+        break;
+    default:
+        // Floating: keep last edge / orientation.
+        return;
+    }
+    if (edge == m_thumbnailEdge) {
+        return;
+    }
+    m_thumbnailEdge = edge;
+    const bool horizontalBar =
+        (edge == ThumbnailEdge::Bottom || edge == ThumbnailEdge::Top);
+    m_thumbnailBar->setBarOrientation(horizontalBar ? Qt::Horizontal : Qt::Vertical);
     updateThumbnailEdgeActions();
 }
 
@@ -1974,7 +2011,8 @@ void MainWindow::updateFullscreenUi()
 
     if (fs) {
         m_toolBarVisibleBeforeFullscreen = m_toolBar->isVisible();
-        m_thumbnailBarVisibleBeforeFullscreen = m_thumbnailBar->isVisible();
+        m_thumbnailBarVisibleBeforeFullscreen =
+            m_thumbnailDock ? m_thumbnailDock->isVisible() : m_thumbnailBar->isVisible();
         m_metadataVisibleBeforeFullscreen =
             m_metadataDock && m_metadataDock->isVisible();
         m_layoutVisibleBeforeFullscreen =
@@ -1985,7 +2023,11 @@ void MainWindow::updateFullscreenUi()
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
         }
-        m_thumbnailBar->setVisible(false);
+        if (m_thumbnailDock) {
+            m_thumbnailDock->setVisible(false);
+        } else {
+            m_thumbnailBar->setVisible(false);
+        }
         m_metadataDock->setVisible(false);
         if (m_layoutDock) {
             m_layoutDock->setVisible(false);
@@ -2207,20 +2249,7 @@ void MainWindow::readSettings()
         }
         setThumbnailBarPosition(edge);
     }
-    if (m_centralSplitter) {
-        const QByteArray splitterState =
-            settings.value(QStringLiteral("centralSplitter")).toByteArray();
-        if (!splitterState.isEmpty()) {
-            m_centralSplitter->restoreState(splitterState);
-        } else if (m_thumbnailBar) {
-            const int extent = ThumbnailBar::extentForThumbSize(m_thumbnailBar->thumbSize());
-            if (m_thumbnailBar->barOrientation() == Qt::Horizontal) {
-                m_centralSplitter->setSizes({qMax(200, height() - extent - 80), extent});
-            } else {
-                m_centralSplitter->setSizes({extent, qMax(200, width() - extent - 40)});
-            }
-        }
-    }
+    // Filmstrip lives in ThumbnailDock; geometry is part of windowState.
     updateWorkspaceActionVisibility();
 
     const bool showBars = settings.value(QStringLiteral("scrollBarsVisible"), false).toBool();
@@ -2428,9 +2457,7 @@ void MainWindow::writeSettings()
                                           ? QStringLiteral("top")
                                           : QStringLiteral("bottom"));
     }
-    if (m_centralSplitter) {
-        settings.setValue(QStringLiteral("centralSplitter"), m_centralSplitter->saveState());
-    }
+    settings.remove(QStringLiteral("centralSplitter"));
     if (m_imageView) {
         settings.setValue(QStringLiteral("imageModeLeftDragPan"),
                           m_imageView->imageModeLeftDragPan());
@@ -2669,9 +2696,14 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
             }
             syncThumbnailCanvasMembership();
             if (m_session.paths().size() > 1 && m_thumbnailBar
-                && !m_thumbnailBar->isVisible()) {
+                && !(m_thumbnailDock ? m_thumbnailDock->isVisible()
+                                    : m_thumbnailBar->isVisible())) {
                 m_toggleThumbnailBarAct->setChecked(true);
-                m_thumbnailBar->setVisible(true);
+                if (m_thumbnailDock) {
+                    m_thumbnailDock->setVisible(true);
+                } else {
+                    m_thumbnailBar->setVisible(true);
+                }
             }
             updateStatus();
         });

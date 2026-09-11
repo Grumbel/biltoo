@@ -1033,7 +1033,12 @@ void MainWindow::applyThumbnailVisibility()
     } else if (m_forceThumbnails) {
         show = !m_session.paths().isEmpty();
     }
-    m_thumbnailBar->setVisible(show && !isFullScreen());
+    const bool vis = show && !isFullScreen();
+    if (m_thumbnailDock) {
+        m_thumbnailDock->setVisible(vis);
+    } else if (m_thumbnailBar) {
+        m_thumbnailBar->setVisible(vis);
+    }
     m_toggleThumbnailBarAct->setChecked(show);
     if (!isFullScreen()) {
         m_thumbnailBarVisibleBeforeFullscreen = show;

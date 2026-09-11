@@ -2,6 +2,26 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-448-filmstrip-dock.** Filmstrip is a QDockWidget (not splitter).
+Prior: **445**. Scrollbar-side experiments (446–447) abandoned.
+
+### Change
+- Remove central QSplitter; ImageView is the sole central widget
+- `m_thumbnailDock` hosts ThumbnailBar (closable / movable / floatable)
+- Allowed areas: left, right, top, bottom
+- `setThumbnailBarPosition` moves the dock + sets bar orientation
+- `dockLocationChanged` keeps edge actions + orientation in sync when dragged
+- Visibility goes through the dock (toggle, fullscreen, mode prefs)
+- Drop `centralSplitter` settings key (geometry is in `windowState`)
+
+### Done criteria
+- [x] Filmstrip dockable on all four edges
+- [ ] Bundle **448**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-445-reset-gallery-full-clear.** Reset Content Appearance failed on
 Gallery tiles that already held a full decode (often the focused/first image).
 Prior: **444**.

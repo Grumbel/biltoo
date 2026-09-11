@@ -465,7 +465,11 @@ void MainWindow::updateThumbnailBarForMode()
     }
     // CLI force flags override per-mode preferences for the strip.
     if (m_forceNoThumbnails) {
-        m_thumbnailBar->setVisible(false);
+        if (m_thumbnailDock) {
+            m_thumbnailDock->setVisible(false);
+        } else {
+            m_thumbnailBar->setVisible(false);
+        }
         if (m_toggleThumbnailBarAct) {
             m_toggleThumbnailBarAct->setChecked(false);
         }
@@ -473,7 +477,11 @@ void MainWindow::updateThumbnailBarForMode()
     }
     if (m_forceThumbnails) {
         const bool show = !m_session.paths().isEmpty();
-        m_thumbnailBar->setVisible(show);
+        if (m_thumbnailDock) {
+            m_thumbnailDock->setVisible(show);
+        } else {
+            m_thumbnailBar->setVisible(show);
+        }
         if (m_toggleThumbnailBarAct) {
             m_toggleThumbnailBarAct->setChecked(show);
         }
@@ -491,7 +499,11 @@ void MainWindow::updateThumbnailBarForMode()
         // Image mode: auto when multi-file session (legacy applyThumbnailVisibility).
         show = m_session.paths().size() > 1;
     }
-    m_thumbnailBar->setVisible(show);
+    if (m_thumbnailDock) {
+        m_thumbnailDock->setVisible(show);
+    } else {
+        m_thumbnailBar->setVisible(show);
+    }
     if (m_toggleThumbnailBarAct) {
         m_toggleThumbnailBarAct->setChecked(show);
     }
