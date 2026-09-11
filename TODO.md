@@ -20,7 +20,7 @@ Prior: **428**.
 ### Done criteria
 - [x] Intrinsic shrink on crop
 - [x] Text crop map → display pixels
-- [ ] Bundle **429**
+- [x] Bundle **429**
 
 ---
 
