@@ -104,6 +104,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     if (!item || pixels.isNull()) {
         return;
     }
+    const QSize layoutBefore = item->imageSize();
 
     // Resolve session id before seed (Image-mode soft path often passes invalid sid).
     if (sid == kInvalidSessionImageId) {
@@ -165,8 +166,9 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         }
     }
 
-    // Gallery must reflow when orientation changes cell aspect (debounced).
-    if (appliedContent && isGalleryMode()) {
+    // Gallery reflow only when layout geometry actually changed — soft ladder
+    // upgrades on focus must not repack the whole grid (click should not move tiles).
+    if (isGalleryMode() && item->imageSize() != layoutBefore) {
         requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
 }
@@ -639,14 +641,8 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                 }
                 // Upgrade loading placeholder (same path) in place when possible.
                 if (cur->path() == path && !cur->hasDecodedPixels()) {
-                    // If layout size was still provisional, adopt preview aspect
-                    // and re-fit so the frame fills the window immediately.
-                    if (isProvisionalImageSize(path)
-                        && image.width() > 0 && image.height() > 0) {
-                        cur->setIntrinsicSize(image.size());
-                    }
-                    // Soft install gate: bake session appearance; Image mode
-                    // refits oriented soft when content swaps aspect.
+                    // Soft install gate bakes appearance and syncs layout aspect.
+                    // Do not setIntrinsicSize from unoriented preview pixels first.
                     {
                         const SessionImageId sid =
                             cur->sessionId() != kInvalidSessionImageId
@@ -692,12 +688,10 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         if (item->hasDisplayPixels() && item->displayPixelLongEdge() >= incoming) {
             continue;
         }
+        // Do not adopt unoriented soft dimensions as layout. installDisplayPixels
+        // bakes content appearance and syncs intrinsic aspect; a pre-set raw
+        // soft size caused oversized/wrong AABB when focus upgraded the ladder.
         const QSize before = item->imageSize();
-        if (isProvisionalImageSize(path)
-            && image.width() > 0 && image.height() > 0
-            && before != image.size()) {
-            item->setIntrinsicSize(image.size());
-        }
         {
             const SessionImageId sid = item->sessionId();
             installDisplayPixels(item, image,

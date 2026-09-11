@@ -2,6 +2,27 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-413-gallery-click-layout.** Click must not reflow Gallery or reset
+content-oriented AABB. Prior: **412**.
+
+### Why click changed Gallery
+Focus → soft ladder upgrade → `installDisplayPixels` with content applied →
+unconditional debounced pack. Soft/probe paths also set intrinsic from
+**unrotated** pixels/size, undoing content orientation.
+
+### Fix
+- Pack only when `imageSize()` actually changes
+- Probe size oriented via session content turns
+- Stop adopting unoriented soft size before install
+
+### Done criteria
+- [x] Click does not repack unless layout size changes
+- [ ] Bundle **413**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-412-workspace-default-zoom.** Workspace default view scale ≈41%
 (four zoom-out steps of 1/1.25). Prior: **411**.
 

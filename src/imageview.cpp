@@ -436,11 +436,25 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         if (item->hasDecodedPixels()) {
             continue;
         }
+        // Probe reports on-disk orientation. Content quarter-turns may swap
+        // layout aspect — do not clobber an oriented cell with the raw size.
+        QSize layoutSize = size;
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId && isImageMode()) {
+            sid = m_currentSessionId;
+        }
+        if (sid != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+                if (SessionAppearance::contentSwapsAspect(*app)) {
+                    layoutSize = QSize(size.height(), size.width());
+                }
+            }
+        }
         const QSize cur = item->imageSize();
-        if (cur == size) {
+        if (cur == layoutSize) {
             continue;
         }
-        item->setIntrinsicSize(size);
+        item->setIntrinsicSize(layoutSize);
         any = true;
         if (isImageMode() && item == targetItem()) {
             if (m_slideshowProgressActive
