@@ -55,8 +55,15 @@ public:
     QSize cellSizeForContent(const QFont &font, QSize contentAspect) const;
     /** Logical letterbox content size (cross-axis = thumbSize) from any aspect. */
     QSize letterboxContentSize(QSize aspect) const;
-    /** Provisional letterbox aspect before decode (portrait ~3:4). */
+    /** Provisional content aspect before decode (square — same cross-axis). */
     QSize provisionalContentSize() const;
+
+    /**
+     * Logical content size for an item: from ThumbContentSizeRole, else
+     * letterbox of ThumbPixmapRole aspect, else provisional. Used by sizeHint
+     * and paint so both always agree.
+     */
+    QSize logicalContentSize(const QModelIndex &index) const;
 
     /** Caption band under the icon (0 when labels hidden). */
     int labelBandHeight(const QFont &font) const;
@@ -124,8 +131,8 @@ public:
     bool labelsVisible() const { return m_labelsVisible; }
 
     /**
-     * When true (default), center-crop to a square thumbSize cell. When false,
-     * letterbox: whole image, cross-axis = thumbSize (see docs/FILMSTRIP_LAYOUT.md).
+     * When true, center-crop to a square thumbSize cell. When false (default),
+     * letterbox: whole image, cross-axis = thumbSize (docs/FILMSTRIP_LAYOUT.md).
      */
     void setCropToSquare(bool on);
     bool cropToSquare() const { return m_cropToSquare; }
@@ -193,6 +200,10 @@ private:
     void scheduleThumbnailLoads();
     /** Queue decode jobs for rows near the viewport / current index only. */
     void scheduleVisibleThumbnailLoads();
+    /** Clear pixmaps + loaded flags (rows stay). Used before full reload. */
+    void invalidateThumbPixels();
+    /** Recompute ThumbContentSizeRole + sizeHint from aspect at current thumbSize. */
+    void refreshAllItemGeometry();
     void requestRemoveSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
     /** Centre icons when the row/column is shorter than the viewport. */

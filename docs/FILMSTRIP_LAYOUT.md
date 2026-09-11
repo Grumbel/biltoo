@@ -1,82 +1,72 @@
 # Filmstrip layout contract
 
-Single layout model for `ThumbnailBar` / `ThumbnailDelegate`. Implement against
-this doc; do not invent parallel sizing rules in paint or decode paths.
+Single model for `ThumbnailBar` / `ThumbnailDelegate`. Every path (sizeHint,
+paint, prepare, crop toggle, thumbSize change) must follow this document.
 
-## Role of `thumbSize`
+## `thumbSize`
 
-`thumbSize` is a **logical pixel** length: the size of the thumbnail **along the
-strip’s cross-axis** (the thin axis of the bar).
+Logical pixels along the strip **cross-axis** (thin axis of the bar).
 
-| Bar orientation | Cross-axis | Image edge that equals `thumbSize` |
-|-----------------|------------|-------------------------------------|
-| Horizontal      | height     | image **height** (letterbox) or both (crop) |
-| Vertical        | width      | image **width** (letterbox) or both (crop) |
+| Orientation | Cross-axis | Letterbox edge = `thumbSize` |
+|-------------|------------|------------------------------|
+| Horizontal  | height     | image **height**             |
+| Vertical    | width      | image **width**              |
 
-Resizing the bar changes `thumbSize` via `thumbSizeFromBarExtent` so the
-cross-axis slot tracks the bar.
+`thumbSizeFromBarExtent` updates `thumbSize` when the bar is resized.
 
 ## Modes
 
-### Crop-to-square (opt-in)
-
-- Source is center-cropped to a square, then scaled to `thumbSize × thumbSize`.
-- Every cell is identical: `thumbSize + 2·pad` by `pad + thumbSize + pad + label`.
-- The image fills the icon slot edge-to-edge.
-
 ### Letterbox (default)
 
-- The whole image is kept; aspect is preserved.
-- The image is scaled so its **cross-axis edge equals `thumbSize`**:
-  - Horizontal bar → height = `thumbSize`, width = `thumbSize × (w/h)`
-  - Vertical bar → width = `thumbSize`, height = `thumbSize × (h/w)`
-- Landscape in a horizontal bar is therefore **wider** than `thumbSize` and
-  still **fills the bar height** (plus the same pad as left/right).
-- Portrait is narrower (horizontal bar) or shorter (vertical bar).
-- Cell **hugs** that content: same `cellPad` on every side, optional label band
-  under the image.
-- By construction, every letterbox cell shares the same cross-axis outer size
-  (`pad + thumbSize + pad + label`), so the strip does not top-align short
-  cells or leave an empty band under landscape thumbs.
+1. Keep full image aspect.
+2. **Logical content** = `letterboxContentSize(aspect)`:
+   - horizontal: `(thumbSize * w/h, thumbSize)`
+   - vertical: `(thumbSize, thumbSize * h/w)`
+3. **Cell** = content + `2·cellPad` (+ optional label band under the image).
+4. Paint **centers** content in the padded inner box (fills when sizeHint matches).
 
-## Pad and label
+### Crop-to-square (opt-in)
 
-- `cellPad()` is **absolute filmstrip logical pixels** (tracks `thumbSize` only:
-  about `thumbSize/24`, clamped). Same value on every cell and every side — not
-  proportional to image width/height and not baked into the pixmap.
-- Cell size = content + `2·cellPad` (+ label). Paint places the image at
-  `(pad, pad)` with the content size — no extra centering slack inside the cell.
-- Spacing between cells is a separate absolute gap (2px), not part of `cellPad`.
-- Label band (optional) sits under the image only; it does not change crop vs
-  letterbox geometry.
+1. Center-crop source to square, scale to decode edge.
+2. Logical content = `(thumbSize, thumbSize)`.
+3. Uniform cells: `cellSize(font)`.
 
-## Logical layout vs decode pixels
+## Roles (per item)
 
-**Layout never uses decode/ladder pixel dimensions as cell sizes.**
+| Role | Meaning |
+|------|---------|
+| `ThumbContentSizeRole` | Logical content size at current `thumbSize` (layout + paint) |
+| `ThumbPixmapRole` | Prepared pixmap (decode-edge pixels, correct aspect) |
+| `ThumbLoadedRole` | Real thumb installed (not placeholder) |
 
-| Concern | Rule |
-|---------|------|
-| `ThumbContentSizeRole` | Logical content size at `thumbSize` scale (aspect only) |
-| `sizeHint` / `cellSizeForContent` | From that logical size + pad + label |
-| Decode / `prepareThumbnailFromImage` | May use a larger ladder edge for sharpness |
-| Icon pixmap | May be device pixels; `setDevicePixelRatio` so logical size matches role |
+`logicalContentSize(index)` is the **only** way paint and sizeHint read content size.
 
-If decode produced a 512px-tall raster for a 96px `thumbSize` slot, the cell is
-still 96px tall on the cross-axis — not 512.
+## Prepare (`prepareThumbnailFromImage`)
 
-## Paint
+- **Crop:** center-crop square → `scaled(max, max, KeepAspectRatio)`.
+- **Letterbox:** `scaled(max, max, KeepAspectRatio)` (longest edge → max).
+- **Never** `IgnoreAspectRatio`.
+- `max` = `filmstripDecodeEdge()` (sharpness only, not layout size).
 
-- Selection/hover fill the **full cell** (pad + image + label).
-- The prepared image is stored as `ThumbPixmapRole` (QPixmap with correct aspect
-  and DPR). Paint draws that pixmap with **KeepAspectRatio** — never
-  `QIcon::pixmap(w,h)`, which resamples a single size into the request and can
-  stretch landscape into a square.
-- Crop: pixmap fills `iconRect`.
-- Letterbox: pixmap fitted inside `iconRect`; hairline on the image bounds.
+## Lifecycle
 
-## What not to do
+| Event | Action |
+|-------|--------|
+| `setFiles` | Provisional square content + sizeHint; `ThumbLoaded=false` |
+| decode done | `setThumbnailIcon`: pixmap, content, sizeHint, layout visible rows |
+| `setThumbSize` | `refreshAllItemGeometry` or full `scheduleThumbnailLoads` if sharper needed |
+| `setCropToSquare` | `scheduleThumbnailLoads` → `invalidateThumbPixels` + reload |
+| `scheduleThumbnailLoads` | **Always** `invalidateThumbPixels` first |
 
-- Do not set long-edge = `thumbSize` for letterbox (landscape stays short of the
-  strip and needs empty bands or centering hacks).
-- Do not feed ladder/decode pixel sizes into `sizeHint`.
-- Do not force a square `gridSize` in letterbox mode.
+## Pad / spacing
+
+- `cellPad()`: absolute filmstrip px (`~thumbSize/24`, clamped). Same every cell.
+- Cell spacing: fixed 2px between items.
+- Selection/hover fills the **full cell**.
+
+## Consistency checks
+
+1. Paint dest aspect == `logicalContentSize` aspect (KeepAspectRatio into inner).
+2. sizeHint cell hugs that content + pad.
+3. No path may attach a pixmap without updating `ThumbContentSizeRole` + sizeHint.
+4. No path may leave `ThumbLoadedRole=true` after a mode/size invalidate without reload.

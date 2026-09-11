@@ -2,6 +2,25 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-441-filmstrip-unified.** End-to-end filmstrip geometry/paint/reload
+unification. Prior: **440**.
+
+### Contract (`docs/FILMSTRIP_LAYOUT.md`)
+- `logicalContentSize(index)` sole source for sizeHint + paint
+- prepare: only KeepAspectRatio (no IgnoreAspectRatio)
+- `invalidateThumbPixels` before every `scheduleThumbnailLoads`
+- `refreshAllItemGeometry` on thumbSize without full reload
+- Centered paint in padded inner box
+- Provisional square content; setFiles seeds ThumbContentSizeRole
+
+### Done criteria
+- [x] Unified paths
+- [ ] Bundle **441**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-440-filmstrip-center-size.** First ~14 thumbs tiny + left-aligned.
 Prior: **439**.
 

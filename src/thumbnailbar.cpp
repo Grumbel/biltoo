@@ -133,6 +133,23 @@ QSize ThumbnailDelegate::provisionalContentSize() const
     return QSize(1, 1);
 }
 
+QSize ThumbnailDelegate::logicalContentSize(const QModelIndex &index) const
+{
+    // Single source for paint + sizeHint.
+    const QSize role = index.data(ThumbContentSizeRole).toSize();
+    if (role.width() > 0 && role.height() > 0) {
+        return letterboxContentSize(role);
+    }
+    const QPixmap pm = qvariant_cast<QPixmap>(index.data(ThumbPixmapRole));
+    if (!pm.isNull()) {
+        QSize a = pm.size();
+        if (a.width() > 0 && a.height() > 0) {
+            return letterboxContentSize(a);
+        }
+    }
+    return letterboxContentSize(provisionalContentSize());
+}
+
 QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
                                  const QModelIndex &index) const
 {
@@ -140,14 +157,10 @@ QSize ThumbnailDelegate::sizeHint(const QStyleOptionViewItem &option,
     if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
         crop = bar->cropToSquare();
     }
-    if (!crop) {
-        const QSize content = index.data(ThumbContentSizeRole).toSize();
-        if (content.width() > 0 && content.height() > 0) {
-            return cellSizeForContent(option.font, content);
-        }
-        return cellSizeForContent(option.font, provisionalContentSize());
+    if (crop) {
+        return cellSize(option.font);
     }
-    return cellSize(option.font);
+    return cellSizeForContent(option.font, logicalContentSize(index));
 }
 
 void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
@@ -190,17 +203,8 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     QRect contentRect;
     if (!pm.isNull() && inner.width() > 0 && inner.height() > 0) {
-        // Prefer layout content size (letterbox at thumbSize); else pixmap aspect.
-        QSize contentSz = index.data(ThumbContentSizeRole).toSize();
-        if (contentSz.width() < 1 || contentSz.height() < 1) {
-            QSize pmAspect = pm.deviceIndependentSize().toSize();
-            if (pmAspect.width() < 1 || pmAspect.height() < 1) {
-                pmAspect = pm.size();
-            }
-            contentSz = letterboxContentSize(pmAspect);
-        }
-        // Fit into the cell's inner area without stretch; center in the cell.
-        // When sizeHint matches content, this fills the inner box exactly.
+        // Same logical size as sizeHint (logicalContentSize).
+        const QSize contentSz = logicalContentSize(index);
         const QSize fitted = contentSz.scaled(inner.size(), Qt::KeepAspectRatio);
         contentRect = QRect(
             inner.x() + (inner.width() - fitted.width()) / 2,
@@ -590,23 +594,8 @@ void ThumbnailBar::applyThumbMetrics()
         setMaximumHeight(QWIDGETSIZE_MAX);
     }
 
-    for (int i = 0; i < count(); ++i) {
-        if (QListWidgetItem *it = item(i)) {
-            if (!m_cropToSquare && m_delegate) {
-                const QSize content =
-                    it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
-                if (content.width() > 0 && content.height() > 0) {
-                    it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
-                } else {
-                    it->setSizeHint(m_delegate->cellSizeForContent(
-                        font(), m_delegate->provisionalContentSize()));
-                }
-                continue;
-            }
-            it->setSizeHint(squareCell);
-        }
-    }
-    doItemsLayout();
+    // Recompute logical content + sizeHint from current aspect at new thumbSize.
+    refreshAllItemGeometry();
 }
 
 QSize ThumbnailBar::sizeHint() const
@@ -637,9 +626,11 @@ void ThumbnailBar::setThumbSize(int pixels)
     }
     m_thumbSize = clamped;
     applyThumbMetrics();
-
+    // Geometry always tracks thumbSize. Re-decode when we need sharper pixels.
     if (thumbDecodePixels() > m_decodedSize && !m_files.isEmpty()) {
         scheduleThumbnailLoads();
+    } else {
+        refreshAllItemGeometry();
     }
 }
 
@@ -720,52 +711,43 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     if (row < 0 || row >= count() || image.isNull()) {
         return;
     }
-    if (QListWidgetItem *it = item(row)) {
-        // Decode-edge pixels are already denser than the logical cell for
-        // sharpness. Do not setDevicePixelRatio — that would shrink the logical
-        // size and fight letterboxContentSize / sizeHint.
-        const QPixmap pm = QPixmap::fromImage(image);
-        // Store the prepared pixmap for painting (aspect preserved). DecorationRole
-        // is kept for “has icon?” checks only — paint uses ThumbPixmapRole.
-        it->setData(ThumbnailDelegate::ThumbPixmapRole, pm);
-        it->setIcon(QIcon(pm));
+    QListWidgetItem *it = item(row);
+    if (!it || !m_delegate) {
+        return;
+    }
+    // Decode-edge pixmap for sharpness; layout uses aspect only.
+    const QPixmap pm = QPixmap::fromImage(image);
+    it->setData(ThumbnailDelegate::ThumbPixmapRole, pm);
+    it->setIcon(QIcon(pm));
 
-        // Layout size is always logical (thumbSize scale). Never use decode
-        // pixel dimensions — filmstripDecodeEdge may be 256/512 for sharpness.
-        QSize content(m_thumbSize, m_thumbSize);
-        if (!m_cropToSquare && m_delegate && image.width() > 0 && image.height() > 0) {
-            content = m_delegate->letterboxContentSize(image.size());
-        }
-        it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
-        it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
+    // Logical content at thumbSize (crop = square; letterbox = cross-axis fit).
+    const QSize content = m_cropToSquare
+        ? QSize(m_thumbSize, m_thumbSize)
+        : m_delegate->letterboxContentSize(image.size());
+    it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
+    it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
 
-        if (m_delegate) {
-            if (m_cropToSquare) {
-                it->setSizeHint(m_delegate->cellSize(font()));
-            } else {
-                it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
-            }
-        }
+    it->setSizeHint(m_cropToSquare
+                        ? m_delegate->cellSize(font())
+                        : m_delegate->cellSizeForContent(font(), content));
 
-        const QModelIndex idx = indexFromItem(it);
-        if (idx.isValid()) {
-            dataChanged(idx, idx, {Qt::DecorationRole, Qt::SizeHintRole,
-                                   ThumbnailDelegate::ThumbContentSizeRole,
-                                   ThumbnailDelegate::ThumbLoadedRole,
-                                   ThumbnailDelegate::ThumbPixmapRole});
+    const QModelIndex idx = indexFromItem(it);
+    if (idx.isValid()) {
+        dataChanged(idx, idx, {Qt::DecorationRole, Qt::SizeHintRole,
+                               ThumbnailDelegate::ThumbContentSizeRole,
+                               ThumbnailDelegate::ThumbLoadedRole,
+                               ThumbnailDelegate::ThumbPixmapRole});
+    }
+    // Visible rows: layout immediately so option.rect matches sizeHint.
+    scheduleLayoutRefresh();
+    if (viewport()) {
+        const QRect vis = visualItemRect(it);
+        if (vis.intersects(viewport()->rect().adjusted(-m_thumbSize, -m_thumbSize,
+                                                       m_thumbSize, m_thumbSize))) {
+            doItemsLayout();
+            updateCenteringMargins();
         }
-        // Layout must run before the next paint or option.rect stays on the
-        // provisional cell and the thumb is clipped tiny in a narrow slot.
-        scheduleLayoutRefresh();
-        if (viewport()) {
-            const QRect vis = visualItemRect(it);
-            if (vis.intersects(viewport()->rect().adjusted(-m_thumbSize, -m_thumbSize,
-                                                           m_thumbSize, m_thumbSize))) {
-                doItemsLayout();
-                updateCenteringMargins();
-            }
-            viewport()->update(visualItemRect(it));
-        }
+        viewport()->update(visualItemRect(it));
     }
 }
 
@@ -792,7 +774,7 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         return QImage();
     }
     if (m_cropToSquare) {
-        // Center-crop to square so the cell is filled edge-to-edge.
+        // Center-crop to square, then scale to maxSize². Aspect stays 1:1.
         const int side = qMin(image.width(), image.height());
         if (side <= 0) {
             return QImage();
@@ -800,45 +782,11 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         const int x = (image.width() - side) / 2;
         const int y = (image.height() - side) / 2;
         QImage square = image.copy(x, y, side, side);
-        // Always scale (including upscale) so small sources fill the cell.
-        if (square.width() != maxSize || square.height() != maxSize) {
-            // Source is already square; KeepAspectRatio avoids accidental stretch
-            // if copy/rounding left a 1px mismatch.
-            square = square.scaled(maxSize, maxSize, Qt::KeepAspectRatio,
-                                   Qt::SmoothTransformation);
-        }
-        return square;
+        return square.scaled(maxSize, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
-    // Letterbox: cross-axis of the *strip* equals maxSize (logical or physical
-    // request from caller). Horizontal bar → height = maxSize; vertical → width.
-    // Return fitted pixels only — cell layout uses logical letterboxContentSize,
-    // not these pixel dimensions.
-    const bool horizontal = (m_orientation == Qt::Horizontal);
-    QImage fitted;
-    if (horizontal) {
-        const int boxW = qMax(maxSize, int(qRound(qreal(maxSize) * qreal(qMax(1, image.width()))
-                                                  / qreal(qMax(1, image.height())))) + 2);
-        fitted = image.scaled(boxW, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        if (!fitted.isNull() && fitted.height() != maxSize && fitted.height() >= maxSize - 1) {
-            const int w = qMax(1, int(qRound(qreal(maxSize) * qreal(fitted.width())
-                                             / qreal(qMax(1, fitted.height())))));
-            fitted = image.scaled(w, maxSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        }
-    } else {
-        const int boxH = qMax(maxSize, int(qRound(qreal(maxSize) * qreal(qMax(1, image.height()))
-                                                  / qreal(qMax(1, image.width())))) + 2);
-        fitted = image.scaled(maxSize, boxH, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        if (!fitted.isNull() && fitted.width() != maxSize && fitted.width() >= maxSize - 1) {
-            const int h = qMax(1, int(qRound(qreal(maxSize) * qreal(fitted.height())
-                                             / qreal(qMax(1, fitted.width())))));
-            fitted = image.scaled(maxSize, h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        }
-    }
-    if (fitted.isNull()) {
-        return QImage();
-    }
-    // Do not IgnoreAspectRatio-snap near-square sources — that stretches.
-    return fitted;
+    // Letterbox: longest edge → maxSize, aspect preserved. Layout uses
+    // letterboxContentSize(aspect) at thumbSize — not these pixel dimensions.
+    return image.scaled(maxSize, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 
 void ThumbnailBar::setCropToSquare(bool on)
@@ -1079,11 +1027,71 @@ void ThumbnailBar::showEvent(QShowEvent *event)
     scheduleVisibleThumbnailLoads();
 }
 
-void ThumbnailBar::scheduleThumbnailLoads()
+void ThumbnailBar::invalidateThumbPixels()
 {
+    // Drop prepared pixels so scheduleVisible reloads. Rows/paths stay.
+    for (int i = 0; i < count(); ++i) {
+        if (QListWidgetItem *it = item(i)) {
+            it->setIcon(QIcon());
+            it->setData(ThumbnailDelegate::ThumbPixmapRole, QVariant());
+            it->setData(ThumbnailDelegate::ThumbLoadedRole, false);
+            if (m_delegate) {
+                if (m_cropToSquare) {
+                    it->setData(ThumbnailDelegate::ThumbContentSizeRole,
+                                QSize(m_thumbSize, m_thumbSize));
+                    it->setSizeHint(m_delegate->cellSize(font()));
+                } else {
+                    const QSize prov = m_delegate->provisionalContentSize();
+                    it->setData(ThumbnailDelegate::ThumbContentSizeRole,
+                                m_delegate->letterboxContentSize(prov));
+                    it->setSizeHint(m_delegate->cellSizeForContent(font(), prov));
+                }
+            }
+        }
+    }
     m_thumbLoadScheduled.clear();
     m_thumbAwaitLadder.clear();
     m_thumbFailed.clear();
+}
+
+void ThumbnailBar::refreshAllItemGeometry()
+{
+    if (!m_delegate) {
+        return;
+    }
+    for (int i = 0; i < count(); ++i) {
+        QListWidgetItem *it = item(i);
+        if (!it) {
+            continue;
+        }
+        if (m_cropToSquare) {
+            it->setData(ThumbnailDelegate::ThumbContentSizeRole,
+                        QSize(m_thumbSize, m_thumbSize));
+            it->setSizeHint(m_delegate->cellSize(font()));
+            continue;
+        }
+        QSize aspect = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+        if (aspect.width() < 1 || aspect.height() < 1) {
+            const QPixmap pm = qvariant_cast<QPixmap>(
+                it->data(ThumbnailDelegate::ThumbPixmapRole));
+            aspect = pm.isNull() ? m_delegate->provisionalContentSize() : pm.size();
+        }
+        // Role may already be logical; letterboxContentSize is idempotent when
+        // cross-axis already equals thumbSize.
+        const QSize content = m_delegate->letterboxContentSize(aspect);
+        it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
+        it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
+    }
+    doItemsLayout();
+    updateCenteringMargins();
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ThumbnailBar::scheduleThumbnailLoads()
+{
+    invalidateThumbPixels();
     scheduleVisibleThumbnailLoads();
     emit loadsChanged();
 }
@@ -1353,6 +1361,14 @@ void ThumbnailBar::setFiles(const QStringList &files)
         // scheduleVisibleThumbnailLoads to pick the row up (non-null icons were
         // treated as already loaded).
         item->setData(ThumbnailDelegate::ThumbLoadedRole, false);
+        if (m_delegate && !m_cropToSquare) {
+            const QSize prov = m_delegate->letterboxContentSize(
+                m_delegate->provisionalContentSize());
+            item->setData(ThumbnailDelegate::ThumbContentSizeRole, prov);
+        } else if (m_delegate) {
+            item->setData(ThumbnailDelegate::ThumbContentSizeRole,
+                          QSize(m_thumbSize, m_thumbSize));
+        }
     }
     setUpdatesEnabled(true);
 
