@@ -30,6 +30,8 @@ class QToolBar;
 class QAction;
 class QActionGroup;
 class QLabel;
+class QCheckBox;
+class QToolButton;
 class QMenu;
 class QSpinBox;
 class QTimer;

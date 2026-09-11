@@ -2,6 +2,17 @@
 
 ## Status (2026-09-11)
 
+**Tip: biltoo-452-qcheckbox-fwd.** Forward-declare QCheckBox/QToolButton in
+mainwindow.h (header is included before widgets headers). Prior: **451**.
+
+### Done criteria
+- [x] Compile fix
+- [ ] Bundle **452**
+
+---
+
+## Status (2026-09-11)
+
 **Tip: biltoo-451-unresolved-link-guard.** Do not open spine `.xhtml` links in
 the browser. Pair with **thumtoo-152** (resolve internal links → page).
 Prior: **450**.
