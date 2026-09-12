@@ -33,17 +33,23 @@ QSet<QString> &inFlight()
 
 constexpr int kMaxEntries = 384;
 
-int longEdge(const QImage &img)
-{
-    return img.isNull() ? 0 : qMax(img.width(), img.height());
-}
-
 QString ensureKey(const QString &path, int maxEdge)
 {
     return path + QLatin1Char('\n') + QString::number(maxEdge);
 }
 
 } // namespace
+
+QImage clampToMaxEdge(const QImage &image, int maxEdge)
+{
+    if (image.isNull() || maxEdge <= 0) {
+        return image;
+    }
+    if (longEdge(image) <= maxEdge) {
+        return image;
+    }
+    return image.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+}
 
 QImage get(const QString &path, int minLongEdge)
 {
@@ -52,10 +58,7 @@ QImage get(const QString &path, int minLongEdge)
     }
     QMutexLocker lock(&mutex());
     const QImage img = map().value(path);
-    if (img.isNull()) {
-        return {};
-    }
-    if (minLongEdge > 0 && longEdge(img) < minLongEdge) {
+    if (!adequate(img, minLongEdge)) {
         return {};
     }
     return img;
@@ -66,19 +69,27 @@ void put(const QString &path, const QImage &image)
     if (path.isEmpty() || image.isNull()) {
         return;
     }
+    const QImage stored = clampToMaxEdge(image, kDisplayMaxEdge);
+    if (stored.isNull()) {
+        return;
+    }
+    const int incoming = longEdge(stored);
+
     QMutexLocker lock(&mutex());
     QHash<QString, QImage> &m = map();
     if (m.contains(path)) {
-        if (longEdge(m.value(path)) >= longEdge(image)) {
+        if (longEdge(m.value(path)) >= incoming) {
             return;
         }
     } else if (m.size() >= kMaxEntries) {
+        // FIFO-ish: erase an arbitrary entry (QHash order). Prefer not to
+        // invent LRU until profiling says we must.
         auto it = m.begin();
         if (it != m.end()) {
             m.erase(it);
         }
     }
-    m.insert(path, image);
+    m.insert(path, stored);
 }
 
 bool has(const QString &path, int minLongEdge)
@@ -108,7 +119,7 @@ QImage ensure(const QString &path, int maxEdge)
     }
 
     QThreadPool::globalInstance()->start([path, maxEdge, key]() {
-        QImage loaded = ImageLoader::loadThumbnail(path, maxEdge);
+        const QImage loaded = ImageLoader::loadThumbnail(path, maxEdge);
         if (!loaded.isNull()) {
             put(path, loaded);
         }

@@ -2,6 +2,41 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-579-host-pixel-cache-unify.** ImageCache is the host path→raster map.
+Prior: **578**.
+
+### Plan
+See [docs/PIXEL_HOST_CACHE.md](docs/PIXEL_HOST_CACHE.md).
+
+### Problem
+`onImageLoaded` downscaled full decodes to **512** before `ImageCache::put`.
+Slideshow and gallery then only saw soft-sized frames even when Image mode held
+a sharp `ImageItem` buffer. Parallel stores (`m_ssRasterByPath`,
+`m_previewByPath`, ImageCache) diverged.
+
+### Change
+- **ImageCache**: document contract; `kDisplayMaxEdge` (2048); `clampToMaxEdge` /
+  `longEdge` / `adequate` helpers; put clamps to display max
+- **onImageLoaded**: put full (clamped) — no hard 512 scale
+- **installDisplayPixels**: put **raw** pre-appearance pixels into ImageCache
+- **putSlideshowRaster / slideshowRaster**: always mirror / prefer ImageCache
+
+### Done criteria
+- [x] Full Image-mode decode reusable at ≤2048 for slideshow
+- [x] Docs plan + API contract
+- [x] Bundle **579**
+
+### Still open (same theme)
+- [ ] Optionally shrink `m_ssRasterByPath` further (hot set only)
+- [ ] `m_previewByPath` vs ImageCache overlap
+- [ ] Memory pressure tuning (entry cap / LRU)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-578-imageitem-paint-unused-widget.** Silence -Wunused-parameter on paint.
 Prior: **577**.
 

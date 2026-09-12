@@ -4,7 +4,7 @@ Guidance for humans and automated agents working on this codebase.
 
 ## Project intent
 
-**Logical size:** see **SIZE.md** — soft/ladder samples never define geometry.
+**Logical size:** see **SIZE.md**. **Host pixels:** [docs/PIXEL_HOST_CACHE.md](docs/PIXEL_HOST_CACHE.md). — soft/ladder samples never define geometry.
 
 Biltoo is a classic Qt (C++) image viewer with three presentation modes
 (Image, Gallery, Workspace) on one canvas. Users browse a session, overview it
@@ -12,8 +12,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md). Content orient/crop/text spaces: [docs/CONTENT_COORDINATES.md](docs/CONTENT_COORDINATES.md). Filmstrip: [docs/FILMSTRIP_LAYOUT.md](docs/FILMSTRIP_LAYOUT.md). Content pixels: [docs/CONTENT_PIPELINE.md](docs/CONTENT_PIPELINE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-578-imageitem-paint-unused-widget**.
-Next bundle number: **579**.
+Latest agent handoff: **TODO.md → biltoo-579-host-pixel-cache-unify**.
+Next bundle number: **580**.
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the

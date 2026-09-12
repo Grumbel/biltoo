@@ -1023,10 +1023,13 @@ void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
     if (path.isEmpty() || image.isNull()) {
         return;
     }
-    const int incoming = qMax(image.width(), image.height());
+    // Unified host map first — slideshow and the rest of the app share it.
+    ImageCache::put(path, image);
+
+    const int incoming = ImageCache::longEdge(image);
     const auto haveIt = m_ssRasterByPath.constFind(path);
     if (haveIt != m_ssRasterByPath.cend() && !haveIt->isNull()) {
-        const int have = qMax(haveIt->width(), haveIt->height());
+        const int have = ImageCache::longEdge(*haveIt);
         // Keep the sharper buffer; equal size keeps the existing one.
         if (have >= incoming) {
             return;
@@ -1140,12 +1143,18 @@ QImage ImageView::slideshowRaster(const QString &path) const
         return QImage();
     }
     // Unoriented disk/preload pixels only — not item->sourceImage() (may already
-    // have content orientation baked in).
+    // have content orientation baked in). Prefer the sharper of the slideshow
+    // hot set and the unified ImageCache (Image mode full loads land there).
+    QImage best;
     const auto it = m_ssRasterByPath.constFind(path);
     if (it != m_ssRasterByPath.cend() && !it->isNull()) {
-        return *it;
+        best = *it;
     }
-    return QImage();
+    const QImage cached = ImageCache::get(path);
+    if (ImageCache::longEdge(cached) > ImageCache::longEdge(best)) {
+        best = cached;
+    }
+    return best;
 }
 
 QImage ImageView::slideshowFullIfReady(const QString &path) const

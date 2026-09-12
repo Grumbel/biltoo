@@ -133,6 +133,13 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     }
     const QSize layoutBefore = item->imageSize();
 
+    // Raw samples (pre-appearance) feed the unified host cache so slideshow /
+    // gallery can reuse them. ImageCache clamps to kDisplayMaxEdge and keeps
+    // the sharper long edge only.
+    if (!item->path().isEmpty()) {
+        ImageCache::put(item->path(), pixels);
+    }
+
     // Resolve session id before seed (Image-mode soft path often passes invalid sid).
     if (sid == kInvalidSessionImageId) {
         if (item->sessionId() != kInvalidSessionImageId) {
@@ -1012,15 +1019,10 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
 void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role)
 {
-    // Feed shared cache (preview-sized) so slideshow/gallery reuse this decode.
+    // Host path→raster map: keep display-ladder samples (≤ kDisplayMaxEdge),
+    // not a hard 512 preview. Slideshow must reuse Image-mode sharpness.
     if (!image.isNull() && !path.isEmpty()) {
-        const int edge = ImageCache::kPreviewEdge;
-        if (qMax(image.width(), image.height()) > edge) {
-            ImageCache::put(path, image.scaled(edge, edge, Qt::KeepAspectRatio,
-                                               Qt::SmoothTransformation));
-        } else {
-            ImageCache::put(path, image);
-        }
+        ImageCache::put(path, image);
     }
     // Replace loads only care about the latest request
     if (role == LoadReplace) {
