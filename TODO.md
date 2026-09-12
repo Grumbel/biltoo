@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-679-inplace-nav-defer-native.** Image ←/→ reuses item; native full deferred; slideshow preload kick.
+Prior: **678**.
+
+### Root cause
+Assert was silent because identity materialize is fine — the hitch was elsewhere:
+1. Every Image LoadReplace **destroyed and recreated** the canvas item
+2. Native `ImageLoader::load` started **in parallel** with soft and starved the pool
+3. Slideshow phase arm did not **preload** when the to-sample was still cold
+
+### Change
+- `installImageModePendingTile`: reuse sole Image-mode item (`setPath` + soft install)
+- `scheduleClassicImageDecode`: soft immediately; native full after 64ms if gen still current
+- Slideshow: preload on cold from/to; `kSsMaxInflight` 2→4; skip ZoomBlur when null
+
+### Done criteria
+- [x] ←/→ does not clearLiveCanvas when a single Image item exists
+- [x] Native full does not race soft on every key
+- [x] Bundle **679**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-678-materialize-identity-gui-safe.** Identity materializeDisplay is GUI-safe; CMake compile summary.
 Prior: **677**.
 

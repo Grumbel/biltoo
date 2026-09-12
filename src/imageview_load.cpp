@@ -637,8 +637,43 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     const QSize sz = layoutSizeForPath(path, pixels);
 
     setUpdatesEnabled(false);
+
+    // Fast path: reuse the single Image-mode item. Destroy/recreate + undo clear
+    // on every ←/→ was a major hitch even when soft pixels were free.
+    ImageItem *item = nullptr;
+    if (m_items.size() == 1) {
+        item = m_items.first();
+    }
+    if (item) {
+        item->setPath(path);
+        if (sz.width() > 1 && sz.height() > 1) {
+            item->setIntrinsicSize(sz);
+        }
+        bindImageModeSessionCursor(item);
+        if (!pixels.isNull()) {
+            // Drop prior FullSource so SoftPreview can install (shouldUpgrade).
+            if (item->hasDecodedPixels()) {
+                item->clearDecodedPixels();
+            }
+            installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
+                                 m_currentSessionId);
+        } else {
+            item->clearDecodedPixels();
+        }
+        resetImageModeItemPlacement(item);
+        prepareImageModeCanvas();
+        fitItem(item, currentFitAspectMode());
+        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+        setUpdatesEnabled(true);
+        if (viewport()) {
+            viewport()->update();
+        }
+        emit statusChanged();
+        return;
+    }
+
     clearLiveCanvas();
-    ImageItem *item = createPlaceholderItem(path, sz);
+    item = createPlaceholderItem(path, sz);
     if (!item) {
         setUpdatesEnabled(true);
         return;
@@ -745,16 +780,21 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
 void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
-    // Soft stand-in (high priority) + native full (low priority) in parallel so
-    // rapid next/prev paints soft first; full frames catch up in the background.
-    // Soft uses ImageCache first (same as slideshow) so a prior Gallery/filmstrip
-    // ladder hit is not re-decoded on every ←/→.
+    // Soft first (high priority). Native full is deferred so rapid ←/→ does not
+    // stack multi-MP ImageLoader::load jobs that starve soft and hitch the pool.
+    // Generation check drops deferred native when the user has already moved on.
     const QPointer<ImageView> guard(this);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
 
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge);
-    startNativeFullDecodeJob(guard, path, gen, roleInt);
+
+    QTimer::singleShot(64, guard.data(), [guard, path, gen, roleInt]() {
+        if (!guard || !guard->matchesLoadGeneration(gen)) {
+            return;
+        }
+        startNativeFullDecodeJob(guard, path, gen, roleInt);
+    });
 }
 
 

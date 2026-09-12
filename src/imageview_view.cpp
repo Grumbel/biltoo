@@ -37,7 +37,7 @@ namespace {
 /** Fraction of target edge treated as "good enough" for slideshow samples. */
 constexpr int kSsAdequacyNumer = 7;
 constexpr int kSsAdequacyDenom = 10;
-constexpr int kSsMaxInflight = 2;
+constexpr int kSsMaxInflight = 4;
 constexpr int kSsMaxPending = 4;
 
 int slideshowNeedEdge(int targetEdge)
@@ -1582,6 +1582,11 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     }
     if (!fromPath.isEmpty()) {
         (void)ensureSlideshowLogicalSize(fromPath);
+        if (m_ssFromImage.isNull()
+            || ImageCache::longEdge(m_ssFromImage)
+                   < slideshowNeedEdge(slideshowTargetEdge())) {
+            preloadSlideshowImage(fromPath);
+        }
         m_motionBiasValid = false;
         pickInterestingMotionBiases(qHash(fromPath), m_ssFromImage);
         m_motionBiasPath = fromPath;
@@ -1664,16 +1669,25 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         m_ssToImage = ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(toPath), slideshowTargetEdge());
     }
+    // Cold to-path: kick preload immediately (do not wait for neighbour pump).
+    if (m_ssToImage.isNull()
+        || ImageCache::longEdge(m_ssToImage) < slideshowNeedEdge(slideshowTargetEdge())) {
+        preloadSlideshowImage(toPath);
+    }
     captureMotionBiasesForPath(toPath, m_ssToImage, &m_ssToBiasA, &m_ssToBiasB);
     m_ssToMotionClock.start();
     m_ssToMotionClockRunning = true;
     m_ssToMotionBaseMs = 0;
     m_ssToMotionT = 0.0;
-    schedulePhaseZoomBlur(toPath, m_ssToImage);
+    if (!m_ssToImage.isNull()) {
+        schedulePhaseZoomBlur(toPath, m_ssToImage);
+    }
     ++m_ssToAtlasRebuildGeneration; // drop stale to-atlas jobs
     m_ssToAtlas = QPixmap();
     requestToPhaseAtlasRebuild();
-    scheduleSlideshowPhaseBufferUpgrade(toPath, m_ssToImage);
+    if (!m_ssToImage.isNull()) {
+        scheduleSlideshowPhaseBufferUpgrade(toPath, m_ssToImage);
+    }
     qCDebug(lcSlideshow).nospace()
         << "[slideshow] phase-to "
         << QFileInfo(toPath).fileName()
