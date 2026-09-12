@@ -759,9 +759,25 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge)
     if (!c) {
         return {};
     }
-    if (auto px = c->get_pixels(uri, maxEdge)) {
+#if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
+    thumtoo::RasterRequest req;
+    req.uri = uri;
+    req.max_edge = maxEdge;
+    req.frame_idx = 0;
+    req.policy = thumtoo::RasterPolicy::PreferCache;
+    auto px = c->get_raster(req);
+#else
+    auto px = c->get_pixels(uri, maxEdge);
+#endif
+    if (px) {
         if (px->bytes.empty()) {
             return {};
+        }
+        {
+            std::lock_guard lock(g_mu);
+            if (static_cast<int>(px->source) != 0) {
+                g_lastPixelSource.insert(path, static_cast<int>(px->source));
+            }
         }
         scheduleBackgroundRevalidate(path, uri);
         return QByteArray(reinterpret_cast<const char *>(px->bytes.data()),
@@ -1004,31 +1020,46 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
     }
     const QString pathCopy = path;
     const int edge = maxEdge;
-    c->request_overview_pixels(
-        uri, edge,
-        [pathCopy, edge, inflightKey](std::string, int,
-                                      std::optional<thumtoo::PixelLevel> px) {
-            QImage decoded;
-            if (px && !px->bytes.empty()) {
-                const QByteArray ba(
-                    reinterpret_cast<const char *>(px->bytes.data()),
-                    int(px->bytes.size()));
-                decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
+    auto onOverview = [pathCopy, edge, inflightKey](
+                          std::string, int,
+                          std::optional<thumtoo::PixelLevel> px) {
+        QImage decoded;
+        int source = 0;
+        if (px && !px->bytes.empty()) {
+            source = static_cast<int>(px->source);
+            const QByteArray ba(
+                reinterpret_cast<const char *>(px->bytes.data()),
+                int(px->bytes.size()));
+            decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
+        }
+        {
+            std::lock_guard doneLock(g_mu);
+            g_pixelsInflight.remove(inflightKey);
+            if (source != 0) {
+                g_lastPixelSource.insert(pathCopy, source);
             }
-            {
-                std::lock_guard doneLock(g_mu);
-                g_pixelsInflight.remove(inflightKey);
-                const int got = decoded.isNull()
-                                    ? 0
-                                    : qMax(decoded.width(), decoded.height());
-                if (got >= (edge * 9) / 10) {
-                    g_pixelsSettled.insert(inflightKey);
-                }
-                g_pixelsActive = qMax(0, g_pixelsActive - 1);
-                startNextPixelJobsUnlocked();
+            const int got = decoded.isNull()
+                                ? 0
+                                : qMax(decoded.width(), decoded.height());
+            if (got >= (edge * 9) / 10) {
+                g_pixelsSettled.insert(inflightKey);
             }
-            emit bridge()->ladderReady(pathCopy, edge, decoded);
-        });
+            g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            startNextPixelJobsUnlocked();
+        }
+        emit bridge()->ladderReady(pathCopy, edge, decoded);
+        emit bridge()->ladderProvenance(pathCopy, edge, source);
+    };
+#if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
+    thumtoo::RasterRequest req;
+    req.uri = uri;
+    req.max_edge = edge;
+    req.frame_idx = 0;
+    req.policy = thumtoo::RasterPolicy::Overview;
+    c->request_raster(std::move(req), std::move(onOverview));
+#else
+    c->request_overview_pixels(uri, edge, std::move(onOverview));
+#endif
     return true;
 #else
     // Older thumtoo: fall back to soft ladder schedule (clamped inside).

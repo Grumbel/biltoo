@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-493-prefer-cache-overview.** get_raster PreferCache + request_raster Overview.
+Prior: **492**. Companion: **thumtoo-173**.
+
+### Change
+- cachedLadderBytes uses get_raster(PreferCache); records PixelSource
+- scheduleOverviewPixels (no SET_INTEREST builds) uses request_raster(Overview)
+
+### Next
+- Pipeline largely complete for lower levels
+- Optional HUD chip polish
+
+### Done criteria
+- [x] PreferCache host read path
+- [x] Bundle **493**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-492-provenance-status.** Status bar shows ladder PixelSource.
 Prior: **491**. Companion: **thumtoo-173**.
 
