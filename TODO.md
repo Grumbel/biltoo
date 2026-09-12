@@ -2,6 +2,35 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-576-slideshow-prefetch-ladder.** Wire PreferCache into slideshow rasters.
+Prior: **575**.
+
+### Problem
+Slideshow stayed soft forever. `preloadSlideshowImage` called
+`ThumtooCache::scheduleDisplayPixels` (async PreferCache) then installed whatever
+soft was already in memory. Completions only went to `ImageCache` + Gallery via
+`ladderReady`; pure-phase reads `m_ssRasterByPath`, which never received the
+sharper payload. Phase entry locked soft placeholders for the whole dwell.
+
+### Fix
+- `ladderReady`: when slideshow is active, `onSlideshowRasterReady` puts into the
+  map and upgrades `m_ssFromImage` / `m_ssToImage` if the path is the current pair
+  (logical-size camera — sharpness only).
+- Prefetch: promote from ImageCache when PreferCache already finished; inflate
+  concurrency to 2; pending drain re-checks need-edge, not only null.
+- Phase entry: `slideshowPixelsForPath` also promotes larger ImageCache entries.
+
+### Done criteria
+- [x] PreferCache ladderReady fills slideshow map
+- [x] Active phase can climb soft→target edge without waiting for next path entry
+- [x] Bundle **576**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-575-preserve-view-scale-fix.** Stable scene-center scale on size magnitude change.
 Prior: **574**.
 

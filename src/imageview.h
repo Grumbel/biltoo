@@ -272,6 +272,12 @@ public:
                            int *atlasVw, int *atlasVh) const;
     /** Store raster if better than what we have (larger long edge). */
     void putSlideshowRaster(const QString &path, const QImage &image);
+    /**
+     * PreferCache / ladderReady delivery for slideshow: put into the map and,
+     * if the path is the current phase pair, upgrade phase buffers so the next
+     * draw samples sharper pixels (camera stays logical-size based).
+     */
+    void onSlideshowRasterReady(const QString &path, const QImage &image);
     /** Best unoriented raster for path, or null. */
     QImage slideshowRaster(const QString &path) const;
     void setSlideshowUnderlayVisible(bool visible);
@@ -1350,7 +1356,7 @@ private:
      * Camera is aspect-based, so resolution climb does not change geometry.
      */
     QHash<QString, QImage> m_ssRasterByPath;
-    /** Slideshow raster decode in flight (max one). */
+    /** Slideshow raster decode in flight (max two for look-ahead). */
     QSet<QString> m_ssRasterInflight;
     /** Neighbours waiting while concurrency is full. */
     QStringList m_ssRasterPending;

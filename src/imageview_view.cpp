@@ -1053,6 +1053,56 @@ void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
     }
 }
 
+void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
+{
+    if (path.isEmpty() || image.isNull()) {
+        return;
+    }
+    const int incoming = qMax(image.width(), image.height());
+    const QImage before = slideshowRaster(path);
+    const int had = before.isNull() ? 0 : qMax(before.width(), before.height());
+    putSlideshowRaster(path, image);
+    if (incoming <= had) {
+        return;
+    }
+    qCDebug(lcSlideshow).nospace()
+        << "[slideshow] raster-ready " << QFileInfo(path).fileName()
+        << " " << image.width() << "x" << image.height()
+        << " (was " << had << ")";
+
+    // Upgrade locked phase buffers when sharper pixels arrive. Geometry is
+    // logical-size based (SIZE.md / SLIDESHOW.md), so sampling a higher raster
+    // does not change framing — only sharpness.
+    auto upgradeSlot = [this, &path, &image, incoming](const QString &slotPath,
+                                                       QImage *slot) -> bool {
+        if (!slot || slotPath != path) {
+            return false;
+        }
+        const int have = slot->isNull() ? 0 : qMax(slot->width(), slot->height());
+        if (incoming <= have) {
+            return false;
+        }
+        *slot = orientSlideshowImage(image, path);
+        return true;
+    };
+
+    bool changed = false;
+    if (upgradeSlot(m_ssFromPath, &m_ssFromImage)) {
+        m_dwellSourceImage = m_ssFromImage;
+        if (!m_ssFromImage.isNull()) {
+            ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                              &m_dwellAtlasVw, &m_dwellAtlasVh);
+        }
+        changed = true;
+    }
+    if (upgradeSlot(m_ssToPath, &m_ssToImage)) {
+        changed = true;
+    }
+    if (changed && viewport()) {
+        viewport()->update();
+    }
+}
+
 QImage ImageView::slideshowRaster(const QString &path) const
 {
     if (path.isEmpty()) {
@@ -1125,6 +1175,19 @@ QImage ImageView::slideshowPixelsForPath(const QString &path)
 {
     const int edge = slideshowTargetEdge();
     QImage img = slideshowRaster(path);
+    // ImageCache may hold PreferCache pixels that never reached the slideshow
+    // map (e.g. gallery session, or race before ladderReady was wired).
+    {
+        const QImage cached = ImageCache::get(path, edge * 7 / 10);
+        if (!cached.isNull()) {
+            const int c = qMax(cached.width(), cached.height());
+            const int h = img.isNull() ? 0 : qMax(img.width(), img.height());
+            if (c > h) {
+                putSlideshowRaster(path, cached);
+                img = cached;
+            }
+        }
+    }
     if (img.isNull()) {
         img = slideshowSoftPlaceholder(path);
     }
@@ -1467,20 +1530,28 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (path.isEmpty()) {
         return;
     }
+    const int targetEdge = slideshowTargetEdge();
+    const int need = targetEdge * 7 / 10;
     // Already have target-edge (or better) pixels — nothing to do.
     {
         const QImage have = slideshowRaster(path);
-        if (!have.isNull()) {
-            const int need = slideshowTargetEdge() * 7 / 10;
-            if (qMax(have.width(), have.height()) >= need) {
-                return;
-            }
+        if (!have.isNull() && qMax(have.width(), have.height()) >= need) {
+            return;
+        }
+        // PreferCache may have finished into ImageCache without hitting the
+        // slideshow map (older path). Promote before scheduling another job.
+        const QImage cached = ImageCache::get(path, need);
+        if (!cached.isNull() && qMax(cached.width(), cached.height()) >= need) {
+            onSlideshowRasterReady(path, cached);
+            return;
         }
     }
     if (m_ssRasterInflight.contains(path)) {
         return;
     }
-    constexpr int kMaxInflight = 1;
+    // Two concurrent prefetches so look-ahead (+1/+2) is not serialized behind
+    // a single soft→PreferCache climb.
+    constexpr int kMaxInflight = 2;
     if (m_ssRasterInflight.size() >= kMaxInflight) {
         if (!m_ssRasterPending.contains(path)) {
             m_ssRasterPending.append(path);
@@ -1495,7 +1566,6 @@ void ImageView::preloadSlideshowImage(const QString &path)
     m_ssRasterInflight.insert(path);
     const QString loadPath = path;
     const QPointer<ImageView> guard(this);
-    const int targetEdge = slideshowTargetEdge();
     qCDebug(lcSlideshow).nospace()
         << "[slideshow] preload-start " << QFileInfo(loadPath).fileName()
         << " edge=" << targetEdge;
@@ -1516,8 +1586,9 @@ void ImageView::preloadSlideshowImage(const QString &path)
         if ((img.isNull()
              || qMax(img.width(), img.height()) < targetEdge * 7 / 10)
             && ThumtooCache::isAvailable()) {
+            // Async PreferCache; completion lands on ladderReady →
+            // onSlideshowRasterReady (installs map + upgrades phase buffers).
             (void)ThumtooCache::scheduleDisplayPixels(loadPath, targetEdge);
-            // One more cache look after request (may still miss — async).
             const QImage again = ImageCache::get(loadPath, targetEdge);
             if (!again.isNull()
                 && (img.isNull()
@@ -1540,23 +1611,28 @@ void ImageView::preloadSlideshowImage(const QString &path)
             }
             view->m_ssRasterInflight.remove(loadPath);
             if (!img.isNull()) {
-                view->putSlideshowRaster(loadPath, img);
+                // Soft placeholder now; PreferCache ladderReady will upgrade.
+                view->onSlideshowRasterReady(loadPath, img);
                 // Never rememberImageSize from soft/target-edge rasters — that
                 // poisons logical size. Size comes from probe / full decode only.
                 qCDebug(lcSlideshow).nospace()
                     << "[slideshow] preload-ready "
                     << QFileInfo(loadPath).fileName()
                     << " " << img.width() << "x" << img.height();
-                // Map only — do not mutate phase paint buffers mid-slide.
-                // setSlideshowPhase picks up sharper pixels on the next path entry.
             }
+            const int needEdge = view->slideshowTargetEdge() * 7 / 10;
             while (!view->m_ssRasterPending.isEmpty()) {
                 const QString next = view->m_ssRasterPending.takeFirst();
-                if (view->slideshowRaster(next).isNull()
-                    && !view->m_ssRasterInflight.contains(next)) {
-                    view->preloadSlideshowImage(next);
-                    break;
+                if (view->m_ssRasterInflight.contains(next)) {
+                    continue;
                 }
+                const QImage have = view->slideshowRaster(next);
+                if (!have.isNull()
+                    && qMax(have.width(), have.height()) >= needEdge) {
+                    continue;
+                }
+                view->preloadSlideshowImage(next);
+                break;
             }
         }, Qt::QueuedConnection);
     });

@@ -179,6 +179,13 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
                     ImageCache::put(path, image);
                     m_previewByPath.insert(path, image);
                 }
+                // Slideshow pure-phase reads m_ssRasterByPath, not ImageCache.
+                // Prefetch used to only scheduleDisplayPixels (async) and install
+                // soft placeholders — PreferCache completions never entered the
+                // slideshow map, so every slide locked at low resolution.
+                if (m_slideshowProgressActive && !image.isNull()) {
+                    onSlideshowRasterReady(path, image);
+                }
                 if (!isGalleryMode()) {
                     return;
                 }
