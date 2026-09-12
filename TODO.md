@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-664-set-phase-helpers.** Split setSlideshowPhase; ZoomBlur QTimer finish.
+Prior: **663**.
+
+### Change
+- `applySlideshowFadeProgressOnly` — fade-only ticks without scene churn
+- `updateSlideshowPhaseMotionProgress` — from/to motion clocks
+- `setSlideshowPhase` arms buffers only on path change
+- ZoomBlur pool completion uses `QTimer` + `installZoomBlurResult` (no nested QPointer)
+
+### Done criteria
+- [x] Phase path change vs fade-only are separate
+- [x] Bundle **664**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-663-arm-from-phase-helpers.** Split armSlideshowFromPhase.
 Prior: **662**.
 

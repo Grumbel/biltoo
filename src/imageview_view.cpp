@@ -1495,6 +1495,33 @@ void ImageView::warmZoomBlurForCurrentPhase()
     warm(m_ssToPath, m_ssToImage);
 }
 
+bool ImageView::applySlideshowFadeProgressOnly(qreal fadeT)
+{
+    // Pure-phase clock ticks at 16ms with unchanged from/to — only advance fade.
+    if (qFuzzyCompare(fadeT, m_ssFadeT) || (fadeT < 0.0 && m_ssFadeT < 0.0)) {
+        return false;
+    }
+    m_ssFadeT = fadeT;
+    if (viewport()) {
+        viewport()->update();
+    }
+    return true;
+}
+
+void ImageView::updateSlideshowPhaseMotionProgress(int pathMs)
+{
+    // Motion clocks keep running across pure-phase ticks; do not re-arm buffers.
+    m_ssFromMotionT = slideshowMotionProgress(
+        m_ssFromMotionBaseMs, m_ssFromMotionClock, m_ssFromMotionClockRunning,
+        m_slideshowMotionPaused, pathMs);
+    if (m_ssFromMotionClockRunning) {
+        m_dwellMotionT = m_ssFromMotionT;
+    }
+    m_ssToMotionT = slideshowMotionProgress(
+        m_ssToMotionBaseMs, m_ssToMotionClock, m_ssToMotionClockRunning,
+        m_slideshowMotionPaused, pathMs);
+}
+
 void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
 {
     if (!m_slideshowProgressActive) {
@@ -1503,78 +1530,45 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
 
     const bool fromChanged = (fromPath != m_ssFromPath);
     const bool toChanged = (toPath != m_ssToPath);
-    // Pure-phase clock ticks at 16ms and used to call us every frame even when
-    // from/to were unchanged — each call hideSlideshowUnderlay()'d the whole
-    // scene and forced a full viewport repaint (GUI appeared dead under load).
+    // Unchanged paths: never hide underlay / full scene refresh every 16ms.
     if (!fromChanged && !toChanged) {
-        if (qFuzzyCompare(fadeT, m_ssFadeT)
-            || (fadeT < 0.0 && m_ssFadeT < 0.0)) {
-            return;
-        }
-        // Fade progress only — keep buffers, just repaint.
-        m_ssFadeT = fadeT;
-        if (viewport()) {
-            viewport()->update();
-        }
+        (void)applySlideshowFadeProgressOnly(fadeT);
         return;
     }
     // Do NOT bump ZoomBlur generation here — that cancelled the incoming
     // slide's underlay build every transition and caused letterbox flicker.
     // Evict only slots that are neither from nor to; in-flight jobs for the
     // new pair keep running.
-    if (fromChanged || toChanged) {
-        pruneZoomBlurOutsidePhasePair(fromPath, toPath);
-    }
+    pruneZoomBlurOutsidePhasePair(fromPath, toPath);
     const int pathMs = slideshowPathDurationMs();
 
-    // Keep m_ssRasterPending look-ahead across phase changes. Clearing it here
-    // cancelled +2/+3 warm-up on every advance. Preload dedupes by path.
-
-    // --- From (A) ---
-    // Phase buffers lock at fromChanged; preload fills ImageCache for next entry.
+    // Phase buffers lock at from/toChanged; preload fills ImageCache for next.
+    // Keep m_ssRasterPending look-ahead (do not clear — cancelled +2/+3 warm-up).
     if (fromChanged) {
         armSlideshowFromPhase(fromPath, pathMs);
     }
-    // Do not soft→sharp upgrade m_ssFromImage mid-dwell. Phase buffers are
-    // locked at fromChanged; preload fills ImageCache for the *next*
-    // entry. Mid-slide resolution flips were jarring even with invariant camera.
-    m_ssFromMotionT = slideshowMotionProgress(
-        m_ssFromMotionBaseMs, m_ssFromMotionClock, m_ssFromMotionClockRunning,
-        m_slideshowMotionPaused, pathMs);
-    if (m_ssFromMotionClockRunning) {
-        m_dwellMotionT = m_ssFromMotionT;
-    }
-
-    // --- To (B) ---
     if (toPath.isEmpty()) {
         armSlideshowToPhase(QString()); // clear
     } else if (toChanged) {
         armSlideshowToPhase(toPath);
     }
-    // toPath pixels locked at toChanged (same as from).
-    m_ssToMotionT = slideshowMotionProgress(
-        m_ssToMotionBaseMs, m_ssToMotionClock, m_ssToMotionClockRunning,
-        m_slideshowMotionPaused, pathMs);
-
+    updateSlideshowPhaseMotionProgress(pathMs);
     m_ssFadeT = fadeT;
 
-    if (fromChanged || toChanged) {
-        if (const char *dbg = std::getenv("BILTOO_DEBUG_SLIDESHOW");
-            (dbg && dbg[0] && dbg[0] != '0')
-            || (std::getenv("THUMTOO_DEBUG")
-                && std::getenv("THUMTOO_DEBUG")[0]
-                && std::getenv("THUMTOO_DEBUG")[0] != '0')) {
-            fprintf(stderr,
-                    "biltoo/ss: phase from=%s to=%s fade=%.3f fromImg=%dx%d toImg=%dx%d\n",
-                    qPrintable(QFileInfo(fromPath).fileName()),
-                    qPrintable(QFileInfo(toPath).fileName()),
-                    fadeT,
-                    m_ssFromImage.width(), m_ssFromImage.height(),
-                    m_ssToImage.width(), m_ssToImage.height());
-        }
+    if (const char *dbg = std::getenv("BILTOO_DEBUG_SLIDESHOW");
+        (dbg && dbg[0] && dbg[0] != '0')
+        || (std::getenv("THUMTOO_DEBUG")
+            && std::getenv("THUMTOO_DEBUG")[0]
+            && std::getenv("THUMTOO_DEBUG")[0] != '0')) {
+        fprintf(stderr,
+                "biltoo/ss: phase from=%s to=%s fade=%.3f fromImg=%dx%d toImg=%dx%d\n",
+                qPrintable(QFileInfo(fromPath).fileName()),
+                qPrintable(QFileInfo(toPath).fileName()),
+                fadeT,
+                m_ssFromImage.width(), m_ssFromImage.height(),
+                m_ssToImage.width(), m_ssToImage.height());
     }
 
-    // Keep underlays warm for the active pair (dwell from, or both in fade).
     warmZoomBlurForCurrentPhase();
     hideSlideshowUnderlay();
     if (viewport()) {
@@ -2090,20 +2084,13 @@ void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint6
     const QPointer<ImageView> guard(const_cast<ImageView *>(this));
     QThreadPool::globalInstance()->start([guard, src, vw, vh, key, gen]() {
         const QImage blurred = makeZoomBlurCover(src, vw, vh);
-        if (blurred.isNull()) {
+        ImageView *view = guard.data();
+        if (blurred.isNull() || !view) {
             return;
         }
-        ImageView *target = guard.data();
-        if (!target) {
-            return;
-        }
-        QMetaObject::invokeMethod(target, [guard, blurred, key, gen]() {
-            ImageView *self = guard.data();
-            if (!self) {
-                return;
-            }
-            self->installZoomBlurResult(blurred, key, gen);
-        }, Qt::QueuedConnection);
+        QTimer::singleShot(0, view, [view, blurred, key, gen]() {
+            view->installZoomBlurResult(blurred, key, gen);
+        });
     });
 }
 

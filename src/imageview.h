@@ -787,6 +787,8 @@ public:
      */
     int slideshowPathDurationMs() const;
     /** Pure-clock drive: fadeT<0 dwell on fromPath; else crossfade from→to at fadeT in [0,1]. */
+    bool applySlideshowFadeProgressOnly(qreal fadeT);
+    void updateSlideshowPhaseMotionProgress(int pathMs);
     void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
     void warmZoomBlurForCurrentPhase();
     /** Drop ZoomBlur slots whose key is neither from nor to path. */
