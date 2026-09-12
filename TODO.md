@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-490-q1-invalidate-note.** Note Q1 invalidate lands in thumtoo-172.
+Prior: **489**. Companion: **thumtoo-172**.
+
+### Change
+- PIXEL_PIPELINE_REDESIGN: Q1 invalidate checkbox
+
+### Next
+- Provenance UI
+- Unified request_raster (optional)
+
+### Done criteria
+- [x] Doc sync
+- [x] Bundle **490**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-489-pipeline-checklist.** Sync PIXEL_PIPELINE_REDESIGN status with shipped work.
 Prior: **488**. Companion: **thumtoo-171**.
 

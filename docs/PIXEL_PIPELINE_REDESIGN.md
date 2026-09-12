@@ -492,7 +492,7 @@ paths.
 
 - [x] Full decode → tile writer (Q2) (existing + FocusFull).
 - [x] `construct_from_tiles` / `get_pixels_from_tiles`.
-- [ ] Invalidate Q1 outputs when Q2 pyramid appears.
+- [x] Invalidate Q1 outputs when Q2 pyramid appears (thumtoo-172).
 
 ### Phase 4 — Unified request API
 
