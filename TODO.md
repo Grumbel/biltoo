@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-530-remove-unused-exiv-loader.** Drop unused sync loadExiv2Metadata.
+Prior: **529**.
+
+### Change
+- Remove anonymous `loadExiv2Metadata` (replaced by async worker in 528);
+  clears -Wunused-function
+
+### Done criteria
+- [x] No -Wunused-function on that symbol
+- [x] Bundle **530**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-529-gallery-pass2-caps.** Cap pass-2 off-screen lists; fix perf -Wformat.
 Prior: **528**.
 
