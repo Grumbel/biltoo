@@ -2,6 +2,36 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-686-pending-defer-empty-soft.** Empty pendingTile must not rebuild/fit the scene.
+Prior: **685**.
+
+### Evidence (timed log)
+```
+t=…6426 gui=1 pendingTile path=001.jpg soft=0x0 cache=0
+… ~117ms GUI gap …
+t=…6543 gui=1 softJob START path=001.jpg
+t=…6723 gui=0 softJob DONE path=001.jpg got=341x512
+```
+Empty pending still ran fit/scene work on the GUI for ~100ms+. Soft decode was fine (off-GUI).
+
+Also: process later **segfaulted** (need stack on next crash).
+
+### Change
+- `installImageModePendingTile`: if soft null and sole item exists → only `setPath`, keep prior frame (no clear/fit)
+- First image: minimal placeholder, no fit storm
+- Install/fit only when soft pixels exist
+- `tryInstall OK` load trace
+
+### Done criteria
+- [x] No ~100ms GUI gap for empty pending
+- [x] Bundle **686**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-685-gallery-soft-no-intermediate-load-dbg.** Gallery cold soft goes to need; load timing debug.
 Prior: **684**.
 

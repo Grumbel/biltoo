@@ -655,14 +655,39 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                   qPrintable(QFileInfo(path).fileName()),
                   pixels.width(), pixels.height(),
                   ImageCache::has(path) ? 1 : 0);
+
+    // Cold path: no soft/LQIP yet. Do NOT rebuild the scene / fitInView here —
+    // timed logs showed ~100ms+ GUI between pendingTile soft=0x0 and softJob
+    // START. Keep prior frame (or empty placeholder) until soft arrives.
+    if (pixels.isNull()) {
+        if (m_items.size() == 1) {
+            ImageItem *item = m_items.first();
+            item->setPath(path);
+            bindImageModeSessionCursor(item);
+            biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",
+                          qPrintable(QFileInfo(path).fileName()));
+            return;
+        }
+        // First image ever: minimal placeholder, no fit storm.
+        const QSize sz = layoutSizeForPath(path, QImage());
+        ImageItem *item = createPlaceholderItem(path, sz);
+        if (item) {
+            bindImageModeSessionCursor(item);
+            resetImageModeItemPlacement(item);
+            prepareImageModeCanvas();
+        }
+        biltooLoadDbg("pendingTile PLACEHOLDER empty soft path=%s",
+                      qPrintable(QFileInfo(path).fileName()));
+        return;
+    }
+
     // Layout size = native when known; else preview aspect so fitInView fills
     // the window (not a provisional square that letterboxes the content).
     const QSize sz = layoutSizeForPath(path, pixels);
 
     setUpdatesEnabled(false);
 
-    // Fast path: reuse the single Image-mode item. Destroy/recreate + undo clear
-    // on every ←/→ was a major hitch even when soft pixels were free.
+    // Fast path: reuse the single Image-mode item.
     ImageItem *item = nullptr;
     if (m_items.size() == 1) {
         item = m_items.first();
@@ -673,16 +698,11 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             item->setIntrinsicSize(sz);
         }
         bindImageModeSessionCursor(item);
-        if (!pixels.isNull()) {
-            // Drop prior FullSource so SoftPreview can install (shouldUpgrade).
-            if (item->hasDecodedPixels()) {
-                item->clearDecodedPixels();
-            }
-            installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
-                                 m_currentSessionId);
-        } else {
+        if (item->hasDecodedPixels()) {
             item->clearDecodedPixels();
         }
+        installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
+                             m_currentSessionId);
         resetImageModeItemPlacement(item);
         prepareImageModeCanvas();
         fitItem(item, currentFitAspectMode());
@@ -692,6 +712,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             viewport()->update();
         }
         emit statusChanged();
+        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d",
+                      qPrintable(QFileInfo(path).fileName()),
+                      pixels.width(), pixels.height());
         return;
     }
 
@@ -702,10 +725,8 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         return;
     }
     bindImageModeSessionCursor(item);
-    if (!pixels.isNull()) {
-        installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
-                             m_currentSessionId);
-    }
+    installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
+                         m_currentSessionId);
     resetImageModeItemPlacement(item);
     prepareImageModeCanvas();
     fitItem(item, currentFitAspectMode());
@@ -715,6 +736,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         viewport()->update();
     }
     emit statusChanged();
+    biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d",
+                  qPrintable(QFileInfo(path).fileName()),
+                  pixels.width(), pixels.height());
 }
 
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
@@ -1986,6 +2010,9 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
     if (ImageItem *cur = imageModeItemForPath(path)) {
         if (canAcceptDisplaySample(cur, image, kind)) {
             installImageModeSampleInPlace(cur, path, image, kind);
+            biltooLoadDbg("tryInstall OK path=%s kind=%d edge=%d",
+                          qPrintable(QFileInfo(path).fileName()),
+                          int(kind), ImageCache::longEdge(image));
         }
         // Even when the sample is not an upgrade (already showing equal soft),
         // keep climbing until native coverage — otherwise soft latches forever.
