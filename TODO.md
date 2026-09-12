@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-614-mouse-press-gallery-workspace.** Finish mousePressEvent split.
+Prior: **613**.
+
+### Change
+- `tryMousePressGalleryRight`, `tryMousePressGalleryLeft`, `tryMousePressWorkspaceSelect`
+- `mousePressEvent` is pure dispatch + base fallback
+
+### Done criteria
+- [x] All press modes in named try* handlers
+- [x] Bundle **614**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-613-mouse-press-phases.** Split mousePressEvent early handlers.
 Prior: **612**.
 

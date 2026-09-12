@@ -1073,6 +1073,9 @@ protected:
     bool tryMousePressImageEdges(QMouseEvent *event);
     bool tryMousePressPan(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);
+    bool tryMousePressGalleryRight(QMouseEvent *event);
+    bool tryMousePressGalleryLeft(QMouseEvent *event);
+    bool tryMousePressWorkspaceSelect(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;

@@ -745,52 +745,45 @@ bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
     return true;
 }
 
-void ImageView::mousePressEvent(QMouseEvent *event)
+bool ImageView::tryMousePressGalleryRight(QMouseEvent *event)
 {
-    if (tryMousePressSlideshowSeek(event)
-        || tryMousePressAttention(event)
-        || tryMousePressCrop(event)
-        || tryMousePressZoomRegion(event)
-        || tryMousePressWorkspaceChrome(event)
-        || tryMousePressImageLink(event)
-        || tryMousePressTextRubber(event)
-        || tryMousePressImageEdges(event)
-        || tryMousePressPan(event)
-        || tryMousePressWorkspaceRotate(event)) {
-        return;
-    }
-
     // Gallery right-click: do not let QGraphicsView alter selection (that
     // cancels multi-select before the context menu opens). If the click is on
     // an unselected tile, select only that tile; if it is already selected,
     // keep the current multi-select for bulk rotate/flip/delete.
-    if (isGalleryMode() && event->button() == Qt::RightButton) {
-        const QPointF scenePos = mapToScene(event->pos());
-        ImageItem *hit = nullptr;
-        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                hit = ii;
-                break;
-            }
-        }
-        if (hit && !hit->isSelected()) {
-            m_scene->clearSelection();
-            hit->setSelected(true);
-            m_gallery.setSelectionAnchor(hit);
-            if (hit->sessionId() != kInvalidSessionImageId) {
-                emit sessionImageFocused(hit->sessionId());
-            } else if (!hit->path().isEmpty()) {
-                emit galleryItemFocused(hit->path());
-            }
-            emit statusChanged();
-        }
-        event->accept();
-        return;
+    if (!isGalleryMode() || event->button() != Qt::RightButton) {
+        return false;
     }
+    const QPointF scenePos = mapToScene(event->pos());
+    ImageItem *hit = nullptr;
+    for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            hit = ii;
+            break;
+        }
+    }
+    if (hit && !hit->isSelected()) {
+        m_scene->clearSelection();
+        hit->setSelected(true);
+        m_gallery.setSelectionAnchor(hit);
+        if (hit->sessionId() != kInvalidSessionImageId) {
+            emit sessionImageFocused(hit->sessionId());
+        } else if (!hit->path().isEmpty()) {
+            emit galleryItemFocused(hit->path());
+        }
+        emit statusChanged();
+    }
+    event->accept();
+    return true;
+}
 
+bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
+{
     // Gallery: classic multi-select (click / Ctrl / Shift); open is double-click.
-    if (isGalleryMode() && event->button() == Qt::LeftButton
-        && !(event->modifiers() & Qt::AltModifier)) {
+    if (!isGalleryMode() || event->button() != Qt::LeftButton
+        || (event->modifiers() & Qt::AltModifier)) {
+        return false;
+    }
         const QPointF scenePos = mapToScene(event->pos());
         ImageItem *hit = nullptr;
         for (QGraphicsItem *gi : m_scene->items(scenePos)) {
@@ -843,7 +836,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             if (m_hudVisible || m_hudFlashVisible) {
                 emit statusChanged();
             }
-            return;
+            return true;
         }
 
         if (hit && ctrl) {
@@ -866,7 +859,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             if (m_hudVisible || m_hudFlashVisible) {
                 emit statusChanged();
             }
-            return;
+            return true;
         }
 
         if (hit) {
@@ -880,7 +873,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             if (already) {
                 m_gallery.setSelectionAnchor(hit);
                 event->accept();
-                return;
+                return true;
             }
             ImageItem *prev = nullptr;
             {
@@ -906,7 +899,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            return;
+            return true;
         }
 
         // Empty space: clear selection (keep Ctrl-additive empty no-ops).
@@ -917,11 +910,16 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         }
         // Allow rubber-band start via base class when drag mode is RubberBandDrag.
         QGraphicsView::mousePressEvent(event);
-        return;
-    }
+        return true;
+    return true;
+}
 
+bool ImageView::tryMousePressWorkspaceSelect(QMouseEvent *event)
+{
     // Workspace Select tool: item move/select, or click the page guide sheet.
-    if (isWorkspaceMode() && event->button() == Qt::LeftButton) {
+    if (!isWorkspaceMode() || event->button() != Qt::LeftButton) {
+        return false;
+    }
         const QPointF scenePos = mapToScene(event->pos());
         ImageItem *itemHit = nullptr;
         if (m_scene) {
@@ -942,7 +940,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             setPageGuideSelected(true);
             event->accept();
             emit statusChanged();
-            return;
+            return true;
         }
         setPageGuideSelected(false);
         QGraphicsView::mousePressEvent(event);
@@ -951,6 +949,24 @@ void ImageView::mousePressEvent(QMouseEvent *event)
             m_dragStartState = captureState(hit);
         }
         emit statusChanged();
+        return true;
+}
+
+void ImageView::mousePressEvent(QMouseEvent *event)
+{
+    if (tryMousePressSlideshowSeek(event)
+        || tryMousePressAttention(event)
+        || tryMousePressCrop(event)
+        || tryMousePressZoomRegion(event)
+        || tryMousePressWorkspaceChrome(event)
+        || tryMousePressImageLink(event)
+        || tryMousePressTextRubber(event)
+        || tryMousePressImageEdges(event)
+        || tryMousePressPan(event)
+        || tryMousePressWorkspaceRotate(event)
+        || tryMousePressGalleryRight(event)
+        || tryMousePressGalleryLeft(event)
+        || tryMousePressWorkspaceSelect(event)) {
         return;
     }
 
