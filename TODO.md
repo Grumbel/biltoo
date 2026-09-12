@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-694-image-nav-keyrepeat-debounce.** Soft every key; PreferCache after settle.
+Prior: **693**.
+
+### Problem
+Held ←/→ in Image mode froze the GUI cumulatively: every auto-repeat ran full
+LoadReplace (sync `repaint`, PreferCache climb timers, chrome title/location).
+
+### Change
+- All Image-mode index changes use nav-hot + 80ms settle timer (same idea as
+  slideshow, now not slideshow-only)
+- While hot: soft install only (`update` not `repaint`); skip PreferCache / native
+- Chrome: skip title/location/HUD pulse while hot
+- Settle: clear hot + one full `loadImage` for the current index
+
+### Done criteria
+- [x] Bundle **694**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-693-force-soft-repaint.** Soft visible before climb; fit on aspect change.
 Prior: **692**.
 

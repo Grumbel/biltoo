@@ -735,15 +735,20 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 preserveImageViewOnLogicalSizeChange(item, sizeBefore, targetSize);
             }
         }
-        // Force soft onto the screen BEFORE returning to the event loop.
-        // update() only queues a paint; climb/chrome can run first and the user
-        // only ever sees the later HQ frame ("soft never shows").
+        // Single press: sync repaint so soft is visible before PreferCache.
+        // Key-repeat (nav hot): async update only — sync repaint every auto-repeat
+        // event was the cumulative GUI freeze under held ←/→.
         if (viewport()) {
-            viewport()->repaint();
+            if (m_slideshowNavHot) {
+                viewport()->update();
+            } else {
+                viewport()->repaint();
+            }
         }
-        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d painted=1",
+        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d painted=%s",
                       qPrintable(QFileInfo(path).fileName()),
-                      pixels.width(), pixels.height(), didFit);
+                      pixels.width(), pixels.height(), didFit,
+                      m_slideshowNavHot ? "async" : "sync");
         return;
     }
 
@@ -804,12 +809,22 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         // Soft already on the item: only climb PreferCache; skip soft pool job.
         if (ImageItem *it = imageModeItemForPath(path)) {
             if (it->displayPixelLongEdge() > 0) {
+                // Rapid ←/→: soft only. PreferCache after settle clears nav hot.
+                if (m_slideshowNavHot) {
+                    biltooLoadDbg("PATH soft-on-item skip climb (nav hot) path=%s edge=%d",
+                                  qPrintable(QFileInfo(path).fileName()),
+                                  it->displayPixelLongEdge());
+                    return;
+                }
                 const QImage soft = it->displayImage();
                 const QString pathCopy = path;
                 // 16ms: let the soft repaint land one frame before PreferCache
                 // schedules more GUI work (scheduleProbe/Pixels/Display).
                 QTimer::singleShot(16, this, [this, pathCopy, soft]() {
                     if (!isImageMode() || classicPath() != pathCopy) {
+                        return;
+                    }
+                    if (m_slideshowNavHot) {
                         return;
                     }
                     ensureImageModeQualityClimb(pathCopy, soft);
@@ -826,6 +841,13 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     if (role == LoadReplace && ThumtooCache::isAvailable()
         && ImageCache::get(path).isNull()) {
         (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+    }
+
+    // Rapid ←/→: soft schedule only — no native full / PreferCache until settle.
+    if (role == LoadReplace && m_slideshowNavHot && isImageMode()) {
+        biltooLoadDbg("PATH nav-hot skip classic decode path=%s",
+                      qPrintable(QFileInfo(path).fileName()));
+        return;
     }
 
     if (m_slideshowProgressActive) {
@@ -1929,7 +1951,7 @@ ImageItem *ImageView::imageModeItemForPath(const QString &path) const
 
 void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantEdge)
 {
-    if (!ThumtooCache::isAvailable() || path.isEmpty()) {
+    if (!ThumtooCache::isAvailable() || path.isEmpty() || m_slideshowNavHot) {
         return;
     }
     if (ImageItem *it = imageModeItemForPath(path)) {
@@ -2018,7 +2040,7 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     // background only — never block the GUI, never cancel soft display.
     // High-res PreferCache (up to kImageLadderEdge / on-screen need) always
     // runs; native extract is a last resort after PreferCache plateaus.
-    if (path.isEmpty()) {
+    if (path.isEmpty() || m_slideshowNavHot) {
         return;
     }
     if (!sample.isNull() && sampleCoversNativeLogical(path, sample)) {

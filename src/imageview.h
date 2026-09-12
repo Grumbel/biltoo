@@ -235,8 +235,9 @@ public:
     /** ≥1: panZoomFactor or pan-scan margin so zoomed frames stay sharp. */
     qreal slideshowMotionHeadroom() const;
     /**
-     * User is rapidly flipping (←/→ key-repeat). Suppresses *new* ZoomBlur
-     * builds only; previous underlay is kept until a replacement is ready.
+     * User is rapidly flipping (←/→ key-repeat) in Image mode or slideshow.
+     * Suppresses PreferCache climb, sync repaint, new ZoomBlur builds, and
+     * atlas work until settle; previous underlay is kept until replacement.
      */
     void setSlideshowNavHot(bool hot);
     bool slideshowNavHot() const { return m_slideshowNavHot; }

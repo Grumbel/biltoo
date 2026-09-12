@@ -1323,20 +1323,26 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
     // Gallery/Workspace keep multi-object canvas; update session cursor only.
     // Gallery: do not exclusive-select (Ctrl+click multi-select is owned by the view).
     if (isImageMode()) {
-        // Key-repeat during slideshow: only advance the phase composite.
-        // loadImage per auto-repeat step (soft decode + gen bump + status)
-        // accumulated until the GUI starved. Decode the settled index after
-        // a short quiet period.
-        if (isSlideshowSession() && !m_slideshowAdvancing) {
-            // Mark nav hot immediately so ZoomBlur/atlas work stops for this
-            // key-repeat burst; cleared when the settle timer fires.
+        // Key-repeat (and rapid ←/→): soft install every step so the flip stays
+        // responsive, but PreferCache / native climb only after a quiet settle.
+        // Without this, gen++ + sync repaint + climb timers stacked until the
+        // GUI froze (cumulative). Slideshow auto-advance skips the hot path.
+        if (m_slideshowAdvancing) {
+            if (m_imageView) {
+                m_imageView->setSlideshowNavHot(false);
+            }
+            m_imageView->loadImage(path);
+        } else {
             m_imageView->setSlideshowNavHot(true);
+            // Soft pixel swap only while hot (scheduleImageLoad skips climb).
+            m_imageView->loadImage(path);
             if (!m_slideshowNavLoadTimer) {
                 m_slideshowNavLoadTimer = new QTimer(this);
                 m_slideshowNavLoadTimer->setSingleShot(true);
-                m_slideshowNavLoadTimer->setInterval(120);
+                // 80ms: single taps still climb quickly; hold settles after burst.
+                m_slideshowNavLoadTimer->setInterval(80);
                 connect(m_slideshowNavLoadTimer, &QTimer::timeout, this, [this]() {
-                    if (!m_imageView || !isImageMode() || !isSlideshowSession()) {
+                    if (!m_imageView || !isImageMode()) {
                         return;
                     }
                     if (m_currentIndex < 0
@@ -1344,15 +1350,11 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
                         return;
                     }
                     m_imageView->setSlideshowNavHot(false);
+                    // Full load + PreferCache climb for the settled index only.
                     m_imageView->loadImage(m_session.paths().at(m_currentIndex));
                 });
             }
             m_slideshowNavLoadTimer->start();
-        } else {
-            if (m_imageView) {
-                m_imageView->setSlideshowNavHot(false);
-            }
-            m_imageView->loadImage(path);
         }
     } else if (isGalleryMode() && m_imageView) {
         // Filmstrip / keyboard nav (ensureGalleryVisible): select the tile and
@@ -1372,8 +1374,14 @@ void MainWindow::finishCurrentIndexChromeUpdate()
     if (m_metadataPanel) {
         m_metadataPath.clear();
     }
-    updateWindowTitle();
-    syncLocationBarText();
+    // During rapid Image-mode ←/→ (nav hot), skip title/location bar churn —
+    // settle timer will load again and chrome catches up then.
+    const bool navHot = m_imageView && m_imageView->slideshowNavHot()
+                        && isImageMode() && !m_slideshowAdvancing;
+    if (!navHot) {
+        updateWindowTitle();
+        syncLocationBarText();
+    }
     // Image mode ←/→: do NOT call full updateStatus (metadata/adjustments/
     // pending-count/statusText rebuild). That was re-entered via statusChanged
     // and dominated the GUI on every key. Light path only.
@@ -1384,7 +1392,7 @@ void MainWindow::finishCurrentIndexChromeUpdate()
         }
         if (m_imageView) {
             m_imageView->setSessionPosition(m_currentIndex, m_session.paths().size(),
-                                            !m_slideshowAdvancing);
+                                            !m_slideshowAdvancing && !navHot);
             m_imageView->setCurrentSessionId(currentSessionId());
         }
         return;
