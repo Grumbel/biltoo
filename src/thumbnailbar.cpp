@@ -1712,8 +1712,22 @@ void ThumbnailBar::setVisibleLoadsSuspended(bool on)
 void ThumbnailBar::setCurrentIndex(int index)
 {
     if (index >= 0 && index < count()) {
+        QListWidgetItem *it = item(index);
+        if (!it) {
+            return;
+        }
+        const bool blocked = blockSignals(true);
         setCurrentRow(index);
-        scrollToItem(item(index), QAbstractItemView::EnsureVisible);
+        blockSignals(blocked);
+        // Only scroll when the row is outside the viewport — EnsureVisible on
+        // every ←/→ re-layouts the strip and retriggers thumbnail loads.
+        if (viewport()) {
+            const QRect vr = viewport()->rect();
+            const QRect ir = visualItemRect(it);
+            if (!vr.intersects(ir.adjusted(-8, -8, 8, 8))) {
+                scrollToItem(it, QAbstractItemView::EnsureVisible);
+            }
+        }
     }
 }
 

@@ -699,36 +699,35 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             item->setIntrinsicSize(sz);
         }
         bindImageModeSessionCursor(item);
-        // Fast soft attach: no installDisplayPixels (appearance/materialize/flags).
-        // setSourceImageReady is assign + update only.
+        // Fast soft attach: no installDisplayPixels, no fitItem/fitInView.
+        // Log showed fit=1 on nearly every ←/→ when aspect differed — fitInView
+        // on the GUI is the remaining hitch (user: wrong corner was "decode").
         if (!path.isEmpty()) {
             ImageCache::put(path, pixels);
         }
         item->setSourceImageReady(pixels);
-        const QSize sizeAfter = item->imageSize();
-        const bool aspectChanged =
-            sizeBefore.width() > 1 && sizeBefore.height() > 1
-            && sizeAfter.width() > 1 && sizeAfter.height() > 1
-            && qAbs(double(sizeBefore.width()) / sizeBefore.height()
-                    - double(sizeAfter.width()) / sizeAfter.height()) > 0.02;
-        if (aspectChanged || sizeBefore.width() <= 1) {
-            resetImageModeItemPlacement(item);
-            // Fit without prepareImageModeCanvas (that clears undo + resets
-            // transform + zeros scene rect on every key).
-            fitItem(item, currentFitAspectMode());
-            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-        } else {
-            preserveImageViewOnLogicalSizeChange(item, sizeBefore, sizeAfter);
+        // Intrinsic from known logical only — never from soft sample dims.
+        const QSize known = logicalSizeForPath(path);
+        if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
+            && !isProvisionalImageSize(path)) {
+            item->setIntrinsicSize(known);
+            // Same-aspect scale only. Aspect change: leave matrix; user sees
+            // letterboxing until a deferred fit (no fitInView on the key path).
+            if (sizeBefore.width() > 1 && sizeBefore.height() > 1) {
+                const qreal a0 = double(sizeBefore.width()) / sizeBefore.height();
+                const qreal a1 = double(known.width()) / known.height();
+                if (qAbs(a0 - a1) <= 0.02 && sizeBefore != known) {
+                    preserveImageViewOnLogicalSizeChange(item, sizeBefore, known);
+                }
+            }
         }
         setUpdatesEnabled(true);
         if (viewport()) {
             viewport()->update();
         }
-        // statusChanged every key floods the status bar — skip for soft swap.
-        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d",
+        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=0",
                       qPrintable(QFileInfo(path).fileName()),
-                      pixels.width(), pixels.height(),
-                      (aspectChanged || sizeBefore.width() <= 1) ? 1 : 0);
+                      pixels.width(), pixels.height());
         return;
     }
 

@@ -2,6 +2,33 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-689-never-fit-on-soft-nav.** No fitInView on soft pending; filmstrip scroll only if offscreen.
+Prior: **688**.
+
+### Evidence (user log)
+```
+pendingTile INSTALLED path=019.jpg soft=256x171 fit=1
+```
+`fit=1` means we still called `fitItem` → `fitInView` on the GUI whenever
+aspect differed (portrait↔landscape). That is pure GUI, not decode.
+
+Also every nav: `ThumbnailBar::setCurrentIndex` → `scrollToItem(EnsureVisible)`
+re-layouts the strip and kicks more `makeThumbnail` jobs.
+
+### Change
+- Soft pending install: **never** `fitItem`; only same-aspect scale via preserve
+- Filmstrip `setCurrentIndex`: scroll only when row is outside viewport
+
+### Done criteria
+- [x] Log shows `fit=0` always on soft pending
+- [x] Bundle **689**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-688-pixel-swap-only-gui.** Image-mode install is assign QImage + update only.
 Prior: **687**.
 
