@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-620-crop-paint-phases.** Split paintCropOverlay into named paint phases.
+Prior: **619**.
+
+### Change
+- `paintCropDimOutside`, `paintCropFrame`
+- `paintCropResizeHandles`, `paintCropRotateKnobs`, `paintCropMoveGrip`
+- `paintCropActionButtons`, `paintCropSizeBadge`
+- `paintCropOverlay` computes geometry and orchestrates
+
+### Done criteria
+- [x] Crop overlay paint paths named; behaviour preserved
+- [x] Bundle **620**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-619-paint-viewport-phases.** Split paintViewportOverlays into named phases.
 Prior: **618**.
 

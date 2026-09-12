@@ -1291,6 +1291,13 @@ private:
     bool cropAllowExpand() const { return m_cropAllowExpand; }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
+    void paintCropDimOutside(QPainter &painter, const QPolygonF &cropViewPoly);
+    void paintCropFrame(QPainter &painter, const QPolygonF &cropViewPoly);
+    void paintCropResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly);
+    void paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly);
+    void paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly);
+    void paintCropActionButtons(QPainter &painter);
+    void paintCropSizeBadge(QPainter &painter, const QRect &cropView);
     void paintAttentionOverlay(QPainter &painter);
     int attentionHandleIndexAt(const QPoint &viewPos) const;
     bool attentionHandleAt(const QPoint &viewPos) const;

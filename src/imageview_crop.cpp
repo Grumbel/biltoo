@@ -1110,30 +1110,8 @@ QRect ImageView::cropCloseButtonView() const
 
 
 
-void ImageView::paintCropOverlay(QPainter &painter)
+void ImageView::paintCropDimOutside(QPainter &painter, const QPolygonF &cropViewPoly)
 {
-    if (!m_cropMode) {
-        return;
-    }
-    ImageItem *item = cropTargetItem();
-    if (!item || !m_cropRect.isValid()) {
-        return;
-    }
-    ensureCropRectValid();
-    const QRectF contentScene = item->mapToScene(item->contentRect()).boundingRect();
-    const QPolygonF cropLocal = cropPolygonItemLocal();
-    const QPolygonF cropScenePoly = item->mapToScene(cropLocal);
-    QPolygonF cropViewPoly;
-    for (const QPointF &sp : cropScenePoly) {
-        cropViewPoly << QPointF(mapFromScene(sp));
-    }
-    const QRect contentView = QRect(mapFromScene(contentScene.topLeft()),
-                                    mapFromScene(contentScene.bottomRight()))
-                                  .normalized();
-    const QRect cropView = cropViewPoly.boundingRect().toRect().normalized();
-
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
     // Dim everything outside the (possibly rotated) crop.
     QPainterPath outer;
     outer.addRect(QRectF(viewport()->rect()));
@@ -1143,7 +1121,10 @@ void ImageView::paintCropOverlay(QPainter &painter)
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(0, 0, 0, 140));
     painter.drawPath(outer.subtracted(hole));
+}
 
+void ImageView::paintCropFrame(QPainter &painter, const QPolygonF &cropViewPoly)
+{
     // Crop frame — amber family (distinct from single-select blue / group violet).
     painter.setBrush(Qt::NoBrush);
     QPen frame(QColor(255, 190, 40, 240), 0);
@@ -1156,7 +1137,10 @@ void ImageView::paintCropOverlay(QPainter &painter)
     dash.setWidthF(1.0);
     painter.setPen(dash);
     painter.drawPolygon(cropViewPoly);
+}
 
+void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly)
+{
     // Bold corner + edge bars at rotated corners (poly order: TL, TR, BR, BL).
     const QPointF tl = cropViewPoly.at(0);
     const QPointF tr = cropViewPoly.at(1);
@@ -1231,7 +1215,18 @@ void ImageView::paintCropOverlay(QPainter &painter)
     drawEdgeBar((tl + bl) / 2.0, bl - tl, CropHandle::Left);
     drawEdgeBar((tr + br) / 2.0, br - tr, CropHandle::Right);
 
+    }
+
+void ImageView::paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly)
+{
     // Rotate knobs on each side (outward from edge midpoints).
+    if (cropViewPoly.size() < 4) {
+        return;
+    }
+    const QPointF tl = cropViewPoly.at(0);
+    const QPointF tr = cropViewPoly.at(1);
+    const QPointF br = cropViewPoly.at(2);
+    const QPointF bl = cropViewPoly.at(3);
     {
         const QPointF centre = (tl + tr + br + bl) * 0.25;
         const bool hot = (m_cropHoverHandle == CropHandle::Rotate
@@ -1261,7 +1256,18 @@ void ImageView::paintCropOverlay(QPainter &painter)
         drawRotateKnob((bl + tl) / 2.0, tl - bl);
     }
 
+    }
+
+void ImageView::paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly)
+{
     // Move grip at centre (interior of the crop starts a rubber-band, not Move).
+    if (cropViewPoly.size() < 4) {
+        return;
+    }
+    const QPointF tl = cropViewPoly.at(0);
+    const QPointF tr = cropViewPoly.at(1);
+    const QPointF br = cropViewPoly.at(2);
+    const QPointF bl = cropViewPoly.at(3);
     {
         const QPointF centre = (tl + tr + br + bl) * 0.25;
         const bool hot = (m_cropHoverHandle == CropHandle::Move
@@ -1279,6 +1285,10 @@ void ImageView::paintCropOverlay(QPainter &painter)
         painter.setBrush(Qt::NoBrush);
     }
 
+    }
+
+void ImageView::paintCropActionButtons(QPainter &painter)
+{
     // Controls: outside below crop when possible, inside if off-screen.
     // Same design language as Workspace chrome (HANDLES.md):
     //   toggle  = rounded square / stronger on-state
@@ -1362,6 +1372,10 @@ void ImageView::paintCropOverlay(QPainter &painter)
     drawTextButton(cropCloseButtonView(), CropHandle::Close, ImageView::tr("Apply"),
                    CropBtnRole::Commit);
 
+    }
+
+void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
+{
     // Crop size in image pixels (same coordinate space as the draft rect).
     const int cropW = qMax(1, qRound(m_cropRect.width()));
     const int cropH = qMax(1, qRound(m_cropRect.height()));
@@ -1391,6 +1405,39 @@ void ImageView::paintCropOverlay(QPainter &painter)
         painter.setPen(QColor(255, 220, 120));
         painter.drawText(labelBg, Qt::AlignCenter, sizeLabel);
     }
+}
+
+void ImageView::paintCropOverlay(QPainter &painter)
+{
+    if (!m_cropMode) {
+        return;
+    }
+    ImageItem *item = cropTargetItem();
+    if (!item || !m_cropRect.isValid()) {
+        return;
+    }
+    ensureCropRectValid();
+    const QRectF contentScene = item->mapToScene(item->contentRect()).boundingRect();
+    const QPolygonF cropLocal = cropPolygonItemLocal();
+    const QPolygonF cropScenePoly = item->mapToScene(cropLocal);
+    QPolygonF cropViewPoly;
+    for (const QPointF &sp : cropScenePoly) {
+        cropViewPoly << mapFromScene(sp);
+    }
+    const QRect contentView = QRect(mapFromScene(contentScene.topLeft()),
+                                    mapFromScene(contentScene.bottomRight())).normalized();
+    const QRect cropView = cropViewPoly.boundingRect().toRect().normalized();
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    paintCropDimOutside(painter, cropViewPoly);
+    paintCropFrame(painter, cropViewPoly);
+    paintCropResizeHandles(painter, cropViewPoly);
+    paintCropRotateKnobs(painter, cropViewPoly);
+    paintCropMoveGrip(painter, cropViewPoly);
+    paintCropActionButtons(painter);
+    paintCropSizeBadge(painter, cropView);
 
     Q_UNUSED(contentView);
     painter.restore();
