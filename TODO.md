@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-624-bake-content-shared.** Shared helpers for bakeItemRotate90 / bakeItemFlip.
+Prior: **623**.
+
+### Change
+- `captureContentBakeBeforeState`, `resolveContentEditSessionId`
+- `appearanceCropMapForEdit`, `persistDurableContentAppearance`
+- Rotate/flip bakes use the shared path for before-state, sid, crop map, durable cache
+
+### Done criteria
+- [x] Bake helpers shared; rotate/flip behaviour preserved
+- [x] Bundle **624**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-623-commit-session-edit-phases.** Split commitItemSessionEdit into persist/sync/saved.
 Prior: **622**.
 

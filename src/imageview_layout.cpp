@@ -346,34 +346,97 @@ void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &sta
     item->setContentVFlip(state.contentVFlip);
 }
 
+WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
+{
+    WorkspaceItemState beforeSt = captureState(item);
+    beforeSt.hasCrop = item->sessionHasCrop();
+    beforeSt.cropRect = item->sessionCropRect();
+    beforeSt.contentHFlip = item->contentHFlip();
+    beforeSt.contentVFlip = item->contentVFlip();
+    const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+    if (sid0 != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid0)) {
+            beforeSt.contentQuarterTurns = it->contentQuarterTurns;
+            beforeSt.sessionId = sid0;
+        }
+    }
+    return beforeSt;
+}
+
+SessionImageId ImageView::resolveContentEditSessionId(ImageItem *item) const
+{
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_currentSessionId;
+    }
+    return sid;
+}
+
+WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
+                                                       const WorkspaceItemState &fallback,
+                                                       SessionImageId sid) const
+{
+    Q_UNUSED(item);
+    WorkspaceItemState cropMap = fallback;
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+            cropMap = *it;
+        }
+    }
+    return cropMap;
+}
+
+void ImageView::persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
+                                                const char *debugTag)
+{
+    const bool contentful =
+        s.contentHFlip || s.contentVFlip
+        || s.contentQuarterTurns != 0
+        || (s.hasCrop && !s.cropRect.isEmpty());
+    if (contentful) {
+        ThumtooCache::StoredContentAppearance stored;
+        stored.contentHFlip = s.contentHFlip;
+        stored.contentVFlip = s.contentVFlip;
+        stored.contentQuarterTurns = s.contentQuarterTurns;
+        stored.hasCrop = s.hasCrop && !s.cropRect.isEmpty();
+        if (stored.hasCrop) {
+            stored.cropRect = s.cropRect;
+            stored.cropSourceSize = s.cropSourceSize;
+            stored.cropRotation = s.cropRotation;
+        }
+        ThumtooCache::saveContentAppearance(item->path(), stored);
+        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+            qWarning().noquote()
+                << QStringLiteral("[appearance] %1 save path=%2 h=%3 v=%4 turns=%5")
+                       .arg(QLatin1String(debugTag))
+                       .arg(item->path())
+                       .arg(s.contentHFlip)
+                       .arg(s.contentVFlip)
+                       .arg(s.contentQuarterTurns);
+        }
+    } else {
+        ThumtooCache::clearContentAppearance(item->path());
+        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+            qWarning().noquote()
+                << QStringLiteral("[appearance] %1 clear (identity) path=%2")
+                       .arg(QLatin1String(debugTag))
+                       .arg(item->path());
+        }
+    }
+}
+
 void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
 {
     if (!item || quarterTurns == 0) {
         return;
     }
     const QImage beforeSrc = item->sourceImage().copy();
-    WorkspaceItemState beforeSt = captureState(item);
-    beforeSt.hasCrop = item->sessionHasCrop();
-    beforeSt.cropRect = item->sessionCropRect();
-    beforeSt.contentHFlip = item->contentHFlip();
-    beforeSt.contentVFlip = item->contentVFlip();
-    {
-        const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
-            ? item->sessionId()
-            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
-        if (sid0 != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *it = m_appearance.get(sid0)) {
-                beforeSt.contentQuarterTurns = it->contentQuarterTurns;
-                beforeSt.sessionId = sid0;
-            }
-        }
-    }
+    WorkspaceItemState beforeSt = captureContentBakeBeforeState(item);
 
     item->bakeRotate90(quarterTurns);
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_currentSessionId;
-    }
+    const SessionImageId sid = resolveContentEditSessionId(item);
     int prevTurns = beforeSt.contentQuarterTurns;
     int turns = (prevTurns + quarterTurns) % 4;
     if (turns < 0) {
@@ -381,12 +444,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     }
     // Keep full-source crop geometry in sync with content orientation so
     // re-entering crop mode still frames the same region.
-    WorkspaceItemState cropMap = beforeSt;
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
-            cropMap = *it;
-        }
-    }
+    WorkspaceItemState cropMap = appearanceCropMapForEdit(item, beforeSt, sid);
     SessionAppearance::mapCropThroughContentRotate90(cropMap, quarterTurns);
     if (cropMap.hasCrop) {
         item->setSessionCrop(true, cropMap.cropRect);
@@ -402,40 +460,13 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.cropSourceSize = cropMap.cropSourceSize;
         s.contentHFlip = item->contentHFlip();
         s.contentVFlip = item->contentVFlip();
-    s.colorAdjust = item->colorAdjustments();
+        s.colorAdjust = item->colorAdjustments();
         m_appearance.set(sid, s);
         // Persist immediately with the known turns (do not wait for commit's
         // captureState — that path previously wiped the DB with identity).
         // When the user rotates back to identity, clear the durable row so a
-        // full 360° cycle does not leave a stale quarter-turns value.
-        if (turns != 0 || s.contentHFlip || s.contentVFlip
-            || (s.hasCrop && !s.cropRect.isEmpty())) {
-            ThumtooCache::StoredContentAppearance stored;
-            stored.contentHFlip = s.contentHFlip;
-            stored.contentVFlip = s.contentVFlip;
-            stored.contentQuarterTurns = turns;
-            stored.hasCrop = s.hasCrop && !s.cropRect.isEmpty();
-            if (stored.hasCrop) {
-                stored.cropRect = s.cropRect;
-                stored.cropSourceSize = s.cropSourceSize;
-                stored.cropRotation = s.cropRotation;
-            }
-            ThumtooCache::saveContentAppearance(item->path(), stored);
-            if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
-                qWarning().noquote()
-                    << QStringLiteral("[appearance] bakeRotate90 save path=%1 turns=%2 sid=%3")
-                           .arg(item->path())
-                           .arg(turns)
-                           .arg(sid);
-            }
-        } else {
-            ThumtooCache::clearContentAppearance(item->path());
-            if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
-                qWarning().noquote()
-                    << QStringLiteral("[appearance] bakeRotate90 clear (identity) path=%1")
-                           .arg(item->path());
-            }
-        }
+        // full 360° leaves no residual appearance.
+        persistDurableContentAppearance(item, s, "bakeRotate");
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);
         s.hasCrop = true;
@@ -443,14 +474,8 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.cropRotation = cropMap.cropRotation;
         s.cropSourceSize = cropMap.cropSourceSize;
         m_itemStates.insert(item->path(), s);
-    } else if (turns != 0) {
-        // Unbound tile with orientation only.
-        ThumtooCache::StoredContentAppearance stored;
-        stored.contentQuarterTurns = turns;
-        ThumtooCache::saveContentAppearance(item->path(), stored);
-    } else {
-        ThumtooCache::clearContentAppearance(item->path());
     }
+
     commitItemSessionEdit(item);
 
     WorkspaceItemState afterSt = captureState(item);
@@ -461,7 +486,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     afterSt.contentHFlip = item->contentHFlip();
     afterSt.contentVFlip = item->contentVFlip();
     afterSt.contentQuarterTurns = turns;
-    afterSt.sessionId = sid;
+    afterSt.sessionId = beforeSt.sessionId;
     pushItemContentCommand(tr("Rotate"), item, beforeSrc, item->sourceImage().copy(),
                            beforeSt, afterSt);
 }
@@ -472,25 +497,11 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         return;
     }
     const QImage beforeSrc = item->sourceImage().copy();
-    WorkspaceItemState beforeSt = captureState(item);
-    beforeSt.hasCrop = item->sessionHasCrop();
-    beforeSt.cropRect = item->sessionCropRect();
-    beforeSt.contentHFlip = item->contentHFlip();
-    beforeSt.contentVFlip = item->contentVFlip();
-    {
-        const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
-            ? item->sessionId()
-            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
-        if (sid0 != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *it = m_appearance.get(sid0)) {
-                beforeSt.contentQuarterTurns = it->contentQuarterTurns;
-                beforeSt.sessionId = sid0;
-            }
-        }
-    }
+    WorkspaceItemState beforeSt = captureContentBakeBeforeState(item);
 
     item->bakeFlip(horizontal, vertical);
-    // Toggle content flags in *source* space so applyContent / text mapping
+
+    // Content-orientation flags track the source raster so durable crop mapping
     // (flip then quarter-turn on the full raster) stay consistent with the
     // display-space flip just applied to the oriented pixels.
     //
@@ -516,16 +527,8 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     item->setContentHFlip(h);
     item->setContentVFlip(v);
 
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_currentSessionId;
-    }
-    WorkspaceItemState cropMap = beforeSt;
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
-            cropMap = *it;
-        }
-    }
+    const SessionImageId sid = resolveContentEditSessionId(item);
+    WorkspaceItemState cropMap = appearanceCropMapForEdit(item, beforeSt, sid);
     SessionAppearance::mapCropThroughContentFlip(cropMap, horizontal, vertical);
     if (cropMap.hasCrop) {
         item->setSessionCrop(true, cropMap.cropRect);
@@ -541,35 +544,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         s.contentVFlip = v;
         s.contentQuarterTurns = cropMap.contentQuarterTurns;
         m_appearance.set(sid, s);
-        if (h || v || s.contentQuarterTurns != 0
-            || (s.hasCrop && !s.cropRect.isEmpty())) {
-            ThumtooCache::StoredContentAppearance stored;
-            stored.contentHFlip = h;
-            stored.contentVFlip = v;
-            stored.contentQuarterTurns = s.contentQuarterTurns;
-            stored.hasCrop = s.hasCrop && !s.cropRect.isEmpty();
-            if (stored.hasCrop) {
-                stored.cropRect = s.cropRect;
-                stored.cropSourceSize = s.cropSourceSize;
-                stored.cropRotation = s.cropRotation;
-            }
-            ThumtooCache::saveContentAppearance(item->path(), stored);
-            if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
-                qWarning().noquote()
-                    << QStringLiteral("[appearance] bakeFlip save path=%1 h=%2 v=%3 turns=%4")
-                           .arg(item->path())
-                           .arg(h)
-                           .arg(v)
-                           .arg(s.contentQuarterTurns);
-            }
-        } else {
-            ThumtooCache::clearContentAppearance(item->path());
-            if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
-                qWarning().noquote()
-                    << QStringLiteral("[appearance] bakeFlip clear (identity) path=%1")
-                           .arg(item->path());
-            }
-        }
+        persistDurableContentAppearance(item, s, "bakeFlip");
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);
         s.hasCrop = true;
