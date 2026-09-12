@@ -83,6 +83,22 @@ ImageView::ImageView(QWidget *parent)
                 viewport()->update();
             }
         }
+        // Workspace focus: Primary interest for the first selected tile.
+        if (isWorkspaceMode()) {
+            QString primaryPath;
+            for (QGraphicsItem *gi : m_scene->selectedItems()) {
+                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    primaryPath = ii->path();
+                    if (!primaryPath.isEmpty()) {
+                        break;
+                    }
+                }
+            }
+            if (!primaryPath.isEmpty()) {
+                (void)ThumtooCache::setPrimaryInterest(
+                    primaryPath, ThumtooCache::kBatchOverviewEdge);
+            }
+        }
         emit statusChanged();
         emit canvasSelectionChanged();
     });

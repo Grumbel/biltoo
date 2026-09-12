@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-486-workspace-primary.** Workspace selection → Primary interest.
+Prior: **485**. Companion: **thumtoo-169**.
+
+### Change
+- selectionChanged in Workspace: setPrimaryInterest on first selected path
+
+### Next
+- Multi-select Primary (optional near)
+- Deduplicate soft schedule vs set_interest
+- Inflight FocusFull accounting
+
+### Done criteria
+- [x] Workspace Primary
+- [x] Bundle **486**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-485-primary-focus.** Image-mode Primary interest (FocusFull tiles).
 Prior: **484**. Companion: **thumtoo-168**.
 
