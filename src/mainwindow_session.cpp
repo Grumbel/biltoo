@@ -1411,22 +1411,8 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
     applySessionRemoveIndices(sorted);
 }
 
-void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
+void MainWindow::removeSessionIndicesFromModel(const QList<int> &sorted)
 {
-    if (indices.isEmpty() || m_session.paths().isEmpty()) {
-        return;
-    }
-
-    stopSlideshow();
-
-    QList<int> sorted = indices;
-    std::sort(sorted.begin(), sorted.end());
-    sorted.erase(std::unique(sorted.begin(), sorted.end()), sorted.end());
-
-    const QString currentPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
-                                    ? m_session.paths().at(m_currentIndex)
-                                    : QString();
-
     // Remove highest indices first so remaining indices stay valid
     if (m_imageView) {
         m_imageView->setPreserveUndoOnDestroy(true);
@@ -1442,7 +1428,6 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         if (idx < 0 || idx >= m_session.paths().size()) {
             continue;
         }
-        const QString path = m_session.pathAt(idx);
         const SessionImageId sid = m_session.idAt(idx);
         m_session.removeAt(idx);
         // Drop the canvas object for this session image only (not every path match).
@@ -1454,16 +1439,20 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     if (m_imageView) {
         m_imageView->setPreserveUndoOnDestroy(false);
     }
+}
 
+void MainWindow::refreshSessionUiAfterRemove()
+{
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
     }
     applyThumbnailVisibility();
-    // Gallery suppress stays on until the end of this function (and one more
-    // event-loop tick) so setCurrentIndex / status updates cannot repack.
+}
 
+void MainWindow::selectIndexAfterSessionRemove(const QString &currentPath, const QList<int> &sorted)
+{
     if (m_session.paths().isEmpty()) {
         m_currentIndex = -1;
         m_imageView->clearWorkspace();
@@ -1524,6 +1513,30 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
         });
     }
 }
+
+void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
+{
+    if (indices.isEmpty() || m_session.paths().isEmpty()) {
+        return;
+    }
+
+    stopSlideshow();
+
+    QList<int> sorted = indices;
+    std::sort(sorted.begin(), sorted.end());
+    sorted.erase(std::unique(sorted.begin(), sorted.end()), sorted.end());
+
+    const QString currentPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                                    ? m_session.paths().at(m_currentIndex)
+                                    : QString();
+
+    // Gallery suppress stays on until the end of selectIndexAfterSessionRemove
+    // (and one more event-loop tick) so setCurrentIndex / status updates cannot repack.
+    removeSessionIndicesFromModel(sorted);
+    refreshSessionUiAfterRemove();
+    selectIndexAfterSessionRemove(currentPath, sorted);
+}
+
 
 void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entries)
 {

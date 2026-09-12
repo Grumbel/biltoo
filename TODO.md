@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-628-motion-cover-session-remove.** Split paintMotionCover geometry + session remove phases.
+Prior: **627**.
+
+### Change
+- `resolveMotionLogicalSize`, `computeMotionCoverDestRect`; `paintMotionCover` only draws
+- `removeSessionIndicesFromModel`, `refreshSessionUiAfterRemove`, `selectIndexAfterSessionRemove`
+
+### Done criteria
+- [x] Motion cover geometry pure; session remove sequenced
+- [x] Bundle **628**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-627-status-slideshow-warm.** Split statusText modes; extract zoom-blur warm helper.
 Prior: **626**.
 

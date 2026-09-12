@@ -79,6 +79,9 @@ public:
 
     /** SessionRemoveCommand redo/undo (must be public — called from QUndoCommand). */
     void applySessionRemoveIndices(const QList<int> &indices);
+    void removeSessionIndicesFromModel(const QList<int> &sorted);
+    void refreshSessionUiAfterRemove();
+    void selectIndexAfterSessionRemove(const QString &currentPath, const QList<int> &sorted);
     void restoreSessionEntries(const QList<SessionEntrySnapshot> &entries);
     /** Canvas + session duplicate; returns new SessionImageIds (for undo). */
     QVector<SessionImageId> applyDuplicate(const QList<SessionImageId> &sourceIds,

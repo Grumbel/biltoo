@@ -1997,42 +1997,34 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     painter->fillRect(viewportRect, slideshowPadColor());
 }
 
-void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
-                                 qreal motionT, QPointF biasA, QPointF biasB,
-                                 const QString &path) const
+QSize ImageView::resolveMotionLogicalSize(const QImage &image, const QString &path) const
 {
-    if (!painter || image.isNull() || !viewport()) {
-        return;
-    }
-    const int vw = qMax(1, viewport()->width());
-    const int vh = qMax(1, viewport()->height());
-
     // HARD RULE: logical size owns geometry. Soft rasters are sampling only.
     QSize logical = logicalSizeForPath(path);
-    if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
-        // Provisional: keep aspect from the sample, magnitude neutral — never
-        // treat soft long-edge as native. Phase entry should have called
-        // ensureSlideshowLogicalSize so this is rare and short-lived.
-        const qreal rw = qMax(1, image.width());
-        const qreal rh = qMax(1, image.height());
-        constexpr qreal kProvLong = 1000.0;
-        if (rw >= rh) {
-            logical = QSize(int(kProvLong), int(qMax(1.0, kProvLong * rh / rw)));
-        } else {
-            logical = QSize(int(qMax(1.0, kProvLong * rw / rh)), int(kProvLong));
-        }
+    if (logical.isValid() && logical.width() >= 1 && logical.height() >= 1) {
+        return logical;
     }
-    const qreal iw = qreal(logical.width());
-    const qreal ih = qreal(logical.height());
-    if (iw < 1.0 || ih < 1.0) {
-        return;
+    // Provisional: keep aspect from the sample, magnitude neutral — never
+    // treat soft long-edge as native. Phase entry should have called
+    // ensureSlideshowLogicalSize so this is rare and short-lived.
+    const qreal rw = qMax(1, image.width());
+    const qreal rh = qMax(1, image.height());
+    constexpr qreal kProvLong = 1000.0;
+    if (rw >= rh) {
+        return QSize(int(kProvLong), int(qMax(1.0, kProvLong * rh / rw)));
     }
+    return QSize(int(qMax(1.0, kProvLong * rw / rh)), int(kProvLong));
+}
 
+QRectF ImageView::computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh,
+                                             qreal motionT, QPointF biasA, QPointF biasB,
+                                             const QString &path) const
+{
     motionT = qBound(0.0, motionT, 1.0);
-
+    const QSize logical(int(iw), int(ih));
     const qreal base = slideshowZoomBaseScale(logical, vw, vh);
     if (base <= 0.0 || !qIsFinite(base)) {
-        return;
+        return QRectF();
     }
 
     qreal scale = base;
@@ -2136,6 +2128,30 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
         destX = (qreal(vw) - dw) * 0.5 - biasX * overflowX;
         destY = (qreal(vh) - dh) * 0.5 - biasY * overflowY;
     }
+    return QRectF(destX, destY, dw, dh);
+}
+
+void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
+                                 qreal motionT, QPointF biasA, QPointF biasB,
+                                 const QString &path) const
+{
+    if (!painter || image.isNull() || !viewport()) {
+        return;
+    }
+    const int vw = qMax(1, viewport()->width());
+    const int vh = qMax(1, viewport()->height());
+
+    const QSize logical = resolveMotionLogicalSize(image, path);
+    const qreal iw = qreal(logical.width());
+    const qreal ih = qreal(logical.height());
+    if (iw < 1.0 || ih < 1.0) {
+        return;
+    }
+
+    const QRectF dest = computeMotionCoverDestRect(iw, ih, vw, vh, motionT, biasA, biasB, path);
+    if (!dest.isValid() || dest.isEmpty()) {
+        return;
+    }
 
     // Prefer pre-scaled atlas (one Smooth scale per slide/resize). Fall back to
     // drawImage only if no atlas matches this source (should be rare).
@@ -2146,11 +2162,12 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
 
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
     if (atlas) {
-        painter->drawPixmap(QRectF(destX, destY, dw, dh), *atlas, atlas->rect());
+        painter->drawPixmap(dest, *atlas, atlas->rect());
     } else {
-        painter->drawImage(QRectF(destX, destY, dw, dh), image);
+        painter->drawImage(dest, image);
     }
 }
+
 
 QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
                                            uint pathHash) const
