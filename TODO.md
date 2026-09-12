@@ -2,6 +2,38 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-504-zoomblur-no-cancel.** Stop invalidating ZoomBlur on phase change.
+Prior: **503**. Companion: **thumtoo-179**.
+
+### Root cause
+`setSlideshowPhase` called `invalidateZoomBlurQueue()` on every from/to change,
+cancelling the incoming slide's underlay build. Miss path painted a foreign
+underlay then snapped when the real key arrived.
+
+### Change
+- Evict only obsolete underlay slots; keep generation for the active pair
+- Prefetch ZoomBlur for from/to when phase updates
+- Miss → solid pad (no foreign underlay)
+- scheduleOverview SKIP/DONE logs; BILTOO_DEBUG_SLIDESHOW phase lines
+
+### Debug
+```bash
+export THUMTOO_DEBUG=1          # decode/DB HIT-MISS + EnsurePixels
+export BILTOO_DEBUG_SLIDESHOW=1 # phase from/to sizes
+# biltoo also appends ~/.cache/biltoo/thumtoo-debug.log
+# thumtoo appends ~/.cache/thumtoo/debug.log
+```
+
+### Done criteria
+- [x] Transition underlay not cancelled on phase flip
+- [x] Bundle **504**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-503-gallery-overview-callback.** Soft first, overview with ladderReady; no sync RAR.
 Prior: **502**. Needs **thumtoo-178**.
 

@@ -1044,6 +1044,8 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
         std::lock_guard lock(g_mu);
         if (g_pixelsInflight.contains(inflightKey)
             || g_pixelsSettled.contains(inflightKey)) {
+            thumtooDbg("scheduleOverview SKIP path=%s edge=%d (inflight/settled)",
+                       qPrintable(path), maxEdge);
             return false;
         }
         g_pixelsInflight.insert(inflightKey);
@@ -1053,6 +1055,8 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
             return false;
         }
         ++g_pixelsActive;
+        thumtooDbg("scheduleOverview queue path=%s edge=%d active=%d",
+                   qPrintable(path), maxEdge, g_pixelsActive);
     }
     const QString pathCopy = path;
     const int edge = maxEdge;
@@ -1081,6 +1085,11 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
                 g_pixelsSettled.insert(inflightKey);
             }
             g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            thumtooDbg(
+                "scheduleOverview DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
+                qPrintable(pathCopy), edge,
+                (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
+                decoded.height(), g_pixelsActive);
             startNextPixelJobsUnlocked();
         }
         emit bridge()->ladderReady(pathCopy, edge, decoded);

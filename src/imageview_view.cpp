@@ -3,6 +3,7 @@
 
 #include "imageview.h"
 #include <cstdlib>
+#include <cstdio>
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "imageloader.h"
@@ -1316,10 +1317,44 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
 
     const bool fromChanged = (fromPath != m_ssFromPath);
     const bool toChanged = (toPath != m_ssToPath);
-    // Page flip: drop queued/in-flight blur jobs so the pool does not fill with
-    // obsolete underlays from slides the user already left.
+    // Do NOT bump ZoomBlur generation here — that cancelled the incoming
+    // slide's underlay build every transition and caused letterbox flicker.
+    // Evict only slots that are neither from nor to; in-flight jobs for the
+    // new pair keep running.
     if (fromChanged || toChanged) {
-        invalidateZoomBlurQueue();
+        const int vw = m_zoomBlurVw > 0 ? m_zoomBlurVw
+            : (viewport() ? viewport()->width() : 0);
+        const int vh = m_zoomBlurVh > 0 ? m_zoomBlurVh
+            : (viewport() ? viewport()->height() : 0);
+        auto pathKey = [vw, vh](const QString &path) -> qint64 {
+            if (path.isEmpty() || vw < 1 || vh < 1) {
+                return 0;
+            }
+            return qint64(qHash(path)) ^ (qint64(vw) << 16) ^ qint64(vh);
+        };
+        const qint64 keepFrom = pathKey(fromPath);
+        const qint64 keepTo = pathKey(toPath);
+        for (int i = 0; i < 2; ++i) {
+            const qint64 k = m_zoomBlurSourceKey[i];
+            if (k != 0 && k != keepFrom && k != keepTo) {
+                m_zoomBlurUnderlay[i] = QPixmap();
+                m_zoomBlurSourceKey[i] = 0;
+            }
+            // Drop in-flight markers for keys we no longer care about so slots
+            // free for the new pair (without invalidating generation).
+            const qint64 fk = m_zoomBlurInFlightKey[i];
+            if (fk != 0 && fk != keepFrom && fk != keepTo
+                && m_zoomBlurInFlightGen[i] == m_zoomBlurGeneration) {
+                m_zoomBlurInFlightGen[i] = 0;
+                m_zoomBlurInFlightKey[i] = 0;
+            }
+        }
+        if (m_zoomBlurLastGoodKey != 0
+            && m_zoomBlurLastGoodKey != keepFrom
+            && m_zoomBlurLastGoodKey != keepTo) {
+            m_zoomBlurLastGood = QPixmap();
+            m_zoomBlurLastGoodKey = 0;
+        }
     }
     const int pathMs = qMax(250, m_slideshowProgressIntervalMs
                             + qMax(0, m_slideshowTransitionDurationMs));
@@ -1429,6 +1464,16 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         m_ssToMotionClockRunning = true;
         m_ssToMotionBaseMs = 0;
         m_ssToMotionT = 0.0;
+        // Prefetch ZoomBlur underlay for B so the first transition frames
+        // already have a matching key (avoids painting A's blur under B).
+        if (!m_ssToImage.isNull() && viewport()) {
+            const QSize vs = viewport()->size();
+            if (vs.width() > 0 && vs.height() > 0) {
+                const qint64 key = qint64(qHash(toPath))
+                    ^ (qint64(vs.width()) << 16) ^ qint64(vs.height());
+                scheduleZoomBlurBuild(m_ssToImage, vs.width(), vs.height(), key);
+            }
+        }
         qCDebug(lcSlideshow).nospace()
             << "[slideshow] phase-to "
             << QFileInfo(toPath).fileName()
@@ -1451,6 +1496,39 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     }
 
     m_ssFadeT = fadeT;
+
+    if (fromChanged || toChanged) {
+        if (const char *dbg = std::getenv("BILTOO_DEBUG_SLIDESHOW");
+            (dbg && dbg[0] && dbg[0] != '0')
+            || (std::getenv("THUMTOO_DEBUG")
+                && std::getenv("THUMTOO_DEBUG")[0]
+                && std::getenv("THUMTOO_DEBUG")[0] != '0')) {
+            fprintf(stderr,
+                    "biltoo/ss: phase from=%s to=%s fade=%.3f fromImg=%dx%d toImg=%dx%d\n",
+                    qPrintable(QFileInfo(fromPath).fileName()),
+                    qPrintable(QFileInfo(toPath).fileName()),
+                    fadeT,
+                    m_ssFromImage.width(), m_ssFromImage.height(),
+                    m_ssToImage.width(), m_ssToImage.height());
+        }
+    }
+
+    // Keep underlays warm for the active pair (dwell from, or both in fade).
+    if (viewport() && m_slideshowLetterboxFill == SlideshowLetterboxFill::ZoomBlur) {
+        const QSize vs = viewport()->size();
+        if (vs.width() > 0 && vs.height() > 0) {
+            auto warm = [&](const QString &path, const QImage &img) {
+                if (path.isEmpty() || img.isNull()) {
+                    return;
+                }
+                const qint64 key = qint64(qHash(path))
+                    ^ (qint64(vs.width()) << 16) ^ qint64(vs.height());
+                scheduleZoomBlurBuild(img, vs.width(), vs.height(), key);
+            };
+            warm(m_ssFromPath, m_ssFromImage.isNull() ? m_dwellSourceImage : m_ssFromImage);
+            warm(m_ssToPath, m_ssToImage);
+        }
+    }
 
     // Pure phase owns the composite — clear legacy live + snapshot flags so
     // residual Slide projector cards / animations cannot paint over us.
@@ -2132,27 +2210,14 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     // Miss: keep previous underlay until the new one is ready (no solid flash,
     // no synchronous CPU blur on the GUI thread).
     scheduleZoomBlurBuild(image, vw, vh, key);
-    // Prefer lastGood only when it matches this key — otherwise a mid-
-    // transition "to" miss would paint the "from" blur at rising opacity and
-    // then snap when the real "to" arrives (flicker).
+    // Prefer lastGood only when it matches this key — never paint a foreign
+    // underlay (that snapped when the real key arrived and looked like flicker).
     if (!m_zoomBlurLastGood.isNull() && m_zoomBlurLastGoodKey == key) {
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter->drawPixmap(viewportRect, m_zoomBlurLastGood);
         return;
     }
-    // Other key still cached? Prefer stable from-blur under to while to builds.
-    for (int i = 0; i < 2; ++i) {
-        if (!m_zoomBlurUnderlay[i].isNull()) {
-            painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-            painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[i]);
-            return;
-        }
-    }
-    if (!m_zoomBlurLastGood.isNull()) {
-        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter->drawPixmap(viewportRect, m_zoomBlurLastGood);
-        return;
-    }
+    // Miss: leave letterbox as solid pad until this key's blur is ready.
     painter->fillRect(viewportRect, slideshowPadColor());
 }
 
