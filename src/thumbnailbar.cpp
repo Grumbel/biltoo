@@ -1488,9 +1488,12 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                         host->m_thumbAwaitLadder.insert(i);
                         if (decodeSize > ThumtooCache::kGalleryLadderEdge
                             && decodeSize <= ThumtooCache::kBatchOverviewEdge) {
-                            (void)ThumtooCache::scheduleOverviewPixels(
-                                path,
-                                qMin(decodeSize, ThumtooCache::kBatchOverviewEdge));
+                            if (!ThumtooCache::interestOwnsOverview()) {
+                                (void)ThumtooCache::scheduleOverviewPixels(
+                                    path,
+                                    qMin(decodeSize,
+                                         ThumtooCache::kBatchOverviewEdge));
+                            }
                         } else {
                             (void)ThumtooCache::schedulePixels(
                                 path,

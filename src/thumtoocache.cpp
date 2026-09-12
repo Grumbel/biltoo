@@ -910,6 +910,17 @@ bool isPixelsInflight(const QString &path, int maxEdge)
 
 
 
+
+bool interestOwnsOverview()
+{
+#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_SET_INTEREST) \
+    && THUMTOO_API_SET_INTEREST
+    return true;
+#else
+    return false;
+#endif
+}
+
 QString queueStatsLabel()
 {
 #ifdef BILTOO_HAVE_THUMTOO

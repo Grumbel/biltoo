@@ -159,6 +159,9 @@ QString lastPixelSourceLabel(const QString &path);
 /** Worker pressure: "pending/inflight focus=N epoch=E" or empty. */
 QString queueStatsLabel();
 
+/** True when setInterest owns overview scheduling (no scheduleOverviewPixels). */
+bool interestOwnsOverview();
+
 /** True while a request_pixels for this path/edge is queued or running. */
 bool isPixelsInflight(const QString &path, int maxEdge);
 

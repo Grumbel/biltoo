@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-497-interest-owns-overview.** Filmstrip/ImageLoader skip overview when interest owns it.
+Prior: **496**. Companion: **thumtoo-174**.
+
+### Change
+- ThumtooCache::interestOwnsOverview()
+- Filmstrip soft-miss + ImageLoader loadThumbnail: no scheduleOverviewPixels when interest owns overview
+
+### Next
+- Push thumtoo-174 + biltoo-496/497; flake.lock refresh
+- Pipeline pause unless new issues
+
+### Done criteria
+- [x] Host overview ownership consistent
+- [x] Bundle **497**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-496-queue-stats-status.** THUMTOO_DEBUG shows worker queue pressure.
 Prior: **495**. Companion: **thumtoo-174**.
 

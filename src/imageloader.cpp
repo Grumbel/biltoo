@@ -937,7 +937,8 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                     }
                     // FastBatch overview when display needs more than soft max.
                     if (maxEdge > ThumtooCache::kGalleryLadderEdge
-                        && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
+                        && maxEdge <= ThumtooCache::kBatchOverviewEdge
+                        && !ThumtooCache::interestOwnsOverview()) {
                         ThumtooCache::scheduleOverviewPixels(
                             path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
                     }
@@ -965,7 +966,8 @@ QImage loadThumbnail(const QString &path, int maxEdge)
         ThumtooCache::schedulePixels(
             path, qMin(maxEdge, ThumtooCache::kGalleryLadderEdge));
         if (maxEdge > ThumtooCache::kGalleryLadderEdge
-            && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
+            && maxEdge <= ThumtooCache::kBatchOverviewEdge
+            && !ThumtooCache::interestOwnsOverview()) {
             ThumtooCache::scheduleOverviewPixels(
                 path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
         }
