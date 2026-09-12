@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-610-unified-path-expand.** Shared expand core for sync and background.
+Prior: **609**.
+
+### Change
+- Anonymous `expandPathList` / `expandOneInputPath` / `appendFileContainerOrImage`
+  — one expansion engine for PDF/EPUB/DjVu/archive/dir/image URIs
+- `MainWindow::expandPaths` is a thin call with no progress
+- `expandPathsInBackground` supplies rate-limited report + generation cancel
+- `expandEmptyResultMessage` for empty-result status text
+
+### Done criteria
+- [x] Sync and background share the same path rules
+- [x] Bundle **610**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-609-onimageloaded-switch.** Role dispatch via switch on LoadRole.
 Prior: **608**.
 

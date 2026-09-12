@@ -24,6 +24,8 @@
 #include <QJsonObject>
 #include <QVector>
 
+#include <functional>
+
 namespace {
 
 QString imageFileDialogFilter()
@@ -45,6 +47,224 @@ QString imageFileDialogFilter()
                "Images only (%1);;Archives only (%2);;PDF documents (*.pdf);;"
                "EPUB books (*.epub);;DjVu documents (*.djvu *.djv);;All Files (*)")
         .arg(images, archives);
+}
+
+/** AUDIT M17: canonical path so relative/absolute/symlink spellings dedup. */
+QString canonicalImagePath(const QString &path)
+{
+    const QFileInfo info(path);
+    if (!info.exists() || !info.isFile()) {
+        return {};
+    }
+    const QString resolved = info.canonicalFilePath();
+    return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
+}
+
+using ExpandReportFn = std::function<void(const QString &message, int current, int total)>;
+using ExpandCancelFn = std::function<bool()>; // true → abort
+
+void expandReport(const ExpandReportFn &report, const QString &message,
+                  int current = -1, int total = -1)
+{
+    if (report) {
+        report(message, current, total);
+    }
+}
+
+/** Expand a concrete filesystem file (PDF/EPUB/DjVu/archive/plain image). */
+void appendFileContainerOrImage(QStringList &images, const QString &path,
+                                const ExpandReportFn &report)
+{
+    if (PagePath::isPdfFile(path) && ThumtooCache::isAvailable()) {
+        const QString name = QFileInfo(path).fileName();
+        expandReport(report, QObject::tr("Indexing PDF “%1”…").arg(name));
+        const QStringList pages = ThumtooCache::expandPdfToPageRefs(path);
+        if (!pages.isEmpty()) {
+            expandReport(report,
+                         QObject::tr("PDF “%1”: %n page(s)", "", pages.size()).arg(name));
+        }
+        images.append(pages);
+        return;
+    }
+    if (PagePath::isEpubFile(path) && ThumtooCache::isAvailable()) {
+        const QString name = QFileInfo(path).fileName();
+        expandReport(report, QObject::tr("Indexing EPUB “%1”…").arg(name));
+        const QStringList pages = ThumtooCache::expandEpubToPageRefs(path);
+        if (!pages.isEmpty()) {
+            expandReport(report,
+                         QObject::tr("EPUB “%1”: %n page(s)", "", pages.size()).arg(name));
+        }
+        images.append(pages);
+        return;
+    }
+    if (PagePath::isDjvuFile(path) && ThumtooCache::isAvailable()) {
+        const QString name = QFileInfo(path).fileName();
+        expandReport(report, QObject::tr("Indexing DjVu “%1”…").arg(name));
+        const QStringList pages = ThumtooCache::expandDjvuToPageRefs(path);
+        if (!pages.isEmpty()) {
+            expandReport(report,
+                         QObject::tr("DjVu “%1”: %n page(s)", "", pages.size()).arg(name));
+        }
+        images.append(pages);
+        return;
+    }
+    if (ArchivePath::isArchiveFile(path) && ThumtooCache::isAvailable()) {
+        const QString name = QFileInfo(path).fileName();
+        expandReport(report, QObject::tr("Indexing archive “%1”…").arg(name));
+        const QStringList members = ThumtooCache::expandArchiveToImageRefs(path);
+        if (!members.isEmpty()) {
+            expandReport(report,
+                         QObject::tr("Archive “%1”: %n image(s)", "", members.size())
+                             .arg(name));
+        }
+        images.append(members);
+        return;
+    }
+    if (ImageLoader::isImageFile(path)) {
+        const QString c = canonicalImagePath(path);
+        if (!c.isEmpty()) {
+            images.append(c);
+        }
+    }
+}
+
+/**
+ * Expand one user-supplied path into session image URIs.
+ * Returns false if @a cancel requested an abort (partial @a images may remain).
+ */
+bool expandOneInputPath(QStringList &images, const QString &path, bool recursive,
+                        const ExpandReportFn &report, const ExpandCancelFn &cancel)
+{
+    if (cancel && cancel()) {
+        return false;
+    }
+    if (PagePath::isPageRef(path)) {
+        const PagePath::Ref ref = PagePath::parse(path);
+        if (ref.valid) {
+            if (ref.isEpub()) {
+                images.append(PagePath::makeEpubRef(ref.pdfPath, ref.page,
+                                                    ref.epubLayoutParams));
+            } else {
+                images.append(PagePath::makeRef(ref.pdfPath, ref.page));
+            }
+        }
+        return true;
+    }
+    if (PagePath::isPdfImageRef(path)) {
+        const QString doc = PagePath::documentFilePath(path);
+        const int n = PagePath::pdfImageNumber(path);
+        if (!doc.isEmpty() && n >= 1) {
+            images.append(PagePath::makePdfImageRef(doc, n));
+        }
+        return true;
+    }
+    if (PagePath::isPdfImagesCollection(path) && ThumtooCache::isAvailable()) {
+        const QString doc = PagePath::documentFilePath(path);
+        const QString name = QFileInfo(doc).fileName();
+        expandReport(report, QObject::tr("Extracting images from “%1”…").arg(name));
+        const QStringList imgs = ThumtooCache::expandPdfToImageRefs(doc);
+        if (!imgs.isEmpty()) {
+            expandReport(report,
+                         QObject::tr("PDF “%1”: %n image(s)", "", imgs.size()).arg(name));
+        }
+        images.append(imgs);
+        return true;
+    }
+    if (ArchivePath::isArchiveRef(path)) {
+        if (ImageLoader::isImageFile(path)) {
+            const ArchivePath::Ref ref = ArchivePath::parse(path);
+            if (ref.valid) {
+                images.append(ArchivePath::makeRef(ref.archivePath, ref.memberPath));
+            }
+        }
+        return true;
+    }
+    // Location bar may leave //epub:w,h,fs after stripping //page:N.
+    if (PagePath::isEpubLayoutOnly(path) && ThumtooCache::isAvailable()) {
+        const QString doc = PagePath::documentFilePath(path);
+        const QString layout = PagePath::epubLayoutParamsOf(path);
+        const QString name = QFileInfo(doc).fileName();
+        expandReport(report, QObject::tr("Indexing EPUB “%1”…").arg(name));
+        QStringList pages = ThumtooCache::expandEpubToPageRefs(doc);
+        if (!layout.isEmpty()) {
+            QStringList relayout;
+            for (const QString &pg : pages) {
+                const PagePath::Ref r = PagePath::parse(pg);
+                if (r.valid) {
+                    relayout.append(PagePath::makeEpubRef(r.pdfPath, r.page, layout));
+                }
+            }
+            pages = relayout;
+        }
+        if (!pages.isEmpty()) {
+            expandReport(report,
+                         QObject::tr("EPUB “%1”: %n page(s)", "", pages.size()).arg(name));
+        }
+        images.append(pages);
+        return true;
+    }
+
+    const QFileInfo info(path);
+    if (info.isDir()) {
+        expandReport(report, QObject::tr("Scanning folder “%1”…").arg(info.fileName()));
+        const QDir::Filters filters = QDir::Files | QDir::Readable | QDir::NoDotAndDotDot;
+        const QDirIterator::IteratorFlags flags = recursive
+            ? QDirIterator::Subdirectories
+            : QDirIterator::NoIteratorFlags;
+        QDirIterator it(path, filters, flags);
+        while (it.hasNext()) {
+            if (cancel && cancel()) {
+                return false;
+            }
+            appendFileContainerOrImage(images, it.next(), report);
+        }
+        return true;
+    }
+    if (info.isFile()) {
+        appendFileContainerOrImage(images, path, report);
+    }
+    return true;
+}
+
+QStringList expandPathList(const QStringList &paths, bool recursive,
+                           const ExpandReportFn &report, const ExpandCancelFn &cancel)
+{
+    QStringList images;
+    for (const QString &path : paths) {
+        if (!expandOneInputPath(images, path, recursive, report, cancel)) {
+            break;
+        }
+    }
+    return images;
+}
+
+QString expandEmptyResultMessage(const QStringList &paths, bool append)
+{
+    bool anyPdf = false;
+    bool anyEpub = false;
+    for (const QString &p : paths) {
+        if (PagePath::isPdfFile(p)) {
+            anyPdf = true;
+        }
+        if (PagePath::isEpubFile(p)) {
+            anyEpub = true;
+        }
+    }
+    if ((anyPdf || anyEpub) && !ThumtooCache::isAvailable()) {
+        return QObject::tr("Cannot open PDF/EPUB: thumtoo is not available.");
+    }
+    if (anyEpub) {
+        return QObject::tr(
+            "Cannot open EPUB (no pages found). Rebuild thumtoo "
+            "with MuPDF and update the biltoo flake input.");
+    }
+    if (anyPdf) {
+        return QObject::tr(
+            "Cannot open PDF (no pages found). Rebuild thumtoo "
+            "with Poppler/MuPDF and update the biltoo flake input.");
+    }
+    return append ? QObject::tr("No readable images to add.")
+                  : QObject::tr("No readable images found.");
 }
 
 /** Undoable session duplicate (Ctrl+D). Identity is SessionImageId, not path. */
@@ -250,124 +470,7 @@ bool MainWindow::isImageFile(const QString &path)
 
 QStringList MainWindow::expandPaths(const QStringList &paths) const
 {
-    // AUDIT M17: canonical paths so relative/absolute/symlink spellings dedup.
-    auto canonicalImage = [](const QString &path) -> QString {
-        const QFileInfo info(path);
-        if (!info.exists() || !info.isFile()) {
-            return {};
-        }
-        const QString resolved = info.canonicalFilePath();
-        return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
-    };
-
-    // Archive/PDF expand is thumtoo-backed (TOC / page count).
-    auto expandArchive = [](const QString &archivePath) {
-        return ThumtooCache::expandArchiveToImageRefs(archivePath);
-    };
-    auto expandPdf = [](const QString &pdfPath) {
-        return ThumtooCache::expandPdfToPageRefs(pdfPath);
-    };
-    auto expandEpub = [](const QString &epubPath) {
-        return ThumtooCache::expandEpubToPageRefs(epubPath);
-    };
-    auto expandDjvu = [](const QString &djvuPath) {
-        return ThumtooCache::expandDjvuToPageRefs(djvuPath);
-    };
-
-    QStringList images;
-    for (const QString &path : paths) {
-        if (PagePath::isPageRef(path)) {
-            const PagePath::Ref ref = PagePath::parse(path);
-            if (ref.valid) {
-                if (ref.isEpub()) {
-                    images.append(PagePath::makeEpubRef(ref.pdfPath, ref.page,
-                                                        ref.epubLayoutParams));
-                } else {
-                    images.append(PagePath::makeRef(ref.pdfPath, ref.page));
-                }
-            }
-            continue;
-        }
-        if (PagePath::isPdfImageRef(path)) {
-            const QString doc = PagePath::documentFilePath(path);
-            const int n = PagePath::pdfImageNumber(path);
-            if (!doc.isEmpty() && n >= 1) {
-                images.append(PagePath::makePdfImageRef(doc, n));
-            }
-            continue;
-        }
-        if (PagePath::isPdfImagesCollection(path) && ThumtooCache::isAvailable()) {
-            const QString doc = PagePath::documentFilePath(path);
-            images.append(ThumtooCache::expandPdfToImageRefs(doc));
-            continue;
-        }
-        if (ArchivePath::isArchiveRef(path)) {
-            if (isImageFile(path)) {
-                const ArchivePath::Ref ref = ArchivePath::parse(path);
-                if (ref.valid) {
-                    images.append(ArchivePath::makeRef(ref.archivePath, ref.memberPath));
-                }
-            }
-            continue;
-        }
-        // Location bar may leave //epub:w,h,fs after stripping //page:N.
-        if (PagePath::isEpubLayoutOnly(path) && ThumtooCache::isAvailable()) {
-            const QString doc = PagePath::documentFilePath(path);
-            const QString layout = PagePath::epubLayoutParamsOf(path);
-            QStringList pages = expandEpub(doc);
-            if (!layout.isEmpty()) {
-                for (const QString &pg : pages) {
-                    const PagePath::Ref r = PagePath::parse(pg);
-                    if (r.valid) {
-                        images.append(PagePath::makeEpubRef(r.pdfPath, r.page, layout));
-                    }
-                }
-            } else {
-                images.append(pages);
-            }
-            continue;
-        }
-        const QFileInfo info(path);
-        if (info.isDir()) {
-            QDir::Filters filters = QDir::Files | QDir::Readable | QDir::NoDotAndDotDot;
-            QDirIterator::IteratorFlags flags = m_recursive
-                ? QDirIterator::Subdirectories
-                : QDirIterator::NoIteratorFlags;
-            QDirIterator it(path, filters, flags);
-            while (it.hasNext()) {
-                const QString full = it.next();
-                if (PagePath::isPdfFile(full) && ThumtooCache::isAvailable()) {
-                    images.append(expandPdf(full));
-                } else if (PagePath::isEpubFile(full) && ThumtooCache::isAvailable()) {
-                    images.append(expandEpub(full));
-                } else if (PagePath::isDjvuFile(full) && ThumtooCache::isAvailable()) {
-                    images.append(expandDjvu(full));
-                } else if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
-                    images.append(expandArchive(full));
-                } else if (isImageFile(full)) {
-                    const QString c = canonicalImage(full);
-                    if (!c.isEmpty()) {
-                        images.append(c);
-                    }
-                }
-            }
-        } else if (info.isFile() && PagePath::isPdfFile(path) && ThumtooCache::isAvailable()) {
-            images.append(expandPdf(path));
-        } else if (info.isFile() && PagePath::isEpubFile(path) && ThumtooCache::isAvailable()) {
-            images.append(expandEpub(path));
-        } else if (info.isFile() && PagePath::isDjvuFile(path) && ThumtooCache::isAvailable()) {
-            images.append(expandDjvu(path));
-        } else if (info.isFile() && ArchivePath::isArchiveFile(path)
-                   && ThumtooCache::isAvailable()) {
-            images.append(expandArchive(path));
-        } else if (info.isFile() && isImageFile(path)) {
-            const QString c = canonicalImage(path);
-            if (!c.isEmpty()) {
-                images.append(c);
-            }
-        }
-    }
-    return images;
+    return expandPathList(paths, m_recursive, /*report=*/{}, /*cancel=*/{});
 }
 
 bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
@@ -450,24 +553,13 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
 
     const QPointer<MainWindow> guard(this);
     QThreadPool::globalInstance()->start([guard, paths, append, startAt, gen, recursive]() {
-        auto canonicalImage = [](const QString &path) -> QString {
-            const QFileInfo info(path);
-            if (!info.exists() || !info.isFile()) {
-                return {};
-            }
-            const QString resolved = info.canonicalFilePath();
-            return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
-        };
-
-        QStringList images;
         QElapsedTimer reportClock;
         reportClock.start();
         qint64 lastReportMs = -1000;
         // Rate-limit GUI posts (~8 Hz) so listing huge archives does not flood
         // the event queue and freeze the UI that way.
-        const auto report = [guard, gen, &reportClock, &lastReportMs](const QString &msg,
-                                                                     int current = -1,
-                                                                     int total = -1) {
+        const ExpandReportFn report = [guard, gen, &reportClock, &lastReportMs](
+                                          const QString &msg, int current, int total) {
             if (!guard) {
                 return;
             }
@@ -489,176 +581,14 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                 }
             }, Qt::QueuedConnection);
         };
-
-        for (const QString &path : paths) {
+        const ExpandCancelFn cancel = [guard, gen]() {
             MainWindow *const window = guard.data();
-            if (!window || gen != window->m_expandGeneration) {
-                return;
-            }
-            if (PagePath::isPageRef(path)) {
-                const PagePath::Ref ref = PagePath::parse(path);
-                if (ref.valid) {
-                    if (ref.isEpub()) {
-                        images.append(PagePath::makeEpubRef(ref.pdfPath, ref.page,
-                                                            ref.epubLayoutParams));
-                    } else {
-                        images.append(PagePath::makeRef(ref.pdfPath, ref.page));
-                    }
-                }
-                continue;
-            }
-            if (PagePath::isPdfImageRef(path)) {
-                const QString doc = PagePath::documentFilePath(path);
-                const int n = PagePath::pdfImageNumber(path);
-                if (!doc.isEmpty() && n >= 1) {
-                    images.append(PagePath::makePdfImageRef(doc, n));
-                }
-                continue;
-            }
-            if (PagePath::isPdfImagesCollection(path) && ThumtooCache::isAvailable()) {
-                const QString doc = PagePath::documentFilePath(path);
-                const QString name = QFileInfo(doc).fileName();
-                report(MainWindow::tr("Extracting images from “%1”…").arg(name));
-                const QStringList imgs = ThumtooCache::expandPdfToImageRefs(doc);
-                if (!imgs.isEmpty()) {
-                    report(MainWindow::tr("PDF “%1”: %n image(s)", "", imgs.size()).arg(name));
-                }
-                images.append(imgs);
-                continue;
-            }
-            if (ArchivePath::isArchiveRef(path)) {
-                if (ImageLoader::isImageFile(path)) {
-                    const ArchivePath::Ref ref = ArchivePath::parse(path);
-                    if (ref.valid) {
-                        images.append(ArchivePath::makeRef(ref.archivePath, ref.memberPath));
-                    }
-                }
-                continue;
-            }
-            if (PagePath::isEpubLayoutOnly(path) && ThumtooCache::isAvailable()) {
-                const QString doc = PagePath::documentFilePath(path);
-                const QString layout = PagePath::epubLayoutParamsOf(path);
-                const QString name = QFileInfo(doc).fileName();
-                report(MainWindow::tr("Indexing EPUB “%1”…").arg(name));
-                QStringList pages = ThumtooCache::expandEpubToPageRefs(doc);
-                if (!layout.isEmpty()) {
-                    QStringList relayout;
-                    for (const QString &pg : pages) {
-                        const PagePath::Ref r = PagePath::parse(pg);
-                        if (r.valid) {
-                            relayout.append(PagePath::makeEpubRef(r.pdfPath, r.page, layout));
-                        }
-                    }
-                    pages = relayout;
-                }
-                if (!pages.isEmpty()) {
-                    report(MainWindow::tr("EPUB “%1”: %n page(s)", "", pages.size()).arg(name));
-                }
-                images.append(pages);
-                continue;
-            }
-            const QFileInfo info(path);
-            if (info.isDir()) {
-                report(MainWindow::tr("Scanning folder “%1”…").arg(info.fileName()));
-                QDir::Filters filters = QDir::Files | QDir::Readable | QDir::NoDotAndDotDot;
-                QDirIterator::IteratorFlags flags = recursive
-                    ? QDirIterator::Subdirectories
-                    : QDirIterator::NoIteratorFlags;
-                QDirIterator it(path, filters, flags);
-                while (it.hasNext()) {
-                    MainWindow *const host = guard.data();
-                    if (!host || gen != host->m_expandGeneration) {
-                        return;
-                    }
-                    const QString full = it.next();
-                    if (PagePath::isPdfFile(full) && ThumtooCache::isAvailable()) {
-                        const QString name = QFileInfo(full).fileName();
-                        report(MainWindow::tr("Indexing PDF “%1”…").arg(name));
-                        const QStringList pages = ThumtooCache::expandPdfToPageRefs(full);
-                        if (!pages.isEmpty()) {
-                            report(MainWindow::tr("PDF “%1”: %n page(s)", "", pages.size())
-                                       .arg(name));
-                        }
-                        images.append(pages);
-                    } else if (PagePath::isEpubFile(full) && ThumtooCache::isAvailable()) {
-                        const QString name = QFileInfo(full).fileName();
-                        report(MainWindow::tr("Indexing EPUB “%1”…").arg(name));
-                        const QStringList pages = ThumtooCache::expandEpubToPageRefs(full);
-                        if (!pages.isEmpty()) {
-                            report(MainWindow::tr("EPUB “%1”: %n page(s)", "", pages.size())
-                                       .arg(name));
-                        }
-                        images.append(pages);
-                    } else if (PagePath::isDjvuFile(full) && ThumtooCache::isAvailable()) {
-                        const QString name = QFileInfo(full).fileName();
-                        report(MainWindow::tr("Indexing DjVu “%1”…").arg(name));
-                        const QStringList pages = ThumtooCache::expandDjvuToPageRefs(full);
-                        if (!pages.isEmpty()) {
-                            report(MainWindow::tr("DjVu “%1”: %n page(s)", "", pages.size())
-                                       .arg(name));
-                        }
-                        images.append(pages);
-                    } else if (ArchivePath::isArchiveFile(full) && ThumtooCache::isAvailable()) {
-                        const QString name = QFileInfo(full).fileName();
-                        report(MainWindow::tr("Indexing archive “%1”…").arg(name));
-                        const QStringList members =
-                            ThumtooCache::expandArchiveToImageRefs(full);
-                        if (!members.isEmpty()) {
-                            report(MainWindow::tr("Archive “%1”: %n image(s)", "",
-                                                 members.size())
-                                       .arg(name));
-                        }
-                        images.append(members);
-                    } else if (ImageLoader::isImageFile(full)) {
-                        const QString c = canonicalImage(full);
-                        if (!c.isEmpty()) {
-                            images.append(c);
-                        }
-                    }
-                }
-            } else if (info.isFile() && PagePath::isPdfFile(path)
-                       && ThumtooCache::isAvailable()) {
-                const QString name = info.fileName();
-                report(MainWindow::tr("Indexing PDF “%1”…").arg(name));
-                const QStringList pages = ThumtooCache::expandPdfToPageRefs(path);
-                if (!pages.isEmpty()) {
-                    report(MainWindow::tr("PDF “%1”: %n page(s)", "", pages.size()).arg(name));
-                }
-                images.append(pages);
-            } else if (info.isFile() && PagePath::isEpubFile(path)
-                       && ThumtooCache::isAvailable()) {
-                const QString name = info.fileName();
-                report(MainWindow::tr("Indexing EPUB “%1”…").arg(name));
-                const QStringList pages = ThumtooCache::expandEpubToPageRefs(path);
-                if (!pages.isEmpty()) {
-                    report(MainWindow::tr("EPUB “%1”: %n page(s)", "", pages.size()).arg(name));
-                }
-                images.append(pages);
-            } else if (info.isFile() && PagePath::isDjvuFile(path)
-                       && ThumtooCache::isAvailable()) {
-                const QString name = info.fileName();
-                report(MainWindow::tr("Indexing DjVu “%1”…").arg(name));
-                const QStringList pages = ThumtooCache::expandDjvuToPageRefs(path);
-                if (!pages.isEmpty()) {
-                    report(MainWindow::tr("DjVu “%1”: %n page(s)", "", pages.size()).arg(name));
-                }
-                images.append(pages);
-            } else if (info.isFile() && ArchivePath::isArchiveFile(path)
-                       && ThumtooCache::isAvailable()) {
-                const QString name = info.fileName();
-                report(MainWindow::tr("Indexing archive “%1”…").arg(name));
-                const QStringList members = ThumtooCache::expandArchiveToImageRefs(path);
-                if (!members.isEmpty()) {
-                    report(MainWindow::tr("Archive “%1”: %n image(s)", "", members.size())
-                               .arg(name));
-                }
-                images.append(members);
-            } else if (info.isFile() && ImageLoader::isImageFile(path)) {
-                const QString c = canonicalImage(path);
-                if (!c.isEmpty()) {
-                    images.append(c);
-                }
-            }
+            return !window || gen != window->m_expandGeneration;
+        };
+
+        const QStringList images = expandPathList(paths, recursive, report, cancel);
+        if (cancel()) {
+            return;
         }
 
         QMetaObject::invokeMethod(guard.data(), [guard, gen, images, append, startAt, paths]() {
@@ -674,33 +604,8 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
                                                       window->m_session.ids());
                 }
                 if (window->statusBar()) {
-                    bool anyPdf = false;
-                    bool anyEpub = false;
-                    for (const QString &p : paths) {
-                        if (PagePath::isPdfFile(p)) {
-                            anyPdf = true;
-                        }
-                        if (PagePath::isEpubFile(p)) {
-                            anyEpub = true;
-                        }
-                    }
-                    QString msg;
-                    if ((anyPdf || anyEpub) && !ThumtooCache::isAvailable()) {
-                        msg = MainWindow::tr(
-                            "Cannot open PDF/EPUB: thumtoo is not available.");
-                    } else if (anyEpub) {
-                        msg = MainWindow::tr(
-                            "Cannot open EPUB (no pages found). Rebuild thumtoo "
-                            "with MuPDF and update the biltoo flake input.");
-                    } else if (anyPdf) {
-                        msg = MainWindow::tr(
-                            "Cannot open PDF (no pages found). Rebuild thumtoo "
-                            "with Poppler/MuPDF and update the biltoo flake input.");
-                    } else {
-                        msg = append ? MainWindow::tr("No readable images to add.")
-                                     : MainWindow::tr("No readable images found.");
-                    }
-                    window->statusBar()->showMessage(msg, 8000);
+                    window->statusBar()->showMessage(
+                        expandEmptyResultMessage(paths, append), 8000);
                 }
                 return;
             }
