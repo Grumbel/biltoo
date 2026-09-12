@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-577-slideshow-prefetch-hud.** Little top-left chip while prefetching.
+Prior: **576**.
+
+### Change
+- `slideshowPrefetchHudLine()`: shows when the queue is busy and/or the current
+  phase path is still below ~70% of target edge (`Loading 512→1024 · prefetch 2`
+  / `Prefetch · N` / `Loading have→need`)
+- Visible without pinning the full HUD (same priority band as paused/flash)
+- Viewport update on preload start/finish and raster-ready so the chip appears
+  and clears promptly
+
+### Done criteria
+- [x] Prefetch activity visible during slideshow
+- [x] Bundle **577**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-576-slideshow-prefetch-ladder.** Wire PreferCache into slideshow rasters.
 Prior: **575**.
 

@@ -278,6 +278,11 @@ public:
      * draw samples sharper pixels (camera stays logical-size based).
      */
     void onSlideshowRasterReady(const QString &path, const QImage &image);
+    /**
+     * Top-left chip while slideshow is warming target-edge rasters (queue or
+     * current phase still soft). Empty when idle / not in slideshow.
+     */
+    QString slideshowPrefetchHudLine() const;
     /** Best unoriented raster for path, or null. */
     QImage slideshowRaster(const QString &path) const;
     void setSlideshowUnderlayVisible(bool visible);

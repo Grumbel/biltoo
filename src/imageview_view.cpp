@@ -1100,7 +1100,38 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     }
     if (changed && viewport()) {
         viewport()->update();
+    } else if (viewport() && m_slideshowProgressActive) {
+        // Prefetch chip may clear when the active path reaches target edge.
+        viewport()->update();
     }
+}
+
+QString ImageView::slideshowPrefetchHudLine() const
+{
+    if (!m_slideshowProgressActive) {
+        return {};
+    }
+    const int queued = m_ssRasterInflight.size() + m_ssRasterPending.size();
+    const int target = slideshowTargetEdge();
+    const int need = target * 7 / 10;
+    const int have = m_ssFromImage.isNull()
+                         ? 0
+                         : qMax(m_ssFromImage.width(), m_ssFromImage.height());
+    const bool currentShort =
+        !m_ssFromPath.isEmpty() && (have < need);
+    if (queued <= 0 && !currentShort) {
+        return {};
+    }
+    if (currentShort && queued > 0) {
+        return tr("Loading %1→%2 · prefetch %3")
+            .arg(have > 0 ? have : 0)
+            .arg(target)
+            .arg(queued);
+    }
+    if (queued > 0) {
+        return tr("Prefetch · %1").arg(queued);
+    }
+    return tr("Loading %1→%2").arg(have).arg(target);
 }
 
 QImage ImageView::slideshowRaster(const QString &path) const
@@ -1564,6 +1595,9 @@ void ImageView::preloadSlideshowImage(const QString &path)
     }
 
     m_ssRasterInflight.insert(path);
+    if (viewport()) {
+        viewport()->update(); // show / refresh prefetch HUD chip
+    }
     const QString loadPath = path;
     const QPointer<ImageView> guard(this);
     qCDebug(lcSlideshow).nospace()
@@ -1633,6 +1667,9 @@ void ImageView::preloadSlideshowImage(const QString &path)
                 }
                 view->preloadSlideshowImage(next);
                 break;
+            }
+            if (view->viewport()) {
+                view->viewport()->update(); // clear or refresh prefetch chip
             }
         }, Qt::QueuedConnection);
     });

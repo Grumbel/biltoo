@@ -337,8 +337,10 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     //   top-right — session index [i/n]
     //   bottom    — filename (+ technical detail when the HUD is pinned)
     // Crop mode: always show a pinned “Crop mode” cue so the tool state is clear.
+    const QString ssPrefetchLine = slideshowPrefetchHudLine();
     if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
-        || m_slideshowPausedHud || !m_gallery.hoverPath().isEmpty()) {
+        || m_slideshowPausedHud || !ssPrefetchLine.isEmpty()
+        || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
         const int pt = qBound(8, m_hudFontPointSize, 48);
@@ -471,8 +473,15 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                 actionLine += QLatin1Char(' ') + m_hudDetail;
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
+        } else if (!ssPrefetchLine.isEmpty()
+                   && !(m_hudVisible || m_hudIdentityPulse)) {
+            // Little chip while warming target-edge pixels — no need to pin HUD.
+            drawPanel({{ssPrefetchLine, true}}, margin, margin, false, false);
         } else if (m_hudVisible || m_hudIdentityPulse) {
             QList<HudLine> topLeft;
+            if (!ssPrefetchLine.isEmpty()) {
+                topLeft.append({ssPrefetchLine, true});
+            }
             if (m_perfEnabled) {
                 topLeft.append({
                     tr("FPS %1 · paint %2 ms · decode-win %3 ms (max %4)")
