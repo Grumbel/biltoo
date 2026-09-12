@@ -102,7 +102,7 @@ public:
     void setSession(const QStringList &files, const QVector<SessionImageId> &ids);
     void setCurrentIndex(int index);
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
-    void setVisibleLoadsSuspended(bool on) { m_visibleLoadsSuspended = on; }
+    void setVisibleLoadsSuspended(bool on);
     bool visibleLoadsSuspended() const { return m_visibleLoadsSuspended; }
     int currentIndex() const;
 

@@ -2,6 +2,21 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-547-filmstrip-suspend-api.** Fix private scheduleVisibleThumbnailLoads call.
+Prior: **546**.
+
+setVisibleLoadsSuspended(false) resumes loads internally — stopSlideshow no longer
+calls the private scheduler.
+
+### Done criteria
+- [x] Bundle **547**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-546-slideshow-soft-only-nav.** Key-repeat: one soft edge, no filmstrip loads.
 Prior: **545**.
 

@@ -2549,7 +2549,6 @@ void MainWindow::stopSlideshow()
 {
     if (m_thumbnailBar) {
         m_thumbnailBar->setVisibleLoadsSuspended(false);
-        m_thumbnailBar->scheduleVisibleThumbnailLoads();
     }
     // Session = playing or paused. Silent no-ops when fully idle.
     const bool wasSession = isSlideshowSession()

@@ -1697,6 +1697,18 @@ void ThumbnailBar::setFiles(const QStringList &files)
     });
 }
 
+
+void ThumbnailBar::setVisibleLoadsSuspended(bool on)
+{
+    if (m_visibleLoadsSuspended == on) {
+        return;
+    }
+    m_visibleLoadsSuspended = on;
+    if (!on) {
+        scheduleVisibleThumbnailLoads();
+    }
+}
+
 void ThumbnailBar::setCurrentIndex(int index)
 {
     if (index >= 0 && index < count()) {
