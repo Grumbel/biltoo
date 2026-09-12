@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-600-complete-load-restore.** LoadRestore as completeLoadRestore.
+Prior: **599**.
+
+### Change
+- `takePendingRestoreState` — FIFO claim one restore snapshot per path
+- `completeLoadRestore` — create tile, merge live appearance + snapshot placement
+- `onImageLoaded` LoadRestore branch is a one-liner
+
+### Done criteria
+- [x] Restore path is a named unit
+- [x] Bundle **600**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-599-place-new-loadadd-item.** placeNewLoadAddItem placement policy.
 Prior: **598**.
 

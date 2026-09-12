@@ -313,6 +313,10 @@ public:
     void takePendingWorkspacePath(const QString &path);
     QList<WorkspaceItemState> &pendingRestoreStates() { return m_pendingRestoreStates; }
     const QList<WorkspaceItemState> &pendingRestoreStates() const { return m_pendingRestoreStates; }
+    /** Claim one pending restore snapshot for @a path (FIFO; duplicates OK). */
+    bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
+    /** LoadRestore: create tile from decode + claimed restore snapshot. */
+    void completeLoadRestore(const QString &path, const QImage &image);
 
     // --- Controller host operations (mode controllers; prefer these over friend) ---
     /** Apply interactive/gallery/static flags for the current ViewMode. */

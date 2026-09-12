@@ -1015,6 +1015,61 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
     }
 }
 
+bool ImageView::takePendingRestoreState(const QString &path, WorkspaceItemState *out)
+{
+    if (!out || path.isEmpty()) {
+        return false;
+    }
+    for (int i = 0; i < m_pendingRestoreStates.size(); ++i) {
+        if (m_pendingRestoreStates.at(i).path == path) {
+            *out = m_pendingRestoreStates.takeAt(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+void ImageView::completeLoadRestore(const QString &path, const QImage &image)
+{
+    WorkspaceItemState state;
+    if (!takePendingRestoreState(path, &state) || image.isNull()) {
+        return;
+    }
+    // Do not apply path-keyed crop — restore uses this slot's own state
+    // (Workspace duplicates must not inherit another instance's crop).
+    ImageItem *item = createItemFromImage(path, image, /*applyStoredSessionCrop=*/false);
+    if (!item) {
+        return;
+    }
+    // Prefer live session-image appearance over the leave-mode snapshot when
+    // Image-mode edits updated m_appearance while Workspace was stashed.
+    WorkspaceItemState app = state;
+    if (state.sessionId != kInvalidSessionImageId) {
+        item->setSessionId(state.sessionId);
+        if (const WorkspaceItemState *it = m_appearance.get(state.sessionId)) {
+            app = *it;
+            // Keep placement from the snapshot.
+            app.pos = state.pos;
+            app.scale = state.scale;
+            app.scaleY = state.scaleY;
+            app.rotation = state.rotation;
+            app.opacity = state.opacity;
+            app.z = state.z;
+        }
+    }
+    if (state.sessionIndex >= 0) {
+        item->setSessionIndex(state.sessionIndex);
+    }
+    SessionAppearance::applyContentToItem(item, app);
+    applyState(item, app);
+    if (m_layoutMode != LayoutMode::FreeForm
+        && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
+        applyLayout(GalleryPackReason::SessionMutate);
+    }
+    emit statusChanged();
+    emit workspacePathsChanged();
+}
+
 void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role)
 {
@@ -1157,54 +1212,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
 
     // Workspace add / restore
     if (role == LoadRestore) {
-        // AUDIT M27: claim one pending restore state for this path (duplicates OK).
-        int claim = -1;
-        for (int i = 0; i < m_pendingRestoreStates.size(); ++i) {
-            if (m_pendingRestoreStates.at(i).path == path) {
-                claim = i;
-                break;
-            }
-        }
-        if (claim < 0) {
-            return;
-        }
-        const WorkspaceItemState state = m_pendingRestoreStates.takeAt(claim);
-        if (image.isNull()) {
-            return;
-        }
-        // Do not apply path-keyed crop — restore uses this slot's own state
-        // (Workspace duplicates must not inherit another instance's crop).
-        ImageItem *item = createItemFromImage(path, image, /*applyStoredSessionCrop=*/false);
-        if (!item) {
-            return;
-        }
-        // Prefer live session-image appearance over the leave-mode snapshot when
-        // Image-mode edits updated m_appearance while Workspace was stashed.
-        WorkspaceItemState app = state;
-        if (state.sessionId != kInvalidSessionImageId) {
-            item->setSessionId(state.sessionId);
-            if (const WorkspaceItemState *it = m_appearance.get(state.sessionId)) {
-                app = *it;
-                // Keep placement from the snapshot.
-                app.pos = state.pos;
-                app.scale = state.scale;
-                app.scaleY = state.scaleY;
-                app.rotation = state.rotation;
-                app.opacity = state.opacity;
-                app.z = state.z;
-            }
-        }
-        if (state.sessionIndex >= 0) {
-            item->setSessionIndex(state.sessionIndex);
-        }
-        SessionAppearance::applyContentToItem(item, app);
-        applyState(item, app);
-        if (m_layoutMode != LayoutMode::FreeForm
-            && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
-            applyLayout(GalleryPackReason::SessionMutate);
-        }
-        emit statusChanged();
-        emit workspacePathsChanged();
+        completeLoadRestore(path, image);
         return;
     }
 
