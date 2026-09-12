@@ -2,6 +2,42 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-545-slideshow-phase-tick.** Stop 16ms phase full-repaint storm.
+Prior: **544**.
+
+### Broader analysis (slideshow GUI kill)
+
+User nav while slideshow is active is **not** primarily stalled by 24MP decode
+anymore (phase logs show ~512). Remaining structural costs:
+
+1. **`m_slideshowTimer` is 16ms**. Every tick `updateSlideshowFromClock()` called
+   `setSlideshowPhase(from, …)` even when `from` was unchanged.
+2. **`setSlideshowPhase` always** (even no path change):
+   - `hideSlideshowUnderlay()` — walks every scene item, `setVisible(false)`
+   - `viewport()->update()` — full repaint
+   - cleared transition pixmaps / live flags
+3. **Same tick** also called `preloadSlideshowImage` ×3 every 16ms.
+4. User ←/→ still does `setCurrentIndex` → `loadImage` → `scheduleImageLoad`
+   (pool) + filmstrip `scheduleVisibleThumbnailLoads` + status/title. Pending
+   tile install is correctly **skipped** while slideshow owns the composite.
+5. Pool work (thumtoo `get_pixels`, filmstrip soft) saturates workers and can
+   make the UI *feel* dead even when the GUI thread is only painting — but the
+   16ms phase teardown was real GUI-thread work.
+
+### Changes in 545
+- `setSlideshowPhase`: no-op when from/to/fade unchanged; fade-only updates
+  skip underlay walk
+- Clock: preload trio only when fromIdx/toIdx pair changes
+
+### Done criteria
+- [x] Bundle **545**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-544-slideshow-edge-atlas-cap.** Cap slideshow edge 1024; cheap atlas.
 Prior: **543**.
 

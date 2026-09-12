@@ -1583,12 +1583,17 @@ void MainWindow::updateSlideshowFromClock()
         const qint64 raw =
             qint64(m_slideshowBaseIndex) * qint64(intervalMs) + elapsed;
         m_imageView->setSlideshowTimeline(totalMs > 0 ? (raw % totalMs) : 0, totalMs);
-        // Full decodes for the visible pair (and one look-ahead). Pure phase
-        // keeps fulls in m_ssFullByPath so A and B can both be full at once.
-        // Do not skip toIdx during the transition — that left only soft paint.
-        m_imageView->preloadSlideshowImage(m_session.paths().at(fromIdx));
-        m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
-        m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 1) % n));
+        // Preload only when the pure-phase pair advances — every 16ms tick
+        // used to poke three preloads and keep the pool busy under rapid flip.
+        static int s_lastPreloadFrom = -1;
+        static int s_lastPreloadTo = -1;
+        if (fromIdx != s_lastPreloadFrom || toIdx != s_lastPreloadTo) {
+            s_lastPreloadFrom = fromIdx;
+            s_lastPreloadTo = toIdx;
+            m_imageView->preloadSlideshowImage(m_session.paths().at(fromIdx));
+            m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
+            m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 1) % n));
+        }
     }
 
     // Pure phase drive — no beginLive / busy / cancel for Crossfade.

@@ -1335,6 +1335,21 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
 
     const bool fromChanged = (fromPath != m_ssFromPath);
     const bool toChanged = (toPath != m_ssToPath);
+    // Pure-phase clock ticks at 16ms and used to call us every frame even when
+    // from/to were unchanged — each call hideSlideshowUnderlay()'d the whole
+    // scene and forced a full viewport repaint (GUI appeared dead under load).
+    if (!fromChanged && !toChanged) {
+        if (qFuzzyCompare(fadeT, m_ssFadeT)
+            || (fadeT < 0.0 && m_ssFadeT < 0.0)) {
+            return;
+        }
+        // Fade progress only — keep buffers, just repaint.
+        m_ssFadeT = fadeT;
+        if (viewport()) {
+            viewport()->update();
+        }
+        return;
+    }
     // Do NOT bump ZoomBlur generation here — that cancelled the incoming
     // slide's underlay build every transition and caused letterbox flicker.
     // Evict only slots that are neither from nor to; in-flight jobs for the
