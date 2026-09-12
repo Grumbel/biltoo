@@ -2277,17 +2277,25 @@ void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
         } else if (!m_slideshowProgressActive) {
             fitItem(item, currentFitAspectMode());
         }
-    } else if (beforeOk && before != after) {
+    } else if (beforeOk && before != after && !m_slideshowProgressActive) {
         // Same aspect, larger/smaller logical size: scale the view so the image
         // keeps the same on-screen footprint (soft→native must not zoom).
+        // Slideshow pure-phase paints via paintMotionCover (logical size) and
+        // does not use the view matrix for framing.
         const qreal factor = qreal(before.width()) / qreal(after.width());
         if (factor > 0.0 && qIsFinite(factor) && !qFuzzyCompare(factor, 1.0)) {
-            const QPointF center = mapToScene(viewport()->rect().center());
+            const QPointF sceneCenter = mapToScene(viewport()->rect().center());
+            const QGraphicsView::ViewportAnchor saved =
+                transformationAnchor();
+            setTransformationAnchor(QGraphicsView::NoAnchor);
+            // Scale about the viewport centre in scene space.
             QTransform t = transform();
-            t.translate(center.x(), center.y());
+            t.translate(sceneCenter.x(), sceneCenter.y());
             t.scale(factor, factor);
-            t.translate(-center.x(), -center.y());
-            setTransform(t);
+            t.translate(-sceneCenter.x(), -sceneCenter.y());
+            setTransform(t, false);
+            setTransformationAnchor(saved);
+            centerOn(sceneCenter);
         }
     }
     if (m_scene) {

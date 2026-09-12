@@ -12,8 +12,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 *not* an image editor. See [DOMAIN.md](DOMAIN.md). Content orient/crop/text spaces: [docs/CONTENT_COORDINATES.md](docs/CONTENT_COORDINATES.md). Filmstrip: [docs/FILMSTRIP_LAYOUT.md](docs/FILMSTRIP_LAYOUT.md). Content pixels: [docs/CONTENT_PIPELINE.md](docs/CONTENT_PIPELINE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-574-no-zoom-on-hires**.
-Next bundle number: **575**.
+Latest agent handoff: **TODO.md → biltoo-575-preserve-view-scale-fix**.
+Next bundle number: **576**.
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the

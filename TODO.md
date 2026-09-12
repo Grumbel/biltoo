@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-575-preserve-view-scale-fix.** Stable scene-center scale on size magnitude change.
+Prior: **574**.
+
+### Changes
+- preserveImageViewOnLogicalSizeChange uses NoAnchor + scale about scene centre
+  then centerOn — correct compensation when logical size grows soft→native
+- Skip view scale during slideshow (pure-phase camera owns framing)
+
+### Done criteria
+- [x] Transform compensation is correct
+- [x] Bundle **575**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-574-no-zoom-on-hires.** Soft→full must not change Image-mode zoom.
 Prior: **573**.
 
