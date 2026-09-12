@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-688-pixel-swap-only-gui.** Image-mode install is assign QImage + update only.
+Prior: **687**.
+
+### Evidence
+`pendingTile INSTALLED fit=0` but still laggy. Every ladderReady still ran full
+`installDisplayPixels` on GUI (appearance, materialize, intrinsic, flags) then
+`setSourceImageReady` did `prepareGeometryChange` + `applyLocalTransform`.
+
+### Change
+- `setSourceImageReady`: **only** assign m_source + clear pixmap + `update()`
+- `installImageModeSampleInPlace`: setSourceImageReady only (no installDisplayPixels)
+- pending soft: setSourceImageReady only (no installDisplayPixels)
+
+GUI thread work on ←/→ is now: QImage ref assign + QGraphicsItem::update.
+
+### Done criteria
+- [x] No prepareGeometryChange on soft/HQ swap
+- [x] Bundle **688**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-687-no-fit-no-fromimage-on-nav.** Soft nav = pixel swap only on GUI.
 Prior: **686**.
 

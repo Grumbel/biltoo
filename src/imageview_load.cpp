@@ -699,14 +699,12 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             item->setIntrinsicSize(sz);
         }
         bindImageModeSessionCursor(item);
-        // Allow SoftPreview over prior FullSource without canAccept blocking.
-        if (item->hasDecodedPixels()) {
-            item->clearDecodedPixels();
+        // Fast soft attach: no installDisplayPixels (appearance/materialize/flags).
+        // setSourceImageReady is assign + update only.
+        if (!path.isEmpty()) {
+            ImageCache::put(path, pixels);
         }
-        // Pixel swap only — prepareImageModeCanvas + fitItem every ←/→ was the
-        // remaining GUI hitch (undo clear, resetTransform, fitInView).
-        installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
-                             m_currentSessionId);
+        item->setSourceImageReady(pixels);
         const QSize sizeAfter = item->imageSize();
         const bool aspectChanged =
             sizeBefore.width() > 1 && sizeBefore.height() > 1
@@ -1931,14 +1929,16 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     if (!item || image.isNull()) {
         return;
     }
-    installDisplayPreservingView(item, image, kind, kInvalidSessionImageId);
+    // Fast path: sample is already worker-baked. Only swap QImage + repaint.
+    // installDisplayPixels still resolved appearance, materialize, intrinsic,
+    // session crop flags — pure GUI cost on every ladderReady.
+    Q_UNUSED(kind);
+    item->setSourceImageReady(image);
     m_lastLoadError.clear();
     rememberSizeFromDecode(path, image);
     if (viewport()) {
         viewport()->update();
     }
-    // Do not emit statusChanged on every ladder step — status bar rebuild is
-    // pure GUI cost on rapid ←/→.
 }
 
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const

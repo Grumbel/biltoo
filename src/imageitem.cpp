@@ -105,26 +105,17 @@ void ImageItem::setSourceImage(const QImage &image)
 
 void ImageItem::setSourceImageReady(const QImage &image)
 {
-    // Display-ready sample: no item-level flip/grade re-bake, no multi-MP
-    // QPixmap::fromImage on the GUI (paint draws m_source when pixmap empty).
-    prepareGeometryChange();
+    // Display-ready sample: assign pixels + repaint only.
+    // Do NOT prepareGeometryChange / applyLocalTransform — intrinsic size is
+    // independent of sample resolution; those calls re-enter the scene and
+    // were the remaining ←/→ GUI cost after decode moved off-thread.
     m_source = image;
     m_preview = QImage();
     m_previewPixels = false;
     m_hFlip = false;
     m_vFlip = false;
     setCacheMode(QGraphicsItem::NoCache);
-    if (m_source.isNull()) {
-        setPixmap(QPixmap());
-        const QSize s = imageSize();
-        setOffset(-s.width() / 2.0, -s.height() / 2.0);
-    } else {
-        setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
-        // Never QPixmap::fromImage here — that convert is pure GUI cost on every
-        // ←/→ soft install (512 soft was still hitting ≤768). paint uses m_source.
-        setPixmap(QPixmap());
-    }
-    applyLocalTransform();
+    setPixmap(QPixmap()); // paint path uses m_source via drawImage
     update();
 }
 
