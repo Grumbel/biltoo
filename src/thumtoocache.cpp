@@ -1025,6 +1025,60 @@ int cancelPendingThumtooWork()
 #endif
 }
 
+quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpeculative,
+                    int nearEdge, int speculativeEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+        if (c) {
+            g_pixelsQueue.clear();
+        }
+    }
+    if (!c) {
+        return 0;
+    }
+    std::vector<thumtoo::InterestItem> items;
+    items.reserve(size_t(pathsNear.size() + pathsSpeculative.size()));
+    auto push = [&](const QStringList &paths, thumtoo::InterestRole role, int edge) {
+        for (const QString &p : paths) {
+            if (p.isEmpty() || isUnsupported(p)) {
+                continue;
+            }
+            const std::string uri = toThumtooUri(p);
+            if (uri.empty()) {
+                continue;
+            }
+            thumtoo::InterestItem it;
+            it.uri = uri;
+            it.target_long_edge = edge;
+            it.role = role;
+            items.push_back(std::move(it));
+        }
+    };
+    push(pathsNear, thumtoo::InterestRole::Near, nearEdge);
+    push(pathsSpeculative, thumtoo::InterestRole::Speculative, speculativeEdge);
+    return static_cast<quint64>(c->set_interest(std::move(items)));
+#else
+    Q_UNUSED(pathsNear);
+    Q_UNUSED(pathsSpeculative);
+    Q_UNUSED(nearEdge);
+    Q_UNUSED(speculativeEdge);
+    return bumpInterestEpoch();
+#endif
+#else
+    Q_UNUSED(pathsNear);
+    Q_UNUSED(pathsSpeculative);
+    Q_UNUSED(nearEdge);
+    Q_UNUSED(speculativeEdge);
+    return 0;
+#endif
+}
+
 void preparePaths(const QStringList &paths)
 {
 #ifdef BILTOO_HAVE_THUMTOO

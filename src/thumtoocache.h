@@ -131,6 +131,14 @@ quint64 bumpInterestEpoch();
 /** Drop all queued thumtoo jobs (pixels/size/tiles); in-flight may still finish. */
 int cancelPendingThumtooWork();
 
+/**
+ * Replace thumtoo interest snapshot (cancels stale work, schedules overview).
+ * pathsNear = visible / high priority; pathsSpeculative = idle overscan.
+ * @return new epoch or 0 if unavailable.
+ */
+quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpeculative,
+                    int nearEdge, int speculativeEdge);
+
 /** True while a request_pixels for this path/edge is queued or running. */
 bool isPixelsInflight(const QString &path, int maxEdge);
 

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-483-set-interest-gallery.** Gallery calls thumtoo set_interest for viewport.
+Prior: **482**. Companion: **thumtoo-167**.
+
+### Change
+- ThumtooCache::setInterest (THUMTOO_API_SET_INTEREST)
+- updateGalleryDecodeWindow: setInterest(visible, rest, nearEdge, softEdge)
+
+### Next
+- Filmstrip setInterest
+- FocusFull for Primary
+- Reduce duplicate scheduleGalleryDecode vs set_interest enqueue
+
+### Done criteria
+- [x] Gallery interest snapshot
+- [x] Bundle **483**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-482-filmstrip-overview-interest.** Filmstrip overview schedule + scroll interest.
 Prior: **481**.
 

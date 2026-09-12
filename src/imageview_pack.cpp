@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "thumtoocache.h"
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
@@ -91,6 +92,17 @@ void ImageView::updateGalleryDecodeWindow()
         } else {
             rest.append(path);
         }
+    }
+
+    // Tell thumtoo the visible window so its queue matches the viewport.
+    {
+        int nearEdge = ThumtooCache::kGalleryLadderEdge;
+        for (const QString &path : visible) {
+            nearEdge = qMax(nearEdge, galleryWantEdgeForPath(path, sceneVisible));
+        }
+        nearEdge = qMin(nearEdge, ThumtooCache::kBatchOverviewEdge);
+        const int specEdge = ThumtooCache::kGalleryLadderEdge;
+        (void)ThumtooCache::setInterest(visible, rest, nearEdge, specEdge);
     }
 
     for (const QString &path : visible) {
