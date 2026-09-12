@@ -1836,17 +1836,23 @@ void ImageView::preloadSlideshowImage(const QString &path)
             view->m_preloadPath = loadPath;
             view->m_preloadImage = img;
             view->m_ssFullByPath.insert(loadPath, img);
-            // Bound memory under rapid flip through a large session.
+            // Bound memory under rapid flip. Collect keys first — erasing via
+            // iterator while calling key() tripped -Wnull-dereference on Qt 6.11.
             constexpr int kMaxSsFull = 12;
-            while (view->m_ssFullByPath.size() > kMaxSsFull) {
-                auto it = view->m_ssFullByPath.begin();
-                if (it.key() == loadPath) {
-                    ++it;
-                    if (it == view->m_ssFullByPath.end()) {
-                        break;
+            if (view->m_ssFullByPath.size() > kMaxSsFull) {
+                QStringList drop;
+                drop.reserve(view->m_ssFullByPath.size() - kMaxSsFull);
+                for (auto it = view->m_ssFullByPath.cbegin();
+                     it != view->m_ssFullByPath.cend()
+                     && drop.size() < view->m_ssFullByPath.size() - kMaxSsFull;
+                     ++it) {
+                    if (it.key() != loadPath) {
+                        drop.append(it.key());
                     }
                 }
-                it = view->m_ssFullByPath.erase(it);
+                for (const QString &k : drop) {
+                    view->m_ssFullByPath.remove(k);
+                }
             }
             qCDebug(lcSlideshow).nospace()
                 << "[slideshow] preload-ready " << QFileInfo(loadPath).fileName()

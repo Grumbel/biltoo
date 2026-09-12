@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-543-ssfull-evict-safe.** Fix -Wnull-dereference in ssFull eviction.
+Prior: **542**.
+
+### Issue
+Qt 6.11 warned on QHash iterator erase/key in preloadSlideshowImage.
+
+### Change
+Collect drop keys, then remove by key — no erase-while-iterating.
+
+### Done criteria
+- [x] Bundle **543**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-542-slideshow-no-24mp-phase.** Cap phase pixels; no full extract / EnsureTiles on flip.
 Prior: **541**.
 
