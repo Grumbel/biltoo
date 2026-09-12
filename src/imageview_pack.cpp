@@ -76,57 +76,51 @@ void ImageView::updateGalleryDecodeWindow()
     const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
 
     // ------------------------------------------------------------------
-    // Pass 1: host soft onto EVERY blank tile (no seen/tile/inflight gates).
-    // Filmstrip and ladderReady put ImageCache by session path; if the tile
-    // is still "⋯", the only correct action is install — not wait on SoftOnly.
+    // Pass 1: host soft onto blank tiles + match on-screen paint budget.
+    // Single O(n) walk (was pass1 + pass1b). Cap installs per turn so a large
+    // session cannot block the GUI with dozens of materializeDisplay scales
+    // (GUI_THREAD_AUDIT G3/G4); continue on the next event-loop tick.
     // ------------------------------------------------------------------
+    constexpr int kMaxInstallsPerDecodeWindow = 48;
     int hostInstalled = 0;
-    for (ImageItem *item : m_items) {
-        if (!item || item->path().isEmpty()) {
-            continue;
-        }
-        if (item->hasDecodedPixels() || item->hasDisplayPixels()) {
-            continue;
-        }
-        const QString &path = item->path();
-        QImage hostSoft = ImageCache::get(path);
-        if (hostSoft.isNull()) {
-            hostSoft = m_previewByPath.value(path);
-        }
-        if (hostSoft.isNull()) {
-            continue;
-        }
-        installDisplayPixels(item, hostSoft,
-                             SessionAppearance::PixelKind::SoftPreview,
-                             item->sessionId());
-        GallerySoftState &st = m_gallerySoft[path];
-        st.have = qMax(st.have, qMax(hostSoft.width(), hostSoft.height()));
-        item->update();
-        ++hostInstalled;
-        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-            dbg && dbg[0] && dbg[0] != '0') {
-            fprintf(stderr,
-                    "biltoo/gallery: INSTALL soft path=%s got=%d "
-                    "(pass1 host ImageCache)\n",
-                    qPrintable(QFileInfo(path).fileName()), st.have);
-        }
-    }
-    if (hostInstalled > 0 && viewport()) {
-        viewport()->update();
-    }
-
-    // ------------------------------------------------------------------
-    // Pass 1b: match display resolution to on-screen need (paint budget).
-    // soft.have stays high; only the QImage attached to the item changes.
-    // ------------------------------------------------------------------
+    bool moreInstallsPending = false;
     for (ImageItem *item : m_items) {
         if (!item || item->path().isEmpty() || item->hasDecodedPixels()) {
             continue;
         }
+        const QString &path = item->path();
+
+        // Blank tile: host from ImageCache / preview map.
         if (!item->hasDisplayPixels()) {
+            if (hostInstalled >= kMaxInstallsPerDecodeWindow) {
+                moreInstallsPending = true;
+                continue;
+            }
+            QImage hostSoft = ImageCache::get(path);
+            if (hostSoft.isNull()) {
+                hostSoft = m_previewByPath.value(path);
+            }
+            if (hostSoft.isNull()) {
+                continue;
+            }
+            installDisplayPixels(item, hostSoft,
+                                 SessionAppearance::PixelKind::SoftPreview,
+                                 item->sessionId());
+            GallerySoftState &st = m_gallerySoft[path];
+            st.have = qMax(st.have, qMax(hostSoft.width(), hostSoft.height()));
+            item->update();
+            ++hostInstalled;
+            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                dbg && dbg[0] && dbg[0] != '0') {
+                fprintf(stderr,
+                        "biltoo/gallery: INSTALL soft path=%s got=%d "
+                        "(pass1 host ImageCache)\n",
+                        qPrintable(QFileInfo(path).fileName()), st.have);
+            }
             continue;
         }
-        const QString &path = item->path();
+
+        // Paint budget: only on-screen tiles.
         const QRectF tile = item->contentSceneRect();
         if (tile.isNull() || !tile.isValid()
             || !tile.intersects(sceneVisible)) {
@@ -138,23 +132,27 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
         GallerySoftState &st = m_gallerySoft[path];
-        // Zoomed out: shrink paint bitmap (keep st.have).
         if (shown > need * 2) {
+            if (hostInstalled >= kMaxInstallsPerDecodeWindow) {
+                moreInstallsPending = true;
+                continue;
+            }
             QImage src = ImageCache::get(path);
             if (src.isNull()) {
                 continue;
             }
-            const int target = qMax(need, ThumtooCache::kFilmstripLadderEdge);
             installDisplayPixels(item, src,
                                  SessionAppearance::PixelKind::SoftPreview,
                                  item->sessionId());
-            // installDisplayPixels applies the paint budget scale.
-            Q_UNUSED(target);
             item->update();
+            ++hostInstalled;
             continue;
         }
-        // Zoomed in: promote from ImageCache when we already decoded larger soft.
         if (shown < need * 9 / 10 && st.have >= need) {
+            if (hostInstalled >= kMaxInstallsPerDecodeWindow) {
+                moreInstallsPending = true;
+                continue;
+            }
             QImage src = ImageCache::get(path, need);
             if (src.isNull()) {
                 src = ImageCache::get(path);
@@ -170,7 +168,15 @@ void ImageView::updateGalleryDecodeWindow()
                                  SessionAppearance::PixelKind::SoftPreview,
                                  item->sessionId());
             item->update();
+            ++hostInstalled;
         }
+    }
+    if (hostInstalled > 0 && viewport()) {
+        viewport()->update();
+    }
+    if (moreInstallsPending) {
+        // Finish remaining installs without blocking this event for O(n) scales.
+        scheduleGalleryDecodeWindowRefresh(0);
     }
 
     // ------------------------------------------------------------------

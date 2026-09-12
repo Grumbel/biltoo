@@ -1376,6 +1376,28 @@ void preparePaths(const QStringList &paths)
 #endif
 }
 
+void warmUris(const QStringList &paths)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (paths.isEmpty()) {
+        return;
+    }
+    // Copy list — caller may mutate session before the worker runs.
+    const QStringList copy = paths;
+    QThreadPool::globalInstance()->start([copy]() {
+        init();
+        for (const QString &p : copy) {
+            if (p.isEmpty() || isUnsupported(p)) {
+                continue;
+            }
+            (void)toThumtooUri(p);
+        }
+    });
+#else
+    Q_UNUSED(paths);
+#endif
+}
+
 bool isAvailable()
 {
 #ifdef BILTOO_HAVE_THUMTOO

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-528-gui-audit-g3468.** GUI_THREAD_AUDIT G3 G4 G6 G8.
+Prior: **527**.
+
+### Changes
+- **G3/G4:** Single host/paint pass; max 48 installs per decode-window turn;
+  reschedule if more remain
+- **G6:** `ThumtooCache::warmUris` worker; called after preparePaths on load
+- **G8:** Exiv2 metadata collected on thread pool; no `ImageLoader::load` on GUI
+
+### Done criteria
+- [x] G3 G4 G6 G8
+- [x] Bundle **528**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-527-gui-audit-followups.** Apply GUI_THREAD_AUDIT G1, G2, G5, G7.
 Prior: **526**.
 

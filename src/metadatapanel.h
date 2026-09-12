@@ -91,6 +91,8 @@ private:
     QString m_pendingPath;
     QImage m_pendingDecoded;
     class QTimer *m_applyTimer = nullptr;
+    /** Bumped to cancel in-flight Exiv2 workers when the path changes. */
+    quint64 m_metaGeneration = 0;
 };
 
 #endif // METADATAPANEL_H

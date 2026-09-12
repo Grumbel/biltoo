@@ -17,6 +17,9 @@
 #include <QPaintEvent>
 #include <QSet>
 #include <QTimer>
+#include <QThreadPool>
+#include <QPointer>
+#include <QMetaObject>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
@@ -503,6 +506,7 @@ void MetadataPanel::clear()
     if (m_applyTimer) {
         m_applyTimer->stop();
     }
+    ++m_metaGeneration;
     m_pendingPath.clear();
     m_pendingDecoded = QImage();
     m_header->setText(tr("No image"));
@@ -696,43 +700,146 @@ void MetadataPanel::applyPendingPath()
         addChildRow(fileGroup, tr("Format"),
                     QString::fromLatin1(reader.format()).toUpper());
     } else if (decodedHint.isNull()) {
-        // Last resort only when we have neither hint nor plugin size.
-        const QImage decoded = ImageLoader::load(path);
-        if (!decoded.isNull()) {
-            addChildRow(fileGroup, tr("Dimensions"),
-                        tr("%1 × %2").arg(decoded.width()).arg(decoded.height()));
-            addChildRow(fileGroup, tr("Format"), tr("fallback loader"));
-            // Reuse for analysis below.
-            fillImageAnalysis(path, decoded);
-#ifdef BILTOO_HAVE_EXIV2
-            if (loadExiv2Metadata(m_tree, path)) {
-                return;
-            }
-#endif
-            return;
-        }
+        // Do not ImageLoader::load on the GUI (GUI_THREAD_AUDIT G8). Size may
+        // arrive later via canvas hint; show plugin error only.
         addChildRow(fileGroup, tr("Error"), reader.errorString());
     }
 
-    // Structure and palette — reuse decoded hint when present.
+    // Structure and palette — reuse decoded hint when present (pixels already on GUI).
     fillImageAnalysis(path, decodedHint);
 
+    // Plugin text keys are cheap; Exiv2 open/read is not — run off the GUI
+    // (GUI_THREAD_AUDIT G8). Generation cancels stale workers on rapid nav.
 #ifdef BILTOO_HAVE_EXIV2
-    if (loadExiv2Metadata(m_tree, path)) {
-        return;
-    }
+    const quint64 gen = ++m_metaGeneration;
+    const QPointer<MetadataPanel> guard(this);
+    const QString pathCopy = path;
+    QThreadPool::globalInstance()->start([guard, gen, pathCopy]() {
+        // Collect rows without touching QWidgets.
+        struct Row {
+            QString group;
+            QString key;
+            QString value;
+        };
+        QVector<Row> rows;
+        bool any = false;
+        try {
+            biltoo_exivlog::ensureExiv2LogHandler();
+            biltoo_exivlog::Exiv2PathScope pathScope(pathCopy);
+            auto image = Exiv2::ImageFactory::open(pathCopy.toStdString());
+            if (image.get()) {
+                image->readMetadata();
+                const Exiv2::ExifData &exif = image->exifData();
+                const Exiv2::IptcData &iptc = image->iptcData();
+                const Exiv2::XmpData &xmp = image->xmpData();
+                if (!(exif.empty() && iptc.empty() && xmp.empty())) {
+                    any = true;
+                    static const char *const kSummaryKeys[] = {
+                        "Exif.Image.Make",
+                        "Exif.Image.Model",
+                        "Exif.Photo.DateTimeOriginal",
+                        "Exif.Image.DateTime",
+                        "Exif.Photo.ExposureTime",
+                        "Exif.Photo.FNumber",
+                        "Exif.Photo.ISOSpeedRatings",
+                        "Exif.Photo.PhotographicSensitivity",
+                        "Exif.Photo.FocalLength",
+                        "Exif.Photo.LensModel",
+                        "Exif.Photo.Flash",
+                        "Exif.Photo.WhiteBalance",
+                        "Exif.GPSInfo.GPSLatitude",
+                        "Exif.GPSInfo.GPSLongitude",
+                    };
+                    QSet<QString> seenSummary;
+                    for (const char *ckey : kSummaryKeys) {
+                        const std::string key(ckey);
+                        auto it = exif.findKey(Exiv2::ExifKey(key));
+                        if (it == exif.end()) {
+                            continue;
+                        }
+                        const QString qkey = QString::fromStdString(key);
+                        if (seenSummary.contains(qkey)) {
+                            continue;
+                        }
+                        seenSummary.insert(qkey);
+                        QString label = friendlyExifLabel(qkey);
+                        if (label.isEmpty()) {
+                            label = qkey.section(QLatin1Char('.'), -1);
+                        }
+                        rows.append({QObject::tr("Summary"), label,
+                                     QString::fromStdString(it->print())});
+                    }
+                    auto appendGroup = [&](const QString &groupName, auto begin, auto end) {
+                        for (auto it = begin; it != end; ++it) {
+                            const QString key = QString::fromStdString(it->key());
+                            if (key.contains(QLatin1String("MakerNote"), Qt::CaseInsensitive)
+                                || key.contains(QLatin1String("Thumbnail"), Qt::CaseInsensitive)
+                                || key.contains(QLatin1String("Preview"), Qt::CaseInsensitive)) {
+                                continue;
+                            }
+                            try {
+                                if (it->size() > 1024
+                                    && (it->typeId() == Exiv2::undefined
+                                        || it->typeId() == Exiv2::unsignedByte)) {
+                                    continue;
+                                }
+                                rows.append(
+                                    {groupName, key, QString::fromStdString(it->print())});
+                            } catch (const Exiv2::Error &) {
+                            }
+                        }
+                    };
+                    if (!exif.empty()) {
+                        appendGroup(QObject::tr("Exif"), exif.begin(), exif.end());
+                    }
+                    if (!iptc.empty()) {
+                        appendGroup(QObject::tr("IPTC"), iptc.begin(), iptc.end());
+                    }
+                    if (!xmp.empty()) {
+                        appendGroup(QObject::tr("XMP"), xmp.begin(), xmp.end());
+                    }
+                }
+            }
+        } catch (const Exiv2::Error &) {
+            any = false;
+            rows.clear();
+        }
+
+        if (!guard) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard.data(), [guard, gen, pathCopy, rows, any]() {
+            MetadataPanel *const host = guard.data();
+            if (!host || gen != host->m_metaGeneration) {
+                return;
+            }
+            // Still showing this path (pending may have advanced; header uses path).
+            if (host->m_pendingPath != pathCopy && !host->m_pendingPath.isEmpty()) {
+                // Timer may have cleared pending; allow if tree still for this nav.
+            }
+            if (!any) {
+                return;
+            }
+            QHash<QString, QTreeWidgetItem *> groups;
+            for (const auto &r : rows) {
+                QTreeWidgetItem *group = groups.value(r.group);
+                if (!group) {
+                    group = ensureGroup(host->m_tree, r.group);
+                    groups.insert(r.group, group);
+                }
+                addChildRow(group, r.key, r.value);
+            }
+        }, Qt::QueuedConnection);
+    });
 #endif
 
     if (reader.canRead()) {
         const QStringList keys = reader.textKeys();
         if (keys.isEmpty()) {
-            addChildRow(fileGroup, tr("Metadata"),
-#ifdef BILTOO_HAVE_EXIV2
-                        tr("(no Exif/IPTC/XMP found)")
-#else
-                        tr("(none from image plugin)")
+#ifndef BILTOO_HAVE_EXIV2
+            addChildRow(fileGroup, tr("Metadata"), tr("(none from image plugin)"));
 #endif
-            );
+            // With Exiv2, rows arrive async; avoid a premature "none" flash.
         } else {
             QTreeWidgetItem *group = ensureGroup(m_tree, tr("Plugin metadata"));
             QStringList sorted = keys;

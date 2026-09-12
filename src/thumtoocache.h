@@ -187,6 +187,13 @@ bool isPixelsInflight(const QString &path, int maxEdge);
  */
 void preparePaths(const QStringList &paths);
 
+/**
+ * Pre-resolve session paths to thumtoo URIs on a worker thread so the first
+ * Gallery setInterest does not pay path→URI conversion on the GUI
+ * (GUI_THREAD_AUDIT G6). Safe no-op when thumtoo is unavailable.
+ */
+void warmUris(const QStringList &paths);
+
 /** True when built with thumtoo and the client opened successfully. */
 bool isAvailable();
 
