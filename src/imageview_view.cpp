@@ -73,6 +73,29 @@ QImage loadSlideshowSample(const QString &path, int targetEdge)
     return ImageCache::clampToMaxEdge(img, targetEdge);
 }
 
+/** Stable ZoomBlur slot key for path + viewport size. */
+qint64 slideshowZoomBlurKey(const QString &path, int vw, int vh)
+{
+    if (path.isEmpty() || vw < 1 || vh < 1) {
+        return 0;
+    }
+    return qint64(qHash(path)) ^ (qint64(vw) << 16) ^ qint64(vh);
+}
+
+/** Motion progress in [0,1] from base + optional running elapsed clock. */
+qreal slideshowMotionProgress(qint64 baseMs, const QElapsedTimer &clock,
+                              bool clockRunning, bool paused, int pathMs)
+{
+    if (!clockRunning || pathMs <= 0) {
+        return 0.0;
+    }
+    qint64 ms = baseMs;
+    if (!paused && clock.isValid()) {
+        ms += clock.elapsed();
+    }
+    return qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
+}
+
 } // namespace
 
 
@@ -1240,14 +1263,8 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             : (viewport() ? viewport()->width() : 0);
         const int vh = m_zoomBlurVh > 0 ? m_zoomBlurVh
             : (viewport() ? viewport()->height() : 0);
-        auto pathKey = [vw, vh](const QString &path) -> qint64 {
-            if (path.isEmpty() || vw < 1 || vh < 1) {
-                return 0;
-            }
-            return qint64(qHash(path)) ^ (qint64(vw) << 16) ^ qint64(vh);
-        };
-        const qint64 keepFrom = pathKey(fromPath);
-        const qint64 keepTo = pathKey(toPath);
+        const qint64 keepFrom = slideshowZoomBlurKey(fromPath, vw, vh);
+        const qint64 keepTo = slideshowZoomBlurKey(toPath, vw, vh);
         for (int i = 0; i < 2; ++i) {
             const qint64 k = m_zoomBlurSourceKey[i];
             if (k != 0 && k != keepFrom && k != keepTo) {
@@ -1312,9 +1329,8 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
                               &m_dwellAtlasVw, &m_dwellAtlasVh);
             if (viewport()) {
                 const QSize vs = viewport()->size();
-                if (vs.width() > 0 && vs.height() > 0) {
-                    const qint64 key = qint64(qHash(fromPath))
-                        ^ (qint64(vs.width()) << 16) ^ qint64(vs.height());
+                const qint64 key = slideshowZoomBlurKey(fromPath, vs.width(), vs.height());
+                if (key != 0) {
                     scheduleZoomBlurBuild(m_ssFromImage, vs.width(), vs.height(), key);
                 }
             }
@@ -1342,12 +1358,10 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     // Do not soft→sharp upgrade m_ssFromImage mid-dwell. Phase buffers are
     // locked at fromChanged; preload fills ImageCache for the *next*
     // entry. Mid-slide resolution flips were jarring even with invariant camera.
-    if (m_ssFromMotionClockRunning && pathMs > 0) {
-        qint64 ms = m_ssFromMotionBaseMs;
-        if (!m_slideshowMotionPaused && m_ssFromMotionClock.isValid()) {
-            ms += m_ssFromMotionClock.elapsed();
-        }
-        m_ssFromMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
+    m_ssFromMotionT = slideshowMotionProgress(
+        m_ssFromMotionBaseMs, m_ssFromMotionClock, m_ssFromMotionClockRunning,
+        m_slideshowMotionPaused, pathMs);
+    if (m_ssFromMotionClockRunning) {
         m_dwellMotionT = m_ssFromMotionT;
     }
 
@@ -1381,9 +1395,8 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         // already have a matching key (avoids painting A's blur under B).
         if (!m_ssToImage.isNull() && viewport()) {
             const QSize vs = viewport()->size();
-            if (vs.width() > 0 && vs.height() > 0) {
-                const qint64 key = qint64(qHash(toPath))
-                    ^ (qint64(vs.width()) << 16) ^ qint64(vs.height());
+            const qint64 key = slideshowZoomBlurKey(toPath, vs.width(), vs.height());
+            if (key != 0) {
                 scheduleZoomBlurBuild(m_ssToImage, vs.width(), vs.height(), key);
             }
         }
@@ -1393,13 +1406,9 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             << " " << m_ssToImage.width() << "x" << m_ssToImage.height();
     }
     // toPath pixels locked at toChanged (same as from).
-    if (m_ssToMotionClockRunning && pathMs > 0) {
-        qint64 ms = m_ssToMotionBaseMs;
-        if (!m_slideshowMotionPaused && m_ssToMotionClock.isValid()) {
-            ms += m_ssToMotionClock.elapsed();
-        }
-        m_ssToMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
-    }
+    m_ssToMotionT = slideshowMotionProgress(
+        m_ssToMotionBaseMs, m_ssToMotionClock, m_ssToMotionClockRunning,
+        m_slideshowMotionPaused, pathMs);
 
     m_ssFadeT = fadeT;
 

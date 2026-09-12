@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-590-slideshow-phase-helpers.** ZoomBlur key + motion progress pure helpers.
+Prior: **589**.
+
+### Change
+- `slideshowZoomBlurKey(path, vw, vh)` — one definition for underlay slot keys
+- `slideshowMotionProgress(...)` — shared from/to motion T calculation
+- `setSlideshowPhase` uses both (no duplicated hash / clock arithmetic)
+
+### Done criteria
+- [x] Phase key and motion T are pure helpers
+- [x] Bundle **590**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-589-gallery-host-soft-pass.** Extract pass1 host soft install.
 Prior: **588**.
 
