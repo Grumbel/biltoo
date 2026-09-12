@@ -80,6 +80,19 @@ inline int ceilLadderEdge(int displayLongEdge)
     return kLadderEdges[sizeof(kLadderEdges) / sizeof(kLadderEdges[0]) - 1];
 }
 
+/** Largest ladder step strictly below @p edge, or 0 if none (below 128). */
+inline int prevLadderEdge(int edge)
+{
+    int prev = 0;
+    for (int e : kLadderEdges) {
+        if (e >= edge) {
+            break;
+        }
+        prev = e;
+    }
+    return prev;
+}
+
 /** Cache-only native size for a session path (file or //archive: ref). */
 QSize cachedSize(const QString &path);
 

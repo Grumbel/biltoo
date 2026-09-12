@@ -2,6 +2,37 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-520-intermediate-ladder-step.** Request one ladder step under target first.
+Prior: **519**.
+
+### Change
+- `ThumtooCache::prevLadderEdge(edge)` — largest step strictly below edge
+- `scheduleGalleryDecode` requestEdge:
+  - `target = min(want, batchCap=1024)`
+  - if `have < prev(target)*0.9` → request intermediate (~4× fewer pixels)
+  - else request `target`
+  - if `have >= target*0.9` → stop PreferCache (tiles beyond batchCap)
+
+### Verified matrix
+| have | want | req |
+|------|------|-----|
+| 0 | 512 | 256 |
+| 0 | 1024 | 512 |
+| 256 | 1024 | 512 |
+| 512 | 1024 | 1024 |
+| 0 | 2048 | 512 then 1024 |
+| 1024 | 2048 | stop |
+
+### Done criteria
+- [x] Intermediate-first climb
+- [x] Bundle **520**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-519-decode-window-debounce.** Coalesce GUI rescans during soft climb.
 Prior: **518**.
 

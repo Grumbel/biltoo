@@ -535,26 +535,23 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
-    // Progressive: soft ladder first, then FastBatch overview (≤1024).
-    // Never ImageLoader::load (native) in Gallery.
-    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    // Progressive: one ladder step under target first (~4× fewer pixels), then
+    // the display edge. Soft/overview band caps at batchCap; beyond that tiles
+    // / setInterest own the climb. Never ImageLoader::load (native) in Gallery.
     const int batchCap = ThumtooCache::kBatchOverviewEdge;
-    int requestEdge = want;
-    if (have < softCap * 9 / 10) {
-        requestEdge = qMin(want, softCap);
-    } else if (want <= batchCap) {
-        requestEdge = want;
-    } else {
-        requestEdge = batchCap; // above batch: still request overview max
-    }
-    // Soft/overview ladder tops out at batchCap. If we already have that band
-    // but want is higher, stop spinning the same PreferCache edge — tiles /
-    // setInterest cover zoom beyond overview.
-    if (have >= requestEdge * 9 / 10) {
+    const int target = qMin(want, batchCap);
+    // Already have the soft/overview target — stop PreferCache spin.
+    if (have >= target * 9 / 10) {
         if (want > batchCap) {
             st.gaveUpWant = qMax(st.gaveUpWant, want);
         }
         return;
+    }
+    // Intermediate = previous ladder step under target (1024→512, 512→256, …).
+    const int intermediate = ThumtooCache::prevLadderEdge(target);
+    int requestEdge = target;
+    if (intermediate > 0 && have < intermediate * 9 / 10) {
+        requestEdge = intermediate;
     }
 
     st.inflight = requestEdge;
@@ -568,8 +565,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
         dbg && dbg[0] != '\0' && dbg[0] != '0') {
         fprintf(stderr,
-                "biltoo/gallery: soft request path need=%d have=%d gaveUp=%d\n",
-                want, have, st.gaveUpWant);
+                "biltoo/gallery: soft request path need=%d have=%d req=%d "
+                "inter=%d gaveUp=%d\n",
+                want, have, requestEdge, intermediate, st.gaveUpWant);
     }
 
     const quint64 gen = m_loadGeneration.load();
