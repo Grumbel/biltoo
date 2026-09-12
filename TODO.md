@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-640-include-projectfile.** Include projectfile.h in mainwindow.h for complete Project* types.
+Prior: **639**.
+
+### Change
+- `#include "projectfile.h"` in mainwindow.h (complete ProjectAsset/Image/Document)
+- Drop redundant forward declarations
+
+### Done criteria
+- [x] ProjectAsset type visible to all TUs including mainwindow.h
+- [x] Bundle **640**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-639-projectasset-fwd.** Fix ProjectAsset incomplete type in mainwindow.h.
 Prior: **638**.
 

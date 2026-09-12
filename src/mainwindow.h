@@ -7,6 +7,7 @@
 #include "imageview.h"
 #include "sessiondocument.h"
 #include "imageview_types.h"
+#include "projectfile.h"
 
 #include <QMainWindow>
 #include <QLineEdit>
@@ -50,10 +51,6 @@ struct SessionEntrySnapshot {
     WorkspaceItemState appearance;
     bool hasAppearance = false;
 };
-
-struct ProjectDocument;
-struct ProjectImage;
-struct ProjectAsset;
 
 class MainWindow : public QMainWindow
 {
