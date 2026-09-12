@@ -693,3 +693,25 @@ QRectF ImageItem::contentRect() const
     return QRectF(offset(), QSizeF(s));
 }
 
+QRectF ImageItem::displayContentRect() const
+{
+    if (!m_galleryCellSize.isEmpty()) {
+        const QRectF clip = galleryClipLocal();
+        if (!clip.isEmpty()) {
+            return clip;
+        }
+    }
+    const QRectF box = contentRect();
+    if (!m_preview.isNull() && (m_source.isNull() || m_previewPixels)) {
+        QSizeF fit(m_preview.size());
+        if (fit.width() > 0 && fit.height() > 0 && box.width() > 0 && box.height() > 0) {
+            fit.scale(box.size(), Qt::KeepAspectRatio);
+            QRectF dest(QPointF(0, 0), fit);
+            dest.moveCenter(box.center());
+            return dest;
+        }
+    }
+    return box;
+}
+
+

@@ -1077,10 +1077,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             // Provisional low-res: keep aspect inside content rect (no stretch).
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             const QRectF box = contentRect();
-            QSizeF fit(m_preview.size());
-            fit.scale(box.size(), Qt::KeepAspectRatio);
-            QRectF dest(QPointF(0, 0), fit);
-            dest.moveCenter(box.center());
+            const QRectF dest = displayContentRect();
             painter->fillRect(box, QColor(40, 40, 44));
             painter->drawImage(dest, m_preview);
         } else {
@@ -1103,7 +1100,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->restore();
     }
 
-    const QRectF r = cropped ? crop : contentRect();
+    const QRectF r = cropped ? crop : displayContentRect();
 
     // Gallery: selection frame only (classic multi-select). Hover is for HUD
     // filename, not a full-tile wash — near-fullscreen packs stay usable.
@@ -1140,7 +1137,7 @@ void ImageItem::paintSelectionFrame(QPainter *painter) const
         return;
     }
     QGraphicsView *view = views.first();
-    const QRectF localRect = contentRect();
+    const QRectF localRect = displayContentRect();
     auto toView = [this, view](const QPointF &local) -> QPointF {
         return QPointF(view->mapFromScene(mapToScene(local)));
     };

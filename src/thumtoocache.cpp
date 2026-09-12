@@ -1039,9 +1039,12 @@ bool isPixelsPending(const QString &path, int maxEdge)
         return false;
     }
     init();
-    const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
+    // Soft uses path#edge; overview uses path#ov{edge}. Check both.
+    const QString softKey = path + QLatin1Char('#') + QString::number(maxEdge);
+    const QString ovKey =
+        path + QLatin1Char('#') + QStringLiteral("ov") + QString::number(maxEdge);
     std::lock_guard lock(g_mu);
-    return g_pixelsInflight.contains(inflightKey);
+    return g_pixelsInflight.contains(softKey) || g_pixelsInflight.contains(ovKey);
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
@@ -1302,6 +1305,15 @@ quint64 setPrimaryInterest(const QString &path, int edge)
         return 0;
     }
     init();
+    if (edge <= 0) {
+        edge = kBatchOverviewEdge;
+    }
+    // Primary is FocusFull / tile pyramid — allow up to kImageLadderEdge (2048),
+    // not FastBatch overview max (1024). Clamping to 1024 left Gallery stuck at
+    // need=2048 have=1024.
+    if (edge > kImageLadderEdge) {
+        edge = kImageLadderEdge;
+    }
     const QString key = QStringLiteral("P|") + QString::number(edge) + QLatin1Char('|') + path;
     {
         std::lock_guard lock(g_mu);
@@ -1310,34 +1322,37 @@ quint64 setPrimaryInterest(const QString &path, int edge)
         }
         g_lastInterestKey = key;
     }
-    thumtoo::Client *c = nullptr;
-    {
-        std::lock_guard lock(g_mu);
-        c = clientUnlocked();
-        // Do not clear g_pixelsQueue here — interest changes on every Gallery
-        // scroll; wiping the host soft queue stalls first pixels and causes
-        // thumtoo cancel/restart storms that contend with the GUI.
-    }
-    if (!c) {
-        return 0;
-    }
-    const std::string uri = toThumtooUri(path);
-    if (uri.empty()) {
-        return 0;
-    }
-    if (edge <= 0) {
-        edge = kBatchOverviewEdge;
-    }
-    if (edge > kBatchOverviewEdge) {
-        edge = kBatchOverviewEdge;
-    }
-    thumtoo::InterestItem it;
-    it.uri = uri;
-    it.target_long_edge = edge;
-    it.role = thumtoo::InterestRole::Primary;
-    std::vector<thumtoo::InterestItem> items;
-    items.push_back(std::move(it));
-    return static_cast<quint64>(c->set_interest(std::move(items)));
+    const quint64 job = ++g_interestJobGen;
+    const QString pathCopy = path;
+    const int edgeCopy = edge;
+    QThreadPool::globalInstance()->start([job, pathCopy, edgeCopy]() {
+        if (job != g_interestJobGen.load()) {
+            return;
+        }
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (!c) {
+            return;
+        }
+        const std::string uri = toThumtooUri(pathCopy);
+        if (uri.empty()) {
+            return;
+        }
+        thumtoo::InterestItem it;
+        it.uri = uri;
+        it.target_long_edge = edgeCopy;
+        it.role = thumtoo::InterestRole::Primary;
+        std::vector<thumtoo::InterestItem> items;
+        items.push_back(std::move(it));
+        if (job != g_interestJobGen.load()) {
+            return;
+        }
+        (void)c->set_interest(std::move(items));
+    });
+    return job;
 #else
     Q_UNUSED(path);
     Q_UNUSED(edge);

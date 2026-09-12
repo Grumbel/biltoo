@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-538-primary-2048-selection.** Climb past 1024; fix selection vs soft.
+Prior: **537**.
+
+### Issues
+1. Stuck at need=2048 have=1024 — overview max is 1024; primary interest was
+   clamped to 1024 and ran sync on GUI.
+2. `isPixelsPending` missed overview keys (`path#ov{edge}`).
+3. Selection frame used full contentRect while soft is KeepAspectRatio-fitted
+   (letterbox mismatch / rounding).
+
+### Changes
+- `setPrimaryInterest`: allow edge up to **kImageLadderEdge (2048)**; async
+- Gallery: after overview in hand, call setPrimaryInterest for need>1024
+- `isPixelsPending`: soft + overview inflight keys
+- `displayContentRect()` + selection/paint use fitted soft rect
+
+### Done criteria
+- [x] Bundle **538**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-537-gallery-overview-climb.** Climb past 512 via overview (≤1024).
 Prior: **536**.
 

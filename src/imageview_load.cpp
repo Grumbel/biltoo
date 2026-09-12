@@ -590,13 +590,32 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         }
     } else if (want > softCap) {
         const int ovTarget = qMin(want, ovCap);
-        if (have >= ovTarget * 9 / 10) {
-            // Best Gallery soft/overview; 2048+ needs Image mode.
+        if (have < ovTarget * 9 / 10) {
+            requestEdge = ovTarget;
+            overviewOnly = true;
+        } else if (want > ovCap) {
+            // Overview is in hand; request FocusFull / tile pyramid (≤2048).
+            // FastBatch overview tops at 1024 — higher need is primary interest.
+            const int primEdge =
+                qMin(want, ThumtooCache::kImageLadderEdge);
+            if (have >= primEdge * 9 / 10) {
+                st.gaveUpWant = qMax(st.gaveUpWant, want);
+                return;
+            }
+            (void)ThumtooCache::setPrimaryInterest(path, primEdge);
+            // Do not pin soft.inflight on primary — ladderReady installs when ready.
+            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                dbg && dbg[0] != '\0' && dbg[0] != '0') {
+                fprintf(stderr,
+                        "biltoo/gallery: primary interest path need=%d have=%d "
+                        "prim=%d\n",
+                        want, have, primEdge);
+            }
+            return;
+        } else {
             st.gaveUpWant = qMax(st.gaveUpWant, want);
             return;
         }
-        requestEdge = ovTarget;
-        overviewOnly = true;
     } else {
         return;
     }

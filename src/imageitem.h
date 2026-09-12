@@ -130,6 +130,12 @@ public:
     qreal stackZ() const { return m_stackZ; }
     /** Item-local pixmap/content rect (no chrome pad). */
     QRectF contentRect() const;
+    /**
+     * Local rect of what is actually painted: soft previews are KeepAspectRatio
+     * fitted into contentRect (letterbox). Selection frames should use this so
+     * the outline matches the pixels, not the full layout box.
+     */
+    QRectF displayContentRect() const;
     /** Scene AABB of the pixmap only (no chrome pad). */
     QRectF contentSceneRect() const;
     /** Content quad in scene coordinates (respects item scale/rotation). */
