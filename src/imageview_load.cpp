@@ -713,12 +713,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 }
 
                 emit host->statusChanged();
-                // Continue soft → overview climb and start the next visible
-                // tiles. Without this, each step waited on scroll/filmstrip
-                // loadsChanged and tiles stayed at 256 forever.
-                if (host->isGalleryMode()) {
-                    host->updateGalleryDecodeWindow();
-                }
+                // Continue climb, but coalesce rescans — a sync
+                // updateGalleryDecodeWindow per INSTALL (setInterest + full
+                // item scan + FullViewportUpdate) stalls scrolling.
+                host->scheduleGalleryDecodeWindowRefresh(48);
             },
             Qt::QueuedConnection);
     });

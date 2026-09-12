@@ -2,6 +2,33 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-519-decode-window-debounce.** Coalesce GUI rescans during soft climb.
+Prior: **518**.
+
+### Problem
+Each PreferCache INSTALL called `updateGalleryDecodeWindow()` synchronously
+(full item scan + setInterest + FullViewportUpdate) → scroll stalls under load.
+
+### Fix
+- `scheduleGalleryDecodeWindowRefresh(48)` after pool climb / filmstrip loadsChanged
+- Drop per-`setPreviewImage` scene invalidate (FullViewportUpdate + item update enough)
+
+### Qt tools for GUI-thread stalls (notes for user)
+- Qt Creator: CPU / QML Profiler, "Events" view
+- GammaRay (object/event inspection)
+- Linux: `perf record -g -p $(pidof biltoo)` + hotspot/speedscope
+- `QElapsedTimer` around slots; assert `QThread::currentThread() == qApp->thread()`
+
+### Done criteria
+- [x] Climb continues without per-INSTALL full rescan
+- [x] Bundle **519**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-518-gallery-climb-continue.** Soft ladder stalled between steps.
 Prior: **517**.
 

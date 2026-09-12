@@ -178,12 +178,6 @@ void ImageItem::setPreviewImage(const QImage &preview)
     setOffset(-s.width() / 2.0, -s.height() / 2.0);
     applyLocalTransform();
     update();
-    // Ensure the view actually schedules a paint for this item's scene rect
-    // (selection used to be the only path that forced a visible upgrade).
-    if (QGraphicsScene *sc = scene()) {
-        sc->invalidate(mapToScene(boundingRect()).boundingRect(),
-                       QGraphicsScene::AllLayers);
-    }
 }
 
 void ImageItem::clearDecodedPixels()

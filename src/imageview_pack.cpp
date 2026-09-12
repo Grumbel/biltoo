@@ -16,6 +16,26 @@
 #include <cstdio>
 #include <QUndoStack>
 
+
+void ImageView::scheduleGalleryDecodeWindowRefresh(int delayMs)
+{
+    if (!isGalleryMode()) {
+        return;
+    }
+    if (!m_galleryDecodeScrollTimer) {
+        m_galleryDecodeScrollTimer = new QTimer(this);
+        m_galleryDecodeScrollTimer->setSingleShot(true);
+        connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
+            if (isGalleryMode()) {
+                updateGalleryDecodeWindow();
+            }
+        });
+    }
+    // Restart with the requested delay (climb uses short; scroll may use longer).
+    m_galleryDecodeScrollTimer->setInterval(qMax(0, delayMs));
+    m_galleryDecodeScrollTimer->start();
+}
+
 void ImageView::updateGalleryDecodeWindow()
 {
     // -------------------------------------------------------------------------

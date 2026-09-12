@@ -856,6 +856,8 @@ public:
     int pendingDecodeCount() const;
     /** Install host soft / schedule SoftOnly for the visible Gallery window. */
     void updateGalleryDecodeWindow();
+    /** Coalesce decode-window rescans (setInterest + schedule) off the hot path. */
+    void scheduleGalleryDecodeWindowRefresh(int delayMs = 48);
 
 signals:
     void statusChanged();
