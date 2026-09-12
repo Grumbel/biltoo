@@ -126,6 +126,8 @@ public:
     void setSortMode(SortMode mode);
     void setThumbnailsForced(bool show) { m_forceThumbnails = show; m_forceNoThumbnails = !show; }
     void setNoThumbnailsForced(bool hide) { m_forceNoThumbnails = hide; if (hide) m_forceThumbnails = false; }
+    void clampSlideshowTransitionToInterval();
+    void rearmSlideshowAfterIntervalChange(int oldInterval);
     void setSlideshowIntervalMs(int ms);
     void startSlideshow();
     void stopSlideshow();
@@ -283,6 +285,10 @@ private slots:
     void about();
     void showKeyboardShortcuts();
     void showPreferences();
+    bool resolveEpubLayoutTarget(QString *epubFile, QString *layoutParams,
+                                 int *keepPage) const;
+    void rewriteEpubSessionPaths(const QString &epubFile, const QString &newParams,
+                                 int keepPage);
     void showEpubLayoutDialog();
     void showSlideshowSettings();
     void onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,

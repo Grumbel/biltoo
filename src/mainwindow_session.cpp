@@ -1948,56 +1948,49 @@ void MainWindow::commitLocationBar()
 }
 
 
-void MainWindow::showEpubLayoutDialog()
+bool MainWindow::resolveEpubLayoutTarget(QString *epubFile, QString *layoutParams,
+                                         int *keepPage) const
 {
     if (m_session.paths().isEmpty()) {
-        return;
+        return false;
     }
     const int idx = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
                         ? m_currentIndex
                         : 0;
     const QString curPath = m_session.paths().at(idx);
 
-    QString epubFile;
-    QString layoutParams;
-    int keepPage = 1;
-
     if (PagePath::isPageRef(curPath)) {
         const PagePath::Ref ref = PagePath::parse(curPath);
         if (!ref.valid || !ref.isEpub()) {
-            if (statusBar()) {
-                statusBar()->showMessage(tr("EPUB Layout applies to EPUB pages only."), 4000);
-            }
-            return;
+            return false;
         }
-        epubFile = ref.pdfPath;
-        layoutParams = ref.epubLayoutParams;
-        keepPage = ref.page;
-    } else if (PagePath::isEpubLayoutOnly(curPath)) {
-        epubFile = PagePath::documentFilePath(curPath);
-        layoutParams = PagePath::epubLayoutParamsOf(curPath);
-    } else if (PagePath::isEpubFile(curPath)) {
-        epubFile = curPath;
-        layoutParams.clear();
-    } else {
-        if (statusBar()) {
-            statusBar()->showMessage(tr("EPUB Layout applies to EPUB pages only."), 4000);
-        }
-        return;
+        *epubFile = ref.pdfPath;
+        *layoutParams = ref.epubLayoutParams;
+        *keepPage = ref.page;
+        return true;
     }
+    if (PagePath::isEpubLayoutOnly(curPath)) {
+        *epubFile = PagePath::documentFilePath(curPath);
+        *layoutParams = PagePath::epubLayoutParamsOf(curPath);
+        *keepPage = 1;
+        return true;
+    }
+    if (PagePath::isEpubFile(curPath)) {
+        *epubFile = curPath;
+        layoutParams->clear();
+        *keepPage = 1;
+        return true;
+    }
+    return false;
+}
 
-    EpubLayoutDialog dlg(this);
-    dlg.setLayoutParams(layoutParams);
-    if (dlg.exec() != QDialog::Accepted) {
-        return;
-    }
-    const QString newParams = dlg.layoutParams();
-    if (newParams == layoutParams) {
-        return;
-    }
-
-    // Rewrite every session page that belongs to this EPUB.
+void MainWindow::rewriteEpubSessionPaths(const QString &epubFile, const QString &newParams,
+                                         int keepPage)
+{
     QStringList paths = m_session.paths();
+    const int idx = (m_currentIndex >= 0 && m_currentIndex < paths.size())
+                        ? m_currentIndex
+                        : 0;
     int newIndex = idx;
     const QFileInfo epubInfo(epubFile);
     const QString epubAbs =
@@ -2025,10 +2018,38 @@ void MainWindow::showEpubLayoutDialog()
     const int startAt = (newIndex >= 0 && newIndex < paths.size()) ? newIndex : 0;
     // Full reload so thumtoo picks up new layout URIs (reflow + cache keys).
     loadFiles(paths, startAt);
+}
+
+void MainWindow::showEpubLayoutDialog()
+{
+    QString epubFile;
+    QString layoutParams;
+    int keepPage = 1;
+    if (!resolveEpubLayoutTarget(&epubFile, &layoutParams, &keepPage)) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("EPUB Layout applies to EPUB pages only."), 4000);
+        }
+        return;
+    }
+
+    EpubLayoutDialog dlg(this);
+    dlg.setLayoutParams(layoutParams);
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+    const QString newParams = dlg.layoutParams();
+    if (newParams == layoutParams) {
+        return;
+    }
+
+    // Rewrite every session page that belongs to this EPUB.
+    rewriteEpubSessionPaths(epubFile, newParams, keepPage);
     if (statusBar()) {
         statusBar()->showMessage(tr("EPUB layout applied."), 3000);
     }
 }
+
+
 
 void MainWindow::openFiles()
 {
@@ -2119,19 +2140,20 @@ void MainWindow::goLast()
     onSlideshowUserNavigated();
 }
 
-void MainWindow::setSlideshowIntervalMs(int ms)
+void MainWindow::clampSlideshowTransitionToInterval()
 {
-    // 0 ms = as fast as the event loop allows; upper bound keeps UI usable.
-    const int oldInterval = m_slideshowIntervalMs;
-    m_slideshowIntervalMs = qBound(0, ms, 3600000); // match UI max 3600s
-    // Transition duration is the full effect (out + in); may use the whole interval.
-    if (m_imageView) {
-        const int cap = m_slideshowIntervalMs;
-        const int tr = m_imageView->slideshowTransitionDurationMs();
-        if (cap >= 0 && tr > cap) {
-            m_imageView->setSlideshowTransitionDurationMs(cap);
-        }
+    if (!m_imageView) {
+        return;
     }
+    const int cap = m_slideshowIntervalMs;
+    const int tr = m_imageView->slideshowTransitionDurationMs();
+    if (cap >= 0 && tr > cap) {
+        m_imageView->setSlideshowTransitionDurationMs(cap);
+    }
+}
+
+void MainWindow::rearmSlideshowAfterIntervalChange(int oldInterval)
+{
     if (!isSlideshowSession()) {
         return;
     }
@@ -2156,6 +2178,18 @@ void MainWindow::setSlideshowIntervalMs(int ms)
         updateSlideshowFromClock();
     }
 }
+
+void MainWindow::setSlideshowIntervalMs(int ms)
+{
+    // 0 ms = as fast as the event loop allows; upper bound keeps UI usable.
+    const int oldInterval = m_slideshowIntervalMs;
+    m_slideshowIntervalMs = qBound(0, ms, 3600000); // match UI max 3600s
+    // Transition duration is the full effect (out + in); may use the whole interval.
+    clampSlideshowTransitionToInterval();
+    rearmSlideshowAfterIntervalChange(oldInterval);
+}
+
+
 
 namespace {
 

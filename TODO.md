@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-636-epub-interval.** Split EPUB layout rewrite and slideshow interval rearm.
+Prior: **635**.
+
+### Change
+- EPUB: `resolveEpubLayoutTarget`, `rewriteEpubSessionPaths`
+- Interval: `clampSlideshowTransitionToInterval`, `rearmSlideshowAfterIntervalChange`
+
+### Done criteria
+- [x] EPUB layout and interval paths named
+- [x] Bundle **636**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-635-zoomblur-expand.** Phase ZoomBlur schedule slots and expanded-path result apply.
 Prior: **634**.
 
