@@ -157,6 +157,13 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::removeSessionIndices);
     connect(m_thumbnailBar, &ThumbnailBar::loadsChanged,
             this, &MainWindow::updateStatus);
+    // Filmstrip put soft into ImageCache; Gallery pass1 only runs on decode-window
+    // ticks. Without this, tiles stay blank until scroll / ladderReady / watchdog.
+    connect(m_thumbnailBar, &ThumbnailBar::loadsChanged, this, [this]() {
+        if (isGalleryMode() && m_imageView) {
+            m_imageView->updateGalleryDecodeWindow();
+        }
+    });
     connect(m_imageView, &ImageView::workspacePathsChanged,
             this, &MainWindow::onWorkspacePathsChanged);
     connect(m_imageView, &ImageView::canvasSelectionChanged, this, [this]() {

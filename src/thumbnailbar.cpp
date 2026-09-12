@@ -891,6 +891,13 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     if (!it || !m_delegate) {
         return;
     }
+    // Shared host soft for Gallery pass1 (same session path key).
+    if (row < m_files.size()) {
+        const QString path = m_files.at(row);
+        if (!path.isEmpty()) {
+            ImageCache::put(path, image);
+        }
+    }
     // Decode-edge pixmap for sharpness; layout uses aspect only.
     const QPixmap pm = QPixmap::fromImage(image);
     it->setData(ThumbnailDelegate::ThumbPixmapRole, pm);

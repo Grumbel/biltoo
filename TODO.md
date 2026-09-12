@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-513-filmstrip-notifies-gallery.** Sixth audit: wire filmstrip soft → Gallery pass1.
+Prior: **512**.
+
+### Hole found (verified)
+Filmstrip soft entered ImageCache but Gallery was never notified. Pass1 only ran on
+scroll / ladderReady / 1s watchdog — so tiles stayed blank while the strip had thumbs.
+
+### Fix
+- `loadsChanged` → `updateGalleryDecodeWindow()` when Gallery mode
+- `setThumbnailIcon` always `ImageCache::put(path, image)`
+
+### Done criteria
+- [x] Filmstrip soft immediately triggers Gallery pass1
+- [x] Bundle **513**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-512-gallery-pass1-host-soft.** Fifth audit: host soft is unconditional.
 Prior: **511**.
 
