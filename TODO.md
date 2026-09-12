@@ -2,6 +2,34 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-518-gallery-climb-continue.** Soft ladder stalled between steps.
+Prior: **517**.
+
+### Symptom
+Logs: INSTALL 256, request need=1024 have=256, INSTALL 512, … then stalls.
+Many tiles never left 256; climb only resumed when filmstrip/scroll refreshed
+the decode window.
+
+### Root cause
+Pool callback cleared `inflight` after each PreferCache step but did **not**
+call `updateGalleryDecodeWindow()`, so the next edge and other tiles waited
+on an external trigger.
+
+### Fix
+- After every pool soft callback: `updateGalleryDecodeWindow()`
+- If `have` already covers `requestEdge` (overview max) stop re-requesting that
+  edge when `want` is higher (tiles/setInterest beyond batchCap)
+
+### Done criteria
+- [x] Soft 256→512→1024 continues without scroll/select
+- [x] Bundle **518**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-517-viewport-mode-warning.** Collapse duplicated FullViewportUpdate branches.
 Prior: **516**.
 

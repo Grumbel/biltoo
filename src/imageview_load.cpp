@@ -547,6 +547,15 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     } else {
         requestEdge = batchCap; // above batch: still request overview max
     }
+    // Soft/overview ladder tops out at batchCap. If we already have that band
+    // but want is higher, stop spinning the same PreferCache edge — tiles /
+    // setInterest cover zoom beyond overview.
+    if (have >= requestEdge * 9 / 10) {
+        if (want > batchCap) {
+            st.gaveUpWant = qMax(st.gaveUpWant, want);
+        }
+        return;
+    }
 
     st.inflight = requestEdge;
     st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
@@ -704,6 +713,12 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 }
 
                 emit host->statusChanged();
+                // Continue soft → overview climb and start the next visible
+                // tiles. Without this, each step waited on scroll/filmstrip
+                // loadsChanged and tiles stayed at 256 forever.
+                if (host->isGalleryMode()) {
+                    host->updateGalleryDecodeWindow();
+                }
             },
             Qt::QueuedConnection);
     });
