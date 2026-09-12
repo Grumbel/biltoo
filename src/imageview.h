@@ -833,6 +833,8 @@ public:
     int resetContentAppearanceForTargets();
 
     QString statusText() const;
+    /** User-facing quality of pixels currently shown for @p item. */
+    QString pixelQualityLabel(const ImageItem *item) const;
     /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */
     QString sessionBadgeText() const;
     /** Path of the last failed Image-mode decode (empty if none). */
@@ -1545,6 +1547,7 @@ private:
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     int m_galleryRelayoutSuppressCount = 0;
     QTimer *m_galleryDecodeScrollTimer = nullptr;
+    QTimer *m_statusRefreshTimer = nullptr;
     QTimer *m_gallerySoftWatchdog = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;
     GalleryPackReason m_debouncedPackReason = GalleryPackReason::ContentChange;

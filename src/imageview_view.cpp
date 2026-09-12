@@ -241,10 +241,21 @@ qreal ImageView::viewScale() const
 
 void ImageView::refreshStatus()
 {
-    emit statusChanged();
-    if (m_hudVisible || m_hudFlashVisible || m_slideshowPausedHud) {
-        viewport()->update();
+    // Coalesce rapid soft-climb / provenance updates so the HUD and status
+    // bar are not rewritten every frame.
+    if (!m_statusRefreshTimer) {
+        m_statusRefreshTimer = new QTimer(this);
+        m_statusRefreshTimer->setSingleShot(true);
+        m_statusRefreshTimer->setInterval(120);
+        connect(m_statusRefreshTimer, &QTimer::timeout, this, [this]() {
+            emit statusChanged();
+            if ((m_hudVisible || m_hudFlashVisible || m_slideshowPausedHud)
+                && viewport()) {
+                viewport()->update();
+            }
+        });
     }
+    m_statusRefreshTimer->start();
 }
 
 void ImageView::zoomViewBy(qreal factor)
@@ -2880,13 +2891,36 @@ QString ImageView::hudFileName() const
     return {};
 }
 
+QString ImageView::pixelQualityLabel(const ImageItem *item) const
+{
+    if (!item) {
+        return {};
+    }
+    // Prefer what is actually on screen over last thumtoo pipeline tag.
+    if (item->hasDecodedPixels()) {
+        return tr("Full resolution");
+    }
+    const int edge = item->displayPixelLongEdge();
+    if (edge <= 0) {
+        return tr("Loading…");
+    }
+    if (edge >= ThumtooCache::kBatchOverviewEdge) {
+        return tr("High quality");
+    }
+    if (edge >= ThumtooCache::kGalleryLadderEdge) {
+        return tr("Preview");
+    }
+    if (edge >= ThumtooCache::kFilmstripLadderEdge) {
+        return tr("Thumbnail");
+    }
+    return tr("Quick preview");
+}
+
 QString ImageView::statusText() const
 {
     if (m_zoomRegionArmed || m_zoomRegionDragging) {
         return tr("Zoom region: drag a rectangle · Esc cancels");
     }
-    // Technical status only (no index badge, no bare filename — those live in
-    // dedicated HUD corners). Used as secondary bottom line when the HUD is pinned.
     ImageItem *item = targetItem();
     if (!item) {
         item = primaryItem();
@@ -2908,71 +2942,74 @@ QString ImageView::statusText() const
         return tr("Ready");
     }
 
+    const QString quality = pixelQualityLabel(item);
+    const int edge = item->displayPixelLongEdge();
+    const QSize native = item->imageSize();
+
     if (isMultiItemMode()) {
         const QString modeLabel = isGalleryMode() ? tr("Gallery") : tr("Workspace");
-        QString text = tr("%1: %2 images  |  View zoom: %3%  |  %4×%5")
+        QString text = tr("%1 · %2 images · Zoom %3%")
                            .arg(modeLabel)
                            .arg(m_items.size())
-                           .arg(qRound(viewScale() * 100))
-                           .arg(item->imageSize().width())
-                           .arg(item->imageSize().height());
+                           .arg(qRound(viewScale() * 100));
+        if (!quality.isEmpty()) {
+            if (edge > 0) {
+                text += tr(" · %1 (%2px)").arg(quality).arg(edge);
+            } else {
+                text += tr(" · %1").arg(quality);
+            }
+        }
+        if (native.width() > 1 && native.height() > 1
+            && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
+            text += tr(" · %1×%2").arg(native.width()).arg(native.height());
+        }
         const int pending = pendingDecodeCount();
         if (pending > 0) {
-            text += tr("  |  Decoding: %n", "status pending decodes", pending);
+            text += tr(" · Loading %1…").arg(pending);
         }
-        if (item->isSelected()) {
+        if (isWorkspaceMode() && item->isSelected()) {
             if (qAbs(item->itemScaleX() - item->itemScaleY()) < 0.005) {
-                text += tr("  |  Item: %1%  |  Rot: %2°")
+                text += tr(" · Item %1% · Rot %2°")
                             .arg(qRound(item->itemScaleX() * 100))
                             .arg(qRound(item->itemRotation()));
             } else {
-                text += tr("  |  Item: %1%×%2%  |  Rot: %3°")
+                text += tr(" · Item %1%×%2% · Rot %3°")
                             .arg(qRound(item->itemScaleX() * 100))
                             .arg(qRound(item->itemScaleY() * 100))
                             .arg(qRound(item->itemRotation()));
             }
-            if (qAbs(item->itemShear()) > 1e-3) {
-                text += tr("  |  Shear: %1").arg(item->itemShear(), 0, 'f', 2);
-            }
-        }
-        if (item->itemOpacity() < 0.999) {
-            text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
-        }
-        {
-            const auto it = m_itemStates.constFind(item->path());
-            if (it != m_itemStates.cend() && it->hasCrop && !it->cropRect.isEmpty()) {
-                text += tr("  |  Cropped: %1×%2")
-                            .arg(it->cropRect.width())
-                            .arg(it->cropRect.height());
-            }
         }
         if (targetHasContentAppearance()) {
-            text += tr("  |  Modified");
-        }
-        {
-            const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
-            if (!src.isEmpty()) {
-                text += tr("  |  Source: %1").arg(src);
-            }
+            text += tr(" · Edited");
         }
         if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-            dbg && dbg[0] != '\0' && dbg[0] != '0') {
+            dbg && dbg[0] != ' ' && dbg[0] != '0') {
             const QString q = ThumtooCache::queueStatsLabel();
             if (!q.isEmpty()) {
-                text += tr("  |  %1").arg(q);
+                text += tr(" · %1").arg(q);
+            }
+            const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
+            if (!src.isEmpty()) {
+                text += tr(" · via %1").arg(src);
             }
         }
         return text;
     }
 
-    // Image mode: zoom is view-level
-    QString text = tr("%1×%2  |  Zoom: %3%  |  Rotation: %4°")
-                       .arg(item->imageSize().width())
-                       .arg(item->imageSize().height())
-                       .arg(qRound(viewScale() * 100))
-                       .arg(qRound(item->itemRotation()));
-    if (qAbs(item->itemShear()) > 1e-3) {
-        text += tr("  |  Shear: %1").arg(item->itemShear(), 0, 'f', 2);
+    // Image mode
+    QString text = tr("%1×%2 · Zoom %3%")
+                       .arg(native.width())
+                       .arg(native.height())
+                       .arg(qRound(viewScale() * 100));
+    if (!quality.isEmpty()) {
+        if (edge > 0 && !item->hasDecodedPixels()) {
+            text += tr(" · %1 (%2px)").arg(quality).arg(edge);
+        } else {
+            text += tr(" · %1").arg(quality);
+        }
+    }
+    if (qAbs(item->itemRotation()) > 0.5) {
+        text += tr(" · Rot %1°").arg(qRound(item->itemRotation()));
     }
     if (item->itemHFlip() || item->itemVFlip()) {
         QStringList flips;
@@ -2982,34 +3019,20 @@ QString ImageView::statusText() const
         if (item->itemVFlip()) {
             flips << tr("V");
         }
-        text += tr("  |  Flip: %1").arg(flips.join(QLatin1Char('+')));
-    }
-    if (item->itemOpacity() < 0.999) {
-        text += tr("  |  Opacity: %1%").arg(qRound(item->itemOpacity() * 100));
-    }
-    {
-        const auto it = m_itemStates.constFind(item->path());
-        if (it != m_itemStates.cend() && it->hasCrop && !it->cropRect.isEmpty()) {
-            // cropRect is original-space size of the kept region.
-            text += tr("  |  Cropped: %1×%2")
-                        .arg(it->cropRect.width())
-                        .arg(it->cropRect.height());
-        }
+        text += tr(" · Flip %1").arg(flips.join(QLatin1Char('+')));
     }
     if (targetHasContentAppearance()) {
-        text += tr("  |  Modified");
-    }
-    {
-        const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
-        if (!src.isEmpty()) {
-            text += tr("  |  Source: %1").arg(src);
-        }
+        text += tr(" · Edited");
     }
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-        dbg && dbg[0] != '\0' && dbg[0] != '0') {
+        dbg && dbg[0] != ' ' && dbg[0] != '0') {
         const QString q = ThumtooCache::queueStatsLabel();
         if (!q.isEmpty()) {
-            text += tr("  |  %1").arg(q);
+            text += tr(" · %1").arg(q);
+        }
+        const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
+        if (!src.isEmpty()) {
+            text += tr(" · via %1").arg(src);
         }
     }
     return text;

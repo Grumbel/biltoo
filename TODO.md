@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-521-friendly-hud-quality.** End-user quality HUD; debounce status flicker.
+Prior: **520**.
+
+### Changes
+- `pixelQualityLabel(item)` from on-screen pixels: Full resolution / High quality /
+  Preview / Thumbnail / Quick preview / Loading…
+- `statusText`: readable mode · count · zoom · quality (px) · size; no jpeg_shrink
+- Internal pipeline tags (`via scaled JPEG`) + queue stats only under THUMTOO_DEBUG
+- `queueStatsLabel`: "N waiting · M decoding" instead of q=/focus=/ep=
+- HUD chip: quality line, not "Ladder: jpeg_shrink"
+- `refreshStatus()` debounced 120ms (soft climb no longer rewrites every frame)
+
+### Done criteria
+- [x] Friendly HUD/status
+- [x] Bundle **521**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-520-intermediate-ladder-step.** Request one ladder step under target first.
 Prior: **519**.
 

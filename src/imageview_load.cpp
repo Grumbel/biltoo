@@ -710,11 +710,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     // may still deliver; failed is permanent and skips forever.
                 }
 
-                emit host->statusChanged();
-                // Continue climb, but coalesce rescans — a sync
-                // updateGalleryDecodeWindow per INSTALL (setInterest + full
-                // item scan + FullViewportUpdate) stalls scrolling.
+                // Coalesce status + decode-window — every INSTALL used to
+                // refresh the HUD and rescan the gallery on the GUI thread.
                 host->scheduleGalleryDecodeWindowRefresh(48);
+                host->refreshStatus();
             },
             Qt::QueuedConnection);
     });

@@ -939,11 +939,20 @@ QString queueStatsLabel()
         return {};
     }
     const auto s = c->queue_stats();
-    return QStringLiteral("q=%1/%2 focus=%3 ep=%4")
-        .arg(qulonglong(s.pending))
-        .arg(s.inflight)
-        .arg(s.focus_full_inflight)
-        .arg(qulonglong(s.interest_epoch));
+    // End-user readable; only shown when THUMTOO_DEBUG is on.
+    QStringList parts;
+    if (s.pending > 0 || s.inflight > 0) {
+        parts << QStringLiteral("%1 waiting · %2 decoding")
+                     .arg(qulonglong(s.pending))
+                     .arg(s.inflight);
+    }
+    if (s.focus_full_inflight > 0) {
+        parts << QStringLiteral("focus decode");
+    }
+    if (parts.isEmpty()) {
+        return QStringLiteral("decoder idle");
+    }
+    return parts.join(QStringLiteral(" · "));
 #else
     return {};
 #endif
@@ -960,15 +969,17 @@ QString lastPixelSourceLabel(const QString &path)
         std::lock_guard lock(g_mu);
         source = g_lastPixelSource.value(path, 0);
     }
+    // How the last ladder/overview bytes were produced (debug-ish). Prefer
+    // ImageView quality labels from on-screen pixels for end users.
     switch (source) {
     case 1:
-        return QStringLiteral("jpeg_shrink");
+        return QStringLiteral("scaled JPEG");
     case 2:
-        return QStringLiteral("embedded");
+        return QStringLiteral("embedded thumb");
     case 3:
-        return QStringLiteral("full");
+        return QStringLiteral("full decode");
     case 4:
-        return QStringLiteral("tile_synth");
+        return QStringLiteral("detail tiles");
     default:
         return {};
     }

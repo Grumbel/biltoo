@@ -650,17 +650,19 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
         } else if (m_hudVisible || m_hudIdentityPulse) {
-            // Compact ladder provenance chip (PixelSource from thumtoo).
+            // Compact quality chip from on-screen pixels (not stale pipeline tags).
             ImageItem *focus = targetItem();
             if (!focus) {
                 focus = primaryItem();
             }
             if (focus) {
-                const QString src =
-                    ThumtooCache::lastPixelSourceLabel(focus->path());
-                if (!src.isEmpty()) {
-                    drawPanel({{tr("Ladder: %1").arg(src), false}}, margin,
-                              margin, false, false);
+                const QString q = pixelQualityLabel(focus);
+                if (!q.isEmpty()) {
+                    const int edge = focus->displayPixelLongEdge();
+                    const QString line = edge > 0 && !focus->hasDecodedPixels()
+                        ? tr("%1 · %2px").arg(q).arg(edge)
+                        : q;
+                    drawPanel({{line, false}}, margin, margin, false, false);
                 }
             }
         }

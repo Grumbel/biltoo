@@ -158,16 +158,12 @@ ImageView::ImageView(QWidget *parent)
                 if (path.isEmpty()) {
                     return;
                 }
-                // Refresh status line Source: label for the focused path.
                 ImageItem *item = targetItem();
                 if (!item) {
                     item = primaryItem();
                 }
                 if (item && item->path() == path) {
-                    emit statusChanged();
-                    if (viewport()) {
-                        viewport()->update();
-                    }
+                    refreshStatus();
                 }
             });
 connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
