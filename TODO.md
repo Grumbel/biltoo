@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-584-gallery-soft-climb-plan.** Pure planSoftClimb for gallery decode.
+Prior: **583**.
+
+### Change
+- `coversEdge` / `SoftClimbPlan` / `planSoftClimb` — pure soft→overview ladder policy
+- `scheduleGalleryDecode` uses the plan; display PreferCache stays an explicit
+  host branch after Kind::None + want > overview
+- Ordered includes at top of imageview_load.cpp
+
+### Done criteria
+- [x] Climb edge selection is data-driven and testable in isolation
+- [x] Bundle **584**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-583-gallery-soft-state-policy.** GallerySoftState + needsSoftSchedule.
 Prior: **582**.
 

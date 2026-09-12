@@ -1,27 +1,75 @@
-#include <cstdlib>
-#include <cstdio>
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include "thumtoocache.h"
 
-#include <QDebug>
+#include "archivepath.h"
+#include "imagecache.h"
 #include "imageitem.h"
 #include "imageloader.h"
-#include "imagecache.h"
-#include "archivepath.h"
 #include "pagepath.h"
 #include "sessionappearance.h"
+#include "thumtoocache.h"
 
+#include <QDateTime>
+#include <QDebug>
 #include <QFileInfo>
+#include <QMetaObject>
+#include <QPointer>
 #include <QScrollBar>
 #include <QThreadPool>
 #include <QTimer>
-#include <QDateTime>
-#include <QPointer>
-#include <QMetaObject>
 #include <QtMath>
+
+#include <cstdio>
+#include <cstdlib>
+
+namespace {
+
+/** ~90% of target long edge counts as delivered (matches soft/overview stops). */
+constexpr int kCoverNumer = 9;
+constexpr int kCoverDenom = 10;
+
+bool coversEdge(int haveLongEdge, int targetEdge)
+{
+    return targetEdge <= 0
+        || haveLongEdge >= (targetEdge * kCoverNumer) / kCoverDenom;
+}
+
+/**
+ * Soft / overview climb only (≤ ovCap). Display PreferCache (> overview) is
+ * handled by the caller — it needs path + host callbacks.
+ */
+struct SoftClimbPlan {
+    enum class Kind { None, Soft, Overview };
+    Kind kind = Kind::None;
+    int edge = 0;
+};
+
+SoftClimbPlan planSoftClimb(int have, int want, int softCap, int ovCap)
+{
+    if (want <= 0 || coversEdge(have, want)) {
+        return {};
+    }
+    if (!coversEdge(have, softCap)) {
+        const int target = qMin(want, softCap);
+        SoftClimbPlan plan{SoftClimbPlan::Kind::Soft, target};
+        const int intermediate = ThumtooCache::prevLadderEdge(target);
+        if (intermediate > 0 && !coversEdge(have, intermediate)) {
+            plan.edge = intermediate;
+        }
+        return plan;
+    }
+    if (want > softCap) {
+        const int ovTarget = qMin(want, ovCap);
+        if (!coversEdge(have, ovTarget)) {
+            return {SoftClimbPlan::Kind::Overview, ovTarget};
+        }
+    }
+    return {};
+}
+
+} // namespace
 
 ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image,
                                           bool applyStoredSessionCrop)
@@ -570,23 +618,17 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
     // Size-first still probes in the background, but never blocks decode:
-    // provisional 1000×1000 or LQIP-only layout must still upgrade to the
-    // zoom-appropriate ladder edge (display-sized, not native full).
+    // provisional layout must still climb to the zoom-appropriate ladder edge.
     if (isProvisionalImageSize(path)) {
         scheduleImageSizeProbe(path);
     }
     GallerySoftState &st = m_gallerySoft[path];
-    if (st.failed) {
-        return;
-    }
-    // Climb / SoftOnly request only when not already waiting on a callback.
-    if (st.inflight > 0 || st.fullInflight) {
+    if (st.failed || st.inflight > 0 || st.fullInflight) {
         return;
     }
 
     // Fast path: updateGalleryDecodeWindow already filled st.have / st.want.
-    // Do not re-scan all items or re-host soft (pass1 owns host installs) —
-    // that was O(n²) and multi-hundred-ms on ~100-tile galleries.
+    // Do not re-scan all items here — that was O(n²) on large galleries.
     int have = st.have;
     int want = st.want;
     if (want <= 0) {
@@ -610,8 +652,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         if (anyFull) {
             return;
         }
-
-        // Host soft only for direct callers (not decode-window pass2).
+        // Host soft only for direct callers (decode-window pass1 owns installs).
         if (have <= 0) {
             const QImage hostSoft = ImageCache::get(path);
             if (!hostSoft.isNull()) {
@@ -621,7 +662,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 st.have = have;
             }
         }
-
         want = galleryWantEdgeForPath(path, sceneVisible);
         st.want = want;
     }
@@ -631,91 +671,67 @@ void ImageView::scheduleGalleryDecode(const QString &path)
 
     // Higher zoom/need or soft arrived — clear shortfall and retry climb.
     if (st.gaveUpWant > 0
-        && (want > st.gaveUpWant || have >= st.gaveUpWant * 9 / 10)) {
+        && (want > st.gaveUpWant || coversEdge(have, st.gaveUpWant))) {
         st.gaveUpWant = 0;
     }
+    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    const int ovCap = ThumtooCache::kBatchOverviewEdge;
     // Soft PreferCache stop: only when still below soft max and that edge gave up.
-    // Do not treat gaveUpWant>=soft as blocking overview (1024) climb.
-    if (have < ThumtooCache::kGalleryLadderEdge * 9 / 10
-        && st.gaveUpWant >= qMin(want, ThumtooCache::kGalleryLadderEdge)) {
+    if (!coversEdge(have, softCap)
+        && st.gaveUpWant >= qMin(want, softCap)) {
         return;
     }
     if (gallerySoftInflightCount() >= galleryDecodeConcurrency()) {
         return;
     }
 
-    // PreferCache / SoftOnly only up to kGalleryLadderEdge (512). Higher need
-    // uses scheduleOverviewPixels (FastBatch ≤ kBatchOverviewEdge = 1024).
-    // Thumtoo durable soft max is 512; 2048 is not a soft/overview level — Image
-    // mode full decode owns that. Do not mark gaveUpWant for want>soft when we
-    // still need overview climb (that froze tiles at 512).
-    const int softCap = ThumtooCache::kGalleryLadderEdge;
-    const int ovCap = ThumtooCache::kBatchOverviewEdge;
-    int requestEdge = 0;
-    bool overviewOnly = false;
-
-    if (have < softCap * 9 / 10) {
-        const int target = qMin(want, softCap);
-        const int intermediate = ThumtooCache::prevLadderEdge(target);
-        requestEdge = target;
-        if (intermediate > 0 && have < intermediate * 9 / 10) {
-            requestEdge = intermediate;
-        }
-    } else if (want > softCap) {
-        const int ovTarget = qMin(want, ovCap);
-        if (have < ovTarget * 9 / 10) {
-            requestEdge = ovTarget;
-            overviewOnly = true;
-        } else if (want > ovCap) {
-            // Overview in hand: PreferCache display raster ≤2048 (uses tiles when
-            // FocusFull has built them). setPrimaryInterest alone only started
-            // EnsureTiles and never installed host pixels — and a primary-only
-            // interest snapshot wiped Gallery near/speculative work every scroll.
-            const int dispEdge =
-                qMin(want, ThumtooCache::kImageLadderEdge);
-            if (have >= dispEdge * 9 / 10) {
-                st.gaveUpWant = qMax(st.gaveUpWant, want);
-                return;
-            }
-            if (ThumtooCache::isPixelsPending(path, dispEdge)) {
-                st.inflight = dispEdge;
-                st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
-                return;
-            }
-            if (ThumtooCache::scheduleDisplayPixels(path, dispEdge)) {
-                st.inflight = dispEdge;
-                st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
-                if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                    dbg && dbg[0] != '\0' && dbg[0] != '0') {
-                    fprintf(stderr,
-                            "biltoo/gallery: display request path need=%d have=%d "
-                            "disp=%d\n",
-                            want, have, dispEdge);
-                }
-            } else {
-                const QImage hit = ImageCache::get(path, dispEdge);
-                if (!hit.isNull()) {
-                    const int got = qMax(hit.width(), hit.height());
-                    if (got > have) {
-                        onImagePreviewLoaded(path, hit, m_loadGeneration.load(),
-                                             static_cast<int>(LoadAdd));
-                        st.have = qMax(st.have, got);
-                    }
-                }
-                if (st.have < dispEdge * 9 / 10) {
-                    st.gaveUpWant = qMax(st.gaveUpWant, dispEdge);
-                }
-            }
-            return;
-        } else {
+    // Soft / overview plan (pure). Display PreferCache is a separate host path.
+    const SoftClimbPlan climb = planSoftClimb(have, want, softCap, ovCap);
+    if (climb.kind == SoftClimbPlan::Kind::None) {
+        if (want <= ovCap) {
             st.gaveUpWant = qMax(st.gaveUpWant, want);
             return;
         }
-
-    } else {
+        // Overview in hand: PreferCache display raster ≤2048.
+        const int dispEdge = qMin(want, ThumtooCache::kImageLadderEdge);
+        if (coversEdge(have, dispEdge)) {
+            st.gaveUpWant = qMax(st.gaveUpWant, want);
+            return;
+        }
+        if (ThumtooCache::isPixelsPending(path, dispEdge)) {
+            st.inflight = dispEdge;
+            st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+            return;
+        }
+        if (ThumtooCache::scheduleDisplayPixels(path, dispEdge)) {
+            st.inflight = dispEdge;
+            st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                dbg && dbg[0] != '\0' && dbg[0] != '0') {
+                fprintf(stderr,
+                        "biltoo/gallery: display request path need=%d have=%d "
+                        "disp=%d\n",
+                        want, have, dispEdge);
+            }
+        } else {
+            const QImage hit = ImageCache::get(path, dispEdge);
+            if (!hit.isNull()) {
+                const int got = ImageCache::longEdge(hit);
+                if (got > have) {
+                    onImagePreviewLoaded(path, hit, m_loadGeneration.load(),
+                                         static_cast<int>(LoadAdd));
+                    st.have = qMax(st.have, got);
+                }
+            }
+            if (!coversEdge(st.have, dispEdge)) {
+                st.gaveUpWant = qMax(st.gaveUpWant, dispEdge);
+            }
+        }
         return;
     }
 
+    const int requestEdge = climb.edge;
+    const bool overviewOnly = (climb.kind == SoftClimbPlan::Kind::Overview);
     st.inflight = requestEdge;
     st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
     addPendingWorkspacePath(path);
