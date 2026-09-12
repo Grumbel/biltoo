@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-668-orient-via-snapshot.** orientSlideshowImage uses shared snapshot.
+Prior: **667**.
+
+### Change
+- `snapshotSlideshowContentAppearance` matches layout resolution order (incl. crop fields)
+- `orientSlideshowImage` → snapshot + `materializeDisplay(SoftPreview)`
+- Same appearance path as async phase buffer upgrade (no duplicate orient logic)
+
+### Done criteria
+- [x] Slideshow orient and phase upgrade share appearance resolution
+- [x] Bundle **668**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-667-motion-tick-no-atlas.** Motion tick does not rebuild atlas.
 Prior: **666**.
 

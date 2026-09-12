@@ -1108,6 +1108,7 @@ bool ImageView::snapshotSlideshowContentAppearance(const QString &path,
                                                    WorkspaceItemState *out) const
 {
     // GUI-only: session map → path map → durable XDG. Worker must not call this.
+    // Same resolution order as imageWithSessionAppearance (without transforming).
     if (!out || path.isEmpty()) {
         return false;
     }
@@ -1129,10 +1130,16 @@ bool ImageView::snapshotSlideshowContentAppearance(const QString &path,
     ThumtooCache::StoredContentAppearance stored;
     if (ThumtooCache::loadContentAppearance(path, &stored)
         && (stored.contentHFlip || stored.contentVFlip
-            || stored.contentQuarterTurns != 0)) {
+            || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+        out->path = path;
+        out->sessionId = sid;
         out->contentHFlip = stored.contentHFlip;
         out->contentVFlip = stored.contentVFlip;
         out->contentQuarterTurns = stored.contentQuarterTurns;
+        out->hasCrop = stored.hasCrop;
+        out->cropRect = stored.cropRect;
+        out->cropSourceSize = stored.cropSourceSize;
+        out->cropRotation = stored.cropRotation;
         return SessionAppearance::hasContentAppearance(*out);
     }
     return false;
@@ -1368,10 +1375,17 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
 
 QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) const
 {
+    // Soft/slideshow path: flip + quarter-turns + grade only (no crop bake).
+    // Shares appearance resolution with scheduleSlideshowPhaseBufferUpgrade.
     if (raw.isNull() || path.isEmpty()) {
         return raw;
     }
-    QImage oriented = imageWithSessionAppearance(raw, sessionIdForPath(path), path);
+    WorkspaceItemState app;
+    if (!snapshotSlideshowContentAppearance(path, &app)) {
+        return raw;
+    }
+    const QImage oriented = SessionAppearance::materializeDisplay(
+        raw, app, SessionAppearance::PixelKind::SoftPreview);
     return oriented.isNull() ? raw : oriented;
 }
 
