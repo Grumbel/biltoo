@@ -2255,6 +2255,46 @@ void ImageView::tickSlideshowMotion()
     viewport()->update();
 }
 
+void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
+                                                     const QSize &before,
+                                                     const QSize &after)
+{
+    if (!item || !viewport()) {
+        return;
+    }
+    if (!after.isValid() || after.width() < 1 || after.height() < 1) {
+        return;
+    }
+    const bool beforeOk = before.isValid() && before.width() > 1 && before.height() > 1;
+    auto aspect = [](const QSize &s) -> qreal {
+        return qreal(s.width()) / qreal(qMax(1, s.height()));
+    };
+    const bool aspectChanged =
+        !beforeOk || qAbs(aspect(before) - aspect(after)) > 0.02;
+    if (aspectChanged) {
+        if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
+            applySlideshowZoomFraming(item);
+        } else if (!m_slideshowProgressActive) {
+            fitItem(item, currentFitAspectMode());
+        }
+    } else if (beforeOk && before != after) {
+        // Same aspect, larger/smaller logical size: scale the view so the image
+        // keeps the same on-screen footprint (soft→native must not zoom).
+        const qreal factor = qreal(before.width()) / qreal(after.width());
+        if (factor > 0.0 && qIsFinite(factor) && !qFuzzyCompare(factor, 1.0)) {
+            const QPointF center = mapToScene(viewport()->rect().center());
+            QTransform t = transform();
+            t.translate(center.x(), center.y());
+            t.scale(factor, factor);
+            t.translate(-center.x(), -center.y());
+            setTransform(t);
+        }
+    }
+    if (m_scene) {
+        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    }
+}
+
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
 {
     if (!item) {

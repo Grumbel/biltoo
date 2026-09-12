@@ -1164,6 +1164,13 @@ private:
     void updateMouseInfo(const QPoint &viewPos);
     /** Frame @p item in the view. Image mode: does not clear rotation/flips. */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
+    /**
+     * After logical size change on the Image-mode target: keep on-screen framing
+     * when aspect is stable (soft→full / probe magnitude). Refit only if aspect
+     * changed or size was unknown.
+     */
+    void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,
+                                              const QSize &after);
     Qt::AspectRatioMode currentFitAspectMode() const;
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;

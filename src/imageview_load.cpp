@@ -947,9 +947,9 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                 }
                 // Upgrade loading placeholder (same path) in place when possible.
                 if (cur->path() == path && !cur->hasDecodedPixels()) {
-                    // Soft install gate bakes appearance and syncs layout aspect.
-                    // Do not setIntrinsicSize from unoriented preview pixels first.
+                    // Soft install in place — do not refit on sample upgrade.
                     {
+                        const QSize before = cur->imageSize();
                         const SessionImageId sid =
                             cur->sessionId() != kInvalidSessionImageId
                                 ? cur->sessionId()
@@ -957,17 +957,8 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                         installDisplayPixels(cur, image,
                                              SessionAppearance::PixelKind::SoftPreview,
                                              sid);
-                    }
-                    // Always re-frame: provisional size adopt and/or content
-                    // orientation swap can change the fit box.
-                    if (!m_slideshowProgressActive) {
-                        fitItem(cur, currentFitAspectMode());
-                    } else {
-                        applySlideshowZoomFraming(cur);
-                    }
-                    if (m_scene) {
-                        m_scene->setSceneRect(
-                            cur->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+                        preserveImageViewOnLogicalSizeChange(
+                            cur, before, cur->imageSize());
                     }
                     if (viewport()) {
                         viewport()->update();
@@ -1062,6 +1053,24 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (isImageMode()) {
             m_lastLoadError.clear();
             rememberSizeFromDecode(path, image);
+            // Same path already on canvas: install full pixels in place. Soft→full
+            // must not clearLiveCanvas + fitItem (that resets zoom).
+            if (ImageItem *cur = targetItem();
+                cur && cur->path() == path) {
+                const QSize before = cur->imageSize();
+                const SessionImageId sid =
+                    cur->sessionId() != kInvalidSessionImageId
+                        ? cur->sessionId()
+                        : m_currentSessionId;
+                installDisplayPixels(cur, image,
+                                     SessionAppearance::PixelKind::FullSource, sid);
+                preserveImageViewOnLogicalSizeChange(cur, before, cur->imageSize());
+                if (viewport()) {
+                    viewport()->update();
+                }
+                emit statusChanged();
+                return;
+            }
             // Suppress paints between removing the old item and fitting the new one
             // so we never present a native-scale (or empty) intermediate frame.
             setUpdatesEnabled(false);

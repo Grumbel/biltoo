@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-574-no-zoom-on-hires.** Soft→full must not change Image-mode zoom.
+Prior: **573**.
+
+### Cause
+LoadReplace cleared the canvas and fitItem on every full decode; soft upgrades
+also always fitItem. High-res arrival reset zoom.
+
+### Fix
+- `preserveImageViewOnLogicalSizeChange`: same aspect → scale view to keep
+  footprint; aspect change → fit
+- LoadReplace same path: in-place FullSource install
+- Soft upgrade in place: no unconditional fit
+- applyProbedImageSize uses the same preserve helper
+
+### Done criteria
+- [x] Soft→full keeps zoom
+- [x] Bundle **574**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-573-samples-never-write-intrinsic.** setSourceImage and orientation sync never write sample magnitude.
 Prior: **572**.
 

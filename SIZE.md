@@ -30,3 +30,9 @@ logical size.
 - Seeding or growing intrinsic from sample pixel dimensions
 - `layoutSizeForPath` returning raw soft size
 - Pack / fit / HUD from `pixmap().size()`
+
+## View framing
+
+Pixel upgrades (soft→full) must not change zoom. Use
+`preserveImageViewOnLogicalSizeChange`: refit only when aspect changes; when
+only magnitude changes, scale the view so the on-screen footprint stays put.

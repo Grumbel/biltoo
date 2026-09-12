@@ -654,15 +654,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         item->setIntrinsicSize(layoutSize);
         any = true;
         if (isImageMode() && item == targetItem()) {
-            if (m_slideshowProgressActive
-                && m_slideshowMotion == SlideshowMotion::Off) {
-                applySlideshowZoomFraming(item);
-            } else if (!m_slideshowProgressActive) {
-                fitItem(item, currentFitAspectMode());
-            }
-            if (m_scene) {
-                m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-            }
+            preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);
         }
     }
     if (any && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
