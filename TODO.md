@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-535-soft-inflight-loop.** Stop have=0 / schedulePixels SKIP soft loops.
+Prior: **534**.
+
+### Symptom
+Repeated `soft request need=… have=0 req=256` + `schedulePixels SKIP (inflight/settled)`
+until ladderReady. GUI ok after 534; load spun.
+
+### Changes
+- Keep `soft.inflight` while `isPixelsPending`
+- On settled SKIP: ImageCache host only (no loadThumbnail re-spam)
+- `gaveUpWant` stops soft path at softTarget even when have==0
+- `isPixelsPending` helper
+
+### Done criteria
+- [x] Bundle **535**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-534-set-interest-async.** setInterest off GUI (was 300–1000ms).
 Prior: **533**.
 

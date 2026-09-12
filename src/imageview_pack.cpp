@@ -188,7 +188,7 @@ void ImageView::updateGalleryDecodeWindow()
         if (st.have >= want && !anyBlank) {
             continue;
         }
-        if (st.gaveUpWant >= want && st.have > 0 && !anyBlank) {
+        if (st.gaveUpWant >= want && !anyBlank) {
             continue;
         }
         if (st.inflight > 0 && st.have > 0 && !anyBlank) {

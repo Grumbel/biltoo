@@ -129,6 +129,8 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
  */
 /** @return false if skipped (already in-flight, settled success, or unsupported). */
 bool schedulePixels(const QString &path, int maxEdge);
+/** True if SoftOnly for path#edge is queued or actively decoding. */
+bool isPixelsPending(const QString &path, int maxEdge);
 
 /**
  * FastBatch overview: request_overview_pixels (≤ kBatchOverviewEdge).

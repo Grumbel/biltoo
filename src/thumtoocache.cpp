@@ -1032,6 +1032,23 @@ bool schedulePixels(const QString &path, int maxEdge)
 #endif
 }
 
+bool isPixelsPending(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (maxEdge <= 0 || path.isEmpty()) {
+        return false;
+    }
+    init();
+    const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
+    std::lock_guard lock(g_mu);
+    return g_pixelsInflight.contains(inflightKey);
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#endif
+}
+
 bool scheduleOverviewPixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
