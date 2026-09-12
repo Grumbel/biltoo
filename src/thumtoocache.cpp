@@ -177,6 +177,8 @@ struct PendingPixels {
 std::vector<PendingPixels> g_pixelsQueue;
 /** path#edge already finished (hit or miss) this process — no re-queue. */
 QSet<QString> g_pixelsSettled;
+/** path → last PixelSource int from ladderProvenance. */
+QHash<QString, int> g_lastPixelSource;
 constexpr int kMaxPixelQueue = 48;
 
 #ifdef BILTOO_HAVE_THUMTOO
@@ -836,6 +838,12 @@ void startNextPixelJobsUnlocked()
                 }
                 startNextPixelJobsUnlocked();
             }
+            {
+                std::lock_guard lock(g_mu);
+                if (source != 0) {
+                    g_lastPixelSource.insert(pathCopy, source);
+                }
+            }
             emit bridge()->ladderReady(pathCopy, edge, decoded);
             emit bridge()->ladderProvenance(pathCopy, edge, source);
         };
@@ -881,6 +889,36 @@ bool isPixelsInflight(const QString &path, int maxEdge)
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
     return false;
+#endif
+}
+
+
+QString lastPixelSourceLabel(const QString &path)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty()) {
+        return {};
+    }
+    int source = 0;
+    {
+        std::lock_guard lock(g_mu);
+        source = g_lastPixelSource.value(path, 0);
+    }
+    switch (source) {
+    case 1:
+        return QStringLiteral("jpeg_shrink");
+    case 2:
+        return QStringLiteral("embedded");
+    case 3:
+        return QStringLiteral("full");
+    case 4:
+        return QStringLiteral("tile_synth");
+    default:
+        return {};
+    }
+#else
+    Q_UNUSED(path);
+    return {};
 #endif
 }
 

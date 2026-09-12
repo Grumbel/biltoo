@@ -153,7 +153,21 @@ ImageView::ImageView(QWidget *parent)
             });
 
     // Soft preview: install better ladder pixels; clear inflight when matched.
-    connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
+        connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderProvenance, this,
+            [this](const QString &path, int, int) {
+                if (path.isEmpty()) {
+                    return;
+                }
+                // Refresh status line Source: label for the focused path.
+                ImageItem *item = targetItem();
+                if (!item) {
+                    item = primaryItem();
+                }
+                if (item && item->path() == path) {
+                    emit statusChanged();
+                }
+            });
+connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int maxEdge, const QImage &image) {
                 if (path.isEmpty() || !isGalleryMode()) {
                     return;

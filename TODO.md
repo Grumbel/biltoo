@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-492-provenance-status.** Status bar shows ladder PixelSource.
+Prior: **491**. Companion: **thumtoo-173**.
+
+### Change
+- ThumtooCache::lastPixelSourceLabel
+- statusText appends Source: jpeg_shrink|embedded|full|tile_synth
+- ladderProvenance refreshes status for focused path
+
+### Next
+- PreferCache gallery overview via request_raster
+- Optional dedicated HUD chip
+
+### Done criteria
+- [x] Provenance in status
+- [x] Bundle **492**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-491-request-raster-provenance.** Soft path via request_raster; ladderProvenance signal.
 Prior: **490**. Companion: **thumtoo-173**.
 

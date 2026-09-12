@@ -153,6 +153,9 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
  */
 quint64 setPrimaryInterest(const QString &path, int edge);
 
+/** Human label for last ladderProvenance on this path (empty if unknown). */
+QString lastPixelSourceLabel(const QString &path);
+
 /** True while a request_pixels for this path/edge is queued or running. */
 bool isPixelsInflight(const QString &path, int maxEdge);
 

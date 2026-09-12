@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "thumtoocache.h"
 #include "imagecache.h"
 #include "imageloader.h"
 #include "imageloader.h"
@@ -2852,6 +2853,12 @@ QString ImageView::statusText() const
         if (targetHasContentAppearance()) {
             text += tr("  |  Modified");
         }
+        {
+            const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
+            if (!src.isEmpty()) {
+                text += tr("  |  Source: %1").arg(src);
+            }
+        }
         return text;
     }
 
@@ -2888,6 +2895,12 @@ QString ImageView::statusText() const
     }
     if (targetHasContentAppearance()) {
         text += tr("  |  Modified");
+    }
+    {
+        const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
+        if (!src.isEmpty()) {
+            text += tr("  |  Source: %1").arg(src);
+        }
     }
     return text;
 }
