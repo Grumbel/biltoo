@@ -3025,6 +3025,160 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
     }
 }
 
+void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternalSelection,
+                                     const QPointF &scenePos, bool hasScenePos,
+                                     const QList<qint64> &sessionIds)
+{
+    const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
+    if (expanded.isEmpty()) {
+        return;
+    }
+    QStringList novel;
+    for (const QString &p : expanded) {
+        if (!m_session.paths().contains(p)) {
+            novel.append(p);
+        }
+    }
+    if (!novel.isEmpty()) {
+        appendFiles(novel);
+    }
+    int i = 0;
+    for (const QString &img : expanded) {
+        SessionImageId sid = kInvalidSessionImageId;
+        int slot = -1;
+        // Prefer identity from the filmstrip drag payload (duplicate-safe).
+        if (i < sessionIds.size() && sessionIds.at(i) != 0
+            && sessionIds.at(i) != static_cast<qint64>(kInvalidSessionImageId)) {
+            sid = static_cast<SessionImageId>(sessionIds.at(i));
+            slot = m_session.indexOfId(sid);
+        }
+        const SessionImageId sourceSid = sid;
+        // Prefer session-id membership over path counts (duplicates share a path).
+        const bool alreadyOnCanvas = (sourceSid != kInvalidSessionImageId)
+            ? (m_imageView->findItemBySessionId(sourceSid) != nullptr)
+            : (m_imageView->workspacePathOccurrenceCount(img) > 0);
+        // Session image already on the canvas: allocate a new session image
+        // (drop-duplicate) and copy content appearance so a cropped filmstrip
+        // drag does not place a full-frame / wrong-looking twin.
+        if (alreadyOnCanvas && (slot < 0 || m_imageView->findItemBySessionId(sid))) {
+            m_session.append(img);
+            const SessionImageId newSid = m_session.ids().isEmpty()
+                ? kInvalidSessionImageId
+                : m_session.ids().last();
+            if (sourceSid != kInvalidSessionImageId && newSid != kInvalidSessionImageId) {
+                m_imageView->copySessionAppearance(sourceSid, newSid);
+            }
+            if (m_thumbnailBar) {
+                m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+                m_thumbnailBar->setMultiSelectEnabled(true);
+            }
+            slot = m_session.size() - 1;
+            sid = newSid;
+        } else if (slot < 0) {
+            slot = m_session.lastIndexOfPath(img);
+            sid = sessionIdAt(slot);
+        }
+        if (hasScenePos) {
+            const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
+            if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+                dbg && dbg[0] != '\0' && dbg[0] != '0') {
+                fprintf(stderr,
+                        "biltoo/drop: placeOrMove path=%s sid=%lld slot=%d "
+                        "pos=(%.1f,%.1f) alreadyOnCanvas=%d\n",
+                        qPrintable(img), static_cast<long long>(sid), slot,
+                        pos.x(), pos.y(), alreadyOnCanvas ? 1 : 0);
+            }
+            // placeOrMoveImageAt owns identity via PendingSessionBind / move-by-id.
+            // Do NOT bindSelectedSessionIds here — that stamped sid onto every
+            // currently selected tile and created duplicate SessionImageIds.
+            m_imageView->placeOrMoveImageAt(img, pos, sid, slot);
+        } else {
+            if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+                dbg && dbg[0] != '\0' && dbg[0] != '0') {
+                fprintf(stderr,
+                        "biltoo/drop: NO scene pos — addImageForSession path=%s "
+                        "sid=%lld (appearance may restore old pose)\n",
+                        qPrintable(img), static_cast<long long>(sid));
+            }
+            m_imageView->addImageForSession(img, sid, slot);
+        }
+        ++i;
+    }
+    // Defer membership sync — rebind during the drop stack asserted under
+    // Qt 6.11 ("destructor may have already run" / wrong type).
+    QTimer::singleShot(0, this, [this]() {
+        if (!isWorkspaceMode()) {
+            return;
+        }
+        syncThumbnailCanvasMembership();
+        if (m_session.paths().size() > 1 && m_thumbnailBar
+            && !(m_thumbnailDock ? m_thumbnailDock->isVisible()
+                                : m_thumbnailBar->isVisible())) {
+            m_toggleThumbnailBarAct->setChecked(true);
+            if (m_thumbnailDock) {
+                m_thumbnailDock->setVisible(true);
+            } else {
+                m_thumbnailBar->setVisible(true);
+            }
+        }
+        updateStatus();
+    });
+    return;
+}
+
+void MainWindow::handleGalleryDrop(const QStringList &paths, bool fromInternalSelection)
+{
+    const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
+    if (expanded.isEmpty()) {
+        return;
+    }
+    for (const QString &p : expanded) {
+        if (p.isEmpty()) {
+            continue;
+        }
+        m_session.append(p);
+    }
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+    }
+    applyThumbnailVisibility();
+    const ImageView::LayoutMode layout = m_imageView
+        ? m_imageView->layoutMode()
+        : ImageView::LayoutMode::Masonry;
+    populateGalleryCanvas();
+    if (m_imageView) {
+        m_imageView->enterGallery(layout);
+    }
+    updateStatus();
+    return;
+}
+
+void MainWindow::handleImageModeDrop(const QStringList &paths, bool fromInternalSelection)
+{
+    // Image mode: always append to the session (Open still replaces).
+    // Drops from the thumbnail bar are already in the session — just navigate
+    // to the first path instead of wiping the session down to one file.
+    const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
+    if (expanded.isEmpty()) {
+        return;
+    }
+    QStringList novel;
+    for (const QString &p : expanded) {
+        if (!m_session.paths().contains(p)) {
+            novel.append(p);
+        }
+    }
+    if (!novel.isEmpty()) {
+        appendFiles(novel);
+    }
+    // Focus the first dropped path (existing or newly appended).
+    const QString focus = expanded.first();
+    const int idx = m_session.paths().indexOf(focus);
+    if (idx >= 0) {
+        setCurrentIndex(idx);
+    }
+}
+
 void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                                    const QPointF &scenePos, bool hasScenePos,
                                    const QList<qint64> &sessionIds,
@@ -3061,156 +3215,20 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
                 static_cast<long long>(internalPaths.size()));
     }
     if (isWorkspaceMode()) {
-        const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
-        if (expanded.isEmpty()) {
-            return;
-        }
-        QStringList novel;
-        for (const QString &p : expanded) {
-            if (!m_session.paths().contains(p)) {
-                novel.append(p);
-            }
-        }
-        if (!novel.isEmpty()) {
-            appendFiles(novel);
-        }
-        int i = 0;
-        for (const QString &img : expanded) {
-            SessionImageId sid = kInvalidSessionImageId;
-            int slot = -1;
-            // Prefer identity from the filmstrip drag payload (duplicate-safe).
-            if (i < sessionIds.size() && sessionIds.at(i) != 0
-                && sessionIds.at(i) != static_cast<qint64>(kInvalidSessionImageId)) {
-                sid = static_cast<SessionImageId>(sessionIds.at(i));
-                slot = m_session.indexOfId(sid);
-            }
-            const SessionImageId sourceSid = sid;
-            // Prefer session-id membership over path counts (duplicates share a path).
-            const bool alreadyOnCanvas = (sourceSid != kInvalidSessionImageId)
-                ? (m_imageView->findItemBySessionId(sourceSid) != nullptr)
-                : (m_imageView->workspacePathOccurrenceCount(img) > 0);
-            // Session image already on the canvas: allocate a new session image
-            // (drop-duplicate) and copy content appearance so a cropped filmstrip
-            // drag does not place a full-frame / wrong-looking twin.
-            if (alreadyOnCanvas && (slot < 0 || m_imageView->findItemBySessionId(sid))) {
-                m_session.append(img);
-                const SessionImageId newSid = m_session.ids().isEmpty()
-                    ? kInvalidSessionImageId
-                    : m_session.ids().last();
-                if (sourceSid != kInvalidSessionImageId && newSid != kInvalidSessionImageId) {
-                    m_imageView->copySessionAppearance(sourceSid, newSid);
-                }
-                if (m_thumbnailBar) {
-                    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-                    m_thumbnailBar->setMultiSelectEnabled(true);
-                }
-                slot = m_session.size() - 1;
-                sid = newSid;
-            } else if (slot < 0) {
-                slot = m_session.lastIndexOfPath(img);
-                sid = sessionIdAt(slot);
-            }
-            if (hasScenePos) {
-                const QPointF pos = scenePos + QPointF(28.0 * i, 22.0 * i);
-                if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
-                    dbg && dbg[0] != '\0' && dbg[0] != '0') {
-                    fprintf(stderr,
-                            "biltoo/drop: placeOrMove path=%s sid=%lld slot=%d "
-                            "pos=(%.1f,%.1f) alreadyOnCanvas=%d\n",
-                            qPrintable(img), static_cast<long long>(sid), slot,
-                            pos.x(), pos.y(), alreadyOnCanvas ? 1 : 0);
-                }
-                // placeOrMoveImageAt owns identity via PendingSessionBind / move-by-id.
-                // Do NOT bindSelectedSessionIds here — that stamped sid onto every
-                // currently selected tile and created duplicate SessionImageIds.
-                m_imageView->placeOrMoveImageAt(img, pos, sid, slot);
-            } else {
-                if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
-                    dbg && dbg[0] != '\0' && dbg[0] != '0') {
-                    fprintf(stderr,
-                            "biltoo/drop: NO scene pos — addImageForSession path=%s "
-                            "sid=%lld (appearance may restore old pose)\n",
-                            qPrintable(img), static_cast<long long>(sid));
-                }
-                m_imageView->addImageForSession(img, sid, slot);
-            }
-            ++i;
-        }
-        // Defer membership sync — rebind during the drop stack asserted under
-        // Qt 6.11 ("destructor may have already run" / wrong type).
-        QTimer::singleShot(0, this, [this]() {
-            if (!isWorkspaceMode()) {
-                return;
-            }
-            syncThumbnailCanvasMembership();
-            if (m_session.paths().size() > 1 && m_thumbnailBar
-                && !(m_thumbnailDock ? m_thumbnailDock->isVisible()
-                                    : m_thumbnailBar->isVisible())) {
-                m_toggleThumbnailBarAct->setChecked(true);
-                if (m_thumbnailDock) {
-                    m_thumbnailDock->setVisible(true);
-                } else {
-                    m_thumbnailBar->setVisible(true);
-                }
-            }
-            updateStatus();
-        });
+        handleWorkspaceDrop(paths, fromInternalSelection, scenePos, hasScenePos, sessionIds);
         return;
     }
-
-    // Gallery mode: each dropped path becomes a new session row (allows the
-    // same file more than once). Thumbnail-bar drags therefore duplicate;
-    // external files are appended as usual.
     if (isGalleryMode()) {
-        const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
-        if (expanded.isEmpty()) {
-            return;
-        }
-        for (const QString &p : expanded) {
-            if (p.isEmpty()) {
-                continue;
-            }
-            m_session.append(p);
-        }
-        if (m_thumbnailBar) {
-            m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-        }
-        applyThumbnailVisibility();
-        const ImageView::LayoutMode layout = m_imageView
-            ? m_imageView->layoutMode()
-            : ImageView::LayoutMode::Masonry;
-        populateGalleryCanvas();
-        if (m_imageView) {
-            m_imageView->enterGallery(layout);
-        }
-        updateStatus();
+        handleGalleryDrop(paths, fromInternalSelection);
         return;
     }
-
-    // Image mode: always append to the session (Open still replaces).
-    // Drops from the thumbnail bar are already in the session — just navigate
-    // to the first path instead of wiping the session down to one file.
-    const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
-    if (expanded.isEmpty()) {
-        return;
-    }
-    QStringList novel;
-    for (const QString &p : expanded) {
-        if (!m_session.paths().contains(p)) {
-            novel.append(p);
-        }
-    }
-    if (!novel.isEmpty()) {
-        appendFiles(novel);
-    }
-    // Focus the first dropped path (existing or newly appended).
-    const QString focus = expanded.first();
-    const int idx = m_session.paths().indexOf(focus);
-    if (idx >= 0) {
-        setCurrentIndex(idx);
-    }
+    handleImageModeDrop(paths, fromInternalSelection);
     Q_UNUSED(modifiers);
 }
+
+
+
+
 
 void MainWindow::onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                                 const QPointF &scenePos, bool hasScenePos,

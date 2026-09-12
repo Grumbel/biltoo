@@ -457,6 +457,11 @@ private:
     void finishApplyExpandedAppend();
     void setExpandProgress(int current, int total, const QString &message);
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
+    void handleWorkspaceDrop(const QStringList &paths, bool fromInternalSelection,
+                             const QPointF &scenePos, bool hasScenePos,
+                             const QList<qint64> &sessionIds);
+    void handleGalleryDrop(const QStringList &paths, bool fromInternalSelection);
+    void handleImageModeDrop(const QStringList &paths, bool fromInternalSelection);
     void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                            const QPointF &scenePos, bool hasScenePos,
                            const QList<qint64> &sessionIds = {},

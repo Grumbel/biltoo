@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-641-drop-handlers.** Split handleDroppedUrls by view mode.
+Prior: **640**.
+
+### Change
+- `handleWorkspaceDrop` — place/duplicate at scene pos
+- `handleGalleryDrop` — append session rows + repack
+- `handleImageModeDrop` — append novel paths + focus
+
+### Done criteria
+- [x] Drop path modes named
+- [x] Bundle **641**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-640-include-projectfile.** Include projectfile.h in mainwindow.h for complete Project* types.
 Prior: **639**.
 
