@@ -110,16 +110,20 @@ void ImageItem::setSourceImage(const QImage &image)
             && m_intrinsicSize.height() > 1
             && m_intrinsicSize != QSize(1000, 1000)
             && m_intrinsicSize != QSize(1024, 1024);
-        // Full / post-crop pixels always define layout geometry. Grow when a
-        // larger decode arrives; also shrink when session crop replaces a larger
-        // intrinsic (never leave pre-crop native size with cropped pixels — that
-        // skews offset and text-region mapping). Soft ladder uses setPreviewImage
-        // and does not touch intrinsic.
-        if (!intrinsicKnown
-            || (qint64(src.width()) * src.height()
-                != qint64(m_intrinsicSize.width()) * m_intrinsicSize.height())
-            || src != m_intrinsicSize) {
+        // Logical size owns geometry. Soft/ladder samples must not redefine it.
+        // - Unknown intrinsic → seed from source (first full decode).
+        // - Known intrinsic → grow only when source is larger (true native).
+        // - Shrink is explicit via setIntrinsicSize (session crop path).
+        // Soft ladder uses setPreviewImage and never touches intrinsic.
+        if (!intrinsicKnown) {
             m_intrinsicSize = src;
+        } else {
+            const qint64 have =
+                qint64(m_intrinsicSize.width()) * qint64(m_intrinsicSize.height());
+            const qint64 incoming = qint64(src.width()) * qint64(src.height());
+            if (incoming > have) {
+                m_intrinsicSize = src;
+            }
         }
         setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
         updateDisplayedPixmap();

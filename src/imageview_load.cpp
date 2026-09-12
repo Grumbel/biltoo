@@ -30,6 +30,14 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         return nullptr;
     }
     auto *item = new ImageItem(path, image);
+    // ImageItem ctor seeds intrinsic from pixel size — replace with logical
+    // layout size when known so ladder/full samples do not define geometry.
+    {
+        const QSize layout = layoutSizeForPath(path, image);
+        if (layout.isValid() && layout.width() > 1 && layout.height() > 1) {
+            item->setIntrinsicSize(layout);
+        }
+    }
     applyItemModeFlags(item);
     // Session crop survives navigation: apply only on full on-disk decodes.
     // Workspace Duplicate passes already-final pixels (possibly cropped) — do
@@ -177,6 +185,15 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
 
     if (kind == SessionAppearance::PixelKind::FullSource) {
         item->setSourceImage(display);
+        // Re-assert logical size from the path map — FullSource may be a
+        // ladder step, not native. Soft must never define geometry either.
+        {
+            const QSize logical = logicalSizeForPath(item->path());
+            if (logical.isValid() && logical.width() > 1 && logical.height() > 1
+                && !isProvisionalImageSize(item->path())) {
+                item->setIntrinsicSize(logical);
+            }
+        }
         // Full pixels are stable — cache the painted tile again.
         if (item->cacheMode() != QGraphicsItem::DeviceCoordinateCache) {
             item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-565-item-logical-intrinsic.** ImageItem intrinsic never shrinks from sample pixels.
+Prior: **564**.
+
+### Changes
+- `setSourceImage`: seed intrinsic only when unknown; grow only when source larger.
+  Shrink is exclusive to `setIntrinsicSize` (crop).
+- `createItemFromImage`: after ctor, `setIntrinsicSize(layoutSizeForPath(...))`
+- `installDisplayPixels(FullSource)`: re-assert non-provisional logical size
+
+### Done criteria
+- [x] Soft/ladder cannot redefine item geometry via setSourceImage
+- [x] Bundle **565**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-564-logical-size-global.** Size model is ImageView-wide, not slideshow-only.
 Prior: **563**.
 
