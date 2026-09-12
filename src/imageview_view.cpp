@@ -16,6 +16,7 @@
 #include <QTimer>
 #include <QPainter>
 #include <QThreadPool>
+#include <QMetaObject>
 #include <QPointer>
 #include <QElapsedTimer>
 #include <QVariantAnimation>
@@ -122,6 +123,11 @@ void ImageView::setSlideshowPadColor(const QColor &color)
     m_zoomBlurUnderlay[1] = QPixmap();
     m_zoomBlurSourceKey[0] = 0;
     m_zoomBlurSourceKey[1] = 0;
+    m_zoomBlurLastGood = QPixmap();
+    m_zoomBlurLastGoodKey = 0;
+    ++m_zoomBlurGeneration;
+    m_zoomBlurInFlightGen = 0;
+    m_zoomBlurInFlightKey = 0;
     if (m_slideshowProgressActive && viewport()) {
         viewport()->update();
     }
@@ -137,6 +143,11 @@ void ImageView::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
     m_zoomBlurUnderlay[1] = QPixmap();
     m_zoomBlurSourceKey[0] = 0;
     m_zoomBlurSourceKey[1] = 0;
+    m_zoomBlurLastGood = QPixmap();
+    m_zoomBlurLastGoodKey = 0;
+    ++m_zoomBlurGeneration;
+    m_zoomBlurInFlightGen = 0;
+    m_zoomBlurInFlightKey = 0;
     if (m_slideshowProgressActive && viewport()) {
         viewport()->update();
     }
@@ -1303,6 +1314,11 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
 
     const bool fromChanged = (fromPath != m_ssFromPath);
     const bool toChanged = (toPath != m_ssToPath);
+    // Page flip: drop queued/in-flight blur jobs so the pool does not fill with
+    // obsolete underlays from slides the user already left.
+    if (fromChanged || toChanged) {
+        invalidateZoomBlurQueue();
+    }
     const int pathMs = qMax(250, m_slideshowProgressIntervalMs
                             + qMax(0, m_slideshowTransitionDurationMs));
 
@@ -1985,6 +2001,82 @@ QImage makeZoomBlurCover(const QImage &src, int vw, int vh)
 
 } // namespace
 
+void ImageView::invalidateZoomBlurQueue() const
+{
+    // Drop in-flight work so a page flip cannot leave a backlog of blur jobs.
+    ++m_zoomBlurGeneration;
+    m_zoomBlurInFlightGen = 0;
+    m_zoomBlurInFlightKey = 0;
+}
+
+void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const
+{
+    if (image.isNull() || vw < 1 || vh < 1 || key == 0) {
+        return;
+    }
+    // Already cached?
+    for (int i = 0; i < 2; ++i) {
+        if (m_zoomBlurSourceKey[i] == key && !m_zoomBlurUnderlay[i].isNull()) {
+            return;
+        }
+    }
+    // One in-flight blur only — ignore duplicate schedule for same key.
+    if (m_zoomBlurInFlightGen == m_zoomBlurGeneration && m_zoomBlurInFlightKey == key) {
+        return;
+    }
+    // Cancel any previous pending key by advancing generation once if something
+    // else was in flight for a different key.
+    if (m_zoomBlurInFlightGen == m_zoomBlurGeneration && m_zoomBlurInFlightKey != 0
+        && m_zoomBlurInFlightKey != key) {
+        ++m_zoomBlurGeneration;
+    }
+    const quint64 gen = m_zoomBlurGeneration;
+    m_zoomBlurInFlightGen = gen;
+    m_zoomBlurInFlightKey = key;
+    // Snapshot pixels for the worker (avoid touching GUI QImage after return).
+    const QImage src = image.copy();
+    const QPointer<ImageView> guard(const_cast<ImageView *>(this));
+    QThreadPool::globalInstance()->start([guard, src, vw, vh, key, gen]() {
+        const QImage blurred = makeZoomBlurCover(src, vw, vh);
+        if (blurred.isNull()) {
+            return;
+        }
+        ImageView *target = guard.data();
+        if (!target) {
+            return;
+        }
+        QMetaObject::invokeMethod(target, [guard, blurred, key, gen]() {
+            if (!guard) {
+                return;
+            }
+            if (gen != guard->m_zoomBlurGeneration) {
+                return; // page flipped — discard
+            }
+            int slot = -1;
+            for (int i = 0; i < 2; ++i) {
+                if (guard->m_zoomBlurSourceKey[i] == key) {
+                    slot = i;
+                    break;
+                }
+            }
+            if (slot < 0) {
+                slot = guard->m_zoomBlurUnderlay[0].isNull() ? 0 : 1;
+            }
+            guard->m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
+            guard->m_zoomBlurSourceKey[slot] = key;
+            guard->m_zoomBlurLastGood = guard->m_zoomBlurUnderlay[slot];
+            guard->m_zoomBlurLastGoodKey = key;
+            if (guard->m_zoomBlurInFlightGen == gen) {
+                guard->m_zoomBlurInFlightGen = 0;
+                guard->m_zoomBlurInFlightKey = 0;
+            }
+            if (guard->viewport()) {
+                guard->viewport()->update();
+            }
+        }, Qt::QueuedConnection);
+    });
+}
+
 void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
                                       const QRect &viewportRect, qint64 stableKey) const
 {
@@ -1998,12 +2090,15 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     // cache and re-blur mid-transition (the spike after the first fix).
     const qint64 key = stableKey ^ (qint64(vw) << 16) ^ qint64(vh);
     if (m_zoomBlurVw != vw || m_zoomBlurVh != vh) {
+        // Viewport size change: drop sized slots; keep lastGood stretched until
+        // async rebuild finishes (still better than solid flash).
         m_zoomBlurUnderlay[0] = QPixmap();
         m_zoomBlurUnderlay[1] = QPixmap();
         m_zoomBlurSourceKey[0] = 0;
         m_zoomBlurSourceKey[1] = 0;
         m_zoomBlurVw = vw;
         m_zoomBlurVh = vh;
+        invalidateZoomBlurQueue();
     }
     int slot = -1;
     for (int i = 0; i < 2; ++i) {
@@ -2012,41 +2107,20 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
             break;
         }
     }
-    if (slot < 0) {
-        // Rapid slide flips: skip CPU blur, solid pad, rebuild after settle.
-        if (m_zoomBlurLastBuild.isValid() && m_zoomBlurLastBuild.elapsed() < 180) {
-            m_zoomBlurDeferredKey = key;
-            auto *self = const_cast<ImageView *>(this);
-            if (!self->m_zoomBlurDebounceTimer) {
-                self->m_zoomBlurDebounceTimer = new QTimer(self);
-                self->m_zoomBlurDebounceTimer->setSingleShot(true);
-                QObject::connect(self->m_zoomBlurDebounceTimer, &QTimer::timeout, self,
-                                 [self]() {
-                                     self->m_zoomBlurDeferredKey = 0;
-                                     if (self->viewport()) {
-                                         self->viewport()->update();
-                                     }
-                                 });
-            }
-            self->m_zoomBlurDebounceTimer->start(200);
-            painter->fillRect(viewportRect, slideshowPadColor());
-            return;
-        }
-        // Prefer empty slot 0, else replace slot 1 (stable "from" in slot 0).
-        slot = m_zoomBlurUnderlay[0].isNull() ? 0 : 1;
-        const QImage blurred = makeZoomBlurCover(image, vw, vh);
-        if (blurred.isNull()) {
-            painter->fillRect(viewportRect, slideshowPadColor());
-            return;
-        }
-        m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
-        m_zoomBlurSourceKey[slot] = key;
-        m_zoomBlurLastBuild.start();
+    if (slot >= 0) {
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[slot]);
+        return;
     }
-    // Low-res underlay: SmoothPixmapTransform → GL_LINEAR on QOpenGLWidget
-    // (without it, nearest-neighbour shows blocky pixels when stretched).
-    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-    painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[slot]);
+    // Miss: keep previous underlay until the new one is ready (no solid flash,
+    // no synchronous CPU blur on the GUI thread).
+    scheduleZoomBlurBuild(image, vw, vh, key);
+    if (!m_zoomBlurLastGood.isNull()) {
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->drawPixmap(viewportRect, m_zoomBlurLastGood);
+        return;
+    }
+    painter->fillRect(viewportRect, slideshowPadColor());
 }
 
 void ImageView::paintMotionCover(QPainter *painter, const QImage &image,

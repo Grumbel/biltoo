@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-475-slideshow-blur-async.** ZoomBlur async; keep last underlay; cancel queue on flip.
+Prior: **474**.
+
+### Changes
+- Never build ZoomBlur on the GUI paint path
+- Keep previous underlay until the new blur is ready
+- Generation token: page flip invalidates in-flight blur jobs (no backlog)
+
+### Done criteria
+- [x] Old background retained across flips
+- [x] Queue cleared on flip
+- [x] Bundle **475**
+
+---
+
+## Status (2026-09-12)
+
 **Tip: biltoo-474-slideshow-chrome-clock-seek.** Slideshow: no scrollbars; freeze clock on pause; seekbar; blur debounce.
 Prior: **473**.
 

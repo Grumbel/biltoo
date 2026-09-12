@@ -218,6 +218,8 @@ public:
      * often reallocated while pixels stay the same, which forced a full CPU
      * blur every paint and spiked transitions.
      */
+    void scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const;
+    void invalidateZoomBlurQueue() const;
     void paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
                                const QRect &viewportRect, qint64 stableKey) const;
 
@@ -1319,10 +1321,16 @@ private:
     mutable qint64 m_zoomBlurSourceKey[2] = {0, 0};
     mutable int m_zoomBlurVw = 0;
     mutable int m_zoomBlurVh = 0;
-    /** Skip rebuild while the user flips slides rapidly (solid pad instead). */
-    mutable QElapsedTimer m_zoomBlurLastBuild;
-    mutable qint64 m_zoomBlurDeferredKey = 0;
-    QTimer *m_zoomBlurDebounceTimer = nullptr;
+    /**
+     * Last successfully built underlay — drawn while a new blur is in flight so
+     * rapid flips never flash solid pad or block the GUI on CPU blur.
+     */
+    mutable QPixmap m_zoomBlurLastGood;
+    mutable qint64 m_zoomBlurLastGoodKey = 0;
+    /** Bumped on every slide change; stale async blur jobs no-op on completion. */
+    mutable quint64 m_zoomBlurGeneration = 0;
+    mutable quint64 m_zoomBlurInFlightGen = 0;
+    mutable qint64 m_zoomBlurInFlightKey = 0;
     bool m_slideshowMotionActive = false;
     bool m_slideshowMotionPaused = false;
     /** Scroll policies restored when Ken Burns underlay returns. */
