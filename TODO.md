@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-481-thumtoo-api-guards.** Compile against older thumtoo; use new APIs when macros present.
+Prior: **480**. Companion: **thumtoo-166**.
+
+### Change
+- scheduleOverviewPixels / interest helpers #ifdef THUMTOO_API_*
+- Fallback to schedulePixels / no-op when macros absent
+- Fix -Wshadow on nested lock_guard in overview callback
+
+### Note
+For full overview + cancel behaviour, point THUMTOO_SOURCE_DIR at thumtoo tip ≥166
+(or flake input once pushed).
+
+### Done criteria
+- [x] Builds with old or new thumtoo
+- [x] Bundle **481**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-480-overview-interest.** Overview schedule + interest bump on gallery scroll.
 Prior: **479**. Companions: **thumtoo-163**, **thumtoo-164**.
 

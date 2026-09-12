@@ -916,6 +916,7 @@ bool schedulePixels(const QString &path, int maxEdge)
 bool scheduleOverviewPixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_OVERVIEW_PIXELS) && THUMTOO_API_OVERVIEW_PIXELS
     if (maxEdge <= 0 || isUnsupported(path)) {
         return false;
     }
@@ -929,6 +930,7 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
     }
     const QString inflightKey =
         path + QLatin1Char('#') + QStringLiteral("ov") + QString::number(maxEdge);
+    thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);
         if (g_pixelsInflight.contains(inflightKey)
@@ -936,41 +938,45 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
             return false;
         }
         g_pixelsInflight.insert(inflightKey);
-        thumtoo::Client *c = clientUnlocked();
+        c = clientUnlocked();
         if (!c) {
             g_pixelsInflight.remove(inflightKey);
             return false;
         }
         ++g_pixelsActive;
-        const QString pathCopy = path;
-        const int edge = maxEdge;
-        c->request_overview_pixels(
-            uri, edge,
-            [pathCopy, edge, inflightKey](std::string, int,
-                                          std::optional<thumtoo::PixelLevel> px) {
-                QImage decoded;
-                if (px && !px->bytes.empty()) {
-                    const QByteArray ba(
-                        reinterpret_cast<const char *>(px->bytes.data()),
-                        int(px->bytes.size()));
-                    decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
-                }
-                {
-                    std::lock_guard lock(g_mu);
-                    g_pixelsInflight.remove(inflightKey);
-                    const int got = decoded.isNull()
-                                        ? 0
-                                        : qMax(decoded.width(), decoded.height());
-                    if (got >= (edge * 9) / 10) {
-                        g_pixelsSettled.insert(inflightKey);
-                    }
-                    g_pixelsActive = qMax(0, g_pixelsActive - 1);
-                    startNextPixelJobsUnlocked();
-                }
-                emit bridge()->ladderReady(pathCopy, edge, decoded);
-            });
     }
+    const QString pathCopy = path;
+    const int edge = maxEdge;
+    c->request_overview_pixels(
+        uri, edge,
+        [pathCopy, edge, inflightKey](std::string, int,
+                                      std::optional<thumtoo::PixelLevel> px) {
+            QImage decoded;
+            if (px && !px->bytes.empty()) {
+                const QByteArray ba(
+                    reinterpret_cast<const char *>(px->bytes.data()),
+                    int(px->bytes.size()));
+                decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
+            }
+            {
+                std::lock_guard doneLock(g_mu);
+                g_pixelsInflight.remove(inflightKey);
+                const int got = decoded.isNull()
+                                    ? 0
+                                    : qMax(decoded.width(), decoded.height());
+                if (got >= (edge * 9) / 10) {
+                    g_pixelsSettled.insert(inflightKey);
+                }
+                g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                startNextPixelJobsUnlocked();
+            }
+            emit bridge()->ladderReady(pathCopy, edge, decoded);
+        });
     return true;
+#else
+    // Older thumtoo: fall back to soft ladder schedule (clamped inside).
+    return schedulePixels(path, qMin(maxEdge, kGalleryLadderEdge));
+#endif
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
@@ -981,6 +987,7 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
 quint64 bumpInterestEpoch()
 {
 #ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_INTEREST_EPOCH) && THUMTOO_API_INTEREST_EPOCH
     init();
     std::lock_guard lock(g_mu);
     thumtoo::Client *c = clientUnlocked();
@@ -993,11 +1000,15 @@ quint64 bumpInterestEpoch()
 #else
     return 0;
 #endif
+#else
+    return 0;
+#endif
 }
 
 int cancelPendingThumtooWork()
 {
 #ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_INTEREST_EPOCH) && THUMTOO_API_INTEREST_EPOCH
     init();
     std::lock_guard lock(g_mu);
     g_pixelsQueue.clear();
@@ -1006,6 +1017,9 @@ int cancelPendingThumtooWork()
         return 0;
     }
     return static_cast<int>(c->cancel_pending());
+#else
+    return 0;
+#endif
 #else
     return 0;
 #endif
