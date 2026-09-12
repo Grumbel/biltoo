@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-602-complete-load-replace.** onImageLoaded is pure role dispatch.
+Prior: **601**.
+
+### Change
+- `completeLoadReplace` — Image-mode install / empty multi-item seed
+- `onImageLoaded` = ImageCache::put + switch on LoadRole
+
+### Done criteria
+- [x] All three load roles have complete* handlers
+- [x] Bundle **602**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-601-complete-load-add.** completeLoadAdd extracted from onImageLoaded.
 Prior: **600**.
 

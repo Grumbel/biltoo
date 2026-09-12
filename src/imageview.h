@@ -315,6 +315,10 @@ public:
     const QList<WorkspaceItemState> &pendingRestoreStates() const { return m_pendingRestoreStates; }
     /** Claim one pending restore snapshot for @a path (FIFO; duplicates OK). */
     bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
+    /**
+     * LoadReplace: Image-mode navigation install, or empty multi-item seed.
+     */
+    void completeLoadReplace(const QString &path, const QImage &image, quint64 generation);
     /** LoadRestore: create tile from decode + claimed restore snapshot. */
     void completeLoadRestore(const QString &path, const QImage &image);
     /**
