@@ -723,6 +723,20 @@ void MainWindow::sortFileListSync()
     m_session.replaceAll(newFiles, newIds);
 }
 
+void MainWindow::applySortedSessionOrder(const QStringList &newFiles,
+                                         const QVector<SessionImageId> &newIds,
+                                         const std::function<void()> &onDone)
+{
+    m_session.replaceAll(newFiles, newIds);
+    setExpandProgressBusy(false);
+    if (statusBar()) {
+        statusBar()->clearMessage();
+    }
+    if (onDone) {
+        onDone();
+    }
+}
+
 void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> &onDone)
 {
     if (m_session.paths().size() <= 1) {
@@ -861,14 +875,7 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
             if (!window || gen != window->m_sortGeneration) {
                 return;
             }
-            window->m_session.replaceAll(newFiles, newIds);
-            window->setExpandProgressBusy(false);
-            if (window->statusBar()) {
-                window->statusBar()->clearMessage();
-            }
-            if (onDone) {
-                onDone();
-            }
+            window->applySortedSessionOrder(newFiles, newIds, onDone);
         }, Qt::QueuedConnection);
     });
 }
@@ -3413,70 +3420,55 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
     return ProjectFile::save(projectPath, doc, error);
 }
 
-void MainWindow::installProjectSession(
+void MainWindow::installProjectAppearances(
+    const QVector<SessionImageId> &ids,
+    const QVector<WorkspaceItemState> &appearanceByRow,
+    const QVector<bool> &rowHasAppearance)
+{
+    if (!m_imageView) {
+        return;
+    }
+    m_imageView->appearance().clear();
+    for (int i = 0; i < appearanceByRow.size(); ++i) {
+        if (!rowHasAppearance.at(i)) {
+            continue;
+        }
+        const SessionImageId sid = ids.at(i);
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
+    }
+}
+
+void MainWindow::installProjectBackground(const ProjectDocument &doc, const QString &projectPath)
+{
+    if (!m_imageView) {
+        return;
+    }
+    if (doc.hasWorkspaceBackground) {
+        WorkspaceBackground wb = doc.workspaceBackground;
+        if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
+            const QString resolved = ProjectFile::resolveWorkspaceBackgroundImage(
+                wb, projectPath);
+            if (!resolved.isEmpty()) {
+                wb.imagePath = resolved;
+            }
+        }
+        m_imageView->setWorkspaceBackground(wb);
+    } else {
+        m_imageView->clearWorkspaceBackground();
+    }
+}
+
+void MainWindow::enterProjectCanvasMode(
     const QStringList &paths,
-    QVector<SessionImageId> ids,
-    QVector<WorkspaceItemState> appearanceByRow,
-    const QVector<bool> &rowHasAppearance,
+    const QVector<SessionImageId> &ids,
+    const QVector<WorkspaceItemState> &appearanceByRow,
     const QVector<bool> &rowHasPose,
     const ProjectDocument &doc,
-    const QString &projectPath,
-    const QStringList &missing)
+    int poseCount)
 {
-    // Replace session with preserved ids where possible.
-    for (int i = 0; i < ids.size(); ++i) {
-        if (ids.at(i) == kInvalidSessionImageId) {
-            ids[i] = m_session.allocId();
-        }
-        // Keep appearance rows keyed to the final session id.
-        appearanceByRow[i].sessionId = ids.at(i);
-    }
-    m_session.clear();
-    m_session.replaceAll(paths, ids);
-    m_currentIndex = 0;
-
-    int poseCount = 0;
-    for (bool p : rowHasPose) {
-        if (p) {
-            ++poseCount;
-        }
-    }
-
-    if (m_imageView) {
-        // Drop prior session tiles, stashes, and durable Workspace snapshot so
-        // enterWorkspaceMode does not restore the previous arrangement.
-        m_imageView->clearWorkspace();
-        m_imageView->appearance().clear();
-        for (int i = 0; i < appearanceByRow.size(); ++i) {
-            if (!rowHasAppearance.at(i)) {
-                continue;
-            }
-            const SessionImageId sid = ids.at(i);
-            if (sid == kInvalidSessionImageId) {
-                continue;
-            }
-            m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
-        }
-        if (doc.hasWorkspaceBackground) {
-            WorkspaceBackground wb = doc.workspaceBackground;
-            if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
-                const QString resolved = ProjectFile::resolveWorkspaceBackgroundImage(
-                    wb, projectPath);
-                if (!resolved.isEmpty()) {
-                    wb.imagePath = resolved;
-                }
-            }
-            m_imageView->setWorkspaceBackground(wb);
-        } else {
-            m_imageView->clearWorkspaceBackground();
-        }
-    }
-
-    if (m_thumbnailBar) {
-        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-    }
-    applyThumbnailVisibility();
-
     // Workspace canvas is a subset of the session: only images with a saved
     // pose (hasWorkspacePose) belong on the canvas. Gallery still shows all.
     const bool wantWorkspace =
@@ -3532,7 +3524,10 @@ void MainWindow::installProjectSession(
         m_currentIndex = -1;
         setCurrentIndex(0);
     }
+}
 
+void MainWindow::finishProjectInstall(const QStringList &missing)
+{
     updateWindowTitle();
     updateWorkspaceActionVisibility();
     if (!missing.isEmpty() && statusBar()) {
@@ -3541,6 +3536,54 @@ void MainWindow::installProjectSession(
     }
     m_workspaceDirty = false;
 }
+
+void MainWindow::installProjectSession(
+    const QStringList &paths,
+    QVector<SessionImageId> ids,
+    QVector<WorkspaceItemState> appearanceByRow,
+    const QVector<bool> &rowHasAppearance,
+    const QVector<bool> &rowHasPose,
+    const ProjectDocument &doc,
+    const QString &projectPath,
+    const QStringList &missing)
+{
+    // Replace session with preserved ids where possible.
+    for (int i = 0; i < ids.size(); ++i) {
+        if (ids.at(i) == kInvalidSessionImageId) {
+            ids[i] = m_session.allocId();
+        }
+        // Keep appearance rows keyed to the final session id.
+        appearanceByRow[i].sessionId = ids.at(i);
+    }
+    m_session.clear();
+    m_session.replaceAll(paths, ids);
+    m_currentIndex = 0;
+
+    int poseCount = 0;
+    for (bool p : rowHasPose) {
+        if (p) {
+            ++poseCount;
+        }
+    }
+
+    if (m_imageView) {
+        // Drop prior session tiles, stashes, and durable Workspace snapshot so
+        // enterWorkspaceMode does not restore the previous arrangement.
+        m_imageView->clearWorkspace();
+        installProjectAppearances(ids, appearanceByRow, rowHasAppearance);
+        installProjectBackground(doc, projectPath);
+    }
+
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+    }
+    applyThumbnailVisibility();
+
+    enterProjectCanvasMode(paths, ids, appearanceByRow, rowHasPose, doc, poseCount);
+    finishProjectInstall(missing);
+}
+
+
 
 bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
 {

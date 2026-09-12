@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-630-project-install-sort.** Phase installProjectSession; extract sort apply helper.
+Prior: **629**.
+
+### Change
+- `installProjectAppearances`, `installProjectBackground`
+- `enterProjectCanvasMode`, `finishProjectInstall`
+- `applySortedSessionOrder` (GUI completion of background sort)
+
+### Done criteria
+- [x] Project install paths named; sort apply extracted
+- [x] Bundle **630**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-629-current-index-nav-actions.** Split setCurrentIndex and updateNavigationActions.
 Prior: **628**.
 

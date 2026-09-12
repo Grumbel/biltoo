@@ -359,6 +359,9 @@ private:
     void sortFileListSync();
     /** Width / height / pixels: probe off the GUI thread, then apply order. */
     void sortFileListWithProbesInBackground(const std::function<void()> &onDone = {});
+    void applySortedSessionOrder(const QStringList &newFiles,
+                                 const QVector<SessionImageId> &newIds,
+                                 const std::function<void()> &onDone);
     bool sortModeNeedsImageProbe() const;
     void readSettings();
     void writeSettings();
@@ -391,6 +394,17 @@ private:
      * After paths/ids/appearance rows are resolved from a .biltoo document,
      * install session, mode, Workspace poses, and background.
      */
+    void installProjectAppearances(const QVector<SessionImageId> &ids,
+                                   const QVector<WorkspaceItemState> &appearanceByRow,
+                                   const QVector<bool> &rowHasAppearance);
+    void installProjectBackground(const ProjectDocument &doc, const QString &projectPath);
+    void enterProjectCanvasMode(const QStringList &paths,
+                                const QVector<SessionImageId> &ids,
+                                const QVector<WorkspaceItemState> &appearanceByRow,
+                                const QVector<bool> &rowHasPose,
+                                const ProjectDocument &doc,
+                                int poseCount);
+    void finishProjectInstall(const QStringList &missing);
     void installProjectSession(const QStringList &paths,
                                QVector<SessionImageId> ids,
                                QVector<WorkspaceItemState> appearanceByRow,
