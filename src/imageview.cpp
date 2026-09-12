@@ -245,41 +245,13 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
     };
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
-        if (isGalleryMode()) {
-            // Debounce: every scroll pixel used to scan all tiles + start pool
-            // work and could peg a core while the user was only panning.
-            if (!m_galleryDecodeScrollTimer) {
-                m_galleryDecodeScrollTimer = new QTimer(this);
-                m_galleryDecodeScrollTimer->setSingleShot(true);
-                m_galleryDecodeScrollTimer->setInterval(150);
-                connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
-                    if (isGalleryMode()) {
-                        // Drop stale thumtoo queue work from the previous window.
-                        // setInterest in updateGalleryDecodeWindow bumps epoch.
-                        updateGalleryDecodeWindow();
-                    }
-                });
-            }
-            m_galleryDecodeScrollTimer->start();
-        }
+        // Debounce: every scroll pixel used to scan all tiles + start pool
+        // work and could peg a core while the user was only panning.
+        scheduleGalleryDecodeWindowRefresh(150);
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
-        if (isGalleryMode()) {
-            if (!m_galleryDecodeScrollTimer) {
-                m_galleryDecodeScrollTimer = new QTimer(this);
-                m_galleryDecodeScrollTimer->setSingleShot(true);
-                m_galleryDecodeScrollTimer->setInterval(150);
-                connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
-                    if (isGalleryMode()) {
-                        // Drop stale thumtoo queue work from the previous window.
-                        // setInterest in updateGalleryDecodeWindow bumps epoch.
-                        updateGalleryDecodeWindow();
-                    }
-                });
-            }
-            m_galleryDecodeScrollTimer->start();
-        }
+        scheduleGalleryDecodeWindowRefresh(150);
     });
 
     // Recover Gallery tiles that received soft pixels but never repainted

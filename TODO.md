@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-657-gallery-decode-timer-one.** One gallery decode-window timer path.
+Prior: **656**.
+
+### Change
+- Scroll bars + `applyGalleryLadderReady` use `scheduleGalleryDecodeWindowRefresh(150)`
+- Remove three duplicate QTimer create/connect blocks (only pack.cpp creates it)
+
+### Done criteria
+- [x] Single debounce timer ownership
+- [x] Bundle **657**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-656-image-mode-install-one-path.** One Image-mode install entry.
 Prior: **655**.
 

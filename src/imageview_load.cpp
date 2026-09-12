@@ -1185,17 +1185,7 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
     }
 
     // Debounce window rescan — avoid full setInterest on every tile delivery.
-    if (!m_galleryDecodeScrollTimer) {
-        m_galleryDecodeScrollTimer = new QTimer(this);
-        m_galleryDecodeScrollTimer->setSingleShot(true);
-        m_galleryDecodeScrollTimer->setInterval(150);
-        connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
-            if (isGalleryMode()) {
-                updateGalleryDecodeWindow();
-            }
-        });
-    }
-    m_galleryDecodeScrollTimer->start();
+    scheduleGalleryDecodeWindowRefresh(150);
     emit statusChanged();
 }
 
