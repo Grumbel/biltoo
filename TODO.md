@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-560-slideshow-blur-hold-prefetch-lock.** Keep ZoomBlur lastGood; lock phase pixels; deeper prefetch.
+Prior: **559**.
+
+### Fixes
+1. **ZoomBlur lost on rapid flip:** phase change cleared `m_zoomBlurLastGood` when key was not the new from/to. Never clear lastGood on path change — paint holds previous underlay until the new key builds.
+2. **Soft→sharp mid-slide:** phase paint buffers are set only on fromChanged/toChanged. Removed upgrades from phase else-branch, motion tick, and preload-ready. Preload only fills `m_ssRasterByPath`.
+3. **Prefetch:** clock look-ahead is from/to/+1/+2/+3; pending queue keeps up to 4 paths; do not clear pending on every phase change.
+
+### Done criteria
+- [x] lastGood survives path change
+- [x] No mid-dwell resolution swap of phase buffers
+- [x] Bundle **560**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-559-slideshow-restore-fillpad.** Restore letterbox fillPad lambda for pure-phase paint.
 Prior: **558**.
 

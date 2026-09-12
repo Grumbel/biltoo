@@ -1580,9 +1580,13 @@ void MainWindow::updateSlideshowFromClock()
         if (fromIdx != s_lastPreloadFrom || toIdx != s_lastPreloadTo) {
             s_lastPreloadFrom = fromIdx;
             s_lastPreloadTo = toIdx;
+            // Look-ahead: current pair + next two so target-edge rasters are in
+            // the map before pure phase locks them at path entry.
             m_imageView->preloadSlideshowImage(m_session.paths().at(fromIdx));
             m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
             m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 1) % n));
+            m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 2) % n));
+            m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 3) % n));
         }
     }
 

@@ -1170,21 +1170,15 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
                 m_zoomBlurInFlightKey[i] = 0;
             }
         }
-        if (m_zoomBlurLastGoodKey != 0
-            && m_zoomBlurLastGoodKey != keepFrom
-            && m_zoomBlurLastGoodKey != keepTo) {
-            m_zoomBlurLastGood = QPixmap();
-            m_zoomBlurLastGoodKey = 0;
-        }
+        // Keep lastGood across path changes. Clearing it here caused solid-pad
+        // flashes under rapid ←/→ — the previous underlay is the correct hold
+        // until the new key's blur finishes (paintZoomBlurUnderlay draws it).
     }
     const int pathMs = qMax(250, m_slideshowProgressIntervalMs
                             + qMax(0, m_slideshowTransitionDurationMs));
 
-    // Drop queued raster work on phase change — rapid ←/→ was draining the
-    // pending list into work for slides already left behind.
-    if (fromChanged) {
-        m_ssRasterPending.clear();
-    }
+    // Keep m_ssRasterPending look-ahead across phase changes. Clearing it here
+    // cancelled +2/+3 warm-up on every advance. Preload dedupes by path.
 
     // --- From (A) ---
     if (fromChanged) {
@@ -1222,6 +1216,14 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         if (!m_ssFromImage.isNull()) {
             ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                               &m_dwellAtlasVw, &m_dwellAtlasVh);
+            if (viewport()) {
+                const QSize vs = viewport()->size();
+                if (vs.width() > 0 && vs.height() > 0) {
+                    const qint64 key = qint64(qHash(fromPath))
+                        ^ (qint64(vs.width()) << 16) ^ qint64(vs.height());
+                    scheduleZoomBlurBuild(m_ssFromImage, vs.width(), vs.height(), key);
+                }
+            }
         }
         if (m_slideshowMotion != SlideshowMotion::Off && pathMs >= 250) {
             if (!m_motionTimer) {
@@ -1242,21 +1244,10 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             << QFileInfo(fromPath).fileName()
             << " " << m_ssFromImage.width() << "x" << m_ssFromImage.height()
             << (promoteB ? " (continue)" : " (start)");
-    } else {
-        // Upgrade only when a full buffer is ready — never re-scale soft every tick.
-        const QImage full = slideshowFullIfReady(fromPath);
-        if (!full.isNull()
-            && (m_ssFromImage.isNull()
-                || full.width() * full.height()
-                    > m_ssFromImage.width() * m_ssFromImage.height())) {
-            // full cache is unbaked disk pixels — orient for paint buffers.
-            const QImage oriented = orientSlideshowImage(full, fromPath);
-            m_ssFromImage = oriented;
-            m_dwellSourceImage = oriented;
-            ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                              &m_dwellAtlasVw, &m_dwellAtlasVh);
-        }
     }
+    // Do not soft→sharp upgrade m_ssFromImage mid-dwell. Phase buffers are
+    // locked at fromChanged; preload fills m_ssRasterByPath for the *next*
+    // entry. Mid-slide resolution flips were jarring even with invariant camera.
     if (m_ssFromMotionClockRunning && pathMs > 0) {
         qint64 ms = m_ssFromMotionBaseMs;
         if (!m_slideshowMotionPaused && m_ssFromMotionClock.isValid()) {
@@ -1305,15 +1296,8 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             << "[slideshow] phase-to "
             << QFileInfo(toPath).fileName()
             << " " << m_ssToImage.width() << "x" << m_ssToImage.height();
-    } else {
-        const QImage full = slideshowFullIfReady(toPath);
-        if (!full.isNull()
-            && (m_ssToImage.isNull()
-                || full.width() * full.height()
-                    > m_ssToImage.width() * m_ssToImage.height())) {
-            m_ssToImage = orientSlideshowImage(full, toPath);
-        }
     }
+    // toPath pixels locked at toChanged (same as from).
     if (m_ssToMotionClockRunning && pathMs > 0) {
         qint64 ms = m_ssToMotionBaseMs;
         if (!m_slideshowMotionPaused && m_ssToMotionClock.isValid()) {
@@ -1428,7 +1412,8 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (m_ssRasterInflight.size() >= kMaxInflight) {
         if (!m_ssRasterPending.contains(path)) {
             m_ssRasterPending.append(path);
-            while (m_ssRasterPending.size() > 1) {
+            // Keep a short look-ahead queue (not only latest) so +2/+3 warm.
+            while (m_ssRasterPending.size() > 4) {
                 m_ssRasterPending.removeFirst();
             }
         }
@@ -1489,25 +1474,8 @@ void ImageView::preloadSlideshowImage(const QString &path)
                     << "[slideshow] preload-ready "
                     << QFileInfo(loadPath).fileName()
                     << " " << img.width() << "x" << img.height();
-                if (view->m_slideshowProgressActive) {
-                    if (loadPath == view->m_ssFromPath) {
-                        const QImage oriented =
-                            view->orientSlideshowImage(img, loadPath);
-                        view->m_ssFromImage = oriented;
-                        view->m_dwellSourceImage = oriented;
-                        view->ensureMotionAtlas(
-                            oriented, &view->m_dwellAtlas,
-                            &view->m_dwellAtlasScale, &view->m_dwellAtlasVw,
-                            &view->m_dwellAtlasVh);
-                    }
-                    if (loadPath == view->m_ssToPath) {
-                        view->m_ssToImage =
-                            view->orientSlideshowImage(img, loadPath);
-                    }
-                    if (view->viewport()) {
-                        view->viewport()->update();
-                    }
-                }
+                // Map only — do not mutate phase paint buffers mid-slide.
+                // setSlideshowPhase picks up sharper pixels on the next path entry.
             }
             while (!view->m_ssRasterPending.isEmpty()) {
                 const QString next = view->m_ssRasterPending.takeFirst();
@@ -2192,27 +2160,8 @@ void ImageView::tickSlideshowMotion()
             }
             m_ssToMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
         }
-        // Upgrade only from full buffers (preload) — orient unbaked disk pixels.
-        if (!m_ssFromPath.isEmpty()) {
-            const QImage full = slideshowFullIfReady(m_ssFromPath);
-            if (!full.isNull()
-                && (m_ssFromImage.isNull()
-                    || full.width() * full.height()
-                        > m_ssFromImage.width() * m_ssFromImage.height())) {
-                const QImage oriented = orientSlideshowImage(full, m_ssFromPath);
-                m_ssFromImage = oriented;
-                m_dwellSourceImage = oriented;
-            }
-        }
-        if (!m_ssToPath.isEmpty()) {
-            const QImage full = slideshowFullIfReady(m_ssToPath);
-            if (!full.isNull()
-                && (m_ssToImage.isNull()
-                    || full.width() * full.height()
-                        > m_ssToImage.width() * m_ssToImage.height())) {
-                m_ssToImage = orientSlideshowImage(full, m_ssToPath);
-            }
-        }
+        // Phase pixel buffers stay locked for the path's participation.
+        // Preload only fills m_ssRasterByPath for the next phase entry.
         viewport()->update();
         return;
     }
