@@ -239,9 +239,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         pixels = ImageCache::get(path);
     }
     if (pixels.isNull()) {
-        const auto fit = m_ssFullByPath.constFind(path);
-        if (fit != m_ssFullByPath.cend() && !fit->isNull()) {
-            pixels = *fit;
+        const QImage ss = slideshowRaster(path);
+        if (!ss.isNull()) {
+            pixels = ss;
         }
     }
     // Layout size = native when known; else preview aspect so fitInView fills
@@ -331,18 +331,8 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     // reuse pixels so goNext does not pay a second disk decode under the hold.
     if (role == LoadReplace) {
         QImage ready;
-        if (path == m_handoffPath && !m_handoffImage.isNull()) {
-            ready = m_handoffImage;
-            m_handoffPath.clear();
-            m_handoffImage = QImage();
-        } else if (path == m_preloadPath && !m_preloadImage.isNull()) {
-            ready = m_preloadImage;
-            m_preloadPath.clear();
-            m_preloadImage = QImage();
-        } else if (m_ssFullByPath.contains(path)
-                   && !m_ssFullByPath.value(path).isNull()) {
-            ready = m_ssFullByPath.value(path);
-        }
+        // Unified slideshow raster map (soft or sharper) — avoid a second decode.
+        ready = slideshowRaster(path);
         if (!ready.isNull()) {
             const QPointer<ImageView> guard(this);
             QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,

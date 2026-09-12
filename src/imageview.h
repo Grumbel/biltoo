@@ -193,7 +193,7 @@ public:
     void startSlideshowTransitionAnimation();
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
     void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
-    /** Decode path off the GUI thread into m_preload* for the next live transition. */
+    /** Decode path off the GUI thread into the unified slideshow raster map. */
     void preloadSlideshowImage(const QString &path);
     /**
      * Slideshow decode / atlas target long-edge: viewport × DPR × motion
@@ -243,6 +243,10 @@ public:
      */
     void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
                            int *atlasVw, int *atlasVh) const;
+    /** Store raster if better than what we have (larger long edge). */
+    void putSlideshowRaster(const QString &path, const QImage &image);
+    /** Best unoriented raster for path, or null. */
+    QImage slideshowRaster(const QString &path) const;
     void setSlideshowUnderlayVisible(bool visible);
     void hideSlideshowUnderlay();
     /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
@@ -1320,10 +1324,12 @@ private:
     bool m_ssToMotionClockRunning = false;
     qint64 m_ssFromMotionBaseMs = 0;
     qint64 m_ssToMotionBaseMs = 0;
-    /** Native-size soft placeholders; scaled once per path, never every tick. */
-    QHash<QString, QImage> m_ssSoftByPath;
-    /** Full decodes retained by path so A and B can both be full at once. */
-    QHash<QString, QImage> m_ssFullByPath; /**< Source pixels for dwell blit */
+    /**
+     * Best unoriented raster per path for the slideshow pure-phase path.
+     * Soft and sharper levels share one map; put only upgrades long-edge.
+     * Camera is aspect-based, so resolution climb does not change geometry.
+     */
+    QHash<QString, QImage> m_ssRasterByPath;
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;
@@ -1417,18 +1423,10 @@ private:
     QPointF m_liveToBiasB{1.0, 1.0};
     /** Motion wall-ms when the to-layer started; -1 = no to-layer. */
     qreal m_toLayerWallMs = -1.0;
-    QString m_preloadPath;
-    QImage m_preloadImage;
-    /** Path currently decoding into preload (may not be in m_preloadPath yet). */
-    QString m_preloadInFlightPath;
-    /** Multi-path inflight set — single path string used to cancel siblings under rapid flip. */
-    QSet<QString> m_preloadInflight;
-    /** Neighbours waiting while concurrency is full (max one decode at a time). */
-    QStringList m_preloadPending;
-    quint64 m_preloadGeneration = 0;
-    /** Pixels kept after transition decode so LoadReplace need not re-decode. */
-    QString m_handoffPath;
-    QImage m_handoffImage;
+    /** Slideshow raster decode in flight (max one). */
+    QSet<QString> m_ssRasterInflight;
+    /** Neighbours waiting while concurrency is full. */
+    QStringList m_ssRasterPending;
     uint m_liveTransitionPathHash = 0;
     /** To-path progress during dual-blit (handoff continues from here). */
     qreal m_liveTransitionMotionProgress = 0.0;

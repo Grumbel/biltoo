@@ -2,6 +2,38 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-554-slideshow-unified-raster-map.** One best-raster map per path.
+Prior: **553**.
+
+### Model step
+Collapse parallel soft / full / preload / handoff stores into:
+
+```
+m_ssRasterByPath   // best unoriented raster; put only upgrades long-edge
+m_ssRasterInflight // max one decode
+m_ssRasterPending  // latest neighbour only
+```
+
+- `putSlideshowRaster` / `slideshowRaster` are the only write/read for path pixels
+- Soft placeholder fills the map when empty; preload upgrades it
+- LoadReplace reuses the map (no second disk decode)
+- Legacy beginLive no longer upscales soft to native size
+
+### Still open
+- Retire legacy live-transition path (pure phase is authority for CF/FB/Slide)
+- Optional: pure camera helper + unit tests
+
+### Done criteria
+- [x] Single path raster map
+- [x] No m_ssFull / soft / preload / handoff members
+- [x] Bundle **554**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-553-slideshow-resolution-invariant-camera.** Foundation of the correct model.
 Prior: **552**.
 

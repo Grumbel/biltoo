@@ -585,8 +585,10 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssToMotionT = 0.0;
         m_ssFromMotionClockRunning = false;
         m_ssToMotionClockRunning = false;
-        m_ssSoftByPath.clear();
-        m_ssFullByPath.clear();
+        m_ssRasterByPath.clear();
+        m_ssRasterInflight.clear();
+        m_ssRasterPending.clear();
+        
     }
     viewport()->update();
 }
@@ -1245,25 +1247,58 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
 }
 
 
-QImage ImageView::slideshowFullIfReady(const QString &path) const
+void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
+{
+    if (path.isEmpty() || image.isNull()) {
+        return;
+    }
+    const int incoming = qMax(image.width(), image.height());
+    const auto it = m_ssRasterByPath.constFind(path);
+    if (it != m_ssRasterByPath.cend() && !it->isNull()) {
+        const int have = qMax(it->width(), it->height());
+        // Keep the sharper buffer; equal size keeps the existing one.
+        if (have >= incoming) {
+            return;
+        }
+    }
+    m_ssRasterByPath.insert(path, image);
+    constexpr int kMaxSsRaster = 12;
+    if (m_ssRasterByPath.size() <= kMaxSsRaster) {
+        return;
+    }
+    // Evict oldest non-active paths (QHash order is arbitrary — drop any excess
+    // that are not the current phase pair).
+    QStringList drop;
+    drop.reserve(m_ssRasterByPath.size() - kMaxSsRaster);
+    for (auto it = m_ssRasterByPath.cbegin();
+         it != m_ssRasterByPath.cend()
+         && drop.size() < m_ssRasterByPath.size() - kMaxSsRaster; ++it) {
+        if (it.key() != path && it.key() != m_ssFromPath && it.key() != m_ssToPath) {
+            drop.append(it.key());
+        }
+    }
+    for (const QString &k : drop) {
+        m_ssRasterByPath.remove(k);
+    }
+}
+
+QImage ImageView::slideshowRaster(const QString &path) const
 {
     if (path.isEmpty()) {
         return QImage();
     }
-    // Only unbaked disk / preload pixels. Do not return item->sourceImage():
-    // that may already have content orientation baked in, and orientSlideshowImage
-    // would apply it a second time.
-    const auto fullIt = m_ssFullByPath.constFind(path);
-    if (fullIt != m_ssFullByPath.cend() && !fullIt->isNull()) {
-        return *fullIt;
-    }
-    if (path == m_preloadPath && !m_preloadImage.isNull()) {
-        return m_preloadImage;
-    }
-    if (path == m_handoffPath && !m_handoffImage.isNull()) {
-        return m_handoffImage;
+    // Unoriented disk/preload pixels only — not item->sourceImage() (may already
+    // have content orientation baked in).
+    const auto it = m_ssRasterByPath.constFind(path);
+    if (it != m_ssRasterByPath.cend() && !it->isNull()) {
+        return *it;
     }
     return QImage();
+}
+
+QImage ImageView::slideshowFullIfReady(const QString &path) const
+{
+    return slideshowRaster(path);
 }
 
 QImage ImageView::slideshowSoftPlaceholder(const QString &path)
@@ -1271,12 +1306,12 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
     if (path.isEmpty()) {
         return QImage();
     }
-    const auto softIt = m_ssSoftByPath.constFind(path);
-    if (softIt != m_ssSoftByPath.cend() && !softIt->isNull()) {
-        return *softIt;
+    // Already have something in the unified map.
+    QImage have = slideshowRaster(path);
+    if (!have.isNull()) {
+        return have;
     }
-    // Prefer viewport-edge cache, then any soft. Never upscale to native size —
-    // that produced 4K–6K phase-from buffers and stalled rapid ←/→.
+    // Prefer target-edge cache, then any soft. Never upscale to native size.
     const int edge = slideshowTargetEdge();
     QImage soft = ImageCache::get(path, edge);
     if (soft.isNull()) {
@@ -1288,7 +1323,8 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
     if (qMax(soft.width(), soft.height()) > edge) {
         soft = soft.scaled(edge, edge, Qt::KeepAspectRatio, Qt::FastTransformation);
     }
-    m_ssSoftByPath.insert(path, soft);
+    // Non-const put from const path: softPlaceholder is non-const method.
+    putSlideshowRaster(path, soft);
     return soft;
 }
 
@@ -1317,7 +1353,7 @@ QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) c
 QImage ImageView::slideshowPixelsForPath(const QString &path)
 {
     const int edge = slideshowTargetEdge();
-    QImage img = slideshowFullIfReady(path);
+    QImage img = slideshowRaster(path);
     if (img.isNull()) {
         img = slideshowSoftPlaceholder(path);
     }
@@ -1392,10 +1428,10 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     const int pathMs = qMax(250, m_slideshowProgressIntervalMs
                             + qMax(0, m_slideshowTransitionDurationMs));
 
-    // Drop queued preloads on phase change — rapid ←/→ was draining the
-    // pending list into edge=2048 tile_synth work for slides already left behind.
+    // Drop queued raster work on phase change — rapid ←/→ was draining the
+    // pending list into work for slides already left behind.
     if (fromChanged) {
-        m_preloadPending.clear();
+        m_ssRasterPending.clear();
     }
 
     // --- From (A) ---
@@ -1643,62 +1679,14 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 
     m_liveTransitionAwaitingLoad = true;
 
-    // Fast path: full decode already preloaded.
-    if (m_preloadPath == nextPath && !m_preloadImage.isNull()) {
-        const QImage img = m_preloadImage;
-        m_preloadPath.clear();
-        m_preloadImage = QImage();
-        m_handoffPath = nextPath;
-        m_handoffImage = img;
-        qCDebug(lcSlideshow).nospace()
-            << "[slideshow] beginLive preload-hit "
-            << QFileInfo(nextPath).fileName()
-            << " " << img.width() << "x" << img.height()
-            << " from=" << m_liveFromSourceImage.width() << "x"
-            << m_liveFromSourceImage.height();
-        const QPointer<ImageView> guard(this);
-        QMetaObject::invokeMethod(this, [guard, img]() {
-            if (guard) {
-                guard->startLiveTransitionWithImage(img);
-            }
-        }, Qt::QueuedConnection);
-        return true;
-    }
-
-    // Shared preview cache (warmed at slideshow start). Paint the transition
-    // immediately so superfast / interval≈transition does not stall waiting for
-    // a full multi-megapixel decode. Do NOT write m_handoff* — handoff must
-    // remain full-res only so LoadReplace is not locked onto a thumbnail.
-    //
-    // Scale the preview up to the path's native full pixel size so motion-cover
-    // cover scale and travel thresholds match the full-res frame. Without that,
-    // a 512px "to" against a multi-MP "from" jumps when the real decode lands.
+    // Fast path: raster map already has pixels for next.
     {
-        const QImage cached = ImageCache::get(nextPath);
-        if (!cached.isNull()) {
-            QSize fullSz;
-            const auto it = m_imageSizeByPath.constFind(nextPath);
-            if (it != m_imageSizeByPath.cend() && it->isValid()
-                && it->width() > 0 && it->height() > 0) {
-                fullSz = *it;
-            } else {
-                fullSz = ImageLoader::probeSize(nextPath);
-                if (fullSz.isValid() && fullSz.width() > 0 && fullSz.height() > 0) {
-                    rememberImageSize(nextPath, fullSz);
-                }
-            }
-            QImage img = cached;
-            if (fullSz.isValid() && fullSz.width() > 0 && fullSz.height() > 0
-                && (img.width() != fullSz.width() || img.height() != fullSz.height())) {
-                img = img.scaled(fullSz, Qt::IgnoreAspectRatio,
-                                 Qt::FastTransformation);
-            }
-            // Appearance bake happens in startLiveTransitionWithImage (all entry paths).
+        const QImage img = slideshowRaster(nextPath);
+        if (!img.isNull()) {
             qCDebug(lcSlideshow).nospace()
-                << "[slideshow] beginLive cache-hit "
+                << "[slideshow] beginLive raster-hit "
                 << QFileInfo(nextPath).fileName()
-                << " cache=" << cached.width() << "x" << cached.height()
-                << " paint=" << img.width() << "x" << img.height()
+                << " " << img.width() << "x" << img.height()
                 << " from=" << m_liveFromSourceImage.width() << "x"
                 << m_liveFromSourceImage.height();
             const QPointer<ImageView> guard(this);
@@ -1707,17 +1695,44 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
                     guard->startLiveTransitionWithImage(img);
                 }
             }, Qt::QueuedConnection);
-            // Still warm a full decode for later cycles / post-transition load.
-            if (m_preloadPath != nextPath && m_preloadInFlightPath != nextPath) {
-                preloadSlideshowImage(nextPath);
+            return true;
+        }
+    }
+
+    // Soft/cache hit is fine: camera is resolution-invariant. Never upscale to
+    // native (that created multi-MP phase buffers). Climb via preload later.
+    {
+        QImage img = slideshowRaster(nextPath);
+        if (img.isNull()) {
+            img = ImageCache::get(nextPath, slideshowTargetEdge());
+            if (img.isNull()) {
+                img = ImageCache::get(nextPath);
             }
+            if (!img.isNull()) {
+                putSlideshowRaster(nextPath, img);
+            }
+        }
+        if (!img.isNull()) {
+            qCDebug(lcSlideshow).nospace()
+                << "[slideshow] beginLive cache-hit "
+                << QFileInfo(nextPath).fileName()
+                << " " << img.width() << "x" << img.height()
+                << " from=" << m_liveFromSourceImage.width() << "x"
+                << m_liveFromSourceImage.height();
+            const QPointer<ImageView> guard(this);
+            QMetaObject::invokeMethod(this, [guard, img]() {
+                if (guard) {
+                    guard->startLiveTransitionWithImage(img);
+                }
+            }, Qt::QueuedConnection);
+            preloadSlideshowImage(nextPath);
             return true;
         }
     }
 
     // Preload already decoding this path — stay awaiting; preload-ready will
     // start the fade (avoid a second full disk load of the same file).
-    if (m_preloadInFlightPath == nextPath) {
+    if (m_ssRasterInflight.contains(nextPath)) {
         qCDebug(lcSlideshow).nospace()
             << "[slideshow] beginLive wait-preload "
             << QFileInfo(nextPath).fileName();
@@ -1780,42 +1795,31 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    if (m_ssFullByPath.contains(path) && !m_ssFullByPath.value(path).isNull()) {
+    // Already have target-edge (or better) pixels — nothing to do.
+    {
+        const QImage have = slideshowRaster(path);
+        if (!have.isNull()) {
+            const int need = slideshowTargetEdge() * 7 / 10;
+            if (qMax(have.width(), have.height()) >= need) {
+                return;
+            }
+        }
+    }
+    if (m_ssRasterInflight.contains(path)) {
         return;
     }
-    if (path == m_preloadPath && !m_preloadImage.isNull()) {
-        m_ssFullByPath.insert(path, m_preloadImage);
-        return;
-    }
-    if (path == m_handoffPath && !m_handoffImage.isNull()) {
-        m_ssFullByPath.insert(path, m_handoffImage);
-        return;
-    }
-    if (m_preloadInflight.contains(path)) {
-        return;
-    }
-    // Cap concurrency: rapid ←/→ used to spawn a full-native decode per key
-    // and bump m_preloadGeneration (discarding every sibling mid-flight).
-    constexpr int kMaxPreloadInflight = 1;
-    if (m_preloadInflight.size() >= kMaxPreloadInflight) {
-        if (!m_preloadPending.contains(path)) {
-            m_preloadPending.append(path);
-            // Only the latest neighbour — a queue of 4 became a 2048-edge crawl.
-            while (m_preloadPending.size() > 1) {
-                m_preloadPending.removeFirst();
+    constexpr int kMaxInflight = 1;
+    if (m_ssRasterInflight.size() >= kMaxInflight) {
+        if (!m_ssRasterPending.contains(path)) {
+            m_ssRasterPending.append(path);
+            while (m_ssRasterPending.size() > 1) {
+                m_ssRasterPending.removeFirst();
             }
         }
         return;
     }
 
-    if (!m_preloadPath.isEmpty() && !m_preloadImage.isNull() && m_preloadPath != path) {
-        m_ssFullByPath.insert(m_preloadPath, m_preloadImage);
-        m_preloadPath.clear();
-        m_preloadImage = QImage();
-    }
-
-    m_preloadInflight.insert(path);
-    m_preloadInFlightPath = path;
+    m_ssRasterInflight.insert(path);
     const QString loadPath = path;
     const QPointer<ImageView> guard(this);
     const int targetEdge = slideshowTargetEdge();
@@ -1824,8 +1828,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
         << " edge=" << targetEdge;
 
     QThreadPool::globalInstance()->start([guard, loadPath, targetEdge]() {
-        // Never ImageLoader::load here — full 4K–6K extract is what made rapid
-        // flip unusable. PreferCache / soft at viewport edge only.
+        // PreferCache / soft at target edge only — never full native extract.
         QImage img = ImageCache::get(loadPath, targetEdge);
         if (img.isNull()
             || qMax(img.width(), img.height()) < targetEdge * 7 / 10) {
@@ -1837,125 +1840,76 @@ void ImageView::preloadSlideshowImage(const QString &path)
                 img = soft;
             }
         }
-        // Still short: try PreferCache host path (async may miss; one more look).
         if ((img.isNull()
-             || qMax(img.width(), img.height()) < targetEdge * 5 / 10)
+             || qMax(img.width(), img.height()) < targetEdge * 7 / 10)
             && ThumtooCache::isAvailable()) {
             (void)ThumtooCache::scheduleDisplayPixels(loadPath, targetEdge);
-            // Best available soft is fine for slideshow; do not full-extract.
+            // One more cache look after request (may still miss — async).
+            const QImage again = ImageCache::get(loadPath, targetEdge);
+            if (!again.isNull()
+                && (img.isNull()
+                    || qMax(again.width(), again.height())
+                        > qMax(img.width(), img.height()))) {
+                img = again;
+            }
         }
         if (!img.isNull() && qMax(img.width(), img.height()) > targetEdge) {
             img = img.scaled(targetEdge, targetEdge, Qt::KeepAspectRatio,
-                             Qt::SmoothTransformation);
-        }
-        if (img.isNull()) {
-            if (guard) {
-                QMetaObject::invokeMethod(guard.data(), [guard, loadPath]() {
-                    ImageView *view = guard.data();
-                    if (!view) {
-                        return;
-                    }
-                    view->m_preloadInflight.remove(loadPath);
-                    if (view->m_preloadInFlightPath == loadPath) {
-                        view->m_preloadInFlightPath.clear();
-                    }
-                    // Drain pending even on miss so the queue does not stall.
-                    while (!view->m_preloadPending.isEmpty()) {
-                        const QString next = view->m_preloadPending.takeFirst();
-                        if (!view->m_ssFullByPath.contains(next)
-                            && !view->m_preloadInflight.contains(next)) {
-                            view->preloadSlideshowImage(next);
-                            break;
-                        }
-                    }
-                }, Qt::QueuedConnection);
-            }
-            return;
-        }
-        if (ImageLoader::cachedThumbnail(loadPath).isNull()) {
-            const int maxEdge = 512;
-            QImage thumb = img;
-            if (thumb.width() > maxEdge || thumb.height() > maxEdge) {
-                thumb = thumb.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
-                                     Qt::SmoothTransformation);
-            }
-            ImageLoader::putCachedThumbnail(loadPath, thumb);
+                             Qt::FastTransformation);
         }
         if (!guard) {
             return;
         }
         QMetaObject::invokeMethod(guard.data(), [guard, loadPath, img]() {
             ImageView *view = guard.data();
-            if (!view || img.isNull()) {
+            if (!view) {
                 return;
             }
-            view->m_preloadInflight.remove(loadPath);
-            if (view->m_preloadInFlightPath == loadPath) {
-                view->m_preloadInFlightPath.clear();
-            }
-            view->m_preloadPath = loadPath;
-            view->m_preloadImage = img;
-            view->m_ssFullByPath.insert(loadPath, img);
-            // Bound memory under rapid flip. Collect keys first — erasing via
-            // iterator while calling key() tripped -Wnull-dereference on Qt 6.11.
-            constexpr int kMaxSsFull = 12;
-            if (view->m_ssFullByPath.size() > kMaxSsFull) {
-                QStringList drop;
-                drop.reserve(view->m_ssFullByPath.size() - kMaxSsFull);
-                for (auto it = view->m_ssFullByPath.cbegin();
-                     it != view->m_ssFullByPath.cend()
-                     && drop.size() < view->m_ssFullByPath.size() - kMaxSsFull;
-                     ++it) {
-                    if (it.key() != loadPath) {
-                        drop.append(it.key());
+            view->m_ssRasterInflight.remove(loadPath);
+            if (!img.isNull()) {
+                view->putSlideshowRaster(loadPath, img);
+                view->rememberImageSize(loadPath, img.size());
+                qCDebug(lcSlideshow).nospace()
+                    << "[slideshow] preload-ready "
+                    << QFileInfo(loadPath).fileName()
+                    << " " << img.width() << "x" << img.height();
+                if (view->m_slideshowProgressActive) {
+                    if (loadPath == view->m_ssFromPath) {
+                        const QImage oriented =
+                            view->orientSlideshowImage(img, loadPath);
+                        view->m_ssFromImage = oriented;
+                        view->m_dwellSourceImage = oriented;
+                        view->ensureMotionAtlas(
+                            oriented, &view->m_dwellAtlas,
+                            &view->m_dwellAtlasScale, &view->m_dwellAtlasVw,
+                            &view->m_dwellAtlasVh);
+                    }
+                    if (loadPath == view->m_ssToPath) {
+                        view->m_ssToImage =
+                            view->orientSlideshowImage(img, loadPath);
+                    }
+                    // Legacy live-transition path still consumes upgrades.
+                    if (view->m_liveTransitionNextPath == loadPath
+                        && (view->m_liveTransitionActive
+                            || view->m_liveTransitionHold
+                            || view->m_liveTransitionAwaitingLoad)) {
+                        const QImage oriented =
+                            view->orientSlideshowImage(img, loadPath);
+                        view->m_liveTransitionSourceImage = oriented;
+                        view->ensureMotionAtlas(
+                            oriented, &view->m_liveToAtlas,
+                            &view->m_liveToAtlasScale, &view->m_liveToAtlasVw,
+                            &view->m_liveToAtlasVh);
+                    }
+                    if (view->viewport()) {
+                        view->viewport()->update();
                     }
                 }
-                for (const QString &k : drop) {
-                    view->m_ssFullByPath.remove(k);
-                }
             }
-            qCDebug(lcSlideshow).nospace()
-                << "[slideshow] preload-ready " << QFileInfo(loadPath).fileName()
-                << " " << img.width() << "x" << img.height();
-            view->rememberImageSize(loadPath, img.size());
-            if (view->m_slideshowProgressActive) {
-                if (loadPath == view->m_ssFromPath) {
-                    const QImage oriented = view->orientSlideshowImage(img, loadPath);
-                    view->m_ssFromImage = oriented;
-                    view->m_dwellSourceImage = oriented;
-                }
-                if (loadPath == view->m_ssToPath) {
-                    view->m_ssToImage = view->orientSlideshowImage(img, loadPath);
-                }
-                if (view->viewport()) {
-                    view->viewport()->update();
-                }
-            }
-            if (view->m_liveTransitionNextPath == loadPath
-                && (view->m_liveTransitionActive || view->m_liveTransitionHold
-                    || view->m_liveTransitionAwaitingLoad)) {
-                const QImage oriented = view->orientSlideshowImage(img, loadPath);
-                view->m_liveTransitionSourceImage = oriented;
-                view->m_handoffPath = loadPath;
-                view->m_handoffImage = img;
-                view->m_preloadPath.clear();
-                view->m_preloadImage = QImage();
-                view->ensureMotionAtlas(oriented, &view->m_liveToAtlas,
-                                        &view->m_liveToAtlasScale,
-                                        &view->m_liveToAtlasVw,
-                                        &view->m_liveToAtlasVh);
-                qCDebug(lcSlideshow).nospace()
-                    << "[slideshow] live-upgrade "
-                    << QFileInfo(loadPath).fileName()
-                    << " " << oriented.width() << "x" << oriented.height();
-                if (view->viewport()) {
-                    view->viewport()->update();
-                }
-            }
-            while (!view->m_preloadPending.isEmpty()) {
-                const QString next = view->m_preloadPending.takeFirst();
-                if (!view->m_ssFullByPath.contains(next)
-                    && !view->m_preloadInflight.contains(next)) {
+            while (!view->m_ssRasterPending.isEmpty()) {
+                const QString next = view->m_ssRasterPending.takeFirst();
+                if (view->slideshowRaster(next).isNull()
+                    && !view->m_ssRasterInflight.contains(next)) {
                     view->preloadSlideshowImage(next);
                     break;
                 }
@@ -1963,7 +1917,6 @@ void ImageView::preloadSlideshowImage(const QString &path)
         }, Qt::QueuedConnection);
     });
 }
-
 
 void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
                                   qreal *atlasScale, int *atlasVw, int *atlasVh) const
