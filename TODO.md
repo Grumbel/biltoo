@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-674-slideshow-soft-to-phase.** Soft/quality load jobs upgrade slideshow phase buffers.
+Prior: **673**.
+
+### Root cause (found while verifying 673)
+`scheduleSlideshowReplaceDecode` soft/quality pool jobs completed via
+`onImagePreviewLoaded` / `onImageLoaded`, which only wrote `ImageCache`.
+Phase blit uses `m_ssFromImage` / `m_ssToImage`, upgraded by
+`onSlideshowRasterReady`. Preload and ladderReady already called it; the
+LoadReplace soft path did not → crossfade could stay blank/LQIP until preload.
+
+### Change
+- `onImagePreviewLoaded` / `onImageLoaded`: if slideshow active, call
+  `onSlideshowRasterReady` after `ImageCache::put`
+
+### Done criteria
+- [x] Soft arrival during slideshow upgrades phase buffers
+- [x] Bundle **674**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-673-soft-first-no-wait.** Soft/LQIP paint before high-res; keep smaller host softs.
 Prior: **672**.
 

@@ -1234,6 +1234,11 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         return;
     }
     ImageCache::put(path, image);
+    // Soft job during slideshow must upgrade phase buffers (m_ssFrom/To), not
+    // only ImageCache — otherwise crossfade stays on empty/LQIP until preload.
+    if (m_slideshowProgressActive) {
+        onSlideshowRasterReady(path, image);
+    }
 
     // Replace navigations: drop superseded previews.
     if (role == LoadReplace) {
@@ -1981,6 +1986,10 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     // not a hard 512 preview. Slideshow must reuse Image-mode sharpness.
     if (!image.isNull() && !path.isEmpty()) {
         ImageCache::put(path, image);
+        // Quality/soft climb during slideshow → phase buffer + atlas upgrade.
+        if (m_slideshowProgressActive) {
+            onSlideshowRasterReady(path, image);
+        }
     }
     switch (static_cast<LoadRole>(role)) {
     case LoadReplace:
