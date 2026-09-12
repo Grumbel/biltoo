@@ -387,13 +387,25 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
 
     connect(this, &QListWidget::itemActivated, this, &ThumbnailBar::onItemActivated);
     connect(this, &QListWidget::currentRowChanged, this, &ThumbnailBar::onCurrentRowChanged);
+    auto armScrollLoad = [this]() {
+        if (!m_scrollLoadTimer) {
+            m_scrollLoadTimer = new QTimer(this);
+            m_scrollLoadTimer->setSingleShot(true);
+            m_scrollLoadTimer->setInterval(80);
+            connect(m_scrollLoadTimer, &QTimer::timeout, this, [this]() {
+                (void)ThumtooCache::bumpInterestEpoch();
+                scheduleVisibleThumbnailLoads();
+            });
+        }
+        m_scrollLoadTimer->start();
+    };
     if (horizontalScrollBar()) {
         connect(horizontalScrollBar(), &QScrollBar::valueChanged, this,
-                &ThumbnailBar::scheduleVisibleThumbnailLoads);
+                [armScrollLoad](int) { armScrollLoad(); });
     }
     if (verticalScrollBar()) {
         connect(verticalScrollBar(), &QScrollBar::valueChanged, this,
-                &ThumbnailBar::scheduleVisibleThumbnailLoads);
+                [armScrollLoad](int) { armScrollLoad(); });
     }
 
     // When thumtoo finishes a ladder level, only fill filmstrip rows that were
@@ -1290,7 +1302,8 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         return;
     }
     const quint64 gen = m_generation.load();
-    // Decode at (or just above) visual demand; soft ladder max 512.
+    // Decode at (or just above) visual demand. Soft ≤512 is a placeholder;
+    // overview covers up to kBatchOverviewEdge via thumtoo.
     const int decodeSize = filmstripDecodeEdge();
     m_decodedSize = decodeSize;
 
@@ -1442,7 +1455,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             if (image.isNull()) {
                 // Soft miss (e.g. archive ladder pending): free the slot and wait
                 // for ladderReady instead of leaving the row permanently scheduled.
-                QMetaObject::invokeMethod(bar, [guard, i, gen]() {
+                QMetaObject::invokeMethod(bar, [guard, i, gen, path, decodeSize]() {
                     ThumbnailBar *const host = guard.data();
                     if (!host || gen != host->m_generation.load()) {
                         return;
@@ -1450,6 +1463,16 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     host->m_thumbLoadScheduled.remove(i);
                     if (ThumtooCache::isAvailable()) {
                         host->m_thumbAwaitLadder.insert(i);
+                        if (decodeSize > ThumtooCache::kGalleryLadderEdge
+                            && decodeSize <= ThumtooCache::kBatchOverviewEdge) {
+                            (void)ThumtooCache::scheduleOverviewPixels(
+                                path,
+                                qMin(decodeSize, ThumtooCache::kBatchOverviewEdge));
+                        } else {
+                            (void)ThumtooCache::schedulePixels(
+                                path,
+                                qMin(decodeSize, ThumtooCache::kGalleryLadderEdge));
+                        }
                     } else {
                         host->m_thumbFailed.insert(i);
                     }

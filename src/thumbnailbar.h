@@ -244,6 +244,8 @@ private:
     QSet<int> m_thumbFailed;
     QTimer *m_layoutRefreshTimer = nullptr;
     QTimer *m_thumbSizeReloadTimer = nullptr;
+    /** Debounce scroll → visible loads + thumtoo interest bump. */
+    QTimer *m_scrollLoadTimer = nullptr;
     void scheduleLayoutRefresh();
     bool m_multiSelect = false;
     int m_selectionAnchor = -1;

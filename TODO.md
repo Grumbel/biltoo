@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-482-filmstrip-overview-interest.** Filmstrip overview schedule + scroll interest.
+Prior: **481**.
+
+### Change
+- Debounced filmstrip scroll (80ms): bumpInterestEpoch + scheduleVisibleThumbnailLoads
+- Soft miss: scheduleOverviewPixels when decode edge is 513–1024
+- m_scrollLoadTimer
+
+### Next
+- set_interest snapshot API in thumtoo
+- FocusFull / tile priority for current image
+- Provenance in UI (optional)
+
+### Done criteria
+- [x] Filmstrip parity with gallery overview path
+- [x] Bundle **482**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-481-thumtoo-api-guards.** Compile against older thumtoo; use new APIs when macros present.
 Prior: **480**. Companion: **thumtoo-166**.
 
