@@ -145,19 +145,12 @@ void ImageItem::setPreviewImage(const QImage &preview)
     if (!m_source.isNull() && !m_previewPixels) {
         return;
     }
-    prepareGeometryChange();
+    // Soft stand-in: assign + repaint only (no prepareGeometryChange).
     m_preview = preview;
     m_previewPixels = true;
     m_source = QImage();
     setPixmap(QPixmap());
-    // Soft tiles: NoCache only. Never touch DeviceCoordinateCache here — that
-    // forces a GUI-thread snapshot of the previous full pixmap (←/→ hitch).
     setCacheMode(QGraphicsItem::NoCache);
-    // Intrinsic is layout geometry (probe / full native). Never adopt soft
-    // sample dimensions — that shrinks Gallery cells and jumps on upgrade.
-    const QSize s = imageSize();
-    setOffset(-s.width() / 2.0, -s.height() / 2.0);
-    applyLocalTransform();
     update();
 }
 

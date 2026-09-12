@@ -708,7 +708,10 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         if (!path.isEmpty()) {
             ImageCache::put(path, pixels);
         }
-        item->setSourceImageReady(pixels);
+        // Soft must be preview, not FullSource. setSourceImageReady made
+        // hasDecodedPixels() true and blocked SoftPreview 512 upgrades
+        // (only 1024 FullSource could install — log: tryInstall edge=1024 only).
+        item->setPreviewImage(pixels);
         // Intrinsic from known logical only — never from soft sample dims.
         const QSize known = logicalSizeForPath(path);
         if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
@@ -799,7 +802,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                     }
                     ensureImageModeQualityClimb(pathCopy, soft);
                 });
-                biltooLoadDbg("scheduleImageLoad soft-present skip softJob path=%s edge=%d",
+                biltooLoadDbg("PATH soft-on-item skip softJob climb deferred path=%s edge=%d",
                               qPrintable(QFileInfo(path).fileName()),
                               it->displayPixelLongEdge());
                 return;
@@ -1946,11 +1949,12 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     if (!item || image.isNull()) {
         return;
     }
-    // Fast path: sample is already worker-baked. Only swap QImage + repaint.
-    // installDisplayPixels still resolved appearance, materialize, intrinsic,
-    // session crop flags — pure GUI cost on every ladderReady.
-    Q_UNUSED(kind);
-    item->setSourceImageReady(image);
+    // Fast path: worker-baked sample — assign + repaint only.
+    if (kind == SessionAppearance::PixelKind::SoftPreview) {
+        item->setPreviewImage(image);
+    } else {
+        item->setSourceImageReady(image);
+    }
     m_lastLoadError.clear();
     rememberSizeFromDecode(path, image);
     if (viewport()) {

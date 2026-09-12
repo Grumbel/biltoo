@@ -2,6 +2,36 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-691-soft-is-preview-not-full.** Soft pending uses setPreviewImage; HQ uses setSourceImageReady.
+Prior: **690**.
+
+### Keypress → screen path (Image mode ←/→)
+
+1. `ImageView` key → `navigateNextRequested`
+2. `MainWindow::goNext` → `setCurrentIndex`
+3. `publishSessionCursorForIndex` (session index on view)
+4. `applyCurrentIndexCanvasChange` → `loadImage(path)`
+5. `scheduleImageLoad(LoadReplace)` → gen++
+6. `installImageModePendingTile` → ImageCache soft → **setPreviewImage** (was wrongly setSourceImageReady)
+7. If soft on item: `QTimer(0)` → `ensureImageModeQualityClimb` → PreferCache 512/1024
+8. Thumtoo `schedulePixels`/`scheduleDisplay` → worker HIT → pool decode → `ladderReady`
+9. `tryInstall` → SoftPreview 512 **setPreviewImage** or FullSource 1024 **setSourceImageReady**
+10. `viewport()->update()` → `ImageItem::paint` → `drawImage`
+
+### Bug fixed
+Soft via `setSourceImageReady` ⇒ `hasDecodedPixels()==true` ⇒ `canAccept(SoftPreview)` false
+⇒ 512 upgrades skipped; only 1024 FullSource installed (`tryInstall edge=1024` only in log).
+
+### Done criteria
+- [x] Soft is preview; 512 can upgrade
+- [x] Bundle **691**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-690-no-status-storm-skip-softjob.** Kill statusChanged/updateStatus storms on ←/→.
 Prior: **689**.
 
