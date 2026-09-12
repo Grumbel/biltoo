@@ -78,7 +78,7 @@ void ImageView::updateGalleryDecodeWindow()
         }
 
         GallerySoftState &st = m_gallerySoft[path];
-        if (st.failed || st.inflight > 0) {
+        if (st.failed) {
             continue;
         }
 
@@ -94,6 +94,11 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
         if (st.gaveUpWant >= want && st.have > 0) {
+            continue;
+        }
+        // Blank tile + inflight: still schedule so host ImageCache soft can
+        // install while SoftOnly builds. Soft already showing + inflight: wait.
+        if (st.inflight > 0 && st.have > 0) {
             continue;
         }
 

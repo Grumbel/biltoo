@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-509-gallery-soft-while-inflight.** Host soft install while SoftOnly inflight.
+Prior: **508**.
+
+### Re-verification (top → bottom)
+1. updateGalleryDecodeWindow skipped paths with `inflight > 0` entirely → never
+   called scheduleGalleryDecode → never installed ImageCache soft while waiting.
+2. scheduleGalleryDecode returned early on `inflight > 0` before host soft install.
+
+### Fix
+- Window: still schedule blank tiles when inflight (have==0)
+- scheduleGalleryDecode: install ImageCache/m_previewByPath soft **before** the
+  inflight early-return; only skip SoftOnly *request* when inflight
+
+### Done criteria
+- [x] Soft visible while higher SoftOnly is in flight
+- [x] Bundle **509**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-508-gallery-soft-install-fix.** Fix permanent soft.inflight pin; seed host soft.
 Prior: **507**.
 

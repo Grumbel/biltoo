@@ -466,7 +466,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         scheduleImageSizeProbe(path);
     }
     GallerySoftState &st = m_gallerySoft[path];
-    if (st.failed || st.inflight > 0 || st.fullInflight) {
+    if (st.failed) {
         return;
     }
 
@@ -491,8 +491,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
-    // Filmstrip / prior ladderReady may already hold soft in ImageCache.
-    // Install on the GUI thread immediately — in-memory only, no IO.
+    // Host soft (filmstrip / prior ladderReady) — install even while a higher
+    // edge is inflight. Blank tiles while waiting for SoftOnly is the failure
+    // mode users see when filmstrip already has the soft.
     if (have <= 0) {
         QImage hostSoft = ImageCache::get(path);
         if (hostSoft.isNull()) {
@@ -511,6 +512,11 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                         qPrintable(QFileInfo(path).fileName()), have);
             }
         }
+    }
+
+    // Climb / SoftOnly request only when not already waiting on a callback.
+    if (st.inflight > 0 || st.fullInflight) {
+        return;
     }
 
     const int want = galleryWantEdgeForPath(path, sceneVisible);
