@@ -10,6 +10,7 @@
 #include "pagepath.h"
 #include "sessionappearance.h"
 #include "thumtoocache.h"
+#include "biltoo_thread.h"
 
 #include <QDateTime>
 #include <QDebug>
@@ -94,6 +95,7 @@ QImage clampSoftForGalleryCell(const QImage &pixels, int needEdge, int minEdge)
 QImage prepareImageModeDisplaySample(const QString &path, QImage raw,
                                      SessionAppearance::PixelKind kind)
 {
+    ASSERT_NOT_GUI_THREAD();
     if (raw.isNull()) {
         return {};
     }
@@ -170,6 +172,7 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
  */
 QImage loadSoftPreviewPixels(const QString &path, int softEdge)
 {
+    ASSERT_NOT_GUI_THREAD();
     // Prefer an adequate host sample; otherwise keep any smaller host soft.
     QImage preview = ImageCache::get(path, softEdge);
     if (preview.isNull()) {

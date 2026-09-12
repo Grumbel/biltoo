@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-676-assert-not-gui-thread.** ASSERT_NOT_GUI_THREAD on heavy decode/bake paths.
+Prior: **675**.
+
+### Change
+- `src/biltoo_thread.h` — `ASSERT_NOT_GUI_THREAD()` / `ASSERT_GUI_THREAD()`
+- Assert at entry of: `prepareImageModeDisplaySample`, `loadSoftPreviewPixels`,
+  `ImageLoader::load`, `ImageLoader::loadThumbnail`, `loadSlideshowSample`
+- `materializeDisplay`: assert when long edge > 512 (soft pending bake stays GUI-legal)
+
+### QueuedConnection note
+`Qt::QueuedConnection` (and `QTimer::singleShot(0, …)`) only **posts the
+result** onto the GUI event loop. It does **not** move the work. Heavy work
+must still run on a pool thread; the assert catches accidental GUI calls.
+
+### Done criteria
+- [x] Debug builds abort if heavy load/bake runs on the GUI thread
+- [x] Bundle **676**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-675-no-gui-mp-install.** Image ←/→: bake+clamp on worker; no multi-MP fromImage on GUI.
 Prior: **674**.
 

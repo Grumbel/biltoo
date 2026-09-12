@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "sessionappearance.h"
+#include "biltoo_thread.h"
 #include "imageitem.h"
 #include "coloradjust.h"
 
@@ -226,6 +227,11 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
 {
     if (raw.isNull()) {
         return {};
+    }
+    // Soft/LQIP (≤512) may still bake on GUI for pending tiles. Multi-MP must
+    // run on a worker (prepareImageModeDisplaySample / pool jobs).
+    if (qMax(raw.width(), raw.height()) > 512) {
+        ASSERT_NOT_GUI_THREAD();
     }
     if (!hasContentAppearance(state) && state.colorAdjust.isIdentity()) {
         return raw;

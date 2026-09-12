@@ -3,6 +3,8 @@
 
 // libvips pulls in GLib, which has struct fields named "signals". Qt defines
 // signals as a macro — include vips before any Qt headers.
+#include "biltoo_thread.h"
+
 #ifdef BILTOO_HAVE_VIPS
 #include <vips/vips.h>
 #endif
@@ -834,6 +836,7 @@ bool autoTrimRect(const QImage &image, const QRect &searchWithin, QRect *trimmed
 
 QImage load(const QString &path)
 {
+    ASSERT_NOT_GUI_THREAD();
     if (PagePath::isPageRef(path)) {
         return loadPageRef(path, 0);
     }
@@ -901,6 +904,7 @@ QImage loadThumbnailFromBytes(const QByteArray &bytes, int maxEdge)
 
 QImage loadThumbnail(const QString &path, int maxEdge)
 {
+    ASSERT_NOT_GUI_THREAD();
     if (maxEdge <= 0) {
         return load(path);
     }

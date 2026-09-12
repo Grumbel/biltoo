@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "biltoo_thread.h"
 
 #include "archivepath.h"
 #include "biltoo_logging.h"
@@ -58,6 +59,7 @@ QImage preferSharper(const QImage &a, const QImage &b)
  */
 QImage loadSlideshowSample(const QString &path, int targetEdge)
 {
+    ASSERT_NOT_GUI_THREAD();
     const int need = slideshowNeedEdge(targetEdge);
     QImage img = ImageCache::get(path, need);
     if (img.isNull()) {
