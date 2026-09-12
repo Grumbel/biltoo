@@ -396,6 +396,21 @@ void ImageView::resizeEvent(QResizeEvent *event)
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
+    // mpv-style seekbar: drag along bottom edge during slideshow.
+    if (m_slideshowProgressActive && event->button() == Qt::LeftButton
+        && viewport() && viewport()->height() > 0) {
+        const int y = event->pos().y();
+        if (y >= viewport()->height() - 48) {
+            m_slideshowSeekDragging = true;
+            m_slideshowSeekbarVisible = true;
+            const qreal f = qBound(
+                0.0, qreal(event->pos().x()) / qreal(qMax(1, viewport()->width())), 1.0);
+            emit slideshowSeekRequested(f);
+            event->accept();
+            return;
+        }
+    }
+
     // Attention mode: multi-point select / move / rubber-band / click-to-add.
     if (m_attentionMode && event->button() == Qt::LeftButton && isImageMode()
         && edgeZoneAt(event->pos()) == EdgeZone::None) {
@@ -1195,6 +1210,19 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     }
 
     m_lastHoverViewPos = event->pos();
+    if (m_slideshowProgressActive && viewport()) {
+        const int y = event->pos().y();
+        const int h = viewport()->height();
+        const bool nearBottom = h > 0 && y >= h - 48;
+        if (nearBottom != m_slideshowSeekbarVisible && !m_slideshowSeekDragging) {
+            m_slideshowSeekbarVisible = nearBottom;
+            viewport()->update();
+        }
+        if (m_slideshowSeekDragging && h > 0 && viewport()->width() > 0) {
+            const qreal f = qBound(0.0, qreal(event->pos().x()) / qreal(viewport()->width()), 1.0);
+            emit slideshowSeekRequested(f);
+        }
+    }
     updateGalleryHoverAt(m_lastHoverViewPos);
 
     // Workspace: drive handle hover from the view so highlight matches the
@@ -1345,6 +1373,15 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_slideshowSeekDragging && event->button() == Qt::LeftButton) {
+        m_slideshowSeekDragging = false;
+        event->accept();
+        if (viewport()) {
+            viewport()->update();
+        }
+        return;
+    }
+
     if (m_textRubberbanding && event->button() == Qt::LeftButton) {
         m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
         finishTextRubberBand();

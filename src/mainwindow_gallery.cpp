@@ -439,10 +439,13 @@ void MainWindow::updateScrollBarPolicyForMode()
     }
     Qt::ScrollBarPolicy h = Qt::ScrollBarAlwaysOff;
     Qt::ScrollBarPolicy v = Qt::ScrollBarAlwaysOff;
-    // Gallery no longer forces AlwaysOn: that left both bars visible after
-    // Zoom Fit/Fill with nothing useful to scroll. Packing reserves bar space
-    // temporarily inside ImageView::applyLayout instead (stable avail box).
-    if (m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked()) {
+    // Slideshow is always chrome-free — never show scrollbars mid-show even if
+    // the user preference is AsNeeded.
+    if (isSlideshowSession()) {
+        h = Qt::ScrollBarAlwaysOff;
+        v = Qt::ScrollBarAlwaysOff;
+    } else if (m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked()) {
+        // Gallery packs reserve bar space inside applyLayout when needed.
         h = Qt::ScrollBarAsNeeded;
         v = Qt::ScrollBarAsNeeded;
     }

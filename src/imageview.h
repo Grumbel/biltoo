@@ -637,6 +637,8 @@ public:
      */
     void setSlideshowPausedHud(bool on);
     bool slideshowPausedHud() const { return m_slideshowPausedHud; }
+    /** Freeze/resume dwell progress elapsed without resetting the timeline. */
+    void setSlideshowProgressPaused(bool paused);
     /** Image-mode fit after leaving slideshow (Fit to window). */
     void restoreImageFramingAfterSlideshow();
     /** Start dwell image-blit Ken Burns if enabled and slideshow is active. */
@@ -863,6 +865,8 @@ signals:
     void navigatePreviousRequested();
     /** Slideshow: left-click centre (not edge zones) toggles pause. */
     void slideshowTogglePauseRequested();
+    /** Seek fraction [0,1] of the full session timeline (mpv-style bar). */
+    void slideshowSeekRequested(qreal fraction);
     void navigateNextRequested();
     /** Internal page (1-based) and/or external URI from a link region click. */
     void linkActivated(int page_1based, const QString &uri);
@@ -1249,6 +1253,9 @@ private:
     /** Persistent slideshow-paused cue (top-left); not cleared by flash timer. */
     QElapsedTimer m_lastSlideshowCenterClick;
     bool m_slideshowPausedHud = false;
+    /** mpv-style bottom seekbar while cursor is near the bottom edge. */
+    bool m_slideshowSeekbarVisible = false;
+    bool m_slideshowSeekDragging = false;
     /** Filename + index shown briefly after navigation / flash (not only when pinned). */
     bool m_hudIdentityPulse = false;
     QString m_hudAction;
@@ -1256,6 +1263,8 @@ private:
     QTimer *m_hudFlashTimer = nullptr;
     /** Slideshow progress (pinned HUD only): active dwell countdown. */
     bool m_slideshowProgressActive = false;
+    bool m_slideshowProgressClockPaused = false;
+    qint64 m_slideshowProgressBaseMs = 0;
     /** Last [slideshow-paint] fingerprint (size/mode); skip duplicate logs. */
     QString m_lastSlideshowPaintFp;
     int m_slideshowProgressIntervalMs = 0;
@@ -1285,6 +1294,8 @@ private:
     QElapsedTimer m_ssToMotionClock;
     bool m_ssFromMotionClockRunning = false;
     bool m_ssToMotionClockRunning = false;
+    qint64 m_ssFromMotionBaseMs = 0;
+    qint64 m_ssToMotionBaseMs = 0;
     /** Native-size soft placeholders; scaled once per path, never every tick. */
     QHash<QString, QImage> m_ssSoftByPath;
     /** Full decodes retained by path so A and B can both be full at once. */
@@ -1308,6 +1319,10 @@ private:
     mutable qint64 m_zoomBlurSourceKey[2] = {0, 0};
     mutable int m_zoomBlurVw = 0;
     mutable int m_zoomBlurVh = 0;
+    /** Skip rebuild while the user flips slides rapidly (solid pad instead). */
+    mutable QElapsedTimer m_zoomBlurLastBuild;
+    mutable qint64 m_zoomBlurDeferredKey = 0;
+    QTimer *m_zoomBlurDebounceTimer = nullptr;
     bool m_slideshowMotionActive = false;
     bool m_slideshowMotionPaused = false;
     /** Scroll policies restored when Ken Burns underlay returns. */

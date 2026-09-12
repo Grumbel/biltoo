@@ -187,6 +187,7 @@ private slots:
     void toggleSlideshow();
     void pauseSlideshow();
     void resumeSlideshow();
+    void seekSlideshowFraction(qreal fraction);
     /** Playing or paused (not fully stopped). */
     bool isSlideshowSession() const;
     void updateSlideshowActionUi();

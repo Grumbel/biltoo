@@ -2335,6 +2335,7 @@ void MainWindow::startSlideshow()
         showFullScreen();
     }
     m_slideshowPaused = false;
+    updateScrollBarPolicyForMode();
     updateSlideshowActionUi();
     qApp->installEventFilter(this);
     // Ensure free mouse moves reach the app filter during the show.
@@ -2368,6 +2369,45 @@ void MainWindow::startSlideshow()
     armSlideshowAdvanceTimer();
 }
 
+void MainWindow::seekSlideshowFraction(qreal fraction)
+{
+    if (!isSlideshowSession() || m_session.paths().size() <= 1) {
+        return;
+    }
+    fraction = qBound(0.0, fraction, 1.0);
+    const int n = m_session.paths().size();
+    int intervalMs = m_slideshowIntervalMs;
+    if (intervalMs <= 0) {
+        intervalMs = 1;
+    }
+    const qint64 totalMs = qint64(n) * qint64(intervalMs);
+    const qint64 target = qint64(qRound(fraction * qreal(totalMs)));
+    // Timeline zero at base 0 so fraction maps the whole session loop.
+    m_slideshowBaseIndex = 0;
+    m_slideshowPausedAccumMs = target;
+    m_slideshowTransitionCycle = -1;
+    m_slideshowPendingToIndex = -1;
+    if (!m_slideshowPaused) {
+        m_slideshowClock.start();
+    }
+    const int idx = int((target / intervalMs) % n);
+    if (m_imageView) {
+        m_imageView->cancelSlideshowTransition();
+        m_imageView->setSlideshowTimeline(target % totalMs, totalMs);
+    }
+    if (idx != m_currentIndex && !m_slideshowAdvancing) {
+        m_slideshowAdvancing = true;
+        setCurrentIndex(idx);
+        m_slideshowAdvancing = false;
+    }
+    if (!m_slideshowPaused) {
+        updateSlideshowFromClock();
+    } else if (m_imageView && idx >= 0 && idx < n) {
+        m_imageView->setSlideshowPhase(m_session.paths().at(idx), QString(), -1.0);
+        m_imageView->setSlideshowMotionPaused(true);
+    }
+}
+
 void MainWindow::pauseSlideshow()
 {
     if (!m_slideshowClockRunning || m_slideshowPaused) {
@@ -2385,9 +2425,10 @@ void MainWindow::pauseSlideshow()
         // image immediately (otherwise the hold layer masks LoadReplace).
         m_imageView->cancelSlideshowTransition();
         m_imageView->setSlideshowMotionPaused(true);
-        m_imageView->setSlideshowProgress(true, 0);
+        m_imageView->setSlideshowProgressPaused(true);
         m_imageView->setSlideshowPausedHud(true);
     }
+    updateScrollBarPolicyForMode();
     updateSlideshowActionUi();
 }
 
@@ -2407,7 +2448,7 @@ void MainWindow::resumeSlideshow()
     if (m_imageView) {
         m_imageView->setSlideshowMotionPaused(false);
         m_imageView->setSlideshowPausedHud(false);
-        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        m_imageView->setSlideshowProgressPaused(false);
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }
@@ -2416,6 +2457,7 @@ void MainWindow::resumeSlideshow()
     }
     updateSlideshowFromClock();
     armSlideshowCursorHide();
+    updateScrollBarPolicyForMode();
     updateSlideshowActionUi();
 }
 
@@ -2456,6 +2498,7 @@ void MainWindow::stopSlideshow()
             m_imageView->flashHud(tr("■  Slideshow stopped"));
         }
     }
+    updateScrollBarPolicyForMode();
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)

@@ -527,14 +527,18 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     m_slideshowProgressActive = active;
     m_slideshowProgressIntervalMs = active ? qMax(0, intervalMs) : 0;
     if (active) {
+        m_slideshowProgressBaseMs = 0;
+        m_slideshowProgressClockPaused = false;
         m_slideshowProgressElapsed.start();
-        if (m_hudVisible && m_slideshowProgressIntervalMs > 0 && m_slideshowProgressTimer) {
+        if (m_slideshowProgressIntervalMs > 0 && m_slideshowProgressTimer) {
             m_slideshowProgressTimer->start();
         } else if (m_slideshowProgressTimer) {
             m_slideshowProgressTimer->stop();
         }
     } else if (m_slideshowProgressTimer) {
         m_slideshowProgressTimer->stop();
+        m_slideshowProgressBaseMs = 0;
+        m_slideshowProgressClockPaused = false;
     }
     if (!active) {
         cancelSlideshowMotion();
@@ -558,6 +562,32 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssFullByPath.clear();
     }
     viewport()->update();
+}
+
+void ImageView::setSlideshowProgressPaused(bool paused)
+{
+    if (paused == m_slideshowProgressClockPaused) {
+        return;
+    }
+    if (paused) {
+        if (m_slideshowProgressElapsed.isValid()) {
+            m_slideshowProgressBaseMs += m_slideshowProgressElapsed.elapsed();
+        }
+        m_slideshowProgressClockPaused = true;
+        if (m_slideshowProgressTimer) {
+            m_slideshowProgressTimer->stop();
+        }
+    } else {
+        m_slideshowProgressClockPaused = false;
+        m_slideshowProgressElapsed.start();
+        if (m_slideshowProgressActive && m_slideshowProgressIntervalMs > 0
+            && m_slideshowProgressTimer) {
+            m_slideshowProgressTimer->start();
+        }
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
@@ -1002,6 +1032,12 @@ void ImageView::setSlideshowMotionPaused(bool paused)
             m_motionElapsedOffsetMs += m_motionClock.elapsed();
             m_motionTimer->stop();
         }
+        if (m_ssFromMotionClockRunning && m_ssFromMotionClock.isValid()) {
+            m_ssFromMotionBaseMs += m_ssFromMotionClock.elapsed();
+        }
+        if (m_ssToMotionClockRunning && m_ssToMotionClock.isValid()) {
+            m_ssToMotionBaseMs += m_ssToMotionClock.elapsed();
+        }
         m_slideshowMotionPaused = true;
         if (viewport()) {
             viewport()->update();
@@ -1009,6 +1045,12 @@ void ImageView::setSlideshowMotionPaused(bool paused)
         return;
     }
     m_slideshowMotionPaused = false;
+    if (m_ssFromMotionClockRunning) {
+        m_ssFromMotionClock.start();
+    }
+    if (m_ssToMotionClockRunning) {
+        m_ssToMotionClock.start();
+    }
     if (m_slideshowMotionActive && m_motionTimer && m_motionDurationMs > 0) {
         m_motionClock.restart();
         m_motionTimer->start();
@@ -1279,6 +1321,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             m_motionBiasValid = true;
             m_motionBiasPath = fromPath;
             m_ssFromMotionClock = m_ssToMotionClock;
+            m_ssFromMotionBaseMs = m_ssToMotionBaseMs;
             m_ssFromMotionClockRunning = true;
             m_ssFromMotionT = m_ssToMotionT;
             m_dwellMotionT = m_ssFromMotionT;
@@ -1291,6 +1334,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             }
             m_ssFromMotionClock.start();
             m_ssFromMotionClockRunning = true;
+            m_ssFromMotionBaseMs = 0;
             m_ssFromMotionT = 0.0;
             m_dwellMotionT = 0.0;
         }
@@ -1334,7 +1378,11 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         }
     }
     if (m_ssFromMotionClockRunning && pathMs > 0) {
-        m_ssFromMotionT = qBound(0.0, qreal(m_ssFromMotionClock.elapsed()) / qreal(pathMs), 1.0);
+        qint64 ms = m_ssFromMotionBaseMs;
+        if (!m_slideshowMotionPaused && m_ssFromMotionClock.isValid()) {
+            ms += m_ssFromMotionClock.elapsed();
+        }
+        m_ssFromMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
         m_dwellMotionT = m_ssFromMotionT;
     }
 
@@ -1361,6 +1409,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         }
         m_ssToMotionClock.start();
         m_ssToMotionClockRunning = true;
+        m_ssToMotionBaseMs = 0;
         m_ssToMotionT = 0.0;
         qCDebug(lcSlideshow).nospace()
             << "[slideshow] phase-to "
@@ -1376,7 +1425,11 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         }
     }
     if (m_ssToMotionClockRunning && pathMs > 0) {
-        m_ssToMotionT = qBound(0.0, qreal(m_ssToMotionClock.elapsed()) / qreal(pathMs), 1.0);
+        qint64 ms = m_ssToMotionBaseMs;
+        if (!m_slideshowMotionPaused && m_ssToMotionClock.isValid()) {
+            ms += m_ssToMotionClock.elapsed();
+        }
+        m_ssToMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
     }
 
     m_ssFadeT = fadeT;
@@ -1960,6 +2013,25 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         }
     }
     if (slot < 0) {
+        // Rapid slide flips: skip CPU blur, solid pad, rebuild after settle.
+        if (m_zoomBlurLastBuild.isValid() && m_zoomBlurLastBuild.elapsed() < 180) {
+            m_zoomBlurDeferredKey = key;
+            auto *self = const_cast<ImageView *>(this);
+            if (!self->m_zoomBlurDebounceTimer) {
+                self->m_zoomBlurDebounceTimer = new QTimer(self);
+                self->m_zoomBlurDebounceTimer->setSingleShot(true);
+                QObject::connect(self->m_zoomBlurDebounceTimer, &QTimer::timeout, self,
+                                 [self]() {
+                                     self->m_zoomBlurDeferredKey = 0;
+                                     if (self->viewport()) {
+                                         self->viewport()->update();
+                                     }
+                                 });
+            }
+            self->m_zoomBlurDebounceTimer->start(200);
+            painter->fillRect(viewportRect, slideshowPadColor());
+            return;
+        }
         // Prefer empty slot 0, else replace slot 1 (stable "from" in slot 0).
         slot = m_zoomBlurUnderlay[0].isNull() ? 0 : 1;
         const QImage blurred = makeZoomBlurCover(image, vw, vh);
@@ -1969,6 +2041,7 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         }
         m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
         m_zoomBlurSourceKey[slot] = key;
+        m_zoomBlurLastBuild.start();
     }
     // Low-res underlay: SmoothPixmapTransform → GL_LINEAR on QOpenGLWidget
     // (without it, nearest-neighbour shows blocky pixels when stretched).
@@ -2391,11 +2464,19 @@ void ImageView::tickSlideshowMotion()
         const int pathMs = qMax(250, m_slideshowProgressIntervalMs
                                 + qMax(0, m_slideshowTransitionDurationMs));
         if (m_ssFromMotionClockRunning) {
-            m_ssFromMotionT = qBound(0.0, qreal(m_ssFromMotionClock.elapsed()) / qreal(pathMs), 1.0);
+            qint64 ms = m_ssFromMotionBaseMs;
+            if (!m_slideshowMotionPaused && m_ssFromMotionClock.isValid()) {
+                ms += m_ssFromMotionClock.elapsed();
+            }
+            m_ssFromMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
             m_dwellMotionT = m_ssFromMotionT;
         }
         if (m_ssToMotionClockRunning) {
-            m_ssToMotionT = qBound(0.0, qreal(m_ssToMotionClock.elapsed()) / qreal(pathMs), 1.0);
+            qint64 ms = m_ssToMotionBaseMs;
+            if (!m_slideshowMotionPaused && m_ssToMotionClock.isValid()) {
+                ms += m_ssToMotionClock.elapsed();
+            }
+            m_ssToMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
         }
         // Upgrade only from full buffers (preload) — orient unbaked disk pixels.
         if (!m_ssFromPath.isEmpty()) {

@@ -36,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
                     pauseSlideshow();
                 }
             });
+    connect(m_imageView, &ImageView::slideshowSeekRequested, this,
+            &MainWindow::seekSlideshowFraction);
     connect(m_imageView, &ImageView::navigatePreviousRequested,
             this, &MainWindow::goPrevious);
     connect(m_imageView, &ImageView::navigateNextRequested,
@@ -1584,9 +1586,8 @@ void MainWindow::updateSlideshowFromClock()
 
     // Pure phase drive — no beginLive / busy / cancel for Crossfade.
     // Every tick: set buffers + fadeT from wall arithmetic; blit does the rest.
-    if (m_imageView) {
-        m_imageView->setSlideshowProgress(true, intervalMs);
-    }
+    // Do NOT call setSlideshowProgress here — it restarts the dwell elapsed
+    // timer and made pause/resume and the progress line jump.
 
     const QString fromPath = m_session.paths().at(fromIdx);
     const QString toPath = m_session.paths().at(toIdx);
@@ -1808,10 +1809,8 @@ void MainWindow::updateThumbnailEdgeActions()
 
 void MainWindow::toggleScrollBars()
 {
-    const bool show = m_toggleScrollBarsAct->isChecked();
-    const auto policy = show ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff;
-    m_imageView->setHorizontalScrollBarPolicy(policy);
-    m_imageView->setVerticalScrollBarPolicy(policy);
+    // Honour mode (slideshow forces off).
+    updateScrollBarPolicyForMode();
 }
 
 void MainWindow::showKeyboardShortcuts()

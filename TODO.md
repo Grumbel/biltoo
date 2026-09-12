@@ -1,5 +1,26 @@
 # TODO / agent handoff
 
+## Status (2026-09-12)
+
+**Tip: biltoo-474-slideshow-chrome-clock-seek.** Slideshow: no scrollbars; freeze clock on pause; seekbar; blur debounce.
+Prior: **473**.
+
+### Changes
+- Scrollbars forced off for entire slideshow session
+- Pause freezes progress + Ken Burns motion bases (no resume jump)
+- Stop calling `setSlideshowProgress` every clock tick (reset the dwell timer)
+- mpv-style bottom seekbar (hover bottom 48px, drag to seek session timeline)
+- ZoomBlur underlay debounced (~180ms) on rapid slide flips
+
+### Done criteria
+- [x] No scrollbars in slideshow
+- [x] Pause freezes time
+- [x] Seekbar
+- [x] Blur debounce
+- [x] Bundle **474**
+
+---
+
 ## Status (2026-09-11)
 
 **Tip: biltoo-473-filmstrip-dblclick-image.** Filmstrip double-click opens Image mode.

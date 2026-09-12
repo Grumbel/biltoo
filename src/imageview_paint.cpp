@@ -679,7 +679,8 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     // Slideshow timeline (extended HUD only): video-player style progress bar
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
     // the host clock. Falls back to per-interval dwell line if no timeline.
-    if (m_hudVisible && m_slideshowProgressActive) {
+    if (m_slideshowProgressActive
+        && (m_hudVisible || m_slideshowSeekbarVisible || m_slideshowSeekDragging)) {
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
         if (viewW > 0 && viewH > 0) {
@@ -688,9 +689,11 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                 fraction = qreal(m_slideshowTimelineElapsedMs)
                     / qreal(m_slideshowTimelineTotalMs);
             } else if (m_slideshowProgressIntervalMs > 0) {
-                const qint64 elapsed = m_slideshowProgressElapsed.isValid()
-                    ? m_slideshowProgressElapsed.elapsed()
-                    : 0;
+                qint64 elapsed = m_slideshowProgressBaseMs;
+                if (!m_slideshowProgressClockPaused
+                    && m_slideshowProgressElapsed.isValid()) {
+                    elapsed += m_slideshowProgressElapsed.elapsed();
+                }
                 fraction = qreal(elapsed) / qreal(m_slideshowProgressIntervalMs);
             }
             fraction = qBound(0.0, fraction, 1.0);
@@ -701,11 +704,14 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             c.setAlpha(200);
             painter.setPen(Qt::NoPen);
             painter.setBrush(track);
-            painter.drawRect(0, viewH - 2, viewW, 2);
+            // Thin dwell/session line when HUD pinned; thicker mpv seekbar when
+            // the cursor is in the bottom hover zone.
+            const int barH = m_slideshowSeekbarVisible ? 6 : 2;
+            painter.drawRect(0, viewH - barH, viewW, barH);
             if (fraction > 0.0) {
                 const int barW = qMax(1, int(qRound(fraction * viewW)));
                 painter.setBrush(c);
-                painter.drawRect(0, viewH - 2, barW, 2);
+                painter.drawRect(0, viewH - barH, barW, barH);
             }
 
             if (m_slideshowTimelineTotalMs > 0) {
