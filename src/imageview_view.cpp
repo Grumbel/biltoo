@@ -1378,6 +1378,12 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         << " " << m_ssToImage.width() << "x" << m_ssToImage.height();
 }
 
+int ImageView::slideshowPathDurationMs() const
+{
+    return qMax(250, m_slideshowProgressIntervalMs
+                     + qMax(0, m_slideshowTransitionDurationMs));
+}
+
 void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
 {
     if (!m_slideshowProgressActive) {
@@ -1408,8 +1414,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     if (fromChanged || toChanged) {
         pruneZoomBlurOutsidePhasePair(fromPath, toPath);
     }
-    const int pathMs = qMax(250, m_slideshowProgressIntervalMs
-                            + qMax(0, m_slideshowTransitionDurationMs));
+    const int pathMs = slideshowPathDurationMs();
 
     // Keep m_ssRasterPending look-ahead across phase changes. Clearing it here
     // cancelled +2/+3 warm-up on every advance. Preload dedupes by path.
@@ -2293,23 +2298,16 @@ void ImageView::tickSlideshowMotion()
     // Pure-phase path: advance A/B motion from their own clocks (spec: both
     // move during transition; B moves through transition + its interval).
     if (m_slideshowProgressActive && (m_ssFromMotionClockRunning || m_ssToMotionClockRunning)) {
-        const int pathMs = qMax(250, m_slideshowProgressIntervalMs
-                                + qMax(0, m_slideshowTransitionDurationMs));
+        const int pathMs = slideshowPathDurationMs();
+        m_ssFromMotionT = slideshowMotionProgress(
+            m_ssFromMotionBaseMs, m_ssFromMotionClock, m_ssFromMotionClockRunning,
+            m_slideshowMotionPaused, pathMs);
         if (m_ssFromMotionClockRunning) {
-            qint64 ms = m_ssFromMotionBaseMs;
-            if (!m_slideshowMotionPaused && m_ssFromMotionClock.isValid()) {
-                ms += m_ssFromMotionClock.elapsed();
-            }
-            m_ssFromMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
             m_dwellMotionT = m_ssFromMotionT;
         }
-        if (m_ssToMotionClockRunning) {
-            qint64 ms = m_ssToMotionBaseMs;
-            if (!m_slideshowMotionPaused && m_ssToMotionClock.isValid()) {
-                ms += m_ssToMotionClock.elapsed();
-            }
-            m_ssToMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
-        }
+        m_ssToMotionT = slideshowMotionProgress(
+            m_ssToMotionBaseMs, m_ssToMotionClock, m_ssToMotionClockRunning,
+            m_slideshowMotionPaused, pathMs);
         // Phase pixel buffers stay locked for the path's participation.
         // Preload only fills ImageCache for the next phase entry.
         viewport()->update();

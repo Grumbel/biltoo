@@ -701,6 +701,11 @@ public:
      * Fit / Fill / 1:1 framing only. No-op when slideshow progress is inactive.
      */
     void reapplySlideshowFraming();
+    /**
+     * Dwell + transition budget for one path's Ken Burns clock (min 250ms).
+     * Used by phase arming and tickSlideshowMotion.
+     */
+    int slideshowPathDurationMs() const;
     /** Pure-clock drive: fadeT<0 dwell on fromPath; else crossfade from→to at fadeT in [0,1]. */
     void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
     /** Drop ZoomBlur slots whose key is neither from nor to path. */

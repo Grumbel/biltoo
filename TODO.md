@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-593-slideshow-path-duration.** Shared path duration + tick progress.
+Prior: **592**.
+
+### Change
+- `slideshowPathDurationMs()` — single dwell+transition budget (min 250)
+- `setSlideshowPhase` and `tickSlideshowMotion` use it
+- Tick path advances A/B via `slideshowMotionProgress` (no duplicated clock math)
+
+### Done criteria
+- [x] Path duration and motion T have one definition each
+- [x] Bundle **593**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-592-arm-slideshow-phase-slots.** Arm from/to phase as methods.
 Prior: **591**.
 
