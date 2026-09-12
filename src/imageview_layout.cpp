@@ -1760,11 +1760,9 @@ bool ImageView::beginPageGuideResize(int handle)
     return true;
 }
 
-void ImageView::updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods)
+QRectF ImageView::pageGuideRectFromHandleDrag(const QPointF &scenePos,
+                                              Qt::KeyboardModifiers mods) const
 {
-    if (m_pageGuideDragHandle < 0) {
-        return;
-    }
     // Match Workspace image scale handles:
     //   default = opposite edge/corner fixed
     //   Ctrl    = scale about centre
@@ -1887,6 +1885,15 @@ void ImageView::updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModif
             next.setHeight(kMin);
         }
     }
+    return next;
+}
+
+void ImageView::updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods)
+{
+    if (m_pageGuideDragHandle < 0) {
+        return;
+    }
+    const QRectF next = pageGuideRectFromHandleDrag(scenePos, mods);
     m_pageGuideRect = next;
     m_pageGuideSize = next.size();
     updateWorkspaceSceneRect();

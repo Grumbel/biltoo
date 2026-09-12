@@ -399,49 +399,37 @@ void ImageView::setCropMode(bool on)
     leaveCropModeInternal(true);
 }
 
-bool ImageView::prepareCropModeFullImage(ImageItem *item)
+bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const
 {
-    if (!item) {
-        return false;
-    }
-    const QString path = item->path();
-    // Always edit against the full on-disk image so the crop region can grow.
-    const QImage full = ImageLoader::load(path);
-    if (full.isNull()) {
-        return false;
-    }
-
     // Prior crop + content flags for *this* session image only — never path map alone.
-    WorkspaceItemState app;
-    bool haveApp = false;
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : m_currentSessionId;
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
-            app = *it;
-            haveApp = true;
+            *app = *it;
+            return true;
         }
     }
-    if (!haveApp && item->sessionHasCrop()) {
-        app.hasCrop = true;
-        app.cropRect = item->sessionCropRect();
-        app.contentHFlip = item->contentHFlip();
-        app.contentVFlip = item->contentVFlip();
-        haveApp = true;
+    if (item->sessionHasCrop()) {
+        app->hasCrop = true;
+        app->cropRect = item->sessionCropRect();
+        app->contentHFlip = item->contentHFlip();
+        app->contentVFlip = item->contentVFlip();
+        return true;
     }
-    if (!haveApp) {
-        // Last resort for unbound single-instance tiles.
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()) {
-            app = *it;
-            haveApp = true;
-        }
+    // Last resort for unbound single-instance tiles.
+    const auto it = m_itemStates.constFind(item->path());
+    if (it != m_itemStates.cend()) {
+        *app = *it;
+        return true;
     }
+    return false;
+}
 
-    const QRect priorCrop = (haveApp && app.hasCrop) ? app.cropRect : QRect();
-    const bool hadCrop = haveApp && app.hasCrop && !priorCrop.isEmpty();
-
+void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
+                                        const WorkspaceItemState *app, bool haveApp)
+{
     // Intentional: not installDisplayPixels. Crop mode needs the full on-disk
     // frame with content bakes only — crop is drafted on top, not baked yet.
     item->setSourceImage(full);
@@ -452,19 +440,26 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     item->setItemVFlip(false);
     // Re-apply content flips/quarter turns for this session image on the full frame
     // (crop draft is drawn in that space). Do not bake the crop yet.
-    if (haveApp) {
-        WorkspaceItemState contentOnly = app;
+    if (haveApp && app) {
+        WorkspaceItemState contentOnly = *app;
         contentOnly.hasCrop = false;
         contentOnly.cropRect = QRect();
         applyContentBakes(item, contentOnly);
     }
     m_cropShowingFullImage = true;
+}
 
+void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
+                                                bool haveApp)
+{
     // Start each crop session without Expand; re-enable below if the stored
     // draft (AABB or rotated corners) extends outside the source.
     m_cropAllowExpand = false;
 
     const QRectF cr = item->contentRect();
+    const QRect priorCrop = (haveApp && app.hasCrop) ? app.cropRect : QRect();
+    const bool hadCrop = haveApp && app.hasCrop && !priorCrop.isEmpty();
+
     if (hadCrop) {
         const QSize sz = item->imageSize();
         const QRect bounds(0, 0, sz.width(), sz.height());
@@ -503,6 +498,23 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         m_cropRotation = 0.0;
     }
     ensureCropRectValid();
+}
+
+bool ImageView::prepareCropModeFullImage(ImageItem *item)
+{
+    if (!item) {
+        return false;
+    }
+    // Always edit against the full on-disk image so the crop region can grow.
+    const QImage full = ImageLoader::load(item->path());
+    if (full.isNull()) {
+        return false;
+    }
+
+    WorkspaceItemState app;
+    const bool haveApp = resolveCropEnterAppearance(item, &app);
+    installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp);
+    initCropRectFromPriorAppearance(item, app, haveApp);
 
     if (isImageMode()) {
         m_fitMode = true;

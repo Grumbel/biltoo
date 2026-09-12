@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-626-crop-enter-page-guide.** Split prepareCropModeFullImage + page guide resize compute.
+Prior: **625**.
+
+### Change
+- Crop enter: `resolveCropEnterAppearance`, `installFullImageForCrop`, `initCropRectFromPriorAppearance`
+- Page guide: `pageGuideRectFromHandleDrag` (pure rect math); `updatePageGuideResize` applies
+
+### Done criteria
+- [x] Crop-enter and page-guide resize phases named
+- [x] Bundle **626**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-625-remove-session-phases.** Split removeWorkspaceSessionId into collect/destroy/prune/restore.
 Prior: **624**.
 

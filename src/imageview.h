@@ -1351,6 +1351,11 @@ private:
      * so the region can grow. Returns false if the image cannot be prepared.
      */
     bool prepareCropModeFullImage(ImageItem *item);
+    bool resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const;
+    void installFullImageForCrop(ImageItem *item, const QImage &full,
+                                 const WorkspaceItemState *app, bool haveApp);
+    void initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
+                                         bool haveApp);
     /** Workspace: shift item so crop-frame centre maps to @p sceneAnchor. */
     void alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
@@ -1448,6 +1453,8 @@ private:
     void paintPageGuideHandles(QPainter *painter) const;
     bool beginPageGuideResize(int handle);
     void updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    QRectF pageGuideRectFromHandleDrag(const QPointF &scenePos,
+                                       Qt::KeyboardModifiers mods) const;
     void endPageGuideResize();
 
     bool m_pageGuideVisible = false;
