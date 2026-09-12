@@ -222,11 +222,54 @@ struct GallerySoftState {
  * the same display edge after a shortfall, and never forget settled on every hit.
  */
 struct ImageModeClimbState {
-    int have = 0;              /**< best sample long edge installed */
-    int lastDisplayWant = 0;   /**< last PreferCache display edge requested */
-    int lastDisplayGot = 0;    /**< long edge from last PreferCache delivery */
-    bool preferGaveUp = false; /**< PreferCache cannot improve further */
-    bool displayQueued = false; /**< scheduleDisplayPixels already issued for lastDisplayWant */
+    int have = 0;               /**< best sample long edge seen */
+    int lastDisplayWant = 0;    /**< last PreferCache display edge requested */
+    int lastDisplayGot = 0;     /**< long edge from last PreferCache delivery */
+    bool preferGaveUp = false;  /**< PreferCache cannot improve further */
+    bool displayQueued = false; /**< scheduleDisplayPixels issued for lastDisplayWant */
+
+    /** Record a delivered sample; mark PreferCache gave-up on shortfall. */
+    void noteDelivery(int requestEdge, int gotEdge)
+    {
+        const int req = requestEdge > 0 ? requestEdge : lastDisplayWant;
+        const int prevGot = lastDisplayGot;
+        if (gotEdge > 0) {
+            have = qMax(have, gotEdge);
+            lastDisplayGot = qMax(lastDisplayGot, gotEdge);
+        }
+        // Shortfall vs request — PreferCache will not improve by asking again.
+        if (req > 0 && gotEdge > 0 && gotEdge < (req * 9) / 10) {
+            preferGaveUp = true;
+            return;
+        }
+        // Plateau: repeated delivery no better than a prior PreferCache sample.
+        if (displayQueued && prevGot > 0 && gotEdge > 0 && gotEdge <= prevGot
+            && req >= 1024) {
+            preferGaveUp = true;
+        }
+    }
+
+    /**
+     * True when PreferCache may schedule @a wantEdge (strictly higher than last
+     * request, or first request). Gave-up always blocks.
+     */
+    bool shouldScheduleDisplay(int wantEdge) const
+    {
+        if (preferGaveUp || wantEdge <= 0) {
+            return false;
+        }
+        if (displayQueued && wantEdge <= lastDisplayWant) {
+            return false;
+        }
+        return true;
+    }
+
+    /** Book-keeping after a PreferCache display schedule is issued. */
+    void markDisplayScheduled(int wantEdge)
+    {
+        lastDisplayWant = wantEdge;
+        displayQueued = true;
+    }
 };
 
 #endif // IMAGEVIEW_TYPES_H

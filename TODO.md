@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-654-climb-state-policy.** PreferCache climb policy on ImageModeClimbState.
+Prior: **653**.
+
+### Change
+- `ImageModeClimbState::noteDelivery` / `shouldScheduleDisplay` / `markDisplayScheduled`
+- Host climb helpers are thin wrappers over state policy (no duplicated give-up logic)
+- Plateau detection uses prior got vs current (not post-update have)
+
+### Done criteria
+- [x] Climb anti-storm policy is testable in one struct
+- [x] Bundle **654**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-653-stop-prefercache-storm.** Break PreferCache soft reschedule loop.
 Prior: **652**.
 

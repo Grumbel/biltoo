@@ -1719,22 +1719,15 @@ void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantE
         return;
     }
     ImageModeClimbState &st = m_imageModeClimb[path];
-    if (st.preferGaveUp) {
-        return;
-    }
     const int edge = wantEdge > 0
                          ? qMin(wantEdge, ThumtooCache::kImageLadderEdge)
                          : ThumtooCache::kImageLadderEdge;
-    // Only re-queue display when the requested edge is strictly higher than the
-    // last request (zoom-in). Never forget settled here — that caused a soft
-    // PreferCache storm (512/1024 tile_synth looping forever).
-    if (st.displayQueued && edge <= st.lastDisplayWant) {
+    if (!st.shouldScheduleDisplay(edge)) {
         return;
     }
-    st.lastDisplayWant = edge;
-    st.displayQueued = true;
+    st.markDisplayScheduled(edge);
     ThumtooCache::scheduleProbe(path);
-    // Soft band once; settled soft skips re-queue.
+    // Soft band once; settled soft skips re-queue (no forgetPixelsSettled).
     (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
     (void)ThumtooCache::scheduleDisplayPixels(path, edge);
 }
@@ -1779,25 +1772,16 @@ void ImageView::noteImageModePreferCacheDelivery(const QString &path, int reques
         return;
     }
     ImageModeClimbState &st = m_imageModeClimb[path];
-    const int got = ImageCache::longEdge(sample);
-    st.have = qMax(st.have, got);
-    st.lastDisplayGot = qMax(st.lastDisplayGot, got);
-    const int req = requestEdge > 0 ? requestEdge : st.lastDisplayWant;
-    if (req > 0 && got > 0 && got < (req * 9) / 10) {
-        // Delivery does not cover the request — PreferCache will not improve by
-        // asking again (archive tile_synth often tops out ~1024).
-        st.preferGaveUp = true;
+    const bool wasGaveUp = st.preferGaveUp;
+    st.noteDelivery(requestEdge, ImageCache::longEdge(sample));
+    if (!wasGaveUp && st.preferGaveUp) {
         if (const char *dbg = std::getenv("THUMTOO_DEBUG");
             dbg && dbg[0] && dbg[0] != '0') {
             fprintf(stderr,
                     "biltoo/image: PreferCache gave up path=%s req=%d got=%d\n",
-                    qPrintable(QFileInfo(path).fileName()), req, got);
+                    qPrintable(QFileInfo(path).fileName()), requestEdge,
+                    ImageCache::longEdge(sample));
         }
-    }
-    // Equal-or-worse delivery after a prior PreferCache sample: also give up.
-    if (st.lastDisplayGot > 0 && got > 0 && got <= st.have
-        && st.displayQueued && req >= ThumtooCache::kBatchOverviewEdge) {
-        st.preferGaveUp = true;
     }
 }
 
@@ -1935,8 +1919,7 @@ void ImageView::maybeClimbImageModePixelsForView()
 
     // Zoom-in only: PreferCache when on-screen need exceeds last request.
     ImageModeClimbState &st = m_imageModeClimb[path];
-    if (!st.preferGaveUp && need > st.lastDisplayWant) {
-        st.displayQueued = false; // allow one higher-edge PreferCache
+    if (st.shouldScheduleDisplay(need)) {
         scheduleImageModePreferCacheClimb(path, need);
     }
     scheduleImageModeNativeFullQuiet(path);
