@@ -746,6 +746,7 @@ public:
     int slideshowPathDurationMs() const;
     /** Pure-clock drive: fadeT<0 dwell on fromPath; else crossfade from→to at fadeT in [0,1]. */
     void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
+    void warmZoomBlurForCurrentPhase();
     /** Drop ZoomBlur slots whose key is neither from nor to path. */
     void pruneZoomBlurOutsidePhasePair(const QString &fromPath, const QString &toPath);
     /** Prefetch ZoomBlur underlay for a phase path if viewport is valid. */
@@ -951,6 +952,12 @@ public:
     int resetContentAppearanceForTargets();
 
     QString statusText() const;
+    void appendThumtooDebugStatus(QString *text, ImageItem *item) const;
+    QString statusTextEmpty() const;
+    QString statusTextMultiItem(ImageItem *item, const QString &quality,
+                                int edge, const QSize &native) const;
+    QString statusTextImageMode(ImageItem *item, const QString &quality,
+                                int edge, const QSize &native) const;
     /** User-facing quality of pixels currently shown for @p item. */
     QString pixelQualityLabel(const ImageItem *item) const;
     /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */

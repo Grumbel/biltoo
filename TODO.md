@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-627-status-slideshow-warm.** Split statusText modes; extract zoom-blur warm helper.
+Prior: **626**.
+
+### Change
+- `statusTextEmpty`, `statusTextMultiItem`, `statusTextImageMode`
+- `appendThumtooDebugStatus` (shared THUMTOO_DEBUG queue/via suffix)
+- `warmZoomBlurForCurrentPhase` from `setSlideshowPhase`
+
+### Done criteria
+- [x] Status paths named; slideshow warm extracted
+- [x] Bundle **627**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-626-crop-enter-page-guide.** Split prepareCropModeFullImage + page guide resize compute.
 Prior: **625**.
 

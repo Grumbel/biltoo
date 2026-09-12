@@ -1384,6 +1384,29 @@ int ImageView::slideshowPathDurationMs() const
                      + qMax(0, m_slideshowTransitionDurationMs));
 }
 
+void ImageView::warmZoomBlurForCurrentPhase()
+{
+    // Skip while user is key-repeating — builds fight soft decode.
+    if (!viewport() || m_slideshowNavHot
+        || m_slideshowLetterboxFill != SlideshowLetterboxFill::ZoomBlur) {
+        return;
+    }
+    const QSize vs = viewport()->size();
+    if (vs.width() <= 0 || vs.height() <= 0) {
+        return;
+    }
+    auto warm = [&](const QString &path, const QImage &img) {
+        if (path.isEmpty() || img.isNull()) {
+            return;
+        }
+        const qint64 key = qint64(qHash(path))
+            ^ (qint64(vs.width()) << 16) ^ qint64(vs.height());
+        scheduleZoomBlurBuild(img, vs.width(), vs.height(), key);
+    };
+    warm(m_ssFromPath, m_ssFromImage.isNull() ? m_dwellSourceImage : m_ssFromImage);
+    warm(m_ssToPath, m_ssToImage);
+}
+
 void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
 {
     if (!m_slideshowProgressActive) {
@@ -1464,24 +1487,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     }
 
     // Keep underlays warm for the active pair (dwell from, or both in fade).
-    // Skip while user is key-repeating — builds fight soft decode.
-    if (viewport() && !m_slideshowNavHot
-        && m_slideshowLetterboxFill == SlideshowLetterboxFill::ZoomBlur) {
-        const QSize vs = viewport()->size();
-        if (vs.width() > 0 && vs.height() > 0) {
-            auto warm = [&](const QString &path, const QImage &img) {
-                if (path.isEmpty() || img.isNull()) {
-                    return;
-                }
-                const qint64 key = qint64(qHash(path))
-                    ^ (qint64(vs.width()) << 16) ^ qint64(vs.height());
-                scheduleZoomBlurBuild(img, vs.width(), vs.height(), key);
-            };
-            warm(m_ssFromPath, m_ssFromImage.isNull() ? m_dwellSourceImage : m_ssFromImage);
-            warm(m_ssToPath, m_ssToImage);
-        }
-    }
-
+    warmZoomBlurForCurrentPhase();
     hideSlideshowUnderlay();
     if (viewport()) {
         viewport()->update();
@@ -2508,87 +2514,87 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     return tier;
 }
 
-QString ImageView::statusText() const
+void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
 {
-    if (m_zoomRegionArmed || m_zoomRegionDragging) {
-        return tr("Zoom region: drag a rectangle · Esc cancels");
+    if (!text || !item) {
+        return;
     }
-    ImageItem *item = targetItem();
-    if (!item) {
-        item = primaryItem();
+    const char *dbg = std::getenv("THUMTOO_DEBUG");
+    if (!dbg || !dbg[0] || dbg[0] == '0') {
+        return;
     }
-
-    if (!item) {
-        if (!m_lastLoadError.isEmpty()) {
-            return tr("Failed to load “%1”").arg(PagePath::displayName(m_lastLoadError));
-        }
-        if (hasClassicPath() && isImageMode()) {
-            return tr("Loading…");
-        }
-        if (isGalleryMode()) {
-            return tr("Gallery — no images");
-        }
-        if (isWorkspaceMode()) {
-            return tr("Workspace — drop images or use Open");
-        }
-        return tr("Ready");
+    const QString q = ThumtooCache::queueStatsLabel();
+    if (!q.isEmpty()) {
+        *text += tr(" · %1").arg(q);
     }
-
-    const QString quality = pixelQualityLabel(item);
-    const int edge = item->displayPixelLongEdge();
-    const QSize native = item->imageSize();
-
-    if (isMultiItemMode()) {
-        const QString modeLabel = isGalleryMode() ? tr("Gallery") : tr("Workspace");
-        QString text = tr("%1 · %2 images · Zoom %3%")
-                           .arg(modeLabel)
-                           .arg(m_items.size())
-                           .arg(qRound(viewScale() * 100));
-        if (!quality.isEmpty()) {
-            if (edge > 0) {
-                text += tr(" · %1 (%2px)").arg(quality).arg(edge);
-            } else {
-                text += tr(" · %1").arg(quality);
-            }
-        }
-        if (native.width() > 1 && native.height() > 1
-            && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
-            text += tr(" · %1×%2").arg(native.width()).arg(native.height());
-        }
-        const int pending = pendingDecodeCount();
-        if (pending > 0) {
-            text += tr(" · Loading %1…").arg(pending);
-        }
-        if (isWorkspaceMode() && item->isSelected()) {
-            if (qAbs(item->itemScaleX() - item->itemScaleY()) < 0.005) {
-                text += tr(" · Item %1% · Rot %2°")
-                            .arg(qRound(item->itemScaleX() * 100))
-                            .arg(qRound(item->itemRotation()));
-            } else {
-                text += tr(" · Item %1%×%2% · Rot %3°")
-                            .arg(qRound(item->itemScaleX() * 100))
-                            .arg(qRound(item->itemScaleY() * 100))
-                            .arg(qRound(item->itemRotation()));
-            }
-        }
-        if (targetHasContentAppearance()) {
-            text += tr(" · Edited");
-        }
-        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-            dbg && dbg[0] && dbg[0] != '0') {
-            const QString q = ThumtooCache::queueStatsLabel();
-            if (!q.isEmpty()) {
-                text += tr(" · %1").arg(q);
-            }
-            const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
-            if (!src.isEmpty()) {
-                text += tr(" · via %1").arg(src);
-            }
-        }
-        return text;
+    const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
+    if (!src.isEmpty()) {
+        *text += tr(" · via %1").arg(src);
     }
+}
 
-    // Image mode
+QString ImageView::statusTextEmpty() const
+{
+    if (!m_lastLoadError.isEmpty()) {
+        return tr("Failed to load “%1”").arg(PagePath::displayName(m_lastLoadError));
+    }
+    if (hasClassicPath() && isImageMode()) {
+        return tr("Loading…");
+    }
+    if (isGalleryMode()) {
+        return tr("Gallery — no images");
+    }
+    if (isWorkspaceMode()) {
+        return tr("Workspace — drop images or use Open");
+    }
+    return tr("Ready");
+}
+
+QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
+                                       int edge, const QSize &native) const
+{
+    const QString modeLabel = isGalleryMode() ? tr("Gallery") : tr("Workspace");
+    QString text = tr("%1 · %2 images · Zoom %3%")
+                       .arg(modeLabel)
+                       .arg(m_items.size())
+                       .arg(qRound(viewScale() * 100));
+    if (!quality.isEmpty()) {
+        if (edge > 0) {
+            text += tr(" · %1 (%2px)").arg(quality).arg(edge);
+        } else {
+            text += tr(" · %1").arg(quality);
+        }
+    }
+    if (native.width() > 1 && native.height() > 1
+        && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
+        text += tr(" · %1×%2").arg(native.width()).arg(native.height());
+    }
+    const int pending = pendingDecodeCount();
+    if (pending > 0) {
+        text += tr(" · Loading %1…").arg(pending);
+    }
+    if (isWorkspaceMode() && item->isSelected()) {
+        if (qAbs(item->itemScaleX() - item->itemScaleY()) < 0.005) {
+            text += tr(" · Item %1% · Rot %2°")
+                        .arg(qRound(item->itemScaleX() * 100))
+                        .arg(qRound(item->itemRotation()));
+        } else {
+            text += tr(" · Item %1%×%2% · Rot %3°")
+                        .arg(qRound(item->itemScaleX() * 100))
+                        .arg(qRound(item->itemScaleY() * 100))
+                        .arg(qRound(item->itemRotation()));
+        }
+    }
+    if (targetHasContentAppearance()) {
+        text += tr(" · Edited");
+    }
+    appendThumtooDebugStatus(&text, item);
+    return text;
+}
+
+QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
+                                       int edge, const QSize &native) const
+{
     QString text = tr("%1×%2 · Zoom %3%")
                        .arg(native.width())
                        .arg(native.height())
@@ -2616,16 +2622,30 @@ QString ImageView::statusText() const
     if (targetHasContentAppearance()) {
         text += tr(" · Edited");
     }
-    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-        dbg && dbg[0] && dbg[0] != '0') {
-        const QString q = ThumtooCache::queueStatsLabel();
-        if (!q.isEmpty()) {
-            text += tr(" · %1").arg(q);
-        }
-        const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
-        if (!src.isEmpty()) {
-            text += tr(" · via %1").arg(src);
-        }
-    }
+    appendThumtooDebugStatus(&text, item);
     return text;
 }
+
+QString ImageView::statusText() const
+{
+    if (m_zoomRegionArmed || m_zoomRegionDragging) {
+        return tr("Zoom region: drag a rectangle · Esc cancels");
+    }
+    ImageItem *item = targetItem();
+    if (!item) {
+        item = primaryItem();
+    }
+    if (!item) {
+        return statusTextEmpty();
+    }
+
+    const QString quality = pixelQualityLabel(item);
+    const int edge = item->displayPixelLongEdge();
+    const QSize native = item->imageSize();
+
+    if (isMultiItemMode()) {
+        return statusTextMultiItem(item, quality, edge, native);
+    }
+    return statusTextImageMode(item, quality, edge, native);
+}
+
