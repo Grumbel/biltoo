@@ -2,6 +2,17 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-478-pipeline-thumtoo160-link.** Plan notes thumtoo-160 TileSynth construct.
+Prior: **477**. Companion: **thumtoo-160-pixels-from-tiles**.
+
+### Next
+- biltoo: use TileSynth / get_pixels_from_tiles when soft short
+- thumtoo: FastBatch archive cursor (Phase 2)
+
+---
+
+## Status (2026-09-12)
+
 **Tip: biltoo-477-pixel-pipeline-plan.** Design doc only: `docs/PIXEL_PIPELINE_REDESIGN.md`.
 Prior: **476**.
 
