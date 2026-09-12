@@ -1048,7 +1048,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         if (isImageMode()) {
             m_lastLoadError.clear();
-            rememberImageSize(path, image.size());
+            rememberSizeFromDecode(path, image);
             // Suppress paints between removing the old item and fitting the new one
             // so we never present a native-scale (or empty) intermediate frame.
             setUpdatesEnabled(false);
@@ -1205,7 +1205,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         return;
     }
     if (!image.isNull()) {
-        rememberImageSize(path, image.size());
+        rememberSizeFromDecode(path, image);
     }
     if (!m_pendingWorkspacePaths.contains(path)) {
         // Cancelled (e.g. path removed from session) — drop the result.

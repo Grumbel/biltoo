@@ -315,6 +315,7 @@ must not leave another mode’s work on the canvas.
 | Provisional layout size | Unknown native size must not use a permanent 1000×1000 **aspect** for fit/pack. Prefer cached native size; else preview aspect until probe/full decode (`layoutSizeForPath`, provisional path set). |
 | **Logical size owns geometry** | `logicalSizeForPath` / `ensureLogicalSizeForPath`. Soft and ladder rasters are sampling only. `rememberImageSize` never shrinks a known size with a smaller sample. Fit, slideshow Ken Burns, and framing share this model. |
 | Item intrinsic | `setSourceImage` / soft install never shrink intrinsic. `syncItemLayoutToContentOrientation` may transpose soft aspect but not adopt soft magnitude; full may grow. Probe applies even when samples are present. |
+| Decode → size | `rememberSizeFromDecode`: thumtoo first; skip ladder/soft edges (≤2048); probe instead. Only larger-than-ladder samples may enter the map as native. |
 
 Async load completions always check **mode** and **load generation** before creating tiles.
 

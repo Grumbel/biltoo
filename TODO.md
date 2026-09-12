@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-567-decode-size-gate.** Decode path never installs soft/ladder as logical size.
+Prior: **566**.
+
+### Changes
+- `rememberSizeFromDecode(path, image)`:
+  - prefer thumtoo cachedSize
+  - keep existing non-provisional logical size
+  - if long-edge ≤ kImageLadderEdge (2048): schedule probe, do not write sample
+  - only larger samples may enter the map as native
+- LoadReplace / LoadAdd `onImageLoaded` use it instead of bare `rememberImageSize(image.size())`
+
+### Done criteria
+- [x] Soft/slideshow raster cannot seed logical size via onImageLoaded
+- [x] Bundle **567**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-566-orientation-sync-logical.** Orientation sync and probe respect logical size.
 Prior: **565**.
 

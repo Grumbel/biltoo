@@ -458,6 +458,32 @@ void ImageView::rememberImageSize(const QString &path, const QSize &size)
     m_provisionalSizePaths.remove(path);
 }
 
+void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
+{
+    if (path.isEmpty() || image.isNull()) {
+        return;
+    }
+    // Durable index is authoritative when present.
+    if (const QSize cached = ThumtooCache::cachedSize(path);
+        cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+        rememberImageSize(path, cached);
+        return;
+    }
+    // Already have a definitive logical size — leave samples alone.
+    if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
+        return;
+    }
+    // Ladder / soft samples are not native identity. Probe for the real size;
+    // do not write sample dimensions into the logical map.
+    const int edge = qMax(image.width(), image.height());
+    if (edge <= ThumtooCache::kImageLadderEdge) {
+        scheduleImageSizeProbe(path);
+        return;
+    }
+    // Larger than the soft ladder max — treat as full native decode.
+    rememberImageSize(path, image.size());
+}
+
 bool ImageView::isProvisionalImageSize(const QString &path) const
 {
     return !path.isEmpty() && m_provisionalSizePaths.contains(path);

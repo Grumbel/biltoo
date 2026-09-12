@@ -1041,6 +1041,11 @@ private:
     bool isProvisionalImageSize(const QString &path) const;
     /** Remember native size after a successful full decode (or async probe). */
     void rememberImageSize(const QString &path, const QSize &size);
+    /**
+     * After a decode: prefer thumtoo/probe size. Never treat soft/ladder
+     * sample dimensions as definitive logical size.
+     */
+    void rememberSizeFromDecode(const QString &path, const QImage &image);
     void scheduleImageSizeProbe(const QString &path);
     void applyProbedImageSize(const QString &path, const QSize &size);
     void scheduleGalleryDecode(const QString &path);
