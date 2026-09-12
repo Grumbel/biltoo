@@ -599,91 +599,86 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
                            beforeSt, afterSt);
 }
 
-void ImageView::commitItemSessionEdit(ImageItem *item)
+void ImageView::persistSessionAppearanceSlot(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    rememberItemState(item);
-
     // Per-session-image appearance is a value copy keyed by stable id.
-    {
-        SessionImageId sid = item->sessionId();
-        // Image mode may bind the cursor id when the live item is not yet tagged.
-        // Workspace/Gallery must not invent an id — that merges edits onto peers.
-        if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_currentSessionId;
+    SessionImageId sid = item->sessionId();
+    // Image mode may bind the cursor id when the live item is not yet tagged.
+    // Workspace/Gallery must not invent an id — that merges edits onto peers.
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_currentSessionId;
+    }
+    WorkspaceItemState contentSlot;
+    bool haveContentSlot = false;
+    if (sid != kInvalidSessionImageId) {
+        if (item->sessionId() == kInvalidSessionImageId) {
+            item->setSessionId(sid);
         }
-        WorkspaceItemState contentSlot;
-        bool haveContentSlot = false;
-        if (sid != kInvalidSessionImageId) {
-            if (item->sessionId() == kInvalidSessionImageId) {
-                item->setSessionId(sid);
-            }
-            WorkspaceItemState slot = captureState(item);
-            slot.sessionId = sid;
-            slot.sessionIndex = item->sessionIndex();
-            slot.path = item->path();
-            if (const WorkspaceItemState *prev = m_appearance.get(sid)) {
-                if (slot.contentQuarterTurns == 0
-                    && prev->contentQuarterTurns != 0) {
-                    slot.contentQuarterTurns = prev->contentQuarterTurns;
-                }
-            }
-            m_appearance.set(sid, slot);
-            contentSlot = slot;
-            haveContentSlot = true;
-        } else {
-            // Unbound tile: still persist content-hash state for the file.
-            contentSlot = captureState(item);
-            contentSlot.contentHFlip = item->contentHFlip();
-            contentSlot.contentVFlip = item->contentVFlip();
-            contentSlot.hasCrop = item->sessionHasCrop();
-            contentSlot.cropRect = item->sessionCropRect();
-            haveContentSlot = true;
-        }
-        if (haveContentSlot) {
-            // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
-            // Does not touch source files; project files remain the portable doc.
-            // v1: flip / quarter-turns / crop only (grade stays session/project).
-            //
-            // Only *write* non-identity rows here. Writing identity deletes the
-            // SQLite row — a later commit whose captureState dropped quarter-turns
-            // was wiping a good row and leaving an empty database. Intentional
-            // clear goes through clearContentAppearance (Reset / undo-to-identity).
-            const bool contentful =
-                contentSlot.contentHFlip || contentSlot.contentVFlip
-                || contentSlot.contentQuarterTurns != 0
-                || (contentSlot.hasCrop && !contentSlot.cropRect.isEmpty());
-            if (contentful) {
-                ThumtooCache::StoredContentAppearance stored;
-                stored.contentHFlip = contentSlot.contentHFlip;
-                stored.contentVFlip = contentSlot.contentVFlip;
-                stored.contentQuarterTurns = contentSlot.contentQuarterTurns;
-                stored.hasCrop = contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
-                if (stored.hasCrop) {
-                    stored.cropRect = contentSlot.cropRect;
-                    stored.cropSourceSize = contentSlot.cropSourceSize;
-                    stored.cropRotation = contentSlot.cropRotation;
-                }
-                ThumtooCache::saveContentAppearance(item->path(), stored);
+        WorkspaceItemState slot = captureState(item);
+        slot.sessionId = sid;
+        slot.sessionIndex = item->sessionIndex();
+        slot.path = item->path();
+        if (const WorkspaceItemState *prev = m_appearance.get(sid)) {
+            if (slot.contentQuarterTurns == 0
+                && prev->contentQuarterTurns != 0) {
+                slot.contentQuarterTurns = prev->contentQuarterTurns;
             }
         }
-        if (sid != kInvalidSessionImageId) {
-            // Bound: do not last-write appearance onto the path map (duplicates
-            // share a path). Placement remains in m_itemStates from Workspace
-            // rememberItemState / snapshot only.
-            const QImage appearance = sessionAppearanceImage(item);
-            if (!appearance.isNull()) {
-                // Id-keyed only — path signals paint every filmstrip row with
-                // the same file (IDENTITY.md).
-                emit sessionAppearanceChanged(sid, item->path(), appearance);
-                emit sessionCropApplied(sid, item->path(), appearance);
+        m_appearance.set(sid, slot);
+        contentSlot = slot;
+        haveContentSlot = true;
+    } else {
+        // Unbound tile: still persist content-hash state for the file.
+        contentSlot = captureState(item);
+        contentSlot.contentHFlip = item->contentHFlip();
+        contentSlot.contentVFlip = item->contentVFlip();
+        contentSlot.hasCrop = item->sessionHasCrop();
+        contentSlot.cropRect = item->sessionCropRect();
+        haveContentSlot = true;
+    }
+    if (haveContentSlot) {
+        // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
+        // Does not touch source files; project files remain the portable doc.
+        // v1: flip / quarter-turns / crop only (grade stays session/project).
+        //
+        // Only *write* non-identity rows here. Writing identity deletes the
+        // SQLite row — a later commit whose captureState dropped quarter-turns
+        // was wiping a good row and leaving an empty database. Intentional
+        // clear goes through clearContentAppearance (Reset / undo-to-identity).
+        const bool contentful =
+            contentSlot.contentHFlip || contentSlot.contentVFlip
+            || contentSlot.contentQuarterTurns != 0
+            || (contentSlot.hasCrop && !contentSlot.cropRect.isEmpty());
+        if (contentful) {
+            ThumtooCache::StoredContentAppearance stored;
+            stored.contentHFlip = contentSlot.contentHFlip;
+            stored.contentVFlip = contentSlot.contentVFlip;
+            stored.contentQuarterTurns = contentSlot.contentQuarterTurns;
+            stored.hasCrop = contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
+            if (stored.hasCrop) {
+                stored.cropRect = contentSlot.cropRect;
+                stored.cropSourceSize = contentSlot.cropSourceSize;
+                stored.cropRotation = contentSlot.cropRotation;
             }
+            ThumtooCache::saveContentAppearance(item->path(), stored);
         }
     }
-    validateUniqueLiveSessionIds("commitItemSessionEdit");
+    if (sid != kInvalidSessionImageId) {
+        // Bound: do not last-write appearance onto the path map (duplicates
+        // share a path). Placement remains in m_itemStates from Workspace
+        // rememberItemState / snapshot only.
+        const QImage appearance = sessionAppearanceImage(item);
+        if (!appearance.isNull()) {
+            // Id-keyed only — path signals paint every filmstrip row with
+            // the same file (IDENTITY.md).
+            emit sessionAppearanceChanged(sid, item->path(), appearance);
+            emit sessionCropApplied(sid, item->path(), appearance);
+        }
+    }
+}
 
+void ImageView::syncSessionEditPeers(ImageItem *item)
+{
     // Propagate pixel / flip / orientation session edits to matching canvas and
     // stashed instances. Placement (pos, scale, free tilt) is preserved.
     const QString path = item->path();
@@ -747,41 +742,51 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     for (ImageItem *other : peers) {
         syncOne(other);
     }
-
-    // Durable snapshot: update the entry for this session image id.
-    if (sessionId != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_appearance.get(sessionId)) {
-            for (WorkspaceItemState &slot : m_workspace.savedItems()) {
-                if (slot.sessionId != sessionId) {
-                    continue;
-                }
-                slot.hasCrop = st->hasCrop;
-                slot.cropRect = st->cropRect;
-                slot.hFlip = hFlip;
-                slot.vFlip = vFlip;
-                slot.contentQuarterTurns = st->contentQuarterTurns;
-                slot.contentHFlip = st->contentHFlip;
-                slot.contentVFlip = st->contentVFlip;
-                slot.orientation = 0.0;
-                slot.sessionId = sessionId;
-                slot.path = path;
-            }
-        }
-    }
-
-    emit statusChanged();
 }
 
+void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
+{
+    // Durable snapshot: update the entry for this session image id.
+    const SessionImageId sessionId = item->sessionId();
+    if (sessionId == kInvalidSessionImageId) {
+        return;
+    }
+    const WorkspaceItemState *st = m_appearance.get(sessionId);
+    if (!st) {
+        return;
+    }
+    const QString path = item->path();
+    const bool hFlip = item->itemHFlip();
+    const bool vFlip = item->itemVFlip();
+    for (WorkspaceItemState &slot : m_workspace.savedItems()) {
+        if (slot.sessionId != sessionId) {
+            continue;
+        }
+        slot.hasCrop = st->hasCrop;
+        slot.cropRect = st->cropRect;
+        slot.hFlip = hFlip;
+        slot.vFlip = vFlip;
+        slot.contentQuarterTurns = st->contentQuarterTurns;
+        slot.contentHFlip = st->contentHFlip;
+        slot.contentVFlip = st->contentVFlip;
+        slot.orientation = 0.0;
+        slot.sessionId = sessionId;
+        slot.path = path;
+    }
+}
 
-
-
-
-
-
-
-
-
-
+void ImageView::commitItemSessionEdit(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    rememberItemState(item);
+    persistSessionAppearanceSlot(item);
+    validateUniqueLiveSessionIds("commitItemSessionEdit");
+    syncSessionEditPeers(item);
+    updateWorkspaceSavedAppearance(item);
+    emit statusChanged();
+}
 
 
 ImageItem *ImageView::findItemByPath(const QString &path) const
@@ -862,6 +867,7 @@ ImageItem *ImageView::findItemBySessionId(SessionImageId sessionId) const
     }
     return nullptr;
 }
+
 
 bool ImageView::hasPendingSessionBindForPath(const QString &path) const
 {

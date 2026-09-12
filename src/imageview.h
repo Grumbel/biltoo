@@ -865,6 +865,9 @@ public:
     void applyState(ImageItem *item, const WorkspaceItemState &state);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
+    void persistSessionAppearanceSlot(ImageItem *item);
+    void syncSessionEditPeers(ImageItem *item);
+    void updateWorkspaceSavedAppearance(ImageItem *item);
     QImage sessionAppearanceImage(const ImageItem *item) const;
     /**
      * Bake stored content flips/rotates (and grade) onto a decode of @p path

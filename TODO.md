@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-623-commit-session-edit-phases.** Split commitItemSessionEdit into persist/sync/saved.
+Prior: **622**.
+
+### Change
+- `persistSessionAppearanceSlot` — appearance map + durable content cache + signals
+- `syncSessionEditPeers` — same-id canvas/stash pixel+flip sync
+- `updateWorkspaceSavedAppearance` — workspace savedItems snapshot fields
+- `commitItemSessionEdit` is a short orchestration
+
+### Done criteria
+- [x] Commit-edit paths named; identity/peer rules preserved
+- [x] Bundle **623**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-622-crop-drag-phases.** Split updateCropHandleDrag into move/rotate/resize.
 Prior: **621**.
 
