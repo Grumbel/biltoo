@@ -195,6 +195,8 @@ public:
     void resetItemPlacementForMotion(ImageItem *item);
     void armMotionBiasForPath(ImageItem *item, const QString &path);
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
+    bool tryApplyAttentionMotionBiases(uint seed, const QImage &source);
+    void applyGeometricMotionBiases(uint seed);
     void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
     /** Decode path off the GUI thread into the unified slideshow raster map. */
     void preloadSlideshowImage(const QString &path);
@@ -1328,6 +1330,9 @@ private:
     void paintCropResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly);
+    enum class CropBtnRole { Toggle, Action, Neutral, Commit };
+    void drawCropTextButton(QPainter &painter, const QRect &btn, CropHandle kind,
+                            const QString &label, CropBtnRole role, bool toggled = false);
     void paintCropActionButtons(QPainter &painter);
     void paintCropSizeBadge(QPainter &painter, const QRect &cropView);
     void paintAttentionOverlay(QPainter &painter);

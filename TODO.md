@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-634-motion-bias-crop-buttons.** Split motion bias selection; extract crop button drawing.
+Prior: **633**.
+
+### Change
+- `tryApplyAttentionMotionBiases`, `applyGeometricMotionBiases`
+- `CropBtnRole` + `drawCropTextButton`; `paintCropActionButtons` only dispatches labels
+
+### Done criteria
+- [x] Bias and crop-button paint paths named
+- [x] Bundle **634**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-633-motion-start-sort-order.** Phase startSlideshowMotion; pure sort order helper.
 Prior: **632**.
 

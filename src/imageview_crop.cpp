@@ -1294,6 +1294,72 @@ void ImageView::paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPo
 
     }
 
+void ImageView::drawCropTextButton(QPainter &painter, const QRect &btn, CropHandle kind,
+                                   const QString &label, CropBtnRole role, bool toggled)
+{
+    if (!btn.isValid()) {
+        return;
+    }
+    const bool hover = (m_cropHoverHandle == kind);
+    const qreal radius = (role == CropBtnRole::Toggle) ? 6.0 : 11.0; // square vs pill
+    QColor fill(50, 50, 50, 230);
+    QColor border(255, 190, 40);
+    QColor text(240, 240, 240);
+    qreal borderW = 1.15;
+    switch (role) {
+    case CropBtnRole::Toggle:
+        // Teal/cyan — distinct from amber Apply so Expand does not read as commit.
+        if (toggled) {
+            fill = hover ? QColor(100, 210, 230, 255) : QColor(60, 175, 200, 245);
+            border = QColor(255, 255, 255);
+            text = QColor(10, 35, 45);
+            borderW = 2.0;
+        } else {
+            fill = hover ? QColor(30, 70, 85, 230) : QColor(40, 40, 40, 220);
+            border = hover ? QColor(255, 255, 255) : QColor(70, 170, 195);
+            borderW = hover ? 1.75 : 1.25;
+        }
+        break;
+    case CropBtnRole::Action:
+        fill = hover ? QColor(80, 60, 20, 240) : QColor(50, 50, 50, 230);
+        border = hover ? QColor(255, 255, 255) : QColor(255, 190, 40);
+        borderW = hover ? 1.75 : 1.15;
+        break;
+    case CropBtnRole::Neutral:
+        fill = hover ? QColor(70, 70, 70, 240) : QColor(45, 45, 45, 220);
+        border = hover ? QColor(200, 200, 200) : QColor(120, 120, 120);
+        text = QColor(220, 220, 220);
+        borderW = hover ? 1.5 : 1.0;
+        break;
+    case CropBtnRole::Commit:
+        fill = hover ? QColor(255, 210, 70, 255) : QColor(240, 175, 40, 245);
+        border = hover ? QColor(255, 255, 255) : QColor(120, 80, 10);
+        text = QColor(40, 25, 5);
+        borderW = hover ? 1.75 : 1.25;
+        break;
+    }
+    QPen pen(border);
+    pen.setWidthF(borderW);
+    pen.setCosmetic(true);
+    painter.setPen(pen);
+    painter.setBrush(fill);
+    painter.drawRoundedRect(btn, radius, radius);
+    if (role == CropBtnRole::Toggle && toggled) {
+        QPen ring(QColor(255, 255, 255, 200));
+        ring.setWidthF(1.1);
+        ring.setCosmetic(true);
+        painter.setPen(ring);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(btn.adjusted(3, 3, -3, -3), radius * 0.7, radius * 0.7);
+    }
+    painter.setPen(text);
+    QFont f = painter.font();
+    f.setPointSize(qMax(9, f.pointSize() + 1));
+    f.setBold(true);
+    painter.setFont(f);
+    painter.drawText(btn, Qt::AlignCenter, label);
+}
+
 void ImageView::paintCropActionButtons(QPainter &painter)
 {
     // Controls: outside below crop when possible, inside if off-screen.
@@ -1302,84 +1368,20 @@ void ImageView::paintCropActionButtons(QPainter &painter)
     //   action  = dark + accent ring
     //   neutral = grey (Cancel)
     //   commit  = filled accent (Apply)
-    enum class CropBtnRole { Toggle, Action, Neutral, Commit };
-    auto drawTextButton = [&](const QRect &btn, CropHandle kind, const QString &label,
-                              CropBtnRole role, bool toggled = false) {
-        if (!btn.isValid()) {
-            return;
-        }
-        const bool hover = (m_cropHoverHandle == kind);
-        const qreal radius = (role == CropBtnRole::Toggle) ? 6.0 : 11.0; // square vs pill
-        QColor fill(50, 50, 50, 230);
-        QColor border(255, 190, 40);
-        QColor text(240, 240, 240);
-        qreal borderW = 1.15;
-        switch (role) {
-        case CropBtnRole::Toggle:
-            // Teal/cyan — distinct from amber Apply so Expand does not read as commit.
-            if (toggled) {
-                fill = hover ? QColor(100, 210, 230, 255) : QColor(60, 175, 200, 245);
-                border = QColor(255, 255, 255);
-                text = QColor(10, 35, 45);
-                borderW = 2.0;
-            } else {
-                fill = hover ? QColor(30, 70, 85, 230) : QColor(40, 40, 40, 220);
-                border = hover ? QColor(255, 255, 255) : QColor(70, 170, 195);
-                borderW = hover ? 1.75 : 1.25;
-            }
-            break;
-        case CropBtnRole::Action:
-            fill = hover ? QColor(80, 60, 20, 240) : QColor(50, 50, 50, 230);
-            border = hover ? QColor(255, 255, 255) : QColor(255, 190, 40);
-            borderW = hover ? 1.75 : 1.15;
-            break;
-        case CropBtnRole::Neutral:
-            fill = hover ? QColor(70, 70, 70, 240) : QColor(45, 45, 45, 220);
-            border = hover ? QColor(200, 200, 200) : QColor(120, 120, 120);
-            text = QColor(220, 220, 220);
-            borderW = hover ? 1.5 : 1.0;
-            break;
-        case CropBtnRole::Commit:
-            fill = hover ? QColor(255, 210, 70, 255) : QColor(240, 175, 40, 245);
-            border = hover ? QColor(255, 255, 255) : QColor(120, 80, 10);
-            text = QColor(40, 25, 5);
-            borderW = hover ? 1.75 : 1.25;
-            break;
-        }
-        QPen pen(border);
-        pen.setWidthF(borderW);
-        pen.setCosmetic(true);
-        painter.setPen(pen);
-        painter.setBrush(fill);
-        painter.drawRoundedRect(btn, radius, radius);
-        if (role == CropBtnRole::Toggle && toggled) {
-            QPen ring(QColor(255, 255, 255, 200));
-            ring.setWidthF(1.1);
-            ring.setCosmetic(true);
-            painter.setPen(ring);
-            painter.setBrush(Qt::NoBrush);
-            painter.drawRoundedRect(btn.adjusted(3, 3, -3, -3), radius * 0.7, radius * 0.7);
-        }
-        painter.setPen(text);
-        QFont f = painter.font();
-        f.setPointSize(qMax(9, f.pointSize() + 1));
-        f.setBold(true);
-        painter.setFont(f);
-        painter.drawText(btn, Qt::AlignCenter, label);
-    };
     // Local QPoint names must not hide QObject::tr — use ImageView::tr.
-    drawTextButton(cropExpandButtonView(), CropHandle::ExpandToggle,
-                   ImageView::tr("Expand"), CropBtnRole::Toggle, m_cropAllowExpand);
-    drawTextButton(cropAutoButtonView(), CropHandle::Auto, ImageView::tr("Auto"),
-                   CropBtnRole::Action);
-    drawTextButton(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"),
-                   CropBtnRole::Action);
-    drawTextButton(cropCancelButtonView(), CropHandle::Cancel, ImageView::tr("Cancel"),
-                   CropBtnRole::Neutral);
-    drawTextButton(cropCloseButtonView(), CropHandle::Close, ImageView::tr("Apply"),
-                   CropBtnRole::Commit);
+    drawCropTextButton(painter, cropExpandButtonView(), CropHandle::ExpandToggle,
+                       ImageView::tr("Expand"), CropBtnRole::Toggle, m_cropAllowExpand);
+    drawCropTextButton(painter, cropAutoButtonView(), CropHandle::Auto, ImageView::tr("Auto"),
+                       CropBtnRole::Action);
+    drawCropTextButton(painter, cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"),
+                       CropBtnRole::Action);
+    drawCropTextButton(painter, cropCancelButtonView(), CropHandle::Cancel, ImageView::tr("Cancel"),
+                       CropBtnRole::Neutral);
+    drawCropTextButton(painter, cropCloseButtonView(), CropHandle::Close, ImageView::tr("Apply"),
+                       CropBtnRole::Commit);
+}
 
-    }
+
 
 void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
 {

@@ -999,14 +999,8 @@ void ImageView::restoreImageFramingAfterSlideshow()
     emit statusChanged();
 }
 
-void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
+bool ImageView::tryApplyAttentionMotionBiases(uint seed, const QImage &source)
 {
-    // Prefer content-aware centres (libvips attention) when the decoded frame
-    // is available; otherwise path-hash corners/edges as before.
-    if (seed == 0) {
-        seed = 1;
-    }
-
     QPointF att01;
     bool haveAtt = false;
     if (ImageItem *item = targetItem()) {
@@ -1023,36 +1017,41 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
     if (!haveAtt && !source.isNull() && ImageLoader::attentionPoint(source, &att01)) {
         haveAtt = true;
     }
-    if (haveAtt) {
-        // Map normalized focus to bias space [-1, 1] (same as corner table).
-        QPointF subject((att01.x() - 0.5) * 2.0, (att01.y() - 0.5) * 2.0);
-        subject.setX(qBound(-1.0, subject.x(), 1.0));
-        subject.setY(qBound(-1.0, subject.y(), 1.0));
-        // Near-centre attention still needs travel — fall through to geometry.
-        if (qAbs(subject.x()) > 0.12 || qAbs(subject.y()) > 0.12) {
-            // Subject must sit mid-path: start/end of the dwell are largely
-            // hidden by the transition, so endpoint focus is invisible.
-            // Travel along the subject↔opposite axis, centred on the subject.
-            const QPointF travel = QPointF(subject.x() * 0.55, subject.y() * 0.55);
-            // Seed picks which way the path runs (toward / away from opposite).
-            if (seed & 1u) {
-                m_motionBiasA = subject - travel;
-                m_motionBiasB = subject + travel;
-            } else {
-                m_motionBiasA = subject + travel;
-                m_motionBiasB = subject - travel;
-            }
-            m_motionBiasA.setX(qBound(-1.0, m_motionBiasA.x(), 1.0));
-            m_motionBiasA.setY(qBound(-1.0, m_motionBiasA.y(), 1.0));
-            m_motionBiasB.setX(qBound(-1.0, m_motionBiasB.x(), 1.0));
-            m_motionBiasB.setY(qBound(-1.0, m_motionBiasB.y(), 1.0));
-            m_motionBiasValid = true;
-            m_motionTravelDir = m_motionBiasB - m_motionBiasA;
-            m_motionSign = (m_motionTravelDir.y() >= 0.0) ? 1.0 : -1.0;
-            return;
-        }
+    if (!haveAtt) {
+        return false;
     }
+    // Map normalized focus to bias space [-1, 1] (same as corner table).
+    QPointF subject((att01.x() - 0.5) * 2.0, (att01.y() - 0.5) * 2.0);
+    subject.setX(qBound(-1.0, subject.x(), 1.0));
+    subject.setY(qBound(-1.0, subject.y(), 1.0));
+    // Near-centre attention still needs travel — fall through to geometry.
+    if (qAbs(subject.x()) <= 0.12 && qAbs(subject.y()) <= 0.12) {
+        return false;
+    }
+    // Subject must sit mid-path: start/end of the dwell are largely
+    // hidden by the transition, so endpoint focus is invisible.
+    // Travel along the subject↔opposite axis, centred on the subject.
+    const QPointF travel = QPointF(subject.x() * 0.55, subject.y() * 0.55);
+    // Seed picks which way the path runs (toward / away from opposite).
+    if (seed & 1u) {
+        m_motionBiasA = subject - travel;
+        m_motionBiasB = subject + travel;
+    } else {
+        m_motionBiasA = subject + travel;
+        m_motionBiasB = subject - travel;
+    }
+    m_motionBiasA.setX(qBound(-1.0, m_motionBiasA.x(), 1.0));
+    m_motionBiasA.setY(qBound(-1.0, m_motionBiasA.y(), 1.0));
+    m_motionBiasB.setX(qBound(-1.0, m_motionBiasB.x(), 1.0));
+    m_motionBiasB.setY(qBound(-1.0, m_motionBiasB.y(), 1.0));
+    m_motionBiasValid = true;
+    m_motionTravelDir = m_motionBiasB - m_motionBiasA;
+    m_motionSign = (m_motionTravelDir.y() >= 0.0) ? 1.0 : -1.0;
+    return true;
+}
 
+void ImageView::applyGeometricMotionBiases(uint seed)
+{
     static const QPointF kBias[8] = {
         QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
         QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
@@ -1073,6 +1072,21 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
     m_motionTravelDir = m_motionBiasB - m_motionBiasA;
     m_motionSign = (m_motionTravelDir.y() >= 0.0) ? 1.0 : -1.0;
 }
+
+void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
+{
+    // Prefer content-aware centres (libvips attention) when the decoded frame
+    // is available; otherwise path-hash corners/edges as before.
+    if (seed == 0) {
+        seed = 1;
+    }
+    if (tryApplyAttentionMotionBiases(seed, source)) {
+        return;
+    }
+    applyGeometricMotionBiases(seed);
+}
+
+
 
 
 // ---------------------------------------------------------------------------
