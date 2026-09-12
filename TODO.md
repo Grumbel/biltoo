@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-512-gallery-pass1-host-soft.** Fifth audit: host soft is unconditional.
+Prior: **511**.
+
+### Hole found
+Host soft install lived inside the per-path schedule loop and required:
+- path not already in `seen`
+- valid `contentSceneRect`
+So blank tiles could skip ImageCache soft entirely while filmstrip had it.
+
+### Fix
+`updateGalleryDecodeWindow` is two passes:
+1. **Every** blank item ← ImageCache / m_previewByPath (no seen/tile/inflight)
+2. Schedule SoftOnly/overview climb for paths that still need pixels
+
+### Done criteria
+- [x] Filmstrip soft in ImageCache always applied to blank Gallery tiles
+- [x] Bundle **512**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-511-gallery-direct-host-soft.** Fourth audit: install soft in decode window.
 Prior: **510**.
 

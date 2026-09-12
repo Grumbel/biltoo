@@ -50,6 +50,49 @@ void ImageView::updateGalleryDecodeWindow()
         kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
     const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
 
+    // ------------------------------------------------------------------
+    // Pass 1: host soft onto EVERY blank tile (no seen/tile/inflight gates).
+    // Filmstrip and ladderReady put ImageCache by session path; if the tile
+    // is still "⋯", the only correct action is install — not wait on SoftOnly.
+    // ------------------------------------------------------------------
+    int hostInstalled = 0;
+    for (ImageItem *item : m_items) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        if (item->hasDecodedPixels() || item->hasDisplayPixels()) {
+            continue;
+        }
+        const QString &path = item->path();
+        QImage hostSoft = ImageCache::get(path);
+        if (hostSoft.isNull()) {
+            hostSoft = m_previewByPath.value(path);
+        }
+        if (hostSoft.isNull()) {
+            continue;
+        }
+        installDisplayPixels(item, hostSoft,
+                             SessionAppearance::PixelKind::SoftPreview,
+                             item->sessionId());
+        GallerySoftState &st = m_gallerySoft[path];
+        st.have = qMax(st.have, qMax(hostSoft.width(), hostSoft.height()));
+        item->update();
+        ++hostInstalled;
+        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+            dbg && dbg[0] && dbg[0] != '0') {
+            fprintf(stderr,
+                    "biltoo/gallery: INSTALL soft path=%s got=%d "
+                    "(pass1 host ImageCache)\n",
+                    qPrintable(QFileInfo(path).fileName()), st.have);
+        }
+    }
+    if (hostInstalled > 0 && viewport()) {
+        viewport()->update();
+    }
+
+    // ------------------------------------------------------------------
+    // Pass 2: schedule SoftOnly / overview climb for paths that still need it.
+    // ------------------------------------------------------------------
     QStringList visible;
     QStringList rest;
     QStringList interestNear;
@@ -67,13 +110,12 @@ void ImageView::updateGalleryDecodeWindow()
         seen.insert(path);
 
         const QRectF tile = item->contentSceneRect();
-        if (tile.isNull() || !tile.isValid()) {
-            continue;
-        }
-        const bool onScreen = tile.intersects(sceneVisible);
+        // Invalid tile: still schedule if blank (pack may not have run yet).
+        const bool tileOk = !tile.isNull() && tile.isValid();
+        const bool onScreen = tileOk && tile.intersects(sceneVisible);
         if (onScreen) {
             interestNear.append(path);
-        } else {
+        } else if (tileOk) {
             interestRest.append(path);
         }
 
@@ -82,51 +124,39 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
 
-        st.have = item->displayPixelLongEdge();
-        if (item->hasDecodedPixels()) {
-            st.have = qMax(st.have, item->displayPixelLongEdge());
-            continue;
+        st.have = 0;
+        bool anyFull = false;
+        bool anyBlank = false;
+        for (ImageItem *it2 : m_items) {
+            if (!it2 || it2->path() != path) {
+                continue;
+            }
+            if (it2->hasDecodedPixels()) {
+                anyFull = true;
+            }
+            st.have = qMax(st.have, it2->displayPixelLongEdge());
+            if (!it2->hasDisplayPixels()) {
+                anyBlank = true;
+            }
         }
-
-        // Direct host soft install — no schedule/inflight state machine.
-        // Filmstrip soft lives in ImageCache under the same session path; if
-        // the tile is still blank, put it on the item before any SoftOnly work.
-        if (!item->hasDisplayPixels()) {
-            QImage hostSoft = ImageCache::get(path);
-            if (hostSoft.isNull()) {
-                hostSoft = m_previewByPath.value(path);
-            }
-            if (!hostSoft.isNull()) {
-                installDisplayPixels(item, hostSoft,
-                                     SessionAppearance::PixelKind::SoftPreview,
-                                     item->sessionId());
-                st.have = qMax(st.have, qMax(hostSoft.width(), hostSoft.height()));
-                item->update();
-                if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                    dbg && dbg[0] && dbg[0] != '0') {
-                    fprintf(stderr,
-                            "biltoo/gallery: INSTALL soft path=%s got=%d "
-                            "(decode-window host)\n",
-                            qPrintable(QFileInfo(path).fileName()), st.have);
-                }
-            }
+        if (anyFull) {
+            continue;
         }
 
         const int want = galleryWantEdgeForPath(path, sceneVisible);
         st.want = want;
-        if (st.have >= want) {
+        if (st.have >= want && !anyBlank) {
             continue;
         }
-        if (st.gaveUpWant >= want && st.have > 0) {
+        if (st.gaveUpWant >= want && st.have > 0 && !anyBlank) {
             continue;
         }
-        // Blank tile + inflight: still schedule so SoftOnly can complete and
-        // host soft can be retried. Soft showing + inflight: wait on climb.
-        if (st.inflight > 0 && st.have > 0) {
+        if (st.inflight > 0 && st.have > 0 && !anyBlank) {
             continue;
         }
 
-        if (onScreen) {
+        // Prefer on-screen; blank tiles without a valid rect still need SoftOnly.
+        if (onScreen || anyBlank) {
             visible.append(path);
         } else {
             rest.append(path);
