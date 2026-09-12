@@ -1000,6 +1000,16 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
 }
 
 
+// ---------------------------------------------------------------------------
+// Slideshow size model
+//
+//   logical size  = identity of the image (probe / full decode / thumtoo)
+//   sample raster = soft or target-edge pixels used only for sampling
+//
+// Camera (fit/fill/actual/Ken Burns) always uses logical size.
+// putSlideshowRaster / preload never write sample dimensions into the size map.
+// ---------------------------------------------------------------------------
+
 void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
 {
     if (path.isEmpty() || image.isNull()) {
@@ -1203,7 +1213,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         } else {
             m_ssFromImage = slideshowPixelsForPath(fromPath);
             if (!fromPath.isEmpty()) {
-                (void)imageSizeForPath(fromPath); // ensure logical size (probe if needed)
+                (void)ensureSlideshowLogicalSize(fromPath);
                 m_motionBiasValid = false;
                 pickInterestingMotionBiases(qHash(fromPath), m_ssFromImage);
                 m_motionBiasPath = fromPath;
@@ -1267,7 +1277,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         m_ssToMotionT = 0.0;
     } else if (toChanged) {
         m_ssToPath = toPath;
-        (void)imageSizeForPath(toPath);
+        (void)ensureSlideshowLogicalSize(toPath);
         m_ssToImage = slideshowPixelsForPath(toPath);
         {
             const QPointF saveA = m_motionBiasA;
@@ -1381,6 +1391,37 @@ int ImageView::slideshowTargetEdge() const
     const int snapped = ThumtooCache::ceilLadderEdge(
         qMax(longPx, ThumtooCache::kGalleryLadderEdge));
     return qMin(snapped, ThumtooCache::kImageLadderEdge);
+}
+
+QSize ImageView::slideshowLogicalSize(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    const auto it = m_imageSizeByPath.constFind(path);
+    if (it != m_imageSizeByPath.cend()
+        && it->isValid() && it->width() > 0 && it->height() > 0) {
+        return *it;
+    }
+    const QSize cached = ThumtooCache::cachedSize(path);
+    if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+        return cached;
+    }
+    return {};
+}
+
+QSize ImageView::ensureSlideshowLogicalSize(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    const QSize known = slideshowLogicalSize(path);
+    if (known.isValid() && known.width() > 0 && known.height() > 0
+        && !isProvisionalImageSize(path)) {
+        return known;
+    }
+    // imageSizeForPath may schedule a probe and/or install thumtoo cache.
+    return imageSizeForPath(path);
 }
 
 void ImageView::setSlideshowNavHot(bool hot)
@@ -1842,27 +1883,20 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
 
-    // HARD RULE: camera uses the image's logical size, never the current
-    // decode raster's pixel size. Soft/target-edge placeholders are only the
-    // sampling source — ImageView treats them like the real image for geometry.
-    QSize logical;
-    if (!path.isEmpty()) {
-        const auto it = m_imageSizeByPath.constFind(path);
-        if (it != m_imageSizeByPath.cend()
-            && it->isValid() && it->width() > 0 && it->height() > 0) {
-            logical = *it;
-        }
-        if (!logical.isValid()) {
-            const QSize cached = ThumtooCache::cachedSize(path);
-            if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
-                logical = cached;
-            }
-        }
-    }
+    // HARD RULE: logical size owns geometry. Soft rasters are sampling only.
+    QSize logical = slideshowLogicalSize(path);
     if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
-        // Last resort only: raster dims (may be soft). Prefer scheduling a size
-        // probe so the next paint uses true logical size.
-        logical = image.size();
+        // Provisional: keep aspect from the sample, magnitude neutral — never
+        // treat soft long-edge as native. Phase entry should have called
+        // ensureSlideshowLogicalSize so this is rare and short-lived.
+        const qreal rw = qMax(1, image.width());
+        const qreal rh = qMax(1, image.height());
+        constexpr qreal kProvLong = 1000.0;
+        if (rw >= rh) {
+            logical = QSize(int(kProvLong), int(qMax(1.0, kProvLong * rh / rw)));
+        } else {
+            logical = QSize(int(qMax(1.0, kProvLong * rw / rh)), int(kProvLong));
+        }
     }
     const qreal iw = qreal(logical.width());
     const qreal ih = qreal(logical.height());

@@ -200,6 +200,16 @@ public:
      * at kImageLadderEdge. Not native max.
      */
     int slideshowTargetEdge() const;
+    /**
+     * Logical image size for @a path (never soft-raster dimensions).
+     * Lookup only: m_imageSizeByPath, then thumtoo cache. Empty if unknown.
+     */
+    QSize slideshowLogicalSize(const QString &path) const;
+    /**
+     * Ensure logical size is known (may schedule async probe). Prefer this
+     * at phase entry; paint uses the const lookup.
+     */
+    QSize ensureSlideshowLogicalSize(const QString &path);
     /** ≥1: panZoomFactor or pan-scan margin so zoomed frames stay sharp. */
     qreal slideshowMotionHeadroom() const;
     /**

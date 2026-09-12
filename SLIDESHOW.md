@@ -62,12 +62,17 @@ else                            → blit soft placeholder
 No events in the draw path. Decode is started ahead of time and stored as a
 pollable buffer. When better pixels arrive, the **next** draw uses them.
 
-**Logical size owns geometry.** Every path has a logical image size
-(`m_imageSizeByPath` / thumtoo / probe) independent of the current decode.
-Ken Burns / fit / fill / actual use that size. Soft and target-edge rasters are
-**sampling only** — ImageView treats them like the real image for layout and
-motion. Never derive camera math from soft pixel width/height, and never write
-soft dimensions into the logical size map.
+**Logical size owns geometry.**
+
+| Concept | Source | Role |
+|---------|--------|------|
+| **Logical size** | `slideshowLogicalSize` / `ensureSlideshowLogicalSize` (`m_imageSizeByPath`, thumtoo, probe) | Fit, fill, actual, Ken Burns, travel |
+| **Sample raster** | `m_ssRasterByPath` / soft cache (target-edge) | Sampling only |
+
+Soft and target-edge placeholders are treated like the real image for geometry.
+Never derive camera math from sample pixel width/height. Never write sample
+dimensions into the logical size map. Phase entry calls
+`ensureSlideshowLogicalSize`; paint uses the const lookup.
 
 **Decode target** (long edge):
 

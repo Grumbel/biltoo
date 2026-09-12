@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-562-slideshow-size-model.** Central logical-size API for slideshow geometry.
+Prior: **561**.
+
+### Model
+```
+slideshowLogicalSize(path)       // const lookup, never soft dims
+ensureSlideshowLogicalSize(path) // phase entry; may probe
+paintMotionCover(..., path)      // camera from logical size only
+putSlideshowRaster               // samples only; never size map
+```
+
+### Done criteria
+- [x] Single size entry points
+- [x] Provisional geometry uses neutral long-edge + sample aspect (not soft native)
+- [x] Bundle **562**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-561-slideshow-logical-size-camera.** Camera uses logical image size, not soft raster dims.
 Prior: **560**.
 
