@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-606-gallery-soft-decode-phases.** Split scheduleGalleryDecode.
+Prior: **605**.
+
+### Change
+- `resolveGallerySoftHaveWant` — have/want scan + host soft bootstrap
+- `scheduleGalleryDisplayPreferCache` — display PreferCache climb (SoftClimb None)
+- `markGallerySoftInflight` / `clearGallerySoftInflight`
+- `applyGallerySoftPoolResult` — GUI-thread result of soft/overview pool job
+- `scheduleGalleryDecode` is a short policy driver + thin pool lambda
+
+### Done criteria
+- [x] Behaviour preserved (superseded install, inflight pinning, gaveUp)
+- [x] Bundle **606**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-605-complete-load-add-phases.** Split completeLoadAdd / Replace into phases.
 Prior: **604**.
 

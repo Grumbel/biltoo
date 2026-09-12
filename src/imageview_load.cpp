@@ -638,21 +638,9 @@ int ImageView::galleryWantEdgeForPath(const QString &path,
     return want;
 }
 
-void ImageView::scheduleGalleryDecode(const QString &path)
+bool ImageView::resolveGallerySoftHaveWant(const QString &path, GallerySoftState &st,
+                                           int *haveOut, int *wantOut)
 {
-    if (!isGalleryMode() || path.isEmpty()) {
-        return;
-    }
-    // Size-first still probes in the background, but never blocks decode:
-    // provisional layout must still climb to the zoom-appropriate ladder edge.
-    if (isProvisionalImageSize(path)) {
-        scheduleImageSizeProbe(path);
-    }
-    GallerySoftState &st = m_gallerySoft[path];
-    if (st.failed || st.inflight > 0 || st.fullInflight) {
-        return;
-    }
-
     // Fast path: updateGalleryDecodeWindow already filled st.have / st.want.
     // Do not re-scan all items here — that was O(n²) on large galleries.
     int have = st.have;
@@ -676,7 +664,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         }
         st.have = have;
         if (anyFull) {
-            return;
+            return false;
         }
         // Host soft only for direct callers (decode-window pass1 owns installs).
         if (have <= 0) {
@@ -692,6 +680,205 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         st.want = want;
     }
     if (want <= 0 || have >= want) {
+        return false;
+    }
+    *haveOut = have;
+    *wantOut = want;
+    return true;
+}
+
+void ImageView::scheduleGalleryDisplayPreferCache(const QString &path, GallerySoftState &st,
+                                                  int have, int want)
+{
+    // Overview in hand: PreferCache display raster ≤2048.
+    const int dispEdge = qMin(want, ThumtooCache::kImageLadderEdge);
+    if (coversEdge(have, dispEdge)) {
+        st.gaveUpWant = qMax(st.gaveUpWant, want);
+        return;
+    }
+    if (ThumtooCache::isPixelsPending(path, dispEdge)) {
+        st.inflight = dispEdge;
+        st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+        return;
+    }
+    if (ThumtooCache::scheduleDisplayPixels(path, dispEdge)) {
+        st.inflight = dispEdge;
+        st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+            dbg && dbg[0] != '\0' && dbg[0] != '0') {
+            fprintf(stderr,
+                    "biltoo/gallery: display request path need=%d have=%d "
+                    "disp=%d\n",
+                    want, have, dispEdge);
+        }
+        return;
+    }
+    const QImage hit = ImageCache::get(path, dispEdge);
+    if (!hit.isNull()) {
+        const int got = ImageCache::longEdge(hit);
+        if (got > have) {
+            onImagePreviewLoaded(path, hit, m_loadGeneration.load(),
+                                 static_cast<int>(LoadAdd));
+            st.have = qMax(st.have, got);
+        }
+    }
+    if (!coversEdge(st.have, dispEdge)) {
+        st.gaveUpWant = qMax(st.gaveUpWant, dispEdge);
+    }
+}
+
+void ImageView::markGallerySoftInflight(GallerySoftState &soft, int edge)
+{
+    soft.inflight = edge;
+    soft.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+}
+
+void ImageView::clearGallerySoftInflight(GallerySoftState &soft)
+{
+    soft.inflight = 0;
+    soft.inflightSinceMs = 0;
+}
+
+void ImageView::applyGallerySoftPoolResult(const QString &path, const QImage &preview,
+                                           quint64 gen, int requestEdge)
+{
+    auto it = m_gallerySoft.find(path);
+    if (it == m_gallerySoft.end()) {
+        takePendingWorkspacePath(path);
+        return;
+    }
+    GallerySoftState &soft = it.value();
+    // Superseded (ladderReady cleared inflight, or a newer edge was
+    // requested): still install any soft we decoded — dropping it
+    // left blank tiles when SoftOnly finished before this callback.
+    if (soft.inflight != requestEdge) {
+        takePendingWorkspacePath(path);
+        if (!preview.isNull()) {
+            const int got = ImageCache::longEdge(preview);
+            onImagePreviewLoaded(path, preview, gen, static_cast<int>(LoadAdd));
+            soft.have = qMax(soft.have, got);
+            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                dbg && dbg[0] && dbg[0] != '0') {
+                fprintf(stderr,
+                        "biltoo/gallery: INSTALL soft path=%s got=%d "
+                        "(superseded pool callback)\n",
+                        qPrintable(QFileInfo(path).fileName()), got);
+            }
+        }
+        if (isGalleryMode()) {
+            scheduleGalleryDecodeWindowRefresh(48);
+        }
+        return;
+    }
+    takePendingWorkspacePath(path);
+
+    // Install any soft we got. Climb only when below the request
+    // edge — and only keep inflight when a host callback is truly
+    // pending (schedule* returned true). SKIP (already settled /
+    // inflight elsewhere) must not pin soft.inflight forever: that
+    // blocked scheduleGalleryDecode while tiles stayed blank even
+    // though PreferCache already had filmstrip soft in the DB.
+    const int got = preview.isNull() ? 0 : ImageCache::longEdge(preview);
+    if (!preview.isNull()) {
+        onImagePreviewLoaded(path, preview, gen, static_cast<int>(LoadAdd));
+        soft.have = qMax(soft.have, got);
+        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+            dbg && dbg[0] && dbg[0] != '0') {
+            fprintf(stderr,
+                    "biltoo/gallery: INSTALL soft path=%s got=%d "
+                    "request=%d (pool PreferCache)\n",
+                    qPrintable(QFileInfo(path).fileName()), got,
+                    requestEdge);
+        }
+    }
+
+    if (got >= requestEdge * 9 / 10) {
+        clearGallerySoftInflight(soft);
+        if (soft.gaveUpWant <= requestEdge) {
+            soft.gaveUpWant = 0;
+        }
+    } else if (ThumtooCache::isAvailable()
+               && requestEdge <= ThumtooCache::kGalleryLadderEdge) {
+        // PreferCache may already have scheduled SoftOnly (returns
+        // empty image). Do not clear inflight while thumtoo still
+        // holds the job — that caused have=0/req=256 soft-request
+        // loops with schedulePixels SKIP spam.
+        if (ThumtooCache::isPixelsPending(path, requestEdge)) {
+            markGallerySoftInflight(soft, requestEdge);
+        } else {
+            const bool queued = ThumtooCache::schedulePixels(path, requestEdge);
+            if (queued) {
+                markGallerySoftInflight(soft, requestEdge);
+            } else {
+                // Settled (or unavailable): host from ImageCache on
+                // the next window pass; release the slot.
+                const QImage hit = ImageCache::get(path, requestEdge);
+                if (!hit.isNull()) {
+                    onImagePreviewLoaded(path, hit, gen, static_cast<int>(LoadAdd));
+                    soft.have = qMax(soft.have, ImageCache::longEdge(hit));
+                }
+                clearGallerySoftInflight(soft);
+                if (soft.have < requestEdge * 9 / 10) {
+                    soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
+                }
+            }
+        }
+    } else if (ThumtooCache::isAvailable()
+               && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
+        const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
+        if (ThumtooCache::isPixelsPending(path, ov)) {
+            markGallerySoftInflight(soft, ov);
+        } else {
+            const bool queued = ThumtooCache::scheduleOverviewPixels(path, ov);
+            if (queued) {
+                markGallerySoftInflight(soft, ov);
+            } else {
+                const QImage hit = ImageCache::get(path, ov);
+                if (!hit.isNull()) {
+                    onImagePreviewLoaded(path, hit, gen, static_cast<int>(LoadAdd));
+                    soft.have = qMax(soft.have, ImageCache::longEdge(hit));
+                }
+                clearGallerySoftInflight(soft);
+                if (soft.have < ov * 9 / 10) {
+                    soft.gaveUpWant = qMax(soft.gaveUpWant, ov);
+                }
+            }
+        }
+    } else if (ThumtooCache::isAvailable()
+               && requestEdge > ThumtooCache::kBatchOverviewEdge) {
+        clearGallerySoftInflight(soft);
+        soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
+    } else {
+        clearGallerySoftInflight(soft);
+        soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
+        // Do not set failed=true on first miss — PreferCache / SoftOnly
+        // may still deliver; failed is permanent and skips forever.
+    }
+
+    // Coalesce status + decode-window — every INSTALL used to
+    // refresh the HUD and rescan the gallery on the GUI thread.
+    scheduleGalleryDecodeWindowRefresh(48);
+    refreshStatus();
+}
+
+void ImageView::scheduleGalleryDecode(const QString &path)
+{
+    if (!isGalleryMode() || path.isEmpty()) {
+        return;
+    }
+    // Size-first still probes in the background, but never blocks decode:
+    // provisional layout must still climb to the zoom-appropriate ladder edge.
+    if (isProvisionalImageSize(path)) {
+        scheduleImageSizeProbe(path);
+    }
+    GallerySoftState &st = m_gallerySoft[path];
+    if (st.failed || st.inflight > 0 || st.fullInflight) {
+        return;
+    }
+
+    int have = 0;
+    int want = 0;
+    if (!resolveGallerySoftHaveWant(path, st, &have, &want)) {
         return;
     }
 
@@ -718,48 +905,13 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             st.gaveUpWant = qMax(st.gaveUpWant, want);
             return;
         }
-        // Overview in hand: PreferCache display raster ≤2048.
-        const int dispEdge = qMin(want, ThumtooCache::kImageLadderEdge);
-        if (coversEdge(have, dispEdge)) {
-            st.gaveUpWant = qMax(st.gaveUpWant, want);
-            return;
-        }
-        if (ThumtooCache::isPixelsPending(path, dispEdge)) {
-            st.inflight = dispEdge;
-            st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
-            return;
-        }
-        if (ThumtooCache::scheduleDisplayPixels(path, dispEdge)) {
-            st.inflight = dispEdge;
-            st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
-            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                dbg && dbg[0] != '\0' && dbg[0] != '0') {
-                fprintf(stderr,
-                        "biltoo/gallery: display request path need=%d have=%d "
-                        "disp=%d\n",
-                        want, have, dispEdge);
-            }
-        } else {
-            const QImage hit = ImageCache::get(path, dispEdge);
-            if (!hit.isNull()) {
-                const int got = ImageCache::longEdge(hit);
-                if (got > have) {
-                    onImagePreviewLoaded(path, hit, m_loadGeneration.load(),
-                                         static_cast<int>(LoadAdd));
-                    st.have = qMax(st.have, got);
-                }
-            }
-            if (!coversEdge(st.have, dispEdge)) {
-                st.gaveUpWant = qMax(st.gaveUpWant, dispEdge);
-            }
-        }
+        scheduleGalleryDisplayPreferCache(path, st, have, want);
         return;
     }
 
     const int requestEdge = climb.edge;
     const bool overviewOnly = (climb.kind == SoftClimbPlan::Kind::Overview);
-    st.inflight = requestEdge;
-    st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+    markGallerySoftInflight(st, requestEdge);
     addPendingWorkspacePath(path);
     emit statusChanged();
 
@@ -794,167 +946,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         QMetaObject::invokeMethod(
             guard.data(),
             [guard, path, preview, gen, requestEdge]() {
-                ImageView *const host = guard.data();
-                if (!host) {
-                    return;
+                if (ImageView *const host = guard.data()) {
+                    host->applyGallerySoftPoolResult(path, preview, gen, requestEdge);
                 }
-                auto it = host->m_gallerySoft.find(path);
-                if (it == host->m_gallerySoft.end()) {
-                    host->takePendingWorkspacePath(path);
-                    return;
-                }
-                GallerySoftState &soft = it.value();
-                // Superseded (ladderReady cleared inflight, or a newer edge was
-                // requested): still install any soft we decoded — dropping it
-                // left blank tiles when SoftOnly finished before this callback.
-                if (soft.inflight != requestEdge) {
-                    host->takePendingWorkspacePath(path);
-                    if (!preview.isNull()) {
-                        const int got = ImageCache::longEdge(preview);
-                        host->onImagePreviewLoaded(
-                            path, preview, gen,
-                            static_cast<int>(LoadAdd));
-                        soft.have = qMax(soft.have, got);
-                        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                            dbg && dbg[0] && dbg[0] != '0') {
-                            fprintf(stderr,
-                                    "biltoo/gallery: INSTALL soft path=%s got=%d "
-                                    "(superseded pool callback)\n",
-                                    qPrintable(QFileInfo(path).fileName()), got);
-                        }
-                    }
-                    if (host->isGalleryMode()) {
-                        host->scheduleGalleryDecodeWindowRefresh(48);
-                    }
-                    return;
-                }
-                host->takePendingWorkspacePath(path);
-
-                // Install any soft we got. Climb only when below the request
-                // edge — and only keep inflight when a host callback is truly
-                // pending (schedule* returned true). SKIP (already settled /
-                // inflight elsewhere) must not pin soft.inflight forever: that
-                // blocked scheduleGalleryDecode while tiles stayed blank even
-                // though PreferCache already had filmstrip soft in the DB.
-                int got = preview.isNull()
-                              ? 0
-                              : ImageCache::longEdge(preview);
-                if (!preview.isNull()) {
-                    host->onImagePreviewLoaded(path, preview, gen,
-                                               static_cast<int>(LoadAdd));
-                    soft.have = qMax(soft.have, got);
-                    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                        dbg && dbg[0] && dbg[0] != '0') {
-                        fprintf(stderr,
-                                "biltoo/gallery: INSTALL soft path=%s got=%d "
-                                "request=%d (pool PreferCache)\n",
-                                qPrintable(QFileInfo(path).fileName()), got,
-                                requestEdge);
-                    }
-                }
-                auto clearInflight = [&]() {
-                    soft.inflight = 0;
-                    soft.inflightSinceMs = 0;
-                };
-                if (got >= requestEdge * 9 / 10) {
-                    clearInflight();
-                    if (soft.gaveUpWant <= requestEdge) {
-                        soft.gaveUpWant = 0;
-                    }
-                } else if (ThumtooCache::isAvailable()
-                           && requestEdge <= ThumtooCache::kGalleryLadderEdge) {
-                    // PreferCache may already have scheduled SoftOnly (returns
-                    // empty image). Do not clear inflight while thumtoo still
-                    // holds the job — that caused have=0/req=256 soft-request
-                    // loops with schedulePixels SKIP spam.
-                    if (ThumtooCache::isPixelsPending(path, requestEdge)) {
-                        soft.inflight = requestEdge;
-                        soft.inflightSinceMs =
-                            QDateTime::currentMSecsSinceEpoch();
-                    } else {
-                        const bool queued =
-                            ThumtooCache::schedulePixels(path, requestEdge);
-                        if (queued) {
-                            soft.inflight = requestEdge;
-                            soft.inflightSinceMs =
-                                QDateTime::currentMSecsSinceEpoch();
-                        } else {
-                            // Settled (or unavailable): host from ImageCache only
-                            // — do not call loadThumbnail (that re-spam schedulePixels).
-                            const QImage again = ImageCache::get(path, requestEdge);
-                            const QImage hostSoft =
-                                again.isNull() ? ImageCache::get(path) : again;
-                            const int againGot = hostSoft.isNull()
-                                ? 0
-                                : ImageCache::longEdge(hostSoft);
-                            if (!hostSoft.isNull() && againGot > soft.have) {
-                                host->onImagePreviewLoaded(
-                                    path, hostSoft, gen,
-                                    static_cast<int>(LoadAdd));
-                                soft.have = qMax(soft.have, againGot);
-                                if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                                    dbg && dbg[0] && dbg[0] != '0') {
-                                    fprintf(stderr,
-                                            "biltoo/gallery: INSTALL soft path=%s "
-                                            "got=%d after settled SoftOnly\n",
-                                            qPrintable(QFileInfo(path).fileName()),
-                                            againGot);
-                                }
-                            }
-                            clearInflight();
-                            // No pixels and not pending: stop spinning this edge.
-                            if (soft.have < requestEdge * 9 / 10) {
-                                soft.gaveUpWant =
-                                    qMax(soft.gaveUpWant, requestEdge);
-                            }
-                        }
-                    }
-                } else if (ThumtooCache::isAvailable()
-                           && requestEdge > ThumtooCache::kGalleryLadderEdge
-                           && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
-                    const int ov =
-                        qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
-                    if (ThumtooCache::isPixelsPending(path, ov)) {
-                        soft.inflight = ov;
-                        soft.inflightSinceMs =
-                            QDateTime::currentMSecsSinceEpoch();
-                    } else {
-                        const bool queued =
-                            ThumtooCache::scheduleOverviewPixels(path, ov);
-                        if (queued) {
-                            soft.inflight = ov;
-                            soft.inflightSinceMs =
-                                QDateTime::currentMSecsSinceEpoch();
-                        } else {
-                            const QImage hit = ImageCache::get(path, ov);
-                            if (!hit.isNull()) {
-                                host->onImagePreviewLoaded(
-                                    path, hit, gen, static_cast<int>(LoadAdd));
-                                soft.have = qMax(
-                                    soft.have,
-                                    ImageCache::longEdge(hit));
-                            }
-                            clearInflight();
-                            if (soft.have < ov * 9 / 10) {
-                                soft.gaveUpWant = qMax(soft.gaveUpWant, ov);
-                            }
-                        }
-                    }
-                } else if (ThumtooCache::isAvailable()
-                           && requestEdge > ThumtooCache::kBatchOverviewEdge) {
-                    clearInflight();
-                    soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
-                } else {
-                    clearInflight();
-                    soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
-                    // Do not set failed=true on first miss — PreferCache / SoftOnly
-                    // may still deliver; failed is permanent and skips forever.
-                }
-
-                // Coalesce status + decode-window — every INSTALL used to
-                // refresh the HUD and rescan the gallery on the GUI thread.
-                host->scheduleGalleryDecodeWindowRefresh(48);
-                host->refreshStatus();
             },
             Qt::QueuedConnection);
     });

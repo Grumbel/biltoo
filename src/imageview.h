@@ -1134,6 +1134,16 @@ private:
     void scheduleImageSizeProbe(const QString &path);
     void applyProbedImageSize(const QString &path, const QSize &size);
     void scheduleGalleryDecode(const QString &path);
+    /** Resolve have/want for @a path; false if decode not needed. */
+    bool resolveGallerySoftHaveWant(const QString &path, GallerySoftState &st,
+                                    int *haveOut, int *wantOut);
+    void scheduleGalleryDisplayPreferCache(const QString &path, GallerySoftState &st,
+                                           int have, int want);
+    void markGallerySoftInflight(GallerySoftState &soft, int edge);
+    void clearGallerySoftInflight(GallerySoftState &soft);
+    /** GUI-thread result of the gallery soft PreferCache / overview pool job. */
+    void applyGallerySoftPoolResult(const QString &path, const QImage &preview,
+                                    quint64 gen, int requestEdge);
     /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
     void gallerySoftWatchdogTick();
     /** Ladder step for item cell size in device pixels. */
