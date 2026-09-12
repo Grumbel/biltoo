@@ -276,6 +276,7 @@ public:
     int claimZoomBlurFlightSlot(qint64 key) const;
     void installZoomBlurResult(const QImage &blurred, qint64 key, quint64 gen);
     void scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const;
+    void clearSlideshowZoomBlurSlots();
     void invalidateZoomBlurQueue() const;
     void paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
                                const QRect &viewportRect, qint64 stableKey) const;

@@ -179,15 +179,7 @@ void ImageView::setSlideshowPadColor(const QColor &color)
         return;
     }
     m_slideshowPadColor = color;
-    m_zoomBlurUnderlay[0] = QPixmap();
-    m_zoomBlurUnderlay[1] = QPixmap();
-    m_zoomBlurSourceKey[0] = 0;
-    m_zoomBlurSourceKey[1] = 0;
-    m_zoomBlurLastGood = QPixmap();
-    m_zoomBlurLastGoodKey = 0;
-    ++m_zoomBlurGeneration;
-    m_zoomBlurInFlightGen[0] = m_zoomBlurInFlightGen[1] = 0;
-    m_zoomBlurInFlightKey[0] = m_zoomBlurInFlightKey[1] = 0;
+    clearSlideshowZoomBlurSlots();
     if (m_slideshowProgressActive && viewport()) {
         viewport()->update();
     }
@@ -199,15 +191,7 @@ void ImageView::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
         return;
     }
     m_slideshowLetterboxFill = mode;
-    m_zoomBlurUnderlay[0] = QPixmap();
-    m_zoomBlurUnderlay[1] = QPixmap();
-    m_zoomBlurSourceKey[0] = 0;
-    m_zoomBlurSourceKey[1] = 0;
-    m_zoomBlurLastGood = QPixmap();
-    m_zoomBlurLastGoodKey = 0;
-    ++m_zoomBlurGeneration;
-    m_zoomBlurInFlightGen[0] = m_zoomBlurInFlightGen[1] = 0;
-    m_zoomBlurInFlightKey[0] = m_zoomBlurInFlightKey[1] = 0;
+    clearSlideshowZoomBlurSlots();
     if (m_slideshowProgressActive && viewport()) {
         viewport()->update();
     }
@@ -1965,6 +1949,18 @@ QImage makeZoomBlurCover(const QImage &src, int vw, int vh)
 }
 
 } // namespace
+
+void ImageView::clearSlideshowZoomBlurSlots()
+{
+    // Drop cached underlays and cancel in-flight blur jobs (pad/letterbox/viewport).
+    m_zoomBlurUnderlay[0] = QPixmap();
+    m_zoomBlurUnderlay[1] = QPixmap();
+    m_zoomBlurSourceKey[0] = 0;
+    m_zoomBlurSourceKey[1] = 0;
+    m_zoomBlurLastGood = QPixmap();
+    m_zoomBlurLastGoodKey = 0;
+    invalidateZoomBlurQueue();
+}
 
 void ImageView::invalidateZoomBlurQueue() const
 {

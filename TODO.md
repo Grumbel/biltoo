@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-662-clear-zoomblur-slots.** One helper to drop slideshow ZoomBlur cache.
+Prior: **661**.
+
+### Change
+- `clearSlideshowZoomBlurSlots` — underlays + lastGood + invalidate in-flight
+- `setSlideshowPadColor` / `setSlideshowLetterboxFill` use it (was duplicated)
+
+### Done criteria
+- [x] ZoomBlur cache clear is one method
+- [x] Bundle **662**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-661-slideshow-preload-finish.** Named finish for slideshow preload.
 Prior: **660**.
 
