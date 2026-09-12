@@ -915,6 +915,9 @@ signals:
                       const QList<qint64> &sessionIds = {},
                       const QStringList &internalPaths = {});
 
+    /** Install host soft / schedule SoftOnly for the visible Gallery window. */
+    void updateGalleryDecodeWindow();
+
 public slots:
     /** Deliver a finished background decode (generation must still match). */
     void onImageLoaded(const QString &path, const QImage &image, quint64 generation,
@@ -1006,7 +1009,6 @@ private:
     void rememberImageSize(const QString &path, const QSize &size);
     void scheduleImageSizeProbe(const QString &path);
     void applyProbedImageSize(const QString &path, const QSize &size);
-    void updateGalleryDecodeWindow();
     void scheduleGalleryDecode(const QString &path);
     /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
     void gallerySoftWatchdogTick();

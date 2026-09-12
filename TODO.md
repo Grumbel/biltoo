@@ -2,6 +2,22 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-514-updateGalleryDecodeWindow-public.** Expose decode window for MainWindow.
+Prior: **513**.
+
+### Fix
+`updateGalleryDecodeWindow()` moved to public (MainWindow filmstrip `loadsChanged` hook).
+
+### Done criteria
+- [x] Builds (private access error fixed)
+- [x] Bundle **514**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-513-filmstrip-notifies-gallery.** Sixth audit: wire filmstrip soft → Gallery pass1.
 Prior: **512**.
 
