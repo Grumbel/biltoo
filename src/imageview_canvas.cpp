@@ -19,21 +19,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths)
     setWorkspacePaths(paths, {});
 }
 
-void ImageView::setWorkspacePaths(const QStringList &paths,
-                                  const QVector<SessionImageId> &sessionIds)
+QList<ImageItem *> ImageView::collectDoomedWorkspaceItems(const QStringList &paths,
+                                                          const QVector<SessionImageId> &sessionIds) const
 {
-    if (isImageMode()) {
-        return;
-    }
-
-    // Phase 1: cache-only sizes + LQIP so the first pack uses real aspects.
-    if (isGalleryMode() && !paths.isEmpty()) {
-        primeGalleryGeometryFromCache(paths);
-    }
-
-    const bool haveIds = !sessionIds.isEmpty();
-
-    // --- Remove tiles that are not part of the new session -------------------
     // Prefer session-id identity. Fall back to path occurrence counts so
     // duplicate paths remain as separate tiles (same path, distinct items).
     QList<ImageItem *> doomed;
@@ -46,6 +34,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         doomed.append(item);
     };
 
+    const bool haveIds = !sessionIds.isEmpty();
     if (haveIds) {
         QSet<SessionImageId> wantedIds;
         for (SessionImageId id : sessionIds) {
@@ -69,7 +58,6 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         }
         // Excess unbound tiles for a path beyond the number of unbound session rows.
         QHash<QString, int> unboundWanted;
-        QSet<SessionImageId> boundWantedIds = wantedIds;
         for (int i = 0; i < paths.size(); ++i) {
             const SessionImageId sid = (i < sessionIds.size()) ? sessionIds.at(i)
                                                               : kInvalidSessionImageId;
@@ -106,12 +94,68 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             }
         }
     }
+    return doomed;
+}
 
+void ImageView::destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed)
+{
     for (ImageItem *item : doomed) {
         gallerySoftResetPath(item->path());
         m_pendingWorkspacePaths.remove(item->path());
         destroyCanvasItem(item);
     }
+}
+
+void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
+                                        const QVector<SessionImageId> &sessionIds)
+{
+    // Keep canvas order aligned with session/sort order (not async load order).
+    reorderItemsByPaths(m_pathOrder);
+
+    if (haveIds) {
+        rebindWorkspaceSession(paths, sessionIds);
+    }
+
+    // Workspace: seed a selection if empty. Gallery must not steal focus to
+    // "last item" on layout switch / path refresh (preserves multi-select).
+    if (isWorkspaceMode() && m_scene->selectedItems().isEmpty() && !m_items.isEmpty()) {
+        m_items.last()->setSelected(true);
+    }
+
+    if (isGalleryMode() && !m_items.isEmpty()) {
+        applyLayout(GalleryPackReason::EnterGallery);
+        updateGalleryDecodeWindow();
+        // First open can pack while the view is still 0×0 (dock/layout settling).
+        // Retry once the event loop has assigned a real viewport size so soft
+        // decodes for on-screen tiles actually start.
+        QTimer::singleShot(0, this, [this]() {
+            if (isGalleryMode() && !m_items.isEmpty()) {
+                updateGalleryDecodeWindow();
+            }
+        });
+    }
+
+    validateUniqueLiveSessionIds("setWorkspacePaths");
+    emit statusChanged();
+    emit workspacePathsChanged();
+}
+
+void ImageView::setWorkspacePaths(const QStringList &paths,
+                                  const QVector<SessionImageId> &sessionIds)
+{
+    if (isImageMode()) {
+        return;
+    }
+
+    // Phase 1: cache-only sizes + LQIP so the first pack uses real aspects.
+    if (isGalleryMode() && !paths.isEmpty()) {
+        primeGalleryGeometryFromCache(paths);
+    }
+
+    const bool haveIds = !sessionIds.isEmpty();
+
+    // --- Remove tiles that are not part of the new session -------------------
+    destroyDoomedWorkspaceItems(collectDoomedWorkspaceItems(paths, sessionIds));
 
     m_pathOrder = paths;
     m_sessionIdOrder = sessionIds;
@@ -158,7 +202,6 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 break;
             }
         }
-
         if (existing) {
             claimed.insert(existing);
             const bool newlyBoundId = (sid != kInvalidSessionImageId
@@ -181,7 +224,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     existing->clearDecodedPixels();
                     gallerySoftResetPath(path);
                     takePendingWorkspacePath(path);
-                    
+
                     PendingSessionBind b;
                     b.path = path;
                     b.id = sid;
@@ -231,36 +274,10 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         }
     }
 
-    // Keep canvas order aligned with session/sort order (not async load order).
-    reorderItemsByPaths(m_pathOrder);
-
-    if (haveIds) {
-        rebindWorkspaceSession(paths, sessionIds);
-    }
-
-    // Workspace: seed a selection if empty. Gallery must not steal focus to
-    // "last item" on layout switch / path refresh (preserves multi-select).
-    if (isWorkspaceMode() && m_scene->selectedItems().isEmpty() && !m_items.isEmpty()) {
-        m_items.last()->setSelected(true);
-    }
-
-    if (isGalleryMode() && !m_items.isEmpty()) {
-        applyLayout(GalleryPackReason::EnterGallery);
-        updateGalleryDecodeWindow();
-        // First open can pack while the view is still 0×0 (dock/layout settling).
-        // Retry once the event loop has assigned a real viewport size so soft
-        // decodes for on-screen tiles actually start.
-        QTimer::singleShot(0, this, [this]() {
-            if (isGalleryMode() && !m_items.isEmpty()) {
-                updateGalleryDecodeWindow();
-            }
-        });
-    }
-
-    validateUniqueLiveSessionIds("setWorkspacePaths");
-    emit statusChanged();
-    emit workspacePathsChanged();
+    finishSetWorkspacePaths(haveIds, paths, sessionIds);
 }
+
+
 
 void ImageView::reorderItemsByPaths(const QStringList &paths)
 {

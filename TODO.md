@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-637-workspace-paths.** Phase setWorkspacePaths doom/destroy/finish.
+Prior: **636**.
+
+### Change
+- `collectDoomedWorkspaceItems` — id/path occurrence excess
+- `destroyDoomedWorkspaceItems` — soft reset + destroy
+- `finishSetWorkspacePaths` — reorder, rebind, gallery pack/decode
+
+### Done criteria
+- [x] Workspace path sync phases named
+- [x] Bundle **637**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-636-epub-interval.** Split EPUB layout rewrite and slideshow interval rearm.
 Prior: **635**.
 

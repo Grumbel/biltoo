@@ -466,6 +466,11 @@ public:
      * @p sessionIds entry (stable SessionImageId). Gallery/Workspace loads
      * then apply per-id crop/flip/rotate from m_appearance.
      */
+    QList<ImageItem *> collectDoomedWorkspaceItems(const QStringList &paths,
+                                                   const QVector<SessionImageId> &sessionIds) const;
+    void destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed);
+    void finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
+                                 const QVector<SessionImageId> &sessionIds);
     void setWorkspacePaths(const QStringList &paths,
                            const QVector<SessionImageId> &sessionIds);
     /** Reorder canvas items to match @p paths (session / sort order). */
