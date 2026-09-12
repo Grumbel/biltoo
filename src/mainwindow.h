@@ -17,6 +17,8 @@
 #include <QEvent>
 #include <QStringList>
 #include <QVector>
+#include <QHash>
+#include <QDir>
 #include <QMimeData>
 #include <QElapsedTimer>
 
@@ -50,6 +52,7 @@ struct SessionEntrySnapshot {
 };
 
 struct ProjectDocument;
+struct ProjectImage;
 
 class MainWindow : public QMainWindow
 {
@@ -386,6 +389,15 @@ private:
                                const ProjectDocument &doc,
                                const QString &projectPath,
                                const QStringList &missing);
+
+    // --- project write helpers ---
+    QString currentProjectModeString() const;
+    static QString containerHashPathForSessionPath(const QString &sessionPath);
+    QString ensureProjectAsset(ProjectDocument *doc, QHash<QString, QString> *pathToSha,
+                               const QDir &projDir, const QString &sessionPath);
+    QHash<SessionImageId, WorkspaceItemState> captureLiveWorkspacePoses() const;
+    static void mergePoseIntoProjectImage(ProjectImage *im, const WorkspaceItemState &pose);
+    void attachWorkspaceBackgroundToDocument(ProjectDocument *doc, const QDir &projDir);
     void setExpandProgressMessage(const QString &message);
     void setExpandProgressBusy(bool busy);
     void applyExpandedLoad(const QStringList &images, int startAt);

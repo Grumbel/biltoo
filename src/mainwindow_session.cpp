@@ -3199,70 +3199,139 @@ void MainWindow::openProject()
     }
 }
 
+QString MainWindow::currentProjectModeString() const
+{
+    if (isWorkspaceMode()) {
+        return QStringLiteral("workspace");
+    }
+    if (isGalleryMode()) {
+        return QStringLiteral("gallery");
+    }
+    return QStringLiteral("image");
+}
+
+QString MainWindow::containerHashPathForSessionPath(const QString &sessionPath)
+{
+    if (sessionPath.isEmpty()) {
+        return {};
+    }
+    // Archive/PDF pages: hash the container file, not the virtual page path.
+    if (ArchivePath::isArchiveRef(sessionPath)) {
+        return ArchivePath::archiveFilePath(sessionPath);
+    }
+    if (PagePath::isPageRef(sessionPath)) {
+        return PagePath::pdfFilePath(sessionPath);
+    }
+    return sessionPath;
+}
+
+QString MainWindow::ensureProjectAsset(ProjectDocument *doc,
+                                       QHash<QString, QString> *pathToSha,
+                                       const QDir &projDir,
+                                       const QString &sessionPath)
+{
+    if (!doc || !pathToSha) {
+        return {};
+    }
+    const QString hashPath = containerHashPathForSessionPath(sessionPath);
+    if (hashPath.isEmpty()) {
+        return {};
+    }
+    if (pathToSha->contains(hashPath)) {
+        return pathToSha->value(hashPath);
+    }
+    const QString sha = ProjectFile::fileSha256(hashPath);
+    if (sha.isEmpty()) {
+        return {};
+    }
+    pathToSha->insert(hashPath, sha);
+    ProjectAsset a;
+    a.sha256 = sha;
+    a.path = hashPath;
+    const QString rel = projDir.relativeFilePath(hashPath);
+    if (!rel.startsWith(QLatin1String(".."))) {
+        a.pathRelative = rel;
+    }
+    doc->assets.append(a);
+    return sha;
+}
+
+QHash<SessionImageId, WorkspaceItemState> MainWindow::captureLiveWorkspacePoses() const
+{
+    QHash<SessionImageId, WorkspaceItemState> poses;
+    if (!m_imageView) {
+        return poses;
+    }
+    for (ImageItem *item : m_imageView->liveItems()) {
+        if (!item || item->sessionId() == kInvalidSessionImageId) {
+            continue;
+        }
+        poses.insert(item->sessionId(), m_imageView->captureState(item));
+    }
+    return poses;
+}
+
+void MainWindow::mergePoseIntoProjectImage(ProjectImage *im, const WorkspaceItemState &pose)
+{
+    if (!im) {
+        return;
+    }
+    im->appearance.pos = pose.pos;
+    im->appearance.scale = pose.scale;
+    im->appearance.scaleY = pose.scaleY;
+    im->appearance.shear = pose.shear;
+    im->appearance.rotation = pose.rotation;
+    im->appearance.opacity = pose.opacity;
+    im->appearance.z = pose.z;
+    im->appearance.hFlip = pose.hFlip;
+    im->appearance.vFlip = pose.vFlip;
+    im->hasWorkspacePose = true;
+    im->hasAppearance = true;
+}
+
+void MainWindow::attachWorkspaceBackgroundToDocument(ProjectDocument *doc, const QDir &projDir)
+{
+    if (!doc || !m_imageView) {
+        return;
+    }
+    WorkspaceBackground wb = m_imageView->workspaceBackground();
+    if (wb.isAppDefault()) {
+        return;
+    }
+    // JSON only: absolute path, optional path relative to the project
+    // file, and SHA-256 checksum. Never copy tile bytes into a side folder.
+    if (wb.mode == WorkspaceBackgroundMode::ImageTile && !wb.imagePath.isEmpty()) {
+        const QFileInfo fi(wb.imagePath);
+        const QString abs = fi.canonicalFilePath().isEmpty()
+            ? fi.absoluteFilePath()
+            : fi.canonicalFilePath();
+        wb.imagePath = abs;
+        const QString rel = projDir.relativeFilePath(abs);
+        if (!rel.startsWith(QLatin1String("..")) && !QFileInfo(rel).isAbsolute()) {
+            wb.imagePathRelative = rel;
+        } else {
+            wb.imagePathRelative.clear();
+        }
+        wb.imageSha256 = ProjectFile::fileSha256(abs);
+    }
+    doc->hasWorkspaceBackground = true;
+    doc->workspaceBackground = wb;
+}
+
 bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
 {
     ProjectDocument doc;
     doc.version = 1;
-    if (isWorkspaceMode()) {
-        doc.mode = QStringLiteral("workspace");
-    } else if (isGalleryMode()) {
-        doc.mode = QStringLiteral("gallery");
-    } else {
-        doc.mode = QStringLiteral("image");
-    }
+    doc.mode = currentProjectModeString();
 
     QHash<QString, QString> pathToSha; // absolute path → sha256
-    const QFileInfo projInfo(projectPath);
-    const QDir projDir = projInfo.absoluteDir();
-
-    auto ensureAsset = [&](const QString &sessionPath) -> QString {
-        if (sessionPath.isEmpty()) {
-            return {};
-        }
-        // Archive/PDF pages: hash the container file, not the virtual page path.
-        QString hashPath = sessionPath;
-        if (ArchivePath::isArchiveRef(sessionPath)) {
-            hashPath = ArchivePath::archiveFilePath(sessionPath);
-        } else if (PagePath::isPageRef(sessionPath)) {
-            hashPath = PagePath::pdfFilePath(sessionPath);
-        }
-        if (hashPath.isEmpty()) {
-            return {};
-        }
-        if (pathToSha.contains(hashPath)) {
-            return pathToSha.value(hashPath);
-        }
-        const QString sha = ProjectFile::fileSha256(hashPath);
-        if (sha.isEmpty()) {
-            return {};
-        }
-        pathToSha.insert(hashPath, sha);
-        ProjectAsset a;
-        a.sha256 = sha;
-        a.path = hashPath;
-        const QString rel = projDir.relativeFilePath(hashPath);
-        if (!rel.startsWith(QLatin1String(".."))) {
-            a.pathRelative = rel;
-        }
-        doc.assets.append(a);
-        return sha;
-    };
-
-    // Workspace poses from live tiles (session-id keyed).
-    QHash<SessionImageId, WorkspaceItemState> poses;
-    if (m_imageView) {
-        for (ImageItem *item : m_imageView->liveItems()) {
-            if (!item || item->sessionId() == kInvalidSessionImageId) {
-                continue;
-            }
-            poses.insert(item->sessionId(), m_imageView->captureState(item));
-        }
-    }
+    const QDir projDir = QFileInfo(projectPath).absoluteDir();
+    const QHash<SessionImageId, WorkspaceItemState> poses = captureLiveWorkspacePoses();
 
     for (int i = 0; i < m_session.size(); ++i) {
         const QString path = m_session.pathAt(i);
         const SessionImageId id = m_session.idAt(i);
-        const QString sha = ensureAsset(path);
+        const QString sha = ensureProjectAsset(&doc, &pathToSha, projDir, path);
         if (sha.isEmpty()) {
             if (error) {
                 *error = tr("Cannot hash image: %1").arg(path);
@@ -3281,49 +3350,14 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
             im.hasAppearance = true;
         }
         if (poses.contains(id)) {
-            const WorkspaceItemState &p = poses.value(id);
-            im.appearance.pos = p.pos;
-            im.appearance.scale = p.scale;
-            im.appearance.scaleY = p.scaleY;
-            im.appearance.shear = p.shear;
-            im.appearance.rotation = p.rotation;
-            im.appearance.opacity = p.opacity;
-            im.appearance.z = p.z;
-            im.appearance.hFlip = p.hFlip;
-            im.appearance.vFlip = p.vFlip;
-            im.hasWorkspacePose = true;
-            im.hasAppearance = true;
+            mergePoseIntoProjectImage(&im, poses.value(id));
         }
         im.appearance.path = path;
         im.appearance.sessionId = id;
         doc.images.append(im);
     }
 
-    if (m_imageView) {
-        WorkspaceBackground wb = m_imageView->workspaceBackground();
-        if (!wb.isAppDefault()) {
-            // JSON only: absolute path, optional path relative to the project
-            // file, and SHA-256 checksum. Never copy tile bytes into a side folder.
-            if (wb.mode == WorkspaceBackgroundMode::ImageTile
-                && !wb.imagePath.isEmpty()) {
-                const QFileInfo fi(wb.imagePath);
-                const QString abs = fi.canonicalFilePath().isEmpty()
-                    ? fi.absoluteFilePath()
-                    : fi.canonicalFilePath();
-                wb.imagePath = abs;
-                const QString rel = projDir.relativeFilePath(abs);
-                if (!rel.startsWith(QLatin1String("..")) && !QFileInfo(rel).isAbsolute()) {
-                    wb.imagePathRelative = rel;
-                } else {
-                    wb.imagePathRelative.clear();
-                }
-                wb.imageSha256 = ProjectFile::fileSha256(abs);
-            }
-            doc.hasWorkspaceBackground = true;
-            doc.workspaceBackground = wb;
-        }
-    }
-
+    attachWorkspaceBackgroundToDocument(&doc, projDir);
     return ProjectFile::save(projectPath, doc, error);
 }
 

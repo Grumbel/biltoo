@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-612-write-project-phases.** Split writeProjectToPath into helpers.
+Prior: **611**.
+
+### Change
+- `currentProjectModeString`, `containerHashPathForSessionPath`, `ensureProjectAsset`
+- `captureLiveWorkspacePoses`, `mergePoseIntoProjectImage`
+- `attachWorkspaceBackgroundToDocument`
+- `writeProjectToPath` is a short assemble-and-save driver
+
+### Done criteria
+- [x] Asset hash / pose / background rules preserved
+- [x] Bundle **612**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-611-install-project-session.** Extract project install from load path.
 Prior: **610**.
 
