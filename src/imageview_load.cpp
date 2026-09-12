@@ -208,13 +208,22 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         || m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
         return;
     }
-    // Prefer an explicit preview argument; else a session-cached thumbnail for
-    // this path (revisit during rapid next/prev).
+    // Prefer explicit preview, session map, shared ImageCache (filmstrip/gallery
+    // soft), then slideshow full map — so next/prev paints immediately.
     QImage pixels = preview;
     if (pixels.isNull()) {
         const auto it = m_previewByPath.constFind(path);
         if (it != m_previewByPath.cend()) {
             pixels = it.value();
+        }
+    }
+    if (pixels.isNull()) {
+        pixels = ImageCache::get(path);
+    }
+    if (pixels.isNull()) {
+        const auto fit = m_ssFullByPath.constFind(path);
+        if (fit != m_ssFullByPath.cend() && !fit->isNull()) {
+            pixels = *fit;
         }
     }
     // Layout size = native when known; else preview aspect so fitInView fills
@@ -311,6 +320,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
             ready = m_preloadImage;
             m_preloadPath.clear();
             m_preloadImage = QImage();
+        } else if (m_ssFullByPath.contains(path)
+                   && !m_ssFullByPath.value(path).isNull()) {
+            ready = m_ssFullByPath.value(path);
         }
         if (!ready.isNull()) {
             const QPointer<ImageView> guard(this);
@@ -335,9 +347,8 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     const QPointer<ImageView> guard(this);
     constexpr int kPreviewEdge = 512;
 
-    // Thumbnail and full decode in parallel. Sequential (thumb then full) meant
-    // Image mode stayed on the loading placeholder until *both* finished when
-    // loadThumbnail was slow or as costly as a full decode.
+    // Thumbnail (high priority) and full decode (low priority) in parallel so
+    // rapid next/prev paints soft pixels first; full frames catch up in the background.
     QThreadPool::globalInstance()->start([guard, path, role, gen]() {
         const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
         if (!guard || preview.isNull()) {
@@ -354,7 +365,12 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         });
     }, 2);
 
+    // Full decode at low priority so soft previews win the pool under rapid nav.
     QThreadPool::globalInstance()->start([guard, path, role, gen]() {
+        // Superseded navigation: skip expensive full decode when possible.
+        if (!guard || gen != guard->m_loadGeneration.load()) {
+            return;
+        }
         const QImage image = ImageLoader::load(path);
         if (!guard) {
             return;
@@ -365,7 +381,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
             }
             guard->onImageLoaded(path, image, gen, static_cast<int>(role));
         });
-    }, 1);
+    }, -1);
 }
 
 

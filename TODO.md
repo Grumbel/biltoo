@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-523-image-nav-soft-first.** Instant Image-mode flip; soft first, full later.
+Prior: **522**.
+
+### Fixes
+- `installImageModePendingTile`: seed from ImageCache + m_ssFullByPath (not only m_previewByPath)
+- LoadReplace reuses m_ssFullByPath when already decoded
+- Full decode pool priority **-1**, soft/preview already **2** — soft wins under rapid nav
+- Skip full decode worker if generation already superseded
+- Slideshow preload supersedes in-flight path (generation drop)
+- goNext/goPrevious: ImageCache::ensure neighbors; preload next/prev in slideshow
+- Null-character warnings in statusText THUMTOO_DEBUG checks
+
+### Done criteria
+- [x] Bundle **523**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-522-slideshow-esc-exits-fullscreen.** Esc leaves slideshow and its fullscreen.
 Prior: **521**.
 

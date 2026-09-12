@@ -1731,10 +1731,8 @@ void ImageView::preloadSlideshowImage(const QString &path)
         m_preloadPath.clear();
         m_preloadImage = QImage();
     }
-    // One in-flight decode at a time; do not cancel a different path mid-load.
-    if (!m_preloadInFlightPath.isEmpty() && m_preloadInFlightPath != path) {
-        return;
-    }
+    // Supersede an in-flight preload of a different path (rapid ←/→). The
+    // generation token drops the stale result when it finishes.
     const quint64 gen = ++m_preloadGeneration;
     if (m_preloadPath == path) {
         m_preloadPath.clear();
@@ -2983,7 +2981,7 @@ QString ImageView::statusText() const
             text += tr(" · Edited");
         }
         if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-            dbg && dbg[0] != ' ' && dbg[0] != '0') {
+            dbg && dbg[0] && dbg[0] != '0') {
             const QString q = ThumtooCache::queueStatsLabel();
             if (!q.isEmpty()) {
                 text += tr(" · %1").arg(q);
@@ -3025,7 +3023,7 @@ QString ImageView::statusText() const
         text += tr(" · Edited");
     }
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-        dbg && dbg[0] != ' ' && dbg[0] != '0') {
+        dbg && dbg[0] && dbg[0] != '0') {
         const QString q = ThumtooCache::queueStatsLabel();
         if (!q.isEmpty()) {
             text += tr(" · %1").arg(q);
