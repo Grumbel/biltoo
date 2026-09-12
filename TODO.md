@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-591-slideshow-phase-slot-helpers.** Phase ZoomBlur + bias helpers.
+Prior: **590**.
+
+### Change
+- `pruneZoomBlurOutsidePhasePair` — drop underlay slots not in the from/to pair
+- `schedulePhaseZoomBlur` — viewport-keyed underlay build for a phase path
+- `captureMotionBiasesForPath` — Ken Burns biases without clobbering live from-slot
+- `setSlideshowPhase` calls these instead of inline blocks
+
+### Done criteria
+- [x] Phase pair maintenance is named units
+- [x] Bundle **591**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-590-slideshow-phase-helpers.** ZoomBlur key + motion progress pure helpers.
 Prior: **589**.
 

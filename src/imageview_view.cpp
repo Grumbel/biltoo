@@ -1231,6 +1231,63 @@ QImage ImageView::slideshowPixelsForPath(const QString &path)
     return orientSlideshowImage(img, path);
 }
 
+void ImageView::pruneZoomBlurOutsidePhasePair(const QString &fromPath, const QString &toPath)
+{
+    const int vw = m_zoomBlurVw > 0 ? m_zoomBlurVw
+                                    : (viewport() ? viewport()->width() : 0);
+    const int vh = m_zoomBlurVh > 0 ? m_zoomBlurVh
+                                    : (viewport() ? viewport()->height() : 0);
+    const qint64 keepFrom = slideshowZoomBlurKey(fromPath, vw, vh);
+    const qint64 keepTo = slideshowZoomBlurKey(toPath, vw, vh);
+    for (int i = 0; i < 2; ++i) {
+        const qint64 k = m_zoomBlurSourceKey[i];
+        if (k != 0 && k != keepFrom && k != keepTo) {
+            m_zoomBlurUnderlay[i] = QPixmap();
+            m_zoomBlurSourceKey[i] = 0;
+        }
+        // Drop in-flight markers for keys we no longer care about so slots
+        // free for the new pair (without invalidating generation).
+        const qint64 fk = m_zoomBlurInFlightKey[i];
+        if (fk != 0 && fk != keepFrom && fk != keepTo
+            && m_zoomBlurInFlightGen[i] == m_zoomBlurGeneration) {
+            m_zoomBlurInFlightGen[i] = 0;
+            m_zoomBlurInFlightKey[i] = 0;
+        }
+    }
+    // Keep lastGood across path changes — previous underlay holds until the
+    // new key finishes (paintZoomBlurUnderlay draws it).
+}
+
+void ImageView::schedulePhaseZoomBlur(const QString &path, const QImage &image)
+{
+    if (path.isEmpty() || image.isNull() || !viewport()) {
+        return;
+    }
+    const QSize vs = viewport()->size();
+    const qint64 key = slideshowZoomBlurKey(path, vs.width(), vs.height());
+    if (key != 0) {
+        scheduleZoomBlurBuild(image, vs.width(), vs.height(), key);
+    }
+}
+
+void ImageView::captureMotionBiasesForPath(const QString &path, const QImage &image,
+                                           QPointF *outA, QPointF *outB)
+{
+    if (!outA || !outB) {
+        return;
+    }
+    const QPointF saveA = m_motionBiasA;
+    const QPointF saveB = m_motionBiasB;
+    const bool saveV = m_motionBiasValid;
+    m_motionBiasValid = false;
+    pickInterestingMotionBiases(qHash(path), image);
+    *outA = m_motionBiasA;
+    *outB = m_motionBiasB;
+    m_motionBiasA = saveA;
+    m_motionBiasB = saveB;
+    m_motionBiasValid = saveV;
+}
+
 void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
 {
     if (!m_slideshowProgressActive) {
@@ -1259,30 +1316,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     // Evict only slots that are neither from nor to; in-flight jobs for the
     // new pair keep running.
     if (fromChanged || toChanged) {
-        const int vw = m_zoomBlurVw > 0 ? m_zoomBlurVw
-            : (viewport() ? viewport()->width() : 0);
-        const int vh = m_zoomBlurVh > 0 ? m_zoomBlurVh
-            : (viewport() ? viewport()->height() : 0);
-        const qint64 keepFrom = slideshowZoomBlurKey(fromPath, vw, vh);
-        const qint64 keepTo = slideshowZoomBlurKey(toPath, vw, vh);
-        for (int i = 0; i < 2; ++i) {
-            const qint64 k = m_zoomBlurSourceKey[i];
-            if (k != 0 && k != keepFrom && k != keepTo) {
-                m_zoomBlurUnderlay[i] = QPixmap();
-                m_zoomBlurSourceKey[i] = 0;
-            }
-            // Drop in-flight markers for keys we no longer care about so slots
-            // free for the new pair (without invalidating generation).
-            const qint64 fk = m_zoomBlurInFlightKey[i];
-            if (fk != 0 && fk != keepFrom && fk != keepTo
-                && m_zoomBlurInFlightGen[i] == m_zoomBlurGeneration) {
-                m_zoomBlurInFlightGen[i] = 0;
-                m_zoomBlurInFlightKey[i] = 0;
-            }
-        }
-        // Keep lastGood across path changes. Clearing it here caused solid-pad
-        // flashes under rapid ←/→ — the previous underlay is the correct hold
-        // until the new key's blur finishes (paintZoomBlurUnderlay draws it).
+        pruneZoomBlurOutsidePhasePair(fromPath, toPath);
     }
     const int pathMs = qMax(250, m_slideshowProgressIntervalMs
                             + qMax(0, m_slideshowTransitionDurationMs));
@@ -1327,13 +1361,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         if (!m_ssFromImage.isNull()) {
             ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                               &m_dwellAtlasVw, &m_dwellAtlasVh);
-            if (viewport()) {
-                const QSize vs = viewport()->size();
-                const qint64 key = slideshowZoomBlurKey(fromPath, vs.width(), vs.height());
-                if (key != 0) {
-                    scheduleZoomBlurBuild(m_ssFromImage, vs.width(), vs.height(), key);
-                }
-            }
+            schedulePhaseZoomBlur(fromPath, m_ssFromImage);
         }
         if (m_slideshowMotion != SlideshowMotion::Off && pathMs >= 250) {
             if (!m_motionTimer) {
@@ -1375,31 +1403,13 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         m_ssToPath = toPath;
         (void)ensureSlideshowLogicalSize(toPath);
         m_ssToImage = slideshowPixelsForPath(toPath);
-        {
-            const QPointF saveA = m_motionBiasA;
-            const QPointF saveB = m_motionBiasB;
-            const bool saveV = m_motionBiasValid;
-            m_motionBiasValid = false;
-            pickInterestingMotionBiases(qHash(toPath), m_ssToImage);
-            m_ssToBiasA = m_motionBiasA;
-            m_ssToBiasB = m_motionBiasB;
-            m_motionBiasA = saveA;
-            m_motionBiasB = saveB;
-            m_motionBiasValid = saveV;
-        }
+        captureMotionBiasesForPath(toPath, m_ssToImage, &m_ssToBiasA, &m_ssToBiasB);
         m_ssToMotionClock.start();
         m_ssToMotionClockRunning = true;
         m_ssToMotionBaseMs = 0;
         m_ssToMotionT = 0.0;
-        // Prefetch ZoomBlur underlay for B so the first transition frames
-        // already have a matching key (avoids painting A's blur under B).
-        if (!m_ssToImage.isNull() && viewport()) {
-            const QSize vs = viewport()->size();
-            const qint64 key = slideshowZoomBlurKey(toPath, vs.width(), vs.height());
-            if (key != 0) {
-                scheduleZoomBlurBuild(m_ssToImage, vs.width(), vs.height(), key);
-            }
-        }
+        // Prefetch ZoomBlur underlay for B (matching key before first paint).
+        schedulePhaseZoomBlur(toPath, m_ssToImage);
         qCDebug(lcSlideshow).nospace()
             << "[slideshow] phase-to "
             << QFileInfo(toPath).fileName()

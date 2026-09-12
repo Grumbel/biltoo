@@ -703,6 +703,16 @@ public:
     void reapplySlideshowFraming();
     /** Pure-clock drive: fadeT<0 dwell on fromPath; else crossfade from→to at fadeT in [0,1]. */
     void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
+    /** Drop ZoomBlur slots whose key is neither from nor to path. */
+    void pruneZoomBlurOutsidePhasePair(const QString &fromPath, const QString &toPath);
+    /** Prefetch ZoomBlur underlay for a phase path if viewport is valid. */
+    void schedulePhaseZoomBlur(const QString &path, const QImage &image);
+    /**
+     * Compute Ken Burns biases for @a path without clobbering the live
+     * m_motionBias* pair used by the from-slot.
+     */
+    void captureMotionBiasesForPath(const QString &path, const QImage &image,
+                                    QPointF *outA, QPointF *outB);
     QImage slideshowPixelsForPath(const QString &path);
     QImage slideshowFullIfReady(const QString &path) const;
     QImage slideshowSoftPlaceholder(const QString &path);
