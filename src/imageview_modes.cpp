@@ -225,10 +225,7 @@ void ImageView::prepareImageModeCanvas()
 {
     m_undoStack->clear();
     m_scene->clearSelection();
-    const bool liveCover = m_liveTransitionHold || m_liveTransitionActive;
-    // Under a live hold the overlay covers the viewport; still avoid a bare
-    // resetTransform flash if updates sneak through before the new camera runs.
-    if (!liveCover) {
+    {
         resetTransform();
         if (horizontalScrollBar()) {
             horizontalScrollBar()->setValue(0);

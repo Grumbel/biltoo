@@ -223,7 +223,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     // wiping the dwell we just armed (logs: underlayVisible=true item="-",
     // dwellT never restarted). Underlay is hidden for the whole show.
     if (m_slideshowProgressActive
-        || m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
+        ) {
         return;
     }
     // Prefer explicit preview, session map, shared ImageCache (filmstrip/gallery
@@ -252,15 +252,11 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     // Wipe the underlay under an active dwell camera would leave motion pointing
     // at a destroyed item — drop motion first; full load restarts it.
     if (m_slideshowProgressActive) {
-        // User next/prev (no live hold): drop transition leftovers and per-image
-        // motion biases so the new dwell / next auto-transition starts clean.
-        // Mid live-advance keeps composite state; only cancel underlay motion.
-        if (!(m_liveTransitionActive || m_liveTransitionHold
-              || m_liveTransitionAwaitingLoad)) {
-            cancelSlideshowTransition();
-            m_motionBiasValid = false;
-            m_motionBiasPath.clear();
-        }
+        // User next/prev: clear transition leftovers and per-image motion biases
+        // so the new dwell / next auto-transition starts clean.
+        cancelSlideshowTransition();
+        m_motionBiasValid = false;
+        m_motionBiasPath.clear();
         cancelSlideshowMotion();
     }
     clearLiveCanvas();
@@ -1102,13 +1098,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 // the previous path — refresh dwell to this decode.
                 setSlideshowPhase(path, QString(), -1.0);
             }
-            // Drop held live-transition overlay only after the new item is fitted
-            // (and motion sample applied) so the outgoing underlay never flashes.
-            releaseLiveTransitionHold();
             setUpdatesEnabled(true);
-            if (m_slideshowTransitionPending) {
-                startSlideshowTransitionAnimation();
-            } else {
+            if (viewport()) {
                 viewport()->update();
             }
             emit statusChanged();

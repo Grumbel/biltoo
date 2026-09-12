@@ -2,6 +2,39 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-556-slideshow-delete-live-state.** Remove retired live/snapshot members and APIs.
+Prior: **555**.
+
+### Verification
+- All edited translation units brace-balanced
+- No remaining `m_live*` / snapshot pixmap / beginLive / releaseLive symbols (except comments)
+- Pure phase still owns paint (early return after composite)
+- Unified raster map + resolution-invariant camera intact (553–554)
+- Qt6 not available in this environment — compile not run here
+
+### Changes
+- Deleted live dual-blit members, snapshot transition pixmaps/anim flags
+- Deleted beginLive / startLive / tickLive / prepare / busy / release / snapshot-anim APIs
+- `cancelSlideshowTransition()` kept as a no-op hook for nav/stop/pause callers
+- Paint: removed snapshot overlay branch and live diagnostic fields
+- Load / modes / input: no live-hold special cases
+- MainWindow: dropped `slideshowLiveTransitionFinished` connection
+
+### Still open
+- Optional pure camera helper + tests
+- Runtime test on real hardware (Ken Burns + ZoomBlur + ←/→)
+
+### Done criteria
+- [x] Live state gone from header and sources
+- [x] Static consistency checks pass
+- [x] Bundle **556**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-555-slideshow-pure-phase-only.** Retire live dual-blit; pure phase owns all transitions.
 Prior: **554**.
 

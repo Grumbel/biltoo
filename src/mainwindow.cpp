@@ -379,17 +379,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_slideshowTimer->setInterval(16);
     connect(m_slideshowTimer, &QTimer::timeout, this, &MainWindow::onSlideshowTick);
     if (m_imageView) {
-        connect(m_imageView, &ImageView::slideshowLiveTransitionFinished, this, [this]() {
-            // Commit the target index for this transition. Scheduling of the
-            // *next* transition stays with the pure clock only.
-            const int to = m_slideshowPendingToIndex;
-            m_slideshowPendingToIndex = -1;
-            m_slideshowAdvancing = true;
-            if (to >= 0 && to < m_session.paths().size() && m_currentIndex != to) {
-                setCurrentIndex(to);
-            }
-            m_slideshowAdvancing = false;
-        });
+        
         // Dwell-resume must not schedule — clock owns the schedule.
         connect(m_imageView, &ImageView::slideshowDwellResumeRequested, this, []() {});
     }

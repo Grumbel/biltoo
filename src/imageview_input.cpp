@@ -376,10 +376,8 @@ void ImageView::resizeEvent(QResizeEvent *event)
     }
     // Dwell cover owns framing — never refit the underlay over it.
     // Invalidate atlas viewport keys so the next tick rebuilds at new size.
-    if (m_slideshowMotionActive || m_liveTransitionActive || m_liveTransitionHold) {
+    if (m_slideshowMotionActive) {
         m_dwellAtlasVw = 0;
-        m_liveFromAtlasVw = 0;
-        m_liveToAtlasVw = 0;
         m_zoomBlurUnderlay[0] = QPixmap();
         m_zoomBlurUnderlay[1] = QPixmap();
         m_zoomBlurSourceKey[0] = 0;

@@ -693,68 +693,13 @@ QPixmap ImageView::captureSlideshowFrame() const
     return pm;
 }
 
-void ImageView::prepareSlideshowTransition()
-{
-    // Retired: pure-phase wall clock drives all transitions (SLIDESHOW.md).
-}
-
-bool ImageView::isSlideshowTransitionBusy() const
-{
-    return m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad
-        || m_slideshowTransitionActive || m_slideshowTransitionPending;
-}
-
 void ImageView::cancelSlideshowTransition()
 {
-    m_slideshowTransitionPending = false;
-    m_slideshowTransitionActive = false;
-    m_slideshowTransitionProgress = 1.0;
-    m_slideshowTransitionPixmap = QPixmap();
-    m_slideshowTransitionToPixmap = QPixmap();
-    m_slideshowTransitionFromPixmap = QPixmap();
-    m_liveTransitionSourceImage = QImage();
-    m_liveFromSourceImage = QImage();
-    m_liveTransitionPathHash = 0;
-    m_liveTransitionMotionProgress = 0.0;
-    if (m_slideshowTransitionAnim) {
-        m_slideshowTransitionAnim->stop();
-    }
-    m_liveTransitionActive = false;
-    m_liveTransitionProgress = 0.0;
-    m_liveTransitionMidAdvanced = false;
-    m_liveTransitionHold = false;
-    m_liveTransitionAwaitingLoad = false;
-    m_liveTransitionElapsedBaseMs = 0;
-    m_toLayerWallMs = -1.0;
-    if (m_liveTransitionTimer) {
-        m_liveTransitionTimer->stop();
-    }
+    // Pure phase has no overlay to cancel; keep the hook for callers that
+    // clear transition intent on user nav / stop / pause.
     if (viewport()) {
         viewport()->update();
     }
-}
-
-void ImageView::releaseLiveTransitionHold()
-{
-    // Retired live dual-blit — only clear residual flags so LoadReplace is safe.
-    m_liveTransitionHold = false;
-    m_liveTransitionAwaitingLoad = false;
-    m_liveTransitionActive = false;
-    m_liveTransitionProgress = 1.0;
-    m_liveFromSourceImage = QImage();
-    m_liveTransitionSourceImage = QImage();
-    m_liveTransitionNextPath.clear();
-    if (m_liveTransitionTimer) {
-        m_liveTransitionTimer->stop();
-    }
-}
-
-void ImageView::startSlideshowTransitionAnimation()
-{
-    // Retired snapshot overlay path; pure phase paints transitions.
-    m_slideshowTransitionPending = false;
-    m_slideshowTransitionActive = false;
-    m_slideshowTransitionProgress = 1.0;
 }
 
 void ImageView::setSlideshowMotion(SlideshowMotion mode)
@@ -860,10 +805,6 @@ void ImageView::reapplySlideshowFraming()
     if (!item || item->boundingRect().isEmpty()) {
         return;
     }
-    // Never restart dwell under an in-flight live fade (underlay flash / stuck busy).
-    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
-        return;
-    }
     if (m_slideshowMotion != SlideshowMotion::Off) {
         // Restart dwell Ken Burns from the zoom base + current interval.
         int duration = m_slideshowProgressIntervalMs;
@@ -961,7 +902,6 @@ void ImageView::cancelSlideshowMotion()
     if (m_motionTimer) {
         m_motionTimer->stop();
     }
-    m_dwellCoverPixmap = QPixmap();
     // Ken Burns only moved the overlay blit. Bring the underlay back in line
     // with static slideshow framing while the show is still running.
     if (wasMotion && m_slideshowProgressActive && isImageMode()) {
@@ -1430,34 +1370,10 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         }
     }
 
-    // Pure phase owns the composite — clear legacy live + snapshot flags so
-    // residual Slide projector cards / animations cannot paint over us.
-    m_liveTransitionActive = false;
-    m_liveTransitionHold = false;
-    m_liveTransitionAwaitingLoad = false;
-    m_liveFromSourceImage = QImage();
-    m_liveTransitionSourceImage = QImage();
-    m_slideshowTransitionPending = false;
-    m_slideshowTransitionActive = false;
-    m_slideshowTransitionProgress = 1.0;
-    if (m_slideshowTransitionAnim) {
-        m_slideshowTransitionAnim->stop();
-    }
-    m_slideshowTransitionPixmap = QPixmap();
-    m_slideshowTransitionToPixmap = QPixmap();
-    m_slideshowTransitionFromPixmap = QPixmap();
-
     hideSlideshowUnderlay();
     if (viewport()) {
         viewport()->update();
     }
-}
-
-bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
-{
-    Q_UNUSED(nextPath);
-    // Retired: pure phase is the only transition path.
-    return false;
 }
 
 qreal ImageView::slideshowMotionHeadroom() const
@@ -2109,10 +2025,6 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     const QPixmap *atlas = nullptr;
     if (&image == &m_dwellSourceImage && !m_dwellAtlas.isNull()) {
         atlas = &m_dwellAtlas;
-    } else if (&image == &m_liveFromSourceImage && !m_liveFromAtlas.isNull()) {
-        atlas = &m_liveFromAtlas;
-    } else if (&image == &m_liveTransitionSourceImage && !m_liveToAtlas.isNull()) {
-        atlas = &m_liveToAtlas;
     }
 
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
@@ -2140,17 +2052,6 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     paintMotionCover(&painter, image, motionT, m_motionBiasA, m_motionBiasB, pathHash);
     painter.end();
     return QPixmap::fromImage(out);
-}
-
-void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
-{
-    Q_UNUSED(nextImage);
-    // Retired: pure phase is the only transition path.
-}
-
-void ImageView::tickLiveTransition()
-{
-    // Retired: pure phase is the only transition path.
 }
 
 void ImageView::maybeStartSlideshowMotion()
@@ -2234,16 +2135,14 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     // Biases are per-image. Manual next/prev (and any LoadReplace) must not keep
     // the previous slide's A/B — that made the first post-nav transition glitch.
     // Live handoff installs to-path biases + path before calling here.
-    if (m_motionBiasValid && m_motionBiasPath != path
-        && !(m_liveTransitionHold || m_liveTransitionActive)) {
+    if (m_motionBiasValid && m_motionBiasPath != path) {
         m_motionBiasValid = false;
     }
-    if (!m_motionBiasValid
-        && !(m_liveTransitionHold || m_liveTransitionActive)) {
+    if (!m_motionBiasValid) {
         const QImage src = item ? item->sourceImage() : QImage();
         pickInterestingMotionBiases(qHash(path), src);
         m_motionBiasPath = path;
-    } else if (m_motionBiasValid && m_motionBiasPath.isEmpty()) {
+    } else if (m_motionBiasPath.isEmpty()) {
         m_motionBiasPath = path;
     }
     // Biases + slideshow zoom are read by renderMotionCoverPixmap.
@@ -2266,7 +2165,6 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     m_motionElapsedOffsetMs = (initialProgress > 0.0 && m_motionDurationMs > 0)
         ? qint64(initialProgress * qreal(m_motionDurationMs))
         : 0;
-    m_dwellCoverPixmap = QPixmap(); // painted live via paintMotionCover
     m_motionTimer->start();
     if (viewport()) {
         viewport()->update();

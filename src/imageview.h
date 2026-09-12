@@ -190,7 +190,6 @@ public:
     void ensurePrimarySelection();
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
-    void startSlideshowTransitionAnimation();
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
     void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
     /** Decode path off the GUI thread into the unified slideshow raster map. */
@@ -210,8 +209,6 @@ public:
     void setSlideshowNavHot(bool hot);
     bool slideshowNavHot() const { return m_slideshowNavHot; }
     void tickSlideshowMotion();
-    void tickLiveTransition();
-    void startLiveTransitionWithImage(const QImage &nextImage);
     /** Static centre-crop cover of @p image to the current viewport size. */
     QPixmap renderCoverPixmap(const QImage &image) const;
     /**
@@ -603,14 +600,8 @@ public:
     SlideshowTransition slideshowTransition() const { return m_slideshowTransition; }
     void setSlideshowTransitionDurationMs(int ms);
     int slideshowTransitionDurationMs() const { return m_slideshowTransitionDurationMs; }
-    /**
-     * Capture the current viewport for a slideshow advance transition.
-     * Call before navigating to the next image while a slideshow is running.
-     */
-    void prepareSlideshowTransition();
+    /** Clear residual transition overlay state (safe during pure-phase show). */
     void cancelSlideshowTransition();
-    /** True while a live or snapshot transition still owns the advance cycle. */
-    bool isSlideshowTransitionBusy() const;
 
     /** Image motion (Ken Burns / pan-scan) during a slideshow dwell. */
     enum class SlideshowMotion {
@@ -670,13 +661,6 @@ public:
      * Fit / Fill / 1:1 framing only. No-op when slideshow progress is inactive.
      */
     void reapplySlideshowFraming();
-    /**
-     * Start a transition while the current image keeps its dwell motion.
-     * @p nextPath is decoded off-thread into the incoming frame. Emits
-     * slideshowLiveTransitionFinished when the host should call goNext().
-     * @return false if a normal snapshot transition should be used instead.
-     */
-    bool beginLiveSlideshowTransition(const QString &nextPath);
     /** Pure-clock drive: fadeT<0 dwell on fromPath; else crossfade from→to at fadeT in [0,1]. */
     void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
     QImage slideshowPixelsForPath(const QString &path);
@@ -695,7 +679,6 @@ public:
      * Called from the LoadReplace path so the incoming frame is not cleared
      * before the new item is on screen (avoids a one-frame flash of the old image).
      */
-    void releaseLiveTransitionHold();
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -902,7 +885,6 @@ signals:
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
     /** Black exit veil finished — host should advance the slideshow. */
-    void slideshowLiveTransitionFinished();
     /** Host may restart the advance timer (snapshot end / fade-black complete). */
     void slideshowDwellResumeRequested();
     /** Crop mode toggled on/off (toolbar checkable state). */
@@ -1303,10 +1285,6 @@ private:
     qint64 m_slideshowTimelineTotalMs = 0;
     SlideshowTransition m_slideshowTransition = SlideshowTransition::Crossfade;
     int m_slideshowTransitionDurationMs = 400;
-    QPixmap m_slideshowTransitionPixmap; /**< From-frame snapshot */
-    QPixmap m_slideshowTransitionToPixmap; /**< To-frame (live blit / Slide) */
-    QPixmap m_slideshowTransitionFromPixmap; /**< From-frame during dual-image fade */
-    QPixmap m_dwellCoverPixmap; /**< Single-image Ken Burns blit during dwell */
     QImage m_dwellSourceImage;
     /** Pure-phase composite (driven every clock tick; no begin/cancel). */
     QString m_ssFromPath;
@@ -1335,10 +1313,6 @@ private:
     int m_dwellAtlasVw = 0;
     int m_dwellAtlasVh = 0;
     qreal m_dwellMotionT = 0.0; /**< Latest dwell progress [0,1] */
-    qreal m_slideshowTransitionProgress = 1.0; /**< 0 = old frame, 1 = done */
-    bool m_slideshowTransitionPending = false;
-    bool m_slideshowTransitionActive = false;
-    QVariantAnimation *m_slideshowTransitionAnim = nullptr;
     SlideshowMotion m_slideshowMotion = SlideshowMotion::Off;
     qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
     SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
@@ -1380,56 +1354,10 @@ private:
     /** Fixed session pan sign (+1 / -1); never reverses mid-show. */
     qreal m_motionSign = 1.0;
     int m_motionDurationMs = 0;
-    /** Added to m_motionClock.elapsed() so live-transition handoff can start mid-path. */
+    /** Added to m_motionClock.elapsed() for motion path continuity. */
     qint64 m_motionElapsedOffsetMs = 0;
     QElapsedTimer m_motionClock;
     QTimer *m_motionTimer = nullptr;
-    bool m_liveTransitionActive = false;
-    bool m_liveTransitionMidAdvanced = false; /**< FadeBlack swapped at midpoint */
-    /**
-     * After the animated portion of a live transition finishes (or at full
-     * black for FadeBlack), keep painting the final composite until the next
-     * LoadReplace has fitted. Prevents a flash of the outgoing image.
-     */
-    bool m_liveTransitionHold = false;
-    /** FadeBlack: freeze at mid-black until goNext load completes. */
-    bool m_liveTransitionAwaitingLoad = false;
-    qreal m_liveTransitionProgress = 0.0;
-    int m_liveTransitionDurationMs = 0;
-    /** Elapsed ms already consumed when resuming after a mid-black load wait. */
-    int m_liveTransitionElapsedBaseMs = 0;
-    QElapsedTimer m_liveTransitionClock;
-    /** Wall clock for Ken Burns sampling during a live transition; never restarted
-     *  for FadeBlack mid-black waits so motion does not jump backward. */
-    QElapsedTimer m_liveMotionClock;
-    QTimer *m_liveTransitionTimer = nullptr;
-    QString m_liveTransitionNextPath;
-    /** Decoded next slide kept for re-rendering animated live-transition covers. */
-    QImage m_liveTransitionSourceImage; /**< Incoming image for to-frame blit */
-    QImage m_liveFromSourceImage; /**< Outgoing image for from-frame blit */
-    QPixmap m_liveFromAtlas;
-    qreal m_liveFromAtlasScale = 0.0;
-    int m_liveFromAtlasVw = 0;
-    int m_liveFromAtlasVh = 0;
-    QPixmap m_liveToAtlas;
-    qreal m_liveToAtlasScale = 0.0;
-    int m_liveToAtlasVw = 0;
-    int m_liveToAtlasVh = 0;
-    qreal m_liveFromMotionProgress0 = 0.0; /**< Outgoing progress at transition start */
-    QPointF m_liveFromBiasA{-1.0, -1.0};
-    QPointF m_liveFromBiasB{1.0, 1.0};
-    /** Incoming Ken Burns path for the to-frame (never overwrites dwell biases). */
-    QPointF m_liveToBiasA{-1.0, -1.0};
-    QPointF m_liveToBiasB{1.0, 1.0};
-    /** Motion wall-ms when the to-layer started; -1 = no to-layer. */
-    qreal m_toLayerWallMs = -1.0;
-    /** Slideshow raster decode in flight (max one). */
-    QSet<QString> m_ssRasterInflight;
-    /** Neighbours waiting while concurrency is full. */
-    QStringList m_ssRasterPending;
-    uint m_liveTransitionPathHash = 0;
-    /** To-path progress during dual-blit (handoff continues from here). */
-    qreal m_liveTransitionMotionProgress = 0.0;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutMode m_layoutMode = LayoutMode::FreeForm;
