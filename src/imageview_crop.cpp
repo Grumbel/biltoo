@@ -837,181 +837,144 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     }
 }
 
-void ImageView::leaveCropModeInternal(bool apply)
+void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 {
-    if (!m_cropMode) {
+    if (!m_undoStack || !item || !m_cropEnterValid) {
         return;
     }
-    ImageItem *item = cropTargetItem();
-    // When a Workspace crop is committed, placement rotation follows the crop
-    // frame angle (straightened pixels + matching pose). Cancel / full-frame
-    // restore the pre-crop placement instead.
-    bool preserveCropFrameRotation = false;
-    if (apply && item) {
-        ensureCropRectValid();
-        const QRectF full = item->contentRect();
-        const bool fullFrame =
-            !m_cropRect.isValid()
-            || (qAbs(m_cropRect.left() - full.left()) < 0.5
-                && qAbs(m_cropRect.top() - full.top()) < 0.5
-                && qAbs(m_cropRect.width() - full.width()) < 0.5
-                && qAbs(m_cropRect.height() - full.height()) < 0.5);
-        // Record absolute crop (or clear it) while the full image is still loaded.
-        recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
-        if (!fullFrame) {
-            // Scene position of the crop-frame centre — new pixels stay here.
-            const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
-            if (item->cropToLocalRect(m_cropRect, backgroundColor(), m_cropRotation)) {
-                // Keep stashed Gallery tiles: commitItemSessionEdit peer-syncs
-                // cropped pixels. Invalidating forced a full-size probe + pack
-                // then a crop decode without repack → tiny tiles on return.
-                if (isImageMode()) {
-                    m_fitMode = true;
-                    fitItem(item, currentFitAspectMode());
-                } else if (isWorkspaceMode()) {
-                    // New image is centred on the item origin; pin that to the
-                    // former crop-frame centre so the region does not jump.
-                    alignItemCenterToScene(item, cropSceneCenter);
-                    // Straightened crop pixels: place at the crop-frame angle so
-                    // the region keeps the same orientation it had while editing
-                    // (crop painter samples with -θ; frame was drawn at +θ).
-                    item->setItemRotation(m_cropRotation);
-                    preserveCropFrameRotation = true;
-                    updateWorkspaceSceneRect();
-                } else if (isGalleryMode()) {
-                    applyLayout(GalleryPackReason::ContentChange);
-                }
-                commitItemSessionEdit(item);
-                // Undo: restore pre-crop-mode appearance + session crop metadata.
-                if (m_undoStack && m_cropEnterValid) {
-                    class CropCommand : public QUndoCommand {
-                    public:
-                        CropCommand(ImageView *view, ImageItem *item,
-                                    const QImage &beforeSrc, const QImage &afterSrc,
-                                    const WorkspaceItemState &beforeSt,
-                                    const WorkspaceItemState &afterSt)
-                            : m_view(view)
-                            , m_item(item)
-                            , m_beforeSrc(beforeSrc)
-                            , m_afterSrc(afterSrc)
-                            , m_beforeSt(beforeSt)
-                            , m_afterSt(afterSt)
-                        {
-                            setText(QObject::tr("Crop"));
-                        }
-                        void undo() override { apply(m_beforeSrc, m_beforeSt); }
-                        void redo() override { apply(m_afterSrc, m_afterSt); }
-                    private:
-                        void apply(const QImage &src, const WorkspaceItemState &st)
-                        {
-                            if (!m_view || !m_item) {
-                                return;
-                            }
-                            m_view->applyCropAppearance(m_item, src, st);
-                        }
-                        ImageView *m_view;
-                        ImageItem *m_item;
-                        QImage m_beforeSrc;
-                        QImage m_afterSrc;
-                        WorkspaceItemState m_beforeSt;
-                        WorkspaceItemState m_afterSt;
-                    };
-                    WorkspaceItemState afterSt = captureState(item);
-                    afterSt.hasCrop = item->sessionHasCrop();
-                    afterSt.cropRect = item->sessionCropRect();
-                    // captureState pulls cropRotation from appearance
-                    // (recordSessionCrop + commitItemSessionEdit).
-                    m_undoStack->push(new CropCommand(
-                        this, item, m_cropEnterSource, item->sourceImage().copy(),
-                        m_cropEnterState, afterSt));
-                }
-                flashHud(tr("Cropped"),
-                         QStringLiteral("%1×%2")
-                             .arg(item->imageSize().width())
-                             .arg(item->imageSize().height()));
+    class CropCommand : public QUndoCommand {
+    public:
+        CropCommand(ImageView *view, ImageItem *item,
+                    const QImage &beforeSrc, const QImage &afterSrc,
+                    const WorkspaceItemState &beforeSt,
+                    const WorkspaceItemState &afterSt,
+                    const QString &text)
+            : m_view(view)
+            , m_item(item)
+            , m_beforeSrc(beforeSrc)
+            , m_afterSrc(afterSrc)
+            , m_beforeSt(beforeSt)
+            , m_afterSt(afterSt)
+        {
+            setText(text);
+        }
+        void undo() override { apply(m_beforeSrc, m_beforeSt); }
+        void redo() override { apply(m_afterSrc, m_afterSt); }
+    private:
+        void apply(const QImage &src, const WorkspaceItemState &st)
+        {
+            if (!m_view || !m_item) {
+                return;
             }
-        } else {
-            // Reset / full frame: keep full pixels; clear session crop metadata.
+            m_view->applyCropAppearance(m_item, src, st);
+        }
+        ImageView *m_view;
+        ImageItem *m_item;
+        QImage m_beforeSrc;
+        QImage m_afterSrc;
+        WorkspaceItemState m_beforeSt;
+        WorkspaceItemState m_afterSt;
+    };
+    WorkspaceItemState afterSt = captureState(item);
+    afterSt.hasCrop = item->sessionHasCrop();
+    afterSt.cropRect = item->sessionCropRect();
+    // captureState pulls cropRotation from appearance
+    // (recordSessionCrop + commitItemSessionEdit).
+    m_undoStack->push(new CropCommand(
+        this, item, m_cropEnterSource, item->sourceImage().copy(),
+        m_cropEnterState, afterSt, text));
+}
+
+bool ImageView::applyCropCommit(ImageItem *item)
+{
+    // Returns true when Workspace placement rotation should keep the crop-frame
+    // angle (non-full-frame commit with successful cropToLocalRect).
+    ensureCropRectValid();
+    const QRectF full = item->contentRect();
+    const bool fullFrame =
+        !m_cropRect.isValid()
+        || (qAbs(m_cropRect.left() - full.left()) < 0.5
+            && qAbs(m_cropRect.top() - full.top()) < 0.5
+            && qAbs(m_cropRect.width() - full.width()) < 0.5
+            && qAbs(m_cropRect.height() - full.height()) < 0.5);
+    // Record absolute crop (or clear it) while the full image is still loaded.
+    recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
+    if (!fullFrame) {
+        // Scene position of the crop-frame centre — new pixels stay here.
+        const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
+        if (item->cropToLocalRect(m_cropRect, backgroundColor(), m_cropRotation)) {
+            // Keep stashed Gallery tiles: commitItemSessionEdit peer-syncs
+            // cropped pixels. Invalidating forced a full-size probe + pack
+            // then a crop decode without repack → tiny tiles on return.
             if (isImageMode()) {
                 m_fitMode = true;
                 fitItem(item, currentFitAspectMode());
             } else if (isWorkspaceMode()) {
-                // Drop the enter-time crop-frame offset; restore pre-crop pose.
-                if (m_cropEnterValid) {
-                    item->setPos(m_cropEnterState.pos);
-                    item->setItemScale(m_cropEnterState.scale,
-                                       m_cropEnterState.scaleY > 0.0
-                                           ? m_cropEnterState.scaleY
-                                           : m_cropEnterState.scale);
-                }
+                // New image is centred on the item origin; pin that to the
+                // former crop-frame centre so the region does not jump.
+                alignItemCenterToScene(item, cropSceneCenter);
+                // Straightened crop pixels: place at the crop-frame angle so
+                // the region keeps the same orientation it had while editing
+                // (crop painter samples with -θ; frame was drawn at +θ).
+                item->setItemRotation(m_cropRotation);
                 updateWorkspaceSceneRect();
             } else if (isGalleryMode()) {
                 applyLayout(GalleryPackReason::ContentChange);
             }
             commitItemSessionEdit(item);
-            if (m_undoStack && m_cropEnterValid
-                && (m_cropEnterState.hasCrop
-                    || m_cropEnterSource.size() != item->sourceImage().size())) {
-                class CropCommand : public QUndoCommand {
-                public:
-                    CropCommand(ImageView *view, ImageItem *item,
-                                const QImage &beforeSrc, const QImage &afterSrc,
-                                const WorkspaceItemState &beforeSt,
-                                const WorkspaceItemState &afterSt)
-                        : m_view(view)
-                        , m_item(item)
-                        , m_beforeSrc(beforeSrc)
-                        , m_afterSrc(afterSrc)
-                        , m_beforeSt(beforeSt)
-                        , m_afterSt(afterSt)
-                    {
-                        setText(QObject::tr("Crop reset"));
-                    }
-                    void undo() override { apply(m_beforeSrc, m_beforeSt); }
-                    void redo() override { apply(m_afterSrc, m_afterSt); }
-                private:
-                    void apply(const QImage &src, const WorkspaceItemState &st)
-                    {
-                        if (!m_view || !m_item) {
-                            return;
-                        }
-                        m_view->applyCropAppearance(m_item, src, st);
-                    }
-                    ImageView *m_view;
-                    ImageItem *m_item;
-                    QImage m_beforeSrc;
-                    QImage m_afterSrc;
-                    WorkspaceItemState m_beforeSt;
-                    WorkspaceItemState m_afterSt;
-                };
-                WorkspaceItemState afterSt = captureState(item);
-                afterSt.hasCrop = item->sessionHasCrop();
-                afterSt.cropRect = item->sessionCropRect();
-                    // captureState pulls cropRotation from appearance
-                    // (recordSessionCrop + commitItemSessionEdit).
-                m_undoStack->push(new CropCommand(
-                    this, item, m_cropEnterSource, item->sourceImage().copy(),
-                    m_cropEnterState, afterSt));
-            }
-            flashHud(tr("Crop reset"), tr("Full image"));
+            // Undo: restore pre-crop-mode appearance + session crop metadata.
+            pushCropAppearanceUndo(item, tr("Crop"));
+            flashHud(tr("Cropped"),
+                     QStringLiteral("%1×%2")
+                         .arg(item->imageSize().width())
+                         .arg(item->imageSize().height()));
+            return isWorkspaceMode();
         }
-    } else if (item && m_cropShowingFullImage) {
-        // Esc / toggle off: put the previous session crop back on the canvas.
-        restoreSessionCropAppearance(item);
-        if (isWorkspaceMode() && m_cropEnterValid) {
+        return false;
+    }
+
+    // Reset / full frame: keep full pixels; clear session crop metadata.
+    if (isImageMode()) {
+        m_fitMode = true;
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        // Drop the enter-time crop-frame offset; restore pre-crop pose.
+        if (m_cropEnterValid) {
             item->setPos(m_cropEnterState.pos);
             item->setItemScale(m_cropEnterState.scale,
                                m_cropEnterState.scaleY > 0.0
                                    ? m_cropEnterState.scaleY
                                    : m_cropEnterState.scale);
         }
+        updateWorkspaceSceneRect();
+    } else if (isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
     }
-    // Restore pre-crop placement rotation unless Apply already set it from the
-    // crop frame (Workspace non-full-frame commit).
-    if (item && m_cropHadStashedPlacement && !preserveCropFrameRotation) {
-        item->setItemRotation(m_cropStashedPlacementRotation);
-        item->setItemShear(m_cropStashedPlacementShear);
+    commitItemSessionEdit(item);
+    if (m_cropEnterValid
+        && (m_cropEnterState.hasCrop
+            || m_cropEnterSource.size() != item->sourceImage().size())) {
+        pushCropAppearanceUndo(item, tr("Crop reset"));
     }
+    flashHud(tr("Crop reset"), tr("Full image"));
+    return false;
+}
+
+void ImageView::cancelCropShowingFullImage(ImageItem *item)
+{
+    // Esc / toggle off: put the previous session crop back on the canvas.
+    restoreSessionCropAppearance(item);
+    if (isWorkspaceMode() && m_cropEnterValid) {
+        item->setPos(m_cropEnterState.pos);
+        item->setItemScale(m_cropEnterState.scale,
+                           m_cropEnterState.scaleY > 0.0
+                               ? m_cropEnterState.scaleY
+                               : m_cropEnterState.scale);
+    }
+}
+
+void ImageView::clearCropModeState()
+{
     m_cropHadStashedPlacement = false;
     m_cropStashedPlacementRotation = 0.0;
     m_cropStashedPlacementShear = 0.0;
@@ -1031,6 +994,30 @@ void ImageView::leaveCropModeInternal(bool apply)
     emit statusChanged();
     viewport()->unsetCursor();
     viewport()->update();
+}
+
+void ImageView::leaveCropModeInternal(bool apply)
+{
+    if (!m_cropMode) {
+        return;
+    }
+    ImageItem *item = cropTargetItem();
+    // When a Workspace crop is committed, placement rotation follows the crop
+    // frame angle (straightened pixels + matching pose). Cancel / full-frame
+    // restore the pre-crop placement instead.
+    bool preserveCropFrameRotation = false;
+    if (apply && item) {
+        preserveCropFrameRotation = applyCropCommit(item);
+    } else if (item && m_cropShowingFullImage) {
+        cancelCropShowingFullImage(item);
+    }
+    // Restore pre-crop placement rotation unless Apply already set it from the
+    // crop frame (Workspace non-full-frame commit).
+    if (item && m_cropHadStashedPlacement && !preserveCropFrameRotation) {
+        item->setItemRotation(m_cropStashedPlacementRotation);
+        item->setItemShear(m_cropStashedPlacementShear);
+    }
+    clearCropModeState();
 }
 
 QPolygonF ImageView::cropPolygonItemLocal() const

@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-621-leave-crop-phases.** Split leaveCropModeInternal into apply/cancel/clear.
+Prior: **620**.
+
+### Change
+- `pushCropAppearanceUndo` — single CropCommand implementation
+- `applyCropCommit` — full-frame reset vs region crop (returns preserve rotation)
+- `cancelCropShowingFullImage` — Esc restore of session crop appearance
+- `clearCropModeState` — mode flag / target / rect teardown
+- `leaveCropModeInternal` is a short orchestration
+
+### Done criteria
+- [x] Leave-crop paths named; undo/placement behaviour preserved
+- [x] Bundle **621**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-620-crop-paint-phases.** Split paintCropOverlay into named paint phases.
 Prior: **619**.
 

@@ -1317,6 +1317,10 @@ private:
     void updateCropRubberBand(const QPoint &viewPos);
     void endCropRubberBand();
     void leaveCropModeInternal(bool apply);
+    void pushCropAppearanceUndo(ImageItem *item, const QString &text);
+    bool applyCropCommit(ImageItem *item);
+    void cancelCropShowingFullImage(ImageItem *item);
+    void clearCropModeState();
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
      * angles map to 0°.
