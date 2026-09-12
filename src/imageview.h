@@ -317,6 +317,11 @@ public:
     bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
     /** LoadRestore: create tile from decode + claimed restore snapshot. */
     void completeLoadRestore(const QString &path, const QImage &image);
+    /**
+     * LoadAdd: fill/create tiles for @a path after a successful or failed decode.
+     * Honours load generation and pending-workspace cancellation.
+     */
+    void completeLoadAdd(const QString &path, const QImage &image, quint64 generation);
 
     // --- Controller host operations (mode controllers; prefer these over friend) ---
     /** Apply interactive/gallery/static flags for the current ViewMode. */

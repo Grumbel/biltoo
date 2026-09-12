@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-601-complete-load-add.** completeLoadAdd extracted from onImageLoaded.
+Prior: **600**.
+
+### Change
+- `completeLoadAdd(path, image, generation)` — full LoadAdd body
+- `onImageLoaded` dispatches Replace / Restore / Add by role
+
+### Done criteria
+- [x] onImageLoaded is a thin dispatcher
+- [x] Bundle **601**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-600-complete-load-restore.** LoadRestore as completeLoadRestore.
 Prior: **599**.
 

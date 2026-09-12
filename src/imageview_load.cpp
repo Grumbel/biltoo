@@ -1070,152 +1070,8 @@ void ImageView::completeLoadRestore(const QString &path, const QImage &image)
     emit workspacePathsChanged();
 }
 
-void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
-                              int role)
+void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint64 generation)
 {
-    // Host path→raster map: keep display-ladder samples (≤ kDisplayMaxEdge),
-    // not a hard 512 preview. Slideshow must reuse Image-mode sharpness.
-    if (!image.isNull() && !path.isEmpty()) {
-        ImageCache::put(path, image);
-    }
-    // Replace loads only care about the latest request
-    if (role == LoadReplace) {
-        if (generation != m_loadGeneration) {
-            return; // superseded by a newer navigation / open
-        }
-        // Stale navigation: only the current classic path may install.
-        // Empty multi-item canvas can still seed from classicPath.
-        if (path != classicPath()) {
-            return;
-        }
-        if (image.isNull()) {
-            if (ThumtooCache::isAvailable()
-                && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
-                // Soft miss: schedule ladder; status bar keeps loading until
-                // ladderReady / a later successful load.
-                ThumtooCache::scheduleProbe(path);
-                ThumtooCache::schedulePixels(
-                    path, qMax(ThumtooCache::kGalleryLadderEdge, 512));
-                m_lastLoadError.clear();
-            } else {
-                m_lastLoadError = path;
-            }
-            emit statusChanged();
-            return;
-        }
-        if (isImageMode()) {
-            m_lastLoadError.clear();
-            rememberSizeFromDecode(path, image);
-            // Same path already on canvas: install full pixels in place. Soft→full
-            // must not clearLiveCanvas + fitItem (that resets zoom).
-            if (ImageItem *cur = targetItem();
-                cur && cur->path() == path) {
-                installDisplayPreservingView(
-                    cur, image, SessionAppearance::PixelKind::FullSource,
-                    kInvalidSessionImageId);
-                if (viewport()) {
-                    viewport()->update();
-                }
-                emit statusChanged();
-                return;
-            }
-            // Suppress paints between removing the old item and fitting the new one
-            // so we never present a native-scale (or empty) intermediate frame.
-            setUpdatesEnabled(false);
-            // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
-            clearLiveCanvas();
-            ImageItem *item = createItemFromImage(path, image);
-            if (!item) {
-                setUpdatesEnabled(true);
-                m_lastLoadError = path;
-                emit statusChanged();
-                return;
-            }
-            // Bind to the session cursor so Image-mode crop/flip targets the
-            // matching Workspace slot (not every canvas instance of this path).
-            if (m_currentSessionId != kInvalidSessionImageId) {
-                item->setSessionId(m_currentSessionId);
-            }
-            if (m_sessionIndex >= 0) {
-                item->setSessionIndex(m_sessionIndex);
-            }
-            // Filmstrip overrides are not driven by decode (selection/nav).
-            // Never inherit Gallery/Workspace placement or scale.
-            // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
-            // Arbitrary Workspace rotation stays on the free-form item only.
-            // Crop was applied in createItemFromImage from m_itemStates.
-            item->setInteractive(false);
-            item->setScaleHandlesEnabled(false);
-            item->setItemScale(1.0);
-            item->setPos(0, 0);
-            {
-                // Image mode: no Workspace placement rotation. Content 90°/flip
-                // are already in pixels (createItemFromImage applies content bakes).
-                item->setItemRotation(0.0);
-                const auto it = m_itemStates.constFind(path);
-                if (it != m_itemStates.cend()) {
-                    // Legacy unbaked flips only if content flags not used yet.
-                    if (!it->contentHFlip && !it->contentVFlip) {
-                        item->setItemHFlip(it->hFlip);
-                        item->setItemVFlip(it->vFlip);
-                    }
-                }
-            }
-            prepareImageModeCanvas();
-            // Slideshow framing: when dwell motion is on, the camera sets the
-            // transform (including handoff from a live transition). Applying
-            // zoom framing first would centre the image then jump to motion t0.
-            if (m_slideshowProgressActive
-                && m_slideshowMotion == SlideshowMotion::Off) {
-                applySlideshowZoomFraming(item);
-            } else if (!m_slideshowProgressActive) {
-                fitItem(item, currentFitAspectMode());
-            }
-            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-            // Apply camera while updates are still blocked and any live hold still
-            // covers the viewport — avoids a flash of identity / wrong pan pose.
-            maybeStartSlideshowMotion();
-            if (m_slideshowProgressActive && m_slideshowMotion != SlideshowMotion::Off
-                && !m_slideshowMotionActive) {
-                applySlideshowZoomFraming(item);
-            }
-            if (m_slideshowProgressActive) {
-                item->setVisible(false);
-                // Paused ←/→ loads the underlay while pure phase still paints
-                // the previous path — refresh dwell to this decode.
-                setSlideshowPhase(path, QString(), -1.0);
-            }
-            setUpdatesEnabled(true);
-            if (viewport()) {
-                viewport()->update();
-            }
-            emit statusChanged();
-            return;
-        }
-        // Workspace with empty canvas: seed with navigated image — only for
-        // genuine session navigation. Project load / membership adds schedule
-        // LoadAdd with pending binds; seeding first would leave an unbound tile
-        // (default placement, no flip/grade) and steal the first path's LoadAdd.
-        if (m_items.isEmpty()
-            && m_pendingSessionBinds.isEmpty()
-            && !m_pendingWorkspacePaths.contains(path)) {
-            ImageItem *item = createItemFromImage(path, image);
-            if (item) {
-                item->setSelected(true);
-                m_fitMode = true;
-                fitItem(item, currentFitAspectMode());
-                emit statusChanged();
-            }
-        }
-        return;
-    }
-
-    // Workspace add / restore
-    if (role == LoadRestore) {
-        completeLoadRestore(path, image);
-        return;
-    }
-
     // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
     // Duplicate paths are separate session images: fill every undecoded live
     // occurrence, then create until live count matches pathOrder occurrences.
@@ -1443,6 +1299,156 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     if (isGalleryMode()) {
         scheduleGalleryDecodeWindowRefresh(48);
     }
+}
+
+void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
+                              int role)
+{
+    // Host path→raster map: keep display-ladder samples (≤ kDisplayMaxEdge),
+    // not a hard 512 preview. Slideshow must reuse Image-mode sharpness.
+    if (!image.isNull() && !path.isEmpty()) {
+        ImageCache::put(path, image);
+    }
+    // Replace loads only care about the latest request
+    if (role == LoadReplace) {
+        if (generation != m_loadGeneration) {
+            return; // superseded by a newer navigation / open
+        }
+        // Stale navigation: only the current classic path may install.
+        // Empty multi-item canvas can still seed from classicPath.
+        if (path != classicPath()) {
+            return;
+        }
+        if (image.isNull()) {
+            if (ThumtooCache::isAvailable()
+                && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
+                // Soft miss: schedule ladder; status bar keeps loading until
+                // ladderReady / a later successful load.
+                ThumtooCache::scheduleProbe(path);
+                ThumtooCache::schedulePixels(
+                    path, qMax(ThumtooCache::kGalleryLadderEdge, 512));
+                m_lastLoadError.clear();
+            } else {
+                m_lastLoadError = path;
+            }
+            emit statusChanged();
+            return;
+        }
+        if (isImageMode()) {
+            m_lastLoadError.clear();
+            rememberSizeFromDecode(path, image);
+            // Same path already on canvas: install full pixels in place. Soft→full
+            // must not clearLiveCanvas + fitItem (that resets zoom).
+            if (ImageItem *cur = targetItem();
+                cur && cur->path() == path) {
+                installDisplayPreservingView(
+                    cur, image, SessionAppearance::PixelKind::FullSource,
+                    kInvalidSessionImageId);
+                if (viewport()) {
+                    viewport()->update();
+                }
+                emit statusChanged();
+                return;
+            }
+            // Suppress paints between removing the old item and fitting the new one
+            // so we never present a native-scale (or empty) intermediate frame.
+            setUpdatesEnabled(false);
+            // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
+            clearLiveCanvas();
+            ImageItem *item = createItemFromImage(path, image);
+            if (!item) {
+                setUpdatesEnabled(true);
+                m_lastLoadError = path;
+                emit statusChanged();
+                return;
+            }
+            // Bind to the session cursor so Image-mode crop/flip targets the
+            // matching Workspace slot (not every canvas instance of this path).
+            if (m_currentSessionId != kInvalidSessionImageId) {
+                item->setSessionId(m_currentSessionId);
+            }
+            if (m_sessionIndex >= 0) {
+                item->setSessionIndex(m_sessionIndex);
+            }
+            // Filmstrip overrides are not driven by decode (selection/nav).
+            // Never inherit Gallery/Workspace placement or scale.
+            // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
+            // Arbitrary Workspace rotation stays on the free-form item only.
+            // Crop was applied in createItemFromImage from m_itemStates.
+            item->setInteractive(false);
+            item->setScaleHandlesEnabled(false);
+            item->setItemScale(1.0);
+            item->setPos(0, 0);
+            {
+                // Image mode: no Workspace placement rotation. Content 90°/flip
+                // are already in pixels (createItemFromImage applies content bakes).
+                item->setItemRotation(0.0);
+                const auto it = m_itemStates.constFind(path);
+                if (it != m_itemStates.cend()) {
+                    // Legacy unbaked flips only if content flags not used yet.
+                    if (!it->contentHFlip && !it->contentVFlip) {
+                        item->setItemHFlip(it->hFlip);
+                        item->setItemVFlip(it->vFlip);
+                    }
+                }
+            }
+            prepareImageModeCanvas();
+            // Slideshow framing: when dwell motion is on, the camera sets the
+            // transform (including handoff from a live transition). Applying
+            // zoom framing first would centre the image then jump to motion t0.
+            if (m_slideshowProgressActive
+                && m_slideshowMotion == SlideshowMotion::Off) {
+                applySlideshowZoomFraming(item);
+            } else if (!m_slideshowProgressActive) {
+                fitItem(item, currentFitAspectMode());
+            }
+            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+            // Apply camera while updates are still blocked and any live hold still
+            // covers the viewport — avoids a flash of identity / wrong pan pose.
+            maybeStartSlideshowMotion();
+            if (m_slideshowProgressActive && m_slideshowMotion != SlideshowMotion::Off
+                && !m_slideshowMotionActive) {
+                applySlideshowZoomFraming(item);
+            }
+            if (m_slideshowProgressActive) {
+                item->setVisible(false);
+                // Paused ←/→ loads the underlay while pure phase still paints
+                // the previous path — refresh dwell to this decode.
+                setSlideshowPhase(path, QString(), -1.0);
+            }
+            setUpdatesEnabled(true);
+            if (viewport()) {
+                viewport()->update();
+            }
+            emit statusChanged();
+            return;
+        }
+        // Workspace with empty canvas: seed with navigated image — only for
+        // genuine session navigation. Project load / membership adds schedule
+        // LoadAdd with pending binds; seeding first would leave an unbound tile
+        // (default placement, no flip/grade) and steal the first path's LoadAdd.
+        if (m_items.isEmpty()
+            && m_pendingSessionBinds.isEmpty()
+            && !m_pendingWorkspacePaths.contains(path)) {
+            ImageItem *item = createItemFromImage(path, image);
+            if (item) {
+                item->setSelected(true);
+                m_fitMode = true;
+                fitItem(item, currentFitAspectMode());
+                emit statusChanged();
+            }
+        }
+        return;
+    }
+
+    // Workspace add / restore
+    if (role == LoadRestore) {
+        completeLoadRestore(path, image);
+        return;
+    }
+
+    // LoadAdd (Gallery / Workspace membership and virtual window).
+    completeLoadAdd(path, image, generation);
 }
 
 
