@@ -2,6 +2,22 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-578-imageitem-paint-unused-widget.** Silence -Wunused-parameter on paint.
+Prior: **577**.
+
+### Change
+- `ImageItem::paint`: `Q_UNUSED(widget)` for the required QGraphicsItem override
+
+### Done criteria
+- [x] No -Wunused-parameter on ImageItem::paint
+- [x] Bundle **578**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-577-slideshow-prefetch-hud.** Little top-left chip while prefetching.
 Prior: **576**.
 
