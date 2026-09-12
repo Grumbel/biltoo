@@ -255,7 +255,12 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
     if (turns != 0) {
         QTransform rot;
         rot.rotate(90.0 * turns);
-        out = out.transformed(rot, Qt::SmoothTransformation);
+        // Soft stand-ins must stay cheap on the GUI thread; Smooth on multi-MP
+        // FullSource is reserved for final installs.
+        const Qt::TransformationMode mode =
+            (kind == PixelKind::SoftPreview) ? Qt::FastTransformation
+                                             : Qt::SmoothTransformation;
+        out = out.transformed(rot, mode);
     }
 
     // 3) Crop in *post-orient* space (cropRect after mapCropThrough*).
@@ -278,7 +283,6 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
                 out = out.copy(srcRect);
             }
         }
-        Q_UNUSED(kind);
     }
 
     // 4) Colour grade baked into returned pixels for soft/blit paths.

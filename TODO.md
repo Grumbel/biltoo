@@ -2,6 +2,34 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-673-soft-first-no-wait.** Soft/LQIP paint before high-res; keep smaller host softs.
+Prior: **672**.
+
+### Root cause
+1. `ImageCache::get(path, softEdge)` required ≥ requested edge, so a 128/256
+   filmstrip soft was **discarded** while waiting for 512/full — blank until HQ.
+2. `loadSoftPreviewPixels` / display quality / slideshow sample did the same.
+3. Image pending tile and slideshow phase arm never used durable **LQIP**.
+4. SoftPreview orient used `SmoothTransformation` (unnecessary GUI cost).
+
+### Change
+- `loadSoftPreviewPixels` / `startDisplayQualityJob` / `loadSlideshowSample`:
+  keep any host soft; prefer sharper; LQIP last
+- `resolveImageModePendingPixels` + `slideshowSoftPlaceholder` /
+  `slideshowSampleUnoriented`: LQIP + schedule soft when cold
+- `scheduleImageLoad`: prime `schedulePixels` on cold host
+- SoftPreview quarter-turns use `FastTransformation`
+
+### Done criteria
+- [x] Smaller host soft/LQIP shows instead of waiting for high-res only
+- [x] Bundle **673**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-672-ss-to-atlas-members.** Declare missing to-phase atlas fields.
 Prior: **671**.
 

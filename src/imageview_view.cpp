@@ -51,24 +51,38 @@ QImage preferSharper(const QImage &a, const QImage &b)
 }
 
 /**
- * Worker-side sample for slideshow: host cache, then soft loadThumbnail, then
- * async PreferCache schedule. Never full native extract. Result clamped to
- * targetEdge.
+ * Worker-side sample for slideshow: any host soft, then loadThumbnail, then
+ * LQIP, then async PreferCache. Never full native extract. Never discard a
+ * smaller soft while waiting for targetEdge — that left crossfade blank.
+ * Result clamped to targetEdge.
  */
 QImage loadSlideshowSample(const QString &path, int targetEdge)
 {
     const int need = slideshowNeedEdge(targetEdge);
     QImage img = ImageCache::get(path, need);
+    if (img.isNull()) {
+        img = ImageCache::get(path);
+    }
 
     if (!ImageCache::adequate(img, need)) {
         const QImage soft = ImageLoader::loadThumbnail(path, targetEdge);
         img = preferSharper(img, soft);
     }
 
+    if (img.isNull()) {
+        img = ThumtooCache::cachedLqipImage(path);
+        if (!img.isNull()) {
+            ImageCache::put(path, img);
+        }
+    }
+
     if (!ImageCache::adequate(img, need) && ThumtooCache::isAvailable()) {
         // Async; ladderReady → onSlideshowRasterReady on the GUI thread.
         (void)ThumtooCache::scheduleDisplayPixels(path, targetEdge);
         img = preferSharper(img, ImageCache::get(path, need));
+        if (img.isNull()) {
+            img = preferSharper(img, ImageCache::get(path));
+        }
     }
 
     return ImageCache::clampToMaxEdge(img, targetEdge);
@@ -1387,10 +1401,20 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
     if (!have.isNull()) {
         return have;
     }
-    // Any host sample, clamped to target edge (never upscale).
+    // Any host sample (incl. filmstrip soft), then durable LQIP. GUI-safe —
+    // never loadThumbnail / native decode here. Schedule soft for the next tick.
     const int edge = slideshowTargetEdge();
     QImage soft = ImageCache::get(path);
     if (soft.isNull()) {
+        soft = ThumtooCache::cachedLqipImage(path);
+    }
+    if (soft.isNull()) {
+        if (ThumtooCache::isAvailable()) {
+            (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+            if (edge > ThumtooCache::kGalleryLadderEdge) {
+                (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+            }
+        }
         return {};
     }
     soft = ImageCache::clampToMaxEdge(soft, edge);
@@ -1429,12 +1453,15 @@ QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) c
 
 QImage ImageView::slideshowSampleUnoriented(const QString &path) const
 {
-    // Host sample clamped to target edge — no flip/rotate (GUI-safe).
+    // Host sample (any soft) + LQIP — no flip/rotate, no loadThumbnail (GUI-safe).
     const int edge = slideshowTargetEdge();
     QImage img = slideshowRaster(path);
     if (img.isNull()) {
-        // soft placeholder may write; use const path via cache only here
         img = ImageCache::get(path);
+    }
+    if (img.isNull()) {
+        img = ThumtooCache::cachedLqipImage(path);
+        // Const method: do not put into ImageCache here; soft placeholder may.
     }
     return ImageCache::clampToMaxEdge(img, edge);
 }

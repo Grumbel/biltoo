@@ -116,12 +116,31 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
     });
 }
 
-/** Host soft first, then loadThumbnail. Shared by classic and slideshow paths. */
+/**
+ * Host soft first (any size), then loadThumbnail, then LQIP.
+ * Never drop a smaller host soft when the requested edge is not ready yet —
+ * that left Image mode / slideshow blank until the high-res job finished.
+ */
 QImage loadSoftPreviewPixels(const QString &path, int softEdge)
 {
+    // Prefer an adequate host sample; otherwise keep any smaller host soft.
     QImage preview = ImageCache::get(path, softEdge);
-    if (!ImageCache::adequate(preview, softEdge)) {
-        preview = ImageLoader::loadThumbnail(path, softEdge);
+    if (preview.isNull()) {
+        preview = ImageCache::get(path);
+    }
+    if (ImageCache::adequate(preview, softEdge)) {
+        return preview;
+    }
+    const QImage loaded = ImageLoader::loadThumbnail(path, softEdge);
+    if (!loaded.isNull()
+        && ImageCache::longEdge(loaded) >= ImageCache::longEdge(preview)) {
+        preview = loaded;
+    }
+    if (preview.isNull()) {
+        preview = ThumtooCache::cachedLqipImage(path);
+        if (!preview.isNull()) {
+            ImageCache::put(path, preview);
+        }
     }
     return preview;
 }
@@ -174,19 +193,35 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
             if (!guard || !guard->matchesLoadGeneration(gen)) {
                 return;
             }
+            // Keep any host sample; do not require qualityEdge up front or a
+            // smaller soft is discarded and the UI waits on high-res only.
             QImage image = ImageCache::get(path, qualityEdge);
-            if (!ImageCache::adequate(image, qualityEdge)) {
-                image = ImageLoader::loadThumbnail(path, qualityEdge);
+            if (image.isNull()) {
+                image = ImageCache::get(path);
             }
-            if (!guard || image.isNull()) {
-                if (guard && ThumtooCache::isAvailable()) {
+            if (!ImageCache::adequate(image, qualityEdge)) {
+                const QImage loaded = ImageLoader::loadThumbnail(path, qualityEdge);
+                if (!loaded.isNull()
+                    && ImageCache::longEdge(loaded) >= ImageCache::longEdge(image)) {
+                    image = loaded;
+                }
+            }
+            if (!guard) {
+                return;
+            }
+            if (image.isNull()) {
+                if (ThumtooCache::isAvailable()) {
                     (void)ThumtooCache::scheduleDisplayPixels(path, qualityEdge);
                 }
                 return;
             }
+            // Soft stand-in still upgrades the view; keep climbing via schedule.
+            if (!ImageCache::adequate(image, qualityEdge) && ThumtooCache::isAvailable()) {
+                (void)ThumtooCache::scheduleDisplayPixels(path, qualityEdge);
+            }
             if (ImageCache::longEdge(image) > qualityEdge) {
                 image = image.scaled(qualityEdge, qualityEdge, Qt::KeepAspectRatio,
-                                     Qt::SmoothTransformation);
+                                     Qt::FastTransformation);
             }
             queueImageLoaded(guard, path, image, gen, roleInt);
         },
@@ -489,13 +524,20 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
                                                 const QImage &preview) const
 {
     // Prefer explicit preview, then unified ImageCache (and slideshow hot set
-    // via slideshowRaster). docs/PIXEL_HOST_CACHE.md
+    // via slideshowRaster), then durable LQIP. GUI-safe — no loadThumbnail.
+    // docs/PIXEL_HOST_CACHE.md
     if (!preview.isNull()) {
         return preview;
     }
     QImage pixels = slideshowRaster(path);
     if (pixels.isNull()) {
         pixels = ImageCache::get(path);
+    }
+    if (pixels.isNull()) {
+        pixels = ThumtooCache::cachedLqipImage(path);
+        if (!pixels.isNull()) {
+            ImageCache::put(path, pixels);
+        }
     }
     return pixels;
 }
@@ -570,9 +612,17 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         return;
     }
 
-    // Image mode: drop the previous frame immediately (cached preview when possible).
+    // Image mode: drop the previous frame immediately (cached preview / LQIP).
     if (role == LoadReplace && isImageMode()) {
         installImageModePendingTile(path);
+    }
+
+    // Cold host: kick soft ladder before pool jobs compete with native full.
+    // loadThumbnail also schedules on miss; this covers the pending-tile path
+    // when the soft job has not started yet.
+    if (role == LoadReplace && ThumtooCache::isAvailable()
+        && ImageCache::get(path).isNull()) {
+        (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
     }
 
     if (m_slideshowProgressActive) {
