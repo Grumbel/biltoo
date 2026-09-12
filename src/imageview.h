@@ -802,6 +802,11 @@ public:
     /** Ensure 16ms PreciseTimer connected to tickSlideshowMotion. */
     void ensureSlideshowMotionTimer();
     /** Arm from-slot on path change (promote B or start); @a pathMs for motion. */
+    bool shouldPromoteSlideshowToAsFrom(const QString &fromPath) const;
+    void promoteSlideshowFromToPhase(const QString &fromPath);
+    void startSlideshowFromPhase(const QString &fromPath);
+    void prepareSlideshowFromDwell(const QString &fromPath);
+    void armSlideshowMotionClock(int pathMs);
     void armSlideshowFromPhase(const QString &fromPath, int pathMs);
     /** Arm or clear to-slot on path change. */
     void armSlideshowToPhase(const QString &toPath);

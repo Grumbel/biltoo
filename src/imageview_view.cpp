@@ -1360,60 +1360,86 @@ void ImageView::ensureSlideshowMotionTimer()
     connect(m_motionTimer, &QTimer::timeout, this, &ImageView::tickSlideshowMotion);
 }
 
-void ImageView::armSlideshowFromPhase(const QString &fromPath, int pathMs)
+bool ImageView::shouldPromoteSlideshowToAsFrom(const QString &fromPath) const
 {
     // Spec: B moves through transition *and* its following interval.
     // When dwell becomes B after A+B fade, promote B's motion — do not restart at 0.
-    const bool promoteB = (!fromPath.isEmpty() && fromPath == m_ssToPath
-                           && m_ssToMotionClockRunning);
-    m_ssFromPath = fromPath;
-    if (promoteB) {
-        m_ssFromImage = !m_ssToImage.isNull() ? m_ssToImage
-                                             : slideshowPixelsForPath(fromPath);
-        m_motionBiasA = m_ssToBiasA;
-        m_motionBiasB = m_ssToBiasB;
-        m_motionBiasValid = true;
+    return !fromPath.isEmpty() && fromPath == m_ssToPath && m_ssToMotionClockRunning;
+}
+
+void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
+{
+    m_ssFromImage = !m_ssToImage.isNull() ? m_ssToImage
+                                         : slideshowPixelsForPath(fromPath);
+    m_motionBiasA = m_ssToBiasA;
+    m_motionBiasB = m_ssToBiasB;
+    m_motionBiasValid = true;
+    m_motionBiasPath = fromPath;
+    m_ssFromMotionClock = m_ssToMotionClock;
+    m_ssFromMotionBaseMs = m_ssToMotionBaseMs;
+    m_ssFromMotionClockRunning = true;
+    m_ssFromMotionT = m_ssToMotionT;
+    m_dwellMotionT = m_ssFromMotionT;
+}
+
+void ImageView::startSlideshowFromPhase(const QString &fromPath)
+{
+    m_ssFromImage = slideshowPixelsForPath(fromPath);
+    if (!fromPath.isEmpty()) {
+        (void)ensureSlideshowLogicalSize(fromPath);
+        m_motionBiasValid = false;
+        pickInterestingMotionBiases(qHash(fromPath), m_ssFromImage);
         m_motionBiasPath = fromPath;
-        m_ssFromMotionClock = m_ssToMotionClock;
-        m_ssFromMotionBaseMs = m_ssToMotionBaseMs;
-        m_ssFromMotionClockRunning = true;
-        m_ssFromMotionT = m_ssToMotionT;
-        m_dwellMotionT = m_ssFromMotionT;
-    } else {
-        m_ssFromImage = slideshowPixelsForPath(fromPath);
-        if (!fromPath.isEmpty()) {
-            (void)ensureSlideshowLogicalSize(fromPath);
-            m_motionBiasValid = false;
-            pickInterestingMotionBiases(qHash(fromPath), m_ssFromImage);
-            m_motionBiasPath = fromPath;
-        }
-        m_ssFromMotionClock.start();
-        m_ssFromMotionClockRunning = true;
-        m_ssFromMotionBaseMs = 0;
-        m_ssFromMotionT = 0.0;
-        m_dwellMotionT = 0.0;
     }
+    m_ssFromMotionClock.start();
+    m_ssFromMotionClockRunning = true;
+    m_ssFromMotionBaseMs = 0;
+    m_ssFromMotionT = 0.0;
+    m_dwellMotionT = 0.0;
+}
+
+void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
+{
     m_dwellSourceImage = m_ssFromImage;
-    if (!m_ssFromImage.isNull()) {
-        invalidateDwellAtlasRebuilds();
-        ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                          &m_dwellAtlasVw, &m_dwellAtlasVh);
-        schedulePhaseZoomBlur(fromPath, m_ssFromImage);
+    if (m_ssFromImage.isNull()) {
+        return;
     }
-    if (m_slideshowMotion != SlideshowMotion::Off && pathMs >= 250) {
-        ensureSlideshowMotionTimer();
-        m_slideshowMotionActive = true;
-        m_motionDurationMs = pathMs;
-        // While paused, arm motion state but do not run the timer.
-        if (!m_slideshowMotionPaused) {
-            m_motionTimer->start();
-        }
+    invalidateDwellAtlasRebuilds();
+    ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
+                      &m_dwellAtlasVw, &m_dwellAtlasVh);
+    schedulePhaseZoomBlur(fromPath, m_ssFromImage);
+}
+
+void ImageView::armSlideshowMotionClock(int pathMs)
+{
+    if (m_slideshowMotion == SlideshowMotion::Off || pathMs < 250) {
+        return;
     }
+    ensureSlideshowMotionTimer();
+    m_slideshowMotionActive = true;
+    m_motionDurationMs = pathMs;
+    // While paused, arm motion state but do not run the timer.
+    if (!m_slideshowMotionPaused) {
+        m_motionTimer->start();
+    }
+}
+
+void ImageView::armSlideshowFromPhase(const QString &fromPath, int pathMs)
+{
+    const bool promote = shouldPromoteSlideshowToAsFrom(fromPath);
+    m_ssFromPath = fromPath;
+    if (promote) {
+        promoteSlideshowFromToPhase(fromPath);
+    } else {
+        startSlideshowFromPhase(fromPath);
+    }
+    prepareSlideshowFromDwell(fromPath);
+    armSlideshowMotionClock(pathMs);
     qCDebug(lcSlideshow).nospace()
         << "[slideshow] phase-from "
         << QFileInfo(fromPath).fileName()
         << " " << m_ssFromImage.width() << "x" << m_ssFromImage.height()
-        << (promoteB ? " (continue)" : " (start)");
+        << (promote ? " (continue)" : " (start)");
 }
 
 void ImageView::armSlideshowToPhase(const QString &toPath)

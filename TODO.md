@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-663-arm-from-phase-helpers.** Split armSlideshowFromPhase.
+Prior: **662**.
+
+### Change
+- `shouldPromoteSlideshowToAsFrom` / `promoteSlideshowFromToPhase`
+- `startSlideshowFromPhase` / `prepareSlideshowFromDwell`
+- `armSlideshowMotionClock`
+- `armSlideshowFromPhase` is orchestration only
+
+### Done criteria
+- [x] Promote vs start vs dwell vs motion are separate steps
+- [x] Bundle **663**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-662-clear-zoomblur-slots.** One helper to drop slideshow ZoomBlur cache.
 Prior: **661**.
 
