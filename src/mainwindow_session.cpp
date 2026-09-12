@@ -1166,6 +1166,52 @@ void MainWindow::appendFiles(const QStringList &paths)
     applyExpandedAppend(images);
 }
 
+void MainWindow::finishExpandedAppendChrome(const QString &current,
+                                            const QStringList &workspacePaths)
+{
+    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+    ThumtooCache::preparePaths(m_session.paths());
+    ThumtooCache::warmUris(m_session.paths());
+    if (isWorkspaceMode()) {
+        m_thumbnailBar->setMultiSelectEnabled(true);
+        syncThumbnailWorkspaceSelection();
+        if (m_thumbnailBar->selectedIndices().isEmpty() && !workspacePaths.isEmpty()) {
+            QList<int> indices;
+            for (const QString &path : workspacePaths) {
+                const int idx = m_session.paths().indexOf(path);
+                if (idx >= 0) {
+                    indices.append(idx);
+                }
+            }
+            m_thumbnailBar->setSelectedIndices(indices);
+        }
+    }
+    applyThumbnailVisibility();
+    updateWorkspaceActionVisibility();
+    setExpandProgressBusy(false);
+
+    int newIndex = 0;
+    if (!current.isEmpty()) {
+        newIndex = m_session.paths().indexOf(current);
+        if (newIndex < 0) {
+            newIndex = 0;
+        }
+    }
+
+    if (isWorkspaceMode()) {
+        m_currentIndex = newIndex;
+        if (m_metadataPanel) {
+            m_metadataPath.clear();
+        }
+        updateStatus();
+        updateNavigationActions();
+    } else {
+        m_currentIndex = -1;
+        setCurrentIndex(newIndex);
+        updateNavigationActions();
+    }
+}
+
 void MainWindow::applyExpandedAppend(const QStringList &images)
 {
     const QString current = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
@@ -1190,47 +1236,7 @@ void MainWindow::applyExpandedAppend(const QStringList &images)
     const QStringList workspacePaths = isWorkspaceMode() ? m_imageView->itemPaths() : QStringList();
 
     auto finish = [this, current, workspacePaths]() {
-        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-        ThumtooCache::preparePaths(m_session.paths());
-        ThumtooCache::warmUris(m_session.paths());
-        if (isWorkspaceMode()) {
-            m_thumbnailBar->setMultiSelectEnabled(true);
-            syncThumbnailWorkspaceSelection();
-            if (m_thumbnailBar->selectedIndices().isEmpty() && !workspacePaths.isEmpty()) {
-                QList<int> indices;
-                for (const QString &path : workspacePaths) {
-                    const int idx = m_session.paths().indexOf(path);
-                    if (idx >= 0) {
-                        indices.append(idx);
-                    }
-                }
-                m_thumbnailBar->setSelectedIndices(indices);
-            }
-        }
-        applyThumbnailVisibility();
-        updateWorkspaceActionVisibility();
-        setExpandProgressBusy(false);
-
-        int newIndex = 0;
-        if (!current.isEmpty()) {
-            newIndex = m_session.paths().indexOf(current);
-            if (newIndex < 0) {
-                newIndex = 0;
-            }
-        }
-
-        if (isWorkspaceMode()) {
-            m_currentIndex = newIndex;
-            if (m_metadataPanel) {
-                m_metadataPath.clear();
-            }
-            updateStatus();
-            updateNavigationActions();
-        } else {
-            m_currentIndex = -1;
-            setCurrentIndex(newIndex);
-            updateNavigationActions();
-        }
+        finishExpandedAppendChrome(current, workspacePaths);
     };
 
     if (sortModeNeedsImageProbe()) {
@@ -1240,6 +1246,8 @@ void MainWindow::applyExpandedAppend(const QStringList &images)
         finish();
     }
 }
+
+
 
 
 SessionImageId MainWindow::allocSessionId()
@@ -3585,6 +3593,126 @@ void MainWindow::installProjectSession(
 
 
 
+QString MainWindow::promptLocateMissingAsset(const ProjectAsset &asset,
+                                             const ProjectImage &im,
+                                             const QString &projectPath,
+                                             bool *skipAllMissing)
+{
+    const QString hint = asset.path.isEmpty()
+        ? (asset.pathRelative.isEmpty()
+               ? im.assetSha256.left(16)
+               : asset.pathRelative)
+        : asset.path;
+    const QMessageBox::StandardButton choice = QMessageBox::question(
+        this,
+        tr("Locate missing image"),
+        tr("Could not find:\n%1\n\nSHA-256: %2\n\nLocate the file manually?")
+            .arg(hint, im.assetSha256),
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::NoToAll,
+        QMessageBox::Yes);
+    if (choice == QMessageBox::NoToAll) {
+        *skipAllMissing = true;
+        return {};
+    }
+    if (choice != QMessageBox::Yes) {
+        return {};
+    }
+    const QString picked = QFileDialog::getOpenFileName(
+        this,
+        tr("Locate image"),
+        QFileInfo(hint).absolutePath().isEmpty()
+            ? QFileInfo(projectPath).absolutePath()
+            : QFileInfo(hint).absolutePath(),
+        tr("Images (*.png *.jpg *.jpeg *.webp *.tif *.tiff *.bmp *.gif);;All Files (*)"));
+    if (picked.isEmpty()) {
+        return {};
+    }
+    if (!asset.sha256.isEmpty()) {
+        const QString got = ProjectFile::fileSha256(picked);
+        if (!got.isEmpty()
+            && got.compare(asset.sha256, Qt::CaseInsensitive) != 0) {
+            const auto useAnyway = QMessageBox::warning(
+                this,
+                tr("Hash mismatch"),
+                tr("The selected file does not match the stored SHA-256.\n"
+                   "Expected %1\nGot %2\n\nUse it anyway?")
+                    .arg(asset.sha256.left(16), got.left(16)),
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::No);
+            if (useAnyway != QMessageBox::Yes) {
+                return {};
+            }
+        }
+    }
+    return picked;
+}
+
+QString MainWindow::sessionPathFromResolvedAsset(const QString &resolved,
+                                                 const ProjectImage &im) const
+{
+    // Asset resolves to a filesystem file (image, archive, or PDF container).
+    QString sessionPath = resolved;
+    if (im.hasAppearance && PagePath::isPageRef(im.appearance.path)) {
+        const PagePath::Ref ref = PagePath::parse(im.appearance.path);
+        if (ref.valid) {
+            sessionPath = PagePath::makeRef(resolved, ref.page);
+        }
+    } else if (im.hasAppearance && ArchivePath::isArchiveRef(im.appearance.path)) {
+        const ArchivePath::Ref ref = ArchivePath::parse(im.appearance.path);
+        if (ref.valid) {
+            sessionPath = ArchivePath::makeRef(resolved, ref.memberPath);
+        }
+    }
+    return sessionPath;
+}
+
+bool MainWindow::resolveProjectSessionRows(
+    const ProjectDocument &doc,
+    const QString &projectPath,
+    QStringList *paths,
+    QVector<SessionImageId> *ids,
+    QVector<WorkspaceItemState> *appearanceByRow,
+    QVector<bool> *rowHasAppearance,
+    QVector<bool> *rowHasPose,
+    QStringList *missing)
+{
+    QHash<QString, ProjectAsset> assetsBySha;
+    for (const ProjectAsset &a : doc.assets) {
+        assetsBySha.insert(a.sha256.toLower(), a);
+    }
+
+    bool skipAllMissing = false;
+    for (const ProjectImage &im : doc.images) {
+        ProjectAsset asset = assetsBySha.value(im.assetSha256.toLower());
+        if (asset.sha256.isEmpty()) {
+            // Asset row missing — synthesize from image only (path unknown).
+            asset.sha256 = im.assetSha256;
+        }
+        QString resolveErr;
+        QString resolved = ProjectFile::resolveAssetPath(asset, projectPath, &resolveErr);
+        if (resolved.isEmpty() && !skipAllMissing) {
+            resolved = promptLocateMissingAsset(asset, im, projectPath, &skipAllMissing);
+        }
+        if (resolved.isEmpty()) {
+            missing->append(resolveErr.isEmpty() ? im.assetSha256.left(12) : resolveErr);
+            continue;
+        }
+        const QString sessionPath = sessionPathFromResolvedAsset(resolved, im);
+        paths->append(sessionPath);
+        const SessionImageId id =
+            im.id != kInvalidSessionImageId ? im.id : kInvalidSessionImageId;
+        ids->append(id);
+
+        WorkspaceItemState st = im.appearance;
+        st.path = sessionPath;
+        st.sessionId = id;
+        appearanceByRow->append(st);
+        rowHasAppearance->append(im.hasAppearance || im.hasWorkspacePose);
+        rowHasPose->append(im.hasWorkspacePose);
+    }
+    return !paths->isEmpty();
+}
+
 bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
 {
     ProjectDocument doc;
@@ -3598,105 +3726,15 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
         return false;
     }
 
-    QHash<QString, ProjectAsset> assetsBySha;
-    for (const ProjectAsset &a : doc.assets) {
-        assetsBySha.insert(a.sha256.toLower(), a);
-    }
-
     QStringList paths;
     QVector<SessionImageId> ids;
-    // Parallel to paths/ids: appearance and pose payloads before id finalization.
     QVector<WorkspaceItemState> appearanceByRow;
     QVector<bool> rowHasAppearance;
     QVector<bool> rowHasPose;
     QStringList missing;
-    bool skipAllMissing = false;
 
-    for (const ProjectImage &im : doc.images) {
-        ProjectAsset asset = assetsBySha.value(im.assetSha256.toLower());
-        if (asset.sha256.isEmpty()) {
-            // Asset row missing — synthesize from image only (path unknown).
-            asset.sha256 = im.assetSha256;
-        }
-        QString resolveErr;
-        QString resolved = ProjectFile::resolveAssetPath(asset, projectPath, &resolveErr);
-        if (resolved.isEmpty() && !skipAllMissing) {
-            const QString hint = asset.path.isEmpty()
-                ? (asset.pathRelative.isEmpty()
-                       ? im.assetSha256.left(16)
-                       : asset.pathRelative)
-                : asset.path;
-            const QMessageBox::StandardButton choice = QMessageBox::question(
-                this,
-                tr("Locate missing image"),
-                tr("Could not find:\n%1\n\nSHA-256: %2\n\nLocate the file manually?")
-                    .arg(hint, im.assetSha256),
-                QMessageBox::Yes | QMessageBox::No | QMessageBox::NoToAll,
-                QMessageBox::Yes);
-            if (choice == QMessageBox::NoToAll) {
-                skipAllMissing = true;
-            } else if (choice == QMessageBox::Yes) {
-                const QString picked = QFileDialog::getOpenFileName(
-                    this,
-                    tr("Locate image"),
-                    QFileInfo(hint).absolutePath().isEmpty()
-                        ? QFileInfo(projectPath).absolutePath()
-                        : QFileInfo(hint).absolutePath(),
-                    tr("Images (*.png *.jpg *.jpeg *.webp *.tif *.tiff *.bmp *.gif);;All Files (*)"));
-                if (!picked.isEmpty()) {
-                    bool acceptPicked = true;
-                    if (!asset.sha256.isEmpty()) {
-                        const QString got = ProjectFile::fileSha256(picked);
-                        if (!got.isEmpty()
-                            && got.compare(asset.sha256, Qt::CaseInsensitive) != 0) {
-                            const auto useAnyway = QMessageBox::warning(
-                                this,
-                                tr("Hash mismatch"),
-                                tr("The selected file does not match the stored SHA-256.\n"
-                                   "Expected %1\nGot %2\n\nUse it anyway?")
-                                    .arg(asset.sha256.left(16), got.left(16)),
-                                QMessageBox::Yes | QMessageBox::No,
-                                QMessageBox::No);
-                            acceptPicked = (useAnyway == QMessageBox::Yes);
-                        }
-                    }
-                    if (acceptPicked) {
-                        resolved = picked;
-                    }
-                }
-            }
-        }
-        if (resolved.isEmpty()) {
-            missing.append(resolveErr.isEmpty() ? im.assetSha256.left(12) : resolveErr);
-            continue;
-        }
-        // Asset resolves to a filesystem file (image, archive, or PDF container).
-        QString sessionPath = resolved;
-        if (im.hasAppearance && PagePath::isPageRef(im.appearance.path)) {
-            const PagePath::Ref ref = PagePath::parse(im.appearance.path);
-            if (ref.valid) {
-                sessionPath = PagePath::makeRef(resolved, ref.page);
-            }
-        } else if (im.hasAppearance && ArchivePath::isArchiveRef(im.appearance.path)) {
-            const ArchivePath::Ref ref = ArchivePath::parse(im.appearance.path);
-            if (ref.valid) {
-                sessionPath = ArchivePath::makeRef(resolved, ref.memberPath);
-            }
-        }
-        paths.append(sessionPath);
-        const SessionImageId id =
-            im.id != kInvalidSessionImageId ? im.id : kInvalidSessionImageId;
-        ids.append(id);
-
-        WorkspaceItemState st = im.appearance;
-        st.path = sessionPath;
-        st.sessionId = id;
-        appearanceByRow.append(st);
-        rowHasAppearance.append(im.hasAppearance || im.hasWorkspacePose);
-        rowHasPose.append(im.hasWorkspacePose);
-    }
-
-    if (paths.isEmpty()) {
+    if (!resolveProjectSessionRows(doc, projectPath, &paths, &ids, &appearanceByRow,
+                                   &rowHasAppearance, &rowHasPose, &missing)) {
         if (error) {
             *error = tr("No images could be resolved from the project.");
         }
@@ -3708,6 +3746,8 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
                           doc, projectPath, missing);
     return true;
 }
+
+
 
 void MainWindow::rememberRecentProject(const QString &path)
 {

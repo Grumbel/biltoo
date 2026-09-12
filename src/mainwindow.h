@@ -96,6 +96,20 @@ public:
     bool clipboardHasWorkspaceItems() const;
     int sessionIndexOfId(SessionImageId id) const;
     bool writeProjectToPath(const QString &projectPath, QString *error = nullptr);
+    QString promptLocateMissingAsset(const ProjectAsset &asset,
+                                     const ProjectImage &im,
+                                     const QString &projectPath,
+                                     bool *skipAllMissing);
+    QString sessionPathFromResolvedAsset(const QString &resolved,
+                                         const ProjectImage &im) const;
+    bool resolveProjectSessionRows(const ProjectDocument &doc,
+                                   const QString &projectPath,
+                                   QStringList *paths,
+                                   QVector<SessionImageId> *ids,
+                                   QVector<WorkspaceItemState> *appearanceByRow,
+                                   QVector<bool> *rowHasAppearance,
+                                   QVector<bool> *rowHasPose,
+                                   QStringList *missing);
     bool loadProjectFromPath(const QString &projectPath, QString *error = nullptr);
     /**
      * Load a .biltoo project from @a path, set the current project path,
@@ -426,6 +440,8 @@ private:
     void setExpandProgressBusy(bool busy);
     void applyExpandedLoad(const QStringList &images, int startAt);
     void applyExpandedAppend(const QStringList &images);
+    void finishExpandedAppendChrome(const QString &current,
+                                    const QStringList &workspacePaths);
     void finishApplyExpandedLoad(int startAt);
     void finishApplyExpandedAppend();
     void setExpandProgress(int current, int total, const QString &message);

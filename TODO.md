@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-631-load-project-append.** Split loadProjectFromPath resolve path and expanded append chrome.
+Prior: **630**.
+
+### Change
+- `promptLocateMissingAsset`, `sessionPathFromResolvedAsset`, `resolveProjectSessionRows`
+- `finishExpandedAppendChrome` from `applyExpandedAppend`
+
+### Done criteria
+- [x] Project load resolve + append chrome named
+- [x] Bundle **631**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-630-project-install-sort.** Phase installProjectSession; extract sort apply helper.
 Prior: **629**.
 
