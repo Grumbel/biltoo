@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-515-decode-window-not-signal.** Fix accidental signals: placement.
+Prior: **514**.
+
+### Fix
+`updateGalleryDecodeWindow()` was under `signals:` (moc stub + cpp body →
+multiple definition). Moved to public methods before `signals:`.
+
+### Done criteria
+- [x] Link succeeds
+- [x] Bundle **515**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-514-updateGalleryDecodeWindow-public.** Expose decode window for MainWindow.
 Prior: **513**.
 

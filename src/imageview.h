@@ -854,6 +854,8 @@ public:
     void clearCanvasSelection();
     /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */
     int pendingDecodeCount() const;
+    /** Install host soft / schedule SoftOnly for the visible Gallery window. */
+    void updateGalleryDecodeWindow();
 
 signals:
     void statusChanged();
@@ -914,9 +916,6 @@ signals:
                       const QPointF &scenePos, bool hasScenePos,
                       const QList<qint64> &sessionIds = {},
                       const QStringList &internalPaths = {});
-
-    /** Install host soft / schedule SoftOnly for the visible Gallery window. */
-    void updateGalleryDecodeWindow();
 
 public slots:
     /** Deliver a finished background decode (generation must still match). */
