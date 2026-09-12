@@ -449,7 +449,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
             }
             QImage preview = ImageCache::get(path, softEdge);
             if (preview.isNull()
-                || qMax(preview.width(), preview.height()) < softEdge * 7 / 10) {
+                || ImageCache::longEdge(preview) < softEdge * 7 / 10) {
                 preview = ImageLoader::loadThumbnail(path, softEdge);
             }
             if (!guard || preview.isNull()) {
@@ -470,7 +470,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                     }
                     QImage image = ImageCache::get(path, qualityEdge);
                     if (image.isNull()
-                        || qMax(image.width(), image.height())
+                        || ImageCache::longEdge(image)
                                < qualityEdge * 7 / 10) {
                         image = ImageLoader::loadThumbnail(path, qualityEdge);
                     }
@@ -481,7 +481,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                         }
                         return;
                     }
-                    if (qMax(image.width(), image.height()) > qualityEdge) {
+                    if (ImageCache::longEdge(image) > qualityEdge) {
                         image = image.scaled(
                             qualityEdge, qualityEdge, Qt::KeepAspectRatio,
                             Qt::SmoothTransformation);
@@ -792,7 +792,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 if (soft.inflight != requestEdge) {
                     host->takePendingWorkspacePath(path);
                     if (!preview.isNull()) {
-                        const int got = qMax(preview.width(), preview.height());
+                        const int got = ImageCache::longEdge(preview);
                         host->onImagePreviewLoaded(
                             path, preview, gen,
                             static_cast<int>(LoadAdd));
@@ -820,7 +820,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 // though PreferCache already had filmstrip soft in the DB.
                 int got = preview.isNull()
                               ? 0
-                              : qMax(preview.width(), preview.height());
+                              : ImageCache::longEdge(preview);
                 if (!preview.isNull()) {
                     host->onImagePreviewLoaded(path, preview, gen,
                                                static_cast<int>(LoadAdd));
@@ -868,7 +868,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                                 again.isNull() ? ImageCache::get(path) : again;
                             const int againGot = hostSoft.isNull()
                                 ? 0
-                                : qMax(hostSoft.width(), hostSoft.height());
+                                : ImageCache::longEdge(hostSoft);
                             if (!hostSoft.isNull() && againGot > soft.have) {
                                 host->onImagePreviewLoaded(
                                     path, hostSoft, gen,
@@ -914,7 +914,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                                     path, hit, gen, static_cast<int>(LoadAdd));
                                 soft.have = qMax(
                                     soft.have,
-                                    qMax(hit.width(), hit.height()));
+                                    ImageCache::longEdge(hit));
                             }
                             clearInflight();
                             if (soft.have < ov * 9 / 10) {
@@ -1016,13 +1016,10 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         if (generation != m_loadGeneration) {
             return; // superseded by a newer navigation / open
         }
-        if (path != classicPath() || isMultiItemMode()) {
-            // Stale image-mode navigation or switched to workspace
-            if (!(isMultiItemMode() && m_items.isEmpty() && path == classicPath())) {
-                if (path != classicPath()) {
-                    return;
-                }
-            }
+        // Stale navigation: only the current classic path may install.
+        // Empty multi-item canvas can still seed from classicPath.
+        if (path != classicPath()) {
+            return;
         }
         if (image.isNull()) {
             if (ThumtooCache::isAvailable()

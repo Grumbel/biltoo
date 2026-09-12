@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-595-load-replace-longedge.** Clearer LoadReplace gate; longEdge.
+Prior: **594**.
+
+### Change
+- `onImageLoaded` LoadReplace: `path != classicPath()` early-out (equivalent to
+  the nested multi-item empty-seed check)
+- Prefer `ImageCache::longEdge` over `qMax(w,h)` in load.cpp
+
+### Done criteria
+- [x] LoadReplace path filter is one condition
+- [x] Bundle **595**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-594-fix-displayimage-overload.** One displayImage() const-ref API.
 Prior: **593**.
 
