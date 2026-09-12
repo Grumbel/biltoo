@@ -1491,272 +1491,273 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     QGraphicsView::mouseMoveEvent(event);
 }
 
-void ImageView::mouseReleaseEvent(QMouseEvent *event)
+void ImageView::restoreToolCursor()
 {
-    if (m_slideshowSeekDragging && event->button() == Qt::LeftButton) {
-        m_slideshowSeekDragging = false;
-        event->accept();
-        if (viewport()) {
-            viewport()->update();
+    if (m_tool == Tool::Pan) {
+        setCursor(Qt::OpenHandCursor);
+    } else if (m_tool == Tool::Zoom) {
+        setCursor(Qt::CrossCursor);
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
+}
+
+void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState &before,
+                                      const WorkspaceItemState &after, const QString &text)
+{
+    if (!item || !m_undoStack) {
+        return;
+    }
+    if (after.pos == before.pos
+        && qFuzzyCompare(after.scale, before.scale)
+        && qFuzzyCompare(after.scaleY > 0 ? after.scaleY : 1.0,
+                         before.scaleY > 0 ? before.scaleY : 1.0)
+        && qFuzzyCompare(after.shear + 1.0, before.shear + 1.0)
+        && qFuzzyCompare(after.rotation, before.rotation)
+        && after.opacity == before.opacity) {
+        return;
+    }
+    class TransformCommand : public QUndoCommand {
+    public:
+        TransformCommand(ImageView *view, ImageItem *item,
+                         const WorkspaceItemState &before,
+                         const WorkspaceItemState &after,
+                         const QString &text)
+            : m_view(view), m_item(item), m_before(before), m_after(after)
+        {
+            setText(text);
         }
-        return;
-    }
+        void undo() override { if (m_item) m_view->applyState(m_item, m_before); }
+        void redo() override { if (m_item) m_view->applyState(m_item, m_after); }
+    private:
+        ImageView *m_view;
+        ImageItem *m_item;
+        WorkspaceItemState m_before, m_after;
+    };
+    m_undoStack->push(new TransformCommand(this, item, before, after, text));
+    emit statusChanged();
+}
 
-    if (m_textRubberbanding && event->button() == Qt::LeftButton) {
-        m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
-        finishTextRubberBand();
-        unsetCursor();
-        event->accept();
-        return;
+bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
+{
+    if (!m_slideshowSeekDragging || event->button() != Qt::LeftButton) {
+        return false;
     }
+    m_slideshowSeekDragging = false;
+    event->accept();
+    if (viewport()) {
+        viewport()->update();
+    }
+    return true;
+}
 
-    if (m_attentionMode && event->button() == Qt::LeftButton) {
-        if (m_attentionRubberbanding) {
-            m_attentionRubberbanding = false;
-            ImageItem *item = targetItem();
-            if (item && !item->contentRect().isEmpty()) {
-                const QRect band = m_attentionRubberRect.normalized();
-                const QVector<QPointF> pts = attentionPointsForTarget();
-                const bool shift = event->modifiers() & Qt::ShiftModifier;
-                QVector<int> hit;
-                for (int i = 0; i < pts.size(); ++i) {
-                    const QPointF v = attentionViewPos(item, pts.at(i));
-                    if (band.contains(v.toPoint())) {
-                        hit.append(i);
-                    }
-                }
-                if (shift) {
-                    for (int i : hit) {
-                        if (!m_attentionSelected.contains(i)) {
-                            m_attentionSelected.append(i);
-                        }
-                    }
-                } else {
-                    m_attentionSelected = hit;
+bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
+{
+    if (!m_textRubberbanding || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
+    finishTextRubberBand();
+    unsetCursor();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
+{
+    if (!m_attentionMode || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (m_attentionRubberbanding) {
+        m_attentionRubberbanding = false;
+        ImageItem *item = targetItem();
+        if (item && !item->contentRect().isEmpty()) {
+            const QRect band = m_attentionRubberRect.normalized();
+            const QVector<QPointF> pts = attentionPointsForTarget();
+            const bool shift = event->modifiers() & Qt::ShiftModifier;
+            QVector<int> hit;
+            for (int i = 0; i < pts.size(); ++i) {
+                const QPointF v = attentionViewPos(item, pts.at(i));
+                if (band.contains(v.toPoint())) {
+                    hit.append(i);
                 }
             }
-            m_attentionRubberRect = QRect();
-            viewport()->update();
-            event->accept();
-            return;
+            if (shift) {
+                for (int i : hit) {
+                    if (!m_attentionSelected.contains(i)) {
+                        m_attentionSelected.append(i);
+                    }
+                }
+            } else {
+                m_attentionSelected = hit;
+            }
         }
-        if (m_attentionDragging) {
-            m_attentionDragging = false;
-            attentionCommitSelectionMove();
-            event->accept();
-            return;
-        }
+        m_attentionRubberRect = QRect();
+        viewport()->update();
+        event->accept();
+        return true;
     }
-    if (m_cropMode && m_cropActiveHandle != CropHandle::None
-        && event->button() == Qt::LeftButton) {
+    if (m_attentionDragging) {
+        m_attentionDragging = false;
+        attentionCommitSelectionMove();
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::tryMouseReleaseCrop(QMouseEvent *event)
+{
+    if (!m_cropMode || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (m_cropActiveHandle != CropHandle::None) {
         endCropHandleDrag();
         event->accept();
-        return;
+        return true;
     }
-    if (m_cropMode && m_cropRubberBanding && event->button() == Qt::LeftButton) {
+    if (m_cropRubberBanding) {
         endCropRubberBand();
         event->accept();
-        return;
+        return true;
     }
+    return false;
+}
 
-    if (m_zoomRegionDragging) {
-        const QRect viewRect = QRect(m_zoomRegionOrigin, event->pos()).normalized();
-        m_zoomRegionDragging = false;
-        if (m_zoomRubberBand) {
-            m_zoomRubberBand->hide();
-        }
-        // Ignore tiny clicks — treat as cancel rather than extreme zoom.
-        if (viewRect.width() >= 8 && viewRect.height() >= 8) {
-            const QRectF sceneRect = mapToScene(viewRect).boundingRect();
-            if (sceneRect.isValid() && !sceneRect.isEmpty()) {
-                m_fitMode = false;
-                m_fillMode = false;
-                fitInView(sceneRect, Qt::KeepAspectRatio);
-                emit statusChanged();
-            }
-        }
-        cancelZoomRegion();
-        event->accept();
-        return;
+bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
+{
+    if (!m_zoomRegionDragging) {
+        return false;
     }
-    if (m_pageGuideDragHandle >= 0 && event->button() == Qt::LeftButton) {
-        endPageGuideResize();
-        event->accept();
-        return;
+    const QRect viewRect = QRect(m_zoomRegionOrigin, event->pos()).normalized();
+    m_zoomRegionDragging = false;
+    if (m_zoomRubberBand) {
+        m_zoomRubberBand->hide();
     }
-    if ((m_groupScaleDrag || m_groupRotateDrag) && event->button() == Qt::LeftButton) {
-        if (m_undoStack && !m_groupDragItems.isEmpty()) {
-            m_undoStack->beginMacro(m_groupRotateDrag ? tr("Rotate selection")
-                                                      : tr("Scale selection"));
-            for (int i = 0; i < m_groupDragItems.size(); ++i) {
-                ImageItem *item = m_groupDragItems.at(i);
-                if (!item || i >= m_groupDragStartStates.size()) {
-                    continue;
-                }
-                const WorkspaceItemState after = captureState(item);
-                const WorkspaceItemState &before = m_groupDragStartStates.at(i);
-                if (after.pos == before.pos
-                    && qFuzzyCompare(after.scale, before.scale)
-                    && qFuzzyCompare(after.scaleY > 0 ? after.scaleY : 1.0,
-                                     before.scaleY > 0 ? before.scaleY : 1.0)
-                    && qFuzzyCompare(after.shear + 1.0, before.shear + 1.0)
-                    && qFuzzyCompare(after.rotation, before.rotation)) {
-                    continue;
-                }
-                // Inline undo entry matching other transform paths.
-                class TransformCommand : public QUndoCommand {
-                public:
-                    TransformCommand(ImageView *view, ImageItem *item,
-                                     const WorkspaceItemState &before,
-                                     const WorkspaceItemState &after)
-                        : m_view(view), m_item(item), m_before(before), m_after(after)
-                    {
-                        setText(QObject::tr("Transform"));
-                    }
-                    void undo() override { if (m_view && m_item) m_view->applyState(m_item, m_before); }
-                    void redo() override { if (m_view && m_item) m_view->applyState(m_item, m_after); }
-                private:
-                    ImageView *m_view;
-                    ImageItem *m_item;
-                    WorkspaceItemState m_before, m_after;
-                };
-                m_undoStack->push(new TransformCommand(this, item, before, after));
-            }
-            m_undoStack->endMacro();
-        }
-        endGroupScale();
-        if (isWorkspaceMode()) {
-            updateWorkspaceSceneRect();
-        }
-        event->accept();
-        return;
-    }
-
-    if (m_handleDragItem && event->button() == Qt::LeftButton) {
-        m_handleDragItem->endHandleInteraction();
-        const WorkspaceItemState after = captureState(m_handleDragItem);
-        if (after.pos != m_dragStartState.pos
-            || after.scale != m_dragStartState.scale
-            || after.scaleY != m_dragStartState.scaleY
-            || after.shear != m_dragStartState.shear
-            || after.rotation != m_dragStartState.rotation
-            || after.opacity != m_dragStartState.opacity) {
-            class TransformCommand : public QUndoCommand {
-            public:
-                TransformCommand(ImageView *view, ImageItem *item,
-                                 const WorkspaceItemState &before,
-                                 const WorkspaceItemState &after)
-                    : m_view(view), m_item(item), m_before(before), m_after(after)
-                {
-                    setText(QObject::tr("Transform"));
-                }
-                void undo() override { if (m_item) m_view->applyState(m_item, m_before); }
-                void redo() override { if (m_item) m_view->applyState(m_item, m_after); }
-            private:
-                ImageView *m_view;
-                ImageItem *m_item;
-                WorkspaceItemState m_before, m_after;
-            };
-            if (m_undoStack) {
-                m_undoStack->push(new TransformCommand(this, m_handleDragItem,
-                                                       m_dragStartState, after));
-            }
+    // Ignore tiny clicks — treat as cancel rather than extreme zoom.
+    if (viewRect.width() >= 8 && viewRect.height() >= 8) {
+        const QRectF sceneRect = mapToScene(viewRect).boundingRect();
+        if (sceneRect.isValid() && !sceneRect.isEmpty()) {
+            m_fitMode = false;
+            m_fillMode = false;
+            fitInView(sceneRect, Qt::KeepAspectRatio);
             emit statusChanged();
         }
-        m_handleDragItem = nullptr;
-        m_dragItem = nullptr;
-        if (isWorkspaceMode()) {
-            updateWorkspaceSceneRect();
-        }
-        event->accept();
-        return;
     }
+    cancelZoomRegion();
+    event->accept();
+    return true;
+}
 
-    if (m_rotating && event->button() == Qt::LeftButton) {
-        if (m_rotateItem) {
-            const WorkspaceItemState after = captureState(m_rotateItem);
-            if (after.rotation != m_dragStartState.rotation
-                || after.pos != m_dragStartState.pos) {
-                // Lightweight: clear is avoided; push a simple undo via reset path
-                // Store as single-step by re-applying start on undo through stack of states
-                class TransformCommand : public QUndoCommand {
-                public:
-                    TransformCommand(ImageView *view, ImageItem *item,
-                                     const WorkspaceItemState &before,
-                                     const WorkspaceItemState &after)
-                        : m_view(view), m_item(item), m_before(before), m_after(after)
-                    {
-                        setText(QObject::tr("Transform"));
-                    }
-                    void undo() override { if (m_item) m_view->applyState(m_item, m_before); }
-                    void redo() override { if (m_item) m_view->applyState(m_item, m_after); }
-                private:
-                    ImageView *m_view;
-                    ImageItem *m_item;
-                    WorkspaceItemState m_before, m_after;
-                };
-                m_undoStack->push(new TransformCommand(this, m_rotateItem,
-                                                       m_dragStartState, after));
+bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
+{
+    if (m_pageGuideDragHandle < 0 || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    endPageGuideResize();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
+{
+    if (!(m_groupScaleDrag || m_groupRotateDrag) || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (m_undoStack && !m_groupDragItems.isEmpty()) {
+        m_undoStack->beginMacro(m_groupRotateDrag ? tr("Rotate selection")
+                                                  : tr("Scale selection"));
+        for (int i = 0; i < m_groupDragItems.size(); ++i) {
+            ImageItem *item = m_groupDragItems.at(i);
+            if (!item || i >= m_groupDragStartStates.size()) {
+                continue;
             }
+            pushItemTransformUndo(item, m_groupDragStartStates.at(i), captureState(item),
+                                  tr("Transform"));
         }
-        m_rotating = false;
-        m_rotateItem = nullptr;
-        if (m_tool == Tool::Pan) {
-            setCursor(Qt::OpenHandCursor);
-        } else if (m_tool == Tool::Zoom) {
-            setCursor(Qt::CrossCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
-        event->accept();
-        return;
+        m_undoStack->endMacro();
     }
-    if (m_panning
-        && (event->button() == Qt::MiddleButton || event->button() == Qt::LeftButton)) {
-        m_panning = false;
-        if (m_tool == Tool::Pan) {
-            setCursor(Qt::OpenHandCursor);
-        } else if (m_tool == Tool::Zoom) {
-            setCursor(Qt::CrossCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
-        event->accept();
-        return;
+    endGroupScale();
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
     }
-    if (m_dragItem && event->button() == Qt::LeftButton) {
-        const WorkspaceItemState after = captureState(m_dragItem);
-        if (after.pos != m_dragStartState.pos
-            || after.scale != m_dragStartState.scale
-            || after.scaleY != m_dragStartState.scaleY
-            || after.shear != m_dragStartState.shear
-            || after.rotation != m_dragStartState.rotation) {
-            class TransformCommand : public QUndoCommand {
-            public:
-                TransformCommand(ImageView *view, ImageItem *item,
-                                 const WorkspaceItemState &before,
-                                 const WorkspaceItemState &after)
-                    : m_view(view), m_item(item), m_before(before), m_after(after)
-                {
-                    setText(QObject::tr("Move"));
-                }
-                void undo() override { if (m_item) m_view->applyState(m_item, m_before); }
-                void redo() override { if (m_item) m_view->applyState(m_item, m_after); }
-            private:
-                ImageView *m_view;
-                ImageItem *m_item;
-                WorkspaceItemState m_before, m_after;
-            };
-            m_undoStack->push(new TransformCommand(this, m_dragItem,
-                                                   m_dragStartState, after));
-            emit statusChanged();
-        }
-        m_dragItem = nullptr;
-        if (isWorkspaceMode()) {
-            updateWorkspaceSceneRect();
-        }
-    }
+    event->accept();
+    return true;
+}
 
+bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
+{
+    if (!m_handleDragItem || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    m_handleDragItem->endHandleInteraction();
+    pushItemTransformUndo(m_handleDragItem, m_dragStartState,
+                          captureState(m_handleDragItem), tr("Transform"));
+    m_handleDragItem = nullptr;
+    m_dragItem = nullptr;
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
+{
+    if (!m_rotating || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (m_rotateItem) {
+        pushItemTransformUndo(m_rotateItem, m_dragStartState, captureState(m_rotateItem),
+                              tr("Rotate"));
+    }
+    m_rotating = false;
+    m_rotateItem = nullptr;
+    restoreToolCursor();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseReleasePan(QMouseEvent *event)
+{
+    if (!m_panning
+        || (event->button() != Qt::MiddleButton && event->button() != Qt::LeftButton)) {
+        return false;
+    }
+    m_panning = false;
+    restoreToolCursor();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
+{
+    if (!m_dragItem || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    pushItemTransformUndo(m_dragItem, m_dragStartState, captureState(m_dragItem), tr("Move"));
+    m_dragItem = nullptr;
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    return false; // fall through to base class
+}
+
+void ImageView::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (tryMouseReleaseSlideshowSeek(event)
+        || tryMouseReleaseTextRubber(event)
+        || tryMouseReleaseAttention(event)
+        || tryMouseReleaseCrop(event)
+        || tryMouseReleaseZoomRegion(event)
+        || tryMouseReleasePageGuide(event)
+        || tryMouseReleaseGroupDrag(event)
+        || tryMouseReleaseHandleDrag(event)
+        || tryMouseReleaseWorkspaceRotate(event)
+        || tryMouseReleasePan(event)) {
+        return;
+    }
+    tryMouseReleaseItemDrag(event);
     QGraphicsView::mouseReleaseEvent(event);
 }
 

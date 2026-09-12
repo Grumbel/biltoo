@@ -1090,6 +1090,22 @@ protected:
     bool tryMouseMoveWorkspaceRotate(QMouseEvent *event);
     void updateMouseMoveSlideshowSeek(QMouseEvent *event);
     void updateMouseMoveWorkspaceChromeHover(QMouseEvent *event);
+
+    // mouseReleaseEvent phases
+    void restoreToolCursor();
+    void pushItemTransformUndo(ImageItem *item, const WorkspaceItemState &before,
+                               const WorkspaceItemState &after, const QString &text);
+    bool tryMouseReleaseSlideshowSeek(QMouseEvent *event);
+    bool tryMouseReleaseTextRubber(QMouseEvent *event);
+    bool tryMouseReleaseAttention(QMouseEvent *event);
+    bool tryMouseReleaseCrop(QMouseEvent *event);
+    bool tryMouseReleaseZoomRegion(QMouseEvent *event);
+    bool tryMouseReleasePageGuide(QMouseEvent *event);
+    bool tryMouseReleaseGroupDrag(QMouseEvent *event);
+    bool tryMouseReleaseHandleDrag(QMouseEvent *event);
+    bool tryMouseReleaseWorkspaceRotate(QMouseEvent *event);
+    bool tryMouseReleasePan(QMouseEvent *event);
+    bool tryMouseReleaseItemDrag(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;

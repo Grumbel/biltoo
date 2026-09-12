@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-616-mouse-release-phases.** Split mouseReleaseEvent + shared transform undo.
+Prior: **615**.
+
+### Change
+- `restoreToolCursor`, `pushItemTransformUndo` (one TransformCommand implementation)
+- `tryMouseRelease*` for seek, text, attention, crop, zoom, page guide, group,
+  handle, rotate, pan, item drag
+- `mouseReleaseEvent` is pure dispatch + base fallback
+- Group release still calls `endGroupScale`
+
+### Done criteria
+- [x] Release paths named; undo/transform behaviour preserved
+- [x] Bundle **616**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-615-mouse-move-phases.** Split mouseMoveEvent into try*/update* helpers.
 Prior: **614**.
 
