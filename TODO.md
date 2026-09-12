@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-672-ss-to-atlas-members.** Declare missing to-phase atlas fields.
+Prior: **671**.
+
+### Root cause
+`biltoo-671` generalized the dwell atlas into `requestSlideshowAtlas(From|To)`
+and used `m_ssToAtlas*` in `imageview_view.cpp`, but the member declarations
+were never added to `ImageView` in `imageview.h`. Compile failed on
+`finishSlideshowAtlas` / `requestSlideshowAtlas` / `armSlideshowToPhase` /
+`paintMotionCover`.
+
+### Change
+- Declare `m_ssToAtlas`, `m_ssToAtlasRebuildGeneration`, `m_ssToAtlasScale`,
+  `m_ssToAtlasVw`, `m_ssToAtlasVh` next to the dwell atlas members
+
+### Done criteria
+- [x] `imageview_view.cpp` compiles (to-atlas symbols in scope)
+- [x] Bundle **672**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-671-to-phase-atlas.** Crossfade to-slide uses a pre-scaled atlas.
 Prior: **670**.
 

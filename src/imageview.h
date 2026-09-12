@@ -1704,6 +1704,12 @@ private:
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;
     int m_dwellAtlasVh = 0;
+    /** Pre-scaled atlas for slideshow to-phase / crossfade incoming slide. */
+    QPixmap m_ssToAtlas;
+    quint64 m_ssToAtlasRebuildGeneration = 0;
+    qreal m_ssToAtlasScale = 0.0;
+    int m_ssToAtlasVw = 0;
+    int m_ssToAtlasVh = 0;
     qreal m_dwellMotionT = 0.0; /**< Latest dwell progress [0,1] */
     SlideshowMotion m_slideshowMotion = SlideshowMotion::Off;
     qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
