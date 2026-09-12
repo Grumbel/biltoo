@@ -1369,16 +1369,26 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
 void MainWindow::finishCurrentIndexChromeUpdate()
 {
     m_thumbnailBar->setCurrentIndex(m_currentIndex);
-    // Metadata refresh is gated on dock visibility inside updateMetadataPanel
-    // (called from updateStatus). Force a path invalidation so a later dock
-    // open still reloads for this selection.
     if (m_metadataPanel) {
         m_metadataPath.clear();
     }
     updateWindowTitle();
     syncLocationBarText();
-    // Gallery: skip heavy status/adjustments path on every click — selection
-    // chrome is already on the tile; filmstrip row is updated above.
+    // Image mode ←/→: do NOT call full updateStatus (metadata/adjustments/
+    // pending-count/statusText rebuild). That was re-entered via statusChanged
+    // and dominated the GUI on every key. Light path only.
+    if (isImageMode()) {
+        updateNavigationActions();
+        if (m_imageView && m_statusLabel) {
+            m_statusLabel->setText(m_imageView->statusText());
+        }
+        if (m_imageView) {
+            m_imageView->setSessionPosition(m_currentIndex, m_session.paths().size(),
+                                            !m_slideshowAdvancing);
+            m_imageView->setCurrentSessionId(currentSessionId());
+        }
+        return;
+    }
     if (isGalleryMode()) {
         updateNavigationActions();
         m_statusLabel->setText(m_imageView ? m_imageView->statusText() : QString());
@@ -1386,8 +1396,6 @@ void MainWindow::finishCurrentIndexChromeUpdate()
         updateStatus();
         updateNavigationActions();
     }
-    // Clock resync on user navigation is owned by onSlideshowUserNavigated
-    // (goNext/goPrevious/filmstrip). Arming here double-fired every ←/→.
 }
 
 void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)

@@ -619,13 +619,16 @@ void ImageView::resetImageModeItemPlacement(ImageItem *item)
 QImage ImageView::resolveImageModePendingPixels(const QString &path,
                                                 const QImage &preview) const
 {
-    // Prefer explicit preview, then unified ImageCache (and slideshow hot set
-    // via slideshowRaster), then durable LQIP. GUI-safe — no loadThumbnail.
-    // docs/PIXEL_HOST_CACHE.md
+    // Prefer explicit preview, then best ImageCache sample (not filmstrip-only
+    // 256 when 512+ is already cached), then LQIP. GUI-safe — no loadThumbnail.
     if (!preview.isNull()) {
         return preview;
     }
     QImage pixels = slideshowRaster(path);
+    if (pixels.isNull()) {
+        // Prefer soft ladder (≥512) when present; fall back to any cache hit.
+        pixels = ImageCache::get(path, ThumtooCache::kGalleryLadderEdge);
+    }
     if (pixels.isNull()) {
         pixels = ImageCache::get(path);
     }
@@ -772,24 +775,39 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         m_imageModeClimb.clear();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
-        // Tile pyramid is requested only from zoom climb when on-screen need
-        // exceeds overview (maybeClimbImageModePixelsForView).
     }
-    emit statusChanged(); // pending count for status bar
+    // LoadReplace: do NOT emit statusChanged — MainWindow finishCurrentIndexChromeUpdate
+    // already updateStatus(); a second statusChanged re-entered updateStatus and
+    // rebuilt chrome on every ←/→ (statusText, metadata, adjustments, filmstrip pending).
 
     // Slideshow dual-blit already decoded this path — reuse under the hold.
     if (role == LoadReplace && tryDeliverReplaceFromSlideshowRaster(path, gen)) {
         return;
     }
 
-    // Image mode: drop the previous frame immediately (cached preview / LQIP).
+    // Image mode: paint soft/LQIP from cache immediately (pixel swap only).
     if (role == LoadReplace && isImageMode()) {
         installImageModePendingTile(path);
+        // Soft already on the item: only climb PreferCache; skip soft pool job.
+        if (ImageItem *it = imageModeItemForPath(path)) {
+            if (it->displayPixelLongEdge() > 0) {
+                const QImage soft = it->displayImage();
+                const QString pathCopy = path;
+                QTimer::singleShot(0, this, [this, pathCopy, soft]() {
+                    if (!isImageMode() || classicPath() != pathCopy) {
+                        return;
+                    }
+                    ensureImageModeQualityClimb(pathCopy, soft);
+                });
+                biltooLoadDbg("scheduleImageLoad soft-present skip softJob path=%s edge=%d",
+                              qPrintable(QFileInfo(path).fileName()),
+                              it->displayPixelLongEdge());
+                return;
+            }
+        }
     }
 
     // Cold host: kick soft ladder before pool jobs compete with native full.
-    // loadThumbnail also schedules on miss; this covers the pending-tile path
-    // when the soft job has not started yet.
     if (role == LoadReplace && ThumtooCache::isAvailable()
         && ImageCache::get(path).isNull()) {
         (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
@@ -2234,9 +2252,8 @@ bool ImageView::loadImage(const QString &path)
         return true;
     }
 
-    // Classic mode: decode off the GUI thread. scheduleImageLoad installs a
-    // loading tile immediately, then upgrades to thumbnail and full decode.
+    // Classic mode: soft from cache immediately; PreferCache climbs in background.
+    // Do not emit statusChanged — setCurrentIndex chrome already updateStatus.
     scheduleImageLoad(path, LoadReplace);
-    emit statusChanged();
     return true;
 }

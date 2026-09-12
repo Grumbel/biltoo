@@ -2,6 +2,36 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-690-no-status-storm-skip-softjob.** Kill statusChanged/updateStatus storms on ←/→.
+Prior: **689**.
+
+### Root cause (wrong corner was installDisplayPixels)
+Every Image-mode nav did:
+1. `loadImage` → `emit statusChanged` → `MainWindow::updateStatus`
+2. `scheduleImageLoad` → `emit statusChanged` → `updateStatus` again
+3. `finishCurrentIndexChromeUpdate` → `updateStatus` a third time
+
+`updateStatus` rebuilds statusText, navigation actions, metadata (if dock open),
+adjustments preview, session position — pure GUI, every key.
+
+Also always started `startSoftPreviewJob` even when soft was already painted
+from cache, and soft was often filmstrip 256 (`get(path)` not `get(path, 512)`).
+
+### Change
+- No `statusChanged` from `loadImage` / `scheduleImageLoad` LoadReplace
+- Image-mode chrome: light status only (no full `updateStatus`)
+- Soft already on item: skip soft pool job; PreferCache climb deferred `QTimer(0)`
+- `resolveImageModePendingPixels`: prefer cache ≥512 before any-size
+
+### Done criteria
+- [x] Bundle **690**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-689-never-fit-on-soft-nav.** No fitInView on soft pending; filmstrip scroll only if offscreen.
 Prior: **688**.
 
