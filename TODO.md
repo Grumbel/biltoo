@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-611-install-project-session.** Extract project install from load path.
+Prior: **610**.
+
+### Change
+- `installProjectSession` — session replace, appearance, mode, Workspace poses
+- `loadProjectFromPath` keeps resolve/locate-missing loop only
+
+### Done criteria
+- [x] Load path readable; install behaviour unchanged
+- [x] Bundle **611**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-610-unified-path-expand.** Shared expand core for sync and background.
 Prior: **609**.
 

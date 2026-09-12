@@ -49,6 +49,8 @@ struct SessionEntrySnapshot {
     bool hasAppearance = false;
 };
 
+struct ProjectDocument;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -372,6 +374,18 @@ private:
      * @p append false → replace session (loadFiles); true → appendFiles.
      */
     void expandPathsInBackground(const QStringList &paths, bool append, int startAt = 0);
+    /**
+     * After paths/ids/appearance rows are resolved from a .biltoo document,
+     * install session, mode, Workspace poses, and background.
+     */
+    void installProjectSession(const QStringList &paths,
+                               QVector<SessionImageId> ids,
+                               QVector<WorkspaceItemState> appearanceByRow,
+                               const QVector<bool> &rowHasAppearance,
+                               const QVector<bool> &rowHasPose,
+                               const ProjectDocument &doc,
+                               const QString &projectPath,
+                               const QStringList &missing);
     void setExpandProgressMessage(const QString &message);
     void setExpandProgressBusy(bool busy);
     void applyExpandedLoad(const QStringList &images, int startAt);

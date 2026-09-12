@@ -3327,6 +3327,135 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
     return ProjectFile::save(projectPath, doc, error);
 }
 
+void MainWindow::installProjectSession(
+    const QStringList &paths,
+    QVector<SessionImageId> ids,
+    QVector<WorkspaceItemState> appearanceByRow,
+    const QVector<bool> &rowHasAppearance,
+    const QVector<bool> &rowHasPose,
+    const ProjectDocument &doc,
+    const QString &projectPath,
+    const QStringList &missing)
+{
+    // Replace session with preserved ids where possible.
+    for (int i = 0; i < ids.size(); ++i) {
+        if (ids.at(i) == kInvalidSessionImageId) {
+            ids[i] = m_session.allocId();
+        }
+        // Keep appearance rows keyed to the final session id.
+        appearanceByRow[i].sessionId = ids.at(i);
+    }
+    m_session.clear();
+    m_session.replaceAll(paths, ids);
+    m_currentIndex = 0;
+
+    int poseCount = 0;
+    for (bool p : rowHasPose) {
+        if (p) {
+            ++poseCount;
+        }
+    }
+
+    if (m_imageView) {
+        // Drop prior session tiles, stashes, and durable Workspace snapshot so
+        // enterWorkspaceMode does not restore the previous arrangement.
+        m_imageView->clearWorkspace();
+        m_imageView->appearance().clear();
+        for (int i = 0; i < appearanceByRow.size(); ++i) {
+            if (!rowHasAppearance.at(i)) {
+                continue;
+            }
+            const SessionImageId sid = ids.at(i);
+            if (sid == kInvalidSessionImageId) {
+                continue;
+            }
+            m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
+        }
+        if (doc.hasWorkspaceBackground) {
+            WorkspaceBackground wb = doc.workspaceBackground;
+            if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
+                const QString resolved = ProjectFile::resolveWorkspaceBackgroundImage(
+                    wb, projectPath);
+                if (!resolved.isEmpty()) {
+                    wb.imagePath = resolved;
+                }
+            }
+            m_imageView->setWorkspaceBackground(wb);
+        } else {
+            m_imageView->clearWorkspaceBackground();
+        }
+    }
+
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+    }
+    applyThumbnailVisibility();
+
+    // Workspace canvas is a subset of the session: only images with a saved
+    // pose (hasWorkspacePose) belong on the canvas. Gallery still shows all.
+    const bool wantWorkspace =
+        (doc.mode == QLatin1String("workspace")) || poseCount > 0;
+    if (wantWorkspace) {
+        if (!isWorkspaceMode()) {
+            enterWorkspaceMode();
+        }
+        if (m_imageView) {
+            // Pose (pos/scale/shear/rotation/opacity/z) is already in m_appearance.
+            // addImageForSession schedules LoadAdd; on decode, LoadAdd applies
+            // placement via applyState from the store.
+            //
+            // Do not call loadImage/LoadReplace here: empty-workspace LoadReplace
+            // would seed the classic/first path as an unbound tile (leftover path
+            // meant for session navigation in an empty Workspace).
+            for (int i = 0; i < rowHasPose.size(); ++i) {
+                if (!rowHasPose.at(i)) {
+                    continue;
+                }
+                const SessionImageId sid = ids.at(i);
+                if (sid == kInvalidSessionImageId) {
+                    continue;
+                }
+                m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
+                m_imageView->addImageForSession(paths.at(i), sid, i);
+            }
+            m_imageView->updateWorkspaceSceneRect();
+            syncThumbnailCanvasMembership();
+        }
+    } else if (doc.mode == QLatin1String("gallery") || isGalleryMode()) {
+        if (!isGalleryMode()) {
+            enterGalleryMode(ImageView::LayoutMode::Masonry);
+        }
+        if (m_imageView) {
+            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+        }
+    } else if (m_imageView && !m_session.paths().isEmpty()) {
+        // Image-mode project: must be in Image mode before loadImage.
+        // Calling loadImage while still in Workspace/Gallery with an empty canvas
+        // seeds the first path via LoadReplace (unbound tile) — intermittent when
+        // Preferences "Start in workspace mode" is on.
+        if (!isImageMode()) {
+            if (m_workspaceModeAct) {
+                m_workspaceModeAct->setChecked(false);
+            }
+            if (m_thumbnailBar) {
+                m_thumbnailBar->setMultiSelectEnabled(false);
+            }
+            m_imageView->setViewMode(ImageView::ViewMode::Image);
+        }
+        // setCurrentIndex loads the classic canvas and binds session cursor.
+        m_currentIndex = -1;
+        setCurrentIndex(0);
+    }
+
+    updateWindowTitle();
+    updateWorkspaceActionVisibility();
+    if (!missing.isEmpty() && statusBar()) {
+        statusBar()->showMessage(
+            tr("Project loaded with %n missing image(s).", "", missing.size()), 8000);
+    }
+    m_workspaceDirty = false;
+}
+
 bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
 {
     ProjectDocument doc;
@@ -3446,128 +3575,10 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     }
 
     stopSlideshow();
-    // Replace session with preserved ids where possible.
-    QVector<SessionImageId> finalIds = ids;
-    for (int i = 0; i < finalIds.size(); ++i) {
-        if (finalIds.at(i) == kInvalidSessionImageId) {
-            finalIds[i] = m_session.allocId();
-        }
-        // Keep appearance rows keyed to the final session id.
-        appearanceByRow[i].sessionId = finalIds.at(i);
-    }
-    m_session.clear();
-    m_session.replaceAll(paths, finalIds);
-    m_currentIndex = 0;
-
-    int poseCount = 0;
-    for (bool p : rowHasPose) {
-        if (p) {
-            ++poseCount;
-        }
-    }
-
-    if (m_imageView) {
-        // Drop prior session tiles, stashes, and durable Workspace snapshot so
-        // enterWorkspaceMode does not restore the previous arrangement.
-        m_imageView->clearWorkspace();
-        m_imageView->appearance().clear();
-        for (int i = 0; i < appearanceByRow.size(); ++i) {
-            if (!rowHasAppearance.at(i)) {
-                continue;
-            }
-            const SessionImageId sid = finalIds.at(i);
-            if (sid == kInvalidSessionImageId) {
-                continue;
-            }
-            m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
-        }
-        if (doc.hasWorkspaceBackground) {
-            WorkspaceBackground wb = doc.workspaceBackground;
-            if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
-                const QString resolved = ProjectFile::resolveWorkspaceBackgroundImage(
-                    wb, projectPath);
-                if (!resolved.isEmpty()) {
-                    wb.imagePath = resolved;
-                }
-            }
-            m_imageView->setWorkspaceBackground(wb);
-        } else {
-            m_imageView->clearWorkspaceBackground();
-        }
-    }
-
-    if (m_thumbnailBar) {
-        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-    }
-    applyThumbnailVisibility();
-
-    // Workspace canvas is a subset of the session: only images with a saved
-    // pose (hasWorkspacePose) belong on the canvas. Gallery still shows all.
-    const bool wantWorkspace =
-        (doc.mode == QLatin1String("workspace")) || poseCount > 0;
-    if (wantWorkspace) {
-        if (!isWorkspaceMode()) {
-            enterWorkspaceMode();
-        }
-        if (m_imageView) {
-            // Pose (pos/scale/shear/rotation/opacity/z) is already in m_appearance.
-            // addImageForSession schedules LoadAdd; on decode, LoadAdd applies
-            // placement via applyState from the store.
-            //
-            // Do not call loadImage/LoadReplace here: empty-workspace LoadReplace
-            // would seed the classic/first path as an unbound tile (leftover path
-            // meant for session navigation in an empty Workspace).
-            for (int i = 0; i < rowHasPose.size(); ++i) {
-                if (!rowHasPose.at(i)) {
-                    continue;
-                }
-                const SessionImageId sid = finalIds.at(i);
-                if (sid == kInvalidSessionImageId) {
-                    continue;
-                }
-                m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
-                m_imageView->addImageForSession(paths.at(i), sid, i);
-            }
-            m_imageView->updateWorkspaceSceneRect();
-            syncThumbnailCanvasMembership();
-        }
-    } else if (doc.mode == QLatin1String("gallery") || isGalleryMode()) {
-        if (!isGalleryMode()) {
-            enterGalleryMode(ImageView::LayoutMode::Masonry);
-        }
-        if (m_imageView) {
-            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
-        }
-    } else if (m_imageView && !m_session.paths().isEmpty()) {
-        // Image-mode project: must be in Image mode before loadImage.
-        // Calling loadImage while still in Workspace/Gallery with an empty canvas
-        // seeds the first path via LoadReplace (unbound tile) — intermittent when
-        // Preferences "Start in workspace mode" is on.
-        if (!isImageMode()) {
-            if (m_workspaceModeAct) {
-                m_workspaceModeAct->setChecked(false);
-            }
-            if (m_thumbnailBar) {
-                m_thumbnailBar->setMultiSelectEnabled(false);
-            }
-            m_imageView->setViewMode(ImageView::ViewMode::Image);
-        }
-        // setCurrentIndex loads the classic canvas and binds session cursor.
-        m_currentIndex = -1;
-        setCurrentIndex(0);
-    }
-
-    updateWindowTitle();
-    updateWorkspaceActionVisibility();
-    if (!missing.isEmpty() && statusBar()) {
-        statusBar()->showMessage(
-            tr("Project loaded with %n missing image(s).", "", missing.size()), 8000);
-    }
-    m_workspaceDirty = false;
+    installProjectSession(paths, ids, appearanceByRow, rowHasAppearance, rowHasPose,
+                          doc, projectPath, missing);
     return true;
 }
-
-
 
 void MainWindow::rememberRecentProject(const QString &path)
 {
