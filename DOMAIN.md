@@ -314,6 +314,7 @@ must not leave another mode’s work on the canvas.
 | Incremental Gallery pack | `ContentChange` / `SessionMutate` / `Reload` preserve the scene point under the viewport centre. Enter / explicit layout switch may start at the origin. |
 | Provisional layout size | Unknown native size must not use a permanent 1000×1000 **aspect** for fit/pack. Prefer cached native size; else preview aspect until probe/full decode (`layoutSizeForPath`, provisional path set). |
 | **Logical size owns geometry** | `logicalSizeForPath` / `ensureLogicalSizeForPath`. Soft and ladder rasters are sampling only. `rememberImageSize` never shrinks a known size with a smaller sample. Fit, slideshow Ken Burns, and framing share this model. |
+| Item intrinsic | `setSourceImage` / soft install never shrink intrinsic. `syncItemLayoutToContentOrientation` may transpose soft aspect but not adopt soft magnitude; full may grow. Probe applies even when samples are present. |
 
 Async load completions always check **mode** and **load generation** before creating tiles.
 

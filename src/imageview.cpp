@@ -601,9 +601,8 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         if (!item || item->path() != path) {
             continue;
         }
-        if (item->hasDecodedPixels()) {
-            continue;
-        }
+        // Probe is authoritative logical size. Apply even when soft/full sample
+        // is present — samples must not block the true size.
         // Probe reports on-disk orientation. Content quarter-turns may swap
         // layout aspect — do not clobber an oriented cell with the raw size.
         QSize layoutSize = size;

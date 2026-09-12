@@ -327,11 +327,10 @@ void syncItemLayoutToContentOrientation(ImageItem *item,
     if (!item) {
         return;
     }
+    // Logical size owns geometry. Soft samples may inform *aspect* only.
     // Oriented display pixels (full source or soft preview). setPreviewImage
     // clears the QPixmap — never use pixmap() here or soft path falls through
     // to a blind transpose that toggles aspect on every reinstall (focus/click).
-    // `state` is kept in the signature for call-site symmetry with apply paths;
-    // layout follows installed pixels, not a second decode of appearance flags.
     QSize display = item->sourceImage().size();
     if (display.width() < 1 || display.height() < 1) {
         display = item->previewImage().size();
@@ -344,28 +343,37 @@ void syncItemLayoutToContentOrientation(ImageItem *item,
         return;
     }
 
+    const bool haveFull = item->hasDecodedPixels();
+
     if (layout.width() < 1 || layout.height() < 1) {
-        // Layout still unknown: seed aspect/magnitude from whatever pixels we
-        // have (full source or soft preview).
-        item->setIntrinsicSize(display);
+        // Layout still unknown: only full (non-preview) pixels may seed
+        // magnitude. Soft must not define geometry.
+        if (haveFull) {
+            item->setIntrinsicSize(display);
+        }
         return;
     }
 
     const bool displayLandscape = display.width() >= display.height();
     const bool layoutLandscape = layout.width() >= layout.height();
     if (displayLandscape == layoutLandscape) {
-        // Already matching. Full decode may still promote magnitude.
-        if (!item->sourceImage().isNull()
-            && display.width() * display.height()
-                >= layout.width() * layout.height()) {
-            item->setIntrinsicSize(display);
+        // Matching aspect. Grow magnitude only from true full pixels that are
+        // larger than the current logical size (never soft / smaller ladder).
+        if (haveFull) {
+            const qint64 have =
+                qint64(layout.width()) * qint64(layout.height());
+            const qint64 incoming =
+                qint64(display.width()) * qint64(display.height());
+            if (incoming > have) {
+                item->setIntrinsicSize(display);
+            }
         }
         return;
     }
 
-    // Aspect mismatch: align layout to oriented display without adopting soft
-    // ladder magnitude (keeps probe/native scale used at pack time).
-    if (!item->sourceImage().isNull()) {
+    // Aspect mismatch (content orientation): transpose layout magnitude for
+    // soft; adopt oriented full pixels only when they are full decode.
+    if (haveFull) {
         item->setIntrinsicSize(display);
     } else {
         item->setIntrinsicSize(QSize(layout.height(), layout.width()));

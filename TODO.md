@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-566-orientation-sync-logical.** Orientation sync and probe respect logical size.
+Prior: **565**.
+
+### Changes
+- `syncItemLayoutToContentOrientation`: soft never seeds/grows magnitude; only
+  full may grow; aspect mismatch on soft → transpose layout only
+- `applyProbedImageSize`: no longer skips items with decoded pixels — probe
+  is authoritative logical size
+
+### Done criteria
+- [x] Soft cannot redefine intrinsic via orientation sync
+- [x] Bundle **566**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-565-item-logical-intrinsic.** ImageItem intrinsic never shrinks from sample pixels.
 Prior: **564**.
 
