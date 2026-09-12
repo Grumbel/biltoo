@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-586-install-display-pixels-clarify.** installDisplayPixels + soft clamp helper.
+Prior: **585**.
+
+### Change
+- `clampSoftForGalleryCell` pure helper for gallery soft paint budget
+- `installDisplayPixels` flattened: cache → resolve sid → appearance → clamp →
+  materialize → attach intrinsic/cache mode
+- `ImageItem::setPreviewImage`: drop dead neutral-size computation (intrinsic
+  still never adopts soft magnitude)
+
+### Done criteria
+- [x] Single soft-budget rule; install path readable top-to-bottom
+- [x] Bundle **586**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-585-logical-size-pure-helpers.** Size identity helpers in types header.
 Prior: **584**.
 

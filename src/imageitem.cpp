@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+
 #include "coloradjust.h"
 #include "placementlinear.h"
 
@@ -130,19 +131,8 @@ void ImageItem::setPreviewImage(const QImage &preview)
     // snapshot is discarded (otherwise OpenGL can keep showing the old soft).
     setCacheMode(QGraphicsItem::DeviceCoordinateCache);
     setCacheMode(QGraphicsItem::NoCache);
-    // Intrinsic size is layout geometry (probe / full native size). Never adopt
-    // soft-preview pixel dimensions — that shrinks Gallery cells to 512 and
-    // makes zoom/pack jump when a full decode later restores native size.
-    // Only seed the neutral 1000² / 1024² stand-in when size is still unknown.
-    const bool neutral =
-        !m_intrinsicSize.isValid()
-        || m_intrinsicSize.width() <= 1 || m_intrinsicSize.height() <= 1
-        || m_intrinsicSize == QSize(1000, 1000)
-        || m_intrinsicSize == QSize(1024, 1024);
-    // Prefer keeping neutral stand-in until size probe / full decode; do not
-    // promote soft thumbs into layout geometry.
-    Q_UNUSED(neutral);
-    Q_UNUSED(preview);
+    // Intrinsic is layout geometry (probe / full native). Never adopt soft
+    // sample dimensions — that shrinks Gallery cells and jumps on upgrade.
     const QSize s = imageSize();
     setOffset(-s.width() / 2.0, -s.height() / 2.0);
     applyLocalTransform();

@@ -69,6 +69,23 @@ SoftClimbPlan planSoftClimb(int have, int want, int softCap, int ovCap)
     return {};
 }
 
+/**
+ * Gallery soft paint budget: shrink attached soft when the cell needs far less
+ * than the sample. Full sample remains in ImageCache for zoom-in.
+ */
+QImage clampSoftForGalleryCell(const QImage &pixels, int needEdge, int minEdge)
+{
+    const int have = ImageCache::longEdge(pixels);
+    if (needEdge <= 0 || have <= needEdge * 2) {
+        return pixels;
+    }
+    const int target = qMax(needEdge, minEdge);
+    if (have <= target) {
+        return pixels;
+    }
+    return ImageCache::clampToMaxEdge(pixels, target);
+}
+
 } // namespace
 
 ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image,
@@ -180,15 +197,14 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         return;
     }
     const QSize layoutBefore = item->imageSize();
+    const QString path = item->path();
 
-    // Raw samples (pre-appearance) feed the unified host cache so slideshow /
-    // gallery can reuse them. ImageCache clamps to kDisplayMaxEdge and keeps
-    // the sharper long edge only.
-    if (!item->path().isEmpty()) {
-        ImageCache::put(item->path(), pixels);
+    // Raw samples → unified host cache (slideshow/gallery reuse).
+    if (!path.isEmpty()) {
+        ImageCache::put(path, pixels);
     }
 
-    // Resolve session id before seed (Image-mode soft path often passes invalid sid).
+    // Resolve session id (Image-mode soft path often passes invalid sid).
     if (sid == kInvalidSessionImageId) {
         if (item->sessionId() != kInvalidSessionImageId) {
             sid = item->sessionId();
@@ -196,63 +212,43 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             sid = m_currentSessionId;
         }
     }
-    seedSessionAppearanceFromState(sid, item->path());
+    seedSessionAppearanceFromState(sid, path);
 
-    const WorkspaceItemState *app = nullptr;
-    WorkspaceItemState pathFallback;
+    WorkspaceItemState appearance;
     if (sid != kInvalidSessionImageId) {
-        app = m_appearance.get(sid);
-    } else if (sid == kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
+        if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+            appearance = *app;
+        }
+    } else if (item->sessionId() == kInvalidSessionImageId) {
         // Unbound tile only: path map is legacy fallback (IDENTITY.md).
-        const auto it = m_itemStates.constFind(item->path());
+        const auto it = m_itemStates.constFind(path);
         if (it != m_itemStates.cend()) {
-            pathFallback = *it;
-            app = &pathFallback;
+            appearance = *it;
         }
     }
 
-    // Single pipeline: raw pixels → materializeDisplay → attach. Never bake
-    // twice. Gallery soft and Image full use the same function + session state.
-    WorkspaceItemState appearance;
-    if (app) {
-        appearance = *app;
-    }
-    // Gallery soft paint budget: do not attach multi-megapixel soft when the
-    // on-screen cell only needs ~256–512. Full soft stays in ImageCache for
-    // zoom-in; soft.have is tracked separately so we do not re-climb.
+    // raw → optional gallery soft clamp → materializeDisplay → attach.
     QImage pixelsForDisplay = pixels;
     if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
-        const int have = qMax(pixels.width(), pixels.height());
-        const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        if (need > 0 && have > need * 2) {
-            const int target =
-                qMax(need, ThumtooCache::kFilmstripLadderEdge);
-            if (have > target) {
-                pixelsForDisplay = pixels.scaled(
-                    target, target, Qt::KeepAspectRatio,
-                    Qt::FastTransformation);
-            }
-        }
+        pixelsForDisplay = clampSoftForGalleryCell(
+            pixels,
+            galleryDisplayEdgeForItem(item, /*allowHighRes=*/true),
+            ThumtooCache::kFilmstripLadderEdge);
     }
     const QImage display =
         SessionAppearance::materializeDisplay(pixelsForDisplay, appearance, kind);
 
     if (kind == SessionAppearance::PixelKind::FullSource) {
         item->setSourceImage(display);
-        // Logical size from path (or provisional layout) — FullSource may be a
-        // ladder step and must not define geometry.
-        {
-            const QString path = item->path();
-            QSize logical = logicalSizeForPath(path);
-            if (!logical.isValid() || logical.width() <= 1 || logical.height() <= 1
-                || isProvisionalImageSize(path)) {
-                logical = layoutSizeForPath(path, display);
-            }
-            if (logical.isValid() && logical.width() > 1 && logical.height() > 1) {
-                item->setIntrinsicSize(logical);
-            }
+        // Logical size from path — FullSource may be a ladder step, not geometry.
+        QSize logical = logicalSizeForPath(path);
+        if (!isPositiveSize(logical) || logical.width() <= 1 || logical.height() <= 1
+            || isProvisionalImageSize(path)) {
+            logical = layoutSizeForPath(path, display);
         }
-        // Full pixels are stable — cache the painted tile again.
+        if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
+            item->setIntrinsicSize(logical);
+        }
         if (item->cacheMode() != QGraphicsItem::DeviceCoordinateCache) {
             item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
         } else {
@@ -260,14 +256,12 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         }
     } else {
         item->setPreviewImage(display); // NoCache soft path
-        // Soft must not leave intrinsic at 1×1 after placeholder without size.
-        {
-            const QSize cur = item->imageSize();
-            if (cur.width() <= 1 || cur.height() <= 1) {
-                const QSize layout = layoutSizeForPath(item->path(), display);
-                if (layout.isValid() && layout.width() > 1 && layout.height() > 1) {
-                    item->setIntrinsicSize(layout);
-                }
+        // Soft must not leave intrinsic at 1×1 after a size-less placeholder.
+        const QSize cur = item->imageSize();
+        if (cur.width() <= 1 || cur.height() <= 1) {
+            const QSize layout = layoutSizeForPath(path, display);
+            if (isPositiveSize(layout) && layout.width() > 1 && layout.height() > 1) {
+                item->setIntrinsicSize(layout);
             }
         }
     }
@@ -277,13 +271,10 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     item->setColorAdjustments(appearance.colorAdjust);
     SessionAppearance::syncItemLayoutToContentOrientation(item, appearance);
 
-    // Do NOT emit sessionAppearanceChanged from decode/install.
-    // Soft ladder upgrades (including after Gallery focus) must not rewrite the
-    // filmstrip — that is selection-coupled and wrong. Filmstrip overrides are
-    // emitted only from user content edits (commit / bake / crop accept).
+    // Do NOT emit sessionAppearanceChanged from decode/install (filmstrip is
+    // selection-coupled). Soft ladder upgrades must not rewrite the strip.
 
-    // Gallery reflow only when layout geometry actually changed — soft ladder
-    // upgrades on focus must not repack the whole grid (click should not move tiles).
+    // Gallery reflow only when layout geometry actually changed.
     if (isGalleryMode() && item->imageSize() != layoutBefore) {
         requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
