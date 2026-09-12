@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-660-dwell-atlas-params.** Shared dwell atlas sizing for sync/async.
+Prior: **659**.
+
+### Change
+- `DwellAtlasParams` / `dwellAtlasParams()` — viewport × headroom sizing once
+- `dwellAtlasCoversSource` — skip rebuild when atlas is adequate
+- `invalidateDwellAtlasRebuilds()` — supersede in-flight async rebuilds
+- `ensureMotionAtlas` and `requestDwellAtlasRebuild` share the same policy
+
+### Done criteria
+- [x] Sync and async atlas paths use one adequacy rule
+- [x] Bundle **660**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-659-async-dwell-atlas.** Slideshow HQ→full atlas off GUI thread.
 Prior: **658**.
 

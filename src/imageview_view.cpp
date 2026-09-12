@@ -1144,25 +1144,21 @@ void ImageView::requestDwellAtlasRebuild()
     if (m_dwellSourceImage.isNull() || !viewport() || m_slideshowNavHot) {
         return;
     }
-    const int vw = qMax(1, viewport()->width());
-    const int vh = qMax(1, viewport()->height());
-    const qreal head = slideshowMotionHeadroom();
-    const int longCap = int(qCeil(qreal(qMax(vw, vh)) * head));
-    const qreal keyScale = head;
-
-    // Skip if current atlas already matches viewport and covers source enough.
-    if (!m_dwellAtlas.isNull() && qFuzzyCompare(m_dwellAtlasScale, keyScale)
-        && m_dwellAtlasVw == vw && m_dwellAtlasVh == vh
-        && m_dwellAtlas.width() >= longCap * 9 / 10) {
-        const int have = qMax(m_dwellAtlas.width(), m_dwellAtlas.height());
-        const int srcLong = qMax(m_dwellSourceImage.width(), m_dwellSourceImage.height());
-        if (srcLong <= have * 5 / 4) {
-            return;
-        }
+    const DwellAtlasParams params = dwellAtlasParams();
+    if (!params.valid) {
+        return;
+    }
+    if (dwellAtlasCoversSource(m_dwellAtlas, m_dwellAtlasScale, m_dwellAtlasVw,
+                               m_dwellAtlasVh, params, m_dwellSourceImage)) {
+        return;
     }
 
     const quint64 gen = ++m_dwellAtlasRebuildGeneration;
     const QImage source = m_dwellSourceImage; // refcounted; not mutated by pool
+    const int longCap = params.longCap;
+    const qreal keyScale = params.keyScale;
+    const int vw = params.vw;
+    const int vh = params.vh;
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start(
         [guard, source, longCap, keyScale, vw, vh, gen]() {
@@ -1415,7 +1411,7 @@ void ImageView::armSlideshowFromPhase(const QString &fromPath, int pathMs)
     }
     m_dwellSourceImage = m_ssFromImage;
     if (!m_ssFromImage.isNull()) {
-        ++m_dwellAtlasRebuildGeneration; // invalidate in-flight async rebuilds
+        invalidateDwellAtlasRebuilds();
         ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                           &m_dwellAtlasVw, &m_dwellAtlasVh);
         schedulePhaseZoomBlur(fromPath, m_ssFromImage);
@@ -1740,6 +1736,46 @@ void ImageView::preloadSlideshowImage(const QString &path)
     });
 }
 
+ImageView::DwellAtlasParams ImageView::dwellAtlasParams() const
+{
+    // Atlas size is a function of the *viewport* and motion headroom only —
+    // not of the source raster's pixel dimensions. Camera dest is aspect-based;
+    // the atlas is just a sharp enough texture to sample under max zoom.
+    DwellAtlasParams p;
+    if (!viewport()) {
+        return p;
+    }
+    p.vw = qMax(1, viewport()->width());
+    p.vh = qMax(1, viewport()->height());
+    p.headroom = slideshowMotionHeadroom();
+    p.longCap = int(qCeil(qreal(qMax(p.vw, p.vh)) * p.headroom));
+    p.keyScale = p.headroom;
+    p.valid = p.longCap > 0;
+    return p;
+}
+
+bool ImageView::dwellAtlasCoversSource(const QPixmap &atlas, qreal atlasScale,
+                                       int atlasVw, int atlasVh,
+                                       const DwellAtlasParams &params,
+                                       const QImage &source) const
+{
+    if (!params.valid || atlas.isNull() || source.isNull()) {
+        return false;
+    }
+    if (!qFuzzyCompare(atlasScale, params.keyScale) || atlasVw != params.vw
+        || atlasVh != params.vh || atlas.width() < params.longCap * 9 / 10) {
+        return false;
+    }
+    const int have = qMax(atlas.width(), atlas.height());
+    const int srcLong = qMax(source.width(), source.height());
+    return srcLong <= have * 5 / 4;
+}
+
+void ImageView::invalidateDwellAtlasRebuilds()
+{
+    ++m_dwellAtlasRebuildGeneration;
+}
+
 void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
                                   qreal *atlasScale, int *atlasVw, int *atlasVh) const
 {
@@ -1751,27 +1787,14 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
     if (m_slideshowNavHot) {
         return;
     }
-    const int vw = qMax(1, viewport()->width());
-    const int vh = qMax(1, viewport()->height());
-    // Atlas size is a function of the *viewport* and motion headroom only —
-    // not of the source raster's pixel dimensions. Camera dest is aspect-based;
-    // the atlas is just a sharp enough texture to sample under max zoom.
-    const qreal head = slideshowMotionHeadroom();
-    const int longCap = int(qCeil(qreal(qMax(vw, vh)) * head));
-    // Key atlas by viewport + headroom, not image×maxScale (that made soft→sharp
-    // rebuilds change texture scale and feel like a camera jump).
-    const qreal keyScale = head;
-    if (!atlas->isNull() && qFuzzyCompare(*atlasScale, keyScale)
-        && *atlasVw == vw && *atlasVh == vh
-        && atlas->width() >= longCap * 9 / 10) {
-        // Still rebuild when source long edge grew enough to matter.
-        const int have = qMax(atlas->width(), atlas->height());
-        const int srcLong = qMax(image.width(), image.height());
-        if (srcLong <= have * 5 / 4) {
-            return;
-        }
+    const DwellAtlasParams params = dwellAtlasParams();
+    if (!params.valid) {
+        return;
     }
-    QImage scaled = image.scaled(longCap, longCap, Qt::KeepAspectRatio,
+    if (dwellAtlasCoversSource(*atlas, *atlasScale, *atlasVw, *atlasVh, params, image)) {
+        return;
+    }
+    QImage scaled = image.scaled(params.longCap, params.longCap, Qt::KeepAspectRatio,
                                  m_slideshowProgressActive
                                      ? Qt::FastTransformation
                                      : Qt::SmoothTransformation);
@@ -1781,9 +1804,9 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
         return;
     }
     *atlas = QPixmap::fromImage(std::move(scaled));
-    *atlasScale = keyScale;
-    *atlasVw = vw;
-    *atlasVh = vh;
+    *atlasScale = params.keyScale;
+    *atlasVw = params.vw;
+    *atlasVh = params.vh;
 }
 
 void ImageView::setSlideshowUnderlayVisible(bool visible)
@@ -2340,7 +2363,7 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     // Align underlay camera to slideshow zoom before hiding it so cancel/stop
     // can restore a known static frame.
     applySlideshowZoomFraming(item);
-    ++m_dwellAtlasRebuildGeneration;
+    invalidateDwellAtlasRebuilds();
     ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                       &m_dwellAtlasVw, &m_dwellAtlasVh);
     setSlideshowUnderlayVisible(false);
@@ -2479,7 +2502,7 @@ void ImageView::tickSlideshowMotion()
     };
     m_dwellMotionT = motionProgress01(wallMs, qreal(m_motionDurationMs));
     if (!m_dwellSourceImage.isNull()) {
-        ++m_dwellAtlasRebuildGeneration;
+        invalidateDwellAtlasRebuilds();
         ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                           &m_dwellAtlasVw, &m_dwellAtlasVh);
     }

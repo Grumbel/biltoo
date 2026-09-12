@@ -288,6 +288,19 @@ public:
     void requestDwellAtlasRebuild();
     void finishDwellAtlasRebuild(quint64 generation, const QPixmap &atlas,
                                 qreal atlasScale, int atlasVw, int atlasVh);
+    struct DwellAtlasParams {
+        int vw = 0;
+        int vh = 0;
+        int longCap = 0;
+        qreal headroom = 0.0;
+        qreal keyScale = 0.0;
+        bool valid = false;
+    };
+    DwellAtlasParams dwellAtlasParams() const;
+    bool dwellAtlasCoversSource(const QPixmap &atlas, qreal atlasScale, int atlasVw,
+                                int atlasVh, const DwellAtlasParams &params,
+                                const QImage &source) const;
+    void invalidateDwellAtlasRebuilds();
     void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
                            int *atlasVw, int *atlasVh) const;
     /** Store sample in ImageCache (upward-only long edge). */
