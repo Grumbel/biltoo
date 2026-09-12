@@ -2,6 +2,41 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-618-wheel-event-phases.** Split wheelEvent gallery vs view zoom.
+Prior: **617**.
+
+### Change
+- `tryWheelGalleryZoom`, `tryWheelGalleryScroll`, `wheelZoomViewAboutCursor`
+- `wheelEvent` is a short dispatch
+
+### Done criteria
+- [x] Bundle **618**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
+**Tip: biltoo-617-key-press-phases.** Split keyPressEvent into tryKeyPress* handlers.
+Prior: **616**.
+
+### Change
+- Attention, crop, zoom-region, select-all, image navigate, gallery (spatial),
+  workspace shear, delete selection
+- `selectedOrFirstGalleryItem`, `emitGalleryItemFocus` helpers
+- `keyPressEvent` is pure dispatch + base fallback
+
+### Done criteria
+- [x] Key paths named; gallery neighbour scoring preserved
+- [x] Bundle **617**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-616-mouse-release-phases.** Split mouseReleaseEvent + shared transform undo.
 Prior: **615**.
 

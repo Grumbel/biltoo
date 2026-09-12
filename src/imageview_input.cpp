@@ -275,80 +275,88 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
     }
 }
 
-void ImageView::wheelEvent(QWheelEvent *event)
+bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
 {
-    // Gallery: default wheel scrolls. Ctrl+wheel zooms the view (inspection)
-    // and refreshes the soft ladder for the new on-screen cell size.
-    if (isGalleryMode() && (event->modifiers() & Qt::ControlModifier)) {
-        const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
-        m_fitMode = false;
-        m_fillMode = false;
-        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-        scale(factor, factor);
-        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-        // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
-        // each wheel notch used to rescan all tiles + setInterest + repaint
-        // every high-res soft, freezing the UI while zooming out.
-        scheduleGalleryDecodeWindowRefresh(120);
-        refreshStatus();
-        event->accept();
-        return;
+    // Gallery: Ctrl+wheel zooms the view (inspection) and refreshes the soft
+    // ladder for the new on-screen cell size.
+    if (!isGalleryMode() || !(event->modifiers() & Qt::ControlModifier)) {
+        return false;
     }
-    if (isGalleryMode()) {
-        QScrollBar *hBar = horizontalScrollBar();
-        QScrollBar *vBar = verticalScrollBar();
-        const bool canH = hBar && hBar->maximum() > hBar->minimum();
-        const bool canV = vBar && vBar->maximum() > vBar->minimum();
-
-        int dx = 0;
-        int dy = 0;
-        if (!event->pixelDelta().isNull()) {
-            dx = event->pixelDelta().x();
-            dy = event->pixelDelta().y();
-        } else {
-            // angleDelta is in eighths of a degree; 120 ≈ one notch.
-            dx = event->angleDelta().x();
-            dy = event->angleDelta().y();
-        }
-
-        // Shift+wheel → prefer horizontal (common UI convention).
-        if (event->modifiers() & Qt::ShiftModifier) {
-            if (dx == 0 && dy != 0) {
-                dx = dy;
-                dy = 0;
-            }
-        }
-
-        // Horizontal strip layouts: vertical wheel pans sideways.
-        const bool preferHorizontalScroll =
-            m_layoutMode == LayoutMode::SideBySide
-            || m_layoutMode == LayoutMode::MasonryRows
-            || m_layoutMode == LayoutMode::MasonryRowsFill;
-
-        if (preferHorizontalScroll && dx == 0 && dy != 0) {
-            dx = dy;
-            dy = 0;
-        } else if (dx == 0 && dy != 0 && !canV && canH) {
-            dx = dy;
-            dy = 0;
-        } else if (dy == 0 && dx != 0 && !canH && canV) {
-            dy = dx;
-            dx = 0;
-        }
-
-        if (canH && dx != 0) {
-            hBar->setValue(hBar->value() - dx);
-        }
-        if (canV && dy != 0) {
-            vBar->setValue(vBar->value() - dy);
-        }
-        // Accept even at scroll ends so the event does not fall through to zoom.
-        event->accept();
-        return;
-    }
-
     const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
+    m_fitMode = false;
+    m_fillMode = false;
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    scale(factor, factor);
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
+    // each wheel notch used to rescan all tiles + setInterest + repaint
+    // every high-res soft, freezing the UI while zooming out.
+    scheduleGalleryDecodeWindowRefresh(120);
+    refreshStatus();
+    event->accept();
+    return true;
+}
 
+bool ImageView::tryWheelGalleryScroll(QWheelEvent *event)
+{
+    if (!isGalleryMode()) {
+        return false;
+    }
+    QScrollBar *hBar = horizontalScrollBar();
+    QScrollBar *vBar = verticalScrollBar();
+    const bool canH = hBar && hBar->maximum() > hBar->minimum();
+    const bool canV = vBar && vBar->maximum() > vBar->minimum();
+
+    int dx = 0;
+    int dy = 0;
+    if (!event->pixelDelta().isNull()) {
+        dx = event->pixelDelta().x();
+        dy = event->pixelDelta().y();
+    } else {
+        // angleDelta is in eighths of a degree; 120 ≈ one notch.
+        dx = event->angleDelta().x();
+        dy = event->angleDelta().y();
+    }
+
+    // Shift+wheel → prefer horizontal (common UI convention).
+    if (event->modifiers() & Qt::ShiftModifier) {
+        if (dx == 0 && dy != 0) {
+            dx = dy;
+            dy = 0;
+        }
+    }
+
+    // Horizontal strip layouts: vertical wheel pans sideways.
+    const bool preferHorizontalScroll =
+        m_layoutMode == LayoutMode::SideBySide
+        || m_layoutMode == LayoutMode::MasonryRows
+        || m_layoutMode == LayoutMode::MasonryRowsFill;
+
+    if (preferHorizontalScroll && dx == 0 && dy != 0) {
+        dx = dy;
+        dy = 0;
+    } else if (dx == 0 && dy != 0 && !canV && canH) {
+        dx = dy;
+        dy = 0;
+    } else if (dy == 0 && dx != 0 && !canH && canV) {
+        dy = dx;
+        dx = 0;
+    }
+
+    if (canH && dx != 0) {
+        hBar->setValue(hBar->value() - dx);
+    }
+    if (canV && dy != 0) {
+        vBar->setValue(vBar->value() - dy);
+    }
+    // Accept even at scroll ends so the event does not fall through to zoom.
+    event->accept();
+    return true;
+}
+
+void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
+{
+    const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
     // Image mode and free-form Workspace: zoom the view about the cursor.
     // Do not touch selected-item geometry here — prepareGeometryChange on
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
@@ -359,6 +367,14 @@ void ImageView::wheelEvent(QWheelEvent *event)
     viewport()->update(); // refresh viewport-space chrome at the new scale
     emit statusChanged();
     event->accept();
+}
+
+void ImageView::wheelEvent(QWheelEvent *event)
+{
+    if (tryWheelGalleryZoom(event) || tryWheelGalleryScroll(event)) {
+        return;
+    }
+    wheelZoomViewAboutCursor(event);
 }
 
 void ImageView::resizeEvent(QResizeEvent *event)
@@ -1761,286 +1777,348 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
     QGraphicsView::mouseReleaseEvent(event);
 }
 
-void ImageView::keyPressEvent(QKeyEvent *event)
+bool ImageView::tryKeyPressAttention(QKeyEvent *event)
 {
-    if (m_attentionMode) {
-        if (event->key() == Qt::Key_Escape) {
-            setAttentionMode(false);
-            event->accept();
-            return;
-        }
-        if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
-            attentionDeleteSelected();
-            event->accept();
-            return;
-        }
-        if (event->key() == Qt::Key_A && (event->modifiers() & Qt::ControlModifier)) {
-            const int n = attentionPointsForTarget().size();
-            m_attentionSelected.clear();
-            for (int i = 0; i < n; ++i) {
-                m_attentionSelected.append(i);
-            }
-            if (viewport()) {
-                viewport()->update();
-            }
-            event->accept();
-            return;
-        }
-        // Detect is toolbar-only — Space is reserved for slideshow.
+    if (!m_attentionMode) {
+        return false;
     }
-    if (m_cropMode) {
-        if (event->key() == Qt::Key_Escape) {
-            cancelCrop();
-            event->accept();
-            return;
-        }
-        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-            applyCrop();
-            event->accept();
-            return;
-        }
-    }
-
-    if (event->key() == Qt::Key_Escape && (m_zoomRegionArmed || m_zoomRegionDragging)) {
-        cancelZoomRegion();
+    if (event->key() == Qt::Key_Escape) {
+        setAttentionMode(false);
         event->accept();
-        return;
+        return true;
     }
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        attentionDeleteSelected();
+        event->accept();
+        return true;
+    }
+    if (event->key() == Qt::Key_A && (event->modifiers() & Qt::ControlModifier)) {
+        const int n = attentionPointsForTarget().size();
+        m_attentionSelected.clear();
+        for (int i = 0; i < n; ++i) {
+            m_attentionSelected.append(i);
+        }
+        if (viewport()) {
+            viewport()->update();
+        }
+        event->accept();
+        return true;
+    }
+    // Detect is toolbar-only — Space is reserved for slideshow.
+    return false;
+}
 
+bool ImageView::tryKeyPressCrop(QKeyEvent *event)
+{
+    if (!m_cropMode) {
+        return false;
+    }
+    if (event->key() == Qt::Key_Escape) {
+        cancelCrop();
+        event->accept();
+        return true;
+    }
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        applyCrop();
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
+{
+    if (event->key() != Qt::Key_Escape || !(m_zoomRegionArmed || m_zoomRegionDragging)) {
+        return false;
+    }
+    cancelZoomRegion();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryKeyPressSelectAll(QKeyEvent *event)
+{
     // Gallery / Workspace: Ctrl+A selects every live tile (standard multi-select).
-    if ((isGalleryMode() || isWorkspaceMode())
-        && event->key() == Qt::Key_A
-        && (event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
-        && !(event->modifiers() & (Qt::ShiftModifier | Qt::AltModifier))) {
-        selectAllCanvasItems();
-        event->accept();
-        return;
+    if (!(isGalleryMode() || isWorkspaceMode())
+        || event->key() != Qt::Key_A
+        || !(event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
+        || (event->modifiers() & (Qt::ShiftModifier | Qt::AltModifier))) {
+        return false;
     }
+    selectAllCanvasItems();
+    event->accept();
+    return true;
+}
 
+bool ImageView::tryKeyPressImageNavigate(QKeyEvent *event)
+{
     // Image mode: Left/Right (and friends) navigate the session. QGraphicsView
     // would otherwise scroll the viewport when the image is zoomed or the view
     // has focus (typical in fullscreen), swallowing the QAction shortcuts.
-    if (isImageMode()
-        && !(event->modifiers()
-             & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
-        switch (event->key()) {
+    if (!isImageMode()
+        || (event->modifiers()
+            & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
+        return false;
+    }
+    switch (event->key()) {
+    case Qt::Key_Left:
+    case Qt::Key_PageUp:
+    case Qt::Key_Backspace:
+        emit navigatePreviousRequested();
+        event->accept();
+        return true;
+    case Qt::Key_Right:
+    case Qt::Key_PageDown:
+        emit navigateNextRequested();
+        event->accept();
+        return true;
+    default:
+        return false;
+    }
+}
+
+ImageItem *ImageView::selectedOrFirstGalleryItem() const
+{
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            return ii;
+        }
+    }
+    return m_items.isEmpty() ? nullptr : m_items.first();
+}
+
+void ImageView::emitGalleryItemFocus(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    if (item->sessionId() != kInvalidSessionImageId) {
+        emit sessionImageFocused(item->sessionId());
+    } else if (!item->path().isEmpty()) {
+        emit galleryItemFocused(item->path());
+    }
+}
+
+bool ImageView::tryKeyPressGallery(QKeyEvent *event)
+{
+    // Gallery: arrow keys move among tiles by scene position; Enter opens.
+    if (!isGalleryMode()
+        || (event->modifiers()
+            & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+        || m_items.isEmpty()) {
+        return false;
+    }
+
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        if (ImageItem *item = selectedOrFirstGalleryItem()) {
+            if (item->sessionId() != kInvalidSessionImageId) {
+                emit sessionImageOpenRequested(item->sessionId());
+            } else if (item->sessionIndex() >= 0) {
+                emit sessionSlotOpenRequested(item->sessionIndex());
+            } else if (!item->path().isEmpty()) {
+                emit galleryItemOpenRequested(item->path());
+            }
+            event->accept();
+            return true;
+        }
+        return false;
+    }
+
+    if (event->key() == Qt::Key_Home || event->key() == Qt::Key_End) {
+        ImageItem *item = (event->key() == Qt::Key_Home)
+                              ? m_items.first()
+                              : m_items.last();
+        focusSessionPath(item->path());
+        emitGalleryItemFocus(item);
+        event->accept();
+        return true;
+    }
+
+    // Spatial neighbour: prefer candidates in the arrow direction, score by
+    // primary-axis distance with a cross-axis penalty (grid-friendly).
+    const int key = event->key();
+    if (key != Qt::Key_Left && key != Qt::Key_Right
+        && key != Qt::Key_Up && key != Qt::Key_Down) {
+        return false;
+    }
+    ImageItem *from = selectedOrFirstGalleryItem();
+    if (!from) {
+        from = m_items.first();
+    }
+    const QPointF origin = from->sceneBoundingRect().center();
+    ImageItem *best = nullptr;
+    qreal bestScore = 1e300;
+    constexpr qreal kEps = 1.0;
+    constexpr qreal kCrossWeight = 2.5;
+    for (ImageItem *cand : m_items) {
+        if (!cand || cand == from) {
+            continue;
+        }
+        const QPointF c = cand->sceneBoundingRect().center();
+        const QPointF d = c - origin;
+        bool inDir = false;
+        qreal primary = 0.0;
+        qreal cross = 0.0;
+        switch (key) {
         case Qt::Key_Left:
-        case Qt::Key_PageUp:
-        case Qt::Key_Backspace:
-            emit navigatePreviousRequested();
-            event->accept();
-            return;
+            inDir = d.x() < -kEps;
+            primary = -d.x();
+            cross = qAbs(d.y());
+            break;
         case Qt::Key_Right:
-        case Qt::Key_PageDown:
-            emit navigateNextRequested();
-            event->accept();
-            return;
+            inDir = d.x() > kEps;
+            primary = d.x();
+            cross = qAbs(d.y());
+            break;
+        case Qt::Key_Up:
+            inDir = d.y() < -kEps;
+            primary = -d.y();
+            cross = qAbs(d.x());
+            break;
+        case Qt::Key_Down:
+            inDir = d.y() > kEps;
+            primary = d.y();
+            cross = qAbs(d.x());
+            break;
         default:
             break;
         }
-    }
-
-    // Gallery: arrow keys move among tiles by scene position; Enter opens.
-    if (isGalleryMode()
-        && !(event->modifiers()
-             & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
-        && !m_items.isEmpty()) {
-        auto selectedGalleryItem = [this]() -> ImageItem * {
-            for (QGraphicsItem *gi : m_scene->selectedItems()) {
-                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    return ii;
-                }
-            }
-            return m_items.isEmpty() ? nullptr : m_items.first();
-        };
-
-        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-            if (ImageItem *item = selectedGalleryItem()) {
-                if (item->sessionId() != kInvalidSessionImageId) {
-                    emit sessionImageOpenRequested(item->sessionId());
-                } else if (item->sessionIndex() >= 0) {
-                    emit sessionSlotOpenRequested(item->sessionIndex());
-                } else if (!item->path().isEmpty()) {
-                    emit galleryItemOpenRequested(item->path());
-                }
-                event->accept();
-                return;
-            }
+        if (!inDir) {
+            continue;
         }
-
-        if (event->key() == Qt::Key_Home || event->key() == Qt::Key_End) {
-            ImageItem *item = (event->key() == Qt::Key_Home)
-                                  ? m_items.first()
-                                  : m_items.last();
-            focusSessionPath(item->path());
-            if (item->sessionId() != kInvalidSessionImageId) {
-                emit sessionImageFocused(item->sessionId());
-            } else if (!item->path().isEmpty()) {
-                emit galleryItemFocused(item->path());
-            }
-            event->accept();
-            return;
-        }
-
-        // Spatial neighbour: prefer candidates in the arrow direction, score by
-        // primary-axis distance with a cross-axis penalty (grid-friendly).
-        const int key = event->key();
-        if (key == Qt::Key_Left || key == Qt::Key_Right
-            || key == Qt::Key_Up || key == Qt::Key_Down) {
-            ImageItem *from = selectedGalleryItem();
-            if (!from) {
-                from = m_items.first();
-            }
-            const QPointF origin = from->sceneBoundingRect().center();
-            ImageItem *best = nullptr;
-            qreal bestScore = 1e300;
-            constexpr qreal kEps = 1.0;
-            constexpr qreal kCrossWeight = 2.5;
-            for (ImageItem *cand : m_items) {
-                if (cand == from) {
-                    continue;
-                }
-                const QPointF d = cand->sceneBoundingRect().center() - origin;
-                qreal primary = 0;
-                qreal cross = 0;
-                bool inDir = false;
-                switch (key) {
-                case Qt::Key_Left:
-                    inDir = d.x() < -kEps;
-                    primary = -d.x();
-                    cross = qAbs(d.y());
-                    break;
-                case Qt::Key_Right:
-                    inDir = d.x() > kEps;
-                    primary = d.x();
-                    cross = qAbs(d.y());
-                    break;
-                case Qt::Key_Up:
-                    inDir = d.y() < -kEps;
-                    primary = -d.y();
-                    cross = qAbs(d.x());
-                    break;
-                case Qt::Key_Down:
-                    inDir = d.y() > kEps;
-                    primary = d.y();
-                    cross = qAbs(d.x());
-                    break;
-                default:
-                    break;
-                }
-                if (!inDir) {
-                    continue;
-                }
-                const qreal score = primary + kCrossWeight * cross;
-                if (score < bestScore) {
-                    bestScore = score;
-                    best = cand;
-                }
-            }
-            if (best) {
-                focusSessionPath(best->path());
-                if (best->sessionId() != kInvalidSessionImageId) {
-                emit sessionImageFocused(best->sessionId());
-            } else if (!best->path().isEmpty()) {
-                emit galleryItemFocused(best->path());
-            }
-                event->accept();
-                return;
-            }
+        const qreal score = primary + kCrossWeight * cross;
+        if (score < bestScore) {
+            bestScore = score;
+            best = cand;
         }
     }
+    if (!best) {
+        return false;
+    }
+    focusSessionPath(best->path());
+    emitGalleryItemFocus(best);
+    event->accept();
+    return true;
+}
 
+bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
+{
     // Workspace: Alt+[ / Alt+] nudge horizontal shear; Alt+0 resets shear.
-    if (isWorkspaceMode()
-        && (event->modifiers() & Qt::AltModifier)
-        && !(event->modifiers() & Qt::ControlModifier)) {
-        const int key = event->key();
-        if (key == Qt::Key_BracketLeft || key == Qt::Key_BracketRight
-            || key == Qt::Key_0) {
-            const QList<QGraphicsItem *> selected = m_scene ? m_scene->selectedItems() : QList<QGraphicsItem *>();
-            QList<ImageItem *> targets;
-            for (QGraphicsItem *gi : selected) {
-                if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    if (m_items.contains(item)) {
-                        targets.append(item);
-                    }
-                }
-            }
-            if (!targets.isEmpty()) {
-                const qreal step = (event->modifiers() & Qt::ShiftModifier) ? 0.1 : 0.05;
-                for (ImageItem *item : targets) {
-                    if (key == Qt::Key_0) {
-                        item->setItemShear(0.0);
-                    } else {
-                        const qreal delta = (key == Qt::Key_BracketRight) ? step : -step;
-                        item->setItemShear(item->itemShear() + delta);
-                    }
-                    commitItemSessionEdit(item);
-                }
-                emit statusChanged();
-                event->accept();
-                return;
+    if (!isWorkspaceMode()
+        || !(event->modifiers() & Qt::AltModifier)
+        || (event->modifiers() & Qt::ControlModifier)) {
+        return false;
+    }
+    const int key = event->key();
+    if (key != Qt::Key_BracketLeft && key != Qt::Key_BracketRight
+        && key != Qt::Key_0) {
+        return false;
+    }
+    const QList<QGraphicsItem *> selected =
+        m_scene ? m_scene->selectedItems() : QList<QGraphicsItem *>();
+    QList<ImageItem *> targets;
+    for (QGraphicsItem *gi : selected) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (m_items.contains(item)) {
+                targets.append(item);
             }
         }
     }
+    if (targets.isEmpty()) {
+        return false;
+    }
+    const qreal step = (event->modifiers() & Qt::ShiftModifier) ? 0.1 : 0.05;
+    for (ImageItem *item : targets) {
+        if (key == Qt::Key_0) {
+            item->setItemShear(0.0);
+        } else {
+            const qreal delta = (key == Qt::Key_BracketRight) ? step : -step;
+            item->setItemShear(item->itemShear() + delta);
+        }
+        commitItemSessionEdit(item);
+    }
+    emit statusChanged();
+    event->accept();
+    return true;
+}
 
-    if (event->key() == Qt::Key_Delete
-        || (event->key() == Qt::Key_Backspace && isMultiItemMode())) {
-        const QList<QGraphicsItem *> selected = m_scene->selectedItems();
-        QVector<SessionImageId> removeIds;
-        QStringList removePaths;
+bool ImageView::tryKeyPressDeleteSelection(QKeyEvent *event)
+{
+    if (event->key() != Qt::Key_Delete
+        && !(event->key() == Qt::Key_Backspace && isMultiItemMode())) {
+        return false;
+    }
+    const QList<QGraphicsItem *> selected = m_scene->selectedItems();
+    QVector<SessionImageId> removeIds;
+    QStringList removePaths;
+    for (QGraphicsItem *gi : selected) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (!m_items.contains(item)) {
+                continue;
+            }
+            if (item->sessionId() != kInvalidSessionImageId) {
+                removeIds.append(item->sessionId());
+            } else if (!item->path().isEmpty()) {
+                removePaths.append(item->path());
+            }
+        }
+    }
+    if (removeIds.isEmpty() && removePaths.isEmpty()) {
+        return false;
+    }
+    if (isGalleryMode()) {
+        // Gallery tiles are the session — remove by id when bound.
+        if (!removeIds.isEmpty()) {
+            emit sessionRemoveIdsRequested(removeIds);
+        }
+        if (!removePaths.isEmpty()) {
+            emit sessionRemovePathsRequested(removePaths);
+        }
+        event->accept();
+        return true;
+    }
+    if (isWorkspaceMode()) {
+        // Workspace: hide from canvas only; session membership stays.
+        // Destroy by item pointer (same path may exist twice after Duplicate).
+        QList<ImageItem *> toRemove;
         for (QGraphicsItem *gi : selected) {
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (!m_items.contains(item)) {
-                    continue;
-                }
-                if (item->sessionId() != kInvalidSessionImageId) {
-                    removeIds.append(item->sessionId());
-                } else if (!item->path().isEmpty()) {
-                    removePaths.append(item->path());
+                if (m_items.contains(item)) {
+                    toRemove.append(item);
                 }
             }
         }
-        if (removeIds.isEmpty() && removePaths.isEmpty()) {
-            // fall through
-        } else if (isGalleryMode()) {
-            // Gallery tiles are the session — remove by id when bound.
-            if (!removeIds.isEmpty()) {
-                emit sessionRemoveIdsRequested(removeIds);
-            }
-            if (!removePaths.isEmpty()) {
-                emit sessionRemovePathsRequested(removePaths);
-            }
-            event->accept();
-            return;
-        } else if (isWorkspaceMode()) {
-            // Workspace: hide from canvas only; session membership stays.
-            // Destroy by item pointer (same path may exist twice after Duplicate).
-            QList<ImageItem *> toRemove;
-            for (QGraphicsItem *gi : selected) {
-                if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    if (m_items.contains(item)) {
-                        toRemove.append(item);
-                    }
-                }
-            }
-            setUpdatesEnabled(false);
-            if (m_scene) {
-                m_scene->blockSignals(true);
-            }
-            for (ImageItem *item : toRemove) {
-                destroyCanvasItem(item);
-            }
-            if (m_scene) {
-                m_scene->blockSignals(false);
-            }
-            setUpdatesEnabled(true);
-            viewport()->update();
-            emit statusChanged();
-            emit workspacePathsChanged();
-            event->accept();
-            return;
+        setUpdatesEnabled(false);
+        if (m_scene) {
+            m_scene->blockSignals(true);
         }
+        for (ImageItem *item : toRemove) {
+            destroyCanvasItem(item);
+        }
+        if (m_scene) {
+            m_scene->blockSignals(false);
+        }
+        setUpdatesEnabled(true);
+        viewport()->update();
+        emit statusChanged();
+        emit workspacePathsChanged();
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+void ImageView::keyPressEvent(QKeyEvent *event)
+{
+    if (tryKeyPressAttention(event)
+        || tryKeyPressCrop(event)
+        || tryKeyPressZoomRegion(event)
+        || tryKeyPressSelectAll(event)
+        || tryKeyPressImageNavigate(event)
+        || tryKeyPressGallery(event)
+        || tryKeyPressWorkspaceShear(event)
+        || tryKeyPressDeleteSelection(event)) {
+        return;
     }
     QGraphicsView::keyPressEvent(event);
 }

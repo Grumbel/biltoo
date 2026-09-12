@@ -1106,6 +1106,23 @@ protected:
     bool tryMouseReleaseWorkspaceRotate(QMouseEvent *event);
     bool tryMouseReleasePan(QMouseEvent *event);
     bool tryMouseReleaseItemDrag(QMouseEvent *event);
+
+    // keyPressEvent phases
+    bool tryKeyPressAttention(QKeyEvent *event);
+    bool tryKeyPressCrop(QKeyEvent *event);
+    bool tryKeyPressZoomRegion(QKeyEvent *event);
+    bool tryKeyPressSelectAll(QKeyEvent *event);
+    bool tryKeyPressImageNavigate(QKeyEvent *event);
+    ImageItem *selectedOrFirstGalleryItem() const;
+    void emitGalleryItemFocus(ImageItem *item);
+    bool tryKeyPressGallery(QKeyEvent *event);
+    bool tryKeyPressWorkspaceShear(QKeyEvent *event);
+    bool tryKeyPressDeleteSelection(QKeyEvent *event);
+
+    // wheelEvent phases
+    bool tryWheelGalleryZoom(QWheelEvent *event);
+    bool tryWheelGalleryScroll(QWheelEvent *event);
+    void wheelZoomViewAboutCursor(QWheelEvent *event);
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
