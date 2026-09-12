@@ -2,6 +2,20 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-477-pixel-pipeline-plan.** Design doc only: `docs/PIXEL_PIPELINE_REDESIGN.md`.
+Prior: **476**.
+
+Lower-level plan: quality tiers Q0–Q3, tile pyramid arbitrary ladder, FastBatch
+(≤1024) vs FocusFull, archive cursor, unified interest API. GUI later.
+
+### Next
+- Review plan with user
+- Phase 0–1 in thumtoo (provenance + peek), not more biltoo GUI hacks
+
+---
+
+## Status (2026-09-12)
+
 **Tip: biltoo-476-zoomblur-null-warnings.** Fix -Wnull-dereference in ZoomBlur completion.
 Prior: **475**.
 
