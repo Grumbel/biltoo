@@ -1106,6 +1106,15 @@ private:
     /** Interactive / gallery / static flags for the current ViewMode. */
     void scheduleImageLoad(const QString &path, LoadRole role);
     /**
+     * If slideshow already holds pixels for @a path, queue onImageLoaded and
+     * return true (skips a second disk decode under the hold).
+     */
+    bool tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen);
+    /** Soft preview + PreferCache quality climb while slideshow is active. */
+    void scheduleSlideshowReplaceDecode(const QString &path, quint64 gen, LoadRole role);
+    /** Parallel thumbnail + full native decode for classic LoadReplace/LoadAdd. */
+    void scheduleClassicImageDecode(const QString &path, quint64 gen, LoadRole role);
+    /**
      * Image mode: drop the previous frame and show a loading/provisional tile
      * for @p path immediately (do not wait for the background decode).
      */

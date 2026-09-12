@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-603-schedule-image-load-split.** scheduleImageLoad role helpers.
+Prior: **602**.
+
+### Change
+- `tryDeliverReplaceFromSlideshowRaster` — reuse phase/cache under hold
+- `scheduleSlideshowReplaceDecode` — soft + PreferCache quality climb
+- `scheduleClassicImageDecode` — parallel thumbnail + full
+- Use `ImageCache::adequate` instead of hand-rolled 7/10 checks
+
+### Done criteria
+- [x] scheduleImageLoad is a short driver
+- [x] Bundle **603**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-602-complete-load-replace.** onImageLoaded is pure role dispatch.
 Prior: **601**.
 
