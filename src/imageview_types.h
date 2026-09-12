@@ -190,6 +190,36 @@ struct GallerySoftState {
     qint64 inflightSinceMs = 0;
 
     /**
+     * Record a soft/ladder delivery. Clears inflight when the request covers
+     * the pending edge (or a usable soft floor arrived). Updates gaveUpWant
+     * on shortfall (~90% of request).
+     *
+     * @param softFloor  minimum edge that may clear a higher inflight (filmstrip)
+     */
+    void noteLadderDelivery(int requestEdge, int gotEdge, int softFloor)
+    {
+        if (gotEdge > 0) {
+            have = qMax(have, gotEdge);
+        }
+        if (inflight > 0
+            && (requestEdge >= inflight
+                || (gotEdge > 0 && requestEdge >= softFloor))) {
+            inflight = 0;
+            inflightSinceMs = 0;
+        }
+        if (requestEdge <= 0) {
+            return;
+        }
+        if (gotEdge >= (requestEdge * 9) / 10) {
+            if (gaveUpWant <= requestEdge) {
+                gaveUpWant = 0;
+            }
+        } else {
+            gaveUpWant = qMax(gaveUpWant, requestEdge);
+        }
+    }
+
+    /**
      * True when the decode window should enqueue more soft work for this path.
      * Pure policy — no I/O.
      *

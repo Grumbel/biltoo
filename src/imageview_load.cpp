@@ -1146,7 +1146,7 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
     }
     const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;
     // Worker already decoded `image` — never PreferCache on the GUI thread.
-    const int got = image.isNull() ? 0 : qMax(image.width(), image.height());
+    const int got = image.isNull() ? 0 : ImageCache::longEdge(image);
     if (!image.isNull()) {
         if (const char *dbg = std::getenv("THUMTOO_DEBUG");
             dbg && dbg[0] && dbg[0] != '0') {
@@ -1164,24 +1164,7 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
 
     auto it = m_gallerySoft.find(path);
     if (it != m_gallerySoft.end()) {
-        GallerySoftState &st = it.value();
-        if (got > 0) {
-            st.have = qMax(st.have, got);
-        }
-        // Soft delivery unblocks even when inflight was a higher display edge.
-        if (st.inflight > 0
-            && (edge >= st.inflight
-                || (got > 0 && edge >= ThumtooCache::kFilmstripLadderEdge))) {
-            st.inflight = 0;
-            st.inflightSinceMs = 0;
-        }
-        if (got >= edge * 9 / 10) {
-            if (st.gaveUpWant <= edge) {
-                st.gaveUpWant = 0;
-            }
-        } else {
-            st.gaveUpWant = qMax(st.gaveUpWant, edge);
-        }
+        it.value().noteLadderDelivery(edge, got, ThumtooCache::kFilmstripLadderEdge);
     }
 
     // Debounce window rescan — avoid full setInterest on every tile delivery.

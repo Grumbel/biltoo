@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-658-gallery-soft-note-delivery.** Gallery soft delivery policy on state.
+Prior: **657**.
+
+### Change
+- `GallerySoftState::noteLadderDelivery` — have / inflight clear / gaveUpWant
+- `applyGalleryLadderReady` is install + note + debounce (no inline bookkeeping)
+
+### Done criteria
+- [x] Gallery soft delivery policy co-located with needsSoftSchedule
+- [x] Bundle **658**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-657-gallery-decode-timer-one.** One gallery decode-window timer path.
 Prior: **656**.
 
