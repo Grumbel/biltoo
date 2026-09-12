@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-661-slideshow-preload-finish.** Named finish for slideshow preload.
+Prior: **660**.
+
+### Change
+- `finishSlideshowPreload` — clear inflight, raster-ready, pump queue
+- `pumpSlideshowPreloadQueue` — start next pending path
+- Pool job uses raw `ImageView *` + `QTimer` (same pattern as native climb finish)
+
+### Done criteria
+- [x] Slideshow preload completion is a single readable method
+- [x] Bundle **661**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-660-dwell-atlas-params.** Shared dwell atlas sizing for sync/async.
 Prior: **659**.
 

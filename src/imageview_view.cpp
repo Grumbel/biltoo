@@ -1662,6 +1662,40 @@ void ImageView::setSlideshowNavHot(bool hot)
     // new key's blur is ready (solid flash on every ←/→ was the bug).
 }
 
+void ImageView::pumpSlideshowPreloadQueue()
+{
+    // Start at most one pending path now that an inflight slot freed.
+    const int needEdge = slideshowNeedEdge(slideshowTargetEdge());
+    while (!m_ssRasterPending.isEmpty()) {
+        const QString next = m_ssRasterPending.takeFirst();
+        if (m_ssRasterInflight.contains(next)) {
+            continue;
+        }
+        if (ImageCache::adequate(slideshowRaster(next), needEdge)) {
+            continue;
+        }
+        preloadSlideshowImage(next);
+        break;
+    }
+}
+
+void ImageView::finishSlideshowPreload(const QString &path, const QImage &image)
+{
+    // GUI-thread completion for preloadSlideshowImage.
+    m_ssRasterInflight.remove(path);
+    if (!image.isNull()) {
+        // Soft/display sample only — never seeds logical size.
+        onSlideshowRasterReady(path, image);
+        qCDebug(lcSlideshow).nospace()
+            << "[slideshow] preload-ready " << QFileInfo(path).fileName()
+            << " " << image.width() << "x" << image.height();
+    }
+    pumpSlideshowPreloadQueue();
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
 void ImageView::preloadSlideshowImage(const QString &path)
 {
     if (path.isEmpty()) {
@@ -1699,40 +1733,13 @@ void ImageView::preloadSlideshowImage(const QString &path)
 
     QThreadPool::globalInstance()->start([guard, loadPath, targetEdge]() {
         const QImage img = loadSlideshowSample(loadPath, targetEdge);
-        if (!guard) {
+        ImageView *view = guard.data();
+        if (!view) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, loadPath, img]() {
-            ImageView *view = guard.data();
-            if (!view) {
-                return;
-            }
-            view->m_ssRasterInflight.remove(loadPath);
-            if (!img.isNull()) {
-                // Soft/display sample only — never seeds logical size.
-                view->onSlideshowRasterReady(loadPath, img);
-                qCDebug(lcSlideshow).nospace()
-                    << "[slideshow] preload-ready "
-                    << QFileInfo(loadPath).fileName()
-                    << " " << img.width() << "x" << img.height();
-            }
-            const int needEdge =
-                slideshowNeedEdge(view->slideshowTargetEdge());
-            while (!view->m_ssRasterPending.isEmpty()) {
-                const QString next = view->m_ssRasterPending.takeFirst();
-                if (view->m_ssRasterInflight.contains(next)) {
-                    continue;
-                }
-                if (ImageCache::adequate(view->slideshowRaster(next), needEdge)) {
-                    continue;
-                }
-                view->preloadSlideshowImage(next);
-                break;
-            }
-            if (view->viewport()) {
-                view->viewport()->update();
-            }
-        }, Qt::QueuedConnection);
+        QTimer::singleShot(0, view, [view, loadPath, img]() {
+            view->finishSlideshowPreload(loadPath, img);
+        });
     });
 }
 

@@ -200,6 +200,8 @@ public:
     void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
     /** Decode path off the GUI thread into the unified slideshow raster map. */
     void preloadSlideshowImage(const QString &path);
+    void finishSlideshowPreload(const QString &path, const QImage &image);
+    void pumpSlideshowPreloadQueue();
     /**
      * Slideshow decode / atlas target long-edge: viewport × DPR × motion
      * headroom (Ken Burns can zoom past 1:1 cover), ladder-snapped, capped
