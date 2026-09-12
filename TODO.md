@@ -2,6 +2,35 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-647-soft-not-fullsource.** Do not latch soft samples as FullSource.
+Prior: **646**.
+
+### Root cause
+HUD "Full resolution" = `hasDecodedPixels()` (`FullSource` / setSourceImage).
+`upgradeImageModeFromLadder` classified PreferCache by **request** edge: a 2048
+request that delivered 512 soft installed FullSource → decoder idle, soft paint
+stuck, HUD lied.
+
+### Change
+- `pixelKindForImageModeSample` — classify by **delivered** long edge + native coverage
+- Soft band (≤512) always SoftPreview; schedule PreferCache to climb
+- `completeLoadReplace` uses the same classifier; soft first-install via pending tile
+- `pixelQualityLabel` requires ~90% native coverage for "Full resolution"
+
+### Done criteria
+- [x] Soft PreferCache shortfall cannot latch FullSource
+- [x] HUD honest about soft vs full
+- [x] Bundle **647**
+
+### Next
+- Further load-path cleanup if needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-646-gallery-decode-schedule-phases.** Phase scheduleGalleryDecode.
 Prior: **645**.
 

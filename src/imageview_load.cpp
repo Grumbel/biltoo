@@ -1058,6 +1058,33 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
     applyGalleryLadderReady(path, maxEdge, image);
 }
 
+SessionAppearance::PixelKind ImageView::pixelKindForImageModeSample(
+    const QString &path, const QImage &image) const
+{
+    // Classify by *delivered* long edge, never by the request edge. A PreferCache
+    // job for 2048 that only returns soft 512 must stay SoftPreview — otherwise
+    // hasDecodedPixels() latches "Full resolution" and the soft paint sticks.
+    const int incoming = ImageCache::longEdge(image);
+    if (incoming <= 0) {
+        return SessionAppearance::PixelKind::SoftPreview;
+    }
+    const QSize logical = logicalSizeForPath(path);
+    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
+        const int native = qMax(logical.width(), logical.height());
+        if (coversEdge(incoming, native)) {
+            return SessionAppearance::PixelKind::FullSource;
+        }
+    }
+    // Soft durable ladder band — keep SoftPreview so native / PreferCache can
+    // still upgrade (onImagePreviewLoaded skips hasDecodedPixels items).
+    if (incoming <= ThumtooCache::kGalleryLadderEdge) {
+        return SessionAppearance::PixelKind::SoftPreview;
+    }
+    // PreferCache display ladder (1024–2048): FullSource for DeviceCoordinate
+    // paint; HUD uses native coverage, not this flag alone.
+    return SessionAppearance::PixelKind::FullSource;
+}
+
 void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
                                            const QImage &image)
 {
@@ -1080,34 +1107,31 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
     if (incoming <= 0) {
         return;
     }
-    // Full native already on the item — do not demote.
-    if (cur->hasDecodedPixels() && !cur->shouldUpgradeDisplayTo(incoming)) {
+    // Already showing equal-or-better sample — do not demote.
+    if (!cur->shouldUpgradeDisplayTo(incoming)) {
         return;
     }
-    // Soft band stays SoftPreview so a later native full decode can still
-    // replace it. PreferCache / overview (≥1024) is display-quality for Image
-    // mode when native load failed (pdfimage, cold page, etc.).
-    const int edge = maxEdge > 0 ? maxEdge : incoming;
-    const bool displayQuality =
-        edge > ThumtooCache::kGalleryLadderEdge
-        || incoming > ThumtooCache::kGalleryLadderEdge;
-    const SessionAppearance::PixelKind kind =
-        displayQuality ? SessionAppearance::PixelKind::FullSource
-                       : SessionAppearance::PixelKind::SoftPreview;
+    const SessionAppearance::PixelKind kind = pixelKindForImageModeSample(path, image);
+    const int reqEdge = maxEdge > 0 ? maxEdge : incoming;
 
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
         dbg && dbg[0] && dbg[0] != '0') {
         fprintf(stderr,
-                "biltoo/image: ladderReady UPGRADE path=%s edge=%d got=%dx%d kind=%s\n",
-                qPrintable(QFileInfo(path).fileName()), edge, image.width(),
+                "biltoo/image: ladderReady UPGRADE path=%s req=%d got=%dx%d kind=%s\n",
+                qPrintable(QFileInfo(path).fileName()), reqEdge, image.width(),
                 image.height(),
-                displayQuality ? "FullSource" : "SoftPreview");
+                kind == SessionAppearance::PixelKind::FullSource ? "FullSource"
+                                                                 : "SoftPreview");
     }
 
     installDisplayPreservingView(cur, image, kind, kInvalidSessionImageId);
-    if (displayQuality) {
-        m_lastLoadError.clear();
-        rememberSizeFromDecode(path, image);
+    m_lastLoadError.clear();
+    rememberSizeFromDecode(path, image);
+    // Soft shortfall after a higher request: keep PreferCache climbing.
+    if (kind == SessionAppearance::PixelKind::SoftPreview
+        && reqEdge > incoming && ThumtooCache::isAvailable()) {
+        (void)ThumtooCache::scheduleDisplayPixels(
+            path, qMin(reqEdge, ThumtooCache::kImageLadderEdge));
     }
     if (viewport()) {
         viewport()->update();
@@ -1694,20 +1718,42 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
     if (isImageMode()) {
         m_lastLoadError.clear();
         rememberSizeFromDecode(path, image);
-        // Same path already on canvas: install full pixels in place. Soft→full
-        // must not clearLiveCanvas + fitItem (that resets zoom).
+        // Classify by delivered size: a soft ladder sample must not latch
+        // FullSource / "Full resolution" (blocks soft→HQ upgrades).
+        const SessionAppearance::PixelKind kind =
+            pixelKindForImageModeSample(path, image);
+        // Same path already on canvas: install in place. Soft→full must not
+        // clearLiveCanvas + fitItem (that resets zoom).
         if (ImageItem *cur = targetItem();
             cur && cur->path() == path) {
-            installDisplayPreservingView(
-                cur, image, SessionAppearance::PixelKind::FullSource,
-                kInvalidSessionImageId);
+            if (!cur->shouldUpgradeDisplayTo(ImageCache::longEdge(image))
+                && cur->hasDisplayPixels()) {
+                emit statusChanged();
+                return;
+            }
+            installDisplayPreservingView(cur, image, kind, kInvalidSessionImageId);
+            if (kind == SessionAppearance::PixelKind::SoftPreview
+                && ThumtooCache::isAvailable()) {
+                (void)ThumtooCache::scheduleDisplayPixels(
+                    path, ThumtooCache::kImageLadderEdge);
+            }
             if (viewport()) {
                 viewport()->update();
             }
             emit statusChanged();
             return;
         }
-        installImageModeReplaceItem(path, image);
+        // First install for this path: SoftPreview uses pending-tile path so
+        // FullSource-only createItemFromImage is not forced on a soft sample.
+        if (kind == SessionAppearance::PixelKind::SoftPreview) {
+            installImageModePendingTile(path, image);
+            if (ThumtooCache::isAvailable()) {
+                (void)ThumtooCache::scheduleDisplayPixels(
+                    path, ThumtooCache::kImageLadderEdge);
+            }
+        } else {
+            installImageModeReplaceItem(path, image);
+        }
         return;
     }
     seedEmptyWorkspaceFromReplace(path, image);

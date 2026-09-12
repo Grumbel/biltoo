@@ -1229,6 +1229,9 @@ private:
      * Image mode: install sharper ladder/PreferCache pixels in place (soft→HQ).
      * Called from onLadderReady; no-op when full native already covers.
      */
+    /** SoftPreview vs FullSource from delivered sample size (not request edge). */
+    SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
+                                                             const QImage &image) const;
     void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
     void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);

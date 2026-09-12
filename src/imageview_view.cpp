@@ -2557,15 +2557,22 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
         return {};
     }
     // Prefer what is actually on screen over last thumtoo pipeline tag.
-    if (item->hasDecodedPixels()) {
-        return tr("Full resolution");
-    }
+    // hasDecodedPixels alone is not "full": soft samples may have been installed
+    // as FullSource by a mistaken PreferCache shortfall classification.
     const int edge = item->displayPixelLongEdge();
     if (edge <= 0) {
         return tr("Loading…");
     }
+    const QSize logical = logicalSizeForPath(item->path());
+    const int native = isPositiveSize(logical) ? qMax(logical.width(), logical.height()) : 0;
+    if (item->hasDecodedPixels() && native > 0
+        && edge >= (native * 9) / 10) {
+        return tr("Full resolution");
+    }
     QString tier;
-    if (edge >= ThumtooCache::kBatchOverviewEdge) {
+    if (item->hasDecodedPixels() && edge >= ThumtooCache::kBatchOverviewEdge) {
+        tier = tr("High quality");
+    } else if (edge >= ThumtooCache::kBatchOverviewEdge) {
         tier = tr("High quality");
     } else if (edge >= ThumtooCache::kGalleryLadderEdge) {
         tier = tr("Preview");
