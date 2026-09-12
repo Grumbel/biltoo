@@ -2,6 +2,19 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-479-pipeline-thumtoo162-cursor.** Plan notes thumtoo-162 archive cursor.
+Prior: **478**. Companion: **thumtoo-162-fastbatch-archive-cursor**.
+
+### Next
+- biltoo: use TileSynth / get_pixels_from_tiles when soft short
+- thumtoo: interest cancel + FastScale Q1 ≤1024
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-478-pipeline-thumtoo160-link.** Plan notes thumtoo-160 TileSynth construct.
 Prior: **477**. Companion: **thumtoo-160-pixels-from-tiles**.
 

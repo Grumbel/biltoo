@@ -456,16 +456,17 @@ paths.
 
 ---
 
-## 10b. Status in thumtoo (as of tip 160)
+## 10b. Status in thumtoo (as of tip 162)
 
 | Item | Status |
 |------|--------|
 | Soft ladder ≤512 | Existing |
 | Grid tiles | Existing (`request_tile` / pyramid) |
 | `PixelSource` / `TileSource` | Existing |
-| **`get_pixels_from_tiles` / TileSynth** | **Landed (thumtoo-160)** |
-| `kBatchMaxEdge` (1024) | Constant landed; FastBatch lane still TODO |
-| Archive cursor + interest API | TODO |
+| **`get_pixels_from_tiles` / TileSynth** | **Landed (thumtoo-160/161)** |
+| `kBatchMaxEdge` (1024) | Constant landed |
+| **`ArchiveCursor` + TOC window** | **Partial (thumtoo-162)** — worker path; no interest API yet |
+| Interest cancel / FastScale Q1 path | TODO |
 
 ## 11. Implementation phases (lower levels first)
 
