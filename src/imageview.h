@@ -907,6 +907,11 @@ public:
     int pendingDecodeCount() const;
     /** Install host soft / schedule SoftOnly for the visible Gallery window. */
     void updateGalleryDecodeWindow();
+    /**
+     * Decode-window pass 1: attach ImageCache soft onto blank tiles (budgeted).
+     * @return number of installs; @p morePending if the budget was exhausted.
+     */
+    int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending);
     /** Coalesce decode-window rescans (setInterest + schedule) off the hot path. */
     void scheduleGalleryDecodeWindowRefresh(int delayMs = 48);
 

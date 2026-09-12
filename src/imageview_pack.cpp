@@ -37,6 +37,45 @@ void ImageView::scheduleGalleryDecodeWindowRefresh(int delayMs)
     m_galleryDecodeScrollTimer->start();
 }
 
+int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending)
+{
+    if (morePending) {
+        *morePending = false;
+    }
+    if (maxInstalls <= 0) {
+        return 0;
+    }
+    int installed = 0;
+    for (ImageItem *item : m_items) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        // Only truly blank tiles — climb upgrades go through scheduleGalleryDecode.
+        if (item->hasDisplayPixels() || item->hasDecodedPixels()) {
+            continue;
+        }
+        if (installed >= maxInstalls) {
+            if (morePending) {
+                *morePending = true;
+            }
+            break;
+        }
+        const QString &path = item->path();
+        const QImage hostSoft = ImageCache::get(path);
+        if (hostSoft.isNull()) {
+            continue;
+        }
+        installDisplayPixels(item, hostSoft,
+                             SessionAppearance::PixelKind::SoftPreview,
+                             item->sessionId());
+        GallerySoftState &st = m_gallerySoft[path];
+        st.have = qMax(st.have, ImageCache::longEdge(hostSoft));
+        item->update();
+        ++installed;
+    }
+    return installed;
+}
+
 void ImageView::updateGalleryDecodeWindow()
 {
     QElapsedTimer decodeWinTimer;
@@ -44,27 +83,13 @@ void ImageView::updateGalleryDecodeWindow()
         decodeWinTimer.start();
     }
     // -------------------------------------------------------------------------
-    // Gallery soft-thumb algorithm (viewport inspection)
+    // Gallery soft-thumb window (viewport inspection)
     //
-    // Zoom: Ctrl+wheel / toolbar scales the *view transform*. Pack cell size in
-    // scene space is unchanged; on-screen pixel size grows with zoom × DPR.
-    //
-    // Per path (GallerySoftState):
-    //   1. Placeholder — always want at least kFilmstripLadderEdge (256) so a
-    //      tile is never blank once soft data exists; idle tiles stay in the
-    //      soft band (≤ kGalleryLadderEdge).
-    //   2. want — for a *visible* tile: ceilLadder(on-screen long edge × DPR).
-    //      No artificial soft-max cliff; no native full dump. Off-screen:
-    //      placeholder band only.
-    //   3. If have >= want → idle (show whatever we have; sharper wins).
-    //   4. If inflight → wait (exactly one request per path).
-    //   5. If failed → stop.
-    //   6. If gaveUpWant >= want && have > 0 → stop (will not grow further).
-    //   7. Soft first: min(want, 512) via schedulePixels / request_raster SoftOnly.
-    //      Higher edges: setInterest overview (or scheduleOverviewPixels without
-    //      SET_INTEREST). Never ImageLoader::load for Gallery.
-    //
-    // Image mode still does full native decode separately.
+    // Pass 1 — ImageCache soft onto blank tiles (budgeted).
+    // Pass 2 — candidates via GallerySoftState::needsSoftSchedule + want edge;
+    //          scheduleGalleryDecode runs SoftClimbPlan (soft → overview → display).
+    // Pixels: ImageCache / ImageItem. Policy: GallerySoftState only.
+    // Image mode full decode is separate.
     // -------------------------------------------------------------------------
     if (!isGalleryMode() || m_items.isEmpty()) {
         return;
@@ -75,47 +100,19 @@ void ImageView::updateGalleryDecodeWindow()
         kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
     const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
 
-    // ------------------------------------------------------------------
-    // Pass 1: host soft onto blank tiles only (max few per turn).
-    // Paint-budget scale/promote is intentionally not done here — QImage::scaled
-    // of soft ladder frames dominated multi-hundred-ms decode-window times.
-    // OpenGL samples large softs; climb still requests the right ladder edge.
-    // ------------------------------------------------------------------
     qint64 usPass1 = 0;
     qint64 usPass2 = 0;
     qint64 usInterest = 0;
     QElapsedTimer phaseTimer;
 
     constexpr int kMaxInstallsPerDecodeWindow = 2;
-    int hostInstalled = 0;
     bool moreInstallsPending = false;
     if (m_perfEnabled) {
         phaseTimer.start();
     }
-    for (ImageItem *item : m_items) {
-        if (!item || item->path().isEmpty() || item->hasDecodedPixels()) {
-            continue;
-        }
-        if (item->hasDisplayPixels()) {
-            continue;
-        }
-        const QString &path = item->path();
-        if (hostInstalled >= kMaxInstallsPerDecodeWindow) {
-            moreInstallsPending = true;
-            break; // remaining blanks next tick
-        }
-        const QImage hostSoft = ImageCache::get(path);
-        if (hostSoft.isNull()) {
-            continue;
-        }
-        installDisplayPixels(item, hostSoft,
-                             SessionAppearance::PixelKind::SoftPreview,
-                             item->sessionId());
-        GallerySoftState &st = m_gallerySoft[path];
-        st.have = qMax(st.have, qMax(hostSoft.width(), hostSoft.height()));
-        item->update();
-        ++hostInstalled;
-    }
+    const int hostInstalled =
+        galleryInstallHostSoftOntoBlanks(kMaxInstallsPerDecodeWindow,
+                                         &moreInstallsPending);
     if (hostInstalled > 0 && viewport()) {
         viewport()->update();
     }

@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-589-gallery-host-soft-pass.** Extract pass1 host soft install.
+Prior: **588**.
+
+### Change
+- `galleryInstallHostSoftOntoBlanks` — budgeted ImageCache → blank tiles
+- `updateGalleryDecodeWindow` algorithm comment matches SoftClimbPlan /
+  needsSoftSchedule (no stale soft-only prose)
+
+### Done criteria
+- [x] Pass 1 is a named unit
+- [x] Bundle **589**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-588-install-preserving-view.** installDisplayPreservingView helper.
 Prior: **587**.
 
