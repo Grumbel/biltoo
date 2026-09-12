@@ -1008,6 +1008,8 @@ private:
     void applyProbedImageSize(const QString &path, const QSize &size);
     void updateGalleryDecodeWindow();
     void scheduleGalleryDecode(const QString &path);
+    /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
+    void gallerySoftWatchdogTick();
     /** Ladder step for item cell size in device pixels. */
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
     ImageItem *primaryItem() const;
@@ -1430,6 +1432,7 @@ private:
         bool fullInflight = false; // ImageLoader::load (native) in flight
         int gaveUpWant = 0;
         bool failed = false;
+        qint64 inflightSinceMs = 0; // QDateTime::currentMSecsSinceEpoch when inflight set
     };
     QHash<QString, GallerySoftState> m_gallerySoft;
 
@@ -1539,6 +1542,7 @@ private:
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     int m_galleryRelayoutSuppressCount = 0;
     QTimer *m_galleryDecodeScrollTimer = nullptr;
+    QTimer *m_gallerySoftWatchdog = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;
     GalleryPackReason m_debouncedPackReason = GalleryPackReason::ContentChange;
 };

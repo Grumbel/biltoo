@@ -18,6 +18,7 @@
 #include <QScrollBar>
 #include <QThreadPool>
 #include <QTimer>
+#include <QDateTime>
 #include <QPointer>
 #include <QMetaObject>
 #include <QtMath>
@@ -160,6 +161,10 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         item->setSourceImage(display);
     } else {
         item->setPreviewImage(display);
+        // Gallery uses DeviceCoordinateCache + BoundingRectViewportUpdate.
+        // Toggle alone inside setPreviewImage is not always enough for the
+        // view to repaint the tile until hover — force a cache rebuild here.
+        item->invalidateDeviceCache();
     }
     item->setContentHFlip(appearance.contentHFlip);
     item->setContentVFlip(appearance.contentVFlip);
@@ -514,6 +519,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
 
     st.inflight = requestEdge;
+    st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
     addPendingWorkspacePath(path);
     // Progressive: keep climbing while have < want (soft → overview).
     // Shortfall settle lives in ThumtooCache::g_pixelsSettled / gaveUpWant so
@@ -572,6 +578,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 }
                 if (got >= requestEdge * 9 / 10) {
                     soft.inflight = 0;
+                    soft.inflightSinceMs = 0;
                     if (soft.gaveUpWant <= requestEdge) {
                         soft.gaveUpWant = 0;
                     }
@@ -580,6 +587,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     // Soft band: wait for ladderReady / build durable soft level.
                     (void)ThumtooCache::schedulePixels(path, requestEdge);
                     soft.inflight = requestEdge;
+                    soft.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kGalleryLadderEdge
                            && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
@@ -590,6 +598,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
                     (void)ThumtooCache::scheduleOverviewPixels(path, ov);
                     soft.inflight = ov;
+                    soft.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kBatchOverviewEdge) {
                     // Above batch overview: durable soft will not grow further.
@@ -693,10 +702,15 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         if (item->imageSize() != before) {
             gallerySizeChanged = true;
         }
+        // Ensure the view schedules a paint for this tile (BoundingRect mode).
+        if (m_scene) {
+            m_scene->update(item->sceneBoundingRect());
+        }
     }
     if (gallerySizeChanged && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
         applyLayout(GalleryPackReason::ContentChange);
-    } else if (viewport()) {
+    }
+    if (viewport()) {
         viewport()->update();
     }
 }

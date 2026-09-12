@@ -206,6 +206,7 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
                                     || (got > 0
                                         && edge >= ThumtooCache::kFilmstripLadderEdge))) {
                                 st.inflight = 0;
+                                st.inflightSinceMs = 0;
                             }
                             // Always record shortfall for this edge so we do not
                             // re-request forever when thumtoo cannot grow.
@@ -339,6 +340,17 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             m_galleryDecodeScrollTimer->start();
         }
     });
+
+    // Recover Gallery tiles that received soft pixels but never repainted
+    // (DeviceCoordinateCache + BoundingRectViewportUpdate stalls).
+    m_gallerySoftWatchdog = new QTimer(this);
+    m_gallerySoftWatchdog->setInterval(400);
+    connect(m_gallerySoftWatchdog, &QTimer::timeout, this, [this]() {
+        if (isGalleryMode()) {
+            gallerySoftWatchdogTick();
+        }
+    });
+    m_gallerySoftWatchdog->start();
 }
 
 ImageView::~ImageView()

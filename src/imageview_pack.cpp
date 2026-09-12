@@ -6,11 +6,14 @@
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
+#include "imagecache.h"
 
 #include <QFileInfo>
 #include <QScrollBar>
 #include <QSet>
 #include <QTimer>
+#include <QDateTime>
+#include <cstdio>
 #include <QUndoStack>
 
 void ImageView::updateGalleryDecodeWindow()
@@ -101,17 +104,16 @@ void ImageView::updateGalleryDecodeWindow()
         }
     }
 
-    // Gallery interest: no Primary FocusFull (solid archives). Near uses
-    // batch overview edge so visible tiles can climb past soft without a
-    // second host request; speculative stays soft-band.
+    // Gallery interest: soft-band only (no Primary FocusFull). Overview climb
+    // past soft is explicit scheduleOverviewPixels with host ladderReady —
+    // setInterest at batch edge starved SoftOnly and delayed first tiles.
     {
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
-        const int nearEdge = ThumtooCache::kBatchOverviewEdge;
         QStringList near = interestNear;
         near.sort();
         QStringList speculative = interestRest;
         speculative.sort();
-        (void)ThumtooCache::setInterest(near, speculative, nearEdge, softEdge,
+        (void)ThumtooCache::setInterest(near, speculative, softEdge, softEdge,
                                         /*pathsPrimary=*/{}, /*primaryEdge=*/0);
     }
 
@@ -527,4 +529,81 @@ bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,
     viewport()->update();
     emit statusChanged();
     return true;
+}
+
+void ImageView::gallerySoftWatchdogTick()
+{
+    if (!isGalleryMode() || m_items.isEmpty()) {
+        return;
+    }
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    constexpr qint64 kStuckMs = 8000;
+    bool needWindow = false;
+    int repaired = 0;
+
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        if (path.isEmpty()) {
+            continue;
+        }
+        GallerySoftState &st = m_gallerySoft[path];
+
+        // Cache/session soft exists but tile still empty → install + force paint.
+        if (!item->hasDisplayPixels()) {
+            QImage soft = m_previewByPath.value(path);
+            if (soft.isNull()) {
+                soft = ImageCache::get(path);
+            }
+            // Do not PreferCache / extract on the GUI thread here.
+            if (!soft.isNull()) {
+                installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
+                                     item->sessionId());
+                if (m_scene) {
+                    m_scene->update(item->sceneBoundingRect());
+                }
+                st.have = qMax(st.have, qMax(soft.width(), soft.height()));
+                ++repaired;
+                continue;
+            }
+        } else {
+            // State says no soft but item has pixels — keep have in sync.
+            const int edge = item->displayPixelLongEdge();
+            if (edge > st.have) {
+                st.have = edge;
+            }
+        }
+
+        // Stuck inflight: clear and allow reschedule (do not leave forever).
+        if (st.inflight > 0 && st.inflightSinceMs > 0
+            && (now - st.inflightSinceMs) > kStuckMs) {
+            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                dbg && dbg[0] && dbg[0] != '0') {
+                fprintf(stderr,
+                        "biltoo/gallery: soft STUCK path need=%d have=%d inflight=%d age=%lldms — reset\n",
+                        st.want, st.have, st.inflight,
+                        static_cast<long long>(now - st.inflightSinceMs));
+            }
+            st.inflight = 0;
+            st.inflightSinceMs = 0;
+            needWindow = true;
+        }
+
+#ifndef NDEBUG
+        // Debug builds: never leave "have soft in cache, blank tile" silent.
+        if (st.have > 0 && !item->hasDisplayPixels()) {
+            Q_ASSERT_X(false, "gallerySoftWatchdogTick",
+                       "Gallery soft have>0 but item has no display pixels");
+        }
+#endif
+    }
+
+    if (repaired > 0 && viewport()) {
+        viewport()->update();
+    }
+    if (needWindow) {
+        updateGalleryDecodeWindow();
+    }
 }

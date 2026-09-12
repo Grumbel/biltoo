@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-506-gallery-soft-paint-watchdog.** Soft install always invalidates device cache; stall recovery.
+Prior: **505**.
+
+### Root cause
+Gallery uses DeviceCoordinateCache + BoundingRectViewportUpdate. Soft pixels
+were installed but tiles stayed blank until hover called invalidateDeviceCache.
+Interest near edge=1024 also starved SoftOnly for first paint.
+
+### Change
+- installDisplayPixels(SoftPreview) → invalidateDeviceCache + scene update
+- setInterest near edge back to soft band
+- gallerySoftWatchdogTick every 400ms: install from ImageCache/m_previewByPath
+  if tile blank; reset inflight stuck >8s; Q_ASSERT in debug if have>0 but blank
+
+### Done criteria
+- [x] Soft tiles paint without hover
+- [x] Bundle **506**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-505-overview-dup-branch.** Collapse identical overview inflight branches.
 Prior: **504**.
 
