@@ -259,7 +259,7 @@ ImageView::ImageView(QWidget *parent)
                 connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
                     if (isGalleryMode()) {
                         // Drop stale thumtoo queue work from the previous window.
-                        (void)ThumtooCache::bumpInterestEpoch();
+                        // setInterest in updateGalleryDecodeWindow bumps epoch.
                         updateGalleryDecodeWindow();
                     }
                 });
@@ -277,7 +277,7 @@ ImageView::ImageView(QWidget *parent)
                 connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
                     if (isGalleryMode()) {
                         // Drop stale thumtoo queue work from the previous window.
-                        (void)ThumtooCache::bumpInterestEpoch();
+                        // setInterest in updateGalleryDecodeWindow bumps epoch.
                         updateGalleryDecodeWindow();
                     }
                 });

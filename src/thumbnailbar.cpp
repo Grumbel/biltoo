@@ -393,7 +393,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
             m_scrollLoadTimer->setSingleShot(true);
             m_scrollLoadTimer->setInterval(80);
             connect(m_scrollLoadTimer, &QTimer::timeout, this, [this]() {
-                (void)ThumtooCache::bumpInterestEpoch();
+                // setInterest inside scheduleVisibleThumbnailLoads bumps epoch.
                 scheduleVisibleThumbnailLoads();
             });
         }
@@ -1370,6 +1370,29 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             lo = qMax(0, focus - 24);
             hi = qMin(n, focus + 25);
         }
+    }
+
+    // Publish interest for the visible filmstrip window (thumtoo ≥167).
+    {
+        QStringList near;
+        QStringList speculative;
+        near.reserve(hi - lo);
+        for (int i = lo; i < hi; ++i) {
+            if (i >= 0 && i < m_files.size()) {
+                near.append(m_files.at(i));
+            }
+        }
+        // Speculative band: one overscan block beyond the scheduled window.
+        const int specPad = qMax(8, (hi - lo) / 2);
+        for (int i = qMax(0, lo - specPad); i < lo; ++i) {
+            speculative.append(m_files.at(i));
+        }
+        for (int i = hi; i < qMin(n, hi + specPad); ++i) {
+            speculative.append(m_files.at(i));
+        }
+        const int nearEdge = qMin(decodeSize, ThumtooCache::kBatchOverviewEdge);
+        const int specEdge = qMin(decodeSize, ThumtooCache::kGalleryLadderEdge);
+        (void)ThumtooCache::setInterest(near, speculative, nearEdge, specEdge);
     }
 
     // Pool jobs only — thumtoo pixel concurrency is separate (kMaxConcurrentPixelJobs).

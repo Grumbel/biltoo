@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-484-filmstrip-set-interest.** Filmstrip setInterest + drop double epoch bumps.
+Prior: **483**. Companion: **thumtoo-167**.
+
+### Change
+- scheduleVisibleThumbnailLoads publishes Near/Speculative via setInterest
+- Filmstrip scroll no longer double-bumps (setInterest owns epoch)
+- Gallery scroll same: only updateGalleryDecodeWindow / setInterest
+
+### Next
+- FocusFull for Primary (tile pyramid on focused image)
+- Deduplicate host soft schedule vs thumtoo set_interest work
+- Image-mode Primary interest
+
+### Done criteria
+- [x] Filmstrip interest window
+- [x] Bundle **484**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-483-set-interest-gallery.** Gallery calls thumtoo set_interest for viewport.
 Prior: **482**. Companion: **thumtoo-167**.
 
