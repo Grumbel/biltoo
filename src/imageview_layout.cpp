@@ -1850,7 +1850,8 @@ QSizeF ImageView::nativeSize(const ImageItem *item)
     if (!item) {
         return {};
     }
-    return QSizeF(item->pixmap().size());
+    // Logical size — never soft display pixmap dimensions.
+    return QSizeF(item->imageSize());
 }
 
 

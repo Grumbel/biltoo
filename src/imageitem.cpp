@@ -57,19 +57,13 @@ ImageItem::ImageItem(const QString &path, const QSize &intrinsicSize, QGraphicsI
 
 QSize ImageItem::imageSize() const
 {
-    // Prefer known native/layout size over decoded ladder/preview pixels so HUD
-    // and packs report the full page size, not a 512–2048 ladder step.
-    const bool intrinsicKnown =
-        m_intrinsicSize.isValid() && m_intrinsicSize.width() > 1
-        && m_intrinsicSize.height() > 1 && m_intrinsicSize != QSize(1000, 1000)
-        && m_intrinsicSize != QSize(1024, 1024);
-    if (intrinsicKnown) {
+    // Logical size only. Never return sample pixel dimensions (soft or
+    // full-source ladder) — those are sampling, not identity.
+    if (m_intrinsicSize.isValid() && m_intrinsicSize.width() > 0
+        && m_intrinsicSize.height() > 0) {
         return m_intrinsicSize;
     }
-    if (!m_source.isNull() && !m_previewPixels) {
-        return m_source.size();
-    }
-    return m_intrinsicSize.isValid() ? m_intrinsicSize : QSize(1, 1);
+    return QSize(1, 1);
 }
 
 void ImageItem::setIntrinsicSize(const QSize &size)
@@ -190,11 +184,7 @@ void ImageItem::clearDecodedPixels()
         return;
     }
     prepareGeometryChange();
-    if (!m_intrinsicSize.isValid() || m_intrinsicSize.isEmpty()) {
-        if (!m_source.isNull()) {
-            m_intrinsicSize = m_source.size();
-        }
-    }
+    // Keep intrinsic — samples must not redefine geometry on clear.
     m_source = QImage();
     m_preview = QImage();
     m_previewPixels = false;
@@ -279,19 +269,14 @@ void ImageItem::bakeRotate90(int quarterTurns)
     if (!m_preview.isNull()) {
         m_preview = m_preview.transformed(xform, Qt::SmoothTransformation);
     }
-    // Layout / imageSize / contentRect must follow content orientation. Odd
-    // 90° steps swap axes — including soft-only tiles (probe intrinsic).
-    // Leaving intrinsic in the pre-rotate aspect made Gallery pack and the
-    // selection AABB keep the old bounding box while pixels looked rotated.
+    // Layout follows content orientation via intrinsic transpose — never adopt
+    // sample pixel size as logical size.
     const bool swapAxes = (quarterTurns % 2) != 0;
-    if (!m_source.isNull() && !m_previewPixels) {
-        m_intrinsicSize = m_source.size();
-        setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
-    } else {
-        if (swapAxes && m_intrinsicSize.isValid()
-            && m_intrinsicSize.width() > 0 && m_intrinsicSize.height() > 0) {
-            m_intrinsicSize.transpose();
-        }
+    if (swapAxes && m_intrinsicSize.isValid()
+        && m_intrinsicSize.width() > 0 && m_intrinsicSize.height() > 0) {
+        m_intrinsicSize.transpose();
+    }
+    {
         const QSize s = imageSize();
         setOffset(-s.width() / 2.0, -s.height() / 2.0);
     }
@@ -342,12 +327,8 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
     }
     m_hFlip = false;
     m_vFlip = false;
-    // Flip keeps width/height; still re-sync offset to current display size so
-    // QGraphicsPixmapItem AABB and contentRect stay aligned after the bake.
-    if (!m_source.isNull() && !m_previewPixels) {
-        m_intrinsicSize = m_source.size();
-        setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
-    } else {
+    // Flip keeps width/height; re-sync offset from logical size only.
+    {
         const QSize s = imageSize();
         setOffset(-s.width() / 2.0, -s.height() / 2.0);
     }

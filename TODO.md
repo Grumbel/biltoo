@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-568-item-imagesize-logical-only.** imageSize/nativeSize never report sample pixels.
+Prior: **567**.
+
+### Changes
+- `ImageItem::imageSize()` returns intrinsic only (no m_source fallback)
+- `clearDecodedPixels` / content rotate / flip no longer adopt source size into intrinsic
+- content rotate: transpose intrinsic on odd quarter-turns
+- `ImageView::nativeSize` uses `imageSize()`, not `pixmap().size()`
+
+### Done criteria
+- [x] Pack/fit/HUD cannot see soft pixmap as native size
+- [x] Bundle **568**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-567-decode-size-gate.** Decode path never installs soft/ladder as logical size.
 Prior: **566**.
 

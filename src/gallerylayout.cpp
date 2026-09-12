@@ -18,7 +18,7 @@ QSizeF nativeSize(const ImageItem *item)
     if (!item) {
         return {};
     }
-    // Prefer intrinsic/decoded image size so placeholders pack correctly.
+    // Logical size (intrinsic) only — soft samples never define pack geometry.
     return QSizeF(item->imageSize());
 }
 
