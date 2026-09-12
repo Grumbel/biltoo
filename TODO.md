@@ -2,6 +2,35 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-555-slideshow-pure-phase-only.** Retire live dual-blit; pure phase owns all transitions.
+Prior: **554**.
+
+### Changes
+- MainWindow clock: pure `setSlideshowPhase` for Crossfade / FadeBlack / Slide / None
+  (no prepareSlideshowTransition branch)
+- Paint: pure-phase composite returns; legacy live paint branch deleted
+- beginLive / startLive / tickLive / prepareTransition / snapshot anim → no-ops
+- releaseLiveTransitionHold only clears residual flags (LoadReplace safety)
+- tickSlideshowMotion: pure-phase clocks or pure dwell only
+- Transition::None = hard cut in pure-phase paint
+- SLIDESHOW.md: pure phase is the only transition implementation
+
+Members (`m_live*`) remain for ABI/residual clears; no longer driven.
+
+### Still open
+- Delete m_live* members and snapshot pixmap path entirely (follow-up cleanup)
+- Optional pure camera helper + tests
+
+### Done criteria
+- [x] Single transition authority: pure phase
+- [x] Bundle **555**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-554-slideshow-unified-raster-map.** One best-raster map per path.
 Prior: **553**.
 

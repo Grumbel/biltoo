@@ -1618,59 +1618,34 @@ void MainWindow::updateSlideshowFromClock()
         return;
     }
 
-    // Transition window: t from pure clock only (Crossfade + FadeBlack).
+    // Transition window: pure phase only (Crossfade / FadeBlack / Slide / None).
+    // Legacy prepareSlideshowTransition + live dual-blit path is retired —
+    // wall clock is the only scheduler (SLIDESHOW.md).
     const qreal t = qBound(0.0, qreal(phaseMs - pureMs) / qreal(transitionMs), 1.0);
     if (m_imageView) {
-        const auto tr = m_imageView->slideshowTransition();
-        if (tr == ImageView::SlideshowTransition::Crossfade
-            || tr == ImageView::SlideshowTransition::FadeBlack
-            || tr == ImageView::SlideshowTransition::Slide) {
-            if (m_slideshowTransitionCycle != cycle) {
-                qCDebug(lcSlideshow).nospace()
-                    << "[slideshow] phase-fade cycle=" << cycle
-                    << " phase=" << phaseMs
-                    << " t=" << QString::number(t, 'f', 3)
-                    << " from=" << fromIdx
-                    << " to=" << toIdx
-                    << " path=" << QFileInfo(toPath).fileName();
-                m_slideshowTransitionCycle = cycle;
-                m_slideshowPendingToIndex = toIdx;
-            }
-            m_imageView->setSlideshowPhase(fromPath, toPath, t);
-            // phaseMs ∈ [0, intervalMs). When pureMs==0, t never reaches 1.0
-            // because phase max is interval-1. Commit on the last phase sample.
-            const bool transitionDone =
-                (t >= 1.0 - 1e-6) || (phaseMs >= intervalMs - 1);
-            if (transitionDone && m_currentIndex != toIdx && !m_slideshowAdvancing) {
-                m_slideshowAdvancing = true;
-                setCurrentIndex(toIdx);
-                m_slideshowAdvancing = false;
-                m_slideshowPendingToIndex = -1;
-            }
-            return;
+        if (m_slideshowTransitionCycle != cycle) {
+            qCDebug(lcSlideshow).nospace()
+                << "[slideshow] phase-fade cycle=" << cycle
+                << " phase=" << phaseMs
+                << " t=" << QString::number(t, 'f', 3)
+                << " from=" << fromIdx
+                << " to=" << toIdx
+                << " path=" << QFileInfo(toPath).fileName();
+            m_slideshowTransitionCycle = cycle;
+            m_slideshowPendingToIndex = toIdx;
         }
-    }
-
-    // Non-crossfade transitions: keep legacy once-per-cycle path.
-    if (m_slideshowTransitionCycle == cycle) {
-        return;
-    }
-    if (m_currentIndex != fromIdx) {
-        if (!m_slideshowAdvancing) {
+        // Transition::None still drives phase with t so the clock commits;
+        // paint treats None as a cut (to frame only when t past midpoint optional).
+        m_imageView->setSlideshowPhase(fromPath, toPath, t);
+        const bool transitionDone =
+            (t >= 1.0 - 1e-6) || (phaseMs >= intervalMs - 1);
+        if (transitionDone && m_currentIndex != toIdx && !m_slideshowAdvancing) {
             m_slideshowAdvancing = true;
-            setCurrentIndex(fromIdx);
+            setCurrentIndex(toIdx);
             m_slideshowAdvancing = false;
+            m_slideshowPendingToIndex = -1;
         }
-        return;
     }
-    m_slideshowTransitionCycle = cycle;
-    m_slideshowPendingToIndex = -1;
-    m_slideshowAdvancing = true;
-    if (m_imageView && m_imageView->isImageMode()) {
-        m_imageView->prepareSlideshowTransition();
-    }
-    setCurrentIndex(toIdx);
-    m_slideshowAdvancing = false;
 }
 
 void MainWindow::onSlideshowTick()

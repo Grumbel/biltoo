@@ -355,6 +355,19 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                                  m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
                 painter.restore();
                 painter.setClipping(false);
+            } else if (m_slideshowTransition == SlideshowTransition::None) {
+                // Hard cut at the end of the transition window (no blend).
+                if (t < 1.0 - 1e-6) {
+                    if (!fromImg.isNull()) {
+                        painter.setOpacity(1.0);
+                        paintMotionCover(&painter, fromImg, fromT,
+                                         m_motionBiasA, m_motionBiasB, 0);
+                    }
+                } else {
+                    painter.setOpacity(1.0);
+                    paintMotionCover(&painter, m_ssToImage, toT,
+                                     m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
+                }
             } else {
                 // Crossfade: A 1→0, B 0→1; both in motion.
                 if (!fromImg.isNull()) {
@@ -372,88 +385,9 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             paintMotionCover(&painter, fromImg, fromT,
                              m_motionBiasA, m_motionBiasB, 0);
         }
-    }
-
-    // Legacy live path (FadeBlack / Slide / non-phase). Prefer pure phase above.
-    if ((m_liveTransitionActive || m_liveTransitionHold)
-        && (m_liveTransitionProgress < 1.0 || m_liveTransitionHold)
-        && m_ssFadeT < 0.0) {
-        const QRect vr = viewport()->rect();
-        const qreal t = m_liveTransitionHold ? 1.0 : m_liveTransitionProgress;
-        if (m_slideshowTransition == SlideshowTransition::Crossfade) {
-            fillPad(vr, m_liveFromSourceImage, m_liveTransitionSourceImage, t,
-                    m_motionBiasPath, m_liveTransitionNextPath);
-            if (!m_liveFromSourceImage.isNull()) {
-                painter.setOpacity(m_liveTransitionHold ? 0.0 : (1.0 - t));
-                paintMotionCover(&painter, m_liveFromSourceImage, m_dwellMotionT,
-                                 m_liveFromBiasA, m_liveFromBiasB, 0);
-            }
-            if (!m_liveTransitionSourceImage.isNull()) {
-                painter.setOpacity(m_liveTransitionHold ? 1.0 : t);
-                paintMotionCover(&painter, m_liveTransitionSourceImage,
-                                 m_liveTransitionMotionProgress,
-                                 m_liveToBiasA, m_liveToBiasB,
-                                 m_liveTransitionPathHash);
-            }
-            painter.setOpacity(1.0);
-        } else if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
-            fillPad(vr, m_liveFromSourceImage, m_liveTransitionSourceImage, t,
-                    m_motionBiasPath, m_liveTransitionNextPath);
-            if (t < 0.5 || m_liveTransitionAwaitingLoad) {
-                if (!m_liveFromSourceImage.isNull()) {
-                    painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_liveFromSourceImage, m_dwellMotionT,
-                                     m_liveFromBiasA, m_liveFromBiasB, 0);
-                }
-                painter.setOpacity(m_liveTransitionAwaitingLoad ? 1.0 : (t * 2.0));
-                painter.fillRect(vr, Qt::black);
-                painter.setOpacity(1.0);
-            } else {
-                if (!m_liveTransitionSourceImage.isNull()) {
-                    painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_liveTransitionSourceImage,
-                                     m_liveTransitionMotionProgress,
-                                     m_liveToBiasA, m_liveToBiasB,
-                                     m_liveTransitionPathHash);
-                }
-                painter.setOpacity((1.0 - t) * 2.0);
-                painter.fillRect(vr, Qt::black);
-                painter.setOpacity(1.0);
-            }
-        } else if (m_slideshowTransition == SlideshowTransition::Slide) {
-            // Projector: outgoing exits left, incoming enters from the right.
-            // Prefer live sources (motion stays on); fall back to snapshot cards.
-            const int w = vr.width();
-            const int xOld = m_liveTransitionHold ? -w : int(qRound(-t * w));
-            const int xNew = m_liveTransitionHold ? 0 : int(qRound((1.0 - t) * w));
-            fillPad(vr, m_liveFromSourceImage, m_liveTransitionSourceImage, t,
-                    m_motionBiasPath, m_liveTransitionNextPath);
-            if (!m_liveFromSourceImage.isNull() || !m_liveTransitionSourceImage.isNull()) {
-                if (!m_liveFromSourceImage.isNull()) {
-                    painter.save();
-                    painter.translate(xOld, 0);
-                    paintMotionCover(&painter, m_liveFromSourceImage, m_dwellMotionT,
-                                     m_liveFromBiasA, m_liveFromBiasB, 0);
-                    painter.restore();
-                }
-                if (!m_liveTransitionSourceImage.isNull()) {
-                    painter.save();
-                    painter.translate(xNew, 0);
-                    paintMotionCover(&painter, m_liveTransitionSourceImage,
-                                     m_liveTransitionMotionProgress,
-                                     m_liveToBiasA, m_liveToBiasB,
-                                     m_liveTransitionPathHash);
-                    painter.restore();
-                }
-            } else {
-                if (!m_slideshowTransitionFromPixmap.isNull()) {
-                    painter.drawPixmap(xOld, 0, m_slideshowTransitionFromPixmap);
-                }
-                if (!m_slideshowTransitionToPixmap.isNull()) {
-                    painter.drawPixmap(xNew, 0, m_slideshowTransitionToPixmap);
-                }
-            }
-        }
+        // Pure phase owns the slideshow viewport — do not fall through to
+        // underlay tiles, snapshot overlays, or the retired live dual-blit path.
+        return;
     }
 
     // Empty session: invite the user to open or drop images.

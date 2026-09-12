@@ -91,6 +91,10 @@ Do not wire “decode finished” into start/cancel/hold of the pure wall clock.
 
 A single wall-clock phase decides the segment (dwell vs transition) and which pair (A, B). Rendering draws the buffers for that phase. There is no second scheduler.
 
+The pure-phase path (`setSlideshowPhase`) is the only transition implementation
+for Crossfade, Fade-to-black, Slide, and None (hard cut). The older live
+dual-blit / snapshot overlay path is retired.
+
 ## Pause
 
 While paused, the clock does not advance. The pause state stays visible until resume or stop.

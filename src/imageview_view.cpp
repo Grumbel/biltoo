@@ -695,23 +695,7 @@ QPixmap ImageView::captureSlideshowFrame() const
 
 void ImageView::prepareSlideshowTransition()
 {
-    cancelSlideshowTransition();
-    // Snapshot transitions when dwell motion is off. With motion on, the host
-    // uses beginLiveSlideshowTransition so the outgoing pan never freezes.
-    if (m_slideshowTransition == SlideshowTransition::None
-        || m_slideshowTransitionDurationMs <= 0
-        || !isImageMode()
-        || !viewport()) {
-        return;
-    }
-    const QPixmap shot = captureSlideshowFrame();
-    if (shot.isNull()) {
-        return;
-    }
-    m_slideshowTransitionPixmap = shot;
-    m_slideshowTransitionProgress = 0.0;
-    m_slideshowTransitionPending = true;
-    m_slideshowTransitionActive = false;
+    // Retired: pure-phase wall clock drives all transitions (SLIDESHOW.md).
 }
 
 bool ImageView::isSlideshowTransitionBusy() const
@@ -752,186 +736,25 @@ void ImageView::cancelSlideshowTransition()
 
 void ImageView::releaseLiveTransitionHold()
 {
-    if (!m_liveTransitionHold && !m_liveTransitionAwaitingLoad) {
-        // Fade-end already armed dwell in tickSlideshowMotion; LoadReplace only
-        // updates the hidden underlay. Upgrade dwell if the canvas has better pixels.
-        if (m_slideshowProgressActive) {
-            if (ImageItem *item = targetItem()) {
-                if (!item->sourceImage().isNull()) {
-                    QImage next = item->sourceImage();
-                    const int edge = slideshowTargetEdge();
-                    if (qMax(next.width(), next.height()) > edge) {
-                        next = next.scaled(edge, edge, Qt::KeepAspectRatio,
-                                           Qt::FastTransformation);
-                    }
-                    const int nextLong = qMax(next.width(), next.height());
-                    const int curLong = qMax(m_dwellSourceImage.width(),
-                                             m_dwellSourceImage.height());
-                    // Only rebuild atlas when long edge grows meaningfully.
-                    if (m_dwellSourceImage.isNull()
-                        || nextLong > curLong * 5 / 4) {
-                        m_dwellSourceImage = next;
-                        ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas,
-                                          &m_dwellAtlasScale, &m_dwellAtlasVw,
-                                          &m_dwellAtlasVh);
-                        qCDebug(lcSlideshow).nospace()
-                            << "[slideshow] dwell-upgrade "
-                            << m_dwellSourceImage.width() << "x"
-                            << m_dwellSourceImage.height()
-                            << " path=" << QFileInfo(item->path()).fileName();
-                    }
-                    hideSlideshowUnderlay();
-                }
-            }
-        }
-        return;
-    }
-    if (m_liveTransitionAwaitingLoad
-        && m_slideshowTransition == SlideshowTransition::FadeBlack
-        && m_liveTransitionActive) {
-        m_liveTransitionAwaitingLoad = false;
-        m_liveTransitionElapsedBaseMs = m_liveTransitionDurationMs / 2;
-        m_liveTransitionClock.restart();
-        m_liveTransitionProgress = 0.5;
-        if (viewport()) {
-            viewport()->update();
-        }
-        return;
-    }
-
-    const QImage toSource = m_liveTransitionSourceImage;
-    const QString nextPath = m_liveTransitionNextPath;
-
-    // Biases for the incoming slide.
-    m_motionBiasA = m_liveToBiasA;
-    m_motionBiasB = m_liveToBiasB;
-    m_motionBiasValid = true;
-    m_motionBiasPath = nextPath.isEmpty()
-        ? (targetItem() ? targetItem()->path() : QString())
-        : nextPath;
-
-    // Dwell buffer: canvas full decode if it matches the target, else fade to-frame.
-    QImage dwell;
-    if (ImageItem *item = targetItem()) {
-        if (!item->sourceImage().isNull()
-            && (nextPath.isEmpty() || item->path() == nextPath)) {
-            dwell = item->sourceImage();
-        }
-    }
-    if (dwell.isNull()) {
-        dwell = toSource;
-    }
-    m_dwellSourceImage = dwell;
-    m_dwellMotionT = 0.0;
-    if (!dwell.isNull()) {
-        m_dwellAtlas = m_liveToAtlas;
-        m_dwellAtlasScale = m_liveToAtlasScale;
-        m_dwellAtlasVw = m_liveToAtlasVw;
-        m_dwellAtlasVh = m_liveToAtlasVh;
-        ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                          &m_dwellAtlasVw, &m_dwellAtlasVh);
-    }
-
-    // Start path at 0 while hold still covers the viewport (no underlay gap).
-    hideSlideshowUnderlay();
-    if (m_slideshowProgressActive
-        && m_slideshowMotion != SlideshowMotion::Off
-        && m_slideshowProgressIntervalMs >= 250
-        && !m_dwellSourceImage.isNull()) {
-        startSlideshowMotion(m_slideshowProgressIntervalMs, 0.0);
-        m_dwellSourceImage = dwell;
-        if (!dwell.isNull()) {
-            ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                              &m_dwellAtlasVw, &m_dwellAtlasVh);
-        }
-        m_dwellMotionT = 0.0;
-        m_motionElapsedOffsetMs = 0;
-        m_motionClock.start();
-        m_slideshowMotionActive = true;
-        qCDebug(lcSlideshow).nospace()
-            << "[slideshow] dwell-start "
-            << m_dwellSourceImage.width() << "x" << m_dwellSourceImage.height()
-            << " path=" << QFileInfo(nextPath).fileName();
-    }
-
-    // Clear live composite only after dwell is armed.
+    // Retired live dual-blit — only clear residual flags so LoadReplace is safe.
     m_liveTransitionHold = false;
     m_liveTransitionAwaitingLoad = false;
     m_liveTransitionActive = false;
     m_liveTransitionProgress = 1.0;
-    m_slideshowTransitionToPixmap = QPixmap();
-    m_slideshowTransitionFromPixmap = QPixmap();
     m_liveFromSourceImage = QImage();
     m_liveTransitionSourceImage = QImage();
-    m_liveFromAtlas = QPixmap();
-    m_liveToAtlas = QPixmap();
-    m_liveTransitionPathHash = 0;
-    m_liveTransitionMotionProgress = 0.0;
     m_liveTransitionNextPath.clear();
-    m_toLayerWallMs = -1.0;
-
-    emit slideshowDwellResumeRequested();
-    if (viewport()) {
-        viewport()->update();
+    if (m_liveTransitionTimer) {
+        m_liveTransitionTimer->stop();
     }
 }
 
 void ImageView::startSlideshowTransitionAnimation()
 {
-    if (!m_slideshowTransitionPending || m_slideshowTransitionPixmap.isNull()) {
-        m_slideshowTransitionPending = false;
-        // Host may be waiting to re-arm the advance timer after goNext.
-        emit slideshowDwellResumeRequested();
-        return;
-    }
+    // Retired snapshot overlay path; pure phase paints transitions.
     m_slideshowTransitionPending = false;
-
-    m_slideshowTransitionToPixmap = QPixmap();
-    if (m_slideshowTransition == SlideshowTransition::Slide && viewport()) {
-        m_slideshowTransitionActive = false;
-        m_slideshowTransitionProgress = 1.0;
-        // New slide is already loaded into the scene; capture without GL grab.
-        m_slideshowTransitionToPixmap = captureSlideshowFrame();
-        // Projector slide is two static frames; pause dwell blit for the swap.
-        cancelSlideshowMotion();
-    }
-
-    m_slideshowTransitionActive = true;
-    m_slideshowTransitionProgress = 0.0;
-
-    if (!m_slideshowTransitionAnim) {
-        m_slideshowTransitionAnim = new QVariantAnimation(this);
-        m_slideshowTransitionAnim->setEasingCurve(QEasingCurve::InOutQuad);
-        connect(m_slideshowTransitionAnim, &QVariantAnimation::valueChanged, this,
-                [this](const QVariant &v) {
-                    m_slideshowTransitionProgress = v.toReal();
-                    if (viewport()) {
-                        viewport()->update();
-                    }
-                });
-        connect(m_slideshowTransitionAnim, &QVariantAnimation::finished, this, [this]() {
-            m_slideshowTransitionActive = false;
-            m_slideshowTransitionProgress = 1.0;
-            m_slideshowTransitionPixmap = QPixmap();
-            m_slideshowTransitionToPixmap = QPixmap();
-            // Resume dwell blit after a static Slide swap.
-            maybeStartSlideshowMotion();
-            if (viewport()) {
-                viewport()->update();
-            }
-            // Interval may equal transition duration — host must not arm the
-            // advance timer until this finishes (avoids tick/transition races).
-            emit slideshowDwellResumeRequested();
-        });
-    }
-    m_slideshowTransitionAnim->stop();
-    m_slideshowTransitionAnim->setStartValue(0.0);
-    m_slideshowTransitionAnim->setEndValue(1.0);
-    m_slideshowTransitionAnim->setDuration(m_slideshowTransitionDurationMs);
-    m_slideshowTransitionAnim->start();
-    if (viewport()) {
-        viewport()->update();
-    }
+    m_slideshowTransitionActive = false;
+    m_slideshowTransitionProgress = 1.0;
 }
 
 void ImageView::setSlideshowMotion(SlideshowMotion mode)
@@ -1632,121 +1455,9 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
 
 bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 {
-    // CONTRACT: two FULL-RES images, both moving, opacity crossfade.
-    // Never open the incoming frame on a thumbnail — thumb→full always jumps
-    // because motion cover uses the image's real pixel size (travel thresholds
-    // and atlas scale are not resolution-invariant in absolute pixels).
-    if (m_slideshowMotion == SlideshowMotion::Off
-        || m_slideshowTransition == SlideshowTransition::None
-        || m_slideshowTransition == SlideshowTransition::Slide
-        || m_slideshowTransitionDurationMs <= 0
-        || !isImageMode()
-        || !viewport()
-        || nextPath.isEmpty()) {
-        qCDebug(lcSlideshow) << "[slideshow] beginLive declined: mode/duration/path";
-        return false;
-    }
-
-    cancelSlideshowTransition();
-    m_liveTransitionNextPath = nextPath;
-    m_liveTransitionMidAdvanced = false;
-
-    // Outgoing: dwell cover or canvas full decode only (no cache thumb).
-    m_liveFromSourceImage = QImage();
-    m_liveFromMotionProgress0 = 0.0;
-    m_liveFromBiasA = m_motionBiasA;
-    m_liveFromBiasB = m_motionBiasB;
-    if (!m_dwellSourceImage.isNull()) {
-        m_liveFromSourceImage = m_dwellSourceImage;
-    } else if (ImageItem *item = targetItem()) {
-        m_liveFromSourceImage = item->sourceImage();
-        if (m_liveFromSourceImage.isNull() && !item->pixmap().isNull()) {
-            m_liveFromSourceImage = item->pixmap().toImage();
-        }
-    }
-    if (m_slideshowMotionActive && m_motionDurationMs > 0) {
-        m_liveFromMotionProgress0 = qBound(
-            0.0,
-            qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
-                / qreal(m_motionDurationMs),
-            1.0);
-    }
-
-    if (m_liveFromSourceImage.isNull()) {
-        qCDebug(lcSlideshow) << "[slideshow] beginLive declined: no from full pixels";
-        return false;
-    }
-
-    m_liveTransitionAwaitingLoad = true;
-
-    // Fast path: raster map already has pixels for next.
-    {
-        const QImage img = slideshowRaster(nextPath);
-        if (!img.isNull()) {
-            qCDebug(lcSlideshow).nospace()
-                << "[slideshow] beginLive raster-hit "
-                << QFileInfo(nextPath).fileName()
-                << " " << img.width() << "x" << img.height()
-                << " from=" << m_liveFromSourceImage.width() << "x"
-                << m_liveFromSourceImage.height();
-            const QPointer<ImageView> guard(this);
-            QMetaObject::invokeMethod(this, [guard, img]() {
-                if (guard) {
-                    guard->startLiveTransitionWithImage(img);
-                }
-            }, Qt::QueuedConnection);
-            return true;
-        }
-    }
-
-    // Soft/cache hit is fine: camera is resolution-invariant. Never upscale to
-    // native (that created multi-MP phase buffers). Climb via preload later.
-    {
-        QImage img = slideshowRaster(nextPath);
-        if (img.isNull()) {
-            img = ImageCache::get(nextPath, slideshowTargetEdge());
-            if (img.isNull()) {
-                img = ImageCache::get(nextPath);
-            }
-            if (!img.isNull()) {
-                putSlideshowRaster(nextPath, img);
-            }
-        }
-        if (!img.isNull()) {
-            qCDebug(lcSlideshow).nospace()
-                << "[slideshow] beginLive cache-hit "
-                << QFileInfo(nextPath).fileName()
-                << " " << img.width() << "x" << img.height()
-                << " from=" << m_liveFromSourceImage.width() << "x"
-                << m_liveFromSourceImage.height();
-            const QPointer<ImageView> guard(this);
-            QMetaObject::invokeMethod(this, [guard, img]() {
-                if (guard) {
-                    guard->startLiveTransitionWithImage(img);
-                }
-            }, Qt::QueuedConnection);
-            preloadSlideshowImage(nextPath);
-            return true;
-        }
-    }
-
-    // Preload already decoding this path — stay awaiting; preload-ready will
-    // start the fade (avoid a second full disk load of the same file).
-    if (m_ssRasterInflight.contains(nextPath)) {
-        qCDebug(lcSlideshow).nospace()
-            << "[slideshow] beginLive wait-preload "
-            << QFileInfo(nextPath).fileName();
-        return true;
-    }
-
-    // Kick preload and wait. preload-ready starts the fade when done.
-    qCDebug(lcSlideshow).nospace()
-        << "[slideshow] beginLive request-preload "
-        << QFileInfo(nextPath).fileName()
-        << " from=" << m_liveFromSourceImage.width() << "x"
-        << m_liveFromSourceImage.height();
-    preloadSlideshowImage(nextPath);
-    return true;
+    Q_UNUSED(nextPath);
+    // Retired: pure phase is the only transition path.
+    return false;
 }
 
 qreal ImageView::slideshowMotionHeadroom() const
@@ -1887,19 +1598,6 @@ void ImageView::preloadSlideshowImage(const QString &path)
                     if (loadPath == view->m_ssToPath) {
                         view->m_ssToImage =
                             view->orientSlideshowImage(img, loadPath);
-                    }
-                    // Legacy live-transition path still consumes upgrades.
-                    if (view->m_liveTransitionNextPath == loadPath
-                        && (view->m_liveTransitionActive
-                            || view->m_liveTransitionHold
-                            || view->m_liveTransitionAwaitingLoad)) {
-                        const QImage oriented =
-                            view->orientSlideshowImage(img, loadPath);
-                        view->m_liveTransitionSourceImage = oriented;
-                        view->ensureMotionAtlas(
-                            oriented, &view->m_liveToAtlas,
-                            &view->m_liveToAtlasScale, &view->m_liveToAtlasVw,
-                            &view->m_liveToAtlasVh);
                     }
                     if (view->viewport()) {
                         view->viewport()->update();
@@ -2446,98 +2144,13 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
 
 void ImageView::startLiveTransitionWithImage(const QImage &nextImage)
 {
-    if (!isImageMode() || !viewport()) {
-        m_liveTransitionAwaitingLoad = false;
-        emit slideshowLiveTransitionFinished();
-        return;
-    }
-    if (nextImage.isNull()) {
-        m_liveTransitionAwaitingLoad = false;
-        emit slideshowLiveTransitionFinished();
-        return;
-    }
-    // Preload/full handoff is usually unbaked disk pixels — apply *next path*
-    // session content once here. Never use m_currentSessionId: that is still
-    // the dwell ("from") image while the transition loads the next path, so
-    // using it painted the incoming frame with the previous slide's rotation.
-    {
-        m_liveTransitionSourceImage =
-            orientSlideshowImage(nextImage, m_liveTransitionNextPath);
-    }
-    if (m_liveTransitionSourceImage.isNull()) {
-        m_liveTransitionSourceImage = nextImage;
-    }
-    m_liveTransitionPathHash = qHash(m_liveTransitionNextPath);
-
-    // Incoming path biases only — never overwrite dwell m_motionBiasA/B.
-    {
-        const QPointF saveA = m_motionBiasA;
-        const QPointF saveB = m_motionBiasB;
-        const bool saveValid = m_motionBiasValid;
-        pickInterestingMotionBiases(m_liveTransitionPathHash
-                                        ? m_liveTransitionPathHash
-                                        : 1u,
-                                    nextImage);
-        m_liveToBiasA = m_motionBiasA;
-        m_liveToBiasB = m_motionBiasB;
-        m_motionBiasA = saveA;
-        m_motionBiasB = saveB;
-        m_motionBiasValid = saveValid;
-    }
-
-    // From keeps the running dwell wall clock. To starts its own path at 0
-    // (toLayerWallMs = wallMs ⇒ toT starts at 0). Soft-handoff then starts a
-    // fresh path at 0 for the new slide — one progress domain per image.
-    const qreal wallMs = (m_slideshowMotionActive && m_motionDurationMs > 0)
-        ? qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed())
-        : 0.0;
-    m_toLayerWallMs = wallMs;
-    m_liveFromMotionProgress0 = (m_motionDurationMs > 0)
-        ? motionProgress01(wallMs, qreal(m_motionDurationMs))
-        : 0.0;
-
-    // Frames are drawn in paintEvent via atlas-backed paintMotionCover.
-    m_dwellMotionT = m_liveFromMotionProgress0;
-    m_liveTransitionMotionProgress = 0.0;
-    ensureMotionAtlas(m_liveFromSourceImage, &m_liveFromAtlas, &m_liveFromAtlasScale,
-                      &m_liveFromAtlasVw, &m_liveFromAtlasVh);
-    ensureMotionAtlas(m_liveTransitionSourceImage, &m_liveToAtlas, &m_liveToAtlasScale,
-                      &m_liveToAtlasVw, &m_liveToAtlasVh);
-    setSlideshowUnderlayVisible(false);
-
-    // Opacity timeline only. Motion stays on m_motionTimer.
-    m_liveTransitionActive = true;
-    m_liveTransitionHold = false;
-    m_liveTransitionAwaitingLoad = false;
-    m_liveTransitionMidAdvanced = false;
-    m_liveTransitionElapsedBaseMs = 0;
-    m_liveTransitionProgress = 0.0;
-    m_liveTransitionMotionProgress = 0.0;
-    m_liveTransitionDurationMs = m_slideshowTransitionDurationMs;
-    m_liveTransitionClock.start();
-
-    // Ensure the single motion timer is running (must already be for dwell).
-    if (!m_slideshowMotionActive && m_slideshowProgressIntervalMs >= 250) {
-        // Degenerate: start motion if somehow inactive.
-        m_slideshowMotionActive = true;
-        m_motionDurationMs = m_slideshowProgressIntervalMs;
-        m_motionClock.start();
-        m_motionElapsedOffsetMs = 0;
-        if (!m_motionTimer) {
-            m_motionTimer = new QTimer(this);
-            m_motionTimer->setTimerType(Qt::PreciseTimer);
-            m_motionTimer->setInterval(16);
-            connect(m_motionTimer, &QTimer::timeout, this, &ImageView::tickSlideshowMotion);
-        }
-        m_motionTimer->start();
-    }
-    viewport()->update();
+    Q_UNUSED(nextImage);
+    // Retired: pure phase is the only transition path.
 }
 
 void ImageView::tickLiveTransition()
 {
-    // Obsolete: opacity + dual-frame sampling live in tickSlideshowMotion
-    // so the motion clock can never be stopped by a transition.
+    // Retired: pure phase is the only transition path.
 }
 
 void ImageView::maybeStartSlideshowMotion()
@@ -2546,14 +2159,7 @@ void ImageView::maybeStartSlideshowMotion()
         || !isImageMode()) {
         return;
     }
-    // Live transition owns motion via the single motion timer + soft handoff
-    // in releaseLiveTransitionHold. startSlideshowMotion() cancels the timer —
-    // calling it here would stop motion mid-crossfade.
-    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
-        return;
-    }
-    // Already running — do not restart from 0 (that caused dwellT 0.75→0.01
-    // after every live soft-handoff when a late maybeStart fired).
+    // Already running — do not restart from 0.
     if (m_slideshowMotionActive) {
         return;
     }
@@ -2724,130 +2330,22 @@ void ImageView::tickSlideshowMotion()
         return;
     }
 
+    // Pure dwell motion (interval timer path when phase clocks are not running).
     if (m_motionDurationMs <= 0) {
         return;
     }
-
     const qreal wallMs = qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed());
-    const qreal dwellT = motionProgress01(wallMs, qreal(m_motionDurationMs));
-    m_dwellMotionT = dwellT;
+    auto motionProgress01 = [](qreal ms, qreal dur) -> qreal {
+        if (dur <= 0.0) {
+            return 0.0;
+        }
+        return qBound(0.0, ms / dur, 1.0);
+    };
+    m_dwellMotionT = motionProgress01(wallMs, qreal(m_motionDurationMs));
     if (!m_dwellSourceImage.isNull()) {
         ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                           &m_dwellAtlasVw, &m_dwellAtlasVh);
     }
-    if (m_liveTransitionActive || m_liveTransitionHold || m_liveTransitionAwaitingLoad) {
-        if (!m_liveFromSourceImage.isNull()) {
-            ensureMotionAtlas(m_liveFromSourceImage, &m_liveFromAtlas,
-                              &m_liveFromAtlasScale, &m_liveFromAtlasVw, &m_liveFromAtlasVh);
-        }
-        if (!m_liveTransitionSourceImage.isNull()) {
-            ensureMotionAtlas(m_liveTransitionSourceImage, &m_liveToAtlas,
-                              &m_liveToAtlasScale, &m_liveToAtlasVw, &m_liveToAtlasVh);
-        }
-    }
-
-    const bool inLive = m_liveTransitionActive || m_liveTransitionHold
-        || m_liveTransitionAwaitingLoad;
-
-    if (inLive) {
-        // Progress only — paintMotionCover draws sources on the GL viewport.
-        qreal toT = 0.0;
-        if (m_toLayerWallMs >= 0.0 && m_motionDurationMs > 0) {
-            toT = motionProgress01(wallMs - m_toLayerWallMs, qreal(m_motionDurationMs));
-        }
-        m_liveTransitionMotionProgress = toT;
-
-        // --- opacity / veil timeline ---
-        if (m_liveTransitionAwaitingLoad) {
-            m_liveTransitionProgress = 0.5;
-        } else if (m_liveTransitionHold) {
-            m_liveTransitionProgress = 1.0;
-        } else if (m_liveTransitionActive) {
-            const qreal elapsed = qreal(m_liveTransitionElapsedBaseMs
-                                        + m_liveTransitionClock.elapsed());
-            const qreal t = m_liveTransitionDurationMs > 0
-                ? elapsed / qreal(m_liveTransitionDurationMs)
-                : 1.0;
-            if (m_slideshowTransition == SlideshowTransition::FadeBlack
-                && !m_liveTransitionMidAdvanced && t >= 0.5) {
-                m_liveTransitionMidAdvanced = true;
-                m_liveTransitionAwaitingLoad = true;
-                m_liveTransitionProgress = 0.5;
-                emit slideshowLiveTransitionFinished();
-            } else if (t >= 1.0) {
-                m_liveTransitionProgress = 1.0;
-                if (!m_liveTransitionHold) {
-                    m_liveTransitionHold = true;
-                    // Arm dwell HERE from the to-frame at progress 0. Do not wait
-                    // for LoadReplace → onImageLoaded → releaseLiveTransitionHold:
-                    // that path was often skipped or late, so dwellT never reset
-                    // (logs: 0.66 → 0.70 → 1.0 frozen) and the dwell buffer kept
-                    // the previous image across orientation changes.
-                    {
-                        const QImage toFrame = m_liveTransitionSourceImage;
-                        m_motionBiasA = m_liveToBiasA;
-                        m_motionBiasB = m_liveToBiasB;
-                        m_motionBiasValid = true;
-                        m_motionBiasPath = m_liveTransitionNextPath;
-                        if (!toFrame.isNull()) {
-                            m_dwellSourceImage = toFrame;
-                            m_dwellAtlas = m_liveToAtlas;
-                            m_dwellAtlasScale = m_liveToAtlasScale;
-                            m_dwellAtlasVw = m_liveToAtlasVw;
-                            m_dwellAtlasVh = m_liveToAtlasVh;
-                            ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas,
-                                              &m_dwellAtlasScale, &m_dwellAtlasVw,
-                                              &m_dwellAtlasVh);
-                        }
-                        m_dwellMotionT = 0.0;
-                        hideSlideshowUnderlay();
-                        if (m_slideshowProgressActive
-                            && m_slideshowMotion != SlideshowMotion::Off
-                            && m_slideshowProgressIntervalMs >= 250
-                            && !m_dwellSourceImage.isNull()) {
-                            startSlideshowMotion(m_slideshowProgressIntervalMs, 0.0);
-                            if (!toFrame.isNull()) {
-                                m_dwellSourceImage = toFrame;
-                                ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas,
-                                                  &m_dwellAtlasScale, &m_dwellAtlasVw,
-                                                  &m_dwellAtlasVh);
-                            }
-                            m_dwellMotionT = 0.0;
-                            m_motionElapsedOffsetMs = 0;
-                            m_motionClock.start();
-                            m_slideshowMotionActive = true;
-                        }
-                        qCDebug(lcSlideshow).nospace()
-                            << "[slideshow] dwell-start "
-                            << m_dwellSourceImage.width() << "x"
-                            << m_dwellSourceImage.height()
-                            << " path="
-                            << QFileInfo(m_liveTransitionNextPath).fileName()
-                            << " (at fade-end)";
-                        // Live composite done — dwell owns the viewport.
-                        m_liveTransitionActive = false;
-                        m_liveTransitionHold = false;
-                        m_liveFromSourceImage = QImage();
-                        m_liveTransitionSourceImage = QImage();
-                        m_liveFromAtlas = QPixmap();
-                        m_liveToAtlas = QPixmap();
-                        m_liveTransitionMotionProgress = 0.0;
-                        m_toLayerWallMs = -1.0;
-                    }
-                    if (m_slideshowTransition != SlideshowTransition::FadeBlack) {
-                        emit slideshowLiveTransitionFinished();
-                    } else {
-                        releaseLiveTransitionHold();
-                    }
-                }
-            } else {
-                m_liveTransitionProgress = t;
-            }
-        }
-    } else {
-        // Pure dwell: paint path samples m_dwellSourceImage at wall progress.
-    }
-
     viewport()->update();
 }
 
