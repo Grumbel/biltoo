@@ -2,6 +2,13 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-476-zoomblur-null-warnings.** Fix -Wnull-dereference in ZoomBlur completion.
+Prior: **475**.
+
+---
+
+## Status (2026-09-12)
+
 **Tip: biltoo-475-slideshow-blur-async.** ZoomBlur async; keep last underlay; cancel queue on flip.
 Prior: **474**.
 
