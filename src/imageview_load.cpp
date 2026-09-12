@@ -503,61 +503,59 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (st.failed) {
         return;
     }
-
-    const QRect viewRect = viewport()->rect().adjusted(
-        -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
-        kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
-    const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
-
-    int have = 0;
-    bool anyFull = false;
-    for (ImageItem *item : m_items) {
-        if (!item || item->path() != path) {
-            continue;
-        }
-        if (item->hasDecodedPixels()) {
-            anyFull = true;
-        }
-        have = qMax(have, item->displayPixelLongEdge());
-    }
-    st.have = have;
-    if (anyFull) {
-        return;
-    }
-
-    // Host soft (filmstrip / prior ladderReady) — install even while a higher
-    // edge is inflight. Blank tiles while waiting for SoftOnly is the failure
-    // mode users see when filmstrip already has the soft.
-    if (have <= 0) {
-        QImage hostSoft = ImageCache::get(path);
-        if (hostSoft.isNull()) {
-            hostSoft = m_previewByPath.value(path);
-        }
-        if (!hostSoft.isNull()) {
-            onImagePreviewLoaded(path, hostSoft, m_loadGeneration.load(),
-                                 static_cast<int>(LoadAdd));
-            have = qMax(have, qMax(hostSoft.width(), hostSoft.height()));
-            st.have = have;
-            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                dbg && dbg[0] && dbg[0] != '0') {
-                fprintf(stderr,
-                        "biltoo/gallery: INSTALL soft path=%s got=%d "
-                        "(ImageCache host)\n",
-                        qPrintable(QFileInfo(path).fileName()), have);
-            }
-        }
-    }
-
     // Climb / SoftOnly request only when not already waiting on a callback.
     if (st.inflight > 0 || st.fullInflight) {
         return;
     }
 
-    const int want = galleryWantEdgeForPath(path, sceneVisible);
-    st.want = want;
-    if (have >= want) {
+    // Fast path: updateGalleryDecodeWindow already filled st.have / st.want.
+    // Do not re-scan all items or re-host soft (pass1 owns host installs) —
+    // that was O(n²) and multi-hundred-ms on ~100-tile galleries.
+    int have = st.have;
+    int want = st.want;
+    if (want <= 0) {
+        const QRect viewRect = viewport()->rect().adjusted(
+            -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
+            kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
+        const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
+
+        have = 0;
+        bool anyFull = false;
+        for (ImageItem *item : m_items) {
+            if (!item || item->path() != path) {
+                continue;
+            }
+            if (item->hasDecodedPixels()) {
+                anyFull = true;
+            }
+            have = qMax(have, item->displayPixelLongEdge());
+        }
+        st.have = have;
+        if (anyFull) {
+            return;
+        }
+
+        // Host soft only for direct callers (not decode-window pass2).
+        if (have <= 0) {
+            QImage hostSoft = ImageCache::get(path);
+            if (hostSoft.isNull()) {
+                hostSoft = m_previewByPath.value(path);
+            }
+            if (!hostSoft.isNull()) {
+                onImagePreviewLoaded(path, hostSoft, m_loadGeneration.load(),
+                                     static_cast<int>(LoadAdd));
+                have = qMax(have, qMax(hostSoft.width(), hostSoft.height()));
+                st.have = have;
+            }
+        }
+
+        want = galleryWantEdgeForPath(path, sceneVisible);
+        st.want = want;
+    }
+    if (want <= 0 || have >= want) {
         return;
     }
+
     // Higher zoom/need than a prior soft shortfall — retry the new edge.
     if (st.gaveUpWant > 0 && want > st.gaveUpWant) {
         st.gaveUpWant = 0;

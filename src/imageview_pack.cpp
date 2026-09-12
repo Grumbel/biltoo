@@ -81,7 +81,8 @@ void ImageView::updateGalleryDecodeWindow()
     // session cannot block the GUI with dozens of materializeDisplay scales
     // (GUI_THREAD_AUDIT G3/G4); continue on the next event-loop tick.
     // ------------------------------------------------------------------
-    constexpr int kMaxInstallsPerDecodeWindow = 48;
+    // Keep low: each install may QImage::scaled + materialize on the GUI.
+    constexpr int kMaxInstallsPerDecodeWindow = 8;
     int hostInstalled = 0;
     bool moreInstallsPending = false;
     for (ImageItem *item : m_items) {
@@ -175,8 +176,9 @@ void ImageView::updateGalleryDecodeWindow()
         viewport()->update();
     }
     if (moreInstallsPending) {
-        // Finish remaining installs without blocking this event for O(n) scales.
-        scheduleGalleryDecodeWindowRefresh(0);
+        // Yield so paint/input run between install batches (never 0 — that
+        // tight-looped updateGalleryDecodeWindow at hundreds of ms each).
+        scheduleGalleryDecodeWindowRefresh(32);
     }
 
     // ------------------------------------------------------------------
@@ -246,8 +248,23 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // Soft decode for visible tiles first — never blocked on interest/thumtoo.
+    // Cap per turn: each call may still hit PreferCache; climb continues via
+    // soft-completion refresh.
+    const int schedBudget =
+        qMax(1, galleryDecodeConcurrency() - gallerySoftInflightCount()) + 2;
+    int scheduled = 0;
     for (const QString &path : visible) {
+        if (scheduled >= schedBudget) {
+            scheduleGalleryDecodeWindowRefresh(48);
+            break;
+        }
+        const int before = gallerySoftInflightCount();
         scheduleGalleryDecode(path);
+        if (gallerySoftInflightCount() > before) {
+            ++scheduled;
+        } else {
+            // No new inflight (already have / gave up) — do not count against budget.
+        }
     }
 
     // Interest: soft-band only. Speculative already capped during the scan.

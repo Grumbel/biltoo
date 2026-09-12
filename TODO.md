@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-531-decode-window-budget.** Cut multi-hundred-ms updateGalleryDecodeWindow.
+Prior: **530**.
+
+### Root cause
+- Up to 48 GUI installs/turn (QImage::scaled + materialize) → hundreds of ms
+- `scheduleGalleryDecodeWindowRefresh(0)` tight-looped the function
+- `scheduleGalleryDecode` re-scanned all items + re-hosted soft per path (O(n²))
+
+### Changes
+- Max 8 installs per decode-window turn; continuation at 32 ms (not 0)
+- Cap SoftOnly schedules per turn to concurrency budget
+- `scheduleGalleryDecode` trusts `st.have`/`st.want` from pass 2 (no item scan / host)
+
+### Done criteria
+- [x] Bundle **531**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-530-remove-unused-exiv-loader.** Drop unused sync loadExiv2Metadata.
 Prior: **529**.
 
