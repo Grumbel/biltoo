@@ -1237,6 +1237,10 @@ private:
     void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
                                        SessionAppearance::PixelKind kind);
     /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */
+    bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
+                                 SessionAppearance::PixelKind kind) const;
+    bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;
+    void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
     bool tryInstallImageModeSample(const QString &path, const QImage &image);
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
@@ -1535,6 +1539,8 @@ private:
     QSet<QString> m_provisionalSizePaths;
     /** Paths with an in-flight async size probe. */
     QSet<QString> m_sizeProbeScheduled;
+    /** Paths with a quiet native full decode in flight (Image-mode climb). */
+    QSet<QString> m_imageModeNativeClimbPaths;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */

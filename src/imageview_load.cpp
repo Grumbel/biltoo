@@ -331,11 +331,33 @@ void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixe
     preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
 }
 
+bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
+                                       SessionAppearance::PixelKind kind) const
+{
+    // Single gate for soft→HQ and against late soft demoting full.
+    if (!item || pixels.isNull()) {
+        return false;
+    }
+    const int incoming = ImageCache::longEdge(pixels);
+    if (incoming <= 0) {
+        return false;
+    }
+    // Never replace full (non-preview) pixels with a SoftPreview sample.
+    if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
+        return false;
+    }
+    // Equal-or-smaller sample is not an upgrade (blank tiles still accept).
+    if (item->hasDisplayPixels() && !item->shouldUpgradeDisplayTo(incoming)) {
+        return false;
+    }
+    return true;
+}
+
 void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
                                      SessionAppearance::PixelKind kind,
                                      SessionImageId sid)
 {
-    if (!item || pixels.isNull()) {
+    if (!canAcceptDisplaySample(item, pixels, kind)) {
         return;
     }
     const QSize layoutBefore = item->imageSize();
@@ -391,11 +413,11 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
             item->setIntrinsicSize(logical);
         }
-        if (item->cacheMode() != QGraphicsItem::DeviceCoordinateCache) {
-            item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-        } else {
-            item->invalidateDeviceCache();
-        }
+        // Soft was NoCache; force a clean DeviceCoordinate snapshot of the full
+        // pixmap (toggle always — invalidate alone can keep a soft freeze).
+        item->setCacheMode(QGraphicsItem::NoCache);
+        item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+        item->update();
     } else {
         item->setPreviewImage(display); // NoCache soft path
         // Soft must not leave intrinsic at 1×1 after a size-less placeholder.
@@ -527,6 +549,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     quint64 gen = m_loadGeneration.load();
     if (role == LoadReplace) {
         gen = ++m_loadGeneration;
+        m_imageModeNativeClimbPaths.clear();
         // FocusFull / EnsureTiles: skip during slideshow — every ←/→ was
         // restarting tile pyramid builds and competing with soft decode.
         if (isImageMode() && !m_slideshowProgressActive) {
@@ -1200,19 +1223,16 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         }
         if (isImageMode()) {
             if (ImageItem *cur = imageModeItemForPath(path)) {
-                const int incoming = ImageCache::longEdge(image);
-                // Native full already adequate — ignore late soft.
-                if (cur->hasDecodedPixels()
-                    && !cur->shouldUpgradeDisplayTo(incoming)) {
-                    return;
-                }
                 const SessionAppearance::PixelKind kind =
                     pixelKindForImageModeSample(path, image);
-                installDisplayPreservingView(cur, image, kind,
-                                             kInvalidSessionImageId);
-                if (kind == SessionAppearance::PixelKind::SoftPreview) {
-                    scheduleImageModePreferCacheClimb(
-                        path, ThumtooCache::kImageLadderEdge);
+                // canAccept blocks late soft over full and equal-or-smaller samples.
+                if (canAcceptDisplaySample(cur, image, kind)) {
+                    installDisplayPreservingView(cur, image, kind,
+                                                 kInvalidSessionImageId);
+                }
+                if (kind == SessionAppearance::PixelKind::SoftPreview
+                    || !sampleCoversNativeLogical(path, image)) {
+                    ensureImageModeQualityClimb(path, image);
                 }
                 if (viewport()) {
                     viewport()->update();
@@ -1729,6 +1749,38 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     emit statusChanged();
 }
 
+bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const
+{
+    const int incoming = ImageCache::longEdge(image);
+    if (incoming <= 0) {
+        return false;
+    }
+    const QSize logical = logicalSizeForPath(path);
+    if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
+        // Unknown native size: PreferCache display ladder counts as "good enough"
+        // only when above soft max (soft band is never final).
+        return incoming > ThumtooCache::kGalleryLadderEdge;
+    }
+    const int native = qMax(logical.width(), logical.height());
+    return coversEdge(incoming, native);
+}
+
+void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
+{
+    // Soft or sub-native samples must keep PreferCache + native full in flight.
+    if (path.isEmpty()) {
+        return;
+    }
+    if (!sample.isNull() && sampleCoversNativeLogical(path, sample)) {
+        return;
+    }
+    scheduleImageModePreferCacheClimb(path, ThumtooCache::kImageLadderEdge);
+    // Null sample: PreferCache only (avoid recursive native quiet).
+    if (!sample.isNull()) {
+        scheduleImageModeNativeFullQuiet(path);
+    }
+}
+
 bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &image)
 {
     if (!isImageMode() || path.isEmpty() || image.isNull()) {
@@ -1736,14 +1788,14 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
     }
     const SessionAppearance::PixelKind kind = pixelKindForImageModeSample(path, image);
     if (ImageItem *cur = imageModeItemForPath(path)) {
-        if (!cur->shouldUpgradeDisplayTo(ImageCache::longEdge(image))
-            && cur->hasDisplayPixels()) {
-            emit statusChanged();
-            return true;
+        if (canAcceptDisplaySample(cur, image, kind)) {
+            installImageModeSampleInPlace(cur, path, image, kind);
         }
-        installImageModeSampleInPlace(cur, path, image, kind);
-        if (kind == SessionAppearance::PixelKind::SoftPreview) {
-            scheduleImageModePreferCacheClimb(path, ThumtooCache::kImageLadderEdge);
+        // Even when the sample is not an upgrade (already showing equal soft),
+        // keep climbing until native coverage — otherwise soft latches forever.
+        if (kind == SessionAppearance::PixelKind::SoftPreview
+            || !sampleCoversNativeLogical(path, image)) {
+            ensureImageModeQualityClimb(path, image);
         }
         return true;
     }
@@ -1751,10 +1803,13 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
     // FullSource-only createItemFromImage is not forced on a soft sample.
     if (kind == SessionAppearance::PixelKind::SoftPreview) {
         installImageModePendingTile(path, image);
-        scheduleImageModePreferCacheClimb(path, ThumtooCache::kImageLadderEdge);
+        ensureImageModeQualityClimb(path, image);
         emit statusChanged();
     } else {
         installImageModeReplaceItem(path, image);
+        if (!sampleCoversNativeLogical(path, image)) {
+            ensureImageModeQualityClimb(path, image);
+        }
     }
     return true;
 }
@@ -1774,12 +1829,34 @@ int ImageView::imageModeOnScreenNeedEdge() const
 void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
 {
     // Native full without LoadReplace generation bump / pending tile (zoom climb).
-    if (path.isEmpty()) {
+    if (path.isEmpty() || m_imageModeNativeClimbPaths.contains(path)) {
         return;
     }
+    m_imageModeNativeClimbPaths.insert(path);
     const QPointer<ImageView> guard(this);
     const quint64 gen = m_loadGeneration.load();
-    startNativeFullDecodeJob(guard, path, gen, static_cast<int>(LoadReplace));
+    const QString pathCopy = path;
+    QThreadPool::globalInstance()->start(
+        [guard, pathCopy, gen]() {
+            QImage image;
+            if (guard && guard->matchesLoadGeneration(gen)) {
+                image = ImageLoader::load(pathCopy);
+            }
+            if (!guard) {
+                return;
+            }
+            QTimer::singleShot(0, guard.data(), [guard, pathCopy, image, gen]() {
+                if (!guard) {
+                    return;
+                }
+                guard->m_imageModeNativeClimbPaths.remove(pathCopy);
+                if (!guard->matchesLoadGeneration(gen) || image.isNull()) {
+                    return;
+                }
+                (void)guard->tryInstallImageModeSample(pathCopy, image);
+            });
+        },
+        -1);
 }
 
 void ImageView::maybeClimbImageModePixelsForView()

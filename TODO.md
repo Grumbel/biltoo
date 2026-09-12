@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-651-anti-demote-quality-climb.** Never demote full; keep soft climbing.
+Prior: **650**.
+
+### Root cause
+- Late soft samples could still race install paths without a single demotion gate.
+- Equal soft re-delivery skipped PreferCache/native climb → soft latched forever.
+- FullSource after SoftPreview could keep a frozen DeviceCoordinate soft snapshot.
+
+### Change
+- `canAcceptDisplaySample` — central gate (no SoftPreview over full; no smaller sample)
+- `sampleCoversNativeLogical` / `ensureImageModeQualityClimb` — PreferCache + quiet native
+- `scheduleImageModeNativeFullQuiet` deduped via `m_imageModeNativeClimbPaths`
+- FullSource install always toggles NoCache→DeviceCoordinateCache
+- Image-mode preview/replace use the same accept + climb policy
+
+### Done criteria
+- [x] Soft cannot demote full; soft always schedules climb until native coverage
+- [x] Bundle **651**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-650-onscreen-need-unify.** Share on-screen need; fold ladder install.
 Prior: **649**.
 
