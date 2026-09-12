@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-522-slideshow-esc-exits-fullscreen.** Esc leaves slideshow and its fullscreen.
+Prior: **521**.
+
+### Change
+- `m_slideshowOwnsFullscreen` set when startSlideshow calls `showFullScreen()`
+- `stopSlideshow()` calls `showNormal()` when it owns fullscreen
+- Status tips mention leave slideshow and fullscreen
+
+### Done criteria
+- [x] Esc from slideshow restores window
+- [x] Bundle **522**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-521-friendly-hud-quality.** End-user quality HUD; debounce status flicker.
 Prior: **520**.
 

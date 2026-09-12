@@ -1654,7 +1654,7 @@ void MainWindow::updateNavigationActions()
     m_slideshowAct->setEnabled(canSlideshow);
     if (m_slideshowAct) {
         if (canSlideshow) {
-            m_slideshowAct->setStatusTip(tr("Space: pause/resume · Esc: leave slideshow"));
+            m_slideshowAct->setStatusTip(tr("Space: pause/resume · Esc: leave slideshow and fullscreen"));
         } else if (m_imageView && m_imageView->isWorkspaceMode()) {
             m_slideshowAct->setStatusTip(tr("Slideshow is not available in Workspace mode"));
         } else {
@@ -2246,21 +2246,21 @@ void MainWindow::updateSlideshowActionUi()
         m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"),
                                            QStyle::SP_MediaPlay));
         m_slideshowAct->setStatusTip(
-            tr("Space: resume · Esc: leave slideshow"));
+            tr("Space: resume · Esc: leave slideshow and fullscreen"));
     } else if (m_slideshowClockRunning) {
         m_slideshowAct->setChecked(true);
         m_slideshowAct->setText(tr("Pause &Slideshow"));
         m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-pause"),
                                            QStyle::SP_MediaPause));
         m_slideshowAct->setStatusTip(
-            tr("Space: pause · Esc: leave slideshow · ←/→ change slide"));
+            tr("Space: pause · Esc: leave slideshow and fullscreen · ←/→ change slide"));
     } else {
         m_slideshowAct->setChecked(false);
         m_slideshowAct->setText(tr("Play &Slideshow"));
         m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"),
                                            QStyle::SP_MediaPlay));
         m_slideshowAct->setStatusTip(
-            tr("Space: pause/resume · Esc: leave slideshow"));
+            tr("Space: pause/resume · Esc: leave slideshow and fullscreen"));
     }
 }
 
@@ -2331,8 +2331,10 @@ void MainWindow::startSlideshow()
         }
         showPathInImageMode(path);
     }
+    m_slideshowOwnsFullscreen = false;
     if (m_slideshowFullscreen && !isFullScreen()) {
         showFullScreen();
+        m_slideshowOwnsFullscreen = true;
     }
     m_slideshowPaused = false;
     updateScrollBarPolicyForMode();
@@ -2499,6 +2501,15 @@ void MainWindow::stopSlideshow()
         }
     }
     updateScrollBarPolicyForMode();
+    // Slideshow is separate from user fullscreen: if we entered fullscreen for
+    // this show, leave it with the show. Esc then returns to a normal window.
+    if (m_slideshowOwnsFullscreen && isFullScreen()) {
+        m_slideshowOwnsFullscreen = false;
+        showNormal();
+        updateFullscreenUi();
+    } else {
+        m_slideshowOwnsFullscreen = false;
+    }
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
