@@ -2,6 +2,35 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-552-slideshow-blur-keep-zoom-edge.** Keep ZoomBlur; motion headroom; stable geometry.
+Prior: **551**.
+
+### User reports
+1. Blurry letterbox background discarded on slide change — solid pad until new blur.
+2. Decode target = viewport was too low — Ken Burns zooms past 1:1 cover.
+3. Soft→sharp resolution switch caused a visible movement jump.
+
+### Changes (minimal)
+- ZoomBlur miss: always paint `lastGood` until the new key is ready; do not
+  invalidate the blur queue on nav-hot; skip only *new* builds while nav-hot.
+- `slideshowMotionHeadroom()` + `slideshowTargetEdge()` = viewport×DPR×headroom,
+  capped at kImageLadderEdge (2048).
+- `ensureMotionAtlas` cap uses the same headroom (atlas sharp under zoom).
+- `paintMotionCover`: dest/bias math uses normalized aspect (fixed ref long-edge)
+  so soft→sharp pixel upgrades cannot shift the camera path.
+
+### Done criteria
+- [x] Previous ZoomBlur held until replacement ready
+- [x] Target/atlas sized for motion zoom
+- [x] Resolution climb does not jump motion geometry
+- [x] Bundle **552**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-551-slideshow-hold-nav-fixes.** Clear quality hold on nav; small-image adequate; atlas skip.
 Prior: **550**.
 

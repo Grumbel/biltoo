@@ -195,8 +195,14 @@ public:
     void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
     /** Decode path off the GUI thread into m_preload* for the next live transition. */
     void preloadSlideshowImage(const QString &path);
-    /** Viewport long-edge × DPR snapped to ladder (slideshow decode target). */
+    /**
+     * Slideshow decode / atlas target long-edge: viewport × DPR × motion
+     * headroom (Ken Burns can zoom past 1:1 cover), ladder-snapped, capped
+     * at kImageLadderEdge. Not native max.
+     */
     int slideshowTargetEdge() const;
+    /** ≥1: panZoomFactor or pan-scan margin so zoomed frames stay sharp. */
+    qreal slideshowMotionHeadroom() const;
     /**
      * True when pixels for @a path are suitable for the current screen
      * (long edge ≥ ~70% of slideshowTargetEdge). Soft-only frames return false.

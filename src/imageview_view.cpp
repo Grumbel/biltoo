@@ -1734,19 +1734,35 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     return true;
 }
 
+qreal ImageView::slideshowMotionHeadroom() const
+{
+    // Ken Burns / pan-scan sample past 1:1 cover; need extra source pixels or
+    // the zoomed region is soft. Off → 1.0. PanZoom uses the configured factor.
+    if (!m_slideshowProgressActive
+        || m_slideshowMotion == SlideshowMotion::Off) {
+        return 1.0;
+    }
+    if (m_slideshowMotion == SlideshowMotion::PanZoom) {
+        return qBound(1.05, m_panZoomFactor, 1.50);
+    }
+    // PanScan can raise scale when travel is short (see motionPathMaxScale).
+    return 1.25;
+}
+
 int ImageView::slideshowTargetEdge() const
 {
-    // Screen-sized only: viewport long edge × DPR, ladder-snapped, hard-capped
-    // at overview (1024). Never request native / "max" for slideshow pixels.
+    // Viewport × DPR × motion headroom, ladder-snapped. Cap at image ladder
+    // (2048), not native — enough for zoomed Ken Burns without full extract.
     if (!viewport()) {
-        return ThumtooCache::kBatchOverviewEdge;
+        return ThumtooCache::kImageLadderEdge;
     }
     const qreal dpr = devicePixelRatioF();
     const QSize vs = viewport()->size();
-    const int longPx = int(qCeil(qMax(vs.width(), vs.height()) * dpr));
+    const qreal head = slideshowMotionHeadroom();
+    const int longPx = int(qCeil(qMax(vs.width(), vs.height()) * dpr * head));
     const int snapped = ThumtooCache::ceilLadderEdge(
         qMax(longPx, ThumtooCache::kGalleryLadderEdge));
-    return qMin(snapped, ThumtooCache::kBatchOverviewEdge);
+    return qMin(snapped, ThumtooCache::kImageLadderEdge);
 }
 
 void ImageView::setSlideshowNavHot(bool hot)
@@ -1755,10 +1771,8 @@ void ImageView::setSlideshowNavHot(bool hot)
         return;
     }
     m_slideshowNavHot = hot;
-    if (hot) {
-        // Drop in-flight blur backlog — rapid ←/→ must not queue CPU work.
-        invalidateZoomBlurQueue();
-    }
+    // Do NOT invalidateZoomBlurQueue here — keep the previous underlay until a
+    // new key's blur is ready (solid flash on every ←/→ was the bug).
 }
 
 bool ImageView::slideshowPixelsAdequate(const QString &path) const
@@ -2083,9 +2097,11 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
     }
     int dw = qMax(1, int(qRound(qreal(image.width()) * maxScale)));
     int dh = qMax(1, int(qRound(qreal(image.height()) * maxScale)));
-    // Cap atlas to ~viewport long edge — Smooth 512→2K+ on every phase-from
-    // stalled the GUI under rapid ←/→.
-    const int cap = qMax(vw, vh) + 2;
+    // Cap must cover motion zoom (headroom), not only 1:1 viewport — otherwise
+    // Ken Burns samples a soft atlas and resolution upgrades look softer than
+    // the source warrants.
+    const qreal head = slideshowMotionHeadroom();
+    const int cap = int(qCeil(qreal(qMax(vw, vh) + 2) * head));
     if (dw > cap || dh > cap) {
         const qreal s = qMin(qreal(cap) / qreal(dw), qreal(cap) / qreal(dh));
         dw = qMax(1, int(qRound(dw * s)));
@@ -2356,11 +2372,6 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     if (!painter || image.isNull() || viewportRect.isEmpty()) {
         return;
     }
-    // Rapid keyboard flip: solid pad only — blur builds stall the pool/GUI.
-    if (m_slideshowNavHot) {
-        painter->fillRect(viewportRect, slideshowPadColor());
-        return;
-    }
     const int vw = viewportRect.width();
     const int vh = viewportRect.height();
     // Stable identity: path key + viewport only.
@@ -2390,17 +2401,17 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[slot]);
         return;
     }
-    // Miss: keep previous underlay until the new one is ready (no solid flash,
-    // no synchronous CPU blur on the GUI thread).
-    scheduleZoomBlurBuild(image, vw, vh, key);
-    // Prefer lastGood only when it matches this key — never paint a foreign
-    // underlay (that snapped when the real key arrived and looked like flicker).
-    if (!m_zoomBlurLastGood.isNull() && m_zoomBlurLastGoodKey == key) {
+    // Miss: schedule build only when not in a key-repeat burst (pool pressure).
+    // Always keep painting the previous underlay until this key is ready —
+    // solid pad on every path change was the "discarded blurry background" bug.
+    if (!m_slideshowNavHot) {
+        scheduleZoomBlurBuild(image, vw, vh, key);
+    }
+    if (!m_zoomBlurLastGood.isNull()) {
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter->drawPixmap(viewportRect, m_zoomBlurLastGood);
         return;
     }
-    // Miss: leave letterbox as solid pad until this key's blur is ready.
     painter->fillRect(viewportRect, slideshowPadColor());
 }
 
@@ -2414,10 +2425,24 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     }
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
-    const qreal iw = qreal(image.width());
-    const qreal ih = qreal(image.height());
-    if (iw < 1.0 || ih < 1.0) {
+    // Motion geometry must be independent of the current decode resolution.
+    // Soft (512) → overview (1024+) upgrades used to recompute cover/fit from
+    // new pixel sizes; integer rounding shifted dest by a pixel and felt like
+    // a camera jump. Normalize to a fixed long-edge with the same aspect.
+    const qreal rawW = qreal(image.width());
+    const qreal rawH = qreal(image.height());
+    if (rawW < 1.0 || rawH < 1.0) {
         return;
+    }
+    constexpr qreal kRefLong = 1000.0;
+    qreal iw = rawW;
+    qreal ih = rawH;
+    if (rawW >= rawH) {
+        iw = kRefLong;
+        ih = kRefLong * (rawH / rawW);
+    } else {
+        ih = kRefLong;
+        iw = kRefLong * (rawW / rawH);
     }
 
     motionT = qBound(0.0, motionT, 1.0);
