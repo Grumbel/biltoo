@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-501-zoomblur-transition-flicker.** Stop ZoomBlur from/to cancel fight.
+Prior: **500**.
+
+### Root cause
+scheduleZoomBlurBuild allowed only one in-flight key and cancelled the other
+each paint frame during transitions (from vs to), causing underlay flicker.
+
+### Change
+- Two concurrent blur builds
+- lastGood only if key matches; else other cached slot
+
+### Done criteria
+- [x] Bundle **501**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-500-embedded-soft-settle.** Accept Embedded ~256 as settled soft; stop 512 spin.
 Prior: **497** on github (+ local 498/499 ideas folded in).
 

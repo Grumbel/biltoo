@@ -128,8 +128,8 @@ void ImageView::setSlideshowPadColor(const QColor &color)
     m_zoomBlurLastGood = QPixmap();
     m_zoomBlurLastGoodKey = 0;
     ++m_zoomBlurGeneration;
-    m_zoomBlurInFlightGen = 0;
-    m_zoomBlurInFlightKey = 0;
+    m_zoomBlurInFlightGen[0] = m_zoomBlurInFlightGen[1] = 0;
+    m_zoomBlurInFlightKey[0] = m_zoomBlurInFlightKey[1] = 0;
     if (m_slideshowProgressActive && viewport()) {
         viewport()->update();
     }
@@ -148,8 +148,8 @@ void ImageView::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
     m_zoomBlurLastGood = QPixmap();
     m_zoomBlurLastGoodKey = 0;
     ++m_zoomBlurGeneration;
-    m_zoomBlurInFlightGen = 0;
-    m_zoomBlurInFlightKey = 0;
+    m_zoomBlurInFlightGen[0] = m_zoomBlurInFlightGen[1] = 0;
+    m_zoomBlurInFlightKey[0] = m_zoomBlurInFlightKey[1] = 0;
     if (m_slideshowProgressActive && viewport()) {
         viewport()->update();
     }
@@ -2007,8 +2007,8 @@ void ImageView::invalidateZoomBlurQueue() const
 {
     // Drop in-flight work so a page flip cannot leave a backlog of blur jobs.
     ++m_zoomBlurGeneration;
-    m_zoomBlurInFlightGen = 0;
-    m_zoomBlurInFlightKey = 0;
+    m_zoomBlurInFlightGen[0] = m_zoomBlurInFlightGen[1] = 0;
+    m_zoomBlurInFlightKey[0] = m_zoomBlurInFlightKey[1] = 0;
 }
 
 void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const
@@ -2022,19 +2022,30 @@ void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint6
             return;
         }
     }
-    // One in-flight blur only — ignore duplicate schedule for same key.
-    if (m_zoomBlurInFlightGen == m_zoomBlurGeneration && m_zoomBlurInFlightKey == key) {
-        return;
+    // Already building this key?
+    for (int i = 0; i < 2; ++i) {
+        if (m_zoomBlurInFlightGen[i] == m_zoomBlurGeneration
+            && m_zoomBlurInFlightKey[i] == key) {
+            return;
+        }
     }
-    // Cancel any previous pending key by advancing generation once if something
-    // else was in flight for a different key.
-    if (m_zoomBlurInFlightGen == m_zoomBlurGeneration && m_zoomBlurInFlightKey != 0
-        && m_zoomBlurInFlightKey != key) {
-        ++m_zoomBlurGeneration;
+    // Allow up to two concurrent builds (outgoing + incoming underlay). Never
+    // cancel the other key mid-transition — that caused ZoomBlur flicker as
+    // from/to fought over a single in-flight slot every paint frame.
+    int flightSlot = -1;
+    for (int i = 0; i < 2; ++i) {
+        if (m_zoomBlurInFlightKey[i] == 0
+            || m_zoomBlurInFlightGen[i] != m_zoomBlurGeneration) {
+            flightSlot = i;
+            break;
+        }
+    }
+    if (flightSlot < 0) {
+        return; // both slots busy with other keys; try again next frame
     }
     const quint64 gen = m_zoomBlurGeneration;
-    m_zoomBlurInFlightGen = gen;
-    m_zoomBlurInFlightKey = key;
+    m_zoomBlurInFlightGen[flightSlot] = gen;
+    m_zoomBlurInFlightKey[flightSlot] = key;
     // Snapshot pixels for the worker (avoid touching GUI QImage after return).
     const QImage src = image.copy();
     const QPointer<ImageView> guard(const_cast<ImageView *>(this));
@@ -2069,9 +2080,12 @@ void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint6
             self->m_zoomBlurSourceKey[slot] = key;
             self->m_zoomBlurLastGood = self->m_zoomBlurUnderlay[slot];
             self->m_zoomBlurLastGoodKey = key;
-            if (self->m_zoomBlurInFlightGen == gen) {
-                self->m_zoomBlurInFlightGen = 0;
-                self->m_zoomBlurInFlightKey = 0;
+            for (int i = 0; i < 2; ++i) {
+                if (self->m_zoomBlurInFlightGen[i] == gen
+                    && self->m_zoomBlurInFlightKey[i] == key) {
+                    self->m_zoomBlurInFlightGen[i] = 0;
+                    self->m_zoomBlurInFlightKey[i] = 0;
+                }
             }
             if (self->viewport()) {
                 self->viewport()->update();
@@ -2118,6 +2132,22 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     // Miss: keep previous underlay until the new one is ready (no solid flash,
     // no synchronous CPU blur on the GUI thread).
     scheduleZoomBlurBuild(image, vw, vh, key);
+    // Prefer lastGood only when it matches this key — otherwise a mid-
+    // transition "to" miss would paint the "from" blur at rising opacity and
+    // then snap when the real "to" arrives (flicker).
+    if (!m_zoomBlurLastGood.isNull() && m_zoomBlurLastGoodKey == key) {
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->drawPixmap(viewportRect, m_zoomBlurLastGood);
+        return;
+    }
+    // Other key still cached? Prefer stable from-blur under to while to builds.
+    for (int i = 0; i < 2; ++i) {
+        if (!m_zoomBlurUnderlay[i].isNull()) {
+            painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+            painter->drawPixmap(viewportRect, m_zoomBlurUnderlay[i]);
+            return;
+        }
+    }
     if (!m_zoomBlurLastGood.isNull()) {
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter->drawPixmap(viewportRect, m_zoomBlurLastGood);

@@ -1329,8 +1329,9 @@ private:
     mutable qint64 m_zoomBlurLastGoodKey = 0;
     /** Bumped on every slide change; stale async blur jobs no-op on completion. */
     mutable quint64 m_zoomBlurGeneration = 0;
-    mutable quint64 m_zoomBlurInFlightGen = 0;
-    mutable qint64 m_zoomBlurInFlightKey = 0;
+    /// Up to two concurrent blur builds (from+to underlays in a transition).
+    mutable quint64 m_zoomBlurInFlightGen[2] = {0, 0};
+    mutable qint64 m_zoomBlurInFlightKey[2] = {0, 0};
     bool m_slideshowMotionActive = false;
     bool m_slideshowMotionPaused = false;
     /** Scroll policies restored when Ken Burns underlay returns. */
