@@ -671,9 +671,8 @@ QColor ImageItem::colorAtPixel(const QPoint &pixel) const
 
 QRectF ImageItem::contentRect() const
 {
-    if (!m_source.isNull() && !pixmap().isNull()) {
-        return QGraphicsPixmapItem::boundingRect();
-    }
+    // Logical size owns geometry. Display pixmap may be soft/ladder and must
+    // not define the item box — paint samples into this rect.
     const QSize s = imageSize();
     return QRectF(offset(), QSizeF(s));
 }

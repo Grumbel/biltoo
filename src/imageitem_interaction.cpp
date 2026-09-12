@@ -355,7 +355,7 @@ bool ImageItem::isShearHandle(Handle h) const
 QPointF ImageItem::scaleAnchorLocal(Handle h) const
 {
     // Opposite corner/edge — kept fixed when not scaling from the centre.
-    const QRectF r = QGraphicsPixmapItem::boundingRect();
+    const QRectF r = contentRect();
     switch (h) {
     case Handle::ScaleTopLeft:
         return r.bottomRight();
@@ -587,7 +587,7 @@ QRectF ImageItem::opacitySliderRect() const
 {
     // Approximate local rect for legacy callers only. Paint / hit / drag use
     // opacityTrackView() in viewport space (left outside, vertical, adaptive).
-    const QRectF r = QGraphicsPixmapItem::boundingRect();
+    const QRectF r = contentRect();
     const qreal h = qMin(r.height() * 0.4, r.height());
     const qreal w = qMin(8.0, r.width() * 0.1);
     return QRectF(r.left() - w - 4.0, r.bottom() - h - 4.0, w, h);
@@ -608,7 +608,7 @@ void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
     auto toView = [this, view](const QPointF &local) -> QPointF {
         return QPointF(view->mapFromScene(mapToScene(local)));
     };
-    const QRectF localRect = QGraphicsPixmapItem::boundingRect();
+    const QRectF localRect = contentRect();
     const QPointF tl = toView(localRect.topLeft());
     const QPointF tr = toView(localRect.topRight());
     const QPointF br = toView(localRect.bottomRight());
@@ -668,7 +668,7 @@ QPointF ImageItem::handleCenter(Handle h) const
     // scale cannot send centres to infinity; paint and hit-testing place the true
     // constant-screen-distance positions in viewport space (see paintInteractionChrome
     // and handleAt). Opacity uses the interior track.
-    const QRectF r = QGraphicsPixmapItem::boundingRect();
+    const QRectF r = contentRect();
     const qreal cx = r.center().x();
     const qreal cy = r.center().y();
     const qreal content = qMax(r.width(), r.height());
@@ -784,7 +784,7 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         return len > 1e-6 ? v / len : QPointF(1, 0);
     };
 
-    const QRectF localRect = QGraphicsPixmapItem::boundingRect();
+    const QRectF localRect = contentRect();
     const QPointF tl = toView(localRect.topLeft());
     const QPointF tr = toView(localRect.topRight());
     const QPointF br = toView(localRect.bottomRight());
@@ -1072,7 +1072,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
         painter->setOpacity(m_opacity);
         if (!m_source.isNull() && !m_previewPixels && !pixmap().isNull()) {
-            QGraphicsPixmapItem::paint(painter, &opt, widget);
+            // Sample into logical contentRect — pixmap pixels are not geometry.
+            painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+            const QRectF box = contentRect();
+            painter->drawPixmap(box, pixmap(), pixmap().rect());
         } else if (!m_preview.isNull()) {
             // Provisional low-res: keep aspect inside content rect (no stretch).
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
@@ -1165,7 +1168,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter) const
         return;
     }
     const QRectF crop = galleryClipLocal();
-    const QRectF r = crop.isEmpty() ? QGraphicsPixmapItem::boundingRect() : crop;
+    const QRectF r = crop.isEmpty() ? contentRect() : crop;
     paintInteractionChrome(painter, r);
 }
 

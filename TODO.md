@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-569-contentrect-paint-logical.** contentRect and paint sample into logical box.
+Prior: **568**.
+
+### Changes
+- `contentRect()` always from intrinsic (not pixmap boundingRect)
+- Full-source paint draws pixmap into contentRect (same as soft)
+- Interaction chrome uses contentRect
+- SIZE.md documents the model
+
+### Done criteria
+- [x] Soft/ladder pixmap size cannot define item geometry or hit box
+- [x] Bundle **569**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-568-item-imagesize-logical-only.** imageSize/nativeSize never report sample pixels.
 Prior: **567**.
 
