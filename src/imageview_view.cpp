@@ -2594,6 +2594,14 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
                 .arg(need)
                 .arg(have);
         }
+    } else if (isImageMode() && edge > 0) {
+        // Image mode: show sample vs native when not yet full coverage.
+        if (native > 0 && edge < (native * 9) / 10) {
+            return tr("%1 · show %2px · native %3px")
+                .arg(tier)
+                .arg(edge)
+                .arg(native);
+        }
     }
     return tier;
 }
@@ -2676,6 +2684,36 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
     return text;
 }
 
+QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
+{
+    // User-visible activity while soft/PreferCache samples climb to native.
+    if (!item || item->path().isEmpty()) {
+        return {};
+    }
+    const QString path = item->path();
+    const int have = item->displayPixelLongEdge();
+    if (have <= 0) {
+        return tr("Loading…");
+    }
+    if (sampleCoversNativeLogical(path, item->displayImage())) {
+        return {};
+    }
+    if (m_imageModeNativeClimbPaths.contains(path)) {
+        return tr("Decoding full…");
+    }
+    if (ThumtooCache::isAvailable()
+        && (ThumtooCache::isPixelsPending(path, ThumtooCache::kImageLadderEdge)
+            || ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge))) {
+        return tr("Improving quality…");
+    }
+    // Soft on screen, climb may be queued but not yet marked inflight.
+    if (!item->hasDecodedPixels()
+        || !sampleCoversNativeLogical(path, item->displayImage())) {
+        return tr("Improving quality…");
+    }
+    return {};
+}
+
 QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
                                        int edge, const QSize &native) const
 {
@@ -2684,11 +2722,16 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
                        .arg(native.height())
                        .arg(qRound(viewScale() * 100));
     if (!quality.isEmpty()) {
-        if (edge > 0 && !item->hasDecodedPixels()) {
+        // quality may already include "show Npx · native Mpx" — avoid double edge.
+        if (edge > 0 && !item->hasDecodedPixels() && !quality.contains(QLatin1String("px"))) {
             text += tr(" · %1 (%2px)").arg(quality).arg(edge);
         } else {
             text += tr(" · %1").arg(quality);
         }
+    }
+    const QString climb = imageModeClimbActivityLabel(item);
+    if (!climb.isEmpty()) {
+        text += tr(" · %1").arg(climb);
     }
     if (qAbs(item->itemRotation()) > 0.5) {
         text += tr(" · Rot %1°").arg(qRound(item->itemRotation()));

@@ -573,15 +573,21 @@ void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
 
 int ImageView::pendingDecodeCount() const
 {
-    // gallery soft inflight ⊆ m_pendingWorkspacePaths for gallery window loads;
-    // do not double-count.
-    {
-        int pendingAdds = 0;
-        for (int n : m_pendingWorkspacePaths) {
-            pendingAdds += n;
-        }
-        return pendingAdds + m_pendingRestoreStates.size();
+    // Workspace LoadAdd membership + restore; gallery soft uses GallerySoftState.
+    int pendingAdds = 0;
+    for (int n : m_pendingWorkspacePaths) {
+        pendingAdds += n;
     }
+    int n = pendingAdds + m_pendingRestoreStates.size();
+    // Image-mode quiet native climb (soft → full without LoadReplace gen bump).
+    n += m_imageModeNativeClimbPaths.size();
+    // Gallery soft / PreferCache inflight (one counter per path).
+    for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
+        if (it.value().inflight > 0 || it.value().fullInflight) {
+            ++n;
+        }
+    }
+    return n;
 }
 
 

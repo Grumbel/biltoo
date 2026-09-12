@@ -940,24 +940,34 @@ QString queueStatsLabel()
 {
 #ifdef BILTOO_HAVE_THUMTOO
     init();
+    int hostActive = 0;
+    int hostInflight = 0;
     thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);
         c = clientUnlocked();
+        hostActive = g_pixelsActive;
+        hostInflight = g_pixelsInflight.size();
     }
-    if (!c) {
-        return {};
-    }
-    const auto s = c->queue_stats();
     // End-user readable; only shown when THUMTOO_DEBUG is on.
+    // Include host PreferCache / soft raster jobs — client queue_stats alone
+    // reports idle while biltoo still waits on ladderReady.
     QStringList parts;
-    if (s.pending > 0 || s.inflight > 0) {
-        parts << QStringLiteral("%1 waiting · %2 decoding")
-                     .arg(qulonglong(s.pending))
-                     .arg(s.inflight);
+    if (c) {
+        const auto s = c->queue_stats();
+        if (s.pending > 0 || s.inflight > 0) {
+            parts << QStringLiteral("%1 waiting · %2 decoding")
+                         .arg(qulonglong(s.pending))
+                         .arg(s.inflight);
+        }
+        if (s.focus_full_inflight > 0) {
+            parts << QStringLiteral("focus decode");
+        }
     }
-    if (s.focus_full_inflight > 0) {
-        parts << QStringLiteral("focus decode");
+    if (hostActive > 0 || hostInflight > 0) {
+        parts << QStringLiteral("host raster %1/%2")
+                     .arg(hostActive)
+                     .arg(hostInflight);
     }
     if (parts.isEmpty()) {
         return QStringLiteral("decoder idle");

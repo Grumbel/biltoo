@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-652-decode-status-clarity.** Honest decode activity in status.
+Prior: **651**.
+
+### Problem
+- THUMTOO_DEBUG "decoder idle" used only client queue_stats — host PreferCache /
+  soft raster jobs were invisible while HQ still arrived later.
+- Image mode status showed quality tier but not that full decode / climb was running.
+- pendingDecodeCount ignored Image-mode native climb and gallery soft inflight.
+
+### Change
+- `queueStatsLabel` includes host raster active/inflight counts
+- `imageModeClimbActivityLabel` — "Decoding full…" / "Improving quality…"
+- Image mode quality shows `show Npx · native Mpx` when undersampled
+- `pendingDecodeCount` includes native climb paths + gallery soft inflight
+
+### Done criteria
+- [x] Status reflects host + climb work, not false idle
+- [x] Bundle **652**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-651-anti-demote-quality-climb.** Never demote full; keep soft climbing.
 Prior: **650**.
 
