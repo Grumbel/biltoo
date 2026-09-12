@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-598-loadadd-footprint-bind.** Footprint install + new-item bind take.
+Prior: **597**.
+
+### Change
+- `installFullPreservingWorkspaceFootprint` — FullSource install; keep Workspace
+  free-form scene footprint when intrinsic grows
+- `takePendingSessionBindForNewItem` — FIFO bind for a new tile (skip owned ids)
+- LoadAdd existing-tile and create loops use these
+
+### Done criteria
+- [x] Footprint preserve and new-item bind are named units
+- [x] Bundle **598**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-597-pending-session-bind-helpers.** LoadAdd bind claim helpers.
 Prior: **596**.
 

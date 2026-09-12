@@ -1373,33 +1373,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         ++have;
         if (!existing->hasDecodedPixels()) {
-            const QSize before = existing->imageSize();
-            const qreal sx0 = existing->itemScaleX();
-            const qreal sy0 = existing->itemScaleY() > 0.0 ? existing->itemScaleY()
-                                                           : sx0;
-            const qreal footW = before.width() * sx0;
-            const qreal footH = before.height() * sy0;
-            installDisplayPixels(existing, image,
-                                 SessionAppearance::PixelKind::FullSource,
-                                 existing->sessionId());
-            const QSize after = existing->imageSize();
-            // Keep scene footprint stable when intrinsic grows (placeholder →
-            // full). Workspace is pixel-scaled: if the placeholder already had
-            // the native size, after==before and scale stays 1.
-            if (isWorkspaceMode() && m_layoutMode == LayoutMode::FreeForm
-                && before.isValid() && after.isValid()
-                && after.width() > 0 && after.height() > 0
-                && (before.width() != after.width()
-                    || before.height() != after.height())) {
-                existing->setItemScale(footW / qreal(after.width()),
-                                       footH / qreal(after.height()));
+            if (installFullPreservingWorkspaceFootprint(existing, image)) {
                 sizeChanged = true;
-            } else if (before.isValid() && after.isValid()
-                       && (before.width() != after.width()
-                           || before.height() != after.height())) {
-                sizeChanged = true;
-            } else {
-                existing->update();
             }
         }
     }
@@ -1428,33 +1403,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         ++have;
         // Bind pending session row if any remain for this path (FIFO).
-        // Skip binds already owned by another live item (should be rare after purge).
         PendingSessionBind bound;
-        bool haveBound = false;
-        for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
-            if (m_pendingSessionBinds.at(bi).path != path) {
-                continue;
-            }
-            const PendingSessionBind candidate = m_pendingSessionBinds.at(bi);
-            if (candidate.id != kInvalidSessionImageId) {
-                if (ImageItem *owner = findItemBySessionId(candidate.id)) {
-                    if (owner != item) {
-                        m_pendingSessionBinds.removeAt(bi);
-                        --bi;
-                        continue;
-                    }
-                }
-            }
-            bound = m_pendingSessionBinds.takeAt(bi);
-            haveBound = true;
-            if (bound.id != kInvalidSessionImageId) {
-                item->setSessionId(bound.id);
-            }
-            if (bound.index >= 0 && bound.id != kInvalidSessionImageId) {
-                item->setSessionIndex(bound.index);
-            }
-            break;
-        }
+        const bool haveBound = takePendingSessionBindForNewItem(path, item, &bound);
         applyStoredAppearance(item);
         // Decode/membership must not rewrite filmstrip; user edits emit overrides.
         if (haveBound && bound.id != kInvalidSessionImageId) {

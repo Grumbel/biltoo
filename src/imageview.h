@@ -472,6 +472,18 @@ public:
      * Apply explicit drop scene placement from a bind (Workspace free-form).
      */
     void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);
+    /**
+     * FullSource install on an existing tile; in Workspace free-form, scale so
+     * scene footprint stays stable when intrinsic grows. @return true if
+     * logical size changed (caller may need pack).
+     */
+    bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);
+    /**
+     * FIFO take of a pending bind for a newly created tile; drops binds already
+     * owned by another live item. Applies session id/index onto @a item when taken.
+     */
+    bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
+                                          PendingSessionBind *out);
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
     void detachCanvasSessionId(SessionImageId sessionId);

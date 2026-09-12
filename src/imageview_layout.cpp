@@ -935,6 +935,68 @@ void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBi
     rememberItemState(item);
 }
 
+bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image)
+{
+    if (!item || image.isNull() || item->hasDecodedPixels()) {
+        return false;
+    }
+    const QSize before = item->imageSize();
+    const qreal sx0 = item->itemScaleX();
+    const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
+    const qreal footW = before.width() * sx0;
+    const qreal footH = before.height() * sy0;
+    installDisplayPixels(item, image, SessionAppearance::PixelKind::FullSource,
+                         item->sessionId());
+    const QSize after = item->imageSize();
+    const bool grew = before.isValid() && after.isValid()
+        && (before.width() != after.width() || before.height() != after.height());
+    if (grew && isWorkspaceMode() && m_layoutMode == LayoutMode::FreeForm
+        && after.width() > 0 && after.height() > 0) {
+        // Keep scene footprint stable when intrinsic grows (placeholder → full).
+        item->setItemScale(footW / qreal(after.width()),
+                           footH / qreal(after.height()));
+        return true;
+    }
+    if (grew) {
+        return true;
+    }
+    item->update();
+    return false;
+}
+
+bool ImageView::takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
+                                                 PendingSessionBind *out)
+{
+    if (!out || path.isEmpty() || !item) {
+        return false;
+    }
+    for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
+        if (m_pendingSessionBinds.at(bi).path != path) {
+            continue;
+        }
+        const PendingSessionBind candidate = m_pendingSessionBinds.at(bi);
+        if (candidate.id != kInvalidSessionImageId) {
+            if (ImageItem *owner = findItemBySessionId(candidate.id)) {
+                if (owner != item) {
+                    m_pendingSessionBinds.removeAt(bi);
+                    --bi;
+                    continue;
+                }
+            }
+        }
+        *out = m_pendingSessionBinds.takeAt(bi);
+        if (out->id != kInvalidSessionImageId) {
+            item->setSessionId(out->id);
+        }
+        if (out->index >= 0 && out->id != kInvalidSessionImageId) {
+            item->setSessionIndex(out->index);
+        }
+        return true;
+    }
+    return false;
+}
+
+
 void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
 {
     if (sessionId == kInvalidSessionImageId) {
