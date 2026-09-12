@@ -553,6 +553,14 @@ void ImageView::duplicateSelected()
         if (!copy) {
             continue;
         }
+        // Preserve source logical size (createItem uses path layout; crop
+        // duplicates must keep the cropped item size).
+        {
+            const QSize sz = src->imageSize();
+            if (sz.isValid() && sz.width() > 1 && sz.height() > 1) {
+                copy->setIntrinsicSize(sz);
+            }
+        }
         copy->setContentHFlip(src->contentHFlip());
         copy->setContentVFlip(src->contentVFlip());
         copy->setSessionCrop(src->sessionHasCrop(), src->sessionCropRect());

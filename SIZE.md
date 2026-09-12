@@ -17,21 +17,16 @@ logical size.
 |-----|------|
 | `logicalSizeForPath` | Const lookup — never soft dims |
 | `ensureLogicalSizeForPath` | May probe |
-| `layoutSizeForPath` | Map / thumtoo / provisional aspect from preview |
+| `layoutSizeForPath` | Known logical first; else provisional aspect at **1024** long-edge (never soft pixel size) |
+| `imageSizeForPath` | Installs thumtoo into map; provisional neutral if unknown |
 | `rememberImageSize` | Never shrink with a smaller sample |
 | `rememberSizeFromDecode` | Thumtoo first; ≤2048 long-edge → probe only |
-| `ImageItem(path, image)` | Stores sample only; intrinsic starts 1×1 until `setIntrinsicSize` |
-| `ImageItem(path, size)` | Placeholder with known logical size |
-| `ImageItem::imageSize()` | Intrinsic only |
-| `ImageItem::contentRect()` | Intrinsic + offset |
-| `ImageItem::paint` | Draw sample into `contentRect` |
-| `setSourceImage` | Seed intrinsic if unknown; grow only; never shrink |
-| `setIntrinsicSize` | Explicit authority (probe, layout, crop) — always applied |
-| `setPreviewImage` | Sample only — no intrinsic change |
-| Orientation sync | Soft: transpose aspect; full may grow |
+| `ImageItem(path, image)` | Sample only; intrinsic 1×1 until `setIntrinsicSize` |
+| `ImageItem::contentRect` / paint | Logical box; sample drawn into it |
+| `setIntrinsicSize` | Explicit authority — always applied |
 
 ## Forbidden
 
-- Seeding intrinsic from `image.size()` / `pixmap().size()` / soft long-edge
-- `contentRect` / pack / fit from display pixel dimensions
-- Letting ladder samples block probe or crop via `setIntrinsicSize`
+- Seeding intrinsic or path map from soft/ladder pixel dimensions
+- `layoutSizeForPath` returning raw preview size as layout magnitude
+- `contentRect` / pack / fit from `pixmap().size()`

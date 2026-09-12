@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-571-layout-size-never-soft.** layoutSizeForPath never returns soft pixel magnitude.
+Prior: **570**.
+
+### Changes
+- `layoutSizeForPath`: definitive logical first; provisional always normalized to 1024 long-edge
+- `imageSizeForPath`: uses `logicalSizeForPath` (installs thumtoo into map)
+- Workspace duplicate copies `src->imageSize()` after create
+
+### Done criteria
+- [x] Soft 512 cannot become pack cell size
+- [x] Bundle **571**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-570-item-ctor-intrinsic-authority.** ImageItem(image) does not seed geometry; setIntrinsicSize is authority.
 Prior: **569**.
 

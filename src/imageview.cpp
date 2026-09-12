@@ -494,14 +494,12 @@ QSize ImageView::imageSizeForPath(const QString &path)
     if (path.isEmpty()) {
         return QSize(1000, 1000);
     }
-    const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend()) {
-        return it.value();
-    }
-    // Cache-only durable size (files and //archive: members) — no source I/O.
-    if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
-        rememberImageSize(path, cached);
-        return cached;
+    const QSize known = logicalSizeForPath(path);
+    if (known.isValid() && known.width() > 0 && known.height() > 0) {
+        if (!m_imageSizeByPath.contains(path)) {
+            rememberImageSize(path, known); // install thumtoo hit into map
+        }
+        return known;
     }
     // Archives / multipage / embedded PDF images: schedule thumtoo probe;
     // neutral stand-in until sizeReady.
@@ -521,24 +519,30 @@ QSize ImageView::imageSizeForPath(const QString &path)
 
 QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHint)
 {
+    // Prefer definitive logical size (map / thumtoo) — never soft sample dims.
+    const QSize known = logicalSizeForPath(path);
+    if (known.isValid() && known.width() > 0 && known.height() > 0
+        && !isProvisionalImageSize(path)) {
+        return known;
+    }
     const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend()) {
+    if (it != m_imageSizeByPath.cend()
+        && it->isValid() && it->width() > 0 && it->height() > 0) {
         return it.value();
     }
-    // Aspect from preview so pack/fit frames correctly. LQIP is often ~32px —
-    // normalize magnitude so cells are not tiny in scene space (view scale
-    // still absorbs absolute size; keeps on-screen edge budgets sane).
+    // Aspect from preview so pack/fit frames correctly. Magnitude is always
+    // normalized to a neutral long-edge — soft 512 must not become layout size.
     if (!previewHint.isNull() && previewHint.width() > 0 && previewHint.height() > 0) {
         scheduleImageSizeProbe(path);
         m_provisionalSizePaths.insert(path);
         const QSize h = previewHint.size();
         const int longEdge = qMax(h.width(), h.height());
-        if (longEdge > 0 && longEdge < 256) {
-            const qreal s = 1024.0 / qreal(longEdge);
+        if (longEdge > 0) {
+            constexpr qreal kProvLong = 1024.0;
+            const qreal s = kProvLong / qreal(longEdge);
             return QSize(qMax(1, int(h.width() * s + 0.5)),
                          qMax(1, int(h.height() * s + 0.5)));
         }
-        return h;
     }
     return imageSizeForPath(path);
 }
