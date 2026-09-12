@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // libvips pulls in GLib, which has struct fields named "signals". Qt defines
-// signals as a macro — include vips before any Qt headers.
-#include "biltoo_thread.h"
-
+// signals as a macro — include vips before any Qt headers (including
+// biltoo_thread.h → QThread).
 #ifdef BILTOO_HAVE_VIPS
 #include <vips/vips.h>
 #endif
 
+#include "biltoo_thread.h"
 #include "imageloader.h"
 #include "thumtoocache.h"
 #include "imagecache.h"

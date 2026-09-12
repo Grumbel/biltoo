@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-677-imageloader-vips-include-order.** vips before biltoo_thread.h (GLib signals).
+Prior: **676**.
+
+### Root cause
+`biltoo_thread.h` includes `QThread` → Qt `signals` macro. Including it *before*
+libvips made GLib's `GDBusSignalInfo **signals` fail to compile.
+
+### Change
+- `imageloader.cpp`: `#include <vips/vips.h>` before `biltoo_thread.h`
+- Note in `biltoo_thread.h`
+
+### Done criteria
+- [x] imageloader.cpp compiles with VIPS + ASSERT_NOT_GUI_THREAD
+- [x] Bundle **677**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-676-assert-not-gui-thread.** ASSERT_NOT_GUI_THREAD on heavy decode/bake paths.
 Prior: **675**.
 

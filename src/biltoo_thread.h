@@ -4,6 +4,9 @@
 #ifndef BILTOO_THREAD_H
 #define BILTOO_THREAD_H
 
+// Pulls Qt headers. In translation units that also use libvips/GLib, include
+// <vips/vips.h> *before* this header (GLib has a field named "signals").
+
 #include <QThread>
 
 /**
