@@ -1734,10 +1734,17 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 
 int ImageView::slideshowTargetEdge() const
 {
-    // Soft ladder only while the show owns the composite. Overview/1024
-    // preload under key-repeat still starved the pool (logs: preload-start
-    // edge=1024 cascading through the session).
-    return ThumtooCache::kGalleryLadderEdge;
+    // Prefer viewport long edge, capped at overview. Soft (512) is for
+    // key-repeat; settled loadImage climbs to this via PreferCache.
+    if (!viewport()) {
+        return ThumtooCache::kBatchOverviewEdge;
+    }
+    const qreal dpr = devicePixelRatioF();
+    const QSize vs = viewport()->size();
+    const int longPx = int(qCeil(qMax(vs.width(), vs.height()) * dpr));
+    const int snapped = ThumtooCache::ceilLadderEdge(
+        qMax(longPx, ThumtooCache::kGalleryLadderEdge));
+    return qMin(snapped, ThumtooCache::kBatchOverviewEdge);
 }
 
 void ImageView::preloadSlideshowImage(const QString &path)

@@ -1406,7 +1406,7 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
             if (!m_slideshowNavLoadTimer) {
                 m_slideshowNavLoadTimer = new QTimer(this);
                 m_slideshowNavLoadTimer->setSingleShot(true);
-                m_slideshowNavLoadTimer->setInterval(60);
+                m_slideshowNavLoadTimer->setInterval(120);
                 connect(m_slideshowNavLoadTimer, &QTimer::timeout, this, [this]() {
                     if (!m_imageView || !isImageMode() || !isSlideshowSession()) {
                         return;

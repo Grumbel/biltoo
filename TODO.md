@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-549-slideshow-quality-climb.** Restore overview PreferCache after soft.
+Prior: **548**.
+
+### Regression
+Hard-capping target edge at 512 + soft-only LoadReplace left the show stuck
+on 341×512 forever (no dwell-upgrade to overview).
+
+### Fix
+- slideshowTargetEdge = viewport×DPR, **capped at 1024** (overview)
+- Settled LoadReplace: soft **512** (high prio) + PreferCache **qualityEdge**
+  (low prio) so dwell upgrades after nav settles
+- Nav load debounce **120ms** (still coalesces key-repeat)
+
+Key-repeat still skips loadImage; only settled/auto-advance climbs.
+
+### Done criteria
+- [x] Bundle **549**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-548-slideshow-nav-coalesce.** Debounce loadImage; soft edge 512 only.
 Prior: **547**.
 

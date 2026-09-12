@@ -366,10 +366,13 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     const QPointer<ImageView> guard(this);
     constexpr int kPreviewEdge = 512;
 
-    // Slideshow: one soft edge only. Parallel 512+1024 get_pixels per key-repeat
-    // step saturated thumtoo and the pool until the GUI starved.
+    // Slideshow: soft first (priority), then PreferCache at target edge (low).
+    // Key-repeat skips loadImage entirely (MainWindow debounce); this path is
+    // for settled index / auto-advance — must climb above 512 or the show
+    // stays on thumbnails forever.
     if (m_slideshowProgressActive) {
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
+        const int qualityEdge = slideshowTargetEdge();
         QThreadPool::globalInstance()->start([guard, path, role, gen, softEdge]() {
             if (!guard || gen != guard->m_loadGeneration.load()) {
                 return;
@@ -389,6 +392,42 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                 guard->onImagePreviewLoaded(path, preview, gen, static_cast<int>(role));
             });
         }, 2);
+        if (qualityEdge > softEdge) {
+            QThreadPool::globalInstance()->start(
+                [guard, path, role, gen, qualityEdge]() {
+                    if (!guard || gen != guard->m_loadGeneration.load()) {
+                        return;
+                    }
+                    QImage image = ImageCache::get(path, qualityEdge);
+                    if (image.isNull()
+                        || qMax(image.width(), image.height())
+                               < qualityEdge * 7 / 10) {
+                        image = ImageLoader::loadThumbnail(path, qualityEdge);
+                    }
+                    if (!guard || image.isNull()) {
+                        if (guard && ThumtooCache::isAvailable()) {
+                            (void)ThumtooCache::scheduleDisplayPixels(
+                                path, qualityEdge);
+                        }
+                        return;
+                    }
+                    if (qMax(image.width(), image.height()) > qualityEdge) {
+                        image = image.scaled(
+                            qualityEdge, qualityEdge, Qt::KeepAspectRatio,
+                            Qt::SmoothTransformation);
+                    }
+                    QTimer::singleShot(
+                        0, guard.data(),
+                        [guard, path, image, gen, role]() {
+                            if (!guard) {
+                                return;
+                            }
+                            guard->onImageLoaded(
+                                path, image, gen, static_cast<int>(role));
+                        });
+                },
+                -1);
+        }
         return;
     }
 
