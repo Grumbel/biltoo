@@ -567,14 +567,15 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
-    // Progressive: one ladder step under target first (~4× fewer pixels), then
-    // the display edge. Soft/overview band caps at batchCap; beyond that tiles
-    // / setInterest own the climb. Never ImageLoader::load (native) in Gallery.
-    const int batchCap = ThumtooCache::kBatchOverviewEdge;
-    const int target = qMin(want, batchCap);
-    // Already have the soft/overview target — stop PreferCache spin.
+    // Progressive soft: PreferCache / SoftOnly only up to kGalleryLadderEdge
+    // (512). Requesting 1024 here installed multi-megapixel softs on every tile
+    // via the pool callback and stalled the GUI (need=1024 logs). Overview at
+    // 1024+ is setInterest's job, not host soft install.
+    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    const int target = qMin(want, softCap);
+    // Already have the durable soft max — stop PreferCache spin.
     if (have >= target * 9 / 10) {
-        if (want > batchCap) {
+        if (want > softCap) {
             st.gaveUpWant = qMax(st.gaveUpWant, want);
         }
         return;

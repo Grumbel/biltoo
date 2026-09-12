@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-533-gallery-soft-cap-512.** PreferCache soft max 512, not 1024.
+Prior: **532**.
+
+### Evidence
+Logs showed `need=1024 have=512 req=1024` then `INSTALL soft … got=1024` on
+the GUI for many tiles → hundreds of ms per decode-window turn.
+
+### Change
+- `scheduleGalleryDecode`: PreferCache / SoftOnly target capped at
+  `kGalleryLadderEdge` (512). Higher need is setInterest overview, not host soft.
+
+### Done criteria
+- [x] Bundle **533**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-532-decode-window-hotpath.** Remove paint-budget installs + O(n²) want.
 Prior: **531**.
 
