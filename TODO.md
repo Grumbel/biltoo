@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-622-crop-drag-phases.** Split updateCropHandleDrag into move/rotate/resize.
+Prior: **621**.
+
+### Change
+- `updateCropMoveDrag` — translate draft, clamp inside content when not expand
+- `updateCropRotateDrag` — angle + snap + constrain
+- `updateCropResizeDrag` — crop-local resize with square/center modifiers
+- `updateCropHandleDrag` is a short dispatcher
+
+### Done criteria
+- [x] Crop drag paths named; behaviour preserved
+- [x] Bundle **622**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-621-leave-crop-phases.** Split leaveCropModeInternal into apply/cancel/clear.
 Prior: **620**.
 

@@ -1312,6 +1312,10 @@ private:
     QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
     void updateCropHandleDrag(const QPoint &viewPos);
+    void updateCropMoveDrag(const QPointF &local, const QRectF &cr);
+    void updateCropRotateDrag(const QPointF &local, const QRectF &cr, qreal minSide);
+    void updateCropResizeDrag(const QPointF &local, const QRectF &cr, const QRectF &limits,
+                              qreal minSide);
     void endCropHandleDrag();
     void beginCropRubberBand(const QPoint &viewPos);
     void updateCropRubberBand(const QPoint &viewPos);
