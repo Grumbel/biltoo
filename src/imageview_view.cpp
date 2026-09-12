@@ -1706,6 +1706,17 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
     return true;
 }
 
+int ImageView::slideshowTargetEdge() const
+{
+    if (!viewport()) {
+        return ThumtooCache::kBatchOverviewEdge;
+    }
+    const qreal dpr = devicePixelRatioF();
+    const QSize vs = viewport()->size();
+    const int longPx = int(qCeil(qMax(vs.width(), vs.height()) * dpr));
+    return ThumtooCache::ceilLadderEdge(qMax(longPx, ThumtooCache::kGalleryLadderEdge));
+}
+
 void ImageView::preloadSlideshowImage(const QString &path)
 {
     if (path.isEmpty()) {
@@ -1745,8 +1756,25 @@ void ImageView::preloadSlideshowImage(const QString &path)
     const QPointer<ImageView> guard(this);
     qCDebug(lcSlideshow).nospace()
         << "[slideshow] preload-start " << QFileInfo(loadPath).fileName();
-    QThreadPool::globalInstance()->start([guard, loadPath, gen]() {
-        const QImage img = ImageLoader::load(loadPath);
+    const int targetEdge = slideshowTargetEdge();
+    QThreadPool::globalInstance()->start([guard, loadPath, gen, targetEdge]() {
+        // Prefer cache / soft / overview at viewport edge — full native extract
+        // on every ←/→ was the slideshow lag (archives especially).
+        QImage img = ImageCache::get(loadPath, targetEdge);
+        if (img.isNull()
+            || qMax(img.width(), img.height()) < targetEdge * 7 / 10) {
+            const QImage soft = ImageLoader::loadThumbnail(loadPath, targetEdge);
+            if (!soft.isNull()
+                && (img.isNull()
+                    || qMax(soft.width(), soft.height())
+                        > qMax(img.width(), img.height()))) {
+                img = soft;
+            }
+        }
+        if (img.isNull()
+            || qMax(img.width(), img.height()) < targetEdge * 5 / 10) {
+            img = ImageLoader::load(loadPath);
+        }
         if (img.isNull()) {
             return;
         }
@@ -1755,7 +1783,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
             QImage thumb = img;
             if (thumb.width() > maxEdge || thumb.height() > maxEdge) {
                 thumb = thumb.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
-                                    Qt::SmoothTransformation);
+                                     Qt::SmoothTransformation);
             }
             ImageLoader::putCachedThumbnail(loadPath, thumb);
         }

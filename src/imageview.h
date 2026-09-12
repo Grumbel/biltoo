@@ -195,6 +195,8 @@ public:
     void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
     /** Decode path off the GUI thread into m_preload* for the next live transition. */
     void preloadSlideshowImage(const QString &path);
+    /** Viewport long-edge × DPR snapped to ladder (slideshow decode target). */
+    int slideshowTargetEdge() const;
     void tickSlideshowMotion();
     void tickLiveTransition();
     void startLiveTransitionWithImage(const QImage &nextImage);

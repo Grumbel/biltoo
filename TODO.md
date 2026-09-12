@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-540-slideshow-display-edge.** Faster slideshow ←/→ via viewport PreferCache.
+Prior: **539**.
+
+### Issue
+Slideshow next/prev felt very slow (esp. archive members).
+
+### Cause
+`preloadSlideshowImage` and slideshow `LoadReplace` always used
+`ImageLoader::load` (full native extract).
+
+### Changes
+- `slideshowTargetEdge()`: viewport long edge × DPR, ladder-snapped
+- Preload and slideshow LoadReplace: ImageCache / loadThumbnail at that edge
+  first; full load only if still short
+- User nav preloads next **and** previous
+
+### Done criteria
+- [x] Bundle **540**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-539-display-prefercache-2048.** PreferCache host install for >1024.
 Prior: **538**.
 

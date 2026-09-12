@@ -2327,6 +2327,15 @@ void MainWindow::onSlideshowUserNavigated()
         return;
     }
 
+    // Warm neighbour slides at viewport edge so ←/→ hit m_ssFullByPath.
+    const int nPaths = m_session.paths().size();
+    if (nPaths > 1 && m_currentIndex >= 0) {
+        const int next = (m_currentIndex + 1) % nPaths;
+        const int prev = (m_currentIndex - 1 + nPaths) % nPaths;
+        m_imageView->preloadSlideshowImage(m_session.paths().at(next));
+        m_imageView->preloadSlideshowImage(m_session.paths().at(prev));
+    }
+
     m_imageView->cancelSlideshowTransition();
     m_slideshowPendingToIndex = -1;
     m_slideshowTransitionCycle = -1;

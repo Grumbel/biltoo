@@ -383,17 +383,40 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         });
     }, 2);
 
-    // Full decode at low priority so soft previews win the pool under rapid nav.
-    QThreadPool::globalInstance()->start([guard, path, role, gen]() {
+    // Full / display decode at low priority so soft previews win under rapid nav.
+    // Slideshow: viewport-sized PreferCache first — native extract made ←/→ lag.
+    const bool slideshowNav = m_slideshowProgressActive;
+    const int ssEdge = slideshowNav ? slideshowTargetEdge() : 0;
+    QThreadPool::globalInstance()->start([guard, path, role, gen, slideshowNav, ssEdge]() {
         // Superseded navigation: skip expensive full decode when possible.
         if (!guard || gen != guard->m_loadGeneration.load()) {
             return;
         }
-        const QImage image = ImageLoader::load(path);
+        QImage image;
+        if (slideshowNav && ssEdge > 0) {
+            image = ImageCache::get(path, ssEdge);
+            if (image.isNull()
+                || qMax(image.width(), image.height()) < ssEdge * 7 / 10) {
+                const QImage soft = ImageLoader::loadThumbnail(path, ssEdge);
+                if (!soft.isNull()
+                    && (image.isNull()
+                        || qMax(soft.width(), soft.height())
+                            > qMax(image.width(), image.height()))) {
+                    image = soft;
+                }
+            }
+            if (image.isNull()
+                || qMax(image.width(), image.height()) < ssEdge * 5 / 10) {
+                image = ImageLoader::load(path);
+            }
+        } else {
+            image = ImageLoader::load(path);
+        }
         if (!guard) {
             return;
         }
         QTimer::singleShot(0, guard.data(), [guard, path, image, gen, role]() {
+
             if (!guard) {
                 return;
             }
