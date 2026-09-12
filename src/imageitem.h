@@ -82,8 +82,8 @@ public:
     void setSessionIndex(int index) { m_sessionIndex = index; }
     QSize imageSize() const;
     /**
-     * Update layout geometry without touching pixels (async size probe).
-     * No-op when a full decode already owns the size.
+     * Set logical layout size (probe / layout / crop). Does not touch pixels.
+     * Always applied — samples never block this write.
      */
     void setIntrinsicSize(const QSize &size);
     const QImage &sourceImage() const { return m_source; }

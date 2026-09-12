@@ -24,18 +24,17 @@ ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *pa
     : QGraphicsPixmapItem(parent)
     , m_path(path)
     , m_source(image)
-    , m_intrinsicSize(image.size())
+    // Sample pixels are not logical size. Caller must setIntrinsicSize
+    // (layoutSizeForPath / probe) before fit/pack.
+    , m_intrinsicSize(1, 1)
 {
     setTransformationMode(Qt::SmoothTransformation);
     // Classic viewer by default: not selectable/movable until workspace mode
     setFlags(ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
+    setOffset(-0.5, -0.5);
     if (!m_source.isNull()) {
-        setOffset(-m_source.width() / 2.0, -m_source.height() / 2.0);
         updateDisplayedPixmap();
-    } else {
-        m_intrinsicSize = QSize(1, 1);
-        setOffset(-0.5, -0.5);
     }
     applyLocalTransform();
 }
@@ -71,16 +70,8 @@ void ImageItem::setIntrinsicSize(const QSize &size)
     if (!size.isValid() || size.width() <= 0 || size.height() <= 0) {
         return;
     }
-    // Allow growth when a size probe reports true native dimensions larger than
-    // a ladder decode already installed as source (HUD / layout geometry).
-    if (!m_source.isNull() && !m_previewPixels) {
-        const bool larger =
-            qint64(size.width()) * size.height()
-            > qint64(m_intrinsicSize.width()) * m_intrinsicSize.height();
-        if (!larger && m_intrinsicSize.isValid()) {
-            return;
-        }
-    }
+    // Explicit logical-size write (probe, layout, crop). Always honored —
+    // samples must not block crop shrink or probe upgrades. Soft never calls this.
     if (m_intrinsicSize == size) {
         return;
     }

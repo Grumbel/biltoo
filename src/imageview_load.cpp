@@ -30,8 +30,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         return nullptr;
     }
     auto *item = new ImageItem(path, image);
-    // ImageItem ctor seeds intrinsic from pixel size — replace with logical
-    // layout size when known so ladder/full samples do not define geometry.
+    // Ctor leaves intrinsic at 1×1; install logical layout size immediately.
     {
         const QSize layout = layoutSizeForPath(path, image);
         if (layout.isValid() && layout.width() > 1 && layout.height() > 1) {

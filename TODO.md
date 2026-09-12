@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-570-item-ctor-intrinsic-authority.** ImageItem(image) does not seed geometry; setIntrinsicSize is authority.
+Prior: **569**.
+
+### Changes
+- `ImageItem(path, image)`: sample only; intrinsic starts 1×1 until setIntrinsicSize
+- `setIntrinsicSize`: always applied (crop/probe/layout); removed grow-only gate that blocked crop shrink
+- SIZE.md updated
+
+### Done criteria
+- [x] Ctor cannot seed logical size from sample
+- [x] Crop can shrink intrinsic
+- [x] Bundle **570**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-569-contentrect-paint-logical.** contentRect and paint sample into logical box.
 Prior: **568**.
 
