@@ -723,8 +723,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                                     dbg && dbg[0] && dbg[0] != '0') {
                                     fprintf(stderr,
                                             "biltoo/gallery: INSTALL soft path=%s "
-                                            "got=%d after settled SoftOnly
-",
+                                            "got=%d after settled SoftOnly\n",
                                             qPrintable(QFileInfo(path).fileName()),
                                             againGot);
                                 }

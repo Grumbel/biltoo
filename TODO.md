@@ -2,6 +2,19 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-536-fix-softonly-fprintf.** Fix broken string in 535 fprintf.
+Prior: **535**.
+
+### Done criteria
+- [x] Compiles
+- [x] Bundle **536**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-535-soft-inflight-loop.** Stop have=0 / schedulePixels SKIP soft loops.
 Prior: **534**.
 
