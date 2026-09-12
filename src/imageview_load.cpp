@@ -746,13 +746,11 @@ void ImageView::scheduleGalleryDisplayPreferCache(const QString &path, GallerySo
         return;
     }
     if (ThumtooCache::isPixelsPending(path, dispEdge)) {
-        st.inflight = dispEdge;
-        st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+        markGallerySoftInflight(st, dispEdge);
         return;
     }
     if (ThumtooCache::scheduleDisplayPixels(path, dispEdge)) {
-        st.inflight = dispEdge;
-        st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+        markGallerySoftInflight(st, dispEdge);
         if (const char *dbg = std::getenv("THUMTOO_DEBUG");
             dbg && dbg[0] != '\0' && dbg[0] != '0') {
             fprintf(stderr,
@@ -917,56 +915,33 @@ void ImageView::applyGallerySoftPoolResult(const QString &path, const QImage &pr
     refreshStatus();
 }
 
-void ImageView::scheduleGalleryDecode(const QString &path)
+void ImageView::clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want)
 {
-    if (!isGalleryMode() || path.isEmpty()) {
-        return;
-    }
-    // Size-first still probes in the background, but never blocks decode:
-    // provisional layout must still climb to the zoom-appropriate ladder edge.
-    if (isProvisionalImageSize(path)) {
-        scheduleImageSizeProbe(path);
-    }
-    GallerySoftState &st = m_gallerySoft[path];
-    if (st.failed || st.inflight > 0 || st.fullInflight) {
-        return;
-    }
-
-    int have = 0;
-    int want = 0;
-    if (!resolveGallerySoftHaveWant(path, st, &have, &want)) {
-        return;
-    }
-
     // Higher zoom/need or soft arrived — clear shortfall and retry climb.
     if (st.gaveUpWant > 0
         && (want > st.gaveUpWant || coversEdge(have, st.gaveUpWant))) {
         st.gaveUpWant = 0;
     }
+}
+
+bool ImageView::gallerySoftScheduleBlocked(const GallerySoftState &st, int have,
+                                           int want) const
+{
     const int softCap = ThumtooCache::kGalleryLadderEdge;
-    const int ovCap = ThumtooCache::kBatchOverviewEdge;
     // Soft PreferCache stop: only when still below soft max and that edge gave up.
-    if (!coversEdge(have, softCap)
-        && st.gaveUpWant >= qMin(want, softCap)) {
-        return;
+    if (!coversEdge(have, softCap) && st.gaveUpWant >= qMin(want, softCap)) {
+        return true;
     }
     if (gallerySoftInflightCount() >= galleryDecodeConcurrency()) {
-        return;
+        return true;
     }
+    return false;
+}
 
-    // Soft / overview plan (pure). Display PreferCache is a separate host path.
-    const SoftClimbPlan climb = planSoftClimb(have, want, softCap, ovCap);
-    if (climb.kind == SoftClimbPlan::Kind::None) {
-        if (want <= ovCap) {
-            st.gaveUpWant = qMax(st.gaveUpWant, want);
-            return;
-        }
-        scheduleGalleryDisplayPreferCache(path, st, have, want);
-        return;
-    }
-
-    const int requestEdge = climb.edge;
-    const bool overviewOnly = (climb.kind == SoftClimbPlan::Kind::Overview);
+void ImageView::startGallerySoftClimbJob(const QString &path, int requestEdge,
+                                         bool overviewOnly, int want, int have,
+                                         GallerySoftState &st)
+{
     markGallerySoftInflight(st, requestEdge);
     addPendingWorkspacePath(path);
     emit statusChanged();
@@ -982,8 +957,8 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen, requestEdge, overviewOnly]() {
-        // Soft: PreferCache via loadThumbnail. Overview: schedule only (ladderReady
-        // installs). Avoid PreferCache 1024 installs that stalled the GUI.
+        // Soft: PreferCache via loadThumbnail. Overview: schedule only
+        // (ladderReady installs). Avoid PreferCache 1024 on the pool thread.
         QImage preview;
         if (!overviewOnly) {
             preview = ImageLoader::loadThumbnail(path, requestEdge);
@@ -1008,6 +983,50 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             },
             Qt::QueuedConnection);
     });
+}
+
+void ImageView::scheduleGalleryDecode(const QString &path)
+{
+    if (!isGalleryMode() || path.isEmpty()) {
+        return;
+    }
+    // Size-first still probes in the background, but never blocks decode:
+    // provisional layout must still climb to the zoom-appropriate ladder edge.
+    if (isProvisionalImageSize(path)) {
+        scheduleImageSizeProbe(path);
+    }
+    GallerySoftState &st = m_gallerySoft[path];
+    if (st.failed || st.inflight > 0 || st.fullInflight) {
+        return;
+    }
+
+    int have = 0;
+    int want = 0;
+    if (!resolveGallerySoftHaveWant(path, st, &have, &want)) {
+        return;
+    }
+
+    clearGalleryGaveUpIfClimbable(st, have, want);
+    if (gallerySoftScheduleBlocked(st, have, want)) {
+        return;
+    }
+
+    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    const int ovCap = ThumtooCache::kBatchOverviewEdge;
+    // Soft / overview plan (pure). Display PreferCache is a separate host path.
+    const SoftClimbPlan climb = planSoftClimb(have, want, softCap, ovCap);
+    if (climb.kind == SoftClimbPlan::Kind::None) {
+        if (want <= ovCap) {
+            st.gaveUpWant = qMax(st.gaveUpWant, want);
+            return;
+        }
+        scheduleGalleryDisplayPreferCache(path, st, have, want);
+        return;
+    }
+
+    startGallerySoftClimbJob(path, climb.edge,
+                             climb.kind == SoftClimbPlan::Kind::Overview, want, have,
+                             st);
 }
 
 void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)

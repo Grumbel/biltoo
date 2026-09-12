@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-646-gallery-decode-schedule-phases.** Phase scheduleGalleryDecode.
+Prior: **645**.
+
+### Change
+- `clearGalleryGaveUpIfClimbable` / `gallerySoftScheduleBlocked` /
+  `startGallerySoftClimbJob`
+- `scheduleGalleryDecode` is gate → plan → soft climb or PreferCache
+- Display PreferCache marks inflight via `markGallerySoftInflight` (timestamp)
+
+### Done criteria
+- [x] scheduleGalleryDecode readable
+- [x] Bundle **646**
+
+### Next
+- resolveGallerySoftHaveWant naming pass if still dense
+- Status-bar PreferCache progress for Image mode (optional)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-645-gallery-soft-pool-phases.** Name soft-pool climb + replace framing.
 Prior: **644**.
 

@@ -1288,7 +1288,12 @@ private:
     void rememberSizeFromDecode(const QString &path, const QImage &image);
     void scheduleImageSizeProbe(const QString &path);
     void applyProbedImageSize(const QString &path, const QSize &size);
+    void clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want);
+    bool gallerySoftScheduleBlocked(const GallerySoftState &st, int have, int want) const;
+    void startGallerySoftClimbJob(const QString &path, int requestEdge, bool overviewOnly,
+                                  int want, int have, GallerySoftState &st);
     void scheduleGalleryDecode(const QString &path);
+
     /** Resolve have/want for @a path; false if decode not needed. */
     bool resolveGallerySoftHaveWant(const QString &path, GallerySoftState &st,
                                     int *haveOut, int *wantOut);
