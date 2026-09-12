@@ -282,6 +282,12 @@ public:
      * Build/refresh motion atlas: sized from viewport × motion headroom
      * (resolution-invariant), not from source pixel dimensions.
      */
+    bool upgradeSlideshowPhaseSlot(const QString &path, const QImage &image,
+                                  int incoming, const QString &slotPath,
+                                  QImage *slot) const;
+    void requestDwellAtlasRebuild();
+    void finishDwellAtlasRebuild(quint64 generation, const QPixmap &atlas,
+                                qreal atlasScale, int atlasVw, int atlasVh);
     void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
                            int *atlasVw, int *atlasVh) const;
     /** Store sample in ImageCache (upward-only long edge). */
@@ -1658,6 +1664,7 @@ private:
     /** Neighbours waiting while concurrency is full. */
     QStringList m_ssRasterPending;
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
+    quint64 m_dwellAtlasRebuildGeneration = 0;
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;
     int m_dwellAtlasVh = 0;

@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-659-async-dwell-atlas.** Slideshow HQ→full atlas off GUI thread.
+Prior: **658**.
+
+### Problem
+`onSlideshowRasterReady` called `ensureMotionAtlas` on the GUI thread when sharper
+pixels arrived. Scaling multi-MP → viewport atlas mid-motion dropped frames;
+High quality only flashed briefly before the hitch.
+
+### Change
+- `requestDwellAtlasRebuild` / `finishDwellAtlasRebuild` — pool scale, GUI assign
+- Keep previous atlas until rebuild completes (no mid-frame scale)
+- `upgradeSlideshowPhaseSlot` extracted; sync phase rebuilds bump generation
+
+### Done criteria
+- [x] Mid-slide HQ→full does not scale on GUI thread
+- [x] Bundle **659**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-658-gallery-soft-note-delivery.** Gallery soft delivery policy on state.
 Prior: **657**.
 

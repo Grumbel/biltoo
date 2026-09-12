@@ -1105,6 +1105,87 @@ void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
     ImageCache::put(path, image);
 }
 
+bool ImageView::upgradeSlideshowPhaseSlot(const QString &path, const QImage &image,
+                                          int incoming, const QString &slotPath,
+                                          QImage *slot) const
+{
+    if (!slot || slotPath != path || path.isEmpty() || image.isNull()) {
+        return false;
+    }
+    if (incoming <= ImageCache::longEdge(*slot)) {
+        return false;
+    }
+    *slot = orientSlideshowImage(image, path);
+    return true;
+}
+
+void ImageView::finishDwellAtlasRebuild(quint64 generation, const QPixmap &atlas,
+                                        qreal atlasScale, int atlasVw, int atlasVh)
+{
+    if (generation != m_dwellAtlasRebuildGeneration) {
+        return; // superseded by a newer source or resize
+    }
+    if (atlas.isNull()) {
+        return;
+    }
+    m_dwellAtlas = atlas;
+    m_dwellAtlasScale = atlasScale;
+    m_dwellAtlasVw = atlasVw;
+    m_dwellAtlasVh = atlasVh;
+    if (viewport() && m_slideshowProgressActive) {
+        viewport()->update();
+    }
+}
+
+void ImageView::requestDwellAtlasRebuild()
+{
+    // Mid-slide HQ→full must not scale multi-MP rasters on the GUI thread —
+    // that hitch drops frames. Keep the previous atlas until this finishes.
+    if (m_dwellSourceImage.isNull() || !viewport() || m_slideshowNavHot) {
+        return;
+    }
+    const int vw = qMax(1, viewport()->width());
+    const int vh = qMax(1, viewport()->height());
+    const qreal head = slideshowMotionHeadroom();
+    const int longCap = int(qCeil(qreal(qMax(vw, vh)) * head));
+    const qreal keyScale = head;
+
+    // Skip if current atlas already matches viewport and covers source enough.
+    if (!m_dwellAtlas.isNull() && qFuzzyCompare(m_dwellAtlasScale, keyScale)
+        && m_dwellAtlasVw == vw && m_dwellAtlasVh == vh
+        && m_dwellAtlas.width() >= longCap * 9 / 10) {
+        const int have = qMax(m_dwellAtlas.width(), m_dwellAtlas.height());
+        const int srcLong = qMax(m_dwellSourceImage.width(), m_dwellSourceImage.height());
+        if (srcLong <= have * 5 / 4) {
+            return;
+        }
+    }
+
+    const quint64 gen = ++m_dwellAtlasRebuildGeneration;
+    const QImage source = m_dwellSourceImage; // refcounted; not mutated by pool
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start(
+        [guard, source, longCap, keyScale, vw, vh, gen]() {
+            if (source.isNull()) {
+                return;
+            }
+            QImage scaled = source.scaled(longCap, longCap, Qt::KeepAspectRatio,
+                                          Qt::FastTransformation);
+            if (scaled.isNull() || !guard) {
+                return;
+            }
+            const QPixmap atlas = QPixmap::fromImage(std::move(scaled));
+            ImageView *view = guard.data();
+            if (!view) {
+                return;
+            }
+            QTimer::singleShot(0, view, [view, gen, atlas, keyScale, vw, vh]() {
+                view->finishDwellAtlasRebuild(gen, atlas, keyScale, vw, vh);
+            });
+        },
+        -1);
+}
+
 void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 {
     if (path.isEmpty() || image.isNull()) {
@@ -1126,28 +1207,14 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 
     // Upgrade phase paint buffers when sharper pixels arrive. Geometry is
     // logical-size based (SIZE.md / SLIDESHOW.md) — sharpness only.
-    auto upgradeSlot = [this, &path, &image, incoming](const QString &slotPath,
-                                                       QImage *slot) -> bool {
-        if (!slot || slotPath != path) {
-            return false;
-        }
-        if (incoming <= ImageCache::longEdge(*slot)) {
-            return false;
-        }
-        *slot = orientSlideshowImage(image, path);
-        return true;
-    };
-
     bool changed = false;
-    if (upgradeSlot(m_ssFromPath, &m_ssFromImage)) {
+    if (upgradeSlideshowPhaseSlot(path, image, incoming, m_ssFromPath, &m_ssFromImage)) {
         m_dwellSourceImage = m_ssFromImage;
-        if (!m_ssFromImage.isNull()) {
-            ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                              &m_dwellAtlasVw, &m_dwellAtlasVh);
-        }
+        // Async atlas: sync ensureMotionAtlas here dropped frames on HQ→full.
+        requestDwellAtlasRebuild();
         changed = true;
     }
-    if (upgradeSlot(m_ssToPath, &m_ssToImage)) {
+    if (upgradeSlideshowPhaseSlot(path, image, incoming, m_ssToPath, &m_ssToImage)) {
         changed = true;
     }
     if (viewport() && (changed || m_slideshowProgressActive)) {
@@ -1348,6 +1415,7 @@ void ImageView::armSlideshowFromPhase(const QString &fromPath, int pathMs)
     }
     m_dwellSourceImage = m_ssFromImage;
     if (!m_ssFromImage.isNull()) {
+        ++m_dwellAtlasRebuildGeneration; // invalidate in-flight async rebuilds
         ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                           &m_dwellAtlasVw, &m_dwellAtlasVh);
         schedulePhaseZoomBlur(fromPath, m_ssFromImage);
@@ -2272,6 +2340,7 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     // Align underlay camera to slideshow zoom before hiding it so cancel/stop
     // can restore a known static frame.
     applySlideshowZoomFraming(item);
+    ++m_dwellAtlasRebuildGeneration;
     ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                       &m_dwellAtlasVw, &m_dwellAtlasVh);
     setSlideshowUnderlayVisible(false);
@@ -2410,6 +2479,7 @@ void ImageView::tickSlideshowMotion()
     };
     m_dwellMotionT = motionProgress01(wallMs, qreal(m_motionDurationMs));
     if (!m_dwellSourceImage.isNull()) {
+        ++m_dwellAtlasRebuildGeneration;
         ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                           &m_dwellAtlasVw, &m_dwellAtlasVh);
     }
