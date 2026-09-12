@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-488-gallery-primary-focus.** Gallery selection as Primary in setInterest.
+Prior: **487**.
+
+### Change
+- updateGalleryDecodeWindow: Primary = selection anchor / first selected
+- Near = other visible; Speculative = rest
+- docs/GALLERY_SOFT.md interest snapshot table
+
+### Next
+- Inflight FocusFull accounting
+- Tune selection-change → decode window refresh for Primary
+
+### Done criteria
+- [x] Gallery Primary
+- [x] Bundle **488**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-487-interest-dedupe-multiselect.** Primary in setInterest; overview owned by snapshot.
 Prior: **486**. Companion: **thumtoo-169**.
 

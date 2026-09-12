@@ -9,6 +9,7 @@
 
 #include <QFileInfo>
 #include <QScrollBar>
+#include <QSet>
 #include <QTimer>
 #include <QUndoStack>
 
@@ -95,14 +96,42 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // Tell thumtoo the visible window so its queue matches the viewport.
+    // Primary = selection focus (anchor / first selected); rest of visible = Near.
     {
+        QStringList primary;
+        QSet<QString> primarySeen;
+        auto addPrimary = [&](const QString &path) {
+            if (path.isEmpty() || primarySeen.contains(path)) {
+                return;
+            }
+            primarySeen.insert(path);
+            primary.append(path);
+        };
+        if (ImageItem *anchor = m_gallery.selectionAnchor()) {
+            addPrimary(anchor->path());
+        }
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                addPrimary(ii->path());
+            }
+        }
+        // Only keep first as Primary (FocusFull cap is 1); others stay Near.
+        QStringList primaryOne;
+        if (!primary.isEmpty()) {
+            primaryOne.append(primary.first());
+        }
+        QStringList near = visible;
+        if (!primaryOne.isEmpty()) {
+            near.removeAll(primaryOne.first());
+        }
         int nearEdge = ThumtooCache::kGalleryLadderEdge;
         for (const QString &path : visible) {
             nearEdge = qMax(nearEdge, galleryWantEdgeForPath(path, sceneVisible));
         }
         nearEdge = qMin(nearEdge, ThumtooCache::kBatchOverviewEdge);
         const int specEdge = ThumtooCache::kGalleryLadderEdge;
-        (void)ThumtooCache::setInterest(visible, rest, nearEdge, specEdge);
+        (void)ThumtooCache::setInterest(near, rest, nearEdge, specEdge, primaryOne,
+                                        ThumtooCache::kBatchOverviewEdge);
     }
 
     for (const QString &path : visible) {

@@ -154,3 +154,18 @@ Optional overrides (process env, read once at first use):
 
 - `BILTOO_GALLERY_DECODE_CONCURRENCY` — overrides `kMaxConcurrentGalleryDecodes` (1–32).
 - `BILTOO_THUMTOO_PIXEL_JOBS` — overrides `kMaxConcurrentPixelJobs` (1–16).
+
+
+## Interest snapshot (thumtoo)
+
+Gallery `updateGalleryDecodeWindow` publishes:
+
+| Role | Source |
+|------|--------|
+| **Primary** | Selection anchor (or first selected tile) — FocusFull tile pyramid |
+| **Near** | Other visible tiles — FastBatch overview ≤1024 |
+| **Speculative** | Off-screen rest — soft band ≤512 |
+
+Host soft path remains `schedulePixels` ≤512 for placeholders. Overview is **not**
+scheduled via `scheduleOverviewPixels` when `THUMTOO_API_SET_INTEREST` is defined;
+only interest snapshots drive overview/FocusFull work.

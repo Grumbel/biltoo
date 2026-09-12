@@ -82,6 +82,8 @@ ImageView::ImageView(QWidget *parent)
             if (viewport()) {
                 viewport()->update();
             }
+            // Refresh interest snapshot so FocusFull tracks the new Primary.
+            updateGalleryDecodeWindow();
         }
         // Workspace: Primary = first selected; Near = remaining selection.
         if (isWorkspaceMode()) {
