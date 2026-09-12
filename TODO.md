@@ -2,6 +2,32 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-644-decode-job-helpers.** Named pool jobs + Image-mode pending helpers.
+Prior: **643**.
+
+### Change
+- `loadSoftPreviewPixels` / `startSoftPreviewJob` / `startNativeFullDecodeJob` /
+  `startDisplayQualityJob` — shared classic + slideshow workers
+- Classic soft path uses ImageCache first (same as slideshow)
+- `bindImageModeSessionCursor` / `resetImageModeItemPlacement` /
+  `resolveImageModePendingPixels` — pending + replace install share placement
+- Drop dead slideshow branches in `installImageModePendingTile` (early-return path)
+- `matchesLoadGeneration` for pool-job generation checks without private access
+
+### Done criteria
+- [x] Decode scheduling readable; classic soft not re-decode when host-cached
+- [x] Bundle **644**
+
+### Next
+- Phase `installImageModeReplaceItem` slideshow framing further if needed
+- Status-bar PreferCache progress for Image mode (optional)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-643-image-mode-ladder-upgrade.** Image mode soft→HQ via ladderReady.
 Prior: **642**.
 

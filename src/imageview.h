@@ -1086,6 +1086,11 @@ public slots:
      * Seeds ImageCache; upgrades Image mode, slideshow, and Gallery soft state.
      */
     void onLadderReady(const QString &path, int maxEdge, const QImage &image);
+    /** True while @p gen is still the active LoadReplace generation (pool jobs). */
+    bool matchesLoadGeneration(quint64 gen) const
+    {
+        return gen == m_loadGeneration.load();
+    }
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
@@ -1232,6 +1237,12 @@ private:
      * for @p path immediately (do not wait for the background decode).
      */
     void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
+    /** Bind Image-mode item to the current session cursor (id + index). */
+    void bindImageModeSessionCursor(ImageItem *item);
+    /** Neutral Image-mode pose (no Workspace free-form scale/rotation). */
+    void resetImageModeItemPlacement(ImageItem *item);
+    /** Soft pixels for pending tile: explicit preview → slideshow map → ImageCache. */
+    QImage resolveImageModePendingPixels(const QString &path, const QImage &preview) const;
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     QSize probeImageSize(const QString &path) const;
     /**

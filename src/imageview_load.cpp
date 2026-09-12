@@ -116,6 +116,83 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
     });
 }
 
+/** Host soft first, then loadThumbnail. Shared by classic and slideshow paths. */
+QImage loadSoftPreviewPixels(const QString &path, int softEdge)
+{
+    QImage preview = ImageCache::get(path, softEdge);
+    if (!ImageCache::adequate(preview, softEdge)) {
+        preview = ImageLoader::loadThumbnail(path, softEdge);
+    }
+    return preview;
+}
+
+/**
+ * High-priority pool job: soft stand-in for rapid next/prev.
+ * Generation-checked so a newer LoadReplace cancels a stale preview.
+ */
+void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
+                         quint64 gen, int roleInt, int softEdge)
+{
+    QThreadPool::globalInstance()->start(
+        [guard, path, roleInt, gen, softEdge]() {
+            if (!guard || !guard->matchesLoadGeneration(gen)) {
+                return;
+            }
+            const QImage preview = loadSoftPreviewPixels(path, softEdge);
+            queuePreviewLoaded(guard, path, preview, gen, roleInt);
+        },
+        2);
+}
+
+/**
+ * Low-priority pool job: native full decode (classic Image mode).
+ * Null results still queue so completeLoadReplace can schedule PreferCache.
+ */
+void startNativeFullDecodeJob(const QPointer<ImageView> &guard, const QString &path,
+                              quint64 gen, int roleInt)
+{
+    QThreadPool::globalInstance()->start(
+        [guard, path, roleInt, gen]() {
+            if (!guard || !guard->matchesLoadGeneration(gen)) {
+                return;
+            }
+            const QImage image = ImageLoader::load(path);
+            queueImageLoaded(guard, path, image, gen, roleInt);
+        },
+        -1);
+}
+
+/**
+ * Low-priority pool job: PreferCache / loadThumbnail at a display edge
+ * (slideshow quality climb). Schedules PreferCache on miss.
+ */
+void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &path,
+                            quint64 gen, int roleInt, int qualityEdge)
+{
+    QThreadPool::globalInstance()->start(
+        [guard, path, roleInt, gen, qualityEdge]() {
+            if (!guard || !guard->matchesLoadGeneration(gen)) {
+                return;
+            }
+            QImage image = ImageCache::get(path, qualityEdge);
+            if (!ImageCache::adequate(image, qualityEdge)) {
+                image = ImageLoader::loadThumbnail(path, qualityEdge);
+            }
+            if (!guard || image.isNull()) {
+                if (guard && ThumtooCache::isAvailable()) {
+                    (void)ThumtooCache::scheduleDisplayPixels(path, qualityEdge);
+                }
+                return;
+            }
+            if (ImageCache::longEdge(image) > qualityEdge) {
+                image = image.scaled(qualityEdge, qualityEdge, Qt::KeepAspectRatio,
+                                     Qt::SmoothTransformation);
+            }
+            queueImageLoaded(guard, path, image, gen, roleInt);
+        },
+        -1);
+}
+
 } // namespace
 
 int ImageView::pathOrderOccurrences(const QString &path) const
@@ -354,6 +431,48 @@ ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &in
     return item;
 }
 
+void ImageView::bindImageModeSessionCursor(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    // Image-mode crop/flip targets the matching Workspace session slot.
+    if (m_currentSessionId != kInvalidSessionImageId) {
+        item->setSessionId(m_currentSessionId);
+    }
+    if (m_sessionIndex >= 0) {
+        item->setSessionIndex(m_sessionIndex);
+    }
+}
+
+void ImageView::resetImageModeItemPlacement(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    // Never inherit Gallery/Workspace free-form placement or scale.
+    item->setInteractive(false);
+    item->setScaleHandlesEnabled(false);
+    item->setItemScale(1.0);
+    item->setPos(0, 0);
+    item->setItemRotation(0.0);
+}
+
+QImage ImageView::resolveImageModePendingPixels(const QString &path,
+                                                const QImage &preview) const
+{
+    // Prefer explicit preview, then unified ImageCache (and slideshow hot set
+    // via slideshowRaster). docs/PIXEL_HOST_CACHE.md
+    if (!preview.isNull()) {
+        return preview;
+    }
+    QImage pixels = slideshowRaster(path);
+    if (pixels.isNull()) {
+        pixels = ImageCache::get(path);
+    }
+    return pixels;
+}
+
 void ImageView::installImageModePendingTile(const QString &path, const QImage &preview)
 {
     if (!isImageMode() || path.isEmpty()) {
@@ -361,74 +480,37 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
     // Slideshow owns the viewport with dwell/live blits. Pending tile used to
     // clearLiveCanvas + cancelSlideshowMotion after fade-end cleared the hold,
-    // wiping the dwell we just armed (logs: underlayVisible=true item="-",
-    // dwellT never restarted). Underlay is hidden for the whole show.
-    if (m_slideshowProgressActive
-        ) {
+    // wiping the dwell we just armed. Underlay is hidden for the whole show.
+    if (m_slideshowProgressActive) {
         return;
     }
-    // Prefer explicit preview, then unified ImageCache (and slideshow hot set
-    // via slideshowRaster). docs/PIXEL_HOST_CACHE.md
-    QImage pixels = preview;
-    if (pixels.isNull()) {
-        pixels = slideshowRaster(path);
-    }
-    if (pixels.isNull()) {
-        pixels = ImageCache::get(path);
-    }
+
+    const QImage pixels = resolveImageModePendingPixels(path, preview);
     // Layout size = native when known; else preview aspect so fitInView fills
     // the window (not a provisional square that letterboxes the content).
     const QSize sz = layoutSizeForPath(path, pixels);
 
     setUpdatesEnabled(false);
-    // Wipe the underlay under an active dwell camera would leave motion pointing
-    // at a destroyed item — drop motion first; full load restarts it.
-    if (m_slideshowProgressActive) {
-        // User next/prev: clear transition leftovers and per-image motion biases
-        // so the new dwell / next auto-transition starts clean.
-        cancelSlideshowTransition();
-        m_motionBiasValid = false;
-        m_motionBiasPath.clear();
-        cancelSlideshowMotion();
-    }
     clearLiveCanvas();
     ImageItem *item = createPlaceholderItem(path, sz);
     if (!item) {
         setUpdatesEnabled(true);
         return;
     }
-    if (m_currentSessionId != kInvalidSessionImageId) {
-        item->setSessionId(m_currentSessionId);
-    }
-    if (m_sessionIndex >= 0) {
-        item->setSessionIndex(m_sessionIndex);
-    }
+    bindImageModeSessionCursor(item);
     if (!pixels.isNull()) {
         installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
                              m_currentSessionId);
     }
-    item->setInteractive(false);
-    item->setScaleHandlesEnabled(false);
-    item->setItemScale(1.0);
-    item->setPos(0, 0);
-    item->setItemRotation(0.0);
+    resetImageModeItemPlacement(item);
     prepareImageModeCanvas();
-    if (m_slideshowProgressActive) {
-        // Stay on slideshow zoom (Fit/Fill/Actual), not normal Image fit.
-        applySlideshowZoomFraming(item);
-    } else {
-        fitItem(item, currentFitAspectMode());
-    }
+    fitItem(item, currentFitAspectMode());
     m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     setUpdatesEnabled(true);
     if (viewport()) {
         viewport()->update();
     }
-    // Avoid statusChanged here during slideshow — updateNavigationActions must
-    // not run mid-nav (and must not treat a transient empty canvas as end-of-show).
-    if (!m_slideshowProgressActive) {
-        emit statusChanged();
-    }
+    emit statusChanged();
 }
 
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
@@ -491,73 +573,32 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
 {
     // Soft first (priority), then PreferCache at target edge (low).
     // Key-repeat skips loadImage entirely (MainWindow debounce); this path is
-    // for settled index / auto-advance — must climb above 512 or the show
+    // for settled index / auto-advance — must climb above soft max or the show
     // stays on thumbnails forever.
     const QPointer<ImageView> guard(this);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const int qualityEdge = slideshowTargetEdge();
     const int roleInt = static_cast<int>(role);
 
-    QThreadPool::globalInstance()->start([guard, path, roleInt, gen, softEdge]() {
-        if (!guard || gen != guard->m_loadGeneration.load()) {
-            return;
-        }
-        QImage preview = ImageCache::get(path, softEdge);
-        if (!ImageCache::adequate(preview, softEdge)) {
-            preview = ImageLoader::loadThumbnail(path, softEdge);
-        }
-        queuePreviewLoaded(guard, path, preview, gen, roleInt);
-    }, 2);
-
-    if (qualityEdge <= softEdge) {
-        return;
+    startSoftPreviewJob(guard, path, gen, roleInt, softEdge);
+    if (qualityEdge > softEdge) {
+        startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge);
     }
-    QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, qualityEdge]() {
-            if (!guard || gen != guard->m_loadGeneration.load()) {
-                return;
-            }
-            QImage image = ImageCache::get(path, qualityEdge);
-            if (!ImageCache::adequate(image, qualityEdge)) {
-                image = ImageLoader::loadThumbnail(path, qualityEdge);
-            }
-            if (!guard || image.isNull()) {
-                if (guard && ThumtooCache::isAvailable()) {
-                    (void)ThumtooCache::scheduleDisplayPixels(path, qualityEdge);
-                }
-                return;
-            }
-            if (ImageCache::longEdge(image) > qualityEdge) {
-                image = image.scaled(qualityEdge, qualityEdge, Qt::KeepAspectRatio,
-                                     Qt::SmoothTransformation);
-            }
-            queueImageLoaded(guard, path, image, gen, roleInt);
-        },
-        -1);
 }
 
 void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
-    // Thumbnail (high priority) and full decode (low priority) in parallel so
-    // rapid next/prev paints soft pixels first; full frames catch up in the
-    // background.
+    // Soft stand-in (high priority) + native full (low priority) in parallel so
+    // rapid next/prev paints soft first; full frames catch up in the background.
+    // Soft uses ImageCache first (same as slideshow) so a prior Gallery/filmstrip
+    // ladder hit is not re-decoded on every ←/→.
     const QPointer<ImageView> guard(this);
-    constexpr int kPreviewEdge = 512;
     const int roleInt = static_cast<int>(role);
+    const int softEdge = ThumtooCache::kGalleryLadderEdge;
 
-    QThreadPool::globalInstance()->start([guard, path, roleInt, gen]() {
-        const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
-        queuePreviewLoaded(guard, path, preview, gen, roleInt);
-    }, 2);
-
-    QThreadPool::globalInstance()->start([guard, path, roleInt, gen]() {
-        if (!guard || gen != guard->m_loadGeneration.load()) {
-            return;
-        }
-        const QImage image = ImageLoader::load(path);
-        queueImageLoaded(guard, path, image, gen, roleInt);
-    }, -1);
+    startSoftPreviewJob(guard, path, gen, roleInt, softEdge);
+    startNativeFullDecodeJob(guard, path, gen, roleInt);
 }
 
 
@@ -1514,27 +1555,14 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
         emit statusChanged();
         return;
     }
-    // Bind to the session cursor so Image-mode crop/flip targets the
-    // matching Workspace slot (not every canvas instance of this path).
-    if (m_currentSessionId != kInvalidSessionImageId) {
-        item->setSessionId(m_currentSessionId);
-    }
-    if (m_sessionIndex >= 0) {
-        item->setSessionIndex(m_sessionIndex);
-    }
+    bindImageModeSessionCursor(item);
     // Filmstrip overrides are not driven by decode (selection/nav).
-    // Never inherit Gallery/Workspace placement or scale.
     // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
     // Arbitrary Workspace rotation stays on the free-form item only.
     // Crop was applied in createItemFromImage from m_itemStates.
-    item->setInteractive(false);
-    item->setScaleHandlesEnabled(false);
-    item->setItemScale(1.0);
-    item->setPos(0, 0);
+    resetImageModeItemPlacement(item);
     {
-        // Image mode: no Workspace placement rotation. Content 90°/flip
-        // are already in pixels (createItemFromImage applies content bakes).
-        item->setItemRotation(0.0);
+        // Content 90°/flip are already in pixels (createItemFromImage bakes).
         const auto it = m_itemStates.constFind(path);
         if (it != m_itemStates.cend()) {
             // Legacy unbaked flips only if content flags not used yet.
