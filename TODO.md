@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-698-docs-nav-slideshow.** Document Image nav-hot + slideshow phase/atlas rules.
+Prior: **697**.
+
+### Change
+- SLIDESHOW.md: phase ownership, no LoadReplace during show, promote atlas,
+  smooth atlas scale, Image-mode key-repeat settle
+- GUI_THREAD_AUDIT.md: G9–G12 (nav-hot, slideshow PreferCache, promote atlas, smooth)
+
+### Done criteria
+- [x] Bundle **698**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-697-slideshow-smooth-atlas.** Smooth atlas scale; smooth soft drawImage fallback.
 Prior: **696**.
 
