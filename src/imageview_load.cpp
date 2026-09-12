@@ -1076,79 +1076,73 @@ void ImageView::completeLoadRestore(const QString &path, const QImage &image)
     emit workspacePathsChanged();
 }
 
-void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint64 generation)
+void ImageView::finishLoadAddStatus(bool refreshGalleryWindow)
 {
-    // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
-    // Duplicate paths are separate session images: fill every undecoded live
-    // occurrence, then create until live count matches pathOrder occurrences.
-    gallerySoftResetPath(path);
+    emit statusChanged();
+    if (refreshGalleryWindow && isGalleryMode()) {
+        scheduleGalleryDecodeWindowRefresh(48);
+    }
+}
+
+bool ImageView::acceptPendingLoadAdd(const QString &path, quint64 generation)
+{
     // Mode leave / empty Workspace bumps generation and clears pending paths.
     // Reject superseded gallery window decodes so they cannot spawn tiles on
     // Workspace after the user switched modes mid-decode.
     if (generation != m_loadGeneration.load()) {
-        emit statusChanged();
-        return;
-    }
-    if (!image.isNull()) {
-        rememberSizeFromDecode(path, image);
+        finishLoadAddStatus(/*refreshGalleryWindow=*/false);
+        return false;
     }
     if (!m_pendingWorkspacePaths.contains(path)) {
         // Cancelled (e.g. path removed from session) — drop the result.
-        emit statusChanged();
-        if (isGalleryMode()) {
-            scheduleGalleryDecodeWindowRefresh(48);
-        }
-        return;
+        finishLoadAddStatus(/*refreshGalleryWindow=*/true);
+        return false;
     }
     takePendingWorkspacePath(path);
+    return true;
+}
 
-    if (image.isNull()) {
-        // //pdfimage: / //page: with thumtoo: empty sync load is expected while the
-        // ladder builds — await ladderReady instead of permanent failure.
-        if (ThumtooCache::isAvailable()
-            && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
-            ThumtooCache::scheduleProbe(path);
-            // Soft state machine will request placeholder / higher steps.
-            m_lastLoadError.clear();
-            emit statusChanged();
-            if (isGalleryMode()) {
-                scheduleGalleryDecodeWindowRefresh(48);
-            }
-            return;
-        }
-        qWarning("ImageView: decode failed for %s", qPrintable(path));
-        if (isGalleryMode()) {
-            GallerySoftState &st = m_gallerySoft[path];
-            st.failed = true;
-            st.inflight = 0;
-        }
-        m_lastLoadError = path;
-        // Surface the error on any live placeholder for this path.
-        for (ImageItem *item : m_items) {
-            if (item && item->path() == path && !item->hasDecodedPixels()) {
-                item->setToolTip(tr("Failed to load:\n%1").arg(path));
-            }
-        }
-        emit statusChanged();
-        if (isGalleryMode()) {
-            scheduleGalleryDecodeWindowRefresh(48);
-        }
+void ImageView::handleLoadAddDecodeFailure(const QString &path)
+{
+    // //pdfimage: / //page: with thumtoo: empty sync load is expected while the
+    // ladder builds — await ladderReady instead of permanent failure.
+    if (ThumtooCache::isAvailable()
+        && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
+        ThumtooCache::scheduleProbe(path);
+        // Soft state machine will request placeholder / higher steps.
+        m_lastLoadError.clear();
+        finishLoadAddStatus(/*refreshGalleryWindow=*/true);
         return;
     }
-
-    if (isImageMode()) {
-        // Fill stashed Gallery placeholders while user is in Image mode.
-        for (ImageItem *cand : m_gallery.stashedItems()) {
-            if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
-                installDisplayPixels(cand, image,
-                                     SessionAppearance::PixelKind::FullSource,
-                                     cand->sessionId());
-            }
-        }
-        emit statusChanged();
-        return;
+    qWarning("ImageView: decode failed for %s", qPrintable(path));
+    if (isGalleryMode()) {
+        GallerySoftState &st = m_gallerySoft[path];
+        st.failed = true;
+        st.inflight = 0;
     }
+    m_lastLoadError = path;
+    // Surface the error on any live placeholder for this path.
+    for (ImageItem *item : m_items) {
+        if (item && item->path() == path && !item->hasDecodedPixels()) {
+            item->setToolTip(tr("Failed to load:\n%1").arg(path));
+        }
+    }
+    finishLoadAddStatus(/*refreshGalleryWindow=*/true);
+}
 
+void ImageView::fillStashedItemsForPath(const QString &path, const QImage &image)
+{
+    for (ImageItem *cand : m_gallery.stashedItems()) {
+        if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
+            installDisplayPixels(cand, image,
+                                 SessionAppearance::PixelKind::FullSource,
+                                 cand->sessionId());
+        }
+    }
+}
+
+void ImageView::reassertPendingBindPlacement(const QString &path)
+{
     // Drop placeholders created in placeOrMoveImageAt already sit at scenePos;
     // re-assert hasScenePos binds so nothing later drifts them, and so a bind
     // still pairs with the pre-created tile.
@@ -1186,12 +1180,10 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
             break;
         }
     }
+}
 
-    const int pathOrderCount = pathOrderOccurrences(path);
-
-    // Pending binds whose SessionImageId is already on a live tile are satisfied.
-    purgeSatisfiedPendingBinds(path);
-
+void ImageView::claimUnboundItemsForPendingBinds(const QString &path, const QImage &image)
+{
     // Claim existing *unbound* tiles of this path for pending session binds
     // (e.g. empty-Workspace LoadReplace seeded the first path before LoadAdd).
     // Without this, have==wanted and the bind is never applied — placement,
@@ -1232,9 +1224,11 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
             }
         }
     }
+}
 
-    const int pendingBinds = countPendingSessionBinds(path);
-
+int ImageView::fillLiveItemsWithDecodedPixels(const QString &path, const QImage &image,
+                                              bool *sizeChangedOut)
+{
     bool sizeChanged = false;
     int have = 0;
     for (ImageItem *existing : m_items) {
@@ -1248,25 +1242,17 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
             }
         }
     }
-    for (ImageItem *cand : m_gallery.stashedItems()) {
-        if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
-            installDisplayPixels(cand, image,
-                                 SessionAppearance::PixelKind::FullSource,
-                                 cand->sessionId());
-        }
+    if (sizeChangedOut) {
+        *sizeChangedOut = sizeChanged;
     }
+    return have;
+}
 
-    // Session pathOrder is the multiplicity source of truth. Do not create more
-    // tiles than session rows for this path (pending binds only fill gaps).
-    int wanted = pathOrderCount;
-    if (wanted <= 0) {
-        // Not in session pathOrder (ad-hoc workspace place): one tile per bind.
-        wanted = qMax(have, pendingBinds > 0 ? pendingBinds : 1);
-    }
-
+void ImageView::createMissingLoadAddItems(const QString &path, const QImage &image,
+                                          int have, int wanted)
+{
     // Create missing occurrences (each duplicate is a normal separate tile).
     while (have < wanted) {
-
         ImageItem *item = createItemFromImage(path, image);
         if (!item) {
             break;
@@ -1285,7 +1271,10 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
         }
         placeNewLoadAddItem(item, path, image, haveBound, bound);
     }
+}
 
+void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
+{
     if (m_layoutMode != LayoutMode::FreeForm) {
         if (!m_pathOrder.isEmpty()) {
             reorderItemsByPaths(m_pathOrder);
@@ -1300,6 +1289,61 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
     } else {
         updateWorkspaceSceneRect();
     }
+}
+
+void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint64 generation)
+{
+    // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
+    // Duplicate paths are separate session images: fill every undecoded live
+    // occurrence, then create until live count matches pathOrder occurrences.
+    gallerySoftResetPath(path);
+
+    // Remember size even when the pending membership was cancelled — a successful
+    // decode still updates the session size cache for later layout.
+    if (generation == m_loadGeneration.load() && !image.isNull()) {
+        rememberSizeFromDecode(path, image);
+    }
+    if (!acceptPendingLoadAdd(path, generation)) {
+        return;
+    }
+    if (image.isNull()) {
+        handleLoadAddDecodeFailure(path);
+        return;
+    }
+
+    if (isImageMode()) {
+        // Fill stashed Gallery placeholders while user is in Image mode.
+        fillStashedItemsForPath(path, image);
+        emit statusChanged();
+        return;
+    }
+
+    reassertPendingBindPlacement(path);
+
+    const int pathOrderCount = pathOrderOccurrences(path);
+
+    // Pending binds whose SessionImageId is already on a live tile are satisfied.
+    purgeSatisfiedPendingBinds(path);
+
+    claimUnboundItemsForPendingBinds(path, image);
+
+    const int pendingBinds = countPendingSessionBinds(path);
+
+    bool sizeChanged = false;
+    int have = fillLiveItemsWithDecodedPixels(path, image, &sizeChanged);
+    fillStashedItemsForPath(path, image);
+
+    // Session pathOrder is the multiplicity source of truth. Do not create more
+    // tiles than session rows for this path (pending binds only fill gaps).
+    int wanted = pathOrderCount;
+    if (wanted <= 0) {
+        // Not in session pathOrder (ad-hoc workspace place): one tile per bind.
+        wanted = qMax(have, pendingBinds > 0 ? pendingBinds : 1);
+    }
+
+    createMissingLoadAddItems(path, image, have, wanted);
+    applyLoadAddLayoutAfterMembership(sizeChanged);
+
     emit statusChanged();
     emit workspacePathsChanged();
     if (isGalleryMode()) {
@@ -1307,10 +1351,105 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
     }
 }
 
+void ImageView::installImageModeReplaceItem(const QString &path, const QImage &image)
+{
+    // Suppress paints between removing the old item and fitting the new one
+    // so we never present a native-scale (or empty) intermediate frame.
+    setUpdatesEnabled(false);
+    // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
+    clearLiveCanvas();
+    ImageItem *item = createItemFromImage(path, image);
+    if (!item) {
+        setUpdatesEnabled(true);
+        m_lastLoadError = path;
+        emit statusChanged();
+        return;
+    }
+    // Bind to the session cursor so Image-mode crop/flip targets the
+    // matching Workspace slot (not every canvas instance of this path).
+    if (m_currentSessionId != kInvalidSessionImageId) {
+        item->setSessionId(m_currentSessionId);
+    }
+    if (m_sessionIndex >= 0) {
+        item->setSessionIndex(m_sessionIndex);
+    }
+    // Filmstrip overrides are not driven by decode (selection/nav).
+    // Never inherit Gallery/Workspace placement or scale.
+    // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
+    // Arbitrary Workspace rotation stays on the free-form item only.
+    // Crop was applied in createItemFromImage from m_itemStates.
+    item->setInteractive(false);
+    item->setScaleHandlesEnabled(false);
+    item->setItemScale(1.0);
+    item->setPos(0, 0);
+    {
+        // Image mode: no Workspace placement rotation. Content 90°/flip
+        // are already in pixels (createItemFromImage applies content bakes).
+        item->setItemRotation(0.0);
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.cend()) {
+            // Legacy unbaked flips only if content flags not used yet.
+            if (!it->contentHFlip && !it->contentVFlip) {
+                item->setItemHFlip(it->hFlip);
+                item->setItemVFlip(it->vFlip);
+            }
+        }
+    }
+    prepareImageModeCanvas();
+    // Slideshow framing: when dwell motion is on, the camera sets the
+    // transform (including handoff from a live transition). Applying
+    // zoom framing first would centre the image then jump to motion t0.
+    if (m_slideshowProgressActive
+        && m_slideshowMotion == SlideshowMotion::Off) {
+        applySlideshowZoomFraming(item);
+    } else if (!m_slideshowProgressActive) {
+        fitItem(item, currentFitAspectMode());
+    }
+    m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    // Apply camera while updates are still blocked and any live hold still
+    // covers the viewport — avoids a flash of identity / wrong pan pose.
+    maybeStartSlideshowMotion();
+    if (m_slideshowProgressActive && m_slideshowMotion != SlideshowMotion::Off
+        && !m_slideshowMotionActive) {
+        applySlideshowZoomFraming(item);
+    }
+    if (m_slideshowProgressActive) {
+        item->setVisible(false);
+        // Paused ←/→ loads the underlay while pure phase still paints
+        // the previous path — refresh dwell to this decode.
+        setSlideshowPhase(path, QString(), -1.0);
+    }
+    setUpdatesEnabled(true);
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
+}
+
+void ImageView::seedEmptyWorkspaceFromReplace(const QString &path, const QImage &image)
+{
+    // Workspace with empty canvas: seed with navigated image — only for
+    // genuine session navigation. Project load / membership adds schedule
+    // LoadAdd with pending binds; seeding first would leave an unbound tile
+    // (default placement, no flip/grade) and steal the first path's LoadAdd.
+    if (!m_items.isEmpty()
+        || !m_pendingSessionBinds.isEmpty()
+        || m_pendingWorkspacePaths.contains(path)) {
+        return;
+    }
+    ImageItem *item = createItemFromImage(path, image);
+    if (!item) {
+        return;
+    }
+    item->setSelected(true);
+    m_fitMode = true;
+    fitItem(item, currentFitAspectMode());
+    emit statusChanged();
+}
+
 void ImageView::completeLoadReplace(const QString &path, const QImage &image, quint64 generation)
 {
-
-    if (generation != m_loadGeneration) {
+    if (generation != m_loadGeneration.load()) {
         return; // superseded by a newer navigation / open
     }
     // Stale navigation: only the current classic path may install.
@@ -1349,96 +1488,10 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
             emit statusChanged();
             return;
         }
-        // Suppress paints between removing the old item and fitting the new one
-        // so we never present a native-scale (or empty) intermediate frame.
-        setUpdatesEnabled(false);
-        // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
-        clearLiveCanvas();
-        ImageItem *item = createItemFromImage(path, image);
-        if (!item) {
-            setUpdatesEnabled(true);
-            m_lastLoadError = path;
-            emit statusChanged();
-            return;
-        }
-        // Bind to the session cursor so Image-mode crop/flip targets the
-        // matching Workspace slot (not every canvas instance of this path).
-        if (m_currentSessionId != kInvalidSessionImageId) {
-            item->setSessionId(m_currentSessionId);
-        }
-        if (m_sessionIndex >= 0) {
-            item->setSessionIndex(m_sessionIndex);
-        }
-        // Filmstrip overrides are not driven by decode (selection/nav).
-        // Never inherit Gallery/Workspace placement or scale.
-        // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
-        // Arbitrary Workspace rotation stays on the free-form item only.
-        // Crop was applied in createItemFromImage from m_itemStates.
-        item->setInteractive(false);
-        item->setScaleHandlesEnabled(false);
-        item->setItemScale(1.0);
-        item->setPos(0, 0);
-        {
-            // Image mode: no Workspace placement rotation. Content 90°/flip
-            // are already in pixels (createItemFromImage applies content bakes).
-            item->setItemRotation(0.0);
-            const auto it = m_itemStates.constFind(path);
-            if (it != m_itemStates.cend()) {
-                // Legacy unbaked flips only if content flags not used yet.
-                if (!it->contentHFlip && !it->contentVFlip) {
-                    item->setItemHFlip(it->hFlip);
-                    item->setItemVFlip(it->vFlip);
-                }
-            }
-        }
-        prepareImageModeCanvas();
-        // Slideshow framing: when dwell motion is on, the camera sets the
-        // transform (including handoff from a live transition). Applying
-        // zoom framing first would centre the image then jump to motion t0.
-        if (m_slideshowProgressActive
-            && m_slideshowMotion == SlideshowMotion::Off) {
-            applySlideshowZoomFraming(item);
-        } else if (!m_slideshowProgressActive) {
-            fitItem(item, currentFitAspectMode());
-        }
-        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-        // Apply camera while updates are still blocked and any live hold still
-        // covers the viewport — avoids a flash of identity / wrong pan pose.
-        maybeStartSlideshowMotion();
-        if (m_slideshowProgressActive && m_slideshowMotion != SlideshowMotion::Off
-            && !m_slideshowMotionActive) {
-            applySlideshowZoomFraming(item);
-        }
-        if (m_slideshowProgressActive) {
-            item->setVisible(false);
-            // Paused ←/→ loads the underlay while pure phase still paints
-            // the previous path — refresh dwell to this decode.
-            setSlideshowPhase(path, QString(), -1.0);
-        }
-        setUpdatesEnabled(true);
-        if (viewport()) {
-            viewport()->update();
-        }
-        emit statusChanged();
+        installImageModeReplaceItem(path, image);
         return;
     }
-    // Workspace with empty canvas: seed with navigated image — only for
-    // genuine session navigation. Project load / membership adds schedule
-    // LoadAdd with pending binds; seeding first would leave an unbound tile
-    // (default placement, no flip/grade) and steal the first path's LoadAdd.
-    if (m_items.isEmpty()
-        && m_pendingSessionBinds.isEmpty()
-        && !m_pendingWorkspacePaths.contains(path)) {
-        ImageItem *item = createItemFromImage(path, image);
-        if (item) {
-            item->setSelected(true);
-            m_fitMode = true;
-            fitItem(item, currentFitAspectMode());
-            emit statusChanged();
-        }
-    }
-    return;
-    
+    seedEmptyWorkspaceFromReplace(path, image);
 }
 
 void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,

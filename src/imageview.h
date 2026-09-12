@@ -327,6 +327,23 @@ public:
      */
     void completeLoadAdd(const QString &path, const QImage &image, quint64 generation);
 
+    // --- completeLoadAdd phases (private; keep the driver thin) ---
+    void finishLoadAddStatus(bool refreshGalleryWindow);
+    bool acceptPendingLoadAdd(const QString &path, quint64 generation);
+    void handleLoadAddDecodeFailure(const QString &path);
+    void fillStashedItemsForPath(const QString &path, const QImage &image);
+    void reassertPendingBindPlacement(const QString &path);
+    void claimUnboundItemsForPendingBinds(const QString &path, const QImage &image);
+    int fillLiveItemsWithDecodedPixels(const QString &path, const QImage &image,
+                                       bool *sizeChangedOut);
+    void createMissingLoadAddItems(const QString &path, const QImage &image,
+                                   int have, int wanted);
+    void applyLoadAddLayoutAfterMembership(bool sizeChanged);
+
+    // --- completeLoadReplace phases ---
+    void installImageModeReplaceItem(const QString &path, const QImage &image);
+    void seedEmptyWorkspaceFromReplace(const QString &path, const QImage &image);
+
     // --- Controller host operations (mode controllers; prefer these over friend) ---
     /** Apply interactive/gallery/static flags for the current ViewMode. */
     void applyItemModeFlags(ImageItem *item);

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-605-complete-load-add-phases.** Split completeLoadAdd / Replace into phases.
+Prior: **604**.
+
+### Change
+- `completeLoadAdd` is a short driver: accept → failure → stash/image-mode →
+  reassert binds → claim unbound → fill live → create missing → layout
+- Extracted helpers: `acceptPendingLoadAdd`, `handleLoadAddDecodeFailure`,
+  `fillStashedItemsForPath`, `reassertPendingBindPlacement`,
+  `claimUnboundItemsForPendingBinds`, `fillLiveItemsWithDecodedPixels`,
+  `createMissingLoadAddItems`, `applyLoadAddLayoutAfterMembership`,
+  `finishLoadAddStatus`
+- `completeLoadReplace`: `installImageModeReplaceItem` + `seedEmptyWorkspaceFromReplace`
+- Consistent `m_loadGeneration.load()` in Replace path
+
+### Done criteria
+- [x] Behaviour preserved (membership, binds, slideshow framing)
+- [x] Drivers readable; phases named
+- [x] Bundle **605**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-604-pending-bind-private-access.** Fix PendingSessionBind access.
 Prior: **603**.
 
