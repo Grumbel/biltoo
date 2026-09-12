@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-544-slideshow-edge-atlas-cap.** Cap slideshow edge 1024; cheap atlas.
+Prior: **543**.
+
+### Issue
+Still GUI-stalled on rapid prev/next. Logs: phase ~512 OK, but preload
+edge=2048 tile_synth, dwell-upgrade 1024, cascade preload-start.
+
+### Changes
+- slideshowTargetEdge capped at **kBatchOverviewEdge (1024)**
+- ensureMotionAtlas: FastTransformation during slideshow; atlas ≤ viewport
+- Clear preload pending on phase change; pending queue size 1
+- dwell-upgrade only if long edge grows >25%; scale to edge first
+
+### Done criteria
+- [x] Bundle **544**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-543-ssfull-evict-safe.** Fix -Wnull-dereference in ssFull eviction.
 Prior: **542**.
 

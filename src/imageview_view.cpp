@@ -755,22 +755,29 @@ void ImageView::releaseLiveTransitionHold()
         // updates the hidden underlay. Upgrade dwell if the canvas has better pixels.
         if (m_slideshowProgressActive) {
             if (ImageItem *item = targetItem()) {
-                if (!item->sourceImage().isNull()
-                    && (m_dwellSourceImage.isNull()
-                        || (item->sourceImage().width() * item->sourceImage().height()
-                            > m_dwellSourceImage.width() * m_dwellSourceImage.height()))) {
-                    // Item source is content-baked by installDisplayPixels; path
-                    // orient is for unbaked caches only — prefer larger item pixels.
-                    m_dwellSourceImage = item->sourceImage();
-                    ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                                      &m_dwellAtlasVw, &m_dwellAtlasVh);
-                    hideSlideshowUnderlay();
-                    qCDebug(lcSlideshow).nospace()
-                        << "[slideshow] dwell-upgrade "
-                        << m_dwellSourceImage.width() << "x"
-                        << m_dwellSourceImage.height()
-                        << " path=" << QFileInfo(item->path()).fileName();
-                } else {
+                if (!item->sourceImage().isNull()) {
+                    QImage next = item->sourceImage();
+                    const int edge = slideshowTargetEdge();
+                    if (qMax(next.width(), next.height()) > edge) {
+                        next = next.scaled(edge, edge, Qt::KeepAspectRatio,
+                                           Qt::FastTransformation);
+                    }
+                    const int nextLong = qMax(next.width(), next.height());
+                    const int curLong = qMax(m_dwellSourceImage.width(),
+                                             m_dwellSourceImage.height());
+                    // Only rebuild atlas when long edge grows meaningfully.
+                    if (m_dwellSourceImage.isNull()
+                        || nextLong > curLong * 5 / 4) {
+                        m_dwellSourceImage = next;
+                        ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas,
+                                          &m_dwellAtlasScale, &m_dwellAtlasVw,
+                                          &m_dwellAtlasVh);
+                        qCDebug(lcSlideshow).nospace()
+                            << "[slideshow] dwell-upgrade "
+                            << m_dwellSourceImage.width() << "x"
+                            << m_dwellSourceImage.height()
+                            << " path=" << QFileInfo(item->path()).fileName();
+                    }
                     hideSlideshowUnderlay();
                 }
             }
@@ -1370,6 +1377,12 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     const int pathMs = qMax(250, m_slideshowProgressIntervalMs
                             + qMax(0, m_slideshowTransitionDurationMs));
 
+    // Drop queued preloads on phase change — rapid ←/→ was draining the
+    // pending list into edge=2048 tile_synth work for slides already left behind.
+    if (fromChanged) {
+        m_preloadPending.clear();
+    }
+
     // --- From (A) ---
     if (fromChanged) {
         // Spec: B moves through transition *and* its following interval.
@@ -1706,13 +1719,17 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 
 int ImageView::slideshowTargetEdge() const
 {
+    // Cap at overview (1024). Viewport×DPR on 4K/HiDPI was 2048+ and every
+    // ←/→ pulled tile_synth 1365×2048 plus Smooth atlas rebuilds on the GUI.
     if (!viewport()) {
-        return ThumtooCache::kBatchOverviewEdge;
+        return ThumtooCache::kGalleryLadderEdge;
     }
     const qreal dpr = devicePixelRatioF();
     const QSize vs = viewport()->size();
     const int longPx = int(qCeil(qMax(vs.width(), vs.height()) * dpr));
-    return ThumtooCache::ceilLadderEdge(qMax(longPx, ThumtooCache::kGalleryLadderEdge));
+    const int snapped = ThumtooCache::ceilLadderEdge(
+        qMax(longPx, ThumtooCache::kFilmstripLadderEdge));
+    return qMin(snapped, ThumtooCache::kBatchOverviewEdge);
 }
 
 void ImageView::preloadSlideshowImage(const QString &path)
@@ -1740,8 +1757,8 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (m_preloadInflight.size() >= kMaxPreloadInflight) {
         if (!m_preloadPending.contains(path)) {
             m_preloadPending.append(path);
-            // Keep pending short — only the latest few neighbours matter.
-            while (m_preloadPending.size() > 4) {
+            // Only the latest neighbour — a queue of 4 became a 2048-edge crawl.
+            while (m_preloadPending.size() > 1) {
                 m_preloadPending.removeFirst();
             }
         }
@@ -1987,10 +2004,20 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
         && *atlasVw == vw && *atlasVh == vh) {
         return;
     }
-    const int dw = qMax(1, int(qRound(qreal(image.width()) * maxScale)));
-    const int dh = qMax(1, int(qRound(qreal(image.height()) * maxScale)));
-    // One Smooth scale per source/viewport change — not per frame.
-    QImage scaled = image.scaled(dw, dh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    int dw = qMax(1, int(qRound(qreal(image.width()) * maxScale)));
+    int dh = qMax(1, int(qRound(qreal(image.height()) * maxScale)));
+    // Cap atlas to ~viewport long edge — Smooth 512→2K+ on every phase-from
+    // stalled the GUI under rapid ←/→.
+    const int cap = qMax(vw, vh) + 2;
+    if (dw > cap || dh > cap) {
+        const qreal s = qMin(qreal(cap) / qreal(dw), qreal(cap) / qreal(dh));
+        dw = qMax(1, int(qRound(dw * s)));
+        dh = qMax(1, int(qRound(dh * s)));
+    }
+    const Qt::TransformationMode filter =
+        m_slideshowProgressActive ? Qt::FastTransformation
+                                  : Qt::SmoothTransformation;
+    QImage scaled = image.scaled(dw, dh, Qt::IgnoreAspectRatio, filter);
     if (scaled.isNull()) {
         *atlas = QPixmap();
         *atlasScale = 0.0;
