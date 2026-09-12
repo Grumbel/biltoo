@@ -491,6 +491,28 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
+    // Filmstrip / prior ladderReady may already hold soft in ImageCache.
+    // Install on the GUI thread immediately — in-memory only, no IO.
+    if (have <= 0) {
+        QImage hostSoft = ImageCache::get(path);
+        if (hostSoft.isNull()) {
+            hostSoft = m_previewByPath.value(path);
+        }
+        if (!hostSoft.isNull()) {
+            onImagePreviewLoaded(path, hostSoft, m_loadGeneration.load(),
+                                 static_cast<int>(LoadAdd));
+            have = qMax(have, qMax(hostSoft.width(), hostSoft.height()));
+            st.have = have;
+            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                dbg && dbg[0] && dbg[0] != '0') {
+                fprintf(stderr,
+                        "biltoo/gallery: INSTALL soft path=%s got=%d "
+                        "(ImageCache host)\n",
+                        qPrintable(QFileInfo(path).fileName()), have);
+            }
+        }
+    }
+
     const int want = galleryWantEdgeForPath(path, sceneVisible);
     st.want = want;
     if (have >= want) {
@@ -567,9 +589,12 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 }
                 host->takePendingWorkspacePath(path);
 
-                // Cache often still has only the placeholder while thumtoo builds
-                // requestEdge. Install what we have, then either wait for
-                // ladderReady or give up if nothing is in flight / settled.
+                // Install any soft we got. Climb only when below the request
+                // edge — and only keep inflight when a host callback is truly
+                // pending (schedule* returned true). SKIP (already settled /
+                // inflight elsewhere) must not pin soft.inflight forever: that
+                // blocked scheduleGalleryDecode while tiles stayed blank even
+                // though PreferCache already had filmstrip soft in the DB.
                 int got = preview.isNull()
                               ? 0
                               : qMax(preview.width(), preview.height());
@@ -577,44 +602,85 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     host->onImagePreviewLoaded(path, preview, gen,
                                                static_cast<int>(LoadAdd));
                     soft.have = qMax(soft.have, got);
+                    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                        dbg && dbg[0] && dbg[0] != '0') {
+                        fprintf(stderr,
+                                "biltoo/gallery: INSTALL soft path=%s got=%d "
+                                "request=%d (pool PreferCache)\n",
+                                qPrintable(QFileInfo(path).fileName()), got,
+                                requestEdge);
+                    }
                 }
-                if (got >= requestEdge * 9 / 10) {
+                auto clearInflight = [&]() {
                     soft.inflight = 0;
                     soft.inflightSinceMs = 0;
+                };
+                if (got >= requestEdge * 9 / 10) {
+                    clearInflight();
                     if (soft.gaveUpWant <= requestEdge) {
                         soft.gaveUpWant = 0;
                     }
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge <= ThumtooCache::kGalleryLadderEdge) {
-                    // Soft band: wait for ladderReady / build durable soft level.
-                    (void)ThumtooCache::schedulePixels(path, requestEdge);
-                    soft.inflight = requestEdge;
-                    soft.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+                    const bool queued =
+                        ThumtooCache::schedulePixels(path, requestEdge);
+                    if (queued) {
+                        soft.inflight = requestEdge;
+                        soft.inflightSinceMs =
+                            QDateTime::currentMSecsSinceEpoch();
+                    } else {
+                        // Settled or already building: PreferCache may now have
+                        // soft (filmstrip SoftOnly finished without host cb).
+                        const QImage again =
+                            ImageLoader::loadThumbnail(path, requestEdge);
+                        const int againGot = again.isNull()
+                            ? 0
+                            : qMax(again.width(), again.height());
+                        if (!again.isNull() && againGot > soft.have) {
+                            host->onImagePreviewLoaded(
+                                path, again, gen,
+                                static_cast<int>(LoadAdd));
+                            soft.have = qMax(soft.have, againGot);
+                            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                                dbg && dbg[0] && dbg[0] != '0') {
+                                fprintf(stderr,
+                                        "biltoo/gallery: INSTALL soft path=%s "
+                                        "got=%d after SKIP schedulePixels\n",
+                                        qPrintable(QFileInfo(path).fileName()),
+                                        againGot);
+                            }
+                        }
+                        clearInflight();
+                        if (againGot < requestEdge * 9 / 10 && soft.have > 0) {
+                            soft.gaveUpWant =
+                                qMax(soft.gaveUpWant, requestEdge);
+                        }
+                    }
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kGalleryLadderEdge
                            && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
-                    // FastBatch overview (≤1024) with host ladderReady callback.
-                    // setInterest alone has no host cb — must schedule explicitly.
-                    // scheduleOverviewPixels may no-op if already inflight/settled;
-                    // still mark inflight so we wait on ladderReady / settle.
-                    const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
-                    (void)ThumtooCache::scheduleOverviewPixels(path, ov);
-                    soft.inflight = ov;
-                    soft.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+                    const int ov =
+                        qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
+                    const bool queued =
+                        ThumtooCache::scheduleOverviewPixels(path, ov);
+                    if (queued) {
+                        soft.inflight = ov;
+                        soft.inflightSinceMs =
+                            QDateTime::currentMSecsSinceEpoch();
+                    } else {
+                        clearInflight();
+                    }
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kBatchOverviewEdge) {
-                    // Above batch overview: durable soft will not grow further.
-                    soft.inflight = 0;
+                    clearInflight();
                     soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
                 } else {
-                    soft.inflight = 0;
+                    clearInflight();
                     soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
-                    if (soft.have <= 0) {
-                        soft.failed = true;
-                    }
+                    // Do not set failed=true on first miss — PreferCache / SoftOnly
+                    // may still deliver; failed is permanent and skips forever.
                 }
 
-                // Decode window rescan is debounced via ladderReady / scroll timer.
                 emit host->statusChanged();
             },
             Qt::QueuedConnection);

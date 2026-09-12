@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "imageview.h"
+#include "imagecache.h"
 #include "imageitem.h"
 #include "imageloader.h"
 
@@ -215,6 +216,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             const auto pit = m_previewByPath.constFind(path);
             if (pit != m_previewByPath.cend()) {
                 hint = pit.value();
+            }
+            if (hint.isNull()) {
+                hint = ImageCache::get(path);
             }
             ImageItem *ph = createPlaceholderItem(path, layoutSizeForPath(path, hint));
             if (ph) {

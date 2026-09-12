@@ -189,9 +189,23 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
                                             ? 0
                                             : qMax(preview.width(), preview.height());
                         if (!preview.isNull()) {
+                            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                                dbg && dbg[0] && dbg[0] != '0') {
+                                fprintf(stderr,
+                                        "biltoo/gallery: ladderReady INSTALL "
+                                        "path=%s edge=%d got=%dx%d\n",
+                                        qPrintable(QFileInfo(path).fileName()),
+                                        edge, preview.width(), preview.height());
+                            }
                             host->onImagePreviewLoaded(
                                 path, preview, 0,
                                 static_cast<int>(ImageView::LoadAdd));
+                        } else if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                                   dbg && dbg[0] && dbg[0] != '0') {
+                            fprintf(stderr,
+                                    "biltoo/gallery: ladderReady EMPTY "
+                                    "path=%s edge=%d\n",
+                                    qPrintable(QFileInfo(path).fileName()), edge);
                         }
                         auto it = host->m_gallerySoft.find(path);
                         if (it != host->m_gallerySoft.end()) {
@@ -216,9 +230,8 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
                                 }
                             } else {
                                 st.gaveUpWant = qMax(st.gaveUpWant, edge);
-                                if (st.have <= 0 && got <= 0) {
-                                    st.failed = true;
-                                }
+                                // Never mark permanent failed on empty delivery —
+                                // SoftOnly/setInterest may still fill PreferCache.
                             }
                         }
                         // Debounce window rescan — every tile used to re-scan

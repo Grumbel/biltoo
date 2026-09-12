@@ -988,6 +988,13 @@ QImage loadThumbnail(const QString &path, int maxEdge)
     if (ArchivePath::isArchiveRef(path)) {
         // thumtoo owns soft + overview for archive members (extract on workers).
         if (ThumtooCache::isAvailable()) {
+            // Filmstrip may already hold a host-side soft in ImageCache while
+            // PreferCache still races SoftOnly completion — never return empty
+            // when a usable soft is already in process memory.
+            const QImage hostSoft = ImageCache::get(path);
+            if (!hostSoft.isNull()) {
+                return scaleToMaxEdge(hostSoft, maxEdge);
+            }
             return {};
         }
         return loadArchiveRef(path, maxEdge);

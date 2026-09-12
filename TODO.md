@@ -2,6 +2,39 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-508-gallery-soft-install-fix.** Fix permanent soft.inflight pin; seed host soft.
+Prior: **507**.
+
+### Root cause (verified)
+1. `schedulePixels` / `scheduleOverviewPixels` returning **false** (already
+   settled or inflight) still set `soft.inflight = edge`. No further
+   `ladderReady` arrives → `scheduleGalleryDecode` early-outs forever while
+   tiles stay blank.
+2. SoftOnly / filmstrip can fill PreferCache + ImageCache without Gallery
+   ever installing; placeholders only seeded from `m_previewByPath`, not
+   ImageCache.
+3. `st.failed = true` on empty ladderReady made the miss permanent.
+
+### Fix
+- Only keep `inflight` when `schedule*` returns **true**
+- On SKIP: PreferCache again and install if present, then clear inflight
+- `scheduleGalleryDecode`: install ImageCache / m_previewByPath soft first
+- Placeholder create: seed ImageCache
+- loadThumbnail archive miss: ImageCache fallback
+- Never set `failed` on empty ladderReady
+- THUMTOO_DEBUG: INSTALL / ladderReady EMPTY lines
+
+### Done criteria
+- [x] Gallery shows soft when filmstrip has soft
+- [x] No permanent inflight pin on schedule SKIP
+- [x] Bundle **508**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-507-gallery-scroll-gui-budget.** Keep Gallery scroll off the soft-queue / interest storm.
 Prior: **506**.
 
