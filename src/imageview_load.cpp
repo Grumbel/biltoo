@@ -218,29 +218,6 @@ void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
 }
 
 /**
- * Low-priority pool job: native full decode (classic Image mode).
- * Null results still queue so completeLoadReplace can schedule PreferCache.
- */
-void startNativeFullDecodeJob(const QPointer<ImageView> &guard, const QString &path,
-                              quint64 gen, int roleInt)
-{
-    QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen]() {
-            if (!guard || !guard->matchesLoadGeneration(gen)) {
-                return;
-            }
-            QImage image = ImageLoader::load(path);
-            if (!image.isNull()) {
-                // Cap + bake on the worker — never multi-MP materialize/fromImage on GUI.
-                image = prepareImageModeDisplaySample(
-                    path, image, SessionAppearance::PixelKind::FullSource);
-            }
-            queueImageLoaded(guard, path, image, gen, roleInt);
-        },
-        -1);
-}
-
-/**
  * Low-priority pool job: PreferCache / loadThumbnail at a display edge
  * (slideshow quality climb). Schedules PreferCache on miss.
  */

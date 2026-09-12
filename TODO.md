@@ -2,6 +2,17 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-683-drop-unused-native-job.** Remove unused startNativeFullDecodeJob (-Wunused-function).
+Prior: **682**.
+
+Native full path remains `scheduleImageModeNativeFullQuiet` (zoom / PreferCache fallback).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-682-hq-background-not-cap.** Soft first; high-res PreferCache always in background.
 Prior: **681**.
 
