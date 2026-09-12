@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-592-arm-slideshow-phase-slots.** Arm from/to phase as methods.
+Prior: **591**.
+
+### Change
+- `ensureSlideshowMotionTimer` — single place for 16ms motion timer setup
+- `armSlideshowFromPhase` — promote B or start from-slot
+- `armSlideshowToPhase` — clear or arm to-slot
+- `setSlideshowPhase` is now: prune → arm from → motion T → arm to → fade
+
+### Done criteria
+- [x] Phase slot arming is named and reusable
+- [x] Bundle **592**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-591-slideshow-phase-slot-helpers.** Phase ZoomBlur + bias helpers.
 Prior: **590**.
 

@@ -713,6 +713,12 @@ public:
      */
     void captureMotionBiasesForPath(const QString &path, const QImage &image,
                                     QPointF *outA, QPointF *outB);
+    /** Ensure 16ms PreciseTimer connected to tickSlideshowMotion. */
+    void ensureSlideshowMotionTimer();
+    /** Arm from-slot on path change (promote B or start); @a pathMs for motion. */
+    void armSlideshowFromPhase(const QString &fromPath, int pathMs);
+    /** Arm or clear to-slot on path change. */
+    void armSlideshowToPhase(const QString &toPath);
     QImage slideshowPixelsForPath(const QString &path);
     QImage slideshowFullIfReady(const QString &path) const;
     QImage slideshowSoftPlaceholder(const QString &path);
