@@ -1100,27 +1100,21 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
 SessionAppearance::PixelKind ImageView::pixelKindForImageModeSample(
     const QString &path, const QImage &image) const
 {
-    // Classify by *delivered* long edge, never by the request edge. A PreferCache
-    // job for 2048 that only returns soft 512 must stay SoftPreview — otherwise
-    // hasDecodedPixels() latches "Full resolution" and the soft paint sticks.
+    // Classify by *delivered* long edge, never by the request edge.
     const int incoming = ImageCache::longEdge(image);
     if (incoming <= 0) {
         return SessionAppearance::PixelKind::SoftPreview;
     }
-    const QSize logical = logicalSizeForPath(path);
-    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-        const int native = qMax(logical.width(), logical.height());
-        if (coversEdge(incoming, native)) {
-            return SessionAppearance::PixelKind::FullSource;
-        }
+    // Native coverage (or PreferCache above soft max when size is provisional).
+    if (sampleCoversNativeLogical(path, image)) {
+        return SessionAppearance::PixelKind::FullSource;
     }
-    // Soft durable ladder band — keep SoftPreview so native / PreferCache can
-    // still upgrade (onImagePreviewLoaded skips hasDecodedPixels items).
+    // Soft durable ladder — SoftPreview so native / PreferCache can still upgrade.
     if (incoming <= ThumtooCache::kGalleryLadderEdge) {
         return SessionAppearance::PixelKind::SoftPreview;
     }
-    // PreferCache display ladder (1024–2048): FullSource for DeviceCoordinate
-    // paint; HUD uses native coverage, not this flag alone.
+    // PreferCache display band without native size: FullSource for paint mode;
+    // HUD uses sampleCoversNativeLogical, not hasDecodedPixels alone.
     return SessionAppearance::PixelKind::FullSource;
 }
 
@@ -1219,24 +1213,8 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
             return;
         }
         if (isImageMode()) {
-            if (ImageItem *cur = imageModeItemForPath(path)) {
-                const SessionAppearance::PixelKind kind =
-                    pixelKindForImageModeSample(path, image);
-                // canAccept blocks late soft over full and equal-or-smaller samples.
-                if (canAcceptDisplaySample(cur, image, kind)) {
-                    installDisplayPreservingView(cur, image, kind,
-                                                 kInvalidSessionImageId);
-                }
-                if (kind == SessionAppearance::PixelKind::SoftPreview
-                    || !sampleCoversNativeLogical(path, image)) {
-                    ensureImageModeQualityClimb(path, image);
-                }
-                if (viewport()) {
-                    viewport()->update();
-                }
-                return;
-            }
-            installImageModePendingTile(path, image);
+            // Same install + climb policy as completeLoadReplace / ladderReady.
+            (void)tryInstallImageModeSample(path, image);
             return;
         }
         // Empty multi-item canvas: fall through to per-item fill.
@@ -1750,14 +1728,15 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
 
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const
 {
+    // True when the sample is good enough to stop PreferCache / soft climb.
+    // Soft band is never final; PreferCache above soft max is only final when
+    // native size is unknown (provisional). Known native uses ~90% coverage.
     const int incoming = ImageCache::longEdge(image);
     if (incoming <= 0) {
         return false;
     }
     const QSize logical = logicalSizeForPath(path);
     if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
-        // Unknown native size: PreferCache display ladder counts as "good enough"
-        // only when above soft max (soft band is never final).
         return incoming > ThumtooCache::kGalleryLadderEdge;
     }
     const int native = qMax(logical.width(), logical.height());

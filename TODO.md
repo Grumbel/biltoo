@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-656-image-mode-install-one-path.** One Image-mode install entry.
+Prior: **655**.
+
+### Change
+- `onImagePreviewLoaded` Image mode → `tryInstallImageModeSample` (same as replace/ladder)
+- `pixelKindForImageModeSample` uses `sampleCoversNativeLogical` (no duplicated size logic)
+- Clearer coverage comments
+
+### Done criteria
+- [x] Soft/full Image-mode install has a single entry point
+- [x] Bundle **656**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-655-native-climb-finish.** Named finish for quiet native climb.
 Prior: **654**.
 
