@@ -710,12 +710,10 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         gen = ++m_loadGeneration;
         m_imageModeNativeClimbPaths.clear();
         m_imageModeClimb.clear();
-        // FocusFull / EnsureTiles: skip during slideshow — every ←/→ was
-        // restarting tile pyramid builds and competing with soft decode.
-        if (isImageMode() && !m_slideshowProgressActive) {
-            (void)ThumtooCache::setPrimaryInterest(
-                path, ThumtooCache::kBatchOverviewEdge);
-        }
+        // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
+        // pyramid builds on archives and cancels the soft queue every ←/→.
+        // Tile pyramid is requested only from zoom climb when on-screen need
+        // exceeds overview (maybeClimbImageModePixelsForView).
     }
     emit statusChanged(); // pending count for status bar
 
@@ -780,21 +778,16 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
 void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
-    // Soft first (high priority). Native full is deferred so rapid ←/→ does not
-    // stack multi-MP ImageLoader::load jobs that starve soft and hitch the pool.
-    // Generation check drops deferred native when the user has already moved on.
+    // Soft only on ←/→. PreferCache climb (capped to on-screen need) is kicked
+    // from tryInstall after soft lands. Native ImageLoader::load / EnsureTiles
+    // are NOT started here — archive full extract and tile pyramids were the
+    // dominant cost in THUMTOO_DEBUG logs on every key.
     const QPointer<ImageView> guard(this);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
 
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge);
-
-    QTimer::singleShot(64, guard.data(), [guard, path, gen, roleInt]() {
-        if (!guard || !guard->matchesLoadGeneration(gen)) {
-            return;
-        }
-        startNativeFullDecodeJob(guard, path, gen, roleInt);
-    });
+    Q_UNUSED(gen);
 }
 
 
@@ -1916,7 +1909,8 @@ void ImageView::noteImageModePreferCacheDelivery(const QString &path, int reques
 
 void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
 {
-    // Soft or sub-native: one PreferCache attempt + native full. No reschedule loop.
+    // Soft → PreferCache only as far as on-screen need. Never default to 2048
+    // + native extract on every ←/→ (archive EnsureTiles / full load storms).
     if (path.isEmpty()) {
         return;
     }
@@ -1924,16 +1918,32 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
         m_imageModeClimb.remove(path);
         return;
     }
+    const int need = imageModeOnScreenNeedEdge();
+    const int have = sample.isNull() ? 0 : ImageCache::longEdge(sample);
+    if (need > 0 && coversEdge(have, need)) {
+        // Soft/overview already fills the viewport — stop climbing.
+        return;
+    }
+
     ImageModeClimbState &st = m_imageModeClimb[path];
     if (!sample.isNull()) {
-        st.have = qMax(st.have, ImageCache::longEdge(sample));
+        st.have = qMax(st.have, have);
     }
-    // PreferCache only while it can still improve; never after gave-up.
+
+    // Fit browsing: climb at most to FastBatch overview (1024). Zoom past that
+    // may request up to kImageLadderEdge and optional native extract.
+    int climbTo = ThumtooCache::kGalleryLadderEdge;
+    if (need > ThumtooCache::kGalleryLadderEdge) {
+        climbTo = qMin(need, ThumtooCache::kBatchOverviewEdge);
+    }
+    if (need > ThumtooCache::kBatchOverviewEdge) {
+        climbTo = qMin(need, ThumtooCache::kImageLadderEdge);
+    }
     if (!st.preferGaveUp) {
-        scheduleImageModePreferCacheClimb(path, ThumtooCache::kImageLadderEdge);
+        scheduleImageModePreferCacheClimb(path, climbTo);
     }
-    // Native full extract (archive/file) — true HQ; deduped by path set.
-    if (!sample.isNull()) {
+    // Native full (archive member extract) only when zoomed past overview.
+    if (need > ThumtooCache::kBatchOverviewEdge) {
         scheduleImageModeNativeFullQuiet(path);
     }
 }
@@ -2085,7 +2095,7 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
         if (ThumtooCache::isAvailable()) {
             // Full native miss: PreferCache display ladder so onLadderReady can
             // upgrade Image mode (soft→HQ).
-            scheduleImageModePreferCacheClimb(path, ThumtooCache::kImageLadderEdge);
+            scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
             m_lastLoadError.clear();
         } else {
             m_lastLoadError = path;

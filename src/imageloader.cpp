@@ -881,6 +881,7 @@ QImage load(const QString &path)
 
 QImage loadThumbnailFromBytes(const QByteArray &bytes, int maxEdge)
 {
+    ASSERT_NOT_GUI_THREAD();
     if (bytes.isEmpty()) {
         return {};
     }

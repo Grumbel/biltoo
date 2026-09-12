@@ -2,6 +2,35 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-680-stop-2048-ensuretiles-storm.** No EnsureTiles/native/2048 on every ←/→.
+Prior: **679**.
+
+### Root cause (from THUMTOO_DEBUG)
+Every Image navigation was:
+1. `setPrimaryInterest` → **EnsureTiles pyramid** on the archive member
+2. PreferCache climb always to **edge=2048** (`scheduleDisplay` ok=0, got 1024)
+3. Deferred **native full** `ImageLoader::load` still competing with soft
+
+Soft HITs were fine; the queue was drowned by 2048 + tile pyramid work.
+
+### Change
+- Remove `setPrimaryInterest` from LoadReplace (no FocusFull/EnsureTiles per key)
+- `ensureImageModeQualityClimb`: climb to on-screen need, cap at 1024 unless zoomed
+- Native full only when need > 1024 (zoom)
+- `scheduleClassicImageDecode`: soft only (no deferred native)
+- `ASSERT_NOT_GUI_THREAD` on `loadThumbnailFromBytes`
+
+### Done criteria
+- [x] ←/→ does not scheduleDisplay 2048 by default
+- [x] ←/→ does not start EnsureTiles
+- [x] Bundle **680**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-679-inplace-nav-defer-native.** Image ←/→ reuses item; native full deferred; slideshow preload kick.
 Prior: **678**.
 
