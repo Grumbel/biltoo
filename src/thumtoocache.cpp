@@ -1198,9 +1198,9 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
     {
         std::lock_guard lock(g_mu);
         c = clientUnlocked();
-        if (c) {
-            g_pixelsQueue.clear();
-        }
+        // Do not clear g_pixelsQueue here — interest changes on every Gallery
+        // scroll; wiping the host soft queue stalls first pixels and causes
+        // thumtoo cancel/restart storms that contend with the GUI.
     }
     if (!c) {
         return 0;
@@ -1270,9 +1270,9 @@ quint64 setPrimaryInterest(const QString &path, int edge)
     {
         std::lock_guard lock(g_mu);
         c = clientUnlocked();
-        if (c) {
-            g_pixelsQueue.clear();
-        }
+        // Do not clear g_pixelsQueue here — interest changes on every Gallery
+        // scroll; wiping the host soft queue stalls first pixels and causes
+        // thumtoo cancel/restart storms that contend with the GUI.
     }
     if (!c) {
         return 0;

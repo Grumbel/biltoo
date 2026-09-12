@@ -104,21 +104,25 @@ void ImageView::updateGalleryDecodeWindow()
         }
     }
 
-    // Gallery interest: soft-band only (no Primary FocusFull). Overview climb
-    // past soft is explicit scheduleOverviewPixels with host ladderReady —
-    // setInterest at batch edge starved SoftOnly and delayed first tiles.
+    // Soft decode for visible tiles first — never blocked on interest/thumtoo.
+    for (const QString &path : visible) {
+        scheduleGalleryDecode(path);
+    }
+
+    // Interest: soft-band only. Cap speculative so we do not convert/hash every
+    // off-screen path in the session on each scroll (GUI jank on large RARs).
     {
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
+        constexpr int kMaxSpeculative = 12;
         QStringList near = interestNear;
         near.sort();
         QStringList speculative = interestRest;
         speculative.sort();
+        if (speculative.size() > kMaxSpeculative) {
+            speculative = speculative.mid(0, kMaxSpeculative);
+        }
         (void)ThumtooCache::setInterest(near, speculative, softEdge, softEdge,
                                         /*pathsPrimary=*/{}, /*primaryEdge=*/0);
-    }
-
-    for (const QString &path : visible) {
-        scheduleGalleryDecode(path);
     }
 
     const int freeSlots =
@@ -540,9 +544,17 @@ void ImageView::gallerySoftWatchdogTick()
     constexpr qint64 kStuckMs = 8000;
     bool needWindow = false;
     int repaired = 0;
+    // Only on-screen (+small overscan) — never walk hundreds of off-screen tiles
+    // on the GUI thread while the user is scrolling.
+    const QRectF sceneVisible = mapToScene(viewport()->rect().adjusted(-80, -80, 80, 80))
+                                    .boundingRect();
 
     for (ImageItem *item : m_items) {
         if (!item) {
+            continue;
+        }
+        const QRectF tile = item->contentSceneRect();
+        if (!tile.isNull() && tile.isValid() && !tile.intersects(sceneVisible)) {
             continue;
         }
         const QString path = item->path();

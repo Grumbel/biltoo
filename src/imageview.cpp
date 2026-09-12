@@ -226,7 +226,7 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
                         if (!host->m_galleryDecodeScrollTimer) {
                             host->m_galleryDecodeScrollTimer = new QTimer(host);
                             host->m_galleryDecodeScrollTimer->setSingleShot(true);
-                            host->m_galleryDecodeScrollTimer->setInterval(80);
+                            host->m_galleryDecodeScrollTimer->setInterval(150);
                             QObject::connect(host->m_galleryDecodeScrollTimer, &QTimer::timeout,
                                              host, [host]() {
                                                  if (host->isGalleryMode()) {
@@ -310,7 +310,7 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             if (!m_galleryDecodeScrollTimer) {
                 m_galleryDecodeScrollTimer = new QTimer(this);
                 m_galleryDecodeScrollTimer->setSingleShot(true);
-                m_galleryDecodeScrollTimer->setInterval(80);
+                m_galleryDecodeScrollTimer->setInterval(150);
                 connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
                     if (isGalleryMode()) {
                         // Drop stale thumtoo queue work from the previous window.
@@ -328,7 +328,7 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             if (!m_galleryDecodeScrollTimer) {
                 m_galleryDecodeScrollTimer = new QTimer(this);
                 m_galleryDecodeScrollTimer->setSingleShot(true);
-                m_galleryDecodeScrollTimer->setInterval(80);
+                m_galleryDecodeScrollTimer->setInterval(150);
                 connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
                     if (isGalleryMode()) {
                         // Drop stale thumtoo queue work from the previous window.
@@ -344,7 +344,7 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
     // Recover Gallery tiles that received soft pixels but never repainted
     // (DeviceCoordinateCache + BoundingRectViewportUpdate stalls).
     m_gallerySoftWatchdog = new QTimer(this);
-    m_gallerySoftWatchdog->setInterval(400);
+    m_gallerySoftWatchdog->setInterval(1000);
     connect(m_gallerySoftWatchdog, &QTimer::timeout, this, [this]() {
         if (isGalleryMode()) {
             gallerySoftWatchdogTick();

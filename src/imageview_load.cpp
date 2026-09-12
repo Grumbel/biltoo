@@ -159,12 +159,14 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
 
     if (kind == SessionAppearance::PixelKind::FullSource) {
         item->setSourceImage(display);
+        // Full pixels are stable — cache the painted tile again.
+        if (item->cacheMode() != QGraphicsItem::DeviceCoordinateCache) {
+            item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+        } else {
+            item->invalidateDeviceCache();
+        }
     } else {
-        item->setPreviewImage(display);
-        // Gallery uses DeviceCoordinateCache + BoundingRectViewportUpdate.
-        // Toggle alone inside setPreviewImage is not always enough for the
-        // view to repaint the tile until hover — force a cache rebuild here.
-        item->invalidateDeviceCache();
+        item->setPreviewImage(display); // NoCache soft path
     }
     item->setContentHFlip(appearance.contentHFlip);
     item->setContentVFlip(appearance.contentVFlip);
@@ -702,15 +704,14 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         if (item->imageSize() != before) {
             gallerySizeChanged = true;
         }
-        // Ensure the view schedules a paint for this tile (BoundingRect mode).
-        if (m_scene) {
-            m_scene->update(item->sceneBoundingRect());
-        }
+        // Mark dirty; one coalesced viewport update below (not per-tile scene
+        // update storms when many ladderReady events land together).
+        item->update();
     }
     if (gallerySizeChanged && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
         applyLayout(GalleryPackReason::ContentChange);
-    }
-    if (viewport()) {
+    } else if (viewport()) {
+        // Coalesce: single full viewport refresh after this batch of installs.
         viewport()->update();
     }
 }

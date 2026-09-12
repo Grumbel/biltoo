@@ -157,11 +157,9 @@ void ImageItem::setPreviewImage(const QImage &preview)
     m_previewPixels = true;
     m_source = QImage();
     setPixmap(QPixmap());
-    // DeviceCoordinateCache keeps a blit of the previous paint; force rebuild.
-    if (cacheMode() == QGraphicsItem::DeviceCoordinateCache) {
-        setCacheMode(QGraphicsItem::NoCache);
-        setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-    }
+    // Soft tiles: NoCache. DeviceCoordinateCache rebuild on every soft upgrade
+    // stalls the GUI when many ladderReady events land during scroll.
+    setCacheMode(QGraphicsItem::NoCache);
     // Intrinsic size is layout geometry (probe / full native size). Never adopt
     // soft-preview pixel dimensions — that shrinks Gallery cells to 512 and
     // makes zoom/pack jump when a full decode later restores native size.

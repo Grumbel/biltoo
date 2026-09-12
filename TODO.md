@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-507-gallery-scroll-gui-budget.** Keep Gallery scroll off the soft-queue / interest storm.
+Prior: **506**.
+
+### Root cause
+Scroll → updateGalleryDecodeWindow → setInterest with *all* off-screen paths,
+URI conversion, epoch bump, and `g_pixelsQueue.clear()` cancelled in-flight soft
+work. Soft installs also toggled DeviceCoordinateCache per tile (GUI stalls).
+
+### Change
+- Cap speculative interest at 12 paths
+- Never clear host soft queue on setInterest
+- Soft decode scheduled before interest
+- Scroll debounce 150ms; watchdog 1s, visible tiles only
+- Soft tiles: NoCache (no per-upgrade device-cache rebuild)
+
+### Done criteria
+- [x] Scroll does not wipe soft queue / rebuild interest for whole session
+- [x] Bundle **507**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-506-gallery-soft-paint-watchdog.** Soft install always invalidates device cache; stall recovery.
 Prior: **505**.
 
