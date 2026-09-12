@@ -1604,6 +1604,43 @@ void MainWindow::updateSlideshowFromClock()
     const QString fromPath = m_session.paths().at(fromIdx);
     const QString toPath = m_session.paths().at(toIdx);
 
+    // Quality gate: do not let the pure clock leave a soft-only frame until
+    // screen-sized pixels are ready (or the hold times out). Freezes timeline
+    // by pinning pausedAccum + restarting the clock so elapsed stays put.
+    // Hold duration is measured on a separate timer (not the frozen wall).
+    if (m_imageView && !m_imageView->slideshowNavHot()) {
+        const bool adequate = m_imageView->slideshowPixelsAdequate(fromPath);
+        if (!adequate) {
+            if (!m_slideshowQualityHold) {
+                m_slideshowQualityHold = true;
+                m_slideshowQualityHoldWallMs = elapsed;
+                m_slideshowQualityHoldClock.start();
+                m_imageView->preloadSlideshowImage(fromPath);
+                qCDebug(lcSlideshow).nospace()
+                    << "[slideshow] quality-hold start path="
+                    << QFileInfo(fromPath).fileName()
+                    << " need~" << m_imageView->slideshowTargetEdge();
+            }
+            // Keep pure wall frozen at the hold anchor.
+            m_slideshowPausedAccumMs = m_slideshowQualityHoldWallMs;
+            m_slideshowClock.start();
+            if (m_slideshowQualityHoldClock.elapsed() < kSlideshowQualityHoldMaxMs) {
+                m_imageView->setSlideshowPhase(fromPath, QString(), -1.0);
+                return;
+            }
+            // Timeout: continue with whatever soft we have.
+            qCDebug(lcSlideshow).nospace()
+                << "[slideshow] quality-hold timeout path="
+                << QFileInfo(fromPath).fileName();
+            m_slideshowQualityHold = false;
+        } else if (m_slideshowQualityHold) {
+            qCDebug(lcSlideshow).nospace()
+                << "[slideshow] quality-hold done path="
+                << QFileInfo(fromPath).fileName();
+            m_slideshowQualityHold = false;
+        }
+    }
+
     if (phaseMs < pureMs || transitionMs <= 0) {
         if (m_imageView) {
             m_imageView->setSlideshowPhase(fromPath, QString(), -1.0);

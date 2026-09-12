@@ -1403,6 +1403,9 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         // accumulated until the GUI starved. Decode the settled index after
         // a short quiet period.
         if (isSlideshowSession() && !m_slideshowAdvancing) {
+            // Mark nav hot immediately so ZoomBlur/atlas work stops for this
+            // key-repeat burst; cleared when the settle timer fires.
+            m_imageView->setSlideshowNavHot(true);
             if (!m_slideshowNavLoadTimer) {
                 m_slideshowNavLoadTimer = new QTimer(this);
                 m_slideshowNavLoadTimer->setSingleShot(true);
@@ -1415,11 +1418,15 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
                         || m_currentIndex >= m_session.paths().size()) {
                         return;
                     }
+                    m_imageView->setSlideshowNavHot(false);
                     m_imageView->loadImage(m_session.paths().at(m_currentIndex));
                 });
             }
             m_slideshowNavLoadTimer->start();
         } else {
+            if (m_imageView) {
+                m_imageView->setSlideshowNavHot(false);
+            }
             m_imageView->loadImage(path);
         }
     } else if (isGalleryMode() && m_imageView) {
@@ -2570,6 +2577,11 @@ void MainWindow::resumeSlideshow()
 
 void MainWindow::stopSlideshow()
 {
+    if (m_imageView) {
+        m_imageView->setSlideshowNavHot(false);
+    }
+    m_slideshowQualityHold = false;
+    m_slideshowQualityHoldWallMs = 0;
     if (m_thumbnailBar) {
         m_thumbnailBar->setVisibleLoadsSuspended(false);
     }

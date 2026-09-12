@@ -608,6 +608,15 @@ private:
     int m_slideshowPendingToIndex = -1;
     /** True while the repeating clock tick is the authority (playing). */
     bool m_slideshowClockRunning = false;
+    /**
+     * Hold pure-clock advancement until the current slide has screen-sized
+     * pixels (or this timeout elapses). Prevents soft-only starts/flips from
+     * racing the quality decode.
+     */
+    bool m_slideshowQualityHold = false;
+    qint64 m_slideshowQualityHoldWallMs = 0;
+    QElapsedTimer m_slideshowQualityHoldClock;
+    static constexpr int kSlideshowQualityHoldMaxMs = 1500;
 
     bool m_toolBarVisibleBeforeFullscreen = true;
     bool m_thumbnailBarVisibleBeforeFullscreen = true;

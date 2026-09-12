@@ -1553,7 +1553,9 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
     }
 
     // Keep underlays warm for the active pair (dwell from, or both in fade).
-    if (viewport() && m_slideshowLetterboxFill == SlideshowLetterboxFill::ZoomBlur) {
+    // Skip while user is key-repeating — builds fight soft decode.
+    if (viewport() && !m_slideshowNavHot
+        && m_slideshowLetterboxFill == SlideshowLetterboxFill::ZoomBlur) {
         const QSize vs = viewport()->size();
         if (vs.width() > 0 && vs.height() > 0) {
             auto warm = [&](const QString &path, const QImage &img) {
@@ -1734,8 +1736,8 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 
 int ImageView::slideshowTargetEdge() const
 {
-    // Prefer viewport long edge, capped at overview. Soft (512) is for
-    // key-repeat; settled loadImage climbs to this via PreferCache.
+    // Screen-sized only: viewport long edge × DPR, ladder-snapped, hard-capped
+    // at overview (1024). Never request native / "max" for slideshow pixels.
     if (!viewport()) {
         return ThumtooCache::kBatchOverviewEdge;
     }
@@ -1745,6 +1747,50 @@ int ImageView::slideshowTargetEdge() const
     const int snapped = ThumtooCache::ceilLadderEdge(
         qMax(longPx, ThumtooCache::kGalleryLadderEdge));
     return qMin(snapped, ThumtooCache::kBatchOverviewEdge);
+}
+
+void ImageView::setSlideshowNavHot(bool hot)
+{
+    if (m_slideshowNavHot == hot) {
+        return;
+    }
+    m_slideshowNavHot = hot;
+    if (hot) {
+        // Drop in-flight blur backlog — rapid ←/→ must not queue CPU work.
+        invalidateZoomBlurQueue();
+    }
+}
+
+bool ImageView::slideshowPixelsAdequate(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return false;
+    }
+    const int target = slideshowTargetEdge();
+    if (target < 1) {
+        return true;
+    }
+    const int need = target * 7 / 10;
+    auto longEdge = [](const QImage &img) -> int {
+        return img.isNull() ? 0 : qMax(img.width(), img.height());
+    };
+    if (longEdge(slideshowFullIfReady(path)) >= need) {
+        return true;
+    }
+    if (path == m_ssFromPath && longEdge(m_ssFromImage) >= need) {
+        return true;
+    }
+    if (path == m_ssToPath && longEdge(m_ssToImage) >= need) {
+        return true;
+    }
+    if (path == m_ssFromPath && longEdge(m_dwellSourceImage) >= need) {
+        return true;
+    }
+    const QImage cached = ImageCache::get(path, target);
+    if (longEdge(cached) >= need) {
+        return true;
+    }
+    return false;
 }
 
 void ImageView::preloadSlideshowImage(const QString &path)
@@ -2204,6 +2250,9 @@ void ImageView::invalidateZoomBlurQueue() const
 
 void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const
 {
+    if (m_slideshowNavHot) {
+        return;
+    }
     if (image.isNull() || vw < 1 || vh < 1 || key == 0) {
         return;
     }
@@ -2289,6 +2338,11 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
                                       const QRect &viewportRect, qint64 stableKey) const
 {
     if (!painter || image.isNull() || viewportRect.isEmpty()) {
+        return;
+    }
+    // Rapid keyboard flip: solid pad only — blur builds stall the pool/GUI.
+    if (m_slideshowNavHot) {
+        painter->fillRect(viewportRect, slideshowPadColor());
         return;
     }
     const int vw = viewportRect.width();

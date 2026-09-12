@@ -197,6 +197,17 @@ public:
     void preloadSlideshowImage(const QString &path);
     /** Viewport long-edge × DPR snapped to ladder (slideshow decode target). */
     int slideshowTargetEdge() const;
+    /**
+     * True when pixels for @a path are suitable for the current screen
+     * (long edge ≥ ~70% of slideshowTargetEdge). Soft-only frames return false.
+     */
+    bool slideshowPixelsAdequate(const QString &path) const;
+    /**
+     * User is rapidly flipping (←/→ key-repeat). Suppresses ZoomBlur builds
+     * and paints solid letterbox pad instead.
+     */
+    void setSlideshowNavHot(bool hot);
+    bool slideshowNavHot() const { return m_slideshowNavHot; }
     void tickSlideshowMotion();
     void tickLiveTransition();
     void startLiveTransitionWithImage(const QImage &nextImage);
@@ -1325,6 +1336,8 @@ private:
     SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
     SlideshowLetterboxFill m_slideshowLetterboxFill = SlideshowLetterboxFill::AppBackground;
     QColor m_slideshowPadColor{42, 42, 42};
+    /** Rapid keyboard nav — skip ZoomBlur work until settled. */
+    bool m_slideshowNavHot = false;
     /** Two-slot ZoomBlur underlay cache (from/to during transitions). */
     mutable QPixmap m_zoomBlurUnderlay[2];
     mutable qint64 m_zoomBlurSourceKey[2] = {0, 0};

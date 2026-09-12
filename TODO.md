@@ -2,6 +2,35 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-550-slideshow-screen-res-gate.** Screen-sized pixels; quality hold; ZoomBlur off on nav.
+Prior: **549**.
+
+### Problems
+1. Rapid ←/→ still slowed by ZoomBlur letterbox builds (CPU box blur + pool).
+2. Pure clock advances on soft-only frames — show starts blurry and keeps moving.
+3. Slideshow must target **viewport × DPR** (capped at overview), never native/max.
+
+### Changes
+- `slideshowTargetEdge()` documented as screen-sized only (already viewport×DPR ≤1024).
+- `slideshowPixelsAdequate(path)` — long edge ≥ ~70% of target.
+- Pure-clock **quality hold** (≤1.5s): freeze timeline on soft-only dwell until adequate
+  pixels or timeout; preload while holding.
+- `setSlideshowNavHot` during keyboard settle window: **skip ZoomBlur** schedule/paint
+  (solid pad), invalidate in-flight blur queue.
+- Nav settle timer clears nav-hot then `loadImage`.
+
+### Done criteria
+- [x] ZoomBlur not scheduled under key-repeat
+- [x] Auto-advance waits for screen-sized pixels (with timeout)
+- [x] No native/max decode target in slideshow path
+- [x] Bundle **550**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-549-slideshow-quality-climb.** Restore overview PreferCache after soft.
 Prior: **548**.
 
