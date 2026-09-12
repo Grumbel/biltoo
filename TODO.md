@@ -2,6 +2,34 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-692-clear-full-before-soft.** Clear prior FullSource before soft preview on ←/→.
+Prior: **691**.
+
+### Evidence
+```
+ladderReady UPGRADE path=010.jpg req=512
+ladderReady UPGRADE path=010.jpg req=1024
+```
+No `tryInstall OK` after UPGRADE — soft never attached, upgrades rejected.
+
+### Cause
+`setPreviewImage` returns early when `hasDecodedPixels()` (previous image FullSource
+still on the reused ImageItem). Soft no-op → item still shows old full or empty
+→ canAccept rejects SoftPreview over FullSource / wrong path state.
+
+### Fix
+`clearDecodedPixels()` before `setPreviewImage` on pending soft path change.
+Log `tryInstall REJECT` when canAccept fails.
+
+### Done criteria
+- [x] Bundle **692**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-691-soft-is-preview-not-full.** Soft pending uses setPreviewImage; HQ uses setSourceImageReady.
 Prior: **690**.
 

@@ -159,14 +159,12 @@ void ImageItem::clearDecodedPixels()
     if (m_source.isNull() && m_preview.isNull()) {
         return;
     }
-    prepareGeometryChange();
     // Keep intrinsic — samples must not redefine geometry on clear.
+    // No prepareGeometryChange — offset/intrinsic unchanged.
     m_source = QImage();
     m_preview = QImage();
     m_previewPixels = false;
     setPixmap(QPixmap());
-    const QSize s = imageSize();
-    setOffset(-s.width() / 2.0, -s.height() / 2.0);
     update();
 }
 

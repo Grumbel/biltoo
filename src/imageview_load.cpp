@@ -703,14 +703,17 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         }
         bindImageModeSessionCursor(item);
         // Fast soft attach: no installDisplayPixels, no fitItem/fitInView.
-        // Log showed fit=1 on nearly every ←/→ when aspect differed — fitInView
-        // on the GUI is the remaining hitch (user: wrong corner was "decode").
         if (!path.isEmpty()) {
             ImageCache::put(path, pixels);
         }
-        // Soft must be preview, not FullSource. setSourceImageReady made
-        // hasDecodedPixels() true and blocked SoftPreview 512 upgrades
-        // (only 1024 FullSource could install — log: tryInstall edge=1024 only).
+        // MUST clear prior FullSource first. setPreviewImage no-ops when
+        // hasDecodedPixels() (designed for "late soft after full" on SAME
+        // image). On ←/→ the item still holds the previous image's FullSource
+        // → soft never attaches → canAccept rejects ladder upgrades → stuck
+        // on old frame or empty (log: ladderReady UPGRADE with no tryInstall OK).
+        if (item->hasDecodedPixels()) {
+            item->clearDecodedPixels();
+        }
         item->setPreviewImage(pixels);
         // Intrinsic from known logical only — never from soft sample dims.
         const QSize known = logicalSizeForPath(path);
@@ -2051,6 +2054,12 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
             biltooLoadDbg("tryInstall OK path=%s kind=%d edge=%d",
                           qPrintable(QFileInfo(path).fileName()),
                           int(kind), ImageCache::longEdge(image));
+        } else {
+            biltooLoadDbg("tryInstall REJECT path=%s kind=%d edge=%d have=%d decoded=%d",
+                          qPrintable(QFileInfo(path).fileName()),
+                          int(kind), ImageCache::longEdge(image),
+                          cur->displayPixelLongEdge(),
+                          cur->hasDecodedPixels() ? 1 : 0);
         }
         // Even when the sample is not an upgrade (already showing equal soft),
         // keep climbing until native coverage — otherwise soft latches forever.
