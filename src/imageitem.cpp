@@ -89,24 +89,7 @@ void ImageItem::setSourceImage(const QImage &image)
     m_preview = QImage();
     m_previewPixels = false;
     if (!m_source.isNull()) {
-        const QSize src = m_source.size();
-        const bool intrinsicKnown =
-            m_intrinsicSize.isValid() && m_intrinsicSize.width() > 1
-            && m_intrinsicSize.height() > 1
-            && m_intrinsicSize != QSize(1000, 1000)
-            && m_intrinsicSize != QSize(1024, 1024);
-        // Logical size owns geometry. Samples never seed intrinsic (that made
-        // ladder steps become the image). Grow only when source is larger than
-        // a known logical size. Shrink is exclusive to setIntrinsicSize (crop).
-        // Soft uses setPreviewImage and never touches intrinsic.
-        if (intrinsicKnown) {
-            const qint64 have =
-                qint64(m_intrinsicSize.width()) * qint64(m_intrinsicSize.height());
-            const qint64 incoming = qint64(src.width()) * qint64(src.height());
-            if (incoming > have) {
-                m_intrinsicSize = src;
-            }
-        }
+        // Samples never write intrinsic — setIntrinsicSize / probe / layout only.
         setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
         updateDisplayedPixmap();
     } else {

@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-573-samples-never-write-intrinsic.** setSourceImage and orientation sync never write sample magnitude.
+Prior: **572**.
+
+### Changes
+- `setSourceImage`: pure sample — no intrinsic seed/grow
+- `syncItemLayoutToContentOrientation`: transpose only; no sample magnitude
+- SIZE.md: setIntrinsicSize is the only item geometry writer for samples path
+
+### Done criteria
+- [x] Samples cannot write intrinsic at all
+- [x] Bundle **573**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-572-sourceimage-never-seeds.** setSourceImage never seeds intrinsic from samples.
 Prior: **571**.
 

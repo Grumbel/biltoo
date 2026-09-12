@@ -343,41 +343,23 @@ void syncItemLayoutToContentOrientation(ImageItem *item,
         return;
     }
 
-    const bool haveFull = item->hasDecodedPixels();
-
     if (layout.width() < 1 || layout.height() < 1) {
-        // Layout still unknown: only full (non-preview) pixels may seed
-        // magnitude. Soft must not define geometry.
-        if (haveFull) {
-            item->setIntrinsicSize(display);
-        }
+        // Layout still unknown — do not seed from samples. Probe / layout path
+        // owns magnitude.
         return;
     }
 
     const bool displayLandscape = display.width() >= display.height();
     const bool layoutLandscape = layout.width() >= layout.height();
     if (displayLandscape == layoutLandscape) {
-        // Matching aspect. Grow magnitude only from true full pixels that are
-        // larger than the current logical size (never soft / smaller ladder).
-        if (haveFull) {
-            const qint64 have =
-                qint64(layout.width()) * qint64(layout.height());
-            const qint64 incoming =
-                qint64(display.width()) * qint64(display.height());
-            if (incoming > have) {
-                item->setIntrinsicSize(display);
-            }
-        }
+        // Matching aspect — leave magnitude to probe/setIntrinsicSize.
+        // Full/ladder samples must not promote layout size.
         return;
     }
 
-    // Aspect mismatch (content orientation): transpose layout magnitude for
-    // soft; adopt oriented full pixels only when they are full decode.
-    if (haveFull) {
-        item->setIntrinsicSize(display);
-    } else {
-        item->setIntrinsicSize(QSize(layout.height(), layout.width()));
-    }
+    // Aspect mismatch (content orientation): transpose layout only. Oriented
+    // sample pixels do not redefine magnitude.
+    item->setIntrinsicSize(QSize(layout.height(), layout.width()));
 }
 
 QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,

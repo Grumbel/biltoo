@@ -8,8 +8,8 @@ logical size.
 | Source | Role |
 |--------|------|
 | `m_imageSizeByPath` / thumtoo / probe | Logical size for a path |
-| `ImageItem::m_intrinsicSize` via `setIntrinsicSize` | Item geometry (layout, hit, fit, crop) |
-| Soft / ladder / `pixmap()` | Display samples — never identity |
+| `setIntrinsicSize` | Only writer of item geometry (layout, probe, crop, orientation transpose) |
+| Soft / ladder / `setSourceImage` / `pixmap()` | Display samples — **never** write intrinsic |
 
 ## APIs
 
@@ -17,16 +17,16 @@ logical size.
 |-----|------|
 | `logicalSizeForPath` | Const lookup — never soft dims |
 | `ensureLogicalSizeForPath` | May probe |
-| `layoutSizeForPath` | Known logical first; else provisional aspect at **1024** long-edge (never soft pixel size) |
-| `imageSizeForPath` | Installs thumtoo into map; provisional neutral if unknown |
-| `rememberImageSize` | Never shrink with a smaller sample |
+| `layoutSizeForPath` | Known logical first; else provisional aspect at **1024** long-edge |
 | `rememberSizeFromDecode` | Thumtoo first; ≤2048 long-edge → probe only |
-| `ImageItem(path, image)` | Sample only; intrinsic 1×1 until `setIntrinsicSize` |
-| `ImageItem::contentRect` / paint | Logical box; sample drawn into it |
+| `setSourceImage` | Sample only — does not touch intrinsic |
+| `setPreviewImage` | Sample only |
 | `setIntrinsicSize` | Explicit authority — always applied |
+| Orientation sync | Transpose aspect only — never adopt sample magnitude |
+| `contentRect` / paint | Logical box; sample drawn into it |
 
 ## Forbidden
 
-- Seeding intrinsic or path map from soft/ladder pixel dimensions
-- `layoutSizeForPath` returning raw preview size as layout magnitude
-- `contentRect` / pack / fit from `pixmap().size()`
+- Seeding or growing intrinsic from sample pixel dimensions
+- `layoutSizeForPath` returning raw soft size
+- Pack / fit / HUD from `pixmap().size()`
