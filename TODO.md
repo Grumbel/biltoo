@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-684-soft-before-prefercache-climb.** PreferCache climb waits for soft paint; filmstrip low priority.
+Prior: **683**.
+
+### Log diagnosis
+`view climb path=001.jpg have=0 need=2048 decoded=0` scheduled PreferCache@2048
+before any soft was installed, racing soft 512. Filmstrip makeThumbnail flooded
+the pool at default priority.
+
+### Change
+- `maybeClimbImageModePixelsForView`: no PreferCache until `have > 0` (soft/LQIP painted)
+- Filmstrip thumbnail jobs: pool priority **-1** (below soft=2 and default)
+
+HQ PreferCache still runs after soft via `ensureImageModeQualityClimb`.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-683-drop-unused-native-job.** Remove unused startNativeFullDecodeJob (-Wunused-function).
 Prior: **682**.
 

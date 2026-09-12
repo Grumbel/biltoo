@@ -2019,9 +2019,9 @@ void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
 
 void ImageView::maybeClimbImageModePixelsForView()
 {
-    // Zoom / resize: soft or PreferCache samples must climb when the on-screen
-    // long edge exceeds what is painted. Native full is also re-queued without
-    // advancing load generation (no canvas clear / no zoom reset).
+    // Zoom / resize: PreferCache climbs when on-screen need exceeds painted.
+    // Do not start Display@ladder while soft is still missing — that races the
+    // soft 512 job and is what THUMTOO_DEBUG showed as need=2048 decoded=0.
     if (!isImageMode() || m_slideshowProgressActive) {
         return;
     }
@@ -2035,6 +2035,11 @@ void ImageView::maybeClimbImageModePixelsForView()
     const QString path = item->path();
     const int need = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
     const int have = item->displayPixelLongEdge();
+    if (have <= 0) {
+        // Soft / LQIP not installed yet — ensureImageModeQualityClimb runs
+        // after soft lands; PreferCache waits for that.
+        return;
+    }
     if (need <= 0 || coversEdge(have, need)) {
         return;
     }

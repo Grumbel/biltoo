@@ -503,7 +503,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                             host->setThumbnailIcon(i, image);
                             emit host->loadsChanged();
                         }, Qt::QueuedConnection);
-                    });
+                    }, -1);
                 }
             });
 }
@@ -1525,7 +1525,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 // Free slot may allow more visible rows to start.
                 host->scheduleVisibleThumbnailLoads();
             }, Qt::QueuedConnection);
-        });
+        }, -1);
     }
     emit loadsChanged();
 }
