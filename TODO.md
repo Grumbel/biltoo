@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-681-thumtoo-decode-off-gui.** thumtoo raster callbacks decode on the pool.
+Prior: **680**.
+
+### Root cause
+`ASSERT_NOT_GUI_THREAD` on `loadThumbnailFromBytes` fired: thumtoo `request_raster`
+callbacks often run on the **main thread** and used to decode JPEG payloads there.
+
+### Change
+- `onPixels` / `onOverview` / `onDisplay`: copy bytes on callback thread; if main,
+  `QThreadPool::start` decode; emit `ladderReady` after decode
+- Keep assert on `loadThumbnailFromBytes`
+
+### Done criteria
+- [x] No GUI-thread FromBytes decode via thumtoo callbacks
+- [x] Bundle **681**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-680-stop-2048-ensuretiles-storm.** No EnsureTiles/native/2048 on every ←/→.
 Prior: **679**.
 

@@ -3,6 +3,7 @@
 
 #include "thumtoocache.h"
 #include "imageloader.h"
+#include "biltoo_thread.h"
 
 #include "archivepath.h"
 #include "pagepath.h"
@@ -820,7 +821,7 @@ void startNextPixelJobsUnlocked()
         auto onPixels = [pathCopy, edge, inflightKey](
                             std::string, int,
                             std::optional<thumtoo::PixelLevel> px) {
-            QImage decoded;
+            QByteArray ba;
             int pxW = 0;
             int pxH = 0;
             int source = 0;
@@ -828,47 +829,50 @@ void startNextPixelJobsUnlocked()
                 pxW = px->width;
                 pxH = px->height;
                 source = static_cast<int>(px->source);
-                const QByteArray ba(
+                ba = QByteArray(
                     reinterpret_cast<const char *>(px->bytes.data()),
                     int(px->bytes.size()));
-                // Decode the payload we actually received — do not re-query
-                // get_pixels (can still see an older smaller level).
-                decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
             }
-            {
-                std::lock_guard lock(g_mu);
-                g_pixelsInflight.remove(inflightKey);
-                // Settle only when pixels meet ~90% of the requested edge.
-                const int got = decoded.isNull()
-                                    ? 0
-                                    : qMax(decoded.width(), decoded.height());
-                // Settle when the payload covers the request. Do not settle on
-                // Embedded alone (APP1 thumbs are often ~160–320): thumtoo must
-                // still JpegShrink to the requested soft edge.
-                const bool ok = got >= (edge * 9) / 10
-                    || (got > 0 && got >= edge / 2);
-                if (ok) {
-                    g_pixelsSettled.insert(inflightKey);
+            auto finish = [pathCopy, edge, inflightKey, ba = std::move(ba),
+                           pxW, pxH, source]() mutable {
+                ASSERT_NOT_GUI_THREAD();
+                QImage decoded;
+                if (!ba.isEmpty()) {
+                    decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
                 }
-                g_pixelsActive = qMax(0, g_pixelsActive - 1);
-                if (thumtooDebugEnabled()) {
-                    thumtooDbg(
-                        "request_raster DONE path=%s edge=%d ok=%d src=%d "
-                        "level=%dx%d decoded=%dx%d active=%d queued=%zu",
-                        qPrintable(pathCopy), edge, ok ? 1 : 0, source, pxW, pxH,
-                        decoded.width(), decoded.height(), g_pixelsActive,
-                        g_pixelsQueue.size());
+                {
+                    std::lock_guard lock(g_mu);
+                    g_pixelsInflight.remove(inflightKey);
+                    const int got = decoded.isNull()
+                                        ? 0
+                                        : qMax(decoded.width(), decoded.height());
+                    const bool ok = got >= (edge * 9) / 10
+                        || (got > 0 && got >= edge / 2);
+                    if (ok) {
+                        g_pixelsSettled.insert(inflightKey);
+                    }
+                    g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                    if (source != 0) {
+                        g_lastPixelSource.insert(pathCopy, source);
+                    }
+                    if (thumtooDebugEnabled()) {
+                        thumtooDbg(
+                            "request_raster DONE path=%s edge=%d ok=%d src=%d "
+                            "level=%dx%d decoded=%dx%d active=%d queued=%zu",
+                            qPrintable(pathCopy), edge, ok ? 1 : 0, source, pxW,
+                            pxH, decoded.width(), decoded.height(),
+                            g_pixelsActive, g_pixelsQueue.size());
+                    }
+                    startNextPixelJobsUnlocked();
                 }
-                startNextPixelJobsUnlocked();
+                emit bridge()->ladderReady(pathCopy, edge, decoded);
+                emit bridge()->ladderProvenance(pathCopy, edge, source);
+            };
+            if (QThread::isMainThread()) {
+                QThreadPool::globalInstance()->start(std::move(finish));
+            } else {
+                finish();
             }
-            {
-                std::lock_guard lock(g_mu);
-                if (source != 0) {
-                    g_lastPixelSource.insert(pathCopy, source);
-                }
-            }
-            emit bridge()->ladderReady(pathCopy, edge, decoded);
-            emit bridge()->ladderProvenance(pathCopy, edge, source);
         };
 #if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
         thumtoo::RasterRequest req;
@@ -1117,37 +1121,49 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
     auto onOverview = [pathCopy, edge, inflightKey](
                           std::string, int,
                           std::optional<thumtoo::PixelLevel> px) {
-        QImage decoded;
+        QByteArray ba;
         int source = 0;
         if (px && !px->bytes.empty()) {
             source = static_cast<int>(px->source);
-            const QByteArray ba(
+            ba = QByteArray(
                 reinterpret_cast<const char *>(px->bytes.data()),
                 int(px->bytes.size()));
-            decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
         }
-        {
-            std::lock_guard doneLock(g_mu);
-            g_pixelsInflight.remove(inflightKey);
-            if (source != 0) {
-                g_lastPixelSource.insert(pathCopy, source);
+        auto finish = [pathCopy, edge, inflightKey, ba = std::move(ba),
+                       source]() mutable {
+            ASSERT_NOT_GUI_THREAD();
+            QImage decoded;
+            if (!ba.isEmpty()) {
+                decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
             }
-            const int got = decoded.isNull()
-                                ? 0
-                                : qMax(decoded.width(), decoded.height());
-            if (got >= (edge * 9) / 10) {
-                g_pixelsSettled.insert(inflightKey);
+            {
+                std::lock_guard doneLock(g_mu);
+                g_pixelsInflight.remove(inflightKey);
+                if (source != 0) {
+                    g_lastPixelSource.insert(pathCopy, source);
+                }
+                const int got = decoded.isNull()
+                                    ? 0
+                                    : qMax(decoded.width(), decoded.height());
+                if (got >= (edge * 9) / 10) {
+                    g_pixelsSettled.insert(inflightKey);
+                }
+                g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                thumtooDbg(
+                    "scheduleOverview DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
+                    qPrintable(pathCopy), edge,
+                    (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
+                    decoded.height(), g_pixelsActive);
+                startNextPixelJobsUnlocked();
             }
-            g_pixelsActive = qMax(0, g_pixelsActive - 1);
-            thumtooDbg(
-                "scheduleOverview DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
-                qPrintable(pathCopy), edge,
-                (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
-                decoded.height(), g_pixelsActive);
-            startNextPixelJobsUnlocked();
+            emit bridge()->ladderReady(pathCopy, edge, decoded);
+            emit bridge()->ladderProvenance(pathCopy, edge, source);
+        };
+        if (QThread::isMainThread()) {
+            QThreadPool::globalInstance()->start(std::move(finish));
+        } else {
+            finish();
         }
-        emit bridge()->ladderReady(pathCopy, edge, decoded);
-        emit bridge()->ladderProvenance(pathCopy, edge, source);
     };
 #if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
     thumtoo::RasterRequest req;
@@ -1215,37 +1231,49 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
     auto onDisplay = [pathCopy, edge, inflightKey](
                          std::string, int,
                          std::optional<thumtoo::PixelLevel> px) {
-        QImage decoded;
+        QByteArray ba;
         int source = 0;
         if (px && !px->bytes.empty()) {
             source = static_cast<int>(px->source);
-            const QByteArray ba(
+            ba = QByteArray(
                 reinterpret_cast<const char *>(px->bytes.data()),
                 int(px->bytes.size()));
-            decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
         }
-        {
-            std::lock_guard doneLock(g_mu);
-            g_pixelsInflight.remove(inflightKey);
-            if (source != 0) {
-                g_lastPixelSource.insert(pathCopy, source);
+        auto finish = [pathCopy, edge, inflightKey, ba = std::move(ba),
+                       source]() mutable {
+            ASSERT_NOT_GUI_THREAD();
+            QImage decoded;
+            if (!ba.isEmpty()) {
+                decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
             }
-            const int got = decoded.isNull()
-                                ? 0
-                                : qMax(decoded.width(), decoded.height());
-            if (got >= (edge * 9) / 10) {
-                g_pixelsSettled.insert(inflightKey);
+            {
+                std::lock_guard doneLock(g_mu);
+                g_pixelsInflight.remove(inflightKey);
+                if (source != 0) {
+                    g_lastPixelSource.insert(pathCopy, source);
+                }
+                const int got = decoded.isNull()
+                                    ? 0
+                                    : qMax(decoded.width(), decoded.height());
+                if (got >= (edge * 9) / 10) {
+                    g_pixelsSettled.insert(inflightKey);
+                }
+                g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                thumtooDbg(
+                    "scheduleDisplay DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
+                    qPrintable(pathCopy), edge,
+                    (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
+                    decoded.height(), g_pixelsActive);
+                startNextPixelJobsUnlocked();
             }
-            g_pixelsActive = qMax(0, g_pixelsActive - 1);
-            thumtooDbg(
-                "scheduleDisplay DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
-                qPrintable(pathCopy), edge,
-                (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
-                decoded.height(), g_pixelsActive);
-            startNextPixelJobsUnlocked();
+            emit bridge()->ladderReady(pathCopy, edge, decoded);
+            emit bridge()->ladderProvenance(pathCopy, edge, source);
+        };
+        if (QThread::isMainThread()) {
+            QThreadPool::globalInstance()->start(std::move(finish));
+        } else {
+            finish();
         }
-        emit bridge()->ladderReady(pathCopy, edge, decoded);
-        emit bridge()->ladderProvenance(pathCopy, edge, source);
     };
     thumtoo::RasterRequest req;
     req.uri = uri;
