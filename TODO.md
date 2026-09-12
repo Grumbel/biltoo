@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-596-path-order-occurrences.** pathOrderOccurrences helper.
+Prior: **595**.
+
+### Change
+- `pathOrderOccurrences(path)` — count session path-order rows for a path
+- LoadAdd uses it instead of an inline loop
+- `createItemFromImage` layout size check clarified (reject 1×1 provisional)
+
+### Done criteria
+- [x] Duplicate-tile count is a named query
+- [x] Bundle **596**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-595-load-replace-longedge.** Clearer LoadReplace gate; longEdge.
 Prior: **594**.
 

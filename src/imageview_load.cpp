@@ -88,6 +88,17 @@ QImage clampSoftForGalleryCell(const QImage &pixels, int needEdge, int minEdge)
 
 } // namespace
 
+int ImageView::pathOrderOccurrences(const QString &path) const
+{
+    int n = 0;
+    for (const QString &p : m_pathOrder) {
+        if (p == path) {
+            ++n;
+        }
+    }
+    return n;
+}
+
 ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image,
                                           bool applyStoredSessionCrop)
 {
@@ -97,8 +108,9 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     auto *item = new ImageItem(path, image);
     // Ctor leaves intrinsic at 1×1; install logical layout size immediately.
     {
+        // Reject 1×1 provisional placeholders; need a real layout size.
         const QSize layout = layoutSizeForPath(path, image);
-        if (layout.isValid() && layout.width() > 1 && layout.height() > 1) {
+        if (layout.width() > 1 && layout.height() > 1) {
             item->setIntrinsicSize(layout);
         }
     }
@@ -1305,12 +1317,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
     }
 
-    int pathOrderCount = 0;
-    for (const QString &p : m_pathOrder) {
-        if (p == path) {
-            ++pathOrderCount;
-        }
-    }
+    const int pathOrderCount = pathOrderOccurrences(path);
 
     // Pending binds whose SessionImageId is already on a live tile are satisfied
     // (placeholders / prior LoadAdd). Drop them so we do not create extras.

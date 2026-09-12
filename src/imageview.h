@@ -291,6 +291,8 @@ public:
     /** Controller host: session path order used for Gallery packing. */
     QStringList &pathOrder() { return m_pathOrder; }
     const QStringList &pathOrder() const { return m_pathOrder; }
+    /** How many times @a path appears in session path order (duplicate tiles). */
+    int pathOrderOccurrences(const QString &path) const;
     QVector<SessionImageId> &sessionIdOrder() { return m_sessionIdOrder; }
     const QVector<SessionImageId> &sessionIdOrder() const { return m_sessionIdOrder; }
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */
