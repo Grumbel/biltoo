@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-516-soft-upgrade-repaint.** Soft 256→512→1024 was installed but not painted.
+Prior: **515**.
+
+### Symptom (user logs)
+`INSTALL soft … got=1024` while tiles stayed on 256 until selection.
+
+### Root cause
+Gallery used `BoundingRectViewportUpdate` with OpenGL viewport; soft upgrades
+called `item->update()` but the view did not repaint until selection’s
+`prepareGeometryChange`.
+
+### Fix
+- Gallery viewport: `FullViewportUpdate`
+- `setPreviewImage`: discard DeviceCoordinate cache + `scene->invalidate`
+
+### Done criteria
+- [x] Soft ladder upgrades visible without selecting
+- [x] Bundle **516**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-515-decode-window-not-signal.** Fix accidental signals: placement.
 Prior: **514**.
 

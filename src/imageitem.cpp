@@ -157,8 +157,9 @@ void ImageItem::setPreviewImage(const QImage &preview)
     m_previewPixels = true;
     m_source = QImage();
     setPixmap(QPixmap());
-    // Soft tiles: NoCache. DeviceCoordinateCache rebuild on every soft upgrade
-    // stalls the GUI when many ladderReady events land during scroll.
+    // Soft tiles: NoCache. Toggle cache mode so any prior DeviceCoordinate
+    // snapshot is discarded (otherwise OpenGL can keep showing the old soft).
+    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
     setCacheMode(QGraphicsItem::NoCache);
     // Intrinsic size is layout geometry (probe / full native size). Never adopt
     // soft-preview pixel dimensions — that shrinks Gallery cells to 512 and
@@ -177,6 +178,12 @@ void ImageItem::setPreviewImage(const QImage &preview)
     setOffset(-s.width() / 2.0, -s.height() / 2.0);
     applyLocalTransform();
     update();
+    // Ensure the view actually schedules a paint for this item's scene rect
+    // (selection used to be the only path that forced a visible upgrade).
+    if (QGraphicsScene *sc = scene()) {
+        sc->invalidate(mapToScene(boundingRect()).boundingRect(),
+                       QGraphicsScene::AllLayers);
+    }
 }
 
 void ImageItem::clearDecodedPixels()

@@ -28,7 +28,10 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
     // Gallery packs many tiles: only repaint dirty item bounds on selection.
     // Image/Workspace keep FullViewportUpdate so HUD/chrome do not trail.
     if (mode == ViewMode::Gallery) {
-        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+        // FullViewportUpdate: BoundingRect + OpenGL viewport left soft upgrades
+        // invisible until selection's prepareGeometryChange forced a redraw
+        // (logs showed INSTALL 512/1024 while tiles stayed on 256).
+        setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     } else {
         setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     }
