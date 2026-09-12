@@ -2327,13 +2327,29 @@ void MainWindow::onSlideshowUserNavigated()
         return;
     }
 
-    // Warm neighbour slides at viewport edge so ←/→ hit m_ssFullByPath.
+    // Debounce neighbour preload — rapid ←/→ used to start a decode every
+    // keystroke for next and prev (and each cancelled the previous job).
     const int nPaths = m_session.paths().size();
     if (nPaths > 1 && m_currentIndex >= 0) {
-        const int next = (m_currentIndex + 1) % nPaths;
-        const int prev = (m_currentIndex - 1 + nPaths) % nPaths;
-        m_imageView->preloadSlideshowImage(m_session.paths().at(next));
-        m_imageView->preloadSlideshowImage(m_session.paths().at(prev));
+        const int idx = m_currentIndex;
+        if (!m_slideshowPreloadTimer) {
+            m_slideshowPreloadTimer = new QTimer(this);
+            m_slideshowPreloadTimer->setSingleShot(true);
+            m_slideshowPreloadTimer->setInterval(80);
+            connect(m_slideshowPreloadTimer, &QTimer::timeout, this, [this]() {
+                if (!m_imageView || m_session.paths().size() <= 1
+                    || m_currentIndex < 0) {
+                    return;
+                }
+                const int n = m_session.paths().size();
+                const int i = m_currentIndex;
+                m_imageView->preloadSlideshowImage(m_session.paths().at((i + 1) % n));
+                m_imageView->preloadSlideshowImage(
+                    m_session.paths().at((i - 1 + n) % n));
+            });
+        }
+        Q_UNUSED(idx);
+        m_slideshowPreloadTimer->start();
     }
 
     m_imageView->cancelSlideshowTransition();

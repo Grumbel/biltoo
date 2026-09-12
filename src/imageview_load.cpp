@@ -407,7 +407,14 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
             }
             if (image.isNull()
                 || qMax(image.width(), image.height()) < ssEdge * 5 / 10) {
+                // Last resort full extract, then scale to viewport — keep
+                // m_ssFullByPath bounded for rapid flip.
                 image = ImageLoader::load(path);
+            }
+            if (!image.isNull()
+                && qMax(image.width(), image.height()) > ssEdge) {
+                image = image.scaled(ssEdge, ssEdge, Qt::KeepAspectRatio,
+                                     Qt::SmoothTransformation);
             }
         } else {
             image = ImageLoader::load(path);

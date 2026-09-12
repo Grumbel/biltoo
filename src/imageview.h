@@ -1406,6 +1406,10 @@ private:
     QImage m_preloadImage;
     /** Path currently decoding into preload (may not be in m_preloadPath yet). */
     QString m_preloadInFlightPath;
+    /** Multi-path inflight set — single path string used to cancel siblings under rapid flip. */
+    QSet<QString> m_preloadInflight;
+    /** Neighbours waiting while concurrency is full (max one decode at a time). */
+    QStringList m_preloadPending;
     quint64 m_preloadGeneration = 0;
     /** Pixels kept after transition decode so LoadReplace need not re-decode. */
     QString m_handoffPath;

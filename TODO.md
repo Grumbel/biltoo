@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-541-slideshow-preload-debounce.** Cap/debounce slideshow preload.
+Prior: **540**.
+
+### Issue
+Rapid ←/→: preload-start spam for every neighbour, no debounce; full 4K–6K
+native still used; each start bumped generation and cancelled siblings.
+
+### Changes
+- Max **1** concurrent preload; pending queue (≤4)
+- No generation cancel of sibling preloads
+- Preload never calls `ImageLoader::load` (PreferCache / soft only, scale down)
+- Debounced neighbour preload (80ms) after user nav
+- Cap `m_ssFullByPath` at 12 entries
+
+### Done criteria
+- [x] Bundle **541**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-540-slideshow-display-edge.** Faster slideshow ←/→ via viewport PreferCache.
 Prior: **539**.
 
