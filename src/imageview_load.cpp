@@ -99,6 +99,32 @@ int ImageView::pathOrderOccurrences(const QString &path) const
     return n;
 }
 
+WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
+{
+    // Prefer stable session-image id appearance; path map is legacy only.
+    //
+    // Image mode LoadReplace: the sole canvas item is the current session
+    // image, so m_currentSessionId identifies it correctly.
+    //
+    // Gallery / Workspace LoadAdd must not call this: each tile is bound to
+    // its own session id *after* creation. Applying m_currentSessionId here
+    // would bake the navigated image's crop into every newly decoded tile.
+    if (m_currentSessionId != kInvalidSessionImageId) {
+        seedSessionAppearanceFromState(m_currentSessionId, path);
+        if (const WorkspaceItemState *sit = m_appearance.get(m_currentSessionId)) {
+            return *sit;
+        }
+        // Bound session image with no appearance entry = full frame, no path fallback.
+        return {};
+    }
+    // Path map only when unbound (no session image id).
+    const auto it = m_itemStates.constFind(path);
+    if (it != m_itemStates.cend()) {
+        return *it;
+    }
+    return {};
+}
+
 ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image,
                                           bool applyStoredSessionCrop)
 {
@@ -107,48 +133,28 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     }
     auto *item = new ImageItem(path, image);
     // Ctor leaves intrinsic at 1×1; install logical layout size immediately.
-    {
-        // Reject 1×1 provisional placeholders; need a real layout size.
-        const QSize layout = layoutSizeForPath(path, image);
-        if (layout.width() > 1 && layout.height() > 1) {
-            item->setIntrinsicSize(layout);
-        }
+    // Reject 1×1 provisional placeholders; need a real layout size.
+    const QSize layout = layoutSizeForPath(path, image);
+    if (layout.width() > 1 && layout.height() > 1) {
+        item->setIntrinsicSize(layout);
     }
     applyItemModeFlags(item);
     // Session crop survives navigation: apply only on full on-disk decodes.
     // Workspace Duplicate passes already-final pixels (possibly cropped) — do
     // not re-apply the path crop or the rect is interpreted on the wrong size.
-    if (applyStoredSessionCrop) {
-        // Prefer stable session-image id appearance; path map is legacy only.
-        //
-        // Image mode LoadReplace: the sole canvas item is the current session
-        // image, so m_currentSessionId / m_sessionIndex identify it correctly.
-        //
-        // Gallery / Workspace LoadAdd: each tile is bound to its own session id
-        // *after* creation (pendingSessionBinds). Using m_currentSessionId here
-        // would bake the *navigated* image's crop into every newly decoded tile
-        // when leaving Image crop for Gallery — do not apply cursor appearance
-        // in multi-item modes.
-        const WorkspaceItemState *app = nullptr;
-        WorkspaceItemState pathFallback;
-        if (isImageMode()) {
-            if (m_currentSessionId != kInvalidSessionImageId) {
-                seedSessionAppearanceFromState(m_currentSessionId, path);
-                if (const WorkspaceItemState *sit = m_appearance.get(m_currentSessionId)) {
-                    app = &(*sit);
+    if (applyStoredSessionCrop && isImageMode()) {
+        const bool haveId = m_currentSessionId != kInvalidSessionImageId;
+        const bool havePath = m_itemStates.contains(path);
+        if (haveId || havePath) {
+            const WorkspaceItemState app = appearanceForNewImageModeItem(path);
+            // Bound id with no store entry: skip path fallback (IDENTITY).
+            if (haveId) {
+                if (m_appearance.get(m_currentSessionId)) {
+                    SessionAppearance::applyContentToItem(item, app);
                 }
-                // Bound session image with no appearance entry = full frame, no path fallback.
             } else {
-                // Path map only when unbound (no session image id).
-                const auto it = m_itemStates.constFind(path);
-                if (it != m_itemStates.cend()) {
-                    pathFallback = *it;
-                    app = &pathFallback;
-                }
+                SessionAppearance::applyContentToItem(item, app);
             }
-        }
-        if (app) {
-            SessionAppearance::applyContentToItem(item, *app);
         }
     }
     m_scene->addItem(item);

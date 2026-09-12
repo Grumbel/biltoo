@@ -1087,6 +1087,8 @@ private:
      */
     ImageItem *createItemFromImage(const QString &path, const QImage &image,
                                    bool applyStoredSessionCrop = true);
+    /** Image-mode only: content appearance for a newly created canvas item. */
+    WorkspaceItemState appearanceForNewImageModeItem(const QString &path);
     /** Interactive / gallery / static flags for the current ViewMode. */
     void scheduleImageLoad(const QString &path, LoadRole role);
     /**

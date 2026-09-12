@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-607-create-item-appearance-helper.** Extract Image-mode appearance lookup.
+Prior: **606**.
+
+### Change
+- `appearanceForNewImageModeItem` — session-id seed + path-map fallback (Image mode)
+- `createItemFromImage` uses the helper; multi-item modes still skip cursor appearance
+
+### Done criteria
+- [x] IDENTITY rules preserved
+- [x] Bundle **607**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-606-gallery-soft-decode-phases.** Split scheduleGalleryDecode.
 Prior: **605**.
 
