@@ -843,6 +843,7 @@ public:
 
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layoutMode; }
+    GalleryLayout::Mode galleryLayoutModeFromViewMode() const;
     void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);
     /**
      * Coalesce rapid Gallery packs (e.g. sizeReady storm when opening a large
@@ -1002,6 +1003,9 @@ public:
     /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */
     int pendingDecodeCount() const;
     /** Install host soft / schedule SoftOnly for the visible Gallery window. */
+    void publishGalleryInterest(const QStringList &interestNear,
+                                const QStringList &interestRest);
+    void scheduleIdleGalleryDecodes(const QStringList &rest);
     void updateGalleryDecodeWindow();
     /**
      * Decode-window pass 1: attach ImageCache soft onto blank tiles (budgeted).

@@ -76,6 +76,92 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
     return installed;
 }
 
+void ImageView::publishGalleryInterest(const QStringList &interestNear,
+                                       const QStringList &interestRest)
+{
+    // Interest: near ≤ overview 1024; primary = tiles needing >1024 (FocusFull).
+    // A primary-only setInterest wiped near/speculative and only EnsureTiles with
+    // no host PreferCache install — merge primary into the Gallery snapshot.
+    const int softEdge = ThumtooCache::kGalleryLadderEdge;
+    const int ovCap = ThumtooCache::kBatchOverviewEdge;
+    const int imgCap = ThumtooCache::kImageLadderEdge;
+    int nearEdge = softEdge;
+    int primEdge = 0;
+    QStringList primary;
+    for (const QString &p : interestNear) {
+        const auto it = m_gallerySoft.constFind(p);
+        if (it == m_gallerySoft.cend() || it->want <= 0) {
+            continue;
+        }
+        nearEdge = qMax(nearEdge, qMin(it->want, ovCap));
+        if (it->want > ovCap && it->have >= ovCap * 9 / 10) {
+            primary.append(p);
+            primEdge = qMax(primEdge, qMin(it->want, imgCap));
+        }
+    }
+    if (primary.size() > 4) {
+        primary = primary.mid(0, 4);
+    }
+    QStringList near = interestNear;
+    near.sort();
+    QStringList speculative = interestRest;
+    speculative.sort();
+    primary.sort();
+    (void)ThumtooCache::setInterest(near, speculative, nearEdge, softEdge,
+                                    primary, primEdge);
+}
+
+void ImageView::scheduleIdleGalleryDecodes(const QStringList &rest)
+{
+    const int freeSlots =
+        galleryDecodeConcurrency() - gallerySoftInflightCount();
+    if (freeSlots <= 0 || rest.isEmpty()) {
+        return;
+    }
+    const int idleBudget = qMin(freeSlots, kMaxIdleGalleryDecodes);
+    int started = 0;
+    for (const QString &path : rest) {
+        if (started >= idleBudget) {
+            break;
+        }
+        const int before = gallerySoftInflightCount();
+        scheduleGalleryDecode(path);
+        if (gallerySoftInflightCount() > before) {
+            ++started;
+        }
+    }
+}
+
+GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
+{
+    switch (m_layoutMode) {
+    case LayoutMode::SideBySide:
+        return GalleryLayout::Mode::SideBySide;
+    case LayoutMode::Vertical:
+        return GalleryLayout::Mode::Vertical;
+    case LayoutMode::Grid:
+        return GalleryLayout::Mode::Grid;
+    case LayoutMode::GridCrop:
+        return GalleryLayout::Mode::GridCrop;
+    case LayoutMode::Masonry:
+        return GalleryLayout::Mode::Masonry;
+    case LayoutMode::MasonryRows:
+        return GalleryLayout::Mode::MasonryRows;
+    case LayoutMode::MasonryFill:
+        return GalleryLayout::Mode::MasonryFill;
+    case LayoutMode::MasonryRowsFill:
+        return GalleryLayout::Mode::MasonryRowsFill;
+    case LayoutMode::Flow:
+        return GalleryLayout::Mode::Flow;
+    case LayoutMode::FlowFill:
+        return GalleryLayout::Mode::FlowFill;
+    case LayoutMode::Facing:
+        return GalleryLayout::Mode::Facing;
+    default:
+        return GalleryLayout::Mode::Masonry;
+    }
+}
+
 void ImageView::updateGalleryDecodeWindow()
 {
     QElapsedTimer decodeWinTimer;
@@ -202,58 +288,12 @@ void ImageView::updateGalleryDecodeWindow()
         phaseTimer.restart();
     }
 
-    // Interest: near ≤ overview 1024; primary = tiles needing >1024 (FocusFull).
-    // A primary-only setInterest wiped near/speculative and only EnsureTiles with
-    // no host PreferCache install — merge primary into the Gallery snapshot.
-    {
-        const int softEdge = ThumtooCache::kGalleryLadderEdge;
-        const int ovCap = ThumtooCache::kBatchOverviewEdge;
-        const int imgCap = ThumtooCache::kImageLadderEdge;
-        int nearEdge = softEdge;
-        int primEdge = 0;
-        QStringList primary;
-        for (const QString &p : interestNear) {
-            const auto it = m_gallerySoft.constFind(p);
-            if (it == m_gallerySoft.cend() || it->want <= 0) {
-                continue;
-            }
-            nearEdge = qMax(nearEdge, qMin(it->want, ovCap));
-            if (it->want > ovCap && it->have >= ovCap * 9 / 10) {
-                primary.append(p);
-                primEdge = qMax(primEdge, qMin(it->want, imgCap));
-            }
-        }
-        if (primary.size() > 4) {
-            primary = primary.mid(0, 4);
-        }
-        QStringList near = interestNear;
-        near.sort();
-        QStringList speculative = interestRest;
-        speculative.sort();
-        primary.sort();
-        (void)ThumtooCache::setInterest(near, speculative, nearEdge, softEdge,
-                                        primary, primEdge);
-    }
+    publishGalleryInterest(interestNear, interestRest);
     if (m_perfEnabled) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
     }
 
-    const int freeSlots =
-        galleryDecodeConcurrency() - gallerySoftInflightCount();
-    if (freeSlots > 0 && !rest.isEmpty()) {
-        const int idleBudget = qMin(freeSlots, kMaxIdleGalleryDecodes);
-        int started = 0;
-        for (const QString &path : rest) {
-            if (started >= idleBudget) {
-                break;
-            }
-            const int before = gallerySoftInflightCount();
-            scheduleGalleryDecode(path);
-            if (gallerySoftInflightCount() > before) {
-                ++started;
-            }
-        }
-    }
+    scheduleIdleGalleryDecodes(rest);
     if (m_perfEnabled && decodeWinTimer.isValid()) {
         m_perfLastDecodeWindowUs = decodeWinTimer.nsecsElapsed() / 1000;
         m_perfMaxDecodeWindowUs =
@@ -482,44 +522,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     params.masonryColumns = m_masonryColumns;
     params.gridColumns = m_gridColumns;
     params.masonryRows = m_masonryRows;
-    switch (m_layoutMode) {
-    case LayoutMode::SideBySide:
-        params.mode = GalleryLayout::Mode::SideBySide;
-        break;
-    case LayoutMode::Vertical:
-        params.mode = GalleryLayout::Mode::Vertical;
-        break;
-    case LayoutMode::Grid:
-        params.mode = GalleryLayout::Mode::Grid;
-        break;
-    case LayoutMode::GridCrop:
-        params.mode = GalleryLayout::Mode::GridCrop;
-        break;
-    case LayoutMode::Masonry:
-        params.mode = GalleryLayout::Mode::Masonry;
-        break;
-    case LayoutMode::MasonryRows:
-        params.mode = GalleryLayout::Mode::MasonryRows;
-        break;
-    case LayoutMode::MasonryFill:
-        params.mode = GalleryLayout::Mode::MasonryFill;
-        break;
-    case LayoutMode::MasonryRowsFill:
-        params.mode = GalleryLayout::Mode::MasonryRowsFill;
-        break;
-    case LayoutMode::Flow:
-        params.mode = GalleryLayout::Mode::Flow;
-        break;
-    case LayoutMode::FlowFill:
-        params.mode = GalleryLayout::Mode::FlowFill;
-        break;
-    case LayoutMode::Facing:
-        params.mode = GalleryLayout::Mode::Facing;
-        break;
-    default:
-        params.mode = GalleryLayout::Mode::Masonry;
-        break;
-    }
+    params.mode = galleryLayoutModeFromViewMode();
 
     GalleryLayout::pack(m_items, params, [this](ImageItem *item) {
         m_itemStates.insert(item->path(), captureState(item));

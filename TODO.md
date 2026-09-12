@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-638-gallery-decode-layout.** Extract gallery interest/idle decode and layout mode map.
+Prior: **637**.
+
+### Change
+- `publishGalleryInterest`, `scheduleIdleGalleryDecodes`
+- `galleryLayoutModeFromViewMode` for applyLayout pack params
+
+### Done criteria
+- [x] Gallery decode interest/idle and layout mode named
+- [x] Bundle **638**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-637-workspace-paths.** Phase setWorkspacePaths doom/destroy/finish.
 Prior: **636**.
 
