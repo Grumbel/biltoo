@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-629-current-index-nav-actions.** Split setCurrentIndex and updateNavigationActions.
+Prior: **628**.
+
+### Change
+- Index: `refreshSameCurrentIndex`, `publishSessionCursorForIndex`,
+  `applyCurrentIndexCanvasChange`, `finishCurrentIndexChromeUpdate`
+- Nav: `updateNavPrevNextSlideshowActions`, `updateNavTransformCropActions`,
+  `updateNavZoomAndSelectionActions`
+
+### Done criteria
+- [x] Index and nav enablement paths named
+- [x] Bundle **629**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-628-motion-cover-session-remove.** Split paintMotionCover geometry + session remove phases.
 Prior: **627**.
 

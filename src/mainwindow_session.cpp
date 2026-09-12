@@ -1255,50 +1255,40 @@ SessionImageId MainWindow::currentSessionId() const
     return sessionIdAt(m_currentIndex);
 }
 
-void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
+bool MainWindow::refreshSameCurrentIndex(bool ensureGalleryVisible)
 {
-    if (m_session.paths().isEmpty() || index < 0 || index >= m_session.paths().size()) {
-        return;
-    }
-    if (index == m_currentIndex) {
-        // Still refresh Image canvas after a mode switch that cleared the live
-        // item, or if classicPath was left pointing at a different file.
-        if (isImageMode() && m_imageView) {
-            const QString path = m_session.paths().at(m_currentIndex);
-            if (m_imageView->itemCount() == 0
-                || m_imageView->classicPath() != path) {
-                m_imageView->loadImage(path);
-            }
-        } else if (isGalleryMode() && m_imageView && ensureGalleryVisible) {
-            // Filmstrip re-click of the current row: still select the gallery tile.
-            m_imageView->focusSessionPath(m_session.paths().at(m_currentIndex));
+    // Still refresh Image canvas after a mode switch that cleared the live
+    // item, or if classicPath was left pointing at a different file.
+    if (isImageMode() && m_imageView) {
+        const QString path = m_session.paths().at(m_currentIndex);
+        if (m_imageView->itemCount() == 0
+            || m_imageView->classicPath() != path) {
+            m_imageView->loadImage(path);
         }
+        return true;
+    }
+    if (isGalleryMode() && m_imageView && ensureGalleryVisible) {
+        // Filmstrip re-click of the current row: still select the gallery tile.
+        m_imageView->focusSessionPath(m_session.paths().at(m_currentIndex));
+        return true;
+    }
+    return true;
+}
+
+void MainWindow::publishSessionCursorForIndex(int index)
+{
+    if (!m_imageView) {
         return;
     }
-    if (m_imageView && m_imageView->isCropMode()) {
-        m_imageView->cancelCrop();
-    }
-    // Paused slideshow: clear transition overlay so the newly loaded image is
-    // visible (hold/live layers otherwise mask LoadReplace).
-    if (m_slideshowPaused && m_imageView) {
-        m_imageView->cancelSlideshowTransition();
-        m_slideshowPendingToIndex = -1;
-    }
+    // HUD identity pulse only in Image mode (Gallery pulse forced a full
+    // viewport repaint of every tile on each click).
+    const bool pulse = !m_slideshowAdvancing && isImageMode();
+    m_imageView->setSessionPosition(index, m_session.paths().size(), pulse);
+    m_imageView->setCurrentSessionId(currentSessionId());
+}
 
-    m_currentIndex = index;
-    const QString path = m_session.paths().at(m_currentIndex);
-
-    // Publish session cursor before decode so Image-mode items bind the correct
-    // sessionIndex (crop/flip sync to the matching Workspace slot).
-    // Slideshow auto-advance must not pulse filename/index (only user nav or pinned HUD).
-    if (m_imageView) {
-        // HUD identity pulse only in Image mode (Gallery pulse forced a full
-        // viewport repaint of every tile on each click).
-        const bool pulse = !m_slideshowAdvancing && isImageMode();
-        m_imageView->setSessionPosition(m_currentIndex, m_session.paths().size(), pulse);
-        m_imageView->setCurrentSessionId(currentSessionId());
-    }
-
+void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureGalleryVisible)
+{
     // DOMAIN: only Image mode replaces the single-image canvas.
     // Gallery/Workspace keep multi-object canvas; update session cursor only.
     // Gallery: do not exclusive-select (Ctrl+click multi-select is owned by the view).
@@ -1344,7 +1334,10 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     } else if (m_imageView) {
         m_imageView->focusSessionPath(path);
     }
+}
 
+void MainWindow::finishCurrentIndexChromeUpdate()
+{
     m_thumbnailBar->setCurrentIndex(m_currentIndex);
     // Metadata refresh is gated on dock visibility inside updateMetadataPanel
     // (called from updateStatus). Force a path invalidation so a later dock
@@ -1363,10 +1356,41 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         updateStatus();
         updateNavigationActions();
     }
-
     // Clock resync on user navigation is owned by onSlideshowUserNavigated
     // (goNext/goPrevious/filmstrip). Arming here double-fired every ←/→.
 }
+
+void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
+{
+    if (m_session.paths().isEmpty() || index < 0 || index >= m_session.paths().size()) {
+        return;
+    }
+    if (index == m_currentIndex) {
+        refreshSameCurrentIndex(ensureGalleryVisible);
+        return;
+    }
+    if (m_imageView && m_imageView->isCropMode()) {
+        m_imageView->cancelCrop();
+    }
+    // Paused slideshow: clear transition overlay so the newly loaded image is
+    // visible (hold/live layers otherwise mask LoadReplace).
+    if (m_slideshowPaused && m_imageView) {
+        m_imageView->cancelSlideshowTransition();
+        m_slideshowPendingToIndex = -1;
+    }
+
+    m_currentIndex = index;
+    const QString path = m_session.paths().at(m_currentIndex);
+
+    // Publish session cursor before decode so Image-mode items bind the correct
+    // sessionIndex (crop/flip sync to the matching Workspace slot).
+    // Slideshow auto-advance must not pulse filename/index (only user nav or pinned HUD).
+    publishSessionCursorForIndex(m_currentIndex);
+    applyCurrentIndexCanvasChange(path, ensureGalleryVisible);
+    finishCurrentIndexChromeUpdate();
+}
+
+
 
 void MainWindow::removeSessionIndices(const QList<int> &indices)
 {
@@ -1619,12 +1643,8 @@ void MainWindow::removeSessionPaths(const QStringList &paths)
     removeSessionIndices(indices);
 }
 
-void MainWindow::updateNavigationActions()
+void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
 {
-    const bool hasMany = m_session.paths().size() > 1;
-    const bool hasFiles = !m_session.paths().isEmpty();
-    const bool hasItem = m_imageView && m_imageView->itemCount() > 0;
-
     // Prev/Next are Image mode only. Slideshow may start from Gallery (enters
     // Image mode on start); still unavailable in Workspace.
     const bool imageNav = hasMany && m_imageView && m_imageView->isImageMode();
@@ -1677,9 +1697,11 @@ void MainWindow::updateNavigationActions()
             || (m_imageView && m_imageView->isWorkspaceMode()))) {
         stopSlideshow();
     }
+}
 
+void MainWindow::updateNavTransformCropActions(bool canTransform)
+{
     // Rotate/flip: Image (current), Workspace (selection), Gallery (selection)
-    const bool canTransform = m_imageView && m_imageView->hasTransformTargets();
     for (QAction *act : {m_rotateLeftAct, m_rotateRightAct, m_flipHAct, m_flipVAct}) {
         if (act) {
             act->setEnabled(canTransform);
@@ -1705,7 +1727,10 @@ void MainWindow::updateNavigationActions()
             act->setEnabled(canResetPlacement);
         }
     }
+}
 
+void MainWindow::updateNavZoomAndSelectionActions(bool hasFiles, bool hasItem)
+{
     // Zoom: Image / Workspace with content; Image with files loading also OK
     const bool canZoom = hasItem
                          || (m_imageView && m_imageView->isImageMode() && hasFiles);
@@ -1730,6 +1755,20 @@ void MainWindow::updateNavigationActions()
         m_openSelectionNewWindowAct->setEnabled(canOpenSel);
     }
 }
+
+void MainWindow::updateNavigationActions()
+{
+    const bool hasFiles = !m_session.paths().isEmpty();
+    const bool hasMany = m_session.paths().size() > 1;
+    const bool hasItem = m_imageView && m_imageView->itemCount() > 0;
+    const bool canTransform = m_imageView && m_imageView->hasTransformTargets();
+
+    updateNavPrevNextSlideshowActions(hasFiles, hasMany);
+    updateNavTransformCropActions(canTransform);
+    updateNavZoomAndSelectionActions(hasFiles, hasItem);
+}
+
+
 
 void MainWindow::onThumbnailActivated(int index)
 {

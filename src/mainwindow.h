@@ -341,7 +341,14 @@ private:
      * focusSessionPath.
      */
     void setCurrentIndex(int index, bool ensureGalleryVisible = true);
+    bool refreshSameCurrentIndex(bool ensureGalleryVisible);
+    void publishSessionCursorForIndex(int index);
+    void applyCurrentIndexCanvasChange(const QString &path, bool ensureGalleryVisible);
+    void finishCurrentIndexChromeUpdate();
     void updateNavigationActions();
+    void updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany);
+    void updateNavTransformCropActions(bool canTransform);
+    void updateNavZoomAndSelectionActions(bool hasFiles, bool hasItem);
     void applyThumbnailVisibility();
     enum class ThumbnailEdge { Bottom, Top, Left, Right };
     void setThumbnailBarPosition(ThumbnailEdge edge);
