@@ -2,6 +2,41 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-553-slideshow-resolution-invariant-camera.** Foundation of the correct model.
+Prior: **552**.
+
+### Model (see SLIDESHOW.md)
+- Camera = f(aspect, motionT, biases, viewport) — never raster width/height
+- Soft→sharp changes sampling only; wall clock never waits on decode
+- Atlas sized from viewport × headroom, not image × maxScale
+- ZoomBlur: keep previous underlay until new key ready (already in 552)
+- Decode target = ladder(viewport×DPR×headroom), cap 2048
+
+### This tip
+- Removed quality-hold clock gate (violated “decode must not drive the timeline”)
+- Removed slideshowPixelsAdequate
+- ensureMotionAtlas: viewport×headroom KeepAspectRatio; rebuild when source grows
+- paintMotionCover: documented as resolution-invariant aspect camera
+- Deleted dead motionPathMaxScale
+- SLIDESHOW.md Pixels section rewritten
+
+### Still open (next tips)
+- Unify m_ssFull / soft / preload / handoff into one path pixel map
+- Quarantine or delete legacy live-transition path (pure phase is authority)
+- Optional: extract camera math to a small pure helper for tests
+
+### Done criteria
+- [x] No quality-hold on pure clock
+- [x] Atlas/camera not tied to absolute raster pixels
+- [x] Docs match code
+- [x] Bundle **553**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-552-slideshow-blur-keep-zoom-edge.** Keep ZoomBlur; motion headroom; stable geometry.
 Prior: **551**.
 

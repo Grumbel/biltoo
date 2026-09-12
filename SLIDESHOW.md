@@ -55,21 +55,37 @@ Motion is independent of opacity. The transition changes compositing, not whethe
 For any path on screen, **each draw** chooses:
 
 ```
-if full-res ready for path → blit full-res
-else                       → blit low-res placeholder (scaled to native size)
+if better raster ready for path → blit it
+else                            → blit soft placeholder
 ```
 
-No events in the draw path. Full decode is started ahead of time and stored as
-something pollable (a future / ready buffer). When it becomes ready, the
-**next** draw simply sees full-res and uses it. Same geometry either way, so
-the switch is seamless (sharper, no layout jump).
+No events in the draw path. Decode is started ahead of time and stored as a
+pollable buffer. When better pixels arrive, the **next** draw uses them.
 
-**Pause exception:** while paused the clock (and usually redraws) stop. If full
-pixels arrive for the visible path, schedule **one redraw** so the sharper
-image appears. That is only “pixels ready → update view,” not transition
-start/cancel/hold logic.
+**Camera is resolution-invariant.** Dest rect and Ken Burns path are functions
+of **aspect ratio + motionT + biases + viewport** only — never of the raster’s
+pixel width/height. Soft and sharp frames with the same aspect share one camera
+path; only sampling sharpness changes. Do not upscale soft to “native size” to
+fake matching geometry (that produced multi-megapixel phase buffers).
 
-Do not wire “decode finished” into start/cancel/hold of the transition.
+**Decode target** (long edge):
+
+```
+ladder(ceil(viewportLong × DPR × motionHeadroom))
+```
+
+capped at the image ladder max (2048). Headroom covers Ken Burns zoom past
+1:1 cover. This is not “max / native.”
+
+**Letterbox ZoomBlur** is a separate low-res underlay cache keyed by
+path + viewport. Keep the previous underlay until the new key is ready; never
+discard it on navigation just because the new blur has not finished.
+
+**Pause exception:** while paused the clock (and usually redraws) stop. If
+sharper pixels arrive for the visible path, schedule **one redraw**. That is
+only “pixels ready → update view,” not transition start/cancel/hold logic.
+
+Do not wire “decode finished” into start/cancel/hold of the pure wall clock.
 
 ## Scheduling
 

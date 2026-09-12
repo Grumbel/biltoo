@@ -1745,7 +1745,7 @@ qreal ImageView::slideshowMotionHeadroom() const
     if (m_slideshowMotion == SlideshowMotion::PanZoom) {
         return qBound(1.05, m_panZoomFactor, 1.50);
     }
-    // PanScan can raise scale when travel is short (see motionPathMaxScale).
+    // PanScan can raise scale when travel is short.
     return 1.25;
 }
 
@@ -1773,49 +1773,6 @@ void ImageView::setSlideshowNavHot(bool hot)
     m_slideshowNavHot = hot;
     // Do NOT invalidateZoomBlurQueue here — keep the previous underlay until a
     // new key's blur is ready (solid flash on every ←/→ was the bug).
-}
-
-bool ImageView::slideshowPixelsAdequate(const QString &path) const
-{
-    if (path.isEmpty()) {
-        return false;
-    }
-    const int target = slideshowTargetEdge();
-    if (target < 1) {
-        return true;
-    }
-    const int need = target * 7 / 10;
-    auto longEdge = [](const QImage &img) -> int {
-        return img.isNull() ? 0 : qMax(img.width(), img.height());
-    };
-    auto bestHave = [&]() -> int {
-        int h = longEdge(slideshowFullIfReady(path));
-        if (path == m_ssFromPath) {
-            h = qMax(h, longEdge(m_ssFromImage));
-            h = qMax(h, longEdge(m_dwellSourceImage));
-        }
-        if (path == m_ssToPath) {
-            h = qMax(h, longEdge(m_ssToImage));
-        }
-        h = qMax(h, longEdge(ImageCache::get(path, target)));
-        // Soft ladder may already be present at 512 while target is higher.
-        h = qMax(h, longEdge(ImageCache::get(path, ThumtooCache::kGalleryLadderEdge)));
-        return h;
-    };
-    const int have = bestHave();
-    if (have >= need) {
-        return true;
-    }
-    // Small sources: cannot climb past native. Known size from path cache only
-    // (no I/O). If we already hold ~native pixels, treat as adequate.
-    const auto szIt = m_imageSizeByPath.constFind(path);
-    if (szIt != m_imageSizeByPath.cend()) {
-        const int nativeLong = qMax(szIt->width(), szIt->height());
-        if (nativeLong > 0 && have >= nativeLong * 9 / 10) {
-            return true;
-        }
-    }
-    return false;
 }
 
 void ImageView::preloadSlideshowImage(const QString &path)
@@ -2008,75 +1965,6 @@ void ImageView::preloadSlideshowImage(const QString &path)
 }
 
 
-qreal ImageView::motionPathMaxScale(const QImage &image) const
-{
-    if (image.isNull() || !viewport()) {
-        return 1.0;
-    }
-    const int vw = qMax(1, viewport()->width());
-    const int vh = qMax(1, viewport()->height());
-    const qreal iw = qreal(image.width());
-    const qreal ih = qreal(image.height());
-    if (iw < 1.0 || ih < 1.0) {
-        return 1.0;
-    }
-    const qreal cover = qMax(qreal(vw) / iw, qreal(vh) / ih);
-    const qreal fit = qMin(qreal(vw) / iw, qreal(vh) / ih);
-    qreal base = cover;
-    switch (m_slideshowZoom) {
-    case SlideshowZoom::Fill:
-        base = cover;
-        break;
-    case SlideshowZoom::Actual:
-        base = 1.0;
-        break;
-    case SlideshowZoom::Fit:
-    default:
-        base = fit;
-        break;
-    }
-    if (base <= 0.0 || !qIsFinite(base)) {
-        return 1.0;
-    }
-
-    if (m_slideshowMotion == SlideshowMotion::PanScan) {
-        qreal s = base;
-        const bool preferX = iw * qreal(vh) >= ih * qreal(vw);
-        const qreal viewW = qreal(vw) / s;
-        const qreal viewH = qreal(vh) / s;
-        const qreal halfX = qMax(0.0, (iw - viewW) * 0.5);
-        const qreal halfY = qMax(0.0, (ih - viewH) * 0.5);
-        const qreal travel = preferX ? halfX : halfY;
-        const qreal kMinTravel = qMax(2.0, qMax(iw, ih) * 0.015);
-        if (travel < kMinTravel) {
-            const qreal longSide = preferX ? iw : ih;
-            const qreal targetHalf = qMax(kMinTravel, longSide * 0.10);
-            const qreal neededView = preferX ? (iw - 2.0 * targetHalf)
-                                             : (ih - 2.0 * targetHalf);
-            if (neededView > 1.0) {
-                s = preferX ? (qreal(vw) / neededView) : (qreal(vh) / neededView);
-                s = qMax(s, base);
-            }
-        }
-        return s;
-    }
-    if (m_slideshowMotion == SlideshowMotion::PanZoom) {
-        const qreal factor = qBound(1.02, m_panZoomFactor, 1.40);
-        qreal motionBase = base;
-        constexpr qreal kMinHalf = 32.0;
-        for (int i = 0; i < 10; ++i) {
-            const qreal hx = qMax(0.0, (iw - qreal(vw) / motionBase) * 0.5);
-            const qreal hy = qMax(0.0, (ih - qreal(vh) / motionBase) * 0.5);
-            if (hx >= kMinHalf || hy >= kMinHalf) {
-                break;
-            }
-            motionBase *= 1.08;
-        }
-        return motionBase * factor; // largest scale along the path
-    }
-    return base;
-}
-
 void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
                                   qreal *atlasScale, int *atlasVw, int *atlasVh) const
 {
@@ -2084,40 +1972,41 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
         return;
     }
     // Rapid keyboard flip: skip atlas rebuild; paintMotionCover falls back to
-    // drawImage. Avoids a FastTransformation scale per key on the GUI thread.
+    // drawImage. Avoids a scale per key on the GUI thread.
     if (m_slideshowNavHot) {
         return;
     }
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
-    const qreal maxScale = motionPathMaxScale(image);
-    if (!atlas->isNull() && qFuzzyCompare(*atlasScale, maxScale)
-        && *atlasVw == vw && *atlasVh == vh) {
-        return;
-    }
-    int dw = qMax(1, int(qRound(qreal(image.width()) * maxScale)));
-    int dh = qMax(1, int(qRound(qreal(image.height()) * maxScale)));
-    // Cap must cover motion zoom (headroom), not only 1:1 viewport — otherwise
-    // Ken Burns samples a soft atlas and resolution upgrades look softer than
-    // the source warrants.
+    // Atlas size is a function of the *viewport* and motion headroom only —
+    // not of the source raster's pixel dimensions. Camera dest is aspect-based;
+    // the atlas is just a sharp enough texture to sample under max zoom.
     const qreal head = slideshowMotionHeadroom();
-    const int cap = int(qCeil(qreal(qMax(vw, vh) + 2) * head));
-    if (dw > cap || dh > cap) {
-        const qreal s = qMin(qreal(cap) / qreal(dw), qreal(cap) / qreal(dh));
-        dw = qMax(1, int(qRound(dw * s)));
-        dh = qMax(1, int(qRound(dh * s)));
+    const int longCap = int(qCeil(qreal(qMax(vw, vh)) * head));
+    // Key atlas by viewport + headroom, not image×maxScale (that made soft→sharp
+    // rebuilds change texture scale and feel like a camera jump).
+    const qreal keyScale = head;
+    if (!atlas->isNull() && qFuzzyCompare(*atlasScale, keyScale)
+        && *atlasVw == vw && *atlasVh == vh
+        && atlas->width() >= longCap * 9 / 10) {
+        // Still rebuild when source long edge grew enough to matter.
+        const int have = qMax(atlas->width(), atlas->height());
+        const int srcLong = qMax(image.width(), image.height());
+        if (srcLong <= have * 5 / 4) {
+            return;
+        }
     }
-    const Qt::TransformationMode filter =
-        m_slideshowProgressActive ? Qt::FastTransformation
-                                  : Qt::SmoothTransformation;
-    QImage scaled = image.scaled(dw, dh, Qt::IgnoreAspectRatio, filter);
+    QImage scaled = image.scaled(longCap, longCap, Qt::KeepAspectRatio,
+                                 m_slideshowProgressActive
+                                     ? Qt::FastTransformation
+                                     : Qt::SmoothTransformation);
     if (scaled.isNull()) {
         *atlas = QPixmap();
         *atlasScale = 0.0;
         return;
     }
     *atlas = QPixmap::fromImage(std::move(scaled));
-    *atlasScale = maxScale;
+    *atlasScale = keyScale;
     *atlasVw = vw;
     *atlasVh = vh;
 }
@@ -2425,18 +2314,17 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     }
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
-    // Motion geometry must be independent of the current decode resolution.
-    // Soft (512) → overview (1024+) upgrades used to recompute cover/fit from
-    // new pixel sizes; integer rounding shifted dest by a pixel and felt like
-    // a camera jump. Normalize to a fixed long-edge with the same aspect.
+    // Camera is resolution-invariant (SLIDESHOW.md): dest/bias are functions of
+    // aspect ratio only. Soft and sharp rasters with the same aspect share one
+    // camera path; only sampling sharpness changes when better pixels arrive.
     const qreal rawW = qreal(image.width());
     const qreal rawH = qreal(image.height());
     if (rawW < 1.0 || rawH < 1.0) {
         return;
     }
     constexpr qreal kRefLong = 1000.0;
-    qreal iw = rawW;
-    qreal ih = rawH;
+    qreal iw;
+    qreal ih;
     if (rawW >= rawH) {
         iw = kRefLong;
         ih = kRefLong * (rawH / rawW);

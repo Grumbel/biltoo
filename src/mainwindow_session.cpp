@@ -2357,11 +2357,6 @@ void MainWindow::onSlideshowUserNavigated()
         return;
     }
 
-    // Drop quality-hold state: user chose a new slide; stale holdWall must not
-    // re-pin pausedAccum after we reset the pure clock below.
-    m_slideshowQualityHold = false;
-    m_slideshowQualityHoldWallMs = 0;
-
     // Debounce neighbour preload — rapid ←/→ used to start a decode every
     // keystroke for next and prev (and each cancelled the previous job).
     const int nPaths = m_session.paths().size();
@@ -2406,10 +2401,8 @@ void MainWindow::onSlideshowUserNavigated()
 
     if (!m_slideshowPaused) {
         armSlideshowAdvanceTimer();
-        // armSlideshowAdvanceTimer → updateSlideshowFromClock. Also force the
-        // pure phase to the navigated path so a residual quality-hold or
-        // mid-transition fade cannot leave the previous slide on screen for
-        // a tick under rapid ←/→.
+        // Force pure phase to the navigated path so a mid-transition fade
+        // cannot leave the previous slide on screen for a tick under ←/→.
         if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
             m_imageView->setSlideshowPhase(m_session.paths().at(m_currentIndex),
                                            QString(), -1.0);
@@ -2514,8 +2507,6 @@ void MainWindow::seekSlideshowFraction(qreal fraction)
     m_slideshowPausedAccumMs = target;
     m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
-    m_slideshowQualityHold = false;
-    m_slideshowQualityHoldWallMs = 0;
     if (!m_slideshowPaused) {
         m_slideshowClock.start();
     }
@@ -2546,8 +2537,6 @@ void MainWindow::pauseSlideshow()
     m_slideshowPausedAccumMs += m_slideshowClock.elapsed();
     m_slideshowPaused = true;
     m_slideshowPendingToIndex = -1;
-    m_slideshowQualityHold = false;
-    m_slideshowQualityHoldWallMs = 0;
     if (m_slideshowTimer) {
         m_slideshowTimer->stop();
     }
@@ -2597,8 +2586,6 @@ void MainWindow::stopSlideshow()
     if (m_imageView) {
         m_imageView->setSlideshowNavHot(false);
     }
-    m_slideshowQualityHold = false;
-    m_slideshowQualityHoldWallMs = 0;
     if (m_thumbnailBar) {
         m_thumbnailBar->setVisibleLoadsSuspended(false);
     }

@@ -204,13 +204,8 @@ public:
     /** ≥1: panZoomFactor or pan-scan margin so zoomed frames stay sharp. */
     qreal slideshowMotionHeadroom() const;
     /**
-     * True when pixels for @a path are suitable for the current screen
-     * (long edge ≥ ~70% of slideshowTargetEdge). Soft-only frames return false.
-     */
-    bool slideshowPixelsAdequate(const QString &path) const;
-    /**
-     * User is rapidly flipping (←/→ key-repeat). Suppresses ZoomBlur builds
-     * and paints solid letterbox pad instead.
+     * User is rapidly flipping (←/→ key-repeat). Suppresses *new* ZoomBlur
+     * builds only; previous underlay is kept until a replacement is ready.
      */
     void setSlideshowNavHot(bool hot);
     bool slideshowNavHot() const { return m_slideshowNavHot; }
@@ -242,9 +237,10 @@ public:
     void paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
                                const QRect &viewportRect, qint64 stableKey) const;
 
-    /** Max image→view scale used by the current motion path (for atlas size). */
-    qreal motionPathMaxScale(const QImage &image) const;
-    /** Build/refresh atlas: one Smooth scale per source/viewport change. */
+    /**
+     * Build/refresh motion atlas: sized from viewport × motion headroom
+     * (resolution-invariant), not from source pixel dimensions.
+     */
     void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
                            int *atlasVw, int *atlasVh) const;
     void setSlideshowUnderlayVisible(bool visible);
