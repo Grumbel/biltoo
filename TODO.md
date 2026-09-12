@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-534-set-interest-async.** setInterest off GUI (was 300–1000ms).
+Prior: **533**.
+
+### Evidence
+`pass1=0 pass2=0.1 interest=300–1064` — never settled while scrolling.
+
+### Changes
+- `ThumtooCache::setInterest`: `Client::set_interest` on thread pool; job gen drops superseded
+- Gallery interest near list capped at 24
+
+### Done criteria
+- [x] Bundle **534**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-533-gallery-soft-cap-512.** PreferCache soft max 512, not 1024.
 Prior: **532**.
 

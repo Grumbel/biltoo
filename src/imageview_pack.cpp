@@ -156,7 +156,10 @@ void ImageView::updateGalleryDecodeWindow()
         const QRectF tile = item->contentSceneRect();
         const bool tileOk = !tile.isNull() && tile.isValid();
         const bool onScreen = tileOk && tile.intersects(sceneVisible);
-        if (onScreen) {
+        // Cap near list — setInterest used to block GUI for ~1s on ~100 near
+        // paths; even async, keep the snapshot small and stable.
+        constexpr int kMaxNear = 24;
+        if (onScreen && interestNear.size() < kMaxNear) {
             interestNear.append(path);
         } else if (tileOk && interestRest.size() < kMaxSpeculative) {
             interestRest.append(path);

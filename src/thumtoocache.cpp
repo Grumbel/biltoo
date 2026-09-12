@@ -28,6 +28,7 @@
 #include <filesystem>
 #include <functional>
 #include <mutex>
+#include <atomic>
 #include <string>
 #include <span>
 
@@ -180,6 +181,7 @@ QSet<QString> g_pixelsSettled;
 /** path → last PixelSource int from ladderProvenance. */
 QHash<QString, int> g_lastPixelSource;
 QString g_lastInterestKey;
+std::atomic<quint64> g_interestJobGen{0};
 constexpr int kMaxPixelQueue = 48;
 
 #ifdef BILTOO_HAVE_THUMTOO
@@ -1205,42 +1207,56 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
         }
         g_lastInterestKey = key;
     }
-    thumtoo::Client *c = nullptr;
-    {
-        std::lock_guard lock(g_mu);
-        c = clientUnlocked();
-        // Do not clear g_pixelsQueue here — interest changes on every Gallery
-        // scroll; wiping the host soft queue stalls first pixels and causes
-        // thumtoo cancel/restart storms that contend with the GUI.
-    }
-    if (!c) {
-        return 0;
-    }
-    std::vector<thumtoo::InterestItem> items;
-    items.reserve(size_t(pathsNear.size() + pathsSpeculative.size()
-                          + pathsPrimary.size()));
-    auto push = [&](const QStringList &paths, thumtoo::InterestRole role, int edge) {
-        for (const QString &p : paths) {
-            if (p.isEmpty() || isUnsupported(p)) {
-                continue;
-            }
-            const std::string uri = toThumtooUri(p);
-            if (uri.empty()) {
-                continue;
-            }
-            thumtoo::InterestItem it;
-            it.uri = uri;
-            it.target_long_edge = edge > 0 ? edge : kBatchOverviewEdge;
-            it.role = role;
-            items.push_back(std::move(it));
+    // Client::set_interest can take hundreds of ms (cancel/reschedule). Never
+    // run it on the GUI — BILTOO_PERF showed interest=300–1000ms while pass1/2
+    // were <1ms. Worker + job generation drops superseded scroll updates.
+    const quint64 job = ++g_interestJobGen;
+    const QStringList nearCopy = pathsNear;
+    const QStringList specCopy = pathsSpeculative;
+    const QStringList primaryCopy = pathsPrimary;
+    const int nearE = nearEdge;
+    const int specE = speculativeEdge;
+    const int primE = primaryEdge;
+    QThreadPool::globalInstance()->start([job, nearCopy, specCopy, primaryCopy, nearE, specE, primE]() {
+        if (job != g_interestJobGen.load()) {
+            return;
         }
-    };
-    // Primary first in the vector (set_interest also sorts by role).
-    push(pathsPrimary, thumtoo::InterestRole::Primary,
-         primaryEdge > 0 ? primaryEdge : kBatchOverviewEdge);
-    push(pathsNear, thumtoo::InterestRole::Near, nearEdge);
-    push(pathsSpeculative, thumtoo::InterestRole::Speculative, speculativeEdge);
-    return static_cast<quint64>(c->set_interest(std::move(items)));
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (!c) {
+            return;
+        }
+        std::vector<thumtoo::InterestItem> items;
+        items.reserve(size_t(nearCopy.size() + specCopy.size() + primaryCopy.size()));
+        auto push = [&](const QStringList &paths, thumtoo::InterestRole role, int edge) {
+            for (const QString &p : paths) {
+                if (p.isEmpty() || isUnsupported(p)) {
+                    continue;
+                }
+                const std::string uri = toThumtooUri(p);
+                if (uri.empty()) {
+                    continue;
+                }
+                thumtoo::InterestItem it;
+                it.uri = uri;
+                it.target_long_edge = edge > 0 ? edge : kBatchOverviewEdge;
+                it.role = role;
+                items.push_back(std::move(it));
+            }
+        };
+        push(primaryCopy, thumtoo::InterestRole::Primary,
+             primE > 0 ? primE : kBatchOverviewEdge);
+        push(nearCopy, thumtoo::InterestRole::Near, nearE);
+        push(specCopy, thumtoo::InterestRole::Speculative, specE);
+        if (job != g_interestJobGen.load()) {
+            return;
+        }
+        (void)c->set_interest(std::move(items));
+    });
+    return job;
 #else
     Q_UNUSED(pathsNear);
     Q_UNUSED(pathsSpeculative);
