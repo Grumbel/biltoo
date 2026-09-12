@@ -1045,7 +1045,7 @@ private:
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
     /**
      * Cache-only pass before Gallery pack: fill m_imageSizeByPath from
-     * ThumtooCache::cachedSize and m_previewByPath from LQIP when present.
+     * ThumtooCache::cachedSize and ImageCache from LQIP when present.
      * Does not schedule ladder encode or source I/O.
      */
     void primeGalleryGeometryFromCache(const QStringList &paths);
@@ -1251,8 +1251,7 @@ private:
     QSet<QString> m_provisionalSizePaths;
     /** Paths with an in-flight async size probe. */
     QSet<QString> m_sizeProbeScheduled;
-    /** Path → last provisional thumbnail (session cache for rapid next/prev). */
-    QHash<QString, QImage> m_previewByPath;
+    // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */
     QVector<SessionImageId> m_sessionIdOrder;

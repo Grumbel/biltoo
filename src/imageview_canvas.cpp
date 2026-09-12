@@ -210,16 +210,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         }
 
         if (virtualize) {
-            // Prefer cached preview aspect when native size is still unknown so
+            // Prefer host ImageCache aspect when native size is still unknown so
             // the first pack does not use a neutral 1000×1000 cell.
-            QImage hint;
-            const auto pit = m_previewByPath.constFind(path);
-            if (pit != m_previewByPath.cend()) {
-                hint = pit.value();
-            }
-            if (hint.isNull()) {
-                hint = ImageCache::get(path);
-            }
+            const QImage hint = ImageCache::get(path);
             ImageItem *ph = createPlaceholderItem(path, layoutSizeForPath(path, hint));
             if (ph) {
                 if (sid != kInvalidSessionImageId) {

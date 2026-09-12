@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-580-drop-preview-by-path.** Retire m_previewByPath; ImageCache only.
+Prior: **579**.
+
+### Change
+- Remove `m_previewByPath` — all host soft/display samples go through ImageCache
+- Gallery LQIP / ladderReady / pack / canvas / load paths read ImageCache only
+- Simplify slideshowSoftPlaceholder / slideshowPixelsForPath (clamp helpers)
+- Fix AGENTS.md host-pixels line
+
+### Done criteria
+- [x] No dual path→QImage soft maps on ImageView
+- [x] Bundle **580**
+
+### Still open
+- [ ] m_ssRasterByPath as hot set only (or drop)
+- [ ] ImageCache eviction policy beyond arbitrary erase
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-579-host-pixel-cache-unify.** ImageCache is the host path→raster map.
 Prior: **578**.
 

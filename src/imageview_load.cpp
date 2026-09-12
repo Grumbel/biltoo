@@ -263,23 +263,14 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         ) {
         return;
     }
-    // Prefer explicit preview, session map, shared ImageCache (filmstrip/gallery
-    // soft), then slideshow full map — so next/prev paints immediately.
+    // Prefer explicit preview, then unified ImageCache (and slideshow hot set
+    // via slideshowRaster). docs/PIXEL_HOST_CACHE.md
     QImage pixels = preview;
     if (pixels.isNull()) {
-        const auto it = m_previewByPath.constFind(path);
-        if (it != m_previewByPath.cend()) {
-            pixels = it.value();
-        }
+        pixels = slideshowRaster(path);
     }
     if (pixels.isNull()) {
         pixels = ImageCache::get(path);
-    }
-    if (pixels.isNull()) {
-        const QImage ss = slideshowRaster(path);
-        if (!ss.isNull()) {
-            pixels = ss;
-        }
     }
     // Layout size = native when known; else preview aspect so fitInView fills
     // the window (not a provisional square that letterboxes the content).
@@ -622,14 +613,11 @@ void ImageView::scheduleGalleryDecode(const QString &path)
 
         // Host soft only for direct callers (not decode-window pass2).
         if (have <= 0) {
-            QImage hostSoft = ImageCache::get(path);
-            if (hostSoft.isNull()) {
-                hostSoft = m_previewByPath.value(path);
-            }
+            const QImage hostSoft = ImageCache::get(path);
             if (!hostSoft.isNull()) {
                 onImagePreviewLoaded(path, hostSoft, m_loadGeneration.load(),
                                      static_cast<int>(LoadAdd));
-                have = qMax(have, qMax(hostSoft.width(), hostSoft.height()));
+                have = qMax(have, ImageCache::longEdge(hostSoft));
                 st.have = have;
             }
         }
@@ -937,8 +925,6 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         return;
     }
     ImageCache::put(path, image);
-    // Session cache for rapid revisit (path is the decode source; size is small).
-    m_previewByPath.insert(path, image);
     // Replace navigations: drop superseded previews.
     if (role == LoadReplace && generation != m_loadGeneration.load()) {
         return;

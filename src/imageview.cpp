@@ -133,11 +133,12 @@ ImageView::ImageView(QWidget *parent)
                     applyProbedImageSize(path, size);
                 }
                 // LQIP often arrives with the size probe — install as soft stand-in
-                // when the tile still has no pixels (cold open).
-                if (isGalleryMode() && !m_previewByPath.contains(path)) {
+                // when the tile still has no pixels (cold open). Host map is
+                // ImageCache (docs/PIXEL_HOST_CACHE.md).
+                if (isGalleryMode() && !ImageCache::has(path)) {
                     const QImage lqip = ThumtooCache::cachedLqipImage(path);
                     if (!lqip.isNull()) {
-                        m_previewByPath.insert(path, lqip);
+                        ImageCache::put(path, lqip);
                         for (ImageItem *item : m_items) {
                             if (!item || item->path() != path) {
                                 continue;
@@ -177,12 +178,9 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
                 // placeholders existed).
                 if (!image.isNull()) {
                     ImageCache::put(path, image);
-                    m_previewByPath.insert(path, image);
                 }
-                // Slideshow pure-phase reads m_ssRasterByPath, not ImageCache.
-                // Prefetch used to only scheduleDisplayPixels (async) and install
-                // soft placeholders — PreferCache completions never entered the
-                // slideshow map, so every slide locked at low resolution.
+                // PreferCache completion → unified host map; slideshow pure-phase
+                // upgrades from ImageCache / hot set via onSlideshowRasterReady.
                 if (m_slideshowProgressActive && !image.isNull()) {
                     onSlideshowRasterReady(path, image);
                 }
@@ -568,11 +566,11 @@ void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
                 rememberImageSize(path, cached);
             }
         }
-        // LQIP as soft stand-in until ladder/full arrives.
-        if (!m_previewByPath.contains(path)) {
+        // LQIP as soft stand-in until ladder/full arrives (ImageCache is authority).
+        if (!ImageCache::has(path)) {
             const QImage lqip = ThumtooCache::cachedLqipImage(path);
             if (!lqip.isNull()) {
-                m_previewByPath.insert(path, lqip);
+                ImageCache::put(path, lqip);
             }
         }
     }

@@ -104,10 +104,7 @@ void ImageView::updateGalleryDecodeWindow()
             moreInstallsPending = true;
             break; // remaining blanks next tick
         }
-        QImage hostSoft = ImageCache::get(path);
-        if (hostSoft.isNull()) {
-            hostSoft = m_previewByPath.value(path);
-        }
+        const QImage hostSoft = ImageCache::get(path);
         if (hostSoft.isNull()) {
             continue;
         }
@@ -714,10 +711,7 @@ void ImageView::gallerySoftWatchdogTick()
 
         // Cache/session soft exists but tile still empty → install + force paint.
         if (!item->hasDisplayPixels()) {
-            QImage soft = m_previewByPath.value(path);
-            if (soft.isNull()) {
-                soft = ImageCache::get(path);
-            }
+            const QImage soft = ImageCache::get(path);
             // Do not PreferCache / extract on the GUI thread here.
             if (!soft.isNull()) {
                 installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
@@ -725,7 +719,7 @@ void ImageView::gallerySoftWatchdogTick()
                 if (m_scene) {
                     m_scene->update(item->sceneBoundingRect());
                 }
-                st.have = qMax(st.have, qMax(soft.width(), soft.height()));
+                st.have = qMax(st.have, ImageCache::longEdge(soft));
                 ++repaired;
                 continue;
             }

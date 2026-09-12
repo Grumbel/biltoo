@@ -5,8 +5,8 @@ Multiple in-process pixel stores disagree:
 
 | Store | Key | What it holds |
 |-------|-----|----------------|
-| `ImageCache` | path | Intentionally **≤512** from `onImageLoaded` |
-| `m_previewByPath` | path | Soft / LQIP |
+| `ImageCache` | path | Best sample ≤2048 (authority) |
+| `m_previewByPath` | — | **Removed** (use ImageCache) |
 | `m_ssRasterByPath` | path | Slideshow samples |
 | `ImageItem::m_source` | item | Oriented full or soft display |
 

@@ -1165,26 +1165,19 @@ QImage ImageView::slideshowFullIfReady(const QString &path) const
 QImage ImageView::slideshowSoftPlaceholder(const QString &path)
 {
     if (path.isEmpty()) {
-        return QImage();
+        return {};
     }
-    // Already have something in the unified map.
     QImage have = slideshowRaster(path);
     if (!have.isNull()) {
         return have;
     }
-    // Prefer target-edge cache, then any soft. Never upscale to native size.
+    // Any host sample, clamped to target edge (never upscale).
     const int edge = slideshowTargetEdge();
-    QImage soft = ImageCache::get(path, edge);
+    QImage soft = ImageCache::get(path);
     if (soft.isNull()) {
-        soft = ImageCache::get(path);
+        return {};
     }
-    if (soft.isNull()) {
-        return QImage();
-    }
-    if (qMax(soft.width(), soft.height()) > edge) {
-        soft = soft.scaled(edge, edge, Qt::KeepAspectRatio, Qt::FastTransformation);
-    }
-    // Non-const put from const path: softPlaceholder is non-const method.
+    soft = ImageCache::clampToMaxEdge(soft, edge);
     putSlideshowRaster(path, soft);
     return soft;
 }
@@ -1214,26 +1207,12 @@ QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) c
 QImage ImageView::slideshowPixelsForPath(const QString &path)
 {
     const int edge = slideshowTargetEdge();
+    // slideshowRaster already prefers max(hot set, ImageCache).
     QImage img = slideshowRaster(path);
-    // ImageCache may hold PreferCache pixels that never reached the slideshow
-    // map (e.g. gallery session, or race before ladderReady was wired).
-    {
-        const QImage cached = ImageCache::get(path, edge * 7 / 10);
-        if (!cached.isNull()) {
-            const int c = qMax(cached.width(), cached.height());
-            const int h = img.isNull() ? 0 : qMax(img.width(), img.height());
-            if (c > h) {
-                putSlideshowRaster(path, cached);
-                img = cached;
-            }
-        }
-    }
     if (img.isNull()) {
         img = slideshowSoftPlaceholder(path);
     }
-    if (!img.isNull() && qMax(img.width(), img.height()) > edge) {
-        img = img.scaled(edge, edge, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    }
+    img = ImageCache::clampToMaxEdge(img, edge);
     return orientSlideshowImage(img, path);
 }
 
