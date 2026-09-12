@@ -574,10 +574,9 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssToMotionT = 0.0;
         m_ssFromMotionClockRunning = false;
         m_ssToMotionClockRunning = false;
-        m_ssRasterByPath.clear();
+        // Rasters live in ImageCache — do not clear the host map on stop.
         m_ssRasterInflight.clear();
         m_ssRasterPending.clear();
-        
     }
     viewport()->update();
 }
@@ -1020,40 +1019,8 @@ void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
 
 void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
 {
-    if (path.isEmpty() || image.isNull()) {
-        return;
-    }
-    // Unified host map first — slideshow and the rest of the app share it.
+    // Thin wrapper: host ImageCache is the only path→raster store.
     ImageCache::put(path, image);
-
-    const int incoming = ImageCache::longEdge(image);
-    const auto haveIt = m_ssRasterByPath.constFind(path);
-    if (haveIt != m_ssRasterByPath.cend() && !haveIt->isNull()) {
-        const int have = ImageCache::longEdge(*haveIt);
-        // Keep the sharper buffer; equal size keeps the existing one.
-        if (have >= incoming) {
-            return;
-        }
-    }
-    m_ssRasterByPath.insert(path, image);
-    constexpr int kMaxSsRaster = 12;
-    if (m_ssRasterByPath.size() <= kMaxSsRaster) {
-        return;
-    }
-    // Evict oldest non-active paths (QHash order is arbitrary — drop any excess
-    // that are not the current phase pair).
-    QStringList drop;
-    drop.reserve(m_ssRasterByPath.size() - kMaxSsRaster);
-    for (auto dropIt = m_ssRasterByPath.cbegin();
-         dropIt != m_ssRasterByPath.cend()
-         && drop.size() < m_ssRasterByPath.size() - kMaxSsRaster; ++dropIt) {
-        if (dropIt.key() != path && dropIt.key() != m_ssFromPath && dropIt.key() != m_ssToPath) {
-            drop.append(dropIt.key());
-        }
-    }
-    for (const QString &k : drop) {
-        m_ssRasterByPath.remove(k);
-    }
 }
 
 void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
@@ -1061,11 +1028,13 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     if (path.isEmpty() || image.isNull()) {
         return;
     }
-    const int incoming = qMax(image.width(), image.height());
-    const QImage before = slideshowRaster(path);
-    const int had = before.isNull() ? 0 : qMax(before.width(), before.height());
+    const int incoming = ImageCache::longEdge(image);
+    const int had = ImageCache::longEdge(slideshowRaster(path));
     putSlideshowRaster(path, image);
     if (incoming <= had) {
+        if (viewport() && m_slideshowProgressActive) {
+            viewport()->update(); // prefetch chip may clear
+        }
         return;
     }
     qCDebug(lcSlideshow).nospace()
@@ -1073,16 +1042,14 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
         << " " << image.width() << "x" << image.height()
         << " (was " << had << ")";
 
-    // Upgrade locked phase buffers when sharper pixels arrive. Geometry is
-    // logical-size based (SIZE.md / SLIDESHOW.md), so sampling a higher raster
-    // does not change framing — only sharpness.
+    // Upgrade phase paint buffers when sharper pixels arrive. Geometry is
+    // logical-size based (SIZE.md / SLIDESHOW.md) — sharpness only.
     auto upgradeSlot = [this, &path, &image, incoming](const QString &slotPath,
                                                        QImage *slot) -> bool {
         if (!slot || slotPath != path) {
             return false;
         }
-        const int have = slot->isNull() ? 0 : qMax(slot->width(), slot->height());
-        if (incoming <= have) {
+        if (incoming <= ImageCache::longEdge(*slot)) {
             return false;
         }
         *slot = orientSlideshowImage(image, path);
@@ -1101,10 +1068,7 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     if (upgradeSlot(m_ssToPath, &m_ssToImage)) {
         changed = true;
     }
-    if (changed && viewport()) {
-        viewport()->update();
-    } else if (viewport() && m_slideshowProgressActive) {
-        // Prefetch chip may clear when the active path reaches target edge.
+    if (viewport() && (changed || m_slideshowProgressActive)) {
         viewport()->update();
     }
 }
@@ -1117,17 +1081,14 @@ QString ImageView::slideshowPrefetchHudLine() const
     const int queued = m_ssRasterInflight.size() + m_ssRasterPending.size();
     const int target = slideshowTargetEdge();
     const int need = target * 7 / 10;
-    const int have = m_ssFromImage.isNull()
-                         ? 0
-                         : qMax(m_ssFromImage.width(), m_ssFromImage.height());
-    const bool currentShort =
-        !m_ssFromPath.isEmpty() && (have < need);
+    const int have = ImageCache::longEdge(m_ssFromImage);
+    const bool currentShort = !m_ssFromPath.isEmpty() && have < need;
     if (queued <= 0 && !currentShort) {
         return {};
     }
     if (currentShort && queued > 0) {
         return tr("Loading %1→%2 · prefetch %3")
-            .arg(have > 0 ? have : 0)
+            .arg(have)
             .arg(target)
             .arg(queued);
     }
@@ -1139,22 +1100,8 @@ QString ImageView::slideshowPrefetchHudLine() const
 
 QImage ImageView::slideshowRaster(const QString &path) const
 {
-    if (path.isEmpty()) {
-        return QImage();
-    }
-    // Unoriented disk/preload pixels only — not item->sourceImage() (may already
-    // have content orientation baked in). Prefer the sharper of the slideshow
-    // hot set and the unified ImageCache (Image mode full loads land there).
-    QImage best;
-    const auto it = m_ssRasterByPath.constFind(path);
-    if (it != m_ssRasterByPath.cend() && !it->isNull()) {
-        best = *it;
-    }
-    const QImage cached = ImageCache::get(path);
-    if (ImageCache::longEdge(cached) > ImageCache::longEdge(best)) {
-        best = cached;
-    }
-    return best;
+    // Unoriented host samples only — not item->sourceImage() (appearance baked).
+    return path.isEmpty() ? QImage() : ImageCache::get(path);
 }
 
 QImage ImageView::slideshowFullIfReady(const QString &path) const
@@ -1348,7 +1295,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
             << (promoteB ? " (continue)" : " (start)");
     }
     // Do not soft→sharp upgrade m_ssFromImage mid-dwell. Phase buffers are
-    // locked at fromChanged; preload fills m_ssRasterByPath for the *next*
+    // locked at fromChanged; preload fills ImageCache for the *next*
     // entry. Mid-slide resolution flips were jarring even with invariant camera.
     if (m_ssFromMotionClockRunning && pathMs > 0) {
         qint64 ms = m_ssFromMotionBaseMs;
@@ -2332,7 +2279,7 @@ void ImageView::tickSlideshowMotion()
             m_ssToMotionT = qBound(0.0, qreal(ms) / qreal(pathMs), 1.0);
         }
         // Phase pixel buffers stay locked for the path's participation.
-        // Preload only fills m_ssRasterByPath for the next phase entry.
+        // Preload only fills ImageCache for the next phase entry.
         viewport()->update();
         return;
     }

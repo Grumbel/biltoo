@@ -270,12 +270,11 @@ public:
      */
     void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
                            int *atlasVw, int *atlasVh) const;
-    /** Store raster if better than what we have (larger long edge). */
+    /** Store sample in ImageCache (upward-only long edge). */
     void putSlideshowRaster(const QString &path, const QImage &image);
     /**
-     * PreferCache / ladderReady delivery for slideshow: put into the map and,
-     * if the path is the current phase pair, upgrade phase buffers so the next
-     * draw samples sharper pixels (camera stays logical-size based).
+     * PreferCache / ladderReady: ImageCache put + upgrade phase buffers when
+     * the path is the current from/to pair (logical-size camera).
      */
     void onSlideshowRasterReady(const QString &path, const QImage &image);
     /**
@@ -283,7 +282,7 @@ public:
      * current phase still soft). Empty when idle / not in slideshow.
      */
     QString slideshowPrefetchHudLine() const;
-    /** Best unoriented raster for path, or null. */
+    /** Best unoriented host sample for path (ImageCache), or null. */
     QImage slideshowRaster(const QString &path) const;
     void setSlideshowUnderlayVisible(bool visible);
     void hideSlideshowUnderlay();
@@ -1354,12 +1353,7 @@ private:
     bool m_ssToMotionClockRunning = false;
     qint64 m_ssFromMotionBaseMs = 0;
     qint64 m_ssToMotionBaseMs = 0;
-    /**
-     * Best unoriented raster per path for the slideshow pure-phase path.
-     * Soft and sharper levels share one map; put only upgrades long-edge.
-     * Camera is aspect-based, so resolution climb does not change geometry.
-     */
-    QHash<QString, QImage> m_ssRasterByPath;
+    // Slideshow samples: ImageCache only (putSlideshowRaster / slideshowRaster).
     /** Slideshow raster decode in flight (max two for look-ahead). */
     QSet<QString> m_ssRasterInflight;
     /** Neighbours waiting while concurrency is full. */

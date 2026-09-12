@@ -7,7 +7,7 @@ Multiple in-process pixel stores disagree:
 |-------|-----|----------------|
 | `ImageCache` | path | Best sample ≤2048 (authority) |
 | `m_previewByPath` | — | **Removed** (use ImageCache) |
-| `m_ssRasterByPath` | path | Slideshow samples |
+| `m_ssRasterByPath` | — | **Removed** — ImageCache only |
 | `ImageItem::m_source` | item | Oriented full or soft display |
 
 Switching to slideshow reads soft / 512 from ImageCache even when Image mode
@@ -38,3 +38,7 @@ E. Docs + TODO handoff; small readable commits
 ## Risk
 Memory: 2048² RGBA × many paths. Mitigate: clamp to 2048, keep entry cap 384,
 evict on insert (existing). Prefer thumtoo for cold paths.
+
+## Eviction
+
+Insertion-order FIFO when over `kMaxEntries` (384). Upgrades in place keep order.

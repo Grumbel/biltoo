@@ -8,6 +8,7 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QSet>
+#include <QStringList>
 #include <QThreadPool>
 
 namespace ImageCache {
@@ -25,6 +26,13 @@ QHash<QString, QImage> &map()
     return m;
 }
 
+/** Insertion order for FIFO eviction when the map is full. */
+QStringList &order()
+{
+    static QStringList o;
+    return o;
+}
+
 QSet<QString> &inFlight()
 {
     static QSet<QString> s;
@@ -36,6 +44,16 @@ constexpr int kMaxEntries = 384;
 QString ensureKey(const QString &path, int maxEdge)
 {
     return path + QLatin1Char('\n') + QString::number(maxEdge);
+}
+
+void evictOldestUnlocked()
+{
+    QHash<QString, QImage> &m = map();
+    QStringList &ord = order();
+    while (!ord.isEmpty() && m.size() >= kMaxEntries) {
+        const QString oldest = ord.takeFirst();
+        m.remove(oldest);
+    }
 }
 
 } // namespace
@@ -77,19 +95,22 @@ void put(const QString &path, const QImage &image)
 
     QMutexLocker lock(&mutex());
     QHash<QString, QImage> &m = map();
+    QStringList &ord = order();
+
     if (m.contains(path)) {
         if (longEdge(m.value(path)) >= incoming) {
             return;
         }
-    } else if (m.size() >= kMaxEntries) {
-        // FIFO-ish: erase an arbitrary entry (QHash order). Prefer not to
-        // invent LRU until profiling says we must.
-        auto it = m.begin();
-        if (it != m.end()) {
-            m.erase(it);
-        }
+        // Upgrade in place — keep position in insertion order.
+        m.insert(path, stored);
+        return;
+    }
+
+    if (m.size() >= kMaxEntries) {
+        evictOldestUnlocked();
     }
     m.insert(path, stored);
+    ord.append(path);
 }
 
 bool has(const QString &path, int minLongEdge)
@@ -143,6 +164,7 @@ void clear()
 {
     QMutexLocker lock(&mutex());
     map().clear();
+    order().clear();
     inFlight().clear();
 }
 

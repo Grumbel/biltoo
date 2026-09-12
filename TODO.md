@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-581-ss-raster-imagecache-only.** Drop m_ssRasterByPath; FIFO ImageCache.
+Prior: **580**.
+
+### Change
+- Remove slideshow-only `m_ssRasterByPath` — `putSlideshowRaster` /
+  `slideshowRaster` are thin ImageCache wrappers
+- Stop clearing host rasters when slideshow ends (queue state only)
+- ImageCache: insertion-order FIFO eviction instead of arbitrary QHash erase
+- Tighten onSlideshowRasterReady / prefetch HUD to use `longEdge` helpers
+
+### Done criteria
+- [x] One host path→raster map for slideshow + gallery + Image mode
+- [x] Deterministic cache eviction order
+- [x] Bundle **581**
+
+### Still open
+- [ ] Optional: touch-to-end on get() for true LRU
+- [ ] Further pure helpers for target-edge / adequacy tables
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-580-drop-preview-by-path.** Retire m_previewByPath; ImageCache only.
 Prior: **579**.
 
