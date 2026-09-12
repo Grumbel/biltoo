@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-655-native-climb-finish.** Named finish for quiet native climb.
+Prior: **654**.
+
+### Change
+- `finishImageModeNativeFullQuiet` — GUI-thread path clear + install
+- `scheduleImageModeNativeFullQuiet` uses raw `ImageView *` in QTimer (no nested
+  QPointer on QSet::remove) — fixes -Wnull-dereference warning
+
+### Done criteria
+- [x] Clean native-climb completion path
+- [x] Bundle **655**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-654-climb-state-policy.** PreferCache climb policy on ImageModeClimbState.
 Prior: **653**.
 

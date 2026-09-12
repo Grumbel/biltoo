@@ -1854,6 +1854,17 @@ int ImageView::imageModeOnScreenNeedEdge() const
     return itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
 }
 
+void ImageView::finishImageModeNativeFullQuiet(const QString &path, const QImage &image,
+                                               quint64 generation)
+{
+    // GUI-thread completion for scheduleImageModeNativeFullQuiet.
+    m_imageModeNativeClimbPaths.remove(path);
+    if (generation != m_loadGeneration.load() || image.isNull()) {
+        return;
+    }
+    (void)tryInstallImageModeSample(path, image);
+}
+
 void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
 {
     // Native full without LoadReplace generation bump / pending tile (zoom climb).
@@ -1866,22 +1877,23 @@ void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
     const QString pathCopy = path;
     QThreadPool::globalInstance()->start(
         [guard, pathCopy, gen]() {
-            QImage image;
-            if (guard && guard->matchesLoadGeneration(gen)) {
-                image = ImageLoader::load(pathCopy);
-            }
-            if (!guard) {
+            if (!guard || !guard->matchesLoadGeneration(gen)) {
+                // Drop the inflight mark on the GUI thread if the view still lives.
+                if (ImageView *view = guard.data()) {
+                    QTimer::singleShot(0, view, [view, pathCopy]() {
+                        view->m_imageModeNativeClimbPaths.remove(pathCopy);
+                    });
+                }
                 return;
             }
-            QTimer::singleShot(0, guard.data(), [guard, pathCopy, image, gen]() {
-                if (!guard) {
-                    return;
-                }
-                guard->m_imageModeNativeClimbPaths.remove(pathCopy);
-                if (!guard->matchesLoadGeneration(gen) || image.isNull()) {
-                    return;
-                }
-                (void)guard->tryInstallImageModeSample(pathCopy, image);
+            const QImage image = ImageLoader::load(pathCopy);
+            ImageView *view = guard.data();
+            if (!view) {
+                return;
+            }
+            // Named finish: clear path + install on GUI thread (no nested QPointer).
+            QTimer::singleShot(0, view, [view, pathCopy, image, gen]() {
+                view->finishImageModeNativeFullQuiet(pathCopy, image, gen);
             });
         },
         -1);
