@@ -184,12 +184,16 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
 
     if (kind == SessionAppearance::PixelKind::FullSource) {
         item->setSourceImage(display);
-        // Re-assert logical size from the path map — FullSource may be a
-        // ladder step, not native. Soft must never define geometry either.
+        // Logical size from path (or provisional layout) — FullSource may be a
+        // ladder step and must not define geometry.
         {
-            const QSize logical = logicalSizeForPath(item->path());
-            if (logical.isValid() && logical.width() > 1 && logical.height() > 1
-                && !isProvisionalImageSize(item->path())) {
+            const QString path = item->path();
+            QSize logical = logicalSizeForPath(path);
+            if (!logical.isValid() || logical.width() <= 1 || logical.height() <= 1
+                || isProvisionalImageSize(path)) {
+                logical = layoutSizeForPath(path, display);
+            }
+            if (logical.isValid() && logical.width() > 1 && logical.height() > 1) {
                 item->setIntrinsicSize(logical);
             }
         }
@@ -201,6 +205,16 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         }
     } else {
         item->setPreviewImage(display); // NoCache soft path
+        // Soft must not leave intrinsic at 1×1 after placeholder without size.
+        {
+            const QSize cur = item->imageSize();
+            if (cur.width() <= 1 || cur.height() <= 1) {
+                const QSize layout = layoutSizeForPath(item->path(), display);
+                if (layout.isValid() && layout.width() > 1 && layout.height() > 1) {
+                    item->setIntrinsicSize(layout);
+                }
+            }
+        }
     }
     item->setContentHFlip(appearance.contentHFlip);
     item->setContentVFlip(appearance.contentVFlip);

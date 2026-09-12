@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-572-sourceimage-never-seeds.** setSourceImage never seeds intrinsic from samples.
+Prior: **571**.
+
+### Changes
+- `setSourceImage`: only grows a *known* intrinsic; never seeds from sample
+- `installDisplayPixels`: always applies logical/layout size after FullSource;
+  SoftPreview fills 1×1 intrinsic via layoutSizeForPath
+- AGENTS.md points at SIZE.md
+
+### Done criteria
+- [x] Ladder FullSource cannot seed geometry
+- [x] Bundle **572**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-571-layout-size-never-soft.** layoutSizeForPath never returns soft pixel magnitude.
 Prior: **570**.
 
