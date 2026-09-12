@@ -973,15 +973,19 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     QGraphicsView::mousePressEvent(event);
 }
 
-void ImageView::mouseMoveEvent(QMouseEvent *event)
+bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 {
-    if (m_textRubberbanding && (event->buttons() & Qt::LeftButton)) {
-        m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
-        viewport()->update();
-        event->accept();
-        return;
+    if (!m_textRubberbanding || !(event->buttons() & Qt::LeftButton)) {
+        return false;
     }
+    m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
+    viewport()->update();
+    event->accept();
+    return true;
+}
 
+void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
+{
     // Link hover: pointing hand + status tip (Image mode page docs).
     if (isImageMode() && !m_cropMode && !m_attentionMode && !m_textRubberbanding
         && !m_panning && event->buttons() == Qt::NoButton
@@ -1019,15 +1023,20 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         m_linkHoverTip.clear();
         emit statusChanged();
     }
+}
 
-
-    if (m_attentionMode && m_attentionRubberbanding && isImageMode()) {
+bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
+{
+    if (!m_attentionMode || !isImageMode()) {
+        return false;
+    }
+    if (m_attentionRubberbanding) {
         m_attentionRubberRect = QRect(m_attentionRubberOrigin, event->pos()).normalized();
         viewport()->update();
         event->accept();
-        return;
+        return true;
     }
-    if (m_attentionMode && m_attentionDragging && isImageMode()) {
+    if (m_attentionDragging) {
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()
             && !m_attentionSelected.isEmpty()
@@ -1051,142 +1060,163 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             setAttentionPointsForTarget(pts);
         }
         event->accept();
-        return;
+        return true;
     }
-    if (m_attentionMode && isImageMode()) {
-        viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
-                                                              : Qt::CrossCursor);
+    viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
+                                                          : Qt::CrossCursor);
+    return false;
+}
+
+bool ImageView::tryMouseMoveCropDrag(QMouseEvent *event)
+{
+    if (!m_cropMode) {
+        return false;
     }
-    if (m_cropMode && m_cropActiveHandle != CropHandle::None) {
+    if (m_cropActiveHandle != CropHandle::None) {
         updateCropHandleDrag(event->pos());
         event->accept();
-        return;
+        return true;
     }
-    if (m_cropMode && m_cropRubberBanding) {
+    if (m_cropRubberBanding) {
         updateCropRubberBand(event->pos());
         event->accept();
-        return;
+        return true;
     }
-    // Middle-button (or Alt) pan must work in crop mode — handle before crop hover.
-    if (m_panning) {
-        // Dwell camera owns the view transform — do not fight it with hand pan.
-        if (m_slideshowMotionActive) {
-            m_panning = false;
-            event->accept();
-            return;
-        }
-        const QPoint delta = event->pos() - m_lastMousePos;
-        m_lastMousePos = event->pos();
-        if (isWorkspaceMode()) {
-            updateWorkspaceSceneRect();
-        }
-        horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
-        verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
-        event->accept();
-        return;
-    }
+    return false;
+}
 
-    if (m_cropMode) {
-        const CropHandle h = cropHandleAt(event->pos());
-        const bool cropHoverChanged = (h != m_cropHoverHandle);
-        if (cropHoverChanged) {
-            m_cropHoverHandle = h;
-            viewport()->update();
-        }
+bool ImageView::tryMouseMovePan(QMouseEvent *event)
+{
+    if (!m_panning) {
+        return false;
+    }
+    // Dwell camera owns the view transform — do not fight it with hand pan.
+    if (m_slideshowMotionActive) {
+        m_panning = false;
+        event->accept();
+        return true;
+    }
+    const QPoint delta = event->pos() - m_lastMousePos;
+    m_lastMousePos = event->pos();
+    // Grow the free-form sceneRect with the view so middle-drag is never
+    // clamped against a stale zero-range scrollbar.
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
+    verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseMoveCropHover(QMouseEvent *event)
+{
+    if (!m_cropMode) {
+        return false;
+    }
+    const CropHandle h = cropHandleAt(event->pos());
+    const bool cropHoverChanged = (h != m_cropHoverHandle);
+    if (cropHoverChanged) {
+        m_cropHoverHandle = h;
+        viewport()->update();
+    }
+    switch (h) {
+    case CropHandle::Move:
+        viewport()->setCursor(Qt::SizeAllCursor);
+        break;
+    case CropHandle::Rotate:
+        viewport()->setCursor(Qt::ClosedHandCursor);
+        break;
+    case CropHandle::Left:
+    case CropHandle::Right:
+        viewport()->setCursor(Qt::SizeHorCursor);
+        break;
+    case CropHandle::Top:
+    case CropHandle::Bottom:
+        viewport()->setCursor(Qt::SizeVerCursor);
+        break;
+    case CropHandle::TopLeft:
+    case CropHandle::BottomRight:
+        viewport()->setCursor(Qt::SizeFDiagCursor);
+        break;
+    case CropHandle::TopRight:
+    case CropHandle::BottomLeft:
+        viewport()->setCursor(Qt::SizeBDiagCursor);
+        break;
+    case CropHandle::ExpandToggle:
+    case CropHandle::Auto:
+    case CropHandle::Reset:
+    case CropHandle::Cancel:
+    case CropHandle::Close:
+        viewport()->setCursor(Qt::PointingHandCursor);
+        break;
+    case CropHandle::None:
+        viewport()->setCursor(Qt::CrossCursor);
+        break;
+    }
+    if (cropHoverChanged) {
+        QString tip;
         switch (h) {
         case CropHandle::Move:
-            viewport()->setCursor(Qt::SizeAllCursor);
+            tip = tr("Move crop");
             break;
         case CropHandle::Rotate:
-            viewport()->setCursor(Qt::ClosedHandCursor);
+            tip = tr("Rotate crop");
             break;
         case CropHandle::Left:
         case CropHandle::Right:
-            viewport()->setCursor(Qt::SizeHorCursor);
-            break;
         case CropHandle::Top:
         case CropHandle::Bottom:
-            viewport()->setCursor(Qt::SizeVerCursor);
-            break;
         case CropHandle::TopLeft:
-        case CropHandle::BottomRight:
-            viewport()->setCursor(Qt::SizeFDiagCursor);
-            break;
         case CropHandle::TopRight:
         case CropHandle::BottomLeft:
-            viewport()->setCursor(Qt::SizeBDiagCursor);
+        case CropHandle::BottomRight:
+            tip = tr("Resize crop");
             break;
-        case CropHandle::ExpandToggle:
         case CropHandle::Auto:
+        case CropHandle::ExpandToggle:
+            tip = tr("Allow crop outside image (pad on apply)");
+            break;
         case CropHandle::Reset:
+            tip = tr("Reset crop to full image");
+            break;
         case CropHandle::Cancel:
+            tip = tr("Cancel crop (Esc)");
+            break;
         case CropHandle::Close:
-            viewport()->setCursor(Qt::PointingHandCursor);
+            tip = tr("Apply crop (Enter)");
             break;
         case CropHandle::None:
-            viewport()->setCursor(Qt::CrossCursor);
             break;
         }
-        if (cropHoverChanged) {
-            QString tip;
-            switch (h) {
-            case CropHandle::Move:
-                tip = tr("Move crop");
-                break;
-            case CropHandle::Rotate:
-                tip = tr("Rotate crop");
-                break;
-            case CropHandle::Left:
-            case CropHandle::Right:
-            case CropHandle::Top:
-            case CropHandle::Bottom:
-            case CropHandle::TopLeft:
-            case CropHandle::TopRight:
-            case CropHandle::BottomLeft:
-            case CropHandle::BottomRight:
-                tip = tr("Resize crop");
-                break;
-            case CropHandle::Auto:
-            case CropHandle::ExpandToggle:
-                tip = tr("Allow crop outside image (pad on apply)");
-                break;
-            case CropHandle::Reset:
-                tip = tr("Reset crop to full image");
-                break;
-            case CropHandle::Cancel:
-                tip = tr("Cancel crop (Esc)");
-                break;
-            case CropHandle::Close:
-                tip = tr("Apply crop (Enter)");
-                break;
-            case CropHandle::None:
-                break;
-            }
-            if (!tip.isEmpty()) {
-                QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
-            } else {
-                QToolTip::hideText();
-            }
+        if (!tip.isEmpty()) {
+            QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
+        } else {
+            QToolTip::hideText();
         }
-        updateMouseInfo(event->pos());
-        event->accept();
-        return;
     }
-
-    if (m_zoomRegionDragging && m_zoomRubberBand) {
-        m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, event->pos()).normalized());
-        event->accept();
-        return;
-    }
-
     updateMouseInfo(event->pos());
+    event->accept();
+    return true;
+}
 
+bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
+{
+    if (!m_zoomRegionDragging || !m_zoomRubberBand) {
+        return false;
+    }
+    m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, event->pos()).normalized());
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
+{
     if (m_pageGuideDragHandle >= 0) {
         updatePageGuideResize(mapToScene(event->pos()), event->modifiers());
         event->accept();
-        return;
+        return true;
     }
-
     if (isWorkspaceMode() && m_pageGuideVisible && m_pageGuideSelected
         && !(event->buttons() & Qt::LeftButton)) {
         const int ph = pageGuideHandleAt(event->pos());
@@ -1212,86 +1242,78 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
                 break;
             }
             event->accept();
-            return;
+            return true;
         }
     }
+    return false;
+}
 
+bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
+{
     if (m_groupScaleDrag) {
         updateGroupScale(mapToScene(event->pos()), event->modifiers());
         viewport()->update();
         event->accept();
-        return;
+        return true;
     }
     if (m_groupRotateDrag) {
         updateGroupRotate(mapToScene(event->pos()), event->modifiers());
         viewport()->update();
         event->accept();
-        return;
+        return true;
     }
-
     if (m_handleDragItem && m_handleDragItem->hasActiveHandle()) {
         m_handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
                                                     event->modifiers());
         viewport()->update(); // live chrome while scaling/rotating
         event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
+{
+    if (!m_rotating || !m_rotateItem) {
+        return false;
+    }
+    const QPointF scenePos = mapToScene(event->pos());
+    const qreal angle = angleAt(scenePos, m_rotateItem);
+    const qreal delta = angle - m_rotateStartAngle;
+    qreal rot = m_rotateItemStart + delta;
+    if (event->modifiers() & Qt::ControlModifier) {
+        rot = qRound(rot / 90.0) * 90.0;
+    } else if (event->modifiers() & Qt::ShiftModifier) {
+        // Shift is held to start free-rotate; Ctrl snaps 90°, Shift alone 45°.
+        rot = qRound(rot / 45.0) * 45.0;
+    }
+    m_rotateItem->setItemRotation(rot);
+    m_fitMode = false;
+    emit statusChanged();
+    event->accept();
+    return true;
+}
+
+void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
+{
+    if (!m_slideshowProgressActive || !viewport()) {
         return;
     }
-
-    if (m_rotating && m_rotateItem) {
-        const QPointF scenePos = mapToScene(event->pos());
-        const qreal angle = angleAt(scenePos, m_rotateItem);
-        const qreal delta = angle - m_rotateStartAngle;
-        qreal rot = m_rotateItemStart + delta;
-        if (event->modifiers() & Qt::ControlModifier) {
-            rot = qRound(rot / 90.0) * 90.0;
-        } else if (event->modifiers() & Qt::ShiftModifier) {
-            // Shift is held to start free-rotate; add Ctrl for 90°, alone keep smooth
-            // unless also... User asked Ctrl/Shift snap. Shift starts rotate so
-            // during shift-drag, snap to 45 when Shift still held without wanting smooth.
-            // Use Ctrl=90 always; for shift-drag path Shift is always down — snap 45.
-            rot = qRound(rot / 45.0) * 45.0;
-        }
-        m_rotateItem->setItemRotation(rot);
-        m_fitMode = false;
-        emit statusChanged();
-        event->accept();
-        return;
+    const int y = event->pos().y();
+    const int h = viewport()->height();
+    const bool nearBottom = h > 0 && y >= h - 48;
+    if (nearBottom != m_slideshowSeekbarVisible && !m_slideshowSeekDragging) {
+        m_slideshowSeekbarVisible = nearBottom;
+        viewport()->update();
     }
-
-    if (m_panning) {
-        const QPoint delta = event->pos() - m_lastMousePos;
-        m_lastMousePos = event->pos();
-        // Grow the free-form sceneRect with the view so middle-drag is never
-        // clamped against a stale zero-range scrollbar.
-        if (isWorkspaceMode()) {
-            updateWorkspaceSceneRect();
-        }
-        horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
-        verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
-        event->accept();
-        return;
+    if (m_slideshowSeekDragging && h > 0 && viewport()->width() > 0) {
+        const qreal f = qBound(0.0, qreal(event->pos().x()) / qreal(viewport()->width()), 1.0);
+        emit slideshowSeekRequested(f);
     }
+}
 
-    if (isImageMode()) {
-        updateHoverEdge(event->pos());
-    }
-
-    m_lastHoverViewPos = event->pos();
-    if (m_slideshowProgressActive && viewport()) {
-        const int y = event->pos().y();
-        const int h = viewport()->height();
-        const bool nearBottom = h > 0 && y >= h - 48;
-        if (nearBottom != m_slideshowSeekbarVisible && !m_slideshowSeekDragging) {
-            m_slideshowSeekbarVisible = nearBottom;
-            viewport()->update();
-        }
-        if (m_slideshowSeekDragging && h > 0 && viewport()->width() > 0) {
-            const qreal f = qBound(0.0, qreal(event->pos().x()) / qreal(viewport()->width()), 1.0);
-            emit slideshowSeekRequested(f);
-        }
-    }
-    updateGalleryHoverAt(m_lastHoverViewPos);
-
+void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
+{
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
     if (isWorkspaceMode() && m_tool == Tool::Select && !m_handleDragItem
@@ -1434,6 +1456,37 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
             }
         }
     }
+
+}
+
+void ImageView::mouseMoveEvent(QMouseEvent *event)
+{
+    if (tryMouseMoveTextRubber(event)) {
+        return;
+    }
+    updateMouseMoveLinkHover(event);
+    if (tryMouseMoveAttention(event)
+        || tryMouseMoveCropDrag(event)
+        || tryMouseMovePan(event)
+        || tryMouseMoveCropHover(event)
+        || tryMouseMoveZoomRegion(event)) {
+        return;
+    }
+    updateMouseInfo(event->pos());
+    if (tryMouseMovePageGuide(event)
+        || tryMouseMoveGroupAndHandleDrag(event)
+        || tryMouseMoveWorkspaceRotate(event)) {
+        return;
+    }
+
+    if (isImageMode()) {
+        updateHoverEdge(event->pos());
+    }
+
+    m_lastHoverViewPos = event->pos();
+    updateMouseMoveSlideshowSeek(event);
+    updateGalleryHoverAt(m_lastHoverViewPos);
+    updateMouseMoveWorkspaceChromeHover(event);
 
     QGraphicsView::mouseMoveEvent(event);
 }

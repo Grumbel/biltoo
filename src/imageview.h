@@ -1076,6 +1076,20 @@ protected:
     bool tryMousePressGalleryRight(QMouseEvent *event);
     bool tryMousePressGalleryLeft(QMouseEvent *event);
     bool tryMousePressWorkspaceSelect(QMouseEvent *event);
+
+    // mouseMoveEvent phases
+    bool tryMouseMoveTextRubber(QMouseEvent *event);
+    void updateMouseMoveLinkHover(QMouseEvent *event);
+    bool tryMouseMoveAttention(QMouseEvent *event);
+    bool tryMouseMoveCropDrag(QMouseEvent *event);
+    bool tryMouseMovePan(QMouseEvent *event);
+    bool tryMouseMoveCropHover(QMouseEvent *event);
+    bool tryMouseMoveZoomRegion(QMouseEvent *event);
+    bool tryMouseMovePageGuide(QMouseEvent *event);
+    bool tryMouseMoveGroupAndHandleDrag(QMouseEvent *event);
+    bool tryMouseMoveWorkspaceRotate(QMouseEvent *event);
+    void updateMouseMoveSlideshowSeek(QMouseEvent *event);
+    void updateMouseMoveWorkspaceChromeHover(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;

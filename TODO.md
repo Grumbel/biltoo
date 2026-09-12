@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-615-mouse-move-phases.** Split mouseMoveEvent into try*/update* helpers.
+Prior: **614**.
+
+### Change
+- Active-drag: text rubber, attention, crop drag, pan, zoom, page guide, group/handle, rotate
+- Hover/side-effect: link hover, crop hover, slideshow seek, workspace chrome hover
+- Dead duplicate pan block removed (early pan already returned)
+- `mouseMoveEvent` is a short dispatch driver
+
+### Done criteria
+- [x] Move paths named; behaviour preserved (page guide modifiers restored)
+- [x] Bundle **615**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-614-mouse-press-gallery-workspace.** Finish mousePressEvent split.
 Prior: **613**.
 
