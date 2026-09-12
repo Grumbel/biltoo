@@ -649,6 +649,20 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                 actionLine += QLatin1Char(' ') + m_hudDetail;
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
+        } else if (m_hudVisible || m_hudIdentityPulse) {
+            // Compact ladder provenance chip (PixelSource from thumtoo).
+            ImageItem *focus = targetItem();
+            if (!focus) {
+                focus = primaryItem();
+            }
+            if (focus) {
+                const QString src =
+                    ThumtooCache::lastPixelSourceLabel(focus->path());
+                if (!src.isEmpty()) {
+                    drawPanel({{tr("Ladder: %1").arg(src), false}}, margin,
+                              margin, false, false);
+                }
+            }
         }
 
         // Top-right: session index — pinned HUD or brief identity pulse after

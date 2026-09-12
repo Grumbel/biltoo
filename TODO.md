@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-494-ladder-hud-chip.** HUD shows Ladder: PixelSource chip.
+Prior: **493**.
+
+### Change
+- Top-left HUD chip "Ladder: jpeg_shrink|…" when HUD pinned or identity pulse
+- Provenance also triggers viewport update
+
+### Next
+- Soft-queue cleanup if needed
+- Publish/flake tip when ready
+
+### Done criteria
+- [x] HUD chip
+- [x] Bundle **494**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-493-prefer-cache-overview.** get_raster PreferCache + request_raster Overview.
 Prior: **492**. Companion: **thumtoo-173**.
 

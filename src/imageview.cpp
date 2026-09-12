@@ -165,6 +165,9 @@ ImageView::ImageView(QWidget *parent)
                 }
                 if (item && item->path() == path) {
                     emit statusChanged();
+                    if (viewport()) {
+                        viewport()->update();
+                    }
                 }
             });
 connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
