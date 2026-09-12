@@ -2,6 +2,19 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-517-viewport-mode-warning.** Collapse duplicated FullViewportUpdate branches.
+Prior: **516**.
+
+### Done criteria
+- [x] No -Wduplicated-branches on setActiveMode
+- [x] Bundle **517**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-516-soft-upgrade-repaint.** Soft 256→512→1024 was installed but not painted.
 Prior: **515**.
 
