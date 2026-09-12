@@ -1061,6 +1061,18 @@ protected:
     void drawForeground(QPainter *painter, const QRectF &rect) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+
+    // mousePressEvent phases (return true if the event was handled)
+    bool tryMousePressSlideshowSeek(QMouseEvent *event);
+    bool tryMousePressAttention(QMouseEvent *event);
+    bool tryMousePressCrop(QMouseEvent *event);
+    bool tryMousePressZoomRegion(QMouseEvent *event);
+    bool tryMousePressWorkspaceChrome(QMouseEvent *event);
+    bool tryMousePressImageLink(QMouseEvent *event);
+    bool tryMousePressTextRubber(QMouseEvent *event);
+    bool tryMousePressImageEdges(QMouseEvent *event);
+    bool tryMousePressPan(QMouseEvent *event);
+    bool tryMousePressWorkspaceRotate(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;

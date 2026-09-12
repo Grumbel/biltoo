@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-613-mouse-press-phases.** Split mousePressEvent early handlers.
+Prior: **612**.
+
+### Change
+- `tryMousePressSlideshowSeek`, `Attention`, `Crop`, `ZoomRegion`, `WorkspaceChrome`
+- `tryMousePressImageLink`, `TextRubber`, `ImageEdges`, `Pan`, `WorkspaceRotate`
+- `mousePressEvent` dispatches those then Gallery / Workspace select (still inline)
+
+### Done criteria
+- [x] Early press paths named and isolated
+- [x] Bundle **613**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-612-write-project-phases.** Split writeProjectToPath into helpers.
 Prior: **611**.
 

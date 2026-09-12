@@ -392,319 +392,372 @@ void ImageView::resizeEvent(QResizeEvent *event)
     }
 }
 
-void ImageView::mousePressEvent(QMouseEvent *event)
+bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
 {
     // mpv-style seekbar: drag along bottom edge during slideshow.
-    if (m_slideshowProgressActive && event->button() == Qt::LeftButton
-        && viewport() && viewport()->height() > 0) {
-        const int y = event->pos().y();
-        if (y >= viewport()->height() - 48) {
-            m_slideshowSeekDragging = true;
-            m_slideshowSeekbarVisible = true;
-            const qreal f = qBound(
-                0.0, qreal(event->pos().x()) / qreal(qMax(1, viewport()->width())), 1.0);
-            emit slideshowSeekRequested(f);
-            event->accept();
-            return;
-        }
+    if (!m_slideshowProgressActive || event->button() != Qt::LeftButton
+        || !viewport() || viewport()->height() <= 0) {
+        return false;
     }
-
-    // Attention mode: multi-point select / move / rubber-band / click-to-add.
-    if (m_attentionMode && event->button() == Qt::LeftButton && isImageMode()
-        && edgeZoneAt(event->pos()) == EdgeZone::None) {
-        ImageItem *item = targetItem();
-        if (item && !item->contentRect().isEmpty()) {
-            const int hit = attentionHandleIndexAt(event->pos());
-            const bool shift = event->modifiers() & Qt::ShiftModifier;
-            if (hit >= 0) {
-                if (shift) {
-                    if (m_attentionSelected.contains(hit)) {
-                        m_attentionSelected.removeAll(hit);
-                    } else {
-                        m_attentionSelected.append(hit);
-                    }
-                } else if (!m_attentionSelected.contains(hit)) {
-                    m_attentionSelected = {hit};
-                }
-                m_attentionDragging = true;
-                m_attentionRubberbanding = false;
-                m_attentionDragOriginView = event->pos();
-                m_attentionDragStartPts = attentionPointsForTarget();
-                viewport()->update();
-                event->accept();
-                return;
-            }
-            const QPointF scene = mapToScene(event->pos());
-            const QPointF local = item->mapFromScene(scene);
-            const QRectF cr = item->contentRect();
-            if (cr.contains(local) && !shift) {
-                const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
-                const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
-                QVector<QPointF> pts = attentionPointsForTarget();
-                pts.append(QPointF(nx, ny));
-                setAttentionPointsForTarget(pts);
-                m_attentionSelected = {int(pts.size() - 1)};
-                m_attentionDragging = true;
-                m_attentionDragOriginView = event->pos();
-                m_attentionDragStartPts = attentionPointsForTarget();
-                event->accept();
-                return;
-            }
-            m_attentionRubberbanding = true;
-            m_attentionDragging = false;
-            m_attentionRubberOrigin = event->pos();
-            m_attentionRubberRect = QRect(event->pos(), QSize());
-            if (!shift) {
-                m_attentionSelected.clear();
-            }
-            viewport()->update();
-            event->accept();
-            return;
-        }
+    if (event->pos().y() < viewport()->height() - 48) {
+        return false;
     }
+    m_slideshowSeekDragging = true;
+    m_slideshowSeekbarVisible = true;
+    const qreal f = qBound(
+        0.0, qreal(event->pos().x()) / qreal(qMax(1, viewport()->width())), 1.0);
+    emit slideshowSeekRequested(f);
+    event->accept();
+    return true;
+}
 
-    // Crop mode: handles adjust the draft rect; drag on image starts rubber-band.
-    if (m_cropMode && event->button() == Qt::LeftButton) {
-        const CropHandle h = cropHandleAt(event->pos());
-        if (h == CropHandle::ExpandToggle) {
-            m_cropAllowExpand = !m_cropAllowExpand;
-            if (!m_cropAllowExpand) {
-                ensureCropRectValid(); // clamp back into the image
-            }
-            viewport()->update();
-            event->accept();
-            return;
-        }
-        if (h == CropHandle::Auto) {
-            applyAutoCrop();
-            event->accept();
-            return;
-        }
-        if (h == CropHandle::Reset) {
-            // Expand draft to the full image; Apply commits a cleared session crop.
-            if (ImageItem *item = cropTargetItem()) {
-                m_cropRect = item->contentRect();
-                m_cropRotation = 0.0;
-                ensureCropRectValid();
-                viewport()->update();
-            }
-            event->accept();
-            return;
-        }
-        if (h == CropHandle::Cancel) {
-            cancelCrop();
-            event->accept();
-            return;
-        }
-        if (h == CropHandle::Close) {
-            applyCrop();
-            event->accept();
-            return;
-        }
-        if (h != CropHandle::None) {
-            beginCropHandleDrag(h, event->pos());
-            event->accept();
-            return;
-        }
-        // Middle/Alt still pan; plain left on the image body → new rubber-band crop.
-        if (!(event->modifiers()
-              & (Qt::AltModifier | Qt::ControlModifier | Qt::ShiftModifier))) {
-            beginCropRubberBand(event->pos());
-            if (m_cropRubberBanding) {
-                event->accept();
-                return;
-            }
-        }
+bool ImageView::tryMousePressAttention(QMouseEvent *event)
+{
+    if (!m_attentionMode || event->button() != Qt::LeftButton || !isImageMode()
+        || edgeZoneAt(event->pos()) != EdgeZone::None) {
+        return false;
     }
-
-    // Rubber-band zoom: one-shot (Z) or continuous Workspace Zoom tool.
-    if ((m_zoomRegionArmed || (isWorkspaceMode() && m_tool == Tool::Zoom))
-        && event->button() == Qt::LeftButton) {
-        m_zoomRegionDragging = true;
-        m_zoomRegionOrigin = event->pos();
-        if (!m_zoomRubberBand) {
-            m_zoomRubberBand = new QRubberBand(QRubberBand::Rectangle, viewport());
+    ImageItem *item = targetItem();
+    if (!item || item->contentRect().isEmpty()) {
+        return false;
+    }
+    const int hit = attentionHandleIndexAt(event->pos());
+    const bool shift = event->modifiers() & Qt::ShiftModifier;
+    if (hit >= 0) {
+        if (shift) {
+            if (m_attentionSelected.contains(hit)) {
+                m_attentionSelected.removeAll(hit);
+            } else {
+                m_attentionSelected.append(hit);
+            }
+        } else if (!m_attentionSelected.contains(hit)) {
+            m_attentionSelected = {hit};
         }
-        m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, QSize()));
-        m_zoomRubberBand->show();
+        m_attentionDragging = true;
+        m_attentionRubberbanding = false;
+        m_attentionDragOriginView = event->pos();
+        m_attentionDragStartPts = attentionPointsForTarget();
+        viewport()->update();
         event->accept();
-        return;
+        return true;
     }
+    const QPointF scene = mapToScene(event->pos());
+    const QPointF local = item->mapFromScene(scene);
+    const QRectF cr = item->contentRect();
+    if (cr.contains(local) && !shift) {
+        const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
+        const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
+        QVector<QPointF> pts = attentionPointsForTarget();
+        pts.append(QPointF(nx, ny));
+        setAttentionPointsForTarget(pts);
+        m_attentionSelected = {int(pts.size() - 1)};
+        m_attentionDragging = true;
+        m_attentionDragOriginView = event->pos();
+        m_attentionDragStartPts = attentionPointsForTarget();
+        event->accept();
+        return true;
+    }
+    m_attentionRubberbanding = true;
+    m_attentionDragging = false;
+    m_attentionRubberOrigin = event->pos();
+    m_attentionRubberRect = QRect(event->pos(), QSize());
+    if (!shift) {
+        m_attentionSelected.clear();
+    }
+    viewport()->update();
+    event->accept();
+    return true;
+}
 
+bool ImageView::tryMousePressCrop(QMouseEvent *event)
+{
+    if (!m_cropMode || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    const CropHandle h = cropHandleAt(event->pos());
+    if (h == CropHandle::ExpandToggle) {
+        m_cropAllowExpand = !m_cropAllowExpand;
+        if (!m_cropAllowExpand) {
+            ensureCropRectValid(); // clamp back into the image
+        }
+        viewport()->update();
+        event->accept();
+        return true;
+    }
+    if (h == CropHandle::Auto) {
+        applyAutoCrop();
+        event->accept();
+        return true;
+    }
+    if (h == CropHandle::Reset) {
+        // Expand draft to the full image; Apply commits a cleared session crop.
+        if (ImageItem *item = cropTargetItem()) {
+            m_cropRect = item->contentRect();
+            m_cropRotation = 0.0;
+            ensureCropRectValid();
+            viewport()->update();
+        }
+        event->accept();
+        return true;
+    }
+    if (h == CropHandle::Cancel) {
+        cancelCrop();
+        event->accept();
+        return true;
+    }
+    if (h == CropHandle::Close) {
+        applyCrop();
+        event->accept();
+        return true;
+    }
+    if (h != CropHandle::None) {
+        beginCropHandleDrag(h, event->pos());
+        event->accept();
+        return true;
+    }
+    // Middle/Alt still pan; plain left on the image body → new rubber-band crop.
+    if (!(event->modifiers()
+          & (Qt::AltModifier | Qt::ControlModifier | Qt::ShiftModifier))) {
+        beginCropRubberBand(event->pos());
+        if (m_cropRubberBanding) {
+            event->accept();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
+{
+    if (!(m_zoomRegionArmed || (isWorkspaceMode() && m_tool == Tool::Zoom))
+        || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    m_zoomRegionDragging = true;
+    m_zoomRegionOrigin = event->pos();
+    if (!m_zoomRubberBand) {
+        m_zoomRubberBand = new QRubberBand(QRubberBand::Rectangle, viewport());
+    }
+    m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, QSize()));
+    m_zoomRubberBand->show();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
+{
+    if (!isWorkspaceMode() || event->button() != Qt::LeftButton
+        || m_tool != Tool::Select) {
+        return false;
+    }
     // Workspace chrome hit-testing is view-owned (DOMAIN: free-object transforms).
     // Chrome is painted above all tiles in viewport space; hit-testing must
     // similarly ignore scene z-order of other images under the pointer.
-    if (isWorkspaceMode() && event->button() == Qt::LeftButton
-        && m_tool == Tool::Select) {
-        const QPointF scenePos = mapToScene(event->pos());
-        QList<ImageItem *> selected;
-        for (QGraphicsItem *gi : m_scene->selectedItems()) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive() && m_items.contains(ii)) {
-                    selected.append(ii);
-                }
+    const QPointF scenePos = mapToScene(event->pos());
+    QList<ImageItem *> selected;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (ii->isInteractive() && m_items.contains(ii)) {
+                selected.append(ii);
             }
-        }
-        if (selected.size() > 1) {
-            // Multi-select: group frame only (no per-item handles).
-            const int gh = groupHandleAt(event->pos(), selected);
-            if (gh >= 0 && beginGroupScale(gh, selected)) {
-                m_groupPressScenePos = mapToScene(event->pos());
-                event->accept();
-                return;
-            }
-        } else if (selected.size() == 1) {
-            // Single selection: test that item's handles first, even when the
-            // pointer is over another tile's pixmap (handles are drawn on top).
-            ImageItem *item = selected.first();
-            if (item->beginHandleInteraction(scenePos, event->modifiers())) {
-                m_handleDragItem = item;
-                m_dragItem = item;
-                m_dragStartState = captureState(item);
-                setPageGuideSelected(false);
-                event->accept();
-                return;
-            }
-        }
-        // Page guide scale grips when the guide is selected.
-        if (m_pageGuideVisible && m_pageGuideSelected) {
-            const int ph = pageGuideHandleAt(event->pos());
-            if (ph >= 0 && beginPageGuideResize(ph)) {
-                event->accept();
-                return;
-            }
-        }
-        // No handle hit — fall through to move/select / clear.
-    }
-
-    // Image mode: plain left click on a link region (PDF/DjVu/EPUB).
-    if (isImageMode() && !m_cropMode && !m_attentionMode
-        && event->button() == Qt::LeftButton
-        && event->modifiers() == Qt::NoModifier
-        && PagePath::isPageRef(classicPath())) {
-        if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
-            const bool hadShow = m_showTextRegions;
-            m_showTextRegions = true;
-            refreshTextLayer();
-            m_showTextRegions = hadShow;
-        }
-        int page = 0;
-        QString uri;
-        if (hitTextLinkAt(event->pos(), &page, &uri)) {
-            emit linkActivated(page, uri);
-            event->accept();
-            return;
         }
     }
-
-    // Image mode: Shift+left rubber-band select text on PDF/DjVu/EPUB pages.
-    if (isImageMode() && !m_cropMode && !m_attentionMode
-        && event->button() == Qt::LeftButton
-        && (event->modifiers() & Qt::ShiftModifier)
-        && !(event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))) {
-        if (PagePath::isPageRef(classicPath())) {
-            m_textRubberbanding = true;
-            m_textRubberOrigin = event->pos();
-            m_textRubberRect = QRect(event->pos(), QSize());
-            m_textSelectedRegions.clear();
-            setCursor(Qt::CrossCursor);
-            viewport()->update();
+    if (selected.size() > 1) {
+        // Multi-select: group frame only (no per-item handles).
+        const int gh = groupHandleAt(event->pos(), selected);
+        if (gh >= 0 && beginGroupScale(gh, selected)) {
+            m_groupPressScenePos = mapToScene(event->pos());
             event->accept();
-            return;
+            return true;
+        }
+    } else if (selected.size() == 1) {
+        // Single selection: test that item's handles first, even when the
+        // pointer is over another tile's pixmap (handles are drawn on top).
+        ImageItem *item = selected.first();
+        if (item->beginHandleInteraction(scenePos, event->modifiers())) {
+            m_handleDragItem = item;
+            m_dragItem = item;
+            m_dragStartState = captureState(item);
+            setPageGuideSelected(false);
+            event->accept();
+            return true;
         }
     }
-
-    // Image mode: edge clicks — top returns to Gallery/Workspace; left/right navigate
-    if (isImageMode() && event->button() == Qt::LeftButton
-        && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
-        const EdgeZone zone = edgeZoneAt(event->pos());
-        if (zone == EdgeZone::GalleryReturn) {
-            emit galleryReturnRequested();
+    // Page guide scale grips when the guide is selected.
+    if (m_pageGuideVisible && m_pageGuideSelected) {
+        const int ph = pageGuideHandleAt(event->pos());
+        if (ph >= 0 && beginPageGuideResize(ph)) {
             event->accept();
-            return;
-        }
-        if (zone == EdgeZone::Previous) {
-            emit navigatePreviousRequested();
-            event->accept();
-            return;
-        }
-        if (zone == EdgeZone::Next) {
-            emit navigateNextRequested();
-            event->accept();
-            return;
-        }
-        // Slideshow: centre click pauses / resumes. Edges stay navigation above.
-        // Ignore the second press of a double-click so we do not toggle twice.
-        if ((m_slideshowProgressActive || m_slideshowPausedHud)
-            && zone == EdgeZone::None) {
-            if (m_lastSlideshowCenterClick.isValid()
-                && m_lastSlideshowCenterClick.elapsed()
-                    < QApplication::doubleClickInterval()) {
-                event->accept();
-                return;
-            }
-            m_lastSlideshowCenterClick.start();
-            emit slideshowTogglePauseRequested();
-            event->accept();
-            return;
+            return true;
         }
     }
+    // No handle hit — fall through to move/select / clear.
+    return false;
+}
 
+bool ImageView::tryMousePressImageLink(QMouseEvent *event)
+{
+    if (!isImageMode() || m_cropMode || m_attentionMode
+        || event->button() != Qt::LeftButton
+        || event->modifiers() != Qt::NoModifier
+        || !PagePath::isPageRef(classicPath())) {
+        return false;
+    }
+    if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
+        const bool hadShow = m_showTextRegions;
+        m_showTextRegions = true;
+        refreshTextLayer();
+        m_showTextRegions = hadShow;
+    }
+    int page = 0;
+    QString uri;
+    if (!hitTextLinkAt(event->pos(), &page, &uri)) {
+        return false;
+    }
+    emit linkActivated(page, uri);
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
+{
+    if (!isImageMode() || m_cropMode || m_attentionMode
+        || event->button() != Qt::LeftButton
+        || !(event->modifiers() & Qt::ShiftModifier)
+        || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
+        || !PagePath::isPageRef(classicPath())) {
+        return false;
+    }
+    m_textRubberbanding = true;
+    m_textRubberOrigin = event->pos();
+    m_textRubberRect = QRect(event->pos(), QSize());
+    m_textSelectedRegions.clear();
+    setCursor(Qt::CrossCursor);
+    viewport()->update();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
+{
+    if (!isImageMode() || event->button() != Qt::LeftButton
+        || (event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
+        return false;
+    }
+    const EdgeZone zone = edgeZoneAt(event->pos());
+    if (zone == EdgeZone::GalleryReturn) {
+        emit galleryReturnRequested();
+        event->accept();
+        return true;
+    }
+    if (zone == EdgeZone::Previous) {
+        emit navigatePreviousRequested();
+        event->accept();
+        return true;
+    }
+    if (zone == EdgeZone::Next) {
+        emit navigateNextRequested();
+        event->accept();
+        return true;
+    }
+    // Slideshow: centre click pauses / resumes. Edges stay navigation above.
+    // Ignore the second press of a double-click so we do not toggle twice.
+    if ((m_slideshowProgressActive || m_slideshowPausedHud)
+        && zone == EdgeZone::None) {
+        if (m_lastSlideshowCenterClick.isValid()
+            && m_lastSlideshowCenterClick.elapsed()
+                < QApplication::doubleClickInterval()) {
+            event->accept();
+            return true;
+        }
+        m_lastSlideshowCenterClick.start();
+        emit slideshowTogglePauseRequested();
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::tryMousePressPan(QMouseEvent *event)
+{
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.
     if (!m_slideshowMotionActive
         && (event->button() == Qt::MiddleButton
-        || (event->button() == Qt::LeftButton
-            && ((isImageMode() && m_imageModeLeftDragPan)
-                || (isWorkspaceMode() && m_tool == Tool::Pan)
-                || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
-                || (event->modifiers() & Qt::AltModifier))))) {
+            || (event->button() == Qt::LeftButton
+                && ((isImageMode() && m_imageModeLeftDragPan)
+                    || (isWorkspaceMode() && m_tool == Tool::Pan)
+                    || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
+                    || (event->modifiers() & Qt::AltModifier))))) {
         if (!(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)
               && event->button() == Qt::LeftButton)) {
             m_panning = true;
             m_lastMousePos = event->pos();
             setCursor(Qt::ClosedHandCursor);
             event->accept();
-            return;
+            return true;
         }
     }
-
     if (event->button() == Qt::MiddleButton && !m_slideshowMotionActive) {
         m_panning = true;
         m_lastMousePos = event->pos();
         setCursor(Qt::ClosedHandCursor);
         event->accept();
-        return;
+        return true;
     }
+    return false;
+}
 
+bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
+{
     // Workspace only: Shift + left button free-rotates (unless the press is on
     // a selected item's scale/chrome handle — those use Shift for opposite-edge scale).
-    if (isWorkspaceMode() && event->button() == Qt::LeftButton
-        && (event->modifiers() & Qt::ShiftModifier)) {
-        ImageItem *hit = nullptr;
-        const QPointF scenePos = mapToScene(event->pos());
-        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                hit = ii;
-                break;
-            }
+    if (!isWorkspaceMode() || event->button() != Qt::LeftButton
+        || !(event->modifiers() & Qt::ShiftModifier)) {
+        return false;
+    }
+    ImageItem *hit = nullptr;
+    const QPointF scenePos = mapToScene(event->pos());
+    for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            hit = ii;
+            break;
         }
-        if (!hit) {
-            hit = targetItem();
-        }
-        if (hit && hit->isSelected() && hit->hasHandleAt(hit->mapFromScene(scenePos))) {
-            // Fall through to QGraphicsView → ImageItem handle interaction.
-        } else if (hit) {
-            m_rotating = true;
-            m_rotateItem = hit;
-            m_rotateStartAngle = angleAt(scenePos, hit);
-            m_rotateItemStart = hit->itemRotation();
-            m_dragStartState = captureState(hit);
-            m_scene->clearSelection();
-            hit->setSelected(true);
-            setCursor(Qt::CrossCursor);
-            event->accept();
-            return;
-        }
+    }
+    if (!hit) {
+        hit = targetItem();
+    }
+    if (hit && hit->isSelected() && hit->hasHandleAt(hit->mapFromScene(scenePos))) {
+        // Fall through to QGraphicsView → ImageItem handle interaction.
+        return false;
+    }
+    if (!hit) {
+        return false;
+    }
+    m_rotating = true;
+    m_rotateItem = hit;
+    m_rotateStartAngle = angleAt(scenePos, hit);
+    m_rotateItemStart = hit->itemRotation();
+    m_dragStartState = captureState(hit);
+    m_scene->clearSelection();
+    hit->setSelected(true);
+    setCursor(Qt::CrossCursor);
+    event->accept();
+    return true;
+}
+
+void ImageView::mousePressEvent(QMouseEvent *event)
+{
+    if (tryMousePressSlideshowSeek(event)
+        || tryMousePressAttention(event)
+        || tryMousePressCrop(event)
+        || tryMousePressZoomRegion(event)
+        || tryMousePressWorkspaceChrome(event)
+        || tryMousePressImageLink(event)
+        || tryMousePressTextRubber(event)
+        || tryMousePressImageEdges(event)
+        || tryMousePressPan(event)
+        || tryMousePressWorkspaceRotate(event)) {
+        return;
     }
 
     // Gallery right-click: do not let QGraphicsView alter selection (that
