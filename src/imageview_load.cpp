@@ -693,28 +693,44 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         item = m_items.first();
     }
     if (item) {
+        const QSize sizeBefore = item->imageSize();
         item->setPath(path);
         if (sz.width() > 1 && sz.height() > 1) {
             item->setIntrinsicSize(sz);
         }
         bindImageModeSessionCursor(item);
+        // Allow SoftPreview over prior FullSource without canAccept blocking.
         if (item->hasDecodedPixels()) {
             item->clearDecodedPixels();
         }
+        // Pixel swap only — prepareImageModeCanvas + fitItem every ←/→ was the
+        // remaining GUI hitch (undo clear, resetTransform, fitInView).
         installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
                              m_currentSessionId);
-        resetImageModeItemPlacement(item);
-        prepareImageModeCanvas();
-        fitItem(item, currentFitAspectMode());
-        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+        const QSize sizeAfter = item->imageSize();
+        const bool aspectChanged =
+            sizeBefore.width() > 1 && sizeBefore.height() > 1
+            && sizeAfter.width() > 1 && sizeAfter.height() > 1
+            && qAbs(double(sizeBefore.width()) / sizeBefore.height()
+                    - double(sizeAfter.width()) / sizeAfter.height()) > 0.02;
+        if (aspectChanged || sizeBefore.width() <= 1) {
+            resetImageModeItemPlacement(item);
+            // Fit without prepareImageModeCanvas (that clears undo + resets
+            // transform + zeros scene rect on every key).
+            fitItem(item, currentFitAspectMode());
+            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+        } else {
+            preserveImageViewOnLogicalSizeChange(item, sizeBefore, sizeAfter);
+        }
         setUpdatesEnabled(true);
         if (viewport()) {
             viewport()->update();
         }
-        emit statusChanged();
-        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d",
+        // statusChanged every key floods the status bar — skip for soft swap.
+        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d",
                       qPrintable(QFileInfo(path).fileName()),
-                      pixels.width(), pixels.height());
+                      pixels.width(), pixels.height(),
+                      (aspectChanged || sizeBefore.width() <= 1) ? 1 : 0);
         return;
     }
 
@@ -1921,7 +1937,8 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     if (viewport()) {
         viewport()->update();
     }
-    emit statusChanged();
+    // Do not emit statusChanged on every ladder step — status bar rebuild is
+    // pure GUI cost on rapid ←/→.
 }
 
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const

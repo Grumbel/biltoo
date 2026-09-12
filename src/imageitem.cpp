@@ -120,13 +120,9 @@ void ImageItem::setSourceImageReady(const QImage &image)
         setOffset(-s.width() / 2.0, -s.height() / 2.0);
     } else {
         setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
-        const int edge = qMax(m_source.width(), m_source.height());
-        // ≤768: cheap fromImage. Larger: paint via drawImage (avoids 16MB+ GUI convert).
-        if (edge <= 768) {
-            setPixmap(QPixmap::fromImage(m_source));
-        } else {
-            setPixmap(QPixmap());
-        }
+        // Never QPixmap::fromImage here — that convert is pure GUI cost on every
+        // ←/→ soft install (512 soft was still hitting ≤768). paint uses m_source.
+        setPixmap(QPixmap());
     }
     applyLocalTransform();
     update();

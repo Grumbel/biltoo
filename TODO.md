@@ -2,6 +2,32 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-687-no-fit-no-fromimage-on-nav.** Soft nav = pixel swap only on GUI.
+Prior: **686**.
+
+### Evidence
+Logs showed soft from cache + PreferCache OK, but user still laggy. Remaining GUI
+on every ←/→ pending INSTALLED:
+- `prepareImageModeCanvas()` (undo clear, resetTransform, zero scene rect)
+- `fitItem` / fitInView every time
+- `QPixmap::fromImage` for ≤768 soft in setSourceImageReady
+- `statusChanged` every soft + every ladder step
+
+### Change
+- `setSourceImageReady`: never fromImage — paint via m_source drawImage
+- pending soft install: **no** prepareImageModeCanvas; fit only if aspect changes >2%
+- installImageModeSampleInPlace: no statusChanged
+
+### Done criteria
+- [x] pendingTile INSTALLED fit=0 for same-aspect nav
+- [x] Bundle **687**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-686-pending-defer-empty-soft.** Empty pendingTile must not rebuild/fit the scene.
 Prior: **685**.
 
