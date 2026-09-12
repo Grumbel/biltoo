@@ -413,6 +413,7 @@ private:
     QTimer *m_slideshowTimer = nullptr;
     /** Debounced neighbour preload after rapid ←/→. */
     QTimer *m_slideshowPreloadTimer = nullptr;
+    QTimer *m_slideshowNavLoadTimer = nullptr;
     QTimer *m_cursorHideTimer = nullptr;
     bool m_slideshowCursorHidden = false;
 

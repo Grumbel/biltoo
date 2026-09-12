@@ -1398,7 +1398,30 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     // Gallery/Workspace keep multi-object canvas; update session cursor only.
     // Gallery: do not exclusive-select (Ctrl+click multi-select is owned by the view).
     if (isImageMode()) {
-        m_imageView->loadImage(path);
+        // Key-repeat during slideshow: only advance the phase composite.
+        // loadImage per auto-repeat step (soft decode + gen bump + status)
+        // accumulated until the GUI starved. Decode the settled index after
+        // a short quiet period.
+        if (isSlideshowSession() && !m_slideshowAdvancing) {
+            if (!m_slideshowNavLoadTimer) {
+                m_slideshowNavLoadTimer = new QTimer(this);
+                m_slideshowNavLoadTimer->setSingleShot(true);
+                m_slideshowNavLoadTimer->setInterval(60);
+                connect(m_slideshowNavLoadTimer, &QTimer::timeout, this, [this]() {
+                    if (!m_imageView || !isImageMode() || !isSlideshowSession()) {
+                        return;
+                    }
+                    if (m_currentIndex < 0
+                        || m_currentIndex >= m_session.paths().size()) {
+                        return;
+                    }
+                    m_imageView->loadImage(m_session.paths().at(m_currentIndex));
+                });
+            }
+            m_slideshowNavLoadTimer->start();
+        } else {
+            m_imageView->loadImage(path);
+        }
     } else if (isGalleryMode() && m_imageView) {
         // Filmstrip / keyboard nav (ensureGalleryVisible): select the tile and
         // scroll it into view. Gallery view clicks pass false — selection was
@@ -2335,7 +2358,7 @@ void MainWindow::onSlideshowUserNavigated()
         if (!m_slideshowPreloadTimer) {
             m_slideshowPreloadTimer = new QTimer(this);
             m_slideshowPreloadTimer->setSingleShot(true);
-            m_slideshowPreloadTimer->setInterval(80);
+            m_slideshowPreloadTimer->setInterval(200);
             connect(m_slideshowPreloadTimer, &QTimer::timeout, this, [this]() {
                 if (!m_imageView || m_session.paths().size() <= 1
                     || m_currentIndex < 0) {

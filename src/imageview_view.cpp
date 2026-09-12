@@ -1734,17 +1734,10 @@ bool ImageView::beginLiveSlideshowTransition(const QString &nextPath)
 
 int ImageView::slideshowTargetEdge() const
 {
-    // Cap at overview (1024). Viewport×DPR on 4K/HiDPI was 2048+ and every
-    // ←/→ pulled tile_synth 1365×2048 plus Smooth atlas rebuilds on the GUI.
-    if (!viewport()) {
-        return ThumtooCache::kGalleryLadderEdge;
-    }
-    const qreal dpr = devicePixelRatioF();
-    const QSize vs = viewport()->size();
-    const int longPx = int(qCeil(qMax(vs.width(), vs.height()) * dpr));
-    const int snapped = ThumtooCache::ceilLadderEdge(
-        qMax(longPx, ThumtooCache::kFilmstripLadderEdge));
-    return qMin(snapped, ThumtooCache::kBatchOverviewEdge);
+    // Soft ladder only while the show owns the composite. Overview/1024
+    // preload under key-repeat still starved the pool (logs: preload-start
+    // edge=1024 cascading through the session).
+    return ThumtooCache::kGalleryLadderEdge;
 }
 
 void ImageView::preloadSlideshowImage(const QString &path)

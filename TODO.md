@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-548-slideshow-nav-coalesce.** Debounce loadImage; soft edge 512 only.
+Prior: **547**.
+
+### Log after 546/547
+Filmstrip gone; still: phase-from every key, preload-start edge=1024 cascade,
+dwell stuck on old itemPath while phase advances, occasional 683×1024 phase.
+
+### Changes
+- slideshowTargetEdge **always 512** (no overview preload under key-repeat)
+- Slideshow session: **skip loadImage** on each setCurrentIndex; **60ms**
+  single-shot loads only the settled index
+- Neighbour preload debounce **200ms**
+
+### Done criteria
+- [x] Bundle **548**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-547-filmstrip-suspend-api.** Fix private scheduleVisibleThumbnailLoads call.
 Prior: **546**.
 
