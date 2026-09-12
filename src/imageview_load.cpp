@@ -1413,40 +1413,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
                 item->setSelected(true);
             }
         }
-        if (isGalleryMode()) {
-            item->setItemRotation(0.0);
-            item->setItemShear(0.0);
-            item->setItemHFlip(false);
-            item->setItemVFlip(false);
-            item->setItemOpacity(1.0);
-        } else if (haveBound && bound.hasScenePos) {
-            // Explicit drop: place at the drop point (new placement).
-            applyPendingBindScenePos(item, bound);
-            m_pendingScenePos.remove(path);
-            rememberItemState(item);
-        } else if (haveBound && bound.id != kInvalidSessionImageId
-                   && m_appearance.get(bound.id)) {
-            // Thumbnail membership toggle: restore last Workspace pose for this
-            // session image (detach saved it via rememberItemState).
-            applyState(item, *m_appearance.get(bound.id));
-        } else if (m_pendingScenePos.contains(path)) {
-            const QPointF pos = m_pendingScenePos.take(path);
-            item->setPos(pos);
-            item->setItemScale(1.0);
-            item->setItemRotation(0.0);
-            item->setItemOpacity(1.0);
-            item->setStackZ(m_items.size() - 1);
-        } else {
-            const auto it = m_itemStates.constFind(path);
-            if (it != m_itemStates.cend()) {
-                applyState(item, *it);
-            } else {
-                WorkspaceItemState s = defaultStateForPath(path, m_items.size() - 1);
-                const QSizeF sz(image.width(), image.height());
-                s.pos = findEmptyPlacement(sz);
-                applyState(item, s);
-            }
-        }
+        placeNewLoadAddItem(item, path, image, haveBound, bound);
     }
 
     if (m_layoutMode != LayoutMode::FreeForm) {

@@ -484,6 +484,12 @@ public:
      */
     bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
                                           PendingSessionBind *out);
+    /**
+     * Placement for a newly created LoadAdd tile: gallery identity transform,
+     * bind scene pos, restored appearance pose, pending drop, or empty slot.
+     */
+    void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
+                             bool haveBound, const PendingSessionBind &bound);
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
     void detachCanvasSessionId(SessionImageId sessionId);

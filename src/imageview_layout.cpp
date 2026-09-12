@@ -996,6 +996,54 @@ bool ImageView::takePendingSessionBindForNewItem(const QString &path, ImageItem 
     return false;
 }
 
+void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
+                                    const QImage &image, bool haveBound,
+                                    const PendingSessionBind &bound)
+{
+    if (!item) {
+        return;
+    }
+    if (isGalleryMode()) {
+        // Packed layout owns pose; keep item transform neutral.
+        item->setItemRotation(0.0);
+        item->setItemShear(0.0);
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+        item->setItemOpacity(1.0);
+        return;
+    }
+    if (haveBound && bound.hasScenePos) {
+        // Explicit drop: place at the drop point (new placement).
+        applyPendingBindScenePos(item, bound);
+        return;
+    }
+    if (haveBound && bound.id != kInvalidSessionImageId
+        && m_appearance.get(bound.id)) {
+        // Thumbnail membership toggle: restore last Workspace pose.
+        applyState(item, *m_appearance.get(bound.id));
+        return;
+    }
+    if (m_pendingScenePos.contains(path)) {
+        const QPointF pos = m_pendingScenePos.take(path);
+        item->setPos(pos);
+        item->setItemScale(1.0);
+        item->setItemRotation(0.0);
+        item->setItemOpacity(1.0);
+        item->setStackZ(m_items.size() - 1);
+        return;
+    }
+    const auto it = m_itemStates.constFind(path);
+    if (it != m_itemStates.cend()) {
+        applyState(item, *it);
+        return;
+    }
+    WorkspaceItemState s = defaultStateForPath(path, m_items.size() - 1);
+    const QSizeF sz(image.width(), image.height());
+    s.pos = findEmptyPlacement(sz);
+    applyState(item, s);
+}
+
+
 
 void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
 {

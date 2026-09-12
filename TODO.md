@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-599-place-new-loadadd-item.** placeNewLoadAddItem placement policy.
+Prior: **598**.
+
+### Change
+- `placeNewLoadAddItem` — gallery neutral / drop pos / restored pose / pending
+  scene / empty slot
+- LoadAdd create loop calls it (drops duplicate scene-pos remember after
+  applyPendingBindScenePos)
+
+### Done criteria
+- [x] New-tile placement is one decision tree
+- [x] Bundle **599**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-598-loadadd-footprint-bind.** Footprint install + new-item bind take.
 Prior: **597**.
 
