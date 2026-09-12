@@ -1165,6 +1165,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     }
     if (path == m_ssToPath && incoming > ImageCache::longEdge(m_ssToImage)) {
         m_ssToImage = oriented;
+        requestToPhaseAtlasRebuild();
         changed = true;
     }
     if (changed && viewport()) {
@@ -1217,64 +1218,101 @@ void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const Q
         -1);
 }
 
-void ImageView::finishDwellAtlasRebuild(quint64 generation, const QImage &scaled,
-                                        qreal atlasScale, int atlasVw, int atlasVh)
+void ImageView::finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 generation,
+                                     const QImage &scaled, qreal atlasScale,
+                                     int atlasVw, int atlasVh)
 {
-    if (generation != m_dwellAtlasRebuildGeneration) {
-        return; // superseded by a newer source or resize
-    }
     if (scaled.isNull()) {
         return;
     }
-    // QPixmap must be created on the GUI thread (not in the pool job).
-    m_dwellAtlas = QPixmap::fromImage(scaled);
-    m_dwellAtlasScale = atlasScale;
-    m_dwellAtlasVw = atlasVw;
-    m_dwellAtlasVh = atlasVh;
+    if (kind == SlideshowAtlasKind::From) {
+        if (generation != m_dwellAtlasRebuildGeneration) {
+            return;
+        }
+        m_dwellAtlas = QPixmap::fromImage(scaled);
+        m_dwellAtlasScale = atlasScale;
+        m_dwellAtlasVw = atlasVw;
+        m_dwellAtlasVh = atlasVh;
+    } else {
+        if (generation != m_ssToAtlasRebuildGeneration) {
+            return;
+        }
+        m_ssToAtlas = QPixmap::fromImage(scaled);
+        m_ssToAtlasScale = atlasScale;
+        m_ssToAtlasVw = atlasVw;
+        m_ssToAtlasVh = atlasVh;
+    }
     if (viewport() && m_slideshowProgressActive) {
         viewport()->update();
     }
 }
 
-void ImageView::requestDwellAtlasRebuild()
+void ImageView::finishDwellAtlasRebuild(quint64 generation, const QImage &scaled,
+                                        qreal atlasScale, int atlasVw, int atlasVh)
 {
-    // Mid-slide HQ→full must not scale multi-MP rasters on the GUI thread —
-    // that hitch drops frames. Keep the previous atlas until this finishes.
-    if (m_dwellSourceImage.isNull() || !viewport() || m_slideshowNavHot) {
+    finishSlideshowAtlas(SlideshowAtlasKind::From, generation, scaled, atlasScale,
+                         atlasVw, atlasVh);
+}
+
+void ImageView::requestSlideshowAtlas(SlideshowAtlasKind kind)
+{
+    // Scale off the GUI thread; keep the previous atlas until finish assigns.
+    if (!viewport() || m_slideshowNavHot) {
+        return;
+    }
+    const QImage *source = (kind == SlideshowAtlasKind::From)
+                               ? &m_dwellSourceImage
+                               : &m_ssToImage;
+    if (!source || source->isNull()) {
         return;
     }
     const DwellAtlasParams params = dwellAtlasParams();
     if (!params.valid) {
         return;
     }
-    if (dwellAtlasCoversSource(m_dwellAtlas, m_dwellAtlasScale, m_dwellAtlasVw,
-                               m_dwellAtlasVh, params, m_dwellSourceImage)) {
+    const QPixmap *atlas = (kind == SlideshowAtlasKind::From) ? &m_dwellAtlas : &m_ssToAtlas;
+    const qreal aScale = (kind == SlideshowAtlasKind::From) ? m_dwellAtlasScale : m_ssToAtlasScale;
+    const int aVw = (kind == SlideshowAtlasKind::From) ? m_dwellAtlasVw : m_ssToAtlasVw;
+    const int aVh = (kind == SlideshowAtlasKind::From) ? m_dwellAtlasVh : m_ssToAtlasVh;
+    if (dwellAtlasCoversSource(*atlas, aScale, aVw, aVh, params, *source)) {
         return;
     }
 
-    const quint64 gen = ++m_dwellAtlasRebuildGeneration;
-    const QImage source = m_dwellSourceImage; // refcounted; not mutated by pool
+    const quint64 gen = (kind == SlideshowAtlasKind::From)
+                            ? ++m_dwellAtlasRebuildGeneration
+                            : ++m_ssToAtlasRebuildGeneration;
+    const QImage src = *source;
     const int longCap = params.longCap;
     const qreal keyScale = params.keyScale;
     const int vw = params.vw;
     const int vh = params.vh;
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start(
-        [guard, source, longCap, keyScale, vw, vh, gen]() {
-            if (source.isNull()) {
+        [guard, src, longCap, keyScale, vw, vh, gen, kind]() {
+            if (src.isNull()) {
                 return;
             }
-            QImage scaled = source.scaled(longCap, longCap, Qt::KeepAspectRatio,
-                                          Qt::FastTransformation);
+            QImage scaled = src.scaled(longCap, longCap, Qt::KeepAspectRatio,
+                                       Qt::FastTransformation);
             ImageView *view = guard.data();
             if (scaled.isNull() || !view) {
                 return;
             }
-            QTimer::singleShot(0, view, [view, gen, scaled, keyScale, vw, vh]() {
-                view->finishDwellAtlasRebuild(gen, scaled, keyScale, vw, vh);
+            QTimer::singleShot(0, view, [view, gen, scaled, keyScale, vw, vh, kind]() {
+                view->finishSlideshowAtlas(kind, gen, scaled, keyScale, vw, vh);
             });
         },
         -1);
+}
+
+void ImageView::requestDwellAtlasRebuild()
+{
+    requestSlideshowAtlas(SlideshowAtlasKind::From);
+}
+
+void ImageView::requestToPhaseAtlasRebuild()
+{
+    requestSlideshowAtlas(SlideshowAtlasKind::To);
 }
 
 void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
@@ -1581,6 +1619,11 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     if (toPath.isEmpty()) {
         m_ssToPath.clear();
         m_ssToImage = QImage();
+        ++m_ssToAtlasRebuildGeneration;
+        m_ssToAtlas = QPixmap();
+        m_ssToAtlasScale = 0.0;
+        m_ssToAtlasVw = 0;
+        m_ssToAtlasVh = 0;
         m_ssToMotionClockRunning = false;
         m_ssToMotionT = 0.0;
         return;
@@ -1598,6 +1641,9 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     m_ssToMotionBaseMs = 0;
     m_ssToMotionT = 0.0;
     schedulePhaseZoomBlur(toPath, m_ssToImage);
+    ++m_ssToAtlasRebuildGeneration; // drop stale to-atlas jobs
+    m_ssToAtlas = QPixmap();
+    requestToPhaseAtlasRebuild();
     scheduleSlideshowPhaseBufferUpgrade(toPath, m_ssToImage);
     qCDebug(lcSlideshow).nospace()
         << "[slideshow] phase-to "
@@ -2440,27 +2486,23 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
         return;
     }
 
-    // Prefer pre-scaled dwell atlas for the from/dwell path. Match by *path*,
-    // not by QImage address — pure-phase paint uses a local fromImg copy, so
-    // &image == &m_dwellSourceImage was never true and every frame smooth-scaled
-    // the full sample (steady frame drops).
+    // Prefer pre-scaled atlases matched by path (not QImage address — pure-phase
+    // paint may pass temporaries). From/dwell → m_dwellAtlas; to → m_ssToAtlas.
     const QPixmap *atlas = nullptr;
-    if (!m_dwellAtlas.isNull()
-        && (path == m_ssFromPath || path.isEmpty()
-            || &image == &m_dwellSourceImage || &image == &m_ssFromImage)) {
-        // Only when this blit is the dwell/from slide (not the incoming "to").
-        if (path.isEmpty() || path == m_ssFromPath) {
-            atlas = &m_dwellAtlas;
-        }
+    if (!path.isEmpty() && path == m_ssFromPath && !m_dwellAtlas.isNull()) {
+        atlas = &m_dwellAtlas;
+    } else if (!path.isEmpty() && path == m_ssToPath && !m_ssToAtlas.isNull()) {
+        atlas = &m_ssToAtlas;
+    } else if (path.isEmpty() && !m_dwellAtlas.isNull()
+               && (&image == &m_dwellSourceImage || &image == &m_ssFromImage)) {
+        atlas = &m_dwellAtlas;
     }
 
     if (atlas) {
-        // Atlas is already near viewport size — smooth is cheap and looks good.
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter->drawPixmap(dest, *atlas, atlas->rect());
     } else {
-        // Full sample scaled into dest every frame: must not use smooth filter
-        // (multi-MP → viewport with Smooth is a pure-phase hitch).
+        // Full sample → dest every frame: never Smooth (multi-MP hitch).
         painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
         painter->drawImage(dest, image);
     }

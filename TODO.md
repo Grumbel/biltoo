@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-671-to-phase-atlas.** Crossfade to-slide uses a pre-scaled atlas.
+Prior: **670**.
+
+### Change
+- `SlideshowAtlasKind::{From,To}` + `requestSlideshowAtlas` / `finishSlideshowAtlas`
+- `m_ssToAtlas` — async pre-scale for the incoming phase
+- `paintMotionCover` selects from vs to atlas by path
+- To-phase arm and HQ upgrade request the to atlas
+
+### Done criteria
+- [x] Crossfade does not smooth-scale full to-sample every frame when atlas ready
+- [x] Bundle **671**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-670-paint-atlas-by-path.** Pure-phase paint uses dwell atlas.
 Prior: **669**.
 

@@ -293,7 +293,13 @@ public:
     void scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image);
     void finishSlideshowPhaseBufferUpgrade(const QString &path, const QImage &oriented,
                                            quint64 generation);
+    enum class SlideshowAtlasKind { From, To };
     void requestDwellAtlasRebuild();
+    void requestToPhaseAtlasRebuild();
+    void requestSlideshowAtlas(SlideshowAtlasKind kind);
+    void finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 generation,
+                              const QImage &scaled, qreal atlasScale,
+                              int atlasVw, int atlasVh);
     void finishDwellAtlasRebuild(quint64 generation, const QImage &scaled,
                                 qreal atlasScale, int atlasVw, int atlasVh);
     struct DwellAtlasParams {
