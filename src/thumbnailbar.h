@@ -101,6 +101,9 @@ public:
      */
     void setSession(const QStringList &files, const QVector<SessionImageId> &ids);
     void setCurrentIndex(int index);
+    /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
+    void setVisibleLoadsSuspended(bool on) { m_visibleLoadsSuspended = on; }
+    bool visibleLoadsSuspended() const { return m_visibleLoadsSuspended; }
     int currentIndex() const;
 
     /**
@@ -238,6 +241,7 @@ private:
     std::atomic<quint64> m_generation{0};
     /** Row indices that already have a pool job (or finished) this generation. */
     QSet<int> m_thumbLoadScheduled;
+    bool m_visibleLoadsSuspended = false;
     /** Soft miss waiting on thumtoo ladderReady (row index). */
     QSet<int> m_thumbAwaitLadder;
     /** Soft-miss settled for this generation — do not re-queue (CPU spin). */

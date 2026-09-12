@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-546-slideshow-soft-only-nav.** Key-repeat: one soft edge, no filmstrip loads.
+Prior: **545**.
+
+### Log pattern (hold key)
+Per step: get_pixels **512 and 1024** for same file, phase-from ~512, filmstrip
+makeThumbnail for ahead rows. Recovers when key released — classic pool/GUI
+starvation under auto-repeat.
+
+### Cause
+- scheduleImageLoad always started **two** pool jobs (preview 512 + display 1024)
+- Filmstrip onCurrentRowChanged scheduled soft loads every index change
+
+### Changes
+- Slideshow LoadReplace: **single** soft job at kGalleryLadderEdge (512)
+- Filmstrip `setVisibleLoadsSuspended` for whole slideshow session
+
+### Done criteria
+- [x] Bundle **546**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-545-slideshow-phase-tick.** Stop 16ms phase full-repaint storm.
 Prior: **544**.
 

@@ -2395,6 +2395,9 @@ void MainWindow::startSlideshow()
     }
     // Shared preview cache: every session path gets a ≥512 frame scheduled now.
     ImageCache::warm(m_session.paths(), ImageCache::kPreviewEdge);
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setVisibleLoadsSuspended(true);
+    }
     // Gallery: open the focused session image in Image mode, then advance.
     if (isGalleryMode()) {
         QString path;
@@ -2544,6 +2547,10 @@ void MainWindow::resumeSlideshow()
 
 void MainWindow::stopSlideshow()
 {
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setVisibleLoadsSuspended(false);
+        m_thumbnailBar->scheduleVisibleThumbnailLoads();
+    }
     // Session = playing or paused. Silent no-ops when fully idle.
     const bool wasSession = isSlideshowSession()
         || (m_slideshowAct && m_slideshowAct->isChecked());

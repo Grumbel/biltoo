@@ -366,6 +366,32 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     const QPointer<ImageView> guard(this);
     constexpr int kPreviewEdge = 512;
 
+    // Slideshow: one soft edge only. Parallel 512+1024 get_pixels per key-repeat
+    // step saturated thumtoo and the pool until the GUI starved.
+    if (m_slideshowProgressActive) {
+        const int softEdge = ThumtooCache::kGalleryLadderEdge;
+        QThreadPool::globalInstance()->start([guard, path, role, gen, softEdge]() {
+            if (!guard || gen != guard->m_loadGeneration.load()) {
+                return;
+            }
+            QImage preview = ImageCache::get(path, softEdge);
+            if (preview.isNull()
+                || qMax(preview.width(), preview.height()) < softEdge * 7 / 10) {
+                preview = ImageLoader::loadThumbnail(path, softEdge);
+            }
+            if (!guard || preview.isNull()) {
+                return;
+            }
+            QTimer::singleShot(0, guard.data(), [guard, path, preview, gen, role]() {
+                if (!guard) {
+                    return;
+                }
+                guard->onImagePreviewLoaded(path, preview, gen, static_cast<int>(role));
+            });
+        }, 2);
+        return;
+    }
+
     // Thumbnail (high priority) and full decode (low priority) in parallel so
     // rapid next/prev paints soft pixels first; full frames catch up in the background.
     QThreadPool::globalInstance()->start([guard, path, role, gen]() {
@@ -373,9 +399,6 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         if (!guard || preview.isNull()) {
             return;
         }
-        // QTimer::singleShot(context, functor) is safer than
-        // QMetaObject::invokeMethod(context, functor) under Qt 6.11 — the latter
-        // asserted "Called object is not of the correct type" during drop loads.
         QTimer::singleShot(0, guard.data(), [guard, path, preview, gen, role]() {
             if (!guard) {
                 return;
@@ -384,48 +407,15 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         });
     }, 2);
 
-    // Full / display decode at low priority so soft previews win under rapid nav.
-    // Slideshow: viewport-sized PreferCache first — native extract made ←/→ lag.
-    const bool slideshowNav = m_slideshowProgressActive;
-    const int ssEdge = slideshowNav ? slideshowTargetEdge() : 0;
-    QThreadPool::globalInstance()->start([guard, path, role, gen, slideshowNav, ssEdge]() {
-        // Superseded navigation: skip expensive full decode when possible.
+    QThreadPool::globalInstance()->start([guard, path, role, gen]() {
         if (!guard || gen != guard->m_loadGeneration.load()) {
             return;
         }
-        QImage image;
-        if (slideshowNav && ssEdge > 0) {
-            image = ImageCache::get(path, ssEdge);
-            if (image.isNull()
-                || qMax(image.width(), image.height()) < ssEdge * 7 / 10) {
-                const QImage soft = ImageLoader::loadThumbnail(path, ssEdge);
-                if (!soft.isNull()
-                    && (image.isNull()
-                        || qMax(soft.width(), soft.height())
-                            > qMax(image.width(), image.height()))) {
-                    image = soft;
-                }
-            }
-            // Do not ImageLoader::load during slideshow — archive full extract
-            // stalls the pool and still feeds 24MP into phase/atlas after scale.
-            if ((image.isNull()
-                 || qMax(image.width(), image.height()) < ssEdge * 5 / 10)
-                && ThumtooCache::isAvailable()) {
-                (void)ThumtooCache::scheduleDisplayPixels(path, ssEdge);
-            }
-            if (!image.isNull()
-                && qMax(image.width(), image.height()) > ssEdge) {
-                image = image.scaled(ssEdge, ssEdge, Qt::KeepAspectRatio,
-                                     Qt::SmoothTransformation);
-            }
-        } else {
-            image = ImageLoader::load(path);
-        }
+        const QImage image = ImageLoader::load(path);
         if (!guard) {
             return;
         }
         QTimer::singleShot(0, guard.data(), [guard, path, image, gen, role]() {
-
             if (!guard) {
                 return;
             }
@@ -433,6 +423,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         });
     }, -1);
 }
+
 
 
 int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const

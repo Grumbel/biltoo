@@ -1773,7 +1773,9 @@ void ThumbnailBar::onItemActivated(QListWidgetItem *item)
 
 void ThumbnailBar::onCurrentRowChanged(int row)
 {
-    scheduleVisibleThumbnailLoads();
+    if (!m_visibleLoadsSuspended) {
+        scheduleVisibleThumbnailLoads();
+    }
     if (m_multiSelect) {
         return;
     }
