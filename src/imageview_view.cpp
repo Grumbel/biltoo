@@ -6,6 +6,7 @@
 #include "archivepath.h"
 #include "biltoo_logging.h"
 #include "imagecache.h"
+#include "sessionappearance.h"
 #include "imageitem.h"
 #include "imageloader.h"
 #include "pagepath.h"
@@ -1099,20 +1100,142 @@ bool ImageView::upgradeSlideshowPhaseSlot(const QString &path, const QImage &ima
     if (incoming <= ImageCache::longEdge(*slot)) {
         return false;
     }
-    *slot = orientSlideshowImage(image, path);
+    // Cap to slideshow target before orient — never flip/rotate multi-MP on GUI.
+    const QImage capped = ImageCache::clampToMaxEdge(image, slideshowTargetEdge());
+    if (ImageCache::longEdge(capped) <= ImageCache::longEdge(*slot)) {
+        return false;
+    }
+    *slot = orientSlideshowImage(capped, path);
     return true;
 }
 
-void ImageView::finishDwellAtlasRebuild(quint64 generation, const QPixmap &atlas,
+void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QImage &oriented,
+                                                  quint64 generation)
+{
+    // GUI assign after pool orient. Generation discards stale mid-slide work.
+    if (generation != m_ssPhaseUpgradeGeneration) {
+        return;
+    }
+    if (path.isEmpty() || oriented.isNull()) {
+        return;
+    }
+    const int incoming = ImageCache::longEdge(oriented);
+    bool changed = false;
+    if (path == m_ssFromPath && incoming > ImageCache::longEdge(m_ssFromImage)) {
+        m_ssFromImage = oriented;
+        m_dwellSourceImage = oriented;
+        requestDwellAtlasRebuild();
+        changed = true;
+    }
+    if (path == m_ssToPath && incoming > ImageCache::longEdge(m_ssToImage)) {
+        m_ssToImage = oriented;
+        changed = true;
+    }
+    if (changed && viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image)
+{
+    // HQ→full mid-slide: clamp + orient off the GUI thread. Orient (flip/rotate)
+    // of a 2k sample on the GUI was dropping frames even after atlas went async.
+    if (path.isEmpty() || image.isNull()) {
+        return;
+    }
+    const bool touchFrom = (path == m_ssFromPath);
+    const bool touchTo = (path == m_ssToPath);
+    if (!touchFrom && !touchTo) {
+        return;
+    }
+    const int edge = slideshowTargetEdge();
+    const QImage capped = ImageCache::clampToMaxEdge(image, edge);
+    const int incoming = ImageCache::longEdge(capped);
+    if (incoming <= 0) {
+        return;
+    }
+    if (touchFrom && incoming <= ImageCache::longEdge(m_ssFromImage)
+        && touchTo && incoming <= ImageCache::longEdge(m_ssToImage)) {
+        return;
+    }
+    if (touchFrom && !touchTo && incoming <= ImageCache::longEdge(m_ssFromImage)) {
+        return;
+    }
+    if (touchTo && !touchFrom && incoming <= ImageCache::longEdge(m_ssToImage)) {
+        return;
+    }
+
+    // Snapshot appearance on the GUI (maps / durable XDG once). Worker must
+    // not touch ImageView state — only pure transform on the capped sample.
+    WorkspaceItemState appState;
+    bool hasApp = false;
+    const SessionImageId sid = sessionIdForPath(path);
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+            if (SessionAppearance::hasContentAppearance(*app)) {
+                appState = *app;
+                hasApp = true;
+            }
+        }
+    }
+    if (!hasApp) {
+        const auto it = m_itemStates.constFind(path);
+        if (it != m_itemStates.cend()
+            && SessionAppearance::hasContentAppearance(*it)) {
+            appState = *it;
+            hasApp = true;
+        }
+    }
+    if (!hasApp) {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored)
+            && (stored.contentHFlip || stored.contentVFlip
+                || stored.contentQuarterTurns != 0)) {
+            appState = {};
+            appState.contentHFlip = stored.contentHFlip;
+            appState.contentVFlip = stored.contentVFlip;
+            appState.contentQuarterTurns = stored.contentQuarterTurns;
+            hasApp = SessionAppearance::hasContentAppearance(appState);
+        }
+    }
+
+    const quint64 gen = ++m_ssPhaseUpgradeGeneration;
+    const QPointer<ImageView> guard(this);
+    const QString pathCopy = path;
+    const QImage raw = capped;
+    if (!hasApp) {
+        QTimer::singleShot(0, this, [this, pathCopy, raw, gen]() {
+            finishSlideshowPhaseBufferUpgrade(pathCopy, raw, gen);
+        });
+        return;
+    }
+    QThreadPool::globalInstance()->start(
+        [guard, pathCopy, raw, appState, gen]() {
+            const QImage oriented = SessionAppearance::materializeDisplay(
+                raw, appState, SessionAppearance::PixelKind::SoftPreview);
+            ImageView *view = guard.data();
+            if (!view) {
+                return;
+            }
+            const QImage out = oriented.isNull() ? raw : oriented;
+            QTimer::singleShot(0, view, [view, pathCopy, out, gen]() {
+                view->finishSlideshowPhaseBufferUpgrade(pathCopy, out, gen);
+            });
+        },
+        -1);
+}
+
+void ImageView::finishDwellAtlasRebuild(quint64 generation, const QImage &scaled,
                                         qreal atlasScale, int atlasVw, int atlasVh)
 {
     if (generation != m_dwellAtlasRebuildGeneration) {
         return; // superseded by a newer source or resize
     }
-    if (atlas.isNull()) {
+    if (scaled.isNull()) {
         return;
     }
-    m_dwellAtlas = atlas;
+    // QPixmap must be created on the GUI thread (not in the pool job).
+    m_dwellAtlas = QPixmap::fromImage(scaled);
     m_dwellAtlasScale = atlasScale;
     m_dwellAtlasVw = atlasVw;
     m_dwellAtlasVh = atlasVh;
@@ -1151,16 +1274,12 @@ void ImageView::requestDwellAtlasRebuild()
             }
             QImage scaled = source.scaled(longCap, longCap, Qt::KeepAspectRatio,
                                           Qt::FastTransformation);
-            if (scaled.isNull() || !guard) {
-                return;
-            }
-            const QPixmap atlas = QPixmap::fromImage(std::move(scaled));
             ImageView *view = guard.data();
-            if (!view) {
+            if (scaled.isNull() || !view) {
                 return;
             }
-            QTimer::singleShot(0, view, [view, gen, atlas, keyScale, vw, vh]() {
-                view->finishDwellAtlasRebuild(gen, atlas, keyScale, vw, vh);
+            QTimer::singleShot(0, view, [view, gen, scaled, keyScale, vw, vh]() {
+                view->finishDwellAtlasRebuild(gen, scaled, keyScale, vw, vh);
             });
         },
         -1);
@@ -1185,19 +1304,10 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
         << " " << image.width() << "x" << image.height()
         << " (was " << had << ")";
 
-    // Upgrade phase paint buffers when sharper pixels arrive. Geometry is
-    // logical-size based (SIZE.md / SLIDESHOW.md) — sharpness only.
-    bool changed = false;
-    if (upgradeSlideshowPhaseSlot(path, image, incoming, m_ssFromPath, &m_ssFromImage)) {
-        m_dwellSourceImage = m_ssFromImage;
-        // Async atlas: sync ensureMotionAtlas here dropped frames on HQ→full.
-        requestDwellAtlasRebuild();
-        changed = true;
-    }
-    if (upgradeSlideshowPhaseSlot(path, image, incoming, m_ssToPath, &m_ssToImage)) {
-        changed = true;
-    }
-    if (viewport() && (changed || m_slideshowProgressActive)) {
+    // Phase buffer upgrade (clamp + orient + atlas) is deferred off this stack
+    // so ladderReady does not block the pure-phase clock.
+    scheduleSlideshowPhaseBufferUpgrade(path, image);
+    if (viewport() && m_slideshowProgressActive) {
         viewport()->update();
     }
 }
@@ -1404,6 +1514,7 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
     if (m_ssFromImage.isNull()) {
         return;
     }
+    ++m_ssPhaseUpgradeGeneration; // drop mid-slide upgrades for previous path
     invalidateDwellAtlasRebuilds();
     ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
                       &m_dwellAtlasVw, &m_dwellAtlasVh);

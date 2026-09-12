@@ -288,8 +288,11 @@ public:
     bool upgradeSlideshowPhaseSlot(const QString &path, const QImage &image,
                                   int incoming, const QString &slotPath,
                                   QImage *slot) const;
+    void scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image);
+    void finishSlideshowPhaseBufferUpgrade(const QString &path, const QImage &oriented,
+                                           quint64 generation);
     void requestDwellAtlasRebuild();
-    void finishDwellAtlasRebuild(quint64 generation, const QPixmap &atlas,
+    void finishDwellAtlasRebuild(quint64 generation, const QImage &scaled,
                                 qreal atlasScale, int atlasVw, int atlasVh);
     struct DwellAtlasParams {
         int vw = 0;
@@ -1688,6 +1691,7 @@ private:
     QStringList m_ssRasterPending;
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     quint64 m_dwellAtlasRebuildGeneration = 0;
+    quint64 m_ssPhaseUpgradeGeneration = 0;
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;
     int m_dwellAtlasVh = 0;

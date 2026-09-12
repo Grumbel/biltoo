@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-665-ss-phase-upgrade-async.** Mid-slide HQ→full off GUI stack.
+Prior: **664**.
+
+### Problem
+Frame drops on full resolution: atlas was async, but phase buffer orient
+(flip/rotate) and QPixmap::fromImage still ran on the GUI (and sometimes on
+the pool thread for QPixmap).
+
+### Change
+- `scheduleSlideshowPhaseBufferUpgrade` / `finishSlideshowPhaseBufferUpgrade`
+- Clamp to `slideshowTargetEdge` before orient
+- Appearance snapshot on GUI; `materializeDisplay` on pool when needed
+- Defer assign via QTimer so ladderReady returns immediately
+- `finishDwellAtlasRebuild` takes QImage; QPixmap only on GUI
+
+### Done criteria
+- [x] No multi-MP orient / QPixmap on GUI mid-slide
+- [x] Bundle **665**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-664-set-phase-helpers.** Split setSlideshowPhase; ZoomBlur QTimer finish.
 Prior: **663**.
 
