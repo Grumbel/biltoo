@@ -580,10 +580,19 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kGalleryLadderEdge
                            && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
-                    // FastBatch overview (≤1024): request_overview_pixels.
+                    // FastBatch overview (≤1024).
                     const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
-                    (void)ThumtooCache::scheduleOverviewPixels(path, ov);
+#if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
+                    // Interest snapshot already scheduled overview; await ladderReady.
                     soft.inflight = ov;
+#else
+                    if (ThumtooCache::scheduleOverviewPixels(path, ov)) {
+                        soft.inflight = ov;
+                    } else {
+                        soft.inflight = 0;
+                        soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
+                    }
+#endif
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kBatchOverviewEdge) {
                     // Above batch overview: durable soft will not grow further.

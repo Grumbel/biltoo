@@ -32,9 +32,9 @@ void ImageView::updateGalleryDecodeWindow()
     //   4. If inflight → wait (exactly one request per path).
     //   5. If failed → stop.
     //   6. If gaveUpWant >= want && have > 0 → stop (will not grow further).
-    //   7. Soft first: request min(want, 512) until soft is present (thumtoo
-    //      request_pixels). Then display-sized edge if want is higher.
-    //      Never ImageLoader::load.
+    //   7. Soft first: min(want, 512) via schedulePixels / request_raster SoftOnly.
+    //      Higher edges: setInterest overview (or scheduleOverviewPixels without
+    //      SET_INTEREST). Never ImageLoader::load for Gallery.
     //
     // Image mode still does full native decode separately.
     // -------------------------------------------------------------------------

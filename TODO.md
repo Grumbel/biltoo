@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-495-gallery-soft-queue.** Gallery overview waits on setInterest, not double schedule.
+Prior: **494**.
+
+### Change
+- scheduleGalleryDecode: with SET_INTEREST, do not call scheduleOverviewPixels
+- await ladderReady for overview band; legacy path still schedules overview
+
+### Next
+- Publish/flake when ready
+- Optional soft-queue metrics
+
+### Done criteria
+- [x] Soft/overview ownership clarified
+- [x] Bundle **495**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-494-ladder-hud-chip.** HUD shows Ladder: PixelSource chip.
 Prior: **493**.
 
