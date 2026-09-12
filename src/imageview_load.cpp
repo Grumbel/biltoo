@@ -1909,8 +1909,10 @@ void ImageView::noteImageModePreferCacheDelivery(const QString &path, int reques
 
 void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
 {
-    // Soft → PreferCache only as far as on-screen need. Never default to 2048
-    // + native extract on every ←/→ (archive EnsureTiles / full load storms).
+    // Soft is already on screen (or pending). Request higher tiers in the
+    // background only — never block the GUI, never cancel soft display.
+    // High-res PreferCache (up to kImageLadderEdge / on-screen need) always
+    // runs; native extract is a last resort after PreferCache plateaus.
     if (path.isEmpty()) {
         return;
     }
@@ -1918,32 +1920,28 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
         m_imageModeClimb.remove(path);
         return;
     }
+
     const int need = imageModeOnScreenNeedEdge();
     const int have = sample.isNull() ? 0 : ImageCache::longEdge(sample);
-    if (need > 0 && coversEdge(have, need)) {
-        // Soft/overview already fills the viewport — stop climbing.
-        return;
-    }
-
     ImageModeClimbState &st = m_imageModeClimb[path];
     if (!sample.isNull()) {
         st.have = qMax(st.have, have);
     }
 
-    // Fit browsing: climb at most to FastBatch overview (1024). Zoom past that
-    // may request up to kImageLadderEdge and optional native extract.
-    int climbTo = ThumtooCache::kGalleryLadderEdge;
-    if (need > ThumtooCache::kGalleryLadderEdge) {
-        climbTo = qMin(need, ThumtooCache::kBatchOverviewEdge);
+    // Background target: at least overview, at most ladder, prefer on-screen need.
+    int climbTo = ThumtooCache::kBatchOverviewEdge;
+    if (need > 0) {
+        climbTo = qMax(climbTo, need);
     }
-    if (need > ThumtooCache::kBatchOverviewEdge) {
-        climbTo = qMin(need, ThumtooCache::kImageLadderEdge);
+    climbTo = qMin(climbTo, ThumtooCache::kImageLadderEdge);
+    if (climbTo < ThumtooCache::kGalleryLadderEdge) {
+        climbTo = ThumtooCache::kGalleryLadderEdge;
     }
+
     if (!st.preferGaveUp) {
         scheduleImageModePreferCacheClimb(path, climbTo);
-    }
-    // Native full (archive member extract) only when zoomed past overview.
-    if (need > ThumtooCache::kBatchOverviewEdge) {
+    } else if (need > 0 && !coversEdge(have, need)) {
+        // PreferCache plateaued below viewport need — quiet native as fallback.
         scheduleImageModeNativeFullQuiet(path);
     }
 }

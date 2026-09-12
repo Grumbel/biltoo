@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-682-hq-background-not-cap.** Soft first; high-res PreferCache always in background.
+Prior: **681**.
+
+### Policy (user correction)
+Do **not** hard-cap navigation quality. Soft must show first; high-res must keep
+requesting in the background without blocking the GUI or delaying soft.
+
+### Change
+- `ensureImageModeQualityClimb`: PreferCache up to max(need, overview) capped at
+  ladder edge — always background after soft install
+- Stop early only when sample covers **native** logical size
+- Native extract only if PreferCache gave up and viewport need still unmet
+
+### Done criteria
+- [x] Soft not gated on HQ
+- [x] HQ still requested in background
+- [x] Bundle **682**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-681-thumtoo-decode-off-gui.** thumtoo raster callbacks decode on the pool.
 Prior: **680**.
 
