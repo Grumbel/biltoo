@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-667-motion-tick-no-atlas.** Motion tick does not rebuild atlas.
+Prior: **666**.
+
+### Problem
+`tickSlideshowMotion` pure-dwell path called `invalidateDwellAtlasRebuilds` +
+`ensureMotionAtlas` every 16ms — cancelled async HQ→full atlas work and could
+re-scale on the GUI thread.
+
+### Change
+- `tickSlideshowPhaseMotionClocks` — progress only via `updateSlideshowPhaseMotionProgress`
+- `tickSlideshowDwellMotionClock` — dwell progress only (no atlas)
+- `tickSlideshowMotion` orchestrates + `viewport()->update()`
+
+### Done criteria
+- [x] Motion timer never rebuilds atlas
+- [x] Bundle **667**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-666-phase-upgrade-helpers.** Clean mid-slide phase buffer upgrade.
 Prior: **665**.
 

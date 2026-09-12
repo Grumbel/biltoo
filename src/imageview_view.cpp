@@ -2570,6 +2570,28 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
 
 
 
+void ImageView::tickSlideshowPhaseMotionClocks()
+{
+    // Pure-phase path: advance A/B motion from their own clocks (spec: both
+    // move during transition; B moves through transition + its interval).
+    // Atlas / phase buffers are not rebuilt here — only motion progress.
+    updateSlideshowPhaseMotionProgress(slideshowPathDurationMs());
+}
+
+void ImageView::tickSlideshowDwellMotionClock()
+{
+    // Pure dwell motion (interval timer path when phase clocks are not running).
+    if (m_motionDurationMs <= 0) {
+        return;
+    }
+    const qreal wallMs = qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed());
+    if (m_motionDurationMs > 0) {
+        m_dwellMotionT = qBound(0.0, wallMs / qreal(m_motionDurationMs), 1.0);
+    }
+    // Do not rebuild the dwell atlas every tick — that used to invalidate
+    // async HQ→full rebuilds every 16ms and re-scale on the GUI thread.
+}
+
 void ImageView::tickSlideshowMotion()
 {
     if (!m_slideshowMotionActive) {
@@ -2582,42 +2604,14 @@ void ImageView::tickSlideshowMotion()
         return;
     }
 
-    // Pure-phase path: advance A/B motion from their own clocks (spec: both
-    // move during transition; B moves through transition + its interval).
-    if (m_slideshowProgressActive && (m_ssFromMotionClockRunning || m_ssToMotionClockRunning)) {
-        const int pathMs = slideshowPathDurationMs();
-        m_ssFromMotionT = slideshowMotionProgress(
-            m_ssFromMotionBaseMs, m_ssFromMotionClock, m_ssFromMotionClockRunning,
-            m_slideshowMotionPaused, pathMs);
-        if (m_ssFromMotionClockRunning) {
-            m_dwellMotionT = m_ssFromMotionT;
-        }
-        m_ssToMotionT = slideshowMotionProgress(
-            m_ssToMotionBaseMs, m_ssToMotionClock, m_ssToMotionClockRunning,
-            m_slideshowMotionPaused, pathMs);
-        // Phase pixel buffers stay locked for the path's participation.
-        // Preload only fills ImageCache for the next phase entry.
+    if (m_slideshowProgressActive
+        && (m_ssFromMotionClockRunning || m_ssToMotionClockRunning)) {
+        tickSlideshowPhaseMotionClocks();
         viewport()->update();
         return;
     }
 
-    // Pure dwell motion (interval timer path when phase clocks are not running).
-    if (m_motionDurationMs <= 0) {
-        return;
-    }
-    const qreal wallMs = qreal(m_motionElapsedOffsetMs + m_motionClock.elapsed());
-    auto motionProgress01 = [](qreal ms, qreal dur) -> qreal {
-        if (dur <= 0.0) {
-            return 0.0;
-        }
-        return qBound(0.0, ms / dur, 1.0);
-    };
-    m_dwellMotionT = motionProgress01(wallMs, qreal(m_motionDurationMs));
-    if (!m_dwellSourceImage.isNull()) {
-        invalidateDwellAtlasRebuilds();
-        ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                          &m_dwellAtlasVw, &m_dwellAtlasVh);
-    }
+    tickSlideshowDwellMotionClock();
     viewport()->update();
 }
 

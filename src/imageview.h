@@ -240,6 +240,8 @@ public:
      */
     void setSlideshowNavHot(bool hot);
     bool slideshowNavHot() const { return m_slideshowNavHot; }
+    void tickSlideshowPhaseMotionClocks();
+    void tickSlideshowDwellMotionClock();
     void tickSlideshowMotion();
     /** Static centre-crop cover of @p image to the current viewport size. */
     QPixmap renderCoverPixmap(const QImage &image) const;
