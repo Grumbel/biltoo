@@ -2062,7 +2062,7 @@ QRectF ImageView::computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh,
                                              const QString &path) const
 {
     motionT = qBound(0.0, motionT, 1.0);
-    const QSize logical(int(iw), int(ih));
+    const QSize logical{int(iw), int(ih)};
     const qreal base = slideshowZoomBaseScale(logical, vw, vh);
     if (base <= 0.0 || !qIsFinite(base)) {
         return QRectF();

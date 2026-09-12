@@ -2,6 +2,22 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-642-qsize-vexing-parse.** Fix most-vexing-parse in computeMotionCoverDestRect.
+Prior: **641**.
+
+### Change
+- `const QSize logical{int(iw), int(ih)};` (brace init, not function decl)
+
+### Done criteria
+- [x] imageview_view.cpp compiles past QSize line
+- [x] Bundle **642**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-641-drop-handlers.** Split handleDroppedUrls by view mode.
 Prior: **640**.
 
