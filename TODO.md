@@ -2,6 +2,32 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-649-zoom-pixel-climb.** Image-mode zoom climbs soft samples.
+Prior: **648**.
+
+### Root cause
+- Image mode wheel zoom only scaled the view — soft/PreferCache samples never
+  re-requested higher pixels when on-screen need grew.
+- `forgetPixelsSettled` only cleared soft keys (`path#edge`), not PreferCache
+  (`path#dispN`) / overview (`path#ovN`), so display retries could stick.
+- Soft LoadReplace preview still hard-stopped on `hasDecodedPixels()`.
+
+### Change
+- `forgetPixelsSettled` clears soft + ov + disp keys
+- `scheduleImageModePreferCacheClimb` forgets before reschedule
+- `imageModeOnScreenNeedEdge` / `maybeClimbImageModePixelsForView` on wheel zoom
+- Re-queue native full without generation bump; fix soft preview upgrade gate
+
+### Done criteria
+- [x] Zoom-in can climb soft → PreferCache / native full
+- [x] Bundle **649**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-648-image-mode-sample-install.** Unify Image-mode sample install + climb.
 Prior: **647**.
 

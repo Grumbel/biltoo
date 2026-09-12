@@ -1213,15 +1213,21 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
             return;
         }
         if (isImageMode()) {
-            if (ImageItem *cur = targetItem();
-                cur && cur->path() == path) {
-                if (cur->hasDecodedPixels()) {
-                    return; // full decode already won the race
+            if (ImageItem *cur = imageModeItemForPath(path)) {
+                const int incoming = ImageCache::longEdge(image);
+                // Native full already adequate — ignore late soft.
+                if (cur->hasDecodedPixels()
+                    && !cur->shouldUpgradeDisplayTo(incoming)) {
+                    return;
                 }
-                // Soft install in place — do not refit on sample upgrade.
-                installDisplayPreservingView(
-                    cur, image, SessionAppearance::PixelKind::SoftPreview,
-                    kInvalidSessionImageId);
+                const SessionAppearance::PixelKind kind =
+                    pixelKindForImageModeSample(path, image);
+                installDisplayPreservingView(cur, image, kind,
+                                             kInvalidSessionImageId);
+                if (kind == SessionAppearance::PixelKind::SoftPreview) {
+                    scheduleImageModePreferCacheClimb(
+                        path, ThumtooCache::kImageLadderEdge);
+                }
                 if (viewport()) {
                     viewport()->update();
                 }
@@ -1712,6 +1718,10 @@ void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantE
     const int edge = wantEdge > 0
                          ? qMin(wantEdge, ThumtooCache::kImageLadderEdge)
                          : ThumtooCache::kImageLadderEdge;
+    // Allow retry after a prior PreferCache shortfall (settled only on ~90% cover,
+    // but soft/disp keys must still be cleared when climbing to a higher need).
+    ThumtooCache::forgetPixelsSettled(path, edge);
+    ThumtooCache::forgetPixelsSettled(path, ThumtooCache::kGalleryLadderEdge);
     ThumtooCache::scheduleProbe(path);
     ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
     (void)ThumtooCache::scheduleDisplayPixels(path, edge);
@@ -1762,6 +1772,71 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
     }
     return true;
 }
+
+int ImageView::imageModeOnScreenNeedEdge() const
+{
+    if (!isImageMode()) {
+        return 0;
+    }
+    const ImageItem *item = targetItem();
+    if (!item) {
+        item = primaryItem();
+    }
+    if (!item) {
+        return ThumtooCache::kFilmstripLadderEdge;
+    }
+    // Same device-pixel long-edge idea as galleryDisplayEdgeForItem.
+    const QRectF br = item->contentSceneRect();
+    if (br.isEmpty()) {
+        return ThumtooCache::kGalleryLadderEdge;
+    }
+    const QPointF a = mapFromScene(br.topLeft());
+    const QPointF b = mapFromScene(br.bottomRight());
+    const qreal longPx =
+        qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
+    return ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
+}
+
+void ImageView::maybeClimbImageModePixelsForView()
+{
+    // Zoom / resize: soft or PreferCache samples must climb when the on-screen
+    // long edge exceeds what is painted. Native full is also re-queued without
+    // advancing load generation (no canvas clear / no zoom reset).
+    if (!isImageMode() || m_slideshowProgressActive) {
+        return;
+    }
+    ImageItem *item = imageModeItemForPath(classicPath());
+    if (!item && targetItem()) {
+        item = targetItem();
+    }
+    if (!item || item->path().isEmpty()) {
+        return;
+    }
+    const QString path = item->path();
+    const int need = imageModeOnScreenNeedEdge();
+    const int have = item->displayPixelLongEdge();
+    if (need <= 0 || coversEdge(have, need)) {
+        return;
+    }
+
+    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+        dbg && dbg[0] && dbg[0] != '0') {
+        fprintf(stderr,
+                "biltoo/image: view climb path=%s have=%d need=%d decoded=%d\n",
+                qPrintable(QFileInfo(path).fileName()), have, need,
+                item->hasDecodedPixels() ? 1 : 0);
+    }
+
+    // PreferCache up to display ladder (and forget settled so shortfalls retry).
+    scheduleImageModePreferCacheClimb(path, need);
+
+    // Native full decode without LoadReplace generation bump / pending tile.
+    const QPointer<ImageView> guard(this);
+    const quint64 gen = m_loadGeneration.load();
+    const int roleInt = static_cast<int>(LoadReplace);
+    startNativeFullDecodeJob(guard, path, gen, roleInt);
+}
+
 
 void ImageView::completeLoadReplace(const QString &path, const QImage &image, quint64 generation)
 {

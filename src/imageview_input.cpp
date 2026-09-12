@@ -364,6 +364,10 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     m_fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
+    // Soft / PreferCache samples: climb when on-screen need exceeds have.
+    if (isImageMode()) {
+        maybeClimbImageModePixelsForView();
+    }
     viewport()->update(); // refresh viewport-space chrome at the new scale
     emit statusChanged();
     event->accept();

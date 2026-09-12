@@ -1238,6 +1238,10 @@ private:
                                        SessionAppearance::PixelKind kind);
     /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */
     bool tryInstallImageModeSample(const QString &path, const QImage &image);
+    /** On-screen long edge (device px) for the current Image-mode item. */
+    int imageModeOnScreenNeedEdge() const;
+    /** PreferCache + native full when zoom leaves soft samples undersampled. */
+    void maybeClimbImageModePixelsForView();
     void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
     void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);

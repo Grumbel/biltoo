@@ -890,9 +890,17 @@ void forgetPixelsSettled(const QString &path, int maxEdge)
     if (path.isEmpty() || maxEdge <= 0) {
         return;
     }
-    const QString key = path + QLatin1Char('#') + QString::number(maxEdge);
+    // Soft uses path#edge; overview path#ov{edge}; display path#disp{edge}.
+    // Clearing only the soft key left PreferCache stuck after a settled run.
+    const QString softKey = path + QLatin1Char('#') + QString::number(maxEdge);
+    const QString ovKey =
+        path + QLatin1Char('#') + QStringLiteral("ov") + QString::number(maxEdge);
+    const QString dispKey =
+        path + QLatin1Char('#') + QStringLiteral("disp") + QString::number(maxEdge);
     std::lock_guard lock(g_mu);
-    g_pixelsSettled.remove(key);
+    g_pixelsSettled.remove(softKey);
+    g_pixelsSettled.remove(ovKey);
+    g_pixelsSettled.remove(dispKey);
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
