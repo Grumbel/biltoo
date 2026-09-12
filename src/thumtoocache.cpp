@@ -916,7 +916,14 @@ bool schedulePixels(const QString &path, int maxEdge)
 bool scheduleOverviewPixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_OVERVIEW_PIXELS) && THUMTOO_API_OVERVIEW_PIXELS
+#if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
+    // Overview work is owned by setInterest / setPrimaryInterest snapshots.
+    // One-off scheduleOverviewPixels would race the interest epoch and
+    // double-extract archives. Prefer setInterest for windowed paths.
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#elif defined(THUMTOO_API_OVERVIEW_PIXELS) && THUMTOO_API_OVERVIEW_PIXELS
     if (maxEdge <= 0 || isUnsupported(path)) {
         return false;
     }
@@ -1026,7 +1033,8 @@ int cancelPendingThumtooWork()
 }
 
 quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpeculative,
-                    int nearEdge, int speculativeEdge)
+                    int nearEdge, int speculativeEdge,
+                    const QStringList &pathsPrimary, int primaryEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
 #if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
@@ -1043,7 +1051,8 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
         return 0;
     }
     std::vector<thumtoo::InterestItem> items;
-    items.reserve(size_t(pathsNear.size() + pathsSpeculative.size()));
+    items.reserve(size_t(pathsNear.size() + pathsSpeculative.size()
+                          + pathsPrimary.size()));
     auto push = [&](const QStringList &paths, thumtoo::InterestRole role, int edge) {
         for (const QString &p : paths) {
             if (p.isEmpty() || isUnsupported(p)) {
@@ -1055,11 +1064,14 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
             }
             thumtoo::InterestItem it;
             it.uri = uri;
-            it.target_long_edge = edge;
+            it.target_long_edge = edge > 0 ? edge : kBatchOverviewEdge;
             it.role = role;
             items.push_back(std::move(it));
         }
     };
+    // Primary first in the vector (set_interest also sorts by role).
+    push(pathsPrimary, thumtoo::InterestRole::Primary,
+         primaryEdge > 0 ? primaryEdge : kBatchOverviewEdge);
     push(pathsNear, thumtoo::InterestRole::Near, nearEdge);
     push(pathsSpeculative, thumtoo::InterestRole::Speculative, speculativeEdge);
     return static_cast<quint64>(c->set_interest(std::move(items)));
@@ -1068,6 +1080,8 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
     Q_UNUSED(pathsSpeculative);
     Q_UNUSED(nearEdge);
     Q_UNUSED(speculativeEdge);
+    Q_UNUSED(pathsPrimary);
+    Q_UNUSED(primaryEdge);
     return bumpInterestEpoch();
 #endif
 #else
@@ -1075,6 +1089,8 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
     Q_UNUSED(pathsSpeculative);
     Q_UNUSED(nearEdge);
     Q_UNUSED(speculativeEdge);
+    Q_UNUSED(pathsPrimary);
+    Q_UNUSED(primaryEdge);
     return 0;
 #endif
 }

@@ -83,20 +83,28 @@ ImageView::ImageView(QWidget *parent)
                 viewport()->update();
             }
         }
-        // Workspace focus: Primary interest for the first selected tile.
+        // Workspace: Primary = first selected; Near = remaining selection.
         if (isWorkspaceMode()) {
-            QString primaryPath;
+            QStringList primary;
+            QStringList near;
             for (QGraphicsItem *gi : m_scene->selectedItems()) {
                 if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    primaryPath = ii->path();
-                    if (!primaryPath.isEmpty()) {
-                        break;
+                    const QString path = ii->path();
+                    if (path.isEmpty()) {
+                        continue;
+                    }
+                    if (primary.isEmpty()) {
+                        primary.append(path);
+                    } else {
+                        near.append(path);
                     }
                 }
             }
-            if (!primaryPath.isEmpty()) {
-                (void)ThumtooCache::setPrimaryInterest(
-                    primaryPath, ThumtooCache::kBatchOverviewEdge);
+            if (!primary.isEmpty()) {
+                (void)ThumtooCache::setInterest(
+                    near, {}, ThumtooCache::kBatchOverviewEdge,
+                    ThumtooCache::kGalleryLadderEdge, primary,
+                    ThumtooCache::kBatchOverviewEdge);
             }
         }
         emit statusChanged();

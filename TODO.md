@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-487-interest-dedupe-multiselect.** Primary in setInterest; overview owned by snapshot.
+Prior: **486**. Companion: **thumtoo-169**.
+
+### Change
+- setInterest accepts pathsPrimary + primaryEdge
+- Workspace multi-select: Primary first + Near rest
+- scheduleOverviewPixels is no-op when THUMTOO_API_SET_INTEREST (snapshot owns overview)
+
+### Next
+- Inflight FocusFull accounting beyond queue cap
+- Gallery focus tile as Primary in setInterest
+- Soft-only host path documentation
+
+### Done criteria
+- [x] Dedupe overview scheduling
+- [x] Workspace multi-select Near
+- [x] Bundle **487**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-486-workspace-primary.** Workspace selection → Primary interest.
 Prior: **485**. Companion: **thumtoo-169**.
 

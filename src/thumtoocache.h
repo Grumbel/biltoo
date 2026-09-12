@@ -136,8 +136,14 @@ int cancelPendingThumtooWork();
  * pathsNear = visible / high priority; pathsSpeculative = idle overscan.
  * @return new epoch or 0 if unavailable.
  */
+/**
+ * @param pathsPrimary  FocusFull candidates (tile pyramid); first is highest priority
+ * @param pathsNear     Visible / selected secondary
+ * @param pathsSpeculative  Idle overscan
+ */
 quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpeculative,
-                    int nearEdge, int speculativeEdge);
+                    int nearEdge, int speculativeEdge,
+                    const QStringList &pathsPrimary = {}, int primaryEdge = 0);
 
 /**
  * Image-mode focus: single Primary interest (overview + tile pyramid on thumtoo ≥168).
