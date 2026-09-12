@@ -2,6 +2,33 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-503-gallery-overview-callback.** Soft first, overview with ladderReady; no sync RAR.
+Prior: **502**. Needs **thumtoo-178**.
+
+### Root cause (logs)
+- Soft 512 arrived (JpegShrink) then `need=1024 have=512` still only hit settled SoftOnly.
+- `scheduleOverviewPixels` was a no-op under SET_INTEREST; setInterest has **no host cb**.
+- `loadThumbnail(1024)` fell through to `loadArchiveRef` → multi-second RAR extract on the pool.
+- Every `ladderReady` called `updateGalleryDecodeWindow` (full scan + setInterest) on the GUI.
+
+### Change
+- Re-enable `scheduleOverviewPixels` with ladderReady callback
+- loadThumbnail: return soft stand-in; never archive/page extract when thumtoo is up
+- Gallery climb always schedules overview explicitly
+- setInterest near edge = batch (1024); speculative soft
+- Debounce decode-window after ladderReady; no GUI loadThumbnail fallback
+
+### Done criteria
+- [x] Soft tiles install before overview
+- [x] Overview climb without sync archive on host threads
+- [x] Bundle **503**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-502-gallery-progressive-upgrade.** Restore soft→HQ climb; stop have≥128 freeze.
 Prior: **501**. Companion: **thumtoo-177**.
 

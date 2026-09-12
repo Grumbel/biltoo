@@ -176,11 +176,9 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
                     return;
                 }
                 const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;
-                // Prefer the decoded payload from request_pixels; fall back to cache.
-                QImage preview = image;
-                if (preview.isNull()) {
-                    preview = ImageLoader::loadThumbnail(path, edge);
-                }
+                // Never PreferCache / loadThumbnail on the GUI thread here — the
+                // worker already decoded the payload into `image`.
+                const QImage preview = image;
                 const QPointer<ImageView> guard(this);
                 QMetaObject::invokeMethod(guard.data(), [guard, path, preview, edge]() {
                         ImageView *const host = guard.data();
@@ -222,7 +220,20 @@ connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
                                 }
                             }
                         }
-                        host->updateGalleryDecodeWindow();
+                        // Debounce window rescan — every tile used to re-scan
+                        // all items + setInterest and stall the GUI under load.
+                        if (!host->m_galleryDecodeScrollTimer) {
+                            host->m_galleryDecodeScrollTimer = new QTimer(host);
+                            host->m_galleryDecodeScrollTimer->setSingleShot(true);
+                            host->m_galleryDecodeScrollTimer->setInterval(80);
+                            QObject::connect(host->m_galleryDecodeScrollTimer, &QTimer::timeout,
+                                             host, [host]() {
+                                                 if (host->isGalleryMode()) {
+                                                     host->updateGalleryDecodeWindow();
+                                                 }
+                                             });
+                        }
+                        host->m_galleryDecodeScrollTimer->start();
                         emit host->statusChanged();
                     }, Qt::QueuedConnection);
             });

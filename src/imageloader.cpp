@@ -936,9 +936,10 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                         ThumtooCache::schedulePixels(path, softWant);
                     }
                     // FastBatch overview when display needs more than soft max.
+                    // Always schedule with callback — setInterest alone has no
+                    // host ladderReady (Gallery would never install the climb).
                     if (maxEdge > ThumtooCache::kGalleryLadderEdge
-                        && maxEdge <= ThumtooCache::kBatchOverviewEdge
-                        && !ThumtooCache::interestOwnsOverview()) {
+                        && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
                         ThumtooCache::scheduleOverviewPixels(
                             path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
                     }
@@ -947,13 +948,15 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                     decoded = decoded.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
                                              Qt::SmoothTransformation);
                 }
-                // Soft payload is enough when it meets the request, or when the
-                // request is within soft max (caller may still upgrade later).
+                // With thumtoo: always return soft stand-in and let overview /
+                // SoftOnly complete async. Never fall through to archive/page
+                // extract on the caller thread (Gallery pool / GUI).
                 if (got >= maxEdge * 9 / 10
-                    || maxEdge <= ThumtooCache::kGalleryLadderEdge) {
+                    || maxEdge <= ThumtooCache::kGalleryLadderEdge
+                    || ThumtooCache::isAvailable()) {
                     return decoded;
                 }
-                // Fall through: need a larger *display* edge than soft can give.
+                // Fall through only when thumtoo is unavailable.
             } else {
                 // Bytes exist but neither VIPS nor Qt could decode — do not call
                 // schedulePixels again (that re-emits ladderReady and spins the pool).
@@ -966,30 +969,25 @@ QImage loadThumbnail(const QString &path, int maxEdge)
         ThumtooCache::schedulePixels(
             path, qMin(maxEdge, ThumtooCache::kGalleryLadderEdge));
         if (maxEdge > ThumtooCache::kGalleryLadderEdge
-            && maxEdge <= ThumtooCache::kBatchOverviewEdge
-            && !ThumtooCache::interestOwnsOverview()) {
+            && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
             ThumtooCache::scheduleOverviewPixels(
                 path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
         }
     }
 
     if (PagePath::isPageRef(path) || PagePath::isPdfImageRef(path)) {
-        // Soft band: wait for ladderReady when thumtoo is available.
-        // Larger display edges: rasterize at maxEdge (not native full page).
-        if (ThumtooCache::isAvailable()
-            && maxEdge <= ThumtooCache::kGalleryLadderEdge) {
+        // thumtoo owns soft + overview; never rasterize on the caller thread.
+        if (ThumtooCache::isAvailable()) {
             return {};
         }
-        if (PagePath::isPdfImageRef(path) && !ThumtooCache::isAvailable()) {
+        if (PagePath::isPdfImageRef(path)) {
             return {}; // no non-thumtoo path for embedded images
         }
         return loadPageRef(path, maxEdge);
     }
     if (ArchivePath::isArchiveRef(path)) {
-        // Soft band: prefer durable ladder (schedulePixels already nudged).
-        // Display edges above soft max: extract + shrink-on-decode once.
-        if (ThumtooCache::isAvailable()
-            && maxEdge <= ThumtooCache::kGalleryLadderEdge) {
+        // thumtoo owns soft + overview for archive members (extract on workers).
+        if (ThumtooCache::isAvailable()) {
             return {};
         }
         return loadArchiveRef(path, maxEdge);

@@ -1022,14 +1022,10 @@ bool schedulePixels(const QString &path, int maxEdge)
 bool scheduleOverviewPixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
-    // Overview work is owned by setInterest / setPrimaryInterest snapshots.
-    // One-off scheduleOverviewPixels would race the interest epoch and
-    // double-extract archives. Prefer setInterest for windowed paths.
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#elif defined(THUMTOO_API_OVERVIEW_PIXELS) && THUMTOO_API_OVERVIEW_PIXELS
+#if defined(THUMTOO_API_OVERVIEW_PIXELS) && THUMTOO_API_OVERVIEW_PIXELS
+    // Explicit host requests (Gallery climb past soft) must keep a callback so
+    // ladderReady can install. setInterest still prefetches without a host cb;
+    // both share inflight keys so we do not double-extract the same edge.
     if (maxEdge <= 0 || isUnsupported(path)) {
         return false;
     }

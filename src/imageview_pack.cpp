@@ -101,14 +101,17 @@ void ImageView::updateGalleryDecodeWindow()
         }
     }
 
-    // Gallery interest: soft only, no Primary FocusFull (solid archives).
+    // Gallery interest: no Primary FocusFull (solid archives). Near uses
+    // batch overview edge so visible tiles can climb past soft without a
+    // second host request; speculative stays soft-band.
     {
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
+        const int nearEdge = ThumtooCache::kBatchOverviewEdge;
         QStringList near = interestNear;
         near.sort();
         QStringList speculative = interestRest;
         speculative.sort();
-        (void)ThumtooCache::setInterest(near, speculative, softEdge, softEdge,
+        (void)ThumtooCache::setInterest(near, speculative, nearEdge, softEdge,
                                         /*pathsPrimary=*/{}, /*primaryEdge=*/0);
     }
 

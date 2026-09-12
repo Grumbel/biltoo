@@ -583,19 +583,15 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kGalleryLadderEdge
                            && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
-                    // FastBatch overview (≤1024).
+                    // FastBatch overview (≤1024) with host ladderReady callback.
+                    // setInterest alone has no host cb — must schedule explicitly.
                     const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
-#if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
-                    // Interest snapshot already scheduled overview; await ladderReady.
-                    soft.inflight = ov;
-#else
                     if (ThumtooCache::scheduleOverviewPixels(path, ov)) {
                         soft.inflight = ov;
                     } else {
-                        soft.inflight = 0;
-                        soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
+                        // Already inflight/settled — keep waiting on ladderReady.
+                        soft.inflight = ov;
                     }
-#endif
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kBatchOverviewEdge) {
                     // Above batch overview: durable soft will not grow further.
@@ -609,9 +605,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     }
                 }
 
-                if (host->isGalleryMode()) {
-                    host->updateGalleryDecodeWindow();
-                }
+                // Decode window rescan is debounced via ladderReady / scroll timer.
                 emit host->statusChanged();
             },
             Qt::QueuedConnection);
