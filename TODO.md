@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-666-phase-upgrade-helpers.** Clean mid-slide phase buffer upgrade.
+Prior: **665**.
+
+### Change
+- Remove unused `upgradeSlideshowPhaseSlot`
+- `phaseBufferWantsSample` — from/to wants sharper sample?
+- `snapshotSlideshowContentAppearance` — GUI appearance snapshot for pool
+- `scheduleSlideshowPhaseBufferUpgrade` is short orchestration
+
+### Done criteria
+- [x] Phase upgrade path is readable helpers
+- [x] Bundle **666**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-665-ss-phase-upgrade-async.** Mid-slide HQ→full off GUI stack.
 Prior: **664**.
 

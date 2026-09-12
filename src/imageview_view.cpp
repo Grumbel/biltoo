@@ -1090,23 +1090,52 @@ void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
     ImageCache::put(path, image);
 }
 
-bool ImageView::upgradeSlideshowPhaseSlot(const QString &path, const QImage &image,
-                                          int incoming, const QString &slotPath,
-                                          QImage *slot) const
+bool ImageView::phaseBufferWantsSample(const QString &path, int sampleEdge) const
 {
-    if (!slot || slotPath != path || path.isEmpty() || image.isNull()) {
+    if (sampleEdge <= 0 || path.isEmpty()) {
         return false;
     }
-    if (incoming <= ImageCache::longEdge(*slot)) {
+    if (path == m_ssFromPath && sampleEdge > ImageCache::longEdge(m_ssFromImage)) {
+        return true;
+    }
+    if (path == m_ssToPath && sampleEdge > ImageCache::longEdge(m_ssToImage)) {
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::snapshotSlideshowContentAppearance(const QString &path,
+                                                   WorkspaceItemState *out) const
+{
+    // GUI-only: session map → path map → durable XDG. Worker must not call this.
+    if (!out || path.isEmpty()) {
         return false;
     }
-    // Cap to slideshow target before orient — never flip/rotate multi-MP on GUI.
-    const QImage capped = ImageCache::clampToMaxEdge(image, slideshowTargetEdge());
-    if (ImageCache::longEdge(capped) <= ImageCache::longEdge(*slot)) {
-        return false;
+    *out = {};
+    const SessionImageId sid = sessionIdForPath(path);
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+            if (SessionAppearance::hasContentAppearance(*app)) {
+                *out = *app;
+                return true;
+            }
+        }
     }
-    *slot = orientSlideshowImage(capped, path);
-    return true;
+    const auto it = m_itemStates.constFind(path);
+    if (it != m_itemStates.cend() && SessionAppearance::hasContentAppearance(*it)) {
+        *out = *it;
+        return true;
+    }
+    ThumtooCache::StoredContentAppearance stored;
+    if (ThumtooCache::loadContentAppearance(path, &stored)
+        && (stored.contentHFlip || stored.contentVFlip
+            || stored.contentQuarterTurns != 0)) {
+        out->contentHFlip = stored.contentHFlip;
+        out->contentVFlip = stored.contentVFlip;
+        out->contentQuarterTurns = stored.contentQuarterTurns;
+        return SessionAppearance::hasContentAppearance(*out);
+    }
+    return false;
 }
 
 void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QImage &oriented,
@@ -1138,72 +1167,28 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
 
 void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image)
 {
-    // HQ→full mid-slide: clamp + orient off the GUI thread. Orient (flip/rotate)
-    // of a 2k sample on the GUI was dropping frames even after atlas went async.
+    // HQ→full mid-slide: clamp + orient off the GUI thread.
     if (path.isEmpty() || image.isNull()) {
         return;
     }
-    const bool touchFrom = (path == m_ssFromPath);
-    const bool touchTo = (path == m_ssToPath);
-    if (!touchFrom && !touchTo) {
+    if (path != m_ssFromPath && path != m_ssToPath) {
         return;
     }
-    const int edge = slideshowTargetEdge();
-    const QImage capped = ImageCache::clampToMaxEdge(image, edge);
+    const QImage capped = ImageCache::clampToMaxEdge(image, slideshowTargetEdge());
     const int incoming = ImageCache::longEdge(capped);
-    if (incoming <= 0) {
-        return;
-    }
-    if (touchFrom && incoming <= ImageCache::longEdge(m_ssFromImage)
-        && touchTo && incoming <= ImageCache::longEdge(m_ssToImage)) {
-        return;
-    }
-    if (touchFrom && !touchTo && incoming <= ImageCache::longEdge(m_ssFromImage)) {
-        return;
-    }
-    if (touchTo && !touchFrom && incoming <= ImageCache::longEdge(m_ssToImage)) {
+    if (!phaseBufferWantsSample(path, incoming)) {
         return;
     }
 
-    // Snapshot appearance on the GUI (maps / durable XDG once). Worker must
-    // not touch ImageView state — only pure transform on the capped sample.
     WorkspaceItemState appState;
-    bool hasApp = false;
-    const SessionImageId sid = sessionIdForPath(path);
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_appearance.get(sid)) {
-            if (SessionAppearance::hasContentAppearance(*app)) {
-                appState = *app;
-                hasApp = true;
-            }
-        }
-    }
-    if (!hasApp) {
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()
-            && SessionAppearance::hasContentAppearance(*it)) {
-            appState = *it;
-            hasApp = true;
-        }
-    }
-    if (!hasApp) {
-        ThumtooCache::StoredContentAppearance stored;
-        if (ThumtooCache::loadContentAppearance(path, &stored)
-            && (stored.contentHFlip || stored.contentVFlip
-                || stored.contentQuarterTurns != 0)) {
-            appState = {};
-            appState.contentHFlip = stored.contentHFlip;
-            appState.contentVFlip = stored.contentVFlip;
-            appState.contentQuarterTurns = stored.contentQuarterTurns;
-            hasApp = SessionAppearance::hasContentAppearance(appState);
-        }
-    }
-
+    const bool hasApp = snapshotSlideshowContentAppearance(path, &appState);
     const quint64 gen = ++m_ssPhaseUpgradeGeneration;
     const QPointer<ImageView> guard(this);
     const QString pathCopy = path;
     const QImage raw = capped;
+
     if (!hasApp) {
+        // No flip/rotate — assign on next tick so ladderReady is not blocked.
         QTimer::singleShot(0, this, [this, pathCopy, raw, gen]() {
             finishSlideshowPhaseBufferUpgrade(pathCopy, raw, gen);
         });

@@ -285,9 +285,9 @@ public:
      * Build/refresh motion atlas: sized from viewport × motion headroom
      * (resolution-invariant), not from source pixel dimensions.
      */
-    bool upgradeSlideshowPhaseSlot(const QString &path, const QImage &image,
-                                  int incoming, const QString &slotPath,
-                                  QImage *slot) const;
+    bool phaseBufferWantsSample(const QString &path, int sampleEdge) const;
+    bool snapshotSlideshowContentAppearance(const QString &path,
+                                            WorkspaceItemState *out) const;
     void scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image);
     void finishSlideshowPhaseBufferUpgrade(const QString &path, const QImage &oriented,
                                            quint64 generation);
