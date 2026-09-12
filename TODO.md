@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-604-pending-bind-private-access.** Fix PendingSessionBind access.
+Prior: **603**.
+
+### Change
+- `PendingSessionBind` only declared/defined in private
+- LoadAdd bind helpers moved to private (were public + fwd-declared public)
+
+### Done criteria
+- [x] No redeclaration with different access
+- [x] Bundle **604**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-603-schedule-image-load-split.** scheduleImageLoad role helpers.
 Prior: **602**.
 

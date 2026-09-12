@@ -467,42 +467,8 @@ public:
     bool hasWorkspaceSessionIndex(int sessionIndex) const;
     ImageItem *findItemBySessionIndex(int sessionIndex) const;
     ImageItem *findItemBySessionId(SessionImageId sessionId) const;
-    struct PendingSessionBind; // defined with other pending-load state below
     /** True while LoadAdd still has an unbound PendingSessionBind for @p path. */
     bool hasPendingSessionBindForPath(const QString &path) const;
-    /** Count pending binds still queued for @a path. */
-    int countPendingSessionBinds(const QString &path) const;
-    /**
-     * Drop pending binds whose SessionImageId is already on a live tile.
-     * Prevents LoadAdd from creating extra duplicates.
-     */
-    void purgeSatisfiedPendingBinds(const QString &path);
-    /**
-     * Take the first pending bind for @a path (FIFO). Returns false if none.
-     */
-    bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
-    /**
-     * Apply explicit drop scene placement from a bind (Workspace free-form).
-     */
-    void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);
-    /**
-     * FullSource install on an existing tile; in Workspace free-form, scale so
-     * scene footprint stays stable when intrinsic grows. @return true if
-     * logical size changed (caller may need pack).
-     */
-    bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);
-    /**
-     * FIFO take of a pending bind for a newly created tile; drops binds already
-     * owned by another live item. Applies session id/index onto @a item when taken.
-     */
-    bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
-                                          PendingSessionBind *out);
-    /**
-     * Placement for a newly created LoadAdd tile: gallery identity transform,
-     * bind scene pos, restored appearance pose, pending drop, or empty slot.
-     */
-    void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
-                             bool haveBound, const PendingSessionBind &bound);
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
     void detachCanvasSessionId(SessionImageId sessionId);
@@ -1089,6 +1055,7 @@ protected:
     bool viewportEvent(QEvent *event) override;
 
 private:
+    struct PendingSessionBind;
     enum LoadRole {
         LoadReplace = 0,
         LoadAdd = 1,
@@ -1529,6 +1496,17 @@ private:
     QHash<QString, QPointF> m_pendingScenePos;
     /** Session slot to assign when a LoadAdd for @p path finishes. */
     QHash<QString, int> m_pendingSessionIndexByPath;
+    // --- LoadAdd pending-bind helpers (PendingSessionBind is private) ---
+    int countPendingSessionBinds(const QString &path) const;
+    void purgeSatisfiedPendingBinds(const QString &path);
+    bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
+    void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);
+    bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);
+    bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
+                                          PendingSessionBind *out);
+    void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
+                             bool haveBound, const PendingSessionBind &bound);
+
     struct PendingSessionBind {
         QString path;
         SessionImageId id = kInvalidSessionImageId;
