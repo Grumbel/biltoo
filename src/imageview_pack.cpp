@@ -76,123 +76,72 @@ void ImageView::updateGalleryDecodeWindow()
     const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
 
     // ------------------------------------------------------------------
-    // Pass 1: host soft onto blank tiles + match on-screen paint budget.
-    // Single O(n) walk (was pass1 + pass1b). Cap installs per turn so a large
-    // session cannot block the GUI with dozens of materializeDisplay scales
-    // (GUI_THREAD_AUDIT G3/G4); continue on the next event-loop tick.
+    // Pass 1: host soft onto blank tiles only (max few per turn).
+    // Paint-budget scale/promote is intentionally not done here — QImage::scaled
+    // of soft ladder frames dominated multi-hundred-ms decode-window times.
+    // OpenGL samples large softs; climb still requests the right ladder edge.
     // ------------------------------------------------------------------
-    // Keep low: each install may QImage::scaled + materialize on the GUI.
-    constexpr int kMaxInstallsPerDecodeWindow = 8;
+    qint64 usPass1 = 0;
+    qint64 usPass2 = 0;
+    qint64 usInterest = 0;
+    QElapsedTimer phaseTimer;
+
+    constexpr int kMaxInstallsPerDecodeWindow = 2;
     int hostInstalled = 0;
     bool moreInstallsPending = false;
+    if (m_perfEnabled) {
+        phaseTimer.start();
+    }
     for (ImageItem *item : m_items) {
         if (!item || item->path().isEmpty() || item->hasDecodedPixels()) {
             continue;
         }
+        if (item->hasDisplayPixels()) {
+            continue;
+        }
         const QString &path = item->path();
-
-        // Blank tile: host from ImageCache / preview map.
-        if (!item->hasDisplayPixels()) {
-            if (hostInstalled >= kMaxInstallsPerDecodeWindow) {
-                moreInstallsPending = true;
-                continue;
-            }
-            QImage hostSoft = ImageCache::get(path);
-            if (hostSoft.isNull()) {
-                hostSoft = m_previewByPath.value(path);
-            }
-            if (hostSoft.isNull()) {
-                continue;
-            }
-            installDisplayPixels(item, hostSoft,
-                                 SessionAppearance::PixelKind::SoftPreview,
-                                 item->sessionId());
-            GallerySoftState &st = m_gallerySoft[path];
-            st.have = qMax(st.have, qMax(hostSoft.width(), hostSoft.height()));
-            item->update();
-            ++hostInstalled;
-            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                dbg && dbg[0] && dbg[0] != '0') {
-                fprintf(stderr,
-                        "biltoo/gallery: INSTALL soft path=%s got=%d "
-                        "(pass1 host ImageCache)\n",
-                        qPrintable(QFileInfo(path).fileName()), st.have);
-            }
+        if (hostInstalled >= kMaxInstallsPerDecodeWindow) {
+            moreInstallsPending = true;
+            break; // remaining blanks next tick
+        }
+        QImage hostSoft = ImageCache::get(path);
+        if (hostSoft.isNull()) {
+            hostSoft = m_previewByPath.value(path);
+        }
+        if (hostSoft.isNull()) {
             continue;
         }
-
-        // Paint budget: only on-screen tiles.
-        const QRectF tile = item->contentSceneRect();
-        if (tile.isNull() || !tile.isValid()
-            || !tile.intersects(sceneVisible)) {
-            continue;
-        }
-        const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        const int shown = item->displayPixelLongEdge();
-        if (need <= 0) {
-            continue;
-        }
+        installDisplayPixels(item, hostSoft,
+                             SessionAppearance::PixelKind::SoftPreview,
+                             item->sessionId());
         GallerySoftState &st = m_gallerySoft[path];
-        if (shown > need * 2) {
-            if (hostInstalled >= kMaxInstallsPerDecodeWindow) {
-                moreInstallsPending = true;
-                continue;
-            }
-            QImage src = ImageCache::get(path);
-            if (src.isNull()) {
-                continue;
-            }
-            installDisplayPixels(item, src,
-                                 SessionAppearance::PixelKind::SoftPreview,
-                                 item->sessionId());
-            item->update();
-            ++hostInstalled;
-            continue;
-        }
-        if (shown < need * 9 / 10 && st.have >= need) {
-            if (hostInstalled >= kMaxInstallsPerDecodeWindow) {
-                moreInstallsPending = true;
-                continue;
-            }
-            QImage src = ImageCache::get(path, need);
-            if (src.isNull()) {
-                src = ImageCache::get(path);
-            }
-            if (src.isNull()) {
-                continue;
-            }
-            const int srcEdge = qMax(src.width(), src.height());
-            if (srcEdge <= shown) {
-                continue;
-            }
-            installDisplayPixels(item, src,
-                                 SessionAppearance::PixelKind::SoftPreview,
-                                 item->sessionId());
-            item->update();
-            ++hostInstalled;
-        }
+        st.have = qMax(st.have, qMax(hostSoft.width(), hostSoft.height()));
+        item->update();
+        ++hostInstalled;
     }
     if (hostInstalled > 0 && viewport()) {
         viewport()->update();
     }
     if (moreInstallsPending) {
-        // Yield so paint/input run between install batches (never 0 — that
-        // tight-looped updateGalleryDecodeWindow at hundreds of ms each).
         scheduleGalleryDecodeWindowRefresh(32);
+    }
+    if (m_perfEnabled) {
+        usPass1 = phaseTimer.nsecsElapsed() / 1000;
+        phaseTimer.restart();
     }
 
     // ------------------------------------------------------------------
-    // Pass 2: schedule SoftOnly / overview climb for paths that still need it.
+    // Pass 2: schedule SoftOnly / overview climb (O(n), want from this item).
     // ------------------------------------------------------------------
     QStringList visible;
     QStringList rest;
     QStringList interestNear;
     QStringList interestRest;
     QSet<QString> seen;
-    // Cap off-screen lists while scanning so large sessions do not allocate
-    // thousands of path strings only to trim later (residual pass-2 cost).
     constexpr int kMaxSpeculative = 12;
     const int kMaxRestCandidates = kMaxIdleGalleryDecodes * 4;
+    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    const int filmEdge = ThumtooCache::kFilmstripLadderEdge;
 
     for (ImageItem *item : m_items) {
         if (!item) {
@@ -205,7 +154,6 @@ void ImageView::updateGalleryDecodeWindow()
         seen.insert(path);
 
         const QRectF tile = item->contentSceneRect();
-        // Invalid tile: still schedule if blank (pack may not have run yet).
         const bool tileOk = !tile.isNull() && tile.isValid();
         const bool onScreen = tileOk && tile.intersects(sceneVisible);
         if (onScreen) {
@@ -219,7 +167,6 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
 
-        // O(1) per path — nested full-item scans were O(n²) on large sessions.
         const bool anyFull = item->hasDecodedPixels();
         const bool anyBlank = !item->hasDisplayPixels();
         st.have = qMax(st.have, item->displayPixelLongEdge());
@@ -227,8 +174,14 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
 
-        const int want = galleryWantEdgeForPath(path, sceneVisible);
+        // O(1) want from this item — was galleryWantEdgeForPath O(n) per path.
+        int want = filmEdge;
+        if (tileOk) {
+            const int edge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/onScreen);
+            want = onScreen ? edge : qMin(edge, softCap);
+        }
         st.want = want;
+
         if (st.have >= want && !anyBlank) {
             continue;
         }
@@ -239,7 +192,6 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
 
-        // Prefer on-screen; blank tiles without a valid rect still need SoftOnly.
         if (onScreen || anyBlank) {
             visible.append(path);
         } else if (rest.size() < kMaxRestCandidates) {
@@ -247,9 +199,6 @@ void ImageView::updateGalleryDecodeWindow()
         }
     }
 
-    // Soft decode for visible tiles first — never blocked on interest/thumtoo.
-    // Cap per turn: each call may still hit PreferCache; climb continues via
-    // soft-completion refresh.
     const int schedBudget =
         qMax(1, galleryDecodeConcurrency() - gallerySoftInflightCount()) + 2;
     int scheduled = 0;
@@ -262,12 +211,14 @@ void ImageView::updateGalleryDecodeWindow()
         scheduleGalleryDecode(path);
         if (gallerySoftInflightCount() > before) {
             ++scheduled;
-        } else {
-            // No new inflight (already have / gave up) — do not count against budget.
         }
     }
+    if (m_perfEnabled) {
+        usPass2 = phaseTimer.nsecsElapsed() / 1000;
+        phaseTimer.restart();
+    }
 
-    // Interest: soft-band only. Speculative already capped during the scan.
+    // Interest: soft-band only.
     {
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
         QStringList near = interestNear;
@@ -276,6 +227,9 @@ void ImageView::updateGalleryDecodeWindow()
         speculative.sort();
         (void)ThumtooCache::setInterest(near, speculative, softEdge, softEdge,
                                         /*pathsPrimary=*/{}, /*primaryEdge=*/0);
+    }
+    if (m_perfEnabled) {
+        usInterest = phaseTimer.nsecsElapsed() / 1000;
     }
 
     const int freeSlots =
@@ -302,10 +256,13 @@ void ImageView::updateGalleryDecodeWindow()
         if (m_perfLastDecodeWindowUs > 4000) {
             fprintf(stderr,
                     "biltoo/perf: updateGalleryDecodeWindow %.1f ms "
-                    "(max %.1f ms runs=%d items=%d)\n",
+                    "(max %.1f ms runs=%d items=%d "
+                    "pass1=%.1f pass2=%.1f interest=%.1f install=%d)\n",
                     m_perfLastDecodeWindowUs / 1000.0,
                     m_perfMaxDecodeWindowUs / 1000.0, m_perfDecodeWindowRuns,
-                    static_cast<int>(m_items.size()));
+                    static_cast<int>(m_items.size()),
+                    usPass1 / 1000.0, usPass2 / 1000.0, usInterest / 1000.0,
+                    hostInstalled);
         }
     }
 }

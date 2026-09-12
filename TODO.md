@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-532-decode-window-hotpath.** Remove paint-budget installs + O(n²) want.
+Prior: **531**.
+
+### Still ~300–900 ms after 531
+Likely causes still in the hot path:
+- Paint-budget QImage::scaled re-installs on scroll
+- `galleryWantEdgeForPath` O(n) per path in pass 2
+
+### Changes
+- Pass 1: **blank host only**, max **2**/turn (no paint-budget scale/promote)
+- Pass 2: **O(1) want** from the current item (no nested item scan)
+- Perf log phases: pass1 / pass2 / interest / install count
+
+### Done criteria
+- [x] Bundle **532**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-531-decode-window-budget.** Cut multi-hundred-ms updateGalleryDecodeWindow.
 Prior: **530**.
 
