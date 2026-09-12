@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-587-item-display-upgrade-api.** ImageItem displayImage / shouldUpgrade.
+Prior: **586**.
+
+### Change
+- `ImageItem::displayImage`, `shouldUpgradeDisplayTo` — single place for soft
+  upgrade comparisons
+- `displayPixelLongEdge` via `displayImage`
+- `onImagePreviewLoaded` linear control flow (replace vs multi-item soft fill)
+
+### Done criteria
+- [x] Soft upgrade policy on the item, not duplicated at call sites
+- [x] Bundle **587**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-586-install-display-pixels-clarify.** installDisplayPixels + soft clamp helper.
 Prior: **585**.
 

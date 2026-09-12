@@ -932,79 +932,61 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         return;
     }
     ImageCache::put(path, image);
+
     // Replace navigations: drop superseded previews.
-    if (role == LoadReplace && generation != m_loadGeneration.load()) {
-        return;
-    }
     if (role == LoadReplace) {
-        if (path != classicPath()) {
+        if (generation != m_loadGeneration.load() || path != classicPath()) {
             return;
         }
         if (isImageMode()) {
-            if (ImageItem *cur = targetItem()) {
-                if (cur->path() == path && cur->hasDecodedPixels()) {
+            if (ImageItem *cur = targetItem();
+                cur && cur->path() == path) {
+                if (cur->hasDecodedPixels()) {
                     return; // full decode already won the race
                 }
-                // Upgrade loading placeholder (same path) in place when possible.
-                if (cur->path() == path && !cur->hasDecodedPixels()) {
-                    // Soft install in place — do not refit on sample upgrade.
-                    {
-                        const QSize before = cur->imageSize();
-                        const SessionImageId sid =
-                            cur->sessionId() != kInvalidSessionImageId
-                                ? cur->sessionId()
-                                : m_currentSessionId;
-                        installDisplayPixels(cur, image,
-                                             SessionAppearance::PixelKind::SoftPreview,
-                                             sid);
-                        preserveImageViewOnLogicalSizeChange(
-                            cur, before, cur->imageSize());
-                    }
-                    if (viewport()) {
-                        viewport()->update();
-                    }
-                    return;
+                // Soft install in place — do not refit on sample upgrade.
+                const QSize before = cur->imageSize();
+                const SessionImageId sid =
+                    cur->sessionId() != kInvalidSessionImageId
+                        ? cur->sessionId()
+                        : m_currentSessionId;
+                installDisplayPixels(cur, image,
+                                     SessionAppearance::PixelKind::SoftPreview, sid);
+                preserveImageViewOnLogicalSizeChange(cur, before, cur->imageSize());
+                if (viewport()) {
+                    viewport()->update();
                 }
+                return;
             }
             installImageModePendingTile(path, image);
             return;
         }
         // Empty multi-item canvas: fall through to per-item fill.
     }
+
     // Gallery / Workspace: fill undecoded occurrences of this path.
-    // If layout size was still provisional, adopt preview aspect and re-pack
-    // so low-res tiles occupy the same footprint as the eventual full image
-    // (otherwise pack stays on 1000×1000 and the preview looks unstretched).
+    // Layout size stays logical (SIZE.md); installDisplayPixels may only fix
+    // 1×1 placeholders via layoutSizeForPath aspect.
+    const int incoming = ImageCache::longEdge(image);
     bool gallerySizeChanged = false;
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path || item->hasDecodedPixels()) {
             continue;
         }
-        // Keep a sharper preview; do not replace with a smaller ladder step.
-        const int incoming = qMax(image.width(), image.height());
-        if (item->hasDisplayPixels() && item->displayPixelLongEdge() >= incoming) {
+        if (!item->shouldUpgradeDisplayTo(incoming)) {
             continue;
         }
-        // Do not adopt unoriented soft dimensions as layout. installDisplayPixels
-        // bakes content appearance and syncs intrinsic aspect; a pre-set raw
-        // soft size caused oversized/wrong AABB when focus upgraded the ladder.
         const QSize before = item->imageSize();
-        {
-            const SessionImageId sid = item->sessionId();
-            installDisplayPixels(item, image,
-                                 SessionAppearance::PixelKind::SoftPreview, sid);
-        }
+        installDisplayPixels(item, image, SessionAppearance::PixelKind::SoftPreview,
+                             item->sessionId());
         if (item->imageSize() != before) {
             gallerySizeChanged = true;
         }
-        // Mark dirty; one coalesced viewport update below (not per-tile scene
-        // update storms when many ladderReady events land together).
-        item->update();
+        item->update(); // coalesced viewport update below
     }
     if (gallerySizeChanged && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
         applyLayout(GalleryPackReason::ContentChange);
     } else if (viewport()) {
-        // Coalesce: single full viewport refresh after this batch of installs.
         viewport()->update();
     }
 }

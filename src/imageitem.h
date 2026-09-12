@@ -94,14 +94,24 @@ public:
     }
     const QImage &previewImage() const { return m_preview; }
     /**
-     * True when a full (non-preview) decode is present. Provisional thumbnail
-     * pixels do not count — gallery still schedules a full load.
+     * True when a full (non-preview) decode is present. Soft preview pixels do
+     * not count — gallery still schedules a higher ladder / full load.
      */
     bool hasDecodedPixels() const { return !m_source.isNull() && !m_previewPixels; }
-    /** Any displayable pixels (full decode or provisional preview). */
+    /** Any displayable pixels (full decode or soft preview). */
     bool hasDisplayPixels() const { return !m_source.isNull() || !m_preview.isNull(); }
+    /**
+     * Active display sample: full source when decoded, else soft preview.
+     * May be null. Does not transfer ownership.
+     */
+    QImage displayImage() const;
     /** Long edge of current display pixels (0 if none). */
     int displayPixelLongEdge() const;
+    /**
+     * True when @a incomingLongEdge is strictly sharper than what we show
+     * (or we have no pixels). Soft ladder upgrades use this.
+     */
+    bool shouldUpgradeDisplayTo(int incomingLongEdge) const;
     /** Replace or clear decoded pixels; keeps path and intrinsic size. */
     void setSourceImage(const QImage &image);
     /**

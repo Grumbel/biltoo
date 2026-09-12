@@ -102,15 +102,29 @@ void ImageItem::setSourceImage(const QImage &image)
     update();
 }
 
+QImage ImageItem::displayImage() const
+{
+    if (hasDecodedPixels()) {
+        return m_source;
+    }
+    return m_preview;
+}
+
 int ImageItem::displayPixelLongEdge() const
 {
-    if (!m_source.isNull() && !m_previewPixels) {
-        return qMax(m_source.width(), m_source.height());
+    const QImage img = displayImage();
+    return img.isNull() ? 0 : qMax(img.width(), img.height());
+}
+
+bool ImageItem::shouldUpgradeDisplayTo(int incomingLongEdge) const
+{
+    if (incomingLongEdge <= 0) {
+        return false;
     }
-    if (!m_preview.isNull()) {
-        return qMax(m_preview.width(), m_preview.height());
+    if (!hasDisplayPixels()) {
+        return true;
     }
-    return 0;
+    return displayPixelLongEdge() < incomingLongEdge;
 }
 
 void ImageItem::setPreviewImage(const QImage &preview)
