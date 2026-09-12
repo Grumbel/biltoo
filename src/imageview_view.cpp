@@ -1389,15 +1389,28 @@ QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) c
     return oriented.isNull() ? raw : oriented;
 }
 
-QImage ImageView::slideshowPixelsForPath(const QString &path)
+QImage ImageView::slideshowSampleUnoriented(const QString &path) const
 {
+    // Host sample clamped to target edge — no flip/rotate (GUI-safe).
     const int edge = slideshowTargetEdge();
-    // slideshowRaster already prefers max(hot set, ImageCache).
     QImage img = slideshowRaster(path);
     if (img.isNull()) {
-        img = slideshowSoftPlaceholder(path);
+        // soft placeholder may write; use const path via cache only here
+        img = ImageCache::get(path);
     }
-    img = ImageCache::clampToMaxEdge(img, edge);
+    return ImageCache::clampToMaxEdge(img, edge);
+}
+
+QImage ImageView::slideshowPixelsForPath(const QString &path)
+{
+    // Oriented sample for callers that need correct content orientation now.
+    // Phase arm uses the unoriented path + async upgrade to avoid GUI hitches.
+    const QImage img = slideshowSampleUnoriented(path);
+    if (img.isNull()) {
+        QImage soft = slideshowSoftPlaceholder(path);
+        soft = ImageCache::clampToMaxEdge(soft, slideshowTargetEdge());
+        return orientSlideshowImage(soft, path);
+    }
     return orientSlideshowImage(img, path);
 }
 
@@ -1493,7 +1506,13 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
 
 void ImageView::startSlideshowFromPhase(const QString &fromPath)
 {
-    m_ssFromImage = slideshowPixelsForPath(fromPath);
+    // Unoriented clamp only — orient + atlas run async (see prepareSlideshowFromDwell).
+    // Sync orientSlideshowImage of a 2k sample on every ←/→ was dropping frames.
+    m_ssFromImage = slideshowSampleUnoriented(fromPath);
+    if (m_ssFromImage.isNull() && !fromPath.isEmpty()) {
+        m_ssFromImage = ImageCache::clampToMaxEdge(
+            slideshowSoftPlaceholder(fromPath), slideshowTargetEdge());
+    }
     if (!fromPath.isEmpty()) {
         (void)ensureSlideshowLogicalSize(fromPath);
         m_motionBiasValid = false;
@@ -1515,9 +1534,14 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
     }
     ++m_ssPhaseUpgradeGeneration; // drop mid-slide upgrades for previous path
     invalidateDwellAtlasRebuilds();
-    ensureMotionAtlas(m_ssFromImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                      &m_dwellAtlasVw, &m_dwellAtlasVh);
+    // Async atlas — never scale multi-MP on the GUI during ←/→ or phase arm.
+    // paintMotionCover falls back to drawImage until the atlas is ready.
+    requestDwellAtlasRebuild();
     schedulePhaseZoomBlur(fromPath, m_ssFromImage);
+    // Orient if durable appearance requires it (async, does not block this stack).
+    if (!fromPath.isEmpty()) {
+        scheduleSlideshowPhaseBufferUpgrade(fromPath, m_ssFromImage);
+    }
 }
 
 void ImageView::armSlideshowMotionClock(int pathMs)
@@ -1563,13 +1587,18 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     }
     m_ssToPath = toPath;
     (void)ensureSlideshowLogicalSize(toPath);
-    m_ssToImage = slideshowPixelsForPath(toPath);
+    m_ssToImage = slideshowSampleUnoriented(toPath);
+    if (m_ssToImage.isNull()) {
+        m_ssToImage = ImageCache::clampToMaxEdge(
+            slideshowSoftPlaceholder(toPath), slideshowTargetEdge());
+    }
     captureMotionBiasesForPath(toPath, m_ssToImage, &m_ssToBiasA, &m_ssToBiasB);
     m_ssToMotionClock.start();
     m_ssToMotionClockRunning = true;
     m_ssToMotionBaseMs = 0;
     m_ssToMotionT = 0.0;
     schedulePhaseZoomBlur(toPath, m_ssToImage);
+    scheduleSlideshowPhaseBufferUpgrade(toPath, m_ssToImage);
     qCDebug(lcSlideshow).nospace()
         << "[slideshow] phase-to "
         << QFileInfo(toPath).fileName()
@@ -2478,9 +2507,9 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     // source may lag durable orientation on the first frame before a full
     // install, or be unbaked soft-only.
     const QString path = item->path();
-    QImage dwell = slideshowPixelsForPath(path);
+    QImage dwell = slideshowSampleUnoriented(path);
     if (dwell.isNull()) {
-        dwell = orientSlideshowImage(item->sourceImage(), path);
+        dwell = ImageCache::clampToMaxEdge(item->sourceImage(), slideshowTargetEdge());
     }
     m_dwellSourceImage = dwell;
     if (m_dwellSourceImage.isNull()) {
@@ -2490,8 +2519,10 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     // can restore a known static frame.
     applySlideshowZoomFraming(item);
     invalidateDwellAtlasRebuilds();
-    ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
-                      &m_dwellAtlasVw, &m_dwellAtlasVh);
+    requestDwellAtlasRebuild(); // async — do not scale on this stack
+    if (!path.isEmpty()) {
+        scheduleSlideshowPhaseBufferUpgrade(path, dwell);
+    }
     setSlideshowUnderlayVisible(false);
     return true;
 }

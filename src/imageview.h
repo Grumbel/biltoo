@@ -817,6 +817,7 @@ public:
     void armSlideshowFromPhase(const QString &fromPath, int pathMs);
     /** Arm or clear to-slot on path change. */
     void armSlideshowToPhase(const QString &toPath);
+    QImage slideshowSampleUnoriented(const QString &path) const;
     QImage slideshowPixelsForPath(const QString &path);
     QImage slideshowFullIfReady(const QString &path) const;
     QImage slideshowSoftPlaceholder(const QString &path);

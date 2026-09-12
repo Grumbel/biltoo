@@ -413,10 +413,15 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
             item->setIntrinsicSize(logical);
         }
-        // Soft was NoCache; force a clean DeviceCoordinate snapshot of the full
-        // pixmap (toggle always — invalidate alone can keep a soft freeze).
+        // Soft was NoCache. DeviceCoordinateCache of a multi-MP pixmap forces a
+        // huge GUI-thread raster snapshot on every full install (slow ←/→).
+        // Use it only for moderate samples; large FullSource stays NoCache.
         item->setCacheMode(QGraphicsItem::NoCache);
-        item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+        const int dispEdge = ImageCache::longEdge(display);
+        if (dispEdge > 0 && dispEdge <= ThumtooCache::kImageLadderEdge
+            && !m_slideshowProgressActive) {
+            item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+        }
         item->update();
     } else {
         item->setPreviewImage(display); // NoCache soft path

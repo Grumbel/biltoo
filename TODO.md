@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-669-phase-arm-async.** Phase arm and FullSource install without GUI scale.
+Prior: **668**.
+
+### Problem
+Slideshow still dropped frames and Image ←/→ felt slow because:
+1. Phase arm called sync `orientSlideshowImage` + `ensureMotionAtlas` on every advance
+2. FullSource install toggled `DeviceCoordinateCache` on multi-MP pixmaps (huge GUI snapshot)
+
+### Change
+- `slideshowSampleUnoriented` — clamp only (no orient)
+- Phase from/to arm + motion dwell: async atlas + async orient upgrade
+- FullSource: DeviceCoordinateCache only when ≤ image ladder and not in slideshow
+
+### Done criteria
+- [x] Phase arm does not scale/orient on the GUI stack
+- [x] Large FullSource does not force DeviceCoordinateCache
+- [x] Bundle **669**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-668-orient-via-snapshot.** orientSlideshowImage uses shared snapshot.
 Prior: **667**.
 
