@@ -53,6 +53,7 @@ struct SessionEntrySnapshot {
 
 struct ProjectDocument;
 struct ProjectImage;
+struct ProjectAsset;
 
 class MainWindow : public QMainWindow
 {

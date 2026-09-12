@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-639-projectasset-fwd.** Fix ProjectAsset incomplete type in mainwindow.h.
+Prior: **638**.
+
+### Change
+- Forward-declare `struct ProjectAsset` with ProjectDocument/ProjectImage so
+  `promptLocateMissingAsset` compiles when projectfile.h is not included.
+
+### Done criteria
+- [x] Build error fixed
+- [x] Bundle **639**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-638-gallery-decode-layout.** Extract gallery interest/idle decode and layout mode map.
 Prior: **637**.
 
