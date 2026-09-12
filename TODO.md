@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-559-slideshow-restore-fillpad.** Restore letterbox fillPad lambda for pure-phase paint.
+Prior: **558**.
+
+### Cause
+Deleting the live paint branch also dropped the local `fillPad` / ZoomBlur underlay lambda that pure-phase still calls.
+
+### Fix
+- Restore `fillPad` (no live-path fallbacks) immediately before pure-phase composite
+
+### Done criteria
+- [x] imageview_paint.cpp compiles fillPad calls
+- [x] Bundle **559**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-558-slideshow-raster-inflight-members.** Fix compile: restore m_ssRasterInflight/Pending.
 Prior: **557**.
 

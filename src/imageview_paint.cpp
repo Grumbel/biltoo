@@ -153,6 +153,47 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         drawEdgeAffordances(painter);
     }
 
+    // Letterbox underlay. During transitions, crossfade from→to underlays.
+    // Blurs are cached by stable path key; each paint only draws two pixmaps
+    // with opacity (GPU). CPU blur runs once per slide/viewport, not per frame.
+    auto blurKey = [](const QString &path) -> qint64 {
+        return path.isEmpty() ? qint64(0) : qint64(qHash(path));
+    };
+    auto fillPad = [&](const QRect &vr, const QImage &fromSrc = QImage(),
+                       const QImage &toSrc = QImage(), qreal t = -1.0,
+                       const QString &fromPath = QString(),
+                       const QString &toPath = QString()) {
+        if (m_slideshowLetterboxFill != SlideshowLetterboxFill::ZoomBlur) {
+            painter.fillRect(vr, slideshowPadColor());
+            return;
+        }
+        const bool haveFrom = !fromSrc.isNull();
+        const bool haveTo = !toSrc.isNull();
+        const qreal tt = qBound(0.0, t, 1.0);
+        const QString fPath = !fromPath.isEmpty() ? fromPath
+            : (!m_ssFromPath.isEmpty() ? m_ssFromPath : m_motionBiasPath);
+        const QString tPath = !toPath.isEmpty() ? toPath : m_ssToPath;
+        if (haveFrom && haveTo && t >= 0.0) {
+            painter.setOpacity(1.0);
+            paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
+            if (tt > 0.0) {
+                painter.setOpacity(tt);
+                paintZoomBlurUnderlay(&painter, toSrc, vr, blurKey(tPath));
+                painter.setOpacity(1.0);
+            }
+            return;
+        }
+        if (haveFrom) {
+            paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
+            return;
+        }
+        if (haveTo) {
+            paintZoomBlurUnderlay(&painter, toSrc, vr, blurKey(tPath));
+            return;
+        }
+        painter.fillRect(vr, slideshowPadColor());
+    };
+
     // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
     if (m_slideshowProgressActive
         && (!m_ssFromImage.isNull() || !m_dwellSourceImage.isNull() || !m_ssToImage.isNull())) {
