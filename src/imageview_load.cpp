@@ -803,6 +803,14 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         return;
     }
 
+    // Slideshow owns the viewport via pure-phase buffers — never soft-install
+    // or PreferCache-climb the underlay ImageItem while the show is running.
+    if (role == LoadReplace && isImageMode() && m_slideshowProgressActive) {
+        biltooLoadDbg("PATH slideshow active skip image-mode load path=%s",
+                      qPrintable(QFileInfo(path).fileName()));
+        return;
+    }
+
     // Image mode: paint soft/LQIP from cache immediately (pixel swap only).
     if (role == LoadReplace && isImageMode()) {
         installImageModePendingTile(path);

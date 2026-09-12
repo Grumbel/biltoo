@@ -1589,6 +1589,15 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
     m_ssFromMotionClockRunning = true;
     m_ssFromMotionT = m_ssToMotionT;
     m_dwellMotionT = m_ssFromMotionT;
+    // Keep the to-atlas as the from/dwell atlas — clearing it forced multi-MP
+    // drawImage every frame until rebuild (visible frame drops on promote).
+    if (!m_ssToAtlas.isNull()) {
+        m_dwellAtlas = m_ssToAtlas;
+        m_dwellAtlasScale = m_ssToAtlasScale;
+        m_dwellAtlasVw = m_ssToAtlasVw;
+        m_dwellAtlasVh = m_ssToAtlasVh;
+        m_dwellAtlasRebuildGeneration = m_ssToAtlasRebuildGeneration;
+    }
 }
 
 void ImageView::startSlideshowFromPhase(const QString &fromPath)
@@ -1625,14 +1634,20 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
         return;
     }
     ++m_ssPhaseUpgradeGeneration; // drop mid-slide upgrades for previous path
-    invalidateDwellAtlasRebuilds();
-    // Drop the previous path's atlas immediately. Keeping it until rebuild
-    // finished painted the *old* slide under the new path for several frames.
-    // Soft drawImage fallback is cheap; wrong-path atlas is a visible glitch.
-    m_dwellAtlas = QPixmap();
-    m_dwellAtlasScale = 0.0;
-    m_dwellAtlasVw = 0;
-    m_dwellAtlasVh = 0;
+    // If promote already transferred the to-atlas, keep it (same image, continuous
+    // motion). Only drop when the atlas cannot cover this source / viewport —
+    // requestDwellAtlasRebuild is a no-op when coverage is adequate.
+    // Fresh startSlideshowFromPhase leaves a wrong-path atlas; clear only then.
+    if (m_dwellAtlas.isNull()
+        || !dwellAtlasCoversSource(m_dwellAtlas, m_dwellAtlasScale, m_dwellAtlasVw,
+                                   m_dwellAtlasVh, dwellAtlasParams(),
+                                   m_ssFromImage)) {
+        invalidateDwellAtlasRebuilds();
+        m_dwellAtlas = QPixmap();
+        m_dwellAtlasScale = 0.0;
+        m_dwellAtlasVw = 0;
+        m_dwellAtlasVh = 0;
+    }
     // Async atlas — never scale multi-MP on the GUI during ←/→ or phase arm.
     // paintMotionCover falls back to drawImage until the atlas is ready.
     requestDwellAtlasRebuild();

@@ -1323,39 +1323,39 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
     // Gallery/Workspace keep multi-object canvas; update session cursor only.
     // Gallery: do not exclusive-select (Ctrl+click multi-select is owned by the view).
     if (isImageMode()) {
-        // Key-repeat (and rapid ←/→): soft install every step so the flip stays
-        // responsive, but PreferCache / native climb only after a quiet settle.
-        // Without this, gen++ + sync repaint + climb timers stacked until the
-        // GUI froze (cumulative). Slideshow auto-advance skips the hot path.
-        if (m_slideshowAdvancing) {
+        // Slideshow pure-phase owns the viewport (m_ssFrom/To + atlas). loadImage
+        // / PreferCache here raced the 16ms clock and caused soft→HQ frame drops
+        // (log: preferCacheClimb after phase-from already at 2048).
+        if (isSlideshowSession()) {
             if (m_imageView) {
-                m_imageView->setSlideshowNavHot(false);
+                m_imageView->setSlideshowNavHot(!m_slideshowAdvancing);
             }
-            m_imageView->loadImage(path);
-        } else {
-            m_imageView->setSlideshowNavHot(true);
-            // Soft pixel swap only while hot (scheduleImageLoad skips climb).
-            m_imageView->loadImage(path);
-            if (!m_slideshowNavLoadTimer) {
-                m_slideshowNavLoadTimer = new QTimer(this);
-                m_slideshowNavLoadTimer->setSingleShot(true);
-                // 80ms: single taps still climb quickly; hold settles after burst.
-                m_slideshowNavLoadTimer->setInterval(80);
-                connect(m_slideshowNavLoadTimer, &QTimer::timeout, this, [this]() {
-                    if (!m_imageView || !isImageMode()) {
-                        return;
-                    }
-                    if (m_currentIndex < 0
-                        || m_currentIndex >= m_session.paths().size()) {
-                        return;
-                    }
-                    m_imageView->setSlideshowNavHot(false);
-                    // Full load + PreferCache climb for the settled index only.
-                    m_imageView->loadImage(m_session.paths().at(m_currentIndex));
-                });
-            }
-            m_slideshowNavLoadTimer->start();
+            // User ←/→: onSlideshowUserNavigated already setSlideshowPhase.
+            // Auto-advance: phase-from promote already has pixels. No LoadReplace.
+            return;
         }
+        // Key-repeat: soft install every step; PreferCache only after quiet settle.
+        m_imageView->setSlideshowNavHot(true);
+        m_imageView->loadImage(path);
+        if (!m_slideshowNavLoadTimer) {
+            m_slideshowNavLoadTimer = new QTimer(this);
+            m_slideshowNavLoadTimer->setSingleShot(true);
+            // 80ms: single taps still climb quickly; hold settles after burst.
+            m_slideshowNavLoadTimer->setInterval(80);
+            connect(m_slideshowNavLoadTimer, &QTimer::timeout, this, [this]() {
+                if (!m_imageView || !isImageMode() || isSlideshowSession()) {
+                    return;
+                }
+                if (m_currentIndex < 0
+                    || m_currentIndex >= m_session.paths().size()) {
+                    return;
+                }
+                m_imageView->setSlideshowNavHot(false);
+                // Full load + PreferCache climb for the settled index only.
+                m_imageView->loadImage(m_session.paths().at(m_currentIndex));
+            });
+        }
+        m_slideshowNavLoadTimer->start();
     } else if (isGalleryMode() && m_imageView) {
         // Filmstrip / keyboard nav (ensureGalleryVisible): select the tile and
         // scroll it into view. Gallery view clicks pass false — selection was

@@ -2,6 +2,34 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-696-slideshow-no-prefercache-promote-atlas.** No LoadReplace during show; promote keeps to-atlas.
+Prior: **695**.
+
+### Evidence (user log)
+```
+phase-from "088.jpg" 1365x2048 (continue)
+preferCacheClimb path=088.jpg edge=2048 have=2048
+scheduleDisplay DONE ... edge=2048 ok=0 decoded=683x1024
+```
+PreferCache after phase already had full pixels. Promote cleared the atlas →
+multi-MP drawImage until rebuild (frame drops).
+
+### Change
+- `applyCurrentIndexCanvasChange`: never `loadImage` while slideshow session active
+  (phase buffers own the viewport; user nav via `setSlideshowPhase`)
+- `scheduleImageLoad`: early-out when `m_slideshowProgressActive`
+- `promoteSlideshowFromToPhase`: transfer to-atlas → dwell atlas
+- `prepareSlideshowFromDwell`: only clear atlas when coverage fails
+
+### Done criteria
+- [x] Bundle **696**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-695-slideshow-soft-hq-atomic.** Phase buffers only take target-edge; atlas swap keeps prior texture; clamp off-GUI.
 Prior: **694**.
 
