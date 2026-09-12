@@ -2046,32 +2046,33 @@ void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint6
             return;
         }
         QMetaObject::invokeMethod(target, [guard, blurred, key, gen]() {
-            if (!guard) {
+            ImageView *self = guard.data();
+            if (!self) {
                 return;
             }
-            if (gen != guard->m_zoomBlurGeneration) {
+            if (gen != self->m_zoomBlurGeneration) {
                 return; // page flipped — discard
             }
             int slot = -1;
             for (int i = 0; i < 2; ++i) {
-                if (guard->m_zoomBlurSourceKey[i] == key) {
+                if (self->m_zoomBlurSourceKey[i] == key) {
                     slot = i;
                     break;
                 }
             }
             if (slot < 0) {
-                slot = guard->m_zoomBlurUnderlay[0].isNull() ? 0 : 1;
+                slot = self->m_zoomBlurUnderlay[0].isNull() ? 0 : 1;
             }
-            guard->m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
-            guard->m_zoomBlurSourceKey[slot] = key;
-            guard->m_zoomBlurLastGood = guard->m_zoomBlurUnderlay[slot];
-            guard->m_zoomBlurLastGoodKey = key;
-            if (guard->m_zoomBlurInFlightGen == gen) {
-                guard->m_zoomBlurInFlightGen = 0;
-                guard->m_zoomBlurInFlightKey = 0;
+            self->m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
+            self->m_zoomBlurSourceKey[slot] = key;
+            self->m_zoomBlurLastGood = self->m_zoomBlurUnderlay[slot];
+            self->m_zoomBlurLastGoodKey = key;
+            if (self->m_zoomBlurInFlightGen == gen) {
+                self->m_zoomBlurInFlightGen = 0;
+                self->m_zoomBlurInFlightKey = 0;
             }
-            if (guard->viewport()) {
-                guard->viewport()->update();
+            if (self->viewport()) {
+                self->viewport()->update();
             }
         }, Qt::QueuedConnection);
     });
