@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-632-crop-enter-resize.** Extract enterCropModeFromUi and cropLocalResizeRect.
+Prior: **631**.
+
+### Change
+- `enterCropModeFromUi` — setCropMode(true) path (stash, full image, workspace anchor)
+- `cropLocalResizeRect` — pure resize geometry; `updateCropResizeDrag` applies limits
+
+### Done criteria
+- [x] Crop enter and resize geometry named
+- [x] Bundle **632**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-631-load-project-append.** Split loadProjectFromPath resolve path and expanded append chrome.
 Prior: **630**.
 

@@ -308,96 +308,104 @@ void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnch
     item->setPos(item->pos() + (sceneAnchor - current));
 }
 
+bool ImageView::enterCropModeFromUi()
+{
+    // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
+    if (isGalleryMode()) {
+        return false;
+    }
+    // Image or Workspace: one explicit subject only.
+    if (!hasSingleCropTarget()) {
+        flashHud(tr("Crop"), tr("Select a single image"));
+        return false;
+    }
+    ImageItem *item = cropTargetItem();
+    if (!item || (!item->hasDecodedPixels() && item->pixmap().isNull())) {
+        flashHud(tr("Crop"), tr("No image"));
+        return false;
+    }
+    cancelZoomRegion();
+    // Lock identity for the whole crop session (IDENTITY.md).
+    m_cropTargetItem = item;
+    m_cropTargetId = item->sessionId();
+    // Snapshot appearance before full-image reload so Close can be undone.
+    m_cropEnterSource = item->sourceImage().copy();
+    m_cropEnterState = captureState(item);
+    m_cropEnterState.hasCrop = item->sessionHasCrop();
+    m_cropEnterState.cropRect = item->sessionCropRect();
+    // cropRotation / cropSourceSize come from captureState → appearance.
+    m_cropEnterValid = !m_cropEnterSource.isNull();
+    // Crop handles are axis-aligned in item space; free Workspace placement
+    // rotation makes rubber-band and edge grips unusable. Unrotate for the
+    // crop session and restore on exit.
+    // Workspace: remember where the *displayed* image centre sits so the
+    // restored crop frame can stay fixed while the full image grows around it.
+    const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
+    m_cropStashedPlacementRotation = item->itemRotation();
+    m_cropStashedPlacementShear = item->itemShear();
+    m_cropHadStashedPlacement = qAbs(m_cropStashedPlacementRotation) > 0.05
+        || qAbs(m_cropStashedPlacementShear) > 1e-4;
+    if (m_cropHadStashedPlacement) {
+        item->setItemRotation(0.0);
+        item->setItemShear(0.0);
+    }
+    if (!prepareCropModeFullImage(item)) {
+        m_cropEnterValid = false;
+        m_cropEnterSource = QImage();
+        if (m_cropHadStashedPlacement) {
+            item->setItemRotation(m_cropStashedPlacementRotation);
+            item->setItemShear(m_cropStashedPlacementShear);
+        }
+        m_cropHadStashedPlacement = false;
+        m_cropTargetItem = nullptr;
+        m_cropTargetId = kInvalidSessionImageId;
+        flashHud(tr("Crop"), tr("Could not load full image"));
+        return false;
+    }
+    if (isWorkspaceMode()) {
+        // If there was no stored crop angle but the tile was free-rotated,
+        // seed the draft rotation so the frame matches the prior pose while
+        // the item stays axis-aligned for editing.
+        if (qAbs(m_cropRotation) < 0.05
+            && qAbs(m_cropStashedPlacementRotation) > 0.05) {
+            m_cropRotation = m_cropStashedPlacementRotation;
+            while (m_cropRotation > 180.0) {
+                m_cropRotation -= 360.0;
+            }
+            while (m_cropRotation <= -180.0) {
+                m_cropRotation += 360.0;
+            }
+            ensureCropRectValid();
+        }
+        alignCropFrameCenterToScene(item, workspaceAnchorScene);
+        updateWorkspaceSceneRect();
+    }
+    m_cropMode = true;
+    m_cropActiveHandle = CropHandle::None;
+    m_cropHoverHandle = CropHandle::None;
+    m_cropRubberBanding = false;
+    flashHud(tr("Crop mode"),
+             tr("Apply commits · Esc cancels"));
+    emit cropModeChanged(true);
+    emit statusChanged();
+    viewport()->update();
+    return true;
+}
+
 void ImageView::setCropMode(bool on)
 {
     if (on == m_cropMode) {
         return;
     }
     if (on) {
-        // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
-        if (isGalleryMode()) {
-            return;
-        }
-        // Image or Workspace: one explicit subject only.
-        if (!hasSingleCropTarget()) {
-            flashHud(tr("Crop"), tr("Select a single image"));
-            return;
-        }
-        ImageItem *item = cropTargetItem();
-        if (!item || (!item->hasDecodedPixels() && item->pixmap().isNull())) {
-            flashHud(tr("Crop"), tr("No image"));
-            return;
-        }
-        cancelZoomRegion();
-        // Lock identity for the whole crop session (IDENTITY.md).
-        m_cropTargetItem = item;
-        m_cropTargetId = item->sessionId();
-        // Snapshot appearance before full-image reload so Close can be undone.
-        m_cropEnterSource = item->sourceImage().copy();
-        m_cropEnterState = captureState(item);
-        m_cropEnterState.hasCrop = item->sessionHasCrop();
-        m_cropEnterState.cropRect = item->sessionCropRect();
-        // cropRotation / cropSourceSize come from captureState → appearance.
-        m_cropEnterValid = !m_cropEnterSource.isNull();
-        // Crop handles are axis-aligned in item space; free Workspace placement
-        // rotation makes rubber-band and edge grips unusable. Unrotate for the
-        // crop session and restore on exit.
-        // Workspace: remember where the *displayed* image centre sits so the
-        // restored crop frame can stay fixed while the full image grows around it.
-        const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
-        m_cropStashedPlacementRotation = item->itemRotation();
-        m_cropStashedPlacementShear = item->itemShear();
-        m_cropHadStashedPlacement = qAbs(m_cropStashedPlacementRotation) > 0.05
-            || qAbs(m_cropStashedPlacementShear) > 1e-4;
-        if (m_cropHadStashedPlacement) {
-            item->setItemRotation(0.0);
-            item->setItemShear(0.0);
-        }
-        if (!prepareCropModeFullImage(item)) {
-            m_cropEnterValid = false;
-            m_cropEnterSource = QImage();
-            if (m_cropHadStashedPlacement) {
-                item->setItemRotation(m_cropStashedPlacementRotation);
-                item->setItemShear(m_cropStashedPlacementShear);
-            }
-            m_cropHadStashedPlacement = false;
-            m_cropTargetItem = nullptr;
-            m_cropTargetId = kInvalidSessionImageId;
-            flashHud(tr("Crop"), tr("Could not load full image"));
-            return;
-        }
-        if (isWorkspaceMode()) {
-            // If there was no stored crop angle but the tile was free-rotated,
-            // seed the draft rotation so the frame matches the prior pose while
-            // the item stays axis-aligned for editing.
-            if (qAbs(m_cropRotation) < 0.05
-                && qAbs(m_cropStashedPlacementRotation) > 0.05) {
-                m_cropRotation = m_cropStashedPlacementRotation;
-                while (m_cropRotation > 180.0) {
-                    m_cropRotation -= 360.0;
-                }
-                while (m_cropRotation <= -180.0) {
-                    m_cropRotation += 360.0;
-                }
-                ensureCropRectValid();
-            }
-            alignCropFrameCenterToScene(item, workspaceAnchorScene);
-            updateWorkspaceSceneRect();
-        }
-        m_cropMode = true;
-        m_cropActiveHandle = CropHandle::None;
-        m_cropHoverHandle = CropHandle::None;
-        m_cropRubberBanding = false;
-        flashHud(tr("Crop mode"),
-                 tr("Apply commits · Esc cancels"));
-        emit cropModeChanged(true);
-        emit statusChanged();
-        viewport()->update();
+        enterCropModeFromUi();
         return;
     }
     // Turning crop off from the toolbar commits the draft (auto-apply).
     leaveCropModeInternal(true);
 }
+
+
 
 bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const
 {
@@ -1502,12 +1510,9 @@ void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qre
     viewport()->update();
 }
 
-void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, const QRectF &limits,
-                                     qreal minSide)
+QRectF ImageView::cropLocalResizeRect(const QPointF &local, qreal minSide) const
 {
-    // Resize in crop-local axes (axis-aligned about start centre), then map
-    // the new centre back through the crop rotation so edges stay under the
-    // grips when the frame is rotated.
+    // Resize in crop-local axes (axis-aligned about start centre).
     const QPointF c0 = m_cropDragStartRect.center();
     const qreal w0 = m_cropDragStartRect.width();
     const qreal h0 = m_cropDragStartRect.height();
@@ -1603,7 +1608,15 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
     const qreal newW = R - L;
     const qreal newH = B - T;
     const QPointF c1 = c0 + rotateVec(cLocal, ang);
-    QRectF r(c1.x() - newW / 2.0, c1.y() - newH / 2.0, newW, newH);
+    return QRectF(c1.x() - newW / 2.0, c1.y() - newH / 2.0, newW, newH);
+}
+
+void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, const QRectF &limits,
+                                     qreal minSide)
+{
+    // Resize in crop-local axes, then map the new centre through crop rotation
+    // so edges stay under the grips when the frame is rotated.
+    QRectF r = cropLocalResizeRect(local, minSide);
 
     if (m_cropAllowExpand) {
         r = r.intersected(limits);
@@ -1615,10 +1628,12 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
         }
         m_cropRect = r;
     } else {
-        m_cropRect = constrainCropToContent(r, ang, cr, minSide);
+        m_cropRect = constrainCropToContent(r, m_cropRotation, cr, minSide);
     }
     viewport()->update();
 }
+
+
 
 void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 {
