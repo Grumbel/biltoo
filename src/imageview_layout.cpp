@@ -1026,6 +1026,132 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
 
 
 
+QList<ImageItem *> ImageView::collectItemsForSessionId(SessionImageId sessionId) const
+{
+    QList<ImageItem *> doomed;
+    auto collect = [&](const QList<ImageItem *> &list) {
+        for (ImageItem *item : list) {
+            if (item && item->sessionId() == sessionId && !doomed.contains(item)) {
+                doomed.append(item);
+            }
+        }
+    };
+    collect(m_items);
+    collect(m_workspace.stashedItems());
+    collect(m_gallery.stashedItems());
+    return doomed;
+}
+
+QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
+{
+    QStringList removedPaths;
+    for (ImageItem *item : doomed) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        removedPaths.append(path);
+        // Drop in-flight decodes so a late LoadAdd cannot create a tile or
+        // call applyLayout after this session image is gone.
+        m_pendingWorkspacePaths.remove(path);
+        gallerySoftResetPath(path);
+        m_pendingScenePos.remove(path);
+        m_pendingSessionIndexByPath.remove(path);
+        // destroyCanvasItem clears selection anchor / drag pointers and
+        // removes from m_items and both stashes (safe if already only in one).
+        destroyCanvasItem(item);
+    }
+    return removedPaths;
+}
+
+void ImageView::prunePendingBindsAndSavedForSessionId(SessionImageId sessionId)
+{
+    for (int i = m_pendingSessionBinds.size() - 1; i >= 0; --i) {
+        // Match by session id only — same path may still need other binds.
+        if (m_pendingSessionBinds.at(i).id == sessionId) {
+            m_pendingSessionBinds.removeAt(i);
+        }
+    }
+    for (int i = m_workspace.savedItems().size() - 1; i >= 0; --i) {
+        if (m_workspace.savedItems().at(i).sessionId == sessionId) {
+            m_workspace.savedItems().removeAt(i);
+        }
+    }
+}
+
+void ImageView::prunePathOrdersAfterSessionRemove(const QStringList &removedPaths)
+{
+    if (removedPaths.isEmpty()) {
+        return;
+    }
+    // Rebuild path/id order aligned with remaining tiles (IDENTITY: id first).
+    QStringList prunedPaths;
+    QVector<SessionImageId> prunedIds;
+    prunedPaths.reserve(m_items.size());
+    prunedIds.reserve(m_items.size());
+    QSet<SessionImageId> seenIds;
+    QHash<QString, int> unboundBudget;
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId sid = item->sessionId();
+        if (sid != kInvalidSessionImageId) {
+            if (seenIds.contains(sid)) {
+                continue;
+            }
+            seenIds.insert(sid);
+            prunedPaths.append(item->path());
+            prunedIds.append(sid);
+        } else {
+            unboundBudget[item->path()] += 1;
+        }
+    }
+    // Preserve prior order for unbound path slots still live.
+    for (int i = 0; i < m_pathOrder.size(); ++i) {
+        const QString &path = m_pathOrder.at(i);
+        const SessionImageId sid = (i < m_sessionIdOrder.size())
+            ? m_sessionIdOrder.at(i) : kInvalidSessionImageId;
+        if (sid != kInvalidSessionImageId) {
+            continue; // already taken from live bound tiles
+        }
+        if (unboundBudget.value(path) > 0) {
+            prunedPaths.append(path);
+            prunedIds.append(kInvalidSessionImageId);
+            unboundBudget[path] -= 1;
+        }
+    }
+    m_pathOrder = prunedPaths;
+    m_sessionIdOrder = prunedIds;
+}
+
+void ImageView::restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,
+                                                  const QPointF &keptCenter, int scrollH, int scrollV)
+{
+    // Gallery: repack so deleted tiles do not leave empty holes. Preserve the
+    // pre-delete viewport centre afterward (same idea as return-from-Image).
+    if (gallery && m_scene) {
+        if (!m_items.isEmpty()) {
+            applyLayout(GalleryPackReason::SessionMutate);
+        } else if (keptSceneRect.isValid()) {
+            m_scene->setSceneRect(keptSceneRect);
+        }
+        if (!keptCenter.isNull()) {
+            centerOn(keptCenter);
+        }
+        if (horizontalScrollBar()) {
+            horizontalScrollBar()->setValue(scrollH);
+        }
+        if (verticalScrollBar()) {
+            verticalScrollBar()->setValue(scrollV);
+        }
+        m_gallery.setViewportSnapshot(keptCenter, scrollH, scrollV);
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    viewport()->update();
+}
+
 void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
 {
     if (sessionId == kInvalidSessionImageId) {
@@ -1050,113 +1176,12 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     const int scrollV = verticalScrollBar() ? verticalScrollBar()->value() : 0;
 
     // Collect first — destroyCanvasItem mutates m_items / stashes.
-    QList<ImageItem *> doomed;
-    auto collect = [&](const QList<ImageItem *> &list) {
-        for (ImageItem *item : list) {
-            if (item && item->sessionId() == sessionId && !doomed.contains(item)) {
-                doomed.append(item);
-            }
-        }
-    };
-    collect(m_items);
-    collect(m_workspace.stashedItems());
-    collect(m_gallery.stashedItems());
+    const QList<ImageItem *> doomed = collectItemsForSessionId(sessionId);
+    const QStringList removedPaths = destroySessionIdItems(doomed);
+    prunePendingBindsAndSavedForSessionId(sessionId);
+    prunePathOrdersAfterSessionRemove(removedPaths);
+    restoreViewportAfterSessionRemove(gallery, keptSceneRect, keptCenter, scrollH, scrollV);
 
-    QStringList removedPaths;
-    for (ImageItem *item : doomed) {
-        if (!item) {
-            continue;
-        }
-        const QString path = item->path();
-        removedPaths.append(path);
-        // Drop in-flight decodes so a late LoadAdd cannot create a tile or
-        // call applyLayout after this session image is gone.
-        m_pendingWorkspacePaths.remove(path);
-        gallerySoftResetPath(path);
-m_pendingScenePos.remove(path);
-        m_pendingSessionIndexByPath.remove(path);
-        // destroyCanvasItem clears selection anchor / drag pointers and
-        // removes from m_items and both stashes (safe if already only in one).
-        destroyCanvasItem(item);
-    }
-    // Pending binds for this session id.
-    for (int i = m_pendingSessionBinds.size() - 1; i >= 0; --i) {
-        // Match by session id only — same path may still need other binds.
-        if (m_pendingSessionBinds.at(i).id == sessionId) {
-            m_pendingSessionBinds.removeAt(i);
-        }
-    }
-
-    for (int i = m_workspace.savedItems().size() - 1; i >= 0; --i) {
-        if (m_workspace.savedItems().at(i).sessionId == sessionId) {
-            m_workspace.savedItems().removeAt(i);
-        }
-    }
-
-    // Keep path/session-id order aligned with remaining tiles (IDENTITY: id first).
-    if (!removedPaths.isEmpty()) {
-        QStringList prunedPaths;
-        QVector<SessionImageId> prunedIds;
-        prunedPaths.reserve(m_items.size());
-        prunedIds.reserve(m_items.size());
-        QSet<SessionImageId> seenIds;
-        QHash<QString, int> unboundBudget;
-        for (ImageItem *item : m_items) {
-            if (!item) {
-                continue;
-            }
-            const SessionImageId sid = item->sessionId();
-            if (sid != kInvalidSessionImageId) {
-                if (seenIds.contains(sid)) {
-                    continue;
-                }
-                seenIds.insert(sid);
-                prunedPaths.append(item->path());
-                prunedIds.append(sid);
-            } else {
-                unboundBudget[item->path()] += 1;
-            }
-        }
-        // Preserve prior order for unbound path slots still live.
-        for (int i = 0; i < m_pathOrder.size(); ++i) {
-            const QString &path = m_pathOrder.at(i);
-            const SessionImageId sid = (i < m_sessionIdOrder.size())
-                ? m_sessionIdOrder.at(i) : kInvalidSessionImageId;
-            if (sid != kInvalidSessionImageId) {
-                continue; // already taken from live bound tiles
-            }
-            if (unboundBudget.value(path) > 0) {
-                prunedPaths.append(path);
-                prunedIds.append(kInvalidSessionImageId);
-                unboundBudget[path] -= 1;
-            }
-        }
-        m_pathOrder = prunedPaths;
-        m_sessionIdOrder = prunedIds;
-    }
-
-    // Gallery: repack so deleted tiles do not leave empty holes. Preserve the
-    // pre-delete viewport centre afterward (same idea as return-from-Image).
-    if (gallery && m_scene) {
-        if (!m_items.isEmpty()) {
-            applyLayout(GalleryPackReason::SessionMutate);
-        } else if (keptSceneRect.isValid()) {
-            m_scene->setSceneRect(keptSceneRect);
-        }
-        if (!keptCenter.isNull()) {
-            centerOn(keptCenter);
-        }
-        if (horizontalScrollBar()) {
-            horizontalScrollBar()->setValue(scrollH);
-        }
-        if (verticalScrollBar()) {
-            verticalScrollBar()->setValue(scrollV);
-        }
-        m_gallery.setViewportSnapshot(keptCenter, scrollH, scrollV);
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    viewport()->update();
     emit statusChanged();
     emit workspacePathsChanged();
 }

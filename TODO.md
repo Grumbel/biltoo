@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-625-remove-session-phases.** Split removeWorkspaceSessionId into collect/destroy/prune/restore.
+Prior: **624**.
+
+### Change
+- `collectItemsForSessionId`, `destroySessionIdItems`
+- `prunePendingBindsAndSavedForSessionId`, `prunePathOrdersAfterSessionRemove`
+- `restoreViewportAfterSessionRemove`
+- `removeWorkspaceSessionId` is short orchestration (also fixed pendingScenePos indent)
+
+### Done criteria
+- [x] Session-remove paths named; gallery viewport preservation preserved
+- [x] Bundle **625**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-624-bake-content-shared.** Shared helpers for bakeItemRotate90 / bakeItemFlip.
 Prior: **623**.
 

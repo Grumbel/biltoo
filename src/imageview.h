@@ -487,6 +487,12 @@ public:
     /** True while LoadAdd still has an unbound PendingSessionBind for @p path. */
     bool hasPendingSessionBindForPath(const QString &path) const;
     void removeWorkspaceSessionId(SessionImageId sessionId);
+    QList<ImageItem *> collectItemsForSessionId(SessionImageId sessionId) const;
+    QStringList destroySessionIdItems(const QList<ImageItem *> &doomed);
+    void prunePendingBindsAndSavedForSessionId(SessionImageId sessionId);
+    void prunePathOrdersAfterSessionRemove(const QStringList &removedPaths);
+    void restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,
+                                           const QPointF &keptCenter, int scrollH, int scrollV);
     /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
     void detachCanvasSessionId(SessionImageId sessionId);
     /** Assign sequential session indices to currently selected items starting at @p first. */
