@@ -1548,6 +1548,16 @@ private:
     int m_galleryRelayoutSuppressCount = 0;
     QTimer *m_galleryDecodeScrollTimer = nullptr;
     QTimer *m_statusRefreshTimer = nullptr;
+    /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
+    bool m_perfEnabled = false;
+    QElapsedTimer m_perfFpsClock;
+    int m_perfFrameCount = 0;
+    qreal m_perfFps = 0.0;
+    qint64 m_perfLastPaintUs = 0;
+    qint64 m_perfLastDecodeWindowUs = 0;
+    qint64 m_perfMaxDecodeWindowUs = 0;
+    int m_perfDecodeWindowRuns = 0;
+
     QTimer *m_gallerySoftWatchdog = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;
     GalleryPackReason m_debouncedPackReason = GalleryPackReason::ContentChange;

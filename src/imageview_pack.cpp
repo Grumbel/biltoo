@@ -12,6 +12,7 @@
 #include <QScrollBar>
 #include <QSet>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QDateTime>
 #include <cstdio>
 #include <QUndoStack>
@@ -38,6 +39,10 @@ void ImageView::scheduleGalleryDecodeWindowRefresh(int delayMs)
 
 void ImageView::updateGalleryDecodeWindow()
 {
+    QElapsedTimer decodeWinTimer;
+    if (m_perfEnabled) {
+        decodeWinTimer.start();
+    }
     // -------------------------------------------------------------------------
     // Gallery soft-thumb algorithm (viewport inspection)
     //
@@ -207,6 +212,20 @@ void ImageView::updateGalleryDecodeWindow()
             if (gallerySoftInflightCount() > before) {
                 ++started;
             }
+        }
+    }
+    if (m_perfEnabled && decodeWinTimer.isValid()) {
+        m_perfLastDecodeWindowUs = decodeWinTimer.nsecsElapsed() / 1000;
+        m_perfMaxDecodeWindowUs =
+            qMax(m_perfMaxDecodeWindowUs, m_perfLastDecodeWindowUs);
+        ++m_perfDecodeWindowRuns;
+        if (m_perfLastDecodeWindowUs > 4000) {
+            fprintf(stderr,
+                    "biltoo/perf: updateGalleryDecodeWindow %.1f ms "
+                    "(max %.1f ms runs=%d items=%d)\n",
+                    m_perfLastDecodeWindowUs / 1000.0,
+                    m_perfMaxDecodeWindowUs / 1000.0, m_perfDecodeWindowRuns,
+                    m_items.size());
         }
     }
 }

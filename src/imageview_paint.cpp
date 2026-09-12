@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include <QElapsedTimer>
 #include <QClipboard>
 #include <QGuiApplication>
 #include <algorithm>
@@ -650,7 +651,16 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
         } else if (m_hudVisible || m_hudIdentityPulse) {
-            // Compact quality chip from on-screen pixels (not stale pipeline tags).
+            QList<HudLine> topLeft;
+            if (m_perfEnabled) {
+                topLeft.append({
+                    tr("FPS %1 · paint %2 ms · decode-win %3 ms (max %4)")
+                        .arg(m_perfFps, 0, 'f', 1)
+                        .arg(m_perfLastPaintUs / 1000.0, 0, 'f', 1)
+                        .arg(m_perfLastDecodeWindowUs / 1000.0, 0, 'f', 1)
+                        .arg(m_perfMaxDecodeWindowUs / 1000.0, 0, 'f', 1),
+                    false});
+            }
             ImageItem *focus = targetItem();
             if (!focus) {
                 focus = primaryItem();
@@ -662,8 +672,11 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                     const QString line = edge > 0 && !focus->hasDecodedPixels()
                         ? tr("%1 · %2px").arg(q).arg(edge)
                         : q;
-                    drawPanel({{line, false}}, margin, margin, false, false);
+                    topLeft.append({line, false});
                 }
+            }
+            if (!topLeft.isEmpty()) {
+                drawPanel(topLeft, margin, margin, false, false);
             }
         }
 
@@ -786,7 +799,23 @@ void ImageView::paintViewportOverlays(QPainter &painter)
 void ImageView::paintEvent(QPaintEvent *event)
 {
     // All overlays are drawn in drawForeground (single GL-safe paint path).
+    if (!m_perfEnabled) {
+        QGraphicsView::paintEvent(event);
+        return;
+    }
+    QElapsedTimer t;
+    t.start();
     QGraphicsView::paintEvent(event);
+    m_perfLastPaintUs = t.nsecsElapsed() / 1000;
+    ++m_perfFrameCount;
+    if (!m_perfFpsClock.isValid()) {
+        m_perfFpsClock.start();
+    } else if (m_perfFpsClock.elapsed() >= 500) {
+        const qint64 ms = m_perfFpsClock.elapsed();
+        m_perfFps = (ms > 0) ? (m_perfFrameCount * 1000.0 / qreal(ms)) : 0.0;
+        m_perfFrameCount = 0;
+        m_perfFpsClock.restart();
+    }
 }
 
 void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,

@@ -2,6 +2,34 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-525-gui-perf-fps.** FPS + decode-window timing (BILTOO_PERF / THUMTOO_DEBUG).
+Prior: **524**.
+
+### Instrumentation
+- `BILTOO_PERF=1` or `THUMTOO_DEBUG=1` enables:
+  - Paint FPS (0.5s window) + last paint ms
+  - `updateGalleryDecodeWindow` last/max µs; stderr if >4ms
+- HUD (when visible): `FPS N · paint X ms · decode-win Y ms (max Z)`
+
+### How to measure
+```bash
+BILTOO_PERF=1 biltoo-run --debug /path/to/archive.rar
+# Pin HUD (H), zoom/scroll gallery, watch FPS and decode-win ms
+```
+
+### Still open (from audit)
+- Display downsample when have ≫ want (paint cost of 1024 soft at 256 cells)
+- Quality HUD: need vs have
+
+### Done criteria
+- [x] Bundle **525**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-524-gallery-zoom-gui-budget.** Debounce zoom decode; BoundingRect gallery; O(n) pass2.
 Prior: **523**.
 
