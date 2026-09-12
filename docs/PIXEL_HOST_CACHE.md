@@ -41,4 +41,4 @@ evict on insert (existing). Prefer thumtoo for cold paths.
 
 ## Eviction
 
-Insertion-order FIFO when over `kMaxEntries` (384). Upgrades in place keep order.
+LRU via access-order list (get/put touch). Cap `kMaxEntries` (384).

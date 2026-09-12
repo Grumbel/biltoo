@@ -20,6 +20,7 @@
  * - put() is upward-only by long edge; larger replaces smaller.
  * - Frames larger than kDisplayMaxEdge are clamped on insert (RAM bound).
  * - Soft ladder (≤512) and display edges (≤2048) share one slot per path.
+ * - Eviction is LRU by access order (get/put touch the entry).
  *
  * See docs/PIXEL_HOST_CACHE.md.
  */

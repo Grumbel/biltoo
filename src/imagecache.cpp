@@ -26,7 +26,7 @@ QHash<QString, QImage> &map()
     return m;
 }
 
-/** Insertion order for FIFO eviction when the map is full. */
+/** Access order for LRU eviction (front = oldest). */
 QStringList &order()
 {
     static QStringList o;
@@ -44,6 +44,13 @@ constexpr int kMaxEntries = 384;
 QString ensureKey(const QString &path, int maxEdge)
 {
     return path + QLatin1Char('\n') + QString::number(maxEdge);
+}
+
+void touchUnlocked(const QString &path)
+{
+    QStringList &ord = order();
+    ord.removeAll(path);
+    ord.append(path);
 }
 
 void evictOldestUnlocked()
@@ -79,6 +86,7 @@ QImage get(const QString &path, int minLongEdge)
     if (!adequate(img, minLongEdge)) {
         return {};
     }
+    touchUnlocked(path);
     return img;
 }
 
@@ -95,14 +103,14 @@ void put(const QString &path, const QImage &image)
 
     QMutexLocker lock(&mutex());
     QHash<QString, QImage> &m = map();
-    QStringList &ord = order();
 
     if (m.contains(path)) {
         if (longEdge(m.value(path)) >= incoming) {
+            touchUnlocked(path);
             return;
         }
-        // Upgrade in place — keep position in insertion order.
         m.insert(path, stored);
+        touchUnlocked(path);
         return;
     }
 
@@ -110,7 +118,7 @@ void put(const QString &path, const QImage &image)
         evictOldestUnlocked();
     }
     m.insert(path, stored);
-    ord.append(path);
+    order().append(path);
 }
 
 bool has(const QString &path, int minLongEdge)
@@ -127,7 +135,6 @@ QImage ensure(const QString &path, int maxEdge)
     if (!hit.isNull()) {
         return hit;
     }
-    // Return any smaller frame while a better one loads.
     hit = get(path);
 
     const QString key = ensureKey(path, maxEdge);

@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-582-slideshow-preload-pure-helpers.** Preload helpers + ImageCache LRU.
+Prior: **581**.
+
+### Change
+- Anonymous pure helpers: `slideshowNeedEdge`, `preferSharper`, `loadSlideshowSample`
+- `preloadSlideshowImage` reads as: adequate? → queue? → worker → drain pending
+- ImageCache: LRU touch on get/put (order list); upgrades touch instead of freeze
+- Deduplicate includes at top of imageview_view.cpp
+
+### Done criteria
+- [x] Preload control flow readable
+- [x] Shared adequacy constant (7/10)
+- [x] LRU eviction
+- [x] Bundle **582**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-581-ss-raster-imagecache-only.** Drop m_ssRasterByPath; FIFO ImageCache.
 Prior: **580**.
 

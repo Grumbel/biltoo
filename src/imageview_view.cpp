@@ -2,33 +2,78 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include <cstdlib>
-#include <cstdio>
-#include "thumtoocache.h"
-#include "imagecache.h"
-#include "imageloader.h"
-#include "imageloader.h"
-#include "imagecache.h"
-#include "archivepath.h"
-#include "pagepath.h"
-#include <QPixmap>
-#include "imageitem.h"
 
-#include <QFileInfo>
-#include <QScrollBar>
-#include <QTimer>
-#include <QPainter>
-#include <QThreadPool>
-#include <QMetaObject>
-#include <QPointer>
-#include <QElapsedTimer>
-#include <QVariantAnimation>
-#include <QRubberBand>
-#include <QDebug>
-#include <QtMath>
-#include <QVector>
-#include <cmath>
+#include "archivepath.h"
 #include "biltoo_logging.h"
+#include "imagecache.h"
+#include "imageitem.h"
+#include "imageloader.h"
+#include "pagepath.h"
+#include "thumtoocache.h"
+
+#include <QDebug>
+#include <QElapsedTimer>
+#include <QFileInfo>
+#include <QMetaObject>
+#include <QPainter>
+#include <QPixmap>
+#include <QPointer>
+#include <QRubberBand>
+#include <QScrollBar>
+#include <QThreadPool>
+#include <QTimer>
+#include <QVariantAnimation>
+#include <QVector>
+#include <QtMath>
+
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+
+namespace {
+
+/** Fraction of target edge treated as "good enough" for slideshow samples. */
+constexpr int kSsAdequacyNumer = 7;
+constexpr int kSsAdequacyDenom = 10;
+constexpr int kSsMaxInflight = 2;
+constexpr int kSsMaxPending = 4;
+
+int slideshowNeedEdge(int targetEdge)
+{
+    return targetEdge * kSsAdequacyNumer / kSsAdequacyDenom;
+}
+
+/** Prefer the sample with the larger long edge (null loses). */
+QImage preferSharper(const QImage &a, const QImage &b)
+{
+    return ImageCache::longEdge(b) > ImageCache::longEdge(a) ? b : a;
+}
+
+/**
+ * Worker-side sample for slideshow: host cache, then soft loadThumbnail, then
+ * async PreferCache schedule. Never full native extract. Result clamped to
+ * targetEdge.
+ */
+QImage loadSlideshowSample(const QString &path, int targetEdge)
+{
+    const int need = slideshowNeedEdge(targetEdge);
+    QImage img = ImageCache::get(path, need);
+
+    if (!ImageCache::adequate(img, need)) {
+        const QImage soft = ImageLoader::loadThumbnail(path, targetEdge);
+        img = preferSharper(img, soft);
+    }
+
+    if (!ImageCache::adequate(img, need) && ThumtooCache::isAvailable()) {
+        // Async; ladderReady → onSlideshowRasterReady on the GUI thread.
+        (void)ThumtooCache::scheduleDisplayPixels(path, targetEdge);
+        img = preferSharper(img, ImageCache::get(path, need));
+    }
+
+    return ImageCache::clampToMaxEdge(img, targetEdge);
+}
+
+} // namespace
 
 
 void ImageView::setTool(Tool tool)
@@ -1080,7 +1125,7 @@ QString ImageView::slideshowPrefetchHudLine() const
     }
     const int queued = m_ssRasterInflight.size() + m_ssRasterPending.size();
     const int target = slideshowTargetEdge();
-    const int need = target * 7 / 10;
+    const int need = slideshowNeedEdge(target);
     const int have = ImageCache::longEdge(m_ssFromImage);
     const bool currentShort = !m_ssFromPath.isEmpty() && have < need;
     if (queued <= 0 && !currentShort) {
@@ -1497,32 +1542,19 @@ void ImageView::preloadSlideshowImage(const QString &path)
         return;
     }
     const int targetEdge = slideshowTargetEdge();
-    const int need = targetEdge * 7 / 10;
-    // Already have target-edge (or better) pixels — nothing to do.
-    {
-        const QImage have = slideshowRaster(path);
-        if (!have.isNull() && qMax(have.width(), have.height()) >= need) {
-            return;
-        }
-        // PreferCache may have finished into ImageCache without hitting the
-        // slideshow map (older path). Promote before scheduling another job.
-        const QImage cached = ImageCache::get(path, need);
-        if (!cached.isNull() && qMax(cached.width(), cached.height()) >= need) {
-            onSlideshowRasterReady(path, cached);
-            return;
-        }
+    const int need = slideshowNeedEdge(targetEdge);
+
+    // Host ImageCache already adequate — nothing to decode.
+    if (ImageCache::adequate(slideshowRaster(path), need)) {
+        return;
     }
     if (m_ssRasterInflight.contains(path)) {
         return;
     }
-    // Two concurrent prefetches so look-ahead (+1/+2) is not serialized behind
-    // a single soft→PreferCache climb.
-    constexpr int kMaxInflight = 2;
-    if (m_ssRasterInflight.size() >= kMaxInflight) {
+    if (m_ssRasterInflight.size() >= kSsMaxInflight) {
         if (!m_ssRasterPending.contains(path)) {
             m_ssRasterPending.append(path);
-            // Keep a short look-ahead queue (not only latest) so +2/+3 warm.
-            while (m_ssRasterPending.size() > 4) {
+            while (m_ssRasterPending.size() > kSsMaxPending) {
                 m_ssRasterPending.removeFirst();
             }
         }
@@ -1531,7 +1563,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
 
     m_ssRasterInflight.insert(path);
     if (viewport()) {
-        viewport()->update(); // show / refresh prefetch HUD chip
+        viewport()->update();
     }
     const QString loadPath = path;
     const QPointer<ImageView> guard(this);
@@ -1540,36 +1572,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
         << " edge=" << targetEdge;
 
     QThreadPool::globalInstance()->start([guard, loadPath, targetEdge]() {
-        // PreferCache / soft at target edge only — never full native extract.
-        QImage img = ImageCache::get(loadPath, targetEdge);
-        if (img.isNull()
-            || qMax(img.width(), img.height()) < targetEdge * 7 / 10) {
-            const QImage soft = ImageLoader::loadThumbnail(loadPath, targetEdge);
-            if (!soft.isNull()
-                && (img.isNull()
-                    || qMax(soft.width(), soft.height())
-                        > qMax(img.width(), img.height()))) {
-                img = soft;
-            }
-        }
-        if ((img.isNull()
-             || qMax(img.width(), img.height()) < targetEdge * 7 / 10)
-            && ThumtooCache::isAvailable()) {
-            // Async PreferCache; completion lands on ladderReady →
-            // onSlideshowRasterReady (installs map + upgrades phase buffers).
-            (void)ThumtooCache::scheduleDisplayPixels(loadPath, targetEdge);
-            const QImage again = ImageCache::get(loadPath, targetEdge);
-            if (!again.isNull()
-                && (img.isNull()
-                    || qMax(again.width(), again.height())
-                        > qMax(img.width(), img.height()))) {
-                img = again;
-            }
-        }
-        if (!img.isNull() && qMax(img.width(), img.height()) > targetEdge) {
-            img = img.scaled(targetEdge, targetEdge, Qt::KeepAspectRatio,
-                             Qt::FastTransformation);
-        }
+        const QImage img = loadSlideshowSample(loadPath, targetEdge);
         if (!guard) {
             return;
         }
@@ -1580,31 +1583,28 @@ void ImageView::preloadSlideshowImage(const QString &path)
             }
             view->m_ssRasterInflight.remove(loadPath);
             if (!img.isNull()) {
-                // Soft placeholder now; PreferCache ladderReady will upgrade.
+                // Soft/display sample only — never seeds logical size.
                 view->onSlideshowRasterReady(loadPath, img);
-                // Never rememberImageSize from soft/target-edge rasters — that
-                // poisons logical size. Size comes from probe / full decode only.
                 qCDebug(lcSlideshow).nospace()
                     << "[slideshow] preload-ready "
                     << QFileInfo(loadPath).fileName()
                     << " " << img.width() << "x" << img.height();
             }
-            const int needEdge = view->slideshowTargetEdge() * 7 / 10;
+            const int needEdge =
+                slideshowNeedEdge(view->slideshowTargetEdge());
             while (!view->m_ssRasterPending.isEmpty()) {
                 const QString next = view->m_ssRasterPending.takeFirst();
                 if (view->m_ssRasterInflight.contains(next)) {
                     continue;
                 }
-                const QImage have = view->slideshowRaster(next);
-                if (!have.isNull()
-                    && qMax(have.width(), have.height()) >= needEdge) {
+                if (ImageCache::adequate(view->slideshowRaster(next), needEdge)) {
                     continue;
                 }
                 view->preloadSlideshowImage(next);
                 break;
             }
             if (view->viewport()) {
-                view->viewport()->update(); // clear or refresh prefetch chip
+                view->viewport()->update();
             }
         }, Qt::QueuedConnection);
     });
