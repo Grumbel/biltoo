@@ -172,7 +172,17 @@ ImageView::ImageView(QWidget *parent)
             });
 connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int maxEdge, const QImage &image) {
-                if (path.isEmpty() || !isGalleryMode()) {
+                if (path.isEmpty()) {
+                    return;
+                }
+                // Always seed host soft cache so Gallery can install even if
+                // this completion landed while not in Gallery mode (or before
+                // placeholders existed).
+                if (!image.isNull()) {
+                    ImageCache::put(path, image);
+                    m_previewByPath.insert(path, image);
+                }
+                if (!isGalleryMode()) {
                     return;
                 }
                 const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;

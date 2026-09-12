@@ -585,9 +585,25 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     return;
                 }
                 GallerySoftState &soft = it.value();
-                // Superseded request?
+                // Superseded (ladderReady cleared inflight, or a newer edge was
+                // requested): still install any soft we decoded — dropping it
+                // left blank tiles when SoftOnly finished before this callback.
                 if (soft.inflight != requestEdge) {
                     host->takePendingWorkspacePath(path);
+                    if (!preview.isNull()) {
+                        const int got = qMax(preview.width(), preview.height());
+                        host->onImagePreviewLoaded(
+                            path, preview, gen,
+                            static_cast<int>(LoadAdd));
+                        soft.have = qMax(soft.have, got);
+                        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                            dbg && dbg[0] && dbg[0] != '0') {
+                            fprintf(stderr,
+                                    "biltoo/gallery: INSTALL soft path=%s got=%d "
+                                    "(superseded pool callback)\n",
+                                    qPrintable(QFileInfo(path).fileName()), got);
+                        }
+                    }
                     if (host->isGalleryMode()) {
                         host->updateGalleryDecodeWindow();
                     }

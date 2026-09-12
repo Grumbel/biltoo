@@ -2,6 +2,34 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-510-gallery-soft-superseded-install.** Third full audit; fix pool race.
+Prior: **509**.
+
+### Audit (again)
+Full path: placeholder seed → decode window → scheduleGalleryDecode →
+loadThumbnail PreferCache → schedulePixels SoftOnly → ladderReady →
+onImagePreviewLoaded → setPreviewImage (NoCache) → paint m_preview.
+
+### Additional bugs found
+1. Pool callback treated as "superseded" when ladderReady cleared `inflight`
+   before the GUI callback ran → **discarded non-null soft** without install.
+2. `ladderReady` required Gallery mode → soft completed off-Gallery never
+   entered ImageCache for later Gallery open (filmstrip put is later).
+
+### Fix
+- Superseded pool callback still installs non-null soft
+- ladderReady always ImageCache::put + m_previewByPath before mode check
+
+### Done criteria
+- [x] Soft not dropped on race with ladderReady
+- [x] Bundle **510**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-509-gallery-soft-while-inflight.** Host soft install while SoftOnly inflight.
 Prior: **508**.
 
