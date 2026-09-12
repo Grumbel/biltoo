@@ -1043,8 +1043,11 @@ bool isPixelsPending(const QString &path, int maxEdge)
     const QString softKey = path + QLatin1Char('#') + QString::number(maxEdge);
     const QString ovKey =
         path + QLatin1Char('#') + QStringLiteral("ov") + QString::number(maxEdge);
+    const QString dispKey =
+        path + QLatin1Char('#') + QStringLiteral("disp") + QString::number(maxEdge);
     std::lock_guard lock(g_mu);
-    return g_pixelsInflight.contains(softKey) || g_pixelsInflight.contains(ovKey);
+    return g_pixelsInflight.contains(softKey) || g_pixelsInflight.contains(ovKey)
+        || g_pixelsInflight.contains(dispKey);
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
@@ -1149,6 +1152,100 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
     return false;
 #endif
 }
+
+bool scheduleDisplayPixels(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
+    // PreferCache: use durable soft/overview/tiles when present; host needs a
+    // callback so Gallery can install 1024–2048 after FocusFull tiles exist.
+    // Primary-only setInterest starts EnsureTiles but never delivered pixels.
+    if (maxEdge <= 0 || isUnsupported(path)) {
+        return false;
+    }
+    if (maxEdge > kImageLadderEdge) {
+        maxEdge = kImageLadderEdge;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return false;
+    }
+    const QString inflightKey =
+        path + QLatin1Char('#') + QStringLiteral("disp") + QString::number(maxEdge);
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        if (g_pixelsInflight.contains(inflightKey)
+            || g_pixelsSettled.contains(inflightKey)) {
+            thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (inflight/settled)",
+                       qPrintable(path), maxEdge);
+            return false;
+        }
+        g_pixelsInflight.insert(inflightKey);
+        c = clientUnlocked();
+        if (!c) {
+            g_pixelsInflight.remove(inflightKey);
+            return false;
+        }
+        ++g_pixelsActive;
+        thumtooDbg("scheduleDisplay queue path=%s edge=%d active=%d",
+                   qPrintable(path), maxEdge, g_pixelsActive);
+    }
+    const QString pathCopy = path;
+    const int edge = maxEdge;
+    auto onDisplay = [pathCopy, edge, inflightKey](
+                         std::string, int,
+                         std::optional<thumtoo::PixelLevel> px) {
+        QImage decoded;
+        int source = 0;
+        if (px && !px->bytes.empty()) {
+            source = static_cast<int>(px->source);
+            const QByteArray ba(
+                reinterpret_cast<const char *>(px->bytes.data()),
+                int(px->bytes.size()));
+            decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
+        }
+        {
+            std::lock_guard doneLock(g_mu);
+            g_pixelsInflight.remove(inflightKey);
+            if (source != 0) {
+                g_lastPixelSource.insert(pathCopy, source);
+            }
+            const int got = decoded.isNull()
+                                ? 0
+                                : qMax(decoded.width(), decoded.height());
+            if (got >= (edge * 9) / 10) {
+                g_pixelsSettled.insert(inflightKey);
+            }
+            g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            thumtooDbg(
+                "scheduleDisplay DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
+                qPrintable(pathCopy), edge,
+                (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
+                decoded.height(), g_pixelsActive);
+            startNextPixelJobsUnlocked();
+        }
+        emit bridge()->ladderReady(pathCopy, edge, decoded);
+        emit bridge()->ladderProvenance(pathCopy, edge, source);
+    };
+    thumtoo::RasterRequest req;
+    req.uri = uri;
+    req.max_edge = edge;
+    req.frame_idx = 0;
+    req.policy = thumtoo::RasterPolicy::PreferCache;
+    c->request_raster(std::move(req), std::move(onDisplay));
+    return true;
+#else
+    return scheduleOverviewPixels(path, qMin(maxEdge, kBatchOverviewEdge));
+#endif
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#endif
+}
+
 
 quint64 bumpInterestEpoch()
 {

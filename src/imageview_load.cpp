@@ -594,28 +594,51 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             requestEdge = ovTarget;
             overviewOnly = true;
         } else if (want > ovCap) {
-            // Overview is in hand; request FocusFull / tile pyramid (≤2048).
-            // FastBatch overview tops at 1024 — higher need is primary interest.
-            const int primEdge =
+            // Overview in hand: PreferCache display raster ≤2048 (uses tiles when
+            // FocusFull has built them). setPrimaryInterest alone only started
+            // EnsureTiles and never installed host pixels — and a primary-only
+            // interest snapshot wiped Gallery near/speculative work every scroll.
+            const int dispEdge =
                 qMin(want, ThumtooCache::kImageLadderEdge);
-            if (have >= primEdge * 9 / 10) {
+            if (have >= dispEdge * 9 / 10) {
                 st.gaveUpWant = qMax(st.gaveUpWant, want);
                 return;
             }
-            (void)ThumtooCache::setPrimaryInterest(path, primEdge);
-            // Do not pin soft.inflight on primary — ladderReady installs when ready.
-            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                dbg && dbg[0] != '\0' && dbg[0] != '0') {
-                fprintf(stderr,
-                        "biltoo/gallery: primary interest path need=%d have=%d "
-                        "prim=%d\n",
-                        want, have, primEdge);
+            if (ThumtooCache::isPixelsPending(path, dispEdge)) {
+                st.inflight = dispEdge;
+                st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+                return;
+            }
+            if (ThumtooCache::scheduleDisplayPixels(path, dispEdge)) {
+                st.inflight = dispEdge;
+                st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
+                if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                    dbg && dbg[0] != '\0' && dbg[0] != '0') {
+                    fprintf(stderr,
+                            "biltoo/gallery: display request path need=%d have=%d "
+                            "disp=%d\n",
+                            want, have, dispEdge);
+                }
+            } else {
+                const QImage hit = ImageCache::get(path, dispEdge);
+                if (!hit.isNull()) {
+                    const int got = qMax(hit.width(), hit.height());
+                    if (got > have) {
+                        onImagePreviewLoaded(path, hit, m_loadGeneration.load(),
+                                             static_cast<int>(LoadAdd));
+                        st.have = qMax(st.have, got);
+                    }
+                }
+                if (st.have < dispEdge * 9 / 10) {
+                    st.gaveUpWant = qMax(st.gaveUpWant, dispEdge);
+                }
             }
             return;
         } else {
             st.gaveUpWant = qMax(st.gaveUpWant, want);
             return;
         }
+
     } else {
         return;
     }

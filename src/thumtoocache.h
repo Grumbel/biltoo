@@ -137,6 +137,8 @@ bool isPixelsPending(const QString &path, int maxEdge);
  * Prefer when display edge is above soft max but at or below batch max.
  */
 bool scheduleOverviewPixels(const QString &path, int maxEdge);
+/** PreferCache raster up to kImageLadderEdge (2048); host callback via ladderReady. */
+bool scheduleDisplayPixels(const QString &path, int maxEdge);
 
 /** Allow a later schedulePixels for this path/edge after a shortfall delivery. */
 void forgetPixelsSettled(const QString &path, int maxEdge);

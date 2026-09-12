@@ -2,6 +2,33 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-539-display-prefercache-2048.** PreferCache host install for >1024.
+Prior: **538**.
+
+### Symptom
+Zoom: repeated `primary interest … prim=2048`, `EnsureTiles START scale=0`, no
+image upgrade (CPU spikes only).
+
+### Root cause
+- setPrimaryInterest only kicked FocusFull/EnsureTiles; no host PreferCache
+  request → no ladderReady install
+- Primary-only interest snapshot wiped Gallery near/speculative every call
+- g_interestJobGen + setInterest on each decode window cancelled work
+
+### Changes
+- `scheduleDisplayPixels` (PreferCache ≤2048) with ladderReady callback
+- Gallery high-zoom uses display schedule + inflight, not primary-only spam
+- Gallery setInterest merges up to 4 primary paths needing >1024
+
+### Done criteria
+- [x] Bundle **539**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-538-primary-2048-selection.** Climb past 1024; fix selection vs soft.
 Prior: **537**.
 

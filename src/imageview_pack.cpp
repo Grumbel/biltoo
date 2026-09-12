@@ -221,24 +221,37 @@ void ImageView::updateGalleryDecodeWindow()
         phaseTimer.restart();
     }
 
-    // Interest: near edge tracks max on-screen want (capped at overview 1024);
-    // speculative stays soft-band. Soft-only interest froze tiles at 512px.
+    // Interest: near ≤ overview 1024; primary = tiles needing >1024 (FocusFull).
+    // A primary-only setInterest wiped near/speculative and only EnsureTiles with
+    // no host PreferCache install — merge primary into the Gallery snapshot.
     {
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
         const int ovCap = ThumtooCache::kBatchOverviewEdge;
+        const int imgCap = ThumtooCache::kImageLadderEdge;
         int nearEdge = softEdge;
+        int primEdge = 0;
+        QStringList primary;
         for (const QString &p : interestNear) {
             const auto it = m_gallerySoft.constFind(p);
-            if (it != m_gallerySoft.cend() && it->want > 0) {
-                nearEdge = qMax(nearEdge, qMin(it->want, ovCap));
+            if (it == m_gallerySoft.cend() || it->want <= 0) {
+                continue;
             }
+            nearEdge = qMax(nearEdge, qMin(it->want, ovCap));
+            if (it->want > ovCap && it->have >= ovCap * 9 / 10) {
+                primary.append(p);
+                primEdge = qMax(primEdge, qMin(it->want, imgCap));
+            }
+        }
+        if (primary.size() > 4) {
+            primary = primary.mid(0, 4);
         }
         QStringList near = interestNear;
         near.sort();
         QStringList speculative = interestRest;
         speculative.sort();
+        primary.sort();
         (void)ThumtooCache::setInterest(near, speculative, nearEdge, softEdge,
-                                        /*pathsPrimary=*/{}, /*primaryEdge=*/0);
+                                        primary, primEdge);
     }
     if (m_perfEnabled) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
