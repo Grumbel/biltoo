@@ -220,8 +220,14 @@ public:
     /** Software snapshot of the current slide (no QOpenGLWidget::grab). */
     QPixmap captureSlideshowFrame() const;
     /** Draw Ken Burns / pan-scan using a pre-scaled atlas (cheap per-frame blit). */
+    /**
+     * Draw Ken Burns / pan-scan. Camera geometry uses the path's *logical*
+     * image size (m_imageSizeByPath / thumtoo cache), never the raster's pixel
+     * dimensions — soft placeholders are sampling only.
+     */
     void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT,
-                          QPointF biasA, QPointF biasB, uint pathHash) const;
+                          QPointF biasA, QPointF biasB,
+                          const QString &path = QString()) const;
     /**
      * Draw cover-scaled blurred @a image into @a viewportRect (ZoomBlur fill).
      * @a stableKey must identify the slide for the current viewport size

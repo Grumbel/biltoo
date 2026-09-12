@@ -669,13 +669,14 @@ QPixmap ImageView::captureSlideshowFrame() const
 
     if (m_slideshowMotionActive && !m_dwellSourceImage.isNull()) {
         paintMotionCover(&painter, m_dwellSourceImage, m_dwellMotionT,
-                         m_motionBiasA, m_motionBiasB, 0);
+                         m_motionBiasA, m_motionBiasB, m_ssFromPath);
     } else if (ImageItem *item = targetItem()) {
         // Still frame: draw source (or displayed pixmap) with cover/fit framing.
         const QImage src = item->hasDecodedPixels() ? item->sourceImage()
                                                     : item->pixmap().toImage();
         if (!src.isNull()) {
-            paintMotionCover(&painter, src, 0.0, QPointF(0, 0), QPointF(0, 0), 0);
+            paintMotionCover(&painter, src, 0.0, QPointF(0, 0), QPointF(0, 0),
+                             item->path());
         }
     }
     painter.end();
@@ -1202,6 +1203,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         } else {
             m_ssFromImage = slideshowPixelsForPath(fromPath);
             if (!fromPath.isEmpty()) {
+                (void)imageSizeForPath(fromPath); // ensure logical size (probe if needed)
                 m_motionBiasValid = false;
                 pickInterestingMotionBiases(qHash(fromPath), m_ssFromImage);
                 m_motionBiasPath = fromPath;
@@ -1265,6 +1267,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         m_ssToMotionT = 0.0;
     } else if (toChanged) {
         m_ssToPath = toPath;
+        (void)imageSizeForPath(toPath);
         m_ssToImage = slideshowPixelsForPath(toPath);
         {
             const QPointF saveA = m_motionBiasA;
@@ -1469,7 +1472,8 @@ void ImageView::preloadSlideshowImage(const QString &path)
             view->m_ssRasterInflight.remove(loadPath);
             if (!img.isNull()) {
                 view->putSlideshowRaster(loadPath, img);
-                view->rememberImageSize(loadPath, img.size());
+                // Never rememberImageSize from soft/target-edge rasters — that
+                // poisons logical size. Size comes from probe / full decode only.
                 qCDebug(lcSlideshow).nospace()
                     << "[slideshow] preload-ready "
                     << QFileInfo(loadPath).fileName()
@@ -1829,32 +1833,41 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
 }
 
 void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
-
                                  qreal motionT, QPointF biasA, QPointF biasB,
-                                 uint pathHash) const
+                                 const QString &path) const
 {
     if (!painter || image.isNull() || !viewport()) {
         return;
     }
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
-    // Camera is resolution-invariant (SLIDESHOW.md): dest/bias are functions of
-    // aspect ratio only. Soft and sharp rasters with the same aspect share one
-    // camera path; only sampling sharpness changes when better pixels arrive.
-    const qreal rawW = qreal(image.width());
-    const qreal rawH = qreal(image.height());
-    if (rawW < 1.0 || rawH < 1.0) {
-        return;
+
+    // HARD RULE: camera uses the image's logical size, never the current
+    // decode raster's pixel size. Soft/target-edge placeholders are only the
+    // sampling source — ImageView treats them like the real image for geometry.
+    QSize logical;
+    if (!path.isEmpty()) {
+        const auto it = m_imageSizeByPath.constFind(path);
+        if (it != m_imageSizeByPath.cend()
+            && it->isValid() && it->width() > 0 && it->height() > 0) {
+            logical = *it;
+        }
+        if (!logical.isValid()) {
+            const QSize cached = ThumtooCache::cachedSize(path);
+            if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+                logical = cached;
+            }
+        }
     }
-    constexpr qreal kRefLong = 1000.0;
-    qreal iw;
-    qreal ih;
-    if (rawW >= rawH) {
-        iw = kRefLong;
-        ih = kRefLong * (rawH / rawW);
-    } else {
-        ih = kRefLong;
-        iw = kRefLong * (rawW / rawH);
+    if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
+        // Last resort only: raster dims (may be soft). Prefer scheduling a size
+        // probe so the next paint uses true logical size.
+        logical = image.size();
+    }
+    const qreal iw = qreal(logical.width());
+    const qreal ih = qreal(logical.height());
+    if (iw < 1.0 || ih < 1.0) {
+        return;
     }
 
     motionT = qBound(0.0, motionT, 1.0);
@@ -1941,7 +1954,10 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
                 QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
                 QPointF(0.0, -1.0), QPointF(0.0, 1.0),
             };
-            uint seed = pathHash ? pathHash : 1u;
+            uint seed = path.isEmpty() ? 1u : uint(qHash(path));
+            if (seed == 0) {
+                seed = 1u;
+            }
             biasA = kBias[seed % 8];
             biasB = kBias[(seed / 8 + 3) % 8];
         }
@@ -1995,8 +2011,7 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
 QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
                                            uint pathHash) const
 {
-    // Snapshot helper (Slide transition / rare paths). Prefer paintMotionCover
-    // on the live viewport painter for the animated slideshow.
+    // Snapshot helper (rare). Prefer paintMotionCover on the live painter.
     if (image.isNull() || !viewport()) {
         return {};
     }
@@ -2006,7 +2021,14 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     out.fill(slideshowPadColor());
     QPainter painter(&out);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    paintMotionCover(&painter, image, motionT, m_motionBiasA, m_motionBiasB, pathHash);
+    // pathHash was historical; recover path from phase when possible.
+    QString path;
+    if (pathHash != 0 && qHash(m_ssToPath) == pathHash) {
+        path = m_ssToPath;
+    } else if (!m_ssFromPath.isEmpty()) {
+        path = m_ssFromPath;
+    }
+    paintMotionCover(&painter, image, motionT, m_motionBiasA, m_motionBiasB, path);
     painter.end();
     return QPixmap::fromImage(out);
 }

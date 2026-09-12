@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-561-slideshow-logical-size-camera.** Camera uses logical image size, not soft raster dims.
+Prior: **560**.
+
+### Root cause
+Ken Burns geometry used raster pixel size / fake kRefLong. Soft 512px was treated
+as the image size. Preload also called `rememberImageSize(path, soft.size())`,
+poisoning `m_imageSizeByPath`.
+
+### Fix
+- `paintMotionCover(..., path)`: geometry from `m_imageSizeByPath` / thumtoo
+  cached size; raster is sampling only
+- Never `rememberImageSize` from slideshow soft/target-edge preload
+- Phase entry calls `imageSizeForPath` so probes fill logical size
+- SLIDESHOW.md: logical size owns geometry
+
+### Done criteria
+- [x] Soft cannot redefine logical size
+- [x] Bundle **561**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-560-slideshow-blur-hold-prefetch-lock.** Keep ZoomBlur lastGood; lock phase pixels; deeper prefetch.
 Prior: **559**.
 

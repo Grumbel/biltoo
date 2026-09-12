@@ -62,11 +62,12 @@ else                            → blit soft placeholder
 No events in the draw path. Decode is started ahead of time and stored as a
 pollable buffer. When better pixels arrive, the **next** draw uses them.
 
-**Camera is resolution-invariant.** Dest rect and Ken Burns path are functions
-of **aspect ratio + motionT + biases + viewport** only — never of the raster’s
-pixel width/height. Soft and sharp frames with the same aspect share one camera
-path; only sampling sharpness changes. Do not upscale soft to “native size” to
-fake matching geometry (that produced multi-megapixel phase buffers).
+**Logical size owns geometry.** Every path has a logical image size
+(`m_imageSizeByPath` / thumtoo / probe) independent of the current decode.
+Ken Burns / fit / fill / actual use that size. Soft and target-edge rasters are
+**sampling only** — ImageView treats them like the real image for layout and
+motion. Never derive camera math from soft pixel width/height, and never write
+soft dimensions into the logical size map.
 
 **Decode target** (long edge):
 

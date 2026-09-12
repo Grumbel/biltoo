@@ -210,7 +210,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_motionBiasA, m_motionBiasB, 0);
+                                         m_motionBiasA, m_motionBiasB, m_ssFromPath);
                     }
                     painter.setOpacity(t * 2.0);
                     painter.fillRect(vr, Qt::black);
@@ -218,7 +218,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                 } else {
                     painter.setOpacity(1.0);
                     paintMotionCover(&painter, m_ssToImage, toT,
-                                     m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
+                                     m_ssToBiasA, m_ssToBiasB, m_ssToPath);
                     painter.setOpacity((1.0 - t) * 2.0);
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
@@ -234,13 +234,13 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                     painter.save();
                     painter.translate(xOld, 0);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_motionBiasA, m_motionBiasB, 0);
+                                     m_motionBiasA, m_motionBiasB, m_ssFromPath);
                     painter.restore();
                 }
                 painter.save();
                 painter.translate(xNew, 0);
                 paintMotionCover(&painter, m_ssToImage, toT,
-                                 m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
+                                 m_ssToBiasA, m_ssToBiasB, m_ssToPath);
                 painter.restore();
                 painter.setClipping(false);
             } else if (m_slideshowTransition == SlideshowTransition::None) {
@@ -249,29 +249,29 @@ void ImageView::paintViewportOverlays(QPainter &painter)
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_motionBiasA, m_motionBiasB, 0);
+                                         m_motionBiasA, m_motionBiasB, m_ssFromPath);
                     }
                 } else {
                     painter.setOpacity(1.0);
                     paintMotionCover(&painter, m_ssToImage, toT,
-                                     m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
+                                     m_ssToBiasA, m_ssToBiasB, m_ssToPath);
                 }
             } else {
                 // Crossfade: A 1→0, B 0→1; both in motion.
                 if (!fromImg.isNull()) {
                     painter.setOpacity(1.0 - t);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_motionBiasA, m_motionBiasB, 0);
+                                     m_motionBiasA, m_motionBiasB, m_ssFromPath);
                 }
                 painter.setOpacity(t);
                 paintMotionCover(&painter, m_ssToImage, toT,
-                                 m_ssToBiasA, m_ssToBiasB, qHash(m_ssToPath));
+                                 m_ssToBiasA, m_ssToBiasB, m_ssToPath);
                 painter.setOpacity(1.0);
             }
         } else if (!fromImg.isNull()) {
             fillPad(vr, fromImg, QImage(), -1.0, m_ssFromPath);
             paintMotionCover(&painter, fromImg, fromT,
-                             m_motionBiasA, m_motionBiasB, 0);
+                             m_motionBiasA, m_motionBiasB, m_ssFromPath);
         }
         // Pure phase painted the slide. Fall through so HUD / seekbar / pause
         // cues still draw (return here used to kill the entire overlay pass).
