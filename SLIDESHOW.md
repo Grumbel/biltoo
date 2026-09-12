@@ -71,8 +71,9 @@ pollable buffer. When better pixels arrive, the **next** draw uses them.
 
 Soft and target-edge placeholders are treated like the real image for geometry.
 Never derive camera math from sample pixel width/height. Never write sample
-dimensions into the logical size map. Phase entry calls
-`ensureSlideshowLogicalSize`; paint uses the const lookup.
+dimensions into the logical size map. Phase entry calls `ensureSlideshowLogicalSize`; paint and static framing use
+`slideshowZoomBaseScale(logical, viewport)` so Fit/Fill/Actual stay consistent
+between the pure-phase blit and the underlay camera.
 
 **Decode target** (long edge):
 

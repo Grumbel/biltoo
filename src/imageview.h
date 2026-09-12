@@ -210,6 +210,11 @@ public:
      * at phase entry; paint uses the const lookup.
      */
     QSize ensureSlideshowLogicalSize(const QString &path);
+    /**
+     * Image→viewport scale for current slideshowZoom (Fit/Fill/Actual)
+     * given logical size and viewport. Pure function of size model.
+     */
+    qreal slideshowZoomBaseScale(const QSize &logical, int vw, int vh) const;
     /** ≥1: panZoomFactor or pan-scan margin so zoomed frames stay sharp. */
     qreal slideshowMotionHeadroom() const;
     /**

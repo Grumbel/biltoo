@@ -730,40 +730,48 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     if (!item || !viewport()) {
         return;
     }
-    // Explicit uniform scale for static slideshow framing.
+    // Explicit uniform scale for static slideshow framing — logical size owns
+    // geometry (same model as paintMotionCover), not soft contentRect pixels.
     item->setItemShear(0.0);
     item->setItemRotation(0.0);
     item->setItemScale(1.0);
     if (isImageMode()) {
         item->setPos(0, 0);
     }
+    const QString path = item->path();
+    QSize logical = ensureSlideshowLogicalSize(path);
+    if (logical.isValid() && logical.width() > 1 && logical.height() > 1
+        && !isProvisionalImageSize(path)) {
+        // Align underlay intrinsic with logical size so contentRect matches
+        // Ken Burns / overlay geometry when motion is off.
+        item->setIntrinsicSize(logical);
+    }
     const QRectF content = item->contentRect();
     if (content.width() < 1.0 || content.height() < 1.0) {
         return;
     }
-    const qreal iw = content.width();
-    const qreal ih = content.height();
+    // Scale from logical size when known; contentRect only for scene mid-point.
     const qreal vw = qreal(qMax(1, viewport()->width()));
     const qreal vh = qreal(qMax(1, viewport()->height()));
     const QPointF mid = item->mapToScene(content.center());
 
-    qreal scale = 1.0;
+    if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
+        logical = QSize(int(content.width()), int(content.height()));
+    }
+    qreal scale = slideshowZoomBaseScale(logical, int(vw), int(vh));
     switch (m_slideshowZoom) {
     case SlideshowZoom::Fill:
         m_fitMode = false;
         m_fillMode = true;
-        scale = qMax(vw / iw, vh / ih);
         break;
     case SlideshowZoom::Actual:
         m_fitMode = false;
         m_fillMode = false;
-        scale = 1.0;
         break;
     case SlideshowZoom::Fit:
     default:
         m_fitMode = true;
         m_fillMode = false;
-        scale = qMin(vw / iw, vh / ih);
         break;
     }
     if (scale <= 0.0 || !qIsFinite(scale)) {
@@ -1424,6 +1432,26 @@ QSize ImageView::ensureSlideshowLogicalSize(const QString &path)
     return imageSizeForPath(path);
 }
 
+qreal ImageView::slideshowZoomBaseScale(const QSize &logical, int vw, int vh) const
+{
+    if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
+        return 1.0;
+    }
+    const qreal iw = qreal(logical.width());
+    const qreal ih = qreal(logical.height());
+    const qreal w = qreal(qMax(1, vw));
+    const qreal h = qreal(qMax(1, vh));
+    switch (m_slideshowZoom) {
+    case SlideshowZoom::Fill:
+        return qMax(w / iw, h / ih);
+    case SlideshowZoom::Actual:
+        return 1.0;
+    case SlideshowZoom::Fit:
+    default:
+        return qMin(w / iw, h / ih);
+    }
+}
+
 void ImageView::setSlideshowNavHot(bool hot)
 {
     if (m_slideshowNavHot == hot) {
@@ -1906,21 +1934,7 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
 
     motionT = qBound(0.0, motionT, 1.0);
 
-    const qreal cover = qMax(qreal(vw) / iw, qreal(vh) / ih);
-    const qreal fit = qMin(qreal(vw) / iw, qreal(vh) / ih);
-    qreal base = cover;
-    switch (m_slideshowZoom) {
-    case SlideshowZoom::Fill:
-        base = cover;
-        break;
-    case SlideshowZoom::Actual:
-        base = 1.0;
-        break;
-    case SlideshowZoom::Fit:
-    default:
-        base = fit;
-        break;
-    }
+    const qreal base = slideshowZoomBaseScale(logical, vw, vh);
     if (base <= 0.0 || !qIsFinite(base)) {
         return;
     }

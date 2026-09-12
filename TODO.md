@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-563-slideshow-shared-zoom-scale.** Share Fit/Fill/Actual scale from logical size.
+Prior: **562**.
+
+### Changes
+- `slideshowZoomBaseScale(logical, vw, vh)` — single Fit/Fill/Actual formula
+- `paintMotionCover` uses it
+- `applySlideshowZoomFraming` uses logical size + same scale; syncs item
+  intrinsic when size is non-provisional
+
+### Done criteria
+- [x] One scale function for motion paint and static framing
+- [x] Bundle **563**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-562-slideshow-size-model.** Central logical-size API for slideshow geometry.
 Prior: **561**.
 
