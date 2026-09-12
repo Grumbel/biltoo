@@ -144,21 +144,10 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
 
-        st.have = 0;
-        bool anyFull = false;
-        bool anyBlank = false;
-        for (ImageItem *it2 : m_items) {
-            if (!it2 || it2->path() != path) {
-                continue;
-            }
-            if (it2->hasDecodedPixels()) {
-                anyFull = true;
-            }
-            st.have = qMax(st.have, it2->displayPixelLongEdge());
-            if (!it2->hasDisplayPixels()) {
-                anyBlank = true;
-            }
-        }
+        // O(1) per path — nested full-item scans were O(n²) on large sessions.
+        const bool anyFull = item->hasDecodedPixels();
+        const bool anyBlank = !item->hasDisplayPixels();
+        st.have = qMax(st.have, item->displayPixelLongEdge());
         if (anyFull) {
             continue;
         }

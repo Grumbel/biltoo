@@ -25,11 +25,15 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 {
     m_viewMode = mode;
     m_layoutMode = layout;
-    // Always FullViewportUpdate. Gallery used BoundingRectViewportUpdate for
-    // many tiles, but under OpenGL soft ladder upgrades (256→512→1024) stayed
-    // invisible until selection's prepareGeometryChange forced a redraw.
-    Q_UNUSED(mode);
-    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    // Gallery: BoundingRect — FullViewportUpdate repaints every tile on each
+    // scroll/zoom tick and is unusable with large soft bitmaps. Soft upgrades
+    // must call item->update() (installDisplayPixels already does).
+    // Image/Workspace: FullViewportUpdate for HUD/chrome.
+    if (mode == ViewMode::Gallery) {
+        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    } else {
+        setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    }
     if (viewport()) {
         viewport()->update();
     }

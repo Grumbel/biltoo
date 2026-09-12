@@ -286,11 +286,11 @@ void ImageView::wheelEvent(QWheelEvent *event)
         setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
         scale(factor, factor);
         setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-        if (viewport()) {
-            viewport()->update();
-        }
-        updateGalleryDecodeWindow();
-        emit statusChanged();
+        // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
+        // each wheel notch used to rescan all tiles + setInterest + repaint
+        // every high-res soft, freezing the UI while zooming out.
+        scheduleGalleryDecodeWindowRefresh(120);
+        refreshStatus();
         event->accept();
         return;
     }

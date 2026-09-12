@@ -2,6 +2,40 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-524-gallery-zoom-gui-budget.** Debounce zoom decode; BoundingRect gallery; O(n) pass2.
+Prior: **523**.
+
+### Audit: GUI-thread work that stalls interaction
+
+| Location | Problem | Severity | Mitigation (this tip / next) |
+|----------|---------|----------|------------------------------|
+| `wheelEvent` Ctrl+zoom | Sync `updateGalleryDecodeWindow` + full viewport every notch | P0 | Debounced refresh only |
+| `setActiveMode` | Always `FullViewportUpdate` | P0 | Gallery → BoundingRect |
+| `updateGalleryDecodeWindow` pass2 | Nested loop O(n²) over items | P0 | O(1) have from current item |
+| Soft climb | Keeps 1024px bitmaps when want is 256 | P1 | Paint cost; optional display downsample (next) |
+| `setInterest` on scroll | Path convert/hash | P1 | Already capped speculative=12 |
+| Pass1 host install | Many `installDisplayPixels` + viewport update | P1 | Only blank tiles; coalesce |
+| `scheduleImageLoad` full decode | Pool saturation | P1 | Soft priority 2, full -1 (523) |
+| Archive expand | Worker + rate-limited GUI posts | OK | Keep off GUI |
+| `QFileInfo` in status/sort | Sync disk on GUI | P2 | Cache where hot |
+| Slideshow preload full load | Heavy | P1 | Supersede + neighbor ensure (523) |
+| Status/HUD | Every install | P2 | Debounced refreshStatus (521) |
+
+### Zoom-out “High quality” label
+Quality HUD uses **display pixel long edge**, not on-screen need. Zoomed-out tiles still hold 1024 soft → label says High quality while cells need ~256. Next: show `need` vs `have`, or downsample display when `have > 2× want`.
+
+### Done criteria
+- [x] Zoom does not sync-rescan decode window
+- [x] Gallery BoundingRectViewportUpdate
+- [x] Pass2 O(n)
+- [x] Bundle **524**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-523-image-nav-soft-first.** Instant Image-mode flip; soft first, full later.
 Prior: **522**.
 
