@@ -684,13 +684,12 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         return;
     }
 
-    // Layout size = native when known; else preview aspect so fitInView fills
-    // the window (not a provisional square that letterboxes the content).
+    // Layout size = native when known; else preview aspect.
     const QSize sz = layoutSizeForPath(path, pixels);
 
-    setUpdatesEnabled(false);
-
     // Fast path: reuse the single Image-mode item.
+    // Do NOT setUpdatesEnabled(false) — that defers soft paint until after the
+    // whole key handler (chrome + climb schedule); user never sees the soft.
     ImageItem *item = nullptr;
     if (m_items.size() == 1) {
         item = m_items.first();
@@ -698,45 +697,53 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     if (item) {
         const QSize sizeBefore = item->imageSize();
         item->setPath(path);
-        if (sz.width() > 1 && sz.height() > 1) {
-            item->setIntrinsicSize(sz);
-        }
         bindImageModeSessionCursor(item);
-        // Fast soft attach: no installDisplayPixels, no fitItem/fitInView.
         if (!path.isEmpty()) {
             ImageCache::put(path, pixels);
         }
-        // MUST clear prior FullSource first. setPreviewImage no-ops when
-        // hasDecodedPixels() (designed for "late soft after full" on SAME
-        // image). On ←/→ the item still holds the previous image's FullSource
-        // → soft never attaches → canAccept rejects ladder upgrades → stuck
-        // on old frame or empty (log: ladderReady UPGRADE with no tryInstall OK).
+        // Clear prior FullSource so setPreviewImage is not a no-op.
         if (item->hasDecodedPixels()) {
             item->clearDecodedPixels();
         }
         item->setPreviewImage(pixels);
-        // Intrinsic from known logical only — never from soft sample dims.
+
         const QSize known = logicalSizeForPath(path);
-        if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
-            && !isProvisionalImageSize(path)) {
-            item->setIntrinsicSize(known);
-            // Same-aspect scale only. Aspect change: leave matrix; user sees
-            // letterboxing until a deferred fit (no fitInView on the key path).
-            if (sizeBefore.width() > 1 && sizeBefore.height() > 1) {
-                const qreal a0 = double(sizeBefore.width()) / sizeBefore.height();
-                const qreal a1 = double(known.width()) / known.height();
-                if (qAbs(a0 - a1) <= 0.02 && sizeBefore != known) {
-                    preserveImageViewOnLogicalSizeChange(item, sizeBefore, known);
+        const QSize targetSize =
+            (isPositiveSize(known) && known.width() > 1 && known.height() > 1
+             && !isProvisionalImageSize(path))
+                ? known
+                : ((sz.width() > 1 && sz.height() > 1) ? sz : sizeBefore);
+        int didFit = 0;
+        if (isPositiveSize(targetSize) && targetSize.width() > 1) {
+            item->setIntrinsicSize(targetSize);
+            const bool needFit =
+                sizeBefore.width() <= 1
+                || qAbs(double(sizeBefore.width()) / qMax(1, sizeBefore.height())
+                        - double(targetSize.width()) / qMax(1, targetSize.height()))
+                       > 0.02;
+            if (needFit) {
+                // Aspect change: must reframe or soft is painted under the old
+                // view matrix and is effectively invisible / letterboxed wrong.
+                resetImageModeItemPlacement(item);
+                fitItem(item, currentFitAspectMode());
+                if (m_scene) {
+                    m_scene->setSceneRect(
+                        item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
                 }
+                didFit = 1;
+            } else if (sizeBefore != targetSize) {
+                preserveImageViewOnLogicalSizeChange(item, sizeBefore, targetSize);
             }
         }
-        setUpdatesEnabled(true);
+        // Force soft onto the screen BEFORE returning to the event loop.
+        // update() only queues a paint; climb/chrome can run first and the user
+        // only ever sees the later HQ frame ("soft never shows").
         if (viewport()) {
-            viewport()->update();
+            viewport()->repaint();
         }
-        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=0",
+        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d painted=1",
                       qPrintable(QFileInfo(path).fileName()),
-                      pixels.width(), pixels.height());
+                      pixels.width(), pixels.height(), didFit);
         return;
     }
 
@@ -799,7 +806,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
             if (it->displayPixelLongEdge() > 0) {
                 const QImage soft = it->displayImage();
                 const QString pathCopy = path;
-                QTimer::singleShot(0, this, [this, pathCopy, soft]() {
+                // 16ms: let the soft repaint land one frame before PreferCache
+                // schedules more GUI work (scheduleProbe/Pixels/Display).
+                QTimer::singleShot(16, this, [this, pathCopy, soft]() {
                     if (!isImageMode() || classicPath() != pathCopy) {
                         return;
                     }

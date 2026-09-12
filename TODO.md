@@ -2,6 +2,32 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-693-force-soft-repaint.** Soft visible before climb; fit on aspect change.
+Prior: **692**.
+
+### User
+"fast thumbnail never shows up" — logs had INSTALLED soft but user never saw it.
+
+### Cause
+1. `setUpdatesEnabled(false)` deferred paints through the whole key handler
+2. `viewport()->update()` only queues paint; climb/chrome ran first
+3. Aspect change without fit left soft under the old view matrix (invisible)
+
+### Fix
+- No `setUpdatesEnabled(false)` on soft path
+- `viewport()->repaint()` after soft (sync paint)
+- `fitItem` only when aspect changes
+- PreferCache climb delayed 16ms so soft frame wins
+
+### Done criteria
+- [x] Bundle **693**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-692-clear-full-before-soft.** Clear prior FullSource before soft preview on ←/→.
 Prior: **691**.
 
