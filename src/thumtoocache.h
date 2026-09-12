@@ -32,6 +32,8 @@ signals:
     void sizeReady(const QString &path, const QSize &size);
     /** Ladder level available; UI should reload soft preview for path. */
     void ladderReady(const QString &path, int maxEdge, const QImage &image);
+    /** PixelSource as int (thumtoo::PixelSource); 0 = unknown. */
+    void ladderProvenance(const QString &path, int maxEdge, int pixelSource);
 };
 
 /** Process-wide notifier (created on first use). */
@@ -108,7 +110,8 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
 
 /**
  * Ensure ladder level exists for maxEdge (probe/encode in thumtoo worker).
- * On success (GUI thread): Bridge::ladderReady (decode via ImageLoader).
+ * On success (GUI thread): Bridge::ladderReady (+ ladderProvenance when known).
+ * Uses thumtoo request_raster(SoftOnly) when THUMTOO_API_REQUEST_RASTER is set.
  * No-op when isUnsupported(path).
  */
 /** @return false if skipped (already in-flight, settled success, or unsupported). */

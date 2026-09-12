@@ -507,7 +507,7 @@ paths.
 
 ### Phase 6 — Host adoption (biltoo)
 
-- [ ] Gallery/filmstrip/slideshow speak interest + provenance only.
+- [x] Gallery/filmstrip speak interest; ladderProvenance signal (UI chip optional).
 - [ ] Remove competing ad hoc full loads for overview.
 - [x] Update `docs/GALLERY_SOFT.md` to point here.
 

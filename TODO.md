@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-491-request-raster-provenance.** Soft path via request_raster; ladderProvenance signal.
+Prior: **490**. Companion: **thumtoo-173**.
+
+### Change
+- schedulePixels dispatch uses request_raster(SoftOnly) when API present
+- Bridge::ladderProvenance(path, edge, pixelSource)
+- Falls back to request_pixels on older thumtoo
+
+### Next
+- UI chip / status for PixelSource (optional)
+- PreferCache path for gallery overview via request_raster
+
+### Done criteria
+- [x] request_raster soft migration
+- [x] Provenance signal
+- [x] Bundle **491**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-490-q1-invalidate-note.** Note Q1 invalidate lands in thumtoo-172.
 Prior: **489**. Companion: **thumtoo-172**.
 
