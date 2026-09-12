@@ -646,7 +646,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                         }
                     }
                     if (host->isGalleryMode()) {
-                        host->updateGalleryDecodeWindow();
+                        host->scheduleGalleryDecodeWindowRefresh(48);
                     }
                     return;
                 }
@@ -1059,7 +1059,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         // Cancelled (e.g. path removed from session) — drop the result.
         emit statusChanged();
         if (isGalleryMode()) {
-            updateGalleryDecodeWindow();
+            scheduleGalleryDecodeWindowRefresh(48);
         }
         return;
     }
@@ -1075,7 +1075,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             m_lastLoadError.clear();
             emit statusChanged();
             if (isGalleryMode()) {
-                updateGalleryDecodeWindow();
+                scheduleGalleryDecodeWindowRefresh(48);
             }
             return;
         }
@@ -1094,7 +1094,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
         emit statusChanged();
         if (isGalleryMode()) {
-            updateGalleryDecodeWindow();
+            scheduleGalleryDecodeWindowRefresh(48);
         }
         return;
     }
@@ -1401,7 +1401,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     emit statusChanged();
     emit workspacePathsChanged();
     if (isGalleryMode()) {
-        updateGalleryDecodeWindow();
+        scheduleGalleryDecodeWindowRefresh(48);
     }
 }
 

@@ -721,7 +721,7 @@ void MainWindow::sortFileList()
         return;
     }
     if (sortModeNeedsImageProbe()) {
-        // Probing archive members / large images must not run on the GUI thread.
+        // MTime/FileSize/size probes must not run on the GUI thread.
         sortFileListWithProbesInBackground();
         return;
     }
@@ -730,9 +730,13 @@ void MainWindow::sortFileList()
 
 bool MainWindow::sortModeNeedsImageProbe() const
 {
+    // Any sort that needs per-path disk or decode work must not run on the GUI
+    // (GUI_THREAD_AUDIT G1). Name-only sort stays sync.
     return m_sortMode == SortMode::Width
         || m_sortMode == SortMode::Height
-        || m_sortMode == SortMode::PixelCount;
+        || m_sortMode == SortMode::PixelCount
+        || m_sortMode == SortMode::MTime
+        || m_sortMode == SortMode::FileSize;
 }
 
 void MainWindow::sortFileListSync()
@@ -759,24 +763,34 @@ void MainWindow::sortFileListSync()
 
     switch (m_sortMode) {
     case SortMode::MTime:
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            const QFileInfo fa(pathAt(ia)), fb(pathAt(ib));
-            if (fa.lastModified() != fb.lastModified()) {
-                return fa.lastModified() < fb.lastModified();
-            }
-            return nameLess(pathAt(ia), pathAt(ib));
-        });
+    case SortMode::FileSize: {
+        // Prefer background path (sortModeNeedsImageProbe). If still here,
+        // snapshot metadata once — never QFileInfo inside the comparator.
+        const int n = order.size();
+        QVector<qint64> mtimes(n);
+        QVector<qint64> fsizes(n);
+        for (int i = 0; i < n; ++i) {
+            const QFileInfo fi(pathAt(i));
+            mtimes[i] = fi.lastModified().toMSecsSinceEpoch();
+            fsizes[i] = fi.size();
+        }
+        if (m_sortMode == SortMode::MTime) {
+            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+                if (mtimes.at(ia) != mtimes.at(ib)) {
+                    return mtimes.at(ia) < mtimes.at(ib);
+                }
+                return nameLess(pathAt(ia), pathAt(ib));
+            });
+        } else {
+            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+                if (fsizes.at(ia) != fsizes.at(ib)) {
+                    return fsizes.at(ia) < fsizes.at(ib);
+                }
+                return nameLess(pathAt(ia), pathAt(ib));
+            });
+        }
         break;
-    case SortMode::FileSize:
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            const qint64 sa = QFileInfo(pathAt(ia)).size();
-            const qint64 sb = QFileInfo(pathAt(ib)).size();
-            if (sa != sb) {
-                return sa < sb;
-            }
-            return nameLess(pathAt(ia), pathAt(ib));
-        });
-        break;
+    }
     case SortMode::Width:
     case SortMode::Height:
     case SortMode::PixelCount:
@@ -817,12 +831,23 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
     const QStringList paths = m_session.paths();
     const QVector<SessionImageId> ids = m_session.ids();
 
-    setExpandProgress(0, paths.size(), tr("Measuring images… 0/%1").arg(paths.size()));
+    const bool diskMeta = (mode == SortMode::MTime || mode == SortMode::FileSize);
+    setExpandProgress(
+        0, paths.size(),
+        diskMeta ? tr("Reading file info… 0/%1").arg(paths.size())
+                 : tr("Measuring images… 0/%1").arg(paths.size()));
 
     const QPointer<MainWindow> guard(this);
-    QThreadPool::globalInstance()->start([guard, gen, mode, paths, ids, onDone]() {
+    QThreadPool::globalInstance()->start([guard, gen, mode, paths, ids, onDone, diskMeta]() {
         QHash<QString, QSize> sizes;
-        sizes.reserve(paths.size());
+        QHash<QString, qint64> mtimes;
+        QHash<QString, qint64> fsizes;
+        if (diskMeta) {
+            mtimes.reserve(paths.size());
+            fsizes.reserve(paths.size());
+        } else {
+            sizes.reserve(paths.size());
+        }
         QElapsedTimer clock;
         clock.start();
         qint64 lastUi = -1000;
@@ -833,7 +858,13 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
                 return;
             }
             const QString &path = paths.at(i);
-            if (!sizes.contains(path)) {
+            if (diskMeta) {
+                if (!mtimes.contains(path)) {
+                    const QFileInfo fi(path);
+                    mtimes.insert(path, fi.lastModified().toMSecsSinceEpoch());
+                    fsizes.insert(path, fi.size());
+                }
+            } else if (!sizes.contains(path)) {
                 sizes.insert(path, ImageLoader::probeSize(path));
             }
             const qint64 now = clock.elapsed();
@@ -841,15 +872,16 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
                 lastUi = now;
                 const int done = i + 1;
                 const int total = paths.size();
-                QMetaObject::invokeMethod(guard.data(), [guard, gen, done, total]() {
-                    // Name `host` so this does not shadow the worker-loop `window`.
+                const bool meta = diskMeta;
+                QMetaObject::invokeMethod(guard.data(), [guard, gen, done, total, meta]() {
                     MainWindow *const host = guard.data();
                     if (!host || gen != host->m_sortGeneration) {
                         return;
                     }
                     host->setExpandProgress(
                         done, total,
-                        MainWindow::tr("Measuring images… %1/%2").arg(done).arg(total));
+                        meta ? MainWindow::tr("Reading file info… %1/%2").arg(done).arg(total)
+                             : MainWindow::tr("Measuring images… %1/%2").arg(done).arg(total));
                 }, Qt::QueuedConnection);
             }
         }
@@ -865,30 +897,50 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
         for (int i = 0; i < order.size(); ++i) {
             order[i] = i;
         }
-        auto sizeOf = [&](int i) -> QSize {
-            return sizes.value(paths.at(i));
-        };
 
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            const QSize sa = sizeOf(ia);
-            const QSize sb = sizeOf(ib);
-            if (mode == SortMode::Width) {
-                if (sa.width() != sb.width()) {
-                    return sa.width() < sb.width();
+        if (mode == SortMode::MTime) {
+            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+                const qint64 ta = mtimes.value(paths.at(ia));
+                const qint64 tb = mtimes.value(paths.at(ib));
+                if (ta != tb) {
+                    return ta < tb;
                 }
-            } else if (mode == SortMode::Height) {
-                if (sa.height() != sb.height()) {
-                    return sa.height() < sb.height();
+                return nameLess(paths.at(ia), paths.at(ib));
+            });
+        } else if (mode == SortMode::FileSize) {
+            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+                const qint64 sa = fsizes.value(paths.at(ia));
+                const qint64 sb = fsizes.value(paths.at(ib));
+                if (sa != sb) {
+                    return sa < sb;
                 }
-            } else { // PixelCount
-                const qint64 pa = qint64(sa.width()) * sa.height();
-                const qint64 pb = qint64(sb.width()) * sb.height();
-                if (pa != pb) {
-                    return pa < pb;
+                return nameLess(paths.at(ia), paths.at(ib));
+            });
+        } else {
+            auto sizeOf = [&](int i) -> QSize {
+                return sizes.value(paths.at(i));
+            };
+            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+                const QSize sa = sizeOf(ia);
+                const QSize sb = sizeOf(ib);
+                if (mode == SortMode::Width) {
+                    if (sa.width() != sb.width()) {
+                        return sa.width() < sb.width();
+                    }
+                } else if (mode == SortMode::Height) {
+                    if (sa.height() != sb.height()) {
+                        return sa.height() < sb.height();
+                    }
+                } else { // PixelCount
+                    const qint64 pa = qint64(sa.width()) * sa.height();
+                    const qint64 pb = qint64(sb.width()) * sb.height();
+                    if (pa != pb) {
+                        return pa < pb;
+                    }
                 }
-            }
-            return nameLess(paths.at(ia), paths.at(ib));
-        });
+                return nameLess(paths.at(ia), paths.at(ib));
+            });
+        }
 
         QStringList newFiles;
         QVector<SessionImageId> newIds;

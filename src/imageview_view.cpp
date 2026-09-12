@@ -274,8 +274,10 @@ void ImageView::zoomViewBy(qreal factor)
         viewport()->update();
     }
     // Zoom changes on-screen cell size → may need a higher ladder step.
+    // Match Ctrl+wheel: debounce so rapid toolbar/shortcut zoom does not
+    // rescan all tiles + setInterest on every notch (GUI_THREAD_AUDIT G5).
     if (isGalleryMode()) {
-        updateGalleryDecodeWindow();
+        scheduleGalleryDecodeWindowRefresh(120);
     }
     emit statusChanged();
 }

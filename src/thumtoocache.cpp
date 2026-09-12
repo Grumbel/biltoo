@@ -1346,10 +1346,9 @@ void preparePaths(const QStringList &paths)
             // open floods the worker; per-tile scheduleProbe handles leaves.
             continue;
         }
-        const QFileInfo fi(p);
-        if (!fi.exists()) {
-            continue;
-        }
+        // Do not QFileInfo::exists() here — that is O(n) disk stats on the GUI
+        // for every plain path at session open (GUI_THREAD_AUDIT G2). Missing
+        // files simply miss in the durable index / sizeReady path.
         fsPaths.emplace_back(absPathStd(p));
         plainPaths.append(p);
     }

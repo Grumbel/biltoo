@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-527-gui-audit-followups.** Apply GUI_THREAD_AUDIT G1, G2, G5, G7.
+Prior: **526**.
+
+### Changes
+- **G1:** MTime/FileSize sort on background thread (same path as size probes);
+  sync sort snapshots mtime/size once if still used
+- **G2:** `preparePaths` no longer `QFileInfo::exists()` on the GUI for every path
+- **G5:** `zoomViewBy` uses `scheduleGalleryDecodeWindowRefresh(120)` (toolbar/keys)
+- **G7:** soft/load completion paths schedule decode-window refresh (48 ms), not sync
+
+### Still open from audit
+- G3 paint install cost, G4 multi-pass O(n), G6 setInterest, G8 metadata worker
+
+### Done criteria
+- [x] G1 G2 G5 G7
+- [x] Bundle **527**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-526-gallery-display-paint-budget.** Downsample soft for paint when need ≪ have.
 Prior: **525**.
 
