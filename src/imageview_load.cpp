@@ -86,6 +86,36 @@ QImage clampSoftForGalleryCell(const QImage &pixels, int needEdge, int minEdge)
     return ImageCache::clampToMaxEdge(pixels, target);
 }
 
+/** Queue onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
+void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
+                        const QImage &preview, quint64 gen, int role)
+{
+    if (!guard || preview.isNull()) {
+        return;
+    }
+    QTimer::singleShot(0, guard.data(), [guard, path, preview, gen, role]() {
+        if (!guard) {
+            return;
+        }
+        guard->onImagePreviewLoaded(path, preview, gen, role);
+    });
+}
+
+/** Queue onImageLoaded on the GUI thread; no-op if @a guard is gone. */
+void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
+                      const QImage &image, quint64 gen, int role)
+{
+    if (!guard) {
+        return;
+    }
+    QTimer::singleShot(0, guard.data(), [guard, path, image, gen, role]() {
+        if (!guard) {
+            return;
+        }
+        guard->onImageLoaded(path, image, gen, role);
+    });
+}
+
 } // namespace
 
 int ImageView::pathOrderOccurrences(const QString &path) const
@@ -466,7 +496,9 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
     const QPointer<ImageView> guard(this);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const int qualityEdge = slideshowTargetEdge();
-    QThreadPool::globalInstance()->start([guard, path, role, gen, softEdge]() {
+    const int roleInt = static_cast<int>(role);
+
+    QThreadPool::globalInstance()->start([guard, path, roleInt, gen, softEdge]() {
         if (!guard || gen != guard->m_loadGeneration.load()) {
             return;
         }
@@ -474,87 +506,57 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
         if (!ImageCache::adequate(preview, softEdge)) {
             preview = ImageLoader::loadThumbnail(path, softEdge);
         }
-        if (!guard || preview.isNull()) {
-            return;
-        }
-        QTimer::singleShot(0, guard.data(), [guard, path, preview, gen, role]() {
-            if (!guard) {
+        queuePreviewLoaded(guard, path, preview, gen, roleInt);
+    }, 2);
+
+    if (qualityEdge <= softEdge) {
+        return;
+    }
+    QThreadPool::globalInstance()->start(
+        [guard, path, roleInt, gen, qualityEdge]() {
+            if (!guard || gen != guard->m_loadGeneration.load()) {
                 return;
             }
-            guard->onImagePreviewLoaded(path, preview, gen, static_cast<int>(role));
-        });
-    }, 2);
-    if (qualityEdge > softEdge) {
-        QThreadPool::globalInstance()->start(
-            [guard, path, role, gen, qualityEdge]() {
-                if (!guard || gen != guard->m_loadGeneration.load()) {
-                    return;
+            QImage image = ImageCache::get(path, qualityEdge);
+            if (!ImageCache::adequate(image, qualityEdge)) {
+                image = ImageLoader::loadThumbnail(path, qualityEdge);
+            }
+            if (!guard || image.isNull()) {
+                if (guard && ThumtooCache::isAvailable()) {
+                    (void)ThumtooCache::scheduleDisplayPixels(path, qualityEdge);
                 }
-                QImage image = ImageCache::get(path, qualityEdge);
-                if (!ImageCache::adequate(image, qualityEdge)) {
-                    image = ImageLoader::loadThumbnail(path, qualityEdge);
-                }
-                if (!guard || image.isNull()) {
-                    if (guard && ThumtooCache::isAvailable()) {
-                        (void)ThumtooCache::scheduleDisplayPixels(
-                            path, qualityEdge);
-                    }
-                    return;
-                }
-                if (ImageCache::longEdge(image) > qualityEdge) {
-                    image = image.scaled(
-                        qualityEdge, qualityEdge, Qt::KeepAspectRatio,
-                        Qt::SmoothTransformation);
-                }
-                QTimer::singleShot(
-                    0, guard.data(),
-                    [guard, path, image, gen, role]() {
-                        if (!guard) {
-                            return;
-                        }
-                        guard->onImageLoaded(
-                            path, image, gen, static_cast<int>(role));
-                    });
-            },
-            -1);
-    }
+                return;
+            }
+            if (ImageCache::longEdge(image) > qualityEdge) {
+                image = image.scaled(qualityEdge, qualityEdge, Qt::KeepAspectRatio,
+                                     Qt::SmoothTransformation);
+            }
+            queueImageLoaded(guard, path, image, gen, roleInt);
+        },
+        -1);
 }
 
 void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
     // Thumbnail (high priority) and full decode (low priority) in parallel so
-    // rapid next/prev paints soft pixels first; full frames catch up in the background.
+    // rapid next/prev paints soft pixels first; full frames catch up in the
+    // background.
     const QPointer<ImageView> guard(this);
     constexpr int kPreviewEdge = 512;
+    const int roleInt = static_cast<int>(role);
 
-    QThreadPool::globalInstance()->start([guard, path, role, gen]() {
+    QThreadPool::globalInstance()->start([guard, path, roleInt, gen]() {
         const QImage preview = ImageLoader::loadThumbnail(path, kPreviewEdge);
-        if (!guard || preview.isNull()) {
-            return;
-        }
-        QTimer::singleShot(0, guard.data(), [guard, path, preview, gen, role]() {
-            if (!guard) {
-                return;
-            }
-            guard->onImagePreviewLoaded(path, preview, gen, static_cast<int>(role));
-        });
+        queuePreviewLoaded(guard, path, preview, gen, roleInt);
     }, 2);
 
-    QThreadPool::globalInstance()->start([guard, path, role, gen]() {
+    QThreadPool::globalInstance()->start([guard, path, roleInt, gen]() {
         if (!guard || gen != guard->m_loadGeneration.load()) {
             return;
         }
         const QImage image = ImageLoader::load(path);
-        if (!guard) {
-            return;
-        }
-        QTimer::singleShot(0, guard.data(), [guard, path, image, gen, role]() {
-            if (!guard) {
-                return;
-            }
-            guard->onImageLoaded(path, image, gen, static_cast<int>(role));
-        });
+        queueImageLoaded(guard, path, image, gen, roleInt);
     }, -1);
 }
 

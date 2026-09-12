@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-608-schedule-decode-queue-helpers.** Shared GUI queue for soft/full.
+Prior: **607**.
+
+### Change
+- Anonymous `queuePreviewLoaded` / `queueImageLoaded` — single place for
+  QTimer::singleShot + QPointer guard when delivering pool results to the GUI
+- `scheduleSlideshowReplaceDecode` and `scheduleClassicImageDecode` use them
+
+### Done criteria
+- [x] Less nested lambda noise; same generation / null guards
+- [x] Bundle **608**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-607-create-item-appearance-helper.** Extract Image-mode appearance lookup.
 Prior: **606**.
 
