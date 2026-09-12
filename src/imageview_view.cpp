@@ -31,17 +31,6 @@
 #include "biltoo_logging.h"
 
 
-/** Linear motion progress in [0,1]. Caller must size duration so the slideshow
- *  does not advance at progress==1 (see startSlideshowMotion).
- */
-static qreal motionProgress01(qreal wallMs, qreal durationMs)
-{
-    if (durationMs <= 0.0) {
-        return 0.0;
-    }
-    return qBound(0.0, wallMs / durationMs, 1.0);
-}
-
 void ImageView::setTool(Tool tool)
 {
     if (m_tool == tool) {
@@ -1016,9 +1005,9 @@ void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
         return;
     }
     const int incoming = qMax(image.width(), image.height());
-    const auto it = m_ssRasterByPath.constFind(path);
-    if (it != m_ssRasterByPath.cend() && !it->isNull()) {
-        const int have = qMax(it->width(), it->height());
+    const auto haveIt = m_ssRasterByPath.constFind(path);
+    if (haveIt != m_ssRasterByPath.cend() && !haveIt->isNull()) {
+        const int have = qMax(haveIt->width(), haveIt->height());
         // Keep the sharper buffer; equal size keeps the existing one.
         if (have >= incoming) {
             return;
@@ -1033,11 +1022,11 @@ void ImageView::putSlideshowRaster(const QString &path, const QImage &image)
     // that are not the current phase pair).
     QStringList drop;
     drop.reserve(m_ssRasterByPath.size() - kMaxSsRaster);
-    for (auto it = m_ssRasterByPath.cbegin();
-         it != m_ssRasterByPath.cend()
-         && drop.size() < m_ssRasterByPath.size() - kMaxSsRaster; ++it) {
-        if (it.key() != path && it.key() != m_ssFromPath && it.key() != m_ssToPath) {
-            drop.append(it.key());
+    for (auto dropIt = m_ssRasterByPath.cbegin();
+         dropIt != m_ssRasterByPath.cend()
+         && drop.size() < m_ssRasterByPath.size() - kMaxSsRaster; ++dropIt) {
+        if (dropIt.key() != path && dropIt.key() != m_ssFromPath && dropIt.key() != m_ssToPath) {
+            drop.append(dropIt.key());
         }
     }
     for (const QString &k : drop) {

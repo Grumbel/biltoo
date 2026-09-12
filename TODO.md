@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-558-slideshow-raster-inflight-members.** Fix compile: restore m_ssRasterInflight/Pending.
+Prior: **557**.
+
+### Cause
+Tip 556 member cleanup dropped `m_ssRasterInflight` / `m_ssRasterPending` from the header while cpp still used them.
+
+### Fix
+- Re-declare both members next to `m_ssRasterByPath`
+- Rename putSlideshowRaster iterators to silence -Wshadow
+- Remove unused file-static `motionProgress01`
+
+### Done criteria
+- [x] Compiles past those errors
+- [x] Bundle **558**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-557-slideshow-hud-after-phase.** Fix pure-phase overlay early-return that skipped HUD.
 Prior: **556**.
 

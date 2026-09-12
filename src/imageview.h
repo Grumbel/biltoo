@@ -1308,6 +1308,10 @@ private:
      * Camera is aspect-based, so resolution climb does not change geometry.
      */
     QHash<QString, QImage> m_ssRasterByPath;
+    /** Slideshow raster decode in flight (max one). */
+    QSet<QString> m_ssRasterInflight;
+    /** Neighbours waiting while concurrency is full. */
+    QStringList m_ssRasterPending;
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;
