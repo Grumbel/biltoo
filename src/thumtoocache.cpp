@@ -1079,6 +1079,54 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
 #endif
 }
 
+quint64 setPrimaryInterest(const QString &path, int edge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
+    if (path.isEmpty() || isUnsupported(path)) {
+        return 0;
+    }
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+        if (c) {
+            g_pixelsQueue.clear();
+        }
+    }
+    if (!c) {
+        return 0;
+    }
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return 0;
+    }
+    if (edge <= 0) {
+        edge = kBatchOverviewEdge;
+    }
+    if (edge > kBatchOverviewEdge) {
+        edge = kBatchOverviewEdge;
+    }
+    thumtoo::InterestItem it;
+    it.uri = uri;
+    it.target_long_edge = edge;
+    it.role = thumtoo::InterestRole::Primary;
+    std::vector<thumtoo::InterestItem> items;
+    items.push_back(std::move(it));
+    return static_cast<quint64>(c->set_interest(std::move(items)));
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(edge);
+    return bumpInterestEpoch();
+#endif
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(edge);
+    return 0;
+#endif
+}
+
 void preparePaths(const QStringList &paths)
 {
 #ifdef BILTOO_HAVE_THUMTOO

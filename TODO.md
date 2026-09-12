@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-485-primary-focus.** Image-mode Primary interest (FocusFull tiles).
+Prior: **484**. Companion: **thumtoo-168**.
+
+### Change
+- ThumtooCache::setPrimaryInterest
+- scheduleImageLoad(LoadReplace) in Image mode → setPrimaryInterest
+
+### Next
+- Cap concurrent FocusFull
+- Workspace primary selection interest
+- Deduplicate soft schedule vs set_interest
+
+### Done criteria
+- [x] Image Primary focus
+- [x] Bundle **485**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-484-filmstrip-set-interest.** Filmstrip setInterest + drop double epoch bumps.
 Prior: **483**. Companion: **thumtoo-167**.
 

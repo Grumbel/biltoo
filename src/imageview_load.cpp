@@ -284,6 +284,11 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     quint64 gen = m_loadGeneration.load();
     if (role == LoadReplace) {
         gen = ++m_loadGeneration;
+        // FocusFull: tell thumtoo this is Primary (overview + tile pyramid).
+        if (isImageMode()) {
+            (void)ThumtooCache::setPrimaryInterest(
+                path, ThumtooCache::kBatchOverviewEdge);
+        }
     }
     emit statusChanged(); // pending count for status bar
 

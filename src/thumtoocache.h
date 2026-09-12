@@ -139,6 +139,11 @@ int cancelPendingThumtooWork();
 quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpeculative,
                     int nearEdge, int speculativeEdge);
 
+/**
+ * Image-mode focus: single Primary interest (overview + tile pyramid on thumtoo ≥168).
+ */
+quint64 setPrimaryInterest(const QString &path, int edge);
+
 /** True while a request_pixels for this path/edge is queued or running. */
 bool isPixelsInflight(const QString &path, int maxEdge);
 
