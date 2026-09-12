@@ -2,6 +2,29 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-670-paint-atlas-by-path.** Pure-phase paint uses dwell atlas.
+Prior: **669**.
+
+### Root cause
+`paintMotionCover` only used the dwell atlas when `&image == &m_dwellSourceImage`.
+Pure-phase paint passed a **local QImage copy**, so the atlas never matched and
+every 16ms frame **smooth-scaled the full sample** → steady frame drops.
+
+### Change
+- Match dwell atlas by **path** (from/dwell), not QImage address alone
+- `drawImage` fallback disables `SmoothPixmapTransform` (full sample → dest)
+- Pure-phase `fromImg` is a **const reference** to the member, not a copy
+
+### Done criteria
+- [x] Dwell/from blit uses pre-scaled atlas during pure phase
+- [x] Bundle **670**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-669-phase-arm-async.** Phase arm and FullSource install without GUI scale.
 Prior: **668**.
 

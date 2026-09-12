@@ -188,7 +188,9 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
     if (m_slideshowProgressActive
         && (!m_ssFromImage.isNull() || !m_dwellSourceImage.isNull() || !m_ssToImage.isNull())) {
         const QRect vr = viewport()->rect();
-        const QImage fromImg = !m_ssFromImage.isNull() ? m_ssFromImage : m_dwellSourceImage;
+        // Prefer member references (not a local QImage copy) so paintMotionCover
+        // can match the dwell atlas by address as well as by path.
+        const QImage &fromImg = !m_ssFromImage.isNull() ? m_ssFromImage : m_dwellSourceImage;
         const qreal fromT = m_ssFromMotionT;
         const qreal toT = m_ssToMotionT;
         if (m_ssFadeT >= 0.0 && !m_ssToImage.isNull()) {

@@ -2440,17 +2440,28 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
         return;
     }
 
-    // Prefer pre-scaled atlas (one Smooth scale per slide/resize). Fall back to
-    // drawImage only if no atlas matches this source (should be rare).
+    // Prefer pre-scaled dwell atlas for the from/dwell path. Match by *path*,
+    // not by QImage address — pure-phase paint uses a local fromImg copy, so
+    // &image == &m_dwellSourceImage was never true and every frame smooth-scaled
+    // the full sample (steady frame drops).
     const QPixmap *atlas = nullptr;
-    if (&image == &m_dwellSourceImage && !m_dwellAtlas.isNull()) {
-        atlas = &m_dwellAtlas;
+    if (!m_dwellAtlas.isNull()
+        && (path == m_ssFromPath || path.isEmpty()
+            || &image == &m_dwellSourceImage || &image == &m_ssFromImage)) {
+        // Only when this blit is the dwell/from slide (not the incoming "to").
+        if (path.isEmpty() || path == m_ssFromPath) {
+            atlas = &m_dwellAtlas;
+        }
     }
 
-    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
     if (atlas) {
+        // Atlas is already near viewport size — smooth is cheap and looks good.
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter->drawPixmap(dest, *atlas, atlas->rect());
     } else {
+        // Full sample scaled into dest every frame: must not use smooth filter
+        // (multi-MP → viewport with Smooth is a pure-phase hitch).
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
         painter->drawImage(dest, image);
     }
 }
