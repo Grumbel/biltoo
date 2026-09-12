@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-496-queue-stats-status.** THUMTOO_DEBUG shows worker queue pressure.
+Prior: **495**. Companion: **thumtoo-174**.
+
+### Change
+- ThumtooCache::queueStatsLabel
+- statusText appends q=pending/inflight focus=N ep=E when THUMTOO_DEBUG
+
+### Next
+- Soft metrics only when needed
+- Publish flake after thumtoo-174 is pushed
+
+### Done criteria
+- [x] Soft-queue metrics surface
+- [x] Bundle **496**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-495-gallery-soft-queue.** Gallery overview waits on setInterest, not double schedule.
 Prior: **494**.
 

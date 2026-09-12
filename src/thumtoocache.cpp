@@ -909,6 +909,30 @@ bool isPixelsInflight(const QString &path, int maxEdge)
 }
 
 
+
+QString queueStatsLabel()
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return {};
+    }
+    const auto s = c->queue_stats();
+    return QStringLiteral("q=%1/%2 focus=%3 ep=%4")
+        .arg(qulonglong(s.pending))
+        .arg(s.inflight)
+        .arg(s.focus_full_inflight)
+        .arg(qulonglong(s.interest_epoch));
+#else
+    return {};
+#endif
+}
+
 QString lastPixelSourceLabel(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO

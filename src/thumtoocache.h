@@ -156,6 +156,9 @@ quint64 setPrimaryInterest(const QString &path, int edge);
 /** Human label for last ladderProvenance on this path (empty if unknown). */
 QString lastPixelSourceLabel(const QString &path);
 
+/** Worker pressure: "pending/inflight focus=N epoch=E" or empty. */
+QString queueStatsLabel();
+
 /** True while a request_pixels for this path/edge is queued or running. */
 bool isPixelsInflight(const QString &path, int maxEdge);
 

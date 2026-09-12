@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include <cstdlib>
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "imageloader.h"
@@ -2859,6 +2860,13 @@ QString ImageView::statusText() const
                 text += tr("  |  Source: %1").arg(src);
             }
         }
+        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+            dbg && dbg[0] != '\0' && dbg[0] != '0') {
+            const QString q = ThumtooCache::queueStatsLabel();
+            if (!q.isEmpty()) {
+                text += tr("  |  %1").arg(q);
+            }
+        }
         return text;
     }
 
@@ -2900,6 +2908,13 @@ QString ImageView::statusText() const
         const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
         if (!src.isEmpty()) {
             text += tr("  |  Source: %1").arg(src);
+        }
+    }
+    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+        dbg && dbg[0] != '\0' && dbg[0] != '0') {
+        const QString q = ThumtooCache::queueStatsLabel();
+        if (!q.isEmpty()) {
+            text += tr("  |  %1").arg(q);
         }
     }
     return text;
