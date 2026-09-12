@@ -788,6 +788,101 @@ void ImageView::clearGallerySoftInflight(GallerySoftState &soft)
     soft.inflightSinceMs = 0;
 }
 
+int ImageView::installGallerySoftPreview(const QString &path, const QImage &preview,
+                                         quint64 gen, GallerySoftState &soft,
+                                         const char *debugTag, int requestEdge)
+{
+    if (preview.isNull()) {
+        return 0;
+    }
+    const int got = ImageCache::longEdge(preview);
+    onImagePreviewLoaded(path, preview, gen, static_cast<int>(LoadAdd));
+    soft.have = qMax(soft.have, got);
+    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+        dbg && dbg[0] && dbg[0] != '0') {
+        if (requestEdge > 0) {
+            fprintf(stderr,
+                    "biltoo/gallery: INSTALL soft path=%s got=%d request=%d (%s)\n",
+                    qPrintable(QFileInfo(path).fileName()), got, requestEdge,
+                    debugTag ? debugTag : "");
+        } else {
+            fprintf(stderr, "biltoo/gallery: INSTALL soft path=%s got=%d (%s)\n",
+                    qPrintable(QFileInfo(path).fileName()), got,
+                    debugTag ? debugTag : "");
+        }
+    }
+    return got;
+}
+
+void ImageView::hostGallerySoftFromCache(const QString &path, quint64 gen,
+                                         GallerySoftState &soft, int edge)
+{
+    const QImage hit = ImageCache::get(path, edge);
+    if (!hit.isNull()) {
+        onImagePreviewLoaded(path, hit, gen, static_cast<int>(LoadAdd));
+        soft.have = qMax(soft.have, ImageCache::longEdge(hit));
+    }
+}
+
+void ImageView::retryGallerySoftOrOverview(const QString &path, quint64 gen,
+                                           GallerySoftState &soft, int edge,
+                                           bool overview)
+{
+    // PreferCache may already have scheduled SoftOnly (empty image). Do not
+    // clear inflight while thumtoo still holds the job — that caused
+    // have=0/req=256 soft-request loops with schedulePixels SKIP spam.
+    if (ThumtooCache::isPixelsPending(path, edge)) {
+        markGallerySoftInflight(soft, edge);
+        return;
+    }
+    const bool queued = overview ? ThumtooCache::scheduleOverviewPixels(path, edge)
+                                 : ThumtooCache::schedulePixels(path, edge);
+    if (queued) {
+        markGallerySoftInflight(soft, edge);
+        return;
+    }
+    // Settled (or unavailable): host from ImageCache; release the slot.
+    hostGallerySoftFromCache(path, gen, soft, edge);
+    clearGallerySoftInflight(soft);
+    if (!coversEdge(soft.have, edge)) {
+        soft.gaveUpWant = qMax(soft.gaveUpWant, edge);
+    }
+}
+
+void ImageView::advanceGallerySoftAfterPool(const QString &path, quint64 gen,
+                                            GallerySoftState &soft, int got,
+                                            int requestEdge)
+{
+    // Climb only when below the request edge — and only keep inflight when a
+    // host callback is truly pending (schedule* returned true). SKIP must not
+    // pin soft.inflight forever.
+    if (coversEdge(got, requestEdge)) {
+        clearGallerySoftInflight(soft);
+        if (soft.gaveUpWant <= requestEdge) {
+            soft.gaveUpWant = 0;
+        }
+        return;
+    }
+    if (!ThumtooCache::isAvailable()) {
+        clearGallerySoftInflight(soft);
+        soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
+        // Do not set failed=true on first miss — PreferCache / SoftOnly may
+        // still deliver; failed is permanent and skips forever.
+        return;
+    }
+    if (requestEdge <= ThumtooCache::kGalleryLadderEdge) {
+        retryGallerySoftOrOverview(path, gen, soft, requestEdge, /*overview=*/false);
+        return;
+    }
+    if (requestEdge <= ThumtooCache::kBatchOverviewEdge) {
+        const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
+        retryGallerySoftOrOverview(path, gen, soft, ov, /*overview=*/true);
+        return;
+    }
+    clearGallerySoftInflight(soft);
+    soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
+}
+
 void ImageView::applyGallerySoftPoolResult(const QString &path, const QImage &preview,
                                            quint64 gen, int requestEdge)
 {
@@ -797,23 +892,13 @@ void ImageView::applyGallerySoftPoolResult(const QString &path, const QImage &pr
         return;
     }
     GallerySoftState &soft = it.value();
-    // Superseded (ladderReady cleared inflight, or a newer edge was
-    // requested): still install any soft we decoded — dropping it
-    // left blank tiles when SoftOnly finished before this callback.
+    // Superseded (ladderReady cleared inflight, or a newer edge was requested):
+    // still install any soft we decoded — dropping it left blank tiles when
+    // SoftOnly finished before this callback.
     if (soft.inflight != requestEdge) {
         takePendingWorkspacePath(path);
-        if (!preview.isNull()) {
-            const int got = ImageCache::longEdge(preview);
-            onImagePreviewLoaded(path, preview, gen, static_cast<int>(LoadAdd));
-            soft.have = qMax(soft.have, got);
-            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                dbg && dbg[0] && dbg[0] != '0') {
-                fprintf(stderr,
-                        "biltoo/gallery: INSTALL soft path=%s got=%d "
-                        "(superseded pool callback)\n",
-                        qPrintable(QFileInfo(path).fileName()), got);
-            }
-        }
+        installGallerySoftPreview(path, preview, gen, soft,
+                                  "superseded pool callback", /*requestEdge=*/0);
         if (isGalleryMode()) {
             scheduleGalleryDecodeWindowRefresh(48);
         }
@@ -821,91 +906,13 @@ void ImageView::applyGallerySoftPoolResult(const QString &path, const QImage &pr
     }
     takePendingWorkspacePath(path);
 
-    // Install any soft we got. Climb only when below the request
-    // edge — and only keep inflight when a host callback is truly
-    // pending (schedule* returned true). SKIP (already settled /
-    // inflight elsewhere) must not pin soft.inflight forever: that
-    // blocked scheduleGalleryDecode while tiles stayed blank even
-    // though PreferCache already had filmstrip soft in the DB.
-    const int got = preview.isNull() ? 0 : ImageCache::longEdge(preview);
-    if (!preview.isNull()) {
-        onImagePreviewLoaded(path, preview, gen, static_cast<int>(LoadAdd));
-        soft.have = qMax(soft.have, got);
-        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-            dbg && dbg[0] && dbg[0] != '0') {
-            fprintf(stderr,
-                    "biltoo/gallery: INSTALL soft path=%s got=%d "
-                    "request=%d (pool PreferCache)\n",
-                    qPrintable(QFileInfo(path).fileName()), got,
-                    requestEdge);
-        }
-    }
+    const int got =
+        installGallerySoftPreview(path, preview, gen, soft, "pool PreferCache",
+                                  requestEdge);
+    advanceGallerySoftAfterPool(path, gen, soft, got, requestEdge);
 
-    if (got >= requestEdge * 9 / 10) {
-        clearGallerySoftInflight(soft);
-        if (soft.gaveUpWant <= requestEdge) {
-            soft.gaveUpWant = 0;
-        }
-    } else if (ThumtooCache::isAvailable()
-               && requestEdge <= ThumtooCache::kGalleryLadderEdge) {
-        // PreferCache may already have scheduled SoftOnly (returns
-        // empty image). Do not clear inflight while thumtoo still
-        // holds the job — that caused have=0/req=256 soft-request
-        // loops with schedulePixels SKIP spam.
-        if (ThumtooCache::isPixelsPending(path, requestEdge)) {
-            markGallerySoftInflight(soft, requestEdge);
-        } else {
-            const bool queued = ThumtooCache::schedulePixels(path, requestEdge);
-            if (queued) {
-                markGallerySoftInflight(soft, requestEdge);
-            } else {
-                // Settled (or unavailable): host from ImageCache on
-                // the next window pass; release the slot.
-                const QImage hit = ImageCache::get(path, requestEdge);
-                if (!hit.isNull()) {
-                    onImagePreviewLoaded(path, hit, gen, static_cast<int>(LoadAdd));
-                    soft.have = qMax(soft.have, ImageCache::longEdge(hit));
-                }
-                clearGallerySoftInflight(soft);
-                if (soft.have < requestEdge * 9 / 10) {
-                    soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
-                }
-            }
-        }
-    } else if (ThumtooCache::isAvailable()
-               && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
-        const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
-        if (ThumtooCache::isPixelsPending(path, ov)) {
-            markGallerySoftInflight(soft, ov);
-        } else {
-            const bool queued = ThumtooCache::scheduleOverviewPixels(path, ov);
-            if (queued) {
-                markGallerySoftInflight(soft, ov);
-            } else {
-                const QImage hit = ImageCache::get(path, ov);
-                if (!hit.isNull()) {
-                    onImagePreviewLoaded(path, hit, gen, static_cast<int>(LoadAdd));
-                    soft.have = qMax(soft.have, ImageCache::longEdge(hit));
-                }
-                clearGallerySoftInflight(soft);
-                if (soft.have < ov * 9 / 10) {
-                    soft.gaveUpWant = qMax(soft.gaveUpWant, ov);
-                }
-            }
-        }
-    } else if (ThumtooCache::isAvailable()
-               && requestEdge > ThumtooCache::kBatchOverviewEdge) {
-        clearGallerySoftInflight(soft);
-        soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
-    } else {
-        clearGallerySoftInflight(soft);
-        soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
-        // Do not set failed=true on first miss — PreferCache / SoftOnly
-        // may still deliver; failed is permanent and skips forever.
-    }
-
-    // Coalesce status + decode-window — every INSTALL used to
-    // refresh the HUD and rescan the gallery on the GUI thread.
+    // Coalesce status + decode-window — every INSTALL used to refresh the HUD
+    // and rescan the gallery on the GUI thread.
     scheduleGalleryDecodeWindowRefresh(48);
     refreshStatus();
 }
@@ -1541,43 +1548,32 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
     }
 }
 
-void ImageView::installImageModeReplaceItem(const QString &path, const QImage &image)
+void ImageView::applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path)
 {
-    // Suppress paints between removing the old item and fitting the new one
-    // so we never present a native-scale (or empty) intermediate frame.
-    setUpdatesEnabled(false);
-    // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
-    clearLiveCanvas();
-    ImageItem *item = createItemFromImage(path, image);
-    if (!item) {
-        setUpdatesEnabled(true);
-        m_lastLoadError = path;
-        emit statusChanged();
+    if (!item || path.isEmpty()) {
         return;
     }
-    bindImageModeSessionCursor(item);
-    // Filmstrip overrides are not driven by decode (selection/nav).
-    // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
-    // Arbitrary Workspace rotation stays on the free-form item only.
-    // Crop was applied in createItemFromImage from m_itemStates.
-    resetImageModeItemPlacement(item);
-    {
-        // Content 90°/flip are already in pixels (createItemFromImage bakes).
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()) {
-            // Legacy unbaked flips only if content flags not used yet.
-            if (!it->contentHFlip && !it->contentVFlip) {
-                item->setItemHFlip(it->hFlip);
-                item->setItemVFlip(it->vFlip);
-            }
-        }
+    // Content 90°/flip are already in pixels (createItemFromImage bakes).
+    // Legacy unbaked flips only if content flags not used yet.
+    const auto it = m_itemStates.constFind(path);
+    if (it == m_itemStates.cend()) {
+        return;
     }
-    prepareImageModeCanvas();
+    if (!it->contentHFlip && !it->contentVFlip) {
+        item->setItemHFlip(it->hFlip);
+        item->setItemVFlip(it->vFlip);
+    }
+}
+
+void ImageView::frameImageModeReplaceItem(ImageItem *item, const QString &path)
+{
+    if (!item) {
+        return;
+    }
     // Slideshow framing: when dwell motion is on, the camera sets the
-    // transform (including handoff from a live transition). Applying
-    // zoom framing first would centre the image then jump to motion t0.
-    if (m_slideshowProgressActive
-        && m_slideshowMotion == SlideshowMotion::Off) {
+    // transform (including handoff from a live transition). Applying zoom
+    // framing first would centre the image then jump to motion t0.
+    if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
         applySlideshowZoomFraming(item);
     } else if (!m_slideshowProgressActive) {
         fitItem(item, currentFitAspectMode());
@@ -1592,10 +1588,35 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     }
     if (m_slideshowProgressActive) {
         item->setVisible(false);
-        // Paused ←/→ loads the underlay while pure phase still paints
-        // the previous path — refresh dwell to this decode.
+        // Paused ←/→ loads the underlay while pure phase still paints the
+        // previous path — refresh dwell to this decode.
         setSlideshowPhase(path, QString(), -1.0);
     }
+}
+
+void ImageView::installImageModeReplaceItem(const QString &path, const QImage &image)
+{
+    // Suppress paints between removing the old item and fitting the new one
+    // so we never present a native-scale (or empty) intermediate frame.
+    setUpdatesEnabled(false);
+    // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
+    clearLiveCanvas();
+    ImageItem *item = createItemFromImage(path, image);
+    if (!item) {
+        setUpdatesEnabled(true);
+        m_lastLoadError = path;
+        emit statusChanged();
+        return;
+    }
+    // Filmstrip overrides are not driven by decode (selection/nav).
+    // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
+    // Arbitrary Workspace rotation stays on the free-form item only.
+    // Crop was applied in createItemFromImage from m_itemStates.
+    bindImageModeSessionCursor(item);
+    resetImageModeItemPlacement(item);
+    applyLegacyPathFlipsIfNeeded(item, path);
+    prepareImageModeCanvas();
+    frameImageModeReplaceItem(item, path);
     setUpdatesEnabled(true);
     if (viewport()) {
         viewport()->update();

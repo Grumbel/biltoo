@@ -1232,6 +1232,21 @@ private:
     void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
     void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
+    /** Install pool/ladder soft into Gallery tiles; returns long edge got (0 if null). */
+    int installGallerySoftPreview(const QString &path, const QImage &preview, quint64 gen,
+                                  GallerySoftState &soft, const char *debugTag,
+                                  int requestEdge);
+    void hostGallerySoftFromCache(const QString &path, quint64 gen, GallerySoftState &soft,
+                                  int edge);
+    /** SoftOnly or overview retry after a PreferCache shortfall. */
+    void retryGallerySoftOrOverview(const QString &path, quint64 gen, GallerySoftState &soft,
+                                    int edge, bool overview);
+    /** After pool install: clear, SoftOnly, overview, or give up. */
+    void advanceGallerySoftAfterPool(const QString &path, quint64 gen, GallerySoftState &soft,
+                                     int got, int requestEdge);
+    void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
+    /** Fit / slideshow zoom / motion handoff after Image-mode full replace. */
+    void frameImageModeReplaceItem(ImageItem *item, const QString &path);
     /**
      * Image mode: drop the previous frame and show a loading/provisional tile
      * for @p path immediately (do not wait for the background decode).

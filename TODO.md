@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-645-gallery-soft-pool-phases.** Name soft-pool climb + replace framing.
+Prior: **644**.
+
+### Change
+- `installGallerySoftPreview` / `hostGallerySoftFromCache` /
+  `retryGallerySoftOrOverview` / `advanceGallerySoftAfterPool`
+- `applyLegacyPathFlipsIfNeeded` / `frameImageModeReplaceItem`
+- Soft vs overview retry share one path (no duplicated pending/schedule/host)
+
+### Done criteria
+- [x] applyGallerySoftPoolResult is orchestration only
+- [x] installImageModeReplaceItem reads as bind → place → frame
+- [x] Bundle **645**
+
+### Next
+- Further scheduleGalleryDecode readability if needed
+- Status-bar PreferCache progress for Image mode (optional)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-644-decode-job-helpers.** Named pool jobs + Image-mode pending helpers.
 Prior: **643**.
 
