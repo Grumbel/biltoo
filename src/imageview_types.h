@@ -215,4 +215,18 @@ struct GallerySoftState {
     }
 };
 
+
+/**
+ * Image-mode soft → PreferCache → native climb (anti-storm).
+ * PreferCache often plateaus below native (tile_synth ~1024); never re-queue
+ * the same display edge after a shortfall, and never forget settled on every hit.
+ */
+struct ImageModeClimbState {
+    int have = 0;              /**< best sample long edge installed */
+    int lastDisplayWant = 0;   /**< last PreferCache display edge requested */
+    int lastDisplayGot = 0;    /**< long edge from last PreferCache delivery */
+    bool preferGaveUp = false; /**< PreferCache cannot improve further */
+    bool displayQueued = false; /**< scheduleDisplayPixels already issued for lastDisplayWant */
+};
+
 #endif // IMAGEVIEW_TYPES_H

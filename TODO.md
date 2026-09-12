@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-653-stop-prefercache-storm.** Break PreferCache soft reschedule loop.
+Prior: **652**.
+
+### Root cause
+`ensureImageModeQualityClimb` + `forgetPixelsSettled` on every ladderReady caused:
+soft 512 / PreferCache 2048→1024 shortfall → re-queue forever (tile_synth plateau).
+UI frozen, endless scheduleProbe/schedulePixels/scheduleDisplay.
+
+### Change
+- `ImageModeClimbState` — have, lastDisplayWant/Got, preferGaveUp, displayQueued
+- PreferCache schedules **once** per edge; never forget settled on every hit
+- Shortfall (got < 90% of request) → `preferGaveUp`; only native full continues
+- Zoom may raise want once; LoadReplace clears climb state
+
+### Done criteria
+- [x] No PreferCache soft loop on archive tile_synth plateau
+- [x] Bundle **653**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-652-decode-status-clarity.** Honest decode activity in status.
 Prior: **651**.
 
