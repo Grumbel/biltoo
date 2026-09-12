@@ -1401,7 +1401,7 @@ int ImageView::slideshowTargetEdge() const
     return qMin(snapped, ThumtooCache::kImageLadderEdge);
 }
 
-QSize ImageView::slideshowLogicalSize(const QString &path) const
+QSize ImageView::logicalSizeForPath(const QString &path) const
 {
     if (path.isEmpty()) {
         return {};
@@ -1418,12 +1418,12 @@ QSize ImageView::slideshowLogicalSize(const QString &path) const
     return {};
 }
 
-QSize ImageView::ensureSlideshowLogicalSize(const QString &path)
+QSize ImageView::ensureLogicalSizeForPath(const QString &path)
 {
     if (path.isEmpty()) {
         return {};
     }
-    const QSize known = slideshowLogicalSize(path);
+    const QSize known = logicalSizeForPath(path);
     if (known.isValid() && known.width() > 0 && known.height() > 0
         && !isProvisionalImageSize(path)) {
         return known;
@@ -1912,7 +1912,7 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     const int vh = qMax(1, viewport()->height());
 
     // HARD RULE: logical size owns geometry. Soft rasters are sampling only.
-    QSize logical = slideshowLogicalSize(path);
+    QSize logical = logicalSizeForPath(path);
     if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
         // Provisional: keep aspect from the sample, magnitude neutral — never
         // treat soft long-edge as native. Phase entry should have called
@@ -2265,6 +2265,15 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     //   Object keeps rotation and flips; this helper must never clear them.
     //   Object scale is normalized to 1 so residual Workspace scale does not
     //   fight the view transform when showing a single image.
+    // Logical size owns geometry — soft display pixels must not define fit.
+    const QString path = item->path();
+    if (!path.isEmpty()) {
+        const QSize logical = ensureLogicalSizeForPath(path);
+        if (logical.isValid() && logical.width() > 1 && logical.height() > 1
+            && !isProvisionalImageSize(path)) {
+            item->setIntrinsicSize(logical);
+        }
+    }
     if (isImageMode() || m_items.size() == 1) {
         item->setItemScale(1.0);
         if (isImageMode()) {

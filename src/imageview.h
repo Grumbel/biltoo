@@ -203,13 +203,22 @@ public:
     /**
      * Logical image size for @a path (never soft-raster dimensions).
      * Lookup only: m_imageSizeByPath, then thumtoo cache. Empty if unknown.
+     * Slideshow and Image-mode framing share this.
      */
-    QSize slideshowLogicalSize(const QString &path) const;
+    QSize logicalSizeForPath(const QString &path) const;
+    /** @deprecated name — use logicalSizeForPath. */
+    QSize slideshowLogicalSize(const QString &path) const {
+        return logicalSizeForPath(path);
+    }
     /**
-     * Ensure logical size is known (may schedule async probe). Prefer this
-     * at phase entry; paint uses the const lookup.
+     * Ensure logical size is known (may schedule async probe).
+     * Phase entry, fit, and framing call this before geometry.
      */
-    QSize ensureSlideshowLogicalSize(const QString &path);
+    QSize ensureLogicalSizeForPath(const QString &path);
+    /** @deprecated name — use ensureLogicalSizeForPath. */
+    QSize ensureSlideshowLogicalSize(const QString &path) {
+        return ensureLogicalSizeForPath(path);
+    }
     /**
      * Image→viewport scale for current slideshowZoom (Fit/Fill/Actual)
      * given logical size and viewport. Pure function of size model.

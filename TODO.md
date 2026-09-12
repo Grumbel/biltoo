@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-564-logical-size-global.** Size model is ImageView-wide, not slideshow-only.
+Prior: **563**.
+
+### Changes
+- `logicalSizeForPath` / `ensureLogicalSizeForPath` (slideshow names are aliases)
+- `rememberImageSize` refuses to replace a known larger logical size with a
+  smaller sample (soft/ladder cannot poison the map)
+- `fitItem` ensures logical size and syncs intrinsic before fitInView
+- DOMAIN.md: logical size owns geometry
+
+### Done criteria
+- [x] One size model for slideshow + Image fit
+- [x] Soft cannot shrink logical size
+- [x] Bundle **564**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-563-slideshow-shared-zoom-scale.** Share Fit/Fill/Actual scale from logical size.
 Prior: **562**.
 

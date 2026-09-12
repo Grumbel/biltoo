@@ -442,6 +442,18 @@ void ImageView::rememberImageSize(const QString &path, const QSize &size)
     if (path.isEmpty() || !size.isValid() || size.width() <= 0 || size.height() <= 0) {
         return;
     }
+    // HARD RULE: logical size is identity. Soft / ladder sample dimensions must
+    // never replace a known larger size (that made 512px "become" the image).
+    const auto it = m_imageSizeByPath.constFind(path);
+    if (it != m_imageSizeByPath.cend()
+        && it->isValid() && it->width() > 0 && it->height() > 0
+        && !isProvisionalImageSize(path)) {
+        const qint64 have = qint64(it->width()) * qint64(it->height());
+        const qint64 incoming = qint64(size.width()) * qint64(size.height());
+        if (have > 0 && incoming * 10 < have * 9) {
+            return;
+        }
+    }
     m_imageSizeByPath.insert(path, size);
     m_provisionalSizePaths.remove(path);
 }
