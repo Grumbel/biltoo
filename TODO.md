@@ -2,6 +2,31 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-695-slideshow-soft-hq-atomic.** Phase buffers only take target-edge; atlas swap keeps prior texture; clamp off-GUI.
+Prior: **694**.
+
+### Problem
+Soft→PreferCache mid-dwell caused frame drops: each ladder step upgraded phase
+buffers, rebuilt the motion atlas, and ran `QPixmap::fromImage` on the GUI
+while the 16ms pure-phase clock kept ticking.
+
+### Change
+- `phaseBufferWantsSample`: ignore intermediate PreferCache when a sample already
+  exists; only promote at slideshow need edge (cache still stores intermediates)
+- Clamp + orient always on the thread pool; GUI only assigns
+- Clear stale from-atlas on path change (wrong-slide flash)
+- Skip extra `update()` on every raster-ready; paint on finish only
+- Atlas coverage: rebuild only when the new source can improve the viewport budget
+
+### Done criteria
+- [x] Bundle **695**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-694-image-nav-keyrepeat-debounce.** Soft every key; PreferCache after settle.
 Prior: **693**.
 

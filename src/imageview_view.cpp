@@ -1111,6 +1111,20 @@ bool ImageView::phaseBufferWantsSample(const QString &path, int sampleEdge) cons
     if (sampleEdge <= 0 || path.isEmpty()) {
         return false;
     }
+    // Mid-dwell soft→HQ: only promote phase buffers when the sample meets the
+    // slideshow need edge. Intermediate PreferCache steps (256→512→1024) still
+    // land in ImageCache via putSlideshowRaster; applying each to the phase
+    // buffer caused atlas rebuilds + GUI fromImage hitches (frame drops).
+    const int need = slideshowNeedEdge(slideshowTargetEdge());
+    if (sampleEdge < need && sampleEdge < ThumtooCache::kImageLadderEdge) {
+        // Allow the first non-empty sample so a cold phase is not blank forever.
+        const int have = (path == m_ssFromPath) ? ImageCache::longEdge(m_ssFromImage)
+                         : (path == m_ssToPath) ? ImageCache::longEdge(m_ssToImage)
+                                               : 0;
+        if (have > 0) {
+            return false;
+        }
+    }
     if (path == m_ssFromPath && sampleEdge > ImageCache::longEdge(m_ssFromImage)) {
         return true;
     }
@@ -1176,6 +1190,8 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     if (path == m_ssFromPath && incoming > ImageCache::longEdge(m_ssFromImage)) {
         m_ssFromImage = oriented;
         m_dwellSourceImage = oriented;
+        // Keep previous atlas for paint until the new one finishes (atomic swap
+        // in finishSlideshowAtlas). Rebuild only if coverage is insufficient.
         requestDwellAtlasRebuild();
         changed = true;
     }
@@ -1191,15 +1207,17 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
 
 void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image)
 {
-    // HQ→full mid-slide: clamp + orient off the GUI thread.
+    // HQ→full mid-slide: clamp + orient off the GUI thread (never Smooth scale here).
     if (path.isEmpty() || image.isNull()) {
         return;
     }
     if (path != m_ssFromPath && path != m_ssToPath) {
         return;
     }
-    const QImage capped = ImageCache::clampToMaxEdge(image, slideshowTargetEdge());
-    const int incoming = ImageCache::longEdge(capped);
+    // Cheap long-edge check before pool work; clamp itself runs off-GUI.
+    const int incomingRaw = ImageCache::longEdge(image);
+    const int targetEdge = slideshowTargetEdge();
+    const int incoming = incomingRaw > targetEdge && targetEdge > 0 ? targetEdge : incomingRaw;
     if (!phaseBufferWantsSample(path, incoming)) {
         return;
     }
@@ -1209,24 +1227,27 @@ void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const Q
     const quint64 gen = ++m_ssPhaseUpgradeGeneration;
     const QPointer<ImageView> guard(this);
     const QString pathCopy = path;
-    const QImage raw = capped;
+    const QImage raw = image;
+    const int edgeCap = targetEdge;
 
-    if (!hasApp) {
-        // No flip/rotate — assign on next tick so ladderReady is not blocked.
-        QTimer::singleShot(0, this, [this, pathCopy, raw, gen]() {
-            finishSlideshowPhaseBufferUpgrade(pathCopy, raw, gen);
-        });
-        return;
-    }
     QThreadPool::globalInstance()->start(
-        [guard, pathCopy, raw, appState, gen]() {
-            const QImage oriented = SessionAppearance::materializeDisplay(
-                raw, appState, SessionAppearance::PixelKind::SoftPreview);
+        [guard, pathCopy, raw, appState, hasApp, gen, edgeCap]() {
+            QImage capped = ImageCache::clampToMaxEdge(raw, edgeCap);
+            if (capped.isNull()) {
+                capped = raw;
+            }
+            QImage out = capped;
+            if (hasApp) {
+                const QImage oriented = SessionAppearance::materializeDisplay(
+                    capped, appState, SessionAppearance::PixelKind::SoftPreview);
+                if (!oriented.isNull()) {
+                    out = oriented;
+                }
+            }
             ImageView *view = guard.data();
             if (!view) {
                 return;
             }
-            const QImage out = oriented.isNull() ? raw : oriented;
             QTimer::singleShot(0, view, [view, pathCopy, out, gen]() {
                 view->finishSlideshowPhaseBufferUpgrade(pathCopy, out, gen);
             });
@@ -1351,11 +1372,10 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
         << " (was " << had << ")";
 
     // Phase buffer upgrade (clamp + orient + atlas) is deferred off this stack
-    // so ladderReady does not block the pure-phase clock.
+    // so ladderReady does not block the pure-phase clock. No update() here —
+    // finishSlideshowPhaseBufferUpgrade / finishSlideshowAtlas paint once the
+    // new buffer is ready (avoids a soft→HQ frame storm on every ladder step).
     scheduleSlideshowPhaseBufferUpgrade(path, image);
-    if (viewport() && m_slideshowProgressActive) {
-        viewport()->update();
-    }
 }
 
 QString ImageView::slideshowPrefetchHudLine() const
@@ -1606,6 +1626,13 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
     }
     ++m_ssPhaseUpgradeGeneration; // drop mid-slide upgrades for previous path
     invalidateDwellAtlasRebuilds();
+    // Drop the previous path's atlas immediately. Keeping it until rebuild
+    // finished painted the *old* slide under the new path for several frames.
+    // Soft drawImage fallback is cheap; wrong-path atlas is a visible glitch.
+    m_dwellAtlas = QPixmap();
+    m_dwellAtlasScale = 0.0;
+    m_dwellAtlasVw = 0;
+    m_dwellAtlasVh = 0;
     // Async atlas — never scale multi-MP on the GUI during ←/→ or phase arm.
     // paintMotionCover falls back to drawImage until the atlas is ready.
     requestDwellAtlasRebuild();
@@ -2007,7 +2034,17 @@ bool ImageView::dwellAtlasCoversSource(const QPixmap &atlas, qreal atlasScale,
     }
     const int have = qMax(atlas.width(), atlas.height());
     const int srcLong = qMax(source.width(), source.height());
-    return srcLong <= have * 5 / 4;
+    // Soft upscaled into atlas (src << have): keep painting it until a sample
+    // that can actually improve the atlas arrives (src approaching longCap).
+    // Rebuild only when the new source is meaningfully sharper than the atlas
+    // budget — avoids a GUI fromImage hitch for tiny PreferCache steps.
+    if (srcLong <= have * 5 / 4) {
+        return true;
+    }
+    // Source exceeds atlas size: only rebuild if it reaches the viewport budget
+    // (target-edge delivery). Intermediate 512→1024 with atlas already at
+    // longCap from a prior soft upscale is a no-op sharpness-wise.
+    return srcLong < params.longCap * 9 / 10;
 }
 
 void ImageView::invalidateDwellAtlasRebuilds()
