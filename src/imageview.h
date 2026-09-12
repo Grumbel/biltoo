@@ -454,8 +454,24 @@ public:
     bool hasWorkspaceSessionIndex(int sessionIndex) const;
     ImageItem *findItemBySessionIndex(int sessionIndex) const;
     ImageItem *findItemBySessionId(SessionImageId sessionId) const;
+    struct PendingSessionBind; // defined with other pending-load state below
     /** True while LoadAdd still has an unbound PendingSessionBind for @p path. */
     bool hasPendingSessionBindForPath(const QString &path) const;
+    /** Count pending binds still queued for @a path. */
+    int countPendingSessionBinds(const QString &path) const;
+    /**
+     * Drop pending binds whose SessionImageId is already on a live tile.
+     * Prevents LoadAdd from creating extra duplicates.
+     */
+    void purgeSatisfiedPendingBinds(const QString &path);
+    /**
+     * Take the first pending bind for @a path (FIFO). Returns false if none.
+     */
+    bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
+    /**
+     * Apply explicit drop scene placement from a bind (Workspace free-form).
+     */
+    void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
     void detachCanvasSessionId(SessionImageId sessionId);

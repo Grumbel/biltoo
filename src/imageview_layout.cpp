@@ -876,6 +876,65 @@ bool ImageView::hasPendingSessionBindForPath(const QString &path) const
     return false;
 }
 
+int ImageView::countPendingSessionBinds(const QString &path) const
+{
+    int n = 0;
+    for (const PendingSessionBind &b : m_pendingSessionBinds) {
+        if (b.path == path) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+void ImageView::purgeSatisfiedPendingBinds(const QString &path)
+{
+    for (int bi = m_pendingSessionBinds.size() - 1; bi >= 0; --bi) {
+        const PendingSessionBind &b = m_pendingSessionBinds.at(bi);
+        if (b.path != path || b.id == kInvalidSessionImageId) {
+            continue;
+        }
+        if (findItemBySessionId(b.id)) {
+            m_pendingSessionBinds.removeAt(bi);
+        }
+    }
+}
+
+bool ImageView::takePendingSessionBind(const QString &path, PendingSessionBind *out)
+{
+    if (!out || path.isEmpty()) {
+        return false;
+    }
+    for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
+        if (m_pendingSessionBinds.at(bi).path != path) {
+            continue;
+        }
+        *out = m_pendingSessionBinds.takeAt(bi);
+        return true;
+    }
+    return false;
+}
+
+void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound)
+{
+    if (!item || !bound.hasScenePos) {
+        return;
+    }
+    item->setGalleryCellSize({});
+    item->setPos(bound.scenePos);
+    item->setItemScale(1.0);
+    item->setItemRotation(0.0);
+    item->setItemShear(0.0);
+    item->setItemOpacity(1.0);
+    item->setStackZ(m_items.size() - 1);
+    if (isWorkspaceMode()) {
+        item->setInteractive(true);
+        item->setScaleHandlesEnabled(true);
+    }
+    m_pendingScenePos.remove(item->path());
+    rememberItemState(item);
+}
+
 void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
 {
     if (sessionId == kInvalidSessionImageId) {

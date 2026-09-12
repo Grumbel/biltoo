@@ -1319,17 +1319,8 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
 
     const int pathOrderCount = pathOrderOccurrences(path);
 
-    // Pending binds whose SessionImageId is already on a live tile are satisfied
-    // (placeholders / prior LoadAdd). Drop them so we do not create extras.
-    for (int bi = m_pendingSessionBinds.size() - 1; bi >= 0; --bi) {
-        const PendingSessionBind &b = m_pendingSessionBinds.at(bi);
-        if (b.path != path || b.id == kInvalidSessionImageId) {
-            continue;
-        }
-        if (findItemBySessionId(b.id)) {
-            m_pendingSessionBinds.removeAt(bi);
-        }
-    }
+    // Pending binds whose SessionImageId is already on a live tile are satisfied.
+    purgeSatisfiedPendingBinds(path);
 
     // Claim existing *unbound* tiles of this path for pending session binds
     // (e.g. empty-Workspace LoadReplace seeded the first path before LoadAdd).
@@ -1343,16 +1334,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             continue;
         }
         PendingSessionBind bound;
-        bool haveBound = false;
-        for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
-            if (m_pendingSessionBinds.at(bi).path != path) {
-                continue;
-            }
-            bound = m_pendingSessionBinds.takeAt(bi);
-            haveBound = true;
-            break;
-        }
-        if (!haveBound) {
+        if (!takePendingSessionBind(path, &bound)) {
             break;
         }
         if (bound.id != kInvalidSessionImageId) {
@@ -1372,21 +1354,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             applyState(existing, *m_appearance.get(bound.id));
         }
         // Explicit drop position wins over restored gallery/workspace pose.
-        if (bound.hasScenePos) {
-            existing->setGalleryCellSize({});
-            existing->setPos(bound.scenePos);
-            existing->setItemScale(1.0);
-            existing->setItemRotation(0.0);
-            existing->setItemShear(0.0);
-            existing->setItemOpacity(1.0);
-            existing->setStackZ(m_items.size() - 1);
-            if (isWorkspaceMode()) {
-                existing->setInteractive(true);
-                existing->setScaleHandlesEnabled(true);
-            }
-            m_pendingScenePos.remove(path);
-            rememberItemState(existing);
-        }
+        applyPendingBindScenePos(existing, bound);
         if (bound.id != kInvalidSessionImageId) {
             // Decode must not rewrite filmstrip (sessionAppearanceChanged).
             if (m_pendingSelectSessionIds.remove(bound.id)) {
@@ -1395,12 +1363,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         }
     }
 
-    int pendingBinds = 0;
-    for (const PendingSessionBind &b : m_pendingSessionBinds) {
-        if (b.path == path) {
-            ++pendingBinds;
-        }
-    }
+    const int pendingBinds = countPendingSessionBinds(path);
 
     bool sizeChanged = false;
     int have = 0;
@@ -1508,17 +1471,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             item->setItemOpacity(1.0);
         } else if (haveBound && bound.hasScenePos) {
             // Explicit drop: place at the drop point (new placement).
-            item->setGalleryCellSize({});
-            item->setPos(bound.scenePos);
-            item->setItemScale(1.0);
-            item->setItemRotation(0.0);
-            item->setItemShear(0.0);
-            item->setItemOpacity(1.0);
-            item->setStackZ(m_items.size() - 1);
-            if (isWorkspaceMode()) {
-                item->setInteractive(true);
-                item->setScaleHandlesEnabled(true);
-            }
+            applyPendingBindScenePos(item, bound);
             m_pendingScenePos.remove(path);
             rememberItemState(item);
         } else if (haveBound && bound.id != kInvalidSessionImageId

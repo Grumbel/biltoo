@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-597-pending-session-bind-helpers.** LoadAdd bind claim helpers.
+Prior: **596**.
+
+### Change
+- `countPendingSessionBinds` / `purgeSatisfiedPendingBinds` / `takePendingSessionBind`
+- `applyPendingBindScenePos` — shared drop placement
+- LoadAdd uses these instead of duplicated FIFO / scene-pos blocks
+
+### Done criteria
+- [x] Pending bind lifecycle is named methods
+- [x] Bundle **597**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-596-path-order-occurrences.** pathOrderOccurrences helper.
 Prior: **595**.
 
