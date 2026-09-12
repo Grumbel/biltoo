@@ -128,4 +128,50 @@ struct WorkspaceItemState {
     }
 };
 
+/**
+ * Per-path Gallery soft/display ladder bookkeeping (host side).
+ * Pixels themselves live in ImageCache / ImageItem — this is only policy state.
+ *
+ * have       — long edge of soft pixels known for the path (0 = none)
+ * want       — last computed target ladder step from visibility + zoom
+ * inflight   — soft edge currently requested (0 = idle); at most one per path
+ * fullInflight — native ImageLoader::load in flight
+ * gaveUpWant — highest want finished without ~90% delivery (anti-storm)
+ * failed     — permanent hard failure for this path
+ */
+struct GallerySoftState {
+    int have = 0;
+    int want = 0;
+    int inflight = 0;
+    bool fullInflight = false;
+    int gaveUpWant = 0;
+    bool failed = false;
+    qint64 inflightSinceMs = 0;
+
+    /**
+     * True when the decode window should enqueue more soft work for this path.
+     * Pure policy — no I/O.
+     *
+     * @param anyBlank  at least one live tile for the path has no display pixels
+     * @param anyFull   a tile already holds full (non-soft) decoded pixels
+     */
+    bool needsSoftSchedule(int wantEdge, bool anyBlank, bool anyFull) const
+    {
+        if (failed || anyFull) {
+            return false;
+        }
+        if (have >= wantEdge && !anyBlank) {
+            return false;
+        }
+        if (gaveUpWant >= wantEdge && !anyBlank) {
+            return false;
+        }
+        // Soft already climbing and tiles show something — wait for delivery.
+        if (inflight > 0 && have > 0 && !anyBlank) {
+            return false;
+        }
+        return true;
+    }
+};
+
 #endif // IMAGEVIEW_TYPES_H

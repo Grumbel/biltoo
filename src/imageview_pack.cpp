@@ -163,16 +163,9 @@ void ImageView::updateGalleryDecodeWindow()
         }
 
         GallerySoftState &st = m_gallerySoft[path];
-        if (st.failed) {
-            continue;
-        }
-
         const bool anyFull = item->hasDecodedPixels();
         const bool anyBlank = !item->hasDisplayPixels();
         st.have = qMax(st.have, item->displayPixelLongEdge());
-        if (anyFull) {
-            continue;
-        }
 
         // O(1) want from this item — was galleryWantEdgeForPath O(n) per path.
         int want = filmEdge;
@@ -182,13 +175,7 @@ void ImageView::updateGalleryDecodeWindow()
         }
         st.want = want;
 
-        if (st.have >= want && !anyBlank) {
-            continue;
-        }
-        if (st.gaveUpWant >= want && !anyBlank) {
-            continue;
-        }
-        if (st.inflight > 0 && st.have > 0 && !anyBlank) {
+        if (!st.needsSoftSchedule(want, anyBlank, anyFull)) {
             continue;
         }
 

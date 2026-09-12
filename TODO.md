@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-583-gallery-soft-state-policy.** GallerySoftState + needsSoftSchedule.
+Prior: **582**.
+
+### Change
+- Move `GallerySoftState` to `imageview_types.h` (data + pure policy method)
+- `needsSoftSchedule(want, anyBlank, anyFull)` consolidates the decode-window
+  skip ladder (failed / full / adequate / gave-up / inflight)
+- `updateGalleryDecodeWindow` pass-2 candidate selection uses that helper
+
+### Done criteria
+- [x] Soft schedule policy is one pure method, not four scattered ifs
+- [x] Bundle **583**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-582-slideshow-preload-pure-helpers.** Preload helpers + ImageCache LRU.
 Prior: **581**.
 

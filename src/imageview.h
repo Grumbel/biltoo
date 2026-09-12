@@ -1417,25 +1417,7 @@ private:
     std::atomic<quint64> m_loadGeneration{0};
     /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
     QHash<QString, int> m_pendingWorkspacePaths;
-    /**
-     * Per-path Gallery soft-thumb state (see updateGalleryDecodeWindow).
-     *
-     * have      — long edge of soft pixels on the item (0 = none)
-     * want      — last computed target ladder step from visibility + zoom
-     * inflight  — edge currently requested (0 = idle); at most one per path
-     * gaveUpWant— highest want we finished without ~90% delivery; do not retry
-     *             the same want (stops schedulePixels/ladderReady storms)
-     * failed    — permanent hard failure
-     */
-    struct GallerySoftState {
-        int have = 0;
-        int want = 0;
-        int inflight = 0;       // soft ladder edge in flight
-        bool fullInflight = false; // ImageLoader::load (native) in flight
-        int gaveUpWant = 0;
-        bool failed = false;
-        qint64 inflightSinceMs = 0; // QDateTime::currentMSecsSinceEpoch when inflight set
-    };
+    /** Per-path soft/display policy — GallerySoftState in imageview_types.h. */
     QHash<QString, GallerySoftState> m_gallerySoft;
 
     int gallerySoftInflightCount() const;
