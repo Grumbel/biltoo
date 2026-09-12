@@ -1372,28 +1372,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         }
     }
 
-    // Publish interest for the visible filmstrip window (thumtoo ≥167).
-    {
-        QStringList near;
-        QStringList speculative;
-        near.reserve(hi - lo);
-        for (int i = lo; i < hi; ++i) {
-            if (i >= 0 && i < m_files.size()) {
-                near.append(m_files.at(i));
-            }
-        }
-        // Speculative band: one overscan block beyond the scheduled window.
-        const int specPad = qMax(8, (hi - lo) / 2);
-        for (int i = qMax(0, lo - specPad); i < lo; ++i) {
-            speculative.append(m_files.at(i));
-        }
-        for (int i = hi; i < qMin(n, hi + specPad); ++i) {
-            speculative.append(m_files.at(i));
-        }
-        const int nearEdge = qMin(decodeSize, ThumtooCache::kBatchOverviewEdge);
-        const int specEdge = qMin(decodeSize, ThumtooCache::kGalleryLadderEdge);
-        (void)ThumtooCache::setInterest(near, speculative, nearEdge, specEdge);
-    }
+    // Filmstrip: soft schedulePixels only — Gallery owns setInterest.
 
     // Pool jobs only — thumtoo pixel concurrency is separate (kMaxConcurrentPixelJobs).
     // Default 24: 12 left gaps when soft misses parked many rows in AwaitLadder

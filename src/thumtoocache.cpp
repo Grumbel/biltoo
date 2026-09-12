@@ -179,6 +179,7 @@ std::vector<PendingPixels> g_pixelsQueue;
 QSet<QString> g_pixelsSettled;
 /** path → last PixelSource int from ladderProvenance. */
 QHash<QString, int> g_lastPixelSource;
+QString g_lastInterestKey;
 constexpr int kMaxPixelQueue = 48;
 
 #ifdef BILTOO_HAVE_THUMTOO
@@ -839,7 +840,13 @@ void startNextPixelJobsUnlocked()
                 const int got = decoded.isNull()
                                     ? 0
                                     : qMax(decoded.width(), decoded.height());
-                const bool ok = got >= (edge * 9) / 10;
+                // Embedded thumbs are often ~256 and cannot grow without a full
+                // decode — treat any successful payload as settled for this edge
+                // so we do not spin schedulePixels forever (ok=0 loops).
+                constexpr int kEmbedded = 2; // thumtoo::PixelSource::Embedded
+                const bool ok = got >= (edge * 9) / 10
+                    || (got > 0 && source == kEmbedded)
+                    || (got > 0 && got >= edge / 2);
                 if (ok) {
                     g_pixelsSettled.insert(inflightKey);
                 }
@@ -1155,6 +1162,35 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
 #ifdef BILTOO_HAVE_THUMTOO
 #if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
     init();
+    QString key;
+    key.reserve(256);
+    key += QString::number(nearEdge);
+    key += QLatin1Char('|');
+    key += QString::number(speculativeEdge);
+    key += QLatin1Char('|');
+    key += QString::number(primaryEdge);
+    key += QLatin1Char('#');
+    for (const QString &p : pathsPrimary) {
+        key += p;
+        key += QLatin1Char(';');
+    }
+    key += QLatin1Char('#');
+    for (const QString &p : pathsNear) {
+        key += p;
+        key += QLatin1Char(';');
+    }
+    key += QLatin1Char('#');
+    for (const QString &p : pathsSpeculative) {
+        key += p;
+        key += QLatin1Char(';');
+    }
+    {
+        std::lock_guard lock(g_mu);
+        if (key == g_lastInterestKey) {
+            return 0;
+        }
+        g_lastInterestKey = key;
+    }
     thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);
@@ -1219,6 +1255,14 @@ quint64 setPrimaryInterest(const QString &path, int edge)
         return 0;
     }
     init();
+    const QString key = QStringLiteral("P|") + QString::number(edge) + QLatin1Char('|') + path;
+    {
+        std::lock_guard lock(g_mu);
+        if (key == g_lastInterestKey) {
+            return 0;
+        }
+        g_lastInterestKey = key;
+    }
     thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);

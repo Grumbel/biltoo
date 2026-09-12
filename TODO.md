@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-500-embedded-soft-settle.** Accept Embedded ~256 as settled soft; stop 512 spin.
+Prior: **497** on github (+ local 498/499 ideas folded in).
+
+### Root cause
+request_raster returned Embedded 171×256 for edge=512 with ok=0 → never
+g_pixelsSettled → same paths re-queued forever while need=1024 have=256.
+
+### Change
+- Settle schedulePixels when Embedded or got ≥ edge/2
+- Gallery: soft placeholder ≥128 is enough (no further host soft request)
+- Gallery setInterest soft-only, no Primary; stable geometry interest
+- Filmstrip does not setInterest
+
+### Done criteria
+- [x] Bundle **500**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-497-interest-owns-overview.** Filmstrip/ImageLoader skip overview when interest owns it.
 Prior: **496**. Companion: **thumtoo-174**.
 

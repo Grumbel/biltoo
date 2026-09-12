@@ -49,6 +49,8 @@ void ImageView::updateGalleryDecodeWindow()
 
     QStringList visible;
     QStringList rest;
+    QStringList interestNear;
+    QStringList interestRest;
     QSet<QString> seen;
 
     for (ImageItem *item : m_items) {
@@ -61,26 +63,34 @@ void ImageView::updateGalleryDecodeWindow()
         }
         seen.insert(path);
 
+        const QRectF tile = item->contentSceneRect();
+        if (tile.isNull() || !tile.isValid()) {
+            continue;
+        }
+        const bool onScreen = tile.intersects(sceneVisible);
+        if (onScreen) {
+            interestNear.append(path);
+        } else {
+            interestRest.append(path);
+        }
+
         GallerySoftState &st = m_gallerySoft[path];
         if (st.failed || st.inflight > 0) {
             continue;
         }
 
-        // Sync have from the item (preview or full).
         st.have = item->displayPixelLongEdge();
         if (item->hasDecodedPixels()) {
-            // Full decode already on the item — soft ladder not needed.
             st.have = qMax(st.have, item->displayPixelLongEdge());
             continue;
         }
 
-        const QRectF tile = item->contentSceneRect();
-        if (tile.isNull() || !tile.isValid()) {
-            continue; // pre-pack
-        }
-
         const int want = galleryWantEdgeForPath(path, sceneVisible);
         st.want = want;
+        // Any soft placeholder (≥128) is enough for gallery; HQ later.
+        if (st.have >= 128) {
+            continue;
+        }
         if (st.have >= want) {
             continue;
         }
@@ -88,50 +98,22 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
 
-        if (tile.intersects(sceneVisible)) {
+        if (onScreen) {
             visible.append(path);
         } else {
             rest.append(path);
         }
     }
 
-    // Tell thumtoo the visible window so its queue matches the viewport.
-    // Primary = selection focus (anchor / first selected); rest of visible = Near.
+    // Gallery interest: soft only, no Primary FocusFull (solid archives).
     {
-        QStringList primary;
-        QSet<QString> primarySeen;
-        auto addPrimary = [&](const QString &path) {
-            if (path.isEmpty() || primarySeen.contains(path)) {
-                return;
-            }
-            primarySeen.insert(path);
-            primary.append(path);
-        };
-        if (ImageItem *anchor = m_gallery.selectionAnchor()) {
-            addPrimary(anchor->path());
-        }
-        for (QGraphicsItem *gi : m_scene->selectedItems()) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                addPrimary(ii->path());
-            }
-        }
-        // Only keep first as Primary (FocusFull cap is 1); others stay Near.
-        QStringList primaryOne;
-        if (!primary.isEmpty()) {
-            primaryOne.append(primary.first());
-        }
-        QStringList near = visible;
-        if (!primaryOne.isEmpty()) {
-            near.removeAll(primaryOne.first());
-        }
-        int nearEdge = ThumtooCache::kGalleryLadderEdge;
-        for (const QString &path : visible) {
-            nearEdge = qMax(nearEdge, galleryWantEdgeForPath(path, sceneVisible));
-        }
-        nearEdge = qMin(nearEdge, ThumtooCache::kBatchOverviewEdge);
-        const int specEdge = ThumtooCache::kGalleryLadderEdge;
-        (void)ThumtooCache::setInterest(near, rest, nearEdge, specEdge, primaryOne,
-                                        ThumtooCache::kBatchOverviewEdge);
+        const int softEdge = ThumtooCache::kGalleryLadderEdge;
+        QStringList near = interestNear;
+        near.sort();
+        QStringList speculative = interestRest;
+        speculative.sort();
+        (void)ThumtooCache::setInterest(near, speculative, softEdge, softEdge,
+                                        /*pathsPrimary=*/{}, /*primaryEdge=*/0);
     }
 
     for (const QString &path : visible) {
