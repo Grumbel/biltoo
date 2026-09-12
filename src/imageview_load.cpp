@@ -155,7 +155,25 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     if (app) {
         appearance = *app;
     }
-    const QImage display = SessionAppearance::materializeDisplay(pixels, appearance, kind);
+    // Gallery soft paint budget: do not attach multi-megapixel soft when the
+    // on-screen cell only needs ~256–512. Full soft stays in ImageCache for
+    // zoom-in; soft.have is tracked separately so we do not re-climb.
+    QImage pixelsForDisplay = pixels;
+    if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
+        const int have = qMax(pixels.width(), pixels.height());
+        const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        if (need > 0 && have > need * 2) {
+            const int target =
+                qMax(need, ThumtooCache::kFilmstripLadderEdge);
+            if (have > target) {
+                pixelsForDisplay = pixels.scaled(
+                    target, target, Qt::KeepAspectRatio,
+                    Qt::FastTransformation);
+            }
+        }
+    }
+    const QImage display =
+        SessionAppearance::materializeDisplay(pixelsForDisplay, appearance, kind);
 
     if (kind == SessionAppearance::PixelKind::FullSource) {
         item->setSourceImage(display);

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-526-gallery-display-paint-budget.** Downsample soft for paint when need ≪ have.
+Prior: **525**.
+
+### Changes
+- `installDisplayPixels` (Gallery SoftPreview): if have > 2× on-screen need, scale
+  to need with FastTransformation before attach (ImageCache keeps full soft)
+- Pass 1b in `updateGalleryDecodeWindow`: zoom-out shrink / zoom-in promote from
+  ImageCache without re-decode; `soft.have` unchanged so no re-climb
+- Quality HUD: `Preview · show 256px · need 256px · have 1024px`
+
+### Done criteria
+- [x] Bundle **526**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-525-gui-perf-fps.** FPS + decode-window timing (BILTOO_PERF / THUMTOO_DEBUG).
 Prior: **524**.
 

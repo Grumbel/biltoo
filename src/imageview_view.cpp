@@ -2902,16 +2902,31 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     if (edge <= 0) {
         return tr("Loading…");
     }
+    QString tier;
     if (edge >= ThumtooCache::kBatchOverviewEdge) {
-        return tr("High quality");
+        tier = tr("High quality");
+    } else if (edge >= ThumtooCache::kGalleryLadderEdge) {
+        tier = tr("Preview");
+    } else if (edge >= ThumtooCache::kFilmstripLadderEdge) {
+        tier = tr("Thumbnail");
+    } else {
+        tier = tr("Quick preview");
     }
-    if (edge >= ThumtooCache::kGalleryLadderEdge) {
-        return tr("Preview");
+    if (isGalleryMode()) {
+        const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        const auto it = m_gallerySoft.constFind(item->path());
+        const int have = (it != m_gallerySoft.cend())
+            ? qMax(it->have, edge)
+            : edge;
+        if (need > 0 && have > 0) {
+            return tr("%1 · show %2px · need %3px · have %4px")
+                .arg(tier)
+                .arg(edge)
+                .arg(need)
+                .arg(have);
+        }
     }
-    if (edge >= ThumtooCache::kFilmstripLadderEdge) {
-        return tr("Thumbnail");
-    }
-    return tr("Quick preview");
+    return tier;
 }
 
 QString ImageView::statusText() const

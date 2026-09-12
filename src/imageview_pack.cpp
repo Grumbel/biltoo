@@ -116,6 +116,64 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // ------------------------------------------------------------------
+    // Pass 1b: match display resolution to on-screen need (paint budget).
+    // soft.have stays high; only the QImage attached to the item changes.
+    // ------------------------------------------------------------------
+    for (ImageItem *item : m_items) {
+        if (!item || item->path().isEmpty() || item->hasDecodedPixels()) {
+            continue;
+        }
+        if (!item->hasDisplayPixels()) {
+            continue;
+        }
+        const QString &path = item->path();
+        const QRectF tile = item->contentSceneRect();
+        if (tile.isNull() || !tile.isValid()
+            || !tile.intersects(sceneVisible)) {
+            continue;
+        }
+        const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        const int shown = item->displayPixelLongEdge();
+        if (need <= 0) {
+            continue;
+        }
+        GallerySoftState &st = m_gallerySoft[path];
+        // Zoomed out: shrink paint bitmap (keep st.have).
+        if (shown > need * 2) {
+            QImage src = ImageCache::get(path);
+            if (src.isNull()) {
+                continue;
+            }
+            const int target = qMax(need, ThumtooCache::kFilmstripLadderEdge);
+            installDisplayPixels(item, src,
+                                 SessionAppearance::PixelKind::SoftPreview,
+                                 item->sessionId());
+            // installDisplayPixels applies the paint budget scale.
+            Q_UNUSED(target);
+            item->update();
+            continue;
+        }
+        // Zoomed in: promote from ImageCache when we already decoded larger soft.
+        if (shown < need * 9 / 10 && st.have >= need) {
+            QImage src = ImageCache::get(path, need);
+            if (src.isNull()) {
+                src = ImageCache::get(path);
+            }
+            if (src.isNull()) {
+                continue;
+            }
+            const int srcEdge = qMax(src.width(), src.height());
+            if (srcEdge <= shown) {
+                continue;
+            }
+            installDisplayPixels(item, src,
+                                 SessionAppearance::PixelKind::SoftPreview,
+                                 item->sessionId());
+            item->update();
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Pass 2: schedule SoftOnly / overview climb for paths that still need it.
     // ------------------------------------------------------------------
     QStringList visible;
