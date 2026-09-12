@@ -2,6 +2,35 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-551-slideshow-hold-nav-fixes.** Clear quality hold on nav; small-image adequate; atlas skip.
+Prior: **550**.
+
+### Audit findings (post-550)
+1. Quality hold left `m_slideshowQualityHoldWallMs` sticky across user ←/→;
+   `onSlideshowUserNavigated` resets `pausedAccum` then the next tick re-pinned
+   the **old** wall → wrong phase / stuck freeze.
+2. Small natives (long edge < 70% of viewport target) held the full 1.5s forever.
+3. `ensureMotionAtlas` still scaled every key on the GUI thread under nav-hot.
+4. Playing + user nav did not force pure phase to the new path after arm (one-tick lag).
+
+### Changes
+- Clear quality hold in `onSlideshowUserNavigated`, `armSlideshowAdvanceTimer`, seek
+- `slideshowPixelsAdequate`: near-native known size counts as adequate
+- Skip `ensureMotionAtlas` while `slideshowNavHot`
+- Force `setSlideshowPhase(current)` after arm on user nav while playing
+
+### Done criteria
+- [x] User ←/→ never re-enters stale quality hold wall
+- [x] Small images do not 1.5s-stall every slide
+- [x] No atlas scale per key under nav-hot
+- [x] Bundle **551**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-550-slideshow-screen-res-gate.** Screen-sized pixels; quality hold; ZoomBlur off on nav.
 Prior: **549**.
 

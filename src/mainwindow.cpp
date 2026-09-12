@@ -1522,6 +1522,8 @@ void MainWindow::armSlideshowAdvanceTimer()
     m_slideshowPausedAccumMs = 0;
     m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
+    m_slideshowQualityHold = false;
+    m_slideshowQualityHoldWallMs = 0;
     m_slideshowClock.start();
     m_slideshowClockRunning = true;
 

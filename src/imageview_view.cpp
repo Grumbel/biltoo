@@ -1774,21 +1774,32 @@ bool ImageView::slideshowPixelsAdequate(const QString &path) const
     auto longEdge = [](const QImage &img) -> int {
         return img.isNull() ? 0 : qMax(img.width(), img.height());
     };
-    if (longEdge(slideshowFullIfReady(path)) >= need) {
+    auto bestHave = [&]() -> int {
+        int h = longEdge(slideshowFullIfReady(path));
+        if (path == m_ssFromPath) {
+            h = qMax(h, longEdge(m_ssFromImage));
+            h = qMax(h, longEdge(m_dwellSourceImage));
+        }
+        if (path == m_ssToPath) {
+            h = qMax(h, longEdge(m_ssToImage));
+        }
+        h = qMax(h, longEdge(ImageCache::get(path, target)));
+        // Soft ladder may already be present at 512 while target is higher.
+        h = qMax(h, longEdge(ImageCache::get(path, ThumtooCache::kGalleryLadderEdge)));
+        return h;
+    };
+    const int have = bestHave();
+    if (have >= need) {
         return true;
     }
-    if (path == m_ssFromPath && longEdge(m_ssFromImage) >= need) {
-        return true;
-    }
-    if (path == m_ssToPath && longEdge(m_ssToImage) >= need) {
-        return true;
-    }
-    if (path == m_ssFromPath && longEdge(m_dwellSourceImage) >= need) {
-        return true;
-    }
-    const QImage cached = ImageCache::get(path, target);
-    if (longEdge(cached) >= need) {
-        return true;
+    // Small sources: cannot climb past native. Known size from path cache only
+    // (no I/O). If we already hold ~native pixels, treat as adequate.
+    const auto szIt = m_imageSizeByPath.constFind(path);
+    if (szIt != m_imageSizeByPath.cend()) {
+        const int nativeLong = qMax(szIt->width(), szIt->height());
+        if (nativeLong > 0 && have >= nativeLong * 9 / 10) {
+            return true;
+        }
     }
     return false;
 }
@@ -2056,6 +2067,11 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
                                   qreal *atlasScale, int *atlasVw, int *atlasVh) const
 {
     if (!atlas || !atlasScale || !atlasVw || !atlasVh || image.isNull() || !viewport()) {
+        return;
+    }
+    // Rapid keyboard flip: skip atlas rebuild; paintMotionCover falls back to
+    // drawImage. Avoids a FastTransformation scale per key on the GUI thread.
+    if (m_slideshowNavHot) {
         return;
     }
     const int vw = qMax(1, viewport()->width());
