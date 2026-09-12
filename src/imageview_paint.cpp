@@ -232,9 +232,8 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             paintMotionCover(&painter, fromImg, fromT,
                              m_motionBiasA, m_motionBiasB, 0);
         }
-        // Pure phase owns the slideshow viewport — do not fall through to
-        // underlay tiles, snapshot overlays, or the retired live dual-blit path.
-        return;
+        // Pure phase painted the slide. Fall through so HUD / seekbar / pause
+        // cues still draw (return here used to kill the entire overlay pass).
     }
 
     // Empty session: invite the user to open or drop images.

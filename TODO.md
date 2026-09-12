@@ -2,6 +2,33 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-557-slideshow-hud-after-phase.** Fix pure-phase overlay early-return that skipped HUD.
+Prior: **556**.
+
+### Verification (556 + this fix)
+- Forbidden residual live/soft/preload/handoff/quality-hold symbols: **0** (code lines)
+- All key pure-phase APIs present; brace balance 0 across slideshow TUs
+- ZoomBlur: keep lastGood on miss; nav-hot skips schedule only
+- Raster map + aspect camera + pure clock path audited
+- **Bug found:** tip 555 `return` after pure-phase composite skipped HUD / seekbar / pause cues
+
+### Fix
+- Remove early `return` after pure-phase paint; fall through to empty-session + HUD overlay
+
+### Still open
+- Runtime test on real hardware
+- Optional pure camera helper + tests
+
+### Done criteria
+- [x] HUD draws during slideshow again
+- [x] Bundle **557**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-556-slideshow-delete-live-state.** Remove retired live/snapshot members and APIs.
 Prior: **555**.
 
