@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-697-slideshow-smooth-atlas.** Smooth atlas scale; smooth soft drawImage fallback.
+Prior: **696**.
+
+### Problem
+Slideshow looked nearest-neighbour: atlas rebuild used `Qt::FastTransformation`
+(blocky soft upscales), and the no-atlas paint path forced
+`SmoothPixmapTransform=false`.
+
+### Change
+- Pool atlas scale: always `SmoothTransformation`
+- `ensureMotionAtlas`: smooth when upscaling
+- `paintMotionCover` drawImage fallback: smooth unless sample is huge
+
+### Done criteria
+- [x] Bundle **697**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-696-slideshow-no-prefercache-promote-atlas.** No LoadReplace during show; promote keeps to-atlas.
 Prior: **695**.
 

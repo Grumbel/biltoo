@@ -1329,8 +1329,11 @@ void ImageView::requestSlideshowAtlas(SlideshowAtlasKind kind)
             if (src.isNull()) {
                 return;
             }
+            // Always Smooth on the pool thread. FastTransformation upscales
+            // soft samples to nearest-neighbour garbage that stays on screen
+            // for the whole dwell when coverage skips a later rebuild.
             QImage scaled = src.scaled(longCap, longCap, Qt::KeepAspectRatio,
-                                       Qt::FastTransformation);
+                                       Qt::SmoothTransformation);
             ImageView *view = guard.data();
             if (scaled.isNull() || !view) {
                 return;
@@ -2085,10 +2088,13 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
     if (dwellAtlasCoversSource(*atlas, *atlasScale, *atlasVw, *atlasVh, params, image)) {
         return;
     }
+    const int srcLong = qMax(image.width(), image.height());
+    // Upscale must be smooth; Fast on soft→viewport is nearest-neighbour mush.
+    const auto mode = (srcLong >= params.longCap)
+                          ? Qt::FastTransformation
+                          : Qt::SmoothTransformation;
     QImage scaled = image.scaled(params.longCap, params.longCap, Qt::KeepAspectRatio,
-                                 m_slideshowProgressActive
-                                     ? Qt::FastTransformation
-                                     : Qt::SmoothTransformation);
+                                 mode);
     if (scaled.isNull()) {
         *atlas = QPixmap();
         *atlasScale = 0.0;
@@ -2597,8 +2603,12 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter->drawPixmap(dest, *atlas, atlas->rect());
     } else {
-        // Full sample → dest every frame: never Smooth (multi-MP hitch).
-        painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+        // No atlas yet: smooth when the sample is in the display budget so soft
+        // placeholders are not nearest-neighbour. Only skip Smooth for huge
+        // native samples (rare during slideshow — atlas should cover those).
+        const int srcLong = qMax(image.width(), image.height());
+        const int budget = qMax(vw, vh) * 2;
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, srcLong <= budget);
         painter->drawImage(dest, image);
     }
 }
