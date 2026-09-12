@@ -19,7 +19,8 @@
 
 ## Residual
 
-- Pass 2 of `updateGalleryDecodeWindow` still O(n) over session (debounced).
+- Pass 2 still walks all items for on-screen/blank detection (debounced); off-screen
+  interest/`rest` lists are capped during the scan (**529**).
 - setInterest still builds interest vectors on GUI (URI cache hit after warm).
 - `fillImageAnalysis` still on GUI when decodedHint is present (CPU only).
 

@@ -2,6 +2,23 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-529-gallery-pass2-caps.** Cap pass-2 off-screen lists; fix perf -Wformat.
+Prior: **528**.
+
+### Changes
+- Pass 2: collect at most 12 speculative interest paths and a small idle `rest`
+  during the scan (no allocate-all-then-trim)
+- Perf fprintf: `static_cast<int>(m_items.size())` for `%d` (-Wformat)
+
+### Done criteria
+- [x] Bundle **529**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-528-gui-audit-g3468.** GUI_THREAD_AUDIT G3 G4 G6 G8.
 Prior: **527**.
 

@@ -187,6 +187,10 @@ void ImageView::updateGalleryDecodeWindow()
     QStringList interestNear;
     QStringList interestRest;
     QSet<QString> seen;
+    // Cap off-screen lists while scanning so large sessions do not allocate
+    // thousands of path strings only to trim later (residual pass-2 cost).
+    constexpr int kMaxSpeculative = 12;
+    const int kMaxRestCandidates = kMaxIdleGalleryDecodes * 4;
 
     for (ImageItem *item : m_items) {
         if (!item) {
@@ -204,7 +208,7 @@ void ImageView::updateGalleryDecodeWindow()
         const bool onScreen = tileOk && tile.intersects(sceneVisible);
         if (onScreen) {
             interestNear.append(path);
-        } else if (tileOk) {
+        } else if (tileOk && interestRest.size() < kMaxSpeculative) {
             interestRest.append(path);
         }
 
@@ -236,7 +240,7 @@ void ImageView::updateGalleryDecodeWindow()
         // Prefer on-screen; blank tiles without a valid rect still need SoftOnly.
         if (onScreen || anyBlank) {
             visible.append(path);
-        } else {
+        } else if (rest.size() < kMaxRestCandidates) {
             rest.append(path);
         }
     }
@@ -246,18 +250,13 @@ void ImageView::updateGalleryDecodeWindow()
         scheduleGalleryDecode(path);
     }
 
-    // Interest: soft-band only. Cap speculative so we do not convert/hash every
-    // off-screen path in the session on each scroll (GUI jank on large RARs).
+    // Interest: soft-band only. Speculative already capped during the scan.
     {
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
-        constexpr int kMaxSpeculative = 12;
         QStringList near = interestNear;
         near.sort();
         QStringList speculative = interestRest;
         speculative.sort();
-        if (speculative.size() > kMaxSpeculative) {
-            speculative = speculative.mid(0, kMaxSpeculative);
-        }
         (void)ThumtooCache::setInterest(near, speculative, softEdge, softEdge,
                                         /*pathsPrimary=*/{}, /*primaryEdge=*/0);
     }
@@ -289,7 +288,7 @@ void ImageView::updateGalleryDecodeWindow()
                     "(max %.1f ms runs=%d items=%d)\n",
                     m_perfLastDecodeWindowUs / 1000.0,
                     m_perfMaxDecodeWindowUs / 1000.0, m_perfDecodeWindowRuns,
-                    m_items.size());
+                    static_cast<int>(m_items.size()));
         }
     }
 }
