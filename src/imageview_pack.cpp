@@ -221,14 +221,23 @@ void ImageView::updateGalleryDecodeWindow()
         phaseTimer.restart();
     }
 
-    // Interest: soft-band only.
+    // Interest: near edge tracks max on-screen want (capped at overview 1024);
+    // speculative stays soft-band. Soft-only interest froze tiles at 512px.
     {
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
+        const int ovCap = ThumtooCache::kBatchOverviewEdge;
+        int nearEdge = softEdge;
+        for (const QString &p : interestNear) {
+            const auto it = m_gallerySoft.constFind(p);
+            if (it != m_gallerySoft.cend() && it->want > 0) {
+                nearEdge = qMax(nearEdge, qMin(it->want, ovCap));
+            }
+        }
         QStringList near = interestNear;
         near.sort();
         QStringList speculative = interestRest;
         speculative.sort();
-        (void)ThumtooCache::setInterest(near, speculative, softEdge, softEdge,
+        (void)ThumtooCache::setInterest(near, speculative, nearEdge, softEdge,
                                         /*pathsPrimary=*/{}, /*primaryEdge=*/0);
     }
     if (m_perfEnabled) {

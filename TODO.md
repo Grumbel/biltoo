@@ -2,6 +2,40 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-537-gallery-overview-climb.** Climb past 512 via overview (≤1024).
+Prior: **536**.
+
+### User report
+Stuck at show/have=512 while need=1024 (and 2048 on zoom). Never requested higher.
+
+### Root cause
+533 softCap stopped PreferCache at 512 and set `gaveUpWant=want`, so overview
+never ran. setInterest near edge was always 512.
+
+### Thumtoo limits (biltoo constants)
+- Soft durable max: **512** (`kGalleryLadderEdge`)
+- FastBatch overview max: **1024** (`kBatchOverviewEdge`)
+- **2048** is Image-mode ladder / full decode — not Gallery soft/overview
+
+### Changes
+- After soft 512, `scheduleOverviewPixels` for min(want, 1024)
+- setInterest near edge = max on-screen want capped at 1024
+- Do not gaveUpWant-block overview when soft is already in hand
+
+### JXL note
+Overview/soft still arrive as compressed ladder payloads decoded via
+`loadThumbnailFromBytes` (often JXL). Raw-pixel handoff is a thumtoo/client
+API change — not addressed here.
+
+### Done criteria
+- [x] Bundle **537**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-536-fix-softonly-fprintf.** Fix broken string in 535 fprintf.
 Prior: **535**.
 

@@ -561,60 +561,76 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         && (want > st.gaveUpWant || have >= st.gaveUpWant * 9 / 10)) {
         st.gaveUpWant = 0;
     }
-    // Soft path only climbs to kGalleryLadderEdge; stop when that edge is settled
-    // even if have is still 0 (failed decode) so we do not soft-request forever.
-    {
-        const int softTarget = qMin(want, ThumtooCache::kGalleryLadderEdge);
-        if (st.gaveUpWant >= softTarget) {
-            return;
-        }
+    // Soft PreferCache stop: only when still below soft max and that edge gave up.
+    // Do not treat gaveUpWant>=soft as blocking overview (1024) climb.
+    if (have < ThumtooCache::kGalleryLadderEdge * 9 / 10
+        && st.gaveUpWant >= qMin(want, ThumtooCache::kGalleryLadderEdge)) {
+        return;
     }
     if (gallerySoftInflightCount() >= galleryDecodeConcurrency()) {
         return;
     }
 
-    // Progressive soft: PreferCache / SoftOnly only up to kGalleryLadderEdge
-    // (512). Requesting 1024 here installed multi-megapixel softs on every tile
-    // via the pool callback and stalled the GUI (need=1024 logs). Overview at
-    // 1024+ is setInterest's job, not host soft install.
+    // PreferCache / SoftOnly only up to kGalleryLadderEdge (512). Higher need
+    // uses scheduleOverviewPixels (FastBatch ≤ kBatchOverviewEdge = 1024).
+    // Thumtoo durable soft max is 512; 2048 is not a soft/overview level — Image
+    // mode full decode owns that. Do not mark gaveUpWant for want>soft when we
+    // still need overview climb (that froze tiles at 512).
     const int softCap = ThumtooCache::kGalleryLadderEdge;
-    const int target = qMin(want, softCap);
-    // Already have the durable soft max — stop PreferCache spin.
-    if (have >= target * 9 / 10) {
-        if (want > softCap) {
-            st.gaveUpWant = qMax(st.gaveUpWant, want);
+    const int ovCap = ThumtooCache::kBatchOverviewEdge;
+    int requestEdge = 0;
+    bool overviewOnly = false;
+
+    if (have < softCap * 9 / 10) {
+        const int target = qMin(want, softCap);
+        const int intermediate = ThumtooCache::prevLadderEdge(target);
+        requestEdge = target;
+        if (intermediate > 0 && have < intermediate * 9 / 10) {
+            requestEdge = intermediate;
         }
+    } else if (want > softCap) {
+        const int ovTarget = qMin(want, ovCap);
+        if (have >= ovTarget * 9 / 10) {
+            // Best Gallery soft/overview; 2048+ needs Image mode.
+            st.gaveUpWant = qMax(st.gaveUpWant, want);
+            return;
+        }
+        requestEdge = ovTarget;
+        overviewOnly = true;
+    } else {
         return;
-    }
-    // Intermediate = previous ladder step under target (1024→512, 512→256, …).
-    const int intermediate = ThumtooCache::prevLadderEdge(target);
-    int requestEdge = target;
-    if (intermediate > 0 && have < intermediate * 9 / 10) {
-        requestEdge = intermediate;
     }
 
     st.inflight = requestEdge;
     st.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
     addPendingWorkspacePath(path);
-    // Progressive: keep climbing while have < want (soft → overview).
-    // Shortfall settle lives in ThumtooCache::g_pixelsSettled / gaveUpWant so
-    // we do not spin the same SoftOnly edge forever when only Embedded exists.
     emit statusChanged();
 
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
         dbg && dbg[0] != '\0' && dbg[0] != '0') {
         fprintf(stderr,
                 "biltoo/gallery: soft request path need=%d have=%d req=%d "
-                "inter=%d gaveUp=%d\n",
-                want, have, requestEdge, intermediate, st.gaveUpWant);
+                "overview=%d gaveUp=%d\n",
+                want, have, requestEdge, overviewOnly ? 1 : 0, st.gaveUpWant);
     }
 
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
-    QThreadPool::globalInstance()->start([guard, path, gen, requestEdge]() {
-        // Soft only — loadThumbnail may schedulePixels once on miss; we never
-        // clear settle / re-queue the same edge in a loop.
-        const QImage preview = ImageLoader::loadThumbnail(path, requestEdge);
+    QThreadPool::globalInstance()->start([guard, path, gen, requestEdge, overviewOnly]() {
+        // Soft: PreferCache via loadThumbnail. Overview: schedule only (ladderReady
+        // installs). Avoid PreferCache 1024 installs that stalled the GUI.
+        QImage preview;
+        if (!overviewOnly) {
+            preview = ImageLoader::loadThumbnail(path, requestEdge);
+        } else if (ThumtooCache::isAvailable()) {
+            if (!ThumtooCache::isPixelsPending(path, requestEdge)) {
+                (void)ThumtooCache::scheduleOverviewPixels(path, requestEdge);
+            }
+            preview = ImageCache::get(path, requestEdge);
+            if (preview.isNull()) {
+                preview = ImageCache::get(path);
+            }
+        }
         if (!guard) {
             return;
         }
@@ -741,14 +757,31 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                            && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
                     const int ov =
                         qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
-                    const bool queued =
-                        ThumtooCache::scheduleOverviewPixels(path, ov);
-                    if (queued) {
+                    if (ThumtooCache::isPixelsPending(path, ov)) {
                         soft.inflight = ov;
                         soft.inflightSinceMs =
                             QDateTime::currentMSecsSinceEpoch();
                     } else {
-                        clearInflight();
+                        const bool queued =
+                            ThumtooCache::scheduleOverviewPixels(path, ov);
+                        if (queued) {
+                            soft.inflight = ov;
+                            soft.inflightSinceMs =
+                                QDateTime::currentMSecsSinceEpoch();
+                        } else {
+                            const QImage hit = ImageCache::get(path, ov);
+                            if (!hit.isNull()) {
+                                host->onImagePreviewLoaded(
+                                    path, hit, gen, static_cast<int>(LoadAdd));
+                                soft.have = qMax(
+                                    soft.have,
+                                    qMax(hit.width(), hit.height()));
+                            }
+                            clearInflight();
+                            if (soft.have < ov * 9 / 10) {
+                                soft.gaveUpWant = qMax(soft.gaveUpWant, ov);
+                            }
+                        }
                     }
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kBatchOverviewEdge) {
