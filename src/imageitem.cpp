@@ -477,10 +477,14 @@ void ImageItem::setGallerySelectable(bool on)
     if (on) {
         setAcceptHoverEvents(true);
         // Gallery: smooth scale (bilinear) so soft thumbs look less blocky when
-        // the view zoom is not 1:1. DeviceCoordinateCache still limits work to
-        // tiles that actually change (selection / new pixels).
+        // the view zoom is not 1:1. Soft tiles stay NoCache — DeviceCoordinate
+        // after soft install used to freeze the empty "⋯" placeholder until hover.
         setTransformationMode(Qt::SmoothTransformation);
-        setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+        if (m_previewPixels && !m_preview.isNull()) {
+            setCacheMode(QGraphicsItem::NoCache);
+        } else {
+            setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+        }
         setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
     } else {
         setSelected(false);

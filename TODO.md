@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-511-gallery-direct-host-soft.** Fourth audit: install soft in decode window.
+Prior: **510**.
+
+### Audit again
+Prior fixes (508–510) still left soft dependent on scheduleGalleryDecode being
+called. If contentSceneRect / inflight / concurrency delayed that call, tiles
+stayed blank while ImageCache already had filmstrip soft.
+
+### Fix
+- **updateGalleryDecodeWindow**: for every blank on-screen tile, install from
+  ImageCache / m_previewByPath **inline** before schedule/inflight logic
+- **setGallerySelectable**: keep NoCache when soft preview is present (do not
+  re-arm DeviceCoordinateCache over empty placeholder)
+
+### Done criteria
+- [x] Host soft applied without scheduleGalleryDecode
+- [x] Bundle **511**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-510-gallery-soft-superseded-install.** Third full audit; fix pool race.
 Prior: **509**.
 

@@ -88,6 +88,30 @@ void ImageView::updateGalleryDecodeWindow()
             continue;
         }
 
+        // Direct host soft install — no schedule/inflight state machine.
+        // Filmstrip soft lives in ImageCache under the same session path; if
+        // the tile is still blank, put it on the item before any SoftOnly work.
+        if (!item->hasDisplayPixels()) {
+            QImage hostSoft = ImageCache::get(path);
+            if (hostSoft.isNull()) {
+                hostSoft = m_previewByPath.value(path);
+            }
+            if (!hostSoft.isNull()) {
+                installDisplayPixels(item, hostSoft,
+                                     SessionAppearance::PixelKind::SoftPreview,
+                                     item->sessionId());
+                st.have = qMax(st.have, qMax(hostSoft.width(), hostSoft.height()));
+                item->update();
+                if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+                    dbg && dbg[0] && dbg[0] != '0') {
+                    fprintf(stderr,
+                            "biltoo/gallery: INSTALL soft path=%s got=%d "
+                            "(decode-window host)\n",
+                            qPrintable(QFileInfo(path).fileName()), st.have);
+                }
+            }
+        }
+
         const int want = galleryWantEdgeForPath(path, sceneVisible);
         st.want = want;
         if (st.have >= want) {
@@ -96,8 +120,8 @@ void ImageView::updateGalleryDecodeWindow()
         if (st.gaveUpWant >= want && st.have > 0) {
             continue;
         }
-        // Blank tile + inflight: still schedule so host ImageCache soft can
-        // install while SoftOnly builds. Soft already showing + inflight: wait.
+        // Blank tile + inflight: still schedule so SoftOnly can complete and
+        // host soft can be retried. Soft showing + inflight: wait on climb.
         if (st.inflight > 0 && st.have > 0) {
             continue;
         }
