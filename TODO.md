@@ -2,6 +2,22 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-505-overview-dup-branch.** Collapse identical overview inflight branches.
+Prior: **504**.
+
+### Change
+- scheduleOverviewPixels + soft.inflight = ov (no duplicated if/else)
+
+### Done criteria
+- [x] -Wduplicated-branches clean
+- [x] Bundle **505**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-504-zoomblur-no-cancel.** Stop invalidating ZoomBlur on phase change.
 Prior: **503**. Companion: **thumtoo-179**.
 

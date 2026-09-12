@@ -585,13 +585,11 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                            && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
                     // FastBatch overview (≤1024) with host ladderReady callback.
                     // setInterest alone has no host cb — must schedule explicitly.
+                    // scheduleOverviewPixels may no-op if already inflight/settled;
+                    // still mark inflight so we wait on ladderReady / settle.
                     const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
-                    if (ThumtooCache::scheduleOverviewPixels(path, ov)) {
-                        soft.inflight = ov;
-                    } else {
-                        // Already inflight/settled — keep waiting on ladderReady.
-                        soft.inflight = ov;
-                    }
+                    (void)ThumtooCache::scheduleOverviewPixels(path, ov);
+                    soft.inflight = ov;
                 } else if (ThumtooCache::isAvailable()
                            && requestEdge > ThumtooCache::kBatchOverviewEdge) {
                     // Above batch overview: durable soft will not grow further.
