@@ -1081,6 +1081,11 @@ public slots:
     /** Fast downscaled stand-in before the full decode arrives. */
     void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role);
+    /**
+     * thumtoo PreferCache / SoftOnly / overview delivery (GUI thread after queue).
+     * Seeds ImageCache; upgrades Image mode, slideshow, and Gallery soft state.
+     */
+    void onLadderReady(const QString &path, int maxEdge, const QImage &image);
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
@@ -1215,6 +1220,13 @@ private:
     void scheduleSlideshowReplaceDecode(const QString &path, quint64 gen, LoadRole role);
     /** Parallel thumbnail + full native decode for classic LoadReplace/LoadAdd. */
     void scheduleClassicImageDecode(const QString &path, quint64 gen, LoadRole role);
+    /**
+     * Image mode: install sharper ladder/PreferCache pixels in place (soft→HQ).
+     * Called from onLadderReady; no-op when full native already covers.
+     */
+    void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
+    /** Gallery soft state + install path for a ladderReady delivery. */
+    void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
     /**
      * Image mode: drop the previous frame and show a loading/provisional tile
      * for @p path immediately (do not wait for the background decode).

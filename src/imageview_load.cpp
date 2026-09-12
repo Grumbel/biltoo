@@ -962,6 +962,153 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     });
 }
 
+void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    // Always seed host soft cache so any mode can install even if this
+    // completion landed before placeholders existed.
+    if (!image.isNull()) {
+        ImageCache::put(path, image);
+    }
+    // PreferCache completion → slideshow pure-phase upgrades from ImageCache.
+    if (m_slideshowProgressActive && !image.isNull()) {
+        onSlideshowRasterReady(path, image);
+    }
+
+    // Image mode: soft→sharp when full ImageLoader::load missed or is still
+    // in flight. ladderReady used to return early for non-Gallery, so PDF /
+    // page / archive PreferCache deliveries left the view stuck on the soft
+    // thumbnail forever.
+    if (isImageMode() && !image.isNull() && !m_slideshowProgressActive) {
+        upgradeImageModeFromLadder(path, maxEdge, image);
+    }
+
+    if (!isGalleryMode()) {
+        return;
+    }
+    applyGalleryLadderReady(path, maxEdge, image);
+}
+
+void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
+                                           const QImage &image)
+{
+    if (!isImageMode() || path.isEmpty() || image.isNull()) {
+        return;
+    }
+    // Only the current classic navigation target.
+    if (path != classicPath()) {
+        return;
+    }
+    ImageItem *cur = targetItem();
+    if (!cur || cur->path() != path) {
+        cur = primaryItem();
+    }
+    if (!cur || cur->path() != path) {
+        return;
+    }
+
+    const int incoming = ImageCache::longEdge(image);
+    if (incoming <= 0) {
+        return;
+    }
+    // Full native already on the item — do not demote.
+    if (cur->hasDecodedPixels() && !cur->shouldUpgradeDisplayTo(incoming)) {
+        return;
+    }
+    // Soft band stays SoftPreview so a later native full decode can still
+    // replace it. PreferCache / overview (≥1024) is display-quality for Image
+    // mode when native load failed (pdfimage, cold page, etc.).
+    const int edge = maxEdge > 0 ? maxEdge : incoming;
+    const bool displayQuality =
+        edge > ThumtooCache::kGalleryLadderEdge
+        || incoming > ThumtooCache::kGalleryLadderEdge;
+    const SessionAppearance::PixelKind kind =
+        displayQuality ? SessionAppearance::PixelKind::FullSource
+                       : SessionAppearance::PixelKind::SoftPreview;
+
+    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+        dbg && dbg[0] && dbg[0] != '0') {
+        fprintf(stderr,
+                "biltoo/image: ladderReady UPGRADE path=%s edge=%d got=%dx%d kind=%s\n",
+                qPrintable(QFileInfo(path).fileName()), edge, image.width(),
+                image.height(),
+                displayQuality ? "FullSource" : "SoftPreview");
+    }
+
+    installDisplayPreservingView(cur, image, kind, kInvalidSessionImageId);
+    if (displayQuality) {
+        m_lastLoadError.clear();
+        rememberSizeFromDecode(path, image);
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
+}
+
+void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
+                                        const QImage &image)
+{
+    if (!isGalleryMode() || path.isEmpty()) {
+        return;
+    }
+    const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;
+    // Worker already decoded `image` — never PreferCache on the GUI thread.
+    const int got = image.isNull() ? 0 : qMax(image.width(), image.height());
+    if (!image.isNull()) {
+        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+            dbg && dbg[0] && dbg[0] != '0') {
+            fprintf(stderr,
+                    "biltoo/gallery: ladderReady INSTALL path=%s edge=%d got=%dx%d\n",
+                    qPrintable(QFileInfo(path).fileName()), edge, image.width(),
+                    image.height());
+        }
+        onImagePreviewLoaded(path, image, 0, static_cast<int>(LoadAdd));
+    } else if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+               dbg && dbg[0] && dbg[0] != '0') {
+        fprintf(stderr, "biltoo/gallery: ladderReady EMPTY path=%s edge=%d\n",
+                qPrintable(QFileInfo(path).fileName()), edge);
+    }
+
+    auto it = m_gallerySoft.find(path);
+    if (it != m_gallerySoft.end()) {
+        GallerySoftState &st = it.value();
+        if (got > 0) {
+            st.have = qMax(st.have, got);
+        }
+        // Soft delivery unblocks even when inflight was a higher display edge.
+        if (st.inflight > 0
+            && (edge >= st.inflight
+                || (got > 0 && edge >= ThumtooCache::kFilmstripLadderEdge))) {
+            st.inflight = 0;
+            st.inflightSinceMs = 0;
+        }
+        if (got >= edge * 9 / 10) {
+            if (st.gaveUpWant <= edge) {
+                st.gaveUpWant = 0;
+            }
+        } else {
+            st.gaveUpWant = qMax(st.gaveUpWant, edge);
+        }
+    }
+
+    // Debounce window rescan — avoid full setInterest on every tile delivery.
+    if (!m_galleryDecodeScrollTimer) {
+        m_galleryDecodeScrollTimer = new QTimer(this);
+        m_galleryDecodeScrollTimer->setSingleShot(true);
+        m_galleryDecodeScrollTimer->setInterval(150);
+        connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
+            if (isGalleryMode()) {
+                updateGalleryDecodeWindow();
+            }
+        });
+    }
+    m_galleryDecodeScrollTimer->start();
+    emit statusChanged();
+}
+
 void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
                                      int role)
 {
@@ -1460,13 +1607,15 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
         return;
     }
     if (image.isNull()) {
-        if (ThumtooCache::isAvailable()
-            && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
-            // Soft miss: schedule ladder; status bar keeps loading until
-            // ladderReady / a later successful load.
+        if (ThumtooCache::isAvailable()) {
+            // Full native miss: PreferCache display ladder so onLadderReady can
+            // upgrade Image mode (soft→HQ). Soft-only schedule left the view
+            // stuck on the 512 stand-in when ladderReady ignored non-Gallery.
             ThumtooCache::scheduleProbe(path);
             ThumtooCache::schedulePixels(
                 path, qMax(ThumtooCache::kGalleryLadderEdge, 512));
+            (void)ThumtooCache::scheduleDisplayPixels(
+                path, ThumtooCache::kImageLadderEdge);
             m_lastLoadError.clear();
         } else {
             m_lastLoadError = path;

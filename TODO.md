@@ -2,6 +2,36 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-643-image-mode-ladder-upgrade.** Image mode soft→HQ via ladderReady.
+Prior: **642**.
+
+### Root cause
+`Bridge::ladderReady` installed Gallery only (`if (!isGalleryMode()) return`).
+Image mode showed soft (512) from `loadThumbnail` / pending tile; when
+`ImageLoader::load` returned null (pdfimage, cold page, PreferCache-only) it
+scheduled soft pixels but the PreferCache completion never upgraded the item.
+
+### Change
+- Extract `onLadderReady` / `upgradeImageModeFromLadder` / `applyGalleryLadderReady`
+- Image mode: install SoftPreview (≤512) or FullSource (> soft max) in place
+- `completeLoadReplace` null: `scheduleDisplayPixels` at `kImageLadderEdge`
+  (any thumtoo path, not only page refs)
+
+### Done criteria
+- [x] Image mode climbs soft→PreferCache without Gallery
+- [x] Gallery path behaviour preserved (soft state + debounced window)
+- [x] Bundle **643**
+
+### Next
+- Further load-path refactors (`scheduleClassicImageDecode` phases)
+- Optional: surface PreferCache progress in status bar for Image mode
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-642-qsize-vexing-parse.** Fix most-vexing-parse in computeMotionCoverDestRect.
 Prior: **641**.
 
