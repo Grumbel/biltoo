@@ -444,20 +444,16 @@ QSize ImageView::probeImageSize(const QString &path) const
 
 void ImageView::rememberImageSize(const QString &path, const QSize &size)
 {
-    if (path.isEmpty() || !size.isValid() || size.width() <= 0 || size.height() <= 0) {
+    if (path.isEmpty() || !isPositiveSize(size)) {
         return;
     }
     // HARD RULE: logical size is identity. Soft / ladder sample dimensions must
     // never replace a known larger size (that made 512px "become" the image).
     const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend()
-        && it->isValid() && it->width() > 0 && it->height() > 0
-        && !isProvisionalImageSize(path)) {
-        const qint64 have = qint64(it->width()) * qint64(it->height());
-        const qint64 incoming = qint64(size.width()) * qint64(size.height());
-        if (have > 0 && incoming * 10 < have * 9) {
-            return;
-        }
+    if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)
+        && !isProvisionalImageSize(path)
+        && isMuchSmallerArea(size, *it)) {
+        return;
     }
     m_imageSizeByPath.insert(path, size);
     m_provisionalSizePaths.remove(path);
@@ -469,8 +465,7 @@ void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
         return;
     }
     // Durable index is authoritative when present.
-    if (const QSize cached = ThumtooCache::cachedSize(path);
-        cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+    if (const QSize cached = ThumtooCache::cachedSize(path); isPositiveSize(cached)) {
         rememberImageSize(path, cached);
         return;
     }
@@ -485,7 +480,7 @@ void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
         scheduleImageSizeProbe(path);
         return;
     }
-    // Larger than the soft ladder max — treat as full native decode.
+    // Larger than the image ladder max — treat as full native decode.
     rememberImageSize(path, image.size());
 }
 
@@ -500,25 +495,20 @@ QSize ImageView::imageSizeForPath(const QString &path)
         return QSize(1000, 1000);
     }
     const QSize known = logicalSizeForPath(path);
-    if (known.isValid() && known.width() > 0 && known.height() > 0) {
+    if (isPositiveSize(known)) {
         if (!m_imageSizeByPath.contains(path)) {
             rememberImageSize(path, known); // install thumtoo hit into map
         }
         return known;
     }
-    // Archives / multipage / embedded PDF images: schedule thumtoo probe;
-    // neutral stand-in until sizeReady.
-    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
-        || PagePath::isPdfImageRef(path)) {
-        scheduleImageSizeProbe(path);
-        m_provisionalSizePaths.insert(path);
-        return QSize(1024, 1024);
-    }
-    // Unknown size: do not touch the filesystem on the GUI thread. Neutral
-    // geometry until async probe, preview aspect, or full decode fills the cache.
-    // Callers that have a preview should use layoutSizeForPath(path, preview).
+    // Archives / multipage / embedded PDF: async probe; neutral stand-in.
     scheduleImageSizeProbe(path);
     m_provisionalSizePaths.insert(path);
+    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
+        || PagePath::isPdfImageRef(path)) {
+        return QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);
+    }
+    // Unknown: do not touch the filesystem on the GUI thread.
     return QSize(1000, 1000);
 }
 
@@ -526,27 +516,21 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
 {
     // Prefer definitive logical size (map / thumtoo) — never soft sample dims.
     const QSize known = logicalSizeForPath(path);
-    if (known.isValid() && known.width() > 0 && known.height() > 0
-        && !isProvisionalImageSize(path)) {
+    if (isPositiveSize(known) && !isProvisionalImageSize(path)) {
         return known;
     }
     const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend()
-        && it->isValid() && it->width() > 0 && it->height() > 0) {
-        return it.value();
+    if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)) {
+        return *it;
     }
-    // Aspect from preview so pack/fit frames correctly. Magnitude is always
-    // normalized to a neutral long-edge — soft 512 must not become layout size.
-    if (!previewHint.isNull() && previewHint.width() > 0 && previewHint.height() > 0) {
+    // Aspect from preview; magnitude normalized to provisional long-edge.
+    if (!previewHint.isNull() && isPositiveSize(previewHint.size())) {
         scheduleImageSizeProbe(path);
         m_provisionalSizePaths.insert(path);
-        const QSize h = previewHint.size();
-        const int longEdge = qMax(h.width(), h.height());
-        if (longEdge > 0) {
-            constexpr qreal kProvLong = 1024.0;
-            const qreal s = kProvLong / qreal(longEdge);
-            return QSize(qMax(1, int(h.width() * s + 0.5)),
-                         qMax(1, int(h.height() * s + 0.5)));
+        const QSize scaled =
+            scaleToLongEdge(previewHint.size(), kProvisionalLayoutLongEdge);
+        if (isPositiveSize(scaled)) {
+            return scaled;
         }
     }
     return imageSizeForPath(path);
@@ -561,8 +545,8 @@ void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
         }
         // Native size from durable index (no probe I/O).
         if (!m_imageSizeByPath.contains(path) || isProvisionalImageSize(path)) {
-            if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()
-                && cached.width() > 0 && cached.height() > 0) {
+            if (const QSize cached = ThumtooCache::cachedSize(path);
+                isPositiveSize(cached)) {
                 rememberImageSize(path, cached);
             }
         }

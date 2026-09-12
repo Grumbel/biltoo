@@ -2,6 +2,26 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-585-logical-size-pure-helpers.** Size identity helpers in types header.
+Prior: **584**.
+
+### Change
+- `isPositiveSize` / `scaleToLongEdge` / `isMuchSmallerArea` /
+  `kProvisionalLayoutLongEdge` in `imageview_types.h`
+- `rememberImageSize`, `layoutSizeForPath`, `logicalSizeForPath`,
+  `ensureLogicalSizeForPath`, `imageSizeForPath` use the helpers
+- SIZE.md documents the pure helpers
+
+### Done criteria
+- [x] Repeated size validity / provisional scale logic is one definition
+- [x] Bundle **585**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-584-gallery-soft-climb-plan.** Pure planSoftClimb for gallery decode.
 Prior: **583**.
 

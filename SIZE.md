@@ -25,6 +25,15 @@ logical size.
 | Orientation sync | Transpose aspect only — never adopt sample magnitude |
 | `contentRect` / paint | Logical box; sample drawn into it |
 
+## Pure helpers (`imageview_types.h`)
+
+| Helper | Role |
+|--------|------|
+| `isPositiveSize` | width/height both > 0 |
+| `scaleToLongEdge` | provisional aspect at fixed long-edge |
+| `isMuchSmallerArea` | reject soft size that would shrink identity |
+| `kProvisionalLayoutLongEdge` | 1024 |
+
 ## Forbidden
 
 - Seeding or growing intrinsic from sample pixel dimensions

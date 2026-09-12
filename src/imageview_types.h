@@ -23,6 +23,47 @@
 using SessionImageId = qint64;
 inline constexpr SessionImageId kInvalidSessionImageId = 0;
 
+/** True when width and height are both positive. */
+inline bool isPositiveSize(const QSize &s)
+{
+    return s.isValid() && s.width() > 0 && s.height() > 0;
+}
+
+/**
+ * Scale @a sample so its long edge equals @a longEdge (aspect preserved).
+ * Used for provisional layout geometry — never adopt soft pixel magnitude.
+ */
+inline QSize scaleToLongEdge(const QSize &sample, int longEdge)
+{
+    if (!isPositiveSize(sample) || longEdge <= 0) {
+        return {};
+    }
+    const int sampleLong = qMax(sample.width(), sample.height());
+    if (sampleLong <= 0) {
+        return {};
+    }
+    const qreal s = qreal(longEdge) / qreal(sampleLong);
+    return QSize(qMax(1, int(sample.width() * s + 0.5)),
+                 qMax(1, int(sample.height() * s + 0.5)));
+}
+
+/**
+ * True when @a incoming covers less than ~90% of @a have's area — used to
+ * reject soft/ladder sizes that would shrink a known logical size.
+ */
+inline bool isMuchSmallerArea(const QSize &incoming, const QSize &have)
+{
+    if (!isPositiveSize(incoming) || !isPositiveSize(have)) {
+        return false;
+    }
+    const qint64 haveArea = qint64(have.width()) * qint64(have.height());
+    const qint64 inArea = qint64(incoming.width()) * qint64(incoming.height());
+    return haveArea > 0 && inArea * 10 < haveArea * 9;
+}
+
+/** Neutral long-edge for provisional pack/fit when only aspect is known. */
+inline constexpr int kProvisionalLayoutLongEdge = 1024;
+
 /** Pixel under the cursor for the status / colour readout. */
 struct ImageMouseInfo {
     bool valid = false;

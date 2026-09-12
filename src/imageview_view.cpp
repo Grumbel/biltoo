@@ -1481,12 +1481,11 @@ QSize ImageView::logicalSizeForPath(const QString &path) const
         return {};
     }
     const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend()
-        && it->isValid() && it->width() > 0 && it->height() > 0) {
+    if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)) {
         return *it;
     }
     const QSize cached = ThumtooCache::cachedSize(path);
-    if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+    if (isPositiveSize(cached)) {
         return cached;
     }
     return {};
@@ -1498,8 +1497,7 @@ QSize ImageView::ensureLogicalSizeForPath(const QString &path)
         return {};
     }
     const QSize known = logicalSizeForPath(path);
-    if (known.isValid() && known.width() > 0 && known.height() > 0
-        && !isProvisionalImageSize(path)) {
+    if (isPositiveSize(known) && !isProvisionalImageSize(path)) {
         return known;
     }
     // imageSizeForPath may schedule a probe and/or install thumtoo cache.
