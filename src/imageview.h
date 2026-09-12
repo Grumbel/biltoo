@@ -1232,6 +1232,12 @@ private:
     /** SoftPreview vs FullSource from delivered sample size (not request edge). */
     SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
                                                              const QImage &image) const;
+    ImageItem *imageModeItemForPath(const QString &path) const;
+    void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
+    void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
+                                       SessionAppearance::PixelKind kind);
+    /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */
+    bool tryInstallImageModeSample(const QString &path, const QImage &image);
     void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
     void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
@@ -1298,6 +1304,7 @@ private:
     void scheduleGalleryDecode(const QString &path);
 
     /** Resolve have/want for @a path; false if decode not needed. */
+    int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut = nullptr) const;
     bool resolveGallerySoftHaveWant(const QString &path, GallerySoftState &st,
                                     int *haveOut, int *wantOut);
     void scheduleGalleryDisplayPreferCache(const QString &path, GallerySoftState &st,

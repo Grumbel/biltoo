@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-648-image-mode-sample-install.** Unify Image-mode sample install + climb.
+Prior: **647**.
+
+### Change
+- `imageModeItemForPath` / `scheduleImageModePreferCacheClimb` /
+  `installImageModeSampleInPlace` / `tryInstallImageModeSample`
+- `completeLoadReplace` and ladder upgrade share install + PreferCache climb
+- `galleryHaveEdgeFromItems` extracted from resolveGallerySoftHaveWant
+
+### Done criteria
+- [x] One install path for Image-mode soft/full samples
+- [x] Bundle **648**
+
+### Next
+- Optional status-bar PreferCache progress
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-647-soft-not-fullsource.** Do not latch soft samples as FullSource.
 Prior: **646**.
 

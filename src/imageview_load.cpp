@@ -687,6 +687,25 @@ int ImageView::galleryWantEdgeForPath(const QString &path,
     return want;
 }
 
+int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
+{
+    int have = 0;
+    bool anyFull = false;
+    for (ImageItem *item : m_items) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        if (item->hasDecodedPixels()) {
+            anyFull = true;
+        }
+        have = qMax(have, item->displayPixelLongEdge());
+    }
+    if (anyFullOut) {
+        *anyFullOut = anyFull;
+    }
+    return have;
+}
+
 bool ImageView::resolveGallerySoftHaveWant(const QString &path, GallerySoftState &st,
                                            int *haveOut, int *wantOut)
 {
@@ -700,17 +719,8 @@ bool ImageView::resolveGallerySoftHaveWant(const QString &path, GallerySoftState
             kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
         const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
 
-        have = 0;
         bool anyFull = false;
-        for (ImageItem *item : m_items) {
-            if (!item || item->path() != path) {
-                continue;
-            }
-            if (item->hasDecodedPixels()) {
-                anyFull = true;
-            }
-            have = qMax(have, item->displayPixelLongEdge());
-        }
+        have = galleryHaveEdgeFromItems(path, &anyFull);
         st.have = have;
         if (anyFull) {
             return false;
@@ -1095,11 +1105,8 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
     if (path != classicPath()) {
         return;
     }
-    ImageItem *cur = targetItem();
-    if (!cur || cur->path() != path) {
-        cur = primaryItem();
-    }
-    if (!cur || cur->path() != path) {
+    ImageItem *cur = imageModeItemForPath(path);
+    if (!cur) {
         return;
     }
 
@@ -1124,19 +1131,11 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
                                                                  : "SoftPreview");
     }
 
-    installDisplayPreservingView(cur, image, kind, kInvalidSessionImageId);
-    m_lastLoadError.clear();
-    rememberSizeFromDecode(path, image);
+    installImageModeSampleInPlace(cur, path, image, kind);
     // Soft shortfall after a higher request: keep PreferCache climbing.
-    if (kind == SessionAppearance::PixelKind::SoftPreview
-        && reqEdge > incoming && ThumtooCache::isAvailable()) {
-        (void)ThumtooCache::scheduleDisplayPixels(
-            path, qMin(reqEdge, ThumtooCache::kImageLadderEdge));
+    if (kind == SessionAppearance::PixelKind::SoftPreview && reqEdge > incoming) {
+        scheduleImageModePreferCacheClimb(path, reqEdge);
     }
-    if (viewport()) {
-        viewport()->update();
-    }
-    emit statusChanged();
 }
 
 void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
@@ -1688,6 +1687,82 @@ void ImageView::seedEmptyWorkspaceFromReplace(const QString &path, const QImage 
     emit statusChanged();
 }
 
+
+ImageItem *ImageView::imageModeItemForPath(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return nullptr;
+    }
+    ImageItem *cur = targetItem();
+    if (cur && cur->path() == path) {
+        return cur;
+    }
+    cur = primaryItem();
+    if (cur && cur->path() == path) {
+        return cur;
+    }
+    return nullptr;
+}
+
+void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantEdge)
+{
+    if (!ThumtooCache::isAvailable() || path.isEmpty()) {
+        return;
+    }
+    const int edge = wantEdge > 0
+                         ? qMin(wantEdge, ThumtooCache::kImageLadderEdge)
+                         : ThumtooCache::kImageLadderEdge;
+    ThumtooCache::scheduleProbe(path);
+    ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+    (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+}
+
+void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &path,
+                                             const QImage &image,
+                                             SessionAppearance::PixelKind kind)
+{
+    if (!item || image.isNull()) {
+        return;
+    }
+    installDisplayPreservingView(item, image, kind, kInvalidSessionImageId);
+    m_lastLoadError.clear();
+    rememberSizeFromDecode(path, image);
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
+}
+
+bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &image)
+{
+    if (!isImageMode() || path.isEmpty() || image.isNull()) {
+        return false;
+    }
+    const SessionAppearance::PixelKind kind = pixelKindForImageModeSample(path, image);
+    if (ImageItem *cur = imageModeItemForPath(path)) {
+        if (!cur->shouldUpgradeDisplayTo(ImageCache::longEdge(image))
+            && cur->hasDisplayPixels()) {
+            emit statusChanged();
+            return true;
+        }
+        installImageModeSampleInPlace(cur, path, image, kind);
+        if (kind == SessionAppearance::PixelKind::SoftPreview) {
+            scheduleImageModePreferCacheClimb(path, ThumtooCache::kImageLadderEdge);
+        }
+        return true;
+    }
+    // First install for this path: SoftPreview uses pending-tile path so
+    // FullSource-only createItemFromImage is not forced on a soft sample.
+    if (kind == SessionAppearance::PixelKind::SoftPreview) {
+        installImageModePendingTile(path, image);
+        scheduleImageModePreferCacheClimb(path, ThumtooCache::kImageLadderEdge);
+        emit statusChanged();
+    } else {
+        installImageModeReplaceItem(path, image);
+    }
+    return true;
+}
+
 void ImageView::completeLoadReplace(const QString &path, const QImage &image, quint64 generation)
 {
     if (generation != m_loadGeneration.load()) {
@@ -1701,13 +1776,8 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
     if (image.isNull()) {
         if (ThumtooCache::isAvailable()) {
             // Full native miss: PreferCache display ladder so onLadderReady can
-            // upgrade Image mode (soft→HQ). Soft-only schedule left the view
-            // stuck on the 512 stand-in when ladderReady ignored non-Gallery.
-            ThumtooCache::scheduleProbe(path);
-            ThumtooCache::schedulePixels(
-                path, qMax(ThumtooCache::kGalleryLadderEdge, 512));
-            (void)ThumtooCache::scheduleDisplayPixels(
-                path, ThumtooCache::kImageLadderEdge);
+            // upgrade Image mode (soft→HQ).
+            scheduleImageModePreferCacheClimb(path, ThumtooCache::kImageLadderEdge);
             m_lastLoadError.clear();
         } else {
             m_lastLoadError = path;
@@ -1716,44 +1786,7 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
         return;
     }
     if (isImageMode()) {
-        m_lastLoadError.clear();
-        rememberSizeFromDecode(path, image);
-        // Classify by delivered size: a soft ladder sample must not latch
-        // FullSource / "Full resolution" (blocks soft→HQ upgrades).
-        const SessionAppearance::PixelKind kind =
-            pixelKindForImageModeSample(path, image);
-        // Same path already on canvas: install in place. Soft→full must not
-        // clearLiveCanvas + fitItem (that resets zoom).
-        if (ImageItem *cur = targetItem();
-            cur && cur->path() == path) {
-            if (!cur->shouldUpgradeDisplayTo(ImageCache::longEdge(image))
-                && cur->hasDisplayPixels()) {
-                emit statusChanged();
-                return;
-            }
-            installDisplayPreservingView(cur, image, kind, kInvalidSessionImageId);
-            if (kind == SessionAppearance::PixelKind::SoftPreview
-                && ThumtooCache::isAvailable()) {
-                (void)ThumtooCache::scheduleDisplayPixels(
-                    path, ThumtooCache::kImageLadderEdge);
-            }
-            if (viewport()) {
-                viewport()->update();
-            }
-            emit statusChanged();
-            return;
-        }
-        // First install for this path: SoftPreview uses pending-tile path so
-        // FullSource-only createItemFromImage is not forced on a soft sample.
-        if (kind == SessionAppearance::PixelKind::SoftPreview) {
-            installImageModePendingTile(path, image);
-            if (ThumtooCache::isAvailable()) {
-                (void)ThumtooCache::scheduleDisplayPixels(
-                    path, ThumtooCache::kImageLadderEdge);
-            }
-        } else {
-            installImageModeReplaceItem(path, image);
-        }
+        (void)tryInstallImageModeSample(path, image);
         return;
     }
     seedEmptyWorkspaceFromReplace(path, image);
