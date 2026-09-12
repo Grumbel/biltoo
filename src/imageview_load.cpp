@@ -602,11 +602,10 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
 }
 
 
-int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const
+int ImageView::itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes) const
 {
     // On-screen long edge in device pixels, snapped to a ladder step.
-    // Visible tiles request that edge (no soft-max cliff, no native full dump).
-    // Off-screen / idle placeholders stay in the soft band to limit work.
+    // Gallery visible tiles and Image-mode zoom climb share this metric.
     if (!item) {
         return ThumtooCache::kFilmstripLadderEdge;
     }
@@ -623,6 +622,12 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
         return qMin(need, ThumtooCache::kGalleryLadderEdge);
     }
     return need;
+}
+
+int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const
+{
+    // Visible tiles: full on-screen need. Off-screen / idle: soft band only.
+    return itemOnScreenNeedEdge(item, allowHighRes);
 }
 
 
@@ -1098,43 +1103,24 @@ SessionAppearance::PixelKind ImageView::pixelKindForImageModeSample(
 void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
                                            const QImage &image)
 {
-    if (!isImageMode() || path.isEmpty() || image.isNull()) {
+    // ladderReady Image-mode path: same install policy as completeLoadReplace.
+    if (path.isEmpty() || image.isNull() || path != classicPath()) {
         return;
     }
-    // Only the current classic navigation target.
-    if (path != classicPath()) {
-        return;
-    }
-    ImageItem *cur = imageModeItemForPath(path);
-    if (!cur) {
-        return;
-    }
-
-    const int incoming = ImageCache::longEdge(image);
-    if (incoming <= 0) {
-        return;
-    }
-    // Already showing equal-or-better sample — do not demote.
-    if (!cur->shouldUpgradeDisplayTo(incoming)) {
-        return;
-    }
-    const SessionAppearance::PixelKind kind = pixelKindForImageModeSample(path, image);
-    const int reqEdge = maxEdge > 0 ? maxEdge : incoming;
-
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
         dbg && dbg[0] && dbg[0] != '0') {
+        const int req = maxEdge > 0 ? maxEdge : ImageCache::longEdge(image);
         fprintf(stderr,
-                "biltoo/image: ladderReady UPGRADE path=%s req=%d got=%dx%d kind=%s\n",
-                qPrintable(QFileInfo(path).fileName()), reqEdge, image.width(),
-                image.height(),
-                kind == SessionAppearance::PixelKind::FullSource ? "FullSource"
-                                                                 : "SoftPreview");
+                "biltoo/image: ladderReady UPGRADE path=%s req=%d got=%dx%d\n",
+                qPrintable(QFileInfo(path).fileName()), req, image.width(),
+                image.height());
     }
-
-    installImageModeSampleInPlace(cur, path, image, kind);
-    // Soft shortfall after a higher request: keep PreferCache climbing.
-    if (kind == SessionAppearance::PixelKind::SoftPreview && reqEdge > incoming) {
-        scheduleImageModePreferCacheClimb(path, reqEdge);
+    (void)tryInstallImageModeSample(path, image);
+    // Soft shortfall vs requested edge: climb at least to the request.
+    if (maxEdge > ImageCache::longEdge(image)
+        && pixelKindForImageModeSample(path, image)
+            == SessionAppearance::PixelKind::SoftPreview) {
+        scheduleImageModePreferCacheClimb(path, maxEdge);
     }
 }
 
@@ -1782,19 +1768,18 @@ int ImageView::imageModeOnScreenNeedEdge() const
     if (!item) {
         item = primaryItem();
     }
-    if (!item) {
-        return ThumtooCache::kFilmstripLadderEdge;
+    return itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
+}
+
+void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
+{
+    // Native full without LoadReplace generation bump / pending tile (zoom climb).
+    if (path.isEmpty()) {
+        return;
     }
-    // Same device-pixel long-edge idea as galleryDisplayEdgeForItem.
-    const QRectF br = item->contentSceneRect();
-    if (br.isEmpty()) {
-        return ThumtooCache::kGalleryLadderEdge;
-    }
-    const QPointF a = mapFromScene(br.topLeft());
-    const QPointF b = mapFromScene(br.bottomRight());
-    const qreal longPx =
-        qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
-    return ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
+    const QPointer<ImageView> guard(this);
+    const quint64 gen = m_loadGeneration.load();
+    startNativeFullDecodeJob(guard, path, gen, static_cast<int>(LoadReplace));
 }
 
 void ImageView::maybeClimbImageModePixelsForView()
@@ -1806,14 +1791,14 @@ void ImageView::maybeClimbImageModePixelsForView()
         return;
     }
     ImageItem *item = imageModeItemForPath(classicPath());
-    if (!item && targetItem()) {
+    if (!item) {
         item = targetItem();
     }
     if (!item || item->path().isEmpty()) {
         return;
     }
     const QString path = item->path();
-    const int need = imageModeOnScreenNeedEdge();
+    const int need = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
     const int have = item->displayPixelLongEdge();
     if (need <= 0 || coversEdge(have, need)) {
         return;
@@ -1827,14 +1812,8 @@ void ImageView::maybeClimbImageModePixelsForView()
                 item->hasDecodedPixels() ? 1 : 0);
     }
 
-    // PreferCache up to display ladder (and forget settled so shortfalls retry).
     scheduleImageModePreferCacheClimb(path, need);
-
-    // Native full decode without LoadReplace generation bump / pending tile.
-    const QPointer<ImageView> guard(this);
-    const quint64 gen = m_loadGeneration.load();
-    const int roleInt = static_cast<int>(LoadReplace);
-    startNativeFullDecodeJob(guard, path, gen, roleInt);
+    scheduleImageModeNativeFullQuiet(path);
 }
 
 

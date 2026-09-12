@@ -1241,6 +1241,7 @@ private:
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
     /** PreferCache + native full when zoom leaves soft samples undersampled. */
+    void scheduleImageModeNativeFullQuiet(const QString &path);
     void maybeClimbImageModePixelsForView();
     void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
@@ -1321,6 +1322,7 @@ private:
     /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
     void gallerySoftWatchdogTick();
     /** Ladder step for item cell size in device pixels. */
+    int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = true) const;
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
     ImageItem *primaryItem() const;
     QList<ImageItem *> transformTargets() const;

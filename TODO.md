@@ -2,6 +2,27 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-650-onscreen-need-unify.** Share on-screen need; fold ladder install.
+Prior: **649**.
+
+### Change
+- `itemOnScreenNeedEdge` — shared Gallery + Image mode device-pixel need
+- `galleryDisplayEdgeForItem` / `imageModeOnScreenNeedEdge` thin wrappers
+- `scheduleImageModeNativeFullQuiet` — native full without generation bump
+- `upgradeImageModeFromLadder` → `tryInstallImageModeSample` (one install policy)
+- Image-mode resize also calls `maybeClimbImageModePixelsForView`
+
+### Done criteria
+- [x] One on-screen edge metric
+- [x] Ladder and replace share sample install
+- [x] Bundle **650**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-649-zoom-pixel-climb.** Image-mode zoom climbs soft samples.
 Prior: **648**.
 

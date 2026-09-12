@@ -387,6 +387,9 @@ void ImageView::resizeEvent(QResizeEvent *event)
     if (m_applyingLayout) {
         return;
     }
+    if (isImageMode() && !m_slideshowProgressActive) {
+        maybeClimbImageModePixelsForView();
+    }
     // Gallery: never repack from resize. Thumb-strip setFiles, scrollbar
     // policy, and splitter drags all resize this view; packing here made
     // session delete look like an automatic layout. Pack only on explicit
