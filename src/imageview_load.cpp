@@ -23,9 +23,39 @@
 #include <QtMath>
 
 #include <cstdio>
+#include <cstdarg>
 #include <cstdlib>
 
 namespace {
+
+/** Timestamped load debug (THUMTOO_DEBUG or BILTOO_LOAD_DEBUG). */
+bool biltooLoadDebugEnabled()
+{
+    static const bool on = []() {
+        auto env = [](const char *k) {
+            const char *e = std::getenv(k);
+            return e && e[0] && e[0] != '0';
+        };
+        return env("THUMTOO_DEBUG") || env("BILTOO_LOAD_DEBUG")
+            || env("BILTOO_THUMTOO_DEBUG");
+    }();
+    return on;
+}
+
+void biltooLoadDbg(const char *fmt, ...)
+{
+    if (!biltooLoadDebugEnabled()) {
+        return;
+    }
+    const qint64 ms = QDateTime::currentMSecsSinceEpoch();
+    fprintf(stderr, "biltoo/load t=%lld gui=%d ", static_cast<long long>(ms),
+            QThread::isMainThread() ? 1 : 0);
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fputc('\n', stderr);
+}
 
 /** ~90% of target long edge counts as delivered (matches soft/overview stops). */
 constexpr int kCoverNumer = 9;
@@ -55,8 +85,11 @@ SoftClimbPlan planSoftClimb(int have, int want, int softCap, int ovCap)
     if (!coversEdge(have, softCap)) {
         const int target = qMin(want, softCap);
         SoftClimbPlan plan{SoftClimbPlan::Kind::Soft, target};
+        // Intermediate (e.g. 256 before 512) only when we already have some
+        // pixels. Cold have=0 + want=512 used to queue 256 for every visible
+        // tile (log: need=512 have=0 req=256) and delay the soft max.
         const int intermediate = ThumtooCache::prevLadderEdge(target);
-        if (intermediate > 0 && !coversEdge(have, intermediate)) {
+        if (have > 0 && intermediate > 0 && !coversEdge(have, intermediate)) {
             plan.edge = intermediate;
         }
         return plan;
@@ -202,12 +235,21 @@ QImage loadSoftPreviewPixels(const QString &path, int softEdge)
 void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
                          quint64 gen, int roleInt, int softEdge)
 {
+    biltooLoadDbg("softJob START path=%s edge=%d gen=%llu",
+                  qPrintable(QFileInfo(path).fileName()), softEdge,
+                  static_cast<unsigned long long>(gen));
     QThreadPool::globalInstance()->start(
         [guard, path, roleInt, gen, softEdge]() {
             if (!guard || !guard->matchesLoadGeneration(gen)) {
+                biltooLoadDbg("softJob STALE path=%s gen=%llu",
+                              qPrintable(QFileInfo(path).fileName()),
+                              static_cast<unsigned long long>(gen));
                 return;
             }
             QImage preview = loadSoftPreviewPixels(path, softEdge);
+            biltooLoadDbg("softJob DONE path=%s got=%dx%d",
+                          qPrintable(QFileInfo(path).fileName()),
+                          preview.width(), preview.height());
             if (!preview.isNull()) {
                 preview = prepareImageModeDisplaySample(
                     path, preview, SessionAppearance::PixelKind::SoftPreview);
@@ -609,6 +651,10 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
 
     const QImage pixels = resolveImageModePendingPixels(path, preview);
+    biltooLoadDbg("pendingTile path=%s soft=%dx%d cache=%d",
+                  qPrintable(QFileInfo(path).fileName()),
+                  pixels.width(), pixels.height(),
+                  ImageCache::has(path) ? 1 : 0);
     // Layout size = native when known; else preview aspect so fitInView fills
     // the window (not a provisional square that letterboxes the content).
     const QSize sz = layoutSizeForPath(path, pixels);
@@ -1816,6 +1862,12 @@ void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantE
     if (!ThumtooCache::isAvailable() || path.isEmpty()) {
         return;
     }
+    if (ImageItem *it = imageModeItemForPath(path)) {
+        if (it->displayPixelLongEdge() <= 0) {
+            biltooLoadDbg("WARN preferCache before soft paint path=%s want=%d",
+                          qPrintable(QFileInfo(path).fileName()), wantEdge);
+        }
+    }
     ImageModeClimbState &st = m_imageModeClimb[path];
     const int edge = wantEdge > 0
                          ? qMin(wantEdge, ThumtooCache::kImageLadderEdge)
@@ -1824,6 +1876,8 @@ void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantE
         return;
     }
     st.markDisplayScheduled(edge);
+    biltooLoadDbg("preferCacheClimb path=%s edge=%d have=%d",
+                  qPrintable(QFileInfo(path).fileName()), edge, st.have);
     ThumtooCache::scheduleProbe(path);
     // Soft band once; settled soft skips re-queue (no forgetPixelsSettled).
     (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);

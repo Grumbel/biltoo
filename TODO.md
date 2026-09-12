@@ -2,6 +2,34 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-685-gallery-soft-no-intermediate-load-dbg.** Gallery cold soft goes to need; load timing debug.
+Prior: **684**.
+
+### Log diagnosis (user dump)
+Almost all lines are **Gallery**, not Image climb:
+`soft request need=512 have=0 req=256` — `planSoftClimb` always stepped to
+prev ladder edge (256) when have=0, so every visible tile requested 256 before
+512 and flooded the pool.
+
+Image mode lines show `have=1024 need=2048` — soft already painted; PreferCache
+background is expected.
+
+### Change
+- `planSoftClimb`: intermediate edge only when `have > 0` (cold → request target soft)
+- `biltoo/load t=<ms> gui=0|1` debug: pendingTile, softJob START/DONE, preferCacheClimb, WARN if PreferCache before soft paint
+- Enable with `THUMTOO_DEBUG=1` or `BILTOO_LOAD_DEBUG=1`
+
+### Done criteria
+- [x] Gallery cold soft request should show req=512 when need=512
+- [x] Timed load traces for Image soft path
+- [x] Bundle **685**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-684-soft-before-prefercache-climb.** PreferCache climb waits for soft paint; filmstrip low priority.
 Prior: **683**.
 
