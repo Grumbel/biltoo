@@ -228,13 +228,13 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
     if (raw.isNull()) {
         return {};
     }
-    // Soft/LQIP (≤512) may still bake on GUI for pending tiles. Multi-MP must
-    // run on a worker (prepareImageModeDisplaySample / pool jobs).
-    if (qMax(raw.width(), raw.height()) > 512) {
-        ASSERT_NOT_GUI_THREAD();
-    }
+    // No-op path is cheap and GUI-safe (Gallery ladderReady often lands here).
     if (!hasContentAppearance(state) && state.colorAdjust.isIdentity()) {
         return raw;
+    }
+    // Real bake of multi-MP must not run on the GUI thread.
+    if (qMax(raw.width(), raw.height()) > 512) {
+        ASSERT_NOT_GUI_THREAD();
     }
 
     QImage out = raw;

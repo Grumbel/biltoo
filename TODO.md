@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-678-materialize-identity-gui-safe.** Identity materializeDisplay is GUI-safe; CMake compile summary.
+Prior: **677**.
+
+### Root cause
+`ASSERT_NOT_GUI_THREAD` ran *before* the identity early-out in `materializeDisplay`.
+Gallery `ladderReady` (edge=1024, no content appearance) aborted on the GUI.
+
+### Change
+- Identity / no-op `materializeDisplay` returns before the multi-MP assert
+- CMake configure prints build type, C++ standard, compiler, warning flags, Werror
+
+### Done criteria
+- [x] Gallery ladderReady identity install does not assert
+- [x] `cmake` status shows compile mode / flags
+- [x] Bundle **678**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-677-imageloader-vips-include-order.** vips before biltoo_thread.h (GLib signals).
 Prior: **676**.
 
