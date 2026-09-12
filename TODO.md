@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-633-motion-start-sort-order.** Phase startSlideshowMotion; pure sort order helper.
+Prior: **632**.
+
+### Change
+- Motion: `prepareSlideshowMotionDwell`, `freezeScrollbarsForMotion`,
+  `resetItemPlacementForMotion`, `armMotionBiasForPath`
+- Sort: `computeSortOrderIndices` (static pure order from probes)
+
+### Done criteria
+- [x] Motion start and sort order paths named
+- [x] Bundle **633**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-632-crop-enter-resize.** Extract enterCropModeFromUi and cropLocalResizeRect.
 Prior: **631**.
 

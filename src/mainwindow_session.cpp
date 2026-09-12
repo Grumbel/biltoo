@@ -737,6 +737,71 @@ void MainWindow::applySortedSessionOrder(const QStringList &newFiles,
     }
 }
 
+QVector<int> MainWindow::computeSortOrderIndices(
+    SortMode mode,
+    const QStringList &paths,
+    const QHash<QString, QSize> &sizes,
+    const QHash<QString, qint64> &mtimes,
+    const QHash<QString, qint64> &fsizes)
+{
+    auto nameLess = [](const QString &a, const QString &b) {
+        QCollator collator;
+        collator.setNumericMode(true);
+        collator.setCaseSensitivity(Qt::CaseInsensitive);
+        return collator.compare(PagePath::displayName(a), PagePath::displayName(b)) < 0;
+    };
+
+    QVector<int> order(paths.size());
+    for (int i = 0; i < order.size(); ++i) {
+        order[i] = i;
+    }
+
+    if (mode == SortMode::MTime) {
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const qint64 ta = mtimes.value(paths.at(ia));
+            const qint64 tb = mtimes.value(paths.at(ib));
+            if (ta != tb) {
+                return ta < tb;
+            }
+            return nameLess(paths.at(ia), paths.at(ib));
+        });
+    } else if (mode == SortMode::FileSize) {
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const qint64 sa = fsizes.value(paths.at(ia));
+            const qint64 sb = fsizes.value(paths.at(ib));
+            if (sa != sb) {
+                return sa < sb;
+            }
+            return nameLess(paths.at(ia), paths.at(ib));
+        });
+    } else {
+        auto sizeOf = [&](int i) -> QSize {
+            return sizes.value(paths.at(i));
+        };
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            const QSize sa = sizeOf(ia);
+            const QSize sb = sizeOf(ib);
+            if (mode == SortMode::Width) {
+                if (sa.width() != sb.width()) {
+                    return sa.width() < sb.width();
+                }
+            } else if (mode == SortMode::Height) {
+                if (sa.height() != sb.height()) {
+                    return sa.height() < sb.height();
+                }
+            } else { // PixelCount
+                const qint64 pa = qint64(sa.width()) * sa.height();
+                const qint64 pb = qint64(sb.width()) * sb.height();
+                if (pa != pb) {
+                    return pa < pb;
+                }
+            }
+            return nameLess(paths.at(ia), paths.at(ib));
+        });
+    }
+    return order;
+}
+
 void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> &onDone)
 {
     if (m_session.paths().size() <= 1) {
@@ -805,61 +870,8 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
             }
         }
 
-        auto nameLess = [](const QString &a, const QString &b) {
-            QCollator collator;
-            collator.setNumericMode(true);
-            collator.setCaseSensitivity(Qt::CaseInsensitive);
-            return collator.compare(PagePath::displayName(a), PagePath::displayName(b)) < 0;
-        };
-
-        QVector<int> order(paths.size());
-        for (int i = 0; i < order.size(); ++i) {
-            order[i] = i;
-        }
-
-        if (mode == SortMode::MTime) {
-            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-                const qint64 ta = mtimes.value(paths.at(ia));
-                const qint64 tb = mtimes.value(paths.at(ib));
-                if (ta != tb) {
-                    return ta < tb;
-                }
-                return nameLess(paths.at(ia), paths.at(ib));
-            });
-        } else if (mode == SortMode::FileSize) {
-            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-                const qint64 sa = fsizes.value(paths.at(ia));
-                const qint64 sb = fsizes.value(paths.at(ib));
-                if (sa != sb) {
-                    return sa < sb;
-                }
-                return nameLess(paths.at(ia), paths.at(ib));
-            });
-        } else {
-            auto sizeOf = [&](int i) -> QSize {
-                return sizes.value(paths.at(i));
-            };
-            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-                const QSize sa = sizeOf(ia);
-                const QSize sb = sizeOf(ib);
-                if (mode == SortMode::Width) {
-                    if (sa.width() != sb.width()) {
-                        return sa.width() < sb.width();
-                    }
-                } else if (mode == SortMode::Height) {
-                    if (sa.height() != sb.height()) {
-                        return sa.height() < sb.height();
-                    }
-                } else { // PixelCount
-                    const qint64 pa = qint64(sa.width()) * sa.height();
-                    const qint64 pb = qint64(sb.width()) * sb.height();
-                    if (pa != pb) {
-                        return pa < pb;
-                    }
-                }
-                return nameLess(paths.at(ia), paths.at(ib));
-            });
-        }
+        const QVector<int> order = MainWindow::computeSortOrderIndices(
+            mode, paths, sizes, mtimes, fsizes);
 
         QStringList newFiles;
         QVector<SessionImageId> newIds;

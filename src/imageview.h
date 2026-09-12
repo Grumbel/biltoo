@@ -190,6 +190,10 @@ public:
     void ensurePrimarySelection();
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
+    bool prepareSlideshowMotionDwell(ImageItem *item);
+    void freezeScrollbarsForMotion();
+    void resetItemPlacementForMotion(ImageItem *item);
+    void armMotionBiasForPath(ImageItem *item, const QString &path);
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
     void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
     /** Decode path off the GUI thread into the unified slideshow raster map. */

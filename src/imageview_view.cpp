@@ -2213,32 +2213,20 @@ void ImageView::maybeStartSlideshowMotion()
     startSlideshowMotion(duration, initial);
 }
 
-void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
+bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
 {
-    cancelSlideshowMotion();
-    if (m_slideshowMotion == SlideshowMotion::Off || !isImageMode()
-        || durationMs < 250 || !viewport()) {
-        return;
-    }
-    ImageItem *item = targetItem();
-    if (!item || item->boundingRect().isEmpty()) {
-        return;
-    }
-
     // Ken Burns moves the *image* via blit, not the QGraphicsView camera.
     // Prefer path-oriented slideshow pixels (unbaked cache + appearance). Item
     // source may lag durable orientation on the first frame before a full
     // install, or be unbaked soft-only.
-    {
-        const QString path = item->path();
-        QImage dwell = slideshowPixelsForPath(path);
-        if (dwell.isNull()) {
-            dwell = orientSlideshowImage(item->sourceImage(), path);
-        }
-        m_dwellSourceImage = dwell;
+    const QString path = item->path();
+    QImage dwell = slideshowPixelsForPath(path);
+    if (dwell.isNull()) {
+        dwell = orientSlideshowImage(item->sourceImage(), path);
     }
+    m_dwellSourceImage = dwell;
     if (m_dwellSourceImage.isNull()) {
-        return;
+        return false;
     }
     // Align underlay camera to slideshow zoom before hiding it so cancel/stop
     // can restore a known static frame.
@@ -2246,6 +2234,11 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     ensureMotionAtlas(m_dwellSourceImage, &m_dwellAtlas, &m_dwellAtlasScale,
                       &m_dwellAtlasVw, &m_dwellAtlasVh);
     setSlideshowUnderlayVisible(false);
+    return true;
+}
+
+void ImageView::freezeScrollbarsForMotion()
+{
     // Freeze scrollbars so the view cannot re-clamp/centre while the overlay
     // path is the only thing that should move (underlay is hidden).
     if (!m_motionSavedBarPolicies) {
@@ -2261,7 +2254,10 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     if (verticalScrollBar()) {
         verticalScrollBar()->setValue(0);
     }
+}
 
+void ImageView::resetItemPlacementForMotion(ImageItem *item)
+{
     m_fitMode = false;
     m_fillMode = (m_slideshowZoom == SlideshowZoom::Fill);
     item->setItemShear(0.0);
@@ -2270,8 +2266,10 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     if (isImageMode()) {
         item->setPos(0, 0);
     }
+}
 
-    const QString path = item->path();
+void ImageView::armMotionBiasForPath(ImageItem *item, const QString &path)
+{
     // Biases are per-image. Manual next/prev (and any LoadReplace) must not keep
     // the previous slide's A/B — that made the first post-nav transition glitch.
     // Live handoff installs to-path biases + path before calling here.
@@ -2285,6 +2283,25 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     } else if (m_motionBiasPath.isEmpty()) {
         m_motionBiasPath = path;
     }
+}
+
+void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
+{
+    cancelSlideshowMotion();
+    if (m_slideshowMotion == SlideshowMotion::Off || !isImageMode()
+        || durationMs < 250 || !viewport()) {
+        return;
+    }
+    ImageItem *item = targetItem();
+    if (!item || item->boundingRect().isEmpty()) {
+        return;
+    }
+    if (!prepareSlideshowMotionDwell(item)) {
+        return;
+    }
+    freezeScrollbarsForMotion();
+    resetItemPlacementForMotion(item);
+    armMotionBiasForPath(item, item->path());
     // Biases + slideshow zoom are read by renderMotionCoverPixmap.
 
     ensureSlideshowMotionTimer();
@@ -2305,6 +2322,8 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
         viewport()->update();
     }
 }
+
+
 
 void ImageView::tickSlideshowMotion()
 {
