@@ -17,6 +17,7 @@ Prior: **473**.
 - [x] Pause freezes time
 - [x] Seekbar
 - [x] Blur debounce
+- [x] Hide seekbar on mouse leave
 - [x] Bundle **474**
 
 ---

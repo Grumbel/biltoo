@@ -776,6 +776,12 @@ void ImageView::leaveEvent(QEvent *event)
         m_gallery.clearHoverPath();
         viewport()->update();
     }
+    if (m_slideshowSeekbarVisible && !m_slideshowSeekDragging) {
+        m_slideshowSeekbarVisible = false;
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
     QGraphicsView::leaveEvent(event);
 }
 
