@@ -2,6 +2,22 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-609-onimageloaded-switch.** Role dispatch via switch on LoadRole.
+Prior: **608**.
+
+### Change
+- `onImageLoaded` uses `switch (LoadRole)` instead of sequential ifs
+
+### Done criteria
+- [x] Clear role exhaustiveness
+- [x] Bundle **609**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-608-schedule-decode-queue-helpers.** Shared GUI queue for soft/full.
 Prior: **607**.
 

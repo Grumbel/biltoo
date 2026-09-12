@@ -1504,20 +1504,17 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     if (!image.isNull() && !path.isEmpty()) {
         ImageCache::put(path, image);
     }
-    if (role == LoadReplace) {
+    switch (static_cast<LoadRole>(role)) {
+    case LoadReplace:
         completeLoadReplace(path, image, generation);
-        return;
-    }
-
-
-    // Workspace add / restore
-    if (role == LoadRestore) {
+        break;
+    case LoadRestore:
         completeLoadRestore(path, image);
-        return;
+        break;
+    case LoadAdd:
+        completeLoadAdd(path, image, generation);
+        break;
     }
-
-    // LoadAdd (Gallery / Workspace membership and virtual window).
-    completeLoadAdd(path, image, generation);
 }
 
 
