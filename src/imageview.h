@@ -860,6 +860,13 @@ public:
     void installDisplayPixels(ImageItem *item, const QImage &pixels,
                               SessionAppearance::PixelKind kind,
                               SessionImageId sid);
+    /**
+     * installDisplayPixels + preserveImageViewOnLogicalSizeChange.
+     * Image-mode soft→full / soft→soft in-place upgrades (no zoom jump).
+     */
+    void installDisplayPreservingView(ImageItem *item, const QImage &pixels,
+                                      SessionAppearance::PixelKind kind,
+                                      SessionImageId sid);
 
     /**
      * True when the primary transform target has non-identity content

@@ -189,6 +189,23 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
     m_appearance.set(sid, seed);
 }
 
+void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixels,
+                                             SessionAppearance::PixelKind kind,
+                                             SessionImageId sid)
+{
+    if (!item || pixels.isNull()) {
+        return;
+    }
+    const QSize before = item->imageSize();
+    if (sid == kInvalidSessionImageId) {
+        sid = item->sessionId() != kInvalidSessionImageId
+                  ? item->sessionId()
+                  : m_currentSessionId;
+    }
+    installDisplayPixels(item, pixels, kind, sid);
+    preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
+}
+
 void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
                                      SessionAppearance::PixelKind kind,
                                      SessionImageId sid)
@@ -945,14 +962,9 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                     return; // full decode already won the race
                 }
                 // Soft install in place — do not refit on sample upgrade.
-                const QSize before = cur->imageSize();
-                const SessionImageId sid =
-                    cur->sessionId() != kInvalidSessionImageId
-                        ? cur->sessionId()
-                        : m_currentSessionId;
-                installDisplayPixels(cur, image,
-                                     SessionAppearance::PixelKind::SoftPreview, sid);
-                preserveImageViewOnLogicalSizeChange(cur, before, cur->imageSize());
+                installDisplayPreservingView(
+                    cur, image, SessionAppearance::PixelKind::SoftPreview,
+                    kInvalidSessionImageId);
                 if (viewport()) {
                     viewport()->update();
                 }
@@ -1034,14 +1046,9 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
             // must not clearLiveCanvas + fitItem (that resets zoom).
             if (ImageItem *cur = targetItem();
                 cur && cur->path() == path) {
-                const QSize before = cur->imageSize();
-                const SessionImageId sid =
-                    cur->sessionId() != kInvalidSessionImageId
-                        ? cur->sessionId()
-                        : m_currentSessionId;
-                installDisplayPixels(cur, image,
-                                     SessionAppearance::PixelKind::FullSource, sid);
-                preserveImageViewOnLogicalSizeChange(cur, before, cur->imageSize());
+                installDisplayPreservingView(
+                    cur, image, SessionAppearance::PixelKind::FullSource,
+                    kInvalidSessionImageId);
                 if (viewport()) {
                     viewport()->update();
                 }

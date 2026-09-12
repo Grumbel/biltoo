@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-588-install-preserving-view.** installDisplayPreservingView helper.
+Prior: **587**.
+
+### Change
+- `installDisplayPreservingView` — install + preserve view framing (soft→full /
+  soft→soft in place without zoom jump)
+- Image-mode paths in `onImagePreviewLoaded` / `onImageLoaded` use it
+
+### Done criteria
+- [x] One place for "upgrade pixels, keep framing"
+- [x] Bundle **588**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-587-item-display-upgrade-api.** ImageItem displayImage / shouldUpgrade.
 Prior: **586**.
 
