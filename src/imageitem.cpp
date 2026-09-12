@@ -85,18 +85,48 @@ void ImageItem::setIntrinsicSize(const QSize &size)
 
 void ImageItem::setSourceImage(const QImage &image)
 {
+    // Legacy path may still carry item-level flip/grade; ready path is preferred
+    // for LoadReplace installs (appearance baked in the sample).
     prepareGeometryChange();
     m_source = image;
     m_preview = QImage();
     m_previewPixels = false;
     if (!m_source.isNull()) {
-        // Samples never write intrinsic — setIntrinsicSize / probe / layout only.
         setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
         updateDisplayedPixmap();
     } else {
         setPixmap(QPixmap());
         const QSize s = imageSize();
         setOffset(-s.width() / 2.0, -s.height() / 2.0);
+    }
+    applyLocalTransform();
+    update();
+}
+
+void ImageItem::setSourceImageReady(const QImage &image)
+{
+    // Display-ready sample: no item-level flip/grade re-bake, no multi-MP
+    // QPixmap::fromImage on the GUI (paint draws m_source when pixmap empty).
+    prepareGeometryChange();
+    m_source = image;
+    m_preview = QImage();
+    m_previewPixels = false;
+    m_hFlip = false;
+    m_vFlip = false;
+    setCacheMode(QGraphicsItem::NoCache);
+    if (m_source.isNull()) {
+        setPixmap(QPixmap());
+        const QSize s = imageSize();
+        setOffset(-s.width() / 2.0, -s.height() / 2.0);
+    } else {
+        setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
+        const int edge = qMax(m_source.width(), m_source.height());
+        // ≤768: cheap fromImage. Larger: paint via drawImage (avoids 16MB+ GUI convert).
+        if (edge <= 768) {
+            setPixmap(QPixmap::fromImage(m_source));
+        } else {
+            setPixmap(QPixmap());
+        }
     }
     applyLocalTransform();
     update();
@@ -133,9 +163,8 @@ void ImageItem::setPreviewImage(const QImage &preview)
     m_previewPixels = true;
     m_source = QImage();
     setPixmap(QPixmap());
-    // Soft tiles: NoCache. Toggle cache mode so any prior DeviceCoordinate
-    // snapshot is discarded (otherwise OpenGL can keep showing the old soft).
-    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    // Soft tiles: NoCache only. Never touch DeviceCoordinateCache here — that
+    // forces a GUI-thread snapshot of the previous full pixmap (←/→ hitch).
     setCacheMode(QGraphicsItem::NoCache);
     // Intrinsic is layout geometry (probe / full native). Never adopt soft
     // sample dimensions — that shrinks Gallery cells and jumps on upgrade.
@@ -505,9 +534,26 @@ void ImageItem::applyLocalTransform()
 
 void ImageItem::setColorAdjustments(const ColorAdjustments &adj)
 {
+    if (m_colorAdjust.brightness == adj.brightness
+        && m_colorAdjust.contrast == adj.contrast
+        && m_colorAdjust.saturation == adj.saturation
+        && m_colorAdjust.hue == adj.hue
+        && qFuzzyCompare(m_colorAdjust.gamma, adj.gamma)
+        && m_colorAdjust.invert == adj.invert) {
+        return;
+    }
     m_colorAdjust = adj;
-    updateDisplayedPixmap();
+    // Live grade only when we still hold full source with item-level grade.
+    // Baked LoadReplace installs use setColorAdjustmentsRecord instead.
+    if (!m_source.isNull() && !m_previewPixels) {
+        updateDisplayedPixmap();
+    }
     update();
+}
+
+void ImageItem::setColorAdjustmentsRecord(const ColorAdjustments &adj)
+{
+    m_colorAdjust = adj;
 }
 
 void ImageItem::updateDisplayedPixmap()

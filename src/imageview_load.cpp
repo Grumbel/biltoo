@@ -86,6 +86,53 @@ QImage clampSoftForGalleryCell(const QImage &pixels, int needEdge, int minEdge)
     return ImageCache::clampToMaxEdge(pixels, target);
 }
 
+/**
+ * Worker-side: bake durable content appearance and clamp for display install.
+ * Must not run on the GUI — materialize + scale of multi-MP samples is the
+ * ←/→ hitch when done in installDisplayPixels.
+ */
+QImage prepareImageModeDisplaySample(const QString &path, QImage raw,
+                                     SessionAppearance::PixelKind kind)
+{
+    if (raw.isNull()) {
+        return {};
+    }
+    WorkspaceItemState app;
+    ThumtooCache::StoredContentAppearance stored;
+    if (ThumtooCache::loadContentAppearance(path, &stored)) {
+        app.contentHFlip = stored.contentHFlip;
+        app.contentVFlip = stored.contentVFlip;
+        app.contentQuarterTurns = stored.contentQuarterTurns;
+        app.hasCrop = stored.hasCrop;
+        app.cropRect = stored.cropRect;
+        app.cropSourceSize = stored.cropSourceSize;
+        app.cropRotation = stored.cropRotation;
+        if (stored.hasGrade) {
+            app.colorAdjust.brightness = stored.gradeBrightness;
+            app.colorAdjust.contrast =
+                stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+            app.colorAdjust.saturation =
+                stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
+            app.colorAdjust.hue = stored.gradeHue;
+            app.colorAdjust.gamma = stored.gradeGamma <= 0
+                ? 1.0
+                : (stored.gradeGamma / 100.0);
+            app.colorAdjust.invert = stored.gradeInvert;
+        }
+    }
+    if (SessionAppearance::hasContentAppearance(app)
+        || !app.colorAdjust.isIdentity()) {
+        raw = SessionAppearance::materializeDisplay(raw, app, kind);
+    }
+    const int cap = (kind == SessionAppearance::PixelKind::SoftPreview)
+                        ? ThumtooCache::kGalleryLadderEdge
+                        : ThumtooCache::kImageLadderEdge;
+    if (ImageCache::longEdge(raw) > cap) {
+        raw = raw.scaled(cap, cap, Qt::KeepAspectRatio, Qt::FastTransformation);
+    }
+    return raw;
+}
+
 /** Queue onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
 void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
                         const QImage &preview, quint64 gen, int role)
@@ -157,7 +204,11 @@ void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
             if (!guard || !guard->matchesLoadGeneration(gen)) {
                 return;
             }
-            const QImage preview = loadSoftPreviewPixels(path, softEdge);
+            QImage preview = loadSoftPreviewPixels(path, softEdge);
+            if (!preview.isNull()) {
+                preview = prepareImageModeDisplaySample(
+                    path, preview, SessionAppearance::PixelKind::SoftPreview);
+            }
             queuePreviewLoaded(guard, path, preview, gen, roleInt);
         },
         2);
@@ -175,7 +226,12 @@ void startNativeFullDecodeJob(const QPointer<ImageView> &guard, const QString &p
             if (!guard || !guard->matchesLoadGeneration(gen)) {
                 return;
             }
-            const QImage image = ImageLoader::load(path);
+            QImage image = ImageLoader::load(path);
+            if (!image.isNull()) {
+                // Cap + bake on the worker — never multi-MP materialize/fromImage on GUI.
+                image = prepareImageModeDisplaySample(
+                    path, image, SessionAppearance::PixelKind::FullSource);
+            }
             queueImageLoaded(guard, path, image, gen, roleInt);
         },
         -1);
@@ -218,6 +274,10 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
             // Soft stand-in still upgrades the view; keep climbing via schedule.
             if (!ImageCache::adequate(image, qualityEdge) && ThumtooCache::isAvailable()) {
                 (void)ThumtooCache::scheduleDisplayPixels(path, qualityEdge);
+            }
+            if (!image.isNull()) {
+                image = prepareImageModeDisplaySample(
+                    path, image, SessionAppearance::PixelKind::FullSource);
             }
             if (ImageCache::longEdge(image) > qualityEdge) {
                 image = image.scaled(qualityEdge, qualityEdge, Qt::KeepAspectRatio,
@@ -273,29 +333,35 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     if (image.isNull()) {
         return nullptr;
     }
-    auto *item = new ImageItem(path, image);
-    // Ctor leaves intrinsic at 1×1; install logical layout size immediately.
-    // Reject 1×1 provisional placeholders; need a real layout size.
+    // Size-first ctor + setSourceImageReady: never QPixmap::fromImage of multi-MP
+    // in ImageItem(path, image) during LoadReplace.
     const QSize layout = layoutSizeForPath(path, image);
-    if (layout.width() > 1 && layout.height() > 1) {
-        item->setIntrinsicSize(layout);
+    const QSize intrinsic = (layout.width() > 1 && layout.height() > 1)
+                                ? layout
+                                : QSize(1, 1);
+    auto *item = new ImageItem(path, intrinsic);
+    if (isImageMode()) {
+        item->setSourceImageReady(image);
+    } else {
+        item->setSourceImage(image);
     }
     applyItemModeFlags(item);
-    // Session crop survives navigation: apply only on full on-disk decodes.
-    // Workspace Duplicate passes already-final pixels (possibly cropped) — do
-    // not re-apply the path crop or the rect is interpreted on the wrong size.
+    // Session crop survives navigation. Image mode LoadReplace jobs already
+    // bake durable appearance on the worker — only sync chrome flags here.
+    // applyContentToItem would materialize + fromImage again on the GUI.
     if (applyStoredSessionCrop && isImageMode()) {
         const bool haveId = m_currentSessionId != kInvalidSessionImageId;
         const bool havePath = m_itemStates.contains(path);
         if (haveId || havePath) {
             const WorkspaceItemState app = appearanceForNewImageModeItem(path);
-            // Bound id with no store entry: skip path fallback (IDENTITY).
-            if (haveId) {
-                if (m_appearance.get(m_currentSessionId)) {
-                    SessionAppearance::applyContentToItem(item, app);
-                }
+            if (haveId && !m_appearance.get(m_currentSessionId)) {
+                // no store entry
             } else {
-                SessionAppearance::applyContentToItem(item, app);
+                item->setContentHFlip(app.contentHFlip);
+                item->setContentVFlip(app.contentVFlip);
+                item->setSessionCrop(app.hasCrop, app.cropRect);
+                item->setColorAdjustmentsRecord(app.colorAdjust);
+                SessionAppearance::syncItemLayoutToContentOrientation(item, app);
             }
         }
     }
@@ -434,11 +500,26 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             galleryDisplayEdgeForItem(item, /*allowHighRes=*/true),
             ThumtooCache::kFilmstripLadderEdge);
     }
-    const QImage display =
-        SessionAppearance::materializeDisplay(pixelsForDisplay, appearance, kind);
+    // Image mode LoadReplace jobs bake appearance on the worker. Gallery still
+    // materializes here (soft ≤512). Never DeviceCoordinateCache on install —
+    // that snapshots multi-MP on the GUI every ←/→.
+    QImage display = pixelsForDisplay;
+    const bool imageModeInstall = isImageMode();
+    if (!imageModeInstall) {
+        display = SessionAppearance::materializeDisplay(pixelsForDisplay, appearance, kind);
+    } else if (ImageCache::longEdge(pixelsForDisplay) <= ThumtooCache::kGalleryLadderEdge
+               && (SessionAppearance::hasContentAppearance(appearance)
+                   || !appearance.colorAdjust.isIdentity())) {
+        // Soft/LQIP pending path may still need a cheap bake on GUI.
+        display = SessionAppearance::materializeDisplay(pixelsForDisplay, appearance, kind);
+    }
 
     if (kind == SessionAppearance::PixelKind::FullSource) {
-        item->setSourceImage(display);
+        if (imageModeInstall) {
+            item->setSourceImageReady(display);
+        } else {
+            item->setSourceImage(display);
+        }
         // Logical size from path — FullSource may be a ladder step, not geometry.
         QSize logical = logicalSizeForPath(path);
         if (!isPositiveSize(logical) || logical.width() <= 1 || logical.height() <= 1
@@ -448,15 +529,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
             item->setIntrinsicSize(logical);
         }
-        // Soft was NoCache. DeviceCoordinateCache of a multi-MP pixmap forces a
-        // huge GUI-thread raster snapshot on every full install (slow ←/→).
-        // Use it only for moderate samples; large FullSource stays NoCache.
         item->setCacheMode(QGraphicsItem::NoCache);
-        const int dispEdge = ImageCache::longEdge(display);
-        if (dispEdge > 0 && dispEdge <= ThumtooCache::kImageLadderEdge
-            && !m_slideshowProgressActive) {
-            item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-        }
         item->update();
     } else {
         item->setPreviewImage(display); // NoCache soft path
@@ -472,7 +545,8 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     item->setContentHFlip(appearance.contentHFlip);
     item->setContentVFlip(appearance.contentVFlip);
     item->setSessionCrop(appearance.hasCrop, appearance.cropRect);
-    item->setColorAdjustments(appearance.colorAdjust);
+    // Baked samples: record grade for HUD only — do not rebuild the pixmap.
+    item->setColorAdjustmentsRecord(appearance.colorAdjust);
     SessionAppearance::syncItemLayoutToContentOrientation(item, appearance);
 
     // Do NOT emit sessionAppearanceChanged from decode/install (filmstrip is
@@ -1898,7 +1972,11 @@ void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
                 }
                 return;
             }
-            const QImage image = ImageLoader::load(pathCopy);
+            QImage image = ImageLoader::load(pathCopy);
+            if (!image.isNull()) {
+                image = prepareImageModeDisplaySample(
+                    pathCopy, image, SessionAppearance::PixelKind::FullSource);
+            }
             ImageView *view = guard.data();
             if (!view) {
                 return;

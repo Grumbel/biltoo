@@ -1072,11 +1072,17 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->setClipRect(crop);
         }
         painter->setOpacity(m_opacity);
-        if (!m_source.isNull() && !m_previewPixels && !pixmap().isNull()) {
+        if (!m_source.isNull() && !m_previewPixels) {
             // Sample into logical contentRect — pixmap pixels are not geometry.
-            painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             const QRectF box = contentRect();
-            painter->drawPixmap(box, pixmap(), pixmap().rect());
+            if (!pixmap().isNull()) {
+                painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+                painter->drawPixmap(box, pixmap(), pixmap().rect());
+            } else {
+                // Large FullSource: skip QPixmap::fromImage on install; draw QImage.
+                painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+                painter->drawImage(box, m_source);
+            }
         } else if (!m_preview.isNull()) {
             // Provisional low-res: keep aspect inside content rect (no stretch).
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);

@@ -113,6 +113,11 @@ public:
     /** Replace or clear decoded pixels; keeps path and intrinsic size. */
     void setSourceImage(const QImage &image);
     /**
+     * Assign display-ready pixels (appearance already baked). Does not
+     * re-apply item-level flip/grade; skips multi-MP QPixmap::fromImage.
+     */
+    void setSourceImageReady(const QImage &image);
+    /**
      * Low-res stand-in while a full decode is in flight. Does not change
      * intrinsic geometry; painted scaled into contentRect().
      */
@@ -161,6 +166,8 @@ public:
     void setContentHFlip(bool on) { m_contentHFlip = on; }
     void setContentVFlip(bool on) { m_contentVFlip = on; }
     void setColorAdjustments(const ColorAdjustments &adj);
+    /** Store grade for HUD without rebuilding the display pixmap. */
+    void setColorAdjustmentsRecord(const ColorAdjustments &adj);
     ColorAdjustments colorAdjustments() const { return m_colorAdjust; }
     /**
      * Per-instance session crop in on-disk pixel coordinates (top-left origin).

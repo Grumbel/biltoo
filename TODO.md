@@ -2,6 +2,37 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-675-no-gui-mp-install.** Image ←/→: bake+clamp on worker; no multi-MP fromImage on GUI.
+Prior: **674**.
+
+### Root cause
+Every LoadReplace still hit the GUI with:
+1. `materializeDisplay` (flip/rotate/crop/grade) of multi-MP samples
+2. `QPixmap::fromImage` of the full sample in `ImageItem` ctor / `setSourceImage`
+3. `setColorAdjustments` re-running grade + fromImage again
+4. `DeviceCoordinateCache` toggle forcing a GUI snapshot on soft/full install
+
+Soft-first alone cannot win if the *full* install freezes the UI on arrival.
+
+### Change
+- Worker `prepareImageModeDisplaySample`: durable appearance bake + Fast clamp ≤2048
+- Soft / native / quality / quiet-native jobs prepare before queue to GUI
+- `ImageItem::setSourceImageReady`: no item-level re-bake; skip fromImage when edge>768 (paint `drawImage`)
+- `setColorAdjustmentsRecord` + install path never rebuilds pixmap for baked grade
+- `setPreviewImage`: NoCache only (no DeviceCoordinateCache toggle)
+- Image mode `createItemFromImage`: size ctor + `setSourceImageReady`; no `applyContentToItem` re-bake
+- FullSource install: never DeviceCoordinateCache
+
+### Done criteria
+- [x] Multi-MP materialize/fromImage off GUI for Image LoadReplace
+- [x] Bundle **675**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-674-slideshow-soft-to-phase.** Soft/quality load jobs upgrade slideshow phase buffers.
 Prior: **673**.
 
