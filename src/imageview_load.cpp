@@ -318,8 +318,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     quint64 gen = m_loadGeneration.load();
     if (role == LoadReplace) {
         gen = ++m_loadGeneration;
-        // FocusFull: tell thumtoo this is Primary (overview + tile pyramid).
-        if (isImageMode()) {
+        // FocusFull / EnsureTiles: skip during slideshow — every ←/→ was
+        // restarting tile pyramid builds and competing with soft decode.
+        if (isImageMode() && !m_slideshowProgressActive) {
             (void)ThumtooCache::setPrimaryInterest(
                 path, ThumtooCache::kBatchOverviewEdge);
         }
@@ -405,11 +406,12 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                     image = soft;
                 }
             }
-            if (image.isNull()
-                || qMax(image.width(), image.height()) < ssEdge * 5 / 10) {
-                // Last resort full extract, then scale to viewport — keep
-                // m_ssFullByPath bounded for rapid flip.
-                image = ImageLoader::load(path);
+            // Do not ImageLoader::load during slideshow — archive full extract
+            // stalls the pool and still feeds 24MP into phase/atlas after scale.
+            if ((image.isNull()
+                 || qMax(image.width(), image.height()) < ssEdge * 5 / 10)
+                && ThumtooCache::isAvailable()) {
+                (void)ThumtooCache::scheduleDisplayPixels(path, ssEdge);
             }
             if (!image.isNull()
                 && qMax(image.width(), image.height()) > ssEdge) {

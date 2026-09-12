@@ -2,6 +2,33 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-542-slideshow-no-24mp-phase.** Cap phase pixels; no full extract / EnsureTiles on flip.
+Prior: **541**.
+
+### Issue
+Rapid flip still stalled. Logs showed `phase-from … 4032x6048`, filmstrip
+`makeThumbnail`, and `EnsureTiles START` every step.
+
+### Root cause
+`slideshowSoftPlaceholder` **upscaled** soft thumbs to native size for phase
+buffers; `slideshowPixelsForPath` returned those 24MP images into
+`ensureMotionAtlas` on the GUI thread. LoadReplace still fell back to full
+extract; every Image-mode LoadReplace called setPrimaryInterest (EnsureTiles).
+
+### Changes
+- Soft placeholder + phase path: viewport edge only, never upscale to native
+- Slideshow LoadReplace: no `ImageLoader::load`; PreferCache schedule only
+- Skip setPrimaryInterest while slideshow is active
+
+### Done criteria
+- [x] Bundle **542**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-541-slideshow-preload-debounce.** Cap/debounce slideshow preload.
 Prior: **540**.
 

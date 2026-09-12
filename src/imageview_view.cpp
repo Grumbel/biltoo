@@ -1268,24 +1268,18 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
     if (softIt != m_ssSoftByPath.cend() && !softIt->isNull()) {
         return *softIt;
     }
-    const QImage cached = ImageCache::get(path);
-    if (cached.isNull()) {
+    // Prefer viewport-edge cache, then any soft. Never upscale to native size —
+    // that produced 4K–6K phase-from buffers and stalled rapid ←/→.
+    const int edge = slideshowTargetEdge();
+    QImage soft = ImageCache::get(path, edge);
+    if (soft.isNull()) {
+        soft = ImageCache::get(path);
+    }
+    if (soft.isNull()) {
         return QImage();
     }
-    QSize fullSz;
-    const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend() && it->isValid() && it->width() > 0) {
-        fullSz = *it;
-    } else {
-        fullSz = ImageLoader::probeSize(path);
-        if (fullSz.isValid() && fullSz.width() > 0) {
-            rememberImageSize(path, fullSz);
-        }
-    }
-    QImage soft = cached;
-    if (fullSz.isValid() && fullSz.width() > 0
-        && (soft.width() != fullSz.width() || soft.height() != fullSz.height())) {
-        soft = soft.scaled(fullSz, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    if (qMax(soft.width(), soft.height()) > edge) {
+        soft = soft.scaled(edge, edge, Qt::KeepAspectRatio, Qt::FastTransformation);
     }
     m_ssSoftByPath.insert(path, soft);
     return soft;
@@ -1315,11 +1309,15 @@ QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) c
 
 QImage ImageView::slideshowPixelsForPath(const QString &path)
 {
-    const QImage full = slideshowFullIfReady(path);
-    if (!full.isNull()) {
-        return orientSlideshowImage(full, path);
+    const int edge = slideshowTargetEdge();
+    QImage img = slideshowFullIfReady(path);
+    if (img.isNull()) {
+        img = slideshowSoftPlaceholder(path);
     }
-    return orientSlideshowImage(slideshowSoftPlaceholder(path), path);
+    if (!img.isNull() && qMax(img.width(), img.height()) > edge) {
+        img = img.scaled(edge, edge, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    return orientSlideshowImage(img, path);
 }
 
 void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
