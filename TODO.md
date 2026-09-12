@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-619-paint-viewport-phases.** Split paintViewportOverlays into named phases.
+Prior: **618**.
+
+### Change
+- `paintTextRubberBandOverlay`
+- `paintWorkspaceViewportChrome` (selection chrome + page guide)
+- `paintSlideshowLetterboxComposite` (fillPad / motion covers)
+- `paintEmptySessionInvite`
+- `paintHudPanels`
+- `paintSlideshowSeekbar`
+- `paintViewportOverlays` is a short orchestration driver
+
+### Done criteria
+- [x] Overlay paint paths named; behaviour preserved
+- [x] Bundle **619**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-618-wheel-event-phases.** Split wheelEvent gallery vs view zoom.
 Prior: **617**.
 

@@ -1040,6 +1040,12 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void paintViewportOverlays(QPainter &painter);
+    void paintTextRubberBandOverlay(QPainter &painter);
+    void paintWorkspaceViewportChrome(QPainter &painter);
+    void paintSlideshowLetterboxComposite(QPainter &painter);
+    void paintEmptySessionInvite(QPainter &painter);
+    void paintHudPanels(QPainter &painter);
+    void paintSlideshowSeekbar(QPainter &painter);
     void recomputeTextSearchMatches();
     void finishTextRubberBand();
     [[nodiscard]] bool pageYUpForTextLayer() const;

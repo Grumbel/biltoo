@@ -95,7 +95,7 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
     }
 }
 
-void ImageView::paintViewportOverlays(QPainter &painter)
+void ImageView::paintTextRubberBandOverlay(QPainter &painter)
 {
     if (m_textRubberbanding && !m_textRubberRect.isEmpty()) {
         painter.save();
@@ -108,20 +108,10 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         painter.restore();
     }
 
-    // Viewport-device-pixel overlays (handles, HUD, slideshow cover). Called from
-    // drawForeground with an identity transform so this works on both the
-    // raster and QOpenGLWidget viewports — a second QPainter on the GL viewport
-    // after QGraphicsView::paintEvent clears the framebuffer (white screen).
+}
 
-    // Workspace chrome in *viewport* device pixels (not scene drawForeground).
-    // Painting here keeps handles a constant on-screen size under any view or
-    // item scale — the same coordinate space as edge affordances and the HUD.
-    if (m_cropMode) {
-        paintCropOverlay(painter);
-    }
-    if (m_attentionMode) {
-        paintAttentionOverlay(painter);
-    }
+void ImageView::paintWorkspaceViewportChrome(QPainter &painter)
+{
     if (!m_cropMode && isWorkspaceMode() && m_scene) {
         QList<ImageItem *> selected;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
@@ -148,11 +138,11 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             paintPageGuideHandles(&painter);
         }
     }
-    if (!m_cropMode && !m_attentionMode && m_hoverEdge != EdgeZone::None && isImageMode()
-        && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
-        drawEdgeAffordances(painter);
-    }
 
+}
+
+void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
+{
     // Letterbox underlay. During transitions, crossfade from→to underlays.
     // Blurs are cached by stable path key; each paint only draws two pixmaps
     // with opacity (GPU). CPU blur runs once per slide/viewport, not per frame.
@@ -277,6 +267,11 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         // cues still draw (return here used to kill the entire overlay pass).
     }
 
+
+}
+
+void ImageView::paintEmptySessionInvite(QPainter &painter)
+{
     // Empty session: invite the user to open or drop images.
     if (m_items.isEmpty() && !hasClassicPath() && !m_cropMode) {
         painter.save();
@@ -332,6 +327,11 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         }
         painter.restore();
     }
+
+}
+
+void ImageView::paintHudPanels(QPainter &painter)
+{
     // HUD layout:
     //   top-left  — transient actions (slideshow, fit, …), never Next/Prev
     //   top-right — session index [i/n]
@@ -535,6 +535,11 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         }
     }
 
+
+}
+
+void ImageView::paintSlideshowSeekbar(QPainter &painter)
+{
     // Slideshow timeline (extended HUD only): video-player style progress bar
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
     // the host clock. Falls back to per-interval dwell line if no timeline.
@@ -624,6 +629,36 @@ void ImageView::paintViewportOverlays(QPainter &painter)
             }
         }
     }
+}
+
+void ImageView::paintViewportOverlays(QPainter &painter)
+{
+    paintTextRubberBandOverlay(painter);
+
+    // Viewport-device-pixel overlays (handles, HUD, slideshow cover). Called from
+    // drawForeground with an identity transform so this works on both the
+    // raster and QOpenGLWidget viewports — a second QPainter on the GL viewport
+    // after QGraphicsView::paintEvent clears the framebuffer (white screen).
+
+    // Workspace chrome in *viewport* device pixels (not scene drawForeground).
+    // Painting here keeps handles a constant on-screen size under any view or
+    // item scale — the same coordinate space as edge affordances and the HUD.
+    if (m_cropMode) {
+        paintCropOverlay(painter);
+    }
+    if (m_attentionMode) {
+        paintAttentionOverlay(painter);
+    }
+    paintWorkspaceViewportChrome(painter);
+    if (!m_cropMode && !m_attentionMode && m_hoverEdge != EdgeZone::None && isImageMode()
+        && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
+        drawEdgeAffordances(painter);
+    }
+
+    paintSlideshowLetterboxComposite(painter);
+    paintEmptySessionInvite(painter);
+    paintHudPanels(painter);
+    paintSlideshowSeekbar(painter);
 }
 
 void ImageView::paintEvent(QPaintEvent *event)
