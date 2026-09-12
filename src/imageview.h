@@ -269,6 +269,10 @@ public:
      * often reallocated while pixels stay the same, which forced a full CPU
      * blur every paint and spiked transitions.
      */
+    bool zoomBlurKeyCached(qint64 key) const;
+    bool zoomBlurKeyInFlight(qint64 key) const;
+    int claimZoomBlurFlightSlot(qint64 key) const;
+    void installZoomBlurResult(const QImage &blurred, qint64 key, quint64 gen);
     void scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const;
     void invalidateZoomBlurQueue() const;
     void paintZoomBlurUnderlay(QPainter *painter, const QImage &image,

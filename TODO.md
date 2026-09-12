@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-635-zoomblur-expand.** Phase ZoomBlur schedule slots and expanded-path result apply.
+Prior: **634**.
+
+### Change
+- ZoomBlur: `zoomBlurKeyCached`, `zoomBlurKeyInFlight`, `claimZoomBlurFlightSlot`,
+  `installZoomBlurResult`
+- Expand: `applyExpandedPathsResult` (empty message / append / load)
+
+### Done criteria
+- [x] ZoomBlur and expand completion paths named
+- [x] Bundle **635**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-634-motion-bias-crop-buttons.** Split motion bias selection; extract crop button drawing.
 Prior: **633**.
 

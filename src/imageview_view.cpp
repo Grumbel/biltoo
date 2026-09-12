@@ -1876,27 +1876,29 @@ void ImageView::invalidateZoomBlurQueue() const
     m_zoomBlurInFlightKey[0] = m_zoomBlurInFlightKey[1] = 0;
 }
 
-void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const
+bool ImageView::zoomBlurKeyCached(qint64 key) const
 {
-    if (m_slideshowNavHot) {
-        return;
-    }
-    if (image.isNull() || vw < 1 || vh < 1 || key == 0) {
-        return;
-    }
-    // Already cached?
     for (int i = 0; i < 2; ++i) {
         if (m_zoomBlurSourceKey[i] == key && !m_zoomBlurUnderlay[i].isNull()) {
-            return;
+            return true;
         }
     }
-    // Already building this key?
+    return false;
+}
+
+bool ImageView::zoomBlurKeyInFlight(qint64 key) const
+{
     for (int i = 0; i < 2; ++i) {
         if (m_zoomBlurInFlightGen[i] == m_zoomBlurGeneration
             && m_zoomBlurInFlightKey[i] == key) {
-            return;
+            return true;
         }
     }
+    return false;
+}
+
+int ImageView::claimZoomBlurFlightSlot(qint64 key) const
+{
     // Allow up to two concurrent builds (outgoing + incoming underlay). Never
     // cancel the other key mid-transition — that caused ZoomBlur flicker as
     // from/to fought over a single in-flight slot every paint frame.
@@ -1909,11 +1911,60 @@ void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint6
         }
     }
     if (flightSlot < 0) {
-        return; // both slots busy with other keys; try again next frame
+        return -1; // both slots busy with other keys; try again next frame
     }
     const quint64 gen = m_zoomBlurGeneration;
     m_zoomBlurInFlightGen[flightSlot] = gen;
     m_zoomBlurInFlightKey[flightSlot] = key;
+    return flightSlot;
+}
+
+void ImageView::installZoomBlurResult(const QImage &blurred, qint64 key, quint64 gen)
+{
+    if (gen != m_zoomBlurGeneration) {
+        return; // page flipped — discard
+    }
+    int slot = -1;
+    for (int i = 0; i < 2; ++i) {
+        if (m_zoomBlurSourceKey[i] == key) {
+            slot = i;
+            break;
+        }
+    }
+    if (slot < 0) {
+        slot = m_zoomBlurUnderlay[0].isNull() ? 0 : 1;
+    }
+    m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
+    m_zoomBlurSourceKey[slot] = key;
+    m_zoomBlurLastGood = m_zoomBlurUnderlay[slot];
+    m_zoomBlurLastGoodKey = key;
+    for (int i = 0; i < 2; ++i) {
+        if (m_zoomBlurInFlightGen[i] == gen
+            && m_zoomBlurInFlightKey[i] == key) {
+            m_zoomBlurInFlightGen[i] = 0;
+            m_zoomBlurInFlightKey[i] = 0;
+        }
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const
+{
+    if (m_slideshowNavHot) {
+        return;
+    }
+    if (image.isNull() || vw < 1 || vh < 1 || key == 0) {
+        return;
+    }
+    if (zoomBlurKeyCached(key) || zoomBlurKeyInFlight(key)) {
+        return;
+    }
+    if (claimZoomBlurFlightSlot(key) < 0) {
+        return;
+    }
+    const quint64 gen = m_zoomBlurGeneration;
     // Snapshot pixels for the worker (avoid touching GUI QImage after return).
     const QImage src = image.copy();
     const QPointer<ImageView> guard(const_cast<ImageView *>(this));
@@ -1931,36 +1982,12 @@ void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint6
             if (!self) {
                 return;
             }
-            if (gen != self->m_zoomBlurGeneration) {
-                return; // page flipped — discard
-            }
-            int slot = -1;
-            for (int i = 0; i < 2; ++i) {
-                if (self->m_zoomBlurSourceKey[i] == key) {
-                    slot = i;
-                    break;
-                }
-            }
-            if (slot < 0) {
-                slot = self->m_zoomBlurUnderlay[0].isNull() ? 0 : 1;
-            }
-            self->m_zoomBlurUnderlay[slot] = QPixmap::fromImage(blurred);
-            self->m_zoomBlurSourceKey[slot] = key;
-            self->m_zoomBlurLastGood = self->m_zoomBlurUnderlay[slot];
-            self->m_zoomBlurLastGoodKey = key;
-            for (int i = 0; i < 2; ++i) {
-                if (self->m_zoomBlurInFlightGen[i] == gen
-                    && self->m_zoomBlurInFlightKey[i] == key) {
-                    self->m_zoomBlurInFlightGen[i] = 0;
-                    self->m_zoomBlurInFlightKey[i] = 0;
-                }
-            }
-            if (self->viewport()) {
-                self->viewport()->update();
-            }
+            self->installZoomBlurResult(blurred, key, gen);
         }, Qt::QueuedConnection);
     });
 }
+
+
 
 void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
                                       const QRect &viewportRect, qint64 stableKey) const

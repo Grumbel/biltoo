@@ -539,6 +539,26 @@ void MainWindow::setExpandProgress(int current, int total, const QString &messag
     }
 }
 
+void MainWindow::applyExpandedPathsResult(const QStringList &images, bool append, int startAt,
+                                          const QStringList &sourcePaths)
+{
+    if (images.isEmpty()) {
+        setExpandProgressBusy(false);
+        if (statusBar()) {
+            statusBar()->showMessage(
+                expandEmptyResultMessage(sourcePaths, append), 8000);
+        }
+        return;
+    }
+    setExpandProgressMessage(
+        tr("Opening %n image(s)…", "", images.size()));
+    if (append) {
+        applyExpandedAppend(images);
+    } else {
+        applyExpandedLoad(images, startAt);
+    }
+}
+
 void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, int startAt)
 {
     const quint64 gen = ++m_expandGeneration;
@@ -596,29 +616,12 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
             if (!window || gen != window->m_expandGeneration) {
                 return;
             }
-            if (images.isEmpty()) {
-                window->setExpandProgressBusy(false);
-                // Replace path cleared the filmstrip at start; restore current.
-                if (!append && window->m_thumbnailBar) {
-                    window->m_thumbnailBar->setSession(window->m_session.paths(),
-                                                      window->m_session.ids());
-                }
-                if (window->statusBar()) {
-                    window->statusBar()->showMessage(
-                        expandEmptyResultMessage(paths, append), 8000);
-                }
-                return;
-            }
-            window->setExpandProgressMessage(
-                MainWindow::tr("Opening %n image(s)…", "", images.size()));
-            if (append) {
-                window->applyExpandedAppend(images);
-            } else {
-                window->applyExpandedLoad(images, startAt);
-            }
+            window->applyExpandedPathsResult(images, append, startAt, paths);
         }, Qt::QueuedConnection);
     });
 }
+
+
 
 void MainWindow::sortFileList()
 {

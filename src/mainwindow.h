@@ -409,6 +409,8 @@ private:
      * @p append false → replace session (loadFiles); true → appendFiles.
      */
     void expandPathsInBackground(const QStringList &paths, bool append, int startAt = 0);
+    void applyExpandedPathsResult(const QStringList &images, bool append, int startAt,
+                                  const QStringList &sourcePaths);
     /**
      * After paths/ids/appearance rows are resolved from a .biltoo document,
      * install session, mode, Workspace poses, and background.
