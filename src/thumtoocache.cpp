@@ -840,12 +840,10 @@ void startNextPixelJobsUnlocked()
                 const int got = decoded.isNull()
                                     ? 0
                                     : qMax(decoded.width(), decoded.height());
-                // Embedded thumbs are often ~256 and cannot grow without a full
-                // decode — treat any successful payload as settled for this edge
-                // so we do not spin schedulePixels forever (ok=0 loops).
-                constexpr int kEmbedded = 2; // thumtoo::PixelSource::Embedded
+                // Settle when the payload covers the request. Do not settle on
+                // Embedded alone (APP1 thumbs are often ~160–320): thumtoo must
+                // still JpegShrink to the requested soft edge.
                 const bool ok = got >= (edge * 9) / 10
-                    || (got > 0 && source == kEmbedded)
                     || (got > 0 && got >= edge / 2);
                 if (ok) {
                     g_pixelsSettled.insert(inflightKey);

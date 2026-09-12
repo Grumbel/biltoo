@@ -2,6 +2,35 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-502-gallery-progressive-upgrade.** Restore soft→HQ climb; stop have≥128 freeze.
+Prior: **501**. Companion: **thumtoo-177**.
+
+### Root cause
+biltoo-500 treated any soft payload ≥128 as final for Gallery to stop a 512
+spin on Embedded placeholders. Progressive upgrade never ran; tiles stayed at
+APP1 / soft-placeholder size.
+
+### Change
+- Remove `have >= 128` early-outs in `updateGalleryDecodeWindow` / `scheduleGalleryDecode`
+- SoftOnly settle no longer keys on Embedded alone (needs real edge coverage)
+- Relies on thumtoo-177 JpegShrink when APP1 is too small
+
+### Scroll note
+Gallery soft decode is off the GUI thread (Qt pool + thumtoo workers).
+`setInterest` is debounced 80ms on scroll. Remaining jank is more likely
+FullViewportUpdate + many DeviceCoordinateCache tiles than source I/O on the
+GUI thread — separate investigation if still bad after upgrade fix.
+
+### Done criteria
+- [x] Visible tiles climb soft ladder / overview while have < want
+- [x] Bundle **502**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-501-zoomblur-transition-flicker.** Stop ZoomBlur from/to cancel fight.
 Prior: **500**.
 

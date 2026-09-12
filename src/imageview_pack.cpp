@@ -87,10 +87,6 @@ void ImageView::updateGalleryDecodeWindow()
 
         const int want = galleryWantEdgeForPath(path, sceneVisible);
         st.want = want;
-        // Any soft placeholder (≥128) is enough for gallery; HQ later.
-        if (st.have >= 128) {
-            continue;
-        }
         if (st.have >= want) {
             continue;
         }

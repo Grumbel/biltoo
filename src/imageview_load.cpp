@@ -515,19 +515,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
 
     st.inflight = requestEdge;
     addPendingWorkspacePath(path);
-    // Placeholder soft is enough for gallery tiles; HQ is a later upgrade.
-    if (have >= 128) {
-        st.inflight = 0;
-        st.have = qMax(st.have, have);
-        takePendingWorkspacePath(path);
-        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-            dbg && dbg[0] != '\0' && dbg[0] != '0') {
-            fprintf(stderr,
-                    "biltoo/gallery: soft placeholder path need=%d have=%d\n",
-                    want, have);
-        }
-        return;
-    }
+    // Progressive: keep climbing while have < want (soft → overview).
+    // Shortfall settle lives in ThumtooCache::g_pixelsSettled / gaveUpWant so
+    // we do not spin the same SoftOnly edge forever when only Embedded exists.
     emit statusChanged();
 
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
