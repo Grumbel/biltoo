@@ -2,6 +2,30 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-480-overview-interest.** Overview schedule + interest bump on gallery scroll.
+Prior: **479**. Companions: **thumtoo-163**, **thumtoo-164**.
+
+### Change
+- `kBatchOverviewEdge` (1024), `scheduleOverviewPixels`, `bumpInterestEpoch`, `cancelPendingThumtooWork`
+- ImageLoader schedules overview when display edge is 513–1024
+- Gallery decode progressive path uses overview; scroll debounce bumps interest epoch
+- Requires thumtoo tip ≥164 for `request_overview_pixels`
+
+### Next
+- Filmstrip overview parity
+- set_interest snapshot on thumtoo
+- Provenance overlay / trust TileSynth in UI
+
+### Done criteria
+- [x] Overview + interest wiring
+- [x] Bundle **480**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-479-pipeline-thumtoo162-cursor.** Plan notes thumtoo-162 archive cursor.
 Prior: **478**. Companion: **thumtoo-162-fastbatch-archive-cursor**.
 

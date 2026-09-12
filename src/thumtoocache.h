@@ -59,6 +59,8 @@ void shutdown();
 constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048};
 constexpr int kFilmstripLadderEdge = 256;
 constexpr int kGalleryLadderEdge = 512;  // durable soft max (thumtoo kMaxSoftLadderEdge)
+/** FastBatch overview max (thumtoo kBatchMaxEdge) — Q1 JpegShrink / TileSynth. */
+constexpr int kBatchOverviewEdge = 1024;
 /** Highest ladder step used for display-edge snap (not a soft durable level). */
 constexpr int kImageLadderEdge = 2048;
 
@@ -112,8 +114,22 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
 /** @return false if skipped (already in-flight, settled success, or unsupported). */
 bool schedulePixels(const QString &path, int maxEdge);
 
+/**
+ * FastBatch overview: request_overview_pixels (≤ kBatchOverviewEdge).
+ * Prefer when display edge is above soft max but at or below batch max.
+ */
+bool scheduleOverviewPixels(const QString &path, int maxEdge);
+
 /** Allow a later schedulePixels for this path/edge after a shortfall delivery. */
 void forgetPixelsSettled(const QString &path, int maxEdge);
+
+/**
+ * Bump thumtoo interest epoch and drop stale queued decode work (gallery scroll).
+ * @return new epoch, or 0 if thumtoo unavailable.
+ */
+quint64 bumpInterestEpoch();
+/** Drop all queued thumtoo jobs (pixels/size/tiles); in-flight may still finish. */
+int cancelPendingThumtooWork();
 
 /** True while a request_pixels for this path/edge is queued or running. */
 bool isPixelsInflight(const QString &path, int maxEdge);

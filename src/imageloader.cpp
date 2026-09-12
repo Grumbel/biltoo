@@ -935,6 +935,12 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                     if (softWant > haveStep) {
                         ThumtooCache::schedulePixels(path, softWant);
                     }
+                    // FastBatch overview when display needs more than soft max.
+                    if (maxEdge > ThumtooCache::kGalleryLadderEdge
+                        && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
+                        ThumtooCache::scheduleOverviewPixels(
+                            path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
+                    }
                 }
                 if (decoded.width() > maxEdge || decoded.height() > maxEdge) {
                     decoded = decoded.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
@@ -955,9 +961,14 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                 return {};
             }
         }
-        // True miss: build soft ladder only (≤ soft max) for next time.
+        // True miss: soft ladder (≤ soft max); overview when display is larger.
         ThumtooCache::schedulePixels(
             path, qMin(maxEdge, ThumtooCache::kGalleryLadderEdge));
+        if (maxEdge > ThumtooCache::kGalleryLadderEdge
+            && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
+            ThumtooCache::scheduleOverviewPixels(
+                path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
+        }
     }
 
     if (PagePath::isPageRef(path) || PagePath::isPdfImageRef(path)) {

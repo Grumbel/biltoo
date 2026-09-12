@@ -258,6 +258,8 @@ ImageView::ImageView(QWidget *parent)
                 m_galleryDecodeScrollTimer->setInterval(80);
                 connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
                     if (isGalleryMode()) {
+                        // Drop stale thumtoo queue work from the previous window.
+                        (void)ThumtooCache::bumpInterestEpoch();
                         updateGalleryDecodeWindow();
                     }
                 });
@@ -274,6 +276,8 @@ ImageView::ImageView(QWidget *parent)
                 m_galleryDecodeScrollTimer->setInterval(80);
                 connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
                     if (isGalleryMode()) {
+                        // Drop stale thumtoo queue work from the previous window.
+                        (void)ThumtooCache::bumpInterestEpoch();
                         updateGalleryDecodeWindow();
                     }
                 });

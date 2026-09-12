@@ -913,6 +913,104 @@ bool schedulePixels(const QString &path, int maxEdge)
 #endif
 }
 
+bool scheduleOverviewPixels(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (maxEdge <= 0 || isUnsupported(path)) {
+        return false;
+    }
+    if (maxEdge > kBatchOverviewEdge) {
+        maxEdge = kBatchOverviewEdge;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return false;
+    }
+    const QString inflightKey =
+        path + QLatin1Char('#') + QStringLiteral("ov") + QString::number(maxEdge);
+    {
+        std::lock_guard lock(g_mu);
+        if (g_pixelsInflight.contains(inflightKey)
+            || g_pixelsSettled.contains(inflightKey)) {
+            return false;
+        }
+        g_pixelsInflight.insert(inflightKey);
+        thumtoo::Client *c = clientUnlocked();
+        if (!c) {
+            g_pixelsInflight.remove(inflightKey);
+            return false;
+        }
+        ++g_pixelsActive;
+        const QString pathCopy = path;
+        const int edge = maxEdge;
+        c->request_overview_pixels(
+            uri, edge,
+            [pathCopy, edge, inflightKey](std::string, int,
+                                          std::optional<thumtoo::PixelLevel> px) {
+                QImage decoded;
+                if (px && !px->bytes.empty()) {
+                    const QByteArray ba(
+                        reinterpret_cast<const char *>(px->bytes.data()),
+                        int(px->bytes.size()));
+                    decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
+                }
+                {
+                    std::lock_guard lock(g_mu);
+                    g_pixelsInflight.remove(inflightKey);
+                    const int got = decoded.isNull()
+                                        ? 0
+                                        : qMax(decoded.width(), decoded.height());
+                    if (got >= (edge * 9) / 10) {
+                        g_pixelsSettled.insert(inflightKey);
+                    }
+                    g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                    startNextPixelJobsUnlocked();
+                }
+                emit bridge()->ladderReady(pathCopy, edge, decoded);
+            });
+    }
+    return true;
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#endif
+}
+
+quint64 bumpInterestEpoch()
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    init();
+    std::lock_guard lock(g_mu);
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return 0;
+    }
+    // Drop host-side pixel queue so we do not keep dispatching stale paths.
+    g_pixelsQueue.clear();
+    return static_cast<quint64>(c->bump_interest_epoch());
+#else
+    return 0;
+#endif
+}
+
+int cancelPendingThumtooWork()
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    init();
+    std::lock_guard lock(g_mu);
+    g_pixelsQueue.clear();
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return 0;
+    }
+    return static_cast<int>(c->cancel_pending());
+#else
+    return 0;
+#endif
+}
+
 void preparePaths(const QStringList &paths)
 {
 #ifdef BILTOO_HAVE_THUMTOO

@@ -495,15 +495,18 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
-    // Progressive: soft ladder first (thumtoo request_pixels, fast), then
-    // display-sized shrink-on-decode only after soft is on the tile. Asking for
-    // want=1024 with have=0 used to extract archive members on the UI pool and
-    // leave inflight stuck while soft 512 finished in thumtoo.
+    // Progressive: soft ladder first, then FastBatch overview (≤1024).
     // Never ImageLoader::load (native) in Gallery.
     const int softCap = ThumtooCache::kGalleryLadderEdge;
-    const int requestEdge = (have < softCap * 9 / 10)
-                                ? qMin(want, softCap)
-                                : want;
+    const int batchCap = ThumtooCache::kBatchOverviewEdge;
+    int requestEdge = want;
+    if (have < softCap * 9 / 10) {
+        requestEdge = qMin(want, softCap);
+    } else if (want <= batchCap) {
+        requestEdge = want;
+    } else {
+        requestEdge = batchCap; // above batch: still request overview max
+    }
 
     st.inflight = requestEdge;
     addPendingWorkspacePath(path);
@@ -570,9 +573,15 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     (void)ThumtooCache::schedulePixels(path, requestEdge);
                     soft.inflight = requestEdge;
                 } else if (ThumtooCache::isAvailable()
-                           && requestEdge > ThumtooCache::kGalleryLadderEdge) {
-                    // Display edge above soft max: durable soft will not grow.
-                    // loadThumbnail already tried shrink-on-decode; stop retrying.
+                           && requestEdge > ThumtooCache::kGalleryLadderEdge
+                           && requestEdge <= ThumtooCache::kBatchOverviewEdge) {
+                    // FastBatch overview (≤1024): request_overview_pixels.
+                    const int ov = qMin(requestEdge, ThumtooCache::kBatchOverviewEdge);
+                    (void)ThumtooCache::scheduleOverviewPixels(path, ov);
+                    soft.inflight = ov;
+                } else if (ThumtooCache::isAvailable()
+                           && requestEdge > ThumtooCache::kBatchOverviewEdge) {
+                    // Above batch overview: durable soft will not grow further.
                     soft.inflight = 0;
                     soft.gaveUpWant = qMax(soft.gaveUpWant, requestEdge);
                 } else {
