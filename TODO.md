@@ -2,6 +2,28 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-489-pipeline-checklist.** Sync PIXEL_PIPELINE_REDESIGN status with shipped work.
+Prior: **488**. Companion: **thumtoo-171**.
+
+### Change
+- Mark archive cursor, FastScale, interest cancel, set_interest, tiles construct done
+- Speculative idle is thumtoo-171
+
+### Next
+- Prefer Q2 construct over re-decode when tiles exist (UI path)
+- Optional unified request_raster
+- Q1 invalidate when Q2 pyramid lands
+
+### Done criteria
+- [x] Checklist sync
+- [x] Bundle **489**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-488-gallery-primary-focus.** Gallery selection as Primary in setInterest.
 Prior: **487**.
 

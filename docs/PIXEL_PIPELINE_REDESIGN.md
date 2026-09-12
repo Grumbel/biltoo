@@ -474,7 +474,7 @@ paths.
 
 - [ ] Freeze quality enum + provenance struct in thumtoo public headers.
 - [ ] Document archive cursor single-stream invariant.
-- [ ] Agree `batch_max_edge` default 1024.
+- [x] Agree `batch_max_edge` default 1024.
 
 ### Phase 1 — Provenance + peek
 
@@ -483,20 +483,20 @@ paths.
 
 ### Phase 2 — FastBatch lane
 
-- [ ] Archive cursor + windowed batch extract.
-- [ ] FastScale decode ≤ `batch_max_edge`.
+- [x] Archive cursor + windowed batch extract.
+- [x] FastScale decode ≤ `batch_max_edge` (`request_overview_pixels`).
 - [ ] Process member byte LRU shared with focus.
-- [ ] Interest cancellation drops out-of-window members from the plan.
+- [x] Interest cancellation drops out-of-window members from the plan.
 
 ### Phase 3 — FocusFull + tile pyramid
 
-- [ ] Full decode → tile writer (Q2).
-- [ ] `construct_from_tiles(target_edge)`.
+- [x] Full decode → tile writer (Q2) (existing + FocusFull).
+- [x] `construct_from_tiles` / `get_pixels_from_tiles`.
 - [ ] Invalidate Q1 outputs when Q2 pyramid appears.
 
 ### Phase 4 — Unified request API
 
-- [ ] `set_interest` / `request_raster` / cancel-by-epoch.
+- [x] `set_interest` + cancel-by-epoch (unified `request_raster` still open).
 - [ ] Retire unconstrained FIFO `request_pixels` queue or make it a thin
       wrapper over interest.
 
@@ -509,7 +509,7 @@ paths.
 
 - [ ] Gallery/filmstrip/slideshow speak interest + provenance only.
 - [ ] Remove competing ad hoc full loads for overview.
-- [ ] Update `docs/GALLERY_SOFT.md` to point here.
+- [x] Update `docs/GALLERY_SOFT.md` to point here.
 
 Each phase must keep **time-to-first-pixel** ≤ status quo for warm soft hits;
 Phases 2–3 are what fix cold archives and mid-edge quality.
