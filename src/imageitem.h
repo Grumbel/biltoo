@@ -87,10 +87,13 @@ public:
      */
     void setIntrinsicSize(const QSize &size);
     const QImage &sourceImage() const { return m_source; }
-    /** Best pixels for display / filmstrip override: full source, else soft preview. */
+    /**
+     * Active display sample: full source when decoded, else soft preview.
+     * May be null. Does not transfer ownership.
+     */
     const QImage &displayImage() const
     {
-        return !m_source.isNull() ? m_source : m_preview;
+        return hasDecodedPixels() ? m_source : m_preview;
     }
     const QImage &previewImage() const { return m_preview; }
     /**
@@ -100,11 +103,6 @@ public:
     bool hasDecodedPixels() const { return !m_source.isNull() && !m_previewPixels; }
     /** Any displayable pixels (full decode or soft preview). */
     bool hasDisplayPixels() const { return !m_source.isNull() || !m_preview.isNull(); }
-    /**
-     * Active display sample: full source when decoded, else soft preview.
-     * May be null. Does not transfer ownership.
-     */
-    QImage displayImage() const;
     /** Long edge of current display pixels (0 if none). */
     int displayPixelLongEdge() const;
     /**

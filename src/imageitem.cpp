@@ -102,17 +102,9 @@ void ImageItem::setSourceImage(const QImage &image)
     update();
 }
 
-QImage ImageItem::displayImage() const
-{
-    if (hasDecodedPixels()) {
-        return m_source;
-    }
-    return m_preview;
-}
-
 int ImageItem::displayPixelLongEdge() const
 {
-    const QImage img = displayImage();
+    const QImage &img = displayImage();
     return img.isNull() ? 0 : qMax(img.width(), img.height());
 }
 

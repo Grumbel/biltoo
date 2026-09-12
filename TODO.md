@@ -2,6 +2,24 @@
 
 ## Status (2026-09-12)
 
+**Tip: biltoo-594-fix-displayimage-overload.** One displayImage() const-ref API.
+Prior: **593**.
+
+### Change
+- Remove duplicate `QImage displayImage() const` that conflicted with the
+  existing `const QImage &displayImage() const` inline
+- Inline uses `hasDecodedPixels()`; `displayPixelLongEdge` takes const-ref
+
+### Done criteria
+- [x] Builds without displayImage overload error
+- [x] Bundle **594**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-12)
+
 **Tip: biltoo-593-slideshow-path-duration.** Shared path duration + tick progress.
 Prior: **592**.
 
