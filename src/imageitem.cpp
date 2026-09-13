@@ -635,7 +635,11 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,
     }
     m_hFlip = false;
     m_vFlip = false;
-    setSourceImage(cropped);
+    // Baked crop is the new display identity: pixels and logical box must match
+    // (SIZE.md). Leaving full-frame intrinsic stretched the crop into the old
+    // contentRect — the reported "cropped image stretched to full size" bug.
+    setSourceImageReady(cropped);
+    setIntrinsicSize(QSize(dw, dh));
     return true;
 }
 

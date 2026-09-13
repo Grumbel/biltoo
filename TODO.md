@@ -2,6 +2,26 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-730-crop-apply-intrinsic.** cropToLocalRect sets intrinsic to the baked crop size.
+Prior: **729**.
+
+### Problem
+After Apply, paint does `drawImage(contentRect, m_source)`. contentRect comes from
+intrinsic size. `cropToLocalRect` replaced pixels with the crop but left intrinsic
+at the full-frame size → crop stretched into the old aspect box.
+
+### Change
+- `cropToLocalRect`: `setSourceImageReady(cropped)` + `setIntrinsicSize(dw, dh)`
+
+### Done criteria
+- [x] Bundle **730**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-729-crop-intrinsic-aspect.** Crop mode keeps logical intrinsic aspect (SIZE.md).
 Prior: **728**.
 
