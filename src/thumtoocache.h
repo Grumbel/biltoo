@@ -58,13 +58,13 @@ void shutdown();
  * higher: loadThumbnail shrink-on-decode at the on-screen ladder step (never
  * native full decode). docs/GALLERY_SOFT.md
  */
-constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048};
+constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048, 4096, 8192};
 constexpr int kFilmstripLadderEdge = 256;
 constexpr int kGalleryLadderEdge = 512;  // durable soft max (thumtoo kMaxSoftLadderEdge)
 /** FastBatch overview max (thumtoo kBatchMaxEdge) — Q1 JpegShrink / TileSynth. */
 constexpr int kBatchOverviewEdge = 1024;
-/** Highest ladder step used for display-edge snap (not a soft durable level). */
-constexpr int kImageLadderEdge = 2048;
+/** Highest ladder step used for display-edge snap (interim; tiles later). */
+constexpr int kImageLadderEdge = 8192;
 
 /** Smallest ladder step ≥ displayLongEdge (px); max step if larger. */
 inline int ceilLadderEdge(int displayLongEdge)
@@ -137,7 +137,7 @@ bool isPixelsPending(const QString &path, int maxEdge);
  * Prefer when display edge is above soft max but at or below batch max.
  */
 bool scheduleOverviewPixels(const QString &path, int maxEdge);
-/** PreferCache raster up to kImageLadderEdge (2048); host callback via ladderReady. */
+/** PreferCache raster up to kImageLadderEdge (8192 interim); host callback via ladderReady. */
 bool scheduleDisplayPixels(const QString &path, int maxEdge);
 /** Full / near-native via thumtoo request_full_pixels (≤ ~8192). */
 bool scheduleFullPixels(const QString &path, int maxEdge = 0);

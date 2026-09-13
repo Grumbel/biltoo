@@ -1496,9 +1496,9 @@ quint64 setPrimaryInterest(const QString &path, int edge)
     if (edge <= 0) {
         edge = kBatchOverviewEdge;
     }
-    // Primary is FocusFull / tile pyramid — allow up to kImageLadderEdge (2048),
+    // Primary is FocusFull / tile pyramid — allow up to kImageLadderEdge,
     // not FastBatch overview max (1024). Clamping to 1024 left Gallery stuck at
-    // need=2048 have=1024.
+    // need above overview when primary.
     if (edge > kImageLadderEdge) {
         edge = kImageLadderEdge;
     }

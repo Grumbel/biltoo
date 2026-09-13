@@ -1898,7 +1898,7 @@ qreal ImageView::slideshowMotionHeadroom() const
 int ImageView::slideshowTargetEdge() const
 {
     // Viewport × DPR × motion headroom, ladder-snapped. Cap at image ladder
-    // (2048), not native — enough for zoomed Ken Burns without full extract.
+    // display max (kImageLadderEdge), not unbounded native — interim until tiles.
     if (!viewport()) {
         return ThumtooCache::kImageLadderEdge;
     }

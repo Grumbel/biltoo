@@ -50,7 +50,7 @@ Biltoo requests a **band**, not “exactly N pixels.” Edge numbers snap via
 |------|------------|-------------------|--------------------|
 | **Soft** | `schedulePixels` | ≤ **512** (`kGalleryLadderEdge`) | Soft ladder level ≤ request (durable) |
 | **Overview** | `scheduleOverviewPixels` | ~**1024** (`kBatchOverviewEdge`) | jpeg_shrink / overview (not a soft level) |
-| **Display (PreferCache)** | `scheduleDisplayPixels` | ≤ **2048** (`kImageLadderEdge`) | **Best available ≤ request**: soft, overview, or tile reconstruct |
+| **Display (PreferCache)** | `scheduleDisplayPixels` | ≤ **8192** (`kImageLadderEdge`, interim) | **Best available ≤ request**: soft, overview, or tile reconstruct |
 | **Full** | `scheduleFullPixels` | up to native / host max | Near-native / full decode path |
 
 **Critical:** PreferCache does **not** guarantee `got ≥ 0.9 × requested`.
@@ -120,7 +120,7 @@ higher band can be requested (gallery zoom, Image zoom).
 |----------|---------------|--------------|
 | **Gallery** | On-screen cell long edge (ladder-snapped) | SoftDisplay |
 | **Image mode** | Viewport × DPR (capped), then native if still short | EscalateToFull |
-| **Slideshow** | `ladder(viewport × DPR × motionHeadroom)` capped at 2048; **need** ≈ 70% of target | EscalateToFull |
+| **Slideshow** | `ladder(viewport × DPR × motionHeadroom)` capped at kImageLadderEdge; **need** ≈ 70% of target | EscalateToFull |
 
 Gallery **`GallerySoftState`** is prioritization only (concurrency, blank tiles,
 on-screen want). PreferCache plateau is mirrored from PathRasterService — not

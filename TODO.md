@@ -2,6 +2,29 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-757-display-cap-8192.** Interim raise whole-frame display max 2048→8192.
+Prior: **756**. Tile paint still the real fix later.
+
+### Change
+- `ImageCache::kDisplayMaxEdge` **8192**
+- `ThumtooCache::kImageLadderEdge` **8192**
+- ladder steps include **4096, 8192**
+- Docs note this is stopgap until grid-tile display
+
+### Apply
+```bash
+git pull /path/to/biltoo-757-display-cap-8192.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **757**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-756-workspace-climb-rebased.** 755 rebased onto origin `cfea1cc`.
 Prior origin tip: **cfea1cc**. Abandoned divergent **755** (based on 30e3c6b).
 

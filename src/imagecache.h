@@ -19,7 +19,8 @@
  * - Values are raw samples (no content flip/rotate/crop/grade applied).
  * - put() is upward-only by long edge; larger replaces smaller.
  * - Frames larger than kDisplayMaxEdge are clamped on insert (RAM bound).
- * - Soft ladder (≤512) and display edges (≤2048) share one slot per path.
+ * - Soft ladder (≤512) and display edges (≤8192 interim) share one slot per path.
+ *   True deep zoom should use grid tiles; raised cap is a stopgap.
  * - Eviction is LRU by access order (get/put touch the entry).
  *
  * See docs/PIXEL_HOST_CACHE.md.
@@ -30,10 +31,10 @@ namespace ImageCache {
 constexpr int kPreviewEdge = 512;
 
 /**
- * Max long edge retained in process memory. Matches thumtoo image ladder
- * (viewport × DPR × motion headroom), not native multi‑MP frames.
+ * Max long edge retained in process memory (interim whole-frame path).
+ * Matches thumtoo kFullMaxEdge / Full schedule. Real deep zoom needs tiles.
  */
-constexpr int kDisplayMaxEdge = 2048;
+constexpr int kDisplayMaxEdge = 8192;
 
 /** Long edge of image, or 0 if null. */
 inline int longEdge(const QImage &img)
