@@ -2,6 +2,32 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-767-todo-parallel-size-probes.** Document post-0.1.0 parallel size-probe work (no code).
+Prior: **766**.
+
+### Note (after 0.1.0)
+Gallery size-first open schedules one `ThumtooCache::scheduleProbe` per path.
+Each call only *submits* `thumtoo::Client::request_size` (async); the real work
+is serialized inside thumtoo’s client/worker. Biltoo’s `QThreadPool` does not
+decode sizes in parallel today.
+
+**Post-0.1.0 options (do not rush for 0.1.0):**
+1. thumtoo: concurrent `request_size` / bounded worker pool for size-only jobs
+2. thumtoo: batch size API for archive leaves (one TOC walk → N sizes)
+3. biltoo: optional `prepare_paths`-style batch for `//archive:` members once (1) exists
+
+Risk if done naively in biltoo only: flooding extract for solid RAR/CBR, SQLite
+writer contention, GUI `sizeReady` storms.
+
+### Done criteria
+- [x] Bundle **767** (docs only)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-766-windowstate-version-gate.** Skip corrupt/cross-Qt windowState restore (dock SEGV).
 Prior: **765**.
 

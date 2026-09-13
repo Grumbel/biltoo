@@ -79,6 +79,10 @@ never confuse EXIF stand-ins with a completed soft level.
 
 Provisional square stand-ins are layout last-resort only; they must not drive the first Gallery pack for cold archives.
 
+**Parallelism:** size probes are submitted per path via `scheduleProbe` →
+`request_size`; throughput is limited by thumtoo’s client, not biltoo’s GUI
+thread. Concurrent/batch size probes are deferred past 0.1.0 (see TODO tip 767).
+
 ## Two paths (aligned with thumtoo)
 
 | Path | When | Mechanism |
