@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-745-loadreplace-path-raster-soft.** Image LoadReplace cold open climbs via PathRaster only.
+Prior: **744**.
+
+### Problem
+LoadReplace still kicked Soft with bare `ThumtooCache::schedulePixels`, bypassing
+PathRasterService state (want/have/policy) while PreferCache/Full were already
+contracted to the service.
+
+### Change
+- Cold LoadReplace → `requestEscalateClimb` (Soft→PreferCache→Full policy)
+- Contract §1 Soft-band exception for ImageLoader/filmstrip only
+- PATH_RASTER anti-patterns updated
+
+### Done criteria
+- [x] Bundle **745**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-744-gallery-soft-mirror-only.** GallerySoftState is prioritization mirror; climb only PathRaster SoftDisplay.
 Prior: **743**.
 

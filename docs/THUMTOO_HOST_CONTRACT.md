@@ -27,6 +27,12 @@ Consumers call `PathRasterService::ensure` (with a climb policy). They **must no
 call `scheduleDisplayPixels` / `forgetPixelsSettled` / ad-hoc PreferCache retries
 to “unstick” a path. That is the service’s job under the policy below.
 
+**Soft-band exception:** `ImageLoader::loadThumbnail` / filmstrip may call
+`ThumtooCache::schedulePixels` (Soft ≤512) when PathRaster is not the caller.
+Display (PreferCache) and Full **must** still go through PathRasterService.
+ImageView LoadReplace cold open uses `requestEscalateClimb` (not bare
+`schedulePixels`).
+
 ---
 
 ## 2. Request bands (what a schedule means)
@@ -123,9 +129,9 @@ Sample climb only changes sharpness.
    `clearPreferGaveUp` as a product feature). Retry belongs only inside the
    service if the contract is extended; today plateau → Full under
    EscalateToFull, or raise want under SoftDisplay.
-2b. **Second Full climb owners** (`scheduleImageModeNativeFullQuiet`, parallel
-   PreferCache from pool workers). PreferCache/Full only via PathRasterService
-   (workers must `requestEscalateClimb` on the GUI thread).
+2b. **Second Full / PreferCache owners** outside PathRasterService (including
+   pool workers). Workers must `requestEscalateClimb` on the GUI thread.
+   Soft-only `schedulePixels` from ImageLoader is allowed (§1 exception).
 3. **Assuming PreferCache returns want** — log/HUD may show target 2048 while
    have is 1024; that is plateau, not a silent bug by itself.
 4. **Second climb owners** — no parallel ImageModeClimb / gallery pool PreferCache.

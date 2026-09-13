@@ -71,4 +71,8 @@ display climb (Display band ≤2048). See contract §2 Full vs Display.
 - Assuming PreferCache returns want edge
 - Second climb state machines / `scheduleDisplayPixels` outside PathRasterService
 - Pool workers calling thumtoo schedule APIs directly (use `requestEscalateClimb`)
+- ImageView cold LoadReplace using bare `schedulePixels` (use `requestEscalateClimb`)
+
+`ImageLoader` soft `schedulePixels` for filmstrip/loadThumbnail remains allowed
+(Soft band only; see contract §1).
 

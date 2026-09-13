@@ -887,10 +887,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         }
     }
 
-    // Cold host: kick soft ladder before pool jobs compete with native full.
-    if (role == LoadReplace && ThumtooCache::isAvailable()
-        && ImageCache::get(path).isNull()) {
-        (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+    // Cold host: Soft→PreferCache→Full via PathRaster only (contract §1).
+    if (role == LoadReplace && ImageCache::get(path).isNull()) {
+        requestEscalateClimb(path, ThumtooCache::kGalleryLadderEdge);
     }
 
     // Rapid ←/→: soft schedule only — no native full / PreferCache until settle.
