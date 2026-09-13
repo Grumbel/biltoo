@@ -76,6 +76,9 @@ pollable buffer. When better pixels arrive, the **next** draw uses them.
 | **Motion atlas** | `m_dwellAtlas` / `m_ssToAtlas` (viewport × headroom long edge) | Cheap per-frame blit |
 
 Soft and target-edge placeholders are treated like the real image for geometry.
+While size is still **provisional** (square archive stand-in before probe),
+`resolveMotionLogicalSize` uses the **sample aspect** so dest is not a
+1:1 box stretching a landscape soft (speed change / seek).
 Never derive camera math from sample pixel width/height. Never write sample
 dimensions into the logical size map. Phase entry calls `ensureSlideshowLogicalSize`; paint and static framing use
 `slideshowZoomBaseScale(logical, viewport)` so Fit/Fill/Actual stay consistent

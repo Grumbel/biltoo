@@ -537,6 +537,20 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     } else if (any && viewport()) {
         viewport()->update();
     }
+    // Slideshow paints from path→logical, not the underlay item. When the probe
+    // lands for a phase path, refresh dest aspect (and atlas if needed).
+    if (m_slideshowProgressActive
+        && (path == m_ssFromPath || path == m_ssToPath)) {
+        if (path == m_ssFromPath && !m_ssFromImage.isNull()) {
+            requestDwellAtlasRebuild();
+        }
+        if (path == m_ssToPath && !m_ssToImage.isNull()) {
+            requestToPhaseAtlasRebuild();
+        }
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
 }
 
 void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)

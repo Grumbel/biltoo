@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-706-slideshow-provisional-aspect.** Motion dest uses sample aspect while provisional.
+Prior: **705**.
+
+### Problem
+Speed change / seek showed wrong aspect: provisional square logical size drove
+paintMotionCover dest while soft/atlas had the real aspect → stretch.
+
+### Change
+- `resolveMotionLogicalSize`: ignore provisional; use soft aspect
+- Framing underlay: same while provisional
+- Probe on phase path: atlas rebuild + update
+
+### Done criteria
+- [x] Bundle **706**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-705-cap-display-edge-native.** PreferCache/HUD never request past known native long edge.
 Prior: **704**.
 

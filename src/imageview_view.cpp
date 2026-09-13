@@ -808,11 +808,16 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     }
     const QString path = item->path();
     QSize logical = ensureSlideshowLogicalSize(path);
-    if (logical.isValid() && logical.width() > 1 && logical.height() > 1
-        && !isProvisionalImageSize(path)) {
+    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
         // Align underlay intrinsic with logical size so contentRect matches
         // Ken Burns / overlay geometry when motion is off.
         item->setIntrinsicSize(logical);
+    } else if (!item->displayImage().isNull()) {
+        // Provisional: frame from sample aspect so underlay is not square-squashed.
+        logical = scaleToLongEdge(item->displayImage().size(), kProvisionalLayoutLongEdge);
+        if (isPositiveSize(logical)) {
+            item->setIntrinsicSize(logical);
+        }
     }
     const QRectF content = item->contentRect();
     if (content.width() < 1.0 || content.height() < 1.0) {
@@ -823,7 +828,7 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     const qreal vh = qreal(qMax(1, viewport()->height()));
     const QPointF mid = item->mapToScene(content.center());
 
-    if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
+    if (!isPositiveSize(logical)) {
         logical = QSize(int(content.width()), int(content.height()));
     }
     qreal scale = slideshowZoomBaseScale(logical, int(vw), int(vh));
@@ -2464,21 +2469,26 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
 
 QSize ImageView::resolveMotionLogicalSize(const QImage &image, const QString &path) const
 {
-    // HARD RULE: logical size owns geometry. Soft rasters are sampling only.
-    QSize logical = logicalSizeForPath(path);
-    if (logical.isValid() && logical.width() >= 1 && logical.height() >= 1) {
+    // HARD RULE: definitive logical size owns geometry. Soft rasters are sampling
+    // only — but while size is still provisional (archive square stand-in, or
+    // probe not yet back), dest aspect must follow the *sample*. Otherwise
+    // paintMotionCover stretches a 16:9 soft into a 1:1 dest (speed change /
+    // seek storms many cold paths before probes finish).
+    const QSize logical = logicalSizeForPath(path);
+    if (isPositiveSize(logical) && !path.isEmpty() && !isProvisionalImageSize(path)) {
         return logical;
     }
-    // Provisional: keep aspect from the sample, magnitude neutral — never
-    // treat soft long-edge as native. Phase entry should have called
-    // ensureSlideshowLogicalSize so this is rare and short-lived.
-    const qreal rw = qMax(1, image.width());
-    const qreal rh = qMax(1, image.height());
-    constexpr qreal kProvLong = 1000.0;
-    if (rw >= rh) {
-        return QSize(int(kProvLong), int(qMax(1.0, kProvLong * rh / rw)));
+    if (!image.isNull() && isPositiveSize(image.size())) {
+        const QSize fromSample =
+            scaleToLongEdge(image.size(), kProvisionalLayoutLongEdge);
+        if (isPositiveSize(fromSample)) {
+            return fromSample;
+        }
     }
-    return QSize(int(qMax(1.0, kProvLong * rw / rh)), int(kProvLong));
+    if (isPositiveSize(logical)) {
+        return logical;
+    }
+    return QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);
 }
 
 QRectF ImageView::computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh,
