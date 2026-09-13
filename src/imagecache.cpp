@@ -98,14 +98,15 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     }
     const int w = image->width();
     const int h = image->height();
+    // Host (biltoo) stamp: cyan border + cyan text, bottom-right biased grid —
+    // distinct from thumtoo magenta/yellow top-left soft stamps.
     const int border = qMax(2, qMin(w, h) / 64);
-    p.setPen(QPen(QColor(255, 0, 255), border));
+    p.setPen(QPen(QColor(0, 220, 255), border));
     p.setBrush(Qt::NoBrush);
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
-    // Compact multi-line block — pathname and metrics on separate lines so
-    // they do not paint over each other when tiled.
     QStringList lines;
+    lines << QStringLiteral("biltoo");
     if (!label.isEmpty()) {
         lines << label;
     }
@@ -113,9 +114,9 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     lines << QStringLiteral("le=%1").arg(qMax(w, h));
 
     QFont f = p.font();
-    f.setBold(false);
-    // Small fixed-ish size; avoid huge glyphs on multi-MP samples.
-    f.setPixelSize(qBound(9, qMin(w, h) / 48, 14));
+    f.setBold(true);
+    // ~2× previous 9–14px band.
+    f.setPixelSize(qBound(18, qMin(w, h) / 24, 28));
     p.setFont(f);
     const QFontMetrics fm(f);
     int blockW = 0;
@@ -124,8 +125,8 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     }
     const int lineH = fm.height();
     const int blockH = lineH * lines.size() + 2;
-    const int stepX = qMax(blockW + 28, w / 4);
-    const int stepY = qMax(blockH + 20, h / 5);
+    const int stepX = qMax(blockW + 36, w / 3);
+    const int stepY = qMax(blockH + 28, h / 4);
 
     auto drawOutlined = [&](const QPoint &o, const QString &s) {
         for (const QPoint d : {QPoint(-1, 0), QPoint(1, 0), QPoint(0, -1),
@@ -133,22 +134,33 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
             p.setPen(Qt::black);
             p.drawText(o + d, s);
         }
-        p.setPen(QColor(255, 255, 80));
+        p.setPen(QColor(0, 255, 220)); // cyan — host
         p.drawText(o, s);
     };
 
-    for (int y = border + 4; y + blockH < h - border; y += stepY) {
-        for (int x = border + 4; x + blockW < w - border; x += stepX) {
+    // Start from bottom-right quadrant so thumtoo top-left yellow stays readable.
+    const int x0 = qMax(border + 4, w / 2);
+    const int y0 = qMax(border + 4, h / 2);
+    for (int y = y0; y + blockH < h - border; y += stepY) {
+        for (int x = x0; x + blockW < w - border; x += stepX) {
             for (int i = 0; i < lines.size(); ++i) {
                 drawOutlined(QPoint(x, y + (i + 1) * lineH), lines.at(i));
             }
+        }
+    }
+    // One block near bottom-left as well if the BR grid is empty (tiny images).
+    if (y0 + blockH >= h - border || x0 + blockW >= w - border) {
+        const int x = border + 4;
+        const int y = qMax(border + 4, h - border - blockH - 4);
+        for (int i = 0; i < lines.size(); ++i) {
+            drawOutlined(QPoint(x, y + (i + 1) * lineH), lines.at(i));
         }
     }
     p.end();
     static bool once = false;
     if (!once) {
         once = true;
-        fprintf(stderr, "biltoo: DEBUG_OVERLAY watermark active\n");
+        fprintf(stderr, "biltoo: DEBUG_OVERLAY host watermark (cyan, BR)\n");
     }
 }
 

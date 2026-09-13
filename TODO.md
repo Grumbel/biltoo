@@ -2,6 +2,18 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-717-debug-overlay-host-style.** Larger host watermark; cyan BR vs thumtoo yellow TL.
+Prior: **716**.
+
+### Done criteria
+- [x] Bundle **717**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-716-debug-overlay-readable.** Smaller font, multi-line non-overlapping watermark.
 Prior: **715**.
 
