@@ -1553,6 +1553,10 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
     } else if (viewport()) {
         viewport()->update();
     }
+    // Workspace soft land: start PreferCache→Full (was never ensured until select).
+    if (isWorkspaceMode()) {
+        ensureWorkspaceQualityClimb();
+    }
 }
 
 bool ImageView::takePendingRestoreState(const QString &path, WorkspaceItemState *out)
@@ -1882,6 +1886,9 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
     emit workspacePathsChanged();
     if (isGalleryMode()) {
         scheduleGalleryDecodeWindowRefresh(48);
+    }
+    if (isWorkspaceMode()) {
+        ensureWorkspaceQualityClimb();
     }
 }
 

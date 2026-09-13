@@ -2,6 +2,32 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-756-workspace-climb-rebased.** 755 rebased onto origin `cfea1cc`.
+Prior origin tip: **cfea1cc**. Abandoned divergent **755** (based on 30e3c6b).
+
+### Why 755 failed
+Bundle 755 was `9a51493..075240a` including divergent `30e3c6b`. Origin already
+had `6c9eb62`/`cfea1cc` for the same HQ work → pull required merge, not FF.
+
+### Change (same as 755 intent)
+- Workspace climb after soft preview + completeLoadAdd
+- Workspace climb on view wheel zoom
+
+### Apply
+```bash
+git pull /path/to/biltoo-756-workspace-climb-rebased.bundle HEAD
+```
+(Fast-forward from `cfea1cc`.)
+
+### Done criteria
+- [x] Bundle **756**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-754-image-workspace-native-climb.** Fix provisional covers; Image parallel native; Workspace native on gave-up.
 Prior: **753**.
 

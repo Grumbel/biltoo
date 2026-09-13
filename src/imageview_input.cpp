@@ -367,6 +367,8 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     // Soft / PreferCache samples: climb when on-screen need exceeds have.
     if (isImageMode()) {
         maybeClimbImageModePixelsForView();
+    } else if (isWorkspaceMode()) {
+        ensureWorkspaceQualityClimb();
     }
     viewport()->update(); // refresh viewport-space chrome at the new scale
     emit statusChanged();
