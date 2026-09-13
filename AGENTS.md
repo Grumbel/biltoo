@@ -15,8 +15,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-727-path-raster-climb-pending**.
-Next bundle number: **728**.
+Latest agent handoff: **TODO.md → biltoo-728-gallery-soft-path-raster-sync**.
+Next bundle number: **729**.
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the

@@ -50,7 +50,8 @@ ImageView (viewport-sized texture).
 | Gallery | `scheduleGalleryDecode` → `ensure`; install on `ladderReady` → `applyGalleryLadderReady` |
 
 Gallery keeps `GallerySoftState` for visibility prioritization, concurrency budget
-(`inflight`), and gave-up tracking. Climb requests go through PathRasterService;
+(`inflight`), and a **mirror** of have/gaveUp. Decode-window pass 2 syncs those
+fields from PathRasterService (the climb authority). Dead `fullInflight` removed.
 `isClimbPending` avoids stuck gallery inflight when ensure schedules nothing.
 
 ## Residual cleanup
@@ -75,5 +76,5 @@ Apply is blocked while still awaiting native coverage.
 
 ## Next
 
-- Optionally fold GallerySoftState have/gaveUp into PathRasterService if duplication hurts
 - Smoke-test gallery zoom after soft shortfall; cold crop enter
+- Further thin GallerySoftState if mirror fields prove redundant in practice

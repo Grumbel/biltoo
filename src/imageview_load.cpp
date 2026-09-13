@@ -958,7 +958,7 @@ int ImageView::gallerySoftInflightCount() const
 {
     int n = 0;
     for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
-        if (it.value().inflight > 0 || it.value().fullInflight) {
+        if (it.value().inflight > 0) {
             ++n;
         }
     }
@@ -1074,12 +1074,13 @@ void ImageView::clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, in
 bool ImageView::gallerySoftScheduleBlocked(const GallerySoftState &st, int have,
                                            int want) const
 {
-    const int softCap = ThumtooCache::kGalleryLadderEdge;
-    // Soft PreferCache stop: only when still below soft max and that edge gave up.
-    if (!coversEdge(have, softCap) && st.gaveUpWant >= qMin(want, softCap)) {
+    if (gallerySoftInflightCount() >= galleryDecodeConcurrency()) {
         return true;
     }
-    if (gallerySoftInflightCount() >= galleryDecodeConcurrency()) {
+    // gaveUpWant is mirrored from PathRasterService in the decode window /
+    // scheduleGalleryDecode; block soft-band retries when still short of soft max.
+    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    if (!coversEdge(have, softCap) && st.gaveUpWant >= qMin(want, softCap)) {
         return true;
     }
     return false;
@@ -1108,7 +1109,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         scheduleImageSizeProbe(path);
     }
     GallerySoftState &st = m_gallerySoft[path];
-    if (st.failed || st.inflight > 0 || st.fullInflight) {
+    if (st.failed || st.inflight > 0) {
         return;
     }
 

@@ -92,7 +92,6 @@ Display-sized work is **on demand** for visible tiles (bounded by
 | `have` | Long edge of pixels on the item (soft or full) |
 | `want` | Target from visibility + zoom (may exceed 512) |
 | `inflight` | Soft edge currently requested (0 = idle) |
-| `fullInflight` | Full `ImageLoader::load` in progress |
 | `gaveUpWant` | Highest want finished without ~90% soft delivery — no soft retry of that want |
 | `failed` | Permanent hard failure |
 
@@ -100,9 +99,7 @@ Display-sized work is **on demand** for visible tiles (bounded by
 
 1. Compute `want` from visibility + zoom.
 2. If any item already has **full** decode → done for that path.
-3. If `want > 512` and visible → schedule **full** decode (`fullInflight`).
 4. Else soft: if `have >= min(want, 512)` → idle.
-5. If soft `inflight != 0` or `fullInflight` → wait.
 6. If `gaveUpWant >= softWant` and `have > 0` → stop soft growth for that band.
 7. Else set soft `inflight`, `loadThumbnail` / ladder; on shortfall keep waiting
    for `ladderReady` while thumtoo is still building; otherwise set `gaveUpWant`.

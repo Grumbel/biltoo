@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-728-gallery-soft-path-raster-sync.** Mirror PathRaster have/gaveUp into GallerySoftState; drop fullInflight.
+Prior: **727**.
+
+### Change
+- Remove dead `GallerySoftState::fullInflight` (never set after PathRaster migration)
+- Decode-window pass 2: sync `have` / `gaveUpWant` from PathRasterService
+- Clear gallery `gaveUpWant` when on-screen `want` rises past the shortfall band
+- Docs: GallerySoftState is a mirror for prioritization, not climb authority
+
+### Done criteria
+- [x] Bundle **728**
+
+### Next
+- Smoke-test gallery zoom after shortfall; cold crop enter
+- Further thin GallerySoftState if mirror fields prove redundant
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-727-path-raster-climb-pending.** Gallery inflight tracks PathRasterService queue state.
 Prior: **726**.
 

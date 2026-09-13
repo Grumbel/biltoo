@@ -622,14 +622,14 @@ int ImageView::pendingDecodeCount() const
             if (blankPaths.contains(it.key())) {
                 continue; // already counted
             }
-            if (it.value().inflight > 0 || it.value().fullInflight) {
+            if (it.value().inflight > 0) {
                 ++n;
             }
         }
     } else {
         // Image mode: only true in-flight climbs (single item).
         for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
-            if (it.value().inflight > 0 || it.value().fullInflight) {
+            if (it.value().inflight > 0) {
                 ++n;
             }
         }

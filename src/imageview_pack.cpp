@@ -249,6 +249,16 @@ void ImageView::updateGalleryDecodeWindow()
         const bool anyFull = item->hasDecodedPixels();
         const bool anyBlank = !item->hasDisplayPixels();
         st.have = qMax(st.have, item->displayPixelLongEdge());
+        // PathRasterService is the host climb authority — keep gallery have/gaveUp aligned.
+        if (m_pathRaster) {
+            st.have = qMax(st.have, m_pathRaster->haveEdge(path));
+            if (m_pathRaster->isGaveUp(path)) {
+                const int prWant = m_pathRaster->wantEdge(path);
+                if (prWant > 0) {
+                    st.gaveUpWant = qMax(st.gaveUpWant, prWant);
+                }
+            }
+        }
 
         // O(1) want from this item — was galleryWantEdgeForPath O(n) per path.
         int want = filmEdge;
@@ -257,6 +267,10 @@ void ImageView::updateGalleryDecodeWindow()
             want = onScreen ? edge : qMin(edge, softCap);
         }
         st.want = want;
+        // Higher on-screen need than a prior shortfall band → allow reschedule.
+        if (st.gaveUpWant > 0 && want > st.gaveUpWant) {
+            st.gaveUpWant = 0;
+        }
 
         if (!st.needsSoftSchedule(want, anyBlank, anyFull)) {
             continue;
