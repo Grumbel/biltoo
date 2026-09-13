@@ -341,7 +341,8 @@ void ImageView::paintHudPanels(QPainter &painter)
     // Crop mode: always show a pinned “Crop mode” cue so the tool state is clear.
     const QString ssPrefetchLine = slideshowPrefetchHudLine();
     if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
-        || m_slideshowPausedHud || !ssPrefetchLine.isEmpty()
+        || m_slideshowPausedHud || m_gallerySizeResolveActive
+        || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();

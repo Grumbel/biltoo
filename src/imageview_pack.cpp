@@ -466,6 +466,10 @@ void ImageView::applyLayout(GalleryPackReason reason)
     if (m_applyingLayout) {
         return;
     }
+    // Size-first open: do not pack on provisional stand-ins while probes run.
+    if (m_gallerySizeResolveActive) {
+        return;
+    }
     // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
     if (!isGalleryMode() || m_items.isEmpty() || m_layoutMode == LayoutMode::FreeForm) {
         return;

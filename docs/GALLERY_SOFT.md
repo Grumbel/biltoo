@@ -73,7 +73,7 @@ never confuse EXIF stand-ins with a completed soft level.
 
 1. **`primeGalleryGeometryFromCache`** — durable `cachedSize` + LQIP only (no ladder encode).
 2. **Placeholders** — one tile per session row; intrinsic size from cache or provisional stand-in.
-3. **Size-resolve gate (policy A)** — `startGallerySizeResolveIfNeeded` schedules probes for every path still missing a definitive size (archive/page leaves included). **No pack** until all probes settle (or 45s timeout). Centre HUD: “Resolving sizes… N / M”.
+3. **Size-resolve gate (policy A)** — `startGallerySizeResolveIfNeeded` schedules probes for every path still missing a definitive size (archive/page leaves included). **No pack** until all probes settle (or 45s timeout). Tiles are **hidden** until then. Centre HUD: “Resolving sizes… N / M” (`paintHudPanels` must list the gate in its outer if).
 4. **`finishGallerySizeResolve` → `applyLayout(EnterGallery)`** — single authoritative pack with real aspects.
 5. **`updateGalleryDecodeWindow`** — soft/display ladder by on-screen edge after geometry is final.
 

@@ -641,6 +641,15 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
         });
     }
     m_gallerySizeResolveTimer->start(45000);
+    // Hide provisional tiles — packing is deferred; otherwise they pile at the
+    // origin with stand-in sizes for seconds (looks like a broken layout).
+    for (ImageItem *item : m_items) {
+        if (item) {
+            item->setVisible(false);
+        }
+    }
+    // Full updates so the centre HUD repaints while BoundingRect would not.
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     if (viewport()) {
         viewport()->update();
     }
@@ -677,6 +686,14 @@ void ImageView::finishGallerySizeResolve()
     if (!wasActive) {
         return;
     }
+    for (ImageItem *item : m_items) {
+        if (item) {
+            item->setVisible(true);
+        }
+    }
+    if (isGalleryMode()) {
+        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    }
     if (isGalleryMode() && !m_items.isEmpty() && m_layoutMode != LayoutMode::FreeForm) {
         applyLayout(GalleryPackReason::EnterGallery);
         updateGalleryDecodeWindow();
@@ -697,9 +714,20 @@ void ImageView::cancelGallerySizeResolve()
     if (m_gallerySizeResolveTimer) {
         m_gallerySizeResolveTimer->stop();
     }
+    const bool wasActive = m_gallerySizeResolveActive;
     m_gallerySizeResolveActive = false;
     m_gallerySizeResolvePending.clear();
     m_gallerySizeResolveTotal = 0;
+    if (wasActive) {
+        for (ImageItem *item : m_items) {
+            if (item) {
+                item->setVisible(true);
+            }
+        }
+        if (isGalleryMode()) {
+            setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+        }
+    }
 }
 
 void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)

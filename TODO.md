@@ -2,6 +2,36 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-760-gallery-size-hud-visible.** Fix size-resolve HUD + hide tiles until pack.
+Prior: **759**.
+
+### Problem
+759 deferred pack but: (1) `paintHudPanels` outer gate omitted `m_gallerySizeResolveActive`
+so “Resolving sizes…” never painted; (2) placeholders stayed visible at stand-in sizes
+for seconds before the deferred pack.
+
+### Change
+- HUD gate includes size-resolve; centre progress can paint
+- Hide Gallery tiles while the gate is active; show + pack on finish
+- `applyLayout` no-ops while size-resolve is active (blocks GalleryController early pack)
+- FullViewportUpdate during resolve so the HUD refreshes
+
+Probes remain off-GUI (`scheduleProbe` → worker + `request_size`).
+
+### Apply
+```bash
+git pull /path/to/biltoo-760-gallery-size-hud-visible.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **760**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-759-gallery-size-first-hud.** Gallery waits for definitive sizes before first pack; centre HUD progress.
 Prior: **758**.
 
