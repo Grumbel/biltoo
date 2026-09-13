@@ -1840,6 +1840,24 @@ int ImageView::cappedDisplayEdgeForPath(const QString &path, int wantEdge) const
     return qMax(1, edge);
 }
 
+QImage ImageView::fullRasterForEdit(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    const QImage cached = ImageCache::get(path);
+    if (!cached.isNull() && sampleCoversNativeLogical(path, cached)) {
+        return cached;
+    }
+    // Cold path: decode on this thread (crop/Workspace enter). Prefer ImageCache
+    // after Image-mode climb so this is rare. Put result for peers / re-enter.
+    const QImage full = ImageLoader::load(path);
+    if (!full.isNull()) {
+        ImageCache::put(path, full);
+    }
+    return full;
+}
+
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const
 {
     // True when the sample is good enough to stop PreferCache / soft climb.

@@ -905,7 +905,7 @@ int ImageView::resetContentAppearanceForTargets()
             }
             // else: decode window will refill after soft state reset
         } else {
-            const QImage full = ImageLoader::load(path);
+            const QImage full = fullRasterForEdit(path);
             if (!full.isNull()) {
                 installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
                                      sid);

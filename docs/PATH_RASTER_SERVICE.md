@@ -56,7 +56,14 @@ Gallery keeps `GallerySoftState` for visibility prioritization, concurrency budg
 - Dead slideshow `m_ss*MotionBaseMs` removed (unitless phase owns progress).
 - Gallery pool soft climb helpers removed (PathRasterService + ladderReady only).
 
+## Edit full raster
+
+Crop / Workspace content bake uses `ImageView::fullRasterForEdit`: **ImageCache**
+when the sample already covers native logical size (after Image-mode / thumtoo
+full climb), otherwise `ImageLoader::load` + `ImageCache::put`. Cold crop enter
+can still decode on the caller thread; warm re-enter after Image mode does not.
+
 ## Next
 
-- Crop / Workspace native load still via `ImageLoader::load` (optional thumtoo full)
+- Optional async crop enter via `scheduleFullPixels` (avoid GUI-thread cold decode)
 - Optionally fold GallerySoftState have/gaveUp into PathRasterService if duplication hurts

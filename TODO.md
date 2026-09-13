@@ -2,6 +2,32 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-724-full-raster-for-edit.** Crop/Workspace full pixels prefer ImageCache native coverage.
+Prior: **723**.
+
+### Change
+- New `ImageView::fullRasterForEdit(path)`: ImageCache when covers native logical,
+  else `ImageLoader::load` + put into ImageCache
+- Crop enter / restore, content appearance bake, transform identity reset,
+  WorkspaceController restore use the helper (no redundant full decode when
+  Image-mode climb already filled the host cache)
+
+### Residual
+- Cold crop enter can still decode on the caller thread (no async crop UI yet)
+
+### Done criteria
+- [x] Bundle **724**
+
+### Next
+- Optional async crop enter via thumtoo `scheduleFullPixels`
+- Optional: fold GallerySoftState into PathRasterService
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-723-gallery-soft-path-raster.** Gallery soft/display climb via PathRasterService.
 Prior: **722**.
 

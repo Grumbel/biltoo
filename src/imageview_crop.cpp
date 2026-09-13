@@ -513,8 +513,9 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     if (!item) {
         return false;
     }
-    // Always edit against the full on-disk image so the crop region can grow.
-    const QImage full = ImageLoader::load(item->path());
+    // Full native raster (ImageCache when climb already covered; else decode).
+    // Crop region can grow beyond soft samples only with real native pixels.
+    const QImage full = fullRasterForEdit(item->path());
     if (full.isNull()) {
         return false;
     }
@@ -564,7 +565,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         app = *it;
         have = true;
     }
-    const QImage full = ImageLoader::load(item->path());
+    const QImage full = fullRasterForEdit(item->path());
     if (!full.isNull()) {
         item->setSourceImage(full);
     }
@@ -736,7 +737,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     const bool needsFullSource = app->hasCrop || app->contentHFlip || app->contentVFlip
         || app->contentQuarterTurns != 0;
     if (needsFullSource) {
-        const QImage full = ImageLoader::load(item->path());
+        const QImage full = fullRasterForEdit(item->path());
         if (!full.isNull()) {
             installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
                                  sid);

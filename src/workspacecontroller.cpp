@@ -201,7 +201,7 @@ void WorkspaceController::restoreStashedItems()
             || app->contentHFlip || app->contentVFlip
             || item->sourceImage().isNull();
         if (needsFullSource) {
-            const QImage full = ImageLoader::load(item->path());
+            const QImage full = m_view->fullRasterForEdit(item->path());
             if (!full.isNull()) {
                 // Raw on-disk reload → single gate (avoids double-bake on cycle).
                 m_view->installDisplayPixels(
