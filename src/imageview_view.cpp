@@ -334,6 +334,9 @@ void ImageView::zoomReset()
 {
     m_fitMode = false;
     m_fillMode = false;
+    if (m_stickyZoomEnabled) {
+        m_stickyZoomKind = StickyZoomKind::Actual;
+    }
     if (isMultiItemMode()) {
         resetTransform();
         if (isGalleryMode()) {
@@ -371,6 +374,9 @@ void ImageView::zoomFit()
 {
     m_fitMode = true;
     m_fillMode = false;
+    if (m_stickyZoomEnabled) {
+        m_stickyZoomKind = StickyZoomKind::Fit;
+    }
     if (isGalleryMode()) {
         // Fit the packed gallery into the viewport. applyLayout() alone only
         // resets to identity after a view-zoom when the pack already matches
@@ -413,6 +419,9 @@ void ImageView::zoomFill()
 {
     m_fitMode = true;
     m_fillMode = true;
+    if (m_stickyZoomEnabled) {
+        m_stickyZoomKind = StickyZoomKind::Fill;
+    }
     if (isGalleryMode()) {
         if (!m_items.isEmpty()) {
             const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
@@ -457,6 +466,75 @@ void ImageView::armZoomRegion()
     setCursor(Qt::CrossCursor);
     emit statusChanged();
     viewport()->update();
+}
+
+
+void ImageView::setStickyZoomEnabled(bool on)
+{
+    m_stickyZoomEnabled = on;
+    emit statusChanged();
+}
+
+void ImageView::captureStickyZoomFromCurrentFraming()
+{
+    if (!m_fitMode && !m_fillMode) {
+        m_stickyZoomKind = StickyZoomKind::Actual;
+    } else if (m_fillMode) {
+        m_stickyZoomKind = StickyZoomKind::Fill;
+    } else {
+        m_stickyZoomKind = StickyZoomKind::Fit;
+    }
+}
+
+void ImageView::setStickyZoomKind(StickyZoomKind kind)
+{
+    m_stickyZoomKind = kind;
+}
+
+void ImageView::applyImageModeFraming(ImageItem *item)
+{
+    if (!item || !isImageMode()) {
+        return;
+    }
+    if (m_stickyZoomEnabled) {
+        switch (m_stickyZoomKind) {
+        case StickyZoomKind::Fill:
+            m_fitMode = true;
+            m_fillMode = true;
+            fitItem(item, Qt::KeepAspectRatioByExpanding);
+            break;
+        case StickyZoomKind::Actual:
+            m_fitMode = false;
+            m_fillMode = false;
+            item->setItemScale(1.0);
+            resetTransform();
+            centerOn(item);
+            break;
+        case StickyZoomKind::Fit:
+        default:
+            m_fitMode = true;
+            m_fillMode = false;
+            fitItem(item, Qt::KeepAspectRatio);
+            break;
+        }
+        if (m_scene) {
+            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+        }
+        refreshScrollBarGeometry();
+        return;
+    }
+    // Non-sticky: Fit/Fill follow flags; 1:1 keeps native scale centred.
+    if (!m_fitMode && !m_fillMode) {
+        item->setItemScale(1.0);
+        resetTransform();
+        centerOn(item);
+        if (m_scene) {
+            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+        }
+        refreshScrollBarGeometry();
+        return;
+    }
+    fitItem(item, currentFitAspectMode());
 }
 
 void ImageView::cancelZoomRegion()

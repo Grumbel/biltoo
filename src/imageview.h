@@ -594,6 +594,20 @@ public:
     /** Cover the viewport (may crop); uses KeepAspectRatioByExpanding. */
     void zoomFill();
     /**
+     * When sticky zoom is on, Fit / Fill / 1:1 last chosen by the user is
+     * re-applied when a new Image-mode file is installed (navigation / Open).
+     * Off (default): framing follows m_fitMode / m_fillMode as before.
+     */
+    enum class StickyZoomKind { Fit = 0, Fill = 1, Actual = 2 };
+    void setStickyZoomEnabled(bool on);
+    /** When enabling sticky from the UI, remember Fit/Fill/1:1 now. */
+    void captureStickyZoomFromCurrentFraming();
+    bool stickyZoomEnabled() const { return m_stickyZoomEnabled; }
+    void setStickyZoomKind(StickyZoomKind kind);
+    StickyZoomKind stickyZoomKind() const { return m_stickyZoomKind; }
+    /** Image-mode framing after soft/full install (honours sticky zoom). */
+    void applyImageModeFraming(ImageItem *item);
+    /**
      * One-shot rubber-band zoom: next left-drag selects a region to zoom into.
      * Esc cancels. Bound to Z from the main window.
      */

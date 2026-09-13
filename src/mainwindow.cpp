@@ -2676,6 +2676,19 @@ void MainWindow::readSettings()
     }
     m_slideshowFullscreen =
         settings.value(QStringLiteral("slideshowFullscreen"), true).toBool();
+    if (m_imageView) {
+        const bool sticky =
+            settings.value(QStringLiteral("stickyZoomEnabled"), false).toBool();
+        const int kind =
+            settings.value(QStringLiteral("stickyZoomKind"), 0).toInt();
+        m_imageView->setStickyZoomKind(
+            static_cast<ImageView::StickyZoomKind>(qBound(0, kind, 2)));
+        m_imageView->setStickyZoomEnabled(sticky);
+        if (m_stickyZoomAct) {
+            const QSignalBlocker blocker(m_stickyZoomAct);
+            m_stickyZoomAct->setChecked(sticky);
+        }
+    }
 
     // Workspace mode is off by default. Only enable at startup when the user
     // opted in via Preferences ("Start in workspace mode").
@@ -2846,6 +2859,12 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
     settings.setValue(QStringLiteral("windowState"), saveState());
     settings.setValue(QStringLiteral("windowStateVersion"), 3);
+    if (m_imageView) {
+        settings.setValue(QStringLiteral("stickyZoomEnabled"),
+                          m_imageView->stickyZoomEnabled());
+        settings.setValue(QStringLiteral("stickyZoomKind"),
+                          static_cast<int>(m_imageView->stickyZoomKind()));
+    }
     settings.setValue(QStringLiteral("windowStateQt"),
                       QString::fromLatin1(qVersion()));
     if (m_adjustmentsDock) {

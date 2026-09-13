@@ -552,6 +552,7 @@ private:
     QAction *m_zoomFitAct = nullptr;
     QAction *m_zoomFillAct = nullptr;
     QAction *m_zoomRegionAct = nullptr;
+    QAction *m_stickyZoomAct = nullptr;
     QAction *m_fullscreenAct = nullptr;
     QAction *m_rotateLeftAct = nullptr;
     QAction *m_rotateRightAct = nullptr;

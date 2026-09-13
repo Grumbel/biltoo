@@ -36,6 +36,7 @@
     <file alias="actions/zoom-tool.svg">../data/icons/actions/zoom-tool.svg</file>
     <file alias="actions/zoom-in.svg">../data/icons/actions/zoom-in.svg</file>
     <file alias="actions/zoom-original.svg">../data/icons/actions/zoom-original.svg</file>
+    <file alias="actions/zoom-sticky.svg">../data/icons/actions/zoom-sticky.svg</file>
     <file alias="actions/zoom-out.svg">../data/icons/actions/zoom-out.svg</file>
     <file alias="actions/gallery-side-by-side.svg">../data/icons/actions/gallery-side-by-side.svg</file>
     <file alias="actions/gallery-vertical.svg">../data/icons/actions/gallery-vertical.svg</file>

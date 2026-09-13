@@ -2,6 +2,29 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-768-sticky-zoom.** Optional sticky Fit/Fill/1:1 across Image-mode navigation.
+Prior: **767**.
+
+### Feature
+- Checkable **Sticky Zoom** (toolbar + View→Zoom), icon `zoom-sticky`
+- When on, last Fit / Fill / 1:1 button is re-applied on each new Image-mode install
+- Free zoom in/out does not change the sticky policy
+- Persisted: `stickyZoomEnabled`, `stickyZoomKind`
+
+### Apply
+```bash
+git pull /path/to/biltoo-768-sticky-zoom.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **768**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-767-todo-parallel-size-probes.** Document post-0.1.0 parallel size-probe work (no code).
 Prior: **766**.
 

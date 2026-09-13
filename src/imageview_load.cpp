@@ -773,11 +773,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 // Aspect change: must reframe or soft is painted under the old
                 // view matrix and is effectively invisible / letterboxed wrong.
                 resetImageModeItemPlacement(item);
-                fitItem(item, currentFitAspectMode());
-                if (m_scene) {
-                    m_scene->setSceneRect(
-                        item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-                }
+                applyImageModeFraming(item);
                 didFit = 1;
             } else if (sizeBefore != targetSize) {
                 preserveImageViewOnLogicalSizeChange(item, sizeBefore, targetSize);
@@ -811,8 +807,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                          m_currentSessionId);
     resetImageModeItemPlacement(item);
     prepareImageModeCanvas();
-    fitItem(item, currentFitAspectMode());
-    m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    applyImageModeFraming(item);
     setUpdatesEnabled(true);
     if (viewport()) {
         viewport()->update();
@@ -1931,9 +1926,11 @@ void ImageView::frameImageModeReplaceItem(ImageItem *item, const QString &path)
     if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
         applySlideshowZoomFraming(item);
     } else if (!m_slideshowProgressActive) {
-        fitItem(item, currentFitAspectMode());
+        applyImageModeFraming(item);
     }
-    m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    if (m_scene) {
+        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    }
     // Apply camera while updates are still blocked and any live hold still
     // covers the viewport — avoids a flash of identity / wrong pan pose.
     maybeStartSlideshowMotion();

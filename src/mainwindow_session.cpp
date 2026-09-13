@@ -1826,6 +1826,7 @@ void MainWindow::updateNavZoomAndSelectionActions(bool hasFiles, bool hasItem)
     const bool canZoom = hasItem
                          || (m_imageView && m_imageView->isImageMode() && hasFiles);
     for (QAction *act : {m_zoomInAct, m_zoomOutAct, m_zoom1to1Act, m_zoomFitAct, m_zoomFillAct,
+                         m_stickyZoomAct,
                          m_zoomRegionAct}) {
         if (act) {
             act->setEnabled(canZoom);

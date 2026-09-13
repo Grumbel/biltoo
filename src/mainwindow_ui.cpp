@@ -180,6 +180,22 @@ void MainWindow::createActions()
         }
     });
 
+    m_stickyZoomAct = new QAction(tr("&Sticky Zoom"), this);
+    m_stickyZoomAct->setCheckable(true);
+    m_stickyZoomAct->setChecked(false);
+    m_stickyZoomAct->setIcon(themeIcon(QStringLiteral("zoom-sticky"), QStyle::SP_ArrowUp));
+    m_stickyZoomAct->setStatusTip(
+        tr("Keep Fit / Fill / 1:1 when switching images (last zoom button wins)"));
+    connect(m_stickyZoomAct, &QAction::toggled, this, [this](bool on) {
+        if (!m_imageView) {
+            return;
+        }
+        if (on) {
+            m_imageView->captureStickyZoomFromCurrentFraming();
+        }
+        m_imageView->setStickyZoomEnabled(on);
+    });
+
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
     // Keyboard F/F11 are QShortcut WindowShortcuts in MainWindow so leave
     // fullscreen cannot get stuck when the checkable action and window state
@@ -848,6 +864,8 @@ void MainWindow::createMenus()
     zoomMenu->addAction(m_zoomFitAct);
     zoomMenu->addAction(m_zoomFillAct);
     zoomMenu->addAction(m_zoomRegionAct);
+    zoomMenu->addSeparator();
+    zoomMenu->addAction(m_stickyZoomAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
@@ -1078,6 +1096,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoom1to1Act);
     m_toolBar->addAction(m_zoomFitAct);
     m_toolBar->addAction(m_zoomFillAct);
+    m_toolBar->addAction(m_stickyZoomAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_toggleThumbnailBarAct);
     m_toolBar->addAction(m_toggleMetadataAct);
