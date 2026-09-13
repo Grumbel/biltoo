@@ -14,8 +14,8 @@ in packed layouts, or arrange several images freely for comparison. It is
 Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-715-debug-overlay-watermark**.
-Next bundle number: **716**.
+Latest agent handoff: **TODO.md → biltoo-716-debug-overlay-readable**.
+Next bundle number: **717**.
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the

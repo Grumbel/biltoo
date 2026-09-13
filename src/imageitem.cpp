@@ -3,6 +3,7 @@
 
 #include "imageitem.h"
 #include "imagecache.h"
+#include <QFileInfo>
 
 #include "coloradjust.h"
 #include "placementlinear.h"
@@ -111,7 +112,7 @@ void ImageItem::setSourceImageReady(const QImage &image)
     // independent of sample resolution; those calls re-enter the scene and
     // were the remaining ←/→ GUI cost after decode moved off-thread.
     QImage src = image;
-    ImageCache::stampDebugOverlayIfEnabled(&src, path());
+    ImageCache::stampDebugOverlayIfEnabled(&src, QFileInfo(path()).fileName());
     m_source = src;
     m_preview = QImage();
     m_previewPixels = false;
@@ -150,7 +151,7 @@ void ImageItem::setPreviewImage(const QImage &preview)
     }
     // Soft stand-in: assign + repaint only (no prepareGeometryChange).
     QImage prev = preview;
-    ImageCache::stampDebugOverlayIfEnabled(&prev, path());
+    ImageCache::stampDebugOverlayIfEnabled(&prev, QFileInfo(path()).fileName());
     m_preview = prev;
     m_previewPixels = true;
     m_source = QImage();

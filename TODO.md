@@ -2,6 +2,18 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-716-debug-overlay-readable.** Smaller font, multi-line non-overlapping watermark.
+Prior: **715**.
+
+### Done criteria
+- [x] Bundle **716**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-715-debug-overlay-watermark.** Persistent tiled overlay on every host sample.
 Prior: **714**.
 

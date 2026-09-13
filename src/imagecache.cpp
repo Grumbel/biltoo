@@ -98,38 +98,50 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     }
     const int w = image->width();
     const int h = image->height();
-    const int border = qMax(3, qMin(w, h) / 40);
+    const int border = qMax(2, qMin(w, h) / 64);
     p.setPen(QPen(QColor(255, 0, 255), border));
     p.setBrush(Qt::NoBrush);
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
-    QString text = label;
-    if (text.isEmpty()) {
-        text = QStringLiteral("%1x%2").arg(w).arg(h);
-    } else {
-        text = QStringLiteral("%1  %2x%3").arg(text).arg(w).arg(h);
+    // Compact multi-line block — pathname and metrics on separate lines so
+    // they do not paint over each other when tiled.
+    QStringList lines;
+    if (!label.isEmpty()) {
+        lines << label;
     }
+    lines << QStringLiteral("%1x%2").arg(w).arg(h);
+    lines << QStringLiteral("le=%1").arg(qMax(w, h));
+
     QFont f = p.font();
-    f.setBold(true);
-    f.setPixelSize(qMax(12, qMin(w, h) / 18));
+    f.setBold(false);
+    // Small fixed-ish size; avoid huge glyphs on multi-MP samples.
+    f.setPixelSize(qBound(9, qMin(w, h) / 48, 14));
     p.setFont(f);
     const QFontMetrics fm(f);
-    const int tw = fm.horizontalAdvance(text);
-    const int th = fm.height();
-    // Tiled watermark — survives Ken Burns / crop / partial viewports.
-    const int stepX = qMax(tw + 32, w / 3);
-    const int stepY = qMax(th * 4, h / 4);
-    for (int y = border + 4; y < h - border; y += stepY) {
-        for (int x = border + 4; x < w - border; x += stepX) {
-            const QPoint o(x, y + th);
-            for (const QPoint d :
-                 {QPoint(-1, 0), QPoint(1, 0), QPoint(0, -1), QPoint(0, 1),
-                  QPoint(-1, -1), QPoint(1, 1)}) {
-                p.setPen(Qt::black);
-                p.drawText(o + d, text);
+    int blockW = 0;
+    for (const QString &line : lines) {
+        blockW = qMax(blockW, fm.horizontalAdvance(line));
+    }
+    const int lineH = fm.height();
+    const int blockH = lineH * lines.size() + 2;
+    const int stepX = qMax(blockW + 28, w / 4);
+    const int stepY = qMax(blockH + 20, h / 5);
+
+    auto drawOutlined = [&](const QPoint &o, const QString &s) {
+        for (const QPoint d : {QPoint(-1, 0), QPoint(1, 0), QPoint(0, -1),
+                               QPoint(0, 1)}) {
+            p.setPen(Qt::black);
+            p.drawText(o + d, s);
+        }
+        p.setPen(QColor(255, 255, 80));
+        p.drawText(o, s);
+    };
+
+    for (int y = border + 4; y + blockH < h - border; y += stepY) {
+        for (int x = border + 4; x + blockW < w - border; x += stepX) {
+            for (int i = 0; i < lines.size(); ++i) {
+                drawOutlined(QPoint(x, y + (i + 1) * lineH), lines.at(i));
             }
-            p.setPen(QColor(255, 255, 80));
-            p.drawText(o, text);
         }
     }
     p.end();
