@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-775-disable-windowstate-restore.** Never restore/save dock windowState (Qt 6.11 SEGV).
+Prior: **774**.
+
+### Problem
+Startup SIGSEGV in QDockAreaLayoutInfo::next on show() — restoreState still unsafe
+even with version gating.
+
+### Change
+- Do not call restoreState; delete windowState from settings on read
+- Do not save windowState on quit
+
+Geometry is still restored. Dock layout resets to code defaults each launch.
+
+### Apply
+```bash
+git pull /path/to/biltoo-775-disable-windowstate-restore.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **775**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-774-free-nav-preserve-zoom-pan.** Non-sticky Image nav keeps view scale + pan.
 Prior: **773**.
 
