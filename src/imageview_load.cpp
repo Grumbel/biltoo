@@ -2244,12 +2244,11 @@ void ImageView::maybeClimbImageModePixelsForView()
                 item->hasDecodedPixels() ? 1 : 0);
     }
 
-    // Zoom-in only: PreferCache when on-screen need exceeds last request.
-    ImageModeClimbState &st = m_imageModeClimb[path];
-    if (st.shouldScheduleDisplay(need)) {
-        scheduleImageModePreferCacheClimb(path, need);
+    // Zoom-in: PathRasterService owns PreferCache; native if service gave up.
+    scheduleImageModePreferCacheClimb(path, need);
+    if (m_pathRaster && m_pathRaster->isGaveUp(path)) {
+        scheduleImageModeNativeFullQuiet(path);
     }
-    scheduleImageModeNativeFullQuiet(path);
 }
 
 

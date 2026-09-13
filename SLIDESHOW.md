@@ -196,3 +196,12 @@ Authority is continuous **position** (slide units), not absolute milliseconds:
 
 Changing interval only changes the **rate**. Position (and therefore the
 visible slide + fade progress) is unchanged — no ms remap, no blip.
+
+
+## Motion progress (unitless)
+
+Ken Burns / pan-scan progress is **T ∈ [0,1]**. Wall clocks only supply Δt:
+
+`T += Δt / pathDurationMs`
+
+Interval changes alter the rate; T is not remapped from absolute milliseconds.

@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-712-unitless-motion-progress.** Ken Burns / phase motion progress is T∈[0,1].
+Prior: **711**.
+
+### Change
+- Phase + dwell motion: integrate wall Δt into unitless T; clocks are rate samples only
+- Pause folds Δt into T (no absolute baseMs authority)
+- Zoom PreferCache climb: PathRasterService only (no ImageModeClimbState gate)
+
+### Next
+- Gallery soft → PathRasterService
+- Remove dead `m_imageModeClimb` / `m_ss*MotionBaseMs` if fully unused
+
+### Done criteria
+- [x] Bundle **712**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-711-slideshow-unitless-phase.** Continuous [0,1) phase; interval only sets rate.
 Prior: **710**.
 
