@@ -230,6 +230,7 @@ void ImageView::clearWorkspace()
     m_imageSizeByPath.clear();
     m_sizeProbeScheduled.clear();
     m_provisionalSizePaths.clear();
+    m_galleryDeferPopulate = false;
     cancelGallerySizeResolve();
     ImageCache::clear();
     m_pathOrder.clear();

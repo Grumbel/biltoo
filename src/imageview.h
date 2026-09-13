@@ -525,6 +525,9 @@ public:
     void destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed);
     void finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
                                  const QVector<SessionImageId> &sessionIds);
+    /** Create Gallery placeholders for m_pathOrder using definitive sizes only. */
+    void ensureGalleryPlaceholders();
+    void updateGallerySizeResolveProgressHud();
     void setWorkspacePaths(const QStringList &paths,
                            const QVector<SessionImageId> &sessionIds);
     /** Reorder canvas items to match @p paths (session / sort order). */
@@ -1628,6 +1631,9 @@ private:
     /** Centre HUD progress (expand / size resolve / sort); empty = inactive. */
     QString m_centreProgressTitle;
     QString m_centreProgressDetail;
+    /** Gallery open: wait for sizes before creating scene tiles. */
+    bool m_galleryDeferPopulate = false;
+    QTimer *m_gallerySizeResolveProgressTimer = nullptr;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */

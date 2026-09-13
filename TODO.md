@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-762-gallery-defer-tiles-until-sizes.** No scene tiles until sizes known; size-resolve progress pulse.
+Prior: **761**.
+
+### Problem
+HUD jumped 0/N → done (sizeReady burst, paints coalesced). Placeholders were
+added to the scene with 1024² stand-ins before probes finished; first pack /
+first cell could stay square until a later layout.
+
+### Change
+- Gallery open: **defer placeholder creation** until size-resolve finishes
+- 50ms progress timer so centre HUD counts up during probe storm
+- `ensureGalleryPlaceholders` builds tiles from definitive sizes, then one pack
+
+### Apply
+```bash
+git pull /path/to/biltoo-762-gallery-defer-tiles-until-sizes.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **762**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-761-centre-progress-expand-sizes.** Centre HUD for expand + size resolve; suppress empty invite.
 Prior: **760**.
 

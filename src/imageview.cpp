@@ -612,7 +612,6 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
         }
         if (const QSize cached = ThumtooCache::cachedSize(path); isPositiveSize(cached)) {
             rememberImageSize(path, cached);
-            applyProbedImageSize(path, cached);
             continue;
         }
         m_gallerySizeResolvePending.insert(path);
@@ -641,17 +640,28 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
         });
     }
     m_gallerySizeResolveTimer->start(45000);
-    // Hide provisional tiles — packing is deferred; otherwise they pile at the
-    // origin with stand-in sizes for seconds (looks like a broken layout).
-    for (ImageItem *item : m_items) {
-        if (item) {
-            item->setVisible(false);
-        }
+    // Pulse HUD even when sizeReady arrives in one burst (Qt coalesces paints).
+    if (!m_gallerySizeResolveProgressTimer) {
+        m_gallerySizeResolveProgressTimer = new QTimer(this);
+        m_gallerySizeResolveProgressTimer->setInterval(50);
+        connect(m_gallerySizeResolveProgressTimer, &QTimer::timeout, this,
+                &ImageView::updateGallerySizeResolveProgressHud);
     }
-    setCentreProgress(tr("Resolving sizes…"),
-                      tr("0 / %1").arg(m_gallerySizeResolveTotal));
+    m_gallerySizeResolveProgressTimer->start();
+    updateGallerySizeResolveProgressHud();
     emit statusChanged();
     return true;
+}
+
+void ImageView::updateGallerySizeResolveProgressHud()
+{
+    if (!m_gallerySizeResolveActive || m_gallerySizeResolveTotal <= 0) {
+        return;
+    }
+    const int done = qMax(0, m_gallerySizeResolveTotal
+                          - m_gallerySizeResolvePending.size());
+    setCentreProgress(tr("Resolving sizes…"),
+                      tr("%1 / %2").arg(done).arg(m_gallerySizeResolveTotal));
 }
 
 void ImageView::noteGallerySizeProbeSettled(const QString &path)
@@ -663,10 +673,7 @@ void ImageView::noteGallerySizeProbeSettled(const QString &path)
         m_gallerySizeResolvePending.remove(path);
     }
     if (!m_gallerySizeResolvePending.isEmpty()) {
-        const int done = qMax(0, m_gallerySizeResolveTotal
-                              - m_gallerySizeResolvePending.size());
-        setCentreProgress(tr("Resolving sizes…"),
-                          tr("%1 / %2").arg(done).arg(m_gallerySizeResolveTotal));
+        updateGallerySizeResolveProgressHud();
         return;
     }
     finishGallerySizeResolve();
@@ -684,14 +691,29 @@ void ImageView::finishGallerySizeResolve()
     if (!wasActive) {
         return;
     }
-    clearCentreProgress();
-    for (ImageItem *item : m_items) {
-        if (item) {
-            item->setVisible(true);
-        }
+    if (m_gallerySizeResolveProgressTimer) {
+        m_gallerySizeResolveProgressTimer->stop();
     }
+    clearCentreProgress();
     if (isGalleryMode()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    }
+    // Create tiles only now — sizes are definitive (or timed out with stand-in).
+    if (m_galleryDeferPopulate) {
+        m_galleryDeferPopulate = false;
+        ensureGalleryPlaceholders();
+    } else {
+        for (ImageItem *item : m_items) {
+            if (item) {
+                item->setVisible(true);
+                if (!isProvisionalImageSize(item->path())) {
+                    const QSize sz = layoutSizeForPath(item->path());
+                    if (isPositiveSize(sz)) {
+                        item->setIntrinsicSize(sz);
+                    }
+                }
+            }
+        }
     }
     if (isGalleryMode() && !m_items.isEmpty() && m_layoutMode != LayoutMode::FreeForm) {
         applyLayout(GalleryPackReason::EnterGallery);
@@ -718,15 +740,13 @@ void ImageView::cancelGallerySizeResolve()
     m_gallerySizeResolvePending.clear();
     m_gallerySizeResolveTotal = 0;
     if (wasActive) {
-        for (ImageItem *item : m_items) {
-            if (item) {
-                item->setVisible(true);
-            }
+        if (m_gallerySizeResolveProgressTimer) {
+            m_gallerySizeResolveProgressTimer->stop();
         }
+        m_galleryDeferPopulate = false;
         if (isGalleryMode() && m_centreProgressTitle.isEmpty()) {
             setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
         }
-        // Size-resolve owns the centre text while active; drop it on cancel.
         if (m_centreProgressTitle.startsWith(tr("Resolving sizes"))) {
             clearCentreProgress();
         }

@@ -122,24 +122,17 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
         m_items.last()->setSelected(true);
     }
 
-    if (isGalleryMode() && !m_items.isEmpty()) {
-        // Size-first: wait for definitive logical sizes (archive/page probes)
-        // before the first pack so masonry/flow/etc. do not use square stand-ins.
-        // Center HUD reports progress; pack once when all probes settle.
-        if (startGallerySizeResolveIfNeeded(paths)) {
-            // Placeholders exist; pack deferred until finishGallerySizeResolve.
-        } else {
-            applyLayout(GalleryPackReason::EnterGallery);
-            updateGalleryDecodeWindow();
-            // First open can pack while the view is still 0×0 (dock/layout settling).
-            // Retry once the event loop has assigned a real viewport size so soft
-            // decodes for on-screen tiles actually start.
-            QTimer::singleShot(0, this, [this]() {
-                if (isGalleryMode() && !m_items.isEmpty()) {
-                    updateGalleryDecodeWindow();
-                }
-            });
-        }
+    if (isGalleryMode() && m_gallerySizeResolveActive) {
+        // Tiles deferred until finishGallerySizeResolve; HUD shows progress.
+    } else if (isGalleryMode() && !m_items.isEmpty()) {
+        applyLayout(GalleryPackReason::EnterGallery);
+        updateGalleryDecodeWindow();
+        // First open can pack while the view is still 0×0 (dock/layout settling).
+        QTimer::singleShot(0, this, [this]() {
+            if (isGalleryMode() && !m_items.isEmpty()) {
+                updateGalleryDecodeWindow();
+            }
+        });
     }
 
     validateUniqueLiveSessionIds("setWorkspacePaths");
@@ -173,6 +166,16 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     while (m_sessionIdOrder.size() > m_pathOrder.size()) {
         m_sessionIdOrder.removeLast();
     }
+
+    // Gallery size-first: probe all unknown sizes before creating tiles so the
+    // first pack never uses 1024² stand-ins (first cell stuck square until reload).
+    if (isGalleryMode() && !paths.isEmpty()
+        && startGallerySizeResolveIfNeeded(paths)) {
+        m_galleryDeferPopulate = true;
+        finishSetWorkspacePaths(haveIds, paths, sessionIds);
+        return;
+    }
+    m_galleryDeferPopulate = false;
 
     // Gallery always virtualizes: placeholders + soft/full ladder. The old
     // threshold (80) left smaller PDF/DjVu sessions with *no* tiles — LoadAdd
@@ -828,4 +831,80 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
     checkList(m_workspace.stashedItems(), "workspace-stash");
     checkList(m_gallery.stashedItems(), "gallery-stash");
     return ok;
+}
+
+void ImageView::ensureGalleryPlaceholders()
+{
+    if (!isGalleryMode() || m_pathOrder.isEmpty()) {
+        return;
+    }
+    QSet<ImageItem *> claimed;
+    for (int i = 0; i < m_pathOrder.size(); ++i) {
+        const QString &path = m_pathOrder.at(i);
+        const SessionImageId sid = (i < m_sessionIdOrder.size())
+            ? m_sessionIdOrder.at(i)
+            : kInvalidSessionImageId;
+
+        ImageItem *existing = nullptr;
+        if (sid != kInvalidSessionImageId) {
+            existing = findItemBySessionId(sid);
+        }
+        if (!existing) {
+            for (ImageItem *item : m_items) {
+                if (!item || item->path() != path || claimed.contains(item)) {
+                    continue;
+                }
+                if (sid != kInvalidSessionImageId
+                    && item->sessionId() != kInvalidSessionImageId
+                    && item->sessionId() != sid) {
+                    continue;
+                }
+                existing = item;
+                break;
+            }
+        }
+        if (existing) {
+            claimed.insert(existing);
+            if (sid != kInvalidSessionImageId
+                && existing->sessionId() == kInvalidSessionImageId) {
+                existing->setSessionId(sid);
+            }
+            existing->setSessionIndex(i);
+            existing->setVisible(true);
+            // Refresh intrinsic from definitive size map.
+            const QSize sz = layoutSizeForPath(path, ImageCache::get(path));
+            if (isPositiveSize(sz) && !isProvisionalImageSize(path)) {
+                existing->setIntrinsicSize(sz);
+            }
+            continue;
+        }
+
+        if (sid != kInvalidSessionImageId || i >= 0) {
+            PendingSessionBind b;
+            b.path = path;
+            b.id = sid;
+            b.index = i;
+            m_pendingSessionBinds.append(b);
+            m_pendingSessionIndexByPath.insert(path, i);
+        }
+
+        // Prefer definitive size; soft hint only if still provisional (should be rare).
+        const QImage hint = ImageCache::get(path);
+        const QSize sz = layoutSizeForPath(path, hint);
+        ImageItem *ph = createPlaceholderItem(path, sz);
+        if (ph) {
+            if (sid != kInvalidSessionImageId) {
+                ph->setSessionId(sid);
+            }
+            ph->setSessionIndex(i);
+            ph->setVisible(true);
+            if (!hint.isNull()) {
+                installDisplayPixels(ph, hint,
+                                     SessionAppearance::PixelKind::SoftPreview,
+                                     sid);
+            }
+            claimed.insert(ph);
+        }
+    }
+    reorderItemsByPaths(m_pathOrder);
 }
