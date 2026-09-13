@@ -2,6 +2,31 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-766-windowstate-version-gate.** Skip corrupt/cross-Qt windowState restore (dock SEGV).
+Prior: **765**.
+
+### Problem
+Startup SIGSEGV in `QDockAreaLayoutInfo::next` during `window.show()` — Qt layout
+walking a bad `restoreState` blob (often after a Qt upgrade).
+
+### Change
+- Restore dock `windowState` only when `windowStateVersion` + `windowStateQt` match
+- Otherwise drop the blob; rewrite on next clean quit
+
+### Apply
+```bash
+git pull /path/to/biltoo-766-windowstate-version-gate.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **766**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-765-unused-defer-vars.** Silence unused wasDefer/wasResolve warnings.
 Prior: **764**.
 

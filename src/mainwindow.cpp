@@ -2550,9 +2550,24 @@ void MainWindow::readSettings()
             setGeometry(normal);
         }
     }
+    // QMainWindow::restoreState can SIGSEGV inside QDockAreaLayout on corrupt or
+    // cross-Qt-version blobs (seen on show() after Qt 6.11). Gate on an explicit
+    // version we control; mismatch → skip and rewrite on next clean quit.
+    constexpr int kWindowStateVersion = 3;
+    const int stateVer =
+        settings.value(QStringLiteral("windowStateVersion"), 0).toInt();
+    const QString stateQt =
+        settings.value(QStringLiteral("windowStateQt")).toString();
+    const QString thisQt = QString::fromLatin1(qVersion());
     const QByteArray state = settings.value(QStringLiteral("windowState")).toByteArray();
-    if (!state.isEmpty()) {
-        restoreState(state);
+    if (!state.isEmpty() && stateVer == kWindowStateVersion && stateQt == thisQt) {
+        if (!restoreState(state)) {
+            settings.remove(QStringLiteral("windowState"));
+        }
+    } else if (!state.isEmpty()) {
+        settings.remove(QStringLiteral("windowState"));
+        settings.setValue(QStringLiteral("windowStateVersion"), kWindowStateVersion);
+        settings.setValue(QStringLiteral("windowStateQt"), thisQt);
     }
     // Adjustments is opt-in: restoreState may re-show it from an old windowState.
     // Prefer an explicit setting (default: hidden).
@@ -2830,6 +2845,9 @@ void MainWindow::writeSettings()
     settings.endArray();
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
     settings.setValue(QStringLiteral("windowState"), saveState());
+    settings.setValue(QStringLiteral("windowStateVersion"), 3);
+    settings.setValue(QStringLiteral("windowStateQt"),
+                      QString::fromLatin1(qVersion()));
     if (m_adjustmentsDock) {
         settings.setValue(QStringLiteral("adjustmentsPanelVisible"),
                           m_adjustmentsDock->isVisible());
