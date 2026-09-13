@@ -539,30 +539,22 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         return;
     }
     if (m_stickyZoomEnabled) {
-        // Fit: unique home pose (centred). Fill / 1:1: scale first, then best-effort
-        // restore the previous viewport centre in image-normalized coordinates
-        // (useful for prev/next comparison at the same relative spot).
+        // Fit: unique home pose (centred). Fill / 1:1: frame, then best-effort
+        // restore viewport centre in image-normalized coords (prev/next compare).
+        // Always restore *after* setSceneRect/refreshScrollBarGeometry — those
+        // often reset QAbstractScrollArea scroll position.
         switch (m_stickyZoomKind) {
         case StickyZoomKind::Fill:
             m_fitMode = true;
             m_fillMode = true;
             fitItem(item, Qt::KeepAspectRatioByExpanding);
-            restoreStickyPanAnchor(item);
             break;
         case StickyZoomKind::Actual:
             m_fitMode = false;
             m_fillMode = false;
             item->setItemScale(1.0);
             resetTransform();
-            if (m_haveStickyPanAnchor) {
-                // sceneRect before centre so scroll range exists
-                if (m_scene) {
-                    m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-                }
-                restoreStickyPanAnchor(item);
-            } else {
-                centerOn(item);
-            }
+            centerOn(item);
             break;
         case StickyZoomKind::Fit:
         default:
@@ -575,9 +567,18 @@ void ImageView::applyImageModeFraming(ImageItem *item)
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
         }
         refreshScrollBarGeometry();
-        // Fill: sceneRect/fitInView can reset scroll — restore pan after that.
-        if (m_stickyZoomKind == StickyZoomKind::Fill) {
+        if (m_stickyZoomKind != StickyZoomKind::Fit) {
             restoreStickyPanAnchor(item);
+            // Scroll ranges often settle after this returns — restore again.
+            QTimer::singleShot(0, this, [this]() {
+                if (!m_stickyZoomEnabled
+                    || m_stickyZoomKind == StickyZoomKind::Fit) {
+                    return;
+                }
+                if (ImageItem *cur = targetItem()) {
+                    restoreStickyPanAnchor(cur);
+                }
+            });
         }
         return;
     }
@@ -3050,7 +3051,12 @@ void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
         if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
             applySlideshowZoomFraming(item);
         } else if (!m_slideshowProgressActive) {
-            fitItem(item, currentFitAspectMode());
+            // Sticky Fill/1:1: reframe + restore pan (fitItem alone recentres).
+            if (m_stickyZoomEnabled) {
+                applyImageModeFraming(item);
+            } else {
+                fitItem(item, currentFitAspectMode());
+            }
         }
     } else if (beforeOk && before != after && !m_slideshowProgressActive) {
         // Same aspect, larger/smaller logical size: scale the view so the image

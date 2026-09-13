@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-772-sticky-pan-survive-upgrades.** Sticky pan survives soft→HQ and sceneRect resets.
+Prior: **771**.
+
+### Fixes
+- Restore pan *after* setSceneRect + scrollbar refresh (+ next event-loop tick)
+- Size/aspect updates use applyImageModeFraming when sticky (not bare fitItem)
+- Capture pan only on path change (not every soft upgrade)
+
+### Apply
+```bash
+git pull /path/to/biltoo-772-sticky-pan-survive-upgrades.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **772**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-771-sticky-pan-best-effort.** Sticky Fill/1:1 keep relative viewport centre across nav.
 Prior: **770**.
 

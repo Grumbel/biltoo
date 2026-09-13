@@ -744,9 +744,11 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
     if (item) {
         const QSize sizeBefore = item->imageSize();
-        // Before path/geometry change: remember where the user was looking
-        // (sticky Fill / 1:1 prev-next comparison).
-        captureStickyPanAnchor(item);
+        // Capture only when navigating to a different file — same-path soft→HQ
+        // upgrades must not replace a user pan with a stale pre-frame anchor.
+        if (item->path() != path) {
+            captureStickyPanAnchor(item);
+        }
         item->setPath(path);
         bindImageModeSessionCursor(item);
         if (!path.isEmpty()) {
@@ -1958,6 +1960,16 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     // Suppress paints between removing the old item and fitting the new one
     // so we never present a native-scale (or empty) intermediate frame.
     setUpdatesEnabled(false);
+    // Preserve sticky pan across the wipe (soft→full or cold replace).
+    if (!m_items.isEmpty()) {
+        if (m_items.first()->path() != path) {
+            captureStickyPanAnchor(m_items.first());
+        } else if (m_stickyZoomEnabled
+                   && m_stickyZoomKind != StickyZoomKind::Fit) {
+            // Same path rebuild: keep looking where we are now.
+            captureStickyPanAnchor(m_items.first());
+        }
+    }
     // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
     clearLiveCanvas();
     ImageItem *item = createItemFromImage(path, image);
