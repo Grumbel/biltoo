@@ -106,6 +106,10 @@ higher band can be requested (gallery zoom, Image zoom).
 | **Image mode** | Viewport × DPR (capped), then native if still short | EscalateToFull |
 | **Slideshow** | `ladder(viewport × DPR × motionHeadroom)` capped at 2048; **need** ≈ 70% of target | EscalateToFull |
 
+Gallery **`GallerySoftState`** is prioritization only (concurrency, blank tiles,
+on-screen want). PreferCache plateau is mirrored from PathRasterService — not
+decided in `noteLadderDelivery`.
+
 Slideshow geometry is **logical size**, not sample size ([SLIDESHOW.md](../SLIDESHOW.md)).
 Sample climb only changes sharpness.
 

@@ -1113,9 +1113,26 @@ bool ImageView::resolveGallerySoftHaveWant(const QString &path, GallerySoftState
 
 void ImageView::clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want)
 {
-    // Higher zoom/need or soft arrived — clear shortfall and retry climb.
+    // Higher zoom/need or soft arrived — clear shortfall mirror so decode window
+    // may schedule again. PathRasterService clears preferGaveUp when want rises.
     if (st.gaveUpWant > 0
         && (want > st.gaveUpWant || coversEdge(have, st.gaveUpWant))) {
+        st.gaveUpWant = 0;
+    }
+}
+
+void ImageView::syncGallerySoftMirrorFromPathRaster(const QString &path,
+                                                    GallerySoftState &st)
+{
+    if (!m_pathRaster || path.isEmpty()) {
+        return;
+    }
+    st.have = qMax(st.have, m_pathRaster->haveEdge(path));
+    if (m_pathRaster->isGaveUp(path)) {
+        const int prWant = m_pathRaster->wantEdge(path);
+        st.gaveUpWant = qMax(st.gaveUpWant, prWant > 0 ? prWant : st.want);
+    } else if (st.want > 0 && st.gaveUpWant > 0 && st.want > st.gaveUpWant) {
+        // Zoom raised product need past mirrored plateau.
         st.gaveUpWant = 0;
     }
 }
@@ -1185,13 +1202,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
 
     markGallerySoftInflight(st, want);
-    // Always ensure - raising want past a prior PreferCache shortfall clears
-    // preferGaveUp inside PathRasterService so gallery zoom can climb again.
+    // SoftDisplay only — PreferCache plateau is terminal for this want (contract).
     m_pathRaster->ensure(path, want, logicalSizeForPath(path),
                          PathRasterService::ClimbPolicy::SoftDisplay);
-
-    // Sync have from service (authoritative host climb).
-    st.have = qMax(st.have, m_pathRaster->haveEdge(path));
+    syncGallerySoftMirrorFromPathRaster(path, st);
 
     // Synchronous cache coverage: ensure may satisfy without async ladderReady.
     if (st.have > have) {
@@ -1211,7 +1225,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
     if (m_pathRaster->isGaveUp(path)) {
         clearGallerySoftInflight(st);
-        st.gaveUpWant = qMax(st.gaveUpWant, want);
         return;
     }
     if (!m_pathRaster->isClimbPending(path)) {
@@ -1367,6 +1380,7 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
     auto it = m_gallerySoft.find(path);
     if (it != m_gallerySoft.end()) {
         it.value().noteLadderDelivery(edge, got, ThumtooCache::kFilmstripLadderEdge);
+        syncGallerySoftMirrorFromPathRaster(path, it.value());
     }
 
     // Debounce window rescan — avoid full setInterest on every tile delivery.

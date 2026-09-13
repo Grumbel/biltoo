@@ -58,7 +58,12 @@ stuck full-res tiles, or permanent soft-ladder skip (`hasDecodedPixels()`).
 | `ThumtooCache::cachedLadderBytes` / `schedulePixels` | Soft ladder |
 | `ImageItem::hasDecodedPixels()` | True only for full source (not soft preview) |
 | `ImageItem::clearDecodedPixels()` | Drop both; used before Gallery soft reinstall |
-| `GallerySoftState` | Per-path soft/full inflight bookkeeping |
+| `GallerySoftState` | Prioritization mirror only (want/inflight/blank); climb = PathRasterService SoftDisplay |
+
+Climb scheduling is **PathRasterService** with `ClimbPolicy::SoftDisplay`
+([THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md)). `gaveUpWant` is synced
+from `isGaveUp` / `wantEdge` — Gallery must not invent PreferCache plateau state.
+
 
 Future thumtoo work: tag ladder payloads vs embedded thumbs explicitly so hosts
 never confuse EXIF stand-ins with a completed soft level.

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-744-gallery-soft-mirror-only.** GallerySoftState is prioritization mirror; climb only PathRaster SoftDisplay.
+Prior: **743**.
+
+### Problem
+GallerySoftState still updated PreferCache plateau (`gaveUpWant`) in
+`noteLadderDelivery`, parallel to PathRasterService — a second climb authority.
+
+### Change
+- GallerySoftState: inflight/have bookkeeping only; no shortfall authority
+- `syncGallerySoftMirrorFromPathRaster` — have/gaveUp from service
+- applyGalleryLadderReady / decode window / scheduleGalleryDecode use the sync
+- Docs: GALLERY_SOFT, PATH_RASTER, THUMTOO_HOST_CONTRACT
+
+### Done criteria
+- [x] Bundle **744**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-743-path-raster-only-climb.** Remove dual Full/PreferCache climb; workers use requestEscalateClimb.
 Prior: **742**.
 

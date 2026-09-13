@@ -54,8 +54,9 @@ invalidateAll()           — session switch
 | Image mode | EscalateToFull | `rasterImproved` / `tryInstall` |
 | Slideshow | EscalateToFull | `rasterImproved` → phase buffers |
 
-Gallery keeps `GallerySoftState` as a **mirror** for prioritization, not climb
-authority. Decode-window pass 2 syncs have/gaveUp from this service.
+Gallery keeps `GallerySoftState` as a **prioritization mirror** (want, inflight
+budget, blank tiles). `syncGallerySoftMirrorFromPathRaster` copies have/gaveUp
+from this service. Decode-window scheduling calls `ensure(..., SoftDisplay)` only.
 
 ## Edit / crop full raster
 

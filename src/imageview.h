@@ -1361,6 +1361,8 @@ private:
     void scheduleImageSizeProbe(const QString &path);
     void applyProbedImageSize(const QString &path, const QSize &size);
     void clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want);
+    /** Sync have/gaveUpWant from PathRasterService (climb authority). */
+    void syncGallerySoftMirrorFromPathRaster(const QString &path, GallerySoftState &st);
     bool gallerySoftScheduleBlocked(const GallerySoftState &st, int have, int want) const;
     void scheduleGalleryDecode(const QString &path);
 

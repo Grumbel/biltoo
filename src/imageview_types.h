@@ -170,13 +170,16 @@ struct WorkspaceItemState {
 };
 
 /**
- * Per-path Gallery soft/display ladder bookkeeping (host side).
- * Pixels themselves live in ImageCache / ImageItem — this is only policy state.
+ * Per-path Gallery prioritization mirror (host side).
  *
- * have       — long edge of soft pixels known for the path (0 = none)
- * want       — last computed target ladder step from visibility + zoom
- * inflight   — soft edge currently requested (0 = idle); at most one per path
- * gaveUpWant — highest want finished without ~90% delivery (anti-storm)
+ * Climb authority is PathRasterService (docs/THUMTOO_HOST_CONTRACT.md).
+ * This struct only answers: "should the decode window spend a concurrency
+ * slot on this path?" — visibility want, blank tiles, inflight budget.
+ *
+ * have       — mirror of ImageCache / tile / PathRaster have (not climb owner)
+ * want       — last on-screen ladder need from decode-window pass
+ * inflight   — gallery concurrency token (0 = idle); at most one per path
+ * gaveUpWant — mirror of PathRaster PreferCache plateau (synced from service)
  * failed     — permanent hard failure for this path
  */
 struct GallerySoftState {
@@ -188,9 +191,9 @@ struct GallerySoftState {
     qint64 inflightSinceMs = 0;
 
     /**
-     * Record a soft/ladder delivery. Clears inflight when the request covers
-     * the pending edge (or a usable soft floor arrived). Updates gaveUpWant
-     * on shortfall (~90% of request).
+     * Record a ladder delivery for concurrency bookkeeping only.
+     * Updates have and clears inflight. Does **not** decide PreferCache
+     * plateau — call ImageView sync from PathRasterService for gaveUpWant.
      *
      * @param softFloor  minimum edge that may clear a higher inflight (filmstrip)
      */
@@ -205,21 +208,11 @@ struct GallerySoftState {
             inflight = 0;
             inflightSinceMs = 0;
         }
-        if (requestEdge <= 0) {
-            return;
-        }
-        if (gotEdge >= (requestEdge * 9) / 10) {
-            if (gaveUpWant <= requestEdge) {
-                gaveUpWant = 0;
-            }
-        } else {
-            gaveUpWant = qMax(gaveUpWant, requestEdge);
-        }
     }
 
     /**
      * True when the decode window should enqueue more soft work for this path.
-     * Pure policy — no I/O.
+     * Pure prioritization — no I/O, no thumtoo schedule.
      *
      * @param anyBlank  at least one live tile for the path has no display pixels
      * @param anyFull   a tile already holds full (non-soft) decoded pixels
