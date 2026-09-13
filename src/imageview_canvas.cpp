@@ -172,6 +172,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     if (isGalleryMode() && !paths.isEmpty()
         && startGallerySizeResolveIfNeeded(paths)) {
         m_galleryDeferPopulate = true;
+        // Drop any leftover Image/Gallery tiles so nothing paints at random
+        // poses while probes run (D&D / mode switch residue).
+        clearLiveCanvas();
         finishSetWorkspacePaths(haveIds, paths, sessionIds);
         return;
     }
@@ -838,6 +841,11 @@ void ImageView::ensureGalleryPlaceholders()
     if (!isGalleryMode() || m_pathOrder.isEmpty()) {
         return;
     }
+    // createPlaceholderItem refuses while defer/resolve flags are set.
+    const bool wasDefer = m_galleryDeferPopulate;
+    const bool wasResolve = m_gallerySizeResolveActive;
+    m_galleryDeferPopulate = false;
+    m_gallerySizeResolveActive = false;
     QSet<ImageItem *> claimed;
     for (int i = 0; i < m_pathOrder.size(); ++i) {
         const QString &path = m_pathOrder.at(i);

@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-764-hard-gate-tiles-until-sizes.** Refuse any Gallery tile create while size-resolve runs.
+Prior: **763**.
+
+### Problem
+D&D still showed tiles at random poses/sizes before probes finished — leftover
+live items and LoadAdd/placeholder paths were not blocked by the defer flag.
+
+### Change
+- `createPlaceholderItem` / LoadAdd membership return no-op while resolve/defer
+- On defer start: `clearLiveCanvas()` so the scene stays empty
+- `invalidateSessionLoads` clears size maps + cancel resolve (clean open)
+- ensure placeholders only after flags clear
+
+### Apply
+```bash
+git pull /path/to/biltoo-764-hard-gate-tiles-until-sizes.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **764**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-763-drop-loadfiles-parity.** Empty D&D uses loadFiles; Gallery drop size-first + HUD.
 Prior: **762**.
 

@@ -608,6 +608,10 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
 
 ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
 {
+    // Size-first Gallery open: no scene tiles until definitive sizes land.
+    if (m_gallerySizeResolveActive || m_galleryDeferPopulate) {
+        return nullptr;
+    }
     auto *item = new ImageItem(path, intrinsicSize);
     applyItemModeFlags(item);
     m_scene->addItem(item);
@@ -1790,6 +1794,9 @@ int ImageView::fillLiveItemsWithDecodedPixels(const QString &path, const QImage 
 void ImageView::createMissingLoadAddItems(const QString &path, const QImage &image,
                                           int have, int wanted)
 {
+    if (m_gallerySizeResolveActive || m_galleryDeferPopulate) {
+        return;
+    }
     // Create missing occurrences (each duplicate is a normal separate tile).
     while (have < wanted) {
         ImageItem *item = createItemFromImage(path, image);
@@ -1814,6 +1821,9 @@ void ImageView::createMissingLoadAddItems(const QString &path, const QImage &ima
 
 void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
 {
+    if (m_gallerySizeResolveActive || m_galleryDeferPopulate) {
+        return;
+    }
     if (m_layoutMode != LayoutMode::FreeForm) {
         if (!m_pathOrder.isEmpty()) {
             reorderItemsByPaths(m_pathOrder);

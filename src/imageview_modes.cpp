@@ -70,9 +70,18 @@ void ImageView::invalidateSessionLoads()
     m_ssPhaseUpgradeGeneration++;
     m_dwellAtlasRebuildGeneration++;
     m_ssToAtlasRebuildGeneration++;
+    // Drop logical-size memory so the size-first gate re-probes (stale square
+    // stand-ins must not skip resolve on the next open).
+    m_imageSizeByPath.clear();
+    m_provisionalSizePaths.clear();
+    m_sizeProbeScheduled.clear();
+    cancelGallerySizeResolve();
     if (isImageMode()) {
         clearLiveCanvas();
         clearClassicPath();
+    }
+    if (isGalleryMode()) {
+        clearLiveCanvas();
     }
     if (m_pathRaster) {
         m_pathRaster->invalidateAll();
