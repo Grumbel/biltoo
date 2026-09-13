@@ -2,6 +2,35 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-747-focusfull-on-display-need.** Generate tiles when PreferCache cannot meet on-screen need.
+Prior: **746**.
+
+### Problem
+PreferCache is cache-only (soft / overview / TileSynth). Biltoo never started
+FocusFull for Image/Slideshow; Gallery Primary required have≥1024 first. Result:
+want 2048, have 1024 forever, "high res for zoom" never generated.
+
+### Change
+- `ThumtooCache::scheduleTilePyramid` — FocusFull without wiping Gallery interest
+- PathRaster: on PreferCache plateau + want > overview → tile pyramid; EscalateToFull
+  still Full; PreferCache retries after tiles/Full
+- `isGaveUp` only when FocusFull/Full/retries exhausted
+- Gallery Primary when want > overview (no have≥1024 gate)
+
+### Done criteria
+- [x] Bundle **747**
+
+### Residual
+- True viewport **tile paint** (galapix-style) still not done; this tip still
+  upgrades a **whole-frame** sample via TileSynth/Full after tiles exist.
+- PreferCache retry timing vs pyramid completion is best-effort (no tile-done signal).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-746-imageloader-soft-only-schedule.** ImageLoader never schedulePixels above soft max.
 Prior: **745**.
 

@@ -6,7 +6,6 @@
 #include "imagecache.h"
 #include "thumtoocache.h"
 
-#include <QFileInfo>
 #include <QtGlobal>
 
 PathRasterService::PathRasterService(QObject *parent)
@@ -22,7 +21,6 @@ bool PathRasterService::covers(int have, int need)
     if (have <= 0) {
         return false;
     }
-    // ~90% of target — Met vs request / want (THUMTOO_HOST_CONTRACT.md §3).
     return have * 10 >= need * 9;
 }
 
@@ -55,17 +53,16 @@ void PathRasterService::ensure(const QString &path, int wantEdge,
     const int want = capWant(wantEdge, knownNative);
     State &st = m_state[path];
     st.epoch = m_epoch;
-    // Sticky max policy: SoftDisplay may upgrade to EscalateToFull, never reverse.
     if (policy == ClimbPolicy::EscalateToFull) {
         st.policy = ClimbPolicy::EscalateToFull;
     }
-    // PreferCache may improve when the display target moves past the last
-    // shortfall request (e.g. gallery zoom soft→overview→display).
     if (want > st.lastDisplayWant) {
         st.preferGaveUp = false;
         st.displayQueued = false;
         st.fullDone = false;
         st.fullQueued = false;
+        st.postTilePreferAttempts = 0;
+        // Keep tilesQueued — pyramid build is still useful for higher want.
     }
     st.want = qMax(st.want, want);
 
@@ -116,7 +113,21 @@ int PathRasterService::wantEdge(const QString &path) const
 bool PathRasterService::isGaveUp(const QString &path) const
 {
     const auto it = m_state.constFind(path);
-    return it != m_state.cend() && it->preferGaveUp;
+    if (it == m_state.cend() || !it->preferGaveUp) {
+        return false;
+    }
+    // PreferCache plateau is not terminal while FocusFull / Full / post-tile
+    // PreferCache retries are still available.
+    if (it->want > ThumtooCache::kBatchOverviewEdge && !it->tilesQueued) {
+        return false;
+    }
+    if (it->tilesQueued && it->postTilePreferAttempts < 2) {
+        return false;
+    }
+    if (it->policy == ClimbPolicy::EscalateToFull && !it->fullDone) {
+        return false;
+    }
+    return true;
 }
 
 void PathRasterService::clearPreferGaveUp(const QString &path)
@@ -142,7 +153,14 @@ bool PathRasterService::isClimbPending(const QString &path) const
     if (it == m_state.cend() || it->epoch != m_epoch) {
         return false;
     }
-    return it->softQueued || it->displayQueued || it->fullQueued;
+    if (it->softQueued || it->displayQueued || it->fullQueued) {
+        return true;
+    }
+    // FocusFull / post-tile PreferCache still in progress (not yet terminal gave-up).
+    if (it->preferGaveUp && !isGaveUp(path)) {
+        return true;
+    }
+    return false;
 }
 
 void PathRasterService::noteDelivery(const QString &path, int requestEdge,
@@ -180,8 +198,6 @@ void PathRasterService::noteDelivery(const QString &path, int requestEdge,
     st.softQueued = false;
     st.fullQueued = false;
 
-    // PreferCache BestAvailable vs request — do not spin the same Display edge
-    // (THUMTOO_HOST_CONTRACT.md §3). EscalateToFull continues via pump → Full.
     if (requestEdge > 0 && got > 0 && got * 10 < requestEdge * 9) {
         st.preferGaveUp = true;
         if (covers(st.have, st.want)) {
@@ -193,11 +209,16 @@ void PathRasterService::noteDelivery(const QString &path, int requestEdge,
     if (covers(st.have, st.want)) {
         return;
     }
-    if (st.preferGaveUp && st.policy != ClimbPolicy::EscalateToFull) {
+    // Full landed but still short: PreferCache retry (TileSynth after FocusFull).
+    if (st.fullDone && st.tilesQueued && st.postTilePreferAttempts < 2) {
+        st.preferGaveUp = false;
+        st.lastDisplayGot = 0;
+        ThumtooCache::forgetPixelsSettled(path, st.want);
+        pump(path, st);
         return;
     }
-    // Full delivery that is still short of want: terminal (no Full spin).
-    if (st.fullDone && st.preferGaveUp) {
+    if (st.preferGaveUp && st.policy != ClimbPolicy::EscalateToFull
+        && !(st.tilesQueued && st.postTilePreferAttempts < 2)) {
         return;
     }
     pump(path, st);
@@ -215,15 +236,15 @@ void PathRasterService::pump(const QString &path, State &st)
         return;
     }
 
-    // Soft band first when we have nothing.
     if (st.have <= 0 && !st.softQueued) {
         st.softQueued = true;
         (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
     }
 
     const int displayWant = st.want;
+    const int overviewCap = ThumtooCache::kBatchOverviewEdge;
 
-    // PreferCache Display — unless already plateaued for this want.
+    // PreferCache Display unless plateaued for this want.
     if (!st.preferGaveUp) {
         if (st.displayQueued && st.lastDisplayWant == displayWant) {
             return;
@@ -244,34 +265,49 @@ void PathRasterService::pump(const QString &path, State &st)
     }
 
     // PreferCache BestAvailable and still short of want.
-    if (st.policy != ClimbPolicy::EscalateToFull) {
-        return;
+    // Tiles are required for TileSynth above overview — PreferCache never builds them.
+    if (displayWant > overviewCap && !st.tilesQueued) {
+        st.tilesQueued = true;
+        (void)ThumtooCache::scheduleTilePyramid(path);
     }
-    if (st.fullQueued || st.fullDone) {
-        return;
-    }
-    st.fullQueued = true;
-    st.fullDone = true; // one-shot: do not re-enter Full if schedule fails mid-flight
-    int edge = ImageCache::kDisplayMaxEdge;
-    // Prefer known native long edge when available (capped by display max).
-    const QSize native = ThumtooCache::cachedSize(path);
-    if (native.isValid() && native.width() > 0 && native.height() > 0) {
-        edge = qMin(edge, qMax(native.width(), native.height()));
-    }
-    edge = qMax(edge, displayWant);
-    edge = qMin(edge, ImageCache::kDisplayMaxEdge);
+
+    if (st.policy == ClimbPolicy::EscalateToFull) {
+        if (!st.fullQueued && !st.fullDone) {
+            st.fullQueued = true;
+            st.fullDone = true;
+            int edge = ImageCache::kDisplayMaxEdge;
+            const QSize native = ThumtooCache::cachedSize(path);
+            if (native.isValid() && native.width() > 0 && native.height() > 0) {
+                edge = qMin(edge, qMax(native.width(), native.height()));
+            }
+            edge = qMax(edge, displayWant);
+            edge = qMin(edge, ImageCache::kDisplayMaxEdge);
 #if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
-    if (!ThumtooCache::scheduleFullPixels(path, edge)) {
-        st.fullQueued = false;
-        // Already settled / unavailable — plateau stands.
-    }
+            if (!ThumtooCache::scheduleFullPixels(path, edge)) {
+                st.fullQueued = false;
+            }
 #else
-    // No full API: last PreferCache at display max once.
-    ThumtooCache::forgetPixelsSettled(path, displayWant);
-    st.preferGaveUp = false;
-    st.displayQueued = true;
-    st.lastDisplayWant = displayWant;
-    st.lastDisplayGot = 0;
-    (void)ThumtooCache::scheduleDisplayPixels(path, displayWant);
+            ThumtooCache::forgetPixelsSettled(path, displayWant);
+            st.preferGaveUp = false;
+            st.displayQueued = true;
+            st.lastDisplayWant = displayWant;
+            st.lastDisplayGot = 0;
+            (void)ThumtooCache::scheduleDisplayPixels(path, displayWant);
 #endif
+            return;
+        }
+        return;
+    }
+
+    // SoftDisplay: after FocusFull queued, PreferCache retries for TileSynth
+    // (tiles build async; decode window / further ensure re-enters pump).
+    if (st.tilesQueued && st.postTilePreferAttempts < 2 && !st.displayQueued) {
+        ++st.postTilePreferAttempts;
+        st.preferGaveUp = false;
+        st.lastDisplayGot = 0;
+        ThumtooCache::forgetPixelsSettled(path, displayWant);
+        st.displayQueued = true;
+        st.lastDisplayWant = displayWant;
+        (void)ThumtooCache::scheduleDisplayPixels(path, displayWant);
+    }
 }

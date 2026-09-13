@@ -1525,6 +1525,36 @@ quint64 setPrimaryInterest(const QString &path, int edge)
 #endif
 }
 
+
+bool scheduleTilePyramid(const QString &path)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty() || isUnsupported(path)) {
+        return false;
+    }
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return false;
+    }
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return false;
+    }
+    // Does not call set_interest — safe alongside Gallery near/speculative.
+    c->request_tile_pyramid(uri, /*min_scale=*/0, /*max_scale=*/-1, {});
+    thumtooDbg("scheduleTilePyramid path=%s", qPrintable(QFileInfo(path).fileName()));
+    return true;
+#else
+    Q_UNUSED(path);
+    return false;
+#endif
+}
+
 void preparePaths(const QStringList &paths)
 {
 #ifdef BILTOO_HAVE_THUMTOO

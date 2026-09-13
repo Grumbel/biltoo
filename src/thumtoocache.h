@@ -169,8 +169,16 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
 
 /**
  * Image-mode focus: single Primary interest (overview + tile pyramid on thumtoo ≥168).
+ * Replaces the whole interest snapshot — avoid during Gallery (use setInterest).
  */
 quint64 setPrimaryInterest(const QString &path, int edge);
+
+/**
+ * Queue durable tile pyramid build (FocusFull) for @p path without wiping
+ * Gallery interest. PreferCache can TileSynth to display edges only after tiles
+ * exist; PreferCache alone does not generate them.
+ */
+bool scheduleTilePyramid(const QString &path);
 
 /** Human label for last ladderProvenance on this path (empty if unknown). */
 QString lastPixelSourceLabel(const QString &path);

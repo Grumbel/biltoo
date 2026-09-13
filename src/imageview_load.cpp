@@ -1201,7 +1201,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
 
     markGallerySoftInflight(st, want);
-    // SoftDisplay only — PreferCache plateau is terminal for this want (contract).
+    // SoftDisplay: PreferCache + FocusFull when need > overview (PathRaster).
     m_pathRaster->ensure(path, want, logicalSizeForPath(path),
                          PathRasterService::ClimbPolicy::SoftDisplay);
     syncGallerySoftMirrorFromPathRaster(path, st);

@@ -29,9 +29,12 @@ failure, and consumers invented different recoveries.
 ## ClimbPolicy
 
 ```text
-SoftDisplay    — Gallery: Soft → PreferCache; plateau terminal for this want
-EscalateToFull — Image mode + Slideshow: Soft → PreferCache → one Full
+SoftDisplay    — Gallery: Soft → PreferCache → FocusFull + PreferCache retry (no Full)
+EscalateToFull — Image/Slideshow: Soft → PreferCache → FocusFull → Full → PreferCache retry
 ```
+
+PreferCache does **not** generate tiles. Above overview (~1024) the service calls
+`scheduleTilePyramid` so TileSynth can meet display edges.
 
 PreferCache does **not** guarantee `got ≈ request`. Plateau is normal. Raising
 `want` past `lastDisplayWant` clears the plateau latch (gallery/Image zoom).

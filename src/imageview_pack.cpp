@@ -94,7 +94,9 @@ void ImageView::publishGalleryInterest(const QStringList &interestNear,
             continue;
         }
         nearEdge = qMax(nearEdge, qMin(it->want, ovCap));
-        if (it->want > ovCap && it->have >= ovCap * 9 / 10) {
+        // FocusFull when on-screen need exceeds overview — do not wait for
+        // have >= 1024 (PreferCache plateau is often 1024 without tiles).
+        if (it->want > ovCap) {
             primary.append(p);
             primEdge = qMax(primEdge, qMin(it->want, imgCap));
         }

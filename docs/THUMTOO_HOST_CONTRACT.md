@@ -95,15 +95,19 @@ enum class ClimbPolicy {
 
 1. Soft if `have == 0`
 2. PreferCache at `want` until Met or BestAvailable
-3. On BestAvailable: stop Display for this want (raise `want` on zoom clears plateau)
-4. **Never** auto-schedule Full (too expensive for N tiles)
+3. On BestAvailable while `want` > overview: **FocusFull** + PreferCache retries
+   (TileSynth). **Never** auto-schedule Full for every gallery cell
+4. Gallery `setInterest` Primary for visible cells with `want` > overview
 
 ### EscalateToFull (Image mode, Slideshow)
 
 1. Soft if `have == 0`
 2. PreferCache at `want` until Met or BestAvailable
-3. On BestAvailable while `have` still short of `want`: **one** Full request
-4. Full settle / shortfall is terminal for this epoch (no Full spin loop)
+3. On BestAvailable while `have` still short of `want` and `want` > overview (~1024):
+   **FocusFull** (`scheduleTilePyramid`) so tiles exist for TileSynth
+4. **one** Full request (near-native)
+5. PreferCache retry after Full / tiles (TileSynth may now Met)
+6. Full + retries exhausted → terminal for this want (raise want clears latches)
 
 Raising `want` past `lastDisplayWant` clears the PreferCache plateau latch so a
 higher band can be requested (gallery zoom, Image zoom).
