@@ -99,14 +99,10 @@ capped at the image ladder max (2048). Headroom covers Ken Burns zoom past
 - **Atlas rebuild** is throttled: only when the atlas is empty, coverage fails,
   or the sample reaches the slideshow **need edge** (~70% of target), so
   intermediate soft→soft-ish steps do not thrash the GUI.
-- PreferCache is re-queued until the host sample meets the need edge (soft-only
-  preload must not stop the climb).
-- **Shortfall recovery:** PathRasterService latches `preferGaveUp` when PreferCache
-  returns below ~90% of the requested edge. Slideshow want is fixed for a dwell,
-  so that latch would leave soft on screen forever. Recovery:
-  1. one PreferCache retry (`clearPreferGaveUp` + `forgetPixelsSettled`);
-  2. for active phase paths (from/to) only, quiet `scheduleFullPixels` (same
-     idea as Image-mode native full after PreferCache exhausts).
+- Climb uses `PathRasterService` with **EscalateToFull**
+  ([docs/THUMTOO_HOST_CONTRACT.md](docs/THUMTOO_HOST_CONTRACT.md)): Soft → PreferCache
+  → one Full when PreferCache returns BestAvailable below want. PreferCache does
+  **not** guarantee `got ≈ request` (overview 1024 for want 2048 is valid plateau).
 - Look-ahead preload (`toIdx`…`+3`) runs **once per toIdx**, not every clock tick.
 - Clamp + orient run on the **thread pool**; the GUI only assigns the finished
   buffer.

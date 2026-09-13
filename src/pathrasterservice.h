@@ -13,27 +13,40 @@
 /**
  * Central host-side path → display-raster climb.
  *
- * Owns the policy that was previously duplicated across Image-mode PreferCache,
- * gallery soft, and slideshow preload:
- *   soft → PreferCache display → (optional) stop when adequate for want edge.
+ * Contract: docs/THUMTOO_HOST_CONTRACT.md
+ *   Soft → PreferCache (Display) → optional Full under ClimbPolicy::EscalateToFull.
  *
- * Pixels always land in ImageCache (upward-only). Consumers listen to
- * rasterImproved and read ImageCache::get — they do not schedule thumtoo jobs.
+ * PreferCache may return BestAvailable below the requested edge (e.g. overview
+ * 1024 for want 2048). That is not a bug; under SoftDisplay the climb stops for
+ * this want; under EscalateToFull the service schedules one Full.
  *
- * Geometry (logical size) is not owned here; pass knownNative to cap want edge.
+ * Pixels land in ImageCache (upward-only). Consumers listen to rasterImproved.
+ * Geometry (logical size) is not owned here; pass knownNative to cap want.
  */
 class PathRasterService : public QObject
 {
     Q_OBJECT
 public:
+    /**
+     * SoftDisplay — Gallery: Soft + PreferCache; plateau terminal for want.
+     * EscalateToFull — Image mode / Slideshow: after PreferCache plateau, one Full.
+     */
+    enum class ClimbPolicy {
+        SoftDisplay = 0,
+        EscalateToFull = 1,
+    };
+
     explicit PathRasterService(QObject *parent = nullptr);
 
     /**
      * Ensure ImageCache holds a sample covering @p wantEdge (capped by native
-     * long edge when @p knownNative is valid). Idempotent; raises the target
-     * if a higher edge is requested later.
+     * when @p knownNative is valid). Idempotent; raises the target if a higher
+     * edge is requested later. @p policy is sticky max (SoftDisplay → Escalate
+     * upgrades; never downgrades while state lives).
      */
-    void ensure(const QString &path, int wantEdge, const QSize &knownNative = QSize());
+    void ensure(const QString &path, int wantEdge,
+                const QSize &knownNative = QSize(),
+                ClimbPolicy policy = ClimbPolicy::SoftDisplay);
 
     /** Drop climb state for one path (session path leave). */
     void cancel(const QString &path);
@@ -46,19 +59,19 @@ public:
 
     int haveEdge(const QString &path) const;
     int wantEdge(const QString &path) const;
+    /** PreferCache returned BestAvailable below want for this path. */
     bool isGaveUp(const QString &path) const;
     /**
-     * Clear PreferCache shortfall latch so the same want edge can be
-     * re-requested (slideshow: tiles may exist after a cold shortfall).
-     * Does not change want/have; call ensure() afterward to pump.
+     * Clear PreferCache plateau latch when the host raises product need via a
+     * higher ensure() want (also done automatically when want > lastDisplayWant).
      */
     void clearPreferGaveUp(const QString &path);
-    /** True when soft or PreferCache work is queued for @p path (epoch-current). */
+    /** Soft, PreferCache Display, or Full work queued for @p path (epoch-current). */
     bool isClimbPending(const QString &path) const;
 
     /**
      * Thumtoo ladderReady / pool soft completion. Always ImageCache::put first.
-     * Continues the climb when still short of want.
+     * Continues the climb when still short of want (and policy allows).
      */
     void noteDelivery(const QString &path, int requestEdge, const QImage &image);
 
@@ -75,11 +88,15 @@ private:
         bool displayQueued = false;
         bool softQueued = false;
         bool preferGaveUp = false;
+        bool fullQueued = false;
+        bool fullDone = false;
+        ClimbPolicy policy = ClimbPolicy::SoftDisplay;
         quint64 epoch = 0;
     };
 
     void pump(const QString &path, State &st);
     static int capWant(int want, const QSize &knownNative);
+    static bool covers(int have, int need);
 
     QHash<QString, State> m_state;
     quint64 m_epoch = 1;

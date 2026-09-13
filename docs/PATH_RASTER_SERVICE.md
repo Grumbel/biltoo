@@ -1,86 +1,72 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # PathRasterService
 
 **One climb policy for path → host raster.**
 
+**Normative contract:** [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md)  
+Bands and codecs: [PERFORMANCE.md](PERFORMANCE.md)
+
 ## Problem
 
-PreferCache / soft scheduling lived in:
-
-- `ImageView::ensureImageModeQualityClimb`
-- `ImageView::preloadSlideshowImage` / `loadSlideshowSample`
-- Gallery soft state (`m_gallerySoft`)
-- Ad-hoc `scheduleDisplayPixels` retries after shortfall
-
-Slideshow stayed soft when those paths disagreed (atlas coverage, missing
-re-queue, duplicate schedules).
+PreferCache / soft scheduling lived in Image-mode climb, slideshow preload,
+gallery soft state, and ad-hoc `scheduleDisplayPixels` retries. PreferCache
+**BestAvailable** (e.g. overview 1024 for want 2048) was misread as a permanent
+failure, and consumers invented different recoveries.
 
 ## Authority
 
 | Layer | Role |
 |-------|------|
-| **Thumtoo** | Durable compressed ladder + PreferCache decode |
+| **Thumtoo** | Durable soft, overview, PreferCache, full; settle keys |
 | **ImageCache** | Process RAM path → best raw sample (upward-only) |
-| **PathRasterService** | Per-path want/have, schedule soft+display, re-queue until adequate or gave-up |
-| **ImageView / paint** | Consume `ImageCache` / phase buffers; **do not** schedule PreferCache |
+| **PathRasterService** | want / have / PreferCache plateau / optional Full; **only** host scheduler |
+| **ImageView / paint** | Need edge + install; **do not** schedule PreferCache directly |
+
+## ClimbPolicy
+
+```text
+SoftDisplay    — Gallery: Soft → PreferCache; plateau terminal for this want
+EscalateToFull — Image mode + Slideshow: Soft → PreferCache → one Full
+```
+
+PreferCache does **not** guarantee `got ≈ request`. Plateau is normal. Raising
+`want` past `lastDisplayWant` clears the plateau latch (gallery/Image zoom).
 
 ## API
 
 ```text
-ensure(path, wantEdge, knownNative?)  → raise target, pump thumtoo
+ensure(path, wantEdge, knownNative?, policy = SoftDisplay)
 noteDelivery(path, requestEdge, image) → put cache, emit rasterImproved, pump
-best(path) / haveEdge(path) / wantEdge / isGaveUp / isClimbPending
-invalidateAll()                        → session switch
+best / haveEdge / wantEdge / isGaveUp / isClimbPending
+clearPreferGaveUp(path)   — rare; prefer raising want via ensure
+invalidateAll()           — session switch
 ```
-
-Raising `want` past `lastDisplayWant` clears `preferGaveUp` so gallery/Image
-zoom can climb PreferCache bands after a shortfall at a lower edge.
-
-`clearPreferGaveUp(path)` clears the shortfall latch and `lastDisplayGot` so the
-**same** want can be re-pumped (slideshow fixed-want recovery). Call `ensure`
-afterward.
-
-## Slideshow
-
-`preloadSlideshowImage` calls `m_pathRaster->ensure` and installs current cache.
-Phase buffers update on `rasterImproved`. After PreferCache shortfall at fixed
-want, `maybeRecoverSlideshowRaster` retries PreferCache once, then (from/to
-only) quiet full pixels. Atlas rebuild policy stays on ImageView
-(viewport-sized texture).
 
 ## Consumers
 
-| Consumer | How |
-|----------|-----|
-| Slideshow | `preloadSlideshowImage` → `ensure`; install on `rasterImproved` |
-| Image mode | `ensureImageModeQualityClimb` → `ensure`; install on `rasterImproved` / ladderReady |
-| Gallery | `scheduleGalleryDecode` → `ensure`; install on `ladderReady` → `applyGalleryLadderReady` |
+| Consumer | ensure policy | Install |
+|----------|---------------|---------|
+| Gallery | SoftDisplay | `ladderReady` → `applyGalleryLadderReady` |
+| Image mode | EscalateToFull | `rasterImproved` / `tryInstall` |
+| Slideshow | EscalateToFull | `rasterImproved` → phase buffers |
 
-Gallery keeps `GallerySoftState` for visibility prioritization, concurrency budget
-(`inflight`), and a **mirror** of have/gaveUp. Decode-window pass 2 syncs those
-fields from PathRasterService (the climb authority). Dead `fullInflight` removed.
-`isClimbPending` avoids stuck gallery inflight when ensure schedules nothing.
+Gallery keeps `GallerySoftState` as a **mirror** for prioritization, not climb
+authority. Decode-window pass 2 syncs have/gaveUp from this service.
 
-## Residual cleanup
+## Edit / crop full raster
 
-- `ImageModeClimbState` / `m_imageModeClimb` removed (PathRasterService owns climb).
-- Dead slideshow `m_ss*MotionBaseMs` removed (unitless phase owns progress).
-- Gallery pool soft climb helpers removed (PathRasterService + ladderReady only).
+Crop and Workspace content bake still use `fullRasterForEdit` /
+`scheduleFullPixels` for **edit-quality** native coverage. That is separate from
+display climb (Display band ≤2048). See contract §2 Full vs Display.
 
-## Edit full raster
+## Anti-patterns
 
-Crop / Workspace content bake uses `ImageView::fullRasterForEdit`: **ImageCache**
-when the sample already covers native logical size (after Image-mode / thumtoo
-full climb), otherwise `ImageLoader::load` + `ImageCache::put`. Cold crop enter
-can still decode on the caller thread; warm re-enter after Image mode does not.
+- PreferCache retry via `forgetPixelsSettled` + `clearPreferGaveUp` in ImageView
+- Per-tick slideshow `ensure` for look-ahead (once per `toIdx` only)
+- Assuming PreferCache returns want edge
+- Second climb state machines beside PathRasterService
 
-## Crop full raster
-
-Crop enter uses provisional host pixels when native is not yet cached, then
-`requestCropFullRaster` → thumtoo `scheduleFullPixels` (pool `ImageLoader::load`
-fallback). `maybeUpgradeCropFullRaster` rescales the draft rect on delivery.
-Apply is blocked while still awaiting native coverage.
-
-## Next
-
-- Smoke-test gallery zoom after soft shortfall; cold crop enter
-- Further thin GallerySoftState if mirror fields prove redundant in practice

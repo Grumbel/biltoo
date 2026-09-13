@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-742-thumtoo-host-contract.** Normative thumtoo↔host raster contract + PathRaster ClimbPolicy.
+Prior: **741**.
+
+### Problem
+PreferCache BestAvailable (e.g. have=1024 for want=2048) was treated as a
+mystery bug. Slideshow and Image mode each invented recovery (retry, clear
+settle, quiet full). Gallery stopped. No single written rule for what a
+request means or who escalates.
+
+### Change
+- **docs/THUMTOO_HOST_CONTRACT.md** — bands, delivery Met/BestAvailable/Failed,
+  ClimbPolicy SoftDisplay vs EscalateToFull, forbidden host patterns
+- PathRasterService: `ClimbPolicy`; PreferCache plateau → one Full under
+  EscalateToFull; gallery stays SoftDisplay
+- Image mode + slideshow `ensure(..., EscalateToFull)`; remove slideshow
+  PreferCache-retry / full-quiet consumer recover
+- Cross-links: PATH_RASTER_SERVICE, PERFORMANCE, SLIDESHOW, AGENTS
+
+### Done criteria
+- [x] Bundle **742**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-741-slideshow-preload-once-per-to.** Stop per-tick look-ahead preload storm.
 Prior: **740**.
 

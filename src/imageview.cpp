@@ -188,14 +188,7 @@ ImageView::ImageView(QWidget *parent)
                     && path == classicPath()) {
                     (void)tryInstallImageModeSample(path, img);
                     // PreferCache plateaued below viewport need → quiet native.
-                    if (m_pathRaster && m_pathRaster->isGaveUp(path)
-                        && !sampleCoversNativeLogical(path, img)) {
-                        const int need = imageModeOnScreenNeedEdge();
-                        if (need > 0
-                            && !ImageCache::adequate(img, need)) {
-                            scheduleImageModeNativeFullQuiet(path);
-                        }
-                    }
+                    // Full escalate is PathRasterService ClimbPolicy::EscalateToFull.
                     emit statusChanged();
                 }
             });

@@ -208,12 +208,6 @@ public:
     void finishSlideshowPreload(const QString &path, const QImage &image);
     void pumpSlideshowPreloadQueue();
     /**
-     * After PathRaster PreferCache shortfall: one PreferCache retry, then
-     * (phase paths only) quiet full pixels so slideshow does not stay soft.
-     */
-    void maybeRecoverSlideshowRaster(const QString &path);
-    void scheduleSlideshowFullQuiet(const QString &path);
-    /**
      * Slideshow decode / atlas target long-edge: viewport × DPR × motion
      * headroom (Ken Burns can zoom past 1:1 cover), ladder-snapped, capped
      * at kImageLadderEdge. Not native max.
@@ -1706,10 +1700,6 @@ private:
     QSet<QString> m_ssRasterInflight;
     /** Neighbours waiting while concurrency is full. */
     QStringList m_ssRasterPending;
-    /** PreferCache shortfall already retried once for this path (slideshow). */
-    QSet<QString> m_ssPreferRetryDone;
-    /** Quiet full-pixel climb in flight for slideshow phase paths. */
-    QSet<QString> m_ssFullClimbPaths;
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     quint64 m_dwellAtlasRebuildGeneration = 0;
     quint64 m_ssPhaseUpgradeGeneration = 0;

@@ -9,9 +9,12 @@
 #include <QFileInfo>
 #include <QtGlobal>
 
-namespace {
+PathRasterService::PathRasterService(QObject *parent)
+    : QObject(parent)
+{
+}
 
-bool covers(int have, int need)
+bool PathRasterService::covers(int have, int need)
 {
     if (need <= 0) {
         return have > 0;
@@ -19,15 +22,8 @@ bool covers(int have, int need)
     if (have <= 0) {
         return false;
     }
-    // ~90% of target — same idea as ImageCache::adequate / coversEdge.
+    // ~90% of target — Met vs request / want (THUMTOO_HOST_CONTRACT.md §3).
     return have * 10 >= need * 9;
-}
-
-} // namespace
-
-PathRasterService::PathRasterService(QObject *parent)
-    : QObject(parent)
-{
 }
 
 int PathRasterService::capWant(int want, const QSize &knownNative)
@@ -40,7 +36,6 @@ int PathRasterService::capWant(int want, const QSize &knownNative)
             edge = qMin(edge, native);
         }
     }
-    // Snap up within remaining budget, then clamp native again.
     edge = ThumtooCache::ceilLadderEdge(edge);
     if (knownNative.isValid() && knownNative.width() > 0 && knownNative.height() > 0) {
         const int native = qMax(knownNative.width(), knownNative.height());
@@ -51,7 +46,8 @@ int PathRasterService::capWant(int want, const QSize &knownNative)
     return qMax(1, edge);
 }
 
-void PathRasterService::ensure(const QString &path, int wantEdge, const QSize &knownNative)
+void PathRasterService::ensure(const QString &path, int wantEdge,
+                               const QSize &knownNative, ClimbPolicy policy)
 {
     if (path.isEmpty()) {
         return;
@@ -59,11 +55,17 @@ void PathRasterService::ensure(const QString &path, int wantEdge, const QSize &k
     const int want = capWant(wantEdge, knownNative);
     State &st = m_state[path];
     st.epoch = m_epoch;
+    // Sticky max policy: SoftDisplay may upgrade to EscalateToFull, never reverse.
+    if (policy == ClimbPolicy::EscalateToFull) {
+        st.policy = ClimbPolicy::EscalateToFull;
+    }
     // PreferCache may improve when the display target moves past the last
     // shortfall request (e.g. gallery zoom soft→overview→display).
     if (want > st.lastDisplayWant) {
         st.preferGaveUp = false;
         st.displayQueued = false;
+        st.fullDone = false;
+        st.fullQueued = false;
     }
     st.want = qMax(st.want, want);
 
@@ -93,14 +95,11 @@ void PathRasterService::invalidateAll()
 
 QImage PathRasterService::best(const QString &path, int minLongEdge) const
 {
-    return path.isEmpty() ? QImage() : ImageCache::get(path, minLongEdge);
+    return ImageCache::get(path, minLongEdge);
 }
 
 int PathRasterService::haveEdge(const QString &path) const
 {
-    if (path.isEmpty()) {
-        return 0;
-    }
     const auto it = m_state.constFind(path);
     if (it != m_state.cend() && it->have > 0) {
         return it->have;
@@ -111,7 +110,7 @@ int PathRasterService::haveEdge(const QString &path) const
 int PathRasterService::wantEdge(const QString &path) const
 {
     const auto it = m_state.constFind(path);
-    return it == m_state.cend() ? 0 : it->want;
+    return it != m_state.cend() ? it->want : 0;
 }
 
 bool PathRasterService::isGaveUp(const QString &path) const
@@ -131,7 +130,6 @@ void PathRasterService::clearPreferGaveUp(const QString &path)
     }
     it->preferGaveUp = false;
     it->displayQueued = false;
-    // Allow pump() to re-request the same displayWant after a shortfall.
     it->lastDisplayGot = 0;
 }
 
@@ -144,7 +142,7 @@ bool PathRasterService::isClimbPending(const QString &path) const
     if (it == m_state.cend() || it->epoch != m_epoch) {
         return false;
     }
-    return it->softQueued || it->displayQueued;
+    return it->softQueued || it->displayQueued || it->fullQueued;
 }
 
 void PathRasterService::noteDelivery(const QString &path, int requestEdge,
@@ -158,7 +156,6 @@ void PathRasterService::noteDelivery(const QString &path, int requestEdge,
     }
     auto it = m_state.find(path);
     if (it == m_state.end()) {
-        // No active ensure — still cache, no climb.
         if (!image.isNull()) {
             emit rasterImproved(path, ImageCache::longEdge(image));
         }
@@ -181,16 +178,26 @@ void PathRasterService::noteDelivery(const QString &path, int requestEdge,
     }
     st.displayQueued = false;
     st.softQueued = false;
+    st.fullQueued = false;
 
-    // PreferCache shortfall vs request — do not spin the same edge.
+    // PreferCache BestAvailable vs request — do not spin the same Display edge
+    // (THUMTOO_HOST_CONTRACT.md §3). EscalateToFull continues via pump → Full.
     if (requestEdge > 0 && got > 0 && got * 10 < requestEdge * 9) {
         st.preferGaveUp = true;
+        if (covers(st.have, st.want)) {
+            return;
+        }
+        pump(path, st);
         return;
     }
     if (covers(st.have, st.want)) {
         return;
     }
-    if (st.preferGaveUp) {
+    if (st.preferGaveUp && st.policy != ClimbPolicy::EscalateToFull) {
+        return;
+    }
+    // Full delivery that is still short of want: terminal (no Full spin).
+    if (st.fullDone && st.preferGaveUp) {
         return;
     }
     pump(path, st);
@@ -215,25 +222,56 @@ void PathRasterService::pump(const QString &path, State &st)
     }
 
     const int displayWant = st.want;
-    if (st.preferGaveUp) {
-        return;
-    }
-    if (st.displayQueued && st.lastDisplayWant == displayWant) {
-        return;
-    }
-    // Avoid re-requesting an edge that already shortfall'd.
-    if (st.lastDisplayWant == displayWant && st.lastDisplayGot > 0
-        && st.lastDisplayGot * 10 < displayWant * 9) {
-        st.preferGaveUp = true;
-        return;
+
+    // PreferCache Display — unless already plateaued for this want.
+    if (!st.preferGaveUp) {
+        if (st.displayQueued && st.lastDisplayWant == displayWant) {
+            return;
+        }
+        if (st.lastDisplayWant == displayWant && st.lastDisplayGot > 0
+            && st.lastDisplayGot * 10 < displayWant * 9) {
+            st.preferGaveUp = true;
+        } else {
+            st.displayQueued = true;
+            st.lastDisplayWant = displayWant;
+            ThumtooCache::scheduleProbe(path);
+            if (st.have < ThumtooCache::kGalleryLadderEdge) {
+                (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+            }
+            (void)ThumtooCache::scheduleDisplayPixels(path, displayWant);
+            return;
+        }
     }
 
+    // PreferCache BestAvailable and still short of want.
+    if (st.policy != ClimbPolicy::EscalateToFull) {
+        return;
+    }
+    if (st.fullQueued || st.fullDone) {
+        return;
+    }
+    st.fullQueued = true;
+    st.fullDone = true; // one-shot: do not re-enter Full if schedule fails mid-flight
+    int edge = ImageCache::kDisplayMaxEdge;
+    // Prefer known native long edge when available (capped by display max).
+    const QSize native = ThumtooCache::cachedSize(path);
+    if (native.isValid() && native.width() > 0 && native.height() > 0) {
+        edge = qMin(edge, qMax(native.width(), native.height()));
+    }
+    edge = qMax(edge, displayWant);
+    edge = qMin(edge, ImageCache::kDisplayMaxEdge);
+#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
+    if (!ThumtooCache::scheduleFullPixels(path, edge)) {
+        st.fullQueued = false;
+        // Already settled / unavailable — plateau stands.
+    }
+#else
+    // No full API: last PreferCache at display max once.
+    ThumtooCache::forgetPixelsSettled(path, displayWant);
+    st.preferGaveUp = false;
     st.displayQueued = true;
     st.lastDisplayWant = displayWant;
-    ThumtooCache::scheduleProbe(path);
-    if (st.have < ThumtooCache::kGalleryLadderEdge) {
-        (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
-    }
+    st.lastDisplayGot = 0;
     (void)ThumtooCache::scheduleDisplayPixels(path, displayWant);
+#endif
 }
-

@@ -1219,11 +1219,8 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
     // PathRasterService::rasterImproved (no second direct call).
     if (m_pathRaster) {
         m_pathRaster->noteDelivery(path, maxEdge, image);
-        // PreferCache shortfall with no have increase does not emit
-        // rasterImproved — recover here so slideshow does not stay soft.
-        if (m_slideshowProgressActive) {
-            maybeRecoverSlideshowRaster(path);
-        }
+        // PreferCache BestAvailable / Full escalate is PathRasterService policy
+        // (docs/THUMTOO_HOST_CONTRACT.md). Do not recover ad-hoc here.
     } else {
         if (!image.isNull()) {
             ImageCache::put(path, image);
@@ -1872,7 +1869,8 @@ void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantE
         path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
     biltooLoadDbg("preferCacheClimb(service) path=%s edge=%d",
                   qPrintable(QFileInfo(path).fileName()), edge);
-    m_pathRaster->ensure(path, edge, logicalSizeForPath(path));
+    m_pathRaster->ensure(path, edge, logicalSizeForPath(path),
+                         PathRasterService::ClimbPolicy::EscalateToFull);
 }
 
 void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &path,
@@ -1999,15 +1997,11 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     if (have > 0 && coversEdge(have, climbTo)) {
         return;
     }
-    if (m_pathRaster->isGaveUp(path) && need > 0 && !coversEdge(have, need)) {
-        // PreferCache exhausted: one full request (settled on shortfall). Do not
-        // re-enter every ladderReady when overview is already the best sample.
-        scheduleImageModeNativeFullQuiet(path);
-        return;
-    }
+    // PreferCache BestAvailable → Full is PathRasterService policy (contract §4).
     biltooLoadDbg("imageModeClimb(service) path=%s climbTo=%d have=%d need=%d",
                   qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
-    m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path));
+    m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path),
+                         PathRasterService::ClimbPolicy::EscalateToFull);
 }
 
 bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &image)
@@ -2150,11 +2144,8 @@ void ImageView::maybeClimbImageModePixelsForView()
                 item->hasDecodedPixels() ? 1 : 0);
     }
 
-    // Zoom-in: PathRasterService owns PreferCache; native if service gave up.
+    // Zoom-in: PathRasterService Soft→PreferCache→Full (contract EscalateToFull).
     scheduleImageModePreferCacheClimb(path, need);
-    if (m_pathRaster && m_pathRaster->isGaveUp(path)) {
-        scheduleImageModeNativeFullQuiet(path);
-    }
 }
 
 
