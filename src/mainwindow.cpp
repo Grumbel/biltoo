@@ -2302,8 +2302,8 @@ void MainWindow::updateStatus()
             statusBar()->showMessage(
                 tr("Could not load “%1”").arg(PagePath::displayName(err)), 5000);
         }
-        // Drag/open decode progress (Gallery virtualization + filmstrip ladder).
-        // Use m_decodeStatusActive — do not match message text (breaks under i18n).
+        // Remaining decode work (Gallery blanks + filmstrip unloaded), not
+        // concurrent inflight — the latter flickered 1↔0 between jobs.
         int pending = m_imageView->pendingDecodeCount();
         if (m_thumbnailBar) {
             pending += m_thumbnailBar->pendingLoadCount();
@@ -2312,9 +2312,38 @@ void MainWindow::updateStatus()
             statusBar()->showMessage(
                 tr("Loading %n thumbnail…", "thumb/decode progress", pending), 0);
             m_decodeStatusActive = true;
+            if (m_decodeStatusClearTimer) {
+                m_decodeStatusClearTimer->stop();
+            }
         } else if (m_decodeStatusActive && statusBar()) {
-            statusBar()->clearMessage();
-            m_decodeStatusActive = false;
+            // Hold the last non-zero message briefly so a gap between claiming
+            // the next soft job does not clear the bar.
+            if (!m_decodeStatusClearTimer) {
+                m_decodeStatusClearTimer = new QTimer(this);
+                m_decodeStatusClearTimer->setSingleShot(true);
+                m_decodeStatusClearTimer->setInterval(300);
+                connect(m_decodeStatusClearTimer, &QTimer::timeout, this, [this]() {
+                    if (!m_imageView || !statusBar()) {
+                        m_decodeStatusActive = false;
+                        return;
+                    }
+                    int still = m_imageView->pendingDecodeCount();
+                    if (m_thumbnailBar) {
+                        still += m_thumbnailBar->pendingLoadCount();
+                    }
+                    if (still > 0) {
+                        statusBar()->showMessage(
+                            tr("Loading %n thumbnail…", "thumb/decode progress",
+                               still),
+                            0);
+                        m_decodeStatusActive = true;
+                        return;
+                    }
+                    statusBar()->clearMessage();
+                    m_decodeStatusActive = false;
+                });
+            }
+            m_decodeStatusClearTimer->start();
         }
     }
     m_statusLabel->setText(m_imageView->statusText());

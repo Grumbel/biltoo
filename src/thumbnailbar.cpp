@@ -824,7 +824,41 @@ void ThumbnailBar::setLabelsVisible(bool on)
 
 int ThumbnailBar::pendingLoadCount() const
 {
-    return m_thumbLoadScheduled.size() + m_thumbAwaitLadder.size();
+    // Remaining unloaded work in the visible band + anything already claimed.
+    // Counting only scheduled/await flickered as each slot finished before the
+    // next row was claimed (status bar 1↔0).
+    QSet<int> remaining = m_thumbLoadScheduled;
+    remaining.unite(m_thumbAwaitLadder);
+    const int n = m_files.size();
+    if (n <= 0 || !viewport()) {
+        return remaining.size();
+    }
+    const int decodeSize = filmstripDecodeEdge();
+    const QRect vr = viewport()->rect().adjusted(-m_thumbSize, -m_thumbSize,
+                                                   m_thumbSize, m_thumbSize);
+    for (int i = 0; i < n; ++i) {
+        if (remaining.contains(i) || m_thumbFailed.contains(i)) {
+            continue;
+        }
+        QListWidgetItem *it = item(i);
+        if (!it) {
+            continue;
+        }
+        if (!visualItemRect(it).intersects(vr)) {
+            continue;
+        }
+        const int haveEdge =
+            it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+        if (haveEdge >= decodeSize * 9 / 10) {
+            continue;
+        }
+        if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()
+            && haveEdge > 0) {
+            continue;
+        }
+        remaining.insert(i);
+    }
+    return remaining.size();
 }
 
 bool ThumbnailBar::isRowLoading(int row) const

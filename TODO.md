@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-701-status-remaining-work.** Status bar counts remaining work, not inflight flicker.
+Prior: **700**.
+
+### Problem
+"Loading N thumbnail…" flickered 1↔0 — `pendingDecodeCount` only counted concurrent
+inflight jobs, not tiles still waiting for soft.
+
+### Change
+- Gallery/Workspace: count blank tiles (+ inflight climbs on non-blank)
+- Filmstrip: count unloaded visible rows, not only scheduled slots
+- Debounce status-bar clear (~300 ms) so gaps between jobs do not clear the message
+
+### Done criteria
+- [x] Bundle **701**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-700-slideshow-phase-climb-retry.** Sharper phase samples; PreferCache until need edge.
 Prior: **699**.
 

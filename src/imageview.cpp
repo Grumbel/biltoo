@@ -551,18 +551,59 @@ void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
 
 int ImageView::pendingDecodeCount() const
 {
-    // Workspace LoadAdd membership + restore; gallery soft uses GallerySoftState.
+    // Remaining work overview — not concurrent inflight. Counting only inflight
+    // flickered 1↔0 as each soft job finished before the next was claimed.
     int pendingAdds = 0;
     for (int n : m_pendingWorkspacePaths) {
         pendingAdds += n;
     }
     int n = pendingAdds + m_pendingRestoreStates.size();
-    // Image-mode quiet native climb (soft → full without LoadReplace gen bump).
     n += m_imageModeNativeClimbPaths.size();
-    // Gallery soft / PreferCache inflight (one counter per path).
-    for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
-        if (it.value().inflight > 0 || it.value().fullInflight) {
-            ++n;
+
+    if (isGalleryMode() || isWorkspaceMode()) {
+        // Tiles still without display pixels (waiting for soft / first sample).
+        QSet<QString> blankPaths;
+        for (ImageItem *item : m_items) {
+            if (!item || item->path().isEmpty()) {
+                continue;
+            }
+            if (!item->hasDisplayPixels()) {
+                blankPaths.insert(item->path());
+            }
+        }
+        n += blankPaths.size();
+        // Soft climbs still in flight for tiles that already show a sample.
+        for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
+            if (blankPaths.contains(it.key())) {
+                continue; // already counted
+            }
+            if (it.value().inflight > 0 || it.value().fullInflight) {
+                ++n;
+            }
+        }
+    } else {
+        // Image mode: only true in-flight climbs (single item).
+        for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
+            if (it.value().inflight > 0 || it.value().fullInflight) {
+                ++n;
+            }
+        }
+    }
+
+    // Slideshow preload queue (inflight + pending neighbours).
+    if (m_slideshowProgressActive) {
+        n += m_ssRasterInflight.size() + m_ssRasterPending.size();
+        const int need = 0; // need edge checked via target below if needed
+        Q_UNUSED(need);
+        if (!m_ssFromPath.isEmpty()
+            && ImageCache::longEdge(m_ssFromImage) > 0
+            && ImageCache::longEdge(m_ssFromImage)
+                   < (slideshowTargetEdge() * 7) / 10) {
+            // Current slide still soft — count as remaining quality work once.
+            if (!m_ssRasterInflight.contains(m_ssFromPath)
+                && !m_ssRasterPending.contains(m_ssFromPath)) {
+                ++n;
+            }
         }
     }
     return n;

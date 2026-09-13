@@ -677,6 +677,8 @@ private:
     bool m_forceNoThumbnails = false;
     /** True while status bar shows drag/gallery decode progress (clear when 0). */
     bool m_decodeStatusActive = false;
+    /** Delay clearing the Loading… status so transient 0 does not flicker. */
+    QTimer *m_decodeStatusClearTimer = nullptr;
     bool m_slideshowAdvancing = false; // true while timer-driven next runs
     bool m_slideshowPaused = false; // session active, timer stopped, framing kept
     /** Pure time base: elapsed since start (minus paused gaps). */
