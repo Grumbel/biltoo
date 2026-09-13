@@ -45,3 +45,18 @@ logical size.
 Pixel upgrades (soft→full) must not change zoom. Use
 `preserveImageViewOnLogicalSizeChange`: refit only when aspect changes; when
 only magnitude changes, scale the view so the on-screen footprint stays put.
+
+## Provisional → definitive
+
+| Stage | Geometry |
+|-------|----------|
+| Cold open (no size, no soft) | Neutral stand-in (archives: **1024²** square) + size probe |
+| Soft / LQIP arrives | **Aspect from sample**, magnitude `kProvisionalLayoutLongEdge` (1024). Still provisional. |
+| Durable probe / thumtoo size | Authoritative native size; clears provisional |
+
+`layoutSizeForPath(path, previewHint)` must prefer soft aspect over a stored
+square stand-in while the path is provisional. Soft install (`installDisplayPixels`
+SoftPreview) updates intrinsic when provisional — not only when the item is 1×1.
+
+Gallery pack is debounced on aspect change (`requestDebouncedGalleryPack`).
+

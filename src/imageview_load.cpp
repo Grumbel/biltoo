@@ -555,12 +555,24 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         item->update();
     } else {
         item->setPreviewImage(display); // NoCache soft path
-        // Soft must not leave intrinsic at 1×1 after a size-less placeholder.
+        // Soft aspect owns provisional geometry. Cold archive placeholders are
+        // often 1024² (square stand-in); only updating when ≤1×1 left cells at
+        // the wrong aspect until the durable probe arrived (visible resize).
         const QSize cur = item->imageSize();
-        if (cur.width() <= 1 || cur.height() <= 1) {
+        const bool provisional = !path.isEmpty() && isProvisionalImageSize(path);
+        if (cur.width() <= 1 || cur.height() <= 1 || provisional) {
             const QSize layout = layoutSizeForPath(path, display);
             if (isPositiveSize(layout) && layout.width() > 1 && layout.height() > 1) {
-                item->setIntrinsicSize(layout);
+                const int cw = qMax(1, cur.width());
+                const int ch = qMax(1, cur.height());
+                const int lw = qMax(1, layout.width());
+                const int lh = qMax(1, layout.height());
+                const bool aspectDiffers =
+                    cur.width() <= 1 || cur.height() <= 1
+                    || qAbs(double(cw) / double(ch) - double(lw) / double(lh)) > 0.02;
+                if (aspectDiffers || cur != layout) {
+                    item->setIntrinsicSize(layout);
+                }
             }
         }
     }

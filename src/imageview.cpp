@@ -383,12 +383,14 @@ QSize ImageView::imageSizeForPath(const QString &path)
     // Archives / multipage / embedded PDF: async probe; neutral stand-in.
     scheduleImageSizeProbe(path);
     m_provisionalSizePaths.insert(path);
+    QSize standIn(1000, 1000);
     if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
         || PagePath::isPdfImageRef(path)) {
-        return QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);
+        // Square is only a last resort until soft aspect or probe arrives.
+        standIn = QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);
     }
-    // Unknown: do not touch the filesystem on the GUI thread.
-    return QSize(1000, 1000);
+    m_imageSizeByPath.insert(path, standIn);
+    return standIn;
 }
 
 QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHint)
@@ -398,19 +400,23 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     if (isPositiveSize(known) && !isProvisionalImageSize(path)) {
         return known;
     }
-    const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)) {
-        return *it;
-    }
-    // Aspect from preview; magnitude normalized to provisional long-edge.
+    // Soft / LQIP aspect is better than a square archive stand-in while the
+    // durable probe is in flight. Magnitude stays at provisional long-edge.
     if (!previewHint.isNull() && isPositiveSize(previewHint.size())) {
         scheduleImageSizeProbe(path);
         m_provisionalSizePaths.insert(path);
         const QSize scaled =
             scaleToLongEdge(previewHint.size(), kProvisionalLayoutLongEdge);
         if (isPositiveSize(scaled)) {
+            // Store provisional aspect so pack/layout see the same size without
+            // a soft sample on every call.
+            m_imageSizeByPath.insert(path, scaled);
             return scaled;
         }
+    }
+    const auto it = m_imageSizeByPath.constFind(path);
+    if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)) {
+        return *it;
     }
     return imageSizeForPath(path);
 }

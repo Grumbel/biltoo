@@ -1,5 +1,26 @@
 # TODO / agent handoff
 
+## Status (2026-09-13)
+
+**Tip: biltoo-699-gallery-soft-provisional-aspect.** Soft aspect updates provisional geometry.
+Prior: **698**.
+
+### Problem
+Cold archive Gallery: placeholders are 1024². Soft install only fixed intrinsic
+when size was ≤1×1, so real aspect waited for the durable probe → visible resize.
+
+### Change
+- `layoutSizeForPath`: prefer soft aspect over provisional square stand-in
+- Soft `installDisplayPixels`: update intrinsic while path is provisional
+- Store stand-in in the size map as provisional; SIZE.md documents the ladder
+
+### Done criteria
+- [x] Bundle **699**
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-12)
 
 **Tip: biltoo-698-docs-nav-slideshow.** Document Image nav-hot + slideshow phase/atlas rules.
