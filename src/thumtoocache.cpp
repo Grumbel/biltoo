@@ -1642,7 +1642,11 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
     const std::string archiveUri = thumtoo::archive_uri(abs);
 
     auto entries = c->get_archive_entries(archiveUri);
-    if (entries.empty()) {
+    // Always re-read TOC for RAR/CBR when unarr is linked so a stale index from
+    // a pre-unarr build (libarchive listing only) cannot block solid extract.
+    const bool rarUnarr = thumtoo::unarr_backend_available()
+        && thumtoo::archive_prefers_unarr(abs);
+    if (entries.empty() || rarUnarr) {
         // Source I/O + durable store; callers use this from expand workers.
         entries = c->refresh_archive_toc(abs);
     }

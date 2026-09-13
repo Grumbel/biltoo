@@ -1842,14 +1842,24 @@ void MainWindow::about()
         "<ul>"
         "<li>libvips (extra codecs, attention Pan&amp;Zoom): %1</li>"
         "<li>libexiv2 (Exif / IPTC / XMP metadata): %2</li>"
-        "<li>thumtoo archives (zip / tar / 7z / rar / …): %3</li>"
-        "<li>GIO (default-application Preferences): %4</li>"
+        "<li>thumtoo (size index + ladder): %3</li>"
+        "<li>thumtoo archives (zip / tar / 7z / rar / …): %4</li>"
+        "<li>libunarr (solid RAR / CBR extract): %5</li>"
+        "<li>MuPDF (PDF pages): %6</li>"
+        "<li>DjVuLibre (DjVu pages): %7</li>"
+        "<li>libcurl (HTTP/S fetch via thumtoo): %8</li>"
+        "<li>GIO (default-application Preferences): %9</li>"
         "</ul>"
         "<p>Qt imageformat plugins (e.g. KImageFormats for XCF) are loaded at "
         "runtime when installed.</p>")
         .arg(feat(BILTOO_FEATURE_VIPS),
              feat(BILTOO_FEATURE_EXIV2),
+             feat(BILTOO_FEATURE_THUMTOO),
              feat(BILTOO_FEATURE_ARCHIVE),
+             feat(BILTOO_FEATURE_THUMTOO_UNARR),
+             feat(BILTOO_FEATURE_THUMTOO_MUPDF),
+             feat(BILTOO_FEATURE_THUMTOO_DJVU),
+             feat(BILTOO_FEATURE_THUMTOO_CURL),
              feat(BILTOO_FEATURE_GIO));
 
     box.setInformativeText(

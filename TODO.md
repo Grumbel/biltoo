@@ -2,6 +2,30 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-733-features-rar-toc.** About/CMake show thumtoo backends; RAR TOC refresh with unarr.
+Prior: **732**.
+
+### Change
+- CMake summary + `version.h`: UNARR / MuPDF / DjVu / curl feature flags from thumtoo
+- About dialog lists those backends (✔/✘)
+- `expandArchiveToImageRefs`: always refresh TOC for `.rar`/`.cbr` when unarr is
+  linked (avoid stale pre-unarr libarchive index)
+
+### Requires
+- thumtoo **192** (PARENT_SCOPE feature exports) + **191** (no libarchive RAR extract fallback)
+
+### Done criteria
+- [x] Bundle **733**
+
+### Verify
+About → libunarr ✔. `biltoo /tmp/archive.rar` after `thumtoo-gc --path /tmp/archive.rar` if TOC was stale.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-732-fititem-respect-crop.** fitItem must not force full-file intrinsic over a session crop.
 Prior: **731**.
 
