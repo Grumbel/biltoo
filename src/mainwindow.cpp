@@ -2602,25 +2602,14 @@ void MainWindow::readSettings()
             setGeometry(normal);
         }
     }
-    // QMainWindow::restoreState can SIGSEGV inside QDockAreaLayout on corrupt or
-    // cross-Qt-version blobs (seen on show() after Qt 6.11). Gate on an explicit
-    // version we control; mismatch → skip and rewrite on next clean quit.
-    constexpr int kWindowStateVersion = 3;
-    const int stateVer =
-        settings.value(QStringLiteral("windowStateVersion"), 0).toInt();
-    const QString stateQt =
-        settings.value(QStringLiteral("windowStateQt")).toString();
-    const QString thisQt = QString::fromLatin1(qVersion());
-    const QByteArray state = settings.value(QStringLiteral("windowState")).toByteArray();
-    if (!state.isEmpty() && stateVer == kWindowStateVersion && stateQt == thisQt) {
-        if (!restoreState(state)) {
-            settings.remove(QStringLiteral("windowState"));
-        }
-    } else if (!state.isEmpty()) {
+    // QMainWindow::restoreState can SIGSEGV inside QDockAreaLayout on show()
+    // (Qt 6.11). Do not restore dock layout from settings; drop any stored blob.
+    if (settings.contains(QStringLiteral("windowState"))) {
         settings.remove(QStringLiteral("windowState"));
-        settings.setValue(QStringLiteral("windowStateVersion"), kWindowStateVersion);
-        settings.setValue(QStringLiteral("windowStateQt"), thisQt);
     }
+    settings.remove(QStringLiteral("windowStateVersion"));
+    settings.remove(QStringLiteral("windowStateQt"));
+
     // Adjustments is opt-in: restoreState may re-show it from an old windowState.
     // Prefer an explicit setting (default: hidden).
     if (m_adjustmentsDock) {
@@ -2906,16 +2895,10 @@ void MainWindow::writeSettings()
     }
     settings.endArray();
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
-    settings.setValue(QStringLiteral("windowState"), saveState());
-    settings.setValue(QStringLiteral("windowStateVersion"), 3);
-    if (m_imageView) {
-        settings.setValue(QStringLiteral("stickyZoomEnabled"),
-                          m_imageView->stickyZoomEnabled());
-        settings.setValue(QStringLiteral("stickyZoomKind"),
-                          static_cast<int>(m_imageView->stickyZoomKind()));
-    }
-    settings.setValue(QStringLiteral("windowStateQt"),
-                      QString::fromLatin1(qVersion()));
+    // Intentionally not saving windowState — restoreState SEGV on Qt 6.11.
+    settings.remove(QStringLiteral("windowState"));
+    settings.remove(QStringLiteral("windowStateVersion"));
+    settings.remove(QStringLiteral("windowStateQt"));
     if (m_adjustmentsDock) {
         settings.setValue(QStringLiteral("adjustmentsPanelVisible"),
                           m_adjustmentsDock->isVisible());
