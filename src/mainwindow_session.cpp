@@ -1027,10 +1027,15 @@ void MainWindow::applyThumbnailVisibility()
 void MainWindow::loadFiles(const QStringList &paths, int startAt)
 {
     stopSlideshow();
+    // Cancel in-flight soft/PreferCache for the previous session before expand.
+    if (m_imageView) {
+        m_imageView->invalidateSessionLoads();
+    }
 
     // Drop the previous filmstrip immediately so History / Open does not keep
     // showing old session thumbs while expand or async sort runs.
     if (m_thumbnailBar) {
+        m_thumbnailBar->cancelPendingLoads();
         m_thumbnailBar->setSession(QStringList(), QVector<SessionImageId>());
     }
 
@@ -1074,6 +1079,12 @@ void MainWindow::applyExpandedLoad(const QStringList &images, int startAt)
 void MainWindow::finishApplyExpandedLoad(int startAt)
 {
     m_currentIndex = -1;
+    // Second barrier after expand/sort: generation may have been bumped at
+    // loadFiles start, but expand is async — bump again so jobs from the
+    // previous session that finished during expand still cannot install.
+    if (m_imageView) {
+        m_imageView->invalidateSessionLoads();
+    }
 
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     // Background size+ladder for the session (same cache as thumtoo-prepare).

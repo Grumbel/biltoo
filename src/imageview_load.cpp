@@ -671,16 +671,34 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                   pixels.width(), pixels.height(),
                   ImageCache::has(path) ? 1 : 0);
 
-    // Cold path: no soft/LQIP yet. Do NOT rebuild the scene / fitInView here —
-    // timed logs showed ~100ms+ GUI between pendingTile soft=0x0 and softJob
-    // START. Keep prior frame (or empty placeholder) until soft arrives.
+    // Cold path: no soft/LQIP yet. Within the *same* path, keep the prior frame
+    // until soft arrives (avoids a flash on PreferCache gaps). Different path
+    // (session switch / ←→): never keep the previous file's pixels — that is
+    // the race where an old session image remains on screen as the new path.
     if (pixels.isNull()) {
         if (m_items.size() == 1) {
             ImageItem *item = m_items.first();
+            const bool pathChanged = item->path() != path;
             item->setPath(path);
             bindImageModeSessionCursor(item);
-            biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",
-                          qPrintable(QFileInfo(path).fileName()));
+            if (pathChanged) {
+                if (item->hasDecodedPixels()) {
+                    item->clearDecodedPixels();
+                }
+                item->setPreviewImage(QImage());
+                const QSize sz = layoutSizeForPath(path, QImage());
+                if (isPositiveSize(sz)) {
+                    item->setIntrinsicSize(sz);
+                }
+                if (viewport()) {
+                    viewport()->update();
+                }
+                biltooLoadDbg("pendingTile DEFER blank path=%s (cleared prior)",
+                              qPrintable(QFileInfo(path).fileName()));
+            } else {
+                biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",
+                              qPrintable(QFileInfo(path).fileName()));
+            }
             return;
         }
         // First image ever: minimal placeholder, no fit storm.

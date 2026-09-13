@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-703-session-switch-stale-pixels.** Session open invalidates loads; no prior-frame on path change.
+Prior: **702**.
+
+### Problem
+Opening a new session while the previous image was still loading could leave the
+old pixels on the Image-mode item (pendingTile "keep prior frame" on soft miss).
+
+### Change
+- `invalidateSessionLoads()`: bump generation, clear canvas, cancel thumtoo epoch
+- Called from `loadFiles` and `finishApplyExpandedLoad`
+- Soft-miss pending tile blanks the item when the path changes
+
+### Done criteria
+- [x] Bundle **703**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-702-slideshow-stop-reload.** Esc/stop reloads current slide into Image mode.
 Prior: **701**.
 

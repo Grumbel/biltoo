@@ -6,6 +6,7 @@
 #include <QDebug>
 #include "imageitem.h"
 #include "imageloader.h"
+#include "thumtoocache.h"
 
 #include <QScrollBar>
 #include <QUndoStack>
@@ -52,8 +53,32 @@ void ImageView::invalidateGalleryDecodes()
     // cannot create tiles after leaving Gallery. Bump generation so in-flight
     // pool jobs are rejected in onImageLoaded.
     gallerySoftResetAll();
-m_pendingWorkspacePaths.clear();
+    m_pendingWorkspacePaths.clear();
     ++m_loadGeneration;
+}
+
+void ImageView::invalidateSessionLoads()
+{
+    // New Open / History session: cancel every in-flight decode and drop the
+    // live canvas so a late soft/PreferCache for the previous session cannot
+    // paint over the first image of the new set.
+    ++m_loadGeneration;
+    clearPendingLoads();
+    m_imageModeNativeClimbPaths.clear();
+    m_imageModeClimb.clear();
+    gallerySoftResetAll();
+    m_ssRasterInflight.clear();
+    m_ssRasterPending.clear();
+    m_ssPhaseUpgradeGeneration++;
+    m_dwellAtlasRebuildGeneration++;
+    m_ssToAtlasRebuildGeneration++;
+    if (isImageMode()) {
+        clearLiveCanvas();
+        clearClassicPath();
+    }
+    if (ThumtooCache::isAvailable()) {
+        (void)ThumtooCache::bumpInterestEpoch();
+    }
 }
 
 void ImageView::takePendingWorkspacePath(const QString &path)

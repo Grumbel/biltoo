@@ -176,6 +176,8 @@ public:
     void clearPendingLoads();
     /** Cancel in-flight Gallery window decodes (mode leave / empty Workspace). */
     void invalidateGalleryDecodes();
+    /** Open/History session barrier: bump gen, clear canvas, cancel thumtoo. */
+    void invalidateSessionLoads();
     /** Controller host: scene->clear with signals blocked (stashes already detached). */
     void clearSceneKeepingStashes();
     /** Controller host: LoadReplace for a path (no-op if empty). */
