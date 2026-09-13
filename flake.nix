@@ -130,6 +130,27 @@
               if [ ! -f "$BILTOO_BUILD_DIR/build.ninja" ] && [ ! -f "$BILTOO_BUILD_DIR/Makefile" ]; then
                 biltoo-configure || exit 1
               fi
+
+              # CMake bakes THUMTOO_SOURCE_DIR into the cache. If the resolved
+              # path moved (new flake/override store hash, or switch to a live
+              # checkout), rebuilds would keep compiling the *old* tree until
+              # someone reconfigures. Detect mismatch and reconfigure once.
+              cache="$BILTOO_BUILD_DIR/CMakeCache.txt"
+              if [ -f "$cache" ]; then
+                cached="$(sed -n 's/^THUMTOO_SOURCE_DIR:PATH=//p' "$cache" | head -n1 || true)"
+                if [ -n "$cached" ] && [ "$cached" != "$THUMTOO_SOURCE_DIR" ]; then
+                  echo "biltoo-build: THUMTOO_SOURCE_DIR changed since configure:" >&2
+                  echo "  cmake cache: $cached" >&2
+                  echo "  current:     $THUMTOO_SOURCE_DIR" >&2
+                  echo "  → re-running biltoo-configure (expect a thumtoo rebuild if the tree path differs)" >&2
+                  biltoo-configure || exit 1
+                elif [ -n "$cached" ] && [ ! -f "$cached/CMakeLists.txt" ]; then
+                  echo "biltoo-build: cached THUMTOO_SOURCE_DIR is gone: $cached" >&2
+                  echo "  → re-running biltoo-configure with $THUMTOO_SOURCE_DIR" >&2
+                  biltoo-configure || exit 1
+                fi
+              fi
+
               cmake --build "$BILTOO_BUILD_DIR" "$@"
             ''
           );

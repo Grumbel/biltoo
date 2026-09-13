@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-735-detect-stale-thumtoo-path.** biltoo-build detects CMake cache vs current THUMTOO_SOURCE_DIR mismatch.
+Prior: **734**.
+
+### Problem
+CMake bakes `THUMTOO_SOURCE_DIR=/nix/store/…-source`. After flake/override updates
+the store path, `biltoo-build` kept compiling the **old** tree until a manual
+reconfigure. User diagnosis confirmed.
+
+### Change
+- `biltoo-build`: if cache `THUMTOO_SOURCE_DIR` ≠ current resolved path (or path
+  missing), auto `biltoo-configure` with a clear message
+
+### Done criteria
+- [x] Bundle **735**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-734-live-thumtoo-source.** Prefer live THUMTOO_SOURCE_DIR; flake store path freezes edits.
 Prior: **733**.
 
