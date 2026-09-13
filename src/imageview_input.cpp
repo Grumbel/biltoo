@@ -283,6 +283,7 @@ bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
         return false;
     }
     const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
+    releaseStickyZoom();
     m_fitMode = false;
     m_fillMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -361,6 +362,7 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     // Do not touch selected-item geometry here — prepareGeometryChange on
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
     cancelSlideshowMotion();
+    releaseStickyZoom();
     m_fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
@@ -1663,6 +1665,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
     if (viewRect.width() >= 8 && viewRect.height() >= 8) {
         const QRectF sceneRect = mapToScene(viewRect).boundingRect();
         if (sceneRect.isValid() && !sceneRect.isEmpty()) {
+            releaseStickyZoom();
             m_fitMode = false;
             m_fillMode = false;
             fitInView(sceneRect, Qt::KeepAspectRatio);

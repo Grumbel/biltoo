@@ -176,6 +176,7 @@ private slots:
     void zoomReset();
     void zoomFit();
     void zoomFill();
+    void syncZoomModeChecks();
     void toggleFullscreen();
     void rotateLeft();
     void rotateRight();
@@ -552,7 +553,6 @@ private:
     QAction *m_zoomFitAct = nullptr;
     QAction *m_zoomFillAct = nullptr;
     QAction *m_zoomRegionAct = nullptr;
-    QAction *m_stickyZoomAct = nullptr;
     QAction *m_fullscreenAct = nullptr;
     QAction *m_rotateLeftAct = nullptr;
     QAction *m_rotateRightAct = nullptr;

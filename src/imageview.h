@@ -594,13 +594,13 @@ public:
     /** Cover the viewport (may crop); uses KeepAspectRatioByExpanding. */
     void zoomFill();
     /**
-     * When sticky zoom is on, Fit / Fill / 1:1 last chosen by the user is
-     * re-applied when a new Image-mode file is installed (navigation / Open).
-     * Off (default): framing follows m_fitMode / m_fillMode as before.
+     * Sticky framing: Fit / Fill / 1:1 stay active across Image-mode navigation
+     * until the same mode is toggled off or free zoom (+/−, wheel, region) runs.
+     * New images are recentred (no attempt to map pan across different aspects).
      */
     enum class StickyZoomKind { Fit = 0, Fill = 1, Actual = 2 };
     void setStickyZoomEnabled(bool on);
-    /** When enabling sticky from the UI, remember Fit/Fill/1:1 now. */
+    void releaseStickyZoom();
     void captureStickyZoomFromCurrentFraming();
     bool stickyZoomEnabled() const { return m_stickyZoomEnabled; }
     void setStickyZoomKind(StickyZoomKind kind);
@@ -1106,6 +1106,7 @@ public:
     void scheduleGalleryDecodeWindowRefresh(int delayMs = 48);
 
 signals:
+    void stickyZoomChanged();
     void statusChanged();
     void mouseInfoChanged(const ImageMouseInfo &info);
     void toolChanged(ImageView::Tool tool);

@@ -282,6 +282,7 @@ void ImageView::zoomViewBy(qreal factor)
     // Gallery: view zoom is allowed for inspection (matches wheel zoom). Pack /
     // resize still resets the view transform so tiles stay layout-correct
     // (AUDIT M4 — one policy: zoom works until next pack).
+    releaseStickyZoom();
     m_fitMode = false;
     m_fillMode = false;
     // Keep the viewport centre stable when zooming via toolbar/shortcuts
@@ -334,9 +335,6 @@ void ImageView::zoomReset()
 {
     m_fitMode = false;
     m_fillMode = false;
-    if (m_stickyZoomEnabled) {
-        m_stickyZoomKind = StickyZoomKind::Actual;
-    }
     if (isMultiItemMode()) {
         resetTransform();
         if (isGalleryMode()) {
@@ -374,9 +372,6 @@ void ImageView::zoomFit()
 {
     m_fitMode = true;
     m_fillMode = false;
-    if (m_stickyZoomEnabled) {
-        m_stickyZoomKind = StickyZoomKind::Fit;
-    }
     if (isGalleryMode()) {
         // Fit the packed gallery into the viewport. applyLayout() alone only
         // resets to identity after a view-zoom when the pack already matches
@@ -419,9 +414,6 @@ void ImageView::zoomFill()
 {
     m_fitMode = true;
     m_fillMode = true;
-    if (m_stickyZoomEnabled) {
-        m_stickyZoomKind = StickyZoomKind::Fill;
-    }
     if (isGalleryMode()) {
         if (!m_items.isEmpty()) {
             const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
@@ -471,7 +463,21 @@ void ImageView::armZoomRegion()
 
 void ImageView::setStickyZoomEnabled(bool on)
 {
+    if (m_stickyZoomEnabled == on) {
+        return;
+    }
     m_stickyZoomEnabled = on;
+    emit stickyZoomChanged();
+    emit statusChanged();
+}
+
+void ImageView::releaseStickyZoom()
+{
+    if (!m_stickyZoomEnabled) {
+        return;
+    }
+    m_stickyZoomEnabled = false;
+    emit stickyZoomChanged();
     emit statusChanged();
 }
 
@@ -497,6 +503,8 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         return;
     }
     if (m_stickyZoomEnabled) {
+        // Always re-centre. Mapping pan across different sizes/aspects is
+        // ambiguous (Fit is the only mode with a unique "home" pose).
         switch (m_stickyZoomKind) {
         case StickyZoomKind::Fill:
             m_fitMode = true;

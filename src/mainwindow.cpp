@@ -143,6 +143,9 @@ MainWindow::MainWindow(QWidget *parent)
             });
     connect(m_imageView, &ImageView::filesDropped,
             this, &MainWindow::onFilesDropped);
+    connect(m_imageView, &ImageView::stickyZoomChanged,
+            this, &MainWindow::syncZoomModeChecks);
+
 
     m_thumbnailBar = new ThumbnailBar(this);
     m_thumbnailBar->setAccessibleName(tr("Thumbnails"));
@@ -564,26 +567,75 @@ void MainWindow::syncThumbnailCanvasMembership()
 void MainWindow::zoomIn()
 {
     m_imageView->zoomIn();
+    syncZoomModeChecks();
 }
 
 void MainWindow::zoomOut()
 {
     m_imageView->zoomOut();
+    syncZoomModeChecks();
 }
 
 void MainWindow::zoomReset()
 {
+    // Toggle sticky 1:1: re-click releases without changing framing.
+    if (m_imageView->stickyZoomEnabled()
+        && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Actual) {
+        m_imageView->releaseStickyZoom();
+        syncZoomModeChecks();
+        return;
+    }
     m_imageView->zoomReset();
+    m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Actual);
+    m_imageView->setStickyZoomEnabled(true);
+    syncZoomModeChecks();
 }
 
 void MainWindow::zoomFit()
 {
+    if (m_imageView->stickyZoomEnabled()
+        && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Fit) {
+        m_imageView->releaseStickyZoom();
+        syncZoomModeChecks();
+        return;
+    }
     m_imageView->zoomFit();
+    m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Fit);
+    m_imageView->setStickyZoomEnabled(true);
+    syncZoomModeChecks();
 }
 
 void MainWindow::zoomFill()
 {
+    if (m_imageView->stickyZoomEnabled()
+        && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Fill) {
+        m_imageView->releaseStickyZoom();
+        syncZoomModeChecks();
+        return;
+    }
     m_imageView->zoomFill();
+    m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Fill);
+    m_imageView->setStickyZoomEnabled(true);
+    syncZoomModeChecks();
+}
+
+void MainWindow::syncZoomModeChecks()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const bool sticky = m_imageView->stickyZoomEnabled();
+    const auto kind = m_imageView->stickyZoomKind();
+    auto setCheck = [](QAction *act, bool on) {
+        if (!act) {
+            return;
+        }
+        const QSignalBlocker blocker(act);
+        act->setChecked(on);
+    };
+    setCheck(m_zoomFitAct, sticky && kind == ImageView::StickyZoomKind::Fit);
+    setCheck(m_zoomFillAct, sticky && kind == ImageView::StickyZoomKind::Fill);
+    setCheck(m_zoom1to1Act, sticky && kind == ImageView::StickyZoomKind::Actual);
 }
 
 void MainWindow::toggleFullscreen()
@@ -2684,10 +2736,7 @@ void MainWindow::readSettings()
         m_imageView->setStickyZoomKind(
             static_cast<ImageView::StickyZoomKind>(qBound(0, kind, 2)));
         m_imageView->setStickyZoomEnabled(sticky);
-        if (m_stickyZoomAct) {
-            const QSignalBlocker blocker(m_stickyZoomAct);
-            m_stickyZoomAct->setChecked(sticky);
-        }
+        syncZoomModeChecks();
     }
 
     // Workspace mode is off by default. Only enable at startup when the user

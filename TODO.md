@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-770-sticky-toggle-fit-fill-1to1.** Fit/Fill/1:1 are sticky toggles; no extra button.
+Prior: **769**.
+
+### Behaviour
+- Fit / Fill / 1:1 are checkable; while checked they re-apply on Image navigation
+- Re-click the same mode, or ± / wheel / zoom-region, releases sticky
+- New images always **re-centred** (no pan mapping across aspects)
+
+### Apply
+```bash
+git pull /path/to/biltoo-770-sticky-toggle-fit-fill-1to1.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **770**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-769-sticky-zoom-members.** Declare m_stickyZoomEnabled / m_stickyZoomKind (build fix).
 Prior: **768**.
 
