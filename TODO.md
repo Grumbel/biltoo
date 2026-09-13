@@ -2,6 +2,31 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-773-sticky-pan-null-guards.** Harden sticky pan / targetItem against UAF (intermittent SEGV).
+Prior: **772**.
+
+### Note
+Startup SEGV was intermittent and not reproduced here. Hardened:
+- `targetItem()` null scene + skip stale selection pointers
+- sticky pan capture/restore require item still in `m_items` and scene
+- deferred pan restore uses `QPointer<ImageView>`
+
+If SEGV returns, capture `gdb bt` — may still be dock restore or thumtoo.
+
+### Apply
+```bash
+git pull /path/to/biltoo-773-sticky-pan-null-guards.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **773**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-772-sticky-pan-survive-upgrades.** Sticky pan survives soft→HQ and sceneRect resets.
 Prior: **771**.
 

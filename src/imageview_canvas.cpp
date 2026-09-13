@@ -775,9 +775,16 @@ ImageItem *ImageView::targetItem() const
     //   Image → primary (sole) canvas object
     //   Gallery / Workspace → first selected item; Workspace also falls back to
     //   the sole object when the selection is empty
+    if (!m_scene) {
+        return m_items.isEmpty() ? nullptr : m_items.first();
+    }
     const QList<QGraphicsItem *> selected = m_scene->selectedItems();
     for (QGraphicsItem *gi : selected) {
         if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            // Selection can briefly hold stale pointers after destroyCanvasItem.
+            if (!m_items.contains(item) || item->scene() != m_scene) {
+                continue;
+            }
             return item;
         }
     }

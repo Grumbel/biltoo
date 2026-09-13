@@ -504,7 +504,10 @@ void ImageView::captureStickyPanAnchor(ImageItem *item)
     if (!m_stickyZoomEnabled || m_stickyZoomKind == StickyZoomKind::Fit) {
         return;
     }
-    if (!item || !viewport()) {
+    if (!item || !viewport() || !m_scene) {
+        return;
+    }
+    if (!m_items.contains(item) || item->scene() != m_scene) {
         return;
     }
     const QRectF r = item->sceneBoundingRect();
@@ -521,7 +524,10 @@ void ImageView::captureStickyPanAnchor(ImageItem *item)
 
 void ImageView::restoreStickyPanAnchor(ImageItem *item)
 {
-    if (!m_haveStickyPanAnchor || !item) {
+    if (!m_haveStickyPanAnchor || !item || !m_scene || !viewport()) {
+        return;
+    }
+    if (!m_items.contains(item) || item->scene() != m_scene) {
         return;
     }
     const QRectF r = item->sceneBoundingRect();
@@ -570,13 +576,17 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         if (m_stickyZoomKind != StickyZoomKind::Fit) {
             restoreStickyPanAnchor(item);
             // Scroll ranges often settle after this returns — restore again.
-            QTimer::singleShot(0, this, [this]() {
-                if (!m_stickyZoomEnabled
-                    || m_stickyZoomKind == StickyZoomKind::Fit) {
+            // QPointer so a destroy mid-navigation cancels the callback safely.
+            const QPointer<ImageView> guard(this);
+            QTimer::singleShot(0, this, [guard]() {
+                ImageView *const view = guard.data();
+                if (!view || !view->m_stickyZoomEnabled
+                    || view->m_stickyZoomKind == StickyZoomKind::Fit
+                    || !view->m_scene || !view->viewport()) {
                     return;
                 }
-                if (ImageItem *cur = targetItem()) {
-                    restoreStickyPanAnchor(cur);
+                if (ImageItem *cur = view->targetItem()) {
+                    view->restoreStickyPanAnchor(cur);
                 }
             });
         }
