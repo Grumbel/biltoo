@@ -731,11 +731,16 @@ void scheduleProbe(const QString &path)
     const QString pathCopy = path;
     QThreadPool::globalInstance()->start([pathCopy]() {
         ASSERT_NOT_GUI_THREAD();
+        auto fail = [&pathCopy]() {
+            emit bridge()->sizeReady(pathCopy, QSize());
+        };
         if (isUnsupported(pathCopy)) {
+            fail();
             return;
         }
         const std::string uri = toThumtooUri(pathCopy);
         if (uri.empty()) {
+            fail();
             return;
         }
         thumtoo::Client *c = nullptr;
@@ -744,13 +749,17 @@ void scheduleProbe(const QString &path)
             c = clientUnlocked();
         }
         if (!c) {
+            fail();
             return;
         }
         if (thumtooDebugEnabled()) {
             thumtooDbg("scheduleProbe path=%s", qPrintable(pathCopy));
         }
         c->request_size(uri, [pathCopy](std::string, std::optional<thumtoo::Size> sz) {
+            // Always emit so the host clears m_sizeProbeScheduled and can
+            // advance Gallery size-resolve (failed size must not stick forever).
             if (!sz) {
+                emit bridge()->sizeReady(pathCopy, QSize());
                 return;
             }
             emit bridge()->sizeReady(pathCopy, QSize(sz->width, sz->height));

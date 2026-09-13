@@ -2,6 +2,37 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-759-gallery-size-first-hud.** Gallery waits for definitive sizes before first pack; centre HUD progress.
+Prior: **758**.
+
+### Problem
+Cold archive open packed Gallery on 1024² provisional stand-ins. Aspect-sensitive
+layouts (masonry, flow, …) showed tiny / wrong cells until `sizeReady` trickled in.
+`preparePaths` skips archive leaves; per-tile probes were late and unordered.
+`scheduleImageSizeProbe` also no-op’d once a provisional was in the size map.
+
+### Change
+- Size-first gate: bulk-schedule probes for all unknown sizes on Gallery open;
+  **one pack** when all settle (45s safety timeout).
+- Centre HUD: “Resolving sizes… N / M” while the gate is active.
+- Probe hygiene: provisional sizes still probe; failed `request_size` emits
+  empty `sizeReady` so scheduling cannot stick forever.
+- Docs: `docs/GALLERY_SOFT.md` open sequence.
+
+### Apply
+```bash
+git pull /path/to/biltoo-759-gallery-size-first-hud.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **759**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-758-gallery-image-crop-bake.** Gallery→Image crop not replaced by uncropped Full/native.
 Prior: **757**.
 
@@ -16,7 +47,7 @@ full-frame replaced the cropped soft tile (crop looked lost).
 
 ### Apply
 ```bash
-git pull …/biltoo-758-gallery-image-crop-bake.bundle HEAD
+git pull /path/to/biltoo-758-gallery-image-crop-bake.bundle HEAD
 ```
 
 ### Done criteria

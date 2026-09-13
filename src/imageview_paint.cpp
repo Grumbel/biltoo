@@ -401,7 +401,7 @@ void ImageView::paintHudPanels(QPainter &painter)
         };
 
         auto drawPanel = [&](const QList<HudLine> &lines, int anchorX, int anchorY,
-                             bool fromRight, bool fromBottom) {
+                             bool fromRight, bool fromBottom, bool centre = false) {
             if (lines.isEmpty()) {
                 return;
             }
@@ -433,8 +433,15 @@ void ImageView::paintHudPanels(QPainter &painter)
             textW = qMin(textW, maxTextW);
             const int bgW = qMin(maxBgW, textW + 2 * pad);
             const int bgH = textH + 2 * pad;
-            int x = fromRight ? (viewW - margin - bgW) : anchorX;
-            int y = fromBottom ? (viewH - margin - bgH) : anchorY;
+            int x;
+            int y;
+            if (centre) {
+                x = (viewW - bgW) / 2;
+                y = (viewH - bgH) / 2;
+            } else {
+                x = fromRight ? (viewW - margin - bgW) : anchorX;
+                y = fromBottom ? (viewH - margin - bgH) : anchorY;
+            }
             // Keep fully on-screen
             x = qBound(margin, x, viewW - margin - bgW);
             y = qBound(margin, y, viewH - margin - bgH);
@@ -469,6 +476,12 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("❚❚  Paused"), true},
                        {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
+        } else if (m_gallerySizeResolveActive && m_gallerySizeResolveTotal > 0) {
+            const int done = qMax(0, m_gallerySizeResolveTotal
+                                  - m_gallerySizeResolvePending.size());
+            drawPanel({{tr("Resolving sizes…"), true},
+                       {tr("%1 / %2").arg(done).arg(m_gallerySizeResolveTotal), false}},
+                      0, 0, false, false, true);
         } else if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
             QString actionLine = m_hudAction;
             if (!m_hudDetail.isEmpty()) {
@@ -1408,7 +1421,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     // Bare Gallery: selection chrome is on the items themselves — skip overlay
     // pass (HUD/edges/slideshow) so selection does not pay for empty work.
     if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
-        && !m_slideshowPausedHud
+        && !m_slideshowPausedHud && !m_gallerySizeResolveActive
         && m_hoverEdge == EdgeZone::None && !m_cropMode
         && !m_slideshowMotionActive 
         ) {

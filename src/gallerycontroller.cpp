@@ -184,6 +184,7 @@ void GalleryController::onLeave(int nextMode)
     // Stop deferred packs immediately — a pending 0ms debounce after
     // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
     m_view->stopDeferredPacking();
+    m_view->cancelGallerySizeResolve();
     m_pendingRestore = false;
     // Gallery → Image: keep scroll/centre snapshot from snapshotViewport()
     // (called just before setViewMode) so return-to-Gallery can restore it.

@@ -119,40 +119,45 @@ ImageView::ImageView(QWidget *parent)
     qRegisterMetaType<quint64>("quint64");
 
     // Durable native size from thumtoo (GUI thread via Qt Executor).
+    // Invalid/empty size still clears probe scheduling and advances the Gallery
+    // size-resolve gate (failed request_size must not stick forever).
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::sizeReady, this,
             [this](const QString &path, const QSize &size) {
-                if (path.isEmpty() || !size.isValid() || size.width() <= 0
-                    || size.height() <= 0) {
+                if (path.isEmpty()) {
                     return;
                 }
                 m_sizeProbeScheduled.remove(path);
-                // Prefer a size already learned from a full decode.
-                if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
-                    // Still try LQIP if tiles are blank (probe may have written LQIP).
-                } else {
-                    rememberImageSize(path, size);
-                    applyProbedImageSize(path, size);
-                }
-                // LQIP often arrives with the size probe — install as soft stand-in
-                // when the tile still has no pixels (cold open). Host map is
-                // ImageCache (docs/PIXEL_HOST_CACHE.md).
-                if (isGalleryMode() && !ImageCache::has(path)) {
-                    const QImage lqip = ThumtooCache::cachedLqipImage(path);
-                    if (!lqip.isNull()) {
-                        ImageCache::put(path, lqip);
-                        for (ImageItem *item : m_items) {
-                            if (!item || item->path() != path) {
-                                continue;
+                const bool valid = size.isValid() && size.width() > 0 && size.height() > 0;
+                if (valid) {
+                    // Prefer a size already learned from a full decode.
+                    if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
+                        // Still try LQIP if tiles are blank (probe may have written LQIP).
+                    } else {
+                        rememberImageSize(path, size);
+                        applyProbedImageSize(path, size);
+                    }
+                    // LQIP often arrives with the size probe — install as soft stand-in
+                    // when the tile still has no pixels (cold open). Host map is
+                    // ImageCache (docs/PIXEL_HOST_CACHE.md).
+                    if (isGalleryMode() && !ImageCache::has(path)) {
+                        const QImage lqip = ThumtooCache::cachedLqipImage(path);
+                        if (!lqip.isNull()) {
+                            ImageCache::put(path, lqip);
+                            for (ImageItem *item : m_items) {
+                                if (!item || item->path() != path) {
+                                    continue;
+                                }
+                                if (item->hasDisplayPixels()) {
+                                    continue;
+                                }
+                                installDisplayPixels(item, lqip,
+                                                     SessionAppearance::PixelKind::SoftPreview,
+                                                     item->sessionId());
                             }
-                            if (item->hasDisplayPixels()) {
-                                continue;
-                            }
-                            installDisplayPixels(item, lqip,
-                                                 SessionAppearance::PixelKind::SoftPreview,
-                                                 item->sessionId());
                         }
                     }
                 }
+                noteGallerySizeProbeSettled(path);
             });
 
     // Soft preview: install better ladder pixels; clear inflight when matched.
@@ -475,7 +480,11 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    if (m_imageSizeByPath.contains(path) || m_sizeProbeScheduled.contains(path)) {
+    if (m_sizeProbeScheduled.contains(path)) {
+        return;
+    }
+    // Definitive size already known — provisional stand-ins must still probe.
+    if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
         return;
     }
     // Durable cache will never handle this locator — do not spin probes.
@@ -557,8 +566,11 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         }
     }
     if (any && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
-        // Coalesce sizeReady storms (large archives) into one pack.
-        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+        // While the open-time size-resolve gate is active, pack once when all
+        // probes settle — not on every sizeReady (avoids thrash + tiny cells).
+        if (!m_gallerySizeResolveActive) {
+            requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+        }
     } else if (any && viewport()) {
         viewport()->update();
     }
@@ -576,6 +588,118 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
             viewport()->update();
         }
     }
+}
+
+bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
+{
+    if (m_gallerySizeResolveTimer) {
+        m_gallerySizeResolveTimer->stop();
+    }
+    m_gallerySizeResolvePending.clear();
+    m_gallerySizeResolveTotal = 0;
+    // Suppress intermediate packs while seeding definitive sizes from cache.
+    m_gallerySizeResolveActive = true;
+
+    for (const QString &path : paths) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        if (ThumtooCache::isUnsupported(path)) {
+            continue;
+        }
+        if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
+            continue;
+        }
+        if (const QSize cached = ThumtooCache::cachedSize(path); isPositiveSize(cached)) {
+            rememberImageSize(path, cached);
+            applyProbedImageSize(path, cached);
+            continue;
+        }
+        m_gallerySizeResolvePending.insert(path);
+    }
+
+    m_gallerySizeResolveTotal = m_gallerySizeResolvePending.size();
+    if (m_gallerySizeResolvePending.isEmpty()) {
+        m_gallerySizeResolveActive = false;
+        return false;
+    }
+
+    // Copy keys — schedule must not iterate a set we mutate.
+    const QList<QString> need = m_gallerySizeResolvePending.values();
+    for (const QString &path : need) {
+        scheduleImageSizeProbe(path);
+    }
+    // Safety: never block Gallery forever if a probe hangs.
+    if (!m_gallerySizeResolveTimer) {
+        m_gallerySizeResolveTimer = new QTimer(this);
+        m_gallerySizeResolveTimer->setSingleShot(true);
+        connect(m_gallerySizeResolveTimer, &QTimer::timeout, this, [this]() {
+            if (!m_gallerySizeResolveActive) {
+                return;
+            }
+            finishGallerySizeResolve();
+        });
+    }
+    m_gallerySizeResolveTimer->start(45000);
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
+    return true;
+}
+
+void ImageView::noteGallerySizeProbeSettled(const QString &path)
+{
+    if (!m_gallerySizeResolveActive) {
+        return;
+    }
+    if (!path.isEmpty()) {
+        m_gallerySizeResolvePending.remove(path);
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+    if (!m_gallerySizeResolvePending.isEmpty()) {
+        return;
+    }
+    finishGallerySizeResolve();
+}
+
+void ImageView::finishGallerySizeResolve()
+{
+    if (m_gallerySizeResolveTimer) {
+        m_gallerySizeResolveTimer->stop();
+    }
+    const bool wasActive = m_gallerySizeResolveActive;
+    m_gallerySizeResolveActive = false;
+    m_gallerySizeResolvePending.clear();
+    m_gallerySizeResolveTotal = 0;
+    if (!wasActive) {
+        return;
+    }
+    if (isGalleryMode() && !m_items.isEmpty() && m_layoutMode != LayoutMode::FreeForm) {
+        applyLayout(GalleryPackReason::EnterGallery);
+        updateGalleryDecodeWindow();
+        QTimer::singleShot(0, this, [this]() {
+            if (isGalleryMode() && !m_items.isEmpty()) {
+                updateGalleryDecodeWindow();
+            }
+        });
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
+}
+
+void ImageView::cancelGallerySizeResolve()
+{
+    if (m_gallerySizeResolveTimer) {
+        m_gallerySizeResolveTimer->stop();
+    }
+    m_gallerySizeResolveActive = false;
+    m_gallerySizeResolvePending.clear();
+    m_gallerySizeResolveTotal = 0;
 }
 
 void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)

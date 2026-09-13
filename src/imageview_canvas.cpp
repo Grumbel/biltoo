@@ -123,16 +123,23 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     }
 
     if (isGalleryMode() && !m_items.isEmpty()) {
-        applyLayout(GalleryPackReason::EnterGallery);
-        updateGalleryDecodeWindow();
-        // First open can pack while the view is still 0×0 (dock/layout settling).
-        // Retry once the event loop has assigned a real viewport size so soft
-        // decodes for on-screen tiles actually start.
-        QTimer::singleShot(0, this, [this]() {
-            if (isGalleryMode() && !m_items.isEmpty()) {
-                updateGalleryDecodeWindow();
-            }
-        });
+        // Size-first: wait for definitive logical sizes (archive/page probes)
+        // before the first pack so masonry/flow/etc. do not use square stand-ins.
+        // Center HUD reports progress; pack once when all probes settle.
+        if (startGallerySizeResolveIfNeeded(paths)) {
+            // Placeholders exist; pack deferred until finishGallerySizeResolve.
+        } else {
+            applyLayout(GalleryPackReason::EnterGallery);
+            updateGalleryDecodeWindow();
+            // First open can pack while the view is still 0×0 (dock/layout settling).
+            // Retry once the event loop has assigned a real viewport size so soft
+            // decodes for on-screen tiles actually start.
+            QTimer::singleShot(0, this, [this]() {
+                if (isGalleryMode() && !m_items.isEmpty()) {
+                    updateGalleryDecodeWindow();
+                }
+            });
+        }
     }
 
     validateUniqueLiveSessionIds("setWorkspacePaths");

@@ -229,6 +229,8 @@ void ImageView::clearWorkspace()
     gallerySoftResetAll();
     m_imageSizeByPath.clear();
     m_sizeProbeScheduled.clear();
+    m_provisionalSizePaths.clear();
+    cancelGallerySizeResolve();
     ImageCache::clear();
     m_pathOrder.clear();
     m_sessionIdOrder.clear();

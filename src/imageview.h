@@ -165,6 +165,8 @@ public:
     void clearInteractionState();
     /** Controller host: stop layout debounce and clear applyingLayout. */
     void stopDeferredPacking();
+    /** Controller host: drop open-time Gallery size-resolve gate (mode leave). */
+    void cancelGallerySizeResolve();
     /** Controller host: set m_viewMode + m_layoutMode and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
     /** Controller host: classic path owned by ImageController. */
@@ -1367,6 +1369,14 @@ private:
     void rememberSizeFromDecode(const QString &path, const QImage &image);
     void scheduleImageSizeProbe(const QString &path);
     void applyProbedImageSize(const QString &path, const QSize &size);
+    /**
+     * Gallery open size-first gate: schedule probes for every path still missing
+     * a definitive size; return true if pack must wait. HUD shows progress until
+     * finishGallerySizeResolve packs once.
+     */
+    bool startGallerySizeResolveIfNeeded(const QStringList &paths);
+    void noteGallerySizeProbeSettled(const QString &path);
+    void finishGallerySizeResolve();
     void clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want);
     /** Sync have/gaveUpWant from PathRasterService (climb authority). */
     void syncGallerySoftMirrorFromPathRaster(const QString &path, GallerySoftState &st);
@@ -1599,6 +1609,14 @@ private:
     QSet<QString> m_provisionalSizePaths;
     /** Paths with an in-flight async size probe. */
     QSet<QString> m_sizeProbeScheduled;
+    /**
+     * Gallery Enter: wait for definitive sizes before the first pack (policy A).
+     * Progress is painted centred in the viewport HUD.
+     */
+    bool m_gallerySizeResolveActive = false;
+    int m_gallerySizeResolveTotal = 0;
+    QSet<QString> m_gallerySizeResolvePending;
+    QTimer *m_gallerySizeResolveTimer = nullptr;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */
