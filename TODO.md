@@ -2,6 +2,24 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-722-remove-dead-climb-state.** Drop residual ImageModeClimb and slideshow motion-base ms.
+Prior: **721**.
+
+### Change
+- Remove unused `ImageModeClimbState` / `m_imageModeClimb` (PathRasterService owns PreferCache climb)
+- Remove write-only `m_ssFromMotionBaseMs` / `m_ssToMotionBaseMs` (unitless [0,1) phase)
+- Indent fix: `m_pathRaster` construction in `ImageView` ctor
+- Docs: `PATH_RASTER_SERVICE.md` residual note; next still gallery soft → service
+
+### Done criteria
+- [x] Bundle **722**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-721-performance-doc.** Document ladder/JPEG/tile/archive performance model.
 Prior: **720**.
 

@@ -65,7 +65,6 @@ void ImageView::invalidateSessionLoads()
     ++m_loadGeneration;
     clearPendingLoads();
     m_imageModeNativeClimbPaths.clear();
-    m_imageModeClimb.clear();
     gallerySoftResetAll();
     m_ssRasterInflight.clear();
     m_ssRasterPending.clear();

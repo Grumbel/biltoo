@@ -168,7 +168,7 @@ ImageView::ImageView(QWidget *parent)
                     refreshStatus();
                 }
             });
-m_pathRaster = new PathRasterService(this);
+    m_pathRaster = new PathRasterService(this);
     connect(m_pathRaster, &PathRasterService::rasterImproved, this,
             [this](const QString &path, int longEdge) {
                 Q_UNUSED(longEdge);

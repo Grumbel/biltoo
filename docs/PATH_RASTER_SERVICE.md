@@ -45,7 +45,12 @@ ImageView (viewport-sized texture).
 | Slideshow | `preloadSlideshowImage` → `ensure`; install on `rasterImproved` |
 | Image mode | `ensureImageModeQualityClimb` → `ensure`; install on `rasterImproved` / ladderReady |
 
+## Residual cleanup
+
+- `ImageModeClimbState` / `m_imageModeClimb` removed (PathRasterService owns climb).
+- Dead slideshow `m_ss*MotionBaseMs` removed (unitless phase owns progress).
+
 ## Next
 
 - Move gallery soft schedule onto the same service (or a thin wrapper)
-- Retire residual `m_imageModeClimb` state if unused
+- Crop / Workspace native load still via `ImageLoader::load` (optional thumtoo full)

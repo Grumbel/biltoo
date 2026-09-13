@@ -1619,7 +1619,6 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
     m_motionBiasValid = true;
     m_motionBiasPath = fromPath;
     m_ssFromMotionClock = m_ssToMotionClock;
-    m_ssFromMotionBaseMs = m_ssToMotionBaseMs;
     m_ssFromMotionClockRunning = true;
     m_ssFromMotionT = m_ssToMotionT;
     m_dwellMotionT = m_ssFromMotionT;
@@ -1656,7 +1655,6 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     }
     m_ssFromMotionClock.start();
     m_ssFromMotionClockRunning = true;
-    m_ssFromMotionBaseMs = 0;
     m_ssFromMotionT = 0.0;
     m_dwellMotionT = 0.0;
 }
@@ -1753,7 +1751,6 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     captureMotionBiasesForPath(toPath, m_ssToImage, &m_ssToBiasA, &m_ssToBiasB);
     m_ssToMotionClock.start();
     m_ssToMotionClockRunning = true;
-    m_ssToMotionBaseMs = 0;
     m_ssToMotionT = 0.0;
     if (!m_ssToImage.isNull()) {
         schedulePhaseZoomBlur(toPath, m_ssToImage);

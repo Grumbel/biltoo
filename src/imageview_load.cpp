@@ -823,7 +823,6 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     if (role == LoadReplace) {
         gen = ++m_loadGeneration;
         m_imageModeNativeClimbPaths.clear();
-        m_imageModeClimb.clear();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
     }

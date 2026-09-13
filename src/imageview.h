@@ -1597,7 +1597,6 @@ private:
     QSet<QString> m_sizeProbeScheduled;
     /** Paths with a quiet native full decode in flight (Image-mode climb). */
     QSet<QString> m_imageModeNativeClimbPaths;
-    QHash<QString, ImageModeClimbState> m_imageModeClimb;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */
@@ -1703,8 +1702,6 @@ private:
     QElapsedTimer m_ssToMotionClock;
     bool m_ssFromMotionClockRunning = false;
     bool m_ssToMotionClockRunning = false;
-    qint64 m_ssFromMotionBaseMs = 0;
-    qint64 m_ssToMotionBaseMs = 0;
     // Slideshow samples: ImageCache only (putSlideshowRaster / slideshowRaster).
     /** Slideshow raster decode in flight (max two for look-ahead). */
     QSet<QString> m_ssRasterInflight;
