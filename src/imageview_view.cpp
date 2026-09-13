@@ -1111,20 +1111,10 @@ bool ImageView::phaseBufferWantsSample(const QString &path, int sampleEdge) cons
     if (sampleEdge <= 0 || path.isEmpty()) {
         return false;
     }
-    // Mid-dwell soft→HQ: only promote phase buffers when the sample meets the
-    // slideshow need edge. Intermediate PreferCache steps (256→512→1024) still
-    // land in ImageCache via putSlideshowRaster; applying each to the phase
-    // buffer caused atlas rebuilds + GUI fromImage hitches (frame drops).
-    const int need = slideshowNeedEdge(slideshowTargetEdge());
-    if (sampleEdge < need && sampleEdge < ThumtooCache::kImageLadderEdge) {
-        // Allow the first non-empty sample so a cold phase is not blank forever.
-        const int have = (path == m_ssFromPath) ? ImageCache::longEdge(m_ssFromImage)
-                         : (path == m_ssToPath) ? ImageCache::longEdge(m_ssToImage)
-                                               : 0;
-        if (have > 0) {
-            return false;
-        }
-    }
+    // Any sharper sample may replace the phase buffer (soft → 512 → need).
+    // Atlas rebuild is throttled in finishSlideshowPhaseBufferUpgrade so
+    // intermediate steps do not thrash the GUI; rejecting intermediates here
+    // left the phase stuck on soft when PreferCache plateaued below need.
     if (path == m_ssFromPath && sampleEdge > ImageCache::longEdge(m_ssFromImage)) {
         return true;
     }
@@ -1186,18 +1176,36 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         return;
     }
     const int incoming = ImageCache::longEdge(oriented);
+    const int need = slideshowNeedEdge(slideshowTargetEdge());
     bool changed = false;
     if (path == m_ssFromPath && incoming > ImageCache::longEdge(m_ssFromImage)) {
         m_ssFromImage = oriented;
         m_dwellSourceImage = oriented;
-        // Keep previous atlas for paint until the new one finishes (atomic swap
-        // in finishSlideshowAtlas). Rebuild only if coverage is insufficient.
-        requestDwellAtlasRebuild();
+        // Rebuild atlas when empty, when coverage fails, or when the sample
+        // reaches the viewport need edge (skip pure soft→soft-ish thrash).
+        const DwellAtlasParams params = dwellAtlasParams();
+        const bool needAtlas =
+            m_dwellAtlas.isNull()
+            || incoming >= need
+            || !dwellAtlasCoversSource(m_dwellAtlas, m_dwellAtlasScale,
+                                       m_dwellAtlasVw, m_dwellAtlasVh, params,
+                                       oriented);
+        if (needAtlas) {
+            requestDwellAtlasRebuild();
+        }
         changed = true;
     }
     if (path == m_ssToPath && incoming > ImageCache::longEdge(m_ssToImage)) {
         m_ssToImage = oriented;
-        requestToPhaseAtlasRebuild();
+        const DwellAtlasParams params = dwellAtlasParams();
+        const bool needAtlas =
+            m_ssToAtlas.isNull()
+            || incoming >= need
+            || !dwellAtlasCoversSource(m_ssToAtlas, m_ssToAtlasScale, m_ssToAtlasVw,
+                                       m_ssToAtlasVh, params, oriented);
+        if (needAtlas) {
+            requestToPhaseAtlasRebuild();
+        }
         changed = true;
     }
     if (changed && viewport()) {
@@ -1379,6 +1387,16 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     // finishSlideshowPhaseBufferUpgrade / finishSlideshowAtlas paint once the
     // new buffer is ready (avoids a soft→HQ frame storm on every ladder step).
     scheduleSlideshowPhaseBufferUpgrade(path, image);
+
+    // Keep climbing until the host sample meets the viewport need edge.
+    if (ThumtooCache::isAvailable()
+        && (path == m_ssFromPath || path == m_ssToPath)) {
+        const int target = slideshowTargetEdge();
+        const int need = slideshowNeedEdge(target);
+        if (!ImageCache::adequate(slideshowRaster(path), need)) {
+            (void)ThumtooCache::scheduleDisplayPixels(path, target);
+        }
+    }
 }
 
 QString ImageView::slideshowPrefetchHudLine() const
@@ -1966,6 +1984,16 @@ void ImageView::finishSlideshowPreload(const QString &path, const QImage &image)
         qCDebug(lcSlideshow).nospace()
             << "[slideshow] preload-ready " << QFileInfo(path).fileName()
             << " " << image.width() << "x" << image.height();
+    }
+    // Soft-only result: keep PreferCache climbing to the viewport need edge.
+    // Without this, loadSlideshowSample returns soft + one async display and
+    // never re-queues after a shortfall, leaving the phase on soft forever.
+    if (!path.isEmpty() && ThumtooCache::isAvailable()) {
+        const int target = slideshowTargetEdge();
+        const int need = slideshowNeedEdge(target);
+        if (!ImageCache::adequate(slideshowRaster(path), need)) {
+            (void)ThumtooCache::scheduleDisplayPixels(path, target);
+        }
     }
     pumpSlideshowPreloadQueue();
     if (viewport()) {

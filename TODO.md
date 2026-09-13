@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-700-slideshow-phase-climb-retry.** Sharper phase samples; PreferCache until need edge.
+Prior: **699**.
+
+### Problem
+Slideshow stayed on soft: `phaseBufferWantsSample` rejected intermediates below
+need edge, and soft preload did not re-queue PreferCache after a shortfall.
+
+### Change
+- Accept any sharper sample into phase buffers
+- Throttle atlas rebuild (need edge / coverage), not phase promotion
+- Re-queue `scheduleDisplayPixels` until host sample meets need edge
+
+### Done criteria
+- [x] Bundle **700**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-699-gallery-soft-provisional-aspect.** Soft aspect updates provisional geometry.
 Prior: **698**.
 

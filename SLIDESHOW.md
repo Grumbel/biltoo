@@ -92,14 +92,16 @@ capped at the image ladder max (2048). Headroom covers Ken Burns zoom past
 
 ### Phase-buffer quality climb
 
-- Intermediate PreferCache steps (256 → 512 → 1024) land in **ImageCache** only.
-- Phase buffers promote only when the sample meets the **slideshow need edge**
-  (`phaseBufferWantsSample`), so mid-dwell does not rebuild the atlas on every
-  ladder step.
+- Any **sharper** sample may replace the phase buffer (`phaseBufferWantsSample`).
+- **Atlas rebuild** is throttled: only when the atlas is empty, coverage fails,
+  or the sample reaches the slideshow **need edge** (~70% of target), so
+  intermediate soft→soft-ish steps do not thrash the GUI.
+- PreferCache is re-queued until the host sample meets the need edge (soft-only
+  preload must not stop the climb).
 - Clamp + orient run on the **thread pool**; the GUI only assigns the finished
-  buffer and may request an atlas rebuild.
-- Do **not** call `loadImage` / PreferCache / Image-mode `LoadReplace` while a
-  slideshow session is active. The pure-phase path owns the viewport; racing
+  buffer.
+- Do **not** call Image-mode `loadImage` / `LoadReplace` while a slideshow
+  session is active. The pure-phase path owns the viewport; racing underlay
   PreferCache after `phase-from` already at target edge caused frame drops.
 
 ### Motion atlas quality
