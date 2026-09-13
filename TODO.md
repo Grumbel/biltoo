@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-708-path-raster-service.** Central PathRasterService; slideshow uses it for climb.
+Prior: **707**.
+
+### Change
+- New `PathRasterService`: single soft→PreferCache climb + ImageCache put
+- Slideshow `preloadSlideshowImage` → `ensure()` only; deliveries via `rasterImproved`
+- Session invalidate clears service state
+- Docs: `docs/PATH_RASTER_SERVICE.md`
+
+### Next
+- Migrate Image-mode PreferCache + gallery soft onto the same service
+
+### Done criteria
+- [x] Bundle **708**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-707-slideshow-atlas-hq-rebuild.** Soft-upscaled atlas no longer blocks PreferCache HQ.
 Prior: **706**.
 

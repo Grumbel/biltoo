@@ -76,6 +76,9 @@ void ImageView::invalidateSessionLoads()
         clearLiveCanvas();
         clearClassicPath();
     }
+    if (m_pathRaster) {
+        m_pathRaster->invalidateAll();
+    }
     if (ThumtooCache::isAvailable()) {
         (void)ThumtooCache::bumpInterestEpoch();
     }

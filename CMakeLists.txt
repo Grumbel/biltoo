@@ -145,6 +145,8 @@ add_executable(biltoo
   src/imageloader.h
   src/imagecache.cpp
   src/imagecache.h
+  src/pathrasterservice.cpp
+  src/pathrasterservice.h
   src/thumtoocache.cpp
   src/thumtoocache.h
   src/archivepath.cpp

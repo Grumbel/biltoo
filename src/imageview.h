@@ -11,6 +11,7 @@
 #include "gallerycontroller.h"
 #include "workspacecontroller.h"
 #include "imagecontroller.h"
+#include "pathrasterservice.h"
 #include "gallerylayout.h"
 
 #include <QColor>
@@ -1772,6 +1773,8 @@ private:
     QHash<QString, int> m_pendingWorkspacePaths;
     /** Per-path soft/display policy — GallerySoftState in imageview_types.h. */
     QHash<QString, GallerySoftState> m_gallerySoft;
+    /** Central path→raster climb (slideshow + shared PreferCache policy). */
+    PathRasterService *m_pathRaster = nullptr;
 
     int gallerySoftInflightCount() const;
     void gallerySoftResetPath(const QString &path);

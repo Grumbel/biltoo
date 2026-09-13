@@ -1394,14 +1394,10 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     // new buffer is ready (avoids a soft→HQ frame storm on every ladder step).
     scheduleSlideshowPhaseBufferUpgrade(path, image);
 
-    // Keep climbing until the host sample meets the viewport need edge.
-    if (ThumtooCache::isAvailable()
-        && (path == m_ssFromPath || path == m_ssToPath)) {
+    // Keep climbing via the central service (not ad-hoc scheduleDisplay).
+    if (m_pathRaster && (path == m_ssFromPath || path == m_ssToPath)) {
         const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
-        const int need = slideshowNeedEdge(target);
-        if (!ImageCache::adequate(slideshowRaster(path), need)) {
-            (void)ThumtooCache::scheduleDisplayPixels(path, target);
-        }
+        m_pathRaster->ensure(path, target, logicalSizeForPath(path));
     }
 }
 
@@ -1985,24 +1981,18 @@ void ImageView::pumpSlideshowPreloadQueue()
 
 void ImageView::finishSlideshowPreload(const QString &path, const QImage &image)
 {
-    // GUI-thread completion for preloadSlideshowImage.
+    // Legacy pool-preload completion — climb is owned by PathRasterService.
     m_ssRasterInflight.remove(path);
     if (!image.isNull()) {
-        // Soft/display sample only — never seeds logical size.
+        if (m_pathRaster) {
+            m_pathRaster->noteDelivery(path, 0, image);
+        } else {
+            ImageCache::put(path, image);
+        }
         onSlideshowRasterReady(path, image);
         qCDebug(lcSlideshow).nospace()
             << "[slideshow] preload-ready " << QFileInfo(path).fileName()
             << " " << image.width() << "x" << image.height();
-    }
-    // Soft-only result: keep PreferCache climbing to the viewport need edge.
-    // Without this, loadSlideshowSample returns soft + one async display and
-    // never re-queues after a shortfall, leaving the phase on soft forever.
-    if (!path.isEmpty() && ThumtooCache::isAvailable()) {
-        const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
-        const int need = slideshowNeedEdge(target);
-        if (!ImageCache::adequate(slideshowRaster(path), need)) {
-            (void)ThumtooCache::scheduleDisplayPixels(path, target);
-        }
     }
     pumpSlideshowPreloadQueue();
     if (viewport()) {
@@ -2012,49 +2002,24 @@ void ImageView::finishSlideshowPreload(const QString &path, const QImage &image)
 
 void ImageView::preloadSlideshowImage(const QString &path)
 {
-    if (path.isEmpty()) {
+    if (path.isEmpty() || !m_pathRaster) {
         return;
     }
     const int targetEdge = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
-    const int need = slideshowNeedEdge(targetEdge);
-
-    // Host ImageCache already adequate — nothing to decode.
-    if (ImageCache::adequate(slideshowRaster(path), need)) {
-        return;
-    }
-    if (m_ssRasterInflight.contains(path)) {
-        return;
-    }
-    if (m_ssRasterInflight.size() >= kSsMaxInflight) {
-        if (!m_ssRasterPending.contains(path)) {
-            m_ssRasterPending.append(path);
-            while (m_ssRasterPending.size() > kSsMaxPending) {
-                m_ssRasterPending.removeFirst();
-            }
-        }
-        return;
-    }
-
-    m_ssRasterInflight.insert(path);
-    if (viewport()) {
-        viewport()->update();
-    }
-    const QString loadPath = path;
-    const QPointer<ImageView> guard(this);
+    const QSize native = logicalSizeForPath(path);
     qCDebug(lcSlideshow).nospace()
-        << "[slideshow] preload-start " << QFileInfo(loadPath).fileName()
-        << " edge=" << targetEdge;
+        << "[slideshow] preload-ensure " << QFileInfo(path).fileName()
+        << " edge=" << targetEdge
+        << " have=" << m_pathRaster->haveEdge(path);
 
-    QThreadPool::globalInstance()->start([guard, loadPath, targetEdge]() {
-        const QImage img = loadSlideshowSample(loadPath, targetEdge);
-        ImageView *view = guard.data();
-        if (!view) {
-            return;
-        }
-        QTimer::singleShot(0, view, [view, loadPath, img]() {
-            view->finishSlideshowPreload(loadPath, img);
-        });
-    });
+    // Single climb owner — soft + PreferCache until adequate (or gave up).
+    m_pathRaster->ensure(path, targetEdge, native);
+
+    // Install whatever is already in the host cache (soft placeholder).
+    const QImage have = ImageCache::get(path);
+    if (!have.isNull()) {
+        onSlideshowRasterReady(path, have);
+    }
 }
 
 ImageView::DwellAtlasParams ImageView::dwellAtlasParams() const

@@ -1391,14 +1391,17 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
     if (path.isEmpty()) {
         return;
     }
-    // Always seed host soft cache so any mode can install even if this
-    // completion landed before placeholders existed.
-    if (!image.isNull()) {
-        ImageCache::put(path, image);
-    }
-    // PreferCache completion → slideshow pure-phase upgrades from ImageCache.
-    if (m_slideshowProgressActive && !image.isNull()) {
-        onSlideshowRasterReady(path, image);
+    // Central climb policy + ImageCache put. Slideshow installs via
+    // PathRasterService::rasterImproved (no second direct call).
+    if (m_pathRaster) {
+        m_pathRaster->noteDelivery(path, maxEdge, image);
+    } else {
+        if (!image.isNull()) {
+            ImageCache::put(path, image);
+        }
+        if (m_slideshowProgressActive && !image.isNull()) {
+            onSlideshowRasterReady(path, image);
+        }
     }
 
     // Image mode: soft→sharp when full ImageLoader::load missed or is still

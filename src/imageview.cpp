@@ -168,7 +168,19 @@ ImageView::ImageView(QWidget *parent)
                     refreshStatus();
                 }
             });
-connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
+m_pathRaster = new PathRasterService(this);
+    connect(m_pathRaster, &PathRasterService::rasterImproved, this,
+            [this](const QString &path, int longEdge) {
+                Q_UNUSED(longEdge);
+                if (m_slideshowProgressActive && !path.isEmpty()
+                    && (path == m_ssFromPath || path == m_ssToPath)) {
+                    const QImage img = ImageCache::get(path);
+                    if (!img.isNull()) {
+                        onSlideshowRasterReady(path, img);
+                    }
+                }
+            });
+    connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             &ImageView::onLadderReady);
 
     connect(this, &ImageView::statusChanged, this, [this]() {
