@@ -1674,6 +1674,8 @@ private:
     QRectF m_pageGuideDragStartRect;
     bool m_fitMode = true;
     bool m_fillMode = false;
+    bool m_stickyZoomEnabled = false;
+    StickyZoomKind m_stickyZoomKind = StickyZoomKind::Fit;
     ViewMode m_viewMode = ViewMode::Image;
     bool m_imageModeNavEnabled = false;
     bool m_galleryReturnAvailable = false;

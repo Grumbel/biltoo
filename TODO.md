@@ -2,6 +2,23 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-769-sticky-zoom-members.** Declare m_stickyZoomEnabled / m_stickyZoomKind (build fix).
+Prior: **768**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-769-sticky-zoom-members.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **769**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-768-sticky-zoom.** Optional sticky Fit/Fill/1:1 across Image-mode navigation.
 Prior: **767**.
 
