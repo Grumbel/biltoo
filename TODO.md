@@ -2,6 +2,26 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-765-unused-defer-vars.** Silence unused wasDefer/wasResolve warnings.
+Prior: **764**.
+
+### Change
+- ensureGalleryPlaceholders: drop unused locals
+
+### Apply
+```bash
+git pull /path/to/biltoo-765-unused-defer-vars.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **765**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-764-hard-gate-tiles-until-sizes.** Refuse any Gallery tile create while size-resolve runs.
 Prior: **763**.
 

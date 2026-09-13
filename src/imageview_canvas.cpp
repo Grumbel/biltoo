@@ -842,8 +842,6 @@ void ImageView::ensureGalleryPlaceholders()
         return;
     }
     // createPlaceholderItem refuses while defer/resolve flags are set.
-    const bool wasDefer = m_galleryDeferPopulate;
-    const bool wasResolve = m_gallerySizeResolveActive;
     m_galleryDeferPopulate = false;
     m_gallerySizeResolveActive = false;
     QSet<ImageItem *> claimed;
