@@ -2,6 +2,31 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-732-fititem-respect-crop.** fitItem must not force full-file intrinsic over a session crop.
+Prior: **731**.
+
+### Root cause (confirmed in code)
+`applyCropCommit` order:
+1. `cropToLocalRect` → intrinsic = crop pixel size
+2. re-assert `setIntrinsicSize(baked)`
+3. **`fitItem()`** → `ensureLogicalSizeForPath(path)` → **`setIntrinsicSize(full file size)`**
+
+Paint draws `m_source` (crop) into `contentRect()` (intrinsic). Step 3 stretched the
+crop into the pre-crop box. Prior tips fixed bake/install but Apply always called
+fitItem afterward.
+
+### Change
+- `fitItem`: skip path-logical `setIntrinsicSize` when `item->sessionHasCrop()`
+
+### Done criteria
+- [x] Bundle **732**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-731-crop-no-stretch.** Crop bake + reinstall keep intrinsic = baked pixel size.
 Prior: **730**.
 

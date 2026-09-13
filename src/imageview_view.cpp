@@ -2928,8 +2928,12 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     //   Object scale is normalized to 1 so residual Workspace scale does not
     //   fight the view transform when showing a single image.
     // Logical size owns geometry — soft display pixels must not define fit.
+    //
+    // Exception: a session crop bake (cropToLocalRect / materializeDisplay) sets
+    // intrinsic to the crop pixel size. Forcing full-file logicalSizeForPath here
+    // immediately after Apply stretched the crop into the pre-crop box.
     const QString path = item->path();
-    if (!path.isEmpty()) {
+    if (!path.isEmpty() && !item->sessionHasCrop()) {
         const QSize logical = ensureLogicalSizeForPath(path);
         if (logical.isValid() && logical.width() > 1 && logical.height() > 1
             && !isProvisionalImageSize(path)) {
