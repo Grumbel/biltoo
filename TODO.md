@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-726-path-raster-raise-want-retry.** PreferCache retry when gallery/Image want rises past shortfall.
+Prior: **725**.
+
+### Problem
+PathRasterService set `preferGaveUp` on PreferCache shortfall and never cleared it
+when a higher display edge was requested. Gallery `scheduleGalleryDecode` also
+bailed on `isGaveUp` *before* `ensure`, so zoom soft→overview→display could stick
+on the shortfall sample.
+
+### Change
+- `PathRasterService::ensure`: clear `preferGaveUp` / `displayQueued` when
+  `want > lastDisplayWant`
+- Gallery schedule: always `ensure` first; treat gave-up only after ensure
+
+### Done criteria
+- [x] Bundle **726**
+
+### Next
+- Optional: fold GallerySoftState into PathRasterService
+- Smoke-test gallery zoom after shortfall; cold crop enter
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-725-async-crop-full-raster.** Crop enter without GUI-thread full decode when possible.
 Prior: **724**.
 

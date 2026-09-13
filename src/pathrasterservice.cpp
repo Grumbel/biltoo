@@ -59,6 +59,12 @@ void PathRasterService::ensure(const QString &path, int wantEdge, const QSize &k
     const int want = capWant(wantEdge, knownNative);
     State &st = m_state[path];
     st.epoch = m_epoch;
+    // PreferCache may improve when the display target moves past the last
+    // shortfall request (e.g. gallery zoom soft→overview→display).
+    if (want > st.lastDisplayWant) {
+        st.preferGaveUp = false;
+        st.displayQueued = false;
+    }
     st.want = qMax(st.want, want);
 
     const QImage cached = ImageCache::get(path);

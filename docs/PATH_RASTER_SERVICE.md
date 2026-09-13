@@ -32,6 +32,9 @@ best(path) / haveEdge(path)
 invalidateAll()                        → session switch
 ```
 
+Raising `want` past `lastDisplayWant` clears `preferGaveUp` so gallery/Image
+zoom can climb PreferCache bands after a shortfall at a lower edge.
+
 ## Slideshow
 
 `preloadSlideshowImage` only calls `m_pathRaster->ensure` and installs current
@@ -73,3 +76,4 @@ Apply is blocked while still awaiting native coverage.
 ## Next
 
 - Optionally fold GallerySoftState have/gaveUp into PathRasterService if duplication hurts
+- Smoke-test gallery zoom after soft shortfall; cold crop enter

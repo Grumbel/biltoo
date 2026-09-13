@@ -1127,21 +1127,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
-    // PathRasterService already plateaued PreferCache for this path.
-    if (m_pathRaster->isGaveUp(path)) {
-        const int prHave = m_pathRaster->haveEdge(path);
-        if (prHave > st.have) {
-            st.have = prHave;
-            const QImage img = ImageCache::get(path);
-            if (!img.isNull()) {
-                onImagePreviewLoaded(path, img, m_loadGeneration.load(),
-                                     static_cast<int>(LoadAdd));
-            }
-        }
-        st.gaveUpWant = qMax(st.gaveUpWant, want);
-        return;
-    }
-
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
         dbg && dbg[0] != '\0' && dbg[0] != '0') {
         fprintf(stderr,
@@ -1150,6 +1135,8 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
 
     markGallerySoftInflight(st, want);
+    // Always ensure - raising want past a prior PreferCache shortfall clears
+    // preferGaveUp inside PathRasterService so gallery zoom can climb again.
     m_pathRaster->ensure(path, want, logicalSizeForPath(path));
 
     // Synchronous cache coverage: ensure may satisfy without async ladderReady.
@@ -1174,7 +1161,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         st.gaveUpWant = qMax(st.gaveUpWant, want);
         return;
     }
-    // Async: ladderReady → applyGalleryLadderReady clears inflight via noteLadderDelivery.
+    // Async: ladderReady -> applyGalleryLadderReady clears inflight via noteLadderDelivery.
 }
 
 void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
