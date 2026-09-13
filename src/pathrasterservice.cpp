@@ -5,6 +5,7 @@
 
 #include "imagecache.h"
 #include "thumtoocache.h"
+#include "biltoo_thread.h"
 
 #include <QtGlobal>
 
@@ -47,6 +48,7 @@ int PathRasterService::capWant(int want, const QSize &knownNative)
 void PathRasterService::ensure(const QString &path, int wantEdge,
                                const QSize &knownNative, ClimbPolicy policy)
 {
+    ASSERT_GUI_THREAD();
     if (path.isEmpty()) {
         return;
     }
@@ -163,6 +165,7 @@ bool PathRasterService::isClimbPending(const QString &path) const
 void PathRasterService::noteDelivery(const QString &path, int requestEdge,
                                      const QImage &image)
 {
+    ASSERT_GUI_THREAD();
     if (path.isEmpty()) {
         return;
     }

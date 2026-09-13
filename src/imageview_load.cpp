@@ -833,6 +833,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     quint64 gen = m_loadGeneration.load();
     if (role == LoadReplace) {
         gen = ++m_loadGeneration;
+        m_imageModeNativeDecodePaths.clear();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
     }
@@ -1263,6 +1264,11 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
         upgradeImageModeFromLadder(path, maxEdge, image);
     }
 
+    // Workspace: was falling through to early return without installing samples.
+    if (isWorkspaceMode() && !image.isNull()) {
+        applyWorkspaceLadderReady(path, maxEdge, image);
+    }
+
     // Crop may be open in Image or Workspace on a provisional sample.
     if (!image.isNull()) {
         maybeUpgradeCropFullRaster(path, image);
@@ -1385,6 +1391,95 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
     // Debounce window rescan — avoid full setInterest on every tile delivery.
     scheduleGalleryDecodeWindowRefresh(150);
     emit statusChanged();
+}
+
+
+void ImageView::applyWorkspaceLadderReady(const QString &path, int maxEdge,
+                                          const QImage &image)
+{
+    ASSERT_GUI_THREAD();
+    if (!isWorkspaceMode() || path.isEmpty() || image.isNull()) {
+        return;
+    }
+    Q_UNUSED(maxEdge);
+    // Same soft/display install as Gallery tiles — Workspace items share paths.
+    onImagePreviewLoaded(path, image, m_loadGeneration.load(),
+                         static_cast<int>(LoadAdd));
+    ensureWorkspaceQualityClimb();
+}
+
+void ImageView::ensureWorkspaceQualityClimb()
+{
+    ASSERT_GUI_THREAD();
+    if (!isWorkspaceMode() || !m_pathRaster || !m_scene) {
+        return;
+    }
+    QList<ImageItem *> targets;
+    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            targets.append(ii);
+        }
+    }
+    if (targets.isEmpty()) {
+        // No selection: climb all on-canvas items (bounded).
+        int n = 0;
+        for (ImageItem *ii : m_items) {
+            if (!ii || ii->path().isEmpty()) {
+                continue;
+            }
+            targets.append(ii);
+            if (++n >= 8) {
+                break;
+            }
+        }
+    }
+    for (ImageItem *ii : targets) {
+        if (!ii) {
+            continue;
+        }
+        const QString path = ii->path();
+        if (path.isEmpty()) {
+            continue;
+        }
+        const int need = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
+        const int have = ii->displayPixelLongEdge();
+        if (need <= 0 || coversEdge(have, need)) {
+            continue;
+        }
+        m_pathRaster->ensure(path, need, logicalSizeForPath(path),
+                             PathRasterService::ClimbPolicy::EscalateToFull);
+    }
+}
+
+void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
+{
+    ASSERT_GUI_THREAD();
+    if (path.isEmpty() || m_imageModeNativeDecodePaths.contains(path)) {
+        return;
+    }
+    m_imageModeNativeDecodePaths.insert(path);
+    const quint64 gen = m_loadGeneration.load();
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start([guard, path, gen]() {
+        ASSERT_NOT_GUI_THREAD();
+        const QImage decoded = ImageLoader::load(path);
+        if (!guard) {
+            return;
+        }
+        QMetaObject::invokeMethod(
+            guard.data(),
+            [guard, path, decoded, gen]() {
+                ImageView *const host = guard.data();
+                if (!host || gen != host->m_loadGeneration.load()) {
+                    return;
+                }
+                if (!decoded.isNull()) {
+                    ImageCache::put(path, decoded);
+                    (void)host->tryInstallImageModeSample(path, decoded);
+                }
+            },
+            Qt::QueuedConnection);
+    });
 }
 
 void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
@@ -2031,6 +2126,10 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
                   qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
     m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path),
                          PathRasterService::ClimbPolicy::EscalateToFull);
+    // Archive Full often settles at overview 1024 — one host native decode.
+    if (m_pathRaster->isGaveUp(path) && need > 0 && !coversEdge(have, need)) {
+        scheduleImageModeNativeDecodeOnce(path);
+    }
 }
 
 bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &image)

@@ -107,7 +107,8 @@ ImageView::ImageView(QWidget *parent)
                 (void)ThumtooCache::setInterest(
                     near, {}, ThumtooCache::kBatchOverviewEdge,
                     ThumtooCache::kGalleryLadderEdge, primary,
-                    ThumtooCache::kBatchOverviewEdge);
+                    ThumtooCache::kImageLadderEdge);
+                ensureWorkspaceQualityClimb();
             }
         }
         emit statusChanged();

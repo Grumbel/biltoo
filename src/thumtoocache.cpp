@@ -2712,16 +2712,11 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
         return false;
     }
     init();
-    const std::string uri = toThumtooUri(path);
-    if (uri.empty()) {
-        return false;
-    }
     if (maxEdge <= 0) {
         maxEdge = 8192;
     }
     const QString inflightKey =
         path + QLatin1Char('#') + QStringLiteral("full") + QString::number(maxEdge);
-    thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);
         if (g_pixelsInflight.contains(inflightKey)
@@ -2731,20 +2726,36 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
             return false;
         }
         g_pixelsInflight.insert(inflightKey);
-        c = clientUnlocked();
-        if (!c) {
-            g_pixelsInflight.remove(inflightKey);
-            return false;
-        }
         ++g_pixelsActive;
         thumtooDbg("scheduleFull queue path=%s edge=%d active=%d",
                    qPrintable(path), maxEdge, g_pixelsActive);
     }
+    // URI resolve + request_full_pixels off the GUI (archive URI can be slow).
     const QString pathCopy = path;
     const int edge = maxEdge;
-    auto onFull = [pathCopy, edge, inflightKey](
-                      std::string, int,
-                      std::optional<thumtoo::PixelLevel> px) {
+    QThreadPool::globalInstance()->start([pathCopy, edge, inflightKey]() {
+        ASSERT_NOT_GUI_THREAD();
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (!c) {
+            std::lock_guard lock(g_mu);
+            g_pixelsInflight.remove(inflightKey);
+            g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            return;
+        }
+        const std::string uri = toThumtooUri(pathCopy);
+        if (uri.empty()) {
+            std::lock_guard lock(g_mu);
+            g_pixelsInflight.remove(inflightKey);
+            g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            return;
+        }
+        auto onFull = [pathCopy, edge, inflightKey](
+                          std::string, int,
+                          std::optional<thumtoo::PixelLevel> px) {
         QByteArray ba;
         int source = 0;
         if (px && !px->bytes.empty()) {
@@ -2796,7 +2807,8 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
         };
         QThreadPool::globalInstance()->start(finish, 0);
     };
-    c->request_full_pixels(uri, edge, std::move(onFull));
+        c->request_full_pixels(uri, edge, std::move(onFull));
+    });
     return true;
 #else
     Q_UNUSED(path);

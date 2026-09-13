@@ -2,6 +2,32 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-750-workspace-image-climb-gui-assert.** Workspace installs ladder samples; Full off GUI; Image native fallback.
+Prior: **749**.
+
+### Problem
+- Gallery worked after Full call fixed; Image/Workspace still soft.
+- Workspace: `onLadderReady` returned before install (`!isGalleryMode`).
+- Workspace selection only `setInterest` at overview edge — no PathRaster Full climb.
+- `scheduleFullPixels` did URI + `request_full` on the GUI thread.
+- Archive Full shortfall settled at 1024 left Image mode with no host decode.
+
+### Change
+- `applyWorkspaceLadderReady` + `ensureWorkspaceQualityClimb` (EscalateToFull)
+- Selection → climb + primary edge 2048
+- `scheduleImageModeNativeDecodeOnce` when PathRaster terminal short of need
+- Full schedule: URI/request on worker + `ASSERT_NOT_GUI_THREAD`
+- PathRaster `ensure`/`noteDelivery`: `ASSERT_GUI_THREAD`
+
+### Done criteria
+- [x] Bundle **750**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-749-call-full-without-api-macro-gate.** PathRaster actually calls scheduleFullPixels.
 Prior: **748**.
 

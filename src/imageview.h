@@ -1308,6 +1308,8 @@ private:
     void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                           const QImage &sample);
     void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
+    /** One ImageLoader::load when thumtoo Full settles short of on-screen need. */
+    void scheduleImageModeNativeDecodeOnce(const QString &path);
     bool tryInstallImageModeSample(const QString &path, const QImage &image);
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
@@ -1316,6 +1318,9 @@ private:
     void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
     void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
+    void applyWorkspaceLadderReady(const QString &path, int maxEdge, const QImage &image);
+    /** PathRaster EscalateToFull for selected Workspace items. */
+    void ensureWorkspaceQualityClimb();
     void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
     /** Fit / slideshow zoom / motion handoff after Image-mode full replace. */
     void frameImageModeReplaceItem(ImageItem *item, const QString &path);
@@ -1771,6 +1776,8 @@ private:
     QHash<QString, int> m_pendingWorkspacePaths;
     /** Per-path soft/display policy — GallerySoftState in imageview_types.h. */
     QHash<QString, GallerySoftState> m_gallerySoft;
+    /** Paths that already started host ImageLoader::load for Image-mode HQ. */
+    QSet<QString> m_imageModeNativeDecodePaths;
     /** Central path→raster climb (slideshow + shared PreferCache policy). */
     PathRasterService *m_pathRaster = nullptr;
 
