@@ -2,6 +2,22 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-714-host-debug-overlay.** Host QImage stamp for THUMTOO/BILTOO_DEBUG_OVERLAY.
+Prior: **713**.
+
+### Change
+Stamp magenta border + size text after ladder decode so overlay is visible
+even when samples already sat in host caches.
+
+### Done criteria
+- [x] Bundle **714**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-713-remove-unused-loadSlideshowSample.** Drop dead worker helper (PathRasterService owns climb).
 Prior: **712**.
 
