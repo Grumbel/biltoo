@@ -10,6 +10,9 @@
 #include "pagepath.h"
 #include "sessionappearance.h"
 #include "thumtoocache.h"
+#if __has_include("thumtoo/client.hpp")
+#include "thumtoo/client.hpp"
+#endif
 #include "biltoo_thread.h"
 
 #include <QDateTime>
@@ -1446,6 +1449,8 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
     if (path.isEmpty() || image.isNull() || path != classicPath()) {
         return;
     }
+    // Full-pixel schedule marks this set; clear when any ladder sample lands.
+    m_imageModeNativeClimbPaths.remove(path);
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
         dbg && dbg[0] && dbg[0] != '0') {
         const int req = maxEdge > 0 ? maxEdge : ImageCache::longEdge(image);
@@ -2173,18 +2178,26 @@ void ImageView::finishImageModeNativeFullQuiet(const QString &path, const QImage
 
 void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
 {
-    // Native full without LoadReplace generation bump / pending tile (zoom climb).
+    // Full / near-native via thumtoo (unified format path). No LoadReplace bump.
     if (path.isEmpty() || m_imageModeNativeClimbPaths.contains(path)) {
         return;
     }
     m_imageModeNativeClimbPaths.insert(path);
+#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
+    if (ThumtooCache::isAvailable()) {
+        // ladderReady → onPathRaster / tryInstall; finish clears inflight mark.
+        if (ThumtooCache::scheduleFullPixels(path, ImageCache::kDisplayMaxEdge)) {
+            return;
+        }
+    }
+#endif
+    // Fallback when thumtoo full API unavailable.
     const QPointer<ImageView> guard(this);
     const quint64 gen = m_loadGeneration.load();
     const QString pathCopy = path;
     QThreadPool::globalInstance()->start(
         [guard, pathCopy, gen]() {
             if (!guard || !guard->matchesLoadGeneration(gen)) {
-                // Drop the inflight mark on the GUI thread if the view still lives.
                 if (ImageView *view = guard.data()) {
                     QTimer::singleShot(0, view, [view, pathCopy]() {
                         view->m_imageModeNativeClimbPaths.remove(pathCopy);
@@ -2201,7 +2214,6 @@ void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
             if (!view) {
                 return;
             }
-            // Named finish: clear path + install on GUI thread (no nested QPointer).
             QTimer::singleShot(0, view, [view, pathCopy, image, gen]() {
                 view->finishImageModeNativeFullQuiet(pathCopy, image, gen);
             });

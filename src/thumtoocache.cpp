@@ -2666,4 +2666,107 @@ void clearContentAppearance(const QString &)
 #endif
 
 
+
+bool scheduleFullPixels(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
+    if (path.isEmpty() || isUnsupported(path)) {
+        return false;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return false;
+    }
+    if (maxEdge <= 0) {
+        maxEdge = 8192;
+    }
+    const QString inflightKey =
+        path + QLatin1Char('#') + QStringLiteral("full") + QString::number(maxEdge);
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        if (g_pixelsInflight.contains(inflightKey)
+            || g_pixelsSettled.contains(inflightKey)) {
+            thumtooDbg("scheduleFull SKIP path=%s edge=%d (inflight/settled)",
+                       qPrintable(path), maxEdge);
+            return false;
+        }
+        g_pixelsInflight.insert(inflightKey);
+        c = clientUnlocked();
+        if (!c) {
+            g_pixelsInflight.remove(inflightKey);
+            return false;
+        }
+        ++g_pixelsActive;
+        thumtooDbg("scheduleFull queue path=%s edge=%d active=%d",
+                   qPrintable(path), maxEdge, g_pixelsActive);
+    }
+    const QString pathCopy = path;
+    const int edge = maxEdge;
+    auto onFull = [pathCopy, edge, inflightKey](
+                      std::string, int,
+                      std::optional<thumtoo::PixelLevel> px) {
+        QByteArray ba;
+        int source = 0;
+        if (px && !px->bytes.empty()) {
+            source = static_cast<int>(px->source);
+            ba = QByteArray(
+                reinterpret_cast<const char *>(px->bytes.data()),
+                int(px->bytes.size()));
+        }
+        auto finish = [pathCopy, edge, inflightKey, ba = std::move(ba),
+                       source]() mutable {
+            ASSERT_NOT_GUI_THREAD();
+            QImage decoded;
+            if (!ba.isEmpty()) {
+                decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
+                ImageCache::stampDebugOverlayIfEnabled(
+                    &decoded,
+                    QStringLiteral("%1 FULL e=%2")
+                        .arg(QFileInfo(pathCopy).fileName())
+                        .arg(edge));
+            }
+            {
+                std::lock_guard doneLock(g_mu);
+                g_pixelsInflight.remove(inflightKey);
+                if (source != 0) {
+                    g_lastPixelSource.insert(pathCopy, source);
+                }
+                const int got = decoded.isNull()
+                                    ? 0
+                                    : qMax(decoded.width(), decoded.height());
+                if (got >= (edge * 9) / 10 || got >= 2048) {
+                    g_pixelsSettled.insert(inflightKey);
+                }
+                g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                thumtooDbg(
+                    "scheduleFull DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
+                    qPrintable(pathCopy), edge, decoded.isNull() ? 0 : 1, source,
+                    decoded.width(), decoded.height(), g_pixelsActive);
+                startNextPixelJobsUnlocked();
+            }
+            if (!decoded.isNull()) {
+                ImageCache::put(pathCopy, decoded);
+            }
+            emit bridge()->ladderReady(pathCopy, edge, decoded);
+            emit bridge()->ladderProvenance(pathCopy, edge, source);
+        };
+        QThreadPool::globalInstance()->start(finish, 0);
+    };
+    c->request_full_pixels(uri, edge, std::move(onFull));
+    return true;
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#endif
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#endif
+}
+
 } // namespace ThumtooCache

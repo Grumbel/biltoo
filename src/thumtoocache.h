@@ -139,6 +139,8 @@ bool isPixelsPending(const QString &path, int maxEdge);
 bool scheduleOverviewPixels(const QString &path, int maxEdge);
 /** PreferCache raster up to kImageLadderEdge (2048); host callback via ladderReady. */
 bool scheduleDisplayPixels(const QString &path, int maxEdge);
+/** Full / near-native via thumtoo request_full_pixels (≤ ~8192). */
+bool scheduleFullPixels(const QString &path, int maxEdge = 0);
 
 /** Allow a later schedulePixels for this path/edge after a shortfall delivery. */
 void forgetPixelsSettled(const QString &path, int maxEdge);

@@ -2,6 +2,23 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-718-full-via-thumtoo.** Native climb uses ThumtooCache::scheduleFullPixels.
+Prior: **717**.
+
+### Change
+- scheduleImageModeNativeFullQuiet → thumtoo request_full_pixels
+- ImageLoader::load only as fallback without FULL_PIXELS API
+- Crop/workspace still use ImageLoader::load (next)
+
+### Done criteria
+- [x] Bundle **718**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-717-debug-overlay-host-style.** Larger host watermark; cyan BR vs thumtoo yellow TL.
 Prior: **716**.
 
