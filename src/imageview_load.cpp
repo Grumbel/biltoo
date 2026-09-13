@@ -1139,9 +1139,11 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     // preferGaveUp inside PathRasterService so gallery zoom can climb again.
     m_pathRaster->ensure(path, want, logicalSizeForPath(path));
 
+    // Sync have from service (authoritative host climb).
+    st.have = qMax(st.have, m_pathRaster->haveEdge(path));
+
     // Synchronous cache coverage: ensure may satisfy without async ladderReady.
-    const int after = qMax(st.have, m_pathRaster->haveEdge(path));
-    if (after > have) {
+    if (st.have > have) {
         const QImage img = ImageCache::get(path);
         if (!img.isNull()) {
             onImagePreviewLoaded(path, img, m_loadGeneration.load(),
@@ -1159,6 +1161,12 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (m_pathRaster->isGaveUp(path)) {
         clearGallerySoftInflight(st);
         st.gaveUpWant = qMax(st.gaveUpWant, want);
+        return;
+    }
+    if (!m_pathRaster->isClimbPending(path)) {
+        // ensure scheduled nothing (thumtoo down / already settled policy) —
+        // do not pin gallery inflight until the watchdog.
+        clearGallerySoftInflight(st);
         return;
     }
     // Async: ladderReady -> applyGalleryLadderReady clears inflight via noteLadderDelivery.

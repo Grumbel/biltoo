@@ -120,6 +120,18 @@ bool PathRasterService::isGaveUp(const QString &path) const
     return it != m_state.cend() && it->preferGaveUp;
 }
 
+bool PathRasterService::isClimbPending(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return false;
+    }
+    const auto it = m_state.constFind(path);
+    if (it == m_state.cend() || it->epoch != m_epoch) {
+        return false;
+    }
+    return it->softQueued || it->displayQueued;
+}
+
 void PathRasterService::noteDelivery(const QString &path, int requestEdge,
                                      const QImage &image)
 {

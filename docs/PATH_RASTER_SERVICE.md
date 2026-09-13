@@ -28,7 +28,7 @@ re-queue, duplicate schedules).
 ```text
 ensure(path, wantEdge, knownNative?)  → raise target, pump thumtoo
 noteDelivery(path, requestEdge, image) → put cache, emit rasterImproved, pump
-best(path) / haveEdge(path)
+best(path) / haveEdge(path) / wantEdge / isGaveUp / isClimbPending
 invalidateAll()                        → session switch
 ```
 
@@ -50,8 +50,8 @@ ImageView (viewport-sized texture).
 | Gallery | `scheduleGalleryDecode` → `ensure`; install on `ladderReady` → `applyGalleryLadderReady` |
 
 Gallery keeps `GallerySoftState` for visibility prioritization, concurrency budget
-(`inflight`), and gave-up tracking. Climb requests no longer use a parallel
-`QThreadPool` + `ImageLoader::loadThumbnail` path.
+(`inflight`), and gave-up tracking. Climb requests go through PathRasterService;
+`isClimbPending` avoids stuck gallery inflight when ensure schedules nothing.
 
 ## Residual cleanup
 

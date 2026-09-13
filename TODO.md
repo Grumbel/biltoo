@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-727-path-raster-climb-pending.** Gallery inflight tracks PathRasterService queue state.
+Prior: **726**.
+
+### Change
+- `PathRasterService::isClimbPending` — softQueued || displayQueued for current epoch
+- Gallery `scheduleGalleryDecode`: sync `have` from service; clear inflight when
+  ensure did not leave work pending (avoids watchdog-only recovery when thumtoo
+  is down or policy already settled)
+
+### Done criteria
+- [x] Bundle **727**
+
+### Next
+- Optional: fold GallerySoftState gaveUp/have into PathRasterService
+- Smoke-test gallery zoom after shortfall; cold crop enter
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-726-path-raster-raise-want-retry.** PreferCache retry when gallery/Image want rises past shortfall.
 Prior: **725**.
 

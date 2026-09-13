@@ -47,6 +47,8 @@ public:
     int haveEdge(const QString &path) const;
     int wantEdge(const QString &path) const;
     bool isGaveUp(const QString &path) const;
+    /** True when soft or PreferCache work is queued for @p path (epoch-current). */
+    bool isClimbPending(const QString &path) const;
 
     /**
      * Thumtoo ladderReady / pool soft completion. Always ImageCache::put first.
