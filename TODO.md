@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-721-performance-doc.** Document ladder/JPEG/tile/archive performance model.
+Prior: **720**.
+
+### Change
+- New `docs/PERFORMANCE.md`: soft vs overview vs PreferCache/tiles, progressive 1+4,
+  scale-from-large vs native 1024, tile assemble cost, SQL completeness + resume,
+  JXL role, time-to-pixels order
+- Links from `AGENTS.md`, `GALLERY_SOFT.md`, `PIXEL_PIPELINE_REDESIGN.md`
+
+### Bundle policy
+Tips stack on the previous tip (`git pull …bundle HEAD` only). Each tip bundle
+includes all commits from the agreed base through the new tip (full stack).
+
+### Done criteria
+- [x] Bundle **721**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-720-full-shortfall-no-loop.** Stop scheduleFull ↔ tryInstall REJECT spin on overview shortfall.
 Prior: **719** (or **718** if 719 not applied).
 

@@ -9,6 +9,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 and high-resolution display, with a clean quality model, tile-backed arbitrary
 ladder levels, and archive-aware parallel work lanes.
 
+Runtime cost model: [PERFORMANCE.md](PERFORMANCE.md).
+
 **Scope of this document:** lower layers (thumtoo cache, decode, tiles, quality
 provenance, scheduling contracts). GUI (Gallery / filmstrip / slideshow) is
 only described as a *consumer* of the API. Do not start with more GUI

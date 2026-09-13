@@ -40,7 +40,9 @@ stuck full-res tiles, or permanent soft-ladder skip (`hasDecodedPixels()`).
 5. Do not ask thumtoo soft ladder for 1024/2048 — those levels are not soft; use full decode when needed.
 6. Gallery requests the **on-screen** ladder edge (no soft-max cliff, no native full). Durable soft levels stay ≤512; larger cells use shrink-on-decode. Image mode alone does `ImageLoader::load`.
 
-### Related APIs
+#Cost model (soft vs overview vs tiles): [PERFORMANCE.md](PERFORMANCE.md).
+
+## Related APIs
 
 | API | Layer |
 |-----|--------|
