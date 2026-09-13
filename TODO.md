@@ -2,6 +2,18 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-713-remove-unused-loadSlideshowSample.** Drop dead worker helper (PathRasterService owns climb).
+Prior: **712**.
+
+### Done criteria
+- [x] Bundle **713**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-712-unitless-motion-progress.** Ken Burns / phase motion progress is T∈[0,1].
 Prior: **711**.
 

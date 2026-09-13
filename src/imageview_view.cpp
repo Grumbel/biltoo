@@ -45,51 +45,6 @@ int slideshowNeedEdge(int targetEdge)
     return targetEdge * kSsAdequacyNumer / kSsAdequacyDenom;
 }
 
-/** Prefer the sample with the larger long edge (null loses). */
-QImage preferSharper(const QImage &a, const QImage &b)
-{
-    return ImageCache::longEdge(b) > ImageCache::longEdge(a) ? b : a;
-}
-
-/**
- * Worker-side sample for slideshow: any host soft, then loadThumbnail, then
- * LQIP, then async PreferCache. Never full native extract. Never discard a
- * smaller soft while waiting for targetEdge — that left crossfade blank.
- * Result clamped to targetEdge.
- */
-QImage loadSlideshowSample(const QString &path, int targetEdge)
-{
-    ASSERT_NOT_GUI_THREAD();
-    const int need = slideshowNeedEdge(targetEdge);
-    QImage img = ImageCache::get(path, need);
-    if (img.isNull()) {
-        img = ImageCache::get(path);
-    }
-
-    if (!ImageCache::adequate(img, need)) {
-        const QImage soft = ImageLoader::loadThumbnail(path, targetEdge);
-        img = preferSharper(img, soft);
-    }
-
-    if (img.isNull()) {
-        img = ThumtooCache::cachedLqipImage(path);
-        if (!img.isNull()) {
-            ImageCache::put(path, img);
-        }
-    }
-
-    if (!ImageCache::adequate(img, need) && ThumtooCache::isAvailable()) {
-        // Async; ladderReady → onSlideshowRasterReady on the GUI thread.
-        (void)ThumtooCache::scheduleDisplayPixels(path, targetEdge);
-        img = preferSharper(img, ImageCache::get(path, need));
-        if (img.isNull()) {
-            img = preferSharper(img, ImageCache::get(path));
-        }
-    }
-
-    return ImageCache::clampToMaxEdge(img, targetEdge);
-}
-
 /** Stable ZoomBlur slot key for path + viewport size. */
 qint64 slideshowZoomBlurKey(const QString &path, int vw, int vh)
 {
