@@ -60,3 +60,9 @@ SoftPreview) updates intrinsic when provisional — not only when the item is 1�
 
 Gallery pack is debounced on aspect change (`requestDebouncedGalleryPack`).
 
+## Display edge vs native
+
+PreferCache / soft climb request edges are **capped at the known native long
+edge** (`cappedDisplayEdgeForPath`). Ladder ceil (1024→2048) must not produce a
+request larger than the file — a 1920×1080 image never targets 2048.
+

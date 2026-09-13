@@ -2,6 +2,25 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-705-cap-display-edge-native.** PreferCache/HUD never request past known native long edge.
+Prior: **704**.
+
+### Problem
+Climb/HUD showed 1024→2048 for a 1920×1080 image — ladder ceil past native.
+
+### Change
+`cappedDisplayEdgeForPath`: min(want, ladder max, known native). Used for Image
+mode climb, PreferCache schedule, slideshow preload/HUD.
+
+### Done criteria
+- [x] Bundle **705**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-704-fix-cancel-pending-private.** Drop private cancelPendingLoads call.
 Prior: **703**.
 

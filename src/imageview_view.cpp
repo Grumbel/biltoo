@@ -1391,7 +1391,7 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     // Keep climbing until the host sample meets the viewport need edge.
     if (ThumtooCache::isAvailable()
         && (path == m_ssFromPath || path == m_ssToPath)) {
-        const int target = slideshowTargetEdge();
+        const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
         const int need = slideshowNeedEdge(target);
         if (!ImageCache::adequate(slideshowRaster(path), need)) {
             (void)ThumtooCache::scheduleDisplayPixels(path, target);
@@ -1405,7 +1405,10 @@ QString ImageView::slideshowPrefetchHudLine() const
         return {};
     }
     const int queued = m_ssRasterInflight.size() + m_ssRasterPending.size();
-    const int target = slideshowTargetEdge();
+    int target = slideshowTargetEdge();
+    if (!m_ssFromPath.isEmpty()) {
+        target = cappedDisplayEdgeForPath(m_ssFromPath, target);
+    }
     const int need = slideshowNeedEdge(target);
     const int have = ImageCache::longEdge(m_ssFromImage);
     const bool currentShort = !m_ssFromPath.isEmpty() && have < need;
@@ -1989,7 +1992,7 @@ void ImageView::finishSlideshowPreload(const QString &path, const QImage &image)
     // Without this, loadSlideshowSample returns soft + one async display and
     // never re-queues after a shortfall, leaving the phase on soft forever.
     if (!path.isEmpty() && ThumtooCache::isAvailable()) {
-        const int target = slideshowTargetEdge();
+        const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
         const int need = slideshowNeedEdge(target);
         if (!ImageCache::adequate(slideshowRaster(path), need)) {
             (void)ThumtooCache::scheduleDisplayPixels(path, target);
@@ -2006,7 +2009,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    const int targetEdge = slideshowTargetEdge();
+    const int targetEdge = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
     const int need = slideshowNeedEdge(targetEdge);
 
     // Host ImageCache already adequate — nothing to decode.
@@ -3131,10 +3134,12 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
     if (m_imageModeNativeClimbPaths.contains(path)) {
         return tr("Decoding full…");
     }
-    if (ThumtooCache::isAvailable()
-        && (ThumtooCache::isPixelsPending(path, ThumtooCache::kImageLadderEdge)
-            || ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge))) {
-        return tr("Improving quality…");
+    if (ThumtooCache::isAvailable()) {
+        const int want = cappedDisplayEdgeForPath(path, imageModeOnScreenNeedEdge());
+        if (ThumtooCache::isPixelsPending(path, want)
+            || ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)) {
+            return tr("Improving quality…");
+        }
     }
     // Soft on screen, climb may be queued but not yet marked inflight.
     if (!item->hasDecodedPixels()

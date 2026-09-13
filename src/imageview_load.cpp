@@ -1999,9 +1999,8 @@ void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantE
         }
     }
     ImageModeClimbState &st = m_imageModeClimb[path];
-    const int edge = wantEdge > 0
-                         ? qMin(wantEdge, ThumtooCache::kImageLadderEdge)
-                         : ThumtooCache::kImageLadderEdge;
+    const int edge = cappedDisplayEdgeForPath(
+        path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
     if (!st.shouldScheduleDisplay(edge)) {
         return;
     }
@@ -2032,6 +2031,32 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     if (viewport()) {
         viewport()->update();
     }
+}
+
+
+int ImageView::cappedDisplayEdgeForPath(const QString &path, int wantEdge) const
+{
+    // Ladder steps are discrete (…1024, 2048). Never request past the known
+    // native long edge — PreferCache cannot invent pixels, and the HUD must
+    // not claim "→2048" for a 1920×1080 photo.
+    int edge = wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge;
+    edge = qMin(edge, ThumtooCache::kImageLadderEdge);
+    const QSize logical = logicalSizeForPath(path);
+    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
+        const int native = qMax(logical.width(), logical.height());
+        if (native > 0) {
+            edge = qMin(edge, native);
+        }
+    }
+    // Snap up only within the remaining budget (ceil then clamp to native again).
+    edge = ThumtooCache::ceilLadderEdge(edge);
+    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
+        const int native = qMax(logical.width(), logical.height());
+        if (native > 0) {
+            edge = qMin(edge, native);
+        }
+    }
+    return qMax(1, edge);
 }
 
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const
@@ -2093,14 +2118,21 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
         st.have = qMax(st.have, have);
     }
 
-    // Background target: at least overview, at most ladder, prefer on-screen need.
+    // Background target: at least overview, prefer on-screen need, never past
+    // native long edge (or ladder max when native is still unknown).
     int climbTo = ThumtooCache::kBatchOverviewEdge;
     if (need > 0) {
         climbTo = qMax(climbTo, need);
     }
-    climbTo = qMin(climbTo, ThumtooCache::kImageLadderEdge);
     if (climbTo < ThumtooCache::kGalleryLadderEdge) {
         climbTo = ThumtooCache::kGalleryLadderEdge;
+    }
+    climbTo = cappedDisplayEdgeForPath(path, climbTo);
+
+    // Already at/above the achievable target — stop (avoids 1024→2048 on 1920).
+    if (have > 0 && coversEdge(have, climbTo)) {
+        m_imageModeClimb.remove(path);
+        return;
     }
 
     if (!st.preferGaveUp) {

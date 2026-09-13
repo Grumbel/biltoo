@@ -1279,6 +1279,8 @@ private:
                                                              const QImage &image) const;
     ImageItem *imageModeItemForPath(const QString &path) const;
     void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
+    /** PreferCache/display edge: min(want, ladder max, known native long edge). */
+    int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
                                        SessionAppearance::PixelKind kind);
     /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */
