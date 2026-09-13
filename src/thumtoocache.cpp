@@ -3,6 +3,7 @@
 
 #include "thumtoocache.h"
 #include "imageloader.h"
+#include "imagecache.h"
 #include "biltoo_thread.h"
 
 #include "archivepath.h"
@@ -82,77 +83,6 @@
 #include <vector>
 #endif
 
-
-namespace {
-
-bool debugOverlayEnvOn()
-{
-    const char *a = std::getenv("THUMTOO_DEBUG_OVERLAY");
-    const char *b = std::getenv("BILTOO_DEBUG_OVERLAY");
-    auto on = [](const char *v) {
-        return v && v[0] && v[0] != '0';
-    };
-    return on(a) || on(b);
-}
-
-/** Host-side stamp so overlay is visible even when ImageCache already holds
- *  a decoded sample (thumtoo only stamps on get_pixels/get_tile). */
-void maybeDebugOverlayQImage(QImage &img, const QString &path, int edge)
-{
-    if (!debugOverlayEnvOn() || img.isNull()) {
-        return;
-    }
-    QImage *work = &img;
-    QImage copy;
-    if (img.format() != QImage::Format_RGB32
-        && img.format() != QImage::Format_ARGB32
-        && img.format() != QImage::Format_ARGB32_Premultiplied) {
-        copy = img.convertToFormat(QImage::Format_ARGB32);
-        work = &copy;
-    }
-    QPainter p(work);
-    if (!p.isActive()) {
-        return;
-    }
-    const int border = qMax(2, qMin(work->width(), work->height()) / 64);
-    p.setPen(QPen(QColor(255, 0, 255), border));
-    p.setBrush(Qt::NoBrush);
-    p.drawRect(border / 2, border / 2,
-               work->width() - border, work->height() - border);
-    QFont f = p.font();
-    f.setBold(true);
-    f.setPixelSize(qMax(10, qMin(work->width(), work->height()) / 28));
-    p.setFont(f);
-    const QString name = QFileInfo(path).fileName();
-    const QString line1 = QStringLiteral("%1").arg(name.left(28));
-    const QString line2 =
-        QStringLiteral("%1x%2 edge=%3")
-            .arg(work->width())
-            .arg(work->height())
-            .arg(edge);
-    // Black outline + yellow fill for readability.
-    const QPoint o(border + 4, border + f.pixelSize() + 2);
-    for (const QPoint d : {QPoint(-1, 0), QPoint(1, 0), QPoint(0, -1), QPoint(0, 1)}) {
-        p.setPen(Qt::black);
-        p.drawText(o + d, line1);
-        p.drawText(o + QPoint(0, f.pixelSize() + 2) + d, line2);
-    }
-    p.setPen(QColor(255, 255, 180));
-    p.drawText(o, line1);
-    p.drawText(o + QPoint(0, f.pixelSize() + 2), line2);
-    p.end();
-    if (work != &img) {
-        img = copy;
-    }
-    static bool once = false;
-    if (!once) {
-        once = true;
-        fprintf(stderr,
-                "biltoo: DEBUG_OVERLAY active (host QImage stamp)\\n");
-    }
-}
-
-} // namespace
 
 namespace ThumtooCache {
 namespace {
@@ -914,7 +844,9 @@ void startNextPixelJobsUnlocked()
                 QImage decoded;
                 if (!ba.isEmpty()) {
                     decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
-                    maybeDebugOverlayQImage(decoded, pathCopy, edge);
+                    ImageCache::stampDebugOverlayIfEnabled(
+                    &decoded,
+                    QStringLiteral("%1 e=%2").arg(QFileInfo(pathCopy).fileName()).arg(edge));
                 }
                 {
                     std::lock_guard lock(g_mu);
@@ -1211,7 +1143,9 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
             QImage decoded;
             if (!ba.isEmpty()) {
                 decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
-                maybeDebugOverlayQImage(decoded, pathCopy, edge);
+                ImageCache::stampDebugOverlayIfEnabled(
+                    &decoded,
+                    QStringLiteral("%1 e=%2").arg(QFileInfo(pathCopy).fileName()).arg(edge));
             }
             {
                 std::lock_guard doneLock(g_mu);
@@ -1322,7 +1256,9 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
             QImage decoded;
             if (!ba.isEmpty()) {
                 decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
-                maybeDebugOverlayQImage(decoded, pathCopy, edge);
+                ImageCache::stampDebugOverlayIfEnabled(
+                    &decoded,
+                    QStringLiteral("%1 e=%2").arg(QFileInfo(pathCopy).fileName()).arg(edge));
             }
             {
                 std::lock_guard doneLock(g_mu);

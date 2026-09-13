@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "imagecache.h"
 
 #include "coloradjust.h"
 #include "placementlinear.h"
@@ -109,7 +110,9 @@ void ImageItem::setSourceImageReady(const QImage &image)
     // Do NOT prepareGeometryChange / applyLocalTransform — intrinsic size is
     // independent of sample resolution; those calls re-enter the scene and
     // were the remaining ←/→ GUI cost after decode moved off-thread.
-    m_source = image;
+    QImage src = image;
+    ImageCache::stampDebugOverlayIfEnabled(&src, path());
+    m_source = src;
     m_preview = QImage();
     m_previewPixels = false;
     m_hFlip = false;
@@ -146,7 +149,9 @@ void ImageItem::setPreviewImage(const QImage &preview)
         return;
     }
     // Soft stand-in: assign + repaint only (no prepareGeometryChange).
-    m_preview = preview;
+    QImage prev = preview;
+    ImageCache::stampDebugOverlayIfEnabled(&prev, path());
+    m_preview = prev;
     m_previewPixels = true;
     m_source = QImage();
     setPixmap(QPixmap());

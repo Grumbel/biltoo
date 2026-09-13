@@ -1191,7 +1191,8 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     bool changed = false;
     if (path == m_ssFromPath && incoming > ImageCache::longEdge(m_ssFromImage)) {
         m_ssFromImage = oriented;
-        m_dwellSourceImage = oriented;
+        ImageCache::stampDebugOverlayIfEnabled(&m_ssFromImage, path);
+        m_dwellSourceImage = m_ssFromImage;
         // Rebuild when atlas missing/stale soft-upsample, or sample meets need.
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
@@ -1208,6 +1209,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     }
     if (path == m_ssToPath && incoming > ImageCache::longEdge(m_ssToImage)) {
         m_ssToImage = oriented;
+        ImageCache::stampDebugOverlayIfEnabled(&m_ssToImage, path);
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
             m_ssToAtlas.isNull()

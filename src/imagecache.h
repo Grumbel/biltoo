@@ -78,6 +78,10 @@ void warm(const QStringList &paths, int maxEdge = kPreviewEdge);
 /** Drop all entries and in-flight ensures. */
 void clear();
 
+/** THUMTOO_DEBUG_OVERLAY / BILTOO_DEBUG_OVERLAY: tiled watermark + border. */
+bool debugOverlayEnabled();
+void stampDebugOverlayIfEnabled(QImage *image, const QString &label = QString());
+
 } // namespace ImageCache
 
 #endif // IMAGECACHE_H

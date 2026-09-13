@@ -2,6 +2,23 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-715-debug-overlay-watermark.** Persistent tiled overlay on every host sample.
+Prior: **714**.
+
+### Change
+- `ImageCache::put` stamps every sample (HQ no longer wipes soft overlay)
+- `ImageItem` preview/source + slideshow phase buffers stamp
+- Tiled watermark + magenta border (not top-left only)
+
+### Done criteria
+- [x] Bundle **715**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-714-host-debug-overlay.** Host QImage stamp for THUMTOO/BILTOO_DEBUG_OVERLAY.
 Prior: **713**.
 
