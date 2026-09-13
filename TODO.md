@@ -2,6 +2,30 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-723-gallery-soft-path-raster.** Gallery soft/display climb via PathRasterService.
+Prior: **722**.
+
+### Change
+- `scheduleGalleryDecode` → `PathRasterService::ensure` (soft → PreferCache)
+- Removed parallel gallery pool climb (`startGallerySoftClimbJob`,
+  `scheduleGalleryDisplayPreferCache`, SoftClimbPlan, pool result helpers)
+- `GallerySoftState` keeps want/have/inflight + concurrency; `gallerySoftResetPath`
+  cancels path in the service
+- Docs: `PATH_RASTER_SERVICE.md`, `GALLERY_SOFT.md`
+
+### Done criteria
+- [x] Bundle **723**
+
+### Next
+- Crop / Workspace native via thumtoo full (still `ImageLoader::load`)
+- Optional: fold remaining GallerySoftState policy into PathRasterService
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-722-remove-dead-climb-state.** Drop residual ImageModeClimb and slideshow motion-base ms.
 Prior: **721**.
 

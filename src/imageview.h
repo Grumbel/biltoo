@@ -1306,18 +1306,6 @@ private:
     void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
     void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
-    /** Install pool/ladder soft into Gallery tiles; returns long edge got (0 if null). */
-    int installGallerySoftPreview(const QString &path, const QImage &preview, quint64 gen,
-                                  GallerySoftState &soft, const char *debugTag,
-                                  int requestEdge);
-    void hostGallerySoftFromCache(const QString &path, quint64 gen, GallerySoftState &soft,
-                                  int edge);
-    /** SoftOnly or overview retry after a PreferCache shortfall. */
-    void retryGallerySoftOrOverview(const QString &path, quint64 gen, GallerySoftState &soft,
-                                    int edge, bool overview);
-    /** After pool install: clear, SoftOnly, overview, or give up. */
-    void advanceGallerySoftAfterPool(const QString &path, quint64 gen, GallerySoftState &soft,
-                                     int got, int requestEdge);
     void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
     /** Fit / slideshow zoom / motion handoff after Image-mode full replace. */
     void frameImageModeReplaceItem(ImageItem *item, const QString &path);
@@ -1364,21 +1352,14 @@ private:
     void applyProbedImageSize(const QString &path, const QSize &size);
     void clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want);
     bool gallerySoftScheduleBlocked(const GallerySoftState &st, int have, int want) const;
-    void startGallerySoftClimbJob(const QString &path, int requestEdge, bool overviewOnly,
-                                  int want, int have, GallerySoftState &st);
     void scheduleGalleryDecode(const QString &path);
 
     /** Resolve have/want for @a path; false if decode not needed. */
     int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut = nullptr) const;
     bool resolveGallerySoftHaveWant(const QString &path, GallerySoftState &st,
                                     int *haveOut, int *wantOut);
-    void scheduleGalleryDisplayPreferCache(const QString &path, GallerySoftState &st,
-                                           int have, int want);
     void markGallerySoftInflight(GallerySoftState &soft, int edge);
     void clearGallerySoftInflight(GallerySoftState &soft);
-    /** GUI-thread result of the gallery soft PreferCache / overview pool job. */
-    void applyGallerySoftPoolResult(const QString &path, const QImage &preview,
-                                    quint64 gen, int requestEdge);
     /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
     void gallerySoftWatchdogTick();
     /** Ladder step for item cell size in device pixels. */

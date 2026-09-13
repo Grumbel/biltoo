@@ -44,13 +44,19 @@ ImageView (viewport-sized texture).
 |----------|-----|
 | Slideshow | `preloadSlideshowImage` → `ensure`; install on `rasterImproved` |
 | Image mode | `ensureImageModeQualityClimb` → `ensure`; install on `rasterImproved` / ladderReady |
+| Gallery | `scheduleGalleryDecode` → `ensure`; install on `ladderReady` → `applyGalleryLadderReady` |
+
+Gallery keeps `GallerySoftState` for visibility prioritization, concurrency budget
+(`inflight`), and gave-up tracking. Climb requests no longer use a parallel
+`QThreadPool` + `ImageLoader::loadThumbnail` path.
 
 ## Residual cleanup
 
 - `ImageModeClimbState` / `m_imageModeClimb` removed (PathRasterService owns climb).
 - Dead slideshow `m_ss*MotionBaseMs` removed (unitless phase owns progress).
+- Gallery pool soft climb helpers removed (PathRasterService + ladderReady only).
 
 ## Next
 
-- Move gallery soft schedule onto the same service (or a thin wrapper)
 - Crop / Workspace native load still via `ImageLoader::load` (optional thumtoo full)
+- Optionally fold GallerySoftState have/gaveUp into PathRasterService if duplication hurts

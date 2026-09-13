@@ -5,6 +5,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Gallery pixels: soft ladder + on-demand full decode
 
+## Authority (host climb)
+
+Gallery soft/display climb is scheduled through **PathRasterService::ensure**
+(`scheduleGalleryDecode`). Deliveries land via thumtoo `ladderReady` →
+`applyGalleryLadderReady` → `ImageCache` + tiles. `GallerySoftState` still owns
+per-path want/have/inflight and the decode-window concurrency budget.
+
 ## Zoom
 
 Ctrl+wheel / toolbar zoom scales the **view transform**. Pack cell size in

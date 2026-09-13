@@ -173,8 +173,8 @@ void ImageView::updateGalleryDecodeWindow()
     //
     // Pass 1 — ImageCache soft onto blank tiles (budgeted).
     // Pass 2 — candidates via GallerySoftState::needsSoftSchedule + want edge;
-    //          scheduleGalleryDecode runs SoftClimbPlan (soft → overview → display).
-    // Pixels: ImageCache / ImageItem. Policy: GallerySoftState only.
+    //          scheduleGalleryDecode → PathRasterService::ensure (soft → PreferCache).
+    // Pixels: ImageCache / ImageItem. Policy: GallerySoftState + PathRasterService.
     // Image mode full decode is separate.
     // -------------------------------------------------------------------------
     if (!isGalleryMode() || m_items.isEmpty()) {
