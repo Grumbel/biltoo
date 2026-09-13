@@ -596,7 +596,6 @@ int ImageView::pendingDecodeCount() const
         pendingAdds += n;
     }
     int n = pendingAdds + m_pendingRestoreStates.size();
-    n += m_imageModeNativeClimbPaths.size();
 
     if (isGalleryMode() || isWorkspaceMode()) {
         // Tiles still without display pixels (waiting for soft / first sample).

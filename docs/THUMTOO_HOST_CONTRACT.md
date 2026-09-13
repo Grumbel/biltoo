@@ -119,6 +119,9 @@ Sample climb only changes sharpness.
    `clearPreferGaveUp` as a product feature). Retry belongs only inside the
    service if the contract is extended; today plateau → Full under
    EscalateToFull, or raise want under SoftDisplay.
+2b. **Second Full climb owners** (`scheduleImageModeNativeFullQuiet`, parallel
+   PreferCache from pool workers). PreferCache/Full only via PathRasterService
+   (workers must `requestEscalateClimb` on the GUI thread).
 3. **Assuming PreferCache returns want** — log/HUD may show target 2048 while
    have is 1024; that is plateau, not a silent bug by itself.
 4. **Second climb owners** — no parallel ImageModeClimb / gallery pool PreferCache.
@@ -136,6 +139,7 @@ Sample climb only changes sharpness.
 | `ThumtooCache::scheduleFullPixels` | Full | Image / slideshow escalation |
 | `Bridge::ladderReady(path, requestEdge, image)` | any | Always `noteDelivery` first |
 | `PathRasterService::ensure(path, want, native, policy)` | climb | Idempotent |
+| `ImageView::requestEscalateClimb(path, want)` | climb | GUI-safe wrapper: EscalateToFull ensure (pool workers queue this) |
 | `PathRasterService::isGaveUp` | — | PreferCache plateau for current want |
 | `PathRasterService::isClimbPending` | — | Soft, Display, or Full queued |
 

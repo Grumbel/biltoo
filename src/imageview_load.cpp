@@ -268,14 +268,27 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                 return;
             }
             if (image.isNull()) {
-                if (ThumtooCache::isAvailable()) {
-                    (void)ThumtooCache::scheduleDisplayPixels(path, qualityEdge);
-                }
+                // PreferCache/Full only via PathRaster on the GUI (contract §1).
+                QMetaObject::invokeMethod(
+                    guard.data(),
+                    [guard, path, qualityEdge]() {
+                        if (guard) {
+                            guard->requestEscalateClimb(path, qualityEdge);
+                        }
+                    },
+                    Qt::QueuedConnection);
                 return;
             }
-            // Soft stand-in still upgrades the view; keep climbing via schedule.
+            // Soft stand-in still upgrades the view; climb via PathRaster on GUI.
             if (!ImageCache::adequate(image, qualityEdge) && ThumtooCache::isAvailable()) {
-                (void)ThumtooCache::scheduleDisplayPixels(path, qualityEdge);
+                QMetaObject::invokeMethod(
+                    guard.data(),
+                    [guard, path, qualityEdge]() {
+                        if (guard) {
+                            guard->requestEscalateClimb(path, qualityEdge);
+                        }
+                    },
+                    Qt::QueuedConnection);
             }
             if (!image.isNull()) {
                 image = prepareImageModeDisplaySample(
@@ -820,7 +833,6 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     quint64 gen = m_loadGeneration.load();
     if (role == LoadReplace) {
         gen = ++m_loadGeneration;
-        m_imageModeNativeClimbPaths.clear();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
     }
@@ -1175,7 +1187,8 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     markGallerySoftInflight(st, want);
     // Always ensure - raising want past a prior PreferCache shortfall clears
     // preferGaveUp inside PathRasterService so gallery zoom can climb again.
-    m_pathRaster->ensure(path, want, logicalSizeForPath(path));
+    m_pathRaster->ensure(path, want, logicalSizeForPath(path),
+                         PathRasterService::ClimbPolicy::SoftDisplay);
 
     // Sync have from service (authoritative host climb).
     st.have = qMax(st.have, m_pathRaster->haveEdge(path));
@@ -1277,8 +1290,6 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
     if (path.isEmpty() || image.isNull() || path != classicPath()) {
         return;
     }
-    // Full-pixel schedule marks this set; clear when any ladder sample lands.
-    m_imageModeNativeClimbPaths.remove(path);
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
         dbg && dbg[0] && dbg[0] != '0') {
         const int req = maxEdge > 0 ? maxEdge : ImageCache::longEdge(image);
@@ -1862,12 +1873,17 @@ ImageItem *ImageView::imageModeItemForPath(const QString &path) const
 
 void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantEdge)
 {
+    requestEscalateClimb(path, wantEdge);
+}
+
+void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
+{
     if (!m_pathRaster || path.isEmpty() || m_slideshowNavHot) {
         return;
     }
     const int edge = cappedDisplayEdgeForPath(
         path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
-    biltooLoadDbg("preferCacheClimb(service) path=%s edge=%d",
+    biltooLoadDbg("escalateClimb(service) path=%s edge=%d",
                   qPrintable(QFileInfo(path).fileName()), edge);
     m_pathRaster->ensure(path, edge, logicalSizeForPath(path),
                          PathRasterService::ClimbPolicy::EscalateToFull);
@@ -2062,51 +2078,6 @@ int ImageView::imageModeOnScreenNeedEdge() const
         item = primaryItem();
     }
     return itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
-}
-
-void ImageView::finishImageModeNativeFullQuiet(const QString &path, const QImage &image,
-                                               quint64 generation)
-{
-    // GUI-thread completion for scheduleImageModeNativeFullQuiet.
-    m_imageModeNativeClimbPaths.remove(path);
-    if (generation != m_loadGeneration.load() || image.isNull()) {
-        return;
-    }
-    (void)tryInstallImageModeSample(path, image);
-}
-
-void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
-{
-    // Full / near-native via thumtoo only. No LoadReplace bump. Shortfall is
-    // settled in ThumtooCache so we never re-queue the same edge (archive
-    // overview jpeg_shrink loop).
-    if (path.isEmpty() || m_imageModeNativeClimbPaths.contains(path)) {
-        return;
-    }
-    m_imageModeNativeClimbPaths.insert(path);
-#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
-    if (ThumtooCache::isAvailable()) {
-        int edge = ImageCache::kDisplayMaxEdge;
-        const QSize native = ThumtooCache::cachedSize(path);
-        if (native.isValid() && native.width() > 0 && native.height() > 0) {
-            edge = qMin(8192, qMax(native.width(), native.height()));
-        } else {
-            edge = 8192;
-        }
-        // ladderReady → upgradeImageModeFromLadder; settle stops re-queue.
-        if (ThumtooCache::scheduleFullPixels(path, edge)) {
-            return;
-        }
-        // Already inflight or settled (including prior shortfall) — stop.
-        m_imageModeNativeClimbPaths.remove(path);
-        return;
-    }
-#endif
-    // No thumtoo full API: PreferCache display only (no biltoo native open).
-    m_imageModeNativeClimbPaths.remove(path);
-    if (ThumtooCache::isAvailable()) {
-        (void)ThumtooCache::scheduleDisplayPixels(path, ImageCache::kDisplayMaxEdge);
-    }
 }
 
 void ImageView::maybeClimbImageModePixelsForView()

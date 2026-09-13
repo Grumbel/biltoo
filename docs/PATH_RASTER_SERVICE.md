@@ -68,5 +68,6 @@ display climb (Display band ≤2048). See contract §2 Full vs Display.
 - PreferCache retry via `forgetPixelsSettled` + `clearPreferGaveUp` in ImageView
 - Per-tick slideshow `ensure` for look-ahead (once per `toIdx` only)
 - Assuming PreferCache returns want edge
-- Second climb state machines beside PathRasterService
+- Second climb state machines / `scheduleDisplayPixels` outside PathRasterService
+- Pool workers calling thumtoo schedule APIs directly (use `requestEscalateClimb`)
 

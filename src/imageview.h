@@ -208,6 +208,11 @@ public:
     void finishSlideshowPreload(const QString &path, const QImage &image);
     void pumpSlideshowPreloadQueue();
     /**
+     * PathRaster Soft→PreferCache→Full (ClimbPolicy::EscalateToFull).
+     * Safe to invoke via QueuedConnection from pool workers (contract §1).
+     */
+    void requestEscalateClimb(const QString &path, int wantEdge = 0);
+    /**
      * Slideshow decode / atlas target long-edge: viewport × DPR × motion
      * headroom (Ken Burns can zoom past 1:1 cover), ladder-snapped, capped
      * at kImageLadderEdge. Not native max.
@@ -1307,9 +1312,6 @@ private:
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
     /** PreferCache + native full when zoom leaves soft samples undersampled. */
-    void scheduleImageModeNativeFullQuiet(const QString &path);
-    void finishImageModeNativeFullQuiet(const QString &path, const QImage &image,
-                                        quint64 generation);
     void maybeClimbImageModePixelsForView();
     void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
@@ -1588,8 +1590,6 @@ private:
     QSet<QString> m_provisionalSizePaths;
     /** Paths with an in-flight async size probe. */
     QSet<QString> m_sizeProbeScheduled;
-    /** Paths with a quiet native full decode in flight (Image-mode climb). */
-    QSet<QString> m_imageModeNativeClimbPaths;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */

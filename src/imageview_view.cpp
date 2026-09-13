@@ -1466,11 +1466,12 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
         soft = ThumtooCache::cachedLqipImage(path);
     }
     if (soft.isNull()) {
-        if (ThumtooCache::isAvailable()) {
+        // Soft + PreferCache/Full via PathRaster only (contract §1).
+        if (m_pathRaster) {
+            m_pathRaster->ensure(path, edge, logicalSizeForPath(path),
+                                 PathRasterService::ClimbPolicy::EscalateToFull);
+        } else if (ThumtooCache::isAvailable()) {
             (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
-            if (edge > ThumtooCache::kGalleryLadderEdge) {
-                (void)ThumtooCache::scheduleDisplayPixels(path, edge);
-            }
         }
         return {};
     }
@@ -3179,8 +3180,9 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
     if (sampleCoversNativeLogical(path, item->displayImage())) {
         return {};
     }
-    if (m_imageModeNativeClimbPaths.contains(path)) {
-        return tr("Decoding full…");
+    if (m_pathRaster && m_pathRaster->isClimbPending(path)) {
+        return m_pathRaster->isGaveUp(path) ? tr("Decoding full…")
+                                            : tr("Improving quality…");
     }
     if (ThumtooCache::isAvailable()) {
         const int want = cappedDisplayEdgeForPath(path, imageModeOnScreenNeedEdge());

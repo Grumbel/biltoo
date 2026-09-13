@@ -2,6 +2,30 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-743-path-raster-only-climb.** Remove dual Full/PreferCache climb; workers use requestEscalateClimb.
+Prior: **742**.
+
+### Problem
+Contract said PathRasterService owns PreferCache→Full, but dead
+`scheduleImageModeNativeFullQuiet` and pool `startDisplayQualityJob` still
+called `scheduleDisplayPixels` / Full directly.
+
+### Change
+- Delete native-full-quiet path + `m_imageModeNativeClimbPaths`
+- `requestEscalateClimb` — GUI-safe EscalateToFull ensure
+- Quality-job + soft-placeholder schedule only via PathRaster
+- Gallery `ensure(..., SoftDisplay)` explicit
+- Contract / PATH_RASTER anti-patterns updated
+
+### Done criteria
+- [x] Bundle **743**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-742-thumtoo-host-contract.** Normative thumtoo↔host raster contract + PathRaster ClimbPolicy.
 Prior: **741**.
 

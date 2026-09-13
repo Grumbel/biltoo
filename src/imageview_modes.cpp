@@ -64,7 +64,6 @@ void ImageView::invalidateSessionLoads()
     // paint over the first image of the new set.
     ++m_loadGeneration;
     clearPendingLoads();
-    m_imageModeNativeClimbPaths.clear();
     gallerySoftResetAll();
     m_ssRasterInflight.clear();
     m_ssRasterPending.clear();
