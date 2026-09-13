@@ -2,6 +2,32 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-758-gallery-image-crop-bake.** Gallery→Image crop not replaced by uncropped Full/native.
+Prior: **757**.
+
+### Problem
+Soft LoadReplace baked session crop correctly. Larger PreferCache/Full/native
+samples installed via `tryInstallImageModeSample` without materialize — raw
+full-frame replaced the cropped soft tile (crop looked lost).
+
+### Change
+- `tryInstallImageModeSample`: if content appearance and edge>512, bake on worker then `tryInstallImageModeSampleBaked`
+- Ladder upgrade path installs baked samples via `…Baked` (no double crop)
+
+### Apply
+```bash
+git pull …/biltoo-758-gallery-image-crop-bake.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **758**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-757-display-cap-8192.** Interim raise whole-frame display max 2048→8192.
 Prior: **756**. Tile paint still the real fix later.
 

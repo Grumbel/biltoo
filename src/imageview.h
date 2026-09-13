@@ -1311,6 +1311,8 @@ private:
     /** One ImageLoader::load when thumtoo Full settles short of on-screen need. */
     void scheduleImageModeNativeDecodeOnce(const QString &path);
     bool tryInstallImageModeSample(const QString &path, const QImage &image);
+    bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
+                                       SessionAppearance::PixelKind kind);
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
     /** PreferCache + native full when zoom leaves soft samples undersampled. */
