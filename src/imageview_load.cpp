@@ -494,13 +494,18 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     // that snapshots multi-MP on the GUI every ←/→.
     QImage display = pixelsForDisplay;
     const bool imageModeInstall = isImageMode();
-    if (!imageModeInstall) {
-        display = SessionAppearance::materializeDisplay(pixelsForDisplay, appearance, kind);
-    } else if (ImageCache::longEdge(pixelsForDisplay) <= ThumtooCache::kGalleryLadderEdge
-               && (SessionAppearance::hasContentAppearance(appearance)
-                   || !appearance.colorAdjust.isIdentity())) {
-        // Soft/LQIP pending path may still need a cheap bake on GUI.
-        display = SessionAppearance::materializeDisplay(pixelsForDisplay, appearance, kind);
+    const bool hasCrop = appearance.hasCrop && !appearance.cropRect.isEmpty();
+    // Image mode used to skip materialize for FullSource, then set intrinsic from
+    // full-path logical size — after a session crop that re-stretched the baked
+    // crop into the full frame. Bake content (crop/flip/turns) whenever present.
+    const bool needMaterialize =
+        !imageModeInstall
+        || hasCrop
+        || SessionAppearance::hasContentAppearance(appearance)
+        || !appearance.colorAdjust.isIdentity();
+    if (needMaterialize) {
+        display = SessionAppearance::materializeDisplay(
+            pixelsForDisplay, appearance, kind);
     }
 
     if (kind == SessionAppearance::PixelKind::FullSource) {
@@ -509,14 +514,19 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         } else {
             item->setSourceImage(display);
         }
-        // Logical size from path — FullSource may be a ladder step, not geometry.
-        QSize logical = logicalSizeForPath(path);
-        if (!isPositiveSize(logical) || logical.width() <= 1 || logical.height() <= 1
-            || isProvisionalImageSize(path)) {
-            logical = layoutSizeForPath(path, display);
-        }
-        if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
-            item->setIntrinsicSize(logical);
+        if (hasCrop && display.width() > 1 && display.height() > 1) {
+            // Cropped display identity is the baked sample — not full-file logical.
+            item->setIntrinsicSize(display.size());
+        } else {
+            // Logical size from path — FullSource may be a ladder step, not geometry.
+            QSize logical = logicalSizeForPath(path);
+            if (!isPositiveSize(logical) || logical.width() <= 1 || logical.height() <= 1
+                || isProvisionalImageSize(path)) {
+                logical = layoutSizeForPath(path, display);
+            }
+            if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
+                item->setIntrinsicSize(logical);
+            }
         }
         item->setCacheMode(QGraphicsItem::NoCache);
         item->update();

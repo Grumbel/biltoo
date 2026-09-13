@@ -574,11 +574,20 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,
         return false;
     }
     const QPointF off = offset();
-    const int dw = qMax(1, qRound(local.width()));
-    const int dh = qMax(1, qRound(local.height()));
+    // localRect is in intrinsic/content space; m_source may be a different
+    // resolution (PreferCache). Map to source pixels so the bake matches paint.
+    const QSize isz = imageSize();
+    const qreal sx = (isz.width() > 0)
+        ? (qreal(m_source.width()) / qreal(isz.width()))
+        : 1.0;
+    const qreal sy = (isz.height() > 0)
+        ? (qreal(m_source.height()) / qreal(isz.height()))
+        : 1.0;
+    const int dw = qMax(1, qRound(local.width() * sx));
+    const int dh = qMax(1, qRound(local.height() * sy));
     // Centre of the crop in source pixel coordinates.
-    const QPointF srcCenter(local.center().x() - off.x(),
-                            local.center().y() - off.y());
+    const QPointF srcCenter((local.center().x() - off.x()) * sx,
+                            (local.center().y() - off.y()) * sy);
 
     QImage::Format fmt = m_source.format();
     if (fmt == QImage::Format_Invalid) {
@@ -592,8 +601,8 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,
     QImage cropped;
     const bool rotated = std::abs(rotationDegrees) > 0.05;
     if (!rotated) {
-        const int dx = qRound(local.left() - off.x());
-        const int dy = qRound(local.top() - off.y());
+        const int dx = qRound((local.left() - off.x()) * sx);
+        const int dy = qRound((local.top() - off.y()) * sy);
         const QRect bounds(0, 0, m_source.width(), m_source.height());
         const QRect destBounds(dx, dy, dw, dh);
         const QRect srcRect = destBounds.intersected(bounds);
@@ -636,10 +645,9 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,
     m_hFlip = false;
     m_vFlip = false;
     // Baked crop is the new display identity: pixels and logical box must match
-    // (SIZE.md). Leaving full-frame intrinsic stretched the crop into the old
-    // contentRect — the reported "cropped image stretched to full size" bug.
+    // (SIZE.md). Always use the actual sample size — never full-frame intrinsic.
     setSourceImageReady(cropped);
-    setIntrinsicSize(QSize(dw, dh));
+    setIntrinsicSize(cropped.size());
     return true;
 }
 

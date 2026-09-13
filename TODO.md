@@ -2,6 +2,31 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-731-crop-no-stretch.** Crop bake + reinstall keep intrinsic = baked pixel size.
+Prior: **730**.
+
+### Problem
+After Apply, Image-mode ladder/PreferCache reinstalls called `installDisplayPixels`
+with full-path logical size as intrinsic while session crop left (or re-baked)
+smaller pixels → paint stretched the crop into the full frame. Peer sync used
+`setSourceImage` without copying intrinsic.
+
+### Change
+- `cropToLocalRect`: map crop rect intrinsic→source resolution; intrinsic = `cropped.size()`
+- `installDisplayPixels`: materialize session crop; intrinsic from display when `hasCrop`
+- `applyContentToItem`: set intrinsic from baked size when hasCrop
+- Peer sync: `setSourceImageReady` + copy `imageSize()`
+- `applyCropCommit`: re-assert intrinsic from source after bake
+
+### Done criteria
+- [x] Bundle **731**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-730-crop-apply-intrinsic.** cropToLocalRect sets intrinsic to the baked crop size.
 Prior: **729**.
 

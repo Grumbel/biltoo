@@ -327,7 +327,15 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     item->setContentVFlip(state.contentVFlip);
     item->setSessionCrop(state.hasCrop, state.cropRect);
     item->setColorAdjustments(state.colorAdjust);
-    syncItemLayoutToContentOrientation(item, state);
+    if (state.hasCrop && !state.cropRect.isEmpty()) {
+        // Baked crop pixels define the display box — do not keep full-file layout.
+        const QSize baked = item->sourceImage().size();
+        if (baked.width() > 1 && baked.height() > 1) {
+            item->setIntrinsicSize(baked);
+        }
+    } else {
+        syncItemLayoutToContentOrientation(item, state);
+    }
 }
 
 void syncItemLayoutToContentOrientation(ImageItem *item,

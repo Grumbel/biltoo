@@ -1087,6 +1087,12 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // Scene position of the crop-frame centre — new pixels stay here.
         const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
         if (item->cropToLocalRect(m_cropRect, backgroundColor(), m_cropRotation)) {
+            // cropToLocalRect sets intrinsic to the bake; re-assert after any
+            // path-size logic so Image mode never keeps the full-frame box.
+            const QSize baked = item->sourceImage().size();
+            if (baked.width() > 1 && baked.height() > 1) {
+                item->setIntrinsicSize(baked);
+            }
             // Keep stashed Gallery tiles: commitItemSessionEdit peer-syncs
             // cropped pixels. Invalidating forced a full-size probe + pack
             // then a crop decode without repack → tiny tiles on return.

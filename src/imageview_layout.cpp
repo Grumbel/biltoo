@@ -703,7 +703,12 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
         // Already-baked display pixels from the edited peer — do not re-run
         // installDisplayPixels / applyContentToItem (would double-crop).
         if (!src.isNull()) {
-            other->setSourceImage(src);
+            other->setSourceImageReady(src);
+            // Keep geometry with baked pixels (crop shrink must not leave full intrinsic).
+            const QSize sz = item->imageSize();
+            if (sz.width() > 1 && sz.height() > 1) {
+                other->setIntrinsicSize(sz);
+            }
         } else if (!item->previewImage().isNull()) {
             // Soft Gallery: content bake lives on the preview; peers must match.
             other->setPreviewImage(item->previewImage());
