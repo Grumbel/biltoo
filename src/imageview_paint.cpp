@@ -554,6 +554,8 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             if (m_slideshowTimelineTotalMs > 0) {
                 fraction = qreal(m_slideshowTimelineElapsedMs)
                     / qreal(m_slideshowTimelineTotalMs);
+            } else if (m_slideshowCycleProgressValid) {
+                fraction = m_slideshowCycleProgress01;
             } else if (m_slideshowProgressIntervalMs > 0) {
                 qint64 elapsed = m_slideshowProgressBaseMs;
                 if (!m_slideshowProgressClockPaused

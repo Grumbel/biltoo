@@ -7,6 +7,8 @@
 
 #include <QDebug>
 #include "biltoo_logging.h"
+#include <cmath>
+#include <QtMath>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -1458,40 +1460,14 @@ void MainWindow::showSlideshowSettings()
 
 void MainWindow::remapSlideshowPhase(int oldIntervalMs, int newIntervalMs)
 {
-    // Map elapsed under oldInterval → same cycle index + normalized phase under
-    // newInterval. Keeps the visible slide; avoids a full dwell restart when
-    // the user edits interval while the show is running or paused.
-    if (oldIntervalMs <= 0) {
-        oldIntervalMs = 1;
-    }
-    if (newIntervalMs <= 0) {
-        newIntervalMs = 1;
-    }
-    const int n = m_session.paths().size();
-    if (n <= 0 || !m_slideshowClockRunning) {
-        return;
-    }
-
-    qint64 elapsed = m_slideshowPausedAccumMs;
-    if (!m_slideshowPaused && m_slideshowClock.isValid()) {
-        elapsed += m_slideshowClock.elapsed();
-    }
-    if (elapsed < 0) {
-        elapsed = 0;
-    }
-
-    const qint64 cycle = elapsed / oldIntervalMs;
-    const qreal phaseT = qreal(elapsed % oldIntervalMs) / qreal(oldIntervalMs);
-
-    m_slideshowBaseIndex = int((qint64(m_slideshowBaseIndex) + cycle) % n);
-    // Stay strictly inside the cycle so we do not land on a sticky "done" edge.
-    const qint64 newPhase =
-        qBound(qint64(0), qint64(qRound(phaseT * qreal(newIntervalMs))),
-               qint64(newIntervalMs) - 1);
-    m_slideshowPausedAccumMs = newPhase;
+    // Position is unitless [slide + phase]. Interval only affects how fast
+    // wall time advances m_slideshowPosition — no absolute-ms remap.
+    Q_UNUSED(oldIntervalMs);
+    Q_UNUSED(newIntervalMs);
     m_slideshowTransitionCycle = -1;
-    m_slideshowPendingToIndex = -1;
-    if (!m_slideshowPaused) {
+    if (!m_slideshowPaused && m_slideshowClockRunning) {
+        // Restart rate sample so the next tick does not apply a large dt under
+        // the new interval after a long settings dialog pause.
         m_slideshowClock.start();
     }
 }
@@ -1510,6 +1486,7 @@ void MainWindow::armSlideshowAdvanceTimer()
 
     m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
     m_slideshowPausedAccumMs = 0;
+    m_slideshowPosition = 0.0;
     m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
     m_slideshowClock.start();
@@ -1536,14 +1513,10 @@ void MainWindow::armSlideshowAdvanceTimer()
 void MainWindow::updateSlideshowFromClock()
 {
     // ------------------------------------------------------------------
-    // Pure scheduler: wall clock is the only authority for *when* and
-    // *which* pair (fromIdx → toIdx). ImageView only renders a transition
-    // when asked; its finished signal installs the session index but does
-    // not schedule the next step.
-    //
-    // elapsed → cycle → (fromIdx, toIdx, phase)
-    // phase < pureMs  → show fromIdx only
-    // phase ≥ pureMs  → one transition fromIdx→toIdx per cycle
+    // Unitless position model:
+    //   m_slideshowPosition = cycles since arm + phase in [0,1)
+    //   wall Δt advances position by Δt / intervalMs
+    // Interval / speed changes only alter the rate — position is unchanged.
     // ------------------------------------------------------------------
     if (m_slideshowPaused || !m_slideshowClockRunning || !m_slideshowTimer) {
         return;
@@ -1560,45 +1533,55 @@ void MainWindow::updateSlideshowFromClock()
     int transitionMs = m_imageView ? m_imageView->slideshowTransitionDurationMs() : 0;
     transitionMs = qBound(0, transitionMs, intervalMs);
     const int pureMs = intervalMs - transitionMs;
+    const qreal pureFrac =
+        (intervalMs > 0) ? qreal(pureMs) / qreal(intervalMs) : 1.0;
 
-    const qint64 elapsed = m_slideshowPausedAccumMs + m_slideshowClock.elapsed();
-    const qint64 cycle = elapsed / intervalMs;
-    const int phaseMs = int(elapsed % intervalMs);
+    // Integrate wall time into unitless position (rate = 1/interval).
+    qint64 wallDelta = 0;
+    if (m_slideshowClock.isValid()) {
+        wallDelta = m_slideshowClock.restart();
+    } else {
+        m_slideshowClock.start();
+    }
+    if (wallDelta < 0) {
+        wallDelta = 0;
+    }
+    // Suspend / debug stall: do not skip many slides in one tick.
+    if (wallDelta > qint64(intervalMs) * 3) {
+        wallDelta = intervalMs;
+    }
+    m_slideshowPosition += qreal(wallDelta) / qreal(intervalMs);
+
+    const qreal cycleF = qFloor(m_slideshowPosition);
+    const qreal phaseT = m_slideshowPosition - cycleF; // [0,1)
+    const qint64 cycle = qint64(cycleF);
     const int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
     const int toIdx = (fromIdx + 1) % n;
 
-    // HUD: session loop position (video-player style).
+    // Session timeline HUD (video-player style) in ms for display only.
     if (m_imageView) {
+        const qreal sessionPos =
+            std::fmod(qreal(m_slideshowBaseIndex) + m_slideshowPosition, qreal(n));
+        const qreal sessionPosPos = sessionPos < 0.0 ? sessionPos + qreal(n) : sessionPos;
         const qint64 totalMs = qint64(n) * qint64(intervalMs);
-        const qint64 raw =
-            qint64(m_slideshowBaseIndex) * qint64(intervalMs) + elapsed;
-        m_imageView->setSlideshowTimeline(totalMs > 0 ? (raw % totalMs) : 0, totalMs);
-        // Preload only when the pure-phase pair advances — every 16ms tick
-        // used to poke three preloads and keep the pool busy under rapid flip.
-        static int s_lastPreloadFrom = -1;
-        static int s_lastPreloadTo = -1;
-        if (fromIdx != s_lastPreloadFrom || toIdx != s_lastPreloadTo) {
-            s_lastPreloadFrom = fromIdx;
-            s_lastPreloadTo = toIdx;
-            // Look-ahead: current pair + next two so target-edge rasters are in
-            // the map before pure phase locks them at path entry.
-            m_imageView->preloadSlideshowImage(m_session.paths().at(fromIdx));
-            m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
-            m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 1) % n));
-            m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 2) % n));
-            m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 3) % n));
-        }
+        const qint64 elapsedMs =
+            totalMs > 0 ? qint64(sessionPosPos * qreal(intervalMs)) % totalMs : 0;
+        m_imageView->setSlideshowTimeline(elapsedMs, totalMs);
+        // Per-cycle dwell fraction for the thin progress line.
+        m_imageView->setSlideshowCycleProgress(phaseT);
     }
 
-    // Pure phase drive — no beginLive / busy / cancel for Crossfade.
-    // Every tick: set buffers + fadeT from wall arithmetic; blit does the rest.
-    // Do NOT call setSlideshowProgress here — it restarts the dwell elapsed
-    // timer and made pause/resume and the progress line jump.
+    if (m_imageView && m_session.paths().size() > 1) {
+        m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
+        m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 1) % n));
+        m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 2) % n));
+        m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 3) % n));
+    }
 
     const QString fromPath = m_session.paths().at(fromIdx);
     const QString toPath = m_session.paths().at(toIdx);
 
-    if (phaseMs < pureMs || transitionMs <= 0) {
+    if (phaseT < pureFrac || transitionMs <= 0) {
         if (m_imageView) {
             m_imageView->setSlideshowPhase(fromPath, QString(), -1.0);
         }
@@ -1612,15 +1595,14 @@ void MainWindow::updateSlideshowFromClock()
         return;
     }
 
-    // Transition window: pure phase only (Crossfade / FadeBlack / Slide / None).
-    // Legacy prepareSlideshowTransition + live dual-blit path is retired —
-    // wall clock is the only scheduler (SLIDESHOW.md).
-    const qreal t = qBound(0.0, qreal(phaseMs - pureMs) / qreal(transitionMs), 1.0);
+    const qreal denom = 1.0 - pureFrac;
+    const qreal t =
+        denom > 1e-9 ? qBound(0.0, (phaseT - pureFrac) / denom, 1.0) : 1.0;
     if (m_imageView) {
         if (m_slideshowTransitionCycle != cycle) {
             qCDebug(lcSlideshow).nospace()
                 << "[slideshow] phase-fade cycle=" << cycle
-                << " phase=" << phaseMs
+                << " phaseT=" << QString::number(phaseT, 'f', 3)
                 << " t=" << QString::number(t, 'f', 3)
                 << " from=" << fromIdx
                 << " to=" << toIdx
@@ -1628,11 +1610,8 @@ void MainWindow::updateSlideshowFromClock()
             m_slideshowTransitionCycle = cycle;
             m_slideshowPendingToIndex = toIdx;
         }
-        // Transition::None still drives phase with t so the clock commits;
-        // paint treats None as a cut (to frame only when t past midpoint optional).
         m_imageView->setSlideshowPhase(fromPath, toPath, t);
-        const bool transitionDone =
-            (t >= 1.0 - 1e-6) || (phaseMs >= intervalMs - 1);
+        const bool transitionDone = (t >= 1.0 - 1e-6);
         if (transitionDone && m_currentIndex != toIdx && !m_slideshowAdvancing) {
             m_slideshowAdvancing = true;
             setCurrentIndex(toIdx);

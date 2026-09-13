@@ -732,6 +732,8 @@ public:
      * Drawn only while the full HUD is pinned and a slideshow is active.
      */
     void setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs);
+    /** Per-cycle phase in [0,1] from host unitless clock. */
+    void setSlideshowCycleProgress(qreal phase01);
 
     void setSlideshowTransition(SlideshowTransition kind);
     SlideshowTransition slideshowTransition() const { return m_slideshowTransition; }
@@ -1681,6 +1683,8 @@ private:
     QTimer *m_slideshowProgressTimer = nullptr;
     /** Overall timeline for extended HUD (video-player style). total<=0 = off. */
     qint64 m_slideshowTimelineElapsedMs = 0;
+    qreal m_slideshowCycleProgress01 = 0.0;
+    bool m_slideshowCycleProgressValid = false;
     qint64 m_slideshowTimelineTotalMs = 0;
     SlideshowTransition m_slideshowTransition = SlideshowTransition::Crossfade;
     int m_slideshowTransitionDurationMs = 400;

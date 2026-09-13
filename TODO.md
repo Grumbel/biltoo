@@ -2,6 +2,22 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-711-slideshow-unitless-phase.** Continuous [0,1) phase; interval only sets rate.
+Prior: **710**.
+
+### Model
+`m_slideshowPosition` = cycles + phase in [0,1). Each tick: `position += Δt / intervalMs`.
+Speed change does not remap absolute ms — position is unchanged.
+
+### Done criteria
+- [x] Bundle **711**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-710-slideshow-speed-no-blip.** Interval edits do not restart phase/motion/atlas.
 Prior: **709**.
 

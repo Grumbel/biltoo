@@ -184,3 +184,15 @@ a burst).
 
 Slideshow `qCDebug` traces (`[slideshow]…`, `[slideshow-paint]…`) are off by
 default. Run with **`--debug`** to enable category `biltoo.slideshow`.
+
+
+## Unitless phase (host clock)
+
+Authority is continuous **position** (slide units), not absolute milliseconds:
+
+- `position += wallΔt / intervalMs`
+- phase in cycle = fractional part ∈ [0,1)
+- fadeT derived from phase vs pureFrac = pureMs/interval
+
+Changing interval only changes the **rate**. Position (and therefore the
+visible slide + fade progress) is unchanged — no ms remap, no blip.

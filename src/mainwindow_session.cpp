@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include <QtMath>
 #include "thumtoocache.h"
 #include "projectfile.h"
 #include "archivepath.h"
@@ -2548,20 +2549,23 @@ void MainWindow::seekSlideshowFraction(qreal fraction)
     if (intervalMs <= 0) {
         intervalMs = 1;
     }
-    const qint64 totalMs = qint64(n) * qint64(intervalMs);
-    const qint64 target = qint64(qRound(fraction * qreal(totalMs)));
-    // Timeline zero at base 0 so fraction maps the whole session loop.
+    // Unitless seek: position covers the whole session loop [0, n).
     m_slideshowBaseIndex = 0;
-    m_slideshowPausedAccumMs = target;
+    m_slideshowPosition = fraction * qreal(n);
+    m_slideshowPausedAccumMs = 0;
     m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
     if (!m_slideshowPaused) {
         m_slideshowClock.start();
     }
-    const int idx = int((target / intervalMs) % n);
+    const int idx = int(qFloor(m_slideshowPosition)) % n;
+    const qreal phaseT = m_slideshowPosition - qFloor(m_slideshowPosition);
+    const qint64 totalMs = qint64(n) * qint64(intervalMs);
+    const qint64 elapsedMs = qint64(m_slideshowPosition * qreal(intervalMs)) % totalMs;
     if (m_imageView) {
         m_imageView->cancelSlideshowTransition();
-        m_imageView->setSlideshowTimeline(target % totalMs, totalMs);
+        m_imageView->setSlideshowTimeline(elapsedMs, totalMs);
+        m_imageView->setSlideshowCycleProgress(phaseT);
     }
     if (idx != m_currentIndex && !m_slideshowAdvancing) {
         m_slideshowAdvancing = true;
@@ -2581,8 +2585,15 @@ void MainWindow::pauseSlideshow()
     if (!m_slideshowClockRunning || m_slideshowPaused) {
         return;
     }
-    // Freeze elapsed: fold running segment into accumulator, stop tick.
-    m_slideshowPausedAccumMs += m_slideshowClock.elapsed();
+    // Fold last wall segment into unitless position, then freeze.
+    if (m_slideshowClock.isValid()) {
+        int intervalMs = m_slideshowIntervalMs > 0 ? m_slideshowIntervalMs : 1;
+        const qint64 wallDelta = m_slideshowClock.elapsed();
+        if (wallDelta > 0) {
+            m_slideshowPosition += qreal(wallDelta) / qreal(intervalMs);
+        }
+    }
+    m_slideshowPausedAccumMs = 0; // position is authoritative
     m_slideshowPaused = true;
     m_slideshowPendingToIndex = -1;
     if (m_slideshowTimer) {
@@ -2648,6 +2659,7 @@ void MainWindow::stopSlideshow()
     m_slideshowPaused = false;
     m_slideshowClockRunning = false;
     m_slideshowPausedAccumMs = 0;
+    m_slideshowPosition = 0.0;
     m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
     if (m_slideshowTimer) {

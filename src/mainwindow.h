@@ -684,6 +684,13 @@ private:
     /** Pure time base: elapsed since start (minus paused gaps). */
     QElapsedTimer m_slideshowClock;
     qint64 m_slideshowPausedAccumMs = 0;
+    /**
+     * Continuous slideshow position in "slide units": integer part is cycles
+     * since arm (added to base index), fractional part is phase in [0,1) within
+     * the current cycle. Interval only scales wall-time → d(position)/dt —
+     * never needs remap on speed change.
+     */
+    qreal m_slideshowPosition = 0.0;
     /** Session index at clock zero; cycle adds on top. */
     int m_slideshowBaseIndex = 0;
     /** Cycle number for which we already started a transition (-1 = none). */

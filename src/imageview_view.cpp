@@ -720,6 +720,13 @@ void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
 }
 
 
+void ImageView::setSlideshowCycleProgress(qreal phase01)
+{
+    m_slideshowCycleProgress01 = qBound(0.0, phase01, 1.0);
+    m_slideshowCycleProgressValid = true;
+}
+
+
 void ImageView::setSlideshowTransition(SlideshowTransition kind)
 {
     if (m_slideshowTransition == kind) {
