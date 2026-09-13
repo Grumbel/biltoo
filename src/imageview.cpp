@@ -172,12 +172,31 @@ m_pathRaster = new PathRasterService(this);
     connect(m_pathRaster, &PathRasterService::rasterImproved, this,
             [this](const QString &path, int longEdge) {
                 Q_UNUSED(longEdge);
-                if (m_slideshowProgressActive && !path.isEmpty()
+                if (path.isEmpty()) {
+                    return;
+                }
+                const QImage img = ImageCache::get(path);
+                if (img.isNull()) {
+                    return;
+                }
+                if (m_slideshowProgressActive
                     && (path == m_ssFromPath || path == m_ssToPath)) {
-                    const QImage img = ImageCache::get(path);
-                    if (!img.isNull()) {
-                        onSlideshowRasterReady(path, img);
+                    onSlideshowRasterReady(path, img);
+                    return;
+                }
+                if (isImageMode() && !m_slideshowProgressActive
+                    && path == classicPath()) {
+                    (void)tryInstallImageModeSample(path, img);
+                    // PreferCache plateaued below viewport need → quiet native.
+                    if (m_pathRaster && m_pathRaster->isGaveUp(path)
+                        && !sampleCoversNativeLogical(path, img)) {
+                        const int need = imageModeOnScreenNeedEdge();
+                        if (need > 0
+                            && !ImageCache::adequate(img, need)) {
+                            scheduleImageModeNativeFullQuiet(path);
+                        }
                     }
+                    emit statusChanged();
                 }
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,

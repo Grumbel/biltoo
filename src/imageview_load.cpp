@@ -1454,8 +1454,7 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
                 qPrintable(QFileInfo(path).fileName()), req, image.width(),
                 image.height());
     }
-    // Record PreferCache shortfall before install so ensure does not re-queue.
-    noteImageModePreferCacheDelivery(path, maxEdge, image);
+    // PathRasterService already recorded this delivery in onLadderReady.
     (void)tryInstallImageModeSample(path, image);
 }
 
@@ -1992,28 +1991,14 @@ ImageItem *ImageView::imageModeItemForPath(const QString &path) const
 
 void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantEdge)
 {
-    if (!ThumtooCache::isAvailable() || path.isEmpty() || m_slideshowNavHot) {
+    if (!m_pathRaster || path.isEmpty() || m_slideshowNavHot) {
         return;
     }
-    if (ImageItem *it = imageModeItemForPath(path)) {
-        if (it->displayPixelLongEdge() <= 0) {
-            biltooLoadDbg("WARN preferCache before soft paint path=%s want=%d",
-                          qPrintable(QFileInfo(path).fileName()), wantEdge);
-        }
-    }
-    ImageModeClimbState &st = m_imageModeClimb[path];
     const int edge = cappedDisplayEdgeForPath(
         path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
-    if (!st.shouldScheduleDisplay(edge)) {
-        return;
-    }
-    st.markDisplayScheduled(edge);
-    biltooLoadDbg("preferCacheClimb path=%s edge=%d have=%d",
-                  qPrintable(QFileInfo(path).fileName()), edge, st.have);
-    ThumtooCache::scheduleProbe(path);
-    // Soft band once; settled soft skips re-queue (no forgetPixelsSettled).
-    (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
-    (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+    biltooLoadDbg("preferCacheClimb(service) path=%s edge=%d",
+                  qPrintable(QFileInfo(path).fileName()), edge);
+    m_pathRaster->ensure(path, edge, logicalSizeForPath(path));
 }
 
 void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &path,
@@ -2082,47 +2067,25 @@ bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &ima
 void ImageView::noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                                  const QImage &sample)
 {
-    // PreferCache shortfall (tile_synth plateau): stop re-requesting the same edge.
-    if (path.isEmpty()) {
-        return;
-    }
-    ImageModeClimbState &st = m_imageModeClimb[path];
-    const bool wasGaveUp = st.preferGaveUp;
-    st.noteDelivery(requestEdge, ImageCache::longEdge(sample));
-    if (!wasGaveUp && st.preferGaveUp) {
-        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-            dbg && dbg[0] && dbg[0] != '0') {
-            fprintf(stderr,
-                    "biltoo/image: PreferCache gave up path=%s req=%d got=%d\n",
-                    qPrintable(QFileInfo(path).fileName()), requestEdge,
-                    ImageCache::longEdge(sample));
-        }
+    if (m_pathRaster && !path.isEmpty()) {
+        m_pathRaster->noteDelivery(path, requestEdge, sample);
     }
 }
 
 void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
 {
-    // Soft is already on screen (or pending). Request higher tiers in the
-    // background only — never block the GUI, never cancel soft display.
-    // High-res PreferCache (up to kImageLadderEdge / on-screen need) always
-    // runs; native extract is a last resort after PreferCache plateaus.
-    if (path.isEmpty() || m_slideshowNavHot) {
+    if (path.isEmpty() || m_slideshowNavHot || !m_pathRaster) {
+        return;
+    }
+    if (m_slideshowProgressActive) {
         return;
     }
     if (!sample.isNull() && sampleCoversNativeLogical(path, sample)) {
-        m_imageModeClimb.remove(path);
         return;
     }
 
     const int need = imageModeOnScreenNeedEdge();
     const int have = sample.isNull() ? 0 : ImageCache::longEdge(sample);
-    ImageModeClimbState &st = m_imageModeClimb[path];
-    if (!sample.isNull()) {
-        st.have = qMax(st.have, have);
-    }
-
-    // Background target: at least overview, prefer on-screen need, never past
-    // native long edge (or ladder max when native is still unknown).
     int climbTo = ThumtooCache::kBatchOverviewEdge;
     if (need > 0) {
         climbTo = qMax(climbTo, need);
@@ -2131,19 +2094,16 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
         climbTo = ThumtooCache::kGalleryLadderEdge;
     }
     climbTo = cappedDisplayEdgeForPath(path, climbTo);
-
-    // Already at/above the achievable target — stop (avoids 1024→2048 on 1920).
     if (have > 0 && coversEdge(have, climbTo)) {
-        m_imageModeClimb.remove(path);
         return;
     }
-
-    if (!st.preferGaveUp) {
-        scheduleImageModePreferCacheClimb(path, climbTo);
-    } else if (need > 0 && !coversEdge(have, need)) {
-        // PreferCache plateaued below viewport need — quiet native as fallback.
+    if (m_pathRaster->isGaveUp(path) && need > 0 && !coversEdge(have, need)) {
         scheduleImageModeNativeFullQuiet(path);
+        return;
     }
+    biltooLoadDbg("imageModeClimb(service) path=%s climbTo=%d have=%d need=%d",
+                  qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
+    m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path));
 }
 
 bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &image)

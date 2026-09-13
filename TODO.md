@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-709-image-mode-path-raster.** Image-mode PreferCache climb uses PathRasterService.
+Prior: **708**.
+
+### Change
+- `ensureImageModeQualityClimb` / `scheduleImageModePreferCacheClimb` → `m_pathRaster->ensure`
+- `rasterImproved` installs Image-mode samples + native fallback on PreferCache gave-up
+- `noteImageModePreferCacheDelivery` forwards to the service
+
+### Next
+- Gallery soft onto PathRasterService
+- Drop dead `m_imageModeClimb` if fully unused
+
+### Done criteria
+- [x] Bundle **709**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-708-path-raster-service.** Central PathRasterService; slideshow uses it for climb.
 Prior: **707**.
 

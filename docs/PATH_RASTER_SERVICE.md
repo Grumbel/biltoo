@@ -38,7 +38,14 @@ invalidateAll()                        → session switch
 cache. Phase buffers update on `rasterImproved`. Atlas rebuild policy stays on
 ImageView (viewport-sized texture).
 
-## Next (not this tip)
+## Consumers
 
-- Move Image-mode PreferCache climb onto PathRasterService
+| Consumer | How |
+|----------|-----|
+| Slideshow | `preloadSlideshowImage` → `ensure`; install on `rasterImproved` |
+| Image mode | `ensureImageModeQualityClimb` → `ensure`; install on `rasterImproved` / ladderReady |
+
+## Next
+
 - Move gallery soft schedule onto the same service (or a thin wrapper)
+- Retire residual `m_imageModeClimb` state if unused
