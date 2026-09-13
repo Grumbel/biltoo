@@ -744,6 +744,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
     if (item) {
         const QSize sizeBefore = item->imageSize();
+        // Before path/geometry change: remember where the user was looking
+        // (sticky Fill / 1:1 prev-next comparison).
+        captureStickyPanAnchor(item);
         item->setPath(path);
         bindImageModeSessionCursor(item);
         if (!path.isEmpty()) {
@@ -769,9 +772,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 || qAbs(double(sizeBefore.width()) / qMax(1, sizeBefore.height())
                         - double(targetSize.width()) / qMax(1, targetSize.height()))
                        > 0.02;
-            if (needFit) {
-                // Aspect change: must reframe or soft is painted under the old
-                // view matrix and is effectively invisible / letterboxed wrong.
+            if (needFit || m_stickyZoomEnabled) {
+                // Aspect change or sticky framing: reframe. Sticky Fill/1:1 then
+                // restores normalized pan for prev/next comparison.
                 resetImageModeItemPlacement(item);
                 applyImageModeFraming(item);
                 didFit = 1;
@@ -796,6 +799,10 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         return;
     }
 
+    // No reusable item — still try to capture from whatever was on the canvas.
+    if (!m_items.isEmpty()) {
+        captureStickyPanAnchor(m_items.first());
+    }
     clearLiveCanvas();
     item = createPlaceholderItem(path, sz);
     if (!item) {

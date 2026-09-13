@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-771-sticky-pan-best-effort.** Sticky Fill/1:1 keep relative viewport centre across nav.
+Prior: **770**.
+
+### Behaviour
+- Before image switch: store viewport centre as normalized (0–1) position in the image
+- After sticky Fill / 1:1 framing: `centerOn` that relative point on the new image
+- Sticky Fit still centres only (no pan)
+
+### Apply
+```bash
+git pull /path/to/biltoo-771-sticky-pan-best-effort.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **771**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-770-sticky-toggle-fit-fill-1to1.** Fit/Fill/1:1 are sticky toggles; no extra button.
 Prior: **769**.
 

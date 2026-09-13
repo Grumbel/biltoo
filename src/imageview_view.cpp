@@ -497,26 +497,72 @@ void ImageView::setStickyZoomKind(StickyZoomKind kind)
     m_stickyZoomKind = kind;
 }
 
+void ImageView::captureStickyPanAnchor(ImageItem *item)
+{
+    m_haveStickyPanAnchor = false;
+    // Fit fills the view — no meaningful pan to carry.
+    if (!m_stickyZoomEnabled || m_stickyZoomKind == StickyZoomKind::Fit) {
+        return;
+    }
+    if (!item || !viewport()) {
+        return;
+    }
+    const QRectF r = item->sceneBoundingRect();
+    if (r.width() < 1.0 || r.height() < 1.0) {
+        return;
+    }
+    const QPointF vc = mapToScene(viewport()->rect().center());
+    m_stickyPanNormX = (vc.x() - r.left()) / r.width();
+    m_stickyPanNormY = (vc.y() - r.top()) / r.height();
+    m_stickyPanNormX = qBound(0.0, m_stickyPanNormX, 1.0);
+    m_stickyPanNormY = qBound(0.0, m_stickyPanNormY, 1.0);
+    m_haveStickyPanAnchor = true;
+}
+
+void ImageView::restoreStickyPanAnchor(ImageItem *item)
+{
+    if (!m_haveStickyPanAnchor || !item) {
+        return;
+    }
+    const QRectF r = item->sceneBoundingRect();
+    if (r.width() < 1.0 || r.height() < 1.0) {
+        return;
+    }
+    const QPointF target(r.left() + m_stickyPanNormX * r.width(),
+                         r.top() + m_stickyPanNormY * r.height());
+    centerOn(target);
+}
+
 void ImageView::applyImageModeFraming(ImageItem *item)
 {
     if (!item || !isImageMode()) {
         return;
     }
     if (m_stickyZoomEnabled) {
-        // Always re-centre. Mapping pan across different sizes/aspects is
-        // ambiguous (Fit is the only mode with a unique "home" pose).
+        // Fit: unique home pose (centred). Fill / 1:1: scale first, then best-effort
+        // restore the previous viewport centre in image-normalized coordinates
+        // (useful for prev/next comparison at the same relative spot).
         switch (m_stickyZoomKind) {
         case StickyZoomKind::Fill:
             m_fitMode = true;
             m_fillMode = true;
             fitItem(item, Qt::KeepAspectRatioByExpanding);
+            restoreStickyPanAnchor(item);
             break;
         case StickyZoomKind::Actual:
             m_fitMode = false;
             m_fillMode = false;
             item->setItemScale(1.0);
             resetTransform();
-            centerOn(item);
+            if (m_haveStickyPanAnchor) {
+                // sceneRect before centre so scroll range exists
+                if (m_scene) {
+                    m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+                }
+                restoreStickyPanAnchor(item);
+            } else {
+                centerOn(item);
+            }
             break;
         case StickyZoomKind::Fit:
         default:
@@ -529,6 +575,10 @@ void ImageView::applyImageModeFraming(ImageItem *item)
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
         }
         refreshScrollBarGeometry();
+        // Fill: sceneRect/fitInView can reset scroll — restore pan after that.
+        if (m_stickyZoomKind == StickyZoomKind::Fill) {
+            restoreStickyPanAnchor(item);
+        }
         return;
     }
     // Non-sticky: Fit/Fill follow flags; 1:1 keeps native scale centred.

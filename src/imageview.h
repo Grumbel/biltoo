@@ -607,6 +607,9 @@ public:
     StickyZoomKind stickyZoomKind() const { return m_stickyZoomKind; }
     /** Image-mode framing after soft/full install (honours sticky zoom). */
     void applyImageModeFraming(ImageItem *item);
+    /** Best-effort: remember viewport centre in image-normalized coords. */
+    void captureStickyPanAnchor(ImageItem *item);
+    void restoreStickyPanAnchor(ImageItem *item);
     /**
      * One-shot rubber-band zoom: next left-drag selects a region to zoom into.
      * Esc cancels. Bound to Z from the main window.
@@ -1677,6 +1680,9 @@ private:
     bool m_fillMode = false;
     bool m_stickyZoomEnabled = false;
     StickyZoomKind m_stickyZoomKind = StickyZoomKind::Fit;
+    bool m_haveStickyPanAnchor = false;
+    qreal m_stickyPanNormX = 0.5;
+    qreal m_stickyPanNormY = 0.5;
     ViewMode m_viewMode = ViewMode::Image;
     bool m_imageModeNavEnabled = false;
     bool m_galleryReturnAvailable = false;
