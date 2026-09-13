@@ -2,6 +2,21 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-739-ladder-lambda-null-warn.** Silence -Wnull-dereference in ladder bake GUI slot.
+Prior: **738**.
+
+### Change
+- Resolve `QPointer` to `ImageView *` before `classicPath()` / install
+
+### Done criteria
+- [x] Bundle **739**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-738-session-crop-worker-bake.** Pass session appearance into Image-mode worker bake (Gallery→Image crop).
 Prior: **737**.
 

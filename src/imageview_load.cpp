@@ -1297,7 +1297,8 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
             pixelKindForImageModeSample(path, image);
         QThreadPool::globalInstance()->start(
             [guard, path, image, sessionApp, gen, kind]() {
-                if (!guard || !guard->matchesLoadGeneration(gen)) {
+                ImageView *view = guard.data();
+                if (!view || !view->matchesLoadGeneration(gen)) {
                     return;
                 }
                 QImage baked = prepareImageModeDisplaySample(
@@ -1305,14 +1306,19 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
                 if (baked.isNull()) {
                     return;
                 }
-                QTimer::singleShot(0, guard.data(),
-                    [guard, path, baked, gen]() {
-                        if (!guard || !guard->matchesLoadGeneration(gen)
-                            || path != guard->classicPath()) {
-                            return;
-                        }
-                        (void)guard->tryInstallImageModeSample(path, baked);
-                    });
+                // Capture expected path by value; resolve the view pointer on the
+                // GUI slot so classicPath() is not evaluated on a null QPointer
+                // (silences -Wnull-dereference on QString copy).
+                QTimer::singleShot(0, view, [guard, path, baked, gen]() {
+                    ImageView *v = guard.data();
+                    if (!v || !v->matchesLoadGeneration(gen)) {
+                        return;
+                    }
+                    if (path != v->classicPath()) {
+                        return;
+                    }
+                    (void)v->tryInstallImageModeSample(path, baked);
+                });
             },
             1);
         return;
