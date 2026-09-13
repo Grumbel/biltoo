@@ -72,8 +72,10 @@
             (qtPluginRoot pkgs.qt6.qtsvg)
           ];
 
-          # Shared preamble: require BILTOO_SOURCE (set by shellHook) and resolve
-          # the out-of-tree build directory.
+          # Shared preamble: BILTOO_SOURCE, build dir, and a *live* thumtoo tree.
+          # Flake input / --override-input still evaluate to a /nix/store snapshot.
+          # Pointing CMake at that snapshot means edits are invisible until
+          # reconfigure, and each new store path forces a full thumtoo rebuild.
           biltooDevPreamble = ''
             set -euo pipefail
             if [ -z "''${BILTOO_SOURCE:-}" ]; then
@@ -81,15 +83,44 @@
               exit 1
             fi
             BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"
+
+            _biltoo_resolve_thumtoo() {
+              if [ -n "''${THUMTOO_SOURCE_DIR:-}" ] && [ -f "''${THUMTOO_SOURCE_DIR}/CMakeLists.txt" ]; then
+                case "''${THUMTOO_SOURCE_DIR}" in
+                  /nix/store/*)
+                    echo "biltoo: THUMTOO_SOURCE_DIR is a Nix store path (frozen snapshot)." >&2
+                    echo "  Local edits will not show up; reconfigure after each change full-rebuilds." >&2
+                    echo "  Prefer a live checkout:" >&2
+                    echo "    export THUMTOO_SOURCE_DIR=/path/to/thumtoo && biltoo-configure" >&2
+                    ;;
+                esac
+                printf '%s\n' "''${THUMTOO_SOURCE_DIR}"
+                return 0
+              fi
+              local cand
+              for cand in \
+                "''${BILTOO_SOURCE}/../thumtoo" \
+                "''${BILTOO_SOURCE}/../thumtoo.git" \
+                "''${BILTOO_SOURCE}/../thumtoo/thumtoo.git"
+              do
+                if [ -f "''${cand}/CMakeLists.txt" ]; then
+                  ( cd "''${cand}" && pwd )
+                  return 0
+                fi
+              done
+              printf '%s\n' "${thumtoo}"
+            }
+            export THUMTOO_SOURCE_DIR="$(_biltoo_resolve_thumtoo)"
           '';
 
           biltooConfigure = pkgs.writeShellScriptBin "biltoo-configure" (
             biltooDevPreamble
             + ''
+              echo "biltoo-configure: THUMTOO_SOURCE_DIR=$THUMTOO_SOURCE_DIR"
               cmake -S "$BILTOO_SOURCE" -B "$BILTOO_BUILD_DIR" -G Ninja \
                 -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}" \
                 -DBILTOO_WITH_THUMTOO=ON \
-                -DTHUMTOO_SOURCE_DIR="''${THUMTOO_SOURCE_DIR:-${thumtoo}}"
+                -DTHUMTOO_SOURCE_DIR="$THUMTOO_SOURCE_DIR"
             ''
           );
 
@@ -167,14 +198,33 @@
 
             # Out-of-tree build dir (override with BILTOO_BUILD_DIR=...).
             export BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"
+
+            # Same live-tree resolution as biltoo-configure (see biltooDevPreamble).
+            if [ -z "''${THUMTOO_SOURCE_DIR:-}" ] || [ ! -f "''${THUMTOO_SOURCE_DIR}/CMakeLists.txt" ]; then
+              for cand in \
+                "$BILTOO_SOURCE/../thumtoo" \
+                "$BILTOO_SOURCE/../thumtoo.git" \
+                "$BILTOO_SOURCE/../thumtoo/thumtoo.git"
+              do
+                if [ -f "$cand/CMakeLists.txt" ]; then
+                  THUMTOO_SOURCE_DIR="$(cd "$cand" && pwd)"
+                  break
+                fi
+              done
+            fi
             export THUMTOO_SOURCE_DIR="''${THUMTOO_SOURCE_DIR:-${thumtoo}}"
+            case "$THUMTOO_SOURCE_DIR" in
+              /nix/store/*)
+                echo "note: THUMTOO_SOURCE_DIR is a store snapshot — export a live path for incremental thumtoo builds"
+                ;;
+            esac
 
             echo "biltoo dev shell (CMAKE_BUILD_TYPE=''${CMAKE_BUILD_TYPE:-Debug})"
             echo "  build dir: $BILTOO_BUILD_DIR"
-            echo "  biltoo-configure   # cmake -S . -B \$BILTOO_BUILD_DIR -G Ninja (+ thumtoo)"
+            echo "  biltoo-configure   # cmake once; then biltoo-build is incremental"
             echo "  THUMTOO_SOURCE_DIR=$THUMTOO_SOURCE_DIR"
             echo "  version: cmake reads VERSION + .git (About → full 0.1.0-dev.N+gHASH)"
-            echo "  biltoo-build       # incremental cmake --build"
+            echo "  biltoo-build       # incremental cmake --build (picks up thumtoo .cpp edits)"
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"
             echo "  nix build          # RelWithDebInfo package (wrapped)"

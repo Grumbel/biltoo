@@ -2,6 +2,36 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-734-live-thumtoo-source.** Prefer live THUMTOO_SOURCE_DIR; flake store path freezes edits.
+Prior: **733**.
+
+### Problem
+`nix develop --override-input thumtoo /path -c biltoo-run` still points CMake at a
+**/nix/store snapshot**. Edits in the real checkout are invisible until
+reconfigure; each new snapshot path forces a full thumtoo rebuild.
+`biltoo-configure` itself is not the root cause — changing the store path is.
+
+### Change
+- `flake.nix`: resolve live tree (explicit env → sibling checkouts → flake store)
+- Warn when `THUMTOO_SOURCE_DIR` is under `/nix/store`
+- AGENTS.md: documented dual-repo workflow
+
+### Workflow
+```bash
+export THUMTOO_SOURCE_DIR=/home/ingo/projects/thumtoo/thumtoo.git
+biltoo-configure   # once
+biltoo-build       # incremental after thumtoo edits
+```
+
+### Done criteria
+- [x] Bundle **734**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-733-features-rar-toc.** About/CMake show thumtoo backends; RAR TOC refresh with unarr.
 Prior: **732**.
 

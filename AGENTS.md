@@ -15,8 +15,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-733-features-rar-toc**.
-Next bundle number: **734**.
+Latest agent handoff: **TODO.md → biltoo-734-live-thumtoo-source**.
+Next bundle number: **735**.
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
@@ -337,7 +337,38 @@ HIG-conformant on every desktop.
 
 Durable size index and display ladder live in the **thumtoo** library
 (<https://github.com/Grumbel/thumtoo>), integrated as a **flake input**
-(`inputs.thumtoo`) and `add_subdirectory` when `THUMTOO_SOURCE_DIR` is set.
+(`inputs.thumtoo`) and CMake **`add_subdirectory(THUMTOO_SOURCE_DIR)`**.
+
+### Live source vs flake snapshot (incremental builds)
+
+CMake already builds thumtoo via `add_subdirectory`. The flake input only
+supplies a **default path**. That path is usually a **`/nix/store/...` snapshot**
+(locked rev or `--override-input thumtoo /path`).
+
+| Mode | What CMake sees | Edit `~/…/thumtoo` then `biltoo-build` |
+|------|-----------------|----------------------------------------|
+| Store path (`${thumtoo}`) | Frozen copy | **Misses edits** until reconfigure; new store path → **full rebuild** |
+| Live checkout | Real tree | **Incremental** `.cpp` rebuilds |
+
+**Day-to-day dual-repo work (preferred):**
+
+```bash
+export THUMTOO_SOURCE_DIR=/home/ingo/projects/thumtoo/thumtoo.git   # live tree
+nix develop   # or: nix develop ./ -c bash
+biltoo-configure   # once (or when thumtoo CMake options/deps change)
+biltoo-build       # incremental — picks up thumtoo source edits
+biltoo-run
+```
+
+`--override-input thumtoo /path` is **not** enough for live edits: Nix still
+copies into the store. Prefer `THUMTOO_SOURCE_DIR` as above.
+
+`biltoo-configure` / the dev shell also auto-prefer siblings when present:
+`$BILTOO_SOURCE/../thumtoo`, `../thumtoo.git`, `../thumtoo/thumtoo.git`.
+
+Re-run **configure** only when: first setup, `THUMTOO_SOURCE_DIR` changes, or
+thumtoo’s CMake feature flags/deps change. Ordinary `.cpp` edits need **build** only.
+
 `ImageLoader::probeSize` and `loadThumbnail` consult `ThumtooCache` first
 (cache-only size / ladder via `get_pixels`). Session open calls
 `ThumtooCache::preparePaths` (size probes only — not full-session ladder
