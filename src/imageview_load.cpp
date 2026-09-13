@@ -489,24 +489,28 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             galleryDisplayEdgeForItem(item, /*allowHighRes=*/true),
             ThumtooCache::kFilmstripLadderEdge);
     }
-    // Image mode LoadReplace jobs bake appearance on the worker. Gallery still
-    // materializes here (soft ≤512). Never DeviceCoordinateCache on install —
-    // that snapshots multi-MP on the GUI every ←/→.
+    // Image mode LoadReplace jobs bake appearance on the worker
+    // (prepareImageModeDisplaySample). Gallery soft samples are ≤512 so a GUI
+    // materialize is cheap and allowed. Multi-MP materializeDisplay asserts off
+    // the GUI thread — never call it here for large samples (would abort on
+    // ←/→ and crop/appearance installs).
     QImage display = pixelsForDisplay;
     const bool imageModeInstall = isImageMode();
     const bool hasCrop = appearance.hasCrop && !appearance.cropRect.isEmpty();
-    // Image mode used to skip materialize for FullSource, then set intrinsic from
-    // full-path logical size — after a session crop that re-stretched the baked
-    // crop into the full frame. Bake content (crop/flip/turns) whenever present.
-    const bool needMaterialize =
-        !imageModeInstall
-        || hasCrop
-        || SessionAppearance::hasContentAppearance(appearance)
+    const bool wantBake =
+        SessionAppearance::hasContentAppearance(appearance)
         || !appearance.colorAdjust.isIdentity();
-    if (needMaterialize) {
-        display = SessionAppearance::materializeDisplay(
-            pixelsForDisplay, appearance, kind);
+    if (wantBake) {
+        const int edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
+        if (edge <= 512) {
+            // Soft / filmstrip band — safe on GUI.
+            display = SessionAppearance::materializeDisplay(
+                pixelsForDisplay, appearance, kind);
+        }
+        // else: already baked by worker, or caller must not pass raw multi-MP
+        // with pending appearance on the GUI thread.
     }
+    Q_UNUSED(imageModeInstall);
 
     if (kind == SessionAppearance::PixelKind::FullSource) {
         if (imageModeInstall) {

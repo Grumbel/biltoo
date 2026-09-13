@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-737-no-gui-multimp-materialize.** Do not materializeDisplay multi-MP on GUI in installDisplayPixels.
+Prior: **736**.
+
+### Problem
+After crop-intrinsic fix, `installDisplayPixels` always called `materializeDisplay`
+when appearance had crop/flips. Multi-MP samples on the GUI thread hit
+`ASSERT_NOT_GUI_THREAD` and aborted.
+
+### Change
+- Bake on GUI only when long edge ≤ 512 (gallery soft band)
+- Larger samples: assume worker already baked (`prepareImageModeDisplaySample`);
+  do not call `materializeDisplay` on the GUI
+
+### Done criteria
+- [x] Bundle **737**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-736-thumtoo-build-inputs.** Merge `thumtoo.lib.mkBuildInputs` into biltoo deps.
 Prior: **735**. Requires thumtoo **194**.
 
