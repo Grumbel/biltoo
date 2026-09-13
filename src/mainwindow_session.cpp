@@ -1254,6 +1254,16 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
         }
         updateStatus();
         updateNavigationActions();
+    } else if (isGalleryMode()) {
+        populateGalleryCanvas();
+        m_currentIndex = -1;
+        setCurrentIndex(newIndex, /*ensureGalleryVisible=*/true);
+        updateNavigationActions();
+    } else if (m_session.paths().size() > 1) {
+        // Multi-image after append in Image mode — Gallery + size-first like Open.
+        enterGalleryMode(ImageView::LayoutMode::Masonry);
+        setCurrentIndex(newIndex, /*ensureGalleryVisible=*/true);
+        updateNavigationActions();
     } else {
         m_currentIndex = -1;
         setCurrentIndex(newIndex);

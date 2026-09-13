@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-763-drop-loadfiles-parity.** Empty D&D uses loadFiles; Gallery drop size-first + HUD.
+Prior: **762**.
+
+### Problem
+Drag-drop on empty session stayed in Image mode and appended leaves — no centre
+HUD, first image provisional square. Gallery drop used sync `expandPaths` and
+`enterGallery` after populate (raced size-first gate).
+
+### Change
+- Empty external drop → `loadFiles` (same as CLI / Open)
+- Gallery drop: background expand when needed; populate only (no re-enter)
+- Append finish: populate Gallery / enter Gallery for multi-image
+
+### Apply
+```bash
+git pull /path/to/biltoo-763-drop-loadfiles-parity.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **763**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-762-gallery-defer-tiles-until-sizes.** No scene tiles until sizes known; size-resolve progress pulse.
 Prior: **761**.
 

@@ -3152,6 +3152,11 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
 
 void MainWindow::handleGalleryDrop(const QStringList &paths, bool fromInternalSelection)
 {
+    // Archives/PDF need the same background expand + centre HUD as File→Open.
+    if (!fromInternalSelection && pathsNeedBackgroundExpand(paths)) {
+        expandPathsInBackground(paths, /*append=*/true);
+        return;
+    }
     const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
     if (expanded.isEmpty()) {
         return;
@@ -3166,15 +3171,10 @@ void MainWindow::handleGalleryDrop(const QStringList &paths, bool fromInternalSe
         m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     }
     applyThumbnailVisibility();
-    const ImageView::LayoutMode layout = m_imageView
-        ? m_imageView->layoutMode()
-        : ImageView::LayoutMode::Masonry;
+    // Already in Gallery — populate only. enterGallery would re-pack and race
+    // the size-first gate (provisional / square first cell).
     populateGalleryCanvas();
-    if (m_imageView) {
-        m_imageView->enterGallery(layout);
-    }
     updateStatus();
-    return;
 }
 
 void MainWindow::handleImageModeDrop(const QStringList &paths, bool fromInternalSelection)
@@ -3240,6 +3240,13 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
     }
     if (isWorkspaceMode()) {
         handleWorkspaceDrop(paths, fromInternalSelection, scenePos, hasScenePos, sessionIds);
+        return;
+    }
+    // Empty session + external drop: same path as CLI / File→Open (centre HUD,
+    // size-first Gallery for multi-image archives). Image-mode append alone
+    // loaded the first leaf with a square provisional size and skipped the gate.
+    if (m_session.paths().isEmpty() && !fromInternalSelection) {
+        loadFiles(paths);
         return;
     }
     if (isGalleryMode()) {
