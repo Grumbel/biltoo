@@ -2128,11 +2128,9 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
                   qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
     m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path),
                          PathRasterService::ClimbPolicy::EscalateToFull);
-    // After ensure: Full may still be async. If already terminal short of need
-    // (e.g. archive Full settled at 1024), host native decode once.
-    if (need > ThumtooCache::kBatchOverviewEdge
-        && !coversEdge(m_pathRaster->haveEdge(path), need)
-        && (m_pathRaster->isGaveUp(path) || !m_pathRaster->isClimbPending(path))) {
+    // Full is async. If already terminal short of need, host native decode once.
+    if (!coversEdge(m_pathRaster->haveEdge(path), climbTo)
+        && m_pathRaster->isGaveUp(path)) {
         scheduleImageModeNativeDecodeOnce(path);
     }
 }
@@ -2156,9 +2154,7 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
                           cur->displayPixelLongEdge(),
                           cur->hasDecodedPixels() ? 1 : 0);
         }
-        // Climb while soft or short of native. When PreferCache already gave up
-        // and this delivery is not larger than what is painted, skip — full is
-        // one-shot/settled and re-entry only burned CPU (ladderReady loop).
+        // Climb while soft or short of native.
         const int incoming = ImageCache::longEdge(image);
         const int painted = cur->displayPixelLongEdge();
         const bool noUpgrade = incoming > 0 && painted > 0 && incoming <= painted;
@@ -2166,6 +2162,13 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
             || !sampleCoversNativeLogical(path, image)) {
             if (!(noUpgrade && m_pathRaster && m_pathRaster->isGaveUp(path))) {
                 ensureImageModeQualityClimb(path, image);
+            } else {
+                // Terminal PreferCache/Full shortfall at same edge as painted —
+                // still need host native when on-screen need exceeds that.
+                const int need = imageModeOnScreenNeedEdge();
+                if (need > painted) {
+                    scheduleImageModeNativeDecodeOnce(path);
+                }
             }
         }
         return true;

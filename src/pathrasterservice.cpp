@@ -126,9 +126,8 @@ bool PathRasterService::isGaveUp(const QString &path) const
     if (it == m_state.cend() || !it->preferGaveUp) {
         return false;
     }
-    // EscalateToFull: not terminal until Full has been attempted.
-    if (it->policy == ClimbPolicy::EscalateToFull
-        && it->want > ThumtooCache::kBatchOverviewEdge && !it->fullDone) {
+    // Not terminal until Full has been attempted when want > overview.
+    if (it->want > ThumtooCache::kBatchOverviewEdge && !it->fullDone) {
         return false;
     }
     if (it->want <= ThumtooCache::kBatchOverviewEdge
@@ -274,32 +273,23 @@ void PathRasterService::pump(const QString &path, State &st)
     }
 
     // PreferCache above soft max is overview-clamped to 1024 in thumtoo.
-    // Full is only for EscalateToFull (Image / Workspace / Slideshow).
-    // SoftDisplay (Gallery) must NOT Full every visible cell — that is what
-    // made Gallery unusable (N archive full extracts).
+    // Whole-frame above that needs Full. Gallery SoftDisplay only ensure()s a
+    // concurrency-bounded visible set — Full those, not every cell in the album.
     if (displayWant > overviewCap) {
-        if (st.policy == ClimbPolicy::EscalateToFull) {
-            if (!st.fullQueued && !st.fullDone) {
+        if (!st.fullQueued && !st.fullDone) {
+            int edge = ImageCache::kDisplayMaxEdge;
+            const QSize native = ThumtooCache::cachedSize(path);
+            if (native.isValid() && native.width() > 0 && native.height() > 0) {
+                edge = qMin(edge, qMax(native.width(), native.height()));
+            }
+            edge = qMax(edge, displayWant);
+            edge = qMin(edge, ImageCache::kDisplayMaxEdge);
+            if (ThumtooCache::scheduleFullPixels(path, edge)) {
                 st.fullQueued = true;
                 st.fullDone = true;
-                int edge = ImageCache::kDisplayMaxEdge;
-                const QSize native = ThumtooCache::cachedSize(path);
-                if (native.isValid() && native.width() > 0 && native.height() > 0) {
-                    edge = qMin(edge, qMax(native.width(), native.height()));
-                }
-                edge = qMax(edge, displayWant);
-                edge = qMin(edge, ImageCache::kDisplayMaxEdge);
-                if (!ThumtooCache::scheduleFullPixels(path, edge)) {
-                    st.fullQueued = false;
-                }
-                return;
             }
+            // else: concurrent Full limit / settled — retry on next ensure/pump
             return;
-        }
-        // SoftDisplay: stop at overview PreferCache; optional one FocusFull.
-        if (!st.tilesQueued) {
-            st.tilesQueued = true;
-            (void)ThumtooCache::scheduleTilePyramid(path);
         }
         return;
     }

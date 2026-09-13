@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-753-full-again-native-on-gaveup.** SoftDisplay Full (cap 2); native when gave-up noUpgrade.
+Prior: **752**.
+
+### Problem
+- SoftDisplay never Full → Gallery stuck ≤1024.
+- Image tryInstall skipped climb when isGaveUp + same edge painted → native never ran after Full shortfall.
+
+### Change
+- SoftDisplay schedules Full when want>1024 (gallery ensure already concurrency-bounded)
+- Max 2 concurrent Full jobs
+- scheduleFull settled/inflight returns true so PathRaster marks fullDone; DEFER returns false
+- tryInstall: if gave-up and need > painted → scheduleImageModeNativeDecodeOnce
+
+### Done criteria
+- [x] Bundle **753**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-752-uri-on-gui-probe-off.** URI string conversion allowed on GUI; scheduleProbe off GUI.
 Prior: **751**.
 

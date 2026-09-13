@@ -175,6 +175,9 @@ int maxConcurrentPixelJobs()
     return n;
 }
 int g_pixelsActive = 0;
+/** Concurrent request_full_pixels jobs (Gallery SoftDisplay Fulls visibles). */
+int g_fullActive = 0;
+constexpr int kMaxConcurrentFullJobs = 2;
 struct PendingPixels {
     QString path;
     int maxEdge = 0;
@@ -2748,16 +2751,26 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
         path + QLatin1Char('#') + QStringLiteral("full") + QString::number(maxEdge);
     {
         std::lock_guard lock(g_mu);
-        if (g_pixelsInflight.contains(inflightKey)
-            || g_pixelsSettled.contains(inflightKey)) {
-            thumtooDbg("scheduleFull SKIP path=%s edge=%d (inflight/settled)",
+        if (g_pixelsInflight.contains(inflightKey)) {
+            thumtooDbg("scheduleFull SKIP path=%s edge=%d (inflight)",
                        qPrintable(path), maxEdge);
+            return true; // already in flight — count as accepted
+        }
+        if (g_pixelsSettled.contains(inflightKey)) {
+            thumtooDbg("scheduleFull SKIP path=%s edge=%d (settled)",
+                       qPrintable(path), maxEdge);
+            return true; // terminal attempt already done — PathRaster marks fullDone
+        }
+        if (g_fullActive >= kMaxConcurrentFullJobs) {
+            thumtooDbg("scheduleFull DEFER path=%s edge=%d fullActive=%d",
+                       qPrintable(path), maxEdge, g_fullActive);
             return false;
         }
         g_pixelsInflight.insert(inflightKey);
         ++g_pixelsActive;
-        thumtooDbg("scheduleFull queue path=%s edge=%d active=%d",
-                   qPrintable(path), maxEdge, g_pixelsActive);
+        ++g_fullActive;
+        thumtooDbg("scheduleFull queue path=%s edge=%d active=%d fullActive=%d",
+                   qPrintable(path), maxEdge, g_pixelsActive, g_fullActive);
     }
     // URI resolve + request_full_pixels off the GUI (archive URI can be slow).
     const QString pathCopy = path;
@@ -2773,6 +2786,7 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
             std::lock_guard lock(g_mu);
             g_pixelsInflight.remove(inflightKey);
             g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            g_fullActive = qMax(0, g_fullActive - 1);
             return;
         }
         const std::string uri = toThumtooUri(pathCopy);
@@ -2780,6 +2794,7 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
             std::lock_guard lock(g_mu);
             g_pixelsInflight.remove(inflightKey);
             g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            g_fullActive = qMax(0, g_fullActive - 1);
             return;
         }
         auto onFull = [pathCopy, edge, inflightKey](
@@ -2820,12 +2835,14 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
                 // → scheduleFull forever.
                 g_pixelsSettled.insert(inflightKey);
                 g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                g_fullActive = qMax(0, g_fullActive - 1);
                 thumtooDbg(
                     "scheduleFull DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d "
-                    "shortfall=%d active=%d",
+                    "shortfall=%d active=%d fullActive=%d",
                     qPrintable(pathCopy), edge, decoded.isNull() ? 0 : 1, source,
                     decoded.width(), decoded.height(),
-                    (got > 0 && got < (edge * 9) / 10) ? 1 : 0, g_pixelsActive);
+                    (got > 0 && got < (edge * 9) / 10) ? 1 : 0, g_pixelsActive,
+                    g_fullActive);
                 startNextPixelJobsUnlocked();
             }
             if (!decoded.isNull()) {
