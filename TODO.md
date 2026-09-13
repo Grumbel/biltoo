@@ -2,6 +2,35 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-761-centre-progress-expand-sizes.** Centre HUD for expand + size resolve; suppress empty invite.
+Prior: **760**.
+
+### Problem
+User only saw “Drop images here…” during archive open. Expand progress lived in the
+status bar; the empty-session invite painted while `m_items` was still empty.
+Size-resolve HUD could also be cleared by `setExpandProgressBusy(false)` after
+`enterGalleryMode`.
+
+### Change
+- `ImageView::setCentreProgress` / `clearCentreProgress` — centre viewport HUD
+- Expand/sort progress drives the centre HUD (and still the status bar)
+- Empty-session invite suppressed while centre progress or size-resolve is active
+- Size-resolve uses the same centre progress text; expand-busy clear preserves it
+
+### Apply
+```bash
+git pull /path/to/biltoo-761-centre-progress-expand-sizes.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **761**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-760-gallery-size-hud-visible.** Fix size-resolve HUD + hide tiles until pack.
 Prior: **759**.
 

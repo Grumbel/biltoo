@@ -648,11 +648,8 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
             item->setVisible(false);
         }
     }
-    // Full updates so the centre HUD repaints while BoundingRect would not.
-    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-    if (viewport()) {
-        viewport()->update();
-    }
+    setCentreProgress(tr("Resolving sizes…"),
+                      tr("0 / %1").arg(m_gallerySizeResolveTotal));
     emit statusChanged();
     return true;
 }
@@ -665,10 +662,11 @@ void ImageView::noteGallerySizeProbeSettled(const QString &path)
     if (!path.isEmpty()) {
         m_gallerySizeResolvePending.remove(path);
     }
-    if (viewport()) {
-        viewport()->update();
-    }
     if (!m_gallerySizeResolvePending.isEmpty()) {
+        const int done = qMax(0, m_gallerySizeResolveTotal
+                              - m_gallerySizeResolvePending.size());
+        setCentreProgress(tr("Resolving sizes…"),
+                          tr("%1 / %2").arg(done).arg(m_gallerySizeResolveTotal));
         return;
     }
     finishGallerySizeResolve();
@@ -686,6 +684,7 @@ void ImageView::finishGallerySizeResolve()
     if (!wasActive) {
         return;
     }
+    clearCentreProgress();
     for (ImageItem *item : m_items) {
         if (item) {
             item->setVisible(true);
@@ -724,9 +723,46 @@ void ImageView::cancelGallerySizeResolve()
                 item->setVisible(true);
             }
         }
-        if (isGalleryMode()) {
+        if (isGalleryMode() && m_centreProgressTitle.isEmpty()) {
             setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
         }
+        // Size-resolve owns the centre text while active; drop it on cancel.
+        if (m_centreProgressTitle.startsWith(tr("Resolving sizes"))) {
+            clearCentreProgress();
+        }
+    }
+}
+
+void ImageView::setCentreProgress(const QString &title, const QString &detail)
+{
+    if (title.isEmpty()) {
+        clearCentreProgress();
+        return;
+    }
+    if (m_centreProgressTitle == title && m_centreProgressDetail == detail) {
+        return;
+    }
+    m_centreProgressTitle = title;
+    m_centreProgressDetail = detail;
+    // Need full viewport updates so the overlay repaints on an empty scene.
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::clearCentreProgress()
+{
+    if (m_centreProgressTitle.isEmpty() && m_centreProgressDetail.isEmpty()) {
+        return;
+    }
+    m_centreProgressTitle.clear();
+    m_centreProgressDetail.clear();
+    if (isGalleryMode() && !m_gallerySizeResolveActive) {
+        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    }
+    if (viewport()) {
+        viewport()->update();
     }
 }
 

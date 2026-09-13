@@ -505,20 +505,31 @@ void MainWindow::setExpandProgressMessage(const QString &message)
     if (statusBar()) {
         statusBar()->showMessage(message, 0);
     }
+    if (m_imageView) {
+        // Centre progress suppresses the empty-session invite during expand.
+        m_imageView->setCentreProgress(
+            message.isEmpty() ? tr("Working…") : message);
+    }
 }
 
 void MainWindow::setExpandProgressBusy(bool busy)
 {
-    if (!m_statusProgress) {
-        return;
+    if (m_statusProgress) {
+        if (busy) {
+            m_statusProgress->setRange(0, 0);
+            m_statusProgress->show();
+        } else {
+            m_statusProgress->hide();
+            m_statusProgress->setRange(0, 1);
+            m_statusProgress->setValue(0);
+        }
     }
-    if (busy) {
-        m_statusProgress->setRange(0, 0);
-        m_statusProgress->show();
-    } else {
-        m_statusProgress->hide();
-        m_statusProgress->setRange(0, 1);
-        m_statusProgress->setValue(0);
+    if (!busy && m_imageView) {
+        // finishApplyExpandedLoad clears busy *after* enterGalleryMode, which may
+        // already own the centre HUD for size-resolve — do not wipe that.
+        if (!m_imageView->gallerySizeResolveActive()) {
+            m_imageView->clearCentreProgress();
+        }
     }
 }
 
@@ -527,16 +538,27 @@ void MainWindow::setExpandProgress(int current, int total, const QString &messag
     if (statusBar()) {
         statusBar()->showMessage(message, 0);
     }
-    if (!m_statusProgress) {
-        return;
+    if (m_statusProgress) {
+        if (total > 0) {
+            m_statusProgress->setRange(0, total);
+            m_statusProgress->setValue(qBound(0, current, total));
+            m_statusProgress->show();
+        } else {
+            m_statusProgress->setRange(0, 0);
+            m_statusProgress->show();
+        }
     }
-    if (total > 0) {
-        m_statusProgress->setRange(0, total);
-        m_statusProgress->setValue(qBound(0, current, total));
-        m_statusProgress->show();
-    } else {
-        m_statusProgress->setRange(0, 0);
-        m_statusProgress->show();
+    if (m_imageView) {
+        const QString title = message.isEmpty() ? tr("Working…") : message;
+        const QString detail = (total > 0)
+            ? tr("%1 / %2").arg(current).arg(total)
+            : QString();
+        // When message already contains N/M, avoid duplicating the detail line.
+        if (!detail.isEmpty() && message.contains(QLatin1Char('/'))) {
+            m_imageView->setCentreProgress(title);
+        } else {
+            m_imageView->setCentreProgress(title, detail);
+        }
     }
 }
 

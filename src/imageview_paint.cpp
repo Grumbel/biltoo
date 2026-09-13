@@ -275,7 +275,9 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
 void ImageView::paintEmptySessionInvite(QPainter &painter)
 {
     // Empty session: invite the user to open or drop images.
-    if (m_items.isEmpty() && !hasClassicPath() && !m_cropMode) {
+    // Suppress while centre progress is active (archive expand / size resolve).
+    if (m_items.isEmpty() && !hasClassicPath() && !m_cropMode
+        && m_centreProgressTitle.isEmpty() && !m_gallerySizeResolveActive) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();
@@ -342,6 +344,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     const QString ssPrefetchLine = slideshowPrefetchHudLine();
     if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
         || m_slideshowPausedHud || m_gallerySizeResolveActive
+        || !m_centreProgressTitle.isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
@@ -477,7 +480,15 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("❚❚  Paused"), true},
                        {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
+        } else if (!m_centreProgressTitle.isEmpty()) {
+            QList<HudLine> lines;
+            lines.append({m_centreProgressTitle, true});
+            if (!m_centreProgressDetail.isEmpty()) {
+                lines.append({m_centreProgressDetail, false});
+            }
+            drawPanel(lines, 0, 0, false, false, true);
         } else if (m_gallerySizeResolveActive && m_gallerySizeResolveTotal > 0) {
+            // Fallback if title was cleared but gate still active.
             const int done = qMax(0, m_gallerySizeResolveTotal
                                   - m_gallerySizeResolvePending.size());
             drawPanel({{tr("Resolving sizes…"), true},
@@ -1423,6 +1434,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     // pass (HUD/edges/slideshow) so selection does not pay for empty work.
     if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
         && !m_slideshowPausedHud && !m_gallerySizeResolveActive
+        && m_centreProgressTitle.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_cropMode
         && !m_slideshowMotionActive 
         ) {

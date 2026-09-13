@@ -167,6 +167,14 @@ public:
     void stopDeferredPacking();
     /** Controller host: drop open-time Gallery size-resolve gate (mode leave). */
     void cancelGallerySizeResolve();
+    /**
+     * Centre viewport progress (archive expand, size resolve, sort probes).
+     * Suppresses the empty-session invite while set. Cleared with clearCentreProgress().
+     */
+    void setCentreProgress(const QString &title, const QString &detail = QString());
+    void clearCentreProgress();
+    bool hasCentreProgress() const { return !m_centreProgressTitle.isEmpty(); }
+    bool gallerySizeResolveActive() const { return m_gallerySizeResolveActive; }
     /** Controller host: set m_viewMode + m_layoutMode and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
     /** Controller host: classic path owned by ImageController. */
@@ -1617,6 +1625,9 @@ private:
     int m_gallerySizeResolveTotal = 0;
     QSet<QString> m_gallerySizeResolvePending;
     QTimer *m_gallerySizeResolveTimer = nullptr;
+    /** Centre HUD progress (expand / size resolve / sort); empty = inactive. */
+    QString m_centreProgressTitle;
+    QString m_centreProgressDetail;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */
