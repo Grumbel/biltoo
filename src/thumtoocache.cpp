@@ -378,13 +378,9 @@ std::string resolveUriUncached(const QString &path)
 
 std::string toThumtooUri(const QString &path)
 {
-    // Archive URI work must not run on the GUI (assert in debug builds).
-    if (QThread::isMainThread()
-        && (path.contains(QLatin1String("//archive:"))
-            || path.contains(QLatin1String("//page:")))) {
-        Q_ASSERT_X(false, "toThumtooUri",
-                   "archive/page URI conversion on GUI thread — use a worker");
-    }
+    // String/path → URI (and URI cache). Allowed on the GUI for cache-only
+    // lookups (cachedSize / isUnsupported). Must not be paired with decode or
+    // request_* on the GUI — those paths ASSERT_NOT_GUI_THREAD on workers.
     if (path.isEmpty()) {
         return {};
     }
@@ -725,31 +721,37 @@ bool isUnsupported(const QString &path)
 void scheduleProbe(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO
-    if (isUnsupported(path)) {
+    if (path.isEmpty()) {
         return;
     }
     init();
-    const std::string uri = toThumtooUri(path);
-    if (uri.empty()) {
-        return;
-    }
-    thumtoo::Client *c = nullptr;
-    {
-        std::lock_guard lock(g_mu);
-        c = clientUnlocked();
-    }
-    if (!c) {
-        return;
-    }
     const QString pathCopy = path;
-    if (thumtooDebugEnabled()) {
-        thumtooDbg("scheduleProbe path=%s", qPrintable(path));
-    }
-    c->request_size(uri, [pathCopy](std::string, std::optional<thumtoo::Size> sz) {
-        if (!sz) {
+    QThreadPool::globalInstance()->start([pathCopy]() {
+        ASSERT_NOT_GUI_THREAD();
+        if (isUnsupported(pathCopy)) {
             return;
         }
-        emit bridge()->sizeReady(pathCopy, QSize(sz->width, sz->height));
+        const std::string uri = toThumtooUri(pathCopy);
+        if (uri.empty()) {
+            return;
+        }
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (!c) {
+            return;
+        }
+        if (thumtooDebugEnabled()) {
+            thumtooDbg("scheduleProbe path=%s", qPrintable(pathCopy));
+        }
+        c->request_size(uri, [pathCopy](std::string, std::optional<thumtoo::Size> sz) {
+            if (!sz) {
+                return;
+            }
+            emit bridge()->sizeReady(pathCopy, QSize(sz->width, sz->height));
+        });
     });
 #else
     Q_UNUSED(path);

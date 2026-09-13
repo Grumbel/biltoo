@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-752-uri-on-gui-probe-off.** URI string conversion allowed on GUI; scheduleProbe off GUI.
+Prior: **751**.
+
+### Problem
+Hard `ASSERT` in `toThumtooUri` for any archive/page path on the GUI aborted
+startup: PathRaster/`cachedSize`/`isUnsupported` need URI for SQLite cache keys.
+That conversion is string + path cleanup, not decode.
+
+### Change
+- Remove hard assert from `toThumtooUri` (cache lookups may run on GUI)
+- `scheduleProbe` fully on worker + `ASSERT_NOT_GUI_THREAD`
+- Decode/request paths still assert off-GUI (scheduleDisplay/Full/Pixels workers)
+
+### Done criteria
+- [x] Bundle **752**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-751-gallery-no-full-assert-off-gui.** Gallery SoftDisplay no longer Fulls every cell; schedule* off GUI + asserts.
 Prior: **750**.
 
