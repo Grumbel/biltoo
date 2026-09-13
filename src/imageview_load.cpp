@@ -93,33 +93,43 @@ QImage clampSoftForGalleryCell(const QImage &pixels, int needEdge, int minEdge)
  * ←/→ hitch when done in installDisplayPixels.
  */
 QImage prepareImageModeDisplaySample(const QString &path, QImage raw,
-                                     SessionAppearance::PixelKind kind)
+                                     SessionAppearance::PixelKind kind,
+                                     const WorkspaceItemState *sessionApp = nullptr)
 {
     ASSERT_NOT_GUI_THREAD();
     if (raw.isNull()) {
         return {};
     }
     WorkspaceItemState app;
-    ThumtooCache::StoredContentAppearance stored;
-    if (ThumtooCache::loadContentAppearance(path, &stored)) {
-        app.contentHFlip = stored.contentHFlip;
-        app.contentVFlip = stored.contentVFlip;
-        app.contentQuarterTurns = stored.contentQuarterTurns;
-        app.hasCrop = stored.hasCrop;
-        app.cropRect = stored.cropRect;
-        app.cropSourceSize = stored.cropSourceSize;
-        app.cropRotation = stored.cropRotation;
-        if (stored.hasGrade) {
-            app.colorAdjust.brightness = stored.gradeBrightness;
-            app.colorAdjust.contrast =
-                stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
-            app.colorAdjust.saturation =
-                stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
-            app.colorAdjust.hue = stored.gradeHue;
-            app.colorAdjust.gamma = stored.gradeGamma <= 0
-                ? 1.0
-                : (stored.gradeGamma / 100.0);
-            app.colorAdjust.invert = stored.gradeInvert;
+    // Session crop/flips are keyed by SessionImageId (m_appearance), not path.
+    // Gallery→Image must pass a snapshot; durable path store alone misses
+    // in-session crops that were never written to thumtoo.
+    if (sessionApp
+        && (SessionAppearance::hasContentAppearance(*sessionApp)
+            || !sessionApp->colorAdjust.isIdentity())) {
+        app = *sessionApp;
+    } else {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored)) {
+            app.contentHFlip = stored.contentHFlip;
+            app.contentVFlip = stored.contentVFlip;
+            app.contentQuarterTurns = stored.contentQuarterTurns;
+            app.hasCrop = stored.hasCrop;
+            app.cropRect = stored.cropRect;
+            app.cropSourceSize = stored.cropSourceSize;
+            app.cropRotation = stored.cropRotation;
+            if (stored.hasGrade) {
+                app.colorAdjust.brightness = stored.gradeBrightness;
+                app.colorAdjust.contrast =
+                    stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+                app.colorAdjust.saturation =
+                    stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
+                app.colorAdjust.hue = stored.gradeHue;
+                app.colorAdjust.gamma = stored.gradeGamma <= 0
+                    ? 1.0
+                    : (stored.gradeGamma / 100.0);
+                app.colorAdjust.invert = stored.gradeInvert;
+            }
         }
     }
     if (SessionAppearance::hasContentAppearance(app)
@@ -200,13 +210,14 @@ QImage loadSoftPreviewPixels(const QString &path, int softEdge)
  * Generation-checked so a newer LoadReplace cancels a stale preview.
  */
 void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
-                         quint64 gen, int roleInt, int softEdge)
+                         quint64 gen, int roleInt, int softEdge,
+                         const WorkspaceItemState &sessionApp)
 {
     biltooLoadDbg("softJob START path=%s edge=%d gen=%llu",
                   qPrintable(QFileInfo(path).fileName()), softEdge,
                   static_cast<unsigned long long>(gen));
     QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, softEdge]() {
+        [guard, path, roleInt, gen, softEdge, sessionApp]() {
             if (!guard || !guard->matchesLoadGeneration(gen)) {
                 biltooLoadDbg("softJob STALE path=%s gen=%llu",
                               qPrintable(QFileInfo(path).fileName()),
@@ -219,7 +230,8 @@ void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
                           preview.width(), preview.height());
             if (!preview.isNull()) {
                 preview = prepareImageModeDisplaySample(
-                    path, preview, SessionAppearance::PixelKind::SoftPreview);
+                    path, preview, SessionAppearance::PixelKind::SoftPreview,
+                    &sessionApp);
             }
             queuePreviewLoaded(guard, path, preview, gen, roleInt);
         },
@@ -231,10 +243,11 @@ void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
  * (slideshow quality climb). Schedules PreferCache on miss.
  */
 void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &path,
-                            quint64 gen, int roleInt, int qualityEdge)
+                            quint64 gen, int roleInt, int qualityEdge,
+                            const WorkspaceItemState &sessionApp)
 {
     QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, qualityEdge]() {
+        [guard, path, roleInt, gen, qualityEdge, sessionApp]() {
             if (!guard || !guard->matchesLoadGeneration(gen)) {
                 return;
             }
@@ -266,7 +279,8 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
             }
             if (!image.isNull()) {
                 image = prepareImageModeDisplaySample(
-                    path, image, SessionAppearance::PixelKind::FullSource);
+                    path, image, SessionAppearance::PixelKind::FullSource,
+                    &sessionApp);
             }
             if (ImageCache::longEdge(image) > qualityEdge) {
                 image = image.scaled(qualityEdge, qualityEdge, Qt::KeepAspectRatio,
@@ -335,8 +349,8 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         item->setSourceImage(image);
     }
     applyItemModeFlags(item);
-    // Session crop survives navigation. Image mode LoadReplace jobs already
-    // bake durable appearance on the worker — only sync chrome flags here.
+    // Session crop survives navigation. Image mode LoadReplace jobs bake
+    // appearance on the worker — only sync chrome flags here.
     // applyContentToItem would materialize + fromImage again on the GUI.
     if (applyStoredSessionCrop && isImageMode()) {
         const bool haveId = m_currentSessionId != kInvalidSessionImageId;
@@ -350,7 +364,13 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
                 item->setContentVFlip(app.contentVFlip);
                 item->setSessionCrop(app.hasCrop, app.cropRect);
                 item->setColorAdjustmentsRecord(app.colorAdjust);
-                SessionAppearance::syncItemLayoutToContentOrientation(item, app);
+                // Baked crop sample: identity is display size, not full-file logical.
+                if (app.hasCrop && !app.cropRect.isEmpty()
+                    && image.width() > 1 && image.height() > 1) {
+                    item->setIntrinsicSize(image.size());
+                } else {
+                    SessionAppearance::syncItemLayoutToContentOrientation(item, app);
+                }
             }
         }
     }
@@ -901,10 +921,12 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const int qualityEdge = slideshowTargetEdge();
     const int roleInt = static_cast<int>(role);
+    // Snapshot session appearance for the worker (crop is id-keyed, not path).
+    const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
 
-    startSoftPreviewJob(guard, path, gen, roleInt, softEdge);
+    startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
     if (qualityEdge > softEdge) {
-        startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge);
+        startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge, sessionApp);
     }
 }
 
@@ -918,8 +940,9 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
     const QPointer<ImageView> guard(this);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
+    const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
 
-    startSoftPreviewJob(guard, path, gen, roleInt, softEdge);
+    startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
     Q_UNUSED(gen);
 }
 
@@ -1261,6 +1284,38 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
                 "biltoo/image: ladderReady UPGRADE path=%s req=%d got=%dx%d\n",
                 qPrintable(QFileInfo(path).fileName()), req, image.width(),
                 image.height());
+    }
+    // Ladder samples are raw (no session crop). Bake on a worker when needed —
+    // materializeDisplay must not run on the GUI for multi-MP.
+    const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
+    const bool needBake = SessionAppearance::hasContentAppearance(sessionApp)
+        || !sessionApp.colorAdjust.isIdentity();
+    if (needBake) {
+        const QPointer<ImageView> guard(this);
+        const quint64 gen = m_loadGeneration.load();
+        const SessionAppearance::PixelKind kind =
+            pixelKindForImageModeSample(path, image);
+        QThreadPool::globalInstance()->start(
+            [guard, path, image, sessionApp, gen, kind]() {
+                if (!guard || !guard->matchesLoadGeneration(gen)) {
+                    return;
+                }
+                QImage baked = prepareImageModeDisplaySample(
+                    path, image, kind, &sessionApp);
+                if (baked.isNull()) {
+                    return;
+                }
+                QTimer::singleShot(0, guard.data(),
+                    [guard, path, baked, gen]() {
+                        if (!guard || !guard->matchesLoadGeneration(gen)
+                            || path != guard->classicPath()) {
+                            return;
+                        }
+                        (void)guard->tryInstallImageModeSample(path, baked);
+                    });
+            },
+            1);
+        return;
     }
     // PathRasterService already recorded this delivery in onLadderReady.
     (void)tryInstallImageModeSample(path, image);
@@ -1821,6 +1876,16 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
         item->setPreviewImage(image);
     } else {
         item->setSourceImageReady(image);
+    }
+    // Session crop: baked sample size is the display identity (not full-file).
+    if (m_currentSessionId != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *app = m_appearance.get(m_currentSessionId)) {
+            if (app->hasCrop && !app->cropRect.isEmpty()
+                && image.width() > 1 && image.height() > 1) {
+                item->setIntrinsicSize(image.size());
+                item->setSessionCrop(true, app->cropRect);
+            }
+        }
     }
     m_lastLoadError.clear();
     rememberSizeFromDecode(path, image);

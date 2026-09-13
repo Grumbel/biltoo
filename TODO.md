@@ -2,6 +2,30 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-738-session-crop-worker-bake.** Pass session appearance into Image-mode worker bake (Gallery→Image crop).
+Prior: **737**.
+
+### Problem
+Session crop is stored in `m_appearance` by `SessionImageId`. Image-mode worker
+`prepareImageModeDisplaySample` only read durable path-based thumtoo appearance,
+so Gallery→Image showed the full frame. After 737, GUI could not materialize
+multi-MP to compensate.
+
+### Change
+- Soft/quality jobs snapshot `appearanceForNewImageModeItem` into the worker
+- `prepareImageModeDisplaySample` prefers session snapshot over path store
+- Ladder upgrades bake session appearance on a worker before install
+- Cropped installs set intrinsic from baked sample size
+
+### Done criteria
+- [x] Bundle **738**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-737-no-gui-multimp-materialize.** Do not materializeDisplay multi-MP on GUI in installDisplayPixels.
 Prior: **736**.
 
