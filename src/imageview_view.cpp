@@ -1186,12 +1186,12 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     if (path == m_ssFromPath && incoming > ImageCache::longEdge(m_ssFromImage)) {
         m_ssFromImage = oriented;
         m_dwellSourceImage = oriented;
-        // Rebuild atlas when empty, when coverage fails, or when the sample
-        // reaches the viewport need edge (skip pure soft→soft-ish thrash).
+        // Rebuild when atlas missing/stale soft-upsample, or sample meets need.
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
             m_dwellAtlas.isNull()
             || incoming >= need
+            || incoming > ThumtooCache::kGalleryLadderEdge
             || !dwellAtlasCoversSource(m_dwellAtlas, m_dwellAtlasScale,
                                        m_dwellAtlasVw, m_dwellAtlasVh, params,
                                        oriented);
@@ -1206,6 +1206,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         const bool needAtlas =
             m_ssToAtlas.isNull()
             || incoming >= need
+            || incoming > ThumtooCache::kGalleryLadderEdge
             || !dwellAtlasCoversSource(m_ssToAtlas, m_ssToAtlasScale, m_ssToAtlasVw,
                                        m_ssToAtlasVh, params, oriented);
         if (needAtlas) {
@@ -2088,17 +2089,22 @@ bool ImageView::dwellAtlasCoversSource(const QPixmap &atlas, qreal atlasScale,
     }
     const int have = qMax(atlas.width(), atlas.height());
     const int srcLong = qMax(source.width(), source.height());
-    // Soft upscaled into atlas (src << have): keep painting it until a sample
-    // that can actually improve the atlas arrives (src approaching longCap).
-    // Rebuild only when the new source is meaningfully sharper than the atlas
-    // budget — avoids a GUI fromImage hitch for tiny PreferCache steps.
-    if (srcLong <= have * 5 / 4) {
+    // Atlas is always ~longCap (viewport budget). Soft samples are *upscaled*
+    // into it, so srcLong << have does NOT mean the atlas is sharp — the old
+    // "srcLong <= have*5/4 → cover" test left soft-looking atlases on screen
+    // forever while PreferCache delivered 1024/native.
+    //
+    // Soft band only: keep the soft-upscaled atlas (skip 256↔512 thrash).
+    // Above soft: require a rebuild so HQ replaces the soft upsample.
+    // At/above longCap: atlas is adequate if it fills the budget.
+    if (srcLong >= (params.longCap * 9) / 10) {
+        return have >= (params.longCap * 9) / 10;
+    }
+    if (srcLong <= ThumtooCache::kGalleryLadderEdge) {
         return true;
     }
-    // Source exceeds atlas size: only rebuild if it reaches the viewport budget
-    // (target-edge delivery). Intermediate 512→1024 with atlas already at
-    // longCap from a prior soft upscale is a no-op sharpness-wise.
-    return srcLong < params.longCap * 9 / 10;
+    // PreferCache mid/high sample while atlas is still a soft upsample.
+    return false;
 }
 
 void ImageView::invalidateDwellAtlasRebuilds()

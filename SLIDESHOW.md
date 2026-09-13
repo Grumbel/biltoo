@@ -112,6 +112,8 @@ capped at the image ladder max (2048). Headroom covers Ken Burns zoom past
 - Atlas size is **viewport-driven** (longCap), not source-driven.
 - Rebuild on the pool with **`Qt::SmoothTransformation`** (never Fast upscale of
   soft samples — that looked nearest-neighbour for the whole dwell).
+- Soft-upscaled atlases do **not** count as covering PreferCache HQ
+  (`srcLong ≤ atlasSize` was wrong — soft is stretched to longCap).
 - Keep the previous atlas until the new one finishes (`finishSlideshowAtlas`
   swaps in place). On promote, transfer the to-atlas to the dwell atlas.
 - `paintMotionCover`: prefer the atlas with `SmoothPixmapTransform`; if falling

@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-707-slideshow-atlas-hq-rebuild.** Soft-upscaled atlas no longer blocks PreferCache HQ.
+Prior: **706**.
+
+### Problem
+`dwellAtlasCoversSource` treated soft-upscaled atlases as covering any sample
+with srcLong ≤ atlasSize, so PreferCache 1024/native never replaced the soft
+atlas on screen.
+
+### Change
+- Soft-band samples may keep a soft atlas; above soft → rebuild
+- Phase upgrade requests atlas when sample leaves the soft band
+
+### Done criteria
+- [x] Bundle **707**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-706-slideshow-provisional-aspect.** Motion dest uses sample aspect while provisional.
 Prior: **705**.
 
