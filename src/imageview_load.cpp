@@ -945,16 +945,19 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
 void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
-    // Soft only on ←/→. PreferCache climb (capped to on-screen need) is kicked
-    // from tryInstall after soft lands. Native ImageLoader::load / EnsureTiles
-    // are NOT started here — archive full extract and tile pyramids were the
-    // dominant cost in THUMTOO_DEBUG logs on every key.
+    // Soft for fast paint. Image LoadReplace also starts Escalate + host native
+    // (skipped during slideshow nav hot / active show).
     const QPointer<ImageView> guard(this);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
 
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
+    if (isImageMode() && !m_slideshowProgressActive && !m_slideshowNavHot
+        && role == LoadReplace) {
+        requestEscalateClimb(path, ThumtooCache::kImageLadderEdge);
+        scheduleImageModeNativeDecodeOnce(path);
+    }
     Q_UNUSED(gen);
 }
 
@@ -1450,6 +1453,10 @@ void ImageView::ensureWorkspaceQualityClimb()
         }
         m_pathRaster->ensure(path, need, logicalSizeForPath(path),
                              PathRasterService::ClimbPolicy::EscalateToFull);
+        if (m_pathRaster->isGaveUp(path)
+            && !coversEdge(ii->displayPixelLongEdge(), need)) {
+            scheduleImageModeNativeDecodeOnce(path);
+        }
     }
 }
 
@@ -1472,12 +1479,23 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
             guard.data(),
             [guard, path, decoded, gen]() {
                 ImageView *const host = guard.data();
-                if (!host || gen != host->m_loadGeneration.load()) {
+                if (!host) {
                     return;
                 }
                 if (!decoded.isNull()) {
                     ImageCache::put(path, decoded);
-                    (void)host->tryInstallImageModeSample(path, decoded);
+                }
+                if (host->isImageMode()) {
+                    if (gen != host->m_loadGeneration.load()) {
+                        return;
+                    }
+                    if (!decoded.isNull()) {
+                        (void)host->tryInstallImageModeSample(path, decoded);
+                    }
+                } else if (host->isWorkspaceMode() && !decoded.isNull()) {
+                    host->onImagePreviewLoaded(
+                        path, decoded, host->m_loadGeneration.load(),
+                        static_cast<int>(LoadAdd));
                 }
             },
             Qt::QueuedConnection);
@@ -2075,16 +2093,19 @@ QImage ImageView::fullRasterForEdit(const QString &path) const
 
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const
 {
-    // True when the sample is good enough to stop PreferCache / soft climb.
-    // Soft band is never final; PreferCache above soft max is only final when
-    // native size is unknown (provisional). Known native uses ~90% coverage.
+    // Soft and overview (≤1024) are never final for Image/Workspace high-res.
+    // Provisional / unknown native: only ≥ kImageLadderEdge (2048) is enough.
+    // Known native: ~90% of true long edge.
     const int incoming = ImageCache::longEdge(image);
     if (incoming <= 0) {
         return false;
     }
+    if (incoming <= ThumtooCache::kBatchOverviewEdge) {
+        return false;
+    }
     const QSize logical = logicalSizeForPath(path);
     if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
-        return incoming > ThumtooCache::kGalleryLadderEdge;
+        return incoming >= ThumtooCache::kImageLadderEdge;
     }
     const int native = qMax(logical.width(), logical.height());
     return coversEdge(incoming, native);
@@ -2128,9 +2149,9 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
                   qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
     m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path),
                          PathRasterService::ClimbPolicy::EscalateToFull);
-    // Full is async. If already terminal short of need, host native decode once.
+    // Full is async. If terminal or nothing pending and still short, host native.
     if (!coversEdge(m_pathRaster->haveEdge(path), climbTo)
-        && m_pathRaster->isGaveUp(path)) {
+        && (m_pathRaster->isGaveUp(path) || !m_pathRaster->isClimbPending(path))) {
         scheduleImageModeNativeDecodeOnce(path);
     }
 }
