@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "biltoo_thread.h"
 #include "thumtoocache.h"
 #include "gallerylayout.h"
 #include "imageitem.h"
@@ -166,6 +167,7 @@ GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
 
 void ImageView::updateGalleryDecodeWindow()
 {
+    ASSERT_GUI_THREAD();
     QElapsedTimer decodeWinTimer;
     if (m_perfEnabled) {
         decodeWinTimer.start();
@@ -460,6 +462,7 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
 
 void ImageView::applyLayout(GalleryPackReason reason)
 {
+    ASSERT_GUI_THREAD();
     if (m_applyingLayout) {
         return;
     }

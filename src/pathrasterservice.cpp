@@ -66,6 +66,14 @@ void PathRasterService::ensure(const QString &path, int wantEdge,
         st.postTilePreferAttempts = 0;
         // Keep tilesQueued — pyramid build is still useful for higher want.
     }
+    if (policy == ClimbPolicy::EscalateToFull) {
+        // Gallery SoftDisplay may have settled Full shortfall at 1024; Image/Workspace
+        // must be allowed to request Full / native again.
+        ThumtooCache::forgetPixelsSettled(path, want);
+        ThumtooCache::forgetPixelsSettled(path, ImageCache::kDisplayMaxEdge);
+        st.fullDone = false;
+        st.fullQueued = false;
+    }
     st.want = qMax(st.want, want);
 
     const QImage cached = ImageCache::get(path);
@@ -118,8 +126,9 @@ bool PathRasterService::isGaveUp(const QString &path) const
     if (it == m_state.cend() || !it->preferGaveUp) {
         return false;
     }
-    // Above overview: not terminal until Full has been attempted.
-    if (it->want > ThumtooCache::kBatchOverviewEdge && !it->fullDone) {
+    // EscalateToFull: not terminal until Full has been attempted.
+    if (it->policy == ClimbPolicy::EscalateToFull
+        && it->want > ThumtooCache::kBatchOverviewEdge && !it->fullDone) {
         return false;
     }
     if (it->want <= ThumtooCache::kBatchOverviewEdge
@@ -264,35 +273,30 @@ void PathRasterService::pump(const QString &path, State &st)
         }
     }
 
-    // thumtoo request_raster(PreferCache) with edge > soft max is routed to
-    // request_overview_pixels and clamped to kBatchMaxEdge (1024). PreferCache
-    // cannot deliver 2048 whole-frame samples — Full (or true tile paint) is
-    // required when want exceeds overview.
+    // PreferCache above soft max is overview-clamped to 1024 in thumtoo.
+    // Full is only for EscalateToFull (Image / Workspace / Slideshow).
+    // SoftDisplay (Gallery) must NOT Full every visible cell — that is what
+    // made Gallery unusable (N archive full extracts).
     if (displayWant > overviewCap) {
-        if (!st.fullQueued && !st.fullDone) {
-            st.fullQueued = true;
-            st.fullDone = true;
-            int edge = ImageCache::kDisplayMaxEdge;
-            const QSize native = ThumtooCache::cachedSize(path);
-            if (native.isValid() && native.width() > 0 && native.height() > 0) {
-                edge = qMin(edge, qMax(native.width(), native.height()));
-            }
-            edge = qMax(edge, displayWant);
-            edge = qMin(edge, ImageCache::kDisplayMaxEdge);
-            // Always call scheduleFullPixels — do NOT gate on THUMTOO_API_FULL_PIXELS
-            // here. That macro is defined only in TUs that include thumtoo/client.hpp;
-            // this file does not, so #if compiled the Full path out and Gallery
-            // never left PreferCache/overview (logs: get_pixels edge=1024 only).
-            if (!ThumtooCache::scheduleFullPixels(path, edge)) {
-                st.fullQueued = false;
-                if (!st.tilesQueued) {
-                    st.tilesQueued = true;
-                    (void)ThumtooCache::scheduleTilePyramid(path);
+        if (st.policy == ClimbPolicy::EscalateToFull) {
+            if (!st.fullQueued && !st.fullDone) {
+                st.fullQueued = true;
+                st.fullDone = true;
+                int edge = ImageCache::kDisplayMaxEdge;
+                const QSize native = ThumtooCache::cachedSize(path);
+                if (native.isValid() && native.width() > 0 && native.height() > 0) {
+                    edge = qMin(edge, qMax(native.width(), native.height()));
                 }
+                edge = qMax(edge, displayWant);
+                edge = qMin(edge, ImageCache::kDisplayMaxEdge);
+                if (!ThumtooCache::scheduleFullPixels(path, edge)) {
+                    st.fullQueued = false;
+                }
+                return;
             }
             return;
         }
-        // Full already requested; optional FocusFull if Full failed to queue.
+        // SoftDisplay: stop at overview PreferCache; optional one FocusFull.
         if (!st.tilesQueued) {
             st.tilesQueued = true;
             (void)ThumtooCache::scheduleTilePyramid(path);

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-751-gallery-no-full-assert-off-gui.** Gallery SoftDisplay no longer Fulls every cell; schedule* off GUI + asserts.
+Prior: **750**.
+
+### Problem
+- Gallery slow: tip 748 made SoftDisplay schedule Full for every want>1024 cell (N archive extracts).
+- Those Full shortfalls also settled keys and blocked Image/Workspace Full.
+- scheduleDisplayPixels / schedulePixels / scheduleTilePyramid did URI on the GUI.
+
+### Change
+- SoftDisplay: PreferCache only (+ optional FocusFull); **no Full**
+- EscalateToFull: Full + `forgetPixelsSettled` so Image can retry after Gallery
+- scheduleDisplay / schedulePixels / scheduleTilePyramid: URI+request on workers + `ASSERT_NOT_GUI_THREAD`
+- `toThumtooUri`: assert if archive/page URI on GUI
+- `updateGalleryDecodeWindow` / `applyLayout` / `onLadderReady` / `scheduleGalleryDecode`: `ASSERT_GUI_THREAD`
+- Image native decode when need>1024 and climb terminal
+
+### Done criteria
+- [x] Bundle **751**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-750-workspace-image-climb-gui-assert.** Workspace installs ladder samples; Full off GUI; Image native fallback.
 Prior: **749**.
 

@@ -378,6 +378,13 @@ std::string resolveUriUncached(const QString &path)
 
 std::string toThumtooUri(const QString &path)
 {
+    // Archive URI work must not run on the GUI (assert in debug builds).
+    if (QThread::isMainThread()
+        && (path.contains(QLatin1String("//archive:"))
+            || path.contains(QLatin1String("//page:")))) {
+        Q_ASSERT_X(false, "toThumtooUri",
+                   "archive/page URI conversion on GUI thread — use a worker");
+    }
     if (path.isEmpty()) {
         return {};
     }
@@ -1031,12 +1038,6 @@ bool schedulePixels(const QString &path, int maxEdge)
         return false;
     }
     init();
-    const std::string uri = toThumtooUri(path);
-    if (uri.empty()) {
-        return false;
-    }
-    // Dedup + settle. Soft queue soft-cap: still accept (no silent DROP) so
-    // filmstrip/gallery are not starved; concurrency remains limited.
     const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
     {
         std::lock_guard lock(g_mu);
@@ -1049,14 +1050,28 @@ bool schedulePixels(const QString &path, int maxEdge)
             return false;
         }
         g_pixelsInflight.insert(inflightKey);
-        g_pixelsQueue.push_back(PendingPixels{path, maxEdge, inflightKey, uri});
         if (thumtooDebugEnabled()) {
-            thumtooDbg("schedulePixels queue path=%s edge=%d active=%d queued=%zu",
-                       qPrintable(path), maxEdge, g_pixelsActive,
-                       g_pixelsQueue.size());
+            thumtooDbg("schedulePixels queue path=%s edge=%d active=%d",
+                       qPrintable(path), maxEdge, g_pixelsActive);
         }
-        startNextPixelJobsUnlocked();
     }
+    // Resolve URI off the GUI — archive path→URI is not free.
+    const QString pathCopy = path;
+    const int edge = maxEdge;
+    QThreadPool::globalInstance()->start([pathCopy, edge, inflightKey]() {
+        ASSERT_NOT_GUI_THREAD();
+        const std::string uri = toThumtooUri(pathCopy);
+        std::lock_guard lock(g_mu);
+        if (!g_pixelsInflight.contains(inflightKey)) {
+            return;
+        }
+        if (uri.empty()) {
+            g_pixelsInflight.remove(inflightKey);
+            return;
+        }
+        g_pixelsQueue.push_back(PendingPixels{pathCopy, edge, inflightKey, uri});
+        startNextPixelJobsUnlocked();
+    });
     return true;
 #else
     Q_UNUSED(path);
@@ -1205,9 +1220,6 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
 #if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
-    // PreferCache: use durable soft/overview/tiles when present; host needs a
-    // callback so Gallery can install 1024–2048 after FocusFull tiles exist.
-    // Primary-only setInterest starts EnsureTiles but never delivered pixels.
     if (maxEdge <= 0 || isUnsupported(path)) {
         return false;
     }
@@ -1215,13 +1227,8 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
         maxEdge = kImageLadderEdge;
     }
     init();
-    const std::string uri = toThumtooUri(path);
-    if (uri.empty()) {
-        return false;
-    }
     const QString inflightKey =
         path + QLatin1Char('#') + QStringLiteral("disp") + QString::number(maxEdge);
-    thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);
         if (g_pixelsInflight.contains(inflightKey)
@@ -1231,73 +1238,89 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
             return false;
         }
         g_pixelsInflight.insert(inflightKey);
-        c = clientUnlocked();
-        if (!c) {
-            g_pixelsInflight.remove(inflightKey);
-            return false;
-        }
         ++g_pixelsActive;
         thumtooDbg("scheduleDisplay queue path=%s edge=%d active=%d",
                    qPrintable(path), maxEdge, g_pixelsActive);
     }
     const QString pathCopy = path;
     const int edge = maxEdge;
-    auto onDisplay = [pathCopy, edge, inflightKey](
-                         std::string, int,
-                         std::optional<thumtoo::PixelLevel> px) {
-        QByteArray ba;
-        int source = 0;
-        if (px && !px->bytes.empty()) {
-            source = static_cast<int>(px->source);
-            ba = QByteArray(
-                reinterpret_cast<const char *>(px->bytes.data()),
-                int(px->bytes.size()));
+    // URI + request_raster off GUI (archive URI conversion is not free).
+    QThreadPool::globalInstance()->start([pathCopy, edge, inflightKey]() {
+        ASSERT_NOT_GUI_THREAD();
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
         }
-        auto finish = [pathCopy, edge, inflightKey, ba = std::move(ba),
-                       source]() mutable {
-            ASSERT_NOT_GUI_THREAD();
-            QImage decoded;
-            if (!ba.isEmpty()) {
-                decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
-                ImageCache::stampDebugOverlayIfEnabled(
-                    &decoded,
-                    QStringLiteral("%1 e=%2").arg(QFileInfo(pathCopy).fileName()).arg(edge));
+        if (!c) {
+            std::lock_guard lock(g_mu);
+            g_pixelsInflight.remove(inflightKey);
+            g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            return;
+        }
+        const std::string uri = toThumtooUri(pathCopy);
+        if (uri.empty()) {
+            std::lock_guard lock(g_mu);
+            g_pixelsInflight.remove(inflightKey);
+            g_pixelsActive = qMax(0, g_pixelsActive - 1);
+            return;
+        }
+        auto onDisplay = [pathCopy, edge, inflightKey](
+                             std::string, int,
+                             std::optional<thumtoo::PixelLevel> px) {
+            QByteArray ba;
+            int source = 0;
+            if (px && !px->bytes.empty()) {
+                source = static_cast<int>(px->source);
+                ba = QByteArray(
+                    reinterpret_cast<const char *>(px->bytes.data()),
+                    int(px->bytes.size()));
             }
-            {
-                std::lock_guard doneLock(g_mu);
-                g_pixelsInflight.remove(inflightKey);
-                if (source != 0) {
-                    g_lastPixelSource.insert(pathCopy, source);
+            auto finish = [pathCopy, edge, inflightKey, ba = std::move(ba),
+                           source]() mutable {
+                ASSERT_NOT_GUI_THREAD();
+                QImage decoded;
+                if (!ba.isEmpty()) {
+                    decoded = ImageLoader::loadThumbnailFromBytes(ba, 0);
+                    ImageCache::stampDebugOverlayIfEnabled(
+                        &decoded,
+                        QStringLiteral("%1 e=%2")
+                            .arg(QFileInfo(pathCopy).fileName())
+                            .arg(edge));
                 }
-                const int got = decoded.isNull()
-                                    ? 0
-                                    : qMax(decoded.width(), decoded.height());
-                if (got >= (edge * 9) / 10) {
-                    g_pixelsSettled.insert(inflightKey);
+                {
+                    std::lock_guard doneLock(g_mu);
+                    g_pixelsInflight.remove(inflightKey);
+                    if (source != 0) {
+                        g_lastPixelSource.insert(pathCopy, source);
+                    }
+                    const int got = decoded.isNull()
+                                        ? 0
+                                        : qMax(decoded.width(), decoded.height());
+                    if (got >= (edge * 9) / 10) {
+                        g_pixelsSettled.insert(inflightKey);
+                    }
+                    g_pixelsActive = qMax(0, g_pixelsActive - 1);
+                    thumtooDbg(
+                        "scheduleDisplay DONE path=%s edge=%d ok=%d src=%d "
+                        "decoded=%dx%d active=%d",
+                        qPrintable(pathCopy), edge,
+                        (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
+                        decoded.height(), g_pixelsActive);
+                    startNextPixelJobsUnlocked();
                 }
-                g_pixelsActive = qMax(0, g_pixelsActive - 1);
-                thumtooDbg(
-                    "scheduleDisplay DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
-                    qPrintable(pathCopy), edge,
-                    (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
-                    decoded.height(), g_pixelsActive);
-                startNextPixelJobsUnlocked();
-            }
-            emit bridge()->ladderReady(pathCopy, edge, decoded);
-            emit bridge()->ladderProvenance(pathCopy, edge, source);
-        };
-        if (QThread::isMainThread()) {
+                emit bridge()->ladderReady(pathCopy, edge, decoded);
+                emit bridge()->ladderProvenance(pathCopy, edge, source);
+            };
             QThreadPool::globalInstance()->start(std::move(finish));
-        } else {
-            finish();
-        }
-    };
-    thumtoo::RasterRequest req;
-    req.uri = uri;
-    req.max_edge = edge;
-    req.frame_idx = 0;
-    req.policy = thumtoo::RasterPolicy::PreferCache;
-    c->request_raster(std::move(req), std::move(onDisplay));
+        };
+        thumtoo::RasterRequest req;
+        req.uri = uri;
+        req.max_edge = edge;
+        req.frame_idx = 0;
+        req.policy = thumtoo::RasterPolicy::PreferCache;
+        c->request_raster(std::move(req), std::move(onDisplay));
+    });
     return true;
 #else
     return scheduleOverviewPixels(path, qMin(maxEdge, kBatchOverviewEdge));
@@ -1533,21 +1556,25 @@ bool scheduleTilePyramid(const QString &path)
         return false;
     }
     init();
-    thumtoo::Client *c = nullptr;
-    {
-        std::lock_guard lock(g_mu);
-        c = clientUnlocked();
-    }
-    if (!c) {
-        return false;
-    }
-    const std::string uri = toThumtooUri(path);
-    if (uri.empty()) {
-        return false;
-    }
-    // Does not call set_interest — safe alongside Gallery near/speculative.
-    c->request_tile_pyramid(uri, /*min_scale=*/0, /*max_scale=*/-1, {});
-    thumtooDbg("scheduleTilePyramid path=%s", qPrintable(QFileInfo(path).fileName()));
+    const QString pathCopy = path;
+    QThreadPool::globalInstance()->start([pathCopy]() {
+        ASSERT_NOT_GUI_THREAD();
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (!c) {
+            return;
+        }
+        const std::string uri = toThumtooUri(pathCopy);
+        if (uri.empty()) {
+            return;
+        }
+        c->request_tile_pyramid(uri, /*min_scale=*/0, /*max_scale=*/-1, {});
+        thumtooDbg("scheduleTilePyramid path=%s",
+                   qPrintable(QFileInfo(pathCopy).fileName()));
+    });
     return true;
 #else
     Q_UNUSED(path);

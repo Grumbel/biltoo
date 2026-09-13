@@ -1166,6 +1166,7 @@ void ImageView::clearGallerySoftInflight(GallerySoftState &soft)
 
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
+    ASSERT_GUI_THREAD();
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
@@ -1238,6 +1239,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
 
 void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
 {
+    ASSERT_GUI_THREAD();
     if (path.isEmpty()) {
         return;
     }
@@ -2126,8 +2128,11 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
                   qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
     m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path),
                          PathRasterService::ClimbPolicy::EscalateToFull);
-    // Archive Full often settles at overview 1024 — one host native decode.
-    if (m_pathRaster->isGaveUp(path) && need > 0 && !coversEdge(have, need)) {
+    // After ensure: Full may still be async. If already terminal short of need
+    // (e.g. archive Full settled at 1024), host native decode once.
+    if (need > ThumtooCache::kBatchOverviewEdge
+        && !coversEdge(m_pathRaster->haveEdge(path), need)
+        && (m_pathRaster->isGaveUp(path) || !m_pathRaster->isClimbPending(path))) {
         scheduleImageModeNativeDecodeOnce(path);
     }
 }
