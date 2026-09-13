@@ -25,6 +25,9 @@
         kimageformats = pkgs.kdePackages.kimageformats;
         # Flake source of thumtoo (add_subdirectory in CMake; not a prebuilt package).
         thumtooSrc = thumtoo;
+        # Same pkg-config deps as standalone thumtoo (libunarr, mupdf, …). Without
+        # these, nested CMake configure silently disables optional backends.
+        thumtooBuildInputs = thumtoo.lib.mkBuildInputs pkgs;
       };
     in
     {

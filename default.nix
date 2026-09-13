@@ -17,6 +17,7 @@
 , djvulibre
 , kimageformats
 , thumtooSrc ? null
+, thumtooBuildInputs ? [ ]  # from thumtoo.lib.mkBuildInputs (libunarr, …)
 , sqlite
 , libjxl
   # Further vips Requires.private (and their .pc deps) — pkg-config noise only.
@@ -95,7 +96,7 @@ stdenv.mkDerivation (finalAttrs: {
     libraw
     openjpeg
     libhwy
-  ];
+  ] ++ thumtooBuildInputs;
 
   # Keep symbols, strip into a separate "debug" output for gdb/coredumpctl.
   # Build with optimisations still on (not a full -O0 Debug build).

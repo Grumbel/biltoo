@@ -15,8 +15,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-735-detect-stale-thumtoo-path**.
-Next bundle number: **736**.
+Latest agent handoff: **TODO.md → biltoo-736-thumtoo-build-inputs**.
+Next bundle number: **737**.
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
@@ -374,6 +374,10 @@ resolved path. If they differ (classic: cache still on `/nix/store/…-source`
 after the flake input moved), it re-runs configure automatically and prints both
 paths. That avoids silently linking an **old** store tree. Switching *between*
 store hashes still rebuilds thumtoo; keep a stable live path to stay incremental.
+
+**Deps for nested thumtoo:** biltoo’s derivation merges `thumtoo.lib.mkBuildInputs`
+(libunarr, mupdf, …). Without that, `add_subdirectory` configures thumtoo without
+thumtoo’s own `buildInputs` and optional backends show as **missing**.
 
 
 `ImageLoader::probeSize` and `loadThumbnail` consult `ThumtooCache` first

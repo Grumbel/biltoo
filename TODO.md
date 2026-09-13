@@ -2,6 +2,29 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-736-thumtoo-build-inputs.** Merge `thumtoo.lib.mkBuildInputs` into biltoo deps.
+Prior: **735**. Requires thumtoo **194**.
+
+### Problem
+Nested `add_subdirectory` builds thumtoo inside biltoo’s env. biltoo lacked
+libunarr (and other thumtoo-only deps) → CMake summary `libunarr ....... missing`.
+
+### Change
+- `default.nix`: `thumtooBuildInputs` appended to `buildInputs`
+- `flake.nix`: `thumtooBuildInputs = thumtoo.lib.mkBuildInputs pkgs`
+
+### Done criteria
+- [x] Bundle **736**
+
+### Verify
+After reconfigure: `libunarr ....... enabled` in cmake summary / About ✔.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-735-detect-stale-thumtoo-path.** biltoo-build detects CMake cache vs current THUMTOO_SOURCE_DIR mismatch.
 Prior: **734**.
 
