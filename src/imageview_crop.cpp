@@ -442,9 +442,37 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
 void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                                         const WorkspaceItemState *app, bool haveApp)
 {
-    // Intentional: not installDisplayPixels. Crop mode needs the full on-disk
-    // frame with content bakes only — crop is drafted on top, not baked yet.
-    item->setSourceImage(full);
+    if (!item || full.isNull()) {
+        return;
+    }
+    // Crop drafts live in contentRect / intrinsic space (SIZE.md). Soft or
+    // PreferCache samples must never redefine that box — only native/probed
+    // logical size. Entering crop on a provisional soft aspect stretched the
+    // full frame into the wrong ratio until leave.
+    const QString path = item->path();
+    QSize logical = logicalSizeForPath(path);
+    if (sampleCoversNativeLogical(path, full)) {
+        // Native (or near-native) raster: durable size is the sample when the
+        // map is still provisional / empty (thumtoo size may lag).
+        rememberSizeFromDecode(path, full);
+        logical = logicalSizeForPath(path);
+        if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
+            logical = full.size();
+            rememberImageSize(path, logical);
+        }
+    }
+    if (!isPositiveSize(logical) || logical.width() <= 1 || logical.height() <= 1
+        || isProvisionalImageSize(path)) {
+        // Still provisional: layout aspect from sample, magnitude capped —
+        // never adopt raw soft pixel dimensions as identity.
+        logical = layoutSizeForPath(path, full);
+    }
+    if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
+        item->setIntrinsicSize(logical);
+    }
+
+    // Pixels only — setSourceImageReady does not touch intrinsic geometry.
+    item->setSourceImageReady(full);
     // Always axis-aligned while cropping (placement was stashed in setCropMode).
     item->setItemRotation(0.0);
     item->setItemShear(0.0);
@@ -452,6 +480,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     item->setItemVFlip(false);
     // Re-apply content flips/quarter turns for this session image on the full frame
     // (crop draft is drawn in that space). Do not bake the crop yet.
+    // Quarter-turns transpose intrinsic via bakeRotate90.
     if (haveApp && app) {
         WorkspaceItemState contentOnly = *app;
         contentOnly.hasCrop = false;

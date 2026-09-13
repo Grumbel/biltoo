@@ -2,6 +2,29 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-729-crop-intrinsic-aspect.** Crop mode keeps logical intrinsic aspect (SIZE.md).
+Prior: **728**.
+
+### Problem
+`installFullImageForCrop` only called `setSourceImage` and left provisional soft
+intrinsic geometry in place. Soft/PreferCache aspect (or square stand-in) made the
+crop frame / painted full sample the wrong ratio.
+
+### Change
+- Before installing crop pixels: set intrinsic from `logicalSizeForPath` /
+  `rememberSizeFromDecode` when native, else `layoutSizeForPath` (provisional)
+- Use `setSourceImageReady` so sample resolution does not redefine geometry
+- Content bakes still transpose intrinsic on quarter-turns
+
+### Done criteria
+- [x] Bundle **729**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-728-gallery-soft-path-raster-sync.** Mirror PathRaster have/gaveUp into GallerySoftState; drop fullInflight.
 Prior: **727**.
 
