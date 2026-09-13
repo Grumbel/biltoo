@@ -2103,6 +2103,8 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
         return;
     }
     if (m_pathRaster->isGaveUp(path) && need > 0 && !coversEdge(have, need)) {
+        // PreferCache exhausted: one full request (settled on shortfall). Do not
+        // re-enter every ladderReady when overview is already the best sample.
         scheduleImageModeNativeFullQuiet(path);
         return;
     }
@@ -2130,11 +2132,17 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
                           cur->displayPixelLongEdge(),
                           cur->hasDecodedPixels() ? 1 : 0);
         }
-        // Even when the sample is not an upgrade (already showing equal soft),
-        // keep climbing until native coverage — otherwise soft latches forever.
+        // Climb while soft or short of native. When PreferCache already gave up
+        // and this delivery is not larger than what is painted, skip — full is
+        // one-shot/settled and re-entry only burned CPU (ladderReady loop).
+        const int incoming = ImageCache::longEdge(image);
+        const int painted = cur->displayPixelLongEdge();
+        const bool noUpgrade = incoming > 0 && painted > 0 && incoming <= painted;
         if (kind == SessionAppearance::PixelKind::SoftPreview
             || !sampleCoversNativeLogical(path, image)) {
-            ensureImageModeQualityClimb(path, image);
+            if (!(noUpgrade && m_pathRaster && m_pathRaster->isGaveUp(path))) {
+                ensureImageModeQualityClimb(path, image);
+            }
         }
         return true;
     }
@@ -2178,47 +2186,36 @@ void ImageView::finishImageModeNativeFullQuiet(const QString &path, const QImage
 
 void ImageView::scheduleImageModeNativeFullQuiet(const QString &path)
 {
-    // Full / near-native via thumtoo (unified format path). No LoadReplace bump.
+    // Full / near-native via thumtoo only. No LoadReplace bump. Shortfall is
+    // settled in ThumtooCache so we never re-queue the same edge (archive
+    // overview jpeg_shrink loop).
     if (path.isEmpty() || m_imageModeNativeClimbPaths.contains(path)) {
         return;
     }
     m_imageModeNativeClimbPaths.insert(path);
 #if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
     if (ThumtooCache::isAvailable()) {
-        // ladderReady → onPathRaster / tryInstall; finish clears inflight mark.
-        if (ThumtooCache::scheduleFullPixels(path, ImageCache::kDisplayMaxEdge)) {
+        int edge = ImageCache::kDisplayMaxEdge;
+        const QSize native = ThumtooCache::cachedSize(path);
+        if (native.isValid() && native.width() > 0 && native.height() > 0) {
+            edge = qMin(8192, qMax(native.width(), native.height()));
+        } else {
+            edge = 8192;
+        }
+        // ladderReady → upgradeImageModeFromLadder; settle stops re-queue.
+        if (ThumtooCache::scheduleFullPixels(path, edge)) {
             return;
         }
+        // Already inflight or settled (including prior shortfall) — stop.
+        m_imageModeNativeClimbPaths.remove(path);
+        return;
     }
 #endif
-    // Fallback when thumtoo full API unavailable.
-    const QPointer<ImageView> guard(this);
-    const quint64 gen = m_loadGeneration.load();
-    const QString pathCopy = path;
-    QThreadPool::globalInstance()->start(
-        [guard, pathCopy, gen]() {
-            if (!guard || !guard->matchesLoadGeneration(gen)) {
-                if (ImageView *view = guard.data()) {
-                    QTimer::singleShot(0, view, [view, pathCopy]() {
-                        view->m_imageModeNativeClimbPaths.remove(pathCopy);
-                    });
-                }
-                return;
-            }
-            QImage image = ImageLoader::load(pathCopy);
-            if (!image.isNull()) {
-                image = prepareImageModeDisplaySample(
-                    pathCopy, image, SessionAppearance::PixelKind::FullSource);
-            }
-            ImageView *view = guard.data();
-            if (!view) {
-                return;
-            }
-            QTimer::singleShot(0, view, [view, pathCopy, image, gen]() {
-                view->finishImageModeNativeFullQuiet(pathCopy, image, gen);
-            });
-        },
-        -1);
+    // No thumtoo full API: PreferCache display only (no biltoo native open).
+    m_imageModeNativeClimbPaths.remove(path);
+    if (ThumtooCache::isAvailable()) {
+        (void)ThumtooCache::scheduleDisplayPixels(path, ImageCache::kDisplayMaxEdge);
+    }
 }
 
 void ImageView::maybeClimbImageModePixelsForView()

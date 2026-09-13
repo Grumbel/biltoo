@@ -2,6 +2,30 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-720-full-shortfall-no-loop.** Stop scheduleFull ↔ tryInstall REJECT spin on overview shortfall.
+Prior: **719** (or **718** if 719 not applied).
+
+### Problem
+`request_full_pixels` for archive members often returns jpeg_shrink overview
+(≤1024) while want edge is native (~3056). `scheduleFull` did not settle on
+shortfall, `tryInstall` REJECT (already have 1024), `ensureImageModeQualityClimb`
+re-queued full → ladderReady forever.
+
+### Change
+- `scheduleFullPixels`: always settle path#full{edge} after completion
+- `forgetPixelsSettled`: clear full keys too
+- `scheduleImageModeNativeFullQuiet`: thumtoo only; skip when settled/inflight
+- `tryInstall`: no climb re-entry when PreferCache gave up and delivery ≤ painted
+
+### Done criteria
+- [x] Bundle **720**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-718-full-via-thumtoo.** Native climb uses ThumtooCache::scheduleFullPixels.
 Prior: **717**.
 

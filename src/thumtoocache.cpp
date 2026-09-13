@@ -909,10 +909,13 @@ void forgetPixelsSettled(const QString &path, int maxEdge)
         path + QLatin1Char('#') + QStringLiteral("ov") + QString::number(maxEdge);
     const QString dispKey =
         path + QLatin1Char('#') + QStringLiteral("disp") + QString::number(maxEdge);
+    const QString fullKey =
+        path + QLatin1Char('#') + QStringLiteral("full") + QString::number(maxEdge);
     std::lock_guard lock(g_mu);
     g_pixelsSettled.remove(softKey);
     g_pixelsSettled.remove(ovKey);
     g_pixelsSettled.remove(dispKey);
+    g_pixelsSettled.remove(fullKey);
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);
@@ -2737,14 +2740,18 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
                 const int got = decoded.isNull()
                                     ? 0
                                     : qMax(decoded.width(), decoded.height());
-                if (got >= (edge * 9) / 10 || got >= 2048) {
-                    g_pixelsSettled.insert(inflightKey);
-                }
+                // Always settle: one full attempt per path#edge. Shortfall is
+                // terminal (e.g. archive jpeg_shrink capped at overview 1024) —
+                // re-queueing the same edge spun ladderReady → tryInstall REJECT
+                // → scheduleFull forever.
+                g_pixelsSettled.insert(inflightKey);
                 g_pixelsActive = qMax(0, g_pixelsActive - 1);
                 thumtooDbg(
-                    "scheduleFull DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
+                    "scheduleFull DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d "
+                    "shortfall=%d active=%d",
                     qPrintable(pathCopy), edge, decoded.isNull() ? 0 : 1, source,
-                    decoded.width(), decoded.height(), g_pixelsActive);
+                    decoded.width(), decoded.height(),
+                    (got > 0 && got < (edge * 9) / 10) ? 1 : 0, g_pixelsActive);
                 startNextPixelJobsUnlocked();
             }
             if (!decoded.isNull()) {
