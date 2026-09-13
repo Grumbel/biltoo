@@ -35,11 +35,17 @@ invalidateAll()                        → session switch
 Raising `want` past `lastDisplayWant` clears `preferGaveUp` so gallery/Image
 zoom can climb PreferCache bands after a shortfall at a lower edge.
 
+`clearPreferGaveUp(path)` clears the shortfall latch and `lastDisplayGot` so the
+**same** want can be re-pumped (slideshow fixed-want recovery). Call `ensure`
+afterward.
+
 ## Slideshow
 
-`preloadSlideshowImage` only calls `m_pathRaster->ensure` and installs current
-cache. Phase buffers update on `rasterImproved`. Atlas rebuild policy stays on
-ImageView (viewport-sized texture).
+`preloadSlideshowImage` calls `m_pathRaster->ensure` and installs current cache.
+Phase buffers update on `rasterImproved`. After PreferCache shortfall at fixed
+want, `maybeRecoverSlideshowRaster` retries PreferCache once, then (from/to
+only) quiet full pixels. Atlas rebuild policy stays on ImageView
+(viewport-sized texture).
 
 ## Consumers
 

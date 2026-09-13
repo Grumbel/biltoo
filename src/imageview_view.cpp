@@ -624,6 +624,8 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         // Rasters live in ImageCache — do not clear the host map on stop.
         m_ssRasterInflight.clear();
         m_ssRasterPending.clear();
+        m_ssPreferRetryDone.clear();
+        m_ssFullClimbPaths.clear();
     }
     viewport()->update();
 }
@@ -1406,6 +1408,7 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     if (m_pathRaster && (path == m_ssFromPath || path == m_ssToPath)) {
         const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
         m_pathRaster->ensure(path, target, logicalSizeForPath(path));
+        maybeRecoverSlideshowRaster(path);
     }
 }
 
@@ -2025,6 +2028,87 @@ void ImageView::preloadSlideshowImage(const QString &path)
     const QImage have = ImageCache::get(path);
     if (!have.isNull()) {
         onSlideshowRasterReady(path, have);
+    }
+
+    // PreferCache may already have shortfall'd at this edge (cold path).
+    maybeRecoverSlideshowRaster(path);
+}
+
+void ImageView::maybeRecoverSlideshowRaster(const QString &path)
+{
+    // PreferCache shortfall latches preferGaveUp at fixed slideshow want.
+    // Gallery/Image clear that latch by raising want; slideshow does not —
+    // without recovery the phase stays on soft for the whole dwell.
+    if (!m_slideshowProgressActive || path.isEmpty() || !m_pathRaster) {
+        return;
+    }
+    const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
+    const int need = slideshowNeedEdge(target);
+    if (need <= 0) {
+        return;
+    }
+    const int have = ImageCache::longEdge(ImageCache::get(path));
+    if (ImageCache::adequate(ImageCache::get(path), need)) {
+        return;
+    }
+    if (!m_pathRaster->isGaveUp(path)) {
+        return; // still climbing or never started PreferCache
+    }
+
+    // One PreferCache retry: tiles / overview may exist after the cold miss.
+    if (!m_ssPreferRetryDone.contains(path)) {
+        m_ssPreferRetryDone.insert(path);
+        ThumtooCache::forgetPixelsSettled(path, target);
+        m_pathRaster->clearPreferGaveUp(path);
+        qCDebug(lcSlideshow).nospace()
+            << "[slideshow] prefer-retry " << QFileInfo(path).fileName()
+            << " need=" << need << " have=" << have << " want=" << target;
+        m_pathRaster->ensure(path, target, logicalSizeForPath(path));
+        return;
+    }
+
+    // Phase paths only: quiet full pixels (Image-mode pattern). Neighbours
+    // stay on soft until they become from/to and recover again.
+    if (path != m_ssFromPath && path != m_ssToPath) {
+        return;
+    }
+    scheduleSlideshowFullQuiet(path);
+}
+
+void ImageView::scheduleSlideshowFullQuiet(const QString &path)
+{
+    if (path.isEmpty() || m_ssFullClimbPaths.contains(path)) {
+        return;
+    }
+    m_ssFullClimbPaths.insert(path);
+#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
+    if (ThumtooCache::isAvailable()) {
+        int edge = ImageCache::kDisplayMaxEdge;
+        const QSize native = logicalSizeForPath(path);
+        if (native.isValid() && native.width() > 0 && native.height() > 0) {
+            edge = qMin(edge, qMax(native.width(), native.height()));
+        }
+        qCDebug(lcSlideshow).nospace()
+            << "[slideshow] full-quiet " << QFileInfo(path).fileName()
+            << " edge=" << edge;
+        if (ThumtooCache::scheduleFullPixels(path, edge)) {
+            return;
+        }
+        m_ssFullClimbPaths.remove(path);
+        return;
+    }
+#endif
+    m_ssFullClimbPaths.remove(path);
+    // No full API: last-ditch PreferCache at display max (forget settle again).
+    if (ThumtooCache::isAvailable()) {
+        const int edge = cappedDisplayEdgeForPath(path, ImageCache::kDisplayMaxEdge);
+        ThumtooCache::forgetPixelsSettled(path, edge);
+        if (m_pathRaster) {
+            m_pathRaster->clearPreferGaveUp(path);
+            m_pathRaster->ensure(path, edge, logicalSizeForPath(path));
+        } else {
+            (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+        }
     }
 }
 

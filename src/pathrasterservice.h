@@ -47,6 +47,12 @@ public:
     int haveEdge(const QString &path) const;
     int wantEdge(const QString &path) const;
     bool isGaveUp(const QString &path) const;
+    /**
+     * Clear PreferCache shortfall latch so the same want edge can be
+     * re-requested (slideshow: tiles may exist after a cold shortfall).
+     * Does not change want/have; call ensure() afterward to pump.
+     */
+    void clearPreferGaveUp(const QString &path);
     /** True when soft or PreferCache work is queued for @p path (epoch-current). */
     bool isClimbPending(const QString &path) const;
 

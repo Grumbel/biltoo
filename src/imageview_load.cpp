@@ -1219,6 +1219,11 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
     // PathRasterService::rasterImproved (no second direct call).
     if (m_pathRaster) {
         m_pathRaster->noteDelivery(path, maxEdge, image);
+        // PreferCache shortfall with no have increase does not emit
+        // rasterImproved — recover here so slideshow does not stay soft.
+        if (m_slideshowProgressActive) {
+            maybeRecoverSlideshowRaster(path);
+        }
     } else {
         if (!image.isNull()) {
             ImageCache::put(path, image);

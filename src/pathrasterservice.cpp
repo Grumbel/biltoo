@@ -120,6 +120,21 @@ bool PathRasterService::isGaveUp(const QString &path) const
     return it != m_state.cend() && it->preferGaveUp;
 }
 
+void PathRasterService::clearPreferGaveUp(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    auto it = m_state.find(path);
+    if (it == m_state.end()) {
+        return;
+    }
+    it->preferGaveUp = false;
+    it->displayQueued = false;
+    // Allow pump() to re-request the same displayWant after a shortfall.
+    it->lastDisplayGot = 0;
+}
+
 bool PathRasterService::isClimbPending(const QString &path) const
 {
     if (path.isEmpty()) {

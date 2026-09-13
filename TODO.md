@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-740-slideshow-prefer-shortfall-recover.** Slideshow recovers after PreferCache shortfall.
+Prior: **739**.
+
+### Problem
+PathRasterService sets `preferGaveUp` when PreferCache returns below ~90% of the
+requested edge and never clears it unless `want` rises. Slideshow keeps a fixed
+want for the whole dwell, so a cold PreferCache miss left soft (≤512) on screen
+even though the target edge (viewport×DPR×headroom) was higher. Image mode
+already falls back to quiet full pixels on gave-up; slideshow did not.
+
+### Change
+- `PathRasterService::clearPreferGaveUp` — clear shortfall latch + lastDisplayGot
+- `maybeRecoverSlideshowRaster`: one PreferCache retry after gave-up; phase
+  from/to paths then quiet `scheduleFullPixels`
+- Hook after `noteDelivery` in `onLadderReady` (shortfall with no have increase
+  does not emit `rasterImproved`)
+- Docs: SLIDESHOW.md, PATH_RASTER_SERVICE.md
+
+### Done criteria
+- [x] Bundle **740**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-739-ladder-lambda-null-warn.** Silence -Wnull-dereference in ladder bake GUI slot.
 Prior: **738**.
 
