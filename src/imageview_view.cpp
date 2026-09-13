@@ -609,6 +609,23 @@ void ImageView::flashHud(const QString &action, const QString &detail)
 
 void ImageView::setSlideshowProgress(bool active, int intervalMs)
 {
+    // Speed / interval edit while the show is already running: only update the
+    // interval. Do not restart the progress clock or clear phase buffers —
+    // that produced HUD and paint blips on every [/] or settings change.
+    if (active && m_slideshowProgressActive) {
+        m_slideshowProgressIntervalMs = qMax(0, intervalMs);
+        if (m_slideshowProgressIntervalMs > 0 && m_slideshowProgressTimer
+            && !m_slideshowProgressClockPaused) {
+            m_slideshowProgressTimer->start();
+        } else if (m_slideshowProgressTimer && m_slideshowProgressIntervalMs <= 0) {
+            m_slideshowProgressTimer->stop();
+        }
+        if (viewport()) {
+            viewport()->update();
+        }
+        return;
+    }
+
     m_slideshowProgressActive = active;
     m_slideshowProgressIntervalMs = active ? qMax(0, intervalMs) : 0;
     if (active) {
@@ -877,12 +894,18 @@ void ImageView::reapplySlideshowFraming()
         return;
     }
     if (m_slideshowMotion != SlideshowMotion::Off) {
-        // Restart dwell Ken Burns from the zoom base + current interval.
         int duration = m_slideshowProgressIntervalMs;
         if (duration < 250) {
             duration = 3000;
         }
-        startSlideshowMotion(duration);
+        // Already in motion (typical interval edit): retarget duration and keep
+        // normalized progress + dwell atlas. startSlideshowMotion cancels first
+        // and clears the atlas — that is the speed-change flash.
+        if (m_slideshowMotionActive) {
+            retargetSlideshowMotionDuration(duration);
+        } else {
+            startSlideshowMotion(duration);
+        }
     } else {
         cancelSlideshowMotion();
         applySlideshowZoomFraming(item);
@@ -2742,6 +2765,33 @@ void ImageView::armMotionBiasForPath(ImageItem *item, const QString &path)
         m_motionBiasPath = path;
     } else if (m_motionBiasPath.isEmpty()) {
         m_motionBiasPath = path;
+    }
+}
+
+void ImageView::retargetSlideshowMotionDuration(int durationMs)
+{
+    // Interval change while Ken Burns is running: keep atlas, biases, and
+    // normalized progress; only the path duration changes.
+    if (!m_slideshowMotionActive || m_slideshowMotion == SlideshowMotion::Off) {
+        return;
+    }
+    if (durationMs < 250) {
+        durationMs = 3000;
+    }
+    qreal progress = 0.0;
+    if (m_motionDurationMs > 0) {
+        qint64 elapsed = m_motionElapsedOffsetMs;
+        if (m_motionClock.isValid() && !m_slideshowMotionPaused) {
+            elapsed += m_motionClock.elapsed();
+        }
+        progress = qBound(0.0, qreal(elapsed) / qreal(m_motionDurationMs), 1.0);
+    }
+    const int pathMs = durationMs + qMax(0, m_slideshowTransitionDurationMs);
+    m_motionDurationMs = qMax(durationMs, pathMs);
+    m_motionElapsedOffsetMs = qint64(progress * qreal(m_motionDurationMs));
+    m_motionClock.start();
+    if (m_motionTimer && !m_slideshowMotionPaused) {
+        m_motionTimer->start();
     }
 }
 

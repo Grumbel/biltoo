@@ -198,6 +198,8 @@ public:
     void resetItemPlacementForMotion(ImageItem *item);
     void armMotionBiasForPath(ImageItem *item, const QString &path);
     void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
+    /** Interval edit: keep motion progress + atlas, change duration only. */
+    void retargetSlideshowMotionDuration(int durationMs);
     bool tryApplyAttentionMotionBiases(uint seed, const QImage &source);
     void applyGeometricMotionBiases(uint seed);
     void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());

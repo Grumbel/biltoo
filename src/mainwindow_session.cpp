@@ -2185,23 +2185,23 @@ void MainWindow::rearmSlideshowAfterIntervalChange(int oldInterval)
         return;
     }
     // Preserve normalized cycle progress under the new interval (running or
-    // paused). Re-arming from zero caused multi-second stalls on the current
-    // image whenever the user nudged interval or opened Slideshow Settings.
+    // paused). Do not tear down phase buffers, atlases, or Ken Burns — speed
+    // changes must be invisible except for timing.
     if (m_slideshowClockRunning && oldInterval != m_slideshowIntervalMs) {
         const int oldI = oldInterval > 0 ? oldInterval : 1;
         const int newI = m_slideshowIntervalMs > 0 ? m_slideshowIntervalMs : 1;
         remapSlideshowPhase(oldI, newI);
     }
-    if (m_imageView) {
-        m_imageView->cancelSlideshowTransition();
-    }
-    m_slideshowPendingToIndex = -1;
+    // Keep pending transition indices; only clear the cycle stamp so the next
+    // tick can re-bind fade math under the new interval without a cut.
     m_slideshowTransitionCycle = -1;
+    if (m_imageView) {
+        // Interval-only when already active (no progress-clock restart).
+        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        // Retarget motion duration; keep dwell atlas and phase images.
+        m_imageView->reapplySlideshowFraming();
+    }
     if (!m_slideshowPaused) {
-        if (m_imageView) {
-            m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-            m_imageView->reapplySlideshowFraming();
-        }
         updateSlideshowFromClock();
     }
 }

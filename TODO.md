@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-710-slideshow-speed-no-blip.** Interval edits do not restart phase/motion/atlas.
+Prior: **709**.
+
+### Problem
+Changing slideshow speed restarted progress clock, cleared dwell atlas via
+`startSlideshowMotion` → `cancelSlideshowMotion`, and forced framing rebuilds.
+
+### Change
+- `setSlideshowProgress(true)` while already active: interval-only
+- `retargetSlideshowMotionDuration`: keep progress + atlas
+- `reapplySlideshowFraming` uses retarget when motion is already active
+- `rearmSlideshowAfterIntervalChange`: no transition cancel / no teardown
+
+### Done criteria
+- [x] Bundle **710**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-709-image-mode-path-raster.** Image-mode PreferCache climb uses PathRasterService.
 Prior: **708**.
 
