@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "imagecache.h"
 #include "thumtoocache.h"
 #include "sessionappearance.h"
 
@@ -16,6 +17,9 @@
 #include <QTransform>
 #include <QUndoCommand>
 #include <QUndoStack>
+#include <QThreadPool>
+#include <QPointer>
+#include <QMetaObject>
 
 namespace {
 // Crop chrome under the frame: Expand alone on the left; Reset/Cancel/Apply
@@ -513,9 +517,26 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     if (!item) {
         return false;
     }
-    // Full native raster (ImageCache when climb already covered; else decode).
-    // Crop region can grow beyond soft samples only with real native pixels.
-    const QImage full = fullRasterForEdit(item->path());
+    const QString path = item->path();
+    m_cropAwaitingFullPath.clear();
+
+    // Prefer host cache when Image-mode / thumtoo full already covered native.
+    QImage full = ImageCache::get(path);
+    const bool cacheNative = !full.isNull() && sampleCoversNativeLogical(path, full);
+    if (!cacheNative) {
+        // Provisional: best available sample so crop UI opens without GUI-thread
+        // ImageLoader::load. Native full is requested async below.
+        if (full.isNull()) {
+            full = item->sourceImage();
+        }
+        if (full.isNull()) {
+            full = ImageCache::get(path);
+        }
+    }
+    if (full.isNull()) {
+        // No host pixels at all — one cold decode (rare).
+        full = fullRasterForEdit(path);
+    }
     if (full.isNull()) {
         return false;
     }
@@ -531,7 +552,109 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
+
+    if (!sampleCoversNativeLogical(path, full)) {
+        m_cropAwaitingFullPath = path;
+        requestCropFullRaster(path);
+        flashHud(tr("Crop"), tr("Loading full image…"));
+    }
     return true;
+}
+
+void ImageView::requestCropFullRaster(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
+    if (ThumtooCache::isAvailable()) {
+        int edge = 8192;
+        const QSize native = ThumtooCache::cachedSize(path);
+        if (native.isValid() && native.width() > 0 && native.height() > 0) {
+            edge = qMin(8192, qMax(native.width(), native.height()));
+        }
+        if (ThumtooCache::scheduleFullPixels(path, edge)) {
+            return;
+        }
+        // Inflight/settled — ladderReady may still deliver; keep awaiting.
+        if (ThumtooCache::isPixelsPending(path, edge)) {
+            return;
+        }
+    }
+#endif
+    // No thumtoo full API or schedule skipped: pool ImageLoader::load.
+    const quint64 gen = m_loadGeneration.load();
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start([guard, path, gen]() {
+        const QImage decoded = ImageLoader::load(path);
+        if (!guard) {
+            return;
+        }
+        QMetaObject::invokeMethod(
+            guard.data(),
+            [guard, path, decoded, gen]() {
+                if (ImageView *const host = guard.data()) {
+                    if (gen != host->m_loadGeneration.load()) {
+                        return;
+                    }
+                    if (!decoded.isNull()) {
+                        ImageCache::put(path, decoded);
+                    }
+                    host->maybeUpgradeCropFullRaster(path, decoded);
+                }
+            },
+            Qt::QueuedConnection);
+    });
+}
+
+void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
+{
+    if (!m_cropMode || path.isEmpty() || path != m_cropAwaitingFullPath) {
+        return;
+    }
+    if (image.isNull()) {
+        return;
+    }
+    // Accept PreferCache shortfall as best-effort so crop is not stuck forever.
+    ImageItem *item = m_cropTargetItem;
+    if (!item || item->path() != path) {
+        m_cropAwaitingFullPath.clear();
+        return;
+    }
+    if (!sampleCoversNativeLogical(path, image)
+        && ImageCache::longEdge(image) <= item->displayPixelLongEdge()) {
+        // Smaller or equal sample — keep waiting for a better delivery.
+        return;
+    }
+
+    const QSize oldSz = item->imageSize();
+    WorkspaceItemState app;
+    const bool haveApp = resolveCropEnterAppearance(item, &app);
+    installFullImageForCrop(item, image, haveApp ? &app : nullptr, haveApp);
+
+    const QSize newSz = item->imageSize();
+    if (oldSz.isValid() && newSz.isValid()
+        && (oldSz.width() != newSz.width() || oldSz.height() != newSz.height())
+        && m_cropRect.isValid()) {
+        const QRect scaled = SessionAppearance::scaleCropRect(
+            m_cropRect.toRect().normalized(), oldSz, newSz);
+        if (scaled.width() >= 1 && scaled.height() >= 1) {
+            m_cropRect = QRectF(scaled);
+        }
+    }
+    ensureCropRectValid();
+    m_cropAwaitingFullPath.clear();
+
+    if (isImageMode()) {
+        m_fitMode = true;
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+    flashHud(tr("Crop"), tr("Full image ready"));
 }
 
 void ImageView::restoreSessionCropAppearance(ImageItem *item)
@@ -698,6 +821,17 @@ void ImageView::applyAutoCrop()
 
 void ImageView::applyCrop()
 {
+    // Do not bake a provisional soft sample into the session crop.
+    if (!m_cropAwaitingFullPath.isEmpty()) {
+        ImageItem *item = m_cropTargetItem;
+        const QImage src = item ? item->sourceImage() : QImage();
+        if (!item || src.isNull()
+            || !sampleCoversNativeLogical(item->path(), src)) {
+            flashHud(tr("Crop"), tr("Still loading full image…"));
+            return;
+        }
+        m_cropAwaitingFullPath.clear();
+    }
     leaveCropModeInternal(true);
 }
 
@@ -1001,6 +1135,7 @@ void ImageView::clearCropModeState()
     m_cropStashedPlacementShear = 0.0;
     m_cropMode = false;
     m_cropShowingFullImage = false;
+    m_cropAwaitingFullPath.clear();
     m_cropEnterValid = false;
     m_cropEnterSource = QImage();
     m_cropTargetItem = nullptr;

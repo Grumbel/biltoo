@@ -2,6 +2,30 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-725-async-crop-full-raster.** Crop enter without GUI-thread full decode when possible.
+Prior: **724**.
+
+### Change
+- `prepareCropModeFullImage` opens on provisional ImageCache / item source when
+  native coverage is missing; schedules thumtoo `scheduleFullPixels` (pool
+  `ImageLoader::load` fallback)
+- `maybeUpgradeCropFullRaster` upgrades source + scales draft rect on delivery
+- `applyCrop` blocked while still awaiting native coverage
+- ladderReady → crop upgrade for Image and Workspace crop sessions
+
+### Done criteria
+- [x] Bundle **725**
+
+### Next
+- Optional: fold GallerySoftState into PathRasterService
+- Smoke-test cold crop enter (archive + plain file)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-724-full-raster-for-edit.** Crop/Workspace full pixels prefer ImageCache native coverage.
 Prior: **723**.
 

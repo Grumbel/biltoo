@@ -1480,6 +1480,10 @@ private:
     void updateCropRubberBand(const QPoint &viewPos);
     void endCropRubberBand();
     void leaveCropModeInternal(bool apply);
+    /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
+    void requestCropFullRaster(const QString &path);
+    /** Upgrade crop source when native full arrives for m_cropAwaitingFullPath. */
+    void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
     bool applyCropCommit(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
@@ -1850,6 +1854,11 @@ private:
     qreal m_cropRotateStartRotation = 0.0;
     /** True while crop mode shows the full on-disk image (not the cropped pixmap). */
     bool m_cropShowingFullImage = false;
+    /**
+     * Non-empty while crop entered on a provisional (soft/PreferCache) sample and
+     * a native full decode is in flight. Cleared on upgrade, leave crop, or fail.
+     */
+    QString m_cropAwaitingFullPath;
     /** Workspace free-rotate stashed while crop runs axis-aligned. */
     qreal m_cropStashedPlacementRotation = 0.0;
     qreal m_cropStashedPlacementShear = 0.0;

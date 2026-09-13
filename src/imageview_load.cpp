@@ -1203,6 +1203,11 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
         upgradeImageModeFromLadder(path, maxEdge, image);
     }
 
+    // Crop may be open in Image or Workspace on a provisional sample.
+    if (!image.isNull()) {
+        maybeUpgradeCropFullRaster(path, image);
+    }
+
     if (!isGalleryMode()) {
         return;
     }

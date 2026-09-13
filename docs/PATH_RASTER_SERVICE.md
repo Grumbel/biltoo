@@ -63,7 +63,13 @@ when the sample already covers native logical size (after Image-mode / thumtoo
 full climb), otherwise `ImageLoader::load` + `ImageCache::put`. Cold crop enter
 can still decode on the caller thread; warm re-enter after Image mode does not.
 
+## Crop full raster
+
+Crop enter uses provisional host pixels when native is not yet cached, then
+`requestCropFullRaster` → thumtoo `scheduleFullPixels` (pool `ImageLoader::load`
+fallback). `maybeUpgradeCropFullRaster` rescales the draft rect on delivery.
+Apply is blocked while still awaiting native coverage.
+
 ## Next
 
-- Optional async crop enter via `scheduleFullPixels` (avoid GUI-thread cold decode)
 - Optionally fold GallerySoftState have/gaveUp into PathRasterService if duplication hurts
