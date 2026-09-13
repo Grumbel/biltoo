@@ -595,7 +595,8 @@ void ImageView::requestCropFullRaster(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
+    // Always try scheduleFullPixels (API macros only defined in TUs that
+    // include thumtoo/client.hpp — not this file).
     if (ThumtooCache::isAvailable()) {
         int edge = 8192;
         const QSize native = ThumtooCache::cachedSize(path);
@@ -605,13 +606,11 @@ void ImageView::requestCropFullRaster(const QString &path)
         if (ThumtooCache::scheduleFullPixels(path, edge)) {
             return;
         }
-        // Inflight/settled — ladderReady may still deliver; keep awaiting.
         if (ThumtooCache::isPixelsPending(path, edge)) {
             return;
         }
     }
-#endif
-    // No thumtoo full API or schedule skipped: pool ImageLoader::load.
+    // scheduleFull skipped/unavailable: pool ImageLoader::load.
     const quint64 gen = m_loadGeneration.load();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {

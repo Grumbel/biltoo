@@ -2,6 +2,30 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-749-call-full-without-api-macro-gate.** PathRaster actually calls scheduleFullPixels.
+Prior: **748**.
+
+### Root cause
+`pathrasterservice.cpp` gated Full on `#if THUMTOO_API_FULL_PIXELS`, but that
+macro is only defined in TUs that `#include "thumtoo/client.hpp"`. PathRaster
+does not — so the Full branch was **compiled out**. Runtime only PreferCache
+(overview ≤1024). Logs with endless `get_pixels … edge=1024 tile_synth` and
+**no** `scheduleFull` match that exactly.
+
+### Change
+- PathRaster always calls `ThumtooCache::scheduleFullPixels` (function no-ops if API absent)
+- Same for crop `requestCropFullRaster`
+
+### Done criteria
+- [x] Bundle **749**
+- User should see `scheduleFull queue` / `scheduleFull DONE` in THUMTOO_DEBUG logs
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-748-full-above-overview-debounce-interest.** Full when want>1024; debounce interest after column pack.
 Prior: **747**.
 

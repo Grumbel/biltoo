@@ -276,27 +276,17 @@ void PathRasterService::pump(const QString &path, State &st)
             }
             edge = qMax(edge, displayWant);
             edge = qMin(edge, ImageCache::kDisplayMaxEdge);
-#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
+            // Always call scheduleFullPixels — do NOT gate on THUMTOO_API_FULL_PIXELS
+            // here. That macro is defined only in TUs that include thumtoo/client.hpp;
+            // this file does not, so #if compiled the Full path out and Gallery
+            // never left PreferCache/overview (logs: get_pixels edge=1024 only).
             if (!ThumtooCache::scheduleFullPixels(path, edge)) {
                 st.fullQueued = false;
-                // Settled shortfall: still try FocusFull once for later TileSynth.
                 if (!st.tilesQueued) {
                     st.tilesQueued = true;
                     (void)ThumtooCache::scheduleTilePyramid(path);
                 }
             }
-#else
-            if (!st.tilesQueued) {
-                st.tilesQueued = true;
-                (void)ThumtooCache::scheduleTilePyramid(path);
-            }
-            ThumtooCache::forgetPixelsSettled(path, displayWant);
-            st.preferGaveUp = false;
-            st.displayQueued = true;
-            st.lastDisplayWant = displayWant;
-            st.lastDisplayGot = 0;
-            (void)ThumtooCache::scheduleDisplayPixels(path, displayWant);
-#endif
             return;
         }
         // Full already requested; optional FocusFull if Full failed to queue.
