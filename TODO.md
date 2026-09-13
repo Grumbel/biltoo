@@ -2,6 +2,27 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-746-imageloader-soft-only-schedule.** ImageLoader never schedulePixels above soft max.
+Prior: **745**.
+
+### Problem
+Page/PDF-image miss paths called `schedulePixels(path, edge)` with native-sized
+edges (up to 4096+), violating Soft ≤512 and the host contract Soft-band rule.
+
+### Change
+- Cap all ImageLoader `schedulePixels` at `kGalleryLadderEdge`
+- Document ImageLoader Soft+Overview only; crop Full is edit path
+- Contract §1 tightened
+
+### Done criteria
+- [x] Bundle **746**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-745-loadreplace-path-raster-soft.** Image LoadReplace cold open climbs via PathRaster only.
 Prior: **744**.
 

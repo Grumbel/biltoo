@@ -27,9 +27,15 @@ Consumers call `PathRasterService::ensure` (with a climb policy). They **must no
 call `scheduleDisplayPixels` / `forgetPixelsSettled` / ad-hoc PreferCache retries
 to “unstick” a path. That is the service’s job under the policy below.
 
-**Soft-band exception:** `ImageLoader::loadThumbnail` / filmstrip may call
-`ThumtooCache::schedulePixels` (Soft ≤512) when PathRaster is not the caller.
-Display (PreferCache) and Full **must** still go through PathRasterService.
+**ImageLoader exception:** `ImageLoader` may schedule **Soft** (≤512) and
+**Overview** (≤1024) for `loadThumbnail` / filmstrip / page soft stand-ins when
+PathRaster is not the caller. It must **never** `schedulePixels` above soft max
+and must **not** call PreferCache Display or Full.
+
+Display (PreferCache) climb goes through PathRasterService. Full for display
+escalate is PathRaster `EscalateToFull`. Full for **crop/edit native** is
+`requestCropFullRaster` / `scheduleFullPixels` (edit path, not display climb).
+
 ImageView LoadReplace cold open uses `requestEscalateClimb` (not bare
 `schedulePixels`).
 

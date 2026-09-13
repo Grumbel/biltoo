@@ -26,6 +26,9 @@
 #include <QImageReader>
 
 namespace ImageLoader {
+// Thumtoo schedules from this unit: Soft (≤512) and Overview (≤1024) only.
+// PreferCache Display and Full are PathRasterService / crop edit (see
+// docs/THUMTOO_HOST_CONTRACT.md). Never schedulePixels above kGalleryLadderEdge.
 namespace {
 
 QImage scaleToMaxEdge(QImage image, int maxEdge)
@@ -211,7 +214,9 @@ QImage loadPageRef(const QString &path, int maxEdge)
                 path, qMin(edge, ThumtooCache::kGalleryLadderEdge));
             return scaleToMaxEdge(img, maxEdge);
         }
-        ThumtooCache::schedulePixels(path, edge);
+        // Soft band only (THUMTOO_HOST_CONTRACT §1) — never Soft at page native edge.
+        ThumtooCache::schedulePixels(
+            path, qMin(edge, ThumtooCache::kGalleryLadderEdge));
         return {};
     }
     qWarning("ImageLoader: cannot load page (no thumtoo): %s", qPrintable(path));
@@ -861,7 +866,8 @@ QImage load(const QString &path)
             }
         }
         if (ThumtooCache::isAvailable()) {
-            ThumtooCache::schedulePixels(path, edge);
+            // Soft band only — Full/native is host PathRaster / crop Full (contract).
+            ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
         }
         return {};
     }
