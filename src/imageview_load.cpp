@@ -774,9 +774,8 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 || qAbs(double(sizeBefore.width()) / qMax(1, sizeBefore.height())
                         - double(targetSize.width()) / qMax(1, targetSize.height()))
                        > 0.02;
-            if (needFit || m_stickyZoomEnabled) {
-                // Aspect change or sticky framing: reframe. Sticky Fill/1:1 then
-                // restores normalized pan for prev/next comparison.
+            if (needFit || m_stickyZoomEnabled || m_havePreservedViewScale) {
+                // Aspect change, sticky mode, or free-zoom preserve across files.
                 resetImageModeItemPlacement(item);
                 applyImageModeFraming(item);
                 didFit = 1;

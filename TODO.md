@@ -2,6 +2,28 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-774-free-nav-preserve-zoom-pan.** Non-sticky Image nav keeps view scale + pan.
+Prior: **773**.
+
+### Behaviour
+- Sticky Fit/Fill/1:1 unchanged
+- No sticky mode: prev/next keeps absolute view scale and normalized pan
+- Cold open (no prior capture) still defaults to Fit
+
+### Apply
+```bash
+git pull /path/to/biltoo-774-free-nav-preserve-zoom-pan.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **774**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-773-sticky-pan-null-guards.** Harden sticky pan / targetItem against UAF (intermittent SEGV).
 Prior: **772**.
 

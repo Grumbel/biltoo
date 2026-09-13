@@ -499,16 +499,20 @@ void ImageView::setStickyZoomKind(StickyZoomKind kind)
 
 void ImageView::captureStickyPanAnchor(ImageItem *item)
 {
+    // Always sample scale + pan when leaving an image so free navigation
+    // (no sticky Fit/Fill/1:1) can keep the same zoom and relative position.
     m_haveStickyPanAnchor = false;
-    // Fit fills the view — no meaningful pan to carry.
-    if (!m_stickyZoomEnabled || m_stickyZoomKind == StickyZoomKind::Fit) {
-        return;
-    }
+    m_havePreservedViewScale = false;
     if (!item || !viewport() || !m_scene) {
         return;
     }
     if (!m_items.contains(item) || item->scene() != m_scene) {
         return;
+    }
+    const qreal sx = transform().m11();
+    if (qIsFinite(sx) && sx > 1e-6) {
+        m_preservedViewScale = sx;
+        m_havePreservedViewScale = true;
     }
     const QRectF r = item->sceneBoundingRect();
     if (r.width() < 1.0 || r.height() < 1.0) {
@@ -592,18 +596,35 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         }
         return;
     }
-    // Non-sticky: Fit/Fill follow flags; 1:1 keeps native scale centred.
-    if (!m_fitMode && !m_fillMode) {
+    // Non-sticky: keep the previous view scale + relative pan (prev/next at the
+    // same zoom). Cold open with no prior capture still defaults to Fit.
+    if (m_havePreservedViewScale) {
+        m_fitMode = false;
+        m_fillMode = false;
         item->setItemScale(1.0);
         resetTransform();
-        centerOn(item);
+        scale(m_preservedViewScale, m_preservedViewScale);
         if (m_scene) {
             m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
         }
         refreshScrollBarGeometry();
+        restoreStickyPanAnchor(item);
+        const QPointer<ImageView> guard(this);
+        QTimer::singleShot(0, this, [guard]() {
+            ImageView *const view = guard.data();
+            if (!view || view->m_stickyZoomEnabled || !view->m_scene
+                || !view->viewport()) {
+                return;
+            }
+            if (ImageItem *cur = view->targetItem()) {
+                view->restoreStickyPanAnchor(cur);
+            }
+        });
         return;
     }
-    fitItem(item, currentFitAspectMode());
+    m_fitMode = true;
+    m_fillMode = false;
+    fitItem(item, Qt::KeepAspectRatio);
 }
 
 void ImageView::cancelZoomRegion()

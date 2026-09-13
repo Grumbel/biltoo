@@ -1683,6 +1683,9 @@ private:
     bool m_haveStickyPanAnchor = false;
     qreal m_stickyPanNormX = 0.5;
     qreal m_stickyPanNormY = 0.5;
+    /** Free (non-sticky) nav: keep absolute view scale across images. */
+    bool m_havePreservedViewScale = false;
+    qreal m_preservedViewScale = 1.0;
     ViewMode m_viewMode = ViewMode::Image;
     bool m_imageModeNavEnabled = false;
     bool m_galleryReturnAvailable = false;
