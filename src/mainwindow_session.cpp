@@ -1035,7 +1035,7 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     // Drop the previous filmstrip immediately so History / Open does not keep
     // showing old session thumbs while expand or async sort runs.
     if (m_thumbnailBar) {
-        m_thumbnailBar->cancelPendingLoads();
+        // setSession() cancels pending loads (private cancelPendingLoads).
         m_thumbnailBar->setSession(QStringList(), QVector<SessionImageId>());
     }
 

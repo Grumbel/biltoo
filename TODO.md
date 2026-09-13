@@ -2,6 +2,22 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-704-fix-cancel-pending-private.** Drop private cancelPendingLoads call.
+Prior: **703**.
+
+### Change
+`loadFiles` used `ThumbnailBar::cancelPendingLoads()` which is private;
+`setSession()` already cancels pending loads.
+
+### Done criteria
+- [x] Bundle **704**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-703-session-switch-stale-pixels.** Session open invalidates loads; no prior-frame on path change.
 Prior: **702**.
 
