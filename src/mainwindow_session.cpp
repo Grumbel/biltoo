@@ -2656,7 +2656,16 @@ void MainWindow::stopSlideshow()
     updateSlideshowActionUi();
     if (m_imageView) {
         m_imageView->setSlideshowProgress(false);
-        if (announce) {
+        // Slideshow advances the session index without loadImage (pure phase owns
+        // the viewport). Leaving without a canvas load left Image mode on the
+        // pre-show tile. Session flags are already cleared so LoadReplace runs.
+        if (announce && isImageMode()
+            && m_currentIndex >= 0
+            && m_currentIndex < m_session.paths().size()) {
+            m_imageView->loadImage(m_session.paths().at(m_currentIndex));
+            m_imageView->restoreImageFramingAfterSlideshow();
+            m_imageView->flashHud(tr("■  Slideshow stopped"));
+        } else if (announce) {
             m_imageView->restoreImageFramingAfterSlideshow();
             m_imageView->flashHud(tr("■  Slideshow stopped"));
         }

@@ -2,6 +2,26 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-702-slideshow-stop-reload.** Esc/stop reloads current slide into Image mode.
+Prior: **701**.
+
+### Problem
+Slideshow never called `loadImage` on advance; stopping left Image mode on the
+pre-show tile.
+
+### Change
+`stopSlideshow`: after clearing the phase, `loadImage` the current session path
+when still in Image mode.
+
+### Done criteria
+- [x] Bundle **702**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-701-status-remaining-work.** Status bar counts remaining work, not inflight flicker.
 Prior: **700**.
 

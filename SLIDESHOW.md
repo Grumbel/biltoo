@@ -147,6 +147,13 @@ promote already hold the pixels.
 While the slideshow session is active, `applyCurrentIndexCanvasChange` does not
 `loadImage` (same rule as auto-advance).
 
+## Leaving the show (Esc / stop)
+
+Slideshow advances `m_currentIndex` without `loadImage` (phase buffers own the
+viewport). On stop, **reload the current path** into Image mode after
+`setSlideshowProgress(false)` so the canvas matches the slide that was showing
+— not the image that was open when the show started.
+
 ## Pause
 
 While paused, the clock does not advance. The pause state stays visible until resume or stop.
