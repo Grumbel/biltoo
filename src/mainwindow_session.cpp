@@ -1435,6 +1435,7 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     if (m_slideshowPaused && m_imageView) {
         m_imageView->cancelSlideshowTransition();
         m_slideshowPendingToIndex = -1;
+        m_slideshowPreloadToIdx = -1;
     }
 
     m_currentIndex = index;
@@ -2433,6 +2434,7 @@ void MainWindow::onSlideshowUserNavigated()
 
     m_imageView->cancelSlideshowTransition();
     m_slideshowPendingToIndex = -1;
+    m_slideshowPreloadToIdx = -1;
     m_slideshowTransitionCycle = -1;
     m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
     m_slideshowPausedAccumMs = 0;
@@ -2555,6 +2557,7 @@ void MainWindow::seekSlideshowFraction(qreal fraction)
     m_slideshowPausedAccumMs = 0;
     m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
+    m_slideshowPreloadToIdx = -1;
     if (!m_slideshowPaused) {
         m_slideshowClock.start();
     }
@@ -2596,6 +2599,7 @@ void MainWindow::pauseSlideshow()
     m_slideshowPausedAccumMs = 0; // position is authoritative
     m_slideshowPaused = true;
     m_slideshowPendingToIndex = -1;
+    m_slideshowPreloadToIdx = -1;
     if (m_slideshowTimer) {
         m_slideshowTimer->stop();
     }
@@ -2662,6 +2666,7 @@ void MainWindow::stopSlideshow()
     m_slideshowPosition = 0.0;
     m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
+    m_slideshowPreloadToIdx = -1;
     if (m_slideshowTimer) {
         m_slideshowTimer->stop();
     }

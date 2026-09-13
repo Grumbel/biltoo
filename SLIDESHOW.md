@@ -107,6 +107,7 @@ capped at the image ladder max (2048). Headroom covers Ken Burns zoom past
   1. one PreferCache retry (`clearPreferGaveUp` + `forgetPixelsSettled`);
   2. for active phase paths (from/to) only, quiet `scheduleFullPixels` (same
      idea as Image-mode native full after PreferCache exhausts).
+- Look-ahead preload (`toIdx`…`+3`) runs **once per toIdx**, not every clock tick.
 - Clamp + orient run on the **thread pool**; the GUI only assigns the finished
   buffer.
 - Do **not** call Image-mode `loadImage` / `LoadReplace` while a slideshow

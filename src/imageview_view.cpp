@@ -2015,11 +2015,37 @@ void ImageView::preloadSlideshowImage(const QString &path)
         return;
     }
     const int targetEdge = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
+    const int need = slideshowNeedEdge(targetEdge);
     const QSize native = logicalSizeForPath(path);
+    const QImage cached = ImageCache::get(path);
+    const int haveEdge = ImageCache::longEdge(cached);
+
+    // Quiet no-ops: clock used to call this every tick for +0..+3 look-ahead.
+    if (need > 0 && ImageCache::adequate(cached, need)) {
+        if (!cached.isNull()) {
+            onSlideshowRasterReady(path, cached);
+        }
+        return;
+    }
+    if (m_pathRaster->isClimbPending(path)) {
+        if (!cached.isNull()) {
+            onSlideshowRasterReady(path, cached);
+        }
+        return;
+    }
+    // PreferCache already exhausted for this want: recover once, do not re-ensure.
+    if (m_pathRaster->isGaveUp(path) && m_ssPreferRetryDone.contains(path)) {
+        maybeRecoverSlideshowRaster(path); // phase → full-quiet if not yet
+        if (!cached.isNull()) {
+            onSlideshowRasterReady(path, cached);
+        }
+        return;
+    }
+
     qCDebug(lcSlideshow).nospace()
         << "[slideshow] preload-ensure " << QFileInfo(path).fileName()
         << " edge=" << targetEdge
-        << " have=" << m_pathRaster->haveEdge(path);
+        << " have=" << haveEdge;
 
     // Single climb owner — soft + PreferCache until adequate (or gave up).
     m_pathRaster->ensure(path, targetEdge, native);

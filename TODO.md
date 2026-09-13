@@ -2,6 +2,29 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-741-slideshow-preload-once-per-to.** Stop per-tick look-ahead preload storm.
+Prior: **740**.
+
+### Problem
+`updateSlideshowFromClock` called `preloadSlideshowImage` for toIdx..+3 on **every**
+16ms tick. PreferCache often plateaus at overview 1024 while want is 2048, so
+`ensure` was a no-op but logs (and work) still fired in a tight loop.
+
+### Change
+- Gate look-ahead on `m_slideshowPreloadToIdx` (once per toIdx)
+- `preloadSlideshowImage` quiet early-out when adequate, climb pending, or
+  PreferCache recovery already exhausted
+- Reset preload gate on arm / user nav / settings apply
+
+### Done criteria
+- [x] Bundle **741**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-740-slideshow-prefer-shortfall-recover.** Slideshow recovers after PreferCache shortfall.
 Prior: **739**.
 

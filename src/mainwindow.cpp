@@ -1447,6 +1447,7 @@ void MainWindow::showSlideshowSettings()
         if (m_slideshowClockRunning && !m_slideshowPaused) {
             m_imageView->cancelSlideshowTransition();
             m_slideshowPendingToIndex = -1;
+            m_slideshowPreloadToIdx = -1;
             m_slideshowTransitionCycle = -1;
             m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
             m_imageView->reapplySlideshowFraming();
@@ -1489,6 +1490,7 @@ void MainWindow::armSlideshowAdvanceTimer()
     m_slideshowPosition = 0.0;
     m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
+    m_slideshowPreloadToIdx = -1;
     m_slideshowClock.start();
     m_slideshowClockRunning = true;
 
@@ -1571,7 +1573,10 @@ void MainWindow::updateSlideshowFromClock()
         m_imageView->setSlideshowCycleProgress(phaseT);
     }
 
-    if (m_imageView && m_session.paths().size() > 1) {
+    // Look-ahead once per toIdx — not every 16ms clock tick (was a log/CPU storm
+    // when PreferCache plateaued below want and ensure stayed a no-op).
+    if (m_imageView && n > 1 && toIdx != m_slideshowPreloadToIdx) {
+        m_slideshowPreloadToIdx = toIdx;
         m_imageView->preloadSlideshowImage(m_session.paths().at(toIdx));
         m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 1) % n));
         m_imageView->preloadSlideshowImage(m_session.paths().at((toIdx + 2) % n));
@@ -1617,6 +1622,7 @@ void MainWindow::updateSlideshowFromClock()
             setCurrentIndex(toIdx);
             m_slideshowAdvancing = false;
             m_slideshowPendingToIndex = -1;
+            m_slideshowPreloadToIdx = -1;
         }
     }
 }

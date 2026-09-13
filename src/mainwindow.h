@@ -697,6 +697,8 @@ private:
     qint64 m_slideshowTransitionCycle = -1;
     /** Target session index for the in-flight transition (-1 = none). */
     int m_slideshowPendingToIndex = -1;
+    /** Last toIdx for which look-ahead preloadSlideshowImage ran (clock tick gate). */
+    int m_slideshowPreloadToIdx = -1;
     /** True while the repeating clock tick is the authority (playing). */
     bool m_slideshowClockRunning = false;
 
