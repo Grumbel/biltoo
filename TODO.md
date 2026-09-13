@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-754-image-workspace-native-climb.** Fix provisional covers; Image parallel native; Workspace native on gave-up.
+Prior: **753**.
+
+### Problem
+Gallery OK; Image/Workspace low-res.
+
+`sampleCoversNativeLogical` treated any sample **>512** as final when native size was
+provisional/unknown — PreferCache 1024 stopped Image climb forever.
+
+Image LoadReplace only started soft; Full cascade was easy to skip. Workspace
+had no native fallback after Full shortfall.
+
+### Change
+- provisional/unknown: only ≥2048 counts as covering; overview ≤1024 never final
+- Image LoadReplace: PathRaster Escalate + `scheduleImageModeNativeDecodeOnce` with soft
+- Workspace: native when PathRaster gave up short of on-screen need
+- Native install also refreshes Workspace items with that path
+
+### Done criteria
+- [x] Bundle **754**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-753-full-again-native-on-gaveup.** SoftDisplay Full (cap 2); native when gave-up noUpgrade.
 Prior: **752**.
 
