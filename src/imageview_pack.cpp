@@ -559,7 +559,15 @@ void ImageView::applyLayout(GalleryPackReason reason)
         // falls in the new bounds (clamped by QGraphicsView otherwise).
         centerOn(keptCenter);
     }
-    updateGalleryDecodeWindow();
+    // Explicit column/layout changes used to call updateGalleryDecodeWindow
+    // synchronously → setInterest epoch cancel → FocusFull/Full queue thrash
+    // and multi-second stalls. Debounce interest+decode after pack.
+    if (reason == GalleryPackReason::ExplicitLayout
+        || reason == GalleryPackReason::EnterGallery) {
+        scheduleGalleryDecodeWindowRefresh(180);
+    } else {
+        updateGalleryDecodeWindow();
+    }
 }
 
 bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,

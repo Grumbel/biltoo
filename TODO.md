@@ -2,6 +2,33 @@
 
 ## Status (2026-09-13)
 
+**Tip: biltoo-748-full-above-overview-debounce-interest.** Full when want>1024; debounce interest after column pack.
+Prior: **747**.
+
+### Root cause (logs)
+`scheduleDisplay edge=2048 ok=0 src=4 decoded=683x1024` — thumtoo routes PreferCache
+with edge>512 to overview (max 1024). TileSynth at 1024 is expected, not a miss.
+FocusFull cannot make PreferCache return 2048. Column changes called
+`updateGalleryDecodeWindow` → `setInterest` every pack → epoch cancel thrash.
+
+### Change
+- PathRaster: PreferCache plateau + want > overview → **scheduleFullPixels** (Gallery SoftDisplay included for visible ensures only)
+- Debounce decode-window/interest 180ms after ExplicitLayout/EnterGallery
+- Contract documents PreferCache overview clamp
+
+### Done criteria
+- [x] Bundle **748**
+
+### Residual
+- Viewport tile paint still not implemented
+- Full on many simultaneous gallery cells can still be heavy (concurrency budget limits ensure)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
 **Tip: biltoo-747-focusfull-on-display-need.** Generate tiles when PreferCache cannot meet on-screen need.
 Prior: **746**.
 

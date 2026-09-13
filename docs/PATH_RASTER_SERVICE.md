@@ -29,12 +29,12 @@ failure, and consumers invented different recoveries.
 ## ClimbPolicy
 
 ```text
-SoftDisplay    — Gallery: Soft → PreferCache → FocusFull + PreferCache retry (no Full)
-EscalateToFull — Image/Slideshow: Soft → PreferCache → FocusFull → Full → PreferCache retry
+SoftDisplay / EscalateToFull — Soft → PreferCache (≤1024 effective) → Full when want > 1024
 ```
 
-PreferCache does **not** generate tiles. Above overview (~1024) the service calls
-`scheduleTilePyramid` so TileSynth can meet display edges.
+thumtoo PreferCache above soft max is overview-clamped to 1024. Whole-frame
+edges above that need **Full**. Gallery only ensures a concurrency-bounded
+visible set so Full is not N× archive extract.
 
 PreferCache does **not** guarantee `got ≈ request`. Plateau is normal. Raising
 `want` past `lastDisplayWant` clears the plateau latch (gallery/Image zoom).

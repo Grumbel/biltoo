@@ -54,9 +54,11 @@ Biltoo requests a **band**, not “exactly N pixels.” Edge numbers snap via
 | **Full** | `scheduleFullPixels` | up to native / host max | Near-native / full decode path |
 
 **Critical:** PreferCache does **not** guarantee `got ≥ 0.9 × requested`.
-Returning overview **1024** for a request of **2048** is a valid **BestAvailable**
-outcome when tiles/full are not ready or not chosen. Host code that treats
-that as a permanent “broken” state without an escalation policy is wrong.
+In current thumtoo, `request_raster(PreferCache)` with `max_edge > 512` is
+routed to **overview** and **clamped to 1024** (`kBatchMaxEdge`). A host request
+of 2048 therefore often returns **1024 TileSynth/overview** with `ok=0`. That is
+thumtoo policy, not a biltoo install bug. Whole-frame samples above 1024 require
+**Full** (`scheduleFullPixels`) or true per-cell tile paint.
 
 Soft never stores 1024. Overview is not soft. PreferCache is not “force 2048.”
 
@@ -94,20 +96,18 @@ enum class ClimbPolicy {
 ### SoftDisplay (Gallery)
 
 1. Soft if `have == 0`
-2. PreferCache at `want` until Met or BestAvailable
-3. On BestAvailable while `want` > overview: **FocusFull** + PreferCache retries
-   (TileSynth). **Never** auto-schedule Full for every gallery cell
-4. Gallery `setInterest` Primary for visible cells with `want` > overview
+2. PreferCache (effectively ≤1024 overview/TileSynth) until Met or BestAvailable
+3. On BestAvailable while `want` > overview (~1024): **one Full** for that path
+   (PreferCache cannot deliver 2048). Gallery only `ensure`s a bounded visible set
+4. Avoid `setInterest` on every column pack — debounce decode-window/interest
 
 ### EscalateToFull (Image mode, Slideshow)
 
 1. Soft if `have == 0`
-2. PreferCache at `want` until Met or BestAvailable
-3. On BestAvailable while `have` still short of `want` and `want` > overview (~1024):
-   **FocusFull** (`scheduleTilePyramid`) so tiles exist for TileSynth
-4. **one** Full request (near-native)
-5. PreferCache retry after Full / tiles (TileSynth may now Met)
-6. Full + retries exhausted → terminal for this want (raise want clears latches)
+2. PreferCache (≤1024 effective) until Met or BestAvailable
+3. On BestAvailable while `want` > overview: **one Full** (required for >1024)
+4. Optional FocusFull if Full fails to queue
+5. Full exhausted → terminal for this want (raise want clears latches)
 
 Raising `want` past `lastDisplayWant` clears the PreferCache plateau latch so a
 higher band can be requested (gallery zoom, Image zoom).

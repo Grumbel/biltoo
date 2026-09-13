@@ -116,15 +116,12 @@ bool PathRasterService::isGaveUp(const QString &path) const
     if (it == m_state.cend() || !it->preferGaveUp) {
         return false;
     }
-    // PreferCache plateau is not terminal while FocusFull / Full / post-tile
-    // PreferCache retries are still available.
-    if (it->want > ThumtooCache::kBatchOverviewEdge && !it->tilesQueued) {
+    // Above overview: not terminal until Full has been attempted.
+    if (it->want > ThumtooCache::kBatchOverviewEdge && !it->fullDone) {
         return false;
     }
-    if (it->tilesQueued && it->postTilePreferAttempts < 2) {
-        return false;
-    }
-    if (it->policy == ClimbPolicy::EscalateToFull && !it->fullDone) {
+    if (it->want <= ThumtooCache::kBatchOverviewEdge
+        && it->postTilePreferAttempts < 2) {
         return false;
     }
     return true;
@@ -264,14 +261,11 @@ void PathRasterService::pump(const QString &path, State &st)
         }
     }
 
-    // PreferCache BestAvailable and still short of want.
-    // Tiles are required for TileSynth above overview — PreferCache never builds them.
-    if (displayWant > overviewCap && !st.tilesQueued) {
-        st.tilesQueued = true;
-        (void)ThumtooCache::scheduleTilePyramid(path);
-    }
-
-    if (st.policy == ClimbPolicy::EscalateToFull) {
+    // thumtoo request_raster(PreferCache) with edge > soft max is routed to
+    // request_overview_pixels and clamped to kBatchMaxEdge (1024). PreferCache
+    // cannot deliver 2048 whole-frame samples — Full (or true tile paint) is
+    // required when want exceeds overview.
+    if (displayWant > overviewCap) {
         if (!st.fullQueued && !st.fullDone) {
             st.fullQueued = true;
             st.fullDone = true;
@@ -285,8 +279,17 @@ void PathRasterService::pump(const QString &path, State &st)
 #if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
             if (!ThumtooCache::scheduleFullPixels(path, edge)) {
                 st.fullQueued = false;
+                // Settled shortfall: still try FocusFull once for later TileSynth.
+                if (!st.tilesQueued) {
+                    st.tilesQueued = true;
+                    (void)ThumtooCache::scheduleTilePyramid(path);
+                }
             }
 #else
+            if (!st.tilesQueued) {
+                st.tilesQueued = true;
+                (void)ThumtooCache::scheduleTilePyramid(path);
+            }
             ThumtooCache::forgetPixelsSettled(path, displayWant);
             st.preferGaveUp = false;
             st.displayQueued = true;
@@ -296,12 +299,16 @@ void PathRasterService::pump(const QString &path, State &st)
 #endif
             return;
         }
+        // Full already requested; optional FocusFull if Full failed to queue.
+        if (!st.tilesQueued) {
+            st.tilesQueued = true;
+            (void)ThumtooCache::scheduleTilePyramid(path);
+        }
         return;
     }
 
-    // SoftDisplay: after FocusFull queued, PreferCache retries for TileSynth
-    // (tiles build async; decode window / further ensure re-enters pump).
-    if (st.tilesQueued && st.postTilePreferAttempts < 2 && !st.displayQueued) {
+    // want ≤ overview: PreferCache retries after a short plateau are enough.
+    if (st.postTilePreferAttempts < 2 && !st.displayQueued) {
         ++st.postTilePreferAttempts;
         st.preferGaveUp = false;
         st.lastDisplayGot = 0;
