@@ -128,7 +128,7 @@ Image is not a multi-object canvas.
 
 | Operation | Meaning | Allowed when |
 |-----------|---------|--------------|
-| Fit / Fill / 1:1 / Zoom ± | Change how the **view** frames the image | Image (primary); view pan/zoom may exist elsewhere |
+| Fit / Fill / 1:1 / Zoom ± | Change how the **view** frames the image; Fit/Fill/1:1 can **stick** across prev/next until unlocked | Image (primary); view pan/zoom may exist elsewhere |
 | Pan view | Move the view, not object local position | Image; Workspace pan tool; Gallery scrollbars / wheel |
 | Wheel zoom | Scale the view transform | Image and Workspace only — **not** Gallery |
 | Previous / Next / First / Last | Change current index; show that path in Image | Image, session size > 1 |

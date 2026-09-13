@@ -2,26 +2,39 @@
 
 ## Status (2026-09-13)
 
-**Tip: biltoo-775-disable-windowstate-restore.** Never restore/save dock windowState (Qt 6.11 SEGV).
-Prior: **774**.
-
-### Problem
-Startup SIGSEGV in QDockAreaLayoutInfo::next on show() — restoreState still unsafe
-even with version gating.
-
-### Change
-- Do not call restoreState; delete windowState from settings on read
-- Do not save windowState on quit
-
-Geometry is still restored. Dock layout resets to code defaults each launch.
+**Tip: biltoo-776-docs-sticky-zoom-windowstate.** README/DOMAIN/AGENTS/TODO for sticky zoom + windowState.
+Prior: **775**.
 
 ### Apply
+```bash
+git pull /path/to/biltoo-776-docs-sticky-zoom-windowstate.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **776**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-13)
+
+**Tip: biltoo-775-disable-windowstate-restore.** Docs + tip stack through sticky zoom / free nav / windowState.
+
+### This series (worth keeping in mind)
+- Gallery: size-first open + centre HUD progress (tile soft paint → 0.2.0)
+- Image: Fit/Fill/1:1 sticky toggles; free nav preserves scale+pan; sticky Fill/1:1 best-effort pan
+- Settings: **do not** restore/save `windowState` (Qt 6.11 dock SEGV); purge keys on read
+- Parallel size probe concurrency → post-0.1.0 TODO
+
+### Apply tip
 ```bash
 git pull /path/to/biltoo-775-disable-windowstate-restore.bundle HEAD
 ```
 
 ### Done criteria
-- [x] Bundle **775**
+- [x] Bundle **775** (windowState off + sticky settings keep)
+- [x] README / handoff docs updated
 
 ---
 

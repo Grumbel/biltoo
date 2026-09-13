@@ -30,7 +30,13 @@
 
 ### Image mode
 
-- Zoom: in/out, 1:1, fit, fill, rubber-band region (**Z**)
+- Zoom: in/out, **1:1**, **Fit**, **Fill**, rubber-band region (**Z**)
+- **Sticky framing:** Fit / Fill / 1:1 are checkable. While one is checked it
+  re-applies on prev/next. Click the same mode again, or use ± / wheel / region
+  zoom, to unlock. Sticky Fill and 1:1 keep a **best-effort** relative pan
+  (viewport centre in image-normalized coords) for comparing nearby images
+- **No sticky mode:** navigation keeps the current **view scale and pan** instead
+  of forcing Fit (cold open still fits)
 - Pan; rotate ±90°; flip H/V (session transforms until export)
 - **Slideshow**: Space to start/stop; `[` / `]` change dwell; optional fullscreen
 - Transitions (Preferences): none, crossfade, fade through black, slide projector
@@ -40,6 +46,8 @@
 ### Gallery
 
 - Layouts: side-by-side, vertical strip, grid, masonry (columns or rows), masonry fill
+- Opening a large set (archive/dir) **waits for image sizes** before packing tiles;
+  centre HUD shows probe progress (soft tile paint is still a later milestone)
 - Multi-select; double-click or Enter opens Image mode
 - Return restores the previous Gallery viewport
 - Incremental re-packs (new tiles, decode size) keep the approximate scroll position
@@ -118,6 +126,16 @@ Space / Q / navigation bindings so two frames do not fight for the same keys.
 ## Image formats
 
 Common formats use Qt. Extra types (e.g. GIMP `.xcf` and related plugins) work when **KImageFormats** is available — the Nix package includes it. Archives are expanded when **libarchive** is linked at build time.
+
+## Settings
+
+Preferences live in the usual Qt location (e.g. `~/.config/biltoo/biltoo.conf` on Linux).
+
+- Window **geometry** is restored across runs
+- **Dock layout** (`windowState`) is **not** restored or saved: on some Qt 6.11
+  builds, `QMainWindow::restoreState` can SIGSEGV in dock layout on startup.
+  Docks use code defaults each launch until that is safe again
+- Sticky Fit/Fill/1:1 is remembered when set
 
 ## Desktop integration
 
