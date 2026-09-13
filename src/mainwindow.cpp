@@ -2899,6 +2899,12 @@ void MainWindow::writeSettings()
     settings.remove(QStringLiteral("windowState"));
     settings.remove(QStringLiteral("windowStateVersion"));
     settings.remove(QStringLiteral("windowStateQt"));
+    if (m_imageView) {
+        settings.setValue(QStringLiteral("stickyZoomEnabled"),
+                          m_imageView->stickyZoomEnabled());
+        settings.setValue(QStringLiteral("stickyZoomKind"),
+                          static_cast<int>(m_imageView->stickyZoomKind()));
+    }
     if (m_adjustmentsDock) {
         settings.setValue(QStringLiteral("adjustmentsPanelVisible"),
                           m_adjustmentsDock->isVisible());
