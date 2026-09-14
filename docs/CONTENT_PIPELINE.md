@@ -124,3 +124,5 @@ materialize is worker-only).
 
 `bakeItemFlip` uses the same host-rematerialize rule when edge ≤512.
 
+When the host sample is **multi-MP** (long edge > `kGuiMaterializeMaxEdge`), live rotate/flip still incremental-bakes for immediate feedback, then `scheduleAsyncHostRematerialize` runs `materializeDisplay` on a worker and attaches the pure result if load generation and applied want still match.
+

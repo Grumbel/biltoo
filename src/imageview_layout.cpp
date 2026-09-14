@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "biltoo_thread.h"
 #include "thumtoocache.h"
 
 #include <QDebug>
@@ -35,6 +36,7 @@
 #include <QTimer>
 #include <QSet>
 #include <QThreadPool>
+#include <QPointer>
 #include <QVector>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
@@ -442,7 +444,7 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
         return false;
     }
     const int edge = qMax(host.width(), host.height());
-    if (edge > 512) {
+    if (edge > ContentXform::kGuiMaterializeMaxEdge) {
         return false;
     }
     const auto kind = item->hasDecodedPixels()
@@ -477,6 +479,46 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
     item->setContentVFlip(want.contentVFlip);
     item->setAppliedContentXform(ContentXform::Value::fromState(want));
     return true;
+}
+
+void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
+                                                 const WorkspaceItemState &want)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    const QImage hostProbe = ImageCache::get(path);
+    if (hostProbe.isNull()) {
+        return;
+    }
+    if (qMax(hostProbe.width(), hostProbe.height())
+        <= ContentXform::kGuiMaterializeMaxEdge) {
+        return; // GUI path already handled by tryRematerializeFromHost
+    }
+    const quint64 gen = m_loadGeneration.load();
+    QPointer<ImageView> guard(this);
+    const WorkspaceItemState wantCopy = want;
+    QThreadPool::globalInstance()->start([guard, path, sid, wantCopy, gen]() {
+        if (!guard) {
+            return;
+        }
+        const QImage host = ImageCache::get(path);
+        if (host.isNull()) {
+            return;
+        }
+        // Worker thread: multi-MP materialize is allowed.
+        const QImage display = SessionAppearance::materializeDisplay(
+            host, wantCopy, SessionAppearance::PixelKind::FullSource);
+        if (display.isNull()) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard.data(), [guard, path, sid, wantCopy, display, gen]() {
+            if (!guard || !guard->matchesLoadGeneration(gen)) {
+                return;
+            }
+            guard->finishAsyncHostRematerialize(path, sid, wantCopy, display);
+        }, Qt::QueuedConnection);
+    });
 }
 
 void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
@@ -516,6 +558,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     if (!tryRematerializeFromHost(item, want)) {
         // Multi-MP or no host raw: incremental pixel bake (GUI-safe transform).
         item->bakeRotate90(quarterTurns);
+        scheduleAsyncHostRematerialize(item->path(), sid, want);
     }
 
     if (sid != kInvalidSessionImageId) {
@@ -639,6 +682,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     // Prefer rematerialize from host when ≤512 (shared with rotate).
     if (!tryRematerializeFromHost(item, want)) {
         item->bakeFlip(horizontal, vertical);
+        scheduleAsyncHostRematerialize(item->path(), sid, want);
     }
     item->setContentHFlip(h);
     item->setContentVFlip(v);

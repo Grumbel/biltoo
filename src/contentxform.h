@@ -21,6 +21,9 @@
  */
 namespace ContentXform {
 
+/** Max long edge for materializeDisplay on the GUI thread (matches SessionAppearance). */
+inline constexpr int kGuiMaterializeMaxEdge = 512;
+
 struct Value {
     int quarterTurns = 0; // normalized 0..3
     bool hFlip = false;

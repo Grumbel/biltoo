@@ -2,6 +2,29 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-838-async-multip-host-rematerialize.** Multi-MP rotate/flip: incremental now + worker pure materialize when host is large.
+Prior: **837**.
+
+### Change
+- `ContentXform::kGuiMaterializeMaxEdge` (512) shared with SessionAppearance
+- `scheduleAsyncHostRematerialize` / `finishAsyncHostRematerialize` — worker materializeDisplay, GUI attach if load gen + applied want still match
+- Wired after incremental bake when host is multi-MP
+
+### Apply
+```bash
+git pull /path/to/biltoo-838-async-multip-host-rematerialize.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **838**
+- [ ] Manual: full-res image rotate 90° stays correct after async settle; rapid rotate does not apply stale job
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-837-rematerialize-helper-soft-install.** Shared tryRematerializeFromHost; Image soft attach via installDisplayPixels.
 Prior: **836**.
 

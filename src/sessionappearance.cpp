@@ -128,7 +128,7 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
         return raw;
     }
     // Real bake of multi-MP must not run on the GUI thread.
-    if (qMax(raw.width(), raw.height()) > 512) {
+    if (qMax(raw.width(), raw.height()) > ContentXform::kGuiMaterializeMaxEdge) {
         ASSERT_NOT_GUI_THREAD();
     }
 

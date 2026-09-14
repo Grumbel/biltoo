@@ -1345,6 +1345,11 @@ private:
      * for @p want and attach to @p item. Returns true when attached.
      */
     bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
+    /** Worker materialize when host is multi-MP; attach on GUI if gen/want still match. */
+    void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
+                                        const WorkspaceItemState &want);
+    void finishAsyncHostRematerialize(const QString &path, SessionImageId sid,
+                                      const WorkspaceItemState &want, const QImage &display);
     bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;
     void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                           const QImage &sample);
