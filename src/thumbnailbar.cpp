@@ -1005,6 +1005,7 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     const int haveEdge = it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
     const bool loaded = it->data(ThumbnailDelegate::ThumbLoadedRole).toBool();
     // No-op if already settled at this edge (stops debug spam + layout thrash).
+    // Override installs always replace — crop changes aspect at the same edge.
     if (loaded && haveEdge >= incomingEdge && haveEdge > 0
         && !m_allowOverrideIconInstall) {
         return;
@@ -1363,12 +1364,19 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
         return;
     }
     for (int row = 0; row < m_sessionIds.size() && row < m_files.size(); ++row) {
-        if (m_sessionIds.at(row) == sessionId) {
-            m_allowOverrideIconInstall = true;
-            setThumbnailIcon(row, thumb);
-            m_allowOverrideIconInstall = false;
-            return;
+        if (m_sessionIds.at(row) != sessionId) {
+            continue;
         }
+        // Force a visible update: clear edge/loaded so setThumbnailIcon cannot
+        // treat a prior path decode as already settled, and aspect can change.
+        if (QListWidgetItem *it = item(row)) {
+            it->setData(ThumbnailDelegate::ThumbLoadedRole, false);
+            it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole, 0);
+        }
+        m_allowOverrideIconInstall = true;
+        setThumbnailIcon(row, thumb);
+        m_allowOverrideIconInstall = false;
+        return;
     }
     // Id not in the strip yet — keep override for when the row appears.
     // Do not paint every path-matching row (leaks crops across duplicates).
@@ -1671,21 +1679,9 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             || m_thumbFailed.contains(i)) {
             continue;
         }
-        // Soft placeholder is fine until long edge meets the display ladder step.
-        if (QListWidgetItem *it = item(i)) {
-            const int haveEdge =
-                it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
-            if (haveEdge >= decodeSize * 9 / 10) {
-                continue;
-            }
-        }
-        if (inFlight >= kMaxConcurrentThumbLoads) {
-            break;
-        }
         const QString path = m_files.at(i);
-        // Prefer per-session-image override (stable id). Path-level override is
-        // legacy only for unbound rows — never paint a path crop onto a bound
-        // duplicate (drag-drop / Duplicate produced the wrong thumbnail).
+        // Overrides first — never skip a crop/appearance bake because the cell
+        // already "settled" on a path decode (that blocked filmstrip crop updates).
         SessionImageId sid = kInvalidSessionImageId;
         if (i < m_sessionIds.size()) {
             sid = m_sessionIds.at(i);
@@ -1702,14 +1698,25 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             }
         }
         if (sid == kInvalidSessionImageId && m_sessionImageOverrides.contains(path)) {
-            const QImage thumb = prepareThumbnailFromImage(m_sessionImageOverrides.value(path),
-                                                          decodeSize);
+            const QImage thumb = prepareThumbnailFromImage(
+                m_sessionImageOverrides.value(path), decodeSize);
             if (!thumb.isNull()) {
                 m_allowOverrideIconInstall = true;
-                    setThumbnailIcon(i, thumb);
-                    m_allowOverrideIconInstall = false;
+                setThumbnailIcon(i, thumb);
+                m_allowOverrideIconInstall = false;
             }
             continue;
+        }
+        // Soft placeholder is fine until long edge meets the display ladder step.
+        if (QListWidgetItem *it = item(i)) {
+            const int haveEdge =
+                it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+            if (haveEdge >= decodeSize * 9 / 10) {
+                continue;
+            }
+        }
+        if (inFlight >= kMaxConcurrentThumbLoads) {
+            break;
         }
         m_thumbLoadScheduled.insert(i);
         ++inFlight;

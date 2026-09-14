@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-890-filmstrip-crop-override.** Filmstrip applies crop overrides even when path decode settled.
+Prior: **889**.
+
+### Filmstrip no longer updated on crop
+`scheduleVisibleThumbnailLoads` skipped rows with `haveEdge ≥ 90% of decode`
+**before** checking session-id overrides. A settled path thumb blocked re-paint
+of the crop bake. Override install now runs first; crop Apply clears loaded/edge
+on the row then forces `setThumbnailIcon`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-890-filmstrip-crop-override.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-889-filmstrip-no-upscale-lqip.** Never upscale LQIP to decode edge (false settle).
 Prior: **888**.
 
