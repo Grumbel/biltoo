@@ -764,6 +764,11 @@ void ImageView::gallerySoftWatchdogTick()
             DisplayQuality::checkSurface(path, shown, target, climbPending);
 
         if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
+            // Host sample already applied earlier this session: cell clamp can
+            // leave shown << hostEdge; that is intentional, not a failure.
+            if (dq.hostEdge > 0 && st.have >= dq.hostEdge) {
+                continue;
+            }
             const QImage soft = ImageCache::get(path);
             if (!soft.isNull()) {
                 installDisplayPixels(item, soft,
@@ -774,8 +779,12 @@ void ImageView::gallerySoftWatchdogTick()
                 }
                 st.have = qMax(st.have, dq.hostEdge);
                 ++repaired;
-                // If still weak after install, fall through to schedule checks.
-                if (!item->shouldUpgradeDisplayTo(dq.hostEdge)) {
+                // Gallery soft is clamped to the cell: shown may stay well below
+                // hostEdge (e.g. shown=216 host=512 target=512). That is not a
+                // quality failure once the host sample has been applied — do not
+                // report install-host-better every tick or spin reinstalls.
+                if (st.have >= dq.hostEdge
+                    || !item->shouldUpgradeDisplayTo(dq.hostEdge)) {
                     continue;
                 }
             }

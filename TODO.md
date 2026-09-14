@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-828-gallery-host-better-no-clamp-spam.** Stop install-host-better spam when Gallery clamps soft below host edge.
+Prior: **827**.
+
+### Problem
+Quality log spam:
+`shown=216(soft) host=512(soft) target=512 verdict=install-host-better`
+Host soft (512) is installed then clamped to the cell (~216–377). DisplayQuality still sees host better than shown and re-requests install every tick (rate-limited log).
+
+### Change
+- After InstallHostBetter install, treat `st.have >= hostEdge` as success (clamp is intentional).
+- If host was already applied earlier (`st.have >= hostEdge`), skip reinstall/report.
+
+### Apply
+```bash
+git pull /path/to/biltoo-828-gallery-host-better-no-clamp-spam.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **828**
+- [ ] Manual: open multi-page PDF in Gallery — climb LQIP→128→512 without repeating install-host-better once soft is on the tile
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-827-gallery-crop-preserve-on-install.** Do not wipe session crop when Gallery installs multi-MP samples.
 Prior: **826**.
 
