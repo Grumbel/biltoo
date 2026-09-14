@@ -2,6 +2,20 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-843-imageitem-applied-members.** Fix build: declare m_appliedContentXform / m_hasAppliedContentXform on ImageItem.
+Prior: **842**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-843-imageitem-applied-members.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-842-rematerialize-item-content.** ImageView::rematerializeItemContent replaces applyContentToItem on view paths; multi-MP safe.
 Prior: **841**.
 

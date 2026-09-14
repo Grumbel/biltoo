@@ -372,6 +372,8 @@ private:
     bool m_contentVFlip = false;
     bool m_sessionHasCrop = false;
     QRect m_sessionCropRect;
+    ContentXform::Value m_appliedContentXform;
+    bool m_hasAppliedContentXform = false;
     bool m_interactive = false;
     bool m_scaleHandlesEnabled = false;
     /** Scene-space crop cell for Grid-Crop gallery; empty = no crop. */
