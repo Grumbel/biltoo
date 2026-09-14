@@ -1397,6 +1397,19 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         m_ssFromContentApplied = true;
         ImageCache::stampDebugOverlayIfEnabled(&m_ssFromImage, path);
         m_dwellSourceImage = m_ssFromImage;
+        // Orient may swap aspect — drop atlas built from the unoriented sample.
+        if (!m_dwellAtlas.isNull() && m_dwellAtlas.height() > 0
+            && oriented.height() > 0) {
+            const qreal aAsp = qreal(m_dwellAtlas.width()) / qreal(m_dwellAtlas.height());
+            const qreal iAsp = qreal(oriented.width()) / qreal(oriented.height());
+            if (qAbs(aAsp - iAsp) > 0.03) {
+                invalidateDwellAtlasRebuilds();
+                m_dwellAtlas = QPixmap();
+                m_dwellAtlasScale = 0.0;
+                m_dwellAtlasVw = 0;
+                m_dwellAtlasVh = 0;
+            }
+        }
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
             m_dwellAtlas.isNull()
@@ -1416,6 +1429,18 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         m_ssToImage = oriented;
         m_ssToContentApplied = true;
         ImageCache::stampDebugOverlayIfEnabled(&m_ssToImage, path);
+        if (!m_ssToAtlas.isNull() && m_ssToAtlas.height() > 0
+            && oriented.height() > 0) {
+            const qreal aAsp = qreal(m_ssToAtlas.width()) / qreal(m_ssToAtlas.height());
+            const qreal iAsp = qreal(oriented.width()) / qreal(oriented.height());
+            if (qAbs(aAsp - iAsp) > 0.03) {
+                ++m_ssToAtlasRebuildGeneration;
+                m_ssToAtlas = QPixmap();
+                m_ssToAtlasScale = 0.0;
+                m_ssToAtlasVw = 0;
+                m_ssToAtlasVh = 0;
+            }
+        }
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
             m_ssToAtlas.isNull()
@@ -1959,11 +1984,25 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     // still be accepted (see phaseBufferWantsSample / m_ssFromContentApplied).
     m_ssFromImage = slideshowSampleUnoriented(fromPath);
     m_ssFromContentApplied = false;
-    // Drop prior atlas: it may be oriented for a different aspect; keep it and
-    // paintMotionCover would stretch the atlas into the new sample dest.
     if (m_ssFromImage.isNull() && !fromPath.isEmpty()) {
         m_ssFromImage = ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(fromPath), slideshowTargetEdge());
+    }
+    // First paint must not wait on the pool: orient soft (≤ GUI budget) now so
+    // dest aspect and pixels agree. Multi-MP still goes async via phase upgrade.
+    if (!fromPath.isEmpty() && !m_ssFromImage.isNull()) {
+        WorkspaceItemState app;
+        if (snapshotSlideshowContentAppearance(fromPath, &app)
+            && SessionAppearance::hasContentAppearance(app)
+            && ImageCache::longEdge(m_ssFromImage)
+                   <= ContentXform::kGuiMaterializeMaxEdge) {
+            const QImage oriented = SessionAppearance::materializeDisplay(
+                m_ssFromImage, app, SessionAppearance::PixelKind::SoftPreview);
+            if (!oriented.isNull()) {
+                m_ssFromImage = oriented;
+                m_ssFromContentApplied = true;
+            }
+        }
     }
     if (!fromPath.isEmpty()) {
         (void)ensureSlideshowLogicalSize(fromPath);
@@ -2068,6 +2107,20 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     if (m_ssToImage.isNull()) {
         m_ssToImage = ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(toPath), slideshowTargetEdge());
+    }
+    if (!m_ssToImage.isNull()) {
+        WorkspaceItemState app;
+        if (snapshotSlideshowContentAppearance(toPath, &app)
+            && SessionAppearance::hasContentAppearance(app)
+            && ImageCache::longEdge(m_ssToImage)
+                   <= ContentXform::kGuiMaterializeMaxEdge) {
+            const QImage oriented = SessionAppearance::materializeDisplay(
+                m_ssToImage, app, SessionAppearance::PixelKind::SoftPreview);
+            if (!oriented.isNull()) {
+                m_ssToImage = oriented;
+                m_ssToContentApplied = true;
+            }
+        }
     }
     // Cold to-path: kick preload immediately (do not wait for neighbour pump).
     if (m_ssToImage.isNull()
@@ -2979,6 +3032,15 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
         atlas = &m_dwellAtlas;
     }
 
+    // Stale atlas after ContentXform orient (aspect swap) stretches into dest.
+    if (atlas && image.width() > 1 && image.height() > 1
+        && atlas->width() > 1 && atlas->height() > 1) {
+        const qreal aAsp = qreal(atlas->width()) / qreal(atlas->height());
+        const qreal iAsp = qreal(image.width()) / qreal(image.height());
+        if (qAbs(aAsp - iAsp) > 0.03) {
+            atlas = nullptr;
+        }
+    }
     if (atlas) {
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter->drawPixmap(dest, *atlas, atlas->rect());

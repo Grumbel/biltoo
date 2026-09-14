@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-863-slideshow-first-frame-orient.** Sync soft ContentXform on phase arm; reject aspect-mismatched atlas.
+Prior: **862**.
+
+### Problem
+First frame(s) stretchy then OK: unoriented soft arm + async orient left a
+window where a **dwell atlas built from unoriented** was drawn into an **oriented**
+dest (or the reverse) after orient landed.
+
+### Fix
+- Arm: materialize SoftPreview on GUI when sample ≤512 and appearance present
+- `paintMotionCover`: ignore atlas if aspect ≠ sample
+- Orient finish: drop atlas when aspect swaps
+
+### Apply
+```bash
+git pull /path/to/biltoo-863-slideshow-first-frame-orient.bundle HEAD
+```
+
+### Verify
+- [ ] Start slideshow on rotated images: first frame correct aspect
+- [ ] Rapid ←/→ still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-862-shutdown-thumtoo-no-uaf.** Quit no longer destroys Client under in-flight set_interest.
 Prior: **861**.
 
