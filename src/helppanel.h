@@ -9,6 +9,7 @@
 class QAction;
 class QLabel;
 class QTextBrowser;
+class QToolButton;
 
 /**
  * Side panel that shows detailed help for the action currently hovered
@@ -38,6 +39,10 @@ public:
     void showTopic(const QString &title, const QString &bodyHtml,
                    const QString &shortcutsLine = QString());
 
+signals:
+    /** User asked to open the full keyboard-shortcuts table. */
+    void showAllShortcutsRequested();
+
 private:
     static QString plainActionTitle(const QAction *action);
     static QString shortcutsLine(const QAction *action);
@@ -46,6 +51,7 @@ private:
 
     QLabel *m_title = nullptr;
     QLabel *m_shortcuts = nullptr;
+    QToolButton *m_showAllShortcutsBtn = nullptr;
     QLabel *m_disabledNote = nullptr;
     QTextBrowser *m_body = nullptr;
 };

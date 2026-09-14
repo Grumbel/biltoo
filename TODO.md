@@ -2,6 +2,31 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-785-shortcuts-table.** Shortcuts table dialog; Help “Show all…”.
+Prior: **784**.
+
+### Changes
+- Help panel: **Show all…** beside the Shortcut line → keyboard shortcuts dialog
+- Replace QMessageBox list with **KeyboardShortcutsDialog**: filterable table
+  (Category / Shortcut / Command), select → Help panel, double-click/Enter/Run →
+  trigger action when enabled
+- Categories taken from the menu hierarchy; Fullscreen listed with F/F11 for the
+  table without permanently changing the action’s shortcuts
+
+### Apply
+```bash
+git pull /path/to/biltoo-785-shortcuts-table.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **785**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-784-help-docs-modes.** Help next to fullscreen; guides + expanded docs.
 Prior: **783**.
 

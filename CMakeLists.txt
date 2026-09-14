@@ -174,6 +174,8 @@ add_executable(biltoo
   src/tocpanel.h
   src/helppanel.cpp
   src/helppanel.h
+  src/keyboardshortcutsdialog.cpp
+  src/keyboardshortcutsdialog.h
   src/layoutpanel.h
   src/defaultapps.cpp
   src/defaultapps.h

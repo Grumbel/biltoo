@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include "keyboardshortcutsdialog.h"
 #include "version.h"
 #include "imageitem.h"
 
 #include <QDebug>
+#include <QSet>
 #include "biltoo_logging.h"
 #include <cmath>
 #include <QtMath>
@@ -315,6 +317,8 @@ MainWindow::MainWindow(QWidget *parent)
                             | QDockWidget::DockWidgetFloatable);
     addDockWidget(Qt::RightDockWidgetArea, m_helpDock);
     m_helpDock->hide();
+    connect(m_helpPanel, &HelpPanel::showAllShortcutsRequested,
+            this, &MainWindow::showKeyboardShortcuts);
 
     createActions();
     createMenus();
@@ -1847,55 +1851,93 @@ void MainWindow::toggleScrollBars()
 
 void MainWindow::showKeyboardShortcuts()
 {
-    QMessageBox box(this);
-    box.setWindowTitle(tr("Keyboard Shortcuts"));
-    box.setTextFormat(Qt::RichText);
-    box.setText(tr(
-        "<h3>Keyboard shortcuts</h3>"
-        "<p><b>Navigation</b><br/>"
-        "←/→ or edge click — previous / next<br/>"
-        "Click centre — pause / resume slideshow<br/>"
-        "Home / End — first / last<br/>"
-        "Space — start/stop slideshow<br/>"
-        "[ / ] — slower / faster slideshow (dwell interval)<br/>"
-        "Esc — leave fullscreen (or return to Gallery)</p>"
-        "<p><b>Slideshow</b><br/>"
-        "Preferences: transition (none, crossfade, fade to black, slide), "
-        "duration, and optional pan&zoom or pan&scan during each dwell. "
-        "Transitions apply on automatic advances only.</p>"
-        "<p><b>View</b><br/>"
-        "Ctrl+Shift+N — new window<br/>"
-        "F / F11 — fullscreen (chrome and docks hide; restored on exit)<br/>"
-        "H — toggle HUD (filename / session index; dwell progress while slideshow runs)<br/>"
-        "F5 — reload from disk (current image / gallery tiles)<br/>"
-        "Ctrl+0 — zoom 1:1 · Ctrl++ / Ctrl+- — zoom<br/>"
-        "Ctrl+F — find · Ctrl+Shift+0 — fill · Fit — fit to window · Z — zoom region<br/>"
-        "Ctrl+T — toolbar · Ctrl+M — thumbnails · Ctrl+E — metadata<br/>"
-        "Ctrl+U — colour adjustments · F1 — this list</p>"
-        "<p><b>Image</b><br/>"
-        "&lt; / &gt; — rotate left / right · R / Ctrl+R — rotate right · Ctrl+Shift+R — rotate left<br/>Ctrl+L — open location · F5 — reload<br/>"
-        "Ctrl+H / Ctrl+Shift+H — flip horizontal / vertical<br/>"
-        "C — crop mode</p>"
-        "<p><b>Workspace</b><br/>"
-        "Tools: Select, Pan, Zoom (drag region) on the left toolbar<br/>"
-        "Ctrl+C / Ctrl+X / Ctrl+V — copy / cut / paste tiles<br/>"
-        "Ctrl+D — duplicate · Delete — remove from canvas<br/>"
-        "Ctrl+Shift+↑/↓ — raise / lower<br/>"
-        "Ctrl+Shift+=/− — opacity up / down<br/>"
-        "Alt+[ / Alt+] — nudge shear · Alt+0 — reset shear<br/>"
-        "Group scale: edges H/V · corners uniform · Shift frees axes<br/>"
-        "Page Guide + Fit to Content; Workspace Background (+ temporary Default)</p>"
-        "<p><b>Gallery</b><br/>"
-        "Click — select · Ctrl/Shift — multi-select · Double-click / Enter — open<br/>"
-        "Arrow keys — spatial focus among tiles</p>"
-        "<p><b>Files</b><br/>"
-        "Ctrl+O — open · Ctrl+Shift+A — add · Ctrl+Shift+O — open project<br/>"
-        "Ctrl+S / Ctrl+Shift+S — save / save project as<br/>"
-        "Q / Ctrl+Q — quit</p>"));
-    box.setStandardButtons(QMessageBox::Close);
-    box.button(QMessageBox::Close)->setText(tr("&Close"));
-    box.setDefaultButton(QMessageBox::Close);
-    box.exec();
+    // Collect actions that expose shortcuts, with menu-derived categories.
+    QList<QAction *> actions;
+    QList<QString> categories;
+    QSet<QAction *> seen;
+
+    auto addAct = [&](QAction *act, const QString &category) {
+        if (!act || act->isSeparator() || seen.contains(act)) {
+            return;
+        }
+        if (act->shortcuts().isEmpty() && act->shortcut().isEmpty()) {
+            return;
+        }
+        seen.insert(act);
+        actions.append(act);
+        categories.append(category);
+    };
+
+    std::function<void(QMenu *, const QString &)> walkMenu;
+    walkMenu = [&](QMenu *menu, const QString &category) {
+        if (!menu) {
+            return;
+        }
+        for (QAction *a : menu->actions()) {
+            if (!a) {
+                continue;
+            }
+            if (a->menu()) {
+                QString sub = a->text();
+                sub.remove(QLatin1Char('&'));
+                walkMenu(a->menu(), sub.isEmpty() ? category : sub);
+            } else {
+                addAct(a, category);
+            }
+        }
+    };
+
+    if (menuBar()) {
+        for (QAction *top : menuBar()->actions()) {
+            if (!top || !top->menu()) {
+                continue;
+            }
+            QString cat = top->text();
+            cat.remove(QLatin1Char('&'));
+            walkMenu(top->menu(), cat);
+        }
+    }
+
+    // Toolbar-only or uncategorized actions with shortcuts.
+    for (QAction *act : findChildren<QAction *>()) {
+        addAct(act, tr("Other"));
+    }
+
+    // F / F11 are dedicated QShortcuts on the window, not on the action.
+    // Temporarily expose them on the action so the table can list Fullscreen.
+    QList<QKeySequence> fullscreenShortcutsSaved;
+    if (m_fullscreenAct) {
+        fullscreenShortcutsSaved = m_fullscreenAct->shortcuts();
+        if (fullscreenShortcutsSaved.isEmpty()) {
+            m_fullscreenAct->setShortcuts({QKeySequence(Qt::Key_F), QKeySequence(Qt::Key_F11)});
+        }
+        addAct(m_fullscreenAct, tr("View"));
+    }
+
+    KeyboardShortcutsDialog dlg(actions, categories, this);
+    connect(&dlg, &KeyboardShortcutsDialog::actionHighlighted, this, [this](QAction *act) {
+        if (m_helpPanel && act) {
+            if (m_helpDock && !m_helpDock->isVisible()) {
+                m_helpDock->show();
+            }
+            m_helpPanel->showAction(act);
+        }
+    });
+    connect(&dlg, &KeyboardShortcutsDialog::actionActivated, this, [this](QAction *act) {
+        if (!act) {
+            return;
+        }
+        if (m_helpPanel) {
+            m_helpPanel->showAction(act);
+        }
+        if (act->isEnabled()) {
+            act->trigger();
+        }
+    });
+    dlg.exec();
+    if (m_fullscreenAct) {
+        m_fullscreenAct->setShortcuts(fullscreenShortcutsSaved);
+    }
 }
 
 void MainWindow::about()
