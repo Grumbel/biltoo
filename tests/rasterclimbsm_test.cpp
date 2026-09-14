@@ -89,12 +89,22 @@ void RasterClimbSmTest::prefercache_soft_delivery_sets_plateau_then_full()
 
 void RasterClimbSmTest::full_shortfall_clears_done_in_plan()
 {
+    // Intermediate shortfall (TileSynth ~2048) is terminal — no RETRY loop.
     Machine m;
     m.setWant(6048, 6048, Policy::EscalateToFull, kSoft, kOverview);
     m.setHaveFromHost(2048, kSoft);
     m.state().fullDone = true;
     m.state().fullQueued = false;
-    const Plan p = m.plan(kSoft, kOverview, kDispMax);
+    Plan p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(!p.forgetFullSettled);
+    QVERIFY(!p.scheduleFull);
+
+    // Soft-tier shortfall (have covers soft band but not need) — Full never
+    // landed at native; clear settled and retry. have==softMax is soft-tier.
+    m.setHaveFromHost(kSoft, kSoft);
+    m.state().fullDone = true;
+    m.state().fullQueued = false;
+    p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(p.forgetFullSettled);
     QVERIFY(p.scheduleFull);
 }

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-819-rasterclimbsm-test-terminal-shortfall.** Align SM test with terminal intermediate Full shortfall.
+Prior: **818**.
+
+### Change
+- Intermediate shortfall (2048): no forgetFullSettled / no scheduleFull
+- Soft-tier shortfall (have ≤ soft max, soft covered): forget + scheduleFull
+
+### Apply
+```bash
+git pull /path/to/biltoo-819-rasterclimbsm-test-terminal-shortfall.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **819**
+- [ ] ctest -R rasterclimbsm passes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-818-full-shortfall-terminal.** scheduleFull RETRY only for soft-tier shortfall.
 Prior: **817**. Pair with **thumtoo-204**.
 
