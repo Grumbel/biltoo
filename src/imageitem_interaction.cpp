@@ -1084,12 +1084,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 painter->drawImage(box, m_source);
             }
         } else if (!m_preview.isNull()) {
-            // Provisional low-res: keep aspect inside content rect (no stretch).
+            // Soft is a stand-in for the same logical page — fill contentRect
+            // like full samples. KeepAspectRatio letterboxing left grey margins
+            // that the scroll area still included (off-center PDF soft view).
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             const QRectF box = contentRect();
-            const QRectF dest = displayContentRect();
-            painter->fillRect(box, QColor(40, 40, 44));
-            painter->drawImage(dest, m_preview);
+            painter->drawImage(box, m_preview);
         } else {
             // Loading placeholder while decode is pending or unloaded.
             const QRectF cr = contentRect();

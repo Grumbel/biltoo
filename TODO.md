@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-822-soft-fill-contentrect.** Soft samples fill logical contentRect (no letterbox).
+Prior: **821**.
+
+### Problem
+Soft paint used KeepAspectRatio inside contentRect while full stretched to fill.
+Scroll/hit geometry followed the full box → soft PDF pages looked off-center
+with grey margins that still scrolled.
+
+### Change
+- Soft drawImage into contentRect (same as full)
+- displayContentRect() == contentRect()
+
+### Apply
+```bash
+git pull /path/to/biltoo-822-soft-fill-contentrect.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **822**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-821-full-settle-no-retry.** scheduleFull settled is always terminal (no soft-tier RETRY).
 Prior: **820**. Pair with **thumtoo-206**.
 

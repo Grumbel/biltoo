@@ -145,9 +145,8 @@ public:
     /** Item-local pixmap/content rect (no chrome pad). */
     QRectF contentRect() const;
     /**
-     * Local rect of what is actually painted: soft previews are KeepAspectRatio
-     * fitted into contentRect (letterbox). Selection frames should use this so
-     * the outline matches the pixels, not the full layout box.
+     * Local rect of painted content — same as contentRect() (logical geometry).
+     * Soft samples fill the layout box; selection frames use this.
      */
     QRectF displayContentRect() const;
     /** Scene AABB of the pixmap only (no chrome pad). */

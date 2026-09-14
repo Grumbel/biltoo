@@ -690,17 +690,9 @@ QRectF ImageItem::displayContentRect() const
             return clip;
         }
     }
-    const QRectF box = contentRect();
-    if (!m_preview.isNull() && (m_source.isNull() || m_previewPixels)) {
-        QSizeF fit(m_preview.size());
-        if (fit.width() > 0 && fit.height() > 0 && box.width() > 0 && box.height() > 0) {
-            fit.scale(box.size(), Qt::KeepAspectRatio);
-            QRectF dest(QPointF(0, 0), fit);
-            dest.moveCenter(box.center());
-            return dest;
-        }
-    }
-    return box;
+    // Soft and full share the same logical contentRect (SIZE.md). Do not
+    // letterbox soft inside the layout box — that desynced scroll/hit geometry.
+    return contentRect();
 }
 
 
