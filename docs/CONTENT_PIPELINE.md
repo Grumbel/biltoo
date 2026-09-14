@@ -114,3 +114,11 @@ updated by `mapCropThrough*` when the user rotates/flips with a crop active.
 | `applyContentBakes` | Incremental flip/turn bake |
 | Peer sync / crop undo | Copy or tag from known state |
 
+
+## Live ±90° rotate
+
+When `ImageCache` holds a host sample with long edge ≤512, `bakeItemRotate90`
+updates absolute want and runs `materializeDisplay(host, want)` (same as install).
+Larger samples keep incremental `ImageItem::bakeRotate90` (GUI-safe; multi-MP
+materialize is worker-only).
+

@@ -2183,16 +2183,25 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     } else {
         item->setSourceImageReady(image);
     }
+    const WorkspaceItemState want = wantAppearanceForItem(item, m_currentSessionId);
     // Session crop: baked sample size is the display identity (not full-file).
-    if (m_currentSessionId != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_appearance.get(m_currentSessionId)) {
-            if (app->hasCrop && !app->cropRect.isEmpty()
-                && image.width() > 1 && image.height() > 1) {
-                item->setIntrinsicSize(image.size());
-                item->setSessionCrop(true, app->cropRect);
-            }
+    if (want.hasCrop && !want.cropRect.isEmpty()
+        && image.width() > 1 && image.height() > 1) {
+        item->setIntrinsicSize(image.size());
+        item->setSessionCrop(true, want.cropRect);
+    } else {
+        QSize native = logicalSizeForPath(path);
+        if (!isPositiveSize(native)) {
+            native = image.size();
+        }
+        const QSize lay = ContentXform::layoutSize(native, want);
+        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+            item->setIntrinsicSize(lay);
         }
     }
+    item->setContentHFlip(want.contentHFlip);
+    item->setContentVFlip(want.contentVFlip);
+    item->setAppliedContentXform(ContentXform::Value::fromState(want));
     m_lastLoadError.clear();
     rememberSizeFromDecode(path, image);
     if (viewport()) {

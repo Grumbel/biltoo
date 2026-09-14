@@ -10,6 +10,7 @@
 #include "imageloader.h"
 #include "sessionappearance.h"
 #include "contentxform.h"
+#include "imagecache.h"
 
 #include <QHash>
 #include <QImage>
@@ -438,7 +439,6 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     const QImage beforeSrc = item->sourceImage().copy();
     WorkspaceItemState beforeSt = captureContentBakeBeforeState(item);
 
-    item->bakeRotate90(quarterTurns);
     const SessionImageId sid = resolveContentEditSessionId(item);
     int prevTurns = beforeSt.contentQuarterTurns;
     int turns = (prevTurns + quarterTurns) % 4;
@@ -452,6 +452,61 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     if (cropMap.hasCrop) {
         item->setSessionCrop(true, cropMap.cropRect);
     }
+
+    // Absolute want after this edit.
+    WorkspaceItemState want = beforeSt;
+    want.contentQuarterTurns = turns;
+    want.hasCrop = cropMap.hasCrop;
+    want.cropRect = cropMap.cropRect;
+    want.cropRotation = cropMap.cropRotation;
+    want.cropSourceSize = cropMap.cropSourceSize;
+    want.contentHFlip = item->contentHFlip();
+    want.contentVFlip = item->contentVFlip();
+    want.colorAdjust = item->colorAdjustments();
+
+    // Prefer rematerialize from host raw (ImageCache) when the sample is small
+    // enough for a GUI materialize — same function as install, no double-bake.
+    bool rematerialized = false;
+    const QString path = item->path();
+    const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (!host.isNull()) {
+        const int edge = qMax(host.width(), host.height());
+        if (edge <= 512) {
+            const auto kind = item->hasDecodedPixels()
+                ? SessionAppearance::PixelKind::FullSource
+                : SessionAppearance::PixelKind::SoftPreview;
+            const QImage display =
+                SessionAppearance::materializeDisplay(host, want, kind);
+            if (!display.isNull()) {
+                if (kind == SessionAppearance::PixelKind::SoftPreview) {
+                    item->setPreviewImage(display);
+                } else if (isImageMode()) {
+                    item->setSourceImageReady(display);
+                } else {
+                    item->setSourceImage(display);
+                }
+                QSize native = logicalSizeForPath(path);
+                if (!isPositiveSize(native)) {
+                    native = host.size();
+                }
+                if (want.hasCrop && !want.cropRect.isEmpty()
+                    && display.width() > 1 && display.height() > 1) {
+                    item->setIntrinsicSize(display.size());
+                } else {
+                    const QSize lay = ContentXform::layoutSize(native, want);
+                    if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                        item->setIntrinsicSize(lay);
+                    }
+                }
+                rematerialized = true;
+            }
+        }
+    }
+    if (!rematerialized) {
+        // Multi-MP or no host raw: incremental pixel bake (GUI-safe transform).
+        item->bakeRotate90(quarterTurns);
+    }
+
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState s = captureState(item);
         s.sessionId = sid;

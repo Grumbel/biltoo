@@ -2,6 +2,29 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-835-rematerialize-rotate-from-host.** Prefer materializeDisplay from ImageCache on ±90° when edge≤512; tag in-place Image install.
+Prior: **834**.
+
+### Change
+- `bakeItemRotate90`: if host soft/full ≤512 exists, `materializeDisplay(host, want)` instead of incremental `item->bakeRotate90` (avoids double-orient vs absolute want)
+- Multi-MP / no host: keep incremental bake
+- `installImageModeSampleInPlace`: layoutSize + applied fingerprint
+
+### Apply
+```bash
+git pull /path/to/biltoo-835-rematerialize-rotate-from-host.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **835**
+- [ ] Manual: soft-loaded image, rotate 90° twice → correct orientation (not 180° double-bake)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-834-tag-applied-on-attach-bypasses.** Tag ContentXform applied on createItem/applyContent/peer/undo/bakes.
 Prior: **833**.
 
