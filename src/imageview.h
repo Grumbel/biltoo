@@ -1573,6 +1573,12 @@ private:
      */
     void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,
                                               const QSize &after);
+    /**
+     * Image mode: keep sceneRect tight to the target item (small fixed margin).
+     * Prevents leftover Workspace/Gallery/null scene rects from allowing free or
+     * asymmetric pan when the image is fitted. No-op outside Image mode.
+     */
+    void syncImageModeSceneRect(ImageItem *item);
     Qt::AspectRatioMode currentFitAspectMode() const;
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;

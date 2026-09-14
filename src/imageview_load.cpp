@@ -717,6 +717,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 const QSize sz = layoutSizeForPath(path, QImage());
                 if (isPositiveSize(sz)) {
                     item->setIntrinsicSize(sz);
+                    // Avoid leaving prior image's sceneRect (free/asymmetric pan)
+                    // until soft/full framing runs.
+                    syncImageModeSceneRect(item);
                 }
                 if (viewport()) {
                     viewport()->update();
@@ -1972,9 +1975,7 @@ void ImageView::frameImageModeReplaceItem(ImageItem *item, const QString &path)
     } else if (!m_slideshowProgressActive) {
         applyImageModeFraming(item);
     }
-    if (m_scene) {
-        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-    }
+    syncImageModeSceneRect(item);
     // Apply camera while updates are still blocked and any live hold still
     // covers the viewport — avoids a flash of identity / wrong pan pose.
     maybeStartSlideshowMotion();

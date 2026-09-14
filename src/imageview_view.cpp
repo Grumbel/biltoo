@@ -574,9 +574,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
             fitItem(item, Qt::KeepAspectRatio);
             break;
         }
-        if (m_scene) {
-            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-        }
+        syncImageModeSceneRect(item);
         refreshScrollBarGeometry();
         if (m_stickyZoomKind != StickyZoomKind::Fit) {
             restoreStickyPanAnchor(item);
@@ -605,9 +603,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         item->setItemScale(1.0);
         resetTransform();
         scale(m_preservedViewScale, m_preservedViewScale);
-        if (m_scene) {
-            m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-        }
+        syncImageModeSceneRect(item);
         refreshScrollBarGeometry();
         restoreStickyPanAnchor(item);
         const QPointer<ImageView> guard(this);
@@ -3215,8 +3211,24 @@ void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
             centerOn(sceneCenter);
         }
     }
-    if (m_scene) {
-        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    syncImageModeSceneRect(item);
+}
+
+void ImageView::syncImageModeSceneRect(ImageItem *item)
+{
+    if (!item || !m_scene || !isImageMode()) {
+        return;
+    }
+    // Tight margin only: Image mode pans the view when zoomed past fit, not a
+    // free Workspace-style halo. Stale larger/null rects (mode switch, resize
+    // fitItem without this, provisional size race) cause intermittent free or
+    // asymmetric scroll range.
+    const QRectF bounds = item->sceneBoundingRect().adjusted(-8, -8, 8, 8);
+    if (!bounds.isValid() || bounds.isEmpty()) {
+        return;
+    }
+    if (m_scene->sceneRect() != bounds) {
+        m_scene->setSceneRect(bounds);
     }
 }
 
@@ -3250,6 +3262,9 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
         }
         resetTransform();
         fitInView(item, mode);
+        // fitInView alone does not tighten sceneRect — a prior Workspace/Gallery
+        // or provisional rect would leave free/asymmetric pan after resize fit.
+        syncImageModeSceneRect(item);
         return;
     }
     fitInView(item, mode);

@@ -2,6 +2,35 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-825-image-mode-scene-rect-sync.** Keep Image-mode sceneRect tight after fit/size change (stop intermittent free/asymmetric pan).
+Prior: **824**.
+
+### Problem
+Scrollable area in Image mode was intermittently too free or asymmetric (not PDF-specific, rare). Root causes:
+- `fitItem` (used on window resize in fit mode) called `fitInView` without updating `sceneRect`, leaving a prior larger Workspace/Gallery/provisional rect.
+- Path-change blank size updates changed intrinsic size without tightening `sceneRect`.
+- Tight `setSceneRect(item+8)` was duplicated; some paths skipped it.
+
+### Change
+- `syncImageModeSceneRect(item)` — single helper: Image mode only, bounds = item sceneBoundingRect ±8, skip no-op.
+- Called from `fitItem`, `preserveImageViewOnLogicalSizeChange`, `applyImageModeFraming`, `frameImageModeReplaceItem`, and path-change blank intrinsic update.
+- Intended behaviour unchanged: fitted image → essentially no pan range; zoom past fit → pan within the image + 8px margin (not a free Workspace halo).
+
+### Apply
+```bash
+git pull /path/to/biltoo-825-image-mode-scene-rect-sync.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **825**
+- [ ] Manual: resize fitted window, mode switch Workspace→Image, soft→full size change — pan range stays tight/symmetric when fitted
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-824-soft-size-preserve-view.** Soft provisional size change preserves view transform (PDF load race).
 Prior: **823**.
 
