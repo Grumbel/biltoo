@@ -1308,11 +1308,16 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
     if (!item || image.isNull() || item->hasDecodedPixels()) {
         return false;
     }
+    // Drop / LoadAdd placeholder → full. Never non-uniform scale: that stretched
+    // oriented (or just aspect-correct) pixels into the provisional footprint and
+    // looked like "wrong rotation + stretch" on drag-drop without any rotate.
     const QSize before = item->imageSize();
     const qreal sx0 = item->itemScaleX();
     const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
     const qreal footW = before.width() * sx0;
     const qreal footH = before.height() * sy0;
+    // Leave Gallery pack geometry on Workspace tiles.
+    item->setGalleryCellSize({});
     installDisplayPixels(item, image, SessionAppearance::PixelKind::FullSource,
                          item->sessionId());
     const QSize after = item->imageSize();
@@ -1320,9 +1325,19 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
         && (before.width() != after.width() || before.height() != after.height());
     if (grew && isWorkspaceMode() && m_layoutMode == LayoutMode::FreeForm
         && after.width() > 0 && after.height() > 0) {
-        // Keep scene footprint stable when intrinsic grows (placeholder → full).
-        item->setItemScale(footW / qreal(after.width()),
-                           footH / qreal(after.height()));
+        const bool neutralScale =
+            qAbs(sx0 - 1.0) < 1e-6 && qAbs(sy0 - 1.0) < 1e-6;
+        if (neutralScale) {
+            // Fresh drop: 1:1 scene units = content pixels (no footprint squash).
+            item->setItemScale(1.0, 1.0);
+        } else {
+            // Prior intentional scale (e.g. moved from Gallery): fit uniformly.
+            const qreal s = qMin(footW / qreal(after.width()),
+                                 footH / qreal(after.height()));
+            if (s > 1e-6) {
+                item->setItemScale(s, s);
+            }
+        }
         return true;
     }
     if (grew) {

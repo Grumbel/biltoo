@@ -2,6 +2,39 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-853-workspace-drop-uniform-footprint.** Workspace drag-drop stretch from non-uniform placeholder→full scale.
+Prior: **852**.
+
+### Problem
+`installFullPreservingWorkspaceFootprint` (LoadAdd fill on Workspace drop placeholders)
+did:
+```
+setItemScale(footW/afterW, footH/afterH);  // non-uniform
+```
+when intrinsic grew (provisional → full, or content layout aspect change). Same
+class of bug as keyboard rotate: oriented/correct-aspect pixels stretched into
+the old AABB → looked rotated + stretched with no user rotate.
+
+### Fix
+- Neutral scale (1,1): keep 1:1 after install (fresh drop)
+- Else: **uniform** fit into prior footprint
+- Clear `galleryCellSize` on install
+
+### Apply
+```bash
+git pull /path/to/biltoo-853-workspace-drop-uniform-footprint.bundle HEAD
+```
+
+### Verify
+- [ ] Drag file onto Workspace: correct aspect, no stretch, no phantom rotate
+- [ ] Drag from filmstrip/Gallery to Workspace still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-852-workspace-crop-source-truth.** Workspace crop scale + re-crop from full frame (ContentXform ground truth).
 Prior: **851**.
 
