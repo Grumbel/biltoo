@@ -606,8 +606,15 @@ void MainWindow::createActions()
     m_sortNameAct->setCheckable(true);
     m_sortNameAct->setChecked(true);
     m_sortNameAct->setIcon(themeIcon(QStringLiteral("view-sort-ascending"), QStyle::SP_ArrowDown));
-    m_sortNameAct->setStatusTip(tr("Sort images by file name"));
+    m_sortNameAct->setStatusTip(tr("Sort by file name only (ignores directory)"));
     connect(m_sortNameAct, &QAction::triggered, this, &MainWindow::sortByName);
+
+    m_sortPathAct = new QAction(tr("Sort by &Path"), this);
+    m_sortPathAct->setCheckable(true);
+    m_sortPathAct->setIcon(themeIcon(QStringLiteral("folder"), QStyle::SP_DirIcon));
+    m_sortPathAct->setStatusTip(
+        tr("Sort by full path (groups multi-folder / multi-archive opens)"));
+    connect(m_sortPathAct, &QAction::triggered, this, &MainWindow::sortByPath);
 
     m_sortMTimeAct = new QAction(tr("Sort by &Date"), this);
     m_sortMTimeAct->setCheckable(true);
@@ -641,6 +648,7 @@ void MainWindow::createActions()
 
     m_sortGroup = new QActionGroup(this);
     m_sortGroup->addAction(m_sortNameAct);
+    m_sortGroup->addAction(m_sortPathAct);
     m_sortGroup->addAction(m_sortMTimeAct);
     m_sortGroup->addAction(m_sortFileSizeAct);
     m_sortGroup->addAction(m_sortWidthAct);
@@ -825,6 +833,7 @@ void MainWindow::createMenus()
     // Session order applies across modes; keep with other document edits.
     auto *sortMenu = m_editMenu->addMenu(tr("&Sort Session"));
     sortMenu->addAction(m_sortNameAct);
+    sortMenu->addAction(m_sortPathAct);
     sortMenu->addAction(m_sortMTimeAct);
     sortMenu->addAction(m_sortFileSizeAct);
     sortMenu->addAction(m_sortWidthAct);
@@ -898,6 +907,7 @@ void MainWindow::createMenus()
     galleryMenu->addSeparator();
     auto *gallerySortMenu = galleryMenu->addMenu(tr("&Sort Session"));
     gallerySortMenu->addAction(m_sortNameAct);
+    gallerySortMenu->addAction(m_sortPathAct);
     gallerySortMenu->addAction(m_sortMTimeAct);
     gallerySortMenu->addAction(m_sortFileSizeAct);
     gallerySortMenu->addAction(m_sortWidthAct);
@@ -983,6 +993,7 @@ void MainWindow::createToolBar()
         sortBtn->setPopupMode(QToolButton::InstantPopup);
         auto *sortPopup = new QMenu(sortBtn);
         sortPopup->addAction(m_sortNameAct);
+        sortPopup->addAction(m_sortPathAct);
         sortPopup->addAction(m_sortMTimeAct);
         sortPopup->addAction(m_sortFileSizeAct);
         sortPopup->addAction(m_sortWidthAct);

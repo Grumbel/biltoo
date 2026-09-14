@@ -2,6 +2,23 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-779-sort-by-path.** Sort by Path (full path) for multi-folder opens.
+Prior: **778**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-779-sort-by-path.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **779**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-778-drop-slideshow-ladder-chip.** Remove slideshow "Loading 1024→2048" HUD chip.
 Prior: **777**.
 

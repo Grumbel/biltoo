@@ -196,6 +196,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     // --- Session ---
     m_sortCombo = new QComboBox(this);
     m_sortCombo->addItem(tr("Name (natural)"), 0);
+    m_sortCombo->addItem(tr("Path (full)"), 6);
     m_sortCombo->addItem(tr("Modification time"), 1);
     m_sortCombo->addItem(tr("File size"), 2);
     m_sortCombo->addItem(tr("Width (pixels)"), 3);

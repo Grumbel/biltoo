@@ -25,7 +25,7 @@
 - Open files, directories, or **archives** (zip, tar variants, 7z, rar) via File dialogs, drag-and-drop, or the command line
 - **File → Open** replaces the session; **File → Add** and drops **append**
 - **Recent Sessions** and **Recent Projects** menus
-- Sort by name, date, size, width, height, or pixel count
+- Sort by name, **path** (full path — better for multi-folder opens), date, size, width, height, or pixel count
 - Thumbnail bar with per-mode visibility defaults, edge placement, labels, optional square crop
 
 ### Image mode
@@ -110,7 +110,7 @@ biltoo [options] [files-or-directories…]
 |--------|-------------|
 | `-r`, `--recursive` | Expand directories recursively |
 | `--start-at=N` | Start at the *N*-th image (1-based) |
-| `--sort=name\|mtime` | Sort by name or modification time |
+| `--sort=name\|path\|mtime` | Sort by name, full path, or modification time |
 | `--mode=image\|gallery\|workspace` | Initial mode |
 | `--slideshow` | Start slideshow after loading |
 | `--interval=ms` | Slideshow dwell in milliseconds |

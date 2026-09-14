@@ -63,7 +63,8 @@ public:
         FileSize = 2,
         Width = 3,
         Height = 4,
-        PixelCount = 5
+        PixelCount = 5,
+        Path = 6
     };
 
     explicit MainWindow(QWidget *parent = nullptr);
@@ -274,6 +275,7 @@ private slots:
     void raiseSelected();
     void onSlideshowTick(); // legacy name kept as private alias; use updateSlideshowFromClock
     void sortByName();
+    void sortByPath();
     void sortByMTime();
     void sortByFileSize();
     void sortByWidth();
@@ -630,6 +632,7 @@ private:
     QAction *m_lowerAct = nullptr;
     QAction *m_raiseAct = nullptr;
     QAction *m_sortNameAct = nullptr;
+    QAction *m_sortPathAct = nullptr;
     QAction *m_sortMTimeAct = nullptr;
     QAction *m_sortFileSizeAct = nullptr;
     QAction *m_sortWidthAct = nullptr;

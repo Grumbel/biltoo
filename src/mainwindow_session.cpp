@@ -683,6 +683,12 @@ void MainWindow::sortFileListSync()
         collator.setCaseSensitivity(Qt::CaseInsensitive);
         return collator.compare(PagePath::displayName(a), PagePath::displayName(b)) < 0;
     };
+    auto pathLess = [](const QString &a, const QString &b) {
+        QCollator collator;
+        collator.setNumericMode(true);
+        collator.setCaseSensitivity(Qt::CaseInsensitive);
+        return collator.compare(a, b) < 0;
+    };
 
     auto pathAt = [&](int i) -> const QString & { return m_session.paths().at(i); };
 
@@ -728,6 +734,11 @@ void MainWindow::sortFileListSync()
         // Must use sortFileListWithProbesInBackground — no probe on GUI.
         std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
             return nameLess(pathAt(ia), pathAt(ib));
+        });
+        break;
+    case SortMode::Path:
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            return pathLess(pathAt(ia), pathAt(ib));
         });
         break;
     case SortMode::Name:
@@ -776,10 +787,23 @@ QVector<int> MainWindow::computeSortOrderIndices(
         collator.setCaseSensitivity(Qt::CaseInsensitive);
         return collator.compare(PagePath::displayName(a), PagePath::displayName(b)) < 0;
     };
+    auto pathLess = [](const QString &a, const QString &b) {
+        QCollator collator;
+        collator.setNumericMode(true);
+        collator.setCaseSensitivity(Qt::CaseInsensitive);
+        return collator.compare(a, b) < 0;
+    };
 
     QVector<int> order(paths.size());
     for (int i = 0; i < order.size(); ++i) {
         order[i] = i;
+    }
+
+    if (mode == SortMode::Path) {
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            return pathLess(paths.at(ia), paths.at(ib));
+        });
+        return order;
     }
 
     if (mode == SortMode::MTime) {
@@ -924,6 +948,9 @@ void MainWindow::setSortMode(SortMode mode)
     if (m_sortNameAct) {
         m_sortNameAct->setChecked(mode == SortMode::Name);
     }
+    if (m_sortPathAct) {
+        m_sortPathAct->setChecked(mode == SortMode::Path);
+    }
     if (m_sortMTimeAct) {
         m_sortMTimeAct->setChecked(mode == SortMode::MTime);
     }
@@ -994,6 +1021,11 @@ void MainWindow::setSortMode(SortMode mode)
 void MainWindow::sortByName()
 {
     setSortMode(SortMode::Name);
+}
+
+void MainWindow::sortByPath()
+{
+    setSortMode(SortMode::Path);
 }
 
 void MainWindow::sortByMTime()
