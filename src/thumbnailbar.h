@@ -112,8 +112,13 @@ public:
      * until setFiles() clears the strip.
      */
     void setSessionImageOverride(const QString &path, const QImage &image);
+    /**
+     * @p fromCropApply true: sessionCropApplied — lock this id so later
+     * sessionAppearanceChanged cannot replace the crop bake with a full-frame
+     * sample (filmstrip flip-flop).
+     */
     void setSessionImageOverride(SessionImageId sessionId, const QString &path,
-                                 const QImage &image);
+                                 const QImage &image, bool fromCropApply = false);
     void setSessionIds(const QVector<SessionImageId> &ids);
 
     /** Multi-select session paths for Workspace canvas membership (not app ViewMode). */
@@ -267,6 +272,8 @@ private:
     QHash<SessionImageId, QImage> m_sessionIdImageOverrides;
     /** True only while setSessionImageOverride / schedule re-applies override thumbs. */
     bool m_allowOverrideIconInstall = false;
+    /** Session ids whose override is a crop bake — refuse non-crop appearance overwrites. */
+    QSet<SessionImageId> m_sessionIdCropSticky;
     QVector<SessionImageId> m_sessionIds;
     QSet<int> m_onCanvasIndices;
     ThumbnailDelegate *m_delegate = nullptr;

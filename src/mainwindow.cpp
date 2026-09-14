@@ -74,7 +74,8 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             [this](SessionImageId id, const QString &path, const QImage &image) {
                 if (m_thumbnailBar) {
-                    m_thumbnailBar->setSessionImageOverride(id, path, image);
+                    // Non-crop appearance must not replace a sticky crop bake.
+                    m_thumbnailBar->setSessionImageOverride(id, path, image, false);
                 }
             });
     connect(m_imageView,
@@ -83,7 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             [this](SessionImageId id, const QString &path, const QImage &image) {
                 if (m_thumbnailBar) {
-                    m_thumbnailBar->setSessionImageOverride(id, path, image);
+                    m_thumbnailBar->setSessionImageOverride(id, path, image, true);
                 }
             });
     connect(m_imageView, &ImageView::fullscreenToggleRequested,

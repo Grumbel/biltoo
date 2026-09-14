@@ -1305,6 +1305,21 @@ bool ImageView::applyCropCommit(ImageItem *item)
         applyLayout(GalleryPackReason::ContentChange);
     }
     commitItemSessionEdit(item);
+    {
+        SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : m_cropTargetId;
+        if (sid == kInvalidSessionImageId) {
+            sid = m_currentSessionId;
+        }
+        if (sid != kInvalidSessionImageId) {
+            QImage appearance = sessionAppearanceImage(item);
+            if (!appearance.isNull()) {
+                // fromCropApply path on filmstrip replaces sticky with full frame.
+                emit sessionCropApplied(sid, item->path(), appearance);
+            }
+        }
+    }
     if (m_cropEnterValid
         && (m_cropEnterState.hasCrop
             || m_cropEnterSource.size() != item->sourceImage().size())) {

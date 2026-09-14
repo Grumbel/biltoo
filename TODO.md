@@ -2,6 +2,42 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-879-filmstrip-crop-sticky.** Crop filmstrip override is sticky against appearance demotion.
+Prior: **878**.
+
+### Log evidence
+Row 14 painted crop aspect `128x106` repeatedly, then a full-strip reload put
+`85x128` (uncropped) on every row including 14 — with **no** `[filmstrip] skip`
+lines. So either the override was replaced by a full-frame appearance emit, or
+cleared, before the bulk path reload.
+
+### Fix
+- `sessionCropApplied` → `setSessionImageOverride(..., fromCropApply=true)` marks
+  **crop sticky** for that SessionImageId
+- `sessionAppearanceChanged` → `fromCropApply=false` **skips** when sticky
+  (logs under `BILTOO_DEBUG_FILMSTRIP`)
+- Full-frame crop reset emits `sessionCropApplied` with full appearance so sticky
+  updates to full (does not stay on old crop forever)
+
+### Apply
+```bash
+git pull /path/to/biltoo-879-filmstrip-crop-sticky.bundle HEAD
+```
+
+### Verify
+```bash
+BILTOO_DEBUG_FILMSTRIP=1 biltoo-run
+```
+After crop: `[filmstrip] override sid=… cropApply=1` then later
+`skip appearance override … (crop sticky)` — **not** a mass uncropped reload of
+that row.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-878-filmstrip-no-poison-host.** Filmstrip must not ImageCache::put; override owns cell; Workspace keep scale.
 Prior: **877**.
 

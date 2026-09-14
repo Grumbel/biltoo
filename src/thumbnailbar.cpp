@@ -1276,6 +1276,13 @@ void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
             }
         }
         m_sessionIdImageOverrides.swap(kept);
+        QSet<SessionImageId> stickyKept;
+        for (SessionImageId id : kept.keys()) {
+            if (m_sessionIdCropSticky.contains(id)) {
+                stickyKept.insert(id);
+            }
+        }
+        m_sessionIdCropSticky.swap(stickyKept);
     }
     // Re-apply icons now that row ↔ id alignment is known.
     for (int row = 0; row < m_sessionIds.size() && row < m_files.size(); ++row) {
@@ -1297,7 +1304,7 @@ void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
 }
 
 void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QString &path,
-                                           const QImage &image)
+                                           const QImage &image, bool fromCropApply)
 {
     if (image.isNull()) {
         return;
@@ -1306,6 +1313,31 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
         // Unbound tiles only. Path-wide update is last resort (IDENTITY.md).
         setSessionImageOverride(path, image);
         return;
+    }
+    // Crop bake owns the cell until a later crop Apply/reset (fromCropApply).
+    // Ordinary appearance emits after soft install must not demote the crop.
+    if (!fromCropApply && m_sessionIdCropSticky.contains(sessionId)) {
+        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FILMSTRIP")) {
+            qWarning().noquote()
+                << QStringLiteral(
+                       "[filmstrip] skip appearance override sid=%1 (crop sticky) img=%2x%3")
+                       .arg(sessionId)
+                       .arg(image.width()).arg(image.height());
+        }
+        return;
+    }
+    if (fromCropApply) {
+        m_sessionIdCropSticky.insert(sessionId);
+    }
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FILMSTRIP")) {
+        qWarning().noquote()
+            << QStringLiteral(
+                   "[filmstrip] override sid=%1 cropApply=%2 sticky=%3 img=%4x%5 path=%6")
+                   .arg(sessionId)
+                   .arg(fromCropApply ? 1 : 0)
+                   .arg(m_sessionIdCropSticky.contains(sessionId) ? 1 : 0)
+                   .arg(image.width()).arg(image.height())
+                   .arg(path);
     }
     m_sessionIdImageOverrides.insert(sessionId, image);
     const QImage thumb = prepareThumbnailFromImage(image, filmstripDecodeEdge());
@@ -1839,6 +1871,13 @@ void ThumbnailBar::setSession(const QStringList &files, const QVector<SessionIma
             }
         }
         m_sessionIdImageOverrides.swap(kept);
+        QSet<SessionImageId> stickyKept;
+        for (SessionImageId id : kept.keys()) {
+            if (m_sessionIdCropSticky.contains(id)) {
+                stickyKept.insert(id);
+            }
+        }
+        m_sessionIdCropSticky.swap(stickyKept);
     }
     setFiles(files);
 }
