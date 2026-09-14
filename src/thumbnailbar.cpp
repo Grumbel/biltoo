@@ -65,17 +65,17 @@ void ThumbnailDelegate::setThumbSize(int pixels)
 
 int ThumbnailDelegate::cellPad() const
 {
-    // Cross-axis margin (top/bottom on a horizontal bar, left/right on vertical).
-    // Absolute filmstrip logical pixels — tracks thumbSize so large thumbs keep
-    // a visible margin against the bar edge.
-    return qBound(2, m_thumbSize / 24, 6);
+    // Cross-axis margin (bar edge ↔ image). Fixed logical pixels — not a
+    // fraction of thumbSize or of the image aspect, so landscape and portrait
+    // get the same gap against the strip edge.
+    return 4;
 }
 
 int ThumbnailDelegate::flowPad() const
 {
-    // Half of cellPad on each flow-axis side so adjacent cells contribute
-    // ~cellPad of empty space between image contents (plus item spacing 0/1).
-    return cellPad() / 2;
+    // Flow-axis pad per side (between images). Fixed half of cellPad so
+    // adjacent cells contribute ~cellPad of empty space, independent of aspect.
+    return 2;
 }
 
 int ThumbnailDelegate::labelBandHeightForFont(const QFont &font)
@@ -246,14 +246,17 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     QRect contentRect;
     if (!pm.isNull() && inner.width() > 0 && inner.height() > 0) {
-        // Same logical size as sizeHint (logicalContentSize).
+        // sizeHint already = content + pads. Draw at that logical size — do not
+        // re-letterbox into inner (that added aspect-dependent side gaps when
+        // option.rect was wider than the content, e.g. IconMode iconSize floor).
         const QSize contentSz = logicalContentSize(index);
-        const QSize fitted = contentSz.scaled(inner.size(), Qt::KeepAspectRatio);
+        const int cw = qBound(1, contentSz.width(), inner.width());
+        const int ch = qBound(1, contentSz.height(), inner.height());
         contentRect = QRect(
-            inner.x() + (inner.width() - fitted.width()) / 2,
-            inner.y() + (inner.height() - fitted.height()) / 2,
-            qMax(1, fitted.width()),
-            qMax(1, fitted.height()));
+            inner.x() + (inner.width() - cw) / 2,
+            inner.y() + (inner.height() - ch) / 2,
+            cw,
+            ch);
         painter->drawPixmap(contentRect, pm);
     }
 
@@ -637,16 +640,21 @@ void ThumbnailBar::setBarOrientation(Qt::Orientation orientation)
 
 void ThumbnailBar::applyThumbMetrics()
 {
-    // iconSize is only a floor for IconMode chrome. Letterbox cell width comes
-    // exclusively from sizeHint / ThumbContentSizeRole — never inflate iconSize
-    // or portrait cells pick up a wide minimum and look over-padded.
-    setIconSize(QSize(m_thumbSize, m_thumbSize));
+    // Letterbox: sizeHint is authoritative. A square iconSize is a *minimum*
+    // item size in IconMode and was widening portrait cells (extra L/R pad) or
+    // otherwise fighting variable letterbox width — use 1×1 so layout hugs content.
+    // Crop mode: uniform squares need a real iconSize for grid chrome.
+    if (m_cropToSquare) {
+        setIconSize(QSize(m_thumbSize, m_thumbSize));
+    } else {
+        setIconSize(QSize(1, 1));
+    }
     if (m_delegate) {
         m_delegate->setThumbSize(m_thumbSize);
     }
 
     const QSize squareCell = m_delegate ? m_delegate->cellSize(font())
-                                        : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight());
+                                        : QSize(m_thumbSize + 8, m_thumbSize + labelBandHeight());
     // Crop mode: uniform squares. Letterbox: no gridSize — QListWidget IconMode
     // uses sizeHint per item (gridSize would force equal square slots and large
     // gaps between portrait pages).
@@ -658,10 +666,10 @@ void ThumbnailBar::applyThumbMetrics()
     }
 
     const int label = labelBandHeight();
-    const int cross = m_delegate ? m_delegate->cellPad() : qBound(2, m_thumbSize / 24, 6);
-    const int flow = m_delegate ? m_delegate->flowPad() : cross / 2;
+    const int cross = m_delegate ? m_delegate->cellPad() : 4;
+    const int flow = m_delegate ? m_delegate->flowPad() : 2;
     // Inter-image gap = 2·flowPad + spacing ≈ cellPad (matches cross-axis margin).
-    setSpacing(cross - 2 * flow);
+    setSpacing(qMax(0, cross - 2 * flow));
     if (m_orientation == Qt::Horizontal) {
         // Cross-axis extent = cross pads + thumbSize + label.
         setMinimumHeight(kMinThumbSize + label + 2 * cross);

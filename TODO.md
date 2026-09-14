@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-795-filmstrip-absolute-pad.** Filmstrip: fixed pad; no iconSize floor.
+Prior: **794**.
+
+### Problem
+Letterbox cells looked uneven: landscape vs portrait L/R padding. `cellPad` scaled
+with thumbSize; IconMode `iconSize(thumbSize²)` acted as a minimum item size and
+fought variable sizeHints; paint re-letterboxed into `option.rect`.
+
+### Change
+- `cellPad` = 4, `flowPad` = 2 (absolute logical px)
+- Letterbox: `iconSize(1,1)` so sizeHint owns layout
+- Paint at exact logical content size (no second KeepAspectRatio)
+
+### Apply
+```bash
+git pull /path/to/biltoo-795-filmstrip-absolute-pad.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **795**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-794-gallery-lqip-climb.** Gallery: soft after LQIP; higher pixel concurrency.
 Prior: **793**.
 

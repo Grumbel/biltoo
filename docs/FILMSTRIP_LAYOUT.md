@@ -23,8 +23,8 @@ Logical pixels along the strip **cross-axis** (thin axis of the bar).
    - horizontal: `(thumbSize * w/h, thumbSize)`
    - vertical: `(thumbSize, thumbSize * h/w)`
 3. **Cell** = content + cross/flow pads (+ optional label band under the image).
-   - Cross-axis: full `cellPad` (matches bar-edge margin).
-   - Flow-axis: `flowPad` (= `cellPad/2`) per side so inter-image gap ≈ `cellPad`.
+   - Cross-axis: full `cellPad` (**fixed** logical pixels, not aspect-relative).
+   - Flow-axis: `flowPad` (fixed, half of `cellPad`) per side so inter-image gap ≈ `cellPad`.
 4. Paint **centers** content in the padded inner box (fills when sizeHint matches).
 
 ### Crop-to-square (opt-in)
