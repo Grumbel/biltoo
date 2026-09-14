@@ -2949,9 +2949,19 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
             return true; // already in flight — count as accepted
         }
         if (g_pixelsSettled.contains(inflightKey)) {
-            thumtooDbg("scheduleFull SKIP path=%s edge=%d (settled)",
-                       qPrintable(path), maxEdge);
-            return true; // terminal attempt already done — PathRaster marks fullDone
+            // Settled only means we already ran Full for this edge once. If the
+            // host still holds a shortfall (e.g. first attempt returned 2048 for
+            // a 6k native request), allow retry — permanent settle left Gallery
+            // zoom stuck below native.
+            const int have = ImageCache::longEdge(ImageCache::get(path));
+            if (have * 10 >= maxEdge * 9) {
+                thumtooDbg("scheduleFull SKIP path=%s edge=%d (settled have=%d)",
+                           qPrintable(path), maxEdge, have);
+                return true;
+            }
+            g_pixelsSettled.remove(inflightKey);
+            thumtooDbg("scheduleFull RETRY path=%s edge=%d (settled but host have=%d)",
+                       qPrintable(path), maxEdge, have);
         }
         if (g_fullActive >= kMaxConcurrentFullJobs) {
             thumtooDbg("scheduleFull DEFER path=%s edge=%d fullActive=%d",

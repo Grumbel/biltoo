@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-813-full-native-retry.** Full requests min(want, native); retry shortfall; gallery upgrades Soft→FullSource.
+Prior: **812**.
+
+### Problem
+Gallery zoom stuck at ~2048 even when native is 6k. Full settled once on shortfall;
+edge used `qMax(native, displayWant)` (could request 8192); gallery install only
+filled tiles without decoded pixels as SoftPreview.
+
+### Change
+- Full edge = min(want, native, kDisplayMaxEdge)
+- `scheduleFullPixels` RETRY when settled but host have < 90% of edge
+- pump clears fullDone on host shortfall vs native/want
+- onImagePreviewLoaded: upgrade soft tiles; kind FullSource when incoming > soft max
+
+### Apply
+```bash
+git pull /path/to/biltoo-813-full-native-retry.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **813**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-812-gallery-zoom-escalate-full.** Gallery zoom past overview escalates to Full; soft PreferCache no longer blocks.
 Prior: **811**.
 

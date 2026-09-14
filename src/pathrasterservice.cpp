@@ -347,15 +347,34 @@ void PathRasterService::pump(const QString &path, State &st)
                 st.tilesQueued = true;
             }
         }
-        if (!st.fullQueued && !st.fullDone) {
-            int edge = ImageCache::kDisplayMaxEdge;
-            const QSize native = ThumtooCache::cachedSize(path);
-            if (native.isValid() && native.width() > 0 && native.height() > 0) {
-                edge = qMin(edge, qMax(native.width(), native.height()));
+        // Full edge = min(want, native, display max). Never raise above native
+        // (old qMax(edge, displayWant) requested 8192 for a 6k file).
+        int fullEdge = displayWant;
+        const QSize nativeSz = ThumtooCache::cachedSize(path);
+        int nativeLong = 0;
+        if (nativeSz.isValid() && nativeSz.width() > 0 && nativeSz.height() > 0) {
+            nativeLong = qMax(nativeSz.width(), nativeSz.height());
+            fullEdge = qMin(fullEdge, nativeLong);
+        }
+        fullEdge = qMin(fullEdge, ImageCache::kDisplayMaxEdge);
+        fullEdge = qMax(fullEdge, ThumtooCache::kBatchOverviewEdge + 1);
+
+        // Host shortfall vs native/want after a prior Full → clear fullDone so
+        // scheduleFull RETRY can run (e.g. stuck at 2048 with 6k native).
+        if (st.fullDone && !st.fullQueued) {
+            const int need = nativeLong > 0 ? qMin(displayWant, nativeLong) : displayWant;
+            if (st.have * 10 < need * 9) {
+                ThumtooCache::forgetPixelsSettled(path, fullEdge);
+                if (nativeLong > 0) {
+                    ThumtooCache::forgetPixelsSettled(path, nativeLong);
+                }
+                ThumtooCache::forgetPixelsSettled(path, ImageCache::kDisplayMaxEdge);
+                st.fullDone = false;
             }
-            edge = qMax(edge, displayWant);
-            edge = qMin(edge, ImageCache::kDisplayMaxEdge);
-            if (ThumtooCache::scheduleFullPixels(path, edge)) {
+        }
+
+        if (!st.fullQueued && !st.fullDone) {
+            if (ThumtooCache::scheduleFullPixels(path, fullEdge)) {
                 st.fullQueued = true;
                 st.fullDone = true;
             }

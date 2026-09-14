@@ -1552,21 +1552,30 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         // Empty multi-item canvas: fall through to per-item fill.
     }
 
-    // Gallery / Workspace: fill undecoded occurrences of this path.
-    // Layout size stays logical (SIZE.md); installDisplayPixels may only fix
-    // 1×1 placeholders via layoutSizeForPath aspect.
+    // Gallery / Workspace: install or upgrade samples for this path.
+    // SoftPreview tiles must accept PreferCache/Full upgrades (hasDecodedPixels
+    // is false for soft). FullSource tiles still reject SoftPreview demotion in
+    // canAcceptDisplaySample.
     const int incoming = ImageCache::longEdge(image);
     bool gallerySizeChanged = false;
     for (ImageItem *item : m_items) {
-        if (!item || item->path() != path || item->hasDecodedPixels()) {
+        if (!item || item->path() != path) {
             continue;
         }
-        if (!item->shouldUpgradeDisplayTo(incoming)) {
+        // FullSource already native-class: only accept strict upgrades.
+        if (item->hasDecodedPixels() && !item->shouldUpgradeDisplayTo(incoming)) {
             continue;
         }
+        if (!item->hasDecodedPixels() && item->hasDisplayPixels()
+            && !item->shouldUpgradeDisplayTo(incoming)) {
+            continue;
+        }
+        const SessionAppearance::PixelKind kind =
+            (incoming > ThumtooCache::kGalleryLadderEdge)
+                ? SessionAppearance::PixelKind::FullSource
+                : SessionAppearance::PixelKind::SoftPreview;
         const QSize before = item->imageSize();
-        installDisplayPixels(item, image, SessionAppearance::PixelKind::SoftPreview,
-                             item->sessionId());
+        installDisplayPixels(item, image, kind, item->sessionId());
         if (item->imageSize() != before) {
             gallerySizeChanged = true;
         }
