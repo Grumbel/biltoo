@@ -2,6 +2,20 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-857-slideshow-shadow-warning.** Rename acceptPhase lambda param (fix -Wshadow).
+Prior: **856**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-857-slideshow-shadow-warning.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-856-slideshow-contentxform-phase.** Slideshow phase buffers accept same-edge ContentXform orient.
 Prior: **855**.
 
