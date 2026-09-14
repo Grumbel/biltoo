@@ -2,6 +2,23 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-788-help-shortcuts-btn.** Help panel: Keyboard Shortcuts… at bottom.
+Prior: **787**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-788-help-shortcuts-btn.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **788**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-787-help-shadow-warning.** Fix -Wshadow in updateHelpPanelFromWidget.
 Prior: **786**.
 

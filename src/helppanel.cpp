@@ -8,7 +8,6 @@
 #include <QKeySequence>
 #include <QLabel>
 #include <QToolButton>
-#include <QHBoxLayout>
 #include <QStringList>
 #include <QTextBrowser>
 #include <QVariant>
@@ -33,10 +32,11 @@ HelpPanel::HelpPanel(QWidget *parent)
     m_shortcuts->setStyleSheet(QStringLiteral("color: palette(mid);"));
 
     m_showAllShortcutsBtn = new QToolButton(this);
-    m_showAllShortcutsBtn->setText(tr("Show all…"));
+    m_showAllShortcutsBtn->setText(tr("Keyboard Shortcuts…"));
     m_showAllShortcutsBtn->setToolTip(tr("Open the keyboard shortcuts table"));
     m_showAllShortcutsBtn->setAutoRaise(true);
     m_showAllShortcutsBtn->setCursor(Qt::PointingHandCursor);
+    m_showAllShortcutsBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     connect(m_showAllShortcutsBtn, &QToolButton::clicked, this, &HelpPanel::showAllShortcutsRequested);
 
     m_disabledNote = new QLabel(this);
@@ -63,15 +63,11 @@ HelpPanel::HelpPanel(QWidget *parent)
     m_body->setStyleSheet(QStringLiteral("QTextBrowser { background: transparent; }"));
 
     layout->addWidget(m_title);
-    auto *shortcutRow = new QHBoxLayout;
-    shortcutRow->setContentsMargins(0, 0, 0, 0);
-    shortcutRow->setSpacing(8);
-    shortcutRow->addWidget(m_shortcuts, 1);
-    shortcutRow->addWidget(m_showAllShortcutsBtn, 0, Qt::AlignTop);
-    layout->addLayout(shortcutRow);
+    layout->addWidget(m_shortcuts);
     layout->addWidget(m_disabledNote);
     layout->addWidget(rule);
     layout->addWidget(m_body, 1);
+    layout->addWidget(m_showAllShortcutsBtn, 0, Qt::AlignLeft);
 
     clear();
 }
@@ -88,8 +84,8 @@ void HelpPanel::clear()
         "detailed help here.</p>"
         "<p>Disabled commands still show help when you hover them, including "
         "why they are unavailable when that reason is known.</p>"
-        "<p>Use <b>Show all…</b> next to the shortcut line for a table of every "
-        "bound key — select a row for Help, double-click or Enter to run it.</p>"
+        "<p>Use <b>Keyboard Shortcuts…</b> at the bottom of this panel for a table of "
+        "every bound key — select a row for Help, double-click or Enter to run it.</p>"
         "<p>Coverage is still being filled in for some commands.</p>"));
 }
 
