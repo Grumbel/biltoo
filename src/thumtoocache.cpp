@@ -607,9 +607,41 @@ void init()
 void shutdown()
 {
 #ifdef BILTOO_HAVE_THUMTOO
-    std::lock_guard lock(g_mu);
-    g_client.reset();
-    g_inited = false;
+    // Abort superseded interest jobs and cancel host work *before* destroying
+    // the client. aboutToQuit used to g_client.reset() while a pool thread was
+    // still inside Client::set_interest → Database::find_locator (NFS/archive
+    // paths hold the DB mutex for a long time) → use-after-free / hang on
+    // QThreadPool::waitForDone in ~QCoreApplication.
+    ++g_interestJobGen;
+    {
+        std::lock_guard lock(g_mu);
+        g_pixelsQueue.clear();
+        g_lastInterestKey.clear();
+        thumtoo::Client *c = clientUnlocked();
+        if (c) {
+#if defined(THUMTOO_API_INTEREST_EPOCH) && THUMTOO_API_INTEREST_EPOCH
+            (void)c->cancel_pending();
+#endif
+        }
+    }
+    QThreadPool::globalInstance()->clear();
+    // Bounded wait: never block process exit on a stuck NFS locator.
+    constexpr int kExitWaitMs = 2500;
+    if (!QThreadPool::globalInstance()->waitForDone(kExitWaitMs)) {
+        qWarning("biltoo/thumtoo: pool still busy after %d ms on shutdown; "
+                 "abandoning Client (process exit)",
+                 kExitWaitMs);
+        std::lock_guard lock(g_mu);
+        // Leak the client object so in-flight set_interest does not UAF.
+        (void)g_client.release();
+        g_inited = false;
+        return;
+    }
+    {
+        std::lock_guard lock(g_mu);
+        g_client.reset();
+        g_inited = false;
+    }
 #endif
 }
 

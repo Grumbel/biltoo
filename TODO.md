@@ -2,6 +2,30 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-862-shutdown-thumtoo-no-uaf.** Quit no longer destroys Client under in-flight set_interest.
+Prior: **861**.
+
+### Problem
+On close: pool thread in `Client::set_interest` → `Database::find_locator` (NFS rar).
+`aboutToQuit` did `g_client.reset()` → **UAF/segfault**. `~QCoreApplication` then
+`waitForDone()` forever if the locator never returned.
+
+### Fix
+- `ThumtooCache::shutdown`: bump interest gen, `cancel_pending`, clear pool, **bounded**
+  `waitForDone(2500)`; if still busy **release()** client (leak, process exiting) instead of reset
+- After `app.exec()`, if pool still active → `std::_Exit(rc)` so ~QApp does not hang
+
+### Apply
+```bash
+git pull /path/to/biltoo-862-shutdown-thumtoo-no-uaf.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-861-contentxform-single-pipeline.** Verification: route leftover appearance helpers through SessionAppearance.
 Prior: **860**.
 

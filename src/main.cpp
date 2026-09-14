@@ -69,9 +69,10 @@ int main(int argc, char *argv[])
     // After QApplication so thumtoo callbacks can queue onto the GUI thread.
     ThumtooCache::init();
     QObject::connect(&app, &QCoreApplication::aboutToQuit, []() {
-        // Drop queued thumbnail work and tear down thumtoo so quit is not blocked
-        // by a worker draining EnsurePixels / QThreadPool loadThumbnail jobs.
-        QThreadPool::globalInstance()->clear();
+        // Tear down thumtoo first (cancels interest, bounded waitForDone, then
+        // drops Client). Clearing the pool queue alone left in-flight
+        // set_interest running on a destroyed Client → UAF/segfault on quit
+        // when archive/NFS locator held the DB mutex.
         ImageCache::clear();
         ThumtooCache::shutdown();
     });
@@ -337,5 +338,13 @@ int main(int argc, char *argv[])
         window.applyCliViewMode(cliMode);
     }
 
-    return app.exec();
+    const int rc = app.exec();
+    // ~QCoreApplication waits forever on QThreadPool::waitForDone(). If a
+    // thumtoo set_interest is still blocked on NFS/archive DB I/O after
+    // ThumtooCache::shutdown()'s bounded wait, abandon clean destructors.
+    if (QThreadPool::globalInstance()->activeThreadCount() > 0) {
+        qWarning("biltoo: pool still active after quit; forcing process exit");
+        std::_Exit(rc);
+    }
+    return rc;
 }
