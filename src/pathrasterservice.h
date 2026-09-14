@@ -4,6 +4,8 @@
 #ifndef PATHRASTERSERVICE_H
 #define PATHRASTERSERVICE_H
 
+#include "rasterclimbsm.h"
+
 #include <QHash>
 #include <QImage>
 #include <QObject>
@@ -11,15 +13,14 @@
 #include <QString>
 
 /**
- * Central host-side path → display-raster climb.
+ * Host-side path → display-raster climb.
+ *
+ * Policy lives in RasterClimb::Machine (pure SM). This service only:
+ *   - maps path → Machine
+ *   - reads ImageCache / ThumtooCache pending
+ *   - executes Plan (schedule Soft / PreferCache / Full / tiles)
  *
  * Contract: docs/THUMTOO_HOST_CONTRACT.md
- *
- * PreferCache returns BestAvailable from soft / overview / TileSynth — it does
- * **not** generate a tile pyramid. When want exceeds overview (~1024) and
- * PreferCache plateaus, this service queues FocusFull (scheduleTilePyramid) so
- * tiles are built, then Full under EscalateToFull, then one PreferCache retry
- * for TileSynth.
  */
 class PathRasterService : public QObject
 {
@@ -53,27 +54,17 @@ signals:
     void rasterImproved(const QString &path, int longEdge);
 
 private:
-    struct State {
-        int want = 0;
-        int have = 0;
-        int lastDisplayWant = 0;
-        int lastDisplayGot = 0;
-        bool displayQueued = false;
-        bool softQueued = false;
-        bool preferGaveUp = false;
-        bool tilesQueued = false;
-        int postTilePreferAttempts = 0;
-        bool fullQueued = false;
-        bool fullDone = false;
-        ClimbPolicy policy = ClimbPolicy::SoftDisplay;
+    struct Entry {
+        RasterClimb::Machine machine;
         quint64 epoch = 0;
     };
 
-    void pump(const QString &path, State &st);
+    void pump(const QString &path, Entry &entry);
     static int capWant(int want, const QSize &knownNative);
-    static bool covers(int have, int need);
+    static RasterClimb::PendingFlags pendingFlagsFor(const QString &path, int want);
+    static RasterClimb::Policy toSmPolicy(ClimbPolicy p);
 
-    QHash<QString, State> m_state;
+    QHash<QString, Entry> m_state;
     quint64 m_epoch = 1;
 };
 

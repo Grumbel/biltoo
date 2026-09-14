@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-815-raster-climb-sm.** Path raster climb policy extracted to pure `RasterClimb::Machine`.
+Prior: **814**.
+
+### Why
+Repeated SoftQueued / PreferCache-before-Full / fullDone shortfall bugs lived in an
+ad-hoc bool soup inside PathRasterService. State transitions were not reviewable.
+
+### Design
+- `src/rasterclimbsm.h` / `.cpp` — pure SM (no I/O)
+- Invariants documented on the class (host have authority, reconcile pending,
+  Full not blocked by PreferCache when soft covered, fullDone cleared on shortfall)
+- `PathRasterService` only: capWant, pending flags, execute Plan
+
+### Apply
+```bash
+git pull /path/to/biltoo-815-raster-climb-sm.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **815**
+- [ ] Optional: unit tests for Machine::plan transitions
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-814-pass1-no-clamp-loop.** Pass1 FullSource for host>soft; no false install count; quieter ScheduleClimb window.
 Prior: **813**.
 
