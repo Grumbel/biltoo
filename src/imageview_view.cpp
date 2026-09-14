@@ -782,6 +782,8 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssToPath.clear();
         m_ssFromImage = QImage();
         m_ssToImage = QImage();
+        m_ssFromContentApplied = false;
+        m_ssToContentApplied = false;
         m_ssFadeT = -1.0;
         m_ssFromMotionT = 0.0;
         m_ssToMotionT = 0.0;
@@ -1295,17 +1297,31 @@ bool ImageView::phaseBufferWantsSample(const QString &path, int sampleEdge) cons
     if (sampleEdge <= 0 || path.isEmpty()) {
         return false;
     }
-    // Any sharper sample may replace the phase buffer (soft → 512 → need).
-    // Atlas rebuild is throttled in finishSlideshowPhaseBufferUpgrade so
-    // intermediate steps do not thrash the GUI; rejecting intermediates here
-    // left the phase stuck on soft when PreferCache plateaued below need.
-    if (path == m_ssFromPath && sampleEdge > ImageCache::longEdge(m_ssFromImage)) {
-        return true;
-    }
-    if (path == m_ssToPath && sampleEdge > ImageCache::longEdge(m_ssToImage)) {
-        return true;
-    }
-    return false;
+    // Sharper sample always. Same-edge still wanted when ContentXform is pending:
+    // arm uses unoriented stand-ins; orient does not grow long-edge for flip-only
+    // (and often not for 90° either), so a strict `>` left slideshow ignoring
+    // all rotation/flip appearance work.
+    auto wants = [&](const QString &phasePath, const QImage &phaseImg,
+                     bool contentApplied) -> bool {
+        if (path != phasePath) {
+            return false;
+        }
+        const int have = ImageCache::longEdge(phaseImg);
+        if (sampleEdge > have) {
+            return true;
+        }
+        if (sampleEdge < have) {
+            return false;
+        }
+        if (contentApplied) {
+            return false;
+        }
+        WorkspaceItemState app;
+        return snapshotSlideshowContentAppearance(path, &app)
+            && SessionAppearance::hasContentAppearance(app);
+    };
+    return wants(m_ssFromPath, m_ssFromImage, m_ssFromContentApplied)
+        || wants(m_ssToPath, m_ssToImage, m_ssToContentApplied);
 }
 
 bool ImageView::snapshotSlideshowContentAppearance(const QString &path,
@@ -1362,11 +1378,17 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     const int incoming = ImageCache::longEdge(oriented);
     const int need = slideshowNeedEdge(slideshowTargetEdge());
     bool changed = false;
-    if (path == m_ssFromPath && incoming > ImageCache::longEdge(m_ssFromImage)) {
+    auto acceptPhase = [](int incoming, int have, bool contentApplied) {
+        // Sharper always; same edge when ContentXform not yet applied.
+        return incoming > have || (incoming == have && !contentApplied);
+    };
+    if (path == m_ssFromPath
+        && acceptPhase(incoming, ImageCache::longEdge(m_ssFromImage),
+                       m_ssFromContentApplied)) {
         m_ssFromImage = oriented;
+        m_ssFromContentApplied = true;
         ImageCache::stampDebugOverlayIfEnabled(&m_ssFromImage, path);
         m_dwellSourceImage = m_ssFromImage;
-        // Rebuild when atlas missing/stale soft-upsample, or sample meets need.
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
             m_dwellAtlas.isNull()
@@ -1380,8 +1402,11 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         }
         changed = true;
     }
-    if (path == m_ssToPath && incoming > ImageCache::longEdge(m_ssToImage)) {
+    if (path == m_ssToPath
+        && acceptPhase(incoming, ImageCache::longEdge(m_ssToImage),
+                       m_ssToContentApplied)) {
         m_ssToImage = oriented;
+        m_ssToContentApplied = true;
         ImageCache::stampDebugOverlayIfEnabled(&m_ssToImage, path);
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
@@ -1891,8 +1916,14 @@ bool ImageView::shouldPromoteSlideshowToAsFrom(const QString &fromPath) const
 
 void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
 {
-    m_ssFromImage = !m_ssToImage.isNull() ? m_ssToImage
-                                         : slideshowPixelsForPath(fromPath);
+    if (!m_ssToImage.isNull()) {
+        m_ssFromImage = m_ssToImage;
+        m_ssFromContentApplied = m_ssToContentApplied;
+    } else {
+        // Oriented path when to-phase missing (slideshowPixelsForPath materializes).
+        m_ssFromImage = slideshowPixelsForPath(fromPath);
+        m_ssFromContentApplied = true;
+    }
     m_motionBiasA = m_ssToBiasA;
     m_motionBiasB = m_ssToBiasB;
     m_motionBiasValid = true;
@@ -1914,9 +1945,12 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
 
 void ImageView::startSlideshowFromPhase(const QString &fromPath)
 {
-    // Unoriented clamp only — orient + atlas run async (see prepareSlideshowFromDwell).
-    // Sync orientSlideshowImage of a 2k sample on every ←/→ was dropping frames.
+    // Unoriented clamp only — ContentXform orient + atlas run async
+    // (prepareSlideshowFromDwell → scheduleSlideshowPhaseBufferUpgrade).
+    // Sync orient of multi-MP on every ←/→ dropped frames; same-edge orient must
+    // still be accepted (see phaseBufferWantsSample / m_ssFromContentApplied).
     m_ssFromImage = slideshowSampleUnoriented(fromPath);
+    m_ssFromContentApplied = false;
     if (m_ssFromImage.isNull() && !fromPath.isEmpty()) {
         m_ssFromImage = ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(fromPath), slideshowTargetEdge());
@@ -2006,6 +2040,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     if (toPath.isEmpty()) {
         m_ssToPath.clear();
         m_ssToImage = QImage();
+        m_ssToContentApplied = false;
         ++m_ssToAtlasRebuildGeneration;
         m_ssToAtlas = QPixmap();
         m_ssToAtlasScale = 0.0;
@@ -2018,6 +2053,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     m_ssToPath = toPath;
     (void)ensureSlideshowLogicalSize(toPath);
     m_ssToImage = slideshowSampleUnoriented(toPath);
+    m_ssToContentApplied = false;
     if (m_ssToImage.isNull()) {
         m_ssToImage = ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(toPath), slideshowTargetEdge());

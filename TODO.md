@@ -2,6 +2,35 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-856-slideshow-contentxform-phase.** Slideshow phase buffers accept same-edge ContentXform orient.
+Prior: **855**.
+
+### Problem
+Slideshow arms **unoriented** phase images then schedules async orient. Upgrade only
+ran when `sampleEdge > phaseLongEdge`. Flip / 90° do not grow long-edge → orient
+never applied → slideshow ignored all ContentXform rotate/flip work.
+
+### Fix
+- `m_ssFromContentApplied` / `m_ssToContentApplied` track orient applied
+- `phaseBufferWantsSample`: same-edge upgrade when appearance pending
+- `finishSlideshowPhaseBufferUpgrade`: accept same-edge orient once
+- Promote carries content-applied flag; stop clears flags
+
+### Apply
+```bash
+git pull /path/to/biltoo-856-slideshow-contentxform-phase.bundle HEAD
+```
+
+### Verify
+- [ ] Rotate/flip in Image or Gallery, start slideshow: appearance visible
+- [ ] ←/→ through oriented slides keeps orient
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-855-chrome-flip-display-axes.** Workspace chrome flip toggles use display axes after odd quarter-turns.
 Prior: **854**.
 

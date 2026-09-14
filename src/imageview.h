@@ -1803,6 +1803,9 @@ private:
     QString m_ssToPath;
     QImage m_ssFromImage;
     QImage m_ssToImage;
+    /** Phase buffer already has ContentXform materialize (not raw host stand-in). */
+    bool m_ssFromContentApplied = false;
+    bool m_ssToContentApplied = false;
     qreal m_ssFadeT = -1.0; // <0 = dwell
     qreal m_ssFromMotionT = 0.0;
     qreal m_ssToMotionT = 0.0;
