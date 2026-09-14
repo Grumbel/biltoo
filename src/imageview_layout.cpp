@@ -521,6 +521,68 @@ void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImage
     });
 }
 
+
+void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId sid,
+                                               const WorkspaceItemState &want,
+                                               const QImage &display)
+{
+    ASSERT_GUI_THREAD();
+    if (display.isNull() || path.isEmpty()) {
+        return;
+    }
+    ImageItem *item = nullptr;
+    for (ImageItem *it : m_items) {
+        if (!it || it->path() != path) {
+            continue;
+        }
+        if (sid != kInvalidSessionImageId && it->sessionId() != sid
+            && it->sessionId() != kInvalidSessionImageId) {
+            continue;
+        }
+        item = it;
+        break;
+    }
+    if (!item) {
+        return;
+    }
+    const ContentXform::Value wantX = ContentXform::Value::fromState(want);
+    if (item->hasAppliedContentXform()
+        && !ContentXform::equal(item->appliedContentXform(), wantX)) {
+        return;
+    }
+    const QSize before = item->imageSize();
+    if (isImageMode()) {
+        item->setSourceImageReady(display);
+    } else {
+        item->setSourceImage(display);
+    }
+    if (want.hasCrop && !want.cropRect.isEmpty()
+        && display.width() > 1 && display.height() > 1) {
+        item->setIntrinsicSize(display.size());
+    } else {
+        QSize native = logicalSizeForPath(path);
+        if (!isPositiveSize(native)) {
+            native = display.size();
+        }
+        const QSize lay = ContentXform::layoutSize(native, wantX);
+        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+            item->setIntrinsicSize(lay);
+        }
+    }
+    item->setContentHFlip(want.contentHFlip);
+    item->setContentVFlip(want.contentVFlip);
+    item->setAppliedContentXform(wantX);
+    if (before != item->imageSize()) {
+        preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
+    }
+    if (isImageMode() && m_scene && m_items.size() == 1) {
+        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
 void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
 {
     if (!item || quarterTurns == 0) {
