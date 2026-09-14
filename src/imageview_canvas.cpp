@@ -530,21 +530,25 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // the stack (filesDropped → handleDroppedUrls); re-entrant status/selection
     // updates were tripping Qt "destructor may have already run" asserts.
     {
-        // Workspace scene units are image pixels at scale 1. Use the real
-        // layout size so the placeholder footprint matches the decoded item
-        // (no jump when full pixels arrive).
-        QSize sz(512, 512);
-        const QSize cached = imageSizeForPath(path);
-        if (cached.isValid() && cached.width() > 1 && cached.height() > 1) {
-            sz = cached;
+        // Workspace scene units = content pixels at scale 1. Placeholder starts
+        // at layout size with identity ContentXform (no pack cell, no flips).
+        QSize sz = layoutSizeForPath(path, QImage());
+        if (!isPositiveSize(sz) || sz.width() <= 1 || sz.height() <= 1) {
+            sz = QSize(512, 512);
         }
         ImageItem *ph = new ImageItem(path, sz);
         ph->setPos(scenePos);
         ph->setGalleryCellSize({});
-        ph->setItemScale(1.0);
+        ph->setItemScale(1.0, 1.0);
         ph->setItemRotation(0.0);
         ph->setItemShear(0.0);
         ph->setItemOpacity(1.0);
+        ph->setItemHFlip(false);
+        ph->setItemVFlip(false);
+        ph->setContentHFlip(false);
+        ph->setContentVFlip(false);
+        ph->setSessionCrop(false, QRect());
+        ph->clearAppliedContentXform();
         if (sessionId != kInvalidSessionImageId) {
             ph->setSessionId(sessionId);
         }

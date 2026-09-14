@@ -1288,12 +1288,16 @@ void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBi
     if (!item || !bound.hasScenePos) {
         return;
     }
+    // Explicit drop pose: free-form identity placement only (never revive
+    // gallery pack scale/cell or a prior non-uniform footprint scale).
     item->setGalleryCellSize({});
     item->setPos(bound.scenePos);
-    item->setItemScale(1.0);
+    item->setItemScale(1.0, 1.0);
     item->setItemRotation(0.0);
     item->setItemShear(0.0);
     item->setItemOpacity(1.0);
+    item->setItemHFlip(false);
+    item->setItemVFlip(false);
     item->setStackZ(m_items.size() - 1);
     if (isWorkspaceMode()) {
         item->setInteractive(true);

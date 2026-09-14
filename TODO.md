@@ -2,6 +2,35 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-854-rotate-no-scale-drop-init.** Workspace rotate no longer shrinks; drop placeholder identity init.
+Prior: **853**.
+
+### Problems
+1. **Repeated rotate shrinks**: `rotateContentByQuarterTurns` fitted with
+   `min(footW/afterW, footH/afterH)` on every 90° → compounds for non-square images.
+2. **Drop weirdness**: placeholder used square/cached size without identity ContentXform
+   / placement flags cleared; bind pose could leave placement flips.
+
+### Fix
+- Workspace content rotate: **do not touch item scale** (intrinsic swap only)
+- Drop placeholder: `layoutSizeForPath`, scale 1:1, clear content/placement flips + applied xform
+- Drop bind pose: uniform 1:1 scale, clear item flips
+
+### Apply
+```bash
+git pull /path/to/biltoo-854-rotate-no-scale-drop-init.bundle HEAD
+```
+
+### Verify
+- [ ] Workspace rotate 8×: size stable, aspect correct
+- [ ] Drag-drop onto Workspace: correct aspect, scale 1:1, no phantom orient
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-853-workspace-drop-uniform-footprint.** Workspace drag-drop stretch from non-uniform placeholder→full scale.
 Prior: **852**.
 
