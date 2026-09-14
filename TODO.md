@@ -2,6 +2,44 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-850-gallery-rotate-contentxform-truth.** Gallery 4th-rotate corruption: captureState/path-map resurrected turns after identity.
+Prior: **849**.
+
+### Root cause
+After a full 360° (`turns → 0`), `captureState` did:
+```
+if (s.contentQuarterTurns == 0)
+    s.contentQuarterTurns = pathMap.turns;  // stale 1..3
+```
+Then `commitItemSessionEdit` → `persistSessionAppearanceSlot` wrote that stale
+value back into `m_appearance`, and a second guard *also* refused to keep
+intentional identity (`if turns==0 && prev!=0 keep prev`). Soft install then
+materialized the wrong absolute want → glitch fest on the 4th rotate.
+
+### Fix
+- Bound SessionImageId: **ContentXform / m_appearance / applied fingerprint only**
+  — path map never supplies content turns.
+- `persistSessionAppearanceSlot` uses applied fingerprint; no prev-turn resurrection.
+- Live rotate: pure materialize from host (clamp soft if multi-MP); write absolute
+  want *before* commit; keep path map content fields in sync.
+- Crop enter: no full-decode schedule at all (draft on RAM only).
+
+### Apply
+```bash
+git pull /path/to/biltoo-850-gallery-rotate-contentxform-truth.bundle HEAD
+```
+
+### Verify
+- [ ] Gallery: rotate same tile 8+ times — each step correct, 4th = identity
+- [ ] Image mode rotate still OK
+- [ ] Crop enter responsive (no full load)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-849-fititem-orient-layout-crop-draft.** Root-cause stretch (fitItem reset native), multi-MP rotate soft stand-in, crop draft stays soft.
 Prior: **848**.
 

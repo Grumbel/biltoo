@@ -101,9 +101,13 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         if (const WorkspaceItemState *app = m_appearance.get(sid)) {
             s.cropRotation = app->cropRotation;
             s.cropSourceSize = app->cropSourceSize;
-            // Appearance store is authoritative for content orientation meta.
-            s.contentQuarterTurns = app->contentQuarterTurns;
-            // Prefer live item flags; fall back to store if item not yet tagged.
+            // Appearance store is sole content-orient authority for bound ids
+            // (ContentXform ground truth). Never fall back to path map when
+            // turns==0 — that resurrected stale 1..3 after a full 360° and
+            // corrupted Gallery on the 4th rotate (commit → captureState →
+            // m_appearance overwrite).
+            s.contentQuarterTurns =
+                ContentXform::normalizeQuarterTurns(app->contentQuarterTurns);
             if (!s.contentHFlip && app->contentHFlip) {
                 s.contentHFlip = true;
             }
@@ -114,20 +118,33 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
                 s.hasCrop = app->hasCrop;
                 s.cropRect = app->cropRect;
             }
+        } else if (item->hasAppliedContentXform()) {
+            // Store empty but live fingerprint exists (mid-edit).
+            s.contentQuarterTurns = item->appliedContentXform().quarterTurns;
+            s.contentHFlip = item->appliedContentXform().hFlip;
+            s.contentVFlip = item->appliedContentXform().vFlip;
         }
-    }
-    // Quarter turns / crop meta also on the path map for unbound tiles.
-    const auto prev = m_itemStates.constFind(item->path());
-    if (prev != m_itemStates.cend()) {
-        if (s.contentQuarterTurns == 0) {
-            s.contentQuarterTurns = prev->contentQuarterTurns;
-        }
-        if (sid == kInvalidSessionImageId) {
+        // Bound session image: path map is placement-only. Do not read content
+        // turns/crop meta from m_itemStates.
+    } else {
+        // Unbound tile: path map may hold content orient.
+        const auto prev = m_itemStates.constFind(item->path());
+        if (prev != m_itemStates.cend()) {
+            s.contentQuarterTurns =
+                ContentXform::normalizeQuarterTurns(prev->contentQuarterTurns);
             s.cropRotation = prev->cropRotation;
             s.cropSourceSize = prev->cropSourceSize;
+            if (s.sessionIndex < 0 && prev->sessionIndex >= 0) {
+                s.sessionIndex = prev->sessionIndex;
+            }
+        } else if (item->hasAppliedContentXform()) {
+            s.contentQuarterTurns = item->appliedContentXform().quarterTurns;
         }
-        if (s.sessionIndex < 0 && prev->sessionIndex >= 0) {
-            // Keep a path-level session index hint when the item is unbound.
+    }
+    // Placement path-map hint for session index only (bound or unbound).
+    if (s.sessionIndex < 0) {
+        const auto prev = m_itemStates.constFind(item->path());
+        if (prev != m_itemStates.cend() && prev->sessionIndex >= 0) {
             s.sessionIndex = prev->sessionIndex;
         }
     }
@@ -354,6 +371,8 @@ void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &sta
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
 {
+    // ContentXform ground truth: applied fingerprint > appearance store >
+    // captureState placement. Never path-map turns for bound ids.
     WorkspaceItemState beforeSt = captureState(item);
     beforeSt.hasCrop = item->sessionHasCrop();
     beforeSt.cropRect = item->sessionCropRect();
@@ -362,10 +381,24 @@ WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) con
     const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+    beforeSt.sessionId = sid0;
+    if (item->hasAppliedContentXform()) {
+        const ContentXform::Value x = item->appliedContentXform();
+        beforeSt.contentQuarterTurns = x.quarterTurns;
+        beforeSt.contentHFlip = x.hFlip;
+        beforeSt.contentVFlip = x.vFlip;
+        beforeSt.hasCrop = x.hasCrop;
+        beforeSt.cropRect = x.cropRect;
+        beforeSt.cropSourceSize = x.cropSourceSize;
+        beforeSt.cropRotation = x.cropRotation;
+        return beforeSt;
+    }
     if (sid0 != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid0)) {
-            beforeSt.contentQuarterTurns = it->contentQuarterTurns;
-            beforeSt.sessionId = sid0;
+            beforeSt.contentQuarterTurns =
+                ContentXform::normalizeQuarterTurns(it->contentQuarterTurns);
+            beforeSt.contentHFlip = it->contentHFlip;
+            beforeSt.contentVFlip = it->contentVFlip;
         }
     }
     return beforeSt;
@@ -693,28 +726,32 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     want.contentVFlip = item->contentVFlip();
     want.colorAdjust = item->colorAdjustments();
 
-    // Prefer pure rematerialize from unoriented host when GUI-safe (≤512).
-    // Multi-MP: do NOT stack QImage::transformed on full pixels (Gallery 4×
-    // glitch / quality collapse). Show a pure soft stand-in from clamped host
-    // immediately, then async rematerialize full from raw.
+    // ContentXform is ground truth: absolute want from store + delta, pure
+    // materialize from unoriented host. Never stack incremental transforms.
+    // ≤512 host: GUI pure. Multi-MP: soft stand-in from clamped host + async.
     if (!tryRematerializeFromHost(item, want)) {
         const QString path = item->path();
         const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-        bool softPreview = false;
-        if (!host.isNull()
-            && qMax(host.width(), host.height()) > ContentXform::kGuiMaterializeMaxEdge) {
-            QImage soft = ImageCache::clampToMaxEdge(
-                host, ContentXform::kGuiMaterializeMaxEdge);
+        bool gotDisplay = false;
+        if (!host.isNull()) {
+            QImage soft = host;
+            if (qMax(host.width(), host.height())
+                > ContentXform::kGuiMaterializeMaxEdge) {
+                soft = ImageCache::clampToMaxEdge(
+                    host, ContentXform::kGuiMaterializeMaxEdge);
+            }
             const QImage display = SessionAppearance::materializeDisplay(
                 soft, want, SessionAppearance::PixelKind::SoftPreview);
             if (!display.isNull()) {
+                // Soft attach must not be ignored when full was present.
                 item->clearDecodedPixels();
                 attachDisplaySample(item, display, want,
                                     SessionAppearance::PixelKind::SoftPreview);
-                softPreview = true;
+                gotDisplay = true;
             }
         }
-        if (!softPreview) {
+        if (!gotDisplay) {
+            // No host at all: last resort incremental on whatever is shown.
             item->bakeRotate90(quarterTurns);
         }
         applyContentLayoutSize(item, want);
@@ -723,56 +760,53 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         applyContentLayoutSize(item, want);
     }
 
-    if (sid != kInvalidSessionImageId) {
-        WorkspaceItemState s = captureState(item);
+    // Write ContentXform absolute state first — before commitItemSessionEdit
+    // captureState, so commit cannot resurrect stale path-map turns.
+    {
+        WorkspaceItemState s = want;
         s.sessionId = sid;
-        s.contentQuarterTurns = turns;
+        s.path = item->path();
         s.orientation = 0.0;
-        s.hasCrop = cropMap.hasCrop;
-        s.cropRect = cropMap.cropRect;
-        s.cropRotation = cropMap.cropRotation;
-        s.cropSourceSize = cropMap.cropSourceSize;
-        s.contentHFlip = item->contentHFlip();
-        s.contentVFlip = item->contentVFlip();
-        s.colorAdjust = item->colorAdjustments();
-        m_appearance.set(sid, s);
-        // Persist immediately with the known turns (do not wait for commit's
-        // captureState — that path previously wiped the DB with identity).
-        // When the user rotates back to identity, clear the durable row so a
-        // full 360° leaves no residual appearance.
-        persistDurableContentAppearance(item, s, "bakeRotate");
-    } else {
-        // Unbound tile: keep path-map orientation so install/soft does not
-        // reset contentRect to file-native aspect (stretch after 90°).
-        WorkspaceItemState s = captureState(item);
         s.contentQuarterTurns = turns;
-        s.orientation = 0.0;
-        s.hasCrop = cropMap.hasCrop;
-        s.cropRect = cropMap.cropRect;
-        s.cropRotation = cropMap.cropRotation;
-        s.cropSourceSize = cropMap.cropSourceSize;
-        s.contentHFlip = item->contentHFlip();
-        s.contentVFlip = item->contentVFlip();
-        m_itemStates.insert(item->path(), s);
+        if (sid != kInvalidSessionImageId) {
+            // Preserve placement fields from previous appearance when present.
+            if (const WorkspaceItemState *prev = m_appearance.get(sid)) {
+                s.pos = prev->pos;
+                s.scale = prev->scale;
+                s.scaleY = prev->scaleY;
+                s.shear = prev->shear;
+                s.rotation = prev->rotation;
+                s.opacity = prev->opacity;
+                s.z = prev->z;
+                s.hFlip = prev->hFlip;
+                s.vFlip = prev->vFlip;
+                s.sessionIndex = prev->sessionIndex;
+            }
+            m_appearance.set(sid, s);
+            persistDurableContentAppearance(item, s, "bakeRotate");
+        }
+        // Keep path map content fields in sync so pack afterEach cannot leave
+        // stale turns for any reader that still peeks at m_itemStates.
+        {
+            WorkspaceItemState pathSlot;
+            const auto it = m_itemStates.constFind(item->path());
+            if (it != m_itemStates.cend()) {
+                pathSlot = *it;
+            }
+            pathSlot.path = item->path();
+            pathSlot.contentQuarterTurns = turns;
+            pathSlot.contentHFlip = want.contentHFlip;
+            pathSlot.contentVFlip = want.contentVFlip;
+            pathSlot.hasCrop = want.hasCrop;
+            pathSlot.cropRect = want.cropRect;
+            pathSlot.cropRotation = want.cropRotation;
+            pathSlot.cropSourceSize = want.cropSourceSize;
+            m_itemStates.insert(item->path(), pathSlot);
+        }
+        item->setAppliedContentXform(ContentXform::Value::fromState(s));
     }
 
     commitItemSessionEdit(item);
-
-    {
-        WorkspaceItemState tag;
-        tag.contentQuarterTurns = turns;
-        tag.contentHFlip = item->contentHFlip();
-        tag.contentVFlip = item->contentVFlip();
-        tag.hasCrop = item->sessionHasCrop();
-        tag.cropRect = item->sessionCropRect();
-        if (sid != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = m_appearance.get(sid)) {
-                tag = *app;
-                tag.contentQuarterTurns = turns;
-            }
-        }
-        item->setAppliedContentXform(ContentXform::Value::fromState(tag));
-    }
 
     // Image mode: contentRect axes may have swapped — refresh tight sceneRect
     // so pan/fit are not locked to the pre-rotate box.
@@ -924,10 +958,19 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         slot.sessionId = sid;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        if (const WorkspaceItemState *prev = m_appearance.get(sid)) {
-            if (slot.contentQuarterTurns == 0
-                && prev->contentQuarterTurns != 0) {
-                slot.contentQuarterTurns = prev->contentQuarterTurns;
+        // ContentXform applied fingerprint wins. Do NOT resurrect prev turns
+        // when capture says 0 — that is a real full-circle identity and was
+        // the Gallery 4th-rotate corruption path.
+        if (item->hasAppliedContentXform()) {
+            const ContentXform::Value x = item->appliedContentXform();
+            slot.contentQuarterTurns = x.quarterTurns;
+            slot.contentHFlip = x.hFlip;
+            slot.contentVFlip = x.vFlip;
+            if (x.hasCrop) {
+                slot.hasCrop = true;
+                slot.cropRect = x.cropRect;
+                slot.cropSourceSize = x.cropSourceSize;
+                slot.cropRotation = x.cropRotation;
             }
         }
         m_appearance.set(sid, slot);

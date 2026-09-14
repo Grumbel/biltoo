@@ -596,11 +596,10 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         updateWorkspaceSceneRect();
     }
 
-    if (!sampleCoversNativeLogical(path, full)) {
-        m_cropAwaitingFullPath = path;
-        requestCropFullRaster(path);
-        flashHud(tr("Crop"), tr("Loading full image…"));
-    }
+    // Do not schedule full decode on enter — that is the crop lag. Draft on
+    // whatever is already in RAM; Apply upgrades from ImageCache when a native
+    // sample is already present (or the user can wait on Apply only).
+    m_cropAwaitingFullPath.clear();
     return true;
 }
 
