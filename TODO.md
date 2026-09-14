@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-800-filmstrip-lqip-upgrade.** Filmstrip schedules soft after LQIP.
+Prior: **799**.
+
+### Problem
+`makeThumbnail` fell back to any `ImageCache` sample (LQIP), installed it as a
+settled thumb, and never entered AwaitLadder / `schedulePixels`. Soft never
+loaded for the strip.
+
+### Change
+- Weak samples (edge &lt; ~90% of filmstrip decode edge) → paint placeholder +
+  AwaitLadder + schedule soft/overview
+- `ladderReady` prefers the delivered `QImage` over a second `makeThumbnail`
+
+### Apply
+```bash
+git pull /path/to/biltoo-800-filmstrip-lqip-upgrade.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **800**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-799-loading-hud-gallery-scroll.** Loading HUD line; fast-scroll LQIP fix.
 Prior: **798**.
 

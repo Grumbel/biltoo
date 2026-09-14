@@ -411,10 +411,9 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                 [armScrollLoad](int) { armScrollLoad(); });
     }
 
-    // When thumtoo finishes a ladder level, only fill filmstrip rows that were
-    // still waiting for a first thumb. Gallery/Image ladder growth for the same
-    // path must not rewrite an already-settled filmstrip icon (selection focus
-    // upgrades soft ladder and would otherwise "sharpen" the strip on click).
+    // When thumtoo finishes a ladder level, upgrade filmstrip rows still short
+    // of the display edge (LQIP / soft stand-in). Fully settled icons
+    // (haveEdge ≥ ~90% of filmstripDecodeEdge) are left alone.
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::sizeReady, this,
             [this](const QString &path, const QSize &size) {
                 if (path.isEmpty() || m_cropToSquare || !m_delegate
@@ -443,7 +442,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                 }
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
-            [this](const QString &path, int /*maxEdge*/, const QImage &) {
+            [this](const QString &path, int /*maxEdge*/, const QImage &ready) {
                 if (path.isEmpty() || m_files.isEmpty()) {
                     return;
                 }
@@ -473,12 +472,22 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     m_thumbAwaitLadder.remove(i);
                     m_thumbLoadScheduled.remove(i);
                     const QPointer<ThumbnailBar> guard(this);
-                    QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
+                    // Prefer the ladder sample just delivered — makeThumbnail may
+                    // still see only LQIP if ImageCache put races this slot.
+                    const QImage delivered = ready;
+                    QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize,
+                                                          delivered]() {
                         ThumbnailBar *bar = guard.data();
                         if (!bar || gen != bar->m_generation.load()) {
                             return;
                         }
-                        const QImage image = bar->makeThumbnail(path, decodeSize);
+                        QImage image = delivered;
+                        if (image.isNull()
+                            || qMax(image.width(), image.height()) < (decodeSize * 9) / 10) {
+                            image = bar->makeThumbnail(path, decodeSize);
+                        } else {
+                            image = bar->prepareThumbnailFromImage(image, decodeSize);
+                        }
                         bar = guard.data();
                         if (!bar || gen != bar->m_generation.load()) {
                             return;
@@ -1503,15 +1512,31 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             if (!bar || gen != bar->m_generation.load()) {
                 return;
             }
-            if (image.isNull()) {
-                // Soft miss (e.g. archive ladder pending): free the slot and wait
-                // for ladderReady instead of leaving the row permanently scheduled.
-                QMetaObject::invokeMethod(bar, [guard, i, gen, path, decodeSize]() {
+            const int gotEdge = image.isNull() ? 0 : qMax(image.width(), image.height());
+            // LQIP / tiny host samples are placeholders only — must not settle the
+            // row or we never schedule soft and the strip stays blurry forever.
+            const bool weakPlaceholder =
+                !image.isNull() && gotEdge < (decodeSize * 9) / 10;
+            if (image.isNull() || weakPlaceholder) {
+                QMetaObject::invokeMethod(bar, [guard, i, gen, path, decodeSize, image,
+                                                gotEdge, weakPlaceholder]() {
                     ThumbnailBar *const host = guard.data();
                     if (!host || gen != host->m_generation.load()) {
                         return;
                     }
                     host->m_thumbLoadScheduled.remove(i);
+                    // Paint LQIP immediately so the cell is not blank while soft loads.
+                    if (weakPlaceholder && !image.isNull()) {
+                        if (QListWidgetItem *it = host->item(i)) {
+                            const int have =
+                                it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+                            if (gotEdge > have) {
+                                host->setThumbnailIcon(i, image);
+                            }
+                        } else {
+                            host->setThumbnailIcon(i, image);
+                        }
+                    }
                     if (ThumtooCache::isAvailable()) {
                         host->m_thumbAwaitLadder.insert(i);
                         if (decodeSize > ThumtooCache::kGalleryLadderEdge
@@ -1527,7 +1552,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                                 path,
                                 qMin(decodeSize, ThumtooCache::kGalleryLadderEdge));
                         }
-                    } else {
+                    } else if (image.isNull()) {
                         host->m_thumbFailed.insert(i);
                     }
                     host->viewport()->update();

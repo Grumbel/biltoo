@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-799-loading-hud-gallery-scroll**.
-Next bundle number: **800**.
+Latest agent handoff: **TODO.md → biltoo-800-filmstrip-lqip-upgrade**.
+Next bundle number: **801**.
 **Settings:** do not reintroduce `QMainWindow::restoreState` / `saveState` for docks without a proven fix for Qt 6.11 `QDockAreaLayout` SEGV on show().
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
