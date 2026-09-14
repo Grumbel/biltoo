@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "sessionappearance.h"
+#include "contentxform.h"
 #include "biltoo_thread.h"
 #include "imageitem.h"
 #include "coloradjust.h"
@@ -101,125 +102,19 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns)
     state.cropSourceSize = sz;
 }
 
-static int normalizeQuarterTurns(int quarterTurns)
+int normalizeQuarterTurns(int quarterTurns)
 {
-    quarterTurns %= 4;
-    if (quarterTurns < 0) {
-        quarterTurns += 4;
-    }
-    return quarterTurns;
+    return ContentXform::normalizeQuarterTurns(quarterTurns);
 }
 
-QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sourceSize,
-                                     const WorkspaceItemState &state)
+bool contentSwapsAspect(const ContentXform::Value &x)
 {
-    // Spaces: docs/CONTENT_COORDINATES.md
-    // Order matches ImageItem bake path: flip pixels, then QImage::transformed
-    // with QTransform::rotate(90 * turns). Crop is post-bake (display space).
-    if (sourceSize.width() < 1 || sourceSize.height() < 1 || sourceRect.isEmpty()) {
-        return {};
-    }
-
-    QRectF r = sourceRect.normalized();
-    QSize work = sourceSize;
-
-    // 1) Content flips (same as QImage::flipped before rotate).
-    if (state.contentHFlip) {
-        r = QRectF(qreal(work.width()) - r.x() - r.width(), r.y(), r.width(), r.height());
-    }
-    if (state.contentVFlip) {
-        r = QRectF(r.x(), qreal(work.height()) - r.y() - r.height(), r.width(), r.height());
-    }
-
-    // 2) Quarter-turns: EXACT transform QImage uses (trueMatrix + rotate).
-    //    Do not hand-roll CW/CCW formulas — they drift from Qt's adjusted matrix.
-    const int turns = normalizeQuarterTurns(state.contentQuarterTurns);
-    if (turns != 0) {
-        QTransform rot;
-        rot.rotate(90.0 * turns);
-        const QTransform mat = QImage::trueMatrix(rot, work.width(), work.height());
-        r = mat.mapRect(r).normalized();
-        if ((turns % 2) != 0) {
-            work = QSize(work.height(), work.width());
-        }
-    }
-
-    // 3) Crop in post-orientation space.
-    if (state.hasCrop && !state.cropRect.isEmpty()) {
-        QRect crop = state.cropRect.normalized();
-        QSize basis = state.cropSourceSize;
-        if (basis.width() < 1 || basis.height() < 1) {
-            basis = work;
-        }
-        if (basis != work) {
-            crop = scaleCropRect(crop, basis, work);
-            if (crop.right() >= work.width() || crop.bottom() >= work.height()) {
-                const QSize swapped(basis.height(), basis.width());
-                if (swapped != basis && swapped.width() > 0 && swapped.height() > 0) {
-                    const QRect alt = scaleCropRect(state.cropRect.normalized(), swapped, work);
-                    if (alt.right() < work.width() && alt.bottom() < work.height()
-                        && alt.width() >= 1 && alt.height() >= 1) {
-                        crop = alt;
-                    }
-                }
-            }
-        }
-        if (crop.width() < 1 || crop.height() < 1) {
-            return {};
-        }
-        r = r.intersected(QRectF(crop));
-        if (r.isEmpty()) {
-            return {};
-        }
-        r = r.translated(-qreal(crop.x()), -qreal(crop.y()));
-    }
-
-    return r;
-}
-
-void applyCrop(ImageItem *item, const WorkspaceItemState &state)
-{
-    if (!item || !state.hasCrop || state.cropRect.isEmpty()) {
-        return;
-    }
-    const QSize sz = item->imageSize();
-    if (sz.width() < 1 || sz.height() < 1) {
-        return;
-    }
-    QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, sz);
-    // Legacy: rect only fits orientation-swapped dimensions.
-    if (state.cropSourceSize.isEmpty()
-        && (crop.right() >= sz.width() || crop.bottom() >= sz.height())) {
-        const QSize swapped(sz.height(), sz.width());
-        if (swapped.width() > 0 && swapped.height() > 0
-            && crop.right() < swapped.width() && crop.bottom() < swapped.height()
-            && swapped != sz) {
-            crop = scaleCropRect(state.cropRect, swapped, sz);
-        }
-    }
-    if (crop.width() < 1 || crop.height() < 1) {
-        return;
-    }
-    const QPointF off = item->offset();
-    // May extend outside the source; cropToLocalRect pads as needed.
-    const QRectF local(crop.x() + off.x(), crop.y() + off.y(),
-                       crop.width(), crop.height());
-    item->cropToLocalRect(local, QColor(0, 0, 0, 0), state.cropRotation);
-}
-
-bool hasContentAppearance(const WorkspaceItemState &state)
-{
-    return state.hasCrop || state.contentHFlip || state.contentVFlip
-           || state.contentQuarterTurns != 0 || !state.colorAdjust.isIdentity();
+    return ContentXform::swapsAspect(x);
 }
 
 bool contentSwapsAspect(const WorkspaceItemState &state)
 {
-    int turns = state.contentQuarterTurns % 4;
-    if (turns < 0) {
-        turns += 4;
-    }
-    return turns == 1 || turns == 3;
+    return ContentXform::swapsAspect(ContentXform::Value::fromState(state));
 }
 
 QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
@@ -341,43 +236,33 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
 void syncItemLayoutToContentOrientation(ImageItem *item,
                                         const WorkspaceItemState &state)
 {
-    Q_UNUSED(state);
     if (!item) {
         return;
     }
-    // Logical size owns geometry. Soft samples may inform *aspect* only.
-    // Oriented display pixels (full source or soft preview). setPreviewImage
-    // clears the QPixmap — never use pixmap() here or soft path falls through
-    // to a blind transpose that toggles aspect on every reinstall (focus/click).
-    QSize display = item->sourceImage().size();
-    if (display.width() < 1 || display.height() < 1) {
-        display = item->previewImage().size();
-    }
-
-    const QSize layout = item->imageSize();
-    if (display.width() < 1 || display.height() < 1) {
-        // No pixels yet: do not guess. Blind transpose is not idempotent and
-        // corrupts an already-oriented cell when soft/probe runs again.
+    // Prefer pure layoutSize from current magnitude + content xform. Fall back
+    // to display-aspect match only when magnitude is still unknown.
+    const QSize cur = item->imageSize();
+    if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
+        const QSize want = layoutSize(cur, state);
+        // layoutSize with already-oriented cur would double-swap. Detect via
+        // display pixels when present.
+        QSize display = item->sourceImage().size();
+        if (display.width() < 1 || display.height() < 1) {
+            display = item->previewImage().size();
+        }
+        if (isPositiveSize(display)) {
+            const bool displayLandscape = display.width() >= display.height();
+            const bool layoutLandscape = cur.width() >= cur.height();
+            if (displayLandscape != layoutLandscape) {
+                item->setIntrinsicSize(QSize(cur.height(), cur.width()));
+            }
+            return;
+        }
+        // No pixels: if state says odd turns and we cannot know whether cur is
+        // already oriented, leave magnitude alone (install sets via layoutSize).
+        Q_UNUSED(want);
         return;
     }
-
-    if (layout.width() < 1 || layout.height() < 1) {
-        // Layout still unknown — do not seed from samples. Probe / layout path
-        // owns magnitude.
-        return;
-    }
-
-    const bool displayLandscape = display.width() >= display.height();
-    const bool layoutLandscape = layout.width() >= layout.height();
-    if (displayLandscape == layoutLandscape) {
-        // Matching aspect — leave magnitude to probe/setIntrinsicSize.
-        // Full/ladder samples must not promote layout size.
-        return;
-    }
-
-    // Aspect mismatch (content orientation): transpose layout only. Oriented
-    // sample pixels do not redefine magnitude.
-    item->setIntrinsicSize(QSize(layout.height(), layout.width()));
 }
 
 QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,

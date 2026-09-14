@@ -9,6 +9,7 @@
 #include "imageitem.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
+#include "contentxform.h"
 
 #include <QHash>
 #include <QImage>
@@ -484,6 +485,22 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
 
     commitItemSessionEdit(item);
 
+    {
+        WorkspaceItemState tag;
+        tag.contentQuarterTurns = turns;
+        tag.contentHFlip = item->contentHFlip();
+        tag.contentVFlip = item->contentVFlip();
+        tag.hasCrop = item->sessionHasCrop();
+        tag.cropRect = item->sessionCropRect();
+        if (sid != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+                tag = *app;
+                tag.contentQuarterTurns = turns;
+            }
+        }
+        item->setAppliedContentXform(ContentXform::Value::fromState(tag));
+    }
+
     // Image mode: contentRect axes may have swapped — refresh tight sceneRect
     // so pan/fit are not locked to the pre-rotate box.
     if (isImageMode() && m_scene && m_items.size() == 1) {
@@ -569,6 +586,18 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     }
 
     commitItemSessionEdit(item);
+
+    {
+        WorkspaceItemState tag;
+        tag.contentHFlip = h;
+        tag.contentVFlip = v;
+        tag.contentQuarterTurns = beforeSt.contentQuarterTurns;
+        tag.hasCrop = item->sessionHasCrop();
+        tag.cropRect = item->sessionCropRect();
+        tag.cropRotation = cropMap.cropRotation;
+        tag.cropSourceSize = cropMap.cropSourceSize;
+        item->setAppliedContentXform(ContentXform::Value::fromState(tag));
+    }
 
     WorkspaceItemState afterSt = captureState(item);
     afterSt.hasCrop = item->sessionHasCrop();

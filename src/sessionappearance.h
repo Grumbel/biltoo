@@ -5,6 +5,8 @@
 #define SESSIONAPPEARANCE_H
 
 #include "imageview_types.h"
+#include "coloradjust.h"
+#include "contentxform.h"
 
 #include <QHash>
 #include <QImage>
@@ -51,6 +53,29 @@ enum class PixelKind {
     FullSource,  /**< Full (or post-crop) on-disk pixels; crop uses native space */
     SoftPreview, /**< Soft ladder / thumbnail; crop scaled; no layout size write */
 };
+
+// Thin aliases so existing SessionAppearance:: call sites keep compiling.
+inline int normalizeQuarterTurns(int t) { return ContentXform::normalizeQuarterTurns(t); }
+inline bool contentSwapsAspect(const ContentXform::Value &x) { return ContentXform::swapsAspect(x); }
+bool contentSwapsAspect(const WorkspaceItemState &state);
+inline bool contentXformEqual(const ContentXform::Value &a, const ContentXform::Value &b)
+{
+    return ContentXform::equal(a, b);
+}
+inline QSize layoutSize(const QSize &native, const ContentXform::Value &x)
+{
+    return ContentXform::layoutSize(native, x);
+}
+inline QSize layoutSize(const QSize &native, const WorkspaceItemState &state)
+{
+    return ContentXform::layoutSize(native, state);
+}
+inline bool needsRematerialize(const ContentXform::Value &applied, const ContentXform::Value &want,
+                               int shown, int incoming)
+{
+    return ContentXform::needsRematerialize(applied, want, shown, incoming);
+}
+
 
 /**
  * Sole pixel pipeline: raw decode → display pixels.
@@ -157,7 +182,7 @@ bool hasContentAppearance(const WorkspaceItemState &state);
  * on-disk / probe size (odd quarter-turns). Used by soft install to fit Image
  * mode without adopting soft dimensions into permanent layout geometry.
  */
-bool contentSwapsAspect(const WorkspaceItemState &state);
+
 
 } // namespace SessionAppearance
 

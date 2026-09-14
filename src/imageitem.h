@@ -6,6 +6,7 @@
 
 #include "imageview_types.h"
 #include "coloradjust.h"
+#include "contentxform.h"
 #include <QGraphicsPixmapItem>
 #include <QColor>
 #include <QImage>
@@ -175,6 +176,24 @@ public:
      * share crops.
      */
     bool sessionHasCrop() const { return m_sessionHasCrop; }
+
+    /**
+     * Content xform that was applied to the current display sample.
+     * Compared on install so rematerialize is driven by data, not aspect heuristics.
+     */
+    ContentXform::Value appliedContentXform() const { return m_appliedContentXform; }
+    void setAppliedContentXform(const ContentXform::Value &x)
+    {
+        m_appliedContentXform = x;
+        m_hasAppliedContentXform = true;
+    }
+    void clearAppliedContentXform()
+    {
+        m_appliedContentXform = {};
+        m_hasAppliedContentXform = false;
+    }
+    bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }
+
     QRect sessionCropRect() const { return m_sessionCropRect; }
     void setSessionCrop(bool has, const QRect &rect)
     {

@@ -2,6 +2,40 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-832-contentxform-pure.** Pure ContentXform value + layoutSize + applied fingerprint.
+Prior: **831**.
+
+### Intent
+Stop geometry/pixel divergence on content rotate by treating appearance as a small pure value:
+`ContentXform::Value`, `layoutSize(native, x)`, `needsRematerialize(applied, want, edges)`.
+`ImageItem` stores `appliedContentXform` after install and live bake.
+
+### Change
+- New `src/contentxform.{h,cpp}` — no ImageItem, unit-tested
+- `installDisplayPixels` uses `ContentXform::layoutSize`; tags applied xform
+- `bakeItemRotate90` / `bakeItemFlip` set applied xform after edit
+- `tests/contentxform_test.cpp` + CMake test target
+
+### Not yet (follow-ups)
+- Route all installs through a single `attachDisplay` that only compares applied vs want
+- Drop in-place bake in favor of rematerialize-from-raw only (optional)
+
+### Apply
+```bash
+git pull /path/to/biltoo-832-contentxform-pure.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **832**
+- [ ] `ctest -R contentxform` green
+- [ ] Manual: rotate 90° still correct aspect (regression of 831)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-831-rotate-content-rect-aspect.** Content 90° rotate must update contentRect aspect (no stretch).
 Prior: **830**.
 

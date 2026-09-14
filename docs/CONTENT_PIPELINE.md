@@ -1,5 +1,51 @@
 # Content appearance pixel pipeline
 
+**One xform value. One materialize. One layout size. Applied fingerprint on the item.**
+
+```text
+want: ContentXform::Value   (session appearance — absolute)
+native: logicalSize(path)   (file geometry, never oriented)
+
+raw decode (disk / ladder / cache)
+        │
+        ▼
+materializeDisplay(raw, want → WorkspaceItemState, kind)
+        │  1. flips  2. quarter turns  3. crop  4. color
+        ▼
+display pixels + layoutSize(native, want)
+        │
+        ▼
+ImageItem: pixels + applied = want
+```
+
+## Pure helpers (`src/contentxform.{h,cpp}`)
+
+| Function | Role |
+|----------|------|
+| `ContentXform::Value` | flips, turns, crop, color — no placement |
+| `layoutSize(native, x)` | file size → contentRect size (odd turns swap axes) |
+| `equal(a, b)` | content fields only |
+| `needsRematerialize(applied, want, shownEdge, incomingEdge)` | install decision |
+
+## Rules
+
+1. **SessionImageId** owns absolute appearance (`WorkspaceItemState`). Path is decode only.
+2. **Raw in, display out** via `materializeDisplay` / `installDisplayPixels`.
+3. **Never materialize twice** on the same buffer. Live `bakeRotate90` / `bakeFlip` update pixels **and** `item->setAppliedContentXform(want)`.
+4. **Layout is pure:** `layoutSize(native, want)` — not a side effect of `QImage::transformed`.
+5. **Next install:** if `applied == want` and no strict edge upgrade, skip; else rematerialize.
+
+## Entry points
+
+| Path | API |
+|------|-----|
+| Attach to ImageItem | `ImageView::installDisplayPixels` |
+| QImage-only | `applyContentToImage` → `materializeDisplay` |
+| Tests | `tests/contentxform_test.cpp` |
+
+
+# Content appearance pixel pipeline
+
 **One function. One order. Every display path.**
 
 ```text

@@ -10,6 +10,7 @@
 #include "imageloader.h"
 #include "pagepath.h"
 #include "sessionappearance.h"
+#include "contentxform.h"
 #include "thumtoocache.h"
 #if __has_include("thumtoo/client.hpp")
 #include "thumtoo/client.hpp"
@@ -556,6 +557,9 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             item->setContentVFlip(appearance.contentVFlip);
             item->setSessionCrop(appearance.hasCrop, appearance.cropRect);
             item->setColorAdjustmentsRecord(appearance.colorAdjust);
+            // Keep existing pixels; still tag want so peers/compare stay coherent.
+            item->setAppliedContentXform(
+                ContentXform::Value::fromState(appearance));
             return;
         }
         // else: cold open with no pixels yet — show raw until a ≤512 soft
@@ -573,18 +577,20 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             // Cropped display identity is the baked sample — not full-file logical.
             item->setIntrinsicSize(display.size());
         } else {
-            // Logical size from path — FullSource may be a ladder step, not geometry.
-            // Content 90° turns swap axes: path logical is file-native; contentRect
-            // must follow oriented aspect or paint stretches into the old box.
-            QSize logical = logicalSizeForPath(path);
-            if (!isPositiveSize(logical) || logical.width() <= 1 || logical.height() <= 1
+            // File-native logical → layoutSize(native, want xform). Never ad-hoc transpose.
+            QSize native = logicalSizeForPath(path);
+            if (!isPositiveSize(native) || native.width() <= 1 || native.height() <= 1
                 || isProvisionalImageSize(path)) {
-                logical = layoutSizeForPath(path, display);
+                native = layoutSizeForPath(path, display);
             }
-            if (SessionAppearance::contentSwapsAspect(appearance)
-                && isPositiveSize(logical)) {
-                logical = QSize(logical.height(), logical.width());
+            // layoutSizeForPath may already reflect provisional soft aspect; still
+            // apply content turns relative to file-native when known.
+            QSize fileNative = logicalSizeForPath(path);
+            if (!isPositiveSize(fileNative) || isProvisionalImageSize(path)) {
+                fileNative = native;
             }
+            const QSize logical =
+                ContentXform::layoutSize(fileNative, appearance);
             if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
                 item->setIntrinsicSize(logical);
             }
@@ -605,11 +611,12 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         const QSize cur = item->imageSize();
         const bool provisional = !path.isEmpty() && isProvisionalImageSize(path);
         if (!hasCrop && (cur.width() <= 1 || cur.height() <= 1 || provisional)) {
-            QSize layout = layoutSizeForPath(path, display);
-            if (SessionAppearance::contentSwapsAspect(appearance)
-                && isPositiveSize(layout)) {
-                layout = QSize(layout.height(), layout.width());
+            QSize fileNative = logicalSizeForPath(path);
+            if (!isPositiveSize(fileNative) || isProvisionalImageSize(path)) {
+                fileNative = layoutSizeForPath(path, display);
             }
+            const QSize layout =
+                ContentXform::layoutSize(fileNative, appearance);
             if (isPositiveSize(layout) && layout.width() > 1 && layout.height() > 1) {
                 const int cw = qMax(1, cur.width());
                 const int ch = qMax(1, cur.height());
@@ -636,6 +643,9 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     // Baked samples: record grade for HUD only — do not rebuild the pixmap.
     item->setColorAdjustmentsRecord(appearance.colorAdjust);
     SessionAppearance::syncItemLayoutToContentOrientation(item, appearance);
+    // Fingerprint: this sample is display pixels for `appearance` (materialized
+    // or identity). Next install compares want vs applied instead of aspect hacks.
+    item->setAppliedContentXform(ContentXform::Value::fromState(appearance));
 
     // Do NOT emit sessionAppearanceChanged from decode/install (filmstrip is
     // selection-coupled). Soft ladder upgrades must not rewrite the strip.

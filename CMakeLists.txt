@@ -131,6 +131,7 @@ add_executable(biltoo
   src/imageview.h
   src/imageview_types.h
   src/sessionappearance.cpp
+  src/contentxform.cpp
   src/sessionappearance.h
   src/sessiondocument.cpp
   src/sessiondocument.h
@@ -455,4 +456,12 @@ if(Qt6Test_FOUND)
   target_include_directories(biltoo-gallerysoftsm-test PRIVATE src)
   target_link_libraries(biltoo-gallerysoftsm-test PRIVATE Qt6::Core Qt6::Test)
   add_test(NAME gallerysoftsm COMMAND biltoo-gallerysoftsm-test)
+
+  add_executable(biltoo-contentxform-test
+    tests/contentxform_test.cpp
+    src/contentxform.cpp
+  )
+  target_include_directories(biltoo-contentxform-test PRIVATE src)
+  target_link_libraries(biltoo-contentxform-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME contentxform COMMAND biltoo-contentxform-test)
 endif()
