@@ -226,7 +226,7 @@ struct GallerySoftState {
             return false;
         }
         // LQIP / quick preview is not a PreferCache plateau — never treat as gave-up.
-        constexpr int kLqipCeiling = 96;
+        constexpr int kLqipCeiling = 96; // keep in sync with DisplayQuality::kLqipMaxEdge
         if (gaveUpWant >= wantEdge && !anyBlank && have >= kLqipCeiling) {
             return false;
         }

@@ -326,3 +326,15 @@ second `MainWindow` (New Window) must not register Space / Ctrl+Q / … process-
 or Qt reports ambiguous shortcut overload and keys appear dead. Quit accepts
 plain **Q** and platform Quit (Ctrl+Q).
 
+
+## Display quality contract (`DisplayQuality`)
+
+Surfaces (Gallery, filmstrip, slideshow phase, Image mode) must not remain on a
+weaker sample while `ImageCache` holds a strictly better one. LQIP-class
+(≤96px) is never a settled soft level when the surface target is ≥ soft.
+
+- **Policy:** `DisplayQuality::isStrictUpgrade` / `checkSurface`
+- **Watchdogs:** Gallery `gallerySoftWatchdogTick`, filmstrip `qualityWatchdogTick`,
+  Image/slideshow `displayQualityWatchdogTick`
+- Debug builds **assert** on stuck-weak without pending climb; all builds
+  rate-limited `qWarning` (`biltoo/quality: …`)

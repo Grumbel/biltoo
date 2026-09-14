@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "displayquality.h"
 
 #include "archivepath.h"
 #include "imagecache.h"
@@ -458,6 +459,7 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
                                        SessionAppearance::PixelKind kind) const
 {
     // Single gate for soft→HQ and against late soft demoting full.
+    // Upgrade policy is DisplayQuality::isStrictUpgrade via shouldUpgradeDisplayTo.
     if (!item || pixels.isNull()) {
         return false;
     }

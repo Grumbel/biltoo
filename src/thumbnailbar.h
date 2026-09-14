@@ -206,6 +206,8 @@ private:
     void scheduleThumbnailLoads();
     /** Queue decode jobs for rows near the viewport / current index only. */
     void scheduleVisibleThumbnailLoads();
+    /** DisplayQuality: host better than cell, or LQIP settled without soft. */
+    void qualityWatchdogTick();
     /** Apply native pixel size as letterbox aspect on a row (sizeHint + role). */
     void applyNativeAspect(QListWidgetItem *item, const QSize &native);
     /** Cache-first sizes for all rows; scheduleProbe for misses. */

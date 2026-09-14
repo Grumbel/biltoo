@@ -2,6 +2,30 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-801-display-quality-contract.** Central DisplayQuality invariants + watchdogs.
+Prior: **800**.
+
+### Design
+- `src/displayquality.h/.cpp` — single upgrade policy (`isStrictUpgrade`, tiers,
+  `checkSurface` verdicts)
+- Surfaces must not paint weaker than host cache; LQIP is never a settled soft level
+- Watchdogs: Gallery, filmstrip, Image mode, slideshow phase buffers
+- Debug: assert on stuck-weak; all builds: rate-limited `biltoo/quality:` warnings
+
+### Apply
+```bash
+git pull /path/to/biltoo-801-display-quality-contract.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **801**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-800-filmstrip-lqip-upgrade.** Filmstrip schedules soft after LQIP.
 Prior: **799**.
 

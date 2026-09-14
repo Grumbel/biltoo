@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumbnailbar.h"
+#include "displayquality.h"
 #include "archivepath.h"
 #include "pagepath.h"
 #include "imagecache.h"
@@ -36,6 +37,7 @@
 #include <QShowEvent>
 #include <QStyle>
 #include <QThreadPool>
+#include <QTimer>
 #include <QScrollBar>
 #include <QUrl>
 #include <QVariant>
@@ -409,6 +411,13 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     if (verticalScrollBar()) {
         connect(verticalScrollBar(), &QScrollBar::valueChanged, this,
                 [armScrollLoad](int) { armScrollLoad(); });
+    }
+
+    {
+        auto *qualityTimer = new QTimer(this);
+        qualityTimer->setInterval(1500);
+        connect(qualityTimer, &QTimer::timeout, this, &ThumbnailBar::qualityWatchdogTick);
+        qualityTimer->start();
     }
 
     // When thumtoo finishes a ladder level, upgrade filmstrip rows still short
@@ -1344,6 +1353,57 @@ void ThumbnailBar::refreshAllItemGeometry()
     updateCenteringMargins();
     if (viewport()) {
         viewport()->update();
+    }
+}
+
+
+void ThumbnailBar::qualityWatchdogTick()
+{
+    if (m_files.isEmpty() || m_visibleLoadsSuspended) {
+        return;
+    }
+    const int decodeSize = filmstripDecodeEdge();
+    const QRect vis = viewport()->rect().adjusted(-40, -40, 40, 40);
+    bool needSchedule = false;
+    for (int i = 0; i < m_files.size(); ++i) {
+        QListWidgetItem *it = item(i);
+        if (!it) {
+            continue;
+        }
+        const QRect r = visualItemRect(it);
+        if (!r.intersects(vis)) {
+            continue;
+        }
+        const QString path = m_files.at(i);
+        if (path.isEmpty()) {
+            continue;
+        }
+        const int shown = it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+        const bool climbPending =
+            m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i);
+        const DisplayQuality::Check dq =
+            DisplayQuality::checkSurface(path, shown, decodeSize, climbPending);
+
+        if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
+            // Prefer host sample; schedule makeThumbnail path via await clear.
+            m_thumbAwaitLadder.remove(i);
+            m_thumbLoadScheduled.remove(i);
+            needSchedule = true;
+            DisplayQuality::reportViolation("filmstrip", path, dq, false);
+        } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak
+                   || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
+            if (!climbPending) {
+                DisplayQuality::reportViolation(
+                    "filmstrip", path, dq,
+                    dq.verdict == DisplayQuality::Verdict::StuckWeak);
+                m_thumbAwaitLadder.remove(i);
+                m_thumbLoadScheduled.remove(i);
+                needSchedule = true;
+            }
+        }
+    }
+    if (needSchedule) {
+        scheduleVisibleThumbnailLoads();
     }
 }
 

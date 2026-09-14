@@ -320,6 +320,7 @@ ImageView::ImageView(QWidget *parent)
         if (isGalleryMode()) {
             gallerySoftWatchdogTick();
         }
+        displayQualityWatchdogTick();
     });
     m_gallerySoftWatchdog->start();
 }

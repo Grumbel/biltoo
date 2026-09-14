@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "displayquality.h"
 #include "biltoo_thread.h"
 
 #include "archivepath.h"
@@ -1589,6 +1590,78 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
             m_pathRaster->ensure(path, target, logicalSizeForPath(path),
                                  PathRasterService::ClimbPolicy::EscalateToFull);
         }
+    }
+}
+
+
+void ImageView::displayQualityWatchdogTick()
+{
+    // Image-mode canvas: host better than painted, or LQIP while climbing to soft+.
+    if (isImageMode()) {
+        ImageItem *item = primaryItem();
+        if (item && !item->path().isEmpty()) {
+            const QString path = item->path();
+            const int shown = item->displayPixelLongEdge();
+            const int target = cappedDisplayEdgeForPath(
+                path, qMax(viewport() ? qMax(viewport()->width(), viewport()->height()) : 0,
+                           DisplayQuality::kSoftMaxEdge));
+            const bool pending =
+                m_pathRaster && m_pathRaster->isClimbPending(path);
+            const DisplayQuality::Check dq =
+                DisplayQuality::checkSurface(path, shown, target, pending);
+            if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
+                const QImage host = ImageCache::get(path);
+                if (!host.isNull()
+                    && canAcceptDisplaySample(
+                        item, host, SessionAppearance::PixelKind::SoftPreview)) {
+                    installDisplayPixels(item, host,
+                                         SessionAppearance::PixelKind::SoftPreview,
+                                         item->sessionId());
+                    if (viewport()) {
+                        viewport()->update();
+                    }
+                } else {
+                    DisplayQuality::reportViolation("image", path, dq, false);
+                }
+            } else if (dq.verdict != DisplayQuality::Verdict::Ok && !pending) {
+                DisplayQuality::reportViolation(
+                    "image", path, dq,
+                    dq.verdict == DisplayQuality::Verdict::StuckWeak);
+                if (m_pathRaster) {
+                    m_pathRaster->ensure(
+                        path, target, logicalSizeForPath(path),
+                        PathRasterService::ClimbPolicy::EscalateToFull);
+                }
+            }
+        }
+    }
+
+    // Slideshow phase buffers must track host upgrades (same bug class as gallery).
+    if (m_slideshowProgressActive) {
+        auto checkPhase = [this](const QString &path, int shownEdge, const char *tag) {
+            if (path.isEmpty()) {
+                return;
+            }
+            const int target = slideshowTargetEdge();
+            const DisplayQuality::Check dq =
+                DisplayQuality::checkSurface(path, shownEdge, target, false);
+            if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
+                const QImage host = ImageCache::get(path);
+                if (!host.isNull()) {
+                    scheduleSlideshowPhaseBufferUpgrade(path, host);
+                }
+                DisplayQuality::reportViolation(tag, path, dq, false);
+            } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak) {
+                DisplayQuality::reportViolation(tag, path, dq, true);
+                if (m_pathRaster) {
+                    m_pathRaster->ensure(
+                        path, slideshowTargetEdge(), logicalSizeForPath(path),
+                        PathRasterService::ClimbPolicy::EscalateToFull);
+                }
+            }
+        };
+        checkPhase(m_ssFromPath, ImageCache::longEdge(m_ssFromImage), "slideshow-from");
+        checkPhase(m_ssToPath, ImageCache::longEdge(m_ssToImage), "slideshow-to");
     }
 }
 

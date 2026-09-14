@@ -188,3 +188,19 @@ Gallery `updateGalleryDecodeWindow` publishes:
 Host soft path remains `schedulePixels` ≤512 for placeholders. Overview is **not**
 scheduled via `scheduleOverviewPixels` when `THUMTOO_API_SET_INTEREST` is defined;
 only interest snapshots drive overview/FocusFull work.
+
+
+## DisplayQuality invariant
+
+`DisplayQuality::checkSurface(path, shown, target, climbPending)` is the host
+contract for every Gallery tile (and filmstrip / slideshow / Image mode):
+
+| Verdict | Meaning |
+|---------|---------|
+| Ok | Shown meets target, or climb is pending |
+| InstallHostBetter | `ImageCache` has a stricter sample than painted — install it |
+| ScheduleClimb | Below target, host has nothing better — schedule soft climb |
+| StuckWeak | Still LQIP/blank while target ≥ soft and no climb pending |
+
+Watchdog installs host-better samples and rate-limits warnings; debug builds
+assert on StuckWeak without pending work.

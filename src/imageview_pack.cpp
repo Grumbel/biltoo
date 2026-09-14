@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "displayquality.h"
 #include "imageview.h"
 #include "biltoo_thread.h"
 #include "thumtoocache.h"
@@ -732,26 +733,50 @@ void ImageView::gallerySoftWatchdogTick()
         }
         GallerySoftState &st = m_gallerySoft[path];
 
-        // Cache has soft/full but tile is blank *or* still on a weaker sample
-        // (LQIP left on the item after ladderReady put soft into ImageCache).
-        {
+        // DisplayQuality contract: host better than painted → install; LQIP
+        // while target ≥ soft and no climb → schedule / warn.
+        const int shown = item->displayPixelLongEdge();
+        const int target = st.want > 0 ? st.want
+            : galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        const bool climbPending =
+            st.inflight > 0
+            || (m_pathRaster && m_pathRaster->isClimbPending(path));
+        const DisplayQuality::Check dq =
+            DisplayQuality::checkSurface(path, shown, target, climbPending);
+
+        if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
             const QImage soft = ImageCache::get(path);
             if (!soft.isNull()) {
-                const int hostEdge = ImageCache::longEdge(soft);
-                if (!item->hasDisplayPixels()
-                    || item->shouldUpgradeDisplayTo(hostEdge)) {
-                    installDisplayPixels(item, soft,
-                                         SessionAppearance::PixelKind::SoftPreview,
-                                         item->sessionId());
-                    if (m_scene) {
-                        m_scene->update(item->sceneBoundingRect());
-                    }
-                    st.have = qMax(st.have, hostEdge);
-                    ++repaired;
+                installDisplayPixels(item, soft,
+                                     SessionAppearance::PixelKind::SoftPreview,
+                                     item->sessionId());
+                if (m_scene) {
+                    m_scene->update(item->sceneBoundingRect());
+                }
+                st.have = qMax(st.have, dq.hostEdge);
+                ++repaired;
+                // If still weak after install, fall through to schedule checks.
+                if (!item->shouldUpgradeDisplayTo(dq.hostEdge)) {
                     continue;
                 }
             }
+            DisplayQuality::reportViolation("gallery", path, dq, /*assertHard=*/false);
+        } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak
+                   || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
+            // Grace: only assert after inflight has had time, or never pending.
+            const bool aged =
+                st.inflightSinceMs <= 0
+                || (now - st.inflightSinceMs) > kStuckMs;
+            if (!climbPending || aged) {
+                DisplayQuality::reportViolation(
+                    "gallery", path, dq,
+                    /*assertHard=*/dq.verdict == DisplayQuality::Verdict::StuckWeak
+                        && aged && !climbPending);
+                clearGallerySoftInflight(st);
+                needWindow = true;
+            }
         }
+
         // Item has pixels — keep have in sync with what is painted.
         if (item->hasDisplayPixels()) {
             const int edge = item->displayPixelLongEdge();
@@ -775,13 +800,8 @@ void ImageView::gallerySoftWatchdogTick()
             needWindow = true;
         }
 
-#ifndef NDEBUG
-        // Debug builds: never leave "have soft in cache, blank tile" silent.
-        if (st.have > 0 && !item->hasDisplayPixels()) {
-            Q_ASSERT_X(false, "gallerySoftWatchdogTick",
-                       "Gallery soft have>0 but item has no display pixels");
-        }
-#endif
+        // Blank tile while host/st.have claims pixels is covered by
+        // DisplayQuality InstallHostBetter above.
     }
 
     if (repaired > 0 && viewport()) {

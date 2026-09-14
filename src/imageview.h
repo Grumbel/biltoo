@@ -1422,6 +1422,8 @@ private:
     void clearGallerySoftInflight(GallerySoftState &soft);
     /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
     void gallerySoftWatchdogTick();
+    /** Image-mode + slideshow phase: DisplayQuality host-vs-shown contract. */
+    void displayQualityWatchdogTick();
     /** Ladder step for item cell size in device pixels. */
     int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = true) const;
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;

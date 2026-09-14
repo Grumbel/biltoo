@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "displayquality.h"
 #include "imagecache.h"
 #include <QFileInfo>
 
@@ -131,13 +132,8 @@ int ImageItem::displayPixelLongEdge() const
 
 bool ImageItem::shouldUpgradeDisplayTo(int incomingLongEdge) const
 {
-    if (incomingLongEdge <= 0) {
-        return false;
-    }
-    if (!hasDisplayPixels()) {
-        return true;
-    }
-    return displayPixelLongEdge() < incomingLongEdge;
+    // Single policy: DisplayQuality::isStrictUpgrade (blank accepts any sample).
+    return DisplayQuality::isStrictUpgrade(displayPixelLongEdge(), incomingLongEdge);
 }
 
 void ImageItem::setPreviewImage(const QImage &preview)
