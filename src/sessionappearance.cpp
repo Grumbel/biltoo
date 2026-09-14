@@ -102,16 +102,6 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns)
     state.cropSourceSize = sz;
 }
 
-int normalizeQuarterTurns(int quarterTurns)
-{
-    return ContentXform::normalizeQuarterTurns(quarterTurns);
-}
-
-bool contentSwapsAspect(const ContentXform::Value &x)
-{
-    return ContentXform::swapsAspect(x);
-}
-
 bool contentSwapsAspect(const WorkspaceItemState &state)
 {
     return ContentXform::swapsAspect(ContentXform::Value::fromState(state));

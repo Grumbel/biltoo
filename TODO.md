@@ -2,6 +2,20 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-844-sessionappearance-no-redef.** Remove cpp redefs of normalizeQuarterTurns / contentSwapsAspect(Value) (already inline in header).
+Prior: **843**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-844-sessionappearance-no-redef.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-843-imageitem-applied-members.** Fix build: declare m_appliedContentXform / m_hasAppliedContentXform on ImageItem.
 Prior: **842**.
 
