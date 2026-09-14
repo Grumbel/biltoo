@@ -9,6 +9,7 @@
 
 #include <QRect>
 #include <QSize>
+#include <QSizeF>
 
 /**
  * Pure content transform + layout helpers (no ImageItem / GUI).
@@ -57,6 +58,12 @@ QSize layoutSize(const QSize &native, const WorkspaceItemState &state);
  */
 bool needsRematerialize(const Value &applied, const Value &want,
                         int shownLongEdge, int incomingLongEdge);
+
+/**
+ * Scale factors so @p logical content size occupies @p footW × @p footH
+ * in scene units (Workspace crop Apply must not shrink the tile).
+ */
+QSizeF scaleToPreserveFootprint(qreal footW, qreal footH, const QSize &logical);
 
 } // namespace ContentXform
 

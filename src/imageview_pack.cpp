@@ -522,10 +522,13 @@ void ImageView::applyLayout(GalleryPackReason reason)
         && (reason == GalleryPackReason::ContentChange
             || reason == GalleryPackReason::SessionMutate
             || reason == GalleryPackReason::Reload);
-    QPointF keptCenter;
-    if (preserveView && viewport()) {
-        keptCenter = mapToScene(viewport()->rect().center());
-    }
+    // Scene coordinates are rewritten by pack — do NOT centerOn a pre-pack
+    // scene point (that jumped the overview to the middle after crop). Keep
+    // scrollbar pixel values instead.
+    const int keptScrollH =
+        (preserveView && horizontalScrollBar()) ? horizontalScrollBar()->value() : -1;
+    const int keptScrollV =
+        (preserveView && verticalScrollBar()) ? verticalScrollBar()->value() : -1;
 
     m_applyingLayout = true;
 
@@ -586,9 +589,12 @@ void ImageView::applyLayout(GalleryPackReason reason)
     // Re-apply scroll after centerOn(0,0) above when returning from Image.
     applyPendingGalleryRestore();
     if (preserveView) {
-        // Scene geometry changed; map the previous centre back if it still
-        // falls in the new bounds (clamped by QGraphicsView otherwise).
-        centerOn(keptCenter);
+        if (keptScrollH >= 0 && horizontalScrollBar()) {
+            horizontalScrollBar()->setValue(keptScrollH);
+        }
+        if (keptScrollV >= 0 && verticalScrollBar()) {
+            verticalScrollBar()->setValue(keptScrollV);
+        }
     }
     // Explicit column/layout changes used to call updateGalleryDecodeWindow
     // synchronously → setInterest epoch cancel → FocusFull/Full queue thrash

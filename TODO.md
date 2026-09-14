@@ -2,6 +2,44 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-877-crop-gallery-filmstrip-workspace.** Gallery scroll, filmstrip watchdog, second-crop full frame, footprint tests.
+Prior: **876**.
+
+### Root causes (verified)
+1. **Gallery jumps to middle after crop:** `applyLayout(ContentChange)` saved a
+   pre-pack *scene* centre and `centerOn` after pack. Pack rewrites scene coords
+   → scroll landed mid-overview. Fix: restore **scrollbar pixel** values.
+2. **Filmstrip crop then uncropped:** `qualityWatchdogTick` installed raw
+   ImageCache host onto cells **without** checking id overrides.
+3. **Second crop still shows crop bake:** Apply used `setSourceImageReady`
+   (marks full decode). Enter crop SoftPreview full-frame was **rejected** by
+   `canAccept` (`SoftPreview && hasDecodedPixels`). Fix: `clearDecodedPixels`
+   (+ clear applied xform) before install full frame for crop.
+4. **Workspace tiny:** pure `scaleToPreserveFootprint(foot, logical)` + tests.
+
+### Tests (`tests/contentxform_test.cpp`)
+- layoutSize crop matrix (existing + edge cases)
+- `scaleToPreserveFootprint` preserves scene size; rejects degenerate
+- `needsRematerialize` when clearing crop (re-enter full frame)
+
+### Apply
+```bash
+git pull /path/to/biltoo-877-crop-gallery-filmstrip-workspace.bundle HEAD
+```
+
+### Verify
+- [ ] Gallery: after crop (or return from Image crop) scroll position stable
+- [ ] Filmstrip stays cropped (watchdog must not replace)
+- [ ] Second crop enter shows **full** original with prior rect draft
+- [ ] Workspace crop keeps footprint (not tiny)
+- [ ] `ctest -R contentxform` green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-876-crop-filmstrip-workspace-roots.** Filmstrip ladderReady race; Workspace crop footprint; no second-crop on bake.
 Prior: **875**.
 

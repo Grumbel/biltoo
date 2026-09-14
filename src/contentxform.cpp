@@ -3,6 +3,8 @@
 
 #include "contentxform.h"
 
+#include <QtMath>
+
 namespace ContentXform {
 
 int normalizeQuarterTurns(int quarterTurns)
@@ -124,6 +126,22 @@ bool needsRematerialize(const Value &applied, const Value &want,
         return true;
     }
     return incomingLongEdge > shownLongEdge;
+}
+
+QSizeF scaleToPreserveFootprint(qreal footW, qreal footH, const QSize &logical)
+{
+    if (!isPositiveSize(logical) || logical.width() < 1 || logical.height() < 1) {
+        return QSizeF(1.0, 1.0);
+    }
+    if (!(footW > 1e-6) || !(footH > 1e-6)) {
+        return QSizeF(1.0, 1.0);
+    }
+    const qreal sx = footW / qreal(logical.width());
+    const qreal sy = footH / qreal(logical.height());
+    if (!qIsFinite(sx) || !qIsFinite(sy) || sx < 1e-6 || sy < 1e-6) {
+        return QSizeF(1.0, 1.0);
+    }
+    return QSizeF(sx, sy);
 }
 
 } // namespace ContentXform

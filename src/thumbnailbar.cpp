@@ -1412,6 +1412,17 @@ void ThumbnailBar::qualityWatchdogTick()
         // Host upgrade is independent of climbPending. Gallery / Image mode may
         // have put soft or better into ImageCache while the strip is still
         // awaiting SoftOnly — checkSurface would return Ok and leave LQIP painted.
+        // Session-id crop/appearance owns the cell — never paint raw host over it.
+        if (i < m_sessionIds.size()) {
+            const SessionImageId sid = m_sessionIds.at(i);
+            if (sid != kInvalidSessionImageId
+                && m_sessionIdImageOverrides.contains(sid)) {
+                continue;
+            }
+        }
+        if (m_sessionImageOverrides.contains(path)) {
+            continue;
+        }
         const int hostEdge = DisplayQuality::hostLongEdge(path);
         if (DisplayQuality::isStrictUpgrade(shown, hostEdge)) {
             const QImage host = ImageCache::get(path);

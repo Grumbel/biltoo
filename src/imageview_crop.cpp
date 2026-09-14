@@ -481,6 +481,11 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     item->setItemShear(0.0);
     item->setItemHFlip(false);
     item->setItemVFlip(false);
+    // Drop prior crop bake so SoftPreview full-frame stand-in is accepted.
+    // Otherwise hasDecodedPixels() rejects soft install and the draft stays
+    // on the already-cropped pixmap (second crop cannot see the original).
+    item->clearDecodedPixels();
+    item->clearAppliedContentXform();
 
     // Interactive crop: never install multi-MP display pixels on the GUI.
     // Soft stand-in ≤kGuiMaterializeMaxEdge; native host stays in ImageCache.
@@ -1215,19 +1220,11 @@ bool ImageView::applyCropCommit(ImageItem *item)
         if (!isPositiveSize(logical) || logical.width() <= 1) {
             logical = QSize(qMax(1, qRound(cropW)), qMax(1, qRound(cropH)));
         }
-        qreal sx = sx0;
-        qreal sy = sy0;
-        if (logical.width() > 0 && logical.height() > 0
-            && cropW > 0.5 && cropH > 0.5) {
-            const qreal nsx = footW / qreal(logical.width());
-            const qreal nsy = footH / qreal(logical.height());
-            if (nsx > 1e-6 && qIsFinite(nsx)) {
-                sx = nsx;
-            }
-            if (nsy > 1e-6 && qIsFinite(nsy)) {
-                sy = nsy;
-            }
-        }
+        const QSizeF scales = ContentXform::scaleToPreserveFootprint(footW, footH, logical);
+        const qreal sx = scales.width();
+        const qreal sy = scales.height();
+        Q_UNUSED(sx0);
+        Q_UNUSED(sy0);
 
         item->setSourceImageReady(display);
         item->setContentHFlip(st.contentHFlip);
