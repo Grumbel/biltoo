@@ -36,7 +36,28 @@ private slots:
     void needsRematerialize_fullToCrop();
     void needsRematerialize_secondCropDifferentRect();
     void layoutSize_secondCropIsNotPriorCropBox();
+    void scaleCropRect_nativeToSoft();
+    void scaleCropRect_softToNative();
+    void scaleCropRect_identity();
 };
+
+/** Must match SessionAppearance::scaleCropRect (sessionappearance.cpp). */
+static QRect scaleCropRectMirror(const QRect &crop, const QSize &recorded, const QSize &live)
+{
+    if (crop.isEmpty() || live.width() < 1 || live.height() < 1) {
+        return {};
+    }
+    if (!recorded.isValid() || recorded.width() < 1 || recorded.height() < 1
+        || recorded == live) {
+        return crop;
+    }
+    return QRect(
+        qRound(crop.x() * double(live.width()) / double(recorded.width())),
+        qRound(crop.y() * double(live.height()) / double(recorded.height())),
+        qMax(1, qRound(crop.width() * double(live.width()) / double(recorded.width()))),
+        qMax(1, qRound(crop.height() * double(live.height()) / double(recorded.height()))));
+}
+
 
 void ContentXformTest::normalizeTurns()
 {
@@ -269,6 +290,28 @@ void ContentXformTest::layoutSize_secondCropIsNotPriorCropBox()
     ContentXform::Value orientOnly;
     orientOnly.quarterTurns = 0;
     QCOMPARE(ContentXform::layoutSize(native, orientOnly), native);
+}
+
+
+void ContentXformTest::scaleCropRect_nativeToSoft()
+{
+    // Crop recorded on native 4000×3000; soft sample 400×300 (10×).
+    const QRect crop(1000, 500, 800, 600);
+    const QRect soft = scaleCropRectMirror(crop, QSize(4000, 3000), QSize(400, 300));
+    QCOMPARE(soft, QRect(100, 50, 80, 60));
+}
+
+void ContentXformTest::scaleCropRect_softToNative()
+{
+    const QRect softCrop(100, 50, 80, 60);
+    const QRect native = scaleCropRectMirror(softCrop, QSize(400, 300), QSize(4000, 3000));
+    QCOMPARE(native, QRect(1000, 500, 800, 600));
+}
+
+void ContentXformTest::scaleCropRect_identity()
+{
+    const QRect crop(10, 20, 100, 80);
+    QCOMPARE(scaleCropRectMirror(crop, QSize(400, 300), QSize(400, 300)), crop);
 }
 
 QTEST_MAIN(ContentXformTest)

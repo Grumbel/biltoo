@@ -2,6 +2,25 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-897-test-link.** Drop sessionappearance-crop test that linked ImageItem-less TU.
+Prior: **896**.
+
+### Fix
+`sessionappearance.cpp` defines applyCrop/applyContentToItem → needs ImageItem.
+Partial link of that TU for unit tests fails. Crop geometry tests live in
+`contentxform_test` (including scaleCropRect mirror of SessionAppearance).
+
+### Apply
+```bash
+git pull /path/to/biltoo-897-test-link.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-896-build-fix.** Compile fixes after 894/895.
 Prior: **895**.
 

@@ -465,14 +465,7 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-contentxform-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME contentxform COMMAND biltoo-contentxform-test)
 
-  # Pure crop geometry + materializeDisplay (no ImageView / GUI).
-  add_executable(biltoo-sessionappearance-crop-test
-    tests/sessionappearance_crop_test.cpp
-    src/sessionappearance.cpp
-    src/contentxform.cpp
-    src/coloradjust.cpp
-  )
-  target_include_directories(biltoo-sessionappearance-crop-test PRIVATE src)
-  target_link_libraries(biltoo-sessionappearance-crop-test PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
-  add_test(NAME sessionappearance-crop COMMAND biltoo-sessionappearance-crop-test)
+  # sessionappearance.cpp also needs ImageItem — crop geometry is covered in
+  # contentxform_test (layoutSize + scaleCropRect formula). Do not link a partial
+  # sessionappearance TU without imageitem (undefined refs at link time).
 endif()
