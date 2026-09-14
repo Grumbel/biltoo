@@ -1959,6 +1959,8 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     // still be accepted (see phaseBufferWantsSample / m_ssFromContentApplied).
     m_ssFromImage = slideshowSampleUnoriented(fromPath);
     m_ssFromContentApplied = false;
+    // Drop prior atlas: it may be oriented for a different aspect; keep it and
+    // paintMotionCover would stretch the atlas into the new sample dest.
     if (m_ssFromImage.isNull() && !fromPath.isEmpty()) {
         m_ssFromImage = ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(fromPath), slideshowTargetEdge());
@@ -1987,14 +1989,15 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
         return;
     }
     ++m_ssPhaseUpgradeGeneration; // drop mid-slide upgrades for previous path
-    // If promote already transferred the to-atlas, keep it (same image, continuous
-    // motion). Only drop when the atlas cannot cover this source / viewport —
-    // requestDwellAtlasRebuild is a no-op when coverage is adequate.
-    // Fresh startSlideshowFromPhase leaves a wrong-path atlas; clear only then.
-    if (m_dwellAtlas.isNull()
-        || !dwellAtlasCoversSource(m_dwellAtlas, m_dwellAtlasScale, m_dwellAtlasVw,
-                                   m_dwellAtlasVh, dwellAtlasParams(),
-                                   m_ssFromImage)) {
+    // Keep atlas only when promote carried oriented continuity for the *same*
+    // sample. Fresh arm (contentApplied false) or aspect mismatch: drop atlas
+    // so paintMotionCover blits the live sample without stretch for a frame.
+    const bool keepAtlas = m_ssFromContentApplied
+        && !m_dwellAtlas.isNull()
+        && dwellAtlasCoversSource(m_dwellAtlas, m_dwellAtlasScale, m_dwellAtlasVw,
+                                  m_dwellAtlasVh, dwellAtlasParams(),
+                                  m_ssFromImage);
+    if (!keepAtlas) {
         invalidateDwellAtlasRebuilds();
         m_dwellAtlas = QPixmap();
         m_dwellAtlasScale = 0.0;
@@ -2792,42 +2795,36 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
 
 QSize ImageView::resolveMotionLogicalSize(const QImage &image, const QString &path) const
 {
-    // HARD RULE: definitive logical size owns geometry. Soft rasters are sampling
-    // only — but while size is still provisional (archive square stand-in, or
-    // probe not yet back), dest aspect must follow the *sample*. Otherwise
-    // paintMotionCover stretches a 16:9 soft into a 1:1 dest (speed change /
-    // seek storms many cold paths before probes finish).
-    //
-    // ContentXform: phase buffers are often *oriented* (flip/turns). Dest must
-    // use layoutSize(fileNative, want) when that orient is applied — otherwise
-    // rotated pixels stretch into the unoriented file box.
+    // Dest aspect must match the *pixels being drawn* (sample). Rapid ←/→ arms
+    // unoriented stand-ins then async ContentXform orient; a dest keyed only on
+    // file-native or only on contentApplied races and stretches for a frame.
+    // Magnitude comes from durable logical long-edge when known.
     const QSize fileNative = logicalSizeForPath(path);
-    const bool phaseOriented =
-        (!path.isEmpty() && path == m_ssFromPath && m_ssFromContentApplied)
-        || (!path.isEmpty() && path == m_ssToPath && m_ssToContentApplied);
-    if (isPositiveSize(fileNative) && !path.isEmpty() && !isProvisionalImageSize(path)) {
-        if (phaseOriented) {
-            WorkspaceItemState app;
-            if (snapshotSlideshowContentAppearance(path, &app)
-                && SessionAppearance::hasContentAppearance(app)) {
-                const QSize lay = ContentXform::layoutSize(fileNative, app);
-                if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-                    return lay;
-                }
-            }
-        }
-        return fileNative;
+    int longEdge = kProvisionalLayoutLongEdge;
+    if (isPositiveSize(fileNative) && !path.isEmpty()
+        && !isProvisionalImageSize(path)) {
+        longEdge = qMax(fileNative.width(), fileNative.height());
     }
-    // Provisional / no durable size: sample aspect (oriented sample already
-    // matches display after phase ContentXform).
-    if (!image.isNull() && isPositiveSize(image.size())) {
-        const QSize fromSample =
-            scaleToLongEdge(image.size(), kProvisionalLayoutLongEdge);
+
+    if (!image.isNull() && isPositiveSize(image.size())
+        && image.width() > 1 && image.height() > 1) {
+        // Sample aspect is ground truth for this blit (raw or oriented).
+        const QSize fromSample = scaleToLongEdge(image.size(), longEdge);
         if (isPositiveSize(fromSample)) {
             return fromSample;
         }
     }
-    if (isPositiveSize(fileNative)) {
+
+    // No sample yet: file-native, oriented if appearance is known.
+    if (isPositiveSize(fileNative) && !path.isEmpty()) {
+        WorkspaceItemState app;
+        if (snapshotSlideshowContentAppearance(path, &app)
+            && SessionAppearance::hasContentAppearance(app)) {
+            const QSize lay = ContentXform::layoutSize(fileNative, app);
+            if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                return lay;
+            }
+        }
         return fileNative;
     }
     return QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);

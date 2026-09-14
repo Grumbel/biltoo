@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-860-slideshow-sample-aspect-dest.** Motion dest aspect follows phase sample; drop stale atlas on unoriented arm.
+Prior: **859**.
+
+### Problem
+Rapid ←/→: unoriented stand-in vs ContentXform orient race left dest size
+mismatched to pixels (file-native vs oriented) → stretch flash. Stale atlas from
+previous oriented phase could also stretch into the new sample dest.
+
+### Fix
+- `resolveMotionLogicalSize`: **sample aspect** + durable long-edge magnitude
+- `prepareSlideshowFromDwell`: drop atlas unless contentApplied + covers source
+
+### Apply
+```bash
+git pull /path/to/biltoo-860-slideshow-sample-aspect-dest.bundle HEAD
+```
+
+### Verify
+- [ ] Hammer ←/→ on rotated slides: no stretch flash
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-859-slideshow-layoutsize-orient.** paintMotionCover dest uses ContentXform::layoutSize when phase orient applied.
 Prior: **858**.
 
