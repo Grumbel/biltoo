@@ -1344,6 +1344,13 @@ private:
      * If ImageCache has a sample with long edge ≤512, materializeDisplay
      * for @p want and attach to @p item. Returns true when attached.
      */
+    /**
+     * Sole attach: display pixels + layoutSize(native, want) + applied fingerprint.
+     * @p display is already materializeDisplay output (or identity raw).
+     */
+    void attachDisplaySample(ImageItem *item, const QImage &display,
+                             const WorkspaceItemState &want,
+                             SessionAppearance::PixelKind kind);
     bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
     /** Worker materialize when host is multi-MP; attach on GUI if gen/want still match. */
     void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,

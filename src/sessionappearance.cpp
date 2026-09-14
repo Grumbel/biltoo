@@ -245,33 +245,10 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
 void syncItemLayoutToContentOrientation(ImageItem *item,
                                         const WorkspaceItemState &state)
 {
-    if (!item) {
-        return;
-    }
-    // Prefer pure layoutSize from current magnitude + content xform. Fall back
-    // to display-aspect match only when magnitude is still unknown.
-    const QSize cur = item->imageSize();
-    if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
-        const QSize want = layoutSize(cur, state);
-        // layoutSize with already-oriented cur would double-swap. Detect via
-        // display pixels when present.
-        QSize display = item->sourceImage().size();
-        if (display.width() < 1 || display.height() < 1) {
-            display = item->previewImage().size();
-        }
-        if (isPositiveSize(display)) {
-            const bool displayLandscape = display.width() >= display.height();
-            const bool layoutLandscape = cur.width() >= cur.height();
-            if (displayLandscape != layoutLandscape) {
-                item->setIntrinsicSize(QSize(cur.height(), cur.width()));
-            }
-            return;
-        }
-        // No pixels: if state says odd turns and we cannot know whether cur is
-        // already oriented, leave magnitude alone (install sets via layoutSize).
-        Q_UNUSED(want);
-        return;
-    }
+    // Layout is owned by attachDisplaySample / ContentXform::layoutSize(native, want).
+    // No aspect heuristics — callers must pass file-native size into layoutSize.
+    Q_UNUSED(item);
+    Q_UNUSED(state);
 }
 
 QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,

@@ -574,121 +574,42 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     // the GUI thread — never call it here for large samples (would abort on
     // ←/→ and crop/appearance installs).
     QImage display = pixelsForDisplay;
-    const bool imageModeInstall = isImageMode();
-    const bool hasCrop = appearance.hasCrop && !appearance.cropRect.isEmpty();
     const bool wantBake =
         SessionAppearance::hasContentAppearance(appearance)
         || !appearance.colorAdjust.isIdentity();
     if (wantBake) {
         int edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
-        // Prefer a ≤512 stand-in so crop/flip can bake on the GUI (Gallery
-        // high-res soft otherwise skips materialize and paints the full frame).
-        if (edge > 512 && kind == SessionAppearance::PixelKind::SoftPreview) {
-            pixelsForDisplay = ImageCache::clampToMaxEdge(pixelsForDisplay, 512);
+        // Soft stand-in ≤kGuiMaterializeMaxEdge so materialize is GUI-safe.
+        if (edge > ContentXform::kGuiMaterializeMaxEdge
+            && kind == SessionAppearance::PixelKind::SoftPreview) {
+            pixelsForDisplay = ImageCache::clampToMaxEdge(
+                pixelsForDisplay, ContentXform::kGuiMaterializeMaxEdge);
             edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
         }
-        if (edge <= 512) {
-            // Soft / filmstrip band — safe on GUI.
+        if (edge <= ContentXform::kGuiMaterializeMaxEdge) {
             display = SessionAppearance::materializeDisplay(
                 pixelsForDisplay, appearance, kind);
         } else if (item->hasDisplayPixels()
                    && SessionAppearance::hasContentAppearance(appearance)) {
-            // Multi-MP materialize is GUI-forbidden. Installing the raw sample
-            // would wipe a crop/flip bake (Gallery soft→full climb after Image
-            // crop; peer-synced stashed tiles). Keep current pixels; refresh meta.
-            item->setContentHFlip(appearance.contentHFlip);
-            item->setContentVFlip(appearance.contentVFlip);
-            item->setSessionCrop(appearance.hasCrop, appearance.cropRect);
-            item->setColorAdjustmentsRecord(appearance.colorAdjust);
-            // Keep existing pixels; still tag want so peers/compare stay coherent.
+            // Multi-MP: cannot materialize on GUI. Keep current display pixels;
+            // tag want and schedule pure rematerialize from host (same as rotate).
             item->setAppliedContentXform(
                 ContentXform::Value::fromState(appearance));
+            scheduleAsyncHostRematerialize(path, sid, appearance);
             return;
         }
-        // else: cold open with no pixels yet — show raw until a ≤512 soft
-        // arrives or a worker-baked FullSource is installed.
+        // Cold open: attach raw until soft ≤kGui or worker-baked FullSource.
     }
-    Q_UNUSED(imageModeInstall);
-
-    if (kind == SessionAppearance::PixelKind::FullSource) {
-        if (imageModeInstall) {
-            item->setSourceImageReady(display);
-        } else {
-            item->setSourceImage(display);
-        }
-        if (hasCrop && display.width() > 1 && display.height() > 1) {
-            // Cropped display identity is the baked sample — not full-file logical.
-            item->setIntrinsicSize(display.size());
-        } else {
-            // File-native logical → layoutSize(native, want xform). Never ad-hoc transpose.
-            QSize native = logicalSizeForPath(path);
-            if (!isPositiveSize(native) || native.width() <= 1 || native.height() <= 1
-                || isProvisionalImageSize(path)) {
-                native = layoutSizeForPath(path, display);
-            }
-            // layoutSizeForPath may already reflect provisional soft aspect; still
-            // apply content turns relative to file-native when known.
-            QSize fileNative = logicalSizeForPath(path);
-            if (!isPositiveSize(fileNative) || isProvisionalImageSize(path)) {
-                fileNative = native;
-            }
-            const QSize logical =
-                ContentXform::layoutSize(fileNative, appearance);
-            if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
-                item->setIntrinsicSize(logical);
-            }
-        }
-        item->setCacheMode(QGraphicsItem::NoCache);
-        item->update();
-    } else {
-        item->setPreviewImage(display); // NoCache soft path
-        // Soft+crop bake: identity is the cropped sample (same as FullSource).
-        if (hasCrop && display.width() > 1 && display.height() > 1) {
-            item->setIntrinsicSize(display.size());
-        }
-        // Soft aspect owns provisional geometry. Cold placeholders are often
-        // square; update intrinsic when still provisional. Must preserve the
-        // view transform — previously size changed without preserve and the
-        // scrollable area stayed on the old geometry until the size probe
-        // (hard-to-reproduce off-center PDF soft load).
-        const QSize cur = item->imageSize();
-        const bool provisional = !path.isEmpty() && isProvisionalImageSize(path);
-        if (!hasCrop && (cur.width() <= 1 || cur.height() <= 1 || provisional)) {
-            QSize fileNative = logicalSizeForPath(path);
-            if (!isPositiveSize(fileNative) || isProvisionalImageSize(path)) {
-                fileNative = layoutSizeForPath(path, display);
-            }
-            const QSize layout =
-                ContentXform::layoutSize(fileNative, appearance);
-            if (isPositiveSize(layout) && layout.width() > 1 && layout.height() > 1) {
-                const int cw = qMax(1, cur.width());
-                const int ch = qMax(1, cur.height());
-                const int lw = qMax(1, layout.width());
-                const int lh = qMax(1, layout.height());
-                const bool aspectDiffers =
-                    cur.width() <= 1 || cur.height() <= 1
-                    || qAbs(double(cw) / double(ch) - double(lw) / double(lh)) > 0.02;
-                if (aspectDiffers || cur != layout) {
-                    item->setIntrinsicSize(layout);
-                    if (isImageMode() && item == targetItem()) {
-                        preserveImageViewOnLogicalSizeChange(item, cur, layout);
-                    } else if (m_scene) {
-                        m_scene->setSceneRect(
-                            item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-                    }
-                }
-            }
-        }
+    const QSize sizeBeforeAttach = item->imageSize();
+    attachDisplaySample(item, display, appearance, kind);
+    // Soft→layout may change aspect; keep Image view scale continuous.
+    if (isImageMode() && item == targetItem()
+        && sizeBeforeAttach != item->imageSize()
+        && sizeBeforeAttach.width() > 1 && sizeBeforeAttach.height() > 1) {
+        preserveImageViewOnLogicalSizeChange(item, sizeBeforeAttach, item->imageSize());
+    } else if (isImageMode() && m_scene && m_items.size() == 1) {
+        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     }
-    item->setContentHFlip(appearance.contentHFlip);
-    item->setContentVFlip(appearance.contentVFlip);
-    item->setSessionCrop(appearance.hasCrop, appearance.cropRect);
-    // Baked samples: record grade for HUD only — do not rebuild the pixmap.
-    item->setColorAdjustmentsRecord(appearance.colorAdjust);
-    SessionAppearance::syncItemLayoutToContentOrientation(item, appearance);
-    // Fingerprint: this sample is display pixels for `appearance` (materialized
-    // or identity). Next install compares want vs applied instead of aspect hacks.
-    item->setAppliedContentXform(ContentXform::Value::fromState(appearance));
 
     // Do NOT emit sessionAppearanceChanged from decode/install (filmstrip is
     // selection-coupled). Soft ladder upgrades must not rewrite the strip.
@@ -2188,31 +2109,10 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     if (!item || image.isNull()) {
         return;
     }
-    // Fast path: worker-baked sample — assign + repaint only.
-    if (kind == SessionAppearance::PixelKind::SoftPreview) {
-        item->setPreviewImage(image);
-    } else {
-        item->setSourceImageReady(image);
-    }
-    const WorkspaceItemState want = wantAppearanceForItem(item, m_currentSessionId);
-    // Session crop: baked sample size is the display identity (not full-file).
-    if (want.hasCrop && !want.cropRect.isEmpty()
-        && image.width() > 1 && image.height() > 1) {
-        item->setIntrinsicSize(image.size());
-        item->setSessionCrop(true, want.cropRect);
-    } else {
-        QSize native = logicalSizeForPath(path);
-        if (!isPositiveSize(native)) {
-            native = image.size();
-        }
-        const QSize lay = ContentXform::layoutSize(native, want);
-        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-            item->setIntrinsicSize(lay);
-        }
-    }
-    item->setContentHFlip(want.contentHFlip);
-    item->setContentVFlip(want.contentVFlip);
-    item->setAppliedContentXform(ContentXform::Value::fromState(want));
+    // Same rules as every other attach: accept → materialize → attachDisplaySample.
+    installDisplayPixels(item, image, kind, item->sessionId() != kInvalidSessionImageId
+                                             ? item->sessionId()
+                                             : m_currentSessionId);
     m_lastLoadError.clear();
     rememberSizeFromDecode(path, image);
     if (viewport()) {

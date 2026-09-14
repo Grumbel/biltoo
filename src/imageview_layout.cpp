@@ -433,6 +433,48 @@ void ImageView::persistDurableContentAppearance(ImageItem *item, const Workspace
     }
 }
 
+void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
+                                      const WorkspaceItemState &want,
+                                      SessionAppearance::PixelKind kind)
+{
+    if (!item || display.isNull()) {
+        return;
+    }
+    const QString path = item->path();
+    const bool hasCrop = want.hasCrop && !want.cropRect.isEmpty();
+
+    if (kind == SessionAppearance::PixelKind::SoftPreview) {
+        item->setPreviewImage(display);
+    } else if (isImageMode()) {
+        item->setSourceImageReady(display);
+    } else {
+        item->setSourceImage(display);
+    }
+
+    // Layout: one rule — crop box is baked sample size; else layoutSize(native, want).
+    if (hasCrop && display.width() > 1 && display.height() > 1) {
+        item->setIntrinsicSize(display.size());
+    } else {
+        QSize native = logicalSizeForPath(path);
+        if (!isPositiveSize(native) || (!path.isEmpty() && isProvisionalImageSize(path))) {
+            native = layoutSizeForPath(path, display);
+        }
+        if (!isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
+            native = display.size();
+        }
+        const QSize lay = ContentXform::layoutSize(native, want);
+        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+            item->setIntrinsicSize(lay);
+        }
+    }
+
+    item->setContentHFlip(want.contentHFlip);
+    item->setContentVFlip(want.contentVFlip);
+    item->setSessionCrop(want.hasCrop, want.cropRect);
+    item->setColorAdjustmentsRecord(want.colorAdjust);
+    item->setAppliedContentXform(ContentXform::Value::fromState(want));
+}
+
 bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want)
 {
     if (!item) {
@@ -443,8 +485,7 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
     if (host.isNull()) {
         return false;
     }
-    const int edge = qMax(host.width(), host.height());
-    if (edge > ContentXform::kGuiMaterializeMaxEdge) {
+    if (qMax(host.width(), host.height()) > ContentXform::kGuiMaterializeMaxEdge) {
         return false;
     }
     const auto kind = item->hasDecodedPixels()
@@ -455,29 +496,7 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
     if (display.isNull()) {
         return false;
     }
-    if (kind == SessionAppearance::PixelKind::SoftPreview) {
-        item->setPreviewImage(display);
-    } else if (isImageMode()) {
-        item->setSourceImageReady(display);
-    } else {
-        item->setSourceImage(display);
-    }
-    if (want.hasCrop && !want.cropRect.isEmpty()
-        && display.width() > 1 && display.height() > 1) {
-        item->setIntrinsicSize(display.size());
-    } else {
-        QSize native = logicalSizeForPath(path);
-        if (!isPositiveSize(native)) {
-            native = host.size();
-        }
-        const QSize lay = ContentXform::layoutSize(native, want);
-        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-            item->setIntrinsicSize(lay);
-        }
-    }
-    item->setContentHFlip(want.contentHFlip);
-    item->setContentVFlip(want.contentVFlip);
-    item->setAppliedContentXform(ContentXform::Value::fromState(want));
+    attachDisplaySample(item, display, want, kind);
     return true;
 }
 
@@ -551,27 +570,7 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
         return;
     }
     const QSize before = item->imageSize();
-    if (isImageMode()) {
-        item->setSourceImageReady(display);
-    } else {
-        item->setSourceImage(display);
-    }
-    if (want.hasCrop && !want.cropRect.isEmpty()
-        && display.width() > 1 && display.height() > 1) {
-        item->setIntrinsicSize(display.size());
-    } else {
-        QSize native = logicalSizeForPath(path);
-        if (!isPositiveSize(native)) {
-            native = display.size();
-        }
-        const QSize lay = ContentXform::layoutSize(native, wantX);
-        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-            item->setIntrinsicSize(lay);
-        }
-    }
-    item->setContentHFlip(want.contentHFlip);
-    item->setContentVFlip(want.contentVFlip);
-    item->setAppliedContentXform(wantX);
+    attachDisplaySample(item, display, want, SessionAppearance::PixelKind::FullSource);
     if (before != item->imageSize()) {
         preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
     }

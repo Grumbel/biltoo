@@ -2,6 +2,27 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-840-one-attach-display-sample.** Sole attachDisplaySample; no layout heuristics; install/in-place/host use same path.
+Prior: **839**.
+
+### Change
+- `attachDisplaySample` — only place that sets pixels + layoutSize(native, want) + applied
+- `installDisplayPixels`, `tryRematerializeFromHost`, `finishAsyncHostRematerialize`, `installImageModeSampleInPlace` all end there
+- Multi-MP GUI install with existing content: tag want + `scheduleAsyncHostRematerialize` (no ad-hoc meta-only branch without async)
+- `syncItemLayoutToContentOrientation` is a no-op (no aspect guessing)
+- CONTENT_PIPELINE.md rewritten for one-rule model
+
+### Apply
+```bash
+git pull /path/to/biltoo-840-one-attach-display-sample.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-839-finish-async-host-rematerialize.** Implements finishAsyncHostRematerialize (838 was incomplete).
 Prior: **838** (schedule only; finish was missing).
 
