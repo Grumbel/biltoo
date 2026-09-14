@@ -2,6 +2,34 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-887-crop-enter-quality.** Crop enter keeps host resolution when orient is identity; no mid-enter paint.
+Prior: **886**.
+
+### Blurry crop enter
+Enter always clamped host to 512 before attach, even when contentOnly needed
+**no bake** (identity orient). High-res host was available → unnecessary soft.
+
+**Fix:** only clamp to kGuiMaterializeMaxEdge when flips/turns must run on GUI.
+Identity path keeps host (cap 2048).
+
+### One-frame glitch (cropped pixels + old contentRect)
+`m_cropMode` was true before install, so chrome could paint one frame on the
+old bake. Install also updated pixels/geometry in steps.
+
+**Fix:** install full + init crop rect first; set `m_cropMode` only then; fitItem;
+viewport updates disabled across prepare.
+
+### Apply
+```bash
+git pull /path/to/biltoo-887-crop-enter-quality.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-886-crop-mode-before-fit.** Set m_cropMode true *before* prepare/fitItem.
 Prior: **885**.
 

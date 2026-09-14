@@ -337,11 +337,9 @@ bool ImageView::enterCropModeFromUi()
     // Lock identity for the whole crop session (IDENTITY.md).
     m_cropTargetItem = item;
     m_cropTargetId = item->sessionId();
-    // Mark crop mode *before* prepare/fitItem. prepare ends with fitItem in
-    // Image mode; that helper must not apply store crop to intrinsic (see
-    // docs/CROP_MODE.md). Setting m_cropMode after fitItem left Image/Gallery
-    // draft on the old crop bake with a wrong rect.
-    m_cropMode = true;
+    // m_cropMode is set only after the full-frame draft is installed (see
+    // prepareCropModeFullImage / end of this function). Setting it earlier
+    // painted one frame of crop chrome on the still-cropped bake.
     // Snapshot appearance before full-image reload so Close can be undone.
     m_cropEnterSource = item->sourceImage().copy();
     if (m_cropEnterSource.isNull()) {
@@ -367,8 +365,15 @@ bool ImageView::enterCropModeFromUi()
         item->setItemRotation(0.0);
         item->setItemShear(0.0);
     }
+    // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
+    if (viewport()) {
+        viewport()->setUpdatesEnabled(false);
+    }
     if (!prepareCropModeFullImage(item)) {
-        m_cropMode = false;
+        if (viewport()) {
+            viewport()->setUpdatesEnabled(true);
+        }
+        m_cropMode = false; // prepare may have set it for fitItem then failed
         m_cropEnterValid = false;
         m_cropEnterSource = QImage();
         if (m_cropHadStashedPlacement) {
@@ -380,6 +385,9 @@ bool ImageView::enterCropModeFromUi()
         m_cropTargetId = kInvalidSessionImageId;
         flashHud(tr("Crop"), tr("Could not load full image"));
         return false;
+    }
+    if (viewport()) {
+        viewport()->setUpdatesEnabled(true);
     }
     if (isWorkspaceMode()) {
         // If there was no stored crop angle but the tile was free-rotated,
@@ -509,16 +517,24 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     item->clearAppliedContentXform();
 
     // Interactive crop draft: orient-only full frame (never prior crop bake).
-    // Soft ≤kGuiMaterializeMaxEdge; native host stays in ImageCache for Apply.
-    //
     // MUST use materializeDisplay for orient — do NOT attach raw + bakeRotate90.
-    // bakeRotate90 transposes intrinsic on top of layoutSize (already oriented)
-    // → double aspect swap and wrong crop-rect space on second enter.
+    //
+    // Quality: identity orient needs no CPU bake — keep host resolution (cap
+    // 2048 for GUI memory). Only clamp to kGuiMaterializeMaxEdge when flips/
+    // turns must run on the GUI thread (that was the blur on crop enter).
     QImage sample = full;
     SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
-    if (ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
+    const bool needBake =
+        SessionAppearance::hasContentAppearance(contentOnly)
+        || !contentOnly.colorAdjust.isIdentity();
+    if (needBake
+        && ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
         sample = ImageCache::clampToMaxEdge(
             sample, ContentXform::kGuiMaterializeMaxEdge);
+        kind = SessionAppearance::PixelKind::SoftPreview;
+    } else if (!needBake
+               && ImageCache::longEdge(sample) > 2048) {
+        sample = ImageCache::clampToMaxEdge(sample, 2048);
         kind = SessionAppearance::PixelKind::SoftPreview;
     }
 
@@ -526,7 +542,6 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     if (unorientedSource) {
         display = SessionAppearance::materializeDisplay(sample, contentOnly, kind);
     } else {
-        // Sample already oriented (rare cache miss path); contentOnly has no crop.
         display = sample;
     }
     if (display.isNull()) {
@@ -663,6 +678,9 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     }
     initCropRectFromPriorAppearance(item, app, haveApp);
 
+    // Crop chrome + fitItem only after pixels and contentRect match the draft.
+    // m_cropMode true before fitItem so layout uses orient-only full size.
+    m_cropMode = true;
     if (isImageMode()) {
         m_fitMode = true;
         fitItem(item, currentFitAspectMode());
@@ -670,10 +688,6 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         updateWorkspaceSceneRect();
     }
 
-    // Do NOT request multi-MP native on enter. That made crop "load full first"
-    // (ImageLoader::load / scheduleFullPixels up to 8192) and stalled the draft.
-    // Crop is content-space; soft host is enough for interactive edit + Apply.
-    // Native stays optional (cache may already hold it; Apply prefers it if ready).
     m_cropAwaitingFullPath.clear();
     return true;
 }
