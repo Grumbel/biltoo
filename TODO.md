@@ -2,6 +2,23 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-821-full-settle-no-retry.** scheduleFull settled is always terminal (no soft-tier RETRY).
+Prior: **820**. Pair with **thumtoo-206**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-821-full-settle-no-retry.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **821**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-819-rasterclimbsm-test-terminal-shortfall.** Align SM test with terminal intermediate Full shortfall.
 Prior: **818**.
 

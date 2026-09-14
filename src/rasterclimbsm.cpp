@@ -161,14 +161,9 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
     fullEdge = std::max(fullEdge, overviewCap + 1);
     p.fullEdge = fullEdge;
 
-    // Soft-tier shortfall after Full → real Full never landed; allow retry.
-    // Intermediate (e.g. TileSynth 2048) shortfall is terminal for whole-frame Full.
+    // Full shortfall is terminal for this ensure cycle (thumtoo must deliver
+    // coverage on the first real Full encode). Soft-tier RETRY looped on PDF.
     bool fullDone = m_.fullDone;
-    if (fullDone && !m_.fullQueued && m_.have * kCoverDenom < need * kCoverNumer
-        && m_.have <= softMax) {
-        p.forgetFullSettled = true;
-        fullDone = false;
-    }
 
     // --- PreferCache (intermediate) ---
     const bool needFullBand = need > overviewCap;

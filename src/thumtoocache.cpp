@@ -2949,24 +2949,13 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
             return true; // already in flight — count as accepted
         }
         if (g_pixelsSettled.contains(inflightKey)) {
-            // Full was attempted. Retry only when host still has soft-tier (or
-            // blank) — that means Ensure Full never really ran. Intermediate
-            // shortfall (TileSynth 2048 for want 6k) is terminal: looping RETRY
-            // + CACHE_HIT spun forever.
+            // Full was attempted once for this path#edge — always terminal.
+            // Soft-tier RETRY looped when thumtoo returned mis-tagged Full at
+            // 512px for PDF pages (request_full early-out on Source::Full).
             const int have = ImageCache::longEdge(ImageCache::get(path));
-            if (have * 10 >= maxEdge * 9) {
-                thumtooDbg("scheduleFull SKIP path=%s edge=%d (settled have=%d)",
-                           qPrintable(path), maxEdge, have);
-                return true;
-            }
-            if (have > kGalleryLadderEdge) {
-                thumtooDbg("scheduleFull SKIP path=%s edge=%d (settled shortfall have=%d terminal)",
-                           qPrintable(path), maxEdge, have);
-                return true;
-            }
-            g_pixelsSettled.remove(inflightKey);
-            thumtooDbg("scheduleFull RETRY path=%s edge=%d (settled soft-tier have=%d)",
+            thumtooDbg("scheduleFull SKIP path=%s edge=%d (settled have=%d)",
                        qPrintable(path), maxEdge, have);
+            return true;
         }
         if (g_fullActive >= kMaxConcurrentFullJobs) {
             thumtooDbg("scheduleFull DEFER path=%s edge=%d fullActive=%d",
