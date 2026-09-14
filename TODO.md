@@ -2,6 +2,29 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-869-workspace-crop-footprint.** Workspace crop preserves frame size/position.
+Prior: **868**.
+
+### Problem
+Apply set intrinsic from `layoutSize(host)` (file-pixel crop size) while
+`footW/footH` were in draft **content** units → scale = foot/huge → shrink.
+
+### Fix
+- Intrinsic = content-space crop rect size (same space as draft frame)
+- Workspace scale from footW/footH ÷ that logical size
+- Centre + crop-frame rotation unchanged
+
+### Apply
+```bash
+git pull /path/to/biltoo-869-workspace-crop-footprint.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-868-crop-rotate-contentxform.** Crop+rotate via single ContentXform materialize.
 Prior: **867**.
 

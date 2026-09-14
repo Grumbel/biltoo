@@ -1154,25 +1154,23 @@ bool ImageView::applyCropCommit(ImageItem *item)
         item->setContentVFlip(st.contentVFlip);
         item->setSessionCrop(st.hasCrop, st.cropRect);
         item->setAppliedContentXform(ContentXform::Value::fromState(st));
-        // Intrinsic = orient + crop layout size from host (not sample pixels).
-        const QSize layout = ContentXform::layoutSize(host.size(), st);
-        if (layout.width() > 1 && layout.height() > 1) {
-            item->setIntrinsicSize(layout);
-        } else {
-            const QSize logical(qMax(1, qRound(m_cropRect.width())),
-                                qMax(1, qRound(m_cropRect.height())));
-            item->setIntrinsicSize(logical);
-        }
+
+        // Intrinsic must stay in the *same content space* as m_cropRect / foot*.
+        // layoutSize(host) mixes file-pixel crop size with draft content units →
+        // Workspace scale collapsed (crop appeared to shrink).
+        const QSize logical(qMax(1, qRound(m_cropRect.width())),
+                            qMax(1, qRound(m_cropRect.height())));
+        item->setIntrinsicSize(logical);
 
         if (isImageMode()) {
             m_fitMode = true;
             fitItem(item, currentFitAspectMode());
         } else if (isWorkspaceMode()) {
-            const QSize after = item->imageSize();
-            if (after.width() > 0 && after.height() > 0) {
-                const qreal s = qMin(footW / qreal(after.width()),
-                                     footH / qreal(after.height()));
-                if (s > 1e-6) {
+            // Preserve scene footprint of the draft crop frame (uniform scale).
+            if (logical.width() > 0 && logical.height() > 0) {
+                const qreal s = qMin(footW / qreal(logical.width()),
+                                     footH / qreal(logical.height()));
+                if (s > 1e-6 && qIsFinite(s)) {
                     item->setItemScale(s, s);
                 }
             }
