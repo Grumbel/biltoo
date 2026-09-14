@@ -475,6 +475,51 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
     item->setAppliedContentXform(ContentXform::Value::fromState(want));
 }
 
+void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want)
+{
+    if (!item) {
+        return;
+    }
+    if (tryRematerializeFromHost(item, want)) {
+        return;
+    }
+    const QString path = item->path();
+    QImage raw = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (raw.isNull()) {
+        raw = item->sourceImage();
+    }
+    if (raw.isNull()) {
+        raw = item->previewImage();
+    }
+    if (raw.isNull()) {
+        return;
+    }
+    const int edge = qMax(raw.width(), raw.height());
+    if (edge <= ContentXform::kGuiMaterializeMaxEdge) {
+        const auto kind = item->hasDecodedPixels() || !item->previewImage().isNull()
+            ? (item->hasDecodedPixels()
+                   ? SessionAppearance::PixelKind::FullSource
+                   : SessionAppearance::PixelKind::SoftPreview)
+            : SessionAppearance::PixelKind::FullSource;
+        // Prefer FullSource when we have a host/full sample.
+        const auto bakeKind = (edge > 0 && item->hasDecodedPixels())
+            ? SessionAppearance::PixelKind::FullSource
+            : kind;
+        const QImage display =
+            SessionAppearance::materializeDisplay(raw, want, bakeKind);
+        if (!display.isNull()) {
+            attachDisplaySample(item, display, want, bakeKind);
+        }
+        return;
+    }
+    // Multi-MP: pure materialize on worker; keep current pixels until finish.
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+    item->setAppliedContentXform(ContentXform::Value::fromState(want));
+    scheduleAsyncHostRematerialize(path, sid, want);
+}
+
 bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want)
 {
     if (!item) {

@@ -39,3 +39,10 @@ Entering crop loads the full frame with content flips/turns only (no crop bake).
 `installFullImageForCrop` uses the same host rematerialize / attach path; multi-MP
 falls back to incremental content bake + async pure rematerialize.
 
+
+## ImageView::rematerializeItemContent
+
+When an item already holds (or host has) raw pixels and absolute want is known,
+use this instead of `SessionAppearance::applyContentToItem`. Same rules:
+host ≤512 materialize + attach; multi-MP schedules async pure materialize.
+

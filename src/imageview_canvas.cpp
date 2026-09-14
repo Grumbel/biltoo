@@ -249,7 +249,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                         scheduleImageLoad(path, LoadAdd);
                     }
                 } else if (SessionAppearance::hasContentAppearance(app)) {
-                    SessionAppearance::applyContentToItem(existing, app);
+                    rematerializeItemContent(existing, app);
                 }
             }
             continue;

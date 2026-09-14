@@ -743,11 +743,11 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
                     item->hasAppliedContentXform() ? item->appliedContentXform()
                                                    : ContentXform::Value{},
                     ContentXform::Value::fromState(app))) {
-                SessionAppearance::applyContentToItem(item, app);
+                rematerializeItemContent(item, app);
             }
         }
     } else {
-        SessionAppearance::applyContentToItem(item, app);
+        rematerializeItemContent(item, app);
     }
     if (isImageMode()) {
         m_fitMode = true;
@@ -928,7 +928,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
         }
     }
     // Grade-only or reload failed: chrome + grade on current pixels.
-    SessionAppearance::applyContentToItem(item, *app);
+    rematerializeItemContent(item, *app);
 }
 
 void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
@@ -955,7 +955,7 @@ void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
         return;
     }
     // Caller just installed full on-disk pixels; do not load again.
-    SessionAppearance::applyContentToItem(item, *app);
+    rematerializeItemContent(item, *app);
 }
 
 void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &state)

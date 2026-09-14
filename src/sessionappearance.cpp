@@ -198,13 +198,27 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     if (!item) {
         return;
     }
-    // Contract: @p item holds *raw* full pixels. Sole bake for install from disk.
-    // Live bakeFlip/bakeRotate90 mutate display pixels and update session state.
+    // Prefer ImageView::rematerializeItemContent (host cache + async multi-MP).
+    // This helper only runs GUI-safe materialize (≤ kGuiMaterializeMaxEdge).
+    // Contract: @p item holds *raw* pixels (or soft). Already-baked display must
+    // not be passed here or transforms double-apply.
     QImage raw = item->sourceImage();
     if (raw.isNull()) {
         raw = item->previewImage();
     }
     if (raw.isNull()) {
+        return;
+    }
+    const int edge = qMax(raw.width(), raw.height());
+    if (edge > ContentXform::kGuiMaterializeMaxEdge
+        && (hasContentAppearance(state) || !state.colorAdjust.isIdentity())) {
+        // Cannot materialize multi-MP on GUI — chrome only; caller should schedule
+        // ImageView::rematerializeItemContent / scheduleAsyncHostRematerialize.
+        item->setContentHFlip(state.contentHFlip);
+        item->setContentVFlip(state.contentVFlip);
+        item->setSessionCrop(state.hasCrop, state.cropRect);
+        item->setColorAdjustmentsRecord(state.colorAdjust);
+        item->setAppliedContentXform(ContentXform::Value::fromState(state));
         return;
     }
 
@@ -223,7 +237,6 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     item->setSessionCrop(state.hasCrop, state.cropRect);
     item->setColorAdjustments(state.colorAdjust);
     if (state.hasCrop && !state.cropRect.isEmpty()) {
-        // Baked crop pixels define the display box — do not keep full-file layout.
         const QSize baked = item->sourceImage().size();
         if (baked.width() > 1 && baked.height() > 1) {
             item->setIntrinsicSize(baked);
@@ -231,13 +244,11 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     } else {
         const QSize cur = item->imageSize();
         if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
-            // cur may already be file-native; layoutSize applies odd turns once.
             const QSize oriented = ContentXform::layoutSize(cur, state);
             if (oriented != cur) {
                 item->setIntrinsicSize(oriented);
             }
         }
-        syncItemLayoutToContentOrientation(item, state);
     }
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }

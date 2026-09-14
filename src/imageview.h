@@ -1351,6 +1351,8 @@ private:
     void attachDisplaySample(ImageItem *item, const QImage &display,
                              const WorkspaceItemState &want,
                              SessionAppearance::PixelKind kind);
+    /** Raw from host/item → materialize → attachDisplaySample (never multi-MP on GUI). */
+    void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
     bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
     /** Worker materialize when host is multi-MP; attach on GUI if gen/want still match. */
     void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,

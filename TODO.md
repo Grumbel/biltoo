@@ -2,6 +2,25 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-842-rematerialize-item-content.** ImageView::rematerializeItemContent replaces applyContentToItem on view paths; multi-MP safe.
+Prior: **841**.
+
+### Change
+- `rematerializeItemContent` — tryRematerializeFromHost → GUI materialize+attach → else async
+- Crop/canvas call sites use it instead of `SessionAppearance::applyContentToItem`
+- `applyContentToItem` refuses multi-MP materialize on GUI (chrome + applied only)
+
+### Apply
+```bash
+git pull /path/to/biltoo-842-rematerialize-item-content.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-841-crop-through-attach-path.** Crop enter/leave/undo use attachDisplaySample / tryRematerialize / installDisplayPixels.
 Prior: **840**.
 
