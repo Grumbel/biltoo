@@ -657,7 +657,6 @@ void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &im
     if (image.isNull()) {
         return;
     }
-    // Accept PreferCache shortfall as best-effort so crop is not stuck forever.
     ImageItem *item = m_cropTargetItem;
     if (!item || item->path() != path) {
         m_cropAwaitingFullPath.clear();
@@ -669,33 +668,14 @@ void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &im
         return;
     }
 
-    const QSize oldSz = item->imageSize();
-    WorkspaceItemState app;
-    const bool haveApp = resolveCropEnterAppearance(item, &app);
-    installFullImageForCrop(item, image, haveApp ? &app : nullptr, haveApp);
-
-    const QSize newSz = item->imageSize();
-    if (oldSz.isValid() && newSz.isValid()
-        && (oldSz.width() != newSz.width() || oldSz.height() != newSz.height())
-        && m_cropRect.isValid()) {
-        const QRect scaled = SessionAppearance::scaleCropRect(
-            m_cropRect.toRect().normalized(), oldSz, newSz);
-        if (scaled.width() >= 1 && scaled.height() >= 1) {
-            m_cropRect = QRectF(scaled);
-        }
+    // Cache the native raster for Apply accuracy, but do not reinstall onto the
+    // live crop item. Swapping multi-MP pixels mid-draft made crop feel like it
+    // "loads full first" and stalled interaction; draft stays on the sample
+    // that was present at enter. applyCropCommit prefers cache when ready.
+    if (!path.isEmpty()) {
+        ImageCache::put(path, image);
     }
-    ensureCropRectValid();
     m_cropAwaitingFullPath.clear();
-
-    if (isImageMode()) {
-        m_fitMode = true;
-        fitItem(item, currentFitAspectMode());
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    if (viewport()) {
-        viewport()->update();
-    }
     flashHud(tr("Crop"), tr("Full image ready"));
 }
 
@@ -1102,6 +1082,51 @@ bool ImageView::applyCropCommit(ImageItem *item)
     // Returns true when Workspace placement rotation should keep the crop-frame
     // angle (non-full-frame commit with successful cropToLocalRect).
     ensureCropRectValid();
+
+    // Draft may still be soft; prefer native host for the bake when ready.
+    {
+        const QString path = item->path();
+        const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+        if (!host.isNull() && sampleCoversNativeLogical(path, host)
+            && ImageCache::longEdge(host) > item->displayPixelLongEdge()) {
+            const QSize oldSz = item->imageSize();
+            WorkspaceItemState contentOnly;
+            const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+                ? item->sessionId()
+                : m_currentSessionId;
+            if (sid != kInvalidSessionImageId) {
+                if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+                    contentOnly = *app;
+                }
+            }
+            contentOnly.hasCrop = false;
+            contentOnly.cropRect = QRect();
+            contentOnly.cropSourceSize = QSize();
+            contentOnly.cropRotation = 0.0;
+            if (!tryRematerializeFromHost(item, contentOnly)) {
+                // Multi-MP: materialize on worker is too late for Apply — use
+                // incremental content bake on the native host sample.
+                attachDisplaySample(item, host, WorkspaceItemState{},
+                                    SessionAppearance::PixelKind::FullSource);
+                if (SessionAppearance::hasContentAppearance(contentOnly)) {
+                    applyContentBakes(item, contentOnly);
+                }
+                applyContentLayoutSize(item, contentOnly);
+            }
+            const QSize newSz = item->imageSize();
+            if (oldSz.isValid() && newSz.isValid()
+                && (oldSz.width() != newSz.width() || oldSz.height() != newSz.height())
+                && m_cropRect.isValid()) {
+                const QRect scaled = SessionAppearance::scaleCropRect(
+                    m_cropRect.toRect().normalized(), oldSz, newSz);
+                if (scaled.width() >= 1 && scaled.height() >= 1) {
+                    m_cropRect = QRectF(scaled);
+                }
+            }
+            ensureCropRectValid();
+        }
+    }
+
     const QRectF full = item->contentRect();
     const bool fullFrame =
         !m_cropRect.isValid()

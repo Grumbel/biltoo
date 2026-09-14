@@ -2,6 +2,37 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-849-fititem-orient-layout-crop-draft.** Root-cause stretch (fitItem reset native), multi-MP rotate soft stand-in, crop draft stays soft.
+Prior: **848**.
+
+### Root causes (848 insufficient)
+1. **Stretch:** `fitItem` after every Image-mode rotate forced `setIntrinsicSize(fileNative)` — unoriented — so oriented pixels painted into the pre-rotate contentRect.
+2. **Gallery 4×:** multi-MP path stacked `QImage::transformed` on full pixels; pure host rematerialize only runs ≤512.
+3. **Crop lag:** `maybeUpgradeCropFullRaster` reinstalled multi-MP onto the live draft mid-interaction.
+
+### Fix
+- `fitItem` uses `layoutSize(fileNative, wantAppearance)` (content turns/flips).
+- Multi-MP live rotate: clamp host → pure soft stand-in + async full rematerialize (no stacked full transforms).
+- Crop: full decode only fills ImageCache; draft stays on enter sample; Apply upgrades from cache when ready.
+- `wantAppearanceForItem` merges applied ContentXform when store lags.
+
+### Apply
+```bash
+git pull /path/to/biltoo-849-fititem-orient-layout-crop-draft.bundle HEAD
+```
+
+### Verify
+- [ ] Image mode Fit on: rotate 90° — portrait frame, no stretch
+- [ ] Gallery: rotate tile 8+ times (soft and after full visit) — stable
+- [ ] Crop enter on soft multi-MP: interactive immediately; Apply uses full if cached
+- [ ] Flip still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-848-rotate-layout-crop-responsive.** Fix contentRect stretch on rotate, Gallery 4× rotate glitch, crop GUI stall on full decode.
 Prior: **847**.
 

@@ -7,6 +7,7 @@
 
 #include "archivepath.h"
 #include "biltoo_logging.h"
+#include "contentxform.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
 #include "imageitem.h"
@@ -3254,12 +3255,23 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     // Exception: a session crop bake (cropToLocalRect / materializeDisplay) sets
     // intrinsic to the crop pixel size. Forcing full-file logicalSizeForPath here
     // immediately after Apply stretched the crop into the pre-crop box.
+    //
+    // Content ±90° turns: never force file-native size. After rotate, fitItem
+    // used to reset intrinsic to unoriented native and paint stretched oriented
+    // pixels into the old contentRect.
     const QString path = item->path();
     if (!path.isEmpty() && !item->sessionHasCrop()) {
-        const QSize logical = ensureLogicalSizeForPath(path);
-        if (logical.isValid() && logical.width() > 1 && logical.height() > 1
+        const QSize fileNative = ensureLogicalSizeForPath(path);
+        if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
             && !isProvisionalImageSize(path)) {
-            item->setIntrinsicSize(logical);
+            const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+                ? item->sessionId()
+                : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+            const WorkspaceItemState want = wantAppearanceForItem(item, sid);
+            const QSize lay = ContentXform::layoutSize(fileNative, want);
+            if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                item->setIntrinsicSize(lay);
+            }
         }
     }
     if (isImageMode() || m_items.size() == 1) {

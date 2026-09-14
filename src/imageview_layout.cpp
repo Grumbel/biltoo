@@ -694,13 +694,31 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     want.colorAdjust = item->colorAdjustments();
 
     // Prefer pure rematerialize from unoriented host when GUI-safe (≤512).
-    // Avoids repeated incremental QImage::transformed quality loss and the
-    // Gallery 4× glitch when an oriented host would double-bake.
-    // Multi-MP / no host: incremental on current display, then async pure.
+    // Multi-MP: do NOT stack QImage::transformed on full pixels (Gallery 4×
+    // glitch / quality collapse). Show a pure soft stand-in from clamped host
+    // immediately, then async rematerialize full from raw.
     if (!tryRematerializeFromHost(item, want)) {
-        item->bakeRotate90(quarterTurns);
+        const QString path = item->path();
+        const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+        bool softPreview = false;
+        if (!host.isNull()
+            && qMax(host.width(), host.height()) > ContentXform::kGuiMaterializeMaxEdge) {
+            QImage soft = ImageCache::clampToMaxEdge(
+                host, ContentXform::kGuiMaterializeMaxEdge);
+            const QImage display = SessionAppearance::materializeDisplay(
+                soft, want, SessionAppearance::PixelKind::SoftPreview);
+            if (!display.isNull()) {
+                item->clearDecodedPixels();
+                attachDisplaySample(item, display, want,
+                                    SessionAppearance::PixelKind::SoftPreview);
+                softPreview = true;
+            }
+        }
+        if (!softPreview) {
+            item->bakeRotate90(quarterTurns);
+        }
         applyContentLayoutSize(item, want);
-        scheduleAsyncHostRematerialize(item->path(), sid, want);
+        scheduleAsyncHostRematerialize(path, sid, want);
     } else {
         applyContentLayoutSize(item, want);
     }
