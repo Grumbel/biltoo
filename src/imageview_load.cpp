@@ -102,6 +102,10 @@ QImage prepareImageModeDisplaySample(const QString &path, QImage raw,
     if (raw.isNull()) {
         return {};
     }
+    // Host cache must stay unoriented (raw). Live rotate rematerializes from it.
+    if (!path.isEmpty()) {
+        ImageCache::put(path, raw);
+    }
     WorkspaceItemState app;
     // Session crop/flips are keyed by SessionImageId (m_appearance), not path.
     // Gallery→Image must pass a snapshot; durable path store alone misses
@@ -542,11 +546,6 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     const QSize layoutBefore = item->imageSize();
     const QString path = item->path();
 
-    // Raw samples → unified host cache (slideshow/gallery reuse).
-    if (!path.isEmpty()) {
-        ImageCache::put(path, pixels);
-    }
-
     // Resolve session id (Image-mode soft path often passes invalid sid).
     if (sid == kInvalidSessionImageId) {
         if (item->sessionId() != kInvalidSessionImageId) {
@@ -559,6 +558,17 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
 
     // Absolute want xform (session store / path map / live flags).
     const WorkspaceItemState appearance = wantAppearanceForItem(item, sid);
+
+    // Host cache is unoriented. Soft ladder samples are always raw. FullSource with
+    // content appearance is often worker-baked — do not overwrite raw host.
+    if (!path.isEmpty()) {
+        const bool wantBake =
+            SessionAppearance::hasContentAppearance(appearance)
+            || !appearance.colorAdjust.isIdentity();
+        if (!wantBake || kind == SessionAppearance::PixelKind::SoftPreview) {
+            ImageCache::put(path, pixels);
+        }
+    }
 
     // raw → optional gallery soft clamp → materializeDisplay → attach.
     QImage pixelsForDisplay = pixels;

@@ -666,24 +666,24 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     want.contentVFlip = item->contentVFlip();
     want.colorAdjust = item->colorAdjustments();
 
-    // Prefer rematerialize from host when ≤512 (shared with flip).
-    if (!tryRematerializeFromHost(item, want)) {
-        // Multi-MP or no host raw: incremental pixel bake (GUI-safe transform).
-        item->bakeRotate90(quarterTurns);
-        // Absolute layout from file-native × want (not relative transpose of a
-        // possibly already-oriented intrinsic).
-        {
-            const QString path = item->path();
-            QSize fileNative = logicalSizeForPath(path);
-            if (isPositiveSize(fileNative) && fileNative.width() > 1
-                && fileNative.height() > 1
-                && (path.isEmpty() || !isProvisionalImageSize(path))) {
-                const QSize lay = ContentXform::layoutSize(fileNative, want);
-                if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-                    item->setIntrinsicSize(lay);
-                }
+    // Live rotate: always incremental on current display (relative ±90°).
+    // Host rematerialize is absolute from raw cache — only as async settle when
+    // host is multi-MP; GUI host rematerialize was double-baking oriented cache.
+    item->bakeRotate90(quarterTurns);
+    {
+        const QString path = item->path();
+        QSize fileNative = logicalSizeForPath(path);
+        if (isPositiveSize(fileNative) && fileNative.width() > 1
+            && fileNative.height() > 1
+            && (path.isEmpty() || !isProvisionalImageSize(path))) {
+            const QSize lay = ContentXform::layoutSize(fileNative, want);
+            if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                item->setIntrinsicSize(lay);
             }
         }
+    }
+    // Rebuild pure display from raw host when possible (unoriented cache).
+    if (!tryRematerializeFromHost(item, want)) {
         scheduleAsyncHostRematerialize(item->path(), sid, want);
     }
 
@@ -805,13 +805,13 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     want.cropSourceSize = cropMap.cropSourceSize;
     want.contentQuarterTurns = cropMap.contentQuarterTurns;
 
-    // Prefer rematerialize from host when ≤512 (shared with rotate).
-    if (!tryRematerializeFromHost(item, want)) {
-        item->bakeFlip(horizontal, vertical);
-        scheduleAsyncHostRematerialize(item->path(), sid, want);
-    }
+    // Live flip: incremental first, then pure rematerialize from raw host.
+    item->bakeFlip(horizontal, vertical);
     item->setContentHFlip(h);
     item->setContentVFlip(v);
+    if (!tryRematerializeFromHost(item, want)) {
+        scheduleAsyncHostRematerialize(item->path(), sid, want);
+    }
 
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState s = captureState(item);

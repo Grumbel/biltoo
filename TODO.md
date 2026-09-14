@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-847-rotate-host-cache-raw.** ImageCache stays unoriented; live rotate incremental then pure rematerialize.
+Prior: **846**.
+
+### Root cause (4× rotate glitch)
+Worker `prepareImageModeDisplaySample` baked appearance then `installDisplayPixels` put **oriented** samples into ImageCache. Live rotate `tryRematerializeFromHost` applied absolute want **again** on oriented host → double bake; after a full turn cycle host/display diverged and further rotates glitched.
+
+### Fix
+- Worker puts **raw** into ImageCache before materialize
+- install puts SoftPreview always (raw ladder); FullSource only when no content bake (avoid overwriting raw with baked)
+- Live rotate/flip: incremental ±90 first, then tryRematerialize from raw host (or async multi-MP)
+
+### Apply
+```bash
+git pull /path/to/biltoo-847-rotate-host-cache-raw.bundle HEAD
+```
+
+### Verify
+- [ ] Rotate 8+ times continuously — no stuck/glitch
+- [ ] Aspect still correct each step
+- [ ] Flip still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-846-fix-rotate-layout-double-swap.** Fix rotate aspect: never layoutSize(orientedDisplay, want).
 Prior: **845**.
 
