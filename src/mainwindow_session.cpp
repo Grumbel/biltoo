@@ -2776,9 +2776,14 @@ void MainWindow::startSlideshow()
         m_imageView->setSlideshowMotionPaused(false);
         m_imageView->setSlideshowPausedHud(false);
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
-        // Frame + start dwell motion BEFORE the pure clock can open the first
-        // transition (arm → updateSlideshowFromClock). Otherwise beginLive has
-        // no from-image pixels and declines.
+        // Arm pure phase *before* framing/motion so the first paint is oriented
+        // ContentXform sample — not an unoriented dwell underlay stand-in.
+        if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+            m_imageView->setSlideshowPhase(
+                m_session.paths().at(m_currentIndex), QString(), -1.0);
+        }
+        // Frame + start dwell motion AFTER phase arm so prepareSlideshowMotionDwell
+        // can reuse the oriented phase buffer.
         m_imageView->reapplySlideshowFraming();
         if (m_session.paths().size() > 1) {
             int n = (m_currentIndex + 1) % m_session.paths().size();

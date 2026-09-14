@@ -1838,16 +1838,26 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
 QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) const
 {
     // Soft/slideshow path: flip + quarter-turns + grade only (no crop bake).
-    // Shares appearance resolution with scheduleSlideshowPhaseBufferUpgrade.
     if (raw.isNull() || path.isEmpty()) {
         return raw;
     }
     WorkspaceItemState app;
-    if (!snapshotSlideshowContentAppearance(path, &app)) {
+    if (!snapshotSlideshowContentAppearance(path, &app)
+        || !SessionAppearance::hasContentAppearance(app)) {
         return raw;
     }
+    WorkspaceItemState orientOnly = app;
+    orientOnly.hasCrop = false;
+    orientOnly.cropRect = {};
+    orientOnly.cropSourceSize = {};
+    orientOnly.cropRotation = 0.0;
+    QImage soft = raw;
+    if (ImageCache::longEdge(soft) > ContentXform::kGuiMaterializeMaxEdge) {
+        soft = ImageCache::clampToMaxEdge(
+            soft, ContentXform::kGuiMaterializeMaxEdge);
+    }
     const QImage oriented = SessionAppearance::materializeDisplay(
-        raw, app, SessionAppearance::PixelKind::SoftPreview);
+        soft, orientOnly, SessionAppearance::PixelKind::SoftPreview);
     return oriented.isNull() ? raw : oriented;
 }
 
@@ -3143,17 +3153,50 @@ void ImageView::maybeStartSlideshowMotion()
 bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
 {
     // Ken Burns moves the *image* via blit, not the QGraphicsView camera.
-    // Prefer path-oriented slideshow pixels (unbaked cache + appearance). Item
-    // source may lag durable orientation on the first frame before a full
-    // install, or be unbaked soft-only.
+    // First paint must be ContentXform-oriented; unoriented dwell was the
+    // "garbage first frame" when this ran before setSlideshowPhase.
     const QString path = item->path();
-    QImage dwell = slideshowSampleUnoriented(path);
-    if (dwell.isNull()) {
-        dwell = ImageCache::clampToMaxEdge(item->sourceImage(), slideshowTargetEdge());
+    QImage host = slideshowSampleUnoriented(path);
+    if (host.isNull()) {
+        host = ImageCache::clampToMaxEdge(item->sourceImage(), slideshowTargetEdge());
+    }
+    if (host.isNull()) {
+        return false;
+    }
+    QImage dwell = host;
+    WorkspaceItemState app;
+    if (!path.isEmpty()
+        && snapshotSlideshowContentAppearance(path, &app)
+        && SessionAppearance::hasContentAppearance(app)) {
+        WorkspaceItemState orientOnly = app;
+        orientOnly.hasCrop = false;
+        orientOnly.cropRect = {};
+        orientOnly.cropSourceSize = {};
+        orientOnly.cropRotation = 0.0;
+        QImage soft = host;
+        if (ImageCache::longEdge(soft) > ContentXform::kGuiMaterializeMaxEdge) {
+            soft = ImageCache::clampToMaxEdge(
+                soft, ContentXform::kGuiMaterializeMaxEdge);
+        }
+        const QImage oriented = SessionAppearance::materializeDisplay(
+            soft, orientOnly, SessionAppearance::PixelKind::SoftPreview);
+        if (!oriented.isNull()) {
+            dwell = oriented;
+        }
     }
     m_dwellSourceImage = dwell;
-    if (m_dwellSourceImage.isNull()) {
-        return false;
+    // Keep pure-phase buffers in sync when progress is already active (start
+    // path arms phase first; motion-only path must not leave m_ssFrom empty).
+    if (m_slideshowProgressActive && !path.isEmpty()) {
+        if (m_ssFromPath != path || m_ssFromImage.isNull()) {
+            m_ssFromPath = path;
+            m_ssFromImage = dwell;
+            WorkspaceItemState app2;
+            m_ssFromContentApplied =
+                snapshotSlideshowContentAppearance(path, &app2)
+                && SessionAppearance::hasContentAppearance(app2)
+                && !dwell.isNull();
+        }
     }
     // Align underlay camera to slideshow zoom before hiding it so cancel/stop
     // can restore a known static frame.
@@ -3161,7 +3204,8 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     invalidateDwellAtlasRebuilds();
     requestDwellAtlasRebuild(); // async — do not scale on this stack
     if (!path.isEmpty()) {
-        scheduleSlideshowPhaseBufferUpgrade(path, dwell);
+        // Upgrade from unoriented host only (never re-materialize dwell).
+        scheduleSlideshowPhaseBufferUpgrade(path, host);
     }
     setSlideshowUnderlayVisible(false);
     return true;

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-866-slideshow-first-frame-phase-arm.** First paint was unoriented dwell before phase arm.
+Prior: **865**.
+
+### Root cause
+`startSlideshow` → `reapplySlideshowFraming` → `prepareSlideshowMotionDwell`
+filled **unoriented** `m_dwellSourceImage` and hid underlay. Pure phase paint
+preferred empty `m_ssFromImage` → dwell, **before** the advance clock called
+`setSlideshowPhase`. First frame had no ContentXform.
+
+### Fix
+- `startSlideshow`: `setSlideshowPhase(current)` **before** framing/motion
+- `prepareSlideshowMotionDwell`: orient ≤512 stand-in; sync `m_ssFrom*` when active
+- Upgrade from unoriented host only; strip crop in `orientSlideshowImage`
+
+### Apply
+```bash
+git pull /path/to/biltoo-866-slideshow-first-frame-phase-arm.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-865-slideshow-no-double-orient.** Slideshow phase: sync ≤512 orient stand-in; upgrade from unoriented host only.
 Prior: **864**.
 
