@@ -999,6 +999,14 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         }
     }
     // Decode-edge pixmap for sharpness; layout uses aspect only.
+    const int incomingEdge = qMax(image.width(), image.height());
+    const int haveEdge = it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+    const bool loaded = it->data(ThumbnailDelegate::ThumbLoadedRole).toBool();
+    // No-op if already settled at this edge (stops debug spam + layout thrash).
+    if (loaded && haveEdge >= incomingEdge && haveEdge > 0
+        && !m_allowOverrideIconInstall) {
+        return;
+    }
     const QPixmap pm = QPixmap::fromImage(image);
     it->setData(ThumbnailDelegate::ThumbPixmapRole, pm);
     it->setIcon(QIcon(pm));
@@ -1010,8 +1018,7 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         : m_delegate->letterboxContentSize(image.size());
     it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
     it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
-    it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole,
-                qMax(image.width(), image.height()));
+    it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole, incomingEdge);
 
     const QSize hint = m_cropToSquare
         ? m_delegate->cellSize(font())
@@ -1470,6 +1477,15 @@ void ThumbnailBar::qualityWatchdogTick()
         const bool climbPending =
             m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i);
 
+        // Already meets filmstrip display edge — settled. Do not re-prepare
+        // from host every 1.5s (that spammed setThumbnailIcon forever whenever
+        // hostEdge > shown, even at target).
+        if (shown >= (decodeSize * 9) / 10) {
+            m_thumbAwaitLadder.remove(i);
+            m_thumbLoadScheduled.remove(i);
+            continue;
+        }
+
         // Host upgrade is independent of climbPending. Gallery / Image mode may
         // have put soft or better into ImageCache while the strip is still
         // awaiting SoftOnly — checkSurface would return Ok and leave LQIP painted.
@@ -1490,8 +1506,11 @@ void ThumbnailBar::qualityWatchdogTick()
             if (!host.isNull()) {
                 const QImage thumb = prepareThumbnailFromImage(host, decodeSize);
                 if (!thumb.isNull()) {
-                    setThumbnailIcon(i, thumb);
                     const int newShown = qMax(thumb.width(), thumb.height());
+                    // Only repaint when the thumb is actually sharper.
+                    if (newShown > shown) {
+                        setThumbnailIcon(i, thumb);
+                    }
                     if (newShown >= (decodeSize * 9) / 10) {
                         m_thumbAwaitLadder.remove(i);
                         m_thumbLoadScheduled.remove(i);
@@ -1782,13 +1801,11 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     if (rowId != kInvalidSessionImageId
                         && host->m_sessionIdImageOverrides.contains(rowId)) {
                         emit host->loadsChanged();
-                        host->scheduleVisibleThumbnailLoads();
                         return;
                     }
                 }
                 if (host->m_sessionImageOverrides.contains(path)) {
                     emit host->loadsChanged();
-                    host->scheduleVisibleThumbnailLoads();
                     return;
                 }
                 host->setThumbnailIcon(i, image);

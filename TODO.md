@@ -1,5 +1,30 @@
 # TODO / agent handoff
 
+## Status (2026-09-15)
+
+**Tip: biltoo-882-filmstrip-settle.** Filmstrip quality watchdog no longer repaints settled cells.
+Prior: **881**.
+
+### Why icons kept logging forever
+`qualityWatchdogTick` (every 1.5s) treated `hostEdge > shown` as “must reinstall”
+even when `shown` already met `filmstripDecodeEdge`. Every tick re-prepared the
+same 128px thumb and called `setThumbnailIcon` → endless `[filmstrip] icon row=…`.
+
+### Fix
+1. Watchdog: skip when `shown >= 90% of decodeSize` (settled)
+2. Watchdog: only `setThumbnailIcon` when `newShown > shown`
+3. `setThumbnailIcon`: no-op if already loaded at ≥ incoming edge (non-override)
+4. Path-job complete with override: do not re-enter `scheduleVisible`
+
+### Apply
+```bash
+git pull /path/to/biltoo-882-filmstrip-settle.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-14)
 
 **Tip: biltoo-881-attach-layoutsize-only.** attachDisplaySample never uses sample pixels as intrinsic.
