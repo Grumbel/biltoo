@@ -273,21 +273,18 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     }
     // Durable XDG appearance when session store is empty (slideshow may paint a
     // path before installDisplayPixels seeds m_appearance for that id).
+    // Orient/flip only — never adopt path crop into an id-keyed soft paint.
     if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored)
             && (stored.contentHFlip || stored.contentVFlip
-                || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+                || stored.contentQuarterTurns != 0)) {
             fallback = {};
             fallback.path = path;
             fallback.sessionId = sid;
             fallback.contentHFlip = stored.contentHFlip;
             fallback.contentVFlip = stored.contentVFlip;
             fallback.contentQuarterTurns = stored.contentQuarterTurns;
-            fallback.hasCrop = stored.hasCrop;
-            fallback.cropRect = stored.cropRect;
-            fallback.cropSourceSize = stored.cropSourceSize;
-            fallback.cropRotation = stored.cropRotation;
             app = &fallback;
         }
     }
@@ -426,17 +423,21 @@ WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
 void ImageView::persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
                                                 const char *debugTag)
 {
+    // Bound session images: path XDG may keep orient/flip as a file-level hint,
+    // but never crop (SessionAppearanceStore owns crop by SessionImageId).
+    const bool bound = item && item->sessionId() != kInvalidSessionImageId;
+    const bool writeCrop = !bound && s.hasCrop && !s.cropRect.isEmpty();
     const bool contentful =
         s.contentHFlip || s.contentVFlip
         || s.contentQuarterTurns != 0
-        || (s.hasCrop && !s.cropRect.isEmpty());
+        || writeCrop;
     if (contentful) {
         ThumtooCache::StoredContentAppearance stored;
         stored.contentHFlip = s.contentHFlip;
         stored.contentVFlip = s.contentVFlip;
         stored.contentQuarterTurns = s.contentQuarterTurns;
-        stored.hasCrop = s.hasCrop && !s.cropRect.isEmpty();
-        if (stored.hasCrop) {
+        stored.hasCrop = writeCrop;
+        if (writeCrop) {
             stored.cropRect = s.cropRect;
             stored.cropSourceSize = s.cropSourceSize;
             stored.cropRotation = s.cropRotation;
@@ -988,24 +989,23 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
     }
     if (haveContentSlot) {
         // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
-        // Does not touch source files; project files remain the portable doc.
-        // v1: flip / quarter-turns / crop only (grade stays session/project).
-        //
-        // Only *write* non-identity rows here. Writing identity deletes the
-        // SQLite row — a later commit whose captureState dropped quarter-turns
-        // was wiping a good row and leaving an empty database. Intentional
-        // clear goes through clearContentAppearance (Reset / undo-to-identity).
+        // Bound: orient/flip only — crop lives in SessionAppearanceStore by id.
+        // Unbound: may include crop (legacy single-instance path edit).
+        // Writing identity deletes the SQLite row; intentional clear goes
+        // through clearContentAppearance (Reset / undo-to-identity).
+        const bool writeCrop = (sid == kInvalidSessionImageId)
+            && contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
         const bool contentful =
             contentSlot.contentHFlip || contentSlot.contentVFlip
             || contentSlot.contentQuarterTurns != 0
-            || (contentSlot.hasCrop && !contentSlot.cropRect.isEmpty());
+            || writeCrop;
         if (contentful) {
             ThumtooCache::StoredContentAppearance stored;
             stored.contentHFlip = contentSlot.contentHFlip;
             stored.contentVFlip = contentSlot.contentVFlip;
             stored.contentQuarterTurns = contentSlot.contentQuarterTurns;
-            stored.hasCrop = contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
-            if (stored.hasCrop) {
+            stored.hasCrop = writeCrop;
+            if (writeCrop) {
                 stored.cropRect = contentSlot.cropRect;
                 stored.cropSourceSize = contentSlot.cropSourceSize;
                 stored.cropRotation = contentSlot.cropRotation;

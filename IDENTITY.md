@@ -506,7 +506,7 @@ appearance map / canvas bind that could still hold old ids.
 | `SessionAppearanceStore` | `SessionImageId` | Sole live content appearance for bound rows |
 | `SessionDocument` | index | Paths + ids only — no crop/flip/turns |
 | Filmstrip id override | `SessionImageId` | Derived; never path-wide when ids present |
-| Thumtoo path XDG appearance | path | Unbound / first-open hint only |
+| Thumtoo path XDG appearance | path | Orient/flip/grade hint only; **never crop** for bound `SessionImageId` |
 
 Do not bake path-keyed XDG into filmstrip cells that have session ids.
 Do not use path as the write key for crop after Apply.

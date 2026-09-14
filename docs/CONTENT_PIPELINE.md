@@ -55,7 +55,7 @@ else:
 |-------|-----|------|
 | **`SessionAppearanceStore`** (`ImageView::m_appearance`) | `SessionImageId` | **Sole** content appearance for bound session images (crop, flips, turns, grade) |
 | `SessionDocument` | list index | Paths + ids only (ordered session). No transforms. |
-| Path-keyed Thumtoo XDG appearance | path / content id | Hint for **unbound** rows / first open of a file — not live session authority |
+| Path-keyed Thumtoo XDG appearance | path / content id | **Orient/flip (and grade) only** as a file-level hint. Never crop for bound ids. Seed into `m_appearance` does not copy crop. Persist from bound edits does not write crop. |
 | Filmstrip id overrides | `SessionImageId` | Derived view of store after emit; never path-wide on a bound strip |
 
 Path is decode source only. Duplicates share a path and must keep independent

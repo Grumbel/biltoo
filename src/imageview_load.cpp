@@ -426,13 +426,11 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
     WorkspaceItemState seed;
     seed.sessionId = sid;
     seed.path = path;
+    // Orient/flip/grade only. Crop is per SessionImageId — never seed from
+    // path-keyed XDG (duplicates share a path; last crop would leak).
     seed.contentHFlip = stored.contentHFlip;
     seed.contentVFlip = stored.contentVFlip;
     seed.contentQuarterTurns = stored.contentQuarterTurns;
-    seed.hasCrop = stored.hasCrop;
-    seed.cropRect = stored.cropRect;
-    seed.cropSourceSize = stored.cropSourceSize;
-    seed.cropRotation = stored.cropRotation;
     if (stored.hasGrade) {
         seed.colorAdjust.brightness = stored.gradeBrightness;
         seed.colorAdjust.contrast =

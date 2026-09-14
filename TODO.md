@@ -2,6 +2,36 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-874-path-xdg-no-bound-crop.** Path XDG never seeds or persists crop for bound SessionImageId.
+Prior: **873**.
+
+### Problem
+Path-keyed Thumtoo content appearance still carried **crop**. After crop Apply on
+id A, save wrote crop under the path; seed/load for id B (same path, no store
+entry yet) adopted A’s crop. Violates “appearance by SessionImageId only”.
+
+### Fix
+- `seedSessionAppearanceFromState`: orient/flip/grade only — never copy crop
+- `persistDurableContentAppearance` / `persistSessionAppearanceSlot`: bound ids
+  write orient/flip to path XDG only (no crop); unbound may still store crop
+- `imageWithSessionAppearance` path fallback: no path crop into soft paint
+
+### Apply
+```bash
+git pull /path/to/biltoo-874-path-xdg-no-bound-crop.bundle HEAD
+```
+
+### Verify
+- [ ] Two session rows, same path: crop A → B stays full; filmstrip B full
+- [ ] Single-row crop still works; orient still seeds from path on first open
+- [ ] `ctest -R contentxform` green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-873-appearance-ownership-docs-tests.** Document appearance ownership; filmstrip path-XDG off for bound rows; layoutSize crop tests.
 Prior: **872**.
 
