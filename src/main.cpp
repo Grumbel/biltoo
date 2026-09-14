@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
         QStringList() << QStringLiteral("sort"),
         QCoreApplication::translate("main",
             "Sort session by name, path, or mtime (date)"),
-        QStringLiteral("name|mtime"));
+        QStringLiteral("name|path|mtime"));
     parser.addOption(sortOption);
 
     QCommandLineOption modeOption(
