@@ -386,9 +386,6 @@ bool ImageView::enterCropModeFromUi()
         flashHud(tr("Crop"), tr("Could not load full image"));
         return false;
     }
-    if (viewport()) {
-        viewport()->setUpdatesEnabled(true);
-    }
     if (isWorkspaceMode()) {
         // If there was no stored crop angle but the tile was free-rotated,
         // seed the draft rotation so the frame matches the prior pose while
@@ -407,7 +404,7 @@ bool ImageView::enterCropModeFromUi()
         alignCropFrameCenterToScene(item, workspaceAnchorScene);
         updateWorkspaceSceneRect();
     }
-    // m_cropMode already true (set before prepare).
+    // m_cropMode already true (set in prepare after full-frame install).
     m_cropActiveHandle = CropHandle::None;
     m_cropHoverHandle = CropHandle::None;
     m_cropRubberBanding = false;
@@ -415,7 +412,10 @@ bool ImageView::enterCropModeFromUi()
              tr("Apply commits · Esc cancels"));
     emit cropModeChanged(true);
     emit statusChanged();
-    viewport()->update();
+    if (viewport()) {
+        viewport()->setUpdatesEnabled(true);
+        viewport()->update();
+    }
     return true;
 }
 

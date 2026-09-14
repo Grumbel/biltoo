@@ -2,6 +2,34 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-888-peer-sync-paint.** Peer sync clears peer pixels before crop bake; Gallery/enter hold paints.
+Prior: **887**.
+
+### Gallery return glitch (crop box + full image)
+After Image crop, peer sync did `setPreviewImage(soft crop)` on stashed Gallery
+tiles that still held full `m_source`. `setPreviewImage` **ignores** soft when
+full source is present → intrinsic became crop (layoutSize) but pixels stayed
+full. One frame (or until soft reinstall): crop rectangle, old image data.
+
+**Fix:** `clearDecodedPixels()` then install baked display on peers.
+
+### Crop enter one-frame
+Hold viewport updates until after prepare + cropModeChanged; re-enable once.
+
+### Gallery enter from Image
+Hold paints from stash restore through applyLayout.
+
+### Apply
+```bash
+git pull /path/to/biltoo-888-peer-sync-paint.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-887-crop-enter-quality.** Crop enter keeps host resolution when orient is identity; no mid-enter paint.
 Prior: **886**.
 

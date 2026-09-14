@@ -248,6 +248,12 @@ void GalleryController::enter(int packagedLayoutInt)
     const bool layoutSwitch = m_view->isGalleryMode();
 
     // Returning from Image: reattach cached tiles before packing.
+    // Hold paints until after applyLayout so crop-sized cells never show with
+    // pre-crop pixels for a frame (peer sync + pack ordering).
+    const bool holdPaint = !layoutSwitch && !m_stashedItems.isEmpty();
+    if (holdPaint && m_view->viewport()) {
+        m_view->viewport()->setUpdatesEnabled(false);
+    }
     if (!layoutSwitch && !m_stashedItems.isEmpty()) {
         restoreStashedItems();
     }
@@ -324,6 +330,11 @@ void GalleryController::enter(int packagedLayoutInt)
         }
     }
     m_view->applyLayout(GalleryPackReason::EnterGallery);
+
+    if (holdPaint && m_view->viewport()) {
+        m_view->viewport()->setUpdatesEnabled(true);
+        m_view->viewport()->update();
+    }
 
     if (layoutSwitch && !selectedPaths.isEmpty()) {
         m_view->canvasScene()->clearSelection();

@@ -1085,15 +1085,22 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
         if (!shouldSync(other)) {
             return;
         }
-        // Already-baked display pixels from the edited peer — do not re-run
-        // installDisplayPixels / applyContentToItem (would double-crop).
-        if (!src.isNull()) {
-            other->setSourceImageReady(src);
-        } else if (!item->previewImage().isNull()) {
-            // Soft Gallery: content bake lives on the preview; peers must match.
-            other->setPreviewImage(item->previewImage());
-        } else if (!item->displayImage().isNull()) {
-            other->setPreviewImage(item->displayImage());
+        // Already-baked display from the edited peer. Must replace peers fully:
+        // setPreviewImage is a no-op when the peer still holds full m_source
+        // (Gallery stash after Image crop). That left crop intrinsic + full
+        // pixels for one frame / until next soft install (Gallery return glitch).
+        const QImage baked = !src.isNull() ? src
+            : (!item->previewImage().isNull() ? item->previewImage()
+                                              : item->displayImage());
+        if (!baked.isNull()) {
+            other->clearDecodedPixels();
+            // Soft crop attach uses preview on the editor; peers still need a
+            // real sample. Prefer FullSource install when the editor has source.
+            if (!src.isNull()) {
+                other->setSourceImageReady(baked);
+            } else {
+                other->setPreviewImage(baked);
+            }
         }
         // Intrinsic from appearance layoutSize — never copy soft sample size.
         if (sessionId != kInvalidSessionImageId) {
