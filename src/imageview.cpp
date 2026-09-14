@@ -180,7 +180,6 @@ ImageView::ImageView(QWidget *parent)
     m_pathRaster = new PathRasterService(this);
     connect(m_pathRaster, &PathRasterService::rasterImproved, this,
             [this](const QString &path, int longEdge) {
-                Q_UNUSED(longEdge);
                 if (path.isEmpty()) {
                     return;
                 }
@@ -191,6 +190,18 @@ ImageView::ImageView(QWidget *parent)
                 if (m_slideshowProgressActive
                     && (path == m_ssFromPath || path == m_ssToPath)) {
                     onSlideshowRasterReady(path, img);
+                    // PreferCache often lands at 1024 first; keep climbing to
+                    // viewport target (2048+) until adequate or terminal.
+                    if (m_pathRaster) {
+                        const int target = cappedDisplayEdgeForPath(
+                            path, slideshowTargetEdge());
+                        const int need = target * 7 / 10;
+                        if (longEdge > 0 && longEdge < need) {
+                            m_pathRaster->ensure(
+                                path, target, logicalSizeForPath(path),
+                                PathRasterService::ClimbPolicy::EscalateToFull);
+                        }
+                    }
                     return;
                 }
                 if (isImageMode() && !m_slideshowProgressActive

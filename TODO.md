@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-780-slideshow-climb-past-1024.** Slideshow/PathRaster climb past PreferCache 1024 plateau.
+Prior: **779**.
+
+### Problem
+PreferCache often plateaus at overview (~1024). PathRaster queued Full once then
+bailed without tile pyramid / PreferCache retry — slideshow stayed soft.
+
+### Fix
+- After PreferCache shortfall with want > 1024: scheduleTilePyramid + Full
+- After Full still short: PreferCache retry (TileSynth) up to 2×
+- Slideshow rasterImproved re-ensure while longEdge < 70% of target
+
+### Apply
+```bash
+git pull /path/to/biltoo-780-slideshow-climb-past-1024.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **780**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-779-sort-by-path.** Sort by Path (full path) for multi-folder opens.
 Prior: **778**.
 

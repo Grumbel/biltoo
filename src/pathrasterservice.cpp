@@ -272,10 +272,15 @@ void PathRasterService::pump(const QString &path, State &st)
         }
     }
 
-    // PreferCache above soft max is overview-clamped to 1024 in thumtoo.
-    // Whole-frame above that needs Full. Gallery SoftDisplay only ensure()s a
-    // concurrency-bounded visible set — Full those, not every cell in the album.
+    // PreferCache above soft max is overview-clamped to ~1024 in thumtoo.
+    // Contract: FocusFull (tile pyramid) + Full, then PreferCache retry for
+    // TileSynth — otherwise slideshow/Image stay stuck at the 1024 plateau.
     if (displayWant > overviewCap) {
+        if (!st.tilesQueued) {
+            if (ThumtooCache::scheduleTilePyramid(path)) {
+                st.tilesQueued = true;
+            }
+        }
         if (!st.fullQueued && !st.fullDone) {
             int edge = ImageCache::kDisplayMaxEdge;
             const QSize native = ThumtooCache::cachedSize(path);
@@ -288,8 +293,19 @@ void PathRasterService::pump(const QString &path, State &st)
                 st.fullQueued = true;
                 st.fullDone = true;
             }
-            // else: concurrent Full limit / settled — retry on next ensure/pump
+            // else: concurrent Full limit — retry on next ensure/pump
             return;
+        }
+        // Full already attempted and still short of want: PreferCache again
+        // (TileSynth after FocusFull) up to two times.
+        if (st.fullDone && st.postTilePreferAttempts < 2 && !st.displayQueued) {
+            ++st.postTilePreferAttempts;
+            st.preferGaveUp = false;
+            st.lastDisplayGot = 0;
+            ThumtooCache::forgetPixelsSettled(path, displayWant);
+            st.displayQueued = true;
+            st.lastDisplayWant = displayWant;
+            (void)ThumtooCache::scheduleDisplayPixels(path, displayWant);
         }
         return;
     }
