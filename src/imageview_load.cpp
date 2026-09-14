@@ -574,10 +574,16 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             item->setIntrinsicSize(display.size());
         } else {
             // Logical size from path — FullSource may be a ladder step, not geometry.
+            // Content 90° turns swap axes: path logical is file-native; contentRect
+            // must follow oriented aspect or paint stretches into the old box.
             QSize logical = logicalSizeForPath(path);
             if (!isPositiveSize(logical) || logical.width() <= 1 || logical.height() <= 1
                 || isProvisionalImageSize(path)) {
                 logical = layoutSizeForPath(path, display);
+            }
+            if (SessionAppearance::contentSwapsAspect(appearance)
+                && isPositiveSize(logical)) {
+                logical = QSize(logical.height(), logical.width());
             }
             if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
                 item->setIntrinsicSize(logical);
@@ -599,7 +605,11 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         const QSize cur = item->imageSize();
         const bool provisional = !path.isEmpty() && isProvisionalImageSize(path);
         if (!hasCrop && (cur.width() <= 1 || cur.height() <= 1 || provisional)) {
-            const QSize layout = layoutSizeForPath(path, display);
+            QSize layout = layoutSizeForPath(path, display);
+            if (SessionAppearance::contentSwapsAspect(appearance)
+                && isPositiveSize(layout)) {
+                layout = QSize(layout.height(), layout.width());
+            }
             if (isPositiveSize(layout) && layout.width() > 1 && layout.height() > 1) {
                 const int cw = qMax(1, cur.width());
                 const int ch = qMax(1, cur.height());

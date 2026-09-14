@@ -216,8 +216,13 @@ void ImageView::rotateLeft()
                                    footH / qreal(after.height()));
             }
         }
-        if (m_fitMode && isImageMode()) {
-            fitItem(item, currentFitAspectMode());
+        if (isImageMode()) {
+            if (m_fitMode) {
+                fitItem(item, currentFitAspectMode());
+            } else if (m_fillMode) {
+                // Keep cover framing after aspect swap.
+                fitItem(item, Qt::KeepAspectRatioByExpanding);
+            }
         }
     }
     if (isGalleryMode()) {
@@ -251,8 +256,12 @@ void ImageView::rotateRight()
                                    footH / qreal(after.height()));
             }
         }
-        if (m_fitMode && isImageMode()) {
-            fitItem(item, currentFitAspectMode());
+        if (isImageMode()) {
+            if (m_fitMode) {
+                fitItem(item, currentFitAspectMode());
+            } else if (m_fillMode) {
+                fitItem(item, Qt::KeepAspectRatioByExpanding);
+            }
         }
     }
     if (isGalleryMode()) {

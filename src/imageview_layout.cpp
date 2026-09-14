@@ -467,16 +467,28 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         // When the user rotates back to identity, clear the durable row so a
         // full 360° leaves no residual appearance.
         persistDurableContentAppearance(item, s, "bakeRotate");
-    } else if (cropMap.hasCrop) {
+    } else {
+        // Unbound tile: keep path-map orientation so install/soft does not
+        // reset contentRect to file-native aspect (stretch after 90°).
         WorkspaceItemState s = captureState(item);
-        s.hasCrop = true;
+        s.contentQuarterTurns = turns;
+        s.orientation = 0.0;
+        s.hasCrop = cropMap.hasCrop;
         s.cropRect = cropMap.cropRect;
         s.cropRotation = cropMap.cropRotation;
         s.cropSourceSize = cropMap.cropSourceSize;
+        s.contentHFlip = item->contentHFlip();
+        s.contentVFlip = item->contentVFlip();
         m_itemStates.insert(item->path(), s);
     }
 
     commitItemSessionEdit(item);
+
+    // Image mode: contentRect axes may have swapped — refresh tight sceneRect
+    // so pan/fit are not locked to the pre-rotate box.
+    if (isImageMode() && m_scene && m_items.size() == 1) {
+        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    }
 
     WorkspaceItemState afterSt = captureState(item);
     afterSt.hasCrop = item->sessionHasCrop();

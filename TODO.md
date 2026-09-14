@@ -2,6 +2,35 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-831-rotate-content-rect-aspect.** Content 90° rotate must update contentRect aspect (no stretch).
+Prior: **830**.
+
+### Problem
+After Image-mode ±90° rotate, the item kept the pre-rotate contentRect aspect and painted the rotated sample stretched into that box.
+
+### Cause
+`installDisplayPixels` set intrinsic from file-native `logicalSizeForPath` after content turns were applied, ignoring odd quarter-turns. Soft provisional path could do the same. Unbound tiles did not persist turns on the path map.
+
+### Change
+- Orient layout size with `contentSwapsAspect` when installing FullSource / provisional soft.
+- Persist `contentQuarterTurns` on the path map for unbound rotates.
+- Refresh Image-mode sceneRect after bake; re-fit/fill when those sticky modes are on.
+
+### Apply
+```bash
+git pull /path/to/biltoo-831-rotate-content-rect-aspect.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **831**
+- [ ] Manual: open landscape image → Rotate 90° → frame is portrait, no stretch; Fit still frames correctly
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-830-filmstrip-multiselect-open-selection.** Fix filmstrip Ctrl multi-select; Open Selection uses strip selection.
 Prior: **829**.
 
