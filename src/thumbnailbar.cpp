@@ -2484,10 +2484,19 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
             }
         }
         if (!pix.isNull()) {
-            // Keep aspect for the drag preview (iconSize() is square).
-            const QSize target = iconSize();
-            if (target.width() > 0 && target.height() > 0) {
-                pix = pix.scaled(target, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            // Letterbox mode sets iconSize to 1×1 so layout hugs content — that
+            // must not drive the drag preview (scaled to 1px = invisible ghost).
+            // Prefer resolvedThumbPixmap (session override / path thumb), then
+            // scale to a visible preview edge (~thumbSize, min 64).
+            if (const int row = this->row(first); row >= 0) {
+                const QPixmap resolved = resolvedThumbPixmap(row);
+                if (!resolved.isNull()) {
+                    pix = resolved;
+                }
+            }
+            const int edge = qMax(64, m_thumbSize);
+            if (qMax(pix.width(), pix.height()) > edge) {
+                pix = pix.scaled(edge, edge, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             }
             drag->setPixmap(pix);
             drag->setHotSpot(QPoint(pix.width() / 2, pix.height() / 2));

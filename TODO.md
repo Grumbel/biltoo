@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-895-drag-preview.** Filmstrip drag preview no longer scaled to 1×1.
+Prior: **894**.
+
+### Bug
+Letterbox filmstrip uses `iconSize(1,1)` so IconMode does not widen cells.
+`startFileDrag` scaled the drag pixmap to `iconSize()` → 1×1 invisible preview.
+
+### Fix
+Scale drag preview to `max(64, thumbSize)` from resolved thumb (override/path).
+
+### Apply
+```bash
+git pull /path/to/biltoo-895-drag-preview.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-894-slideshow-crop.** Slideshow materializes full SessionAppearanceStore want including crop.
 Prior: **893**.
 
