@@ -110,6 +110,14 @@ Never upscale LQIP to decode edge (false settle). Overrides checked before
 - Async rematerialize onto the crop target during `m_cropMode`.
 - Upscaling LQIP so `ThumbDecodeEdgeRole` reports the target edge.
 
+## Slideshow
+
+Slideshow phase buffers must use the **same** `SessionAppearanceStore` want as
+Image/Gallery — including **crop**. `orientSlideshowImage` and phase upgrades
+call `materializeDisplay(raw, app)` with the full appearance (never strip crop).
+
+Identity is resolved by `sessionIdForPath` → `m_appearance.get(sid)`.
+
 ## Debug
 
 ```bash

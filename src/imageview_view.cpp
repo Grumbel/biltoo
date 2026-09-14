@@ -1493,13 +1493,8 @@ void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const Q
             }
             QImage out = capped;
             if (hasApp) {
-                WorkspaceItemState orientOnly = appState;
-                orientOnly.hasCrop = false;
-                orientOnly.cropRect = {};
-                orientOnly.cropSourceSize = {};
-                orientOnly.cropRotation = 0.0;
                 const QImage oriented = SessionAppearance::materializeDisplay(
-                    capped, orientOnly, SessionAppearance::PixelKind::SoftPreview);
+                    capped, appState, SessionAppearance::PixelKind::SoftPreview);
                 if (!oriented.isNull()) {
                     out = oriented;
                 }
@@ -1827,9 +1822,24 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
     if (path.isEmpty()) {
         return kInvalidSessionImageId;
     }
+    // Prefer ordered session row (slideshow / gallery path list).
     for (int i = 0; i < m_pathOrder.size() && i < m_sessionIdOrder.size(); ++i) {
         if (m_pathOrder.at(i) == path) {
-            return m_sessionIdOrder.at(i);
+            const SessionImageId id = m_sessionIdOrder.at(i);
+            if (id != kInvalidSessionImageId) {
+                return id;
+            }
+        }
+    }
+    // Image-mode slideshow: current session cursor when path matches.
+    if (m_currentSessionId != kInvalidSessionImageId) {
+        if (ImageItem *it = findItemBySessionId(m_currentSessionId)) {
+            if (it->path() == path) {
+                return m_currentSessionId;
+            }
+        }
+        if (m_classicPath == path || currentPath() == path) {
+            return m_currentSessionId;
         }
     }
     return kInvalidSessionImageId;
@@ -1837,7 +1847,7 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
 
 QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) const
 {
-    // Soft/slideshow path: flip + quarter-turns + grade only (no crop bake).
+    // SessionAppearanceStore is sole content truth (CROP_MODE.md): flips, turns, crop.
     if (raw.isNull() || path.isEmpty()) {
         return raw;
     }
@@ -1846,18 +1856,13 @@ QImage ImageView::orientSlideshowImage(const QImage &raw, const QString &path) c
         || !SessionAppearance::hasContentAppearance(app)) {
         return raw;
     }
-    WorkspaceItemState orientOnly = app;
-    orientOnly.hasCrop = false;
-    orientOnly.cropRect = {};
-    orientOnly.cropSourceSize = {};
-    orientOnly.cropRotation = 0.0;
     QImage soft = raw;
     if (ImageCache::longEdge(soft) > ContentXform::kGuiMaterializeMaxEdge) {
         soft = ImageCache::clampToMaxEdge(
             soft, ContentXform::kGuiMaterializeMaxEdge);
     }
     const QImage oriented = SessionAppearance::materializeDisplay(
-        soft, orientOnly, SessionAppearance::PixelKind::SoftPreview);
+        soft, app, SessionAppearance::PixelKind::SoftPreview);
     return oriented.isNull() ? raw : oriented;
 }
 
@@ -2013,18 +2018,13 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
         WorkspaceItemState app;
         if (snapshotSlideshowContentAppearance(fromPath, &app)
             && SessionAppearance::hasContentAppearance(app)) {
-            WorkspaceItemState orientOnly = app;
-            orientOnly.hasCrop = false;
-            orientOnly.cropRect = {};
-            orientOnly.cropSourceSize = {};
-            orientOnly.cropRotation = 0.0;
             QImage soft = m_ssFromImage;
             if (ImageCache::longEdge(soft) > ContentXform::kGuiMaterializeMaxEdge) {
                 soft = ImageCache::clampToMaxEdge(
                     soft, ContentXform::kGuiMaterializeMaxEdge);
             }
             const QImage oriented = SessionAppearance::materializeDisplay(
-                soft, orientOnly, SessionAppearance::PixelKind::SoftPreview);
+                soft, app, SessionAppearance::PixelKind::SoftPreview);
             if (!oriented.isNull()) {
                 m_ssFromImage = oriented;
                 m_ssFromContentApplied = true;
@@ -2146,18 +2146,13 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         WorkspaceItemState app;
         if (snapshotSlideshowContentAppearance(toPath, &app)
             && SessionAppearance::hasContentAppearance(app)) {
-            WorkspaceItemState orientOnly = app;
-            orientOnly.hasCrop = false;
-            orientOnly.cropRect = {};
-            orientOnly.cropSourceSize = {};
-            orientOnly.cropRotation = 0.0;
             QImage soft = m_ssToImage;
             if (ImageCache::longEdge(soft) > ContentXform::kGuiMaterializeMaxEdge) {
                 soft = ImageCache::clampToMaxEdge(
                     soft, ContentXform::kGuiMaterializeMaxEdge);
             }
             const QImage oriented = SessionAppearance::materializeDisplay(
-                soft, orientOnly, SessionAppearance::PixelKind::SoftPreview);
+                soft, app, SessionAppearance::PixelKind::SoftPreview);
             if (!oriented.isNull()) {
                 m_ssToImage = oriented;
                 m_ssToContentApplied = true;
@@ -3168,18 +3163,13 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     if (!path.isEmpty()
         && snapshotSlideshowContentAppearance(path, &app)
         && SessionAppearance::hasContentAppearance(app)) {
-        WorkspaceItemState orientOnly = app;
-        orientOnly.hasCrop = false;
-        orientOnly.cropRect = {};
-        orientOnly.cropSourceSize = {};
-        orientOnly.cropRotation = 0.0;
         QImage soft = host;
         if (ImageCache::longEdge(soft) > ContentXform::kGuiMaterializeMaxEdge) {
             soft = ImageCache::clampToMaxEdge(
                 soft, ContentXform::kGuiMaterializeMaxEdge);
         }
         const QImage oriented = SessionAppearance::materializeDisplay(
-            soft, orientOnly, SessionAppearance::PixelKind::SoftPreview);
+            soft, app, SessionAppearance::PixelKind::SoftPreview);
         if (!oriented.isNull()) {
             dwell = oriented;
         }

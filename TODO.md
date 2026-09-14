@@ -2,6 +2,29 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-894-slideshow-crop.** Slideshow materializes full SessionAppearanceStore want including crop.
+Prior: **893**.
+
+### Bug
+`orientSlideshowImage` and phase buffer upgrades stripped crop (`orientOnly.hasCrop
+= false`) — slideshow showed full frame while Image/Gallery used the store crop.
+That violated the single source of truth (`m_appearance` by SessionImageId).
+
+### Fix
+All slideshow `materializeDisplay` paths use the full appearance (crop included).
+`sessionIdForPath` also resolves `m_currentSessionId` for Image-mode slideshow.
+
+### Apply
+```bash
+git pull /path/to/biltoo-894-slideshow-crop.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-893-crop-docs-tests.** Crop/filmstrip contracts documented + unit tests.
 Prior: **892** (mostly working).
 
