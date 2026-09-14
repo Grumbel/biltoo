@@ -2,6 +2,44 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-804-cache-evict-reschedule.** Reschedule soft after ImageCache LRU eviction.
+Prior: **803**.
+
+### Problem
+Large PDF galleries exceed `ImageCache` LRU (384). SoftOnly delivered and
+`g_pixelsSettled` / PathRaster `st.have` remembered the edge, but LRU dropped
+the sample. Gallery stayed **blank** while:
+
+```
+schedulePixels SKIP … edge=512 (inflight/settled)
+gallery … shown=0(blank) host=0(blank) target=512 verdict=stuck-weak
+```
+
+PathRaster only raised `st.have` (`qMax`), never re-synced down to the live
+host cache, so `covers` skipped pump forever.
+
+### Change
+- `PathRasterService::ensure`: re-sync `st.have` from ImageCache; on demotion
+  forget settled + clear soft/display queued flags
+- `haveEdge`: prefer live cache; do not report stale bookkeeping as paintable
+- `schedulePixels` / `scheduleDisplayPixels`: settled SKIP only if host still
+  holds ~90% of the requested edge; otherwise RETRY
+- `softQueued` / `displayQueued` set only when schedule accepts the job
+
+### Apply
+```bash
+git pull /path/to/biltoo-804-cache-evict-reschedule.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **804**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-803-quality-watchdog-grace.** Do not hard-assert StuckWeak on first tick.
 Prior: **802**.
 

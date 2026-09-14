@@ -76,10 +76,26 @@ void PathRasterService::ensure(const QString &path, int wantEdge,
     }
     st.want = qMax(st.want, want);
 
-    const QImage cached = ImageCache::get(path);
-    const int have = ImageCache::longEdge(cached);
-    if (have > 0) {
-        st.have = qMax(st.have, have);
+    // ImageCache is the only paint source. LRU (kMaxEntries) can drop soft
+    // samples while PathRaster still remembers a prior delivery edge — then
+    // covers(st.have, want) would skip reschedule and Gallery stays blank
+    // with schedulePixels SKIP (settled). Always re-sync have from the host
+    // cache; never claim pixels that are no longer resident.
+    const int cacheEdge = ImageCache::longEdge(ImageCache::get(path));
+    if (cacheEdge < st.have) {
+        // Evicted (or never installed). Drop settled soft/display so SoftOnly
+        // / PreferCache may run again for this path.
+        if (st.have > 0) {
+            ThumtooCache::forgetPixelsSettled(path, ThumtooCache::kGalleryLadderEdge);
+            ThumtooCache::forgetPixelsSettled(path, st.want > 0 ? st.want : want);
+            st.softQueued = false;
+            st.displayQueued = false;
+            st.preferGaveUp = false;
+            st.lastDisplayGot = 0;
+        }
+        st.have = cacheEdge;
+    } else if (cacheEdge > st.have) {
+        st.have = cacheEdge;
     }
     if (covers(st.have, st.want)) {
         st.preferGaveUp = false;
@@ -107,11 +123,17 @@ QImage PathRasterService::best(const QString &path, int minLongEdge) const
 
 int PathRasterService::haveEdge(const QString &path) const
 {
+    // Prefer live ImageCache edge; PathRaster have can lag after LRU eviction.
+    const int cacheEdge = ImageCache::longEdge(ImageCache::get(path));
+    if (cacheEdge > 0) {
+        return cacheEdge;
+    }
     const auto it = m_state.constFind(path);
     if (it != m_state.cend() && it->have > 0) {
-        return it->have;
+        // Stale bookkeeping only — callers that need paint must re-ensure.
+        return 0;
     }
-    return ImageCache::longEdge(ImageCache::get(path));
+    return 0;
 }
 
 int PathRasterService::wantEdge(const QString &path) const
@@ -250,9 +272,12 @@ void PathRasterService::pump(const QString &path, State &st)
 
     // LQIP / tiny stand-ins set have > 0 but must not skip the soft ladder.
     // Schedule SoftOnly until we reach durable soft max (kGalleryLadderEdge).
+    // Only mark softQueued when a job was actually accepted — otherwise SKIP
+    // (true inflight) leaves climb pending forever with no delivery.
     if (!covers(st.have, ThumtooCache::kGalleryLadderEdge) && !st.softQueued) {
-        st.softQueued = true;
-        (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+        if (ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge)) {
+            st.softQueued = true;
+        }
     }
 
     const int displayWant = st.want;
@@ -267,13 +292,16 @@ void PathRasterService::pump(const QString &path, State &st)
             && st.lastDisplayGot * 10 < displayWant * 9) {
             st.preferGaveUp = true;
         } else {
-            st.displayQueued = true;
             st.lastDisplayWant = displayWant;
             ThumtooCache::scheduleProbe(path);
-            if (st.have < ThumtooCache::kGalleryLadderEdge) {
-                (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+            if (st.have < ThumtooCache::kGalleryLadderEdge && !st.softQueued) {
+                if (ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge)) {
+                    st.softQueued = true;
+                }
             }
-            (void)ThumtooCache::scheduleDisplayPixels(path, displayWant);
+            if (ThumtooCache::scheduleDisplayPixels(path, displayWant)) {
+                st.displayQueued = true;
+            }
             return;
         }
     }

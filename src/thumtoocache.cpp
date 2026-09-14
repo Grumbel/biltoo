@@ -1149,13 +1149,31 @@ bool schedulePixels(const QString &path, int maxEdge)
     const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
     {
         std::lock_guard lock(g_mu);
-        if (g_pixelsInflight.contains(inflightKey)
-            || g_pixelsSettled.contains(inflightKey)) {
+        if (g_pixelsInflight.contains(inflightKey)) {
             if (thumtooDebugEnabled()) {
-                thumtooDbg("schedulePixels SKIP path=%s edge=%d (inflight/settled)",
+                thumtooDbg("schedulePixels SKIP path=%s edge=%d (inflight)",
                            qPrintable(path), maxEdge);
             }
             return false;
+        }
+        if (g_pixelsSettled.contains(inflightKey)) {
+            // Settled only means "we already ran SoftOnly for this edge".
+            // ImageCache LRU may have dropped the sample — host paint is gone
+            // while SKIP would leave Gallery blank forever. Allow retry when
+            // the host cache no longer holds ~90% of the requested edge.
+            const int have = ImageCache::longEdge(ImageCache::get(path));
+            if (have * 10 >= maxEdge * 9) {
+                if (thumtooDebugEnabled()) {
+                    thumtooDbg("schedulePixels SKIP path=%s edge=%d (settled have=%d)",
+                               qPrintable(path), maxEdge, have);
+                }
+                return false;
+            }
+            g_pixelsSettled.remove(inflightKey);
+            if (thumtooDebugEnabled()) {
+                thumtooDbg("schedulePixels RETRY path=%s edge=%d (settled but host have=%d)",
+                           qPrintable(path), maxEdge, have);
+            }
         }
         g_pixelsInflight.insert(inflightKey);
         if (thumtooDebugEnabled()) {
@@ -1339,11 +1357,21 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
         path + QLatin1Char('#') + QStringLiteral("disp") + QString::number(maxEdge);
     {
         std::lock_guard lock(g_mu);
-        if (g_pixelsInflight.contains(inflightKey)
-            || g_pixelsSettled.contains(inflightKey)) {
-            thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (inflight/settled)",
+        if (g_pixelsInflight.contains(inflightKey)) {
+            thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (inflight)",
                        qPrintable(path), maxEdge);
             return false;
+        }
+        if (g_pixelsSettled.contains(inflightKey)) {
+            const int have = ImageCache::longEdge(ImageCache::get(path));
+            if (have * 10 >= maxEdge * 9) {
+                thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (settled have=%d)",
+                           qPrintable(path), maxEdge, have);
+                return false;
+            }
+            g_pixelsSettled.remove(inflightKey);
+            thumtooDbg("scheduleDisplay RETRY path=%s edge=%d (settled but host have=%d)",
+                       qPrintable(path), maxEdge, have);
         }
         g_pixelsInflight.insert(inflightKey);
         ++g_pixelsActive;
