@@ -170,6 +170,13 @@ void reportViolation(const char *surface, const QString &path, const Check &chec
     if (check.verdict == Verdict::Ok) {
         return;
     }
+    // Soft climb in progress (host still LQIP/blank): recovery runs at the call
+    // site; logging every path every few seconds floods the console and hid
+    // real InstallHostBetter / host-soft StuckWeak cases.
+    if (check.verdict == Verdict::StuckWeak
+        && (check.hostTier == Tier::Blank || check.hostTier == Tier::Lqip)) {
+        return;
+    }
     const QString key =
         QString::fromLatin1(surface ? surface : "?") + QLatin1Char('\n') + path;
     if (!shouldWarn(key)) {
@@ -186,8 +193,8 @@ void reportViolation(const char *surface, const QString &path, const Check &chec
                             .arg(tierLabel(check.hostTier))
                             .arg(check.targetEdge)
                             .arg(verdictLabel(check.verdict));
+    // qWarning already goes to stderr in typical Qt setups — do not fprintf twice.
     qWarning("%s", qPrintable(msg));
-    fprintf(stderr, "%s\n", qPrintable(msg));
 
 #ifndef NDEBUG
     if (assertHard) {

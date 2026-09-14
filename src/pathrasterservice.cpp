@@ -276,6 +276,20 @@ void PathRasterService::pump(const QString &path, State &st)
         return;
     }
 
+    // SoftOnly / PreferCache can finish (or fail URI resolve) without noteDelivery
+    // clearing queue flags. A sticky softQueued blocks reschedule; a sticky
+    // displayQueued hits the early return below and deadlocks the path on LQIP.
+    if (st.softQueued
+        && !ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)) {
+        st.softQueued = false;
+    }
+    if (st.displayQueued) {
+        const int dw = st.lastDisplayWant > 0 ? st.lastDisplayWant : st.want;
+        if (!ThumtooCache::isPixelsPending(path, dw)) {
+            st.displayQueued = false;
+        }
+    }
+
     // LQIP / tiny stand-ins set have > 0 but must not skip the soft ladder.
     // Schedule SoftOnly until we reach durable soft max (kGalleryLadderEdge).
     // Only mark softQueued when a job was actually accepted — otherwise SKIP

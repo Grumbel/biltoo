@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-810-stale-soft-queue-flags.** Clear dead softQueued/displayQueued; quiet LQIP StuckWeak logs.
+Prior: **809**.
+
+### Problem
+Gallery tiles stayed on LQIP (`host=16`) with `stuck-weak` spam. Sticky
+`softQueued` / `displayQueued` after SoftOnly/PreferCache finished without
+`noteDelivery` blocked reschedule (`displayQueued && lastWant` early-return).
+Also double-printed quality lines (qWarning + fprintf).
+
+### Change
+- `PathRasterService::pump`: if softQueued/displayQueued but `!isPixelsPending`, clear flags so SoftOnly/PreferCache can run again
+- `reportViolation`: no log for StuckWeak while host is still blank/LQIP (recovery still runs); single qWarning (no dual fprintf)
+
+### Apply
+```bash
+git pull /path/to/biltoo-810-stale-soft-queue-flags.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **810**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-809-quality-target-first.** checkSurface: meet target before InstallHostBetter.
 Prior: **808**.
 
