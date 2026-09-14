@@ -2,6 +2,28 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-792-slideshow-single-image.** Allow slideshow with one image.
+Prior: **791**.
+
+### Changes
+- Slideshow enabled when the session has ≥1 image (still disabled in Workspace)
+- Clock/start/resume no longer bail on size==1; stop only when empty or Workspace
+- Help / DOMAIN updated
+
+### Apply
+```bash
+git pull /path/to/biltoo-792-slideshow-single-image.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **792**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-791-readable-window-geometry.** Human-readable windowGeometry settings.
 Prior: **790**.
 

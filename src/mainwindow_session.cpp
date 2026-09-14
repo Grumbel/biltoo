@@ -1859,7 +1859,8 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
     // Prev/Next are Image mode only. Slideshow may start from Gallery (enters
     // Image mode on start); still unavailable in Workspace.
     const bool imageNav = hasMany && m_imageView && m_imageView->isImageMode();
-    const bool canSlideshow = hasMany && m_imageView && !m_imageView->isWorkspaceMode();
+    // Single-image sessions may still run a (short) slideshow dwell / motion.
+    const bool canSlideshow = hasFiles && m_imageView && !m_imageView->isWorkspaceMode();
     m_previousAct->setEnabled(imageNav);
     m_nextAct->setEnabled(imageNav);
     const QString imageNavReason = tr("Available in Image mode when the session has more than one image.");
@@ -1906,7 +1907,7 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
             m_slideshowAct->setStatusTip(r);
             m_slideshowAct->setProperty("biltooDisabledHelp", r);
         } else {
-            const QString r = tr("Open more than one image to use the slideshow.");
+            const QString r = tr("Open at least one image to use the slideshow.");
             m_slideshowAct->setStatusTip(r);
             m_slideshowAct->setProperty("biltooDisabledHelp", r);
         }
@@ -1914,14 +1915,14 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
     if (m_imageView) {
         m_imageView->setImageModeNavigationEnabled(imageNav);
     }
-    // Stop only when a running slideshow becomes invalid (Workspace or single
-    // file). Idle stopSlideshow is a no-op for the timer, but still emitted
-    // statusChanged via restoreImageFramingAfterSlideshow → re-entered here
-    // forever (stack overflow / SEGV in QToolButton when loading one image).
-    // Only end the session when it becomes impossible (Workspace / single file).
+    // Stop only when a running slideshow becomes invalid (empty session or
+    // Workspace). Idle stopSlideshow is a no-op for the timer, but still
+    // emitted statusChanged via restoreImageFramingAfterSlideshow → re-entered
+    // here forever (stack overflow / SEGV in QToolButton). Single-image
+    // sessions may keep a short dwell/motion loop.
     // Do not use transient "no canvas items" mid LoadReplace as a stop signal.
     if (isSlideshowSession()
-        && (m_session.paths().size() <= 1
+        && (m_session.paths().isEmpty()
             || (m_imageView && m_imageView->isWorkspaceMode()))) {
         stopSlideshow();
     }
@@ -2653,7 +2654,7 @@ void MainWindow::onSlideshowUserNavigated()
 
 void MainWindow::startSlideshow()
 {
-    if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
+    if (m_session.paths().isEmpty() || isWorkspaceMode()) {
         m_slideshowPaused = false;
         updateSlideshowActionUi();
         return;
@@ -2720,7 +2721,7 @@ void MainWindow::startSlideshow()
 
 void MainWindow::seekSlideshowFraction(qreal fraction)
 {
-    if (!isSlideshowSession() || m_session.paths().size() <= 1) {
+    if (!isSlideshowSession() || m_session.paths().isEmpty()) {
         return;
     }
     fraction = qBound(0.0, fraction, 1.0);
@@ -2798,7 +2799,7 @@ void MainWindow::resumeSlideshow()
     if (!m_slideshowPaused) {
         return;
     }
-    if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
+    if (m_session.paths().isEmpty() || isWorkspaceMode()) {
         stopSlideshow();
         return;
     }

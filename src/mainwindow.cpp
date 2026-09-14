@@ -1552,7 +1552,7 @@ void MainWindow::armSlideshowAdvanceTimer()
     if (m_slideshowPaused || !m_slideshowTimer) {
         return;
     }
-    if (m_session.paths().size() <= 1 || isWorkspaceMode()) {
+    if (m_session.paths().isEmpty() || isWorkspaceMode()) {
         return;
     }
 
@@ -1595,7 +1595,7 @@ void MainWindow::updateSlideshowFromClock()
         return;
     }
     const int n = m_session.paths().size();
-    if (n <= 1 || isWorkspaceMode()) {
+    if (n < 1 || isWorkspaceMode()) {
         return;
     }
 

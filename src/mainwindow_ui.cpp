@@ -345,7 +345,7 @@ void MainWindow::createActions()
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     m_slideshowAct->setCheckable(true);
     m_slideshowAct->setStatusTip(
-        tr("Space: pause/resume · Esc: leave slideshow (Space). Unavailable in workspace mode."));
+        tr("Space: pause/resume · Esc: leave slideshow. Unavailable in Workspace mode."));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
     m_slideshowSettingsAct = new QAction(tr("Slideshow &Settings…"), this);
@@ -1742,9 +1742,10 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_firstAct, tr("<p>Jump to the first session image (Image mode, multi-image session).</p>"));
     setHelp(m_lastAct, tr("<p>Jump to the last session image (Image mode, multi-image session).</p>"));
     setHelp(m_slideshowAct, tr(
-        "<p>Start or toggle the slideshow. Requires more than one session image and is "
-        "unavailable in Workspace. Space often pauses/resumes; Esc leaves slideshow "
-        "(and fullscreen). Interval and transitions are in Preferences / Slideshow settings.</p>"));
+        "<p>Start or toggle the slideshow. Needs at least one session image; unavailable "
+        "in Workspace. With a single image the dwell (and optional motion) still runs. "
+        "Space pauses/resumes; Esc leaves slideshow (and fullscreen). Interval and "
+        "transitions are in Preferences / Slideshow settings.</p>"));
     setHelp(m_backToGalleryAct, tr(
         "<p><b>Back</b> leaves Image mode and returns to Gallery or Workspace depending on "
         "how Image was entered, restoring the previous overview or free-canvas snapshot.</p>"));

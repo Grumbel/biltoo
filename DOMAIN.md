@@ -175,7 +175,7 @@ Image is not a multi-object canvas.
 4. **In Gallery mode, canvas paths = session paths** (one each); positions come only from the active layout.
 5. **In Workspace mode, transform chrome and free move exist; in other modes they do not.**
 6. **View framing must not erase user orientation** (rotation/flips) unless the operation is explicitly “reset” or “load fresh image.”
-7. **Slideshow ⇒ Image mode and session size > 1.** Otherwise slideshow is idle.
+7. **Slideshow ⇒ non-empty session and not Workspace** (enters Image mode if started from Gallery). A single image may still run dwell/motion; otherwise slideshow is idle.
 8. **Gallery → Image → Return** restores Gallery state; it does not open Workspace.
 9. **Workspace → Image → Return** restores the Workspace free-object stash/snapshot; it does not open Gallery.
 10. **Targets of transform** follow the table above.
