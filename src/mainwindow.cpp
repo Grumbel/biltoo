@@ -771,7 +771,10 @@ void MainWindow::toggleCropMode()
                 if (!primary && !m_imageView->liveItems().isEmpty()) {
                     primary = m_imageView->liveItems().first();
                 }
-                if (!primary || !primary->hasDecodedPixels()) {
+                // Soft-only is enough to enter crop (prepareCrop loads host).
+                // Waiting for hasDecodedPixels left Gallery→Image crop stuck on
+                // soft tiles, or entered only after a crop bake arrived.
+                if (!primary || !primary->hasDisplayPixels()) {
                     return;
                 }
                 m_pendingGalleryCrop = false;

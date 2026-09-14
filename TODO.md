@@ -2,6 +2,39 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-884-image-crop-race.** Block display installs during crop; Gallery soft can enter crop.
+Prior: **883**.
+
+### Image / Gallery repeated crop (Workspace was OK)
+1. **Race:** Apply schedules `scheduleAsyncHostRematerialize` (multi-MP). User
+   re-enters crop (orient-only full frame). Async finish reattached **crop bake**
+   onto the draft → wrong size / rect. Workspace users less often re-enter
+   before the worker finishes; Image mode is faster.
+2. **Gallery→Image crop:** waited for `hasDecodedPixels()` so soft-only never
+   opened crop, or opened only after a full crop bake landed.
+
+### Fix
+- `finishAsyncHostRematerialize`: no-op while `m_cropMode`
+- `installDisplayPixels`: skip crop target while `m_cropMode`
+- Gallery pending crop: `hasDisplayPixels()` (soft is enough)
+- Apply: `attachDisplaySample` (same path as enter)
+
+### Apply
+```bash
+git pull /path/to/biltoo-884-image-crop-race.bundle HEAD
+```
+
+### Verify
+- [ ] Image: crop → apply → crop again → full frame + prior rect
+- [ ] Gallery: crop → apply → back → crop again
+- [ ] Workspace repeated crop still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-883-double-crop-enter.** Second crop enter uses pure materialize; cropSourceSize is oriented native.
 Prior: **882**.
 

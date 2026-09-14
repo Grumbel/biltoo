@@ -552,6 +552,18 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
                                      SessionAppearance::PixelKind kind,
                                      SessionImageId sid)
 {
+    if (!item) {
+        return;
+    }
+    // Crop mode: draft is orient-only full frame. Ladder/async must not put a
+    // crop bake (or unoriented soft) back onto the target.
+    if (m_cropMode) {
+        if (item == m_cropTargetItem
+            || (m_cropTargetId != kInvalidSessionImageId
+                && item->sessionId() == m_cropTargetId)) {
+            return;
+        }
+    }
     if (!canAcceptDisplaySample(item, pixels, kind)) {
         return;
     }

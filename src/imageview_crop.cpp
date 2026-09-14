@@ -1300,12 +1300,10 @@ bool ImageView::applyCropCommit(ImageItem *item)
                        .arg(item->imageSize().width()).arg(item->imageSize().height());
         }
 
-        // Pixels + layout through the single attach path (no soft size as intrinsic).
-        item->setSourceImageReady(display);
-        item->setContentHFlip(st.contentHFlip);
-        item->setContentVFlip(st.contentVFlip);
-        item->setSessionCrop(st.hasCrop, st.cropRect);
-        item->setAppliedContentXform(ContentXform::Value::fromState(st));
+        // Single attach path (layoutSize only — never soft size as intrinsic).
+        const auto pixelKind = multiMp ? SessionAppearance::PixelKind::SoftPreview
+                                       : SessionAppearance::PixelKind::FullSource;
+        attachDisplaySample(item, display, st, pixelKind);
         applyContentLayoutSize(item, st);
         {
             const QSize isz = item->imageSize();

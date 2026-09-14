@@ -666,6 +666,11 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     if (display.isNull() || path.isEmpty()) {
         return;
     }
+    // Crop draft owns the target item — do not reinstall a crop bake (or any
+    // sample) over orient-only full frame mid-session (Image/Gallery re-crop).
+    if (m_cropMode) {
+        return;
+    }
     ImageItem *item = nullptr;
     for (ImageItem *it : m_items) {
         if (!it || it->path() != path) {
