@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     QCommandLineOption sortOption(
         QStringList() << QStringLiteral("sort"),
         QCoreApplication::translate("main",
-            "Sort session by file name or modification time"),
+            "Sort session by name, path, or mtime (date)"),
         QStringLiteral("name|mtime"));
     parser.addOption(sortOption);
 
@@ -240,6 +240,8 @@ int main(int argc, char *argv[])
         if (sort == QLatin1String("mtime") || sort == QLatin1String("date")
             || sort == QLatin1String("time")) {
             window.setSortMode(MainWindow::SortMode::MTime);
+        } else if (sort == QLatin1String("path")) {
+            window.setSortMode(MainWindow::SortMode::Path);
         } else {
             window.setSortMode(MainWindow::SortMode::Name);
         }
