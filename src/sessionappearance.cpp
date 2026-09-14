@@ -310,6 +310,20 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
     if (!state.colorAdjust.isIdentity()) {
         out = applyColorAdjustments(out, state.colorAdjust);
     }
+
+    // Assert: crop want must not produce empty/1×1 when the crop rect is larger.
+    if (state.hasCrop && !state.cropRect.isEmpty() && !out.isNull()) {
+        const QRect want = state.cropRect.normalized();
+        if (want.width() > 2 && want.height() > 2
+            && (out.width() <= 1 || out.height() <= 1)) {
+            qCritical("materializeDisplay: crop %dx%d @ source %dx%d → output %dx%d "
+                      "(cropSourceSize %dx%d raw was likely wrong space)",
+                      want.width(), want.height(),
+                      state.cropSourceSize.width(), state.cropSourceSize.height(),
+                      out.width(), out.height(),
+                      state.cropSourceSize.width(), state.cropSourceSize.height());
+        }
+    }
     return out;
 }
 

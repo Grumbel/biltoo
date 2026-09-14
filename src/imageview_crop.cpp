@@ -546,6 +546,14 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
         const QRect prior = SessionAppearance::scaleCropRect(
             priorCrop.normalized(), app.cropSourceSize, sz);
         m_cropRotation = haveApp ? app.cropRotation : 0.0;
+        if (prior.width() <= 1 || prior.height() <= 1) {
+            qCritical("initCropRect: prior crop scaled to %dx%d (stored %dx%d "
+                      "sourceSize %dx%d live imageSize %dx%d) — draft will be 1×1",
+                      prior.width(), prior.height(),
+                      priorCrop.width(), priorCrop.height(),
+                      app.cropSourceSize.width(), app.cropSourceSize.height(),
+                      sz.width(), sz.height());
+        }
         if (prior.width() >= 1 && prior.height() >= 1) {
             const QPointF off = item->offset();
             // Do not mirror for contentHFlip/VFlip: applyContentBakes already
@@ -1213,42 +1221,46 @@ bool ImageView::applyCropCommit(ImageItem *item)
             return false;
         }
 
-        // Placement scale is independent of crop. Prefer scale captured at crop
-        // *enter* (before any draft geometry change). Current sx0 can already be
-        // wrong if an older build mutated scale on enter.
-        const QSize logical(qMax(1, qRound(cropW)), qMax(1, qRound(cropH)));
-        qreal sx = sx0;
-        qreal sy = sy0;
-        if (m_cropEnterValid && m_cropEnterState.scale > 1e-6) {
-            sx = m_cropEnterState.scale;
-            sy = (m_cropEnterState.scaleY > 1e-6) ? m_cropEnterState.scaleY
-                                                 : m_cropEnterState.scale;
-        }
-
+        // Placement scale is never written by crop (Workspace Zoom stays put).
+        // Geometry = layoutSize(fileNative, st) via applyContentLayoutSize only.
         if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
             qWarning().noquote()
                 << QStringLiteral(
                        "[crop] Apply path=%1 host=%2x%3 cache=%4 display=%5x%6 "
-                       "cropRect=%7x%8 foot=%9x%10 logical=%11x%12 scale=%13x%14 "
-                       "imageSizeBefore=%15x%16")
+                       "cropDraft=%7x%8 foot=%9x%10 scaleKeep=%11x%12 "
+                       "imageSizeBefore=%13x%14")
                        .arg(path)
                        .arg(host.width()).arg(host.height())
                        .arg(hostFromCache ? 1 : 0)
                        .arg(display.width()).arg(display.height())
                        .arg(cropW).arg(cropH)
                        .arg(footW).arg(footH)
-                       .arg(logical.width()).arg(logical.height())
-                       .arg(sx).arg(sy)
+                       .arg(sx0).arg(sy0)
                        .arg(item->imageSize().width()).arg(item->imageSize().height());
         }
 
+        // Pixels + layout through the single attach path (no soft size as intrinsic).
         item->setSourceImageReady(display);
         item->setContentHFlip(st.contentHFlip);
         item->setContentVFlip(st.contentVFlip);
         item->setSessionCrop(st.hasCrop, st.cropRect);
         item->setAppliedContentXform(ContentXform::Value::fromState(st));
-        item->setIntrinsicSize(logical);
-        item->setItemScale(sx, sy);
+        applyContentLayoutSize(item, st);
+        {
+            const QSize isz = item->imageSize();
+            if (isz.width() <= 1 || isz.height() <= 1) {
+                qCritical("applyCropCommit: layoutSize after crop is %dx%d (draft %gx%g path=%s)",
+                          isz.width(), isz.height(), cropW, cropH, qPrintable(path));
+                // Last resort: draft content units (still better than 1x1).
+                item->setIntrinsicSize(QSize(qMax(1, qRound(cropW)), qMax(1, qRound(cropH))));
+            }
+        }
+        // Restore enter placement scale if something else mutated it during draft.
+        if (m_cropEnterValid && m_cropEnterState.scale > 1e-6) {
+            const qreal sx = m_cropEnterState.scale;
+            const qreal sy = (m_cropEnterState.scaleY > 1e-6) ? m_cropEnterState.scaleY : sx;
+            item->setItemScale(sx, sy);
+        }
         alignItemCenterToScene(item, cropSceneCenter);
 
         // Multi-MP: soft stand-in now; pure full rematerialize when host is large.

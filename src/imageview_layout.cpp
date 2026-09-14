@@ -481,21 +481,26 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
         item->setSourceImage(display);
     }
 
-    // Layout: one rule.
-    // - Crop: baked sample is the box.
-    // - Else: layoutSize(FILE-NATIVE, want). Never treat oriented display size as
-    //   "native" or layoutSize double-swaps aspect (ImageView/Gallery stretch).
-    // Soft pixel size must not become identity when a durable native is known.
-    if (hasCrop && display.width() > 1 && display.height() > 1) {
-        item->setIntrinsicSize(display.size());
-    } else {
-        applyContentLayoutSize(item, want);
-        // Cold open only: no durable size and placeholder intrinsic — seed
-        // aspect from the oriented display (still provisional until probe).
+    // Layout: ONE rule — ContentXform::layoutSize(fileNative, want).
+    // Soft/full sample pixels never define intrinsic (SIZE.md / CONTENT_PIPELINE).
+    // The old "crop → display.size()" branch set soft crop pixels as geometry,
+    // which collapsed Workspace scale to ~1% and broke second-crop draft size.
+    applyContentLayoutSize(item, want);
+    {
         const QSize cur = item->imageSize();
         if ((cur.width() <= 1 || cur.height() <= 1)
             && display.width() > 1 && display.height() > 1) {
+            // Cold open only: no durable native yet.
             item->setIntrinsicSize(display.size());
+        }
+    }
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")
+        || (want.hasCrop && item->imageSize().width() <= 1)) {
+        const QSize isz = item->imageSize();
+        if (want.hasCrop && (isz.width() <= 1 || isz.height() <= 1)) {
+            qCritical("attachDisplaySample: crop want but intrinsic %dx%d (display %dx%d path=%s)",
+                      isz.width(), isz.height(), display.width(), display.height(),
+                      qPrintable(path));
         }
     }
 
@@ -1085,10 +1090,17 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
         } else if (!item->displayImage().isNull()) {
             other->setPreviewImage(item->displayImage());
         }
-        // Intrinsic must follow orient/crop — never leave full-frame on crop.
-        const QSize sz = item->imageSize();
-        if (sz.width() > 1 && sz.height() > 1) {
-            other->setIntrinsicSize(sz);
+        // Intrinsic from appearance layoutSize — never copy soft sample size.
+        if (sessionId != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *st = m_appearance.get(sessionId)) {
+                applyContentLayoutSize(other, *st);
+            }
+        }
+        {
+            const QSize sz = item->imageSize();
+            if (other->imageSize().width() <= 1 && sz.width() > 1) {
+                other->setIntrinsicSize(sz);
+            }
         }
         other->setItemHFlip(hFlip);
         other->setItemVFlip(vFlip);

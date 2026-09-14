@@ -2,6 +2,44 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-881-attach-layoutsize-only.** attachDisplaySample never uses sample pixels as intrinsic.
+Prior: **880**.
+
+### Root cause (scale / 1×1 / second crop)
+`attachDisplaySample` had:
+
+```cpp
+if (hasCrop) item->setIntrinsicSize(display.size());  // SOFT PIXELS
+```
+
+That violated SIZE.md / CONTENT_PIPELINE (`layoutSize(fileNative, want)` only).
+Soft crop ~100px became Workspace geometry while placement scale stayed
+file-native → Zoom ~1%. Async rematerialize re-attached and re-broke size.
+Second crop draft used that geometry → 1×1 frame / wrong image space.
+
+### Fix
+1. `attachDisplaySample`: **always** `applyContentLayoutSize` (file-native layoutSize)
+2. Peer sync: layout from appearance store, not `item->imageSize()` soft copy
+3. Apply crop: `applyContentLayoutSize`; restore enter-time scale only; never
+   write scale from draft soft math
+4. `qCritical` if materialize/crop/layout produce 1×1 for a larger crop want
+
+### Apply
+```bash
+git pull /path/to/biltoo-881-attach-layoutsize-only.bundle HEAD
+```
+
+### Verify
+- [ ] Workspace: crop does not change Zoom %
+- [ ] Second crop (Image + Workspace): full frame draft, prior rect, not 1×1
+- [ ] No `attachDisplaySample: crop want but intrinsic 1x1` in stderr
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-880-crop-scale-gallery-scroll.** Crop must not touch Workspace zoom; Gallery restore prefers scroll.
 Prior: **879**.
 
