@@ -647,6 +647,32 @@ QSize cachedSize(const QString &path)
     return {};
 }
 
+
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_LQIP)
+QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob)
+{
+    if (blob.empty()) {
+        return {};
+    }
+    auto rgba = thumtoo::lqip_decode_rgba(
+        std::span<const std::uint8_t>(blob.data(), blob.size()));
+    if (!rgba || rgba->width < 1 || rgba->height < 1
+        || rgba->rgba.size() < size_t(rgba->width) * size_t(rgba->height) * 4) {
+        return {};
+    }
+    QImage img(rgba->width, rgba->height, QImage::Format_RGBA8888);
+    if (img.isNull()) {
+        return {};
+    }
+    const int rowBytes = rgba->width * 4;
+    for (int y = 0; y < rgba->height; ++y) {
+        memcpy(img.scanLine(y), rgba->rgba.data() + size_t(y) * size_t(rowBytes),
+               size_t(rowBytes));
+    }
+    return img;
+}
+#endif
+
 QImage cachedLqipImage(const QString &path)
 {
 #if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_LQIP)
@@ -670,22 +696,7 @@ QImage cachedLqipImage(const QString &path)
     if (!blob || blob->empty()) {
         return {};
     }
-    auto rgba = thumtoo::lqip_decode_rgba(
-        std::span<const std::uint8_t>(blob->data(), blob->size()));
-    if (!rgba || rgba->width < 1 || rgba->height < 1
-        || rgba->rgba.size() < size_t(rgba->width) * size_t(rgba->height) * 4) {
-        return {};
-    }
-    QImage img(rgba->width, rgba->height, QImage::Format_RGBA8888);
-    if (img.isNull()) {
-        return {};
-    }
-    const int rowBytes = rgba->width * 4;
-    for (int y = 0; y < rgba->height; ++y) {
-        memcpy(img.scanLine(y), rgba->rgba.data() + size_t(y) * size_t(rowBytes),
-               size_t(rowBytes));
-    }
-    return img;
+    return qimageFromLqipBlob(*blob);
 #else
     Q_UNUSED(path);
     return {};
@@ -755,14 +766,25 @@ void scheduleProbe(const QString &path)
         if (thumtooDebugEnabled()) {
             thumtooDbg("scheduleProbe path=%s", qPrintable(pathCopy));
         }
-        c->request_size(uri, [pathCopy](std::string, std::optional<thumtoo::Size> sz) {
+        c->request_size(uri, [pathCopy](std::string, thumtoo::SizeReply reply) {
             // Always emit so the host clears m_sizeProbeScheduled and can
             // advance Gallery size-resolve (failed size must not stick forever).
-            if (!sz) {
+            if (!reply.size) {
                 emit bridge()->sizeReady(pathCopy, QSize());
                 return;
             }
-            emit bridge()->sizeReady(pathCopy, QSize(sz->width, sz->height));
+            // Size probe carries cache-only LQIP when already backfilled so the
+            // first open can show a placeholder before soft/full arrive.
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+            if (reply.lqip && !reply.lqip->empty() && !ImageCache::has(pathCopy)) {
+                const QImage lqip = qimageFromLqipBlob(*reply.lqip);
+                if (!lqip.isNull()) {
+                    ImageCache::put(pathCopy, lqip);
+                }
+            }
+#endif
+            emit bridge()->sizeReady(
+                pathCopy, QSize(reply.size->width, reply.size->height));
         });
     });
 #else
@@ -1635,7 +1657,7 @@ void preparePaths(const QStringList &paths)
         return;
     }
     // Size probes only; do not encode ladders for the whole session here.
-    c->prepare_paths(fsPaths, [plainPaths](std::string uri, std::optional<thumtoo::Size> sz) {
+    c->prepare_paths(fsPaths, [plainPaths](std::string uri, thumtoo::SizeReply reply) {
         QString path;
         for (const QString &p : plainPaths) {
             if (toThumtooUri(p) == uri) {
@@ -1646,9 +1668,18 @@ void preparePaths(const QStringList &paths)
         if (path.isEmpty()) {
             return;
         }
-        if (sz) {
-            emit bridge()->sizeReady(path, QSize(sz->width, sz->height));
+        if (!reply.size) {
+            return;
         }
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+        if (reply.lqip && !reply.lqip->empty() && !ImageCache::has(path)) {
+            const QImage lqip = qimageFromLqipBlob(*reply.lqip);
+            if (!lqip.isNull()) {
+                ImageCache::put(path, lqip);
+            }
+        }
+#endif
+        emit bridge()->sizeReady(path, QSize(reply.size->width, reply.size->height));
     });
 #else
     Q_UNUSED(paths);

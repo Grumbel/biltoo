@@ -2,6 +2,28 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-793-size-reply-lqip.** Consume thumtoo SizeReply LQIP on size probe.
+Prior: **792**. Requires **thumtoo-200**.
+
+### Change
+- scheduleProbe / prepare_paths use SizeReply; put LQIP into ImageCache when present
+- Open can show size + LQIP before soft/full
+
+### Apply
+```bash
+git pull /path/to/biltoo-793-size-reply-lqip.bundle HEAD
+# with thumtoo tip 200+
+```
+
+### Done criteria
+- [x] Bundle **793**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-792-slideshow-single-image.** Allow slideshow with one image.
 Prior: **791**.
 
