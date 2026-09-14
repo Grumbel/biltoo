@@ -371,7 +371,9 @@ QImage loadWithVips(const QString &path, int maxEdge)
         }
     }
 
-    // AUDIT M18: match Qt QImageReader::setAutoTransform — honour EXIF orientation.
+    // EXIF autorot: primary contract lives in *thumtoo* (probe size + ladder/tiles).
+    // This path is the no-thumtoo / direct-file fallback only — do not invent a
+    // second policy; keep the same vips_autorot semantics as thumtoo-207.
     VipsImage *rotated = nullptr;
     if (vips_autorot(in, &rotated, nullptr) == 0 && rotated) {
         g_object_unref(in);

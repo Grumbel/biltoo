@@ -2,6 +2,27 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-864-exif-owned-by-thumtoo-note.** Document EXIF autorot ownership (thumtoo-207).
+Prior: **863**.
+
+Decode orientation is **thumtoo’s** contract (display size + upright pixels).
+`ImageLoader` keeps matching `vips_autorot` only as no-thumtoo fallback.
+
+Related: `thumtoo-207-exif-autorot-display-size.bundle`
+
+### Apply
+```bash
+git pull /path/to/biltoo-864-exif-owned-by-thumtoo-note.bundle HEAD
+# and for thumtoo:
+git pull /path/to/thumtoo-207-exif-autorot-display-size.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-863-slideshow-first-frame-orient.** Sync soft ContentXform on phase arm; reject aspect-mismatched atlas.
 Prior: **862**.
 
