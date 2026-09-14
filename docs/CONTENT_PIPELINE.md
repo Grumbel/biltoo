@@ -76,6 +76,14 @@ appearance under different ids. See [IDENTITY.md](../IDENTITY.md),
 
 **Full contract:** [CROP_MODE.md](CROP_MODE.md).
 
+Critical Apply rule: if enter installed FullSource, soft crop attach must
+`clearDecodedPixels()` first — otherwise `setPreviewImage` is a no-op and the
+filmstrip receives a full-frame override.
+
+## Crop
+
+**Full contract:** [CROP_MODE.md](CROP_MODE.md).
+
 
 Entering crop loads the full frame with content flips/turns only (no crop bake).
 `installFullImageForCrop` uses the same host rematerialize / attach path; multi-MP

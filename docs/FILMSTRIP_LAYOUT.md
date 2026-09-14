@@ -166,3 +166,19 @@ Crop Apply paints correct thumb → ladder/job installs full-path decode → cro
 `ThumbDecodeEdgeRole` so the quality watchdog and visible loader continue until
 a real soft/host sample arrives. Upscaling LQIP to the target edge used to mark
 cells as settled while still blurry on tiny filmstrips.
+
+
+## Session appearance / crop overrides
+
+Crop and orient bakes are keyed by **SessionImageId**, not path.
+
+1. `sessionCropApplied` → `setSessionImageOverride(id, path, image, fromCropApply=true)`
+   - stores override, sets **crop sticky**, installs icon, `viewport()->update()`
+2. `sessionAppearanceChanged` → `fromCropApply=false`
+   - **no-op** while sticky (must not replace crop with full-frame soft)
+3. **Paint** uses `resolvedThumbPixmap(row)`: override first, else path thumb
+4. `scheduleVisibleThumbnailLoads` applies overrides **before** the settled-edge skip
+5. Never put filmstrip icons into `ImageCache` (poisoned host for Apply)
+
+Override image on crop Apply must be the **crop bake** pixel size, not the full
+frame (see CROP_MODE.md — clear FullSource before SoftPreview attach).

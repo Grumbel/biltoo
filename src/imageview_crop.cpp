@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+// Crop enter/apply/leave: docs/CROP_MODE.md (SessionImageId store, full-frame
+// draft, clear FullSource before soft crop attach, filmstrip bake emit).
+
 #include "imageview.h"
 #include "imagecache.h"
 #include "thumtoocache.h"

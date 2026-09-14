@@ -3451,6 +3451,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     if (!item) {
         return;
     }
+    // docs/CROP_MODE.md: during crop draft, never layoutSize(file, want-with-crop).
     // DOMAIN.md ownership (Image mode):
     //   View matrix owns framing (fit / zoom / pan).
     //   Object keeps rotation and flips; this helper must never clear them.

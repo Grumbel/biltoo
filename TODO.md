@@ -2,6 +2,34 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-893-crop-docs-tests.** Crop/filmstrip contracts documented + unit tests.
+Prior: **892** (mostly working).
+
+### Docs
+- `docs/CROP_MODE.md` — full enter/apply/repeated-crop/filmstrip contract + pitfalls
+- `docs/FILMSTRIP_LAYOUT.md` — override / sticky / paint resolution
+- `docs/CONTENT_PIPELINE.md` — SoftPreview-after-FullSource rule
+
+### Tests
+- `tests/contentxform_test.cpp` — second-crop layoutSize orient-only, needsRematerialize
+- `tests/sessionappearance_crop_test.cpp` — scaleCropRect + materializeDisplay crop size
+
+### Apply
+```bash
+git pull /path/to/biltoo-893-crop-docs-tests.bundle HEAD
+```
+
+### Run tests
+```bash
+ctest -R 'contentxform|sessionappearance-crop' --output-on-failure
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-892-crop-apply-clear-pixels.** Crop Apply clears FullSource before soft crop attach.
 Prior: **891**.
 

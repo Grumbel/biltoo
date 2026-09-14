@@ -33,6 +33,9 @@ private slots:
     void equal_ignoresPlacement();
     void equal_detectsCrop();
     void fromState_roundTrip();
+    void needsRematerialize_fullToCrop();
+    void needsRematerialize_secondCropDifferentRect();
+    void layoutSize_secondCropIsNotPriorCropBox();
 };
 
 void ContentXformTest::normalizeTurns()
@@ -226,6 +229,46 @@ void ContentXformTest::fromState_roundTrip()
     QCOMPARE(out.contentQuarterTurns, 1);
     QCOMPARE(out.hasCrop, true);
     QCOMPARE(out.cropRect, QRect(1, 2, 3, 4));
+}
+
+
+void ContentXformTest::needsRematerialize_fullToCrop()
+{
+    ContentXform::Value full;
+    ContentXform::Value cropped;
+    cropped.hasCrop = true;
+    cropped.cropRect = QRect(10, 10, 100, 80);
+    cropped.cropSourceSize = QSize(400, 300);
+    // Soft full on screen, want crop → must rematerialize.
+    QVERIFY(ContentXform::needsRematerialize(full, cropped, 256, 256));
+}
+
+void ContentXformTest::needsRematerialize_secondCropDifferentRect()
+{
+    ContentXform::Value a;
+    a.hasCrop = true;
+    a.cropRect = QRect(0, 0, 200, 150);
+    a.cropSourceSize = QSize(4000, 3000);
+    ContentXform::Value b = a;
+    b.cropRect = QRect(50, 50, 200, 150);
+    QVERIFY(!ContentXform::equal(a, b));
+    QVERIFY(ContentXform::needsRematerialize(a, b, 200, 200));
+}
+
+void ContentXformTest::layoutSize_secondCropIsNotPriorCropBox()
+{
+    // After first crop, layout is the crop box. Re-enter crop uses orient-only
+    // want (hasCrop false) → full oriented size, never the prior crop box.
+    const QSize native(4000, 3000);
+    ContentXform::Value cropped;
+    cropped.hasCrop = true;
+    cropped.cropRect = QRect(100, 100, 500, 400);
+    cropped.cropSourceSize = native;
+    QCOMPARE(ContentXform::layoutSize(native, cropped), QSize(500, 400));
+
+    ContentXform::Value orientOnly;
+    orientOnly.quarterTurns = 0;
+    QCOMPARE(ContentXform::layoutSize(native, orientOnly), native);
 }
 
 QTEST_MAIN(ContentXformTest)
