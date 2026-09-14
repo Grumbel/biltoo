@@ -3,6 +3,8 @@
 
 #include "mainwindow_includes.h"
 #include <QtMath>
+#include <random>
+#include <algorithm>
 #include "thumtoocache.h"
 #include "projectfile.h"
 #include "archivepath.h"
@@ -666,9 +668,34 @@ bool MainWindow::sortModeNeedsImageProbe() const
     return m_sortMode == SortMode::Width
         || m_sortMode == SortMode::Height
         || m_sortMode == SortMode::PixelCount
+        || m_sortMode == SortMode::AspectRatio
         || m_sortMode == SortMode::MTime
         || m_sortMode == SortMode::FileSize;
 }
+
+bool MainWindow::sessionLooksLikePagedDocument(const QStringList &paths)
+{
+    if (paths.isEmpty()) {
+        return false;
+    }
+    int pages = 0;
+    for (const QString &path : paths) {
+        if (PagePath::isPageRef(path) || PagePath::isPdfImageRef(path)) {
+            ++pages;
+        }
+    }
+    // Majority: pure books + mixed dumps that are mostly pages.
+    return pages * 2 >= paths.size();
+}
+
+ImageView::LayoutMode MainWindow::initialGalleryLayoutForOpen() const
+{
+    if (sessionLooksLikePagedDocument(m_session.paths())) {
+        return ImageView::LayoutMode::Flow;
+    }
+    return m_galleryReturnLayout;
+}
+
 
 void MainWindow::sortFileListSync()
 {
@@ -741,6 +768,19 @@ void MainWindow::sortFileListSync()
             return pathLess(pathAt(ia), pathAt(ib));
         });
         break;
+    case SortMode::Shuffle: {
+        // Non-deterministic: new order each time this mode is applied.
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::shuffle(order.begin(), order.end(), gen);
+        break;
+    }
+    case SortMode::AspectRatio:
+        // Needs probes — should use background path; basename fallback here.
+        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
+            return nameLess(pathAt(ia), pathAt(ib));
+        });
+        break;
     case SortMode::Name:
     default:
         std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
@@ -805,6 +845,12 @@ QVector<int> MainWindow::computeSortOrderIndices(
         });
         return order;
     }
+    if (mode == SortMode::Shuffle) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::shuffle(order.begin(), order.end(), gen);
+        return order;
+    }
 
     if (mode == SortMode::MTime) {
         std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
@@ -838,6 +884,14 @@ QVector<int> MainWindow::computeSortOrderIndices(
             } else if (mode == SortMode::Height) {
                 if (sa.height() != sb.height()) {
                     return sa.height() < sb.height();
+                }
+            } else if (mode == SortMode::AspectRatio) {
+                const qreal ra = (sa.height() > 0)
+                    ? qreal(sa.width()) / qreal(sa.height()) : 0.0;
+                const qreal rb = (sb.height() > 0)
+                    ? qreal(sb.width()) / qreal(sb.height()) : 0.0;
+                if (!qFuzzyCompare(ra, rb)) {
+                    return ra < rb;
                 }
             } else { // PixelCount
                 const qint64 pa = qint64(sa.width()) * sa.height();
@@ -951,6 +1005,12 @@ void MainWindow::setSortMode(SortMode mode)
     if (m_sortPathAct) {
         m_sortPathAct->setChecked(mode == SortMode::Path);
     }
+    if (m_sortAspectAct) {
+        m_sortAspectAct->setChecked(mode == SortMode::AspectRatio);
+    }
+    if (m_sortShuffleAct) {
+        m_sortShuffleAct->setChecked(mode == SortMode::Shuffle);
+    }
     if (m_sortMTimeAct) {
         m_sortMTimeAct->setChecked(mode == SortMode::MTime);
     }
@@ -1051,6 +1111,17 @@ void MainWindow::sortByHeight()
 void MainWindow::sortByPixelCount()
 {
     setSortMode(SortMode::PixelCount);
+}
+
+void MainWindow::sortByAspectRatio()
+{
+    setSortMode(SortMode::AspectRatio);
+}
+
+void MainWindow::sortByShuffle()
+{
+    // Always re-apply: Shuffle is intentional non-deterministic.
+    setSortMode(SortMode::Shuffle);
 }
 
 void MainWindow::applyThumbnailVisibility()
@@ -1171,7 +1242,7 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         setExpandProgress(
             0, m_session.paths().size(),
             tr("Opening %n image(s)…", "", m_session.paths().size()));
-        enterGalleryMode(ImageView::LayoutMode::Masonry);
+        enterGalleryMode(initialGalleryLayoutForOpen());
         setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
         // Warm after size-resolve has registered pending probes + HUD.
         ThumtooCache::preparePaths(m_session.paths());
@@ -1305,7 +1376,7 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
         setExpandProgress(
             0, m_session.paths().size(),
             tr("Opening %n image(s)…", "", m_session.paths().size()));
-        enterGalleryMode(ImageView::LayoutMode::Masonry);
+        enterGalleryMode(initialGalleryLayoutForOpen());
         setCurrentIndex(newIndex, /*ensureGalleryVisible=*/true);
         updateNavigationActions();
         ThumtooCache::preparePaths(m_session.paths());
@@ -3692,7 +3763,7 @@ void MainWindow::enterProjectCanvasMode(
         }
     } else if (doc.mode == QLatin1String("gallery") || isGalleryMode()) {
         if (!isGalleryMode()) {
-            enterGalleryMode(ImageView::LayoutMode::Masonry);
+            enterGalleryMode(initialGalleryLayoutForOpen());
         }
         if (m_imageView) {
             m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());

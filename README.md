@@ -25,7 +25,7 @@
 - Open files, directories, or **archives** (zip, tar variants, 7z, rar) via File dialogs, drag-and-drop, or the command line
 - **File → Open** replaces the session; **File → Add** and drops **append**
 - **Recent Sessions** and **Recent Projects** menus
-- Sort by name, **path** (full path — better for multi-folder opens), date, size, width, height, or pixel count
+- Sort by name, **path**, **aspect ratio**, **shuffle**, date, size, width, height, or pixel count
 - Thumbnail bar with per-mode visibility defaults, edge placement, labels, optional square crop
 
 ### Image mode
@@ -48,6 +48,7 @@
 - Layouts: side-by-side, vertical strip, grid, masonry (columns or rows), masonry fill
 - Opening a large set (archive/dir) **waits for image sizes** before packing tiles;
   centre HUD shows probe progress (soft tile paint is still a later milestone)
+- PDF / EPUB / DjVu page sessions open Gallery in **Flow** by default (reading order)
 - Multi-select; double-click or Enter opens Image mode
 - Return restores the previous Gallery viewport
 - Incremental re-packs (new tiles, decode size) keep the approximate scroll position

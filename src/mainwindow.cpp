@@ -2017,7 +2017,7 @@ void MainWindow::showPreferences()
     {
         const int si = dlg.sortModeIndex();
         SortMode mode = SortMode::Name;
-        if (si >= 0 && si <= 6) {
+        if (si >= 0 && si <= 8) {
             mode = static_cast<SortMode>(si);
         }
         setSortMode(mode);
@@ -2668,6 +2668,10 @@ void MainWindow::readSettings()
         m_sortMode = SortMode::PixelCount;
     } else if (sort == QLatin1String("path")) {
         m_sortMode = SortMode::Path;
+    } else if (sort == QLatin1String("aspect") || sort == QLatin1String("aspectratio")) {
+        m_sortMode = SortMode::AspectRatio;
+    } else if (sort == QLatin1String("shuffle") || sort == QLatin1String("random")) {
+        m_sortMode = SortMode::Shuffle;
     } else {
         m_sortMode = SortMode::Name;
     }
@@ -2924,6 +2928,8 @@ void MainWindow::writeSettings()
     case SortMode::Height: sortKey = QStringLiteral("height"); break;
     case SortMode::PixelCount: sortKey = QStringLiteral("pixels"); break;
     case SortMode::Path: sortKey = QStringLiteral("path"); break;
+    case SortMode::AspectRatio: sortKey = QStringLiteral("aspect"); break;
+    case SortMode::Shuffle: sortKey = QStringLiteral("shuffle"); break;
     case SortMode::Name:
     default: sortKey = QStringLiteral("name"); break;
     }

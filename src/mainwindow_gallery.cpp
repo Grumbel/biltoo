@@ -381,7 +381,7 @@ void MainWindow::applyCliViewMode(const QString &mode)
         return;
     }
     if (m == QLatin1String("gallery")) {
-        enterGalleryMode(ImageView::LayoutMode::Masonry);
+        enterGalleryMode(initialGalleryLayoutForOpen());
         return;
     }
     if (m == QLatin1String("workspace") || m == QLatin1String("work")) {

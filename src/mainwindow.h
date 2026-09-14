@@ -64,7 +64,9 @@ public:
         Width = 3,
         Height = 4,
         PixelCount = 5,
-        Path = 6
+        Path = 6,
+        AspectRatio = 7,
+        Shuffle = 8
     };
 
     explicit MainWindow(QWidget *parent = nullptr);
@@ -281,6 +283,8 @@ private slots:
     void sortByWidth();
     void sortByHeight();
     void sortByPixelCount();
+    void sortByAspectRatio();
+    void sortByShuffle();
     void toggleToolBar();
     void toggleThumbnailBar();
     void about();
@@ -389,6 +393,10 @@ private:
                                  const QVector<SessionImageId> &newIds,
                                  const std::function<void()> &onDone);
     bool sortModeNeedsImageProbe() const;
+    /** Majority of paths are PDF/EPUB/DjVu page (or pdfimage) refs. */
+    static bool sessionLooksLikePagedDocument(const QStringList &paths);
+    /** Flow for paged documents; otherwise last Gallery layout preference. */
+    ImageView::LayoutMode initialGalleryLayoutForOpen() const;
     void readSettings();
     void writeSettings();
     void rememberSessionHistory(const QStringList &paths);
@@ -633,6 +641,8 @@ private:
     QAction *m_raiseAct = nullptr;
     QAction *m_sortNameAct = nullptr;
     QAction *m_sortPathAct = nullptr;
+    QAction *m_sortAspectAct = nullptr;
+    QAction *m_sortShuffleAct = nullptr;
     QAction *m_sortMTimeAct = nullptr;
     QAction *m_sortFileSizeAct = nullptr;
     QAction *m_sortWidthAct = nullptr;

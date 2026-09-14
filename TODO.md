@@ -2,6 +2,27 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-781-doc-flow-aspect-shuffle.** Paged docs → Flow; sort Aspect + Shuffle.
+Prior: **780**.
+
+### Changes
+- PDF/EPUB/DjVu page sessions open Gallery in **Flow** (`sessionLooksLikePagedDocument`)
+- Sort: **Aspect ratio** (w/h, size probe), **Shuffle** (new random order each apply)
+
+### Apply
+```bash
+git pull /path/to/biltoo-781-doc-flow-aspect-shuffle.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **781**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-780-slideshow-climb-past-1024.** Slideshow/PathRaster climb past PreferCache 1024 plateau.
 Prior: **779**.
 

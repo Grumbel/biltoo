@@ -616,6 +616,20 @@ void MainWindow::createActions()
         tr("Sort by full path (groups multi-folder / multi-archive opens)"));
     connect(m_sortPathAct, &QAction::triggered, this, &MainWindow::sortByPath);
 
+    m_sortAspectAct = new QAction(tr("Sort by &Aspect Ratio"), this);
+    m_sortAspectAct->setCheckable(true);
+    m_sortAspectAct->setIcon(themeIcon(QStringLiteral("object-flip-horizontal"), QStyle::SP_ArrowRight));
+    m_sortAspectAct->setStatusTip(
+        tr("Sort by width÷height (portrait first; needs size probe)"));
+    connect(m_sortAspectAct, &QAction::triggered, this, &MainWindow::sortByAspectRatio);
+
+    m_sortShuffleAct = new QAction(tr("S&huffle"), this);
+    m_sortShuffleAct->setCheckable(true);
+    m_sortShuffleAct->setIcon(themeIcon(QStringLiteral("media-playlist-shuffle"), QStyle::SP_BrowserReload));
+    m_sortShuffleAct->setStatusTip(
+        tr("Random order (new shuffle each time this is chosen)"));
+    connect(m_sortShuffleAct, &QAction::triggered, this, &MainWindow::sortByShuffle);
+
     m_sortMTimeAct = new QAction(tr("Sort by &Date"), this);
     m_sortMTimeAct->setCheckable(true);
     m_sortMTimeAct->setIcon(themeIcon(QStringLiteral("view-calendar"), QStyle::SP_FileDialogDetailedView));
@@ -649,6 +663,8 @@ void MainWindow::createActions()
     m_sortGroup = new QActionGroup(this);
     m_sortGroup->addAction(m_sortNameAct);
     m_sortGroup->addAction(m_sortPathAct);
+    m_sortGroup->addAction(m_sortAspectAct);
+    m_sortGroup->addAction(m_sortShuffleAct);
     m_sortGroup->addAction(m_sortMTimeAct);
     m_sortGroup->addAction(m_sortFileSizeAct);
     m_sortGroup->addAction(m_sortWidthAct);
@@ -834,6 +850,8 @@ void MainWindow::createMenus()
     auto *sortMenu = m_editMenu->addMenu(tr("&Sort Session"));
     sortMenu->addAction(m_sortNameAct);
     sortMenu->addAction(m_sortPathAct);
+    sortMenu->addAction(m_sortAspectAct);
+    sortMenu->addAction(m_sortShuffleAct);
     sortMenu->addAction(m_sortMTimeAct);
     sortMenu->addAction(m_sortFileSizeAct);
     sortMenu->addAction(m_sortWidthAct);
@@ -908,6 +926,8 @@ void MainWindow::createMenus()
     auto *gallerySortMenu = galleryMenu->addMenu(tr("&Sort Session"));
     gallerySortMenu->addAction(m_sortNameAct);
     gallerySortMenu->addAction(m_sortPathAct);
+    gallerySortMenu->addAction(m_sortAspectAct);
+    gallerySortMenu->addAction(m_sortShuffleAct);
     gallerySortMenu->addAction(m_sortMTimeAct);
     gallerySortMenu->addAction(m_sortFileSizeAct);
     gallerySortMenu->addAction(m_sortWidthAct);
@@ -994,6 +1014,8 @@ void MainWindow::createToolBar()
         auto *sortPopup = new QMenu(sortBtn);
         sortPopup->addAction(m_sortNameAct);
         sortPopup->addAction(m_sortPathAct);
+        sortPopup->addAction(m_sortAspectAct);
+        sortPopup->addAction(m_sortShuffleAct);
         sortPopup->addAction(m_sortMTimeAct);
         sortPopup->addAction(m_sortFileSizeAct);
         sortPopup->addAction(m_sortWidthAct);
