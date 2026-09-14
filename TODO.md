@@ -2,6 +2,36 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-865-slideshow-no-double-orient.** Slideshow phase: sync ≤512 orient stand-in; upgrade from unoriented host only.
+Prior: **864**.
+
+### Root cause of remaining glitch
+1. Phase arm oriented soft, then `scheduleSlideshowPhaseBufferUpgrade(path, m_ssFromImage)`
+   **re-materialized** the already-oriented buffer → double turns/flips.
+2. Samples >512 skipped GUI orient → first frames waited on the pool.
+3. Underlay item could flash before pure phase hid it.
+
+### Fix
+- Always GUI-orient a ≤512 stand-in when appearance is present (crop stripped)
+- Phase upgrades pass **ImageCache host** (unoriented), never the phase buffer
+- SoftPreview materialize strips crop (orient only)
+- `setSlideshowProgress(true)` → `hideSlideshowUnderlay()` immediately
+
+### Apply
+```bash
+git pull /path/to/biltoo-865-slideshow-no-double-orient.bundle HEAD
+```
+
+### Verify
+- [ ] Start slideshow on rotated images: first frame upright, no stretch
+- [ ] Hammer ←/→: no glitch burst
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-864-exif-owned-by-thumtoo-note.** Document EXIF autorot ownership (thumtoo-207).
 Prior: **863**.
 

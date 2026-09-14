@@ -756,6 +756,8 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     m_slideshowProgressActive = active;
     m_slideshowProgressIntervalMs = active ? qMax(0, intervalMs) : 0;
     if (active) {
+        // Pure phase owns the viewport — never flash the underlay item.
+        hideSlideshowUnderlay();
         m_slideshowProgressBaseMs = 0;
         m_slideshowProgressClockPaused = false;
         m_slideshowProgressElapsed.start();
@@ -1491,8 +1493,13 @@ void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const Q
             }
             QImage out = capped;
             if (hasApp) {
+                WorkspaceItemState orientOnly = appState;
+                orientOnly.hasCrop = false;
+                orientOnly.cropRect = {};
+                orientOnly.cropSourceSize = {};
+                orientOnly.cropRotation = 0.0;
                 const QImage oriented = SessionAppearance::materializeDisplay(
-                    capped, appState, SessionAppearance::PixelKind::SoftPreview);
+                    capped, orientOnly, SessionAppearance::PixelKind::SoftPreview);
                 if (!oriented.isNull()) {
                     out = oriented;
                 }
@@ -1988,16 +1995,26 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
         m_ssFromImage = ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(fromPath), slideshowTargetEdge());
     }
-    // First paint must not wait on the pool: orient soft (≤ GUI budget) now so
-    // dest aspect and pixels agree. Multi-MP still goes async via phase upgrade.
+    // Always orient a ≤512 stand-in on the GUI when appearance is present so
+    // the first paint is correct. Larger samples are clamped for this pass;
+    // sharper unoriented host climbs via scheduleSlideshowPhaseBufferUpgrade
+    // (must pass *host* raw — never re-materialize an oriented phase buffer).
     if (!fromPath.isEmpty() && !m_ssFromImage.isNull()) {
         WorkspaceItemState app;
         if (snapshotSlideshowContentAppearance(fromPath, &app)
-            && SessionAppearance::hasContentAppearance(app)
-            && ImageCache::longEdge(m_ssFromImage)
-                   <= ContentXform::kGuiMaterializeMaxEdge) {
+            && SessionAppearance::hasContentAppearance(app)) {
+            WorkspaceItemState orientOnly = app;
+            orientOnly.hasCrop = false;
+            orientOnly.cropRect = {};
+            orientOnly.cropSourceSize = {};
+            orientOnly.cropRotation = 0.0;
+            QImage soft = m_ssFromImage;
+            if (ImageCache::longEdge(soft) > ContentXform::kGuiMaterializeMaxEdge) {
+                soft = ImageCache::clampToMaxEdge(
+                    soft, ContentXform::kGuiMaterializeMaxEdge);
+            }
             const QImage oriented = SessionAppearance::materializeDisplay(
-                m_ssFromImage, app, SessionAppearance::PixelKind::SoftPreview);
+                soft, orientOnly, SessionAppearance::PixelKind::SoftPreview);
             if (!oriented.isNull()) {
                 m_ssFromImage = oriented;
                 m_ssFromContentApplied = true;
@@ -2047,9 +2064,16 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
     // paintMotionCover falls back to drawImage until the atlas is ready.
     requestDwellAtlasRebuild();
     schedulePhaseZoomBlur(fromPath, m_ssFromImage);
-    // Orient if durable appearance requires it (async, does not block this stack).
+    // Sharper climb from *unoriented* host only. Passing the phase buffer here
+    // re-materialized an already-oriented sample (double turns/flips → glitch).
     if (!fromPath.isEmpty()) {
-        scheduleSlideshowPhaseBufferUpgrade(fromPath, m_ssFromImage);
+        QImage host = ImageCache::get(fromPath);
+        if (host.isNull()) {
+            host = slideshowSampleUnoriented(fromPath);
+        }
+        if (!host.isNull()) {
+            scheduleSlideshowPhaseBufferUpgrade(fromPath, host);
+        }
     }
 }
 
@@ -2111,11 +2135,19 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     if (!m_ssToImage.isNull()) {
         WorkspaceItemState app;
         if (snapshotSlideshowContentAppearance(toPath, &app)
-            && SessionAppearance::hasContentAppearance(app)
-            && ImageCache::longEdge(m_ssToImage)
-                   <= ContentXform::kGuiMaterializeMaxEdge) {
+            && SessionAppearance::hasContentAppearance(app)) {
+            WorkspaceItemState orientOnly = app;
+            orientOnly.hasCrop = false;
+            orientOnly.cropRect = {};
+            orientOnly.cropSourceSize = {};
+            orientOnly.cropRotation = 0.0;
+            QImage soft = m_ssToImage;
+            if (ImageCache::longEdge(soft) > ContentXform::kGuiMaterializeMaxEdge) {
+                soft = ImageCache::clampToMaxEdge(
+                    soft, ContentXform::kGuiMaterializeMaxEdge);
+            }
             const QImage oriented = SessionAppearance::materializeDisplay(
-                m_ssToImage, app, SessionAppearance::PixelKind::SoftPreview);
+                soft, orientOnly, SessionAppearance::PixelKind::SoftPreview);
             if (!oriented.isNull()) {
                 m_ssToImage = oriented;
                 m_ssToContentApplied = true;
@@ -2138,7 +2170,15 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     m_ssToAtlas = QPixmap();
     requestToPhaseAtlasRebuild();
     if (!m_ssToImage.isNull()) {
-        scheduleSlideshowPhaseBufferUpgrade(toPath, m_ssToImage);
+        {
+            QImage host = ImageCache::get(toPath);
+            if (host.isNull()) {
+                host = slideshowSampleUnoriented(toPath);
+            }
+            if (!host.isNull()) {
+                scheduleSlideshowPhaseBufferUpgrade(toPath, host);
+            }
+        }
     }
     qCDebug(lcSlideshow).nospace()
         << "[slideshow] phase-to "
