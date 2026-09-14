@@ -2,6 +2,27 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-808-filmstrip-pad-2x.** Filmstrip absolute pads doubled (cellPad 8, flowPad 4).
+Prior: **807**.
+
+### Change
+- `cellPad` 4 → **8**, `flowPad` 2 → **4** (still absolute; inter-image ≈ cross margin)
+- Docs: FILMSTRIP_LAYOUT.md
+
+### Apply
+```bash
+git pull /path/to/biltoo-808-filmstrip-pad-2x.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **808**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-807-stuck-weak-no-lqip-assert.** Do not hard-assert StuckWeak while host is still LQIP/blank.
 Prior: **806**.
 

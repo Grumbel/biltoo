@@ -70,14 +70,14 @@ int ThumbnailDelegate::cellPad() const
     // Cross-axis margin (bar edge ↔ image). Fixed logical pixels — not a
     // fraction of thumbSize or of the image aspect, so landscape and portrait
     // get the same gap against the strip edge.
-    return 4;
+    return 8;
 }
 
 int ThumbnailDelegate::flowPad() const
 {
     // Flow-axis pad per side (between images). Fixed half of cellPad so
     // adjacent cells contribute ~cellPad of empty space, independent of aspect.
-    return 2;
+    return 4;
 }
 
 int ThumbnailDelegate::labelBandHeightForFont(const QFont &font)

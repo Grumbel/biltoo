@@ -76,9 +76,9 @@ Every install path (pool worker, session override, ladder) must call
 
 ## Pad / spacing
 
-- `cellPad()`: cross-axis margin (`~thumbSize/24`, clamped). Top/bottom on a
+- `cellPad()`: cross-axis margin — **8** logical px (absolute). Top/bottom on a
   horizontal bar; left/right on vertical.
-- `flowPad()`: `cellPad()/2` on each flow-axis side of the cell.
+- `flowPad()`: **4** logical px (`cellPad/2`) on each flow-axis side of the cell.
 - Item spacing: `cellPad - 2·flowPad` (0 or 1). Together with the two flow pads,
   the empty gap between adjacent image contents equals `cellPad` — same as the
   cross-axis margin against the bar edge.
