@@ -2,6 +2,48 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-873-appearance-ownership-docs-tests.** Document appearance ownership; filmstrip path-XDG off for bound rows; layoutSize crop tests.
+Prior: **872**.
+
+### Context
+Crop stretch and filmstrip “crop then overwrite” were addressed across 848–872
+for geometry/target/scale. This tip locks the **ownership contract** in docs and
+tests, and closes the remaining filmstrip path-authority hole on tip 872.
+
+### Code
+- Filmstrip `makeThumbnail`: no path-keyed Thumtoo XDG bake when any
+  `SessionImageId` is present (bound rows get appearance only via id overrides).
+- Async weak/full completion never installs over id/path overrides; always
+  clear `m_thumbLoadScheduled` on the GUI thread when skipping.
+
+### Docs
+- `docs/CONTENT_PIPELINE.md` — layoutSize rules, SessionAppearanceStore ownership table
+- `docs/FILMSTRIP_LAYOUT.md` — session appearance section
+- `IDENTITY.md` — appearance ownership standing table
+- `contentxform.h` — layoutSize contract comment
+
+### Tests (`tests/contentxform_test.cpp`)
+- layoutSize: identity, odd/even turns, crop box, scale from cropSourceSize,
+  crop+odd turn, empty crop fallback, invalid native
+- equal detects crop; needsRematerialize on crop want; fromState round-trip
+
+### Apply
+```bash
+git pull /path/to/biltoo-873-appearance-ownership-docs-tests.bundle HEAD
+```
+
+### Verify
+- [ ] `ctest -R contentxform` green
+- [ ] Crop Apply: filmstrip stays cropped (no flash to full/path)
+- [ ] Two session rows same path, crop one: other row unchanged
+- [ ] Image mode crop aspect matches crop rect (no stretch)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-872-crop-verified-target-scale-filmstrip.** Verified cropTargetItem + scale identity + filmstrip emit.
 Prior: **871**.
 

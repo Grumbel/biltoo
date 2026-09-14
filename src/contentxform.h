@@ -42,7 +42,12 @@ int normalizeQuarterTurns(int quarterTurns);
 bool swapsAspect(const Value &x);
 bool equal(const Value &a, const Value &b);
 
-/** File-native size → layout size after content turns and crop. */
+/**
+ * File-native size → display intrinsic after content turns and crop.
+ * Orient full frame, then crop box in post-orient space (matches
+ * materializeDisplay). Cropped want must not return full-frame size
+ * (that stretched pixels into the wrong aspect). See CONTENT_PIPELINE.md.
+ */
 QSize layoutSize(const QSize &native, const Value &x);
 QSize layoutSize(const QSize &native, const WorkspaceItemState &state);
 

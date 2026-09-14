@@ -1126,33 +1126,43 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
     if (image.isNull()) {
         return {};
     }
-    // Durable content appearance (XDG state) — filmstrip owns its own bake.
-    // Do not rely on Gallery soft install emitting overrides (that coupled
-    // selection to the strip). Session-id overrides still win in the scheduler.
-    ThumtooCache::StoredContentAppearance stored;
-    if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-        WorkspaceItemState st;
-        st.contentHFlip = stored.contentHFlip;
-        st.contentVFlip = stored.contentVFlip;
-        st.contentQuarterTurns = stored.contentQuarterTurns;
-        st.hasCrop = stored.hasCrop;
-        st.cropRect = stored.cropRect;
-        st.cropSourceSize = stored.cropSourceSize;
-        st.cropRotation = stored.cropRotation;
-        if (stored.hasGrade) {
-            st.colorAdjust.brightness = stored.gradeBrightness;
-            st.colorAdjust.contrast =
-                stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
-            st.colorAdjust.saturation =
-                stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
-            st.colorAdjust.hue = stored.gradeHue;
-            st.colorAdjust.gamma = stored.gradeGamma <= 0
-                ? 1.0
-                : (stored.gradeGamma / 100.0);
-            st.colorAdjust.invert = stored.gradeInvert;
+    // Path-keyed XDG appearance is only a hint for *unbound* rows. When the
+    // strip has SessionImageIds, appearance is owned by SessionAppearanceStore
+    // and arrives via id overrides — never bake path state onto a bound row
+    // (last crop on a path would leak to every duplicate / overwrite id crop).
+    bool anySessionId = false;
+    for (SessionImageId id : m_sessionIds) {
+        if (id != kInvalidSessionImageId) {
+            anySessionId = true;
+            break;
         }
-        image = SessionAppearance::applyContentToImage(
-            image, st, SessionAppearance::PixelKind::SoftPreview);
+    }
+    if (!anySessionId) {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+            WorkspaceItemState st;
+            st.contentHFlip = stored.contentHFlip;
+            st.contentVFlip = stored.contentVFlip;
+            st.contentQuarterTurns = stored.contentQuarterTurns;
+            st.hasCrop = stored.hasCrop;
+            st.cropRect = stored.cropRect;
+            st.cropSourceSize = stored.cropSourceSize;
+            st.cropRotation = stored.cropRotation;
+            if (stored.hasGrade) {
+                st.colorAdjust.brightness = stored.gradeBrightness;
+                st.colorAdjust.contrast =
+                    stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+                st.colorAdjust.saturation =
+                    stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
+                st.colorAdjust.hue = stored.gradeHue;
+                st.colorAdjust.gamma = stored.gradeGamma <= 0
+                    ? 1.0
+                    : (stored.gradeGamma / 100.0);
+                st.colorAdjust.invert = stored.gradeInvert;
+            }
+            image = SessionAppearance::applyContentToImage(
+                image, st, SessionAppearance::PixelKind::SoftPreview);
+        }
     }
     return prepareThumbnailFromImage(image, maxSize);
 }
@@ -1612,6 +1622,20 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                         return;
                     }
                     host->m_thumbLoadScheduled.remove(i);
+                    // Session-id (or path) override already owns this cell — never
+                    // paint a weaker path decode over a crop/appearance override.
+                    if (i < host->m_sessionIds.size()) {
+                        const SessionImageId rowId = host->m_sessionIds.at(i);
+                        if (rowId != kInvalidSessionImageId
+                            && host->m_sessionIdImageOverrides.contains(rowId)) {
+                            emit host->loadsChanged();
+                            return;
+                        }
+                    }
+                    if (host->m_sessionImageOverrides.contains(path)) {
+                        emit host->loadsChanged();
+                        return;
+                    }
                     // Paint LQIP immediately so the cell is not blank while soft loads.
                     if (weakPlaceholder && !image.isNull()) {
                         if (QListWidgetItem *it = host->item(i)) {
@@ -1649,21 +1673,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             }
             // A crop may have landed while this job ran — do not clobber it.
             // Path override only protects unbound rows; bound rows use id map.
-            if (i < bar->m_sessionIds.size()) {
-                const SessionImageId rowId = bar->m_sessionIds.at(i);
-                if (rowId != kInvalidSessionImageId) {
-                    if (bar->m_sessionIdImageOverrides.contains(rowId)) {
-                        return;
-                    }
-                } else if (bar->m_sessionImageOverrides.contains(path)) {
-                    return;
-                }
-            } else if (bar->m_sessionImageOverrides.contains(path)) {
-                return;
-            }
-            // Re-check generation + path on the GUI thread: cancelPendingLoads /
-            // setFiles may have rebuilt the list between pool completion and
-            // this queued call (History session switch showed old thumbs).
+            // Always clear scheduled on the GUI thread so the row is not stuck.
             QMetaObject::invokeMethod(bar, [guard, i, path, gen, image]() {
                 ThumbnailBar *const host = guard.data();
                 if (!host || gen != host->m_generation.load()) {
@@ -1674,6 +1684,20 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 }
                 host->m_thumbLoadScheduled.remove(i);
                 host->m_thumbFailed.remove(i);
+                if (i < host->m_sessionIds.size()) {
+                    const SessionImageId rowId = host->m_sessionIds.at(i);
+                    if (rowId != kInvalidSessionImageId
+                        && host->m_sessionIdImageOverrides.contains(rowId)) {
+                        emit host->loadsChanged();
+                        host->scheduleVisibleThumbnailLoads();
+                        return;
+                    }
+                }
+                if (host->m_sessionImageOverrides.contains(path)) {
+                    emit host->loadsChanged();
+                    host->scheduleVisibleThumbnailLoads();
+                    return;
+                }
                 host->setThumbnailIcon(i, image);
                 emit host->loadsChanged();
                 // Free slot may allow more visible rows to start.

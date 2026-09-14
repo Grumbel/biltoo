@@ -499,6 +499,20 @@ appearance map / canvas bind that could still hold old ids.
 **Do not add** new path-keyed identity, appearance, or selection APIs.
 
 
+### Appearance ownership (standing, tip 873+)
+
+| Authority | Key | Notes |
+|-----------|-----|-------|
+| `SessionAppearanceStore` | `SessionImageId` | Sole live content appearance for bound rows |
+| `SessionDocument` | index | Paths + ids only — no crop/flip/turns |
+| Filmstrip id override | `SessionImageId` | Derived; never path-wide when ids present |
+| Thumtoo path XDG appearance | path | Unbound / first-open hint only |
+
+Do not bake path-keyed XDG into filmstrip cells that have session ids.
+Do not use path as the write key for crop after Apply.
+
+
+
 ---
 
 ## 15. Content id vs variant id (design note)

@@ -127,3 +127,32 @@ Dragging the filmstrip dock/splitter changes `thumbSize` via `resizeEvent` →
 cells, minimum 16 rows). Concurrent pool jobs default to **24**
 (`BILTOO_FILMSTRIP_THUMB_LOADS`, 1–64). Soft misses wait on `ladderReady` via
 `m_thumbAwaitLadder` (not permanent fail).
+
+## Session appearance (crop / flip / turns)
+
+Filmstrip does **not** own content appearance. It only displays a derived thumb.
+
+| Situation | Behaviour |
+|-----------|-----------|
+| Row has `SessionImageId` + id override | Paint override; **do not** path-decode over it |
+| Row has `SessionImageId`, no override yet | Decode **raw** path pixels only (no path-keyed XDG bake) |
+| No session ids on the strip (unbound) | Optional path-keyed Thumtoo XDG appearance as first-open hint |
+
+### Rules
+
+1. **`setSessionImageOverride(SessionImageId, path, image)`** is the only way
+   bound crops/rotations reach the strip (from `sessionCropApplied` /
+   `sessionAppearanceChanged` with id).
+2. **`makeThumbnail(path)`** must not apply path-keyed XDG appearance when any
+   row has a valid `SessionImageId` — that leaked one path’s crop onto every
+   duplicate and overwrote id overrides after async climb.
+3. Async job completion (including weak LQIP) must **skip install** when an
+   id or path override already owns the cell; always clear `m_thumbLoadScheduled`
+   on the GUI thread so the row is not stuck.
+4. Path-only `setSessionImageOverride(path, image)` is legacy for unbound rows;
+   ignored when the strip has session ids.
+
+### Bug class avoided
+
+Crop Apply paints correct thumb → ladder/job installs full-path decode → crop
+“vanishes”. Root: path authority competing with id override.
