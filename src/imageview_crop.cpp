@@ -442,7 +442,8 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
 }
 
 void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
-                                        const WorkspaceItemState *app, bool haveApp)
+                                        const WorkspaceItemState *app, bool haveApp,
+                                        bool unorientedSource)
 {
     if (!item || full.isNull()) {
         return;
@@ -458,8 +459,8 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
             rememberImageSize(path, full.size());
         }
     }
-    // Host cache holds raw full frame for materialize / async rematerialize.
-    if (!path.isEmpty()) {
+    // Host cache is undecoded-appearance *source* only (never crop-baked display).
+    if (!path.isEmpty() && unorientedSource && sampleCoversNativeLogical(path, full)) {
         ImageCache::put(path, full);
     }
 
@@ -473,25 +474,27 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
         contentOnly.cropRotation = 0.0;
     }
 
-    // Always axis-aligned while cropping (placement was stashed in setCropMode).
     item->setItemRotation(0.0);
     item->setItemShear(0.0);
     item->setItemHFlip(false);
     item->setItemVFlip(false);
 
-    // Same rules as everywhere: materialize + attachDisplaySample when possible.
-    if (tryRematerializeFromHost(item, contentOnly)) {
+    // ContentXform: pure materialize from unoriented host when possible.
+    if (unorientedSource && tryRematerializeFromHost(item, contentOnly)) {
         m_cropShowingFullImage = true;
         return;
     }
-    // Multi-MP: attach raw, incremental content bake, async pure rematerialize.
-    attachDisplaySample(item, full, WorkspaceItemState{}, SessionAppearance::PixelKind::FullSource);
-    if (haveApp && app) {
+    attachDisplaySample(item, full, contentOnly, SessionAppearance::PixelKind::FullSource);
+    if (unorientedSource && SessionAppearance::hasContentAppearance(contentOnly)) {
         applyContentBakes(item, contentOnly);
+        applyContentLayoutSize(item, contentOnly);
         const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
             : m_currentSessionId;
         scheduleAsyncHostRematerialize(path, sid, contentOnly);
+    } else {
+        applyContentLayoutSize(item, contentOnly);
+        item->setAppliedContentXform(ContentXform::Value::fromState(contentOnly));
     }
     m_cropShowingFullImage = true;
 }
@@ -555,38 +558,46 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const QString path = item->path();
     m_cropAwaitingFullPath.clear();
 
-    // Prefer host cache when Image-mode / thumtoo full already covered native.
-    // Never block the GUI on ImageLoader::load — draft crop on the best sample
-    // already in RAM (item display or ImageCache), then upgrade async.
-    QImage full = ImageCache::get(path);
-    const bool cacheNative = !full.isNull() && sampleCoversNativeLogical(path, full);
-    if (!cacheNative) {
-        if (full.isNull()) {
-            full = item->sourceImage();
-        }
+    WorkspaceItemState app;
+    const bool haveApp = resolveCropEnterAppearance(item, &app);
+    const bool hadCrop = haveApp && app.hasCrop && !app.cropRect.isEmpty();
+
+    // Ground truth for crop enter: unoriented host (ImageCache), never the
+    // crop-baked item display. Using item->sourceImage() after a prior crop
+    // treated the crop as the full frame → re-crop "scaled up" the crop rect.
+    QImage full = path.isEmpty() ? QImage() : ImageCache::get(path);
+    const bool hostOk = !full.isNull();
+
+    if (!hostOk && !hadCrop) {
+        // No prior crop: live display is still a full-frame sample (orient may
+        // be baked in). Safe draft source until host arrives.
+        full = item->sourceImage();
         if (full.isNull()) {
             full = item->previewImage();
         }
-        if (full.isNull()) {
-            full = ImageCache::get(path);
-        }
     }
+
     if (full.isNull()) {
-        // No pixels at all: open crop chrome on the current item geometry and
-        // request a decode; do not stall the UI thread.
+        // Need host (re-crop or blank). Schedule async; keep chrome if we can
+        // show something only when not re-croping from a crop-baked sample.
         m_cropAwaitingFullPath = path;
         requestCropFullRaster(path);
-        flashHud(tr("Crop"), tr("Loading image…"));
-        // Still need a drawable source — fail only if the item has nothing.
+        if (hadCrop) {
+            flashHud(tr("Crop"), tr("Loading full image…"));
+            // Cannot draft on crop-baked pixels — wait for host.
+            // Still allow enter with a neutral full-frame box from logical size
+            // once we have any host sample from the pool (maybeUpgrade).
+            return false;
+        }
         if (item->sourceImage().isNull() && item->previewImage().isNull()) {
             return false;
         }
-        full = item->sourceImage().isNull() ? item->previewImage() : item->sourceImage();
+        full = item->sourceImage().isNull() ? item->previewImage()
+                                            : item->sourceImage();
     }
 
-    WorkspaceItemState app;
-    const bool haveApp = resolveCropEnterAppearance(item, &app);
-    installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp);
+    const bool unoriented = hostOk; // only ImageCache samples are source-raw
+    installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp, unoriented);
     initCropRectFromPriorAppearance(item, app, haveApp);
 
     if (isImageMode()) {
@@ -596,10 +607,11 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         updateWorkspaceSceneRect();
     }
 
-    // Do not schedule full decode on enter — that is the crop lag. Draft on
-    // whatever is already in RAM; Apply upgrades from ImageCache when a native
-    // sample is already present (or the user can wait on Apply only).
-    m_cropAwaitingFullPath.clear();
+    // Background native upgrade into ImageCache only (not live mid-draft).
+    if (!sampleCoversNativeLogical(path, full)) {
+        m_cropAwaitingFullPath = path;
+        requestCropFullRaster(path);
+    }
     return true;
 }
 
@@ -1136,35 +1148,40 @@ bool ImageView::applyCropCommit(ImageItem *item)
     // Record absolute crop (or clear it) while the full image is still loaded.
     recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
     if (!fullFrame) {
+        // Scene size of the draft crop frame (Workspace): preserve after bake.
+        const qreal sx0 = item->itemScaleX();
+        const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
+        const qreal footW = m_cropRect.width() * sx0;
+        const qreal footH = m_cropRect.height() * sy0;
         // Scene position of the crop-frame centre — new pixels stay here.
         const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
         if (item->cropToLocalRect(m_cropRect, backgroundColor(), m_cropRotation)) {
-            // cropToLocalRect sets intrinsic to the bake; re-assert after any
-            // path-size logic so Image mode never keeps the full-frame box.
-            const QSize baked = item->sourceImage().size();
-            if (baked.width() > 1 && baked.height() > 1) {
-                item->setIntrinsicSize(baked);
+            // Intrinsic is content-space crop size (not sample pixels).
+            const QSize logical(qMax(1, qRound(m_cropRect.width())),
+                                qMax(1, qRound(m_cropRect.height())));
+            if (logical.width() > 1 && logical.height() > 1) {
+                item->setIntrinsicSize(logical);
             }
-            // Keep stashed Gallery tiles: commitItemSessionEdit peer-syncs
-            // cropped pixels. Invalidating forced a full-size probe + pack
-            // then a crop decode without repack → tiny tiles on return.
             if (isImageMode()) {
                 m_fitMode = true;
                 fitItem(item, currentFitAspectMode());
             } else if (isWorkspaceMode()) {
-                // New image is centred on the item origin; pin that to the
-                // former crop-frame centre so the region does not jump.
+                // Keep the crop region the same size on the canvas (uniform).
+                const QSize after = item->imageSize();
+                if (after.width() > 0 && after.height() > 0) {
+                    const qreal s = qMin(footW / qreal(after.width()),
+                                         footH / qreal(after.height()));
+                    if (s > 1e-6) {
+                        item->setItemScale(s, s);
+                    }
+                }
                 alignItemCenterToScene(item, cropSceneCenter);
-                // Straightened crop pixels: place at the crop-frame angle so
-                // the region keeps the same orientation it had while editing
-                // (crop painter samples with -θ; frame was drawn at +θ).
                 item->setItemRotation(m_cropRotation);
                 updateWorkspaceSceneRect();
             } else if (isGalleryMode()) {
                 applyLayout(GalleryPackReason::ContentChange);
             }
             commitItemSessionEdit(item);
-            // Undo: restore pre-crop-mode appearance + session crop metadata.
             pushCropAppearanceUndo(item, tr("Crop"));
             flashHud(tr("Cropped"),
                      QStringLiteral("%1×%2")

@@ -1588,8 +1588,10 @@ private:
      */
     bool prepareCropModeFullImage(ImageItem *item);
     bool resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const;
+    /** @p unorientedSource true when @p full is ImageCache/host raw (safe to bake). */
     void installFullImageForCrop(ImageItem *item, const QImage &full,
-                                 const WorkspaceItemState *app, bool haveApp);
+                                 const WorkspaceItemState *app, bool haveApp,
+                                 bool unorientedSource);
     void initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
                                          bool haveApp);
     /** Workspace: shift item so crop-frame centre maps to @p sceneAnchor. */

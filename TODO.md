@@ -2,6 +2,35 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-852-workspace-crop-source-truth.** Workspace crop scale + re-crop from full frame (ContentXform ground truth).
+Prior: **851**.
+
+### Problems
+1. Cropped tile **too small** in Workspace: `cropToLocalRect` set intrinsic to **sample** pixel size (soft crop → tiny box).
+2. **Re-crop** scaled the crop region instead of the original: crop enter used `item->sourceImage()` (already crop-baked) as "full" and could `ImageCache::put` that poison as host.
+
+### Fix
+- Intrinsic after crop = **content-space** crop rect size (SIZE.md), not sample dims
+- Workspace Apply: uniform scale preserves crop-frame scene footprint
+- Crop enter: host from ImageCache only when re-croping; never put crop-baked display into ImageCache
+- `installFullImageForCrop(..., unorientedSource)` — bake orient only from true host
+
+### Apply
+```bash
+git pull /path/to/biltoo-852-workspace-crop-source-truth.bundle HEAD
+```
+
+### Verify
+- [ ] Workspace crop Apply: region stays same on-canvas size, correct aspect
+- [ ] Re-enter crop: full frame + prior crop rect (not zoomed crop-as-full)
+- [ ] Image mode crop still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-851-one-rotate-path.** Unify chrome/toolbar/keyboard content rotate; Workspace no non-uniform footprint scale.
 Prior: **850**.
 

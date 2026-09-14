@@ -641,10 +641,13 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,
     }
     m_hFlip = false;
     m_vFlip = false;
-    // Baked crop is the new display identity: pixels and logical box must match
-    // (SIZE.md). Always use the actual sample size — never full-frame intrinsic.
+    // Logical box is the crop in content space (localRect size), not sample
+    // pixel dimensions (SIZE.md). Soft/ladder samples paint into that box;
+    // using cropped.size() as intrinsic shrank Workspace tiles to soft pixels.
     setSourceImageReady(cropped);
-    setIntrinsicSize(cropped.size());
+    const QSize logical(qMax(1, qRound(local.width())),
+                        qMax(1, qRound(local.height())));
+    setIntrinsicSize(logical);
     return true;
 }
 
