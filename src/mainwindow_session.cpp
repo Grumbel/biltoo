@@ -2942,6 +2942,14 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
             }
         }
     }
+    // Mode / filmstrip overviews when the pointer enters the canvas or strip.
+    if (m_helpPanel && event->type() == QEvent::HoverEnter) {
+        if (watched == m_thumbnailBar || watched == m_thumbnailDock) {
+            showFilmstripHelp();
+        } else if (watched == m_imageView) {
+            showCurrentModeHelp();
+        }
+    }
 
     // Escape is also a WindowShortcut (fullscreen / leave Image). QLineEdit does
     // not accept ShortcutOverride for Esc, so the window shortcut wins unless we

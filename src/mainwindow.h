@@ -362,6 +362,9 @@ private:
     void updateHelpPanelFromWidget(QWidget *widget, const QPoint &localPos);
     /** Seed QAction::whatsThis() for commands that already have long help. */
     void populateActionHelpTexts();
+    /** Help panel topic for the current presentation mode (Image/Gallery/Workspace). */
+    void showCurrentModeHelp();
+    void showFilmstripHelp();
     void createToolBar();
     void createStatusBar();
     /** Associate shortcut-bearing actions with the window (fullscreen-safe). */
@@ -673,6 +676,12 @@ private:
     QAction *m_epubLayoutAct = nullptr;
     QAction *m_aboutAct = nullptr;
     QAction *m_keyboardShortcutsAct = nullptr;
+    /** Help → Guides: mode / chrome overviews (not toolbar commands). */
+    QAction *m_helpGuideImageAct = nullptr;
+    QAction *m_helpGuideGalleryAct = nullptr;
+    QAction *m_helpGuideWorkspaceAct = nullptr;
+    QAction *m_helpGuideFilmstripAct = nullptr;
+    QAction *m_helpGuideSessionAct = nullptr;
     QActionGroup *m_sortGroup = nullptr;
     QActionGroup *m_thumbnailPositionGroup = nullptr;
 

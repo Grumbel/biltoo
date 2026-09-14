@@ -804,6 +804,59 @@ void MainWindow::createActions()
     m_keyboardShortcutsAct->setStatusTip(tr("List of keyboard shortcuts"));
     connect(m_keyboardShortcutsAct, &QAction::triggered, this, &MainWindow::showKeyboardShortcuts);
 
+    m_helpGuideImageAct = new QAction(tr("&Image Mode"), this);
+    m_helpGuideImageAct->setStatusTip(tr("Overview of Image mode (single-image viewing)"));
+    connect(m_helpGuideImageAct, &QAction::triggered, this, [this]() {
+        if (m_helpDock && !m_helpDock->isVisible()) {
+            m_helpDock->show();
+        }
+        if (m_helpPanel) {
+            m_helpPanel->showAction(m_helpGuideImageAct);
+        }
+    });
+
+    m_helpGuideGalleryAct = new QAction(tr("&Gallery Mode"), this);
+    m_helpGuideGalleryAct->setStatusTip(tr("Overview of Gallery mode (packed session overview)"));
+    connect(m_helpGuideGalleryAct, &QAction::triggered, this, [this]() {
+        if (m_helpDock && !m_helpDock->isVisible()) {
+            m_helpDock->show();
+        }
+        if (m_helpPanel) {
+            m_helpPanel->showAction(m_helpGuideGalleryAct);
+        }
+    });
+
+    m_helpGuideWorkspaceAct = new QAction(tr("&Workspace Mode"), this);
+    m_helpGuideWorkspaceAct->setStatusTip(tr("Overview of Workspace mode (free-form layout)"));
+    connect(m_helpGuideWorkspaceAct, &QAction::triggered, this, [this]() {
+        if (m_helpDock && !m_helpDock->isVisible()) {
+            m_helpDock->show();
+        }
+        if (m_helpPanel) {
+            m_helpPanel->showAction(m_helpGuideWorkspaceAct);
+        }
+    });
+
+    m_helpGuideFilmstripAct = new QAction(tr("&Filmstrip"), this);
+    m_helpGuideFilmstripAct->setStatusTip(tr("Overview of the thumbnail filmstrip"));
+    connect(m_helpGuideFilmstripAct, &QAction::triggered, this, [this]() {
+        if (m_helpDock && !m_helpDock->isVisible()) {
+            m_helpDock->show();
+        }
+        showFilmstripHelp();
+    });
+
+    m_helpGuideSessionAct = new QAction(tr("&Session and Identity"), this);
+    m_helpGuideSessionAct->setStatusTip(tr("How session paths and SessionImageId relate"));
+    connect(m_helpGuideSessionAct, &QAction::triggered, this, [this]() {
+        if (m_helpDock && !m_helpDock->isVisible()) {
+            m_helpDock->show();
+        }
+        if (m_helpPanel) {
+            m_helpPanel->showAction(m_helpGuideSessionAct);
+        }
+    });
+
     m_aboutAct = new QAction(tr("&About Biltoo"), this);
     m_aboutAct->setIcon(themeIcon(QStringLiteral("help-about"), QStyle::SP_MessageBoxInformation));
     m_aboutAct->setStatusTip(tr("About this application"));
@@ -996,6 +1049,13 @@ void MainWindow::createMenus()
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
     m_helpMenu->addAction(m_toggleHelpAct);
     m_helpMenu->addAction(m_keyboardShortcutsAct);
+    auto *guidesMenu = m_helpMenu->addMenu(tr("&Guides"));
+    guidesMenu->addAction(m_helpGuideImageAct);
+    guidesMenu->addAction(m_helpGuideGalleryAct);
+    guidesMenu->addAction(m_helpGuideWorkspaceAct);
+    guidesMenu->addAction(m_helpGuideFilmstripAct);
+    guidesMenu->addSeparator();
+    guidesMenu->addAction(m_helpGuideSessionAct);
     m_helpMenu->addSeparator();
     m_helpMenu->addAction(m_aboutAct);
 }
@@ -1131,10 +1191,11 @@ void MainWindow::createToolBar()
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_toggleThumbnailBarAct);
     m_toolBar->addAction(m_toggleMetadataAct);
-    m_toolBar->addAction(m_toggleHelpAct);
     if (m_toggleAdjustmentsAct) {
         m_toolBar->addAction(m_toggleAdjustmentsAct);
     }
+    // Help sits with chrome toggles, immediately before Fullscreen.
+    m_toolBar->addAction(m_toggleHelpAct);
     m_toolBar->addAction(m_fullscreenAct);
 
     // Left vertical toolbar for workspace tools (hidden until workspace mode)
@@ -1382,18 +1443,128 @@ void MainWindow::installActionHelpTracking()
             btn->installEventFilter(this);
         }
     }
+
+    // Canvas / filmstrip: HoverEnter shows the mode or filmstrip guide.
+    if (m_imageView) {
+        m_imageView->setAttribute(Qt::WA_Hover, true);
+        m_imageView->installEventFilter(this);
+    }
+    if (m_thumbnailBar) {
+        m_thumbnailBar->setAttribute(Qt::WA_Hover, true);
+        m_thumbnailBar->installEventFilter(this);
+    }
+    if (m_thumbnailDock) {
+        m_thumbnailDock->installEventFilter(this);
+    }
 }
 
 void MainWindow::populateActionHelpTexts()
 {
     // Long-form help for the Help panel (HTML). statusTip stays the short
-    // status-bar / tooltip line. Fill remaining actions in later bundles.
+    // status-bar / tooltip line. Guides describe modes; actions describe commands.
     auto setHelp = [](QAction *act, const QString &html) {
         if (act) {
             act->setWhatsThis(html);
         }
     };
 
+    // --- Mode / chrome guides (Help → Guides) ---
+    setHelp(m_helpGuideImageAct, tr(
+        "<p><b>Image mode</b> is the linear viewer: one picture at a time from the "
+        "session.</p>"
+        "<ul>"
+        "<li>The canvas shows at most the <b>current</b> session image.</li>"
+        "<li>Zoom and pan move the <b>view</b> (Fit, Fill, 1:1, wheel, region zoom). "
+        "Sticky Fit/Fill/1:1 can re-apply when you step to another image.</li>"
+        "<li>Rotate, flip, and crop change that image’s <b>session appearance</b> "
+        "(keyed by SessionImageId), not the file on disk.</li>"
+        "<li>Previous / Next / First / Last and the <b>slideshow</b> walk the session. "
+        "Edge clicks and shortcuts do the same.</li>"
+        "<li>You cannot place a second free image here — use <b>Workspace</b> for that.</li>"
+        "</ul>"
+        "<p>Open Image mode by double-clicking a Gallery tile, activating from the "
+        "filmstrip, or starting a slideshow. <b>Up</b> (or Esc in many cases) returns "
+        "to Gallery or Workspace depending on where you came from.</p>"));
+
+    setHelp(m_helpGuideGalleryAct, tr(
+        "<p><b>Gallery mode</b> is a packed overview of the whole session — not a "
+        "free-form editor.</p>"
+        "<ul>"
+        "<li>Every session image appears as one tile. Positions come only from the "
+        "active <b>layout</b> (side-by-side, vertical, grid, masonry, flow, facing, …).</li>"
+        "<li>Wheel <b>scrolls</b> the overview (no zoom). Multi-select with "
+        "Ctrl/Shift/rubber-band; double-click or Enter opens <b>Image</b> mode.</li>"
+        "<li>Rotate/flip apply to the selection. Delete removes from the "
+        "<b>session</b> (undoable).</li>"
+        "<li>Sort reorders the session and re-packs. Opening large sets waits for "
+        "image sizes before packing; a centre HUD shows probe progress.</li>"
+        "<li>PDF/EPUB/DjVu page sessions often open Gallery in <b>Flow</b> (reading order).</li>"
+        "</ul>"
+        "<p><b>Law:</b> Gallery is not a kind of Workspace. Leaving for Image and "
+        "returning restores layout and scroll; it does not open Workspace.</p>"));
+
+    setHelp(m_helpGuideWorkspaceAct, tr(
+        "<p><b>Workspace mode</b> is a free-form canvas for comparing and arranging "
+        "several pictures. It is intentionally different from Gallery.</p>"
+        "<h3>What you can do</h3>"
+        "<ul>"
+        "<li><b>Place</b> zero or more session images on the canvas. Membership is "
+        "optional — the session can hold images that are not on the canvas.</li>"
+        "<li>Each tile is a free object: move, scale (including non-uniform), rotate, "
+        "shear, opacity, and raise/lower stacking order.</li>"
+        "<li>Tools on the left toolbar: <b>Select</b>, <b>Pan</b> (view), "
+        "<b>Zoom</b> (region). Selection supports multi-select and rubber-band.</li>"
+        "<li><b>Layout panel</b> packs only the <i>current selection</i> with Gallery-like "
+        "algorithms without leaving Workspace.</li>"
+        "<li><b>Page Guide</b> and <b>Fit Page Guide to Content</b> frame print/PDF "
+        "export; they are not the meaning of the Workspace itself.</li>"
+        "<li>Custom <b>background</b> (solid, checker, image tile). "
+        "<b>Delete</b> removes a tile from the canvas only — the session entry stays.</li>"
+        "<li><b>New Window</b> can open the current selection elsewhere.</li>"
+        "</ul>"
+        "<h3>What it is not</h3>"
+        "<ul>"
+        "<li>Not an image editor that writes pixels back to the source files.</li>"
+        "<li>Not Gallery: entering Workspace does <b>not</b> import Gallery packing as "
+        "free poses. The durable Workspace snapshot is restored instead.</li>"
+        "<li>Slideshow and edge-next are off — this is not the linear viewer.</li>"
+        "</ul>"
+        "<h3>Persistence</h3>"
+        "<p>Leaving Workspace for Gallery or Image keeps object transforms. "
+        "<b>Save Project</b> (<code>.biltoo</code>) stores session appearance and "
+        "Workspace poses with content-addressed assets. Export PNG/PDF renders the "
+        "canvas region; sources stay untouched.</p>"
+        "<p>Identity is always <b>SessionImageId</b>: two tiles with the same path can "
+        "have independent crop, flips, and placement.</p>"));
+
+    setHelp(m_helpGuideFilmstripAct, tr(
+        "<p>The <b>filmstrip</b> (thumbnail bar) is the session browser shared by all "
+        "modes.</p>"
+        "<ul>"
+        "<li>Click a thumb to select / navigate the session. Double-click behaviour "
+        "depends on mode (e.g. open Image, or toggle Workspace membership).</li>"
+        "<li>Drag thumbs onto the Workspace canvas to add membership. Labels and "
+        "position (top/bottom/left/right) are configurable.</li>"
+        "<li>Visibility defaults differ by mode (Workspace often on, Gallery often off) "
+        "and can be toggled independently.</li>"
+        "</ul>"
+        "<p>Use <b>Show Thumbnails</b> or the toolbar button to show or hide the strip.</p>"));
+
+    setHelp(m_helpGuideSessionAct, tr(
+        "<p>A <b>session</b> is an ordered list of images (and archive/page members) "
+        "open in this window.</p>"
+        "<ul>"
+        "<li><b>Path</b> is only the decode source (file, <code>//archive:</code> member, "
+        "or page ref).</li>"
+        "<li><b>SessionImageId</b> is the stable identity for crop, flips, colour, and "
+        "Workspace poses. Duplicates of the same path get different ids.</li>"
+        "<li>Open/Add/Directory replace or append paths; sort reorders; delete may "
+        "drop session rows or only canvas tiles (Workspace).</li>"
+        "</ul>"
+        "<p>Projects (<code>.biltoo</code>) persist ids, appearance, and poses with "
+        "SHA-256 asset checks. See also Help → Guides → Workspace Mode.</p>"));
+
+    // --- File / session ---
     setHelp(m_openAct, tr(
         "<p>Replace the current session with one or more image files, directories, "
         "or archives chosen in a file dialog.</p>"
@@ -1401,77 +1572,247 @@ void MainWindow::populateActionHelpTexts()
         "expand to member paths. The previous session is discarded (with the "
         "usual unsaved Workspace prompt when needed).</p>"
         "<p>Use <b>Add Images</b> to append without clearing the session.</p>"));
-
     setHelp(m_addAct, tr(
         "<p>Append image files to the current session without removing existing "
-        "entries. Duplicates by path are skipped; each accepted path gets its "
-        "own session identity.</p>"));
-
+        "entries. Path duplicates are skipped; each accepted path gets its own "
+        "session identity.</p>"));
     setHelp(m_openDirAct, tr(
-        "<p>Open every supported image under a chosen directory (non-recursive "
-        "at the top level of the dialog selection — subfolder policy follows "
-        "the open expander).</p>"
-        "<p>Replaces the current session, same as Open for a multi-file set.</p>"));
-
+        "<p>Open supported images under a chosen directory. Replaces the current "
+        "session, same as a multi-file Open.</p>"));
+    setHelp(m_openLocationAct, tr(
+        "<p>Open a path or URI typed in the location bar (file, directory, archive "
+        "member syntax, or page reference). Useful for exact paths and scripting-friendly "
+        "entry.</p>"));
     setHelp(m_newAct, tr(
-        "<p>Start a new empty session in this window. Workspace canvas tiles and "
-        "session rows are cleared after the usual save prompt when needed.</p>"));
-
+        "<p>Start a new empty session in this window. Workspace tiles and session "
+        "rows are cleared after the usual save prompt when needed.</p>"));
     setHelp(m_newWindowAct, tr(
         "<p>Open another Biltoo main window with an empty session. Shortcuts are "
         "window-scoped so both windows can be used side by side.</p>"));
-
     setHelp(m_openProjectAct, tr(
         "<p>Load a <code>.biltoo</code> project: session order, appearance "
         "(crop, flips, colour), Workspace poses, and optional page guide / "
         "background. File identity is verified with SHA-256 when possible.</p>"));
-
     setHelp(m_saveProjectAct, tr(
         "<p>Write the current session and Workspace layout to the open "
         "<code>.biltoo</code> project path. Sources on disk are never "
         "overwritten; only the project JSON is updated.</p>"));
+    setHelp(m_saveProjectAsAct, tr(
+        "<p>Save the project under a new file name, then keep that path as the "
+        "current project for subsequent Save.</p>"));
+    setHelp(m_reloadAct, tr(
+        "<p>Reload pixels and metadata for the current session from disk (or "
+        "archive members). Appearance and Workspace poses stay; decode caches "
+        "refresh when content changed.</p>"));
+    setHelp(m_quitAct, tr(
+        "<p>Quit this Biltoo window. You may be prompted if the Workspace has "
+        "unsaved project state.</p>"));
 
+    // --- Print / export ---
+    setHelp(m_printAct, tr(
+        "<p>Print the current Image or the Workspace page (honouring page setup "
+        "and optional page guide).</p>"));
+    setHelp(m_printPreviewAct, tr(
+        "<p>Preview how the page will look when printed.</p>"));
+    setHelp(m_pageSetupAct, tr(
+        "<p>Choose paper size, orientation, and margins for print and PDF export.</p>"));
+    setHelp(m_exportPngAct, tr(
+        "<p>Export a PNG of the content bounds or page guide at a chosen width. "
+        "Optional transparency. Never overwrites the source image.</p>"));
+    setHelp(m_exportPdfAct, tr(
+        "<p>Export a PDF of the current page setup / Workspace framing. "
+        "Sources remain untouched.</p>"));
+    setHelp(m_exportTextAct, tr(
+        "<p>Export extracted text when the current document provides it "
+        "(e.g. some PDF/EPUB flows).</p>"));
+
+    // --- View / zoom ---
+    setHelp(m_zoomInAct, tr("<p>Zoom the view in around the viewport centre (or cursor where applicable).</p>"));
+    setHelp(m_zoomOutAct, tr("<p>Zoom the view out.</p>"));
     setHelp(m_zoomFitAct, tr(
-        "<p>Scale the current Image-mode view so the whole image fits inside the "
-        "viewport (letterboxed if aspects differ).</p>"
-        "<p>When sticky Fit is active, each new image is reframed the same way. "
+        "<p>Scale so the whole image fits inside the viewport (letterboxed if aspects differ).</p>"
+        "<p>When sticky Fit is active, each new Image-mode picture is reframed the same way. "
         "Click Fit again, or zoom freely, to release sticky framing.</p>"));
-
     setHelp(m_zoomFillAct, tr(
-        "<p>Scale the image to cover the viewport (may crop edges). Sticky Fill "
-        "re-applies on navigation and tries to keep the relative pan centre.</p>"));
-
+        "<p>Scale to cover the viewport (may crop edges). Sticky Fill re-applies on "
+        "navigation and tries to keep the relative pan centre.</p>"));
     setHelp(m_zoom1to1Act, tr(
-        "<p>Show pixels 1:1 with the screen (no resampling scale). Sticky 1:1 "
-        "re-applies on Image-mode navigation with best-effort pan retention.</p>"));
-
-    setHelp(m_cropAct, tr(
-        "<p>Enter crop mode on the current Image-mode image (or a single "
-        "Workspace selection). Drag the frame, use the centre grip, rotate the "
-        "draft, expand beyond the image to pad, then apply or cancel.</p>"
-        "<p>Crop is non-destructive session appearance keyed by "
-        "<code>SessionImageId</code>, not by path.</p>"));
-
-    setHelp(m_toggleHudAct, tr(
-        "<p>Toggle the on-canvas HUD overlay (filename, zoom, size, and related "
-        "status). Independent of the Help panel and of fullscreen chrome.</p>"));
-
-    setHelp(m_toggleMetadataAct, tr(
-        "<p>Show or hide the Metadata dock: file info, image structure, palette, "
-        "and embedded Exif/IPTC/XMP when available. Heavy work runs only while "
-        "the dock is visible.</p>"));
-
-    setHelp(m_toggleHelpAct, tr(
-        "<p>Show or hide this Help dock. Hover menu or toolbar commands, or "
-        "trigger them, to load detailed descriptions. Short status tips remain "
-        "in the status bar and as tooltips.</p>"));
-
+        "<p>Show pixels 1:1 with the screen. Sticky 1:1 re-applies on Image navigation "
+        "with best-effort pan retention.</p>"));
+    setHelp(m_zoomRegionAct, tr(
+        "<p>Drag a rectangle on the image to zoom the view to that region (one-shot tool).</p>"));
     setHelp(m_fullscreenAct, tr(
-        "<p>Toggle fullscreen. Menu bar, toolbars, and docks hide; leaving "
-        "fullscreen restores prior chrome visibility (thumbnail and Layout "
-        "follow mode rules). Ends an active slideshow session.</p>"));
+        "<p>Toggle fullscreen. Menu bar, toolbars, and docks hide; leaving fullscreen "
+        "restores prior chrome (thumbnail and Layout follow mode rules). Ends an active "
+        "slideshow session.</p>"));
+    setHelp(m_toggleHudAct, tr(
+        "<p>Toggle the on-canvas HUD overlay (filename, zoom, size, and related status). "
+        "Independent of the Help panel.</p>"));
+    setHelp(m_toggleScrollBarsAct, tr(
+        "<p>Show or hide scroll bars on the image view.</p>"));
+    setHelp(m_toggleToolBarAct, tr(
+        "<p>Show or hide the main toolbar.</p>"));
+    setHelp(m_showLocationBarAct, tr(
+        "<p>Keep the location bar visible. Otherwise it opens with the location shortcut "
+        "and hides on Enter or Esc.</p>"));
+    setHelp(m_showSearchBarAct, tr(
+        "<p>Show the in-document search bar when text search is available.</p>"));
+    setHelp(m_findOnPageAct, tr(
+        "<p>Find text on the current page when the document exposes searchable text.</p>"));
+    setHelp(m_showTextRegionsAct, tr(
+        "<p>Outline detected text regions on supporting document pages.</p>"));
 
+    // --- Docks ---
+    setHelp(m_toggleMetadataAct, tr(
+        "<p>Show or hide the Metadata dock: file info, structure, palette, and "
+        "embedded Exif/IPTC/XMP when available. Heavy work runs only while visible.</p>"));
+    setHelp(m_toggleHelpAct, tr(
+        "<p>Show or hide this Help dock. Hover menu or toolbar commands (including "
+        "disabled ones), or open <b>Help → Guides</b>, for longer explanations.</p>"));
+    setHelp(m_toggleTocAct, tr(
+        "<p>Show or hide the document Contents (table of contents) for PDF/EPUB-style "
+        "sessions when an outline is available.</p>"));
+    setHelp(m_toggleAdjustmentsAct, tr(
+        "<p>Colour grade, histogram, and vectorscope. Adjustments are session appearance "
+        "until you export; they do not write the source file.</p>"));
+    setHelp(m_toggleLayoutPanelAct, tr(
+        "<p>Workspace-only: pack the <b>current selection</b> with a Gallery-like layout "
+        "without leaving Workspace. Hidden/disabled outside Workspace.</p>"));
+    setHelp(m_toggleThumbnailBarAct, tr(
+        "<p>Show or hide the filmstrip. Default visibility can differ per mode "
+        "(see Help → Guides → Filmstrip).</p>"));
+    setHelp(m_hideThumbLabelsAct, tr(
+        "<p>Hide or show filenames under filmstrip thumbnails.</p>"));
+
+    // --- Content transforms ---
+    setHelp(m_rotateLeftAct, tr(
+        "<p>Rotate the target 90° counter-clockwise. Target follows mode: current Image, "
+        "or the Gallery/Workspace selection. Stored as session appearance.</p>"));
+    setHelp(m_rotateRightAct, tr(
+        "<p>Rotate the target 90° clockwise. Same targeting rules as Rotate Left.</p>"));
+    setHelp(m_flipHAct, tr("<p>Flip the target horizontally (session appearance).</p>"));
+    setHelp(m_flipVAct, tr("<p>Flip the target vertically (session appearance).</p>"));
+    setHelp(m_cropAct, tr(
+        "<p>Enter crop mode on the current Image, or on a single Gallery/Workspace "
+        "selection. Drag the frame, use the centre grip, rotate the draft, expand beyond "
+        "the image to pad, then apply or cancel.</p>"
+        "<p>Crop is non-destructive and keyed by SessionImageId.</p>"));
+    setHelp(m_resetContentAppearanceAct, tr(
+        "<p>Clear content transforms (crop, flips, quarter turns, colour) on the target "
+        "back toward the decoded source orientation.</p>"));
+    setHelp(m_attentionAct, tr(
+        "<p>Set or clear an attention point used by some slideshow motions / framing "
+        "hints for the current image.</p>"));
+
+    // --- Navigation / slideshow ---
+    setHelp(m_previousAct, tr(
+        "<p>Go to the previous session image in <b>Image</b> mode when more than one "
+        "image is open.</p>"));
+    setHelp(m_nextAct, tr(
+        "<p>Go to the next session image in <b>Image</b> mode when more than one "
+        "image is open.</p>"));
+    setHelp(m_firstAct, tr("<p>Jump to the first session image (Image mode, multi-image session).</p>"));
+    setHelp(m_lastAct, tr("<p>Jump to the last session image (Image mode, multi-image session).</p>"));
+    setHelp(m_slideshowAct, tr(
+        "<p>Start or toggle the slideshow. Requires more than one session image and is "
+        "unavailable in Workspace. Space often pauses/resumes; Esc leaves slideshow "
+        "(and fullscreen). Interval and transitions are in Preferences / Slideshow settings.</p>"));
+    setHelp(m_backToGalleryAct, tr(
+        "<p><b>Up</b> leaves Image mode and returns to Gallery or Workspace depending on "
+        "how Image was entered, restoring the previous overview or free-canvas snapshot.</p>"));
+
+    // --- Gallery layouts / sort ---
+    setHelp(m_layoutSideBySideAct, tr("<p>Gallery layout: tiles in a horizontal strip.</p>"));
+    setHelp(m_layoutVerticalAct, tr("<p>Gallery layout: tiles in a vertical strip.</p>"));
+    setHelp(m_layoutGridAct, tr(
+        "<p>Gallery layout: regular grid. Column count is adjustable; cells are width-driven.</p>"));
+    setHelp(m_layoutGridCropAct, tr(
+        "<p>Gallery layout: square grid with centre-crop to fill cells. Temporarily disabled "
+        "because it conflicts with session/manual crop.</p>"));
+    setHelp(m_layoutMasonryAct, tr(
+        "<p>Gallery layout: masonry columns (Pinterest-style), preserving aspect ratios.</p>"));
+    setHelp(m_layoutMasonryRowsAct, tr(
+        "<p>Gallery layout: masonry by rows instead of columns.</p>"));
+    setHelp(m_layoutMasonryFillAct, tr(
+        "<p>Gallery layout: masonry columns, then scale columns so the outer shape is a "
+        "clean rectangle.</p>"));
+    setHelp(m_layoutMasonryRowsFillAct, tr(
+        "<p>Gallery layout: masonry rows with fill so the outer shape is rectangular.</p>"));
+    setHelp(m_layoutFlowAct, tr(
+        "<p>Gallery layout: reading-order flow (left-to-right, top-to-bottom), natural for "
+        "paged documents.</p>"));
+    setHelp(m_layoutFlowFillAct, tr(
+        "<p>Gallery layout: flow with row justification (fill).</p>"));
+    setHelp(m_layoutFacingAct, tr(
+        "<p>Gallery layout: cover alone, then two-up spreads (verso|recto) — PDF-reader style.</p>"));
+    setHelp(m_sortNameAct, tr("<p>Sort the session by file name and re-pack Gallery if active.</p>"));
+    setHelp(m_sortPathAct, tr(
+        "<p>Sort by full path — useful when the session spans several folders or archives.</p>"));
+    setHelp(m_sortAspectAct, tr(
+        "<p>Sort by aspect ratio (width/height), using probed sizes when needed.</p>"));
+    setHelp(m_sortShuffleAct, tr(
+        "<p>Apply a new random order each time Shuffle is chosen.</p>"));
+    setHelp(m_sortMTimeAct, tr("<p>Sort by file modification time.</p>"));
+    setHelp(m_sortFileSizeAct, tr("<p>Sort by file size on disk.</p>"));
+    setHelp(m_sortWidthAct, tr("<p>Sort by image width (after size probe).</p>"));
+    setHelp(m_sortHeightAct, tr("<p>Sort by image height (after size probe).</p>"));
+    setHelp(m_sortPixelCountAct, tr("<p>Sort by pixel count (width × height).</p>"));
+
+    // --- Workspace ---
+    setHelp(m_workspaceModeAct, tr(
+        "<p>Enter or leave <b>Workspace</b> mode. See Help → Guides → Workspace Mode for "
+        "the full model (free placement, snapshot, layout panel, page guide).</p>"
+        "<p>Entering from Gallery restores the durable Workspace snapshot; it does not "
+        "import Gallery packing as free poses.</p>"));
+    setHelp(m_pageGuideAct, tr(
+        "<p>Toggle the print page guide on the Workspace canvas (framing helper for "
+        "print/PDF, not the definition of the Workspace).</p>"));
+    setHelp(m_fitPageGuideAct, tr(
+        "<p>Size/position the page guide to fit the current content bounds.</p>"));
+    setHelp(m_workspaceBackgroundAct, tr(
+        "<p>Choose Workspace background: solid, checker, image tile, or app default. "
+        "Stored in the project when you save.</p>"));
+    setHelp(m_workspaceBgDefaultAct, tr(
+        "<p>Reset Workspace background to the application default.</p>"));
+    setHelp(m_selectToolAct, tr(
+        "<p>Workspace tool: select and transform tiles (move, handles, multi-select).</p>"));
+    setHelp(m_panToolAct, tr(
+        "<p>Workspace tool: pan the view without moving tiles.</p>"));
+    setHelp(m_zoomToolAct, tr(
+        "<p>Workspace tool: drag a region to zoom the view.</p>"));
+
+    // --- Edit / misc ---
+    setHelp(m_preferencesAct, tr(
+        "<p>Application preferences: slideshow, background, HUD, thumbnail defaults, "
+        "and more.</p>"));
     setHelp(m_keyboardShortcutsAct, tr(
-        "<p>Open a dialog listing the main keyboard shortcuts. For longer "
-        "per-command explanations, use the Help panel (View → Show Help Panel).</p>"));
+        "<p>Dialog listing main keyboard shortcuts. For longer per-command text, keep "
+        "the Help panel open and hover commands, or open Help → Guides.</p>"));
+    setHelp(m_aboutAct, tr("<p>About Biltoo: version and brief project description.</p>"));
+    setHelp(m_epubLayoutAct, tr(
+        "<p>Edit the //epub: layout profile for the current EPUB book (margins, columns, "
+        "and related presentation).</p>"));
+}
+
+void MainWindow::showFilmstripHelp()
+{
+    if (m_helpPanel && m_helpGuideFilmstripAct) {
+        m_helpPanel->showAction(m_helpGuideFilmstripAct);
+    }
+}
+
+void MainWindow::showCurrentModeHelp()
+{
+    if (!m_helpPanel || !m_imageView) {
+        return;
+    }
+    QAction *guide = m_helpGuideImageAct;
+    if (m_imageView->isWorkspaceMode()) {
+        guide = m_helpGuideWorkspaceAct;
+    } else if (m_imageView->isGalleryMode()) {
+        guide = m_helpGuideGalleryAct;
+    }
+    if (guide) {
+        m_helpPanel->showAction(guide);
+    }
 }

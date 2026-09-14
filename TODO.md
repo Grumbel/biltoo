@@ -2,6 +2,31 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-784-help-docs-modes.** Help next to fullscreen; guides + expanded docs.
+Prior: **783**.
+
+### Changes
+- Toolbar: Help button moved next to **Fullscreen** (after Metadata/Adjustments)
+- **Help → Guides**: Image, Gallery, Workspace (lengthy), Filmstrip, Session & Identity
+- `HelpPanel::showTopic`; hover canvas → current mode guide; hover filmstrip → filmstrip guide
+- Expanded `whatsThis` for file/open/project, zoom, docks, transforms, nav/slideshow,
+  gallery layouts & sort, workspace tools, print/export, preferences
+
+### Apply
+```bash
+git pull /path/to/biltoo-784-help-docs-modes.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **784**
+- [ ] Remaining actions still without whatsThis (edit clipboard, history, …)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-783-help-toolbar-disabled.** Help toolbar button; disabled-action help.
 Prior: **782**.
 
