@@ -29,6 +29,9 @@ public:
     bool startFullscreen() const;
     void setStartFullscreen(bool on);
 
+    bool loop() const;
+    void setLoop(bool on);
+
     int transitionIndex() const;
     void setTransitionIndex(int index);
 
@@ -60,6 +63,7 @@ private:
 
     QDoubleSpinBox *m_intervalSpin = nullptr;
     QCheckBox *m_fullscreenCheck = nullptr;
+    QCheckBox *m_loopCheck = nullptr;
     QComboBox *m_transitionCombo = nullptr;
     QDoubleSpinBox *m_transitionMsSpin = nullptr;
     QComboBox *m_motionCombo = nullptr;

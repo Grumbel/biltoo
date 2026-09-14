@@ -74,6 +74,10 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_slideshowFullscreenCheck = new QCheckBox(tr("Start slideshow in fullscreen"), this);
     m_slideshowFullscreenCheck->setToolTip(
         tr("Enter fullscreen automatically when starting a slideshow"));
+    m_slideshowLoopCheck = new QCheckBox(tr("Loop slideshow"), this);
+    m_slideshowLoopCheck->setToolTip(
+        tr("When enabled, advance from the last image back to the first.\nWhen disabled, the slideshow stops after the last image."));
+    m_slideshowLoopCheck->setChecked(true);
 
     auto *slideshowForm = new QFormLayout;
     slideshowForm->setContentsMargins(0, 0, 0, 0);
@@ -89,6 +93,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                               setSlideshowFullscreen(kDefaultSlideshowFullscreen);
                               updateResetButtons();
                           }));
+    slideshowForm->addRow(QString(), m_slideshowLoopCheck);
 
     m_slideshowTransitionCombo = new QComboBox(this);
     m_slideshowTransitionCombo->addItem(tr("None"), 0);
@@ -574,6 +579,8 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
             this, [this](double) { updateResetButtons(); });
     connect(m_slideshowZoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
+    connect(m_slideshowLoopCheck, &QCheckBox::toggled,
+            this, [this](bool) { updateResetButtons(); });
     connect(m_slideshowFullscreenCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
     connect(m_sortCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -811,6 +818,18 @@ bool PreferencesDialog::slideshowFullscreen() const
 void PreferencesDialog::setSlideshowFullscreen(bool on)
 {
     m_slideshowFullscreenCheck->setChecked(on);
+}
+
+bool PreferencesDialog::slideshowLoop() const
+{
+    return m_slideshowLoopCheck && m_slideshowLoopCheck->isChecked();
+}
+
+void PreferencesDialog::setSlideshowLoop(bool on)
+{
+    if (m_slideshowLoopCheck) {
+        m_slideshowLoopCheck->setChecked(on);
+    }
 }
 
 bool PreferencesDialog::imageModeLeftDragPan() const

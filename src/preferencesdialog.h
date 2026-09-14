@@ -37,6 +37,8 @@ public:
 
     bool slideshowFullscreen() const;
     void setSlideshowFullscreen(bool on);
+    bool slideshowLoop() const;
+    void setSlideshowLoop(bool on);
 
     /** 0 = none, 1 = crossfade, 2 = fade through black */
     int slideshowTransitionIndex() const;
@@ -143,6 +145,7 @@ private:
     QComboBox *m_sortCombo = nullptr;
     QCheckBox *m_workspaceCheck = nullptr;
     QCheckBox *m_slideshowFullscreenCheck = nullptr;
+    QCheckBox *m_slideshowLoopCheck = nullptr;
     QComboBox *m_slideshowTransitionCombo = nullptr;
     QDoubleSpinBox *m_slideshowTransitionMsSpin = nullptr;
     QToolButton *m_resetSlideshowTransitionBtn = nullptr;

@@ -2,6 +2,29 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-797-slideshow-loop-option.** Slideshow loop on/off; fix wrap transitions.
+Prior: **796**.
+
+### Change
+- Loop checkbox in Slideshow settings + Preferences (default on; `slideshowLoop` setting)
+- Non-loop: stop after last image pure dwell (no wrap crossfade)
+- Single-image / last non-loop: no self/wrap transition (clears messy dual-buffer fades)
+- New transition cycle resets to-side cleanly; pure phase always clears `to` path
+
+### Apply
+```bash
+git pull /path/to/biltoo-797-slideshow-loop-option.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **797**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-796-gallery-lqip-display-upgrade.** Gallery paints soft over LQIP.
 Prior: **795**.
 

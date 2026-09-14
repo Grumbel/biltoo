@@ -704,6 +704,7 @@ private:
     ThumbnailEdge m_thumbnailEdge = ThumbnailEdge::Bottom;
     bool m_startInWorkspaceMode = false; // preference / startup default
     bool m_slideshowFullscreen = true;   // enter fullscreen when starting slideshow
+    bool m_slideshowLoop = true;          // last → first; false = stop after last
     /** True if this slideshow session called showFullScreen(); Esc/stop restores window. */
     bool m_slideshowOwnsFullscreen = false;
     SortMode m_sortMode = SortMode::Name;

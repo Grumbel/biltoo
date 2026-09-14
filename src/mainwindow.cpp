@@ -1475,6 +1475,7 @@ void MainWindow::showSlideshowSettings()
     SlideshowSettingsDialog dlg(this);
     dlg.setIntervalMs(m_slideshowIntervalMs);
     dlg.setStartFullscreen(m_slideshowFullscreen);
+    dlg.setLoop(m_slideshowLoop);
     if (m_imageView) {
         dlg.setTransitionIndex(static_cast<int>(m_imageView->slideshowTransition()));
         dlg.setTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
@@ -1493,6 +1494,7 @@ void MainWindow::showSlideshowSettings()
     auto applyFromDialog = [this, &dlg]() {
         setSlideshowIntervalMs(dlg.intervalMs());
         m_slideshowFullscreen = dlg.startFullscreen();
+        m_slideshowLoop = dlg.loop();
         if (!m_imageView) {
             return;
         }
@@ -1628,17 +1630,53 @@ void MainWindow::updateSlideshowFromClock()
     const qreal cycleF = qFloor(m_slideshowPosition);
     const qreal phaseT = m_slideshowPosition - cycleF; // [0,1)
     const qint64 cycle = qint64(cycleF);
-    const int fromIdx = int((qint64(m_slideshowBaseIndex) + cycle) % n);
-    const int toIdx = (fromIdx + 1) % n;
+    const qint64 absFrom = qint64(m_slideshowBaseIndex) + cycle;
+
+    // Non-loop: stop after the last image's pure dwell (no wrap transition).
+    if (!m_slideshowLoop && absFrom >= n) {
+        if (m_currentIndex != n - 1 && !m_slideshowAdvancing) {
+            m_slideshowAdvancing = true;
+            setCurrentIndex(n - 1);
+            m_slideshowAdvancing = false;
+        }
+        if (m_imageView) {
+            m_imageView->setSlideshowPhase(
+                m_session.paths().at(n - 1), QString(), -1.0);
+            m_imageView->cancelSlideshowTransition();
+        }
+        m_slideshowPendingToIndex = -1;
+        m_slideshowTransitionCycle = -1;
+        m_slideshowPreloadToIdx = -1;
+        stopSlideshow();
+        return;
+    }
+
+    const int fromIdx = m_slideshowLoop
+                            ? int(absFrom % n)
+                            : int(qBound(qint64(0), absFrom, qint64(n - 1)));
+    // Single-image or non-loop last slide: never crossfade into a wrap target.
+    const bool allowTransition =
+        (n > 1) && (m_slideshowLoop || fromIdx < n - 1);
+    const int toIdx = allowTransition ? ((fromIdx + 1) % n) : fromIdx;
 
     // Session timeline HUD (video-player style) in ms for display only.
     if (m_imageView) {
-        const qreal sessionPos =
-            std::fmod(qreal(m_slideshowBaseIndex) + m_slideshowPosition, qreal(n));
-        const qreal sessionPosPos = sessionPos < 0.0 ? sessionPos + qreal(n) : sessionPos;
-        const qint64 totalMs = qint64(n) * qint64(intervalMs);
-        const qint64 elapsedMs =
-            totalMs > 0 ? qint64(sessionPosPos * qreal(intervalMs)) % totalMs : 0;
+        qint64 totalMs = 0;
+        qint64 elapsedMs = 0;
+        if (m_slideshowLoop) {
+            const qreal sessionPos =
+                std::fmod(qreal(m_slideshowBaseIndex) + m_slideshowPosition, qreal(n));
+            const qreal sessionPosPos =
+                sessionPos < 0.0 ? sessionPos + qreal(n) : sessionPos;
+            totalMs = qint64(n) * qint64(intervalMs);
+            elapsedMs =
+                totalMs > 0 ? qint64(sessionPosPos * qreal(intervalMs)) % totalMs : 0;
+        } else {
+            totalMs = qint64(n) * qint64(intervalMs);
+            const qreal pos = qMin(qreal(m_slideshowBaseIndex) + m_slideshowPosition,
+                                   qreal(n));
+            elapsedMs = qMin(totalMs, qint64(pos * qreal(intervalMs)));
+        }
         m_imageView->setSlideshowTimeline(elapsedMs, totalMs);
         // Per-cycle dwell fraction for the thin progress line.
         m_imageView->setSlideshowCycleProgress(phaseT);
@@ -1657,8 +1695,9 @@ void MainWindow::updateSlideshowFromClock()
     const QString fromPath = m_session.paths().at(fromIdx);
     const QString toPath = m_session.paths().at(toIdx);
 
-    if (phaseT < pureFrac || transitionMs <= 0) {
+    if (phaseT < pureFrac || transitionMs <= 0 || !allowTransition) {
         if (m_imageView) {
+            // Clear any leftover to-side buffer so dwell is not dual-blended.
             m_imageView->setSlideshowPhase(fromPath, QString(), -1.0);
         }
         if (m_currentIndex != fromIdx && !m_slideshowAdvancing) {
@@ -1668,6 +1707,14 @@ void MainWindow::updateSlideshowFromClock()
         }
         m_slideshowPendingToIndex = -1;
         m_slideshowTransitionCycle = -1;
+        // Non-loop last slide: end when the pure dwell finishes.
+        if (!m_slideshowLoop && fromIdx >= n - 1
+            && phaseT >= pureFrac && transitionMs > 0) {
+            stopSlideshow();
+        } else if (!m_slideshowLoop && fromIdx >= n - 1
+                   && transitionMs <= 0 && phaseT >= 1.0 - 1e-6) {
+            stopSlideshow();
+        }
         return;
     }
 
@@ -1683,6 +1730,8 @@ void MainWindow::updateSlideshowFromClock()
                 << " from=" << fromIdx
                 << " to=" << toIdx
                 << " path=" << QFileInfo(toPath).fileName();
+            // New transition cycle: reset fade target so armSlideshowToPhase
+            // runs cleanly (avoids stale buffers when wrapping last→first).
             m_slideshowTransitionCycle = cycle;
             m_slideshowPendingToIndex = toIdx;
         }
@@ -1694,6 +1743,11 @@ void MainWindow::updateSlideshowFromClock()
             m_slideshowAdvancing = false;
             m_slideshowPendingToIndex = -1;
             m_slideshowPreloadToIdx = -1;
+            // After commit, force pure phase on the new current path so the
+            // next tick does not keep a finished fade pair on screen.
+            if (t >= 1.0 - 1e-9 && phaseT >= 1.0 - 1e-6) {
+                m_imageView->setSlideshowPhase(toPath, QString(), -1.0);
+            }
         }
     }
 }
@@ -1996,6 +2050,7 @@ void MainWindow::showPreferences()
     PreferencesDialog dlg(this);
     dlg.setSlideshowIntervalMs(m_slideshowIntervalMs);
     dlg.setSlideshowFullscreen(m_slideshowFullscreen);
+    dlg.setSlideshowLoop(m_slideshowLoop);
     if (m_imageView) {
         dlg.setSlideshowTransitionIndex(static_cast<int>(m_imageView->slideshowTransition()));
         dlg.setSlideshowTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
@@ -2046,6 +2101,7 @@ void MainWindow::showPreferences()
     }
     setSlideshowIntervalMs(dlg.slideshowIntervalMs());
     m_slideshowFullscreen = dlg.slideshowFullscreen();
+    m_slideshowLoop = dlg.slideshowLoop();
     if (m_imageView) {
         m_imageView->setSlideshowTransition(
             static_cast<ImageView::SlideshowTransition>(dlg.slideshowTransitionIndex()));
@@ -2843,6 +2899,8 @@ void MainWindow::readSettings()
     }
     m_slideshowFullscreen =
         settings.value(QStringLiteral("slideshowFullscreen"), true).toBool();
+    m_slideshowLoop =
+        settings.value(QStringLiteral("slideshowLoop"), true).toBool();
     if (m_imageView) {
         const bool sticky =
             settings.value(QStringLiteral("stickyZoomEnabled"), false).toBool();
@@ -3072,6 +3130,7 @@ void MainWindow::writeSettings()
                           m_imageView->slideshowPadColor().name(QColor::HexRgb));
     }
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
+    settings.setValue(QStringLiteral("slideshowLoop"), m_slideshowLoop);
     if (m_imageView) {
         settings.setValue(QStringLiteral("masonryColumns"),
                           m_imageView->masonryColumns());

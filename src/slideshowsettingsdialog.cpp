@@ -32,6 +32,11 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_fullscreenCheck->setToolTip(
         tr("Enter fullscreen automatically when starting a slideshow"));
 
+    m_loopCheck = new QCheckBox(tr("Loop slideshow"), this);
+    m_loopCheck->setToolTip(
+        tr("When enabled, advance from the last image back to the first.\nWhen disabled, the slideshow stops after the last image."));
+    m_loopCheck->setChecked(true);
+
     m_transitionCombo = new QComboBox(this);
     m_transitionCombo->addItem(tr("None"), 0);
     m_transitionCombo->addItem(tr("Crossfade"), 1);
@@ -81,6 +86,7 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     form->setVerticalSpacing(8);
     form->addRow(tr("Interval:"), m_intervalSpin);
     form->addRow(QString(), m_fullscreenCheck);
+    form->addRow(QString(), m_loopCheck);
     form->addRow(tr("Transition:"), m_transitionCombo);
     form->addRow(tr("Transition duration:"), m_transitionMsSpin);
     form->addRow(tr("Dwell motion:"), m_motionCombo);
@@ -130,6 +136,7 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
                 emitChanged();
             });
     connect(m_fullscreenCheck, &QCheckBox::toggled, this, [this](bool) { emitChanged(); });
+    connect(m_loopCheck, &QCheckBox::toggled, this, [this](bool) { emitChanged(); });
     connect(m_transitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { emitChanged(); });
     connect(m_transitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
@@ -202,6 +209,21 @@ void SlideshowSettingsDialog::setStartFullscreen(bool on)
     }
     m_blockEmit = true;
     m_fullscreenCheck->setChecked(on);
+    m_blockEmit = false;
+}
+
+bool SlideshowSettingsDialog::loop() const
+{
+    return m_loopCheck && m_loopCheck->isChecked();
+}
+
+void SlideshowSettingsDialog::setLoop(bool on)
+{
+    if (!m_loopCheck) {
+        return;
+    }
+    m_blockEmit = true;
+    m_loopCheck->setChecked(on);
     m_blockEmit = false;
 }
 
