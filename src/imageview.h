@@ -1335,6 +1335,9 @@ private:
     void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
                                        SessionAppearance::PixelKind kind);
     /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */
+    /** Absolute content want for @p item (session store + live flags). */
+    WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
+                                             SessionImageId sid = kInvalidSessionImageId) const;
     bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
                                  SessionAppearance::PixelKind kind) const;
     bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;

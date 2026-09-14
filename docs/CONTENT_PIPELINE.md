@@ -35,6 +35,15 @@ ImageItem: pixels + applied = want
 4. **Layout is pure:** `layoutSize(native, want)` — not a side effect of `QImage::transformed`.
 5. **Next install:** if `applied == want` and no strict edge upgrade, skip; else rematerialize.
 
+## Accept / attach
+
+`canAcceptDisplaySample` uses `ContentXform::needsRematerialize(applied, want, shown, incoming)`
+when the item has an applied fingerprint. Same xform + no edge upgrade → reject.
+Soft still never demotes full decode.
+
+`wantAppearanceForItem` is the single resolver for absolute want (session store,
+path map, live flags).
+
 ## Entry points
 
 | Path | API |
@@ -71,6 +80,15 @@ display pixels on ImageItem / filmstrip / slideshow blit
    full install from disk uses `materializeDisplay` with that state.
 4. **Gallery soft and Image full use the same function.** Mode transitions cannot
    disagree on orientation if both go through `installDisplayPixels`.
+
+## Accept / attach
+
+`canAcceptDisplaySample` uses `ContentXform::needsRematerialize(applied, want, shown, incoming)`
+when the item has an applied fingerprint. Same xform + no edge upgrade → reject.
+Soft still never demotes full decode.
+
+`wantAppearanceForItem` is the single resolver for absolute want (session store,
+path map, live flags).
 
 ## Entry points
 

@@ -456,11 +456,49 @@ void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixe
     preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
 }
 
+WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
+                                                      SessionImageId sid) const
+{
+    WorkspaceItemState appearance;
+    if (!item) {
+        return appearance;
+    }
+    SessionImageId id = sid;
+    if (id == kInvalidSessionImageId) {
+        id = item->sessionId();
+    }
+    if (id == kInvalidSessionImageId && isImageMode()) {
+        id = m_currentSessionId;
+    }
+    if (id != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *app = m_appearance.get(id)) {
+            appearance = *app;
+        }
+    } else if (item->sessionId() == kInvalidSessionImageId) {
+        const auto it = m_itemStates.constFind(item->path());
+        if (it != m_itemStates.cend()) {
+            appearance = *it;
+        }
+    }
+    // Live flags on the item win when the store is still empty for flips/crop.
+    if (item->contentHFlip()) {
+        appearance.contentHFlip = true;
+    }
+    if (item->contentVFlip()) {
+        appearance.contentVFlip = true;
+    }
+    if (item->sessionHasCrop() && appearance.cropRect.isEmpty()) {
+        appearance.hasCrop = true;
+        appearance.cropRect = item->sessionCropRect();
+    }
+    return appearance;
+}
+
 bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
                                        SessionAppearance::PixelKind kind) const
 {
-    // Single gate for soft→HQ and against late soft demoting full.
-    // Upgrade policy is DisplayQuality::isStrictUpgrade via shouldUpgradeDisplayTo.
+    // Soft must not demote full. Otherwise accept when ContentXform says
+    // rematerialize (xform change or strict edge upgrade) or the tile is blank.
     if (!item || pixels.isNull()) {
         return false;
     }
@@ -468,15 +506,24 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
     if (incoming <= 0) {
         return false;
     }
-    // Never replace full (non-preview) pixels with a SoftPreview sample.
     if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
         return false;
     }
-    // Equal-or-smaller sample is not an upgrade (blank tiles still accept).
-    if (item->hasDisplayPixels() && !item->shouldUpgradeDisplayTo(incoming)) {
-        return false;
+    if (!item->hasDisplayPixels()) {
+        return true;
     }
-    return true;
+    const WorkspaceItemState wantState = wantAppearanceForItem(item, item->sessionId());
+    const ContentXform::Value want = ContentXform::Value::fromState(wantState);
+    const ContentXform::Value applied = item->hasAppliedContentXform()
+        ? item->appliedContentXform()
+        : ContentXform::Value{};
+    const int shown = item->displayPixelLongEdge();
+    // No applied fingerprint yet: fall back to edge-only (pre-tag tiles).
+    if (!item->hasAppliedContentXform()) {
+        return item->shouldUpgradeDisplayTo(incoming)
+            || ContentXform::needsRematerialize(applied, want, shown, incoming);
+    }
+    return ContentXform::needsRematerialize(applied, want, shown, incoming);
 }
 
 void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
@@ -504,18 +551,8 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     }
     seedSessionAppearanceFromState(sid, path);
 
-    WorkspaceItemState appearance;
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_appearance.get(sid)) {
-            appearance = *app;
-        }
-    } else if (item->sessionId() == kInvalidSessionImageId) {
-        // Unbound tile only: path map is legacy fallback (IDENTITY.md).
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()) {
-            appearance = *it;
-        }
-    }
+    // Absolute want xform (session store / path map / live flags).
+    const WorkspaceItemState appearance = wantAppearanceForItem(item, sid);
 
     // raw → optional gallery soft clamp → materializeDisplay → attach.
     QImage pixelsForDisplay = pixels;

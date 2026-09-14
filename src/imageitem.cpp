@@ -167,6 +167,7 @@ void ImageItem::clearDecodedPixels()
     m_preview = QImage();
     m_previewPixels = false;
     setPixmap(QPixmap());
+    clearAppliedContentXform();
     update();
 }
 

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-833-accept-needs-rematerialize.** canAccept uses ContentXform needsRematerialize + wantAppearanceForItem.
+Prior: **832**.
+
+### Change
+- `wantAppearanceForItem` — one resolver for absolute content want
+- `canAcceptDisplaySample` — soft-demotion guard + `needsRematerialize(applied, want, edges)` when applied is tagged; untagged tiles still edge-upgrade
+- `installDisplayPixels` uses the same want resolver
+- `clearDecodedPixels` clears applied fingerprint
+
+### Apply
+```bash
+git pull /path/to/biltoo-833-accept-needs-rematerialize.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **833**
+- [ ] Manual: rotate 90°; soft climb still upgrades edge; same-edge soft does not wipe oriented pixels
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-832-contentxform-pure.** Pure ContentXform value + layoutSize + applied fingerprint.
 Prior: **831**.
 
