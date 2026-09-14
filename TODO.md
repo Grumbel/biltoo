@@ -2,6 +2,38 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-816-raster-climb-sm-tests.** Unit tests for RasterClimb::Machine; simplified plan apply.
+Prior: **815**.
+
+### Change
+- `tests/rasterclimbsm_test.cpp` — soft-first, Full same-tick after soft, PreferCache plateau→Full,
+  full shortfall retry, LRU demotion, reconcile sticky flags, escalate reset, non-terminal give-up
+- CMake: `biltoo-rasterclimbsm-test` / test name `rasterclimbsm`
+- PathRasterService::pump: mark queued only when schedule accepted / pending
+
+### Run
+```bash
+ctest -R rasterclimbsm --output-on-failure
+```
+
+### Apply
+```bash
+git pull /path/to/biltoo-816-raster-climb-sm-tests.bundle HEAD
+```
+
+### Next
+- GallerySoftState → same pure-SM treatment (optional)
+- Run ctest after rebuild
+
+### Done criteria
+- [x] Bundle **816**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-815-raster-climb-sm.** Path raster climb policy extracted to pure `RasterClimb::Machine`.
 Prior: **814**.
 

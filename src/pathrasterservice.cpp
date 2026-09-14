@@ -236,64 +236,38 @@ void PathRasterService::pump(const QString &path, Entry &entry)
         m.state().fullDone = false;
     }
 
-    bool any = false;
+    RasterClimb::Plan accepted;
+    accepted.softEdge = plan.softEdge;
+    accepted.displayEdge = plan.displayEdge;
+    accepted.fullEdge = plan.fullEdge;
+
     if (plan.scheduleSoft) {
-        if (ThumtooCache::schedulePixels(path, plan.softEdge > 0 ? plan.softEdge
-                                                                 : ThumtooCache::kGalleryLadderEdge)) {
-            any = true;
+        const int edge = plan.softEdge > 0 ? plan.softEdge
+                                           : ThumtooCache::kGalleryLadderEdge;
+        if (ThumtooCache::schedulePixels(path, edge)
+            || ThumtooCache::isPixelsPending(path, edge)) {
+            accepted.scheduleSoft = true;
         }
     }
     if (plan.scheduleDisplay) {
         ThumtooCache::scheduleProbe(path);
-        if (ThumtooCache::scheduleDisplayPixels(path, plan.displayEdge > 0 ? plan.displayEdge
-                                                                           : want)) {
-            any = true;
+        const int edge = plan.displayEdge > 0 ? plan.displayEdge : want;
+        if (ThumtooCache::scheduleDisplayPixels(path, edge)
+            || ThumtooCache::isPixelsPending(path, edge)) {
+            accepted.scheduleDisplay = true;
+            accepted.forgetDisplaySettled = plan.forgetDisplaySettled;
         }
     }
     if (plan.scheduleTiles) {
         if (ThumtooCache::scheduleTilePyramid(path)) {
-            any = true;
+            accepted.scheduleTiles = true;
         }
     }
     if (plan.scheduleFull) {
-        if (ThumtooCache::scheduleFullPixels(path, plan.fullEdge)) {
-            any = true;
+        if (ThumtooCache::scheduleFullPixels(path, plan.fullEdge)
+            || ThumtooCache::isPixelsPending(path, plan.fullEdge)) {
+            accepted.scheduleFull = true;
         }
     }
-    if (any || plan.scheduleSoft || plan.scheduleDisplay || plan.scheduleTiles
-        || plan.scheduleFull) {
-        // Mark queued only for jobs we attempted; schedule* may no-op.
-        RasterClimb::Plan accepted = plan;
-        if (plan.scheduleSoft
-            && !ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)
-            && !any) {
-            accepted.scheduleSoft = false;
-        }
-        m.markScheduled(accepted);
-        // Re-mark only flags that actually went inflight
-        if (plan.scheduleSoft
-            && ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)) {
-            m.state().softQueued = true;
-        } else if (plan.scheduleSoft) {
-            m.state().softQueued = false;
-        }
-        if (plan.scheduleDisplay
-            && ThumtooCache::isPixelsPending(path, plan.displayEdge > 0 ? plan.displayEdge
-                                                                        : want)) {
-            m.state().displayQueued = true;
-        } else if (plan.scheduleDisplay) {
-            m.state().displayQueued = false;
-        }
-        if (plan.scheduleFull
-            && ThumtooCache::isPixelsPending(path, plan.fullEdge)) {
-            m.state().fullQueued = true;
-            m.state().fullDone = true;
-        } else if (plan.scheduleFull) {
-            m.state().fullQueued = false;
-            m.state().fullDone = false;
-        }
-        if (plan.scheduleTiles) {
-            m.state().tilesQueued = true;
-        }
-    }
+    m.markScheduled(accepted);
 }

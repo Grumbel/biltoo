@@ -437,4 +437,12 @@ if(Qt6Test_FOUND)
   target_include_directories(biltoo-placementlinear-test PRIVATE src)
   target_link_libraries(biltoo-placementlinear-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME placementlinear-roundtrip COMMAND biltoo-placementlinear-test)
+
+  add_executable(biltoo-rasterclimbsm-test
+    tests/rasterclimbsm_test.cpp
+    src/rasterclimbsm.cpp
+  )
+  target_include_directories(biltoo-rasterclimbsm-test PRIVATE src)
+  target_link_libraries(biltoo-rasterclimbsm-test PRIVATE Qt6::Core Qt6::Test)
+  add_test(NAME rasterclimbsm COMMAND biltoo-rasterclimbsm-test)
 endif()
