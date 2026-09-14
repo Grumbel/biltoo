@@ -1580,30 +1580,10 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 
 QString ImageView::slideshowPrefetchHudLine() const
 {
-    if (!m_slideshowProgressActive) {
-        return {};
-    }
-    const int queued = m_ssRasterInflight.size() + m_ssRasterPending.size();
-    int target = slideshowTargetEdge();
-    if (!m_ssFromPath.isEmpty()) {
-        target = cappedDisplayEdgeForPath(m_ssFromPath, target);
-    }
-    const int need = slideshowNeedEdge(target);
-    const int have = ImageCache::longEdge(m_ssFromImage);
-    const bool currentShort = !m_ssFromPath.isEmpty() && have < need;
-    if (queued <= 0 && !currentShort) {
-        return {};
-    }
-    if (currentShort && queued > 0) {
-        return tr("Loading %1→%2 · prefetch %3")
-            .arg(have)
-            .arg(target)
-            .arg(queued);
-    }
-    if (queued > 0) {
-        return tr("Prefetch · %1").arg(queued);
-    }
-    return tr("Loading %1→%2").arg(have).arg(target);
+    // Ladder edge chips ("Loading 1024→2048") were noisy and not actionable —
+    // especially with HUD off. Prefetch still runs; status is not shown here.
+    Q_UNUSED(m_slideshowProgressActive);
+    return {};
 }
 
 QImage ImageView::slideshowRaster(const QString &path) const

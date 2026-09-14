@@ -2,6 +2,23 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-778-drop-slideshow-ladder-chip.** Remove slideshow "Loading 1024→2048" HUD chip.
+Prior: **777**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-778-drop-slideshow-ladder-chip.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **778**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-777-multi-file-open-progress.** Multi-file open shows centre progress; size-resolve starts before preparePaths.
 Prior: **776**.
 
