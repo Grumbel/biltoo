@@ -1551,30 +1551,44 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
         return;
     }
     const int incoming = ImageCache::longEdge(image);
-    const int had = ImageCache::longEdge(slideshowRaster(path));
+    // Host ImageCache is often already updated by noteDelivery / ladderReady
+    // *before* this runs. Comparing incoming to the cache edge skipped every
+    // upgrade and left m_ssFrom/To stuck on LQIP/soft until re-enter.
+    const int hadPhase =
+        (path == m_ssFromPath) ? ImageCache::longEdge(m_ssFromImage)
+        : (path == m_ssToPath)  ? ImageCache::longEdge(m_ssToImage)
+                                 : 0;
     putSlideshowRaster(path, image);
-    if (incoming <= had) {
-        if (viewport() && m_slideshowProgressActive) {
-            viewport()->update(); // prefetch chip may clear
-        }
+
+    const bool isPhasePath = (path == m_ssFromPath || path == m_ssToPath);
+    if (!isPhasePath) {
         return;
     }
-    qCDebug(lcSlideshow).nospace()
-        << "[slideshow] raster-ready " << QFileInfo(path).fileName()
-        << " " << image.width() << "x" << image.height()
-        << " (was " << had << ")";
 
-    // Phase buffer upgrade (clamp + orient + atlas) is deferred off this stack
-    // so ladderReady does not block the pure-phase clock. No update() here —
-    // finishSlideshowPhaseBufferUpgrade / finishSlideshowAtlas paint once the
-    // new buffer is ready (avoids a soft→HQ frame storm on every ladder step).
-    scheduleSlideshowPhaseBufferUpgrade(path, image);
+    if (phaseBufferWantsSample(path, incoming)) {
+        qCDebug(lcSlideshow).nospace()
+            << "[slideshow] raster-ready " << QFileInfo(path).fileName()
+            << " " << image.width() << "x" << image.height()
+            << " (phase was " << hadPhase << ")";
+        // Phase buffer upgrade (clamp + orient + atlas) is deferred off this stack
+        // so ladderReady does not block the pure-phase clock.
+        scheduleSlideshowPhaseBufferUpgrade(path, image);
+    } else if (viewport() && m_slideshowProgressActive) {
+        viewport()->update();
+    }
 
-    // Climb: PathRasterService EscalateToFull (docs/THUMTOO_HOST_CONTRACT.md).
-    if (m_pathRaster && (path == m_ssFromPath || path == m_ssToPath)) {
+    // Climb while the *phase buffer* is still short of target (not only when
+    // the host cache edge increases).
+    if (m_pathRaster) {
         const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
-        m_pathRaster->ensure(path, target, logicalSizeForPath(path),
-                             PathRasterService::ClimbPolicy::EscalateToFull);
+        const int need = slideshowNeedEdge(target);
+        const int phaseHave =
+            (path == m_ssFromPath) ? ImageCache::longEdge(m_ssFromImage)
+                                   : ImageCache::longEdge(m_ssToImage);
+        if (phaseHave < need || incoming < need) {
+            m_pathRaster->ensure(path, target, logicalSizeForPath(path),
+                                 PathRasterService::ClimbPolicy::EscalateToFull);
+        }
     }
 }
 

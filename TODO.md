@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-798-slideshow-phase-upgrade.** Slideshow phase buffers upgrade past LQIP/soft.
+Prior: **797**.
+
+### Problem
+`onSlideshowRasterReady` compared the incoming sample to **ImageCache**, which
+`noteDelivery` / `ladderReady` had already updated. `incoming <= had` always,
+so `m_ssFromImage` / `m_ssToImage` stayed on LQIP/soft until re-enter.
+
+### Change
+- Gate upgrades on **phase buffer** edge (`phaseBufferWantsSample`)
+- Keep EscalateToFull while phase buffer is short of need
+
+### Apply
+```bash
+git pull /path/to/biltoo-798-slideshow-phase-upgrade.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **798**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-797-slideshow-loop-option.** Slideshow loop on/off; fix wrap transitions.
 Prior: **796**.
 
