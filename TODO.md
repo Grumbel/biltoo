@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-823-restore-text-layer-intrinsic.** Re-apply text-layer intrinsic mapping (was dropped off the tip line).
+Prior: **822** (soft fill). **820 was lost** when 821 was committed on 819 without pulling 820.
+
+### What went wrong
+- Tip bundles were replaced (only latest kept in artifacts) — stacking still OK if history is complete
+- 821 landed on **819**, not **820**: shallow/missing-prereq pull failed; text-layer commit never joined HEAD
+- 822 continued that line → tip lacked "text layer uses intrinsic size"
+
+### Change
+- Re-apply textRegionImageRect: no soft sample rescale
+
+### Apply
+```bash
+git pull /path/to/biltoo-823-restore-text-layer-intrinsic.bundle HEAD
+```
+
+Full stack from this work line base is in the tip bundle.
+
+### Done criteria
+- [x] Bundle **823**
+- [x] Text-layer intrinsic fix on tip again
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-822-soft-fill-contentrect.** Soft samples fill logical contentRect (no letterbox).
 Prior: **821**.
 
