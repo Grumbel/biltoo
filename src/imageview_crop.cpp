@@ -479,19 +479,27 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     item->setItemHFlip(false);
     item->setItemVFlip(false);
 
-    // ContentXform: pure materialize from unoriented host when possible.
+    // Interactive crop: never install multi-MP display pixels on the GUI.
+    // Soft stand-in ≤kGuiMaterializeMaxEdge; native host stays in ImageCache.
+    QImage display = full;
+    SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
+    if (ImageCache::longEdge(display) > ContentXform::kGuiMaterializeMaxEdge) {
+        display = ImageCache::clampToMaxEdge(
+            display, ContentXform::kGuiMaterializeMaxEdge);
+        kind = SessionAppearance::PixelKind::SoftPreview;
+    }
+
+    // ContentXform: pure materialize from unoriented host when possible (≤512).
     if (unorientedSource && tryRematerializeFromHost(item, contentOnly)) {
         m_cropShowingFullImage = true;
         return;
     }
-    attachDisplaySample(item, full, contentOnly, SessionAppearance::PixelKind::FullSource);
+    attachDisplaySample(item, display, contentOnly, kind);
     if (unorientedSource && SessionAppearance::hasContentAppearance(contentOnly)) {
         applyContentBakes(item, contentOnly);
         applyContentLayoutSize(item, contentOnly);
-        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-            ? item->sessionId()
-            : m_currentSessionId;
-        scheduleAsyncHostRematerialize(path, sid, contentOnly);
+        // No scheduleAsyncHostRematerialize here — multi-MP orient during crop
+        // draft is what made enter laggy; Apply uses host if already cached.
     } else {
         applyContentLayoutSize(item, contentOnly);
         item->setAppliedContentXform(ContentXform::Value::fromState(contentOnly));
@@ -578,22 +586,19 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     }
 
     if (full.isNull()) {
-        // Need host (re-crop or blank). Schedule async; keep chrome if we can
-        // show something only when not re-croping from a crop-baked sample.
-        m_cropAwaitingFullPath = path;
-        requestCropFullRaster(path);
-        if (hadCrop) {
-            flashHud(tr("Crop"), tr("Loading full image…"));
-            // Cannot draft on crop-baked pixels — wait for host.
-            // Still allow enter with a neutral full-frame box from logical size
-            // once we have any host sample from the pool (maybeUpgrade).
+        // Prefer soft stand-in over multi-MP full load. Re-crop on crop-baked
+        // display is imperfect; still allow draft rather than blocking enter.
+        full = item->sourceImage();
+        if (full.isNull()) {
+            full = item->previewImage();
+        }
+        if (full.isNull() && !path.isEmpty()) {
+            full = ImageCache::clampToMaxEdge(
+                ImageCache::get(path), ContentXform::kGuiMaterializeMaxEdge);
+        }
+        if (full.isNull()) {
             return false;
         }
-        if (item->sourceImage().isNull() && item->previewImage().isNull()) {
-            return false;
-        }
-        full = item->sourceImage().isNull() ? item->previewImage()
-                                            : item->sourceImage();
     }
 
     const bool unoriented = hostOk; // only ImageCache samples are source-raw
@@ -607,11 +612,11 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         updateWorkspaceSceneRect();
     }
 
-    // Background native upgrade into ImageCache only (not live mid-draft).
-    if (!sampleCoversNativeLogical(path, full)) {
-        m_cropAwaitingFullPath = path;
-        requestCropFullRaster(path);
-    }
+    // Do NOT request multi-MP native on enter. That made crop "load full first"
+    // (ImageLoader::load / scheduleFullPixels up to 8192) and stalled the draft.
+    // Crop is content-space; soft host is enough for interactive edit + Apply.
+    // Native stays optional (cache may already hold it; Apply prefers it if ready).
+    m_cropAwaitingFullPath.clear();
     return true;
 }
 
@@ -869,17 +874,8 @@ void ImageView::applyAutoCrop()
 
 void ImageView::applyCrop()
 {
-    // Do not bake a provisional soft sample into the session crop.
-    if (!m_cropAwaitingFullPath.isEmpty()) {
-        ImageItem *item = m_cropTargetItem;
-        const QImage src = item ? item->sourceImage() : QImage();
-        if (!item || src.isNull()
-            || !sampleCoversNativeLogical(item->path(), src)) {
-            flashHud(tr("Crop"), tr("Still loading full image…"));
-            return;
-        }
-        m_cropAwaitingFullPath.clear();
-    }
+    // Soft draft is valid — crop is content-space. Do not wait on multi-MP load.
+    m_cropAwaitingFullPath.clear();
     leaveCropModeInternal(true);
 }
 
@@ -1094,12 +1090,15 @@ bool ImageView::applyCropCommit(ImageItem *item)
     // angle (non-full-frame commit with successful cropToLocalRect).
     ensureCropRectValid();
 
-    // Draft may still be soft; prefer native host for the bake when ready.
+    // Prefer a better host sample when already in cache *and* GUI-safe to install.
+    // Multi-MP native is left for export paths; interactive Apply crops the soft
+    // display so Apply stays responsive.
     {
         const QString path = item->path();
         const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-        if (!host.isNull() && sampleCoversNativeLogical(path, host)
-            && ImageCache::longEdge(host) > item->displayPixelLongEdge()) {
+        if (!host.isNull()
+            && ImageCache::longEdge(host) > item->displayPixelLongEdge()
+            && ImageCache::longEdge(host) <= ContentXform::kGuiMaterializeMaxEdge) {
             const QSize oldSz = item->imageSize();
             WorkspaceItemState contentOnly;
             const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
@@ -1115,10 +1114,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
             contentOnly.cropSourceSize = QSize();
             contentOnly.cropRotation = 0.0;
             if (!tryRematerializeFromHost(item, contentOnly)) {
-                // Multi-MP: materialize on worker is too late for Apply — use
-                // incremental content bake on the native host sample.
                 attachDisplaySample(item, host, WorkspaceItemState{},
-                                    SessionAppearance::PixelKind::FullSource);
+                                    SessionAppearance::PixelKind::SoftPreview);
                 if (SessionAppearance::hasContentAppearance(contentOnly)) {
                     applyContentBakes(item, contentOnly);
                 }

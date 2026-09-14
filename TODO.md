@@ -2,6 +2,31 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-867-crop-soft-not-full.** Crop enter/apply must not load multi-MP native.
+Prior: **866**.
+
+### Problem
+`prepareCropModeFullImage` always `requestCropFullRaster` (up to 8192 /
+`ImageLoader::load` full file) when soft did not cover native. `applyCrop`
+blocked on "Still loading full image…". Felt like crop always loads full first.
+
+### Fix
+- Enter/draft on best soft/host ≤ GUI materialize budget
+- No full request on enter; clear awaiting gate
+- Apply never waits on native; multi-MP not installed on GUI for draft
+- Crop remains content-space (soft is valid)
+
+### Apply
+```bash
+git pull /path/to/biltoo-867-crop-soft-not-full.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-866-slideshow-first-frame-phase-arm.** First paint was unoriented dwell before phase arm.
 Prior: **865**.
 
