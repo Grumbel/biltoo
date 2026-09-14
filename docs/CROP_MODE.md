@@ -40,6 +40,9 @@ Preconditions: single subject, `hasDisplayPixels()`.
    into content space; else full contentRect.
 5. **View only (Image mode):** `fitInView` / transform so the full frame is
    visible. Must **not** change intrinsic using a want that still has crop.
+   **`m_cropMode` must be true before any `fitItem` call** (Image mode runs
+   fitItem at the end of prepare). If fitItem runs with m_cropMode false, it
+   applies store crop to intrinsic and the draft collapses to the old crop bake.
 6. Block `installDisplayPixels` / async rematerialize on the crop target until
    leave (draft must not be overwritten by a crop bake).
 

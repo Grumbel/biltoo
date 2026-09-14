@@ -2,6 +2,41 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-886-crop-mode-before-fit.** Set m_cropMode true *before* prepare/fitItem.
+Prior: **885**.
+
+### User model
+Cropped image → crop again → show **original** → draw prior rect → done.
+
+### Why Image still showed the crop bake
+`prepareCropModeFullImage` ends with `fitItem` (Image only). `m_cropMode` was
+set **after** prepare returned. fitItem therefore still did:
+
+```text
+want = store appearance (has crop)
+intrinsic = layoutSize(native, want)  // OLD CROP BOX
+```
+
+Full-frame pixels were installed, then intrinsic collapsed to the crop box —
+rect in the wrong place, looks like “still the cropped image”.
+
+Workspace never calls fitItem after enter → worked.
+
+### Fix
+1. `m_cropMode = true` before prepare (clear on prepare failure)
+2. fitItem treats crop draft (m_cropMode or applied orient-only) as orient-only layout
+
+### Apply
+```bash
+git pull /path/to/biltoo-886-crop-mode-before-fit.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-885-crop-mode-plan-fititem.** Plan in docs/CROP_MODE.md; Image fitItem no longer collapses crop draft.
 Prior: **884**.
 

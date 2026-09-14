@@ -3470,21 +3470,27 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     // (docs/CROP_MODE.md). wantAppearance still has the stored crop — using it
     // here collapsed intrinsic to the old crop box right after enter (Image
     // mode calls fitItem; Workspace does not — that is why Workspace worked).
-    if (!path.isEmpty() && !item->sessionHasCrop() && !m_cropMode) {
+    // Crop draft (m_cropMode or applied orient-only): never layoutSize with
+    // store crop — that collapses the full-frame draft to the old crop box.
+    const bool cropDraft =
+        m_cropMode
+        || (item->hasAppliedContentXform()
+            && !item->appliedContentXform().hasCrop
+            && item->sessionHasCrop() == false);
+    if (!path.isEmpty() && !item->sessionHasCrop() && !cropDraft) {
         const QSize fileNative = ensureLogicalSizeForPath(path);
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
             && !isProvisionalImageSize(path)) {
             const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
                 ? item->sessionId()
                 : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
-            WorkspaceItemState want = wantAppearanceForItem(item, sid);
+            const WorkspaceItemState want = wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);
             if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
                 item->setIntrinsicSize(lay);
             }
         }
-    } else if (m_cropMode && !path.isEmpty()) {
-        // Crop draft: force full orient layout even if store still has crop.
+    } else if (cropDraft && !path.isEmpty()) {
         WorkspaceItemState orientOnly = wantAppearanceForItem(
             item,
             item->sessionId() != kInvalidSessionImageId

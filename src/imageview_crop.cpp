@@ -337,6 +337,11 @@ bool ImageView::enterCropModeFromUi()
     // Lock identity for the whole crop session (IDENTITY.md).
     m_cropTargetItem = item;
     m_cropTargetId = item->sessionId();
+    // Mark crop mode *before* prepare/fitItem. prepare ends with fitItem in
+    // Image mode; that helper must not apply store crop to intrinsic (see
+    // docs/CROP_MODE.md). Setting m_cropMode after fitItem left Image/Gallery
+    // draft on the old crop bake with a wrong rect.
+    m_cropMode = true;
     // Snapshot appearance before full-image reload so Close can be undone.
     m_cropEnterSource = item->sourceImage().copy();
     if (m_cropEnterSource.isNull()) {
@@ -363,6 +368,7 @@ bool ImageView::enterCropModeFromUi()
         item->setItemShear(0.0);
     }
     if (!prepareCropModeFullImage(item)) {
+        m_cropMode = false;
         m_cropEnterValid = false;
         m_cropEnterSource = QImage();
         if (m_cropHadStashedPlacement) {
@@ -393,7 +399,7 @@ bool ImageView::enterCropModeFromUi()
         alignCropFrameCenterToScene(item, workspaceAnchorScene);
         updateWorkspaceSceneRect();
     }
-    m_cropMode = true;
+    // m_cropMode already true (set before prepare).
     m_cropActiveHandle = CropHandle::None;
     m_cropHoverHandle = CropHandle::None;
     m_cropRubberBanding = false;
