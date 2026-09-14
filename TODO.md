@@ -2,6 +2,25 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-841-crop-through-attach-path.** Crop enter/leave/undo use attachDisplaySample / tryRematerialize / installDisplayPixels.
+Prior: **840**.
+
+### Change
+- `installFullImageForCrop`: ImageCache put → tryRematerializeFromHost; else attach raw + applyContentBakes + async rematerialize
+- `restoreSessionCropAppearance`: same host/install path
+- `applyCropAppearance` (undo): attachDisplaySample for baked after-image
+
+### Apply
+```bash
+git pull /path/to/biltoo-841-crop-through-attach-path.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-840-one-attach-display-sample.** Sole attachDisplaySample; no layout heuristics; install/in-place/host use same path.
 Prior: **839**.
 

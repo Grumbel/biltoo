@@ -32,3 +32,10 @@ ImageItem
 | Live rotate/flip multi-MP | incremental bake + `scheduleAsyncHostRematerialize` → `finishAsync` → `attachDisplaySample` |
 | Tests | `tests/contentxform_test.cpp` |
 
+
+## Crop
+
+Entering crop loads the full frame with content flips/turns only (no crop bake).
+`installFullImageForCrop` uses the same host rematerialize / attach path; multi-MP
+falls back to incremental content bake + async pure rematerialize.
+

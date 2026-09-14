@@ -449,45 +449,49 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     }
     // Crop drafts live in contentRect / intrinsic space (SIZE.md). Soft or
     // PreferCache samples must never redefine that box — only native/probed
-    // logical size. Entering crop on a provisional soft aspect stretched the
-    // full frame into the wrong ratio until leave.
+    // logical size.
     const QString path = item->path();
-    QSize logical = logicalSizeForPath(path);
     if (sampleCoversNativeLogical(path, full)) {
-        // Native (or near-native) raster: durable size is the sample when the
-        // map is still provisional / empty (thumtoo size may lag).
         rememberSizeFromDecode(path, full);
-        logical = logicalSizeForPath(path);
+        QSize logical = logicalSizeForPath(path);
         if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
-            logical = full.size();
-            rememberImageSize(path, logical);
+            rememberImageSize(path, full.size());
         }
     }
-    if (!isPositiveSize(logical) || logical.width() <= 1 || logical.height() <= 1
-        || isProvisionalImageSize(path)) {
-        // Still provisional: layout aspect from sample, magnitude capped —
-        // never adopt raw soft pixel dimensions as identity.
-        logical = layoutSizeForPath(path, full);
-    }
-    if (isPositiveSize(logical) && logical.width() > 1 && logical.height() > 1) {
-        item->setIntrinsicSize(logical);
+    // Host cache holds raw full frame for materialize / async rematerialize.
+    if (!path.isEmpty()) {
+        ImageCache::put(path, full);
     }
 
-    // Pixels only — setSourceImageReady does not touch intrinsic geometry.
-    item->setSourceImageReady(full);
+    // Content flips/turns only — crop is drafted on the full post-orient frame.
+    WorkspaceItemState contentOnly;
+    if (haveApp && app) {
+        contentOnly = *app;
+        contentOnly.hasCrop = false;
+        contentOnly.cropRect = QRect();
+        contentOnly.cropSourceSize = QSize();
+        contentOnly.cropRotation = 0.0;
+    }
+
     // Always axis-aligned while cropping (placement was stashed in setCropMode).
     item->setItemRotation(0.0);
     item->setItemShear(0.0);
     item->setItemHFlip(false);
     item->setItemVFlip(false);
-    // Re-apply content flips/quarter turns for this session image on the full frame
-    // (crop draft is drawn in that space). Do not bake the crop yet.
-    // Quarter-turns transpose intrinsic via bakeRotate90.
+
+    // Same rules as everywhere: materialize + attachDisplaySample when possible.
+    if (tryRematerializeFromHost(item, contentOnly)) {
+        m_cropShowingFullImage = true;
+        return;
+    }
+    // Multi-MP: attach raw, incremental content bake, async pure rematerialize.
+    attachDisplaySample(item, full, WorkspaceItemState{}, SessionAppearance::PixelKind::FullSource);
     if (haveApp && app) {
-        WorkspaceItemState contentOnly = *app;
-        contentOnly.hasCrop = false;
-        contentOnly.cropRect = QRect();
         applyContentBakes(item, contentOnly);
+        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : m_currentSessionId;
+        scheduleAsyncHostRematerialize(path, sid, contentOnly);
     }
     m_cropShowingFullImage = true;
 }
@@ -718,9 +722,10 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         app = *it;
         have = true;
     }
-    const QImage full = fullRasterForEdit(item->path());
-    if (!full.isNull()) {
-        item->setSourceImage(full);
+    const QString path = item->path();
+    const QImage full = fullRasterForEdit(path);
+    if (!full.isNull() && !path.isEmpty()) {
+        ImageCache::put(path, full);
     }
     if (isImageMode()) {
         item->setItemRotation(0.0);
@@ -731,7 +736,19 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     }
     item->setItemHFlip(false);
     item->setItemVFlip(false);
-    SessionAppearance::applyContentToItem(item, app);
+    if (!full.isNull()) {
+        if (!tryRematerializeFromHost(item, app)) {
+            installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
+            if (!ContentXform::equal(
+                    item->hasAppliedContentXform() ? item->appliedContentXform()
+                                                   : ContentXform::Value{},
+                    ContentXform::Value::fromState(app))) {
+                SessionAppearance::applyContentToItem(item, app);
+            }
+        }
+    } else {
+        SessionAppearance::applyContentToItem(item, app);
+    }
     if (isImageMode()) {
         m_fitMode = true;
         fitItem(item, currentFitAspectMode());
@@ -751,14 +768,15 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     if (!item) {
         return;
     }
-    // Undo/redo after-image: pixels are already content-baked — do not re-bake.
+    // Undo/redo after-image: pixels are already content-baked — attach only.
     if (!src.isNull()) {
-        item->setSourceImage(src);
+        attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
+    } else {
+        item->setSessionCrop(state.hasCrop, state.cropRect);
+        item->setContentHFlip(state.contentHFlip);
+        item->setContentVFlip(state.contentVFlip);
+        item->setAppliedContentXform(ContentXform::Value::fromState(state));
     }
-    item->setSessionCrop(state.hasCrop, state.cropRect);
-    item->setContentHFlip(state.contentHFlip);
-    item->setContentVFlip(state.contentVFlip);
-    item->setAppliedContentXform(ContentXform::Value::fromState(state));
     applyState(item, state);
     // Seed appearance with the full state (including cropRotation) before
     // commitItemSessionEdit, which rebuilds the slot via captureState.
