@@ -2756,6 +2756,10 @@ void MainWindow::startSlideshow()
         m_slideshowOwnsFullscreen = true;
     }
     m_slideshowPaused = false;
+    // Mark the session active *before* chrome policy. updateScrollBarPolicyForMode
+    // keys off isSlideshowSession(); calling it before the clock runs left Gallery
+    // AsNeeded/AlwaysOn bars visible for the whole show (Gallery → Space).
+    m_slideshowClockRunning = true;
     updateScrollBarPolicyForMode();
     updateSlideshowActionUi();
     qApp->installEventFilter(this);
@@ -2788,6 +2792,9 @@ void MainWindow::startSlideshow()
     }
     // Clock last — may immediately start a transition when pureMs==0.
     armSlideshowAdvanceTimer();
+    // Re-assert after arm (and after any motion freeze) so Gallery→show never
+    // leaves AsNeeded bars from the pre-session policy snapshot.
+    updateScrollBarPolicyForMode();
 }
 
 void MainWindow::seekSlideshowFraction(qreal fraction)

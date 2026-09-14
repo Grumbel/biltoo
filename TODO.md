@@ -2,6 +2,36 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-829-slideshow-hide-bars-from-gallery.** Hide scrollbars when starting slideshow from Gallery; align DOMAIN/TODO.
+Prior: **828**.
+
+### Bug
+Gallery → Space left view scrollbars visible for the whole show.
+`updateScrollBarPolicyForMode()` ran while `isSlideshowSession()` was still false
+(`m_slideshowClockRunning` set only inside `armSlideshowAdvanceTimer()` at the end).
+With “Show Scrollbars” (or residual Gallery AsNeeded), bars stayed on. Ken Burns
+`cancelSlideshowMotion` could also restore a pre-show AsNeeded policy mid-show.
+
+### Change
+- Mark `m_slideshowClockRunning` before the first policy update; re-assert after arm.
+- While `m_slideshowProgressActive`, motion cancel keeps AlwaysOff (do not restore Gallery AsNeeded).
+- DOMAIN Gallery: Space starts slideshow via Image; TODO interaction table lists Space / Esc.
+
+### Apply
+```bash
+git pull /path/to/biltoo-829-slideshow-hide-bars-from-gallery.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **829**
+- [ ] Manual: Gallery with Show Scrollbars on → Space → no bars; Esc restores preference
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-828-gallery-host-better-no-clamp-spam.** Stop install-host-better spam when Gallery clamps soft below host edge.
 Prior: **827**.
 
@@ -9836,7 +9866,9 @@ Relink UI: prompt to locate missing assets on load; warn on SHA-256 mismatch.
 | Click thumb | Session select / navigate |
 | Double-click thumb (Workspace multi-select) | Toggle canvas membership |
 | Drag thumb → canvas | Add to session/canvas |
+| **Space** | Slideshow start/stop (Image **or Gallery**; enters Image first from Gallery; not Workspace) |
 | `[` / `]` | Slideshow interval slower / faster |
+| Esc (slideshow) | Leave slideshow (and fullscreen if the show owned it) |
 
 See also [HANDLES.md](HANDLES.md), [DOMAIN.md](DOMAIN.md), [AGENTS.md](AGENTS.md).
 

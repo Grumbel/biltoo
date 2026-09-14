@@ -46,7 +46,7 @@
 
 | ID | Area | Issue |
 |----|------|--------|
-| H1 | Domain vs code | **DOMAIN.md still says slideshow is “Image only”.** Implementation allows start from Gallery (`startSlideshow` → `showPathInImageMode`). TODO interaction table still says “Space \| Slideshow (Image only)”. Spec and product disagree. |
+| H1 | Domain vs code | **Aligned (829).** DOMAIN + TODO: Space starts slideshow from Image **or Gallery** (enters Image first); not Workspace. |
 | H2 | Chrome dual path | **Handle hover/cursor still implemented on `ImageItem` (`hoverMoveEvent`) and again on `ImageView` (view-driven).** View path is authoritative for paint/hits; item path still mutates cursor, tooltip, `m_hoverHandle`, and calls `update()`. Risk of desync, double work, and “ghost” highlights when view and item disagree (especially under another pixmap). AGENTS.md already warns dual paths must stay consistent — they are not a single ownership model. |
 | H3 | Async load | **`LoadResult` / generation checks exist for replace-style loads**, but rapid mode switches (Gallery ↔ Image ↔ Workspace) while thread-pool jobs complete can still apply a finished decode to the wrong mode or leave empty canvas until next navigation. Worth a dedicated race review with gen+mode token on every completion path (`loadImage`, `addImage`, gallery populate). |
 | H4 | Undo | **Undo stack is cleared on several mode/canvas resets** (`clearExtras`, layout enters). Workspace transform undo is local to `ImageView`; session-level “remove files” is not on the same stack. User expectation of one Undo may be violated. |

@@ -1133,8 +1133,15 @@ void ImageView::cancelSlideshowMotion()
     m_slideshowMotionActive = false;
     m_slideshowMotionPaused = false;
     if (m_motionSavedBarPolicies) {
-        setHorizontalScrollBarPolicy(m_motionSavedHBarPolicy);
-        setVerticalScrollBarPolicy(m_motionSavedVBarPolicy);
+        // freezeScrollbars may have saved Gallery AsNeeded from before the
+        // session was marked running. Restoring that mid-show brings bars back.
+        if (m_slideshowProgressActive) {
+            setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+            setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        } else {
+            setHorizontalScrollBarPolicy(m_motionSavedHBarPolicy);
+            setVerticalScrollBarPolicy(m_motionSavedVBarPolicy);
+        }
         m_motionSavedBarPolicies = false;
     }
     setSlideshowUnderlayVisible(true);

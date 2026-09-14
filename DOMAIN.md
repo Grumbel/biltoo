@@ -71,7 +71,9 @@ diverge from it.
 - **Flow / Flow Fill**: session order L→R, T→B; wrap at layout width (book-friendly). Flow Fill justifies each row.
 - **Facing**: cover page alone, then two-up spreads (verso|recto), stacked — PDF-reader style.
 - User may rotate (±90°) and flip selected tiles; scale/opacity/stack remain Workspace-only.
-- Linear viewer navigation (slideshow, prev/next) is not the primary job here.
+- Linear viewer navigation is secondary here: **Space** still starts a slideshow
+  (enters Image mode on the current session image first). Prev/next while in
+  Gallery move the session cursor among tiles, not a timed show.
 
 ### Workspace mode — “arrange several pictures freely”
 
