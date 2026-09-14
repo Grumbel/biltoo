@@ -2,6 +2,20 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-858-slideshow-shadow-fix.** Actually rename acceptPhase param (857 was docs-only).
+Prior: **857**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-858-slideshow-shadow-fix.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-857-slideshow-shadow-warning.** Rename acceptPhase lambda param (fix -Wshadow).
 Prior: **856**.
 

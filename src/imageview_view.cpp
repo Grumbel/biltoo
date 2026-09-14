@@ -1378,9 +1378,9 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     const int incoming = ImageCache::longEdge(oriented);
     const int need = slideshowNeedEdge(slideshowTargetEdge());
     bool changed = false;
-    auto acceptPhase = [](int incoming, int have, bool contentApplied) {
+    auto acceptPhase = [](int sampleEdge, int have, bool contentApplied) {
         // Sharper always; same edge when ContentXform not yet applied.
-        return incoming > have || (incoming == have && !contentApplied);
+        return sampleEdge > have || (sampleEdge == have && !contentApplied);
     };
     if (path == m_ssFromPath
         && acceptPhase(incoming, ImageCache::longEdge(m_ssFromImage),
