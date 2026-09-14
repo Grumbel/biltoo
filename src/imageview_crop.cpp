@@ -339,11 +339,15 @@ bool ImageView::enterCropModeFromUi()
     m_cropTargetId = item->sessionId();
     // Snapshot appearance before full-image reload so Close can be undone.
     m_cropEnterSource = item->sourceImage().copy();
+    if (m_cropEnterSource.isNull()) {
+        m_cropEnterSource = item->previewImage().copy();
+    }
     m_cropEnterState = captureState(item);
     m_cropEnterState.hasCrop = item->sessionHasCrop();
     m_cropEnterState.cropRect = item->sessionCropRect();
     // cropRotation / cropSourceSize come from captureState → appearance.
-    m_cropEnterValid = !m_cropEnterSource.isNull();
+    // Soft-only tiles have preview only; still a valid enter snapshot.
+    m_cropEnterValid = !m_cropEnterSource.isNull() || item->hasDisplayPixels();
     // Crop handles are axis-aligned in item space; free Workspace placement
     // rotation makes rubber-band and edge grips unusable. Unrotate for the
     // crop session and restore on exit.

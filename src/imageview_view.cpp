@@ -3466,19 +3466,35 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     // used to reset intrinsic to unoriented native and paint stretched oriented
     // pixels into the old contentRect.
     const QString path = item->path();
-    if (!path.isEmpty() && !item->sessionHasCrop()) {
+    // While crop mode is active the draft is orient-only *full* frame
+    // (docs/CROP_MODE.md). wantAppearance still has the stored crop — using it
+    // here collapsed intrinsic to the old crop box right after enter (Image
+    // mode calls fitItem; Workspace does not — that is why Workspace worked).
+    if (!path.isEmpty() && !item->sessionHasCrop() && !m_cropMode) {
         const QSize fileNative = ensureLogicalSizeForPath(path);
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
             && !isProvisionalImageSize(path)) {
             const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
                 ? item->sessionId()
                 : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
-            const WorkspaceItemState want = wantAppearanceForItem(item, sid);
+            WorkspaceItemState want = wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);
             if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
                 item->setIntrinsicSize(lay);
             }
         }
+    } else if (m_cropMode && !path.isEmpty()) {
+        // Crop draft: force full orient layout even if store still has crop.
+        WorkspaceItemState orientOnly = wantAppearanceForItem(
+            item,
+            item->sessionId() != kInvalidSessionImageId
+                ? item->sessionId()
+                : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId));
+        orientOnly.hasCrop = false;
+        orientOnly.cropRect = QRect();
+        orientOnly.cropSourceSize = QSize();
+        orientOnly.cropRotation = 0.0;
+        applyContentLayoutSize(item, orientOnly);
     }
     if (isImageMode() || m_items.size() == 1) {
         item->setItemScale(1.0);

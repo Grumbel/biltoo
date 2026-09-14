@@ -2,6 +2,46 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-885-crop-mode-plan-fititem.** Plan in docs/CROP_MODE.md; Image fitItem no longer collapses crop draft.
+Prior: **884**.
+
+### Why Image/Gallery failed while Workspace worked
+After crop enter, Image mode calls `fitItem`. That helper did:
+
+```text
+want = wantAppearanceForItem()  // still has crop from store
+intrinsic = layoutSize(native, want)  // → OLD CROP BOX
+```
+
+Draft had just been installed as **full** frame; fitItem immediately shrunk
+contentRect to the previous crop. Prior rect placement and size were garbage.
+Workspace never calls `fitItem` after enter — so it worked.
+
+### Plan
+See **docs/CROP_MODE.md**. Content rules are mode-agnostic; Image only changes
+**view** (fit/pan).
+
+### Fix
+- `fitItem`: if `m_cropMode`, force orient-only layoutSize (crop cleared on want)
+- Enter snapshot accepts soft-only (preview)
+
+### Apply
+```bash
+git pull /path/to/biltoo-885-crop-mode-plan-fititem.bundle HEAD
+```
+
+### Verify against plan
+- [ ] Image crop enter: full frame, prior rect, not tiny/wrong
+- [ ] Image second crop same
+- [ ] Gallery → Image crop same
+- [ ] Workspace still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-884-image-crop-race.** Block display installs during crop; Gallery soft can enter crop.
 Prior: **883**.
 

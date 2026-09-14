@@ -74,6 +74,9 @@ appearance under different ids. See [IDENTITY.md](../IDENTITY.md),
 
 ## Crop
 
+**Full contract:** [CROP_MODE.md](CROP_MODE.md).
+
+
 Entering crop loads the full frame with content flips/turns only (no crop bake).
 `installFullImageForCrop` uses the same host rematerialize / attach path; multi-MP
 falls back to incremental content bake + async pure rematerialize.
