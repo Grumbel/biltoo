@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-817-gallery-soft-sm.** Gallery soft schedule + pass1 host install policy in pure `GallerySoft` SM.
+Prior: **816**.
+
+### Change
+- `src/gallerysoftsm.h` / `.cpp` — needsSchedule, decideHostInstall, noteLadderDelivery
+- `GallerySoftState` embeds `GallerySoft::State`
+- Pass1 uses `decideHostInstall` (FullSource when host > soft max)
+- Tests: `tests/gallerysoftsm_test.cpp` / ctest `gallerysoftsm`
+
+### Apply
+```bash
+git pull /path/to/biltoo-817-gallery-soft-sm.bundle HEAD
+```
+
+### Run
+```bash
+ctest -R 'rasterclimbsm|gallerysoftsm' --output-on-failure
+```
+
+### Done criteria
+- [x] Bundle **817**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-816-raster-climb-sm-tests.** Unit tests for RasterClimb::Machine; simplified plan apply.
 Prior: **815**.
 

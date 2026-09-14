@@ -9,6 +9,7 @@
 #include "imageitem.h"
 #include "imageloader.h"
 #include "imagecache.h"
+#include "gallerysoftsm.h"
 
 #include <QFileInfo>
 #include <QScrollBar>
@@ -48,14 +49,9 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         return 0;
     }
     int installed = 0;
+    const int softMax = ThumtooCache::kGalleryLadderEdge;
     for (ImageItem *item : m_items) {
         if (!item || item->path().isEmpty()) {
-            continue;
-        }
-        // FullSource already native-class — only strict edge upgrades.
-        if (item->hasDecodedPixels()
-            && !item->shouldUpgradeDisplayTo(
-                   ImageCache::longEdge(ImageCache::get(item->path())))) {
             continue;
         }
         if (installed >= maxInstalls) {
@@ -70,22 +66,22 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             continue;
         }
         const int hostEdge = ImageCache::longEdge(hostSample);
-        if (item->hasDisplayPixels() && !item->shouldUpgradeDisplayTo(hostEdge)) {
+        const int shown = item->displayPixelLongEdge();
+        const GallerySoft::InstallDecision dec = GallerySoft::decideHostInstall(
+            shown, hostEdge, item->hasDisplayPixels(), item->hasDecodedPixels(),
+            softMax);
+        if (dec.kind == GallerySoft::InstallKind::None || !dec.meaningful) {
             continue;
         }
-        // SoftPreview path clamps host samples down to cell need — then
-        // shouldUpgradeDisplayTo(hostEdge) stays true forever (pass1 install=2
-        // every 32ms). Host samples above soft max install as FullSource.
         const SessionAppearance::PixelKind kind =
-            (hostEdge > ThumtooCache::kGalleryLadderEdge)
+            (dec.kind == GallerySoft::InstallKind::FullSource)
                 ? SessionAppearance::PixelKind::FullSource
                 : SessionAppearance::PixelKind::SoftPreview;
-        const int before = item->displayPixelLongEdge();
+        const int before = shown;
         const bool hadDisplay = item->hasDisplayPixels();
         installDisplayPixels(item, hostSample, kind, item->sessionId());
         const int after = item->displayPixelLongEdge();
         if (after <= before && hadDisplay) {
-            // Rejected or no visible upgrade — do not count / reschedule.
             continue;
         }
         GallerySoftState &st = m_gallerySoft[path];

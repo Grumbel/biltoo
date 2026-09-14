@@ -10,6 +10,8 @@
 #include <QRect>
 #include <QSize>
 #include <QString>
+
+#include "gallerysoftsm.h"
 #include <QVector>
 #include "coloradjust.h"
 #include <QtGlobal>
@@ -182,67 +184,19 @@ struct WorkspaceItemState {
  * gaveUpWant — mirror of PathRaster PreferCache plateau (synced from service)
  * failed     — permanent hard failure for this path
  */
-struct GallerySoftState {
-    int have = 0;
-    int want = 0;
-    int inflight = 0;
-    int gaveUpWant = 0;
-    bool failed = false;
-    qint64 inflightSinceMs = 0;
-    /** Wall clock when StuckWeak / ScheduleClimb was first observed with no climb.
-     *  Used so the quality watchdog can recover for a grace period before hard-assert. */
-    qint64 weakSinceMs = 0;
-
+struct GallerySoftState : GallerySoft::State {
     /**
      * Record a ladder delivery for concurrency bookkeeping only.
-     * Updates have and clears inflight. Does **not** decide PreferCache
-     * plateau — call ImageView sync from PathRasterService for gaveUpWant.
-     *
-     * @param softFloor  minimum edge that may clear a higher inflight (filmstrip)
+     * PreferCache plateau stays with PathRasterService / gaveUpWant sync.
      */
     void noteLadderDelivery(int requestEdge, int gotEdge, int softFloor)
     {
-        if (gotEdge > 0) {
-            have = qMax(have, gotEdge);
-            // Past LQIP band → soft climb is progressing; reset weak timer.
-            if (gotEdge > 96) {
-                weakSinceMs = 0;
-            }
-        }
-        if (inflight > 0
-            && (requestEdge >= inflight
-                || (gotEdge > 0 && requestEdge >= softFloor))) {
-            inflight = 0;
-            inflightSinceMs = 0;
-        }
+        GallerySoft::noteLadderDelivery(*this, requestEdge, gotEdge, softFloor);
     }
 
-    /**
-     * True when the decode window should enqueue more soft work for this path.
-     * Pure prioritization — no I/O, no thumtoo schedule.
-     *
-     * @param anyBlank  at least one live tile for the path has no display pixels
-     * @param anyFull   a tile already holds full (non-soft) decoded pixels
-     */
     bool needsSoftSchedule(int wantEdge, bool anyBlank, bool anyFull) const
     {
-        if (failed || anyFull) {
-            return false;
-        }
-        if (have >= wantEdge && !anyBlank) {
-            return false;
-        }
-        // LQIP / quick preview is not a PreferCache plateau — never treat as gave-up.
-        constexpr int kLqipCeiling = 96; // keep in sync with DisplayQuality::kLqipMaxEdge
-        if (gaveUpWant >= wantEdge && !anyBlank && have >= kLqipCeiling) {
-            return false;
-        }
-        // Soft climbing with a real soft sample on-screen — wait for delivery.
-        // Still schedule when only LQIP is painted (have < soft floor).
-        if (inflight > 0 && have >= 128 && !anyBlank) {
-            return false;
-        }
-        return true;
+        return GallerySoft::needsSchedule(*this, wantEdge, anyBlank, anyFull);
     }
 };
 

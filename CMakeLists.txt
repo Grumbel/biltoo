@@ -150,6 +150,8 @@ add_executable(biltoo
   src/pathrasterservice.h
   src/rasterclimbsm.cpp
   src/rasterclimbsm.h
+  src/gallerysoftsm.cpp
+  src/gallerysoftsm.h
   src/thumtoocache.cpp
   src/thumtoocache.h
   src/archivepath.cpp
@@ -445,4 +447,12 @@ if(Qt6Test_FOUND)
   target_include_directories(biltoo-rasterclimbsm-test PRIVATE src)
   target_link_libraries(biltoo-rasterclimbsm-test PRIVATE Qt6::Core Qt6::Test)
   add_test(NAME rasterclimbsm COMMAND biltoo-rasterclimbsm-test)
+
+  add_executable(biltoo-gallerysoftsm-test
+    tests/gallerysoftsm_test.cpp
+    src/gallerysoftsm.cpp
+  )
+  target_include_directories(biltoo-gallerysoftsm-test PRIVATE src)
+  target_link_libraries(biltoo-gallerysoftsm-test PRIVATE Qt6::Core Qt6::Test)
+  add_test(NAME gallerysoftsm COMMAND biltoo-gallerysoftsm-test)
 endif()
