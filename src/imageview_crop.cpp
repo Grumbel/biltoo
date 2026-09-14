@@ -123,7 +123,10 @@ ImageItem *ImageView::cropTargetItem() const
         return nullptr;
     }
     if (ImageItem *t = targetItem()) {
-        if (t->hasDecodedPixels() || !t->pixmap().isNull()) {
+        // Soft ladder tiles have preview/source with m_previewPixels; pixmap is
+        // often empty (paint uses m_source). hasDecodedPixels() alone was
+        // "Crop / No image" for every soft-only Workspace/Gallery selection.
+        if (t->hasDisplayPixels()) {
             return t;
         }
     }
@@ -1101,23 +1104,44 @@ bool ImageView::applyCropCommit(ImageItem *item)
     // Record content-space crop while the draft frame is still valid.
     recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
     if (!fullFrame) {
-        // Scene footprint of the draft crop frame (ground truth for Workspace).
-        const QRectF cropScene = item->mapRectToScene(m_cropRect);
-        const qreal footW = cropScene.width();
-        const qreal footH = cropScene.height();
-        const QPointF cropSceneCenter = cropScene.center();
+        // --- Workspace footprint math (verify) ---
+        // During crop mode the item is axis-aligned (placement rotation stashed).
+        // Content units: m_cropRect is in item content space (same as contentRect).
+        // Scene size of the draft selection:
+        //   footW = m_cropRect.width()  * itemScaleX
+        //   footH = m_cropRect.height() * itemScaleY
+        // After Apply we set intrinsic to (cropW, cropH) in the *same* content
+        // units and keep the same scale → scene size unchanged.
+        const qreal sx0 = item->itemScaleX();
+        const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
+        const qreal cropW = m_cropRect.width();
+        const qreal cropH = m_cropRect.height();
+        const qreal footW = cropW * sx0;
+        const qreal footH = cropH * sy0;
+        const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
 
-        // Host only — never crop-baked item pixels as materialize input.
         const QString path = item->path();
         QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+        const bool hostFromCache = !host.isNull();
+        if (!hostFromCache) {
+            // Draft display is orient-only full frame (crop not baked until Apply).
+            host = item->sourceImage();
+            if (host.isNull()) {
+                host = item->previewImage();
+            }
+        }
         if (host.isNull()) {
+            flashHud(tr("Crop"), tr("No pixels to crop"));
             return false;
         }
 
         WorkspaceItemState st;
-        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
-            : m_currentSessionId;
+            : m_cropTargetId;
+        if (sid == kInvalidSessionImageId) {
+            sid = m_currentSessionId;
+        }
         if (sid != kInvalidSessionImageId) {
             if (const WorkspaceItemState *app = m_appearance.get(sid)) {
                 st = *app;
@@ -1126,7 +1150,10 @@ bool ImageView::applyCropCommit(ImageItem *item)
         if (!st.hasCrop) {
             st = captureState(item);
             st.hasCrop = true;
-            st.cropRect = m_cropRect.toRect().normalized();
+            st.cropRect = QRect(qRound(m_cropRect.left() - item->offset().x()),
+                                qRound(m_cropRect.top() - item->offset().y()),
+                                qMax(1, qRound(cropW)),
+                                qMax(1, qRound(cropH)));
             st.cropSourceSize = item->imageSize();
             st.cropRotation = m_cropRotation;
             if (sid != kInvalidSessionImageId) {
@@ -1134,61 +1161,58 @@ bool ImageView::applyCropCommit(ImageItem *item)
             }
         }
 
+        // materializeDisplay pipeline: flips → turns → crop±rot.
+        // Host from ImageCache is unoriented → full state.
+        // Host from draft item already has turns baked → crop-only state.
+        WorkspaceItemState bake = st;
+        if (!hostFromCache) {
+            bake.contentQuarterTurns = 0;
+            bake.contentHFlip = false;
+            bake.contentVFlip = false;
+        }
         QImage sample = host;
         if (ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
             sample = ImageCache::clampToMaxEdge(
                 sample, ContentXform::kGuiMaterializeMaxEdge);
         }
         const QImage display = SessionAppearance::materializeDisplay(
-            sample, st, SessionAppearance::PixelKind::SoftPreview);
+            sample, bake, SessionAppearance::PixelKind::SoftPreview);
         if (display.isNull()) {
+            flashHud(tr("Crop"), tr("Crop bake failed"));
             return false;
         }
+
         item->setSourceImageReady(display);
         item->setContentHFlip(st.contentHFlip);
         item->setContentVFlip(st.contentVFlip);
         item->setSessionCrop(st.hasCrop, st.cropRect);
         item->setAppliedContentXform(ContentXform::Value::fromState(st));
 
-        if (isImageMode()) {
-            // Image mode: file-native layout size + fit.
-            applyContentLayoutSize(item, st);
-            m_fitMode = true;
-            fitItem(item, currentFitAspectMode());
-        } else if (isWorkspaceMode()) {
-            // Intrinsic in the same content units as the draft crop frame so
-            // scale = foot/logical preserves scene size (layoutSize(fileNative)
-            // is a different unit space when draft was soft-sized).
-            const QSize logical(qMax(1, qRound(m_cropRect.width())),
-                                qMax(1, qRound(m_cropRect.height())));
-            item->setIntrinsicSize(logical);
-            if (logical.width() > 0 && logical.height() > 0
-                && footW > 1.0 && footH > 1.0) {
-                const qreal s = qMin(footW / qreal(logical.width()),
-                                     footH / qreal(logical.height()));
-                if (s > 1e-6 && qIsFinite(s)) {
-                    item->setItemScale(s, s);
-                }
-            }
-            alignItemCenterToScene(item, cropSceneCenter);
+        // Intrinsic = draft crop size in content units; keep scale → footprint.
+        const QSize logical(qMax(1, qRound(cropW)), qMax(1, qRound(cropH)));
+        item->setIntrinsicSize(logical);
+        item->setItemScale(sx0, sy0);
+        alignItemCenterToScene(item, cropSceneCenter);
+        if (isWorkspaceMode()) {
             item->setItemRotation(m_cropRotation);
             updateWorkspaceSceneRect();
+        } else if (isImageMode()) {
+            m_fitMode = true;
+            fitItem(item, currentFitAspectMode());
         } else if (isGalleryMode()) {
-            applyContentLayoutSize(item, st);
             applyLayout(GalleryPackReason::ContentChange);
         }
+
         commitItemSessionEdit(item);
-        // Filmstrip: commit emits via persist; force id-keyed override from
-        // the live crop sample so the strip updates even if appearance image
-        // was blank before persist finished.
+
         if (sid != kInvalidSessionImageId) {
-            const QImage appearance = sessionAppearanceImage(item);
+            QImage appearance = sessionAppearanceImage(item);
+            if (appearance.isNull()) {
+                appearance = display;
+            }
             if (!appearance.isNull()) {
                 emit sessionAppearanceChanged(sid, path, appearance);
                 emit sessionCropApplied(sid, path, appearance);
-            } else if (!display.isNull()) {
-                emit sessionAppearanceChanged(sid, path, display);
-                emit sessionCropApplied(sid, path, display);
             }
         }
         pushCropAppearanceUndo(item, tr("Crop"));

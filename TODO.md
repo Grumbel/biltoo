@@ -2,6 +2,25 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-872-crop-verified-target-scale-filmstrip.** Verified cropTargetItem + scale identity + filmstrip emit.
+Prior: **871**.
+
+### Verified causes
+1. **No image**: `cropTargetItem()` required `hasDecodedPixels() || pixmap` — soft tiles have neither usable. Fixed: `hasDisplayPixels()`.
+2. **Shrink**: Apply recomputed scale from mixed unit spaces. Fixed: keep `itemScaleX/Y`, set intrinsic to crop content size only (`scene = crop × scale` unchanged).
+3. **Filmstrip**: emit id-keyed appearance after Apply using `m_cropTargetId` fallback; draft host may be orient-baked → crop-only materialize when not from ImageCache.
+
+### Apply
+```bash
+git pull /path/to/biltoo-872-crop-verified-target-scale-filmstrip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-871-crop-noimage-footprint-filmstrip.** Soft tiles crop; Workspace content units; filmstrip emit.
 Prior: **870**.
 
