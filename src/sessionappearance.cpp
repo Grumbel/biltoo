@@ -107,6 +107,108 @@ bool contentSwapsAspect(const WorkspaceItemState &state)
     return ContentXform::swapsAspect(ContentXform::Value::fromState(state));
 }
 
+QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sourceSize,
+                                     const WorkspaceItemState &state)
+{
+    // Spaces: docs/CONTENT_COORDINATES.md
+    // Order matches ImageItem bake path: flip pixels, then QImage::transformed
+    // with QTransform::rotate(90 * turns). Crop is post-bake (display space).
+    if (sourceSize.width() < 1 || sourceSize.height() < 1 || sourceRect.isEmpty()) {
+        return {};
+    }
+
+    QRectF r = sourceRect.normalized();
+    QSize work = sourceSize;
+
+    // 1) Content flips (same as QImage::flipped before rotate).
+    if (state.contentHFlip) {
+        r = QRectF(qreal(work.width()) - r.x() - r.width(), r.y(), r.width(), r.height());
+    }
+    if (state.contentVFlip) {
+        r = QRectF(r.x(), qreal(work.height()) - r.y() - r.height(), r.width(), r.height());
+    }
+
+    // 2) Quarter-turns: EXACT transform QImage uses (trueMatrix + rotate).
+    const int turns = ContentXform::normalizeQuarterTurns(state.contentQuarterTurns);
+    if (turns != 0) {
+        QTransform rot;
+        rot.rotate(90.0 * turns);
+        const QTransform mat = QImage::trueMatrix(rot, work.width(), work.height());
+        r = mat.mapRect(r).normalized();
+        if ((turns % 2) != 0) {
+            work = QSize(work.height(), work.width());
+        }
+    }
+
+    // 3) Crop in post-orientation space.
+    if (state.hasCrop && !state.cropRect.isEmpty()) {
+        QRect crop = state.cropRect.normalized();
+        QSize basis = state.cropSourceSize;
+        if (basis.width() < 1 || basis.height() < 1) {
+            basis = work;
+        }
+        if (basis != work) {
+            crop = scaleCropRect(crop, basis, work);
+            if (crop.right() >= work.width() || crop.bottom() >= work.height()) {
+                const QSize swapped(basis.height(), basis.width());
+                if (swapped != basis && swapped.width() > 0 && swapped.height() > 0) {
+                    const QRect alt = scaleCropRect(state.cropRect.normalized(), swapped, work);
+                    if (alt.right() < work.width() && alt.bottom() < work.height()
+                        && alt.width() >= 1 && alt.height() >= 1) {
+                        crop = alt;
+                    }
+                }
+            }
+        }
+        if (crop.width() < 1 || crop.height() < 1) {
+            return {};
+        }
+        r = r.intersected(QRectF(crop));
+        if (r.isEmpty()) {
+            return {};
+        }
+        r = r.translated(-qreal(crop.x()), -qreal(crop.y()));
+    }
+
+    return r;
+}
+
+void applyCrop(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item || !state.hasCrop || state.cropRect.isEmpty()) {
+        return;
+    }
+    const QSize sz = item->imageSize();
+    if (sz.width() < 1 || sz.height() < 1) {
+        return;
+    }
+    QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, sz);
+    // Legacy: rect only fits orientation-swapped dimensions.
+    if (state.cropSourceSize.isEmpty()
+        && (crop.right() >= sz.width() || crop.bottom() >= sz.height())) {
+        const QSize swapped(sz.height(), sz.width());
+        if (swapped.width() > 0 && swapped.height() > 0
+            && crop.right() < swapped.width() && crop.bottom() < swapped.height()
+            && swapped != sz) {
+            crop = scaleCropRect(state.cropRect, swapped, sz);
+        }
+    }
+    if (crop.width() < 1 || crop.height() < 1) {
+        return;
+    }
+    const QPointF off = item->offset();
+    // May extend outside the source; cropToLocalRect pads as needed.
+    const QRectF local(crop.x() + off.x(), crop.y() + off.y(),
+                       crop.width(), crop.height());
+    item->cropToLocalRect(local, QColor(0, 0, 0, 0), state.cropRotation);
+}
+
+bool hasContentAppearance(const WorkspaceItemState &state)
+{
+    return state.hasCrop || state.contentHFlip || state.contentVFlip
+           || state.contentQuarterTurns != 0 || !state.colorAdjust.isIdentity();
+}
+
 QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
                           PixelKind kind)
 {

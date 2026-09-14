@@ -2,6 +2,20 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-845-restore-sessionappearance-symbols.** Restore hasContentAppearance, applyCrop, mapSourceRectToContentDisplay (lost in ContentXform refactor).
+Prior: **844**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-845-restore-sessionappearance-symbols.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-844-sessionappearance-no-redef.** Remove cpp redefs of normalizeQuarterTurns / contentSwapsAspect(Value) (already inline in header).
 Prior: **843**.
 
