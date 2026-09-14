@@ -43,11 +43,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1789315402,
-        "narHash": "sha256-e/LIMfmxC5EYPHKvAC+mmCN8JUM9D41zJUUmu/PTv28=",
+        "lastModified": 1789376622,
+        "narHash": "sha256-xZ3lE4Zywa/O85a7wDYD8RRI+NPHJUrSdIXZ48IF6Ls=",
         "owner": "Grumbel",
         "repo": "thumtoo",
-        "rev": "44c519849f6e69de7788d9de99bb9bba0a50392e",
+        "rev": "dc7cd8c800ae86430128022642e8448f588db2ca",
         "type": "github"
       },
       "original": {
