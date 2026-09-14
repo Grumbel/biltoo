@@ -419,6 +419,8 @@ private:
     void openRecentProject();
     void clearRecentProjects();
     QString historyEntryLabel(const QStringList &paths) const;
+    /** Rich Help-panel body for one remembered session (file list). */
+    QString historyEntryHelpHtml(const QStringList &paths) const;
     void syncThumbnailWorkspaceSelection();
     void syncThumbnailCanvasMembership();
     /** Push thumbnail multi-select onto the canvas (Workspace membership / Gallery seed). */

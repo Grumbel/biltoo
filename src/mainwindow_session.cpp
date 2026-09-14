@@ -3071,6 +3071,49 @@ QString MainWindow::historyEntryLabel(const QStringList &paths) const
         .arg(PagePath::displayName(paths.first()));
 }
 
+
+QString MainWindow::historyEntryHelpHtml(const QStringList &paths) const
+{
+    if (paths.isEmpty()) {
+        return tr("<p>This history slot is empty.</p>");
+    }
+
+    QStringList items;
+    items.reserve(paths.size());
+    constexpr int kListCap = 40;
+    const int shown = qMin(paths.size(), kListCap);
+    for (int i = 0; i < shown; ++i) {
+        const QString &p = paths.at(i);
+        const QString name = PagePath::displayName(p);
+        // Prefer a readable name; include the session path when it differs.
+        if (name == p || p.endsWith(name)) {
+            items.append(QStringLiteral("<li><code>%1</code></li>").arg(p.toHtmlEscaped()));
+        } else {
+            items.append(QStringLiteral("<li>%1<br/><code>%2</code></li>")
+                             .arg(name.toHtmlEscaped(), p.toHtmlEscaped()));
+        }
+    }
+
+    QString more;
+    if (paths.size() > kListCap) {
+        more = tr("<p><i>…and %n more path(s) not listed here.</i></p>",
+                  nullptr, paths.size() - kListCap);
+    }
+
+    return tr(
+        "<p>Reopen this <b>Recent Session</b> — the full ordered list of images "
+        "from a previous open (not a .biltoo project).</p>"
+        "<p><b>%n file(s) / page(s)</b> will replace the current session "
+        "(same as Open with those paths).</p>"
+        "<ul>%1</ul>%2"
+        "<p>Paths keep archive members (<code>//archive:</code>) and document "
+        "pages in session form. Choosing an entry does not restore Workspace poses "
+        "or project appearance — only the image list.</p>",
+        nullptr,
+        paths.size())
+        .arg(items.join(QString()), more);
+}
+
 void MainWindow::rememberSessionHistory(const QStringList &paths)
 {
     if (paths.isEmpty()) {
@@ -3111,6 +3154,20 @@ void MainWindow::rebuildHistoryMenu()
     if (m_sessionHistory.isEmpty()) {
         auto *empty = m_historyMenu->addAction(tr("(No recent sessions)"));
         empty->setEnabled(false);
+        empty->setWhatsThis(tr(
+            "<p>No sessions have been remembered yet.</p>"
+            "<p>After you open a set of images (Open, directory, archive, …), "
+            "the ordered path list is stored under <b>Recent Sessions</b> "
+            "(up to %1 entries). That is separate from <b>Recent Projects</b> "
+            "(.biltoo files).</p>").arg(kMaxSessionHistory));
+        empty->setProperty(
+            "biltooDisabledHelp",
+            tr("Open some images first; sessions appear here after a successful open."));
+        if (m_helpPanel) {
+            connect(empty, &QAction::hovered, this, [this, empty]() {
+                m_helpPanel->showAction(empty);
+            });
+        }
         m_historyMenu->addSeparator();
         if (m_clearHistoryAct) {
             m_historyMenu->addAction(m_clearHistoryAct);
@@ -3123,10 +3180,31 @@ void MainWindow::rebuildHistoryMenu()
         const QStringList &entry = m_sessionHistory.at(i);
         QAction *act = m_historyMenu->addAction(historyEntryLabel(entry));
         act->setData(i);
-        act->setStatusTip(entry.size() <= 3
-                              ? entry.join(QStringLiteral(", "))
-                              : tr("%1 paths").arg(entry.size()));
+        // Status bar: compact path summary; Help panel gets the full list via whatsThis.
+        if (entry.size() <= 2) {
+            QStringList names;
+            for (const QString &p : entry) {
+                names.append(PagePath::displayName(p));
+            }
+            act->setStatusTip(names.join(QStringLiteral(" · ")));
+        } else {
+            act->setStatusTip(
+                tr("%1 — %n item(s); open Help panel or hover for the full list",
+                   nullptr, entry.size())
+                    .arg(PagePath::displayName(entry.first())));
+        }
+        act->setWhatsThis(historyEntryHelpHtml(entry));
+        act->setToolTip(act->statusTip());
         connect(act, &QAction::triggered, this, &MainWindow::openHistoryEntry);
+        // Dynamic menu entries are not covered by the one-shot installActionHelpTracking.
+        if (m_helpPanel) {
+            connect(act, &QAction::hovered, this, [this, act]() {
+                m_helpPanel->showAction(act);
+            });
+            connect(act, &QAction::triggered, this, [this, act](bool) {
+                m_helpPanel->showAction(act);
+            });
+        }
     }
     m_historyMenu->addSeparator();
     if (m_clearHistoryAct) {

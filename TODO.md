@@ -2,6 +2,30 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-786-recent-sessions-help.** Detailed Help for Recent Sessions entries.
+Prior: **785**.
+
+### Changes
+- Each Recent Sessions menu entry sets `whatsThis` with the full ordered path list
+  (display name + session path; capped at 40 lines with a “more” note)
+- Hover/trigger updates Help (dynamic actions wired on rebuild)
+- Menu title and Clear Recent Sessions documented; empty state explained
+- Clarifies: sessions ≠ Recent Projects; reopen replaces session paths only
+
+### Apply
+```bash
+git pull /path/to/biltoo-786-recent-sessions-help.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **786**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-785-shortcuts-table.** Shortcuts table dialog; Help “Show all…”.
 Prior: **784**.
 

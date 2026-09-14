@@ -1042,8 +1042,25 @@ void MainWindow::createMenus()
     m_historyMenu->setStatusTip(
         tr("Reopen a previous image session (all files from that open); "
            "not the same as Recent Projects"));
+    if (QAction *histMenuAct = m_historyMenu->menuAction()) {
+        histMenuAct->setStatusTip(m_historyMenu->statusTip());
+        histMenuAct->setWhatsThis(tr(
+            "<p><b>Recent Sessions</b> remembers the ordered path lists from recent "
+            "opens (up to %1). Each menu entry is one full session — choose it to "
+            "replace the current session with those paths again.</p>"
+            "<ul>"
+            "<li>Hover an entry to list every file/page in the Help panel.</li>"
+            "<li>Labels summarize the set (folder name, archive name, or first file).</li>"
+            "<li>Not the same as <b>Recent Projects</b> (<code>.biltoo</code>), which "
+            "restore Workspace poses and appearance.</li>"
+            "<li>History is stored in application settings for this user.</li>"
+            "</ul>").arg(kMaxSessionHistory));
+    }
     m_clearHistoryAct = new QAction(tr("&Clear Recent Sessions"), this);
     m_clearHistoryAct->setStatusTip(tr("Remove all remembered image sessions"));
+    m_clearHistoryAct->setWhatsThis(tr(
+        "<p>Remove every entry under <b>Recent Sessions</b>. Does not close the "
+        "current session or delete any image files. Recent Projects are unaffected.</p>"));
     connect(m_clearHistoryAct, &QAction::triggered, this, &MainWindow::clearSessionHistory);
 
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
@@ -1789,6 +1806,14 @@ void MainWindow::populateActionHelpTexts()
         "<p>Dialog listing main keyboard shortcuts. For longer per-command text, keep "
         "the Help panel open and hover commands, or open Help → Guides.</p>"));
     setHelp(m_aboutAct, tr("<p>About Biltoo: version and brief project description.</p>"));
+    setHelp(m_clearHistoryAct, tr(
+        "<p>Remove every entry under <b>Recent Sessions</b>. Does not close the "
+        "current session or delete any image files. Recent Projects are unaffected.</p>"));
+    if (m_historyMenu) {
+        if (QAction *histMenuAct = m_historyMenu->menuAction()) {
+            setHelp(histMenuAct, histMenuAct->whatsThis());
+        }
+    }
     setHelp(m_epubLayoutAct, tr(
         "<p>Edit the //epub: layout profile for the current EPUB book (margins, columns, "
         "and related presentation).</p>"));
