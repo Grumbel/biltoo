@@ -584,26 +584,31 @@ void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState
     if (!item) {
         return;
     }
-    // Cropped display: intrinsic is the baked sample box (SIZE.md).
-    if (want.hasCrop && !want.cropRect.isEmpty()) {
-        const QImage disp = item->displayImage();
-        if (!disp.isNull() && disp.width() > 1 && disp.height() > 1) {
-            item->setIntrinsicSize(disp.size());
+    // Intrinsic is always ContentXform layout of file-native size — never sample
+    // pixel dimensions. Using displayImage().size() for crops shrank Workspace
+    // tiles to soft resolution (and stretched wrong pixels on re-crop).
+    const QString path = item->path();
+    QSize fileNative = logicalSizeForPath(path);
+    if (!isPositiveSize(fileNative) || fileNative.width() <= 1 || fileNative.height() <= 1
+        || (!path.isEmpty() && isProvisionalImageSize(path))) {
+        // Fall back: crop rect in recorded source space, or orient-only current.
+        if (want.hasCrop && !want.cropRect.isEmpty()) {
+            const QSize basis = (want.cropSourceSize.isValid()
+                                && want.cropSourceSize.width() > 1)
+                                   ? want.cropSourceSize
+                                   : item->imageSize();
+            const QRect c = SessionAppearance::scaleCropRect(
+                want.cropRect.normalized(), want.cropSourceSize, basis);
+            if (c.width() > 1 && c.height() > 1) {
+                item->setIntrinsicSize(c.size());
+            }
         }
         return;
     }
-    const QString path = item->path();
-    QSize fileNative = logicalSizeForPath(path);
-    if (isPositiveSize(fileNative) && fileNative.width() > 1 && fileNative.height() > 1
-        && (path.isEmpty() || !isProvisionalImageSize(path))) {
-        const QSize lay = ContentXform::layoutSize(fileNative, want);
-        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-            item->setIntrinsicSize(lay);
-            return;
-        }
+    const QSize lay = ContentXform::layoutSize(fileNative, want);
+    if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+        item->setIntrinsicSize(lay);
     }
-    // No durable native yet: bakeRotate90 already transposed intrinsic on odd
-    // turns. Do not adopt soft sample pixel size as identity (SIZE.md).
 }
 
 void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-870-crop-layout-not-sample.** Crop intrinsic from ContentXform, never sample size.
+Prior: **869**.
+
+### Root causes
+1. `applyContentLayoutSize` set intrinsic to `displayImage().size()` when hasCrop
+   → Workspace collapsed to soft resolution after Apply.
+2. Re-crop used crop-baked `item->sourceImage()` as full frame when ImageCache
+   missed → wrong pixels stretched into content rect.
+3. Footprint used content×scale instead of `mapRectToScene(crop)`.
+
+### Fix
+- Intrinsic always `ContentXform::layoutSize(fileNative, want)`
+- Enter/Apply: unoriented **host only**; refuse hadCrop without host
+- Workspace enter/apply: preserve scene footprint via mapRectToScene
+
+### Apply
+```bash
+git pull /path/to/biltoo-870-crop-layout-not-sample.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-869-workspace-crop-footprint.** Workspace crop preserves frame size/position.
 Prior: **868**.
 

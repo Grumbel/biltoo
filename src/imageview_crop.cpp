@@ -570,15 +570,13 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const bool haveApp = resolveCropEnterAppearance(item, &app);
     const bool hadCrop = haveApp && app.hasCrop && !app.cropRect.isEmpty();
 
-    // Ground truth for crop enter: unoriented host (ImageCache), never the
-    // crop-baked item display. Using item->sourceImage() after a prior crop
-    // treated the crop as the full frame → re-crop "scaled up" the crop rect.
+    // Ground truth: unoriented host only. Crop-baked item display is never a
+    // full-frame stand-in (re-crop stretched the crop into the content rect).
     QImage full = path.isEmpty() ? QImage() : ImageCache::get(path);
     const bool hostOk = !full.isNull();
 
     if (!hostOk && !hadCrop) {
-        // No prior crop: live display is still a full-frame sample (orient may
-        // be baked in). Safe draft source until host arrives.
+        // First crop: live display is still a full-frame sample.
         full = item->sourceImage();
         if (full.isNull()) {
             full = item->previewImage();
@@ -586,23 +584,29 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     }
 
     if (full.isNull()) {
-        // Prefer soft stand-in over multi-MP full load. Re-crop on crop-baked
-        // display is imperfect; still allow draft rather than blocking enter.
-        full = item->sourceImage();
-        if (full.isNull()) {
-            full = item->previewImage();
-        }
-        if (full.isNull() && !path.isEmpty()) {
-            full = ImageCache::clampToMaxEdge(
-                ImageCache::get(path), ContentXform::kGuiMaterializeMaxEdge);
-        }
-        if (full.isNull()) {
-            return false;
-        }
+        // hadCrop without host: do not use crop-baked sourceImage.
+        return false;
     }
 
     const bool unoriented = hostOk; // only ImageCache samples are source-raw
+    // Preserve Workspace scene footprint of the *current* content while we
+    // expand to full-frame draft (install may change intrinsic).
+    const QRectF beforeScene = item->mapRectToScene(item->contentRect());
+    const qreal footW0 = beforeScene.width();
+    const qreal footH0 = beforeScene.height();
+    const QPointF center0 = beforeScene.center();
     installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp, unoriented);
+    if (isWorkspaceMode() && footW0 > 1.0 && footH0 > 1.0) {
+        const QSize after = item->imageSize();
+        if (after.width() > 0 && after.height() > 0) {
+            const qreal s = qMin(footW0 / qreal(after.width()),
+                                 footH0 / qreal(after.height()));
+            if (s > 1e-6 && qIsFinite(s)) {
+                item->setItemScale(s, s);
+            }
+            alignItemCenterToScene(item, center0);
+        }
+    }
     initCropRectFromPriorAppearance(item, app, haveApp);
 
     if (isImageMode()) {
@@ -1100,23 +1104,15 @@ bool ImageView::applyCropCommit(ImageItem *item)
     // Record content-space crop while the draft frame is still valid.
     recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
     if (!fullFrame) {
-        const qreal sx0 = item->itemScaleX();
-        const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
-        const qreal footW = m_cropRect.width() * sx0;
-        const qreal footH = m_cropRect.height() * sy0;
-        const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
+        // Scene footprint of the draft crop frame (ground truth for Workspace).
+        const QRectF cropScene = item->mapRectToScene(m_cropRect);
+        const qreal footW = cropScene.width();
+        const qreal footH = cropScene.height();
+        const QPointF cropSceneCenter = cropScene.center();
 
-        // Single path: unoriented host + full ContentXform (turns+flips+crop±rot).
-        // Never cropToLocalRect on an already-oriented display (double transform /
-        // wrong intrinsic was the rotate+crop squish).
+        // Host only — never crop-baked item pixels as materialize input.
         const QString path = item->path();
         QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-        if (host.isNull()) {
-            host = item->sourceImage();
-        }
-        if (host.isNull()) {
-            host = item->previewImage();
-        }
         if (host.isNull()) {
             return false;
         }
@@ -1131,12 +1127,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
             }
         }
         if (!st.hasCrop) {
-            // recordSessionCrop may have only written path map.
             st = captureState(item);
             st.hasCrop = true;
             st.cropRect = m_cropRect.toRect().normalized();
             st.cropSourceSize = item->imageSize();
             st.cropRotation = m_cropRotation;
+            if (sid != kInvalidSessionImageId) {
+                m_appearance.set(sid, st);
+            }
         }
 
         QImage sample = host;
@@ -1149,27 +1147,22 @@ bool ImageView::applyCropCommit(ImageItem *item)
         if (display.isNull()) {
             return false;
         }
-        item->setSourceImage(display);
+        item->setSourceImageReady(display);
         item->setContentHFlip(st.contentHFlip);
         item->setContentVFlip(st.contentVFlip);
         item->setSessionCrop(st.hasCrop, st.cropRect);
         item->setAppliedContentXform(ContentXform::Value::fromState(st));
-
-        // Intrinsic must stay in the *same content space* as m_cropRect / foot*.
-        // layoutSize(host) mixes file-pixel crop size with draft content units →
-        // Workspace scale collapsed (crop appeared to shrink).
-        const QSize logical(qMax(1, qRound(m_cropRect.width())),
-                            qMax(1, qRound(m_cropRect.height())));
-        item->setIntrinsicSize(logical);
+        // Intrinsic from ContentXform (file-native + crop) — never sample size.
+        applyContentLayoutSize(item, st);
 
         if (isImageMode()) {
             m_fitMode = true;
             fitItem(item, currentFitAspectMode());
         } else if (isWorkspaceMode()) {
-            // Preserve scene footprint of the draft crop frame (uniform scale).
-            if (logical.width() > 0 && logical.height() > 0) {
-                const qreal s = qMin(footW / qreal(logical.width()),
-                                     footH / qreal(logical.height()));
+            const QSize after = item->imageSize();
+            if (after.width() > 0 && after.height() > 0 && footW > 1.0 && footH > 1.0) {
+                const qreal s = qMin(footW / qreal(after.width()),
+                                     footH / qreal(after.height()));
                 if (s > 1e-6 && qIsFinite(s)) {
                     item->setItemScale(s, s);
                 }
