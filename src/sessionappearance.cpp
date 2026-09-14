@@ -229,8 +229,17 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
             item->setIntrinsicSize(baked);
         }
     } else {
+        const QSize cur = item->imageSize();
+        if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
+            // cur may already be file-native; layoutSize applies odd turns once.
+            const QSize oriented = ContentXform::layoutSize(cur, state);
+            if (oriented != cur) {
+                item->setIntrinsicSize(oriented);
+            }
+        }
         syncItemLayoutToContentOrientation(item, state);
     }
+    item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
 
 void syncItemLayoutToContentOrientation(ImageItem *item,

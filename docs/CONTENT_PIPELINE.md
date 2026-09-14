@@ -103,3 +103,14 @@ path map, live flags).
 `cropRect` / `cropSourceSize` are in **post-orient** space (after flips/turns),
 updated by `mapCropThrough*` when the user rotates/flips with a crop active.
 `materializeDisplay` applies crop after orient so reload matches the live item.
+
+## Attach sites that must tag `applied`
+
+| Site | Notes |
+|------|--------|
+| `installDisplayPixels` | Primary path |
+| `createItemFromImage` | Worker-baked LoadReplace |
+| `applyContentToItem` | Raw item → materialize |
+| `applyContentBakes` | Incremental flip/turn bake |
+| Peer sync / crop undo | Copy or tag from known state |
+

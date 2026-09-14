@@ -345,6 +345,8 @@ void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &sta
     // Keep chrome indicators in sync with session state (bakeFlip clears display flags).
     item->setContentHFlip(state.contentHFlip);
     item->setContentVFlip(state.contentVFlip);
+    // Pixels now match absolute state (incremental bake from identity raw).
+    item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
@@ -759,6 +761,9 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
         other->setContentHFlip(contentH);
         other->setContentVFlip(contentV);
         other->setSessionCrop(item->sessionHasCrop(), item->sessionCropRect());
+        if (item->hasAppliedContentXform()) {
+            other->setAppliedContentXform(item->appliedContentXform());
+        }
     };
     for (ImageItem *other : peers) {
         syncOne(other);

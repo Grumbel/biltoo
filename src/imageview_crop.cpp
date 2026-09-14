@@ -5,11 +5,13 @@
 #include "imagecache.h"
 #include "thumtoocache.h"
 #include "sessionappearance.h"
+#include "contentxform.h"
 
 #include <QGuiApplication>
 #include "imageitem.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
+#include "contentxform.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -756,6 +758,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     item->setSessionCrop(state.hasCrop, state.cropRect);
     item->setContentHFlip(state.contentHFlip);
     item->setContentVFlip(state.contentVFlip);
+    item->setAppliedContentXform(ContentXform::Value::fromState(state));
     applyState(item, state);
     // Seed appearance with the full state (including cropRotation) before
     // commitItemSessionEdit, which rebuilds the slot via captureState.

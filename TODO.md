@@ -2,6 +2,31 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-834-tag-applied-on-attach-bypasses.** Tag ContentXform applied on createItem/applyContent/peer/undo/bakes.
+Prior: **833**.
+
+### Change
+- `createItemFromImage`: `layoutSize(native, want)` + `setAppliedContentXform`
+- `applyContentToItem`: layout + applied after materialize
+- `applyContentBakes`: applied after live flip/turn bake
+- Peer sync copies applied fingerprint
+- Crop undo `applyCropAppearance` tags applied
+
+### Apply
+```bash
+git pull /path/to/biltoo-834-tag-applied-on-attach-bypasses.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **834**
+- [ ] Manual: Image open with stored 90° rotate frames correctly; Gallery peer crop sync still matches
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-833-accept-needs-rematerialize.** canAccept uses ContentXform needsRematerialize + wantAppearanceForItem.
 Prior: **832**.
 

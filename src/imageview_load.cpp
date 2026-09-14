@@ -353,10 +353,29 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     }
     // Size-first ctor + setSourceImageReady: never QPixmap::fromImage of multi-MP
     // in ImageItem(path, image) during LoadReplace.
-    const QSize layout = layoutSizeForPath(path, image);
-    const QSize intrinsic = (layout.width() > 1 && layout.height() > 1)
-                                ? layout
-                                : QSize(1, 1);
+    // Prefer ContentXform::layoutSize when appearance is known; else path layout.
+    WorkspaceItemState app;
+    if (applyStoredSessionCrop && isImageMode()) {
+        const bool haveId = m_currentSessionId != kInvalidSessionImageId;
+        const bool havePath = m_itemStates.contains(path);
+        if ((haveId || havePath)
+            && !(haveId && !m_appearance.get(m_currentSessionId))) {
+            app = appearanceForNewImageModeItem(path);
+        }
+    }
+    QSize native = layoutSizeForPath(path, image);
+    if (!isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
+        native = image.size();
+    }
+    QSize intrinsic = ContentXform::layoutSize(native, app);
+    if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
+        intrinsic = QSize(1, 1);
+    }
+    if (app.hasCrop && !app.cropRect.isEmpty()
+        && image.width() > 1 && image.height() > 1) {
+        // Worker-baked crop: display sample is the identity box.
+        intrinsic = image.size();
+    }
     auto *item = new ImageItem(path, intrinsic);
     if (isImageMode()) {
         item->setSourceImageReady(image);
@@ -366,29 +385,16 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     applyItemModeFlags(item);
     // Session crop survives navigation. Image mode LoadReplace jobs bake
     // appearance on the worker — only sync chrome flags here.
-    // applyContentToItem would materialize + fromImage again on the GUI.
-    if (applyStoredSessionCrop && isImageMode()) {
-        const bool haveId = m_currentSessionId != kInvalidSessionImageId;
-        const bool havePath = m_itemStates.contains(path);
-        if (haveId || havePath) {
-            const WorkspaceItemState app = appearanceForNewImageModeItem(path);
-            if (haveId && !m_appearance.get(m_currentSessionId)) {
-                // no store entry
-            } else {
-                item->setContentHFlip(app.contentHFlip);
-                item->setContentVFlip(app.contentVFlip);
-                item->setSessionCrop(app.hasCrop, app.cropRect);
-                item->setColorAdjustmentsRecord(app.colorAdjust);
-                // Baked crop sample: identity is display size, not full-file logical.
-                if (app.hasCrop && !app.cropRect.isEmpty()
-                    && image.width() > 1 && image.height() > 1) {
-                    item->setIntrinsicSize(image.size());
-                } else {
-                    SessionAppearance::syncItemLayoutToContentOrientation(item, app);
-                }
-            }
-        }
+    if (applyStoredSessionCrop && isImageMode()
+        && (app.hasCrop || app.contentHFlip || app.contentVFlip
+            || app.contentQuarterTurns != 0 || !app.colorAdjust.isIdentity())) {
+        item->setContentHFlip(app.contentHFlip);
+        item->setContentVFlip(app.contentVFlip);
+        item->setSessionCrop(app.hasCrop, app.cropRect);
+        item->setColorAdjustmentsRecord(app.colorAdjust);
     }
+    // Fingerprint: sample is already display (worker-baked or identity).
+    item->setAppliedContentXform(ContentXform::Value::fromState(app));
     m_scene->addItem(item);
     m_items.append(item);
     return item;
