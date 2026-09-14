@@ -1325,6 +1325,11 @@ bool ImageView::applyCropCommit(ImageItem *item)
         }
 
         // Single attach path (layoutSize only — never soft size as intrinsic).
+        // Enter may have installed FullSource host; SoftPreview is ignored when
+        // m_source is set (setPreviewImage no-op). Clear first so the crop bake
+        // replaces full-frame pixels — otherwise canvas stretches full into the
+        // crop box and filmstrip gets img=full (cropApply with uncropped pixels).
+        item->clearDecodedPixels();
         const auto pixelKind = multiMp ? SessionAppearance::PixelKind::SoftPreview
                                        : SessionAppearance::PixelKind::FullSource;
         attachDisplaySample(item, display, st, pixelKind);
@@ -1364,9 +1369,11 @@ bool ImageView::applyCropCommit(ImageItem *item)
         commitItemSessionEdit(item);
 
         if (sid != kInvalidSessionImageId) {
-            QImage appearance = sessionAppearanceImage(item);
+            // Prefer the crop bake we just materialized — not displayImage(), which
+            // can still be pre-crop if soft attach was rejected.
+            QImage appearance = display;
             if (appearance.isNull()) {
-                appearance = display;
+                appearance = sessionAppearanceImage(item);
             }
             if (!appearance.isNull()) {
                 emit sessionAppearanceChanged(sid, path, appearance);

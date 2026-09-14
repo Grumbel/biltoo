@@ -2,6 +2,28 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-892-crop-apply-clear-pixels.** Crop Apply clears FullSource before soft crop attach.
+Prior: **891**.
+
+### Filmstrip got full frame on cropApply (log: img=1365x2048)
+Crop enter can install FullSource host. Apply materializes soft crop and
+`attachDisplaySample(SoftPreview)` → `setPreviewImage` **no-ops** when
+`m_source` is set. Pixels stayed full; filmstrip override was uncropped.
+content=37x55 matched full portrait aspect.
+
+**Fix:** `clearDecodedPixels()` before attach; emit the materialize `display` bake.
+
+### Apply
+```bash
+git pull /path/to/biltoo-892-crop-apply-clear-pixels.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-891-filmstrip-paint-override.** Paint reads session-id overrides live.
 Prior: **890**.
 
