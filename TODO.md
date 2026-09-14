@@ -2,6 +2,25 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-896-build-fix.** Compile fixes after 894/895.
+Prior: **895**.
+
+### Fixes
+- `sessionIdForPath`: `classicPath()` not `m_classicPath`
+- crop prepare: drop unused `unoriented` local; pass `unorientedSource`
+- sessionappearance-crop test links `Qt6::Widgets` (imageitem.h)
+
+### Apply
+```bash
+git pull /path/to/biltoo-896-build-fix.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-895-drag-preview.** Filmstrip drag preview no longer scaled to 1×1.
 Prior: **894**.
 

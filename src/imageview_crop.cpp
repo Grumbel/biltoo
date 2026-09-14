@@ -665,13 +665,12 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         return false;
     }
 
-    const bool unoriented = hostOk;
     // Workspace: lock scene footprint before intrinsic changes on install.
     const QRectF beforeScene = item->mapRectToScene(item->contentRect());
     const qreal footW0 = beforeScene.width();
     const qreal footH0 = beforeScene.height();
     const QPointF center0 = beforeScene.center();
-    installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp, unoriented);
+    installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp, unorientedSource);
     // Workspace: do NOT rescale to fit full frame into the previous crop
     // footprint. That drove item scale toward ~1% on second crop (Zoom UI)
     // and made Apply inherit a near-zero scale. Placement scale is placement —

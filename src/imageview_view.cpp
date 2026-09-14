@@ -1838,7 +1838,7 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
                 return m_currentSessionId;
             }
         }
-        if (m_classicPath == path || currentPath() == path) {
+        if (classicPath() == path || currentPath() == path) {
             return m_currentSessionId;
         }
     }
