@@ -226,8 +226,14 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         orient = barOrient->barOrientation();
     }
 
-    // Prepared pixmap (correct aspect). Never QIcon::pixmap(w,h) — stretches.
-    QPixmap pm = qvariant_cast<QPixmap>(index.data(ThumbPixmapRole));
+    // Prefer session override (crop/appearance) over any installed path thumb.
+    QPixmap pm;
+    if (const ThumbnailBar *bar = qobject_cast<const ThumbnailBar *>(parent())) {
+        pm = bar->resolvedThumbPixmap(index.row());
+    }
+    if (pm.isNull()) {
+        pm = qvariant_cast<QPixmap>(index.data(ThumbPixmapRole));
+    }
     if (pm.isNull()) {
         const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
         if (!icon.isNull()) {
@@ -1363,12 +1369,11 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
     if (thumb.isNull()) {
         return;
     }
+    bool painted = false;
     for (int row = 0; row < m_sessionIds.size() && row < m_files.size(); ++row) {
         if (m_sessionIds.at(row) != sessionId) {
             continue;
         }
-        // Force a visible update: clear edge/loaded so setThumbnailIcon cannot
-        // treat a prior path decode as already settled, and aspect can change.
         if (QListWidgetItem *it = item(row)) {
             it->setData(ThumbnailDelegate::ThumbLoadedRole, false);
             it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole, 0);
@@ -1376,11 +1381,57 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
         m_allowOverrideIconInstall = true;
         setThumbnailIcon(row, thumb);
         m_allowOverrideIconInstall = false;
-        return;
+        painted = true;
+        break;
     }
-    // Id not in the strip yet — keep override for when the row appears.
-    // Do not paint every path-matching row (leaks crops across duplicates).
-    Q_UNUSED(path);
+    // Always repaint — paint() reads overrides live via resolvedThumbPixmap.
+    if (viewport()) {
+        viewport()->update();
+    }
+    if (!painted) {
+        // Id not in the strip yet — keep override for when the row appears.
+        Q_UNUSED(path);
+    }
+}
+
+
+QPixmap ThumbnailBar::resolvedThumbPixmap(int row) const
+{
+    if (row < 0 || row >= count()) {
+        return {};
+    }
+    // Session-id override wins (crop / orient bake).
+    if (row < m_sessionIds.size()) {
+        const SessionImageId sid = m_sessionIds.at(row);
+        if (sid != kInvalidSessionImageId) {
+            const auto it = m_sessionIdImageOverrides.constFind(sid);
+            if (it != m_sessionIdImageOverrides.cend() && !it.value().isNull()) {
+                const QImage thumb =
+                    prepareThumbnailFromImage(it.value(), filmstripDecodeEdge());
+                if (!thumb.isNull()) {
+                    return QPixmap::fromImage(thumb);
+                }
+            }
+        }
+    }
+    // Path override only when this row is unbound.
+    if (row < m_sessionIds.size()
+        && m_sessionIds.at(row) == kInvalidSessionImageId
+        && row < m_files.size()) {
+        const QString path = m_files.at(row);
+        const auto it = m_sessionImageOverrides.constFind(path);
+        if (it != m_sessionImageOverrides.cend() && !it.value().isNull()) {
+            const QImage thumb =
+                prepareThumbnailFromImage(it.value(), filmstripDecodeEdge());
+            if (!thumb.isNull()) {
+                return QPixmap::fromImage(thumb);
+            }
+        }
+    }
+    if (QListWidgetItem *it = item(row)) {
+        return qvariant_cast<QPixmap>(it->data(ThumbnailDelegate::ThumbPixmapRole));
+    }
+    return {};
 }
 
 void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)

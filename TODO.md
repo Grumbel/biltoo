@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-891-filmstrip-paint-override.** Paint reads session-id overrides live.
+Prior: **890**.
+
+### Filmstrip still not updating on crop
+Installed path thumbs could stay on the cell despite override map updates.
+**Paint** now uses `resolvedThumbPixmap(row)` which prefers the session-id
+override image every frame. Crop Apply still forces setThumbnailIcon + viewport
+update for sizeHint/aspect.
+
+### Apply
+```bash
+git pull /path/to/biltoo-891-filmstrip-paint-override.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-890-filmstrip-crop-override.** Filmstrip applies crop overrides even when path decode settled.
 Prior: **889**.
 

@@ -119,6 +119,13 @@ public:
      */
     void setSessionImageOverride(SessionImageId sessionId, const QString &path,
                                  const QImage &image, bool fromCropApply = false);
+
+    /**
+     * Pixmap for paint: session-id (or path) override if present, else the
+     * installed ThumbPixmapRole. Paint must prefer overrides so crop updates
+     * show even when schedule/settle races leave a stale path thumb installed.
+     */
+    QPixmap resolvedThumbPixmap(int row) const;
     void setSessionIds(const QVector<SessionImageId> &ids);
 
     /** Multi-select session paths for Workspace canvas membership (not app ViewMode). */
