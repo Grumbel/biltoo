@@ -8,6 +8,7 @@
 
 #include <QDebug>
 #include <QSet>
+#include <QRect>
 #include "biltoo_logging.h"
 #include <cmath>
 #include <QtMath>
@@ -2654,26 +2655,75 @@ void MainWindow::updateFullscreenUi()
     }
 }
 
+namespace {
+
+/** Human-readable window frame: "x,y,width,height" (screen coordinates). */
+QString formatWindowGeometry(const QRect &r)
+{
+    return QStringLiteral("%1,%2,%3,%4")
+        .arg(r.x())
+        .arg(r.y())
+        .arg(r.width())
+        .arg(r.height());
+}
+
+bool parseWindowGeometry(const QString &s, QRect *out)
+{
+    if (!out || s.trimmed().isEmpty()) {
+        return false;
+    }
+    const QStringList parts = s.split(QLatin1Char(','));
+    if (parts.size() != 4) {
+        return false;
+    }
+    bool okX = false, okY = false, okW = false, okH = false;
+    const int x = parts.at(0).trimmed().toInt(&okX);
+    const int y = parts.at(1).trimmed().toInt(&okY);
+    const int w = parts.at(2).trimmed().toInt(&okW);
+    const int h = parts.at(3).trimmed().toInt(&okH);
+    if (!okX || !okY || !okW || !okH || w < 100 || h < 100) {
+        return false;
+    }
+    *out = QRect(x, y, w, h);
+    return true;
+}
+
+} // namespace
+
 void MainWindow::readSettings()
 {
     QSettings settings;
-    const QByteArray geometry = settings.value(QStringLiteral("geometry")).toByteArray();
-    if (!geometry.isEmpty()) {
-        restoreGeometry(geometry);
-    }
-    // Fullscreen is not a persistent preference — only --fullscreen / -f starts
-    // that way. QWidget::saveGeometry() encodes WindowFullScreen and would
-    // reopen full-screen after a prior session left that way.
-    if (isFullScreen()) {
-        setWindowState(windowState() & ~Qt::WindowFullScreen);
-        showNormal();
-        const QRect normal = settings.value(QStringLiteral("normalGeometry")).toRect();
-        if (normal.isValid()) {
-            setGeometry(normal);
+
+    // Prefer human-readable geometry ("x,y,w,h"). Fall back to legacy QByteArray
+    // from QWidget::saveGeometry() for older configs.
+    QRect frame;
+    bool haveFrame = parseWindowGeometry(
+        settings.value(QStringLiteral("windowGeometry")).toString(), &frame);
+    if (!haveFrame) {
+        const QByteArray legacy = settings.value(QStringLiteral("geometry")).toByteArray();
+        if (!legacy.isEmpty()) {
+            restoreGeometry(legacy);
+            // Fullscreen is not a persistent preference — only --fullscreen / -f.
+            if (isFullScreen()) {
+                setWindowState(windowState() & ~Qt::WindowFullScreen);
+                showNormal();
+                const QRect normal = settings.value(QStringLiteral("normalGeometry")).toRect();
+                if (normal.isValid()) {
+                    setGeometry(normal);
+                }
+            }
+            haveFrame = true;
+            frame = geometry();
         }
+    } else {
+        setGeometry(frame);
     }
+    if (haveFrame && settings.value(QStringLiteral("windowMaximized"), false).toBool()) {
+        showMaximized();
+    }
+
     // QMainWindow::restoreState can SIGSEGV inside QDockAreaLayout on show()
-    // (Qt 6.11). Do not restore dock layout from settings; drop any stored blob.
+    // (Qt 6.11). Never restore or keep dock-layout blobs.
     if (settings.contains(QStringLiteral("windowState"))) {
         settings.remove(QStringLiteral("windowState"));
     }
@@ -2954,16 +3004,16 @@ void MainWindow::readSettings()
 void MainWindow::writeSettings()
 {
     QSettings settings;
-    // Persist the normal frame geometry, not a fullscreen state bit.
-    if (isFullScreen()) {
-        settings.setValue(QStringLiteral("geometry"),
-                          saveGeometry()); // still has FS bit — stripped on read
-        // Also store normalGeometry for a cleaner reopen size.
-        settings.setValue(QStringLiteral("normalGeometry"), normalGeometry());
-    } else {
-        settings.setValue(QStringLiteral("geometry"), saveGeometry());
-        settings.setValue(QStringLiteral("normalGeometry"), geometry());
-    }
+    // Human-readable frame geometry (not QWidget::saveGeometry QByteArray).
+    // Fullscreen is never persisted — store the normal frame instead.
+    const QRect frame = isFullScreen() ? normalGeometry() : geometry();
+    const bool maximized = !isFullScreen() && isMaximized();
+    settings.setValue(QStringLiteral("windowGeometry"), formatWindowGeometry(frame));
+    settings.setValue(QStringLiteral("windowMaximized"), maximized);
+    // Drop legacy binary keys so conf files stay readable.
+    settings.remove(QStringLiteral("geometry"));
+    settings.remove(QStringLiteral("normalGeometry"));
+
     settings.beginWriteArray(QStringLiteral("sessionHistory"), m_sessionHistory.size());
     for (int i = 0; i < m_sessionHistory.size(); ++i) {
         settings.setArrayIndex(i);

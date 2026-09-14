@@ -2,6 +2,29 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-791-readable-window-geometry.** Human-readable windowGeometry settings.
+Prior: **790**.
+
+### Changes
+- Persist `windowGeometry=x,y,w,h` and `windowMaximized` instead of opaque
+  `geometry` QByteArray from `saveGeometry()`
+- Still **read** legacy binary geometry once for migration, then rewrite clean keys
+- **Never** save/restore `windowState` (dock layout SEGV on Qt 6.11); keep purging
+
+### Apply
+```bash
+git pull /path/to/biltoo-791-readable-window-geometry.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **791**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-790-docs-workspace-drag-only.** Docs: filmstrip double-click ≠ Workspace place.
 Prior: **789**.
 
