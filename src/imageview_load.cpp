@@ -1554,7 +1554,10 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         if (item->imageSize() != before) {
             gallerySizeChanged = true;
         }
-        item->update(); // coalesced viewport update below
+        item->update();
+        if (m_scene) {
+            m_scene->update(item->sceneBoundingRect());
+        }
     }
     if (gallerySizeChanged && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
         applyLayout(GalleryPackReason::ContentChange);

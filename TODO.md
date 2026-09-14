@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-796-gallery-lqip-display-upgrade.** Gallery paints soft over LQIP.
+Prior: **795**.
+
+### Problem
+Soft arrived in ImageCache but tiles stayed on LQIP until Workspace round-trip.
+Repair/install paths only filled **blank** tiles (`!hasDisplayPixels`), so LQIP
+blocked upgrades. `rasterImproved` never installed Gallery samples.
+
+### Change
+- Host-soft install + decode-window repair: upgrade when cache edge > display
+- `rasterImproved` → `onImagePreviewLoaded` in Gallery/Workspace
+- Scene rect update after soft install; sizeReady still paints blank LQIP tiles
+
+### Apply
+```bash
+git pull /path/to/biltoo-796-gallery-lqip-display-upgrade.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **796**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-795-filmstrip-absolute-pad.** Filmstrip: fixed pad; no iconSize floor.
 Prior: **794**.
 

@@ -51,8 +51,9 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         if (!item || item->path().isEmpty()) {
             continue;
         }
-        // Only truly blank tiles — climb upgrades go through scheduleGalleryDecode.
-        if (item->hasDisplayPixels() || item->hasDecodedPixels()) {
+        // Blank tiles, or tiles still on LQIP/placeholder while ImageCache has
+        // a sharper sample (soft/full arrived without a successful paint).
+        if (item->hasDecodedPixels()) {
             continue;
         }
         if (installed >= maxInstalls) {
@@ -66,11 +67,15 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         if (hostSoft.isNull()) {
             continue;
         }
+        const int hostEdge = ImageCache::longEdge(hostSoft);
+        if (item->hasDisplayPixels() && !item->shouldUpgradeDisplayTo(hostEdge)) {
+            continue;
+        }
         installDisplayPixels(item, hostSoft,
                              SessionAppearance::PixelKind::SoftPreview,
                              item->sessionId());
         GallerySoftState &st = m_gallerySoft[path];
-        st.have = qMax(st.have, ImageCache::longEdge(hostSoft));
+        st.have = qMax(st.have, hostEdge);
         item->update();
         ++installed;
     }
@@ -718,22 +723,28 @@ void ImageView::gallerySoftWatchdogTick()
         }
         GallerySoftState &st = m_gallerySoft[path];
 
-        // Cache/session soft exists but tile still empty → install + force paint.
-        if (!item->hasDisplayPixels()) {
+        // Cache has soft/full but tile is blank *or* still on a weaker sample
+        // (LQIP left on the item after ladderReady put soft into ImageCache).
+        {
             const QImage soft = ImageCache::get(path);
-            // Do not PreferCache / extract on the GUI thread here.
             if (!soft.isNull()) {
-                installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
-                                     item->sessionId());
-                if (m_scene) {
-                    m_scene->update(item->sceneBoundingRect());
+                const int hostEdge = ImageCache::longEdge(soft);
+                if (!item->hasDisplayPixels()
+                    || item->shouldUpgradeDisplayTo(hostEdge)) {
+                    installDisplayPixels(item, soft,
+                                         SessionAppearance::PixelKind::SoftPreview,
+                                         item->sessionId());
+                    if (m_scene) {
+                        m_scene->update(item->sceneBoundingRect());
+                    }
+                    st.have = qMax(st.have, hostEdge);
+                    ++repaired;
+                    continue;
                 }
-                st.have = qMax(st.have, ImageCache::longEdge(soft));
-                ++repaired;
-                continue;
             }
-        } else {
-            // State says no soft but item has pixels — keep have in sync.
+        }
+        // Item has pixels — keep have in sync with what is painted.
+        if (item->hasDisplayPixels()) {
             const int edge = item->displayPixelLongEdge();
             if (edge > st.have) {
                 st.have = edge;

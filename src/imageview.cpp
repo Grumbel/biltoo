@@ -139,13 +139,17 @@ ImageView::ImageView(QWidget *parent)
                         rememberImageSize(path, size);
                         applyProbedImageSize(path, size);
                     }
-                    // LQIP often arrives with the size probe — install as soft stand-in
-                    // when the tile still has no pixels (cold open). Host map is
-                    // ImageCache (docs/PIXEL_HOST_CACHE.md).
-                    if (isGalleryMode() && !ImageCache::has(path)) {
-                        const QImage lqip = ThumtooCache::cachedLqipImage(path);
+                    // LQIP may already be in ImageCache (size probe callback).
+                    // Still paint blank tiles; never block later soft upgrades.
+                    if (isGalleryMode()) {
+                        QImage lqip = ImageCache::get(path);
+                        if (lqip.isNull()) {
+                            lqip = ThumtooCache::cachedLqipImage(path);
+                            if (!lqip.isNull()) {
+                                ImageCache::put(path, lqip);
+                            }
+                        }
                         if (!lqip.isNull()) {
-                            ImageCache::put(path, lqip);
                             for (ImageItem *item : m_items) {
                                 if (!item || item->path() != path) {
                                     continue;
@@ -210,6 +214,16 @@ ImageView::ImageView(QWidget *parent)
                     // PreferCache plateaued below viewport need → quiet native.
                     // Full escalate is PathRasterService ClimbPolicy::EscalateToFull.
                     emit statusChanged();
+                }
+                // Gallery: soft may land in ImageCache via noteDelivery while the
+                // tile still shows LQIP — mirror ladderReady install.
+                if (isGalleryMode()) {
+                    onImagePreviewLoaded(path, img, m_loadGeneration.load(),
+                                         static_cast<int>(LoadAdd));
+                }
+                if (isWorkspaceMode()) {
+                    onImagePreviewLoaded(path, img, m_loadGeneration.load(),
+                                         static_cast<int>(LoadAdd));
                 }
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
