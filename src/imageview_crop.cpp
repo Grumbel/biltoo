@@ -573,18 +573,27 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const bool haveApp = resolveCropEnterAppearance(item, &app);
     const bool hadCrop = haveApp && app.hasCrop && !app.cropRect.isEmpty();
 
-    // Unoriented host preferred. Soft item display only when there is no prior
-    // crop (otherwise re-crop treats the bake as the full frame).
+    // Unoriented ImageCache host preferred. Never use item display as the crop
+    // base when a prior crop exists — that bake is already cropped, so a second
+    // crop would edit the wrong frame and shrink further.
     QImage full = path.isEmpty() ? QImage() : ImageCache::get(path);
     bool hostOk = !full.isNull();
+    bool unorientedSource = hostOk;
 
     if (!hostOk && !hadCrop) {
         full = item->sourceImage();
         if (full.isNull()) {
             full = item->previewImage();
         }
+        unorientedSource = false;
     }
     if (full.isNull()) {
+        // Prior crop and no host: force a load; do not enter on the bake.
+        if (hadCrop && !path.isEmpty()) {
+            requestCropFullRaster(path);
+            m_cropAwaitingFullPath = path;
+            flashHud(tr("Crop"), tr("Loading full image…"));
+        }
         flashHud(tr("Crop"), tr("Image not cached yet — try again"));
         return false;
     }
@@ -1124,7 +1133,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
         QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
         const bool hostFromCache = !host.isNull();
         if (!hostFromCache) {
-            // Draft display is orient-only full frame (crop not baked until Apply).
+            // Draft must be orient-only full frame. If the item already holds a
+            // crop bake (second Apply without cache), refuse — cropping the bake
+            // double-crops and shrinks Workspace tiles.
+            if (item->hasAppliedContentXform()
+                && item->appliedContentXform().hasCrop) {
+                flashHud(tr("Crop"), tr("Full image not ready — try again"));
+                return false;
+            }
             host = item->sourceImage();
             if (host.isNull()) {
                 host = item->previewImage();
@@ -1161,9 +1177,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
             }
         }
 
-        // materializeDisplay pipeline: flips → turns → crop±rot.
-        // Host from ImageCache is unoriented → full state.
-        // Host from draft item already has turns baked → crop-only state.
+        // materializeDisplay: prefer unoriented ImageCache host + full want.
+        // Draft item pixels may be orient- or crop-baked — crop-only bake then.
         WorkspaceItemState bake = st;
         if (!hostFromCache) {
             bake.contentQuarterTurns = 0;
@@ -1171,15 +1186,47 @@ bool ImageView::applyCropCommit(ImageItem *item)
             bake.contentVFlip = false;
         }
         QImage sample = host;
-        if (ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
+        const bool multiMp =
+            ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge;
+        if (multiMp) {
             sample = ImageCache::clampToMaxEdge(
                 sample, ContentXform::kGuiMaterializeMaxEdge);
         }
         const QImage display = SessionAppearance::materializeDisplay(
-            sample, bake, SessionAppearance::PixelKind::SoftPreview);
+            sample, bake,
+            multiMp ? SessionAppearance::PixelKind::SoftPreview
+                    : SessionAppearance::PixelKind::FullSource);
         if (display.isNull()) {
             flashHud(tr("Crop"), tr("Crop bake failed"));
             return false;
+        }
+
+        // Intrinsic from file-native layoutSize(crop), not soft draft pixel size.
+        // Recompute scale so scene footprint (draft selection) is preserved.
+        QSize fileNative = logicalSizeForPath(path);
+        if (!isPositiveSize(fileNative) || fileNative.width() <= 1) {
+            if (hostFromCache && host.width() > 1) {
+                fileNative = host.size();
+            }
+        }
+        QSize logical = isPositiveSize(fileNative)
+            ? ContentXform::layoutSize(fileNative, st)
+            : QSize();
+        if (!isPositiveSize(logical) || logical.width() <= 1) {
+            logical = QSize(qMax(1, qRound(cropW)), qMax(1, qRound(cropH)));
+        }
+        qreal sx = sx0;
+        qreal sy = sy0;
+        if (logical.width() > 0 && logical.height() > 0
+            && cropW > 0.5 && cropH > 0.5) {
+            const qreal nsx = footW / qreal(logical.width());
+            const qreal nsy = footH / qreal(logical.height());
+            if (nsx > 1e-6 && qIsFinite(nsx)) {
+                sx = nsx;
+            }
+            if (nsy > 1e-6 && qIsFinite(nsy)) {
+                sy = nsy;
+            }
         }
 
         item->setSourceImageReady(display);
@@ -1187,12 +1234,15 @@ bool ImageView::applyCropCommit(ImageItem *item)
         item->setContentVFlip(st.contentVFlip);
         item->setSessionCrop(st.hasCrop, st.cropRect);
         item->setAppliedContentXform(ContentXform::Value::fromState(st));
-
-        // Intrinsic = draft crop size in content units; keep scale → footprint.
-        const QSize logical(qMax(1, qRound(cropW)), qMax(1, qRound(cropH)));
         item->setIntrinsicSize(logical);
-        item->setItemScale(sx0, sy0);
+        item->setItemScale(sx, sy);
         alignItemCenterToScene(item, cropSceneCenter);
+
+        // Multi-MP: soft stand-in now; pure full rematerialize when host is large.
+        if (hostFromCache && multiMp) {
+            scheduleAsyncHostRematerialize(path, sid, st);
+        }
+
         if (isWorkspaceMode()) {
             item->setItemRotation(m_cropRotation);
             updateWorkspaceSceneRect();

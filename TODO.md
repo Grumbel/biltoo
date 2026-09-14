@@ -2,6 +2,46 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-876-crop-filmstrip-workspace-roots.** Filmstrip ladderReady race; Workspace crop footprint; no second-crop on bake.
+Prior: **875**.
+
+### Symptoms
+1. Image: correct crop → wrong crop flash → correct again (not res climb alone)
+2. Filmstrip: cropped thumb then overwritten by uncropped
+3. Workspace: crop shrinks to tiny; second Apply does not show original frame
+
+### Causes
+1. **Filmstrip:** `ladderReady` checked id override before starting a job, but the
+   GUI completion path installed the path sample **without** re-checking override
+   (race with Crop Apply).
+2. **Workspace:** Apply set intrinsic to **draft soft pixel** crop size and kept
+   soft-relative scale inconsistently vs file-native `layoutSize`.
+3. **Second crop:** enter/apply could use **already crop-baked** item pixels as
+   host when ImageCache missed → double-crop / refuse original.
+
+### Fix
+- ladderReady completion: skip install if id/path override present
+- Apply: `layoutSize(fileNative, want)` intrinsic; scale = foot / logical
+- Apply: refuse draft host when applied xform already has crop
+- Enter crop with prior crop: never use item bake as full host; schedule load
+
+### Apply
+```bash
+git pull /path/to/biltoo-876-crop-filmstrip-workspace-roots.bundle HEAD
+```
+
+### Verify
+- [ ] Filmstrip stays cropped after Apply (no uncropped flash)
+- [ ] Workspace crop keeps scene footprint (not tiny)
+- [ ] Second crop enter shows full original (or “loading”); Apply works
+- [ ] Image Apply: stable crop (no wrong intermediate from ladder)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-875-propagate-content-transform-views.** One hub refreshes filmstrip + Gallery + Workspace + Image after content transform.
 Prior: **874**.
 

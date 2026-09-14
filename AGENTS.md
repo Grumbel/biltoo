@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-875-propagate-content-transform-views**.
-Next bundle number: **876**.
+Latest agent handoff: **TODO.md → biltoo-876-crop-filmstrip-workspace-roots**.
+Next bundle number: **877**.
 Requires **thumtoo ≥ 202** (`THUMTOO_API_DOCUMENT_INDEX`) for PDF/DjVu/EPUB page-count cache.
 **Settings:** do not reintroduce `QMainWindow::restoreState` / `saveState` for docks without a proven fix for Qt 6.11 `QDockAreaLayout` SEGV on show().
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).

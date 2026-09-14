@@ -510,6 +510,23 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                                 || host->m_files.at(i) != path) {
                                 return;
                             }
+                            // Crop/appearance may have landed while the ladder job ran.
+                            if (i < host->m_sessionIds.size()) {
+                                const SessionImageId rowId = host->m_sessionIds.at(i);
+                                if (rowId != kInvalidSessionImageId
+                                    && host->m_sessionIdImageOverrides.contains(rowId)) {
+                                    host->m_thumbAwaitLadder.remove(i);
+                                    host->m_thumbLoadScheduled.remove(i);
+                                    emit host->loadsChanged();
+                                    return;
+                                }
+                            }
+                            if (host->m_sessionImageOverrides.contains(path)) {
+                                host->m_thumbAwaitLadder.remove(i);
+                                host->m_thumbLoadScheduled.remove(i);
+                                emit host->loadsChanged();
+                                return;
+                            }
                             if (image.isNull()) {
                                 // Ladder finished but still undecodable — settle so we
                                 // do not re-enter scheduleVisible → pool forever.
