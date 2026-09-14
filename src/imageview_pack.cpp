@@ -52,9 +52,10 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         if (!item || item->path().isEmpty()) {
             continue;
         }
-        // Blank tiles, or tiles still on LQIP/placeholder while ImageCache has
-        // a sharper sample (soft/full arrived without a successful paint).
-        if (item->hasDecodedPixels()) {
+        // FullSource already native-class — only strict edge upgrades.
+        if (item->hasDecodedPixels()
+            && !item->shouldUpgradeDisplayTo(
+                   ImageCache::longEdge(ImageCache::get(item->path())))) {
             continue;
         }
         if (installed >= maxInstalls) {
@@ -64,17 +65,29 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             break;
         }
         const QString &path = item->path();
-        const QImage hostSoft = ImageCache::get(path);
-        if (hostSoft.isNull()) {
+        const QImage hostSample = ImageCache::get(path);
+        if (hostSample.isNull()) {
             continue;
         }
-        const int hostEdge = ImageCache::longEdge(hostSoft);
+        const int hostEdge = ImageCache::longEdge(hostSample);
         if (item->hasDisplayPixels() && !item->shouldUpgradeDisplayTo(hostEdge)) {
             continue;
         }
-        installDisplayPixels(item, hostSoft,
-                             SessionAppearance::PixelKind::SoftPreview,
-                             item->sessionId());
+        // SoftPreview path clamps host samples down to cell need — then
+        // shouldUpgradeDisplayTo(hostEdge) stays true forever (pass1 install=2
+        // every 32ms). Host samples above soft max install as FullSource.
+        const SessionAppearance::PixelKind kind =
+            (hostEdge > ThumtooCache::kGalleryLadderEdge)
+                ? SessionAppearance::PixelKind::FullSource
+                : SessionAppearance::PixelKind::SoftPreview;
+        const int before = item->displayPixelLongEdge();
+        const bool hadDisplay = item->hasDisplayPixels();
+        installDisplayPixels(item, hostSample, kind, item->sessionId());
+        const int after = item->displayPixelLongEdge();
+        if (after <= before && hadDisplay) {
+            // Rejected or no visible upgrade — do not count / reschedule.
+            continue;
+        }
         GallerySoftState &st = m_gallerySoft[path];
         st.have = qMax(st.have, hostEdge);
         item->update();
@@ -774,6 +787,8 @@ void ImageView::gallerySoftWatchdogTick()
         } else if (dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
             // Need PreferCache / Full — normal work, not a quality violation.
             // Skip ensure when PathRaster already plateaued for this want.
+            // Do not force needWindow every tick — that re-entered pass1 forever
+            // when SoftPreview clamp kept shouldUpgrade true.
             clearGallerySoftInflight(st);
             if (m_pathRaster && !m_pathRaster->isGaveUp(path)) {
                 const auto pol =
@@ -781,9 +796,11 @@ void ImageView::gallerySoftWatchdogTick()
                         ? PathRasterService::ClimbPolicy::EscalateToFull
                         : PathRasterService::ClimbPolicy::SoftDisplay;
                 m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
+                if (m_pathRaster->isClimbPending(path)) {
+                    needWindow = true;
+                }
             }
             scheduleGalleryDecode(path);
-            needWindow = true;
             st.weakSinceMs = 0;
         } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak) {
             if (st.weakSinceMs <= 0) {

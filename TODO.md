@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-814-pass1-no-clamp-loop.** Pass1 FullSource for host>soft; no false install count; quieter ScheduleClimb window.
+Prior: **813**.
+
+### Problem
+`updateGalleryDecodeWindow` spun ~4ms × 1000 runs with `install=2` and no real progress.
+Pass1 installed SoftPreview host samples; clampSoft shrank paint; shouldUpgrade stayed true → reinstall every 32ms.
+
+### Change
+- Pass1: FullSource when hostEdge > soft max (no soft clamp)
+- Only count installs that raise display edge (or fill blank)
+- ScheduleClimb: needWindow only if climb actually pending
+
+### Apply
+```bash
+git pull /path/to/biltoo-814-pass1-no-clamp-loop.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **814**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-813-full-native-retry.** Full requests min(want, native); retry shortfall; gallery upgrades Soft→FullSource.
 Prior: **812**.
 
