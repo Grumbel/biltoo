@@ -305,6 +305,17 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
+    m_helpPanel = new HelpPanel(this);
+    m_helpDock = new QDockWidget(tr("Help"), this);
+    m_helpDock->setObjectName(QStringLiteral("HelpDock"));
+    m_helpDock->setWidget(m_helpPanel);
+    m_helpDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_helpDock->setFeatures(QDockWidget::DockWidgetClosable
+                            | QDockWidget::DockWidgetMovable
+                            | QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::RightDockWidgetArea, m_helpDock);
+    m_helpDock->hide();
+
     createActions();
     createMenus();
     createToolBar();
@@ -316,6 +327,9 @@ MainWindow::MainWindow(QWidget *parent)
             act->setToolTip(act->statusTip());
         }
     }
+
+    populateActionHelpTexts();
+    installActionHelpTracking();
 
     bindViewerShortcuts();
 
@@ -2526,6 +2540,8 @@ void MainWindow::updateFullscreenUi()
             m_layoutDock && m_layoutDock->isVisible();
         m_adjustmentsVisibleBeforeFullscreen =
             m_adjustmentsDock && m_adjustmentsDock->isVisible();
+        m_helpVisibleBeforeFullscreen =
+            m_helpDock && m_helpDock->isVisible();
         m_toolBar->setVisible(false);
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
@@ -2542,6 +2558,9 @@ void MainWindow::updateFullscreenUi()
         if (m_adjustmentsDock) {
             m_adjustmentsDock->setVisible(false);
         }
+        if (m_helpDock) {
+            m_helpDock->setVisible(false);
+        }
         m_toggleToolBarAct->setChecked(false);
         m_toggleThumbnailBarAct->setChecked(false);
         m_toggleMetadataAct->setChecked(false);
@@ -2550,6 +2569,9 @@ void MainWindow::updateFullscreenUi()
         }
         if (m_toggleAdjustmentsAct) {
             m_toggleAdjustmentsAct->setChecked(false);
+        }
+        if (m_toggleHelpAct) {
+            m_toggleHelpAct->setChecked(false);
         }
         menuBar()->setVisible(false);
         statusBar()->setVisible(false);
@@ -2571,6 +2593,12 @@ void MainWindow::updateFullscreenUi()
         }
         if (m_toggleAdjustmentsAct) {
             m_toggleAdjustmentsAct->setChecked(m_adjustmentsVisibleBeforeFullscreen);
+        }
+        if (m_helpDock) {
+            m_helpDock->setVisible(m_helpVisibleBeforeFullscreen);
+        }
+        if (m_toggleHelpAct) {
+            m_toggleHelpAct->setChecked(m_helpVisibleBeforeFullscreen);
         }
         // Thumbnails and Layout panel follow per-mode rules, not a single
         // pre-fullscreen snapshot (Gallery must not regain a Workspace layout dock).

@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-782-help-panel-infra.** Help dock + action hover/trigger tracking.
+Prior: **781**.
+
+### Changes
+- New **Help** side panel (`HelpPanel` / `HelpDock`) — rich-text body for the
+  current QAction (hovered in menu/toolbar or last triggered)
+- `QAction::whatsThis()` is the long-form source; statusTip remains the short
+  status-bar/tooltip line. Fallback text when whatsThis is still empty.
+- View → Show Help Panel; Help → Show Help Panel; fullscreen hide/restore
+- Seeded detailed help for a first batch (Open/Add/New, zoom Fit/Fill/1:1,
+  Crop, HUD, Metadata, Help panel, Fullscreen, Keyboard Shortcuts)
+- Remaining actions: fill `whatsThis` in follow-up tips (783+)
+
+### Apply
+```bash
+git pull /path/to/biltoo-782-help-panel-infra.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **782**
+- [ ] Later: complete whatsThis coverage for all menus/toolbars
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-781-doc-flow-aspect-shuffle.** Paged docs → Flow; sort Aspect + Shuffle.
 Prior: **780**.
 

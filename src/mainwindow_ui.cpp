@@ -706,6 +706,11 @@ void MainWindow::createActions()
     m_toggleTocAct->setText(tr("Show &Contents"));
     m_toggleTocAct->setStatusTip(tr("Show or hide the document table of contents"));
 
+    m_toggleHelpAct = m_helpDock->toggleViewAction();
+    m_toggleHelpAct->setText(tr("Show &Help Panel"));
+    m_toggleHelpAct->setIcon(themeIcon(QStringLiteral("help-contents"), QStyle::SP_DialogHelpButton));
+    m_toggleHelpAct->setStatusTip(tr("Show or hide the detailed action help panel"));
+
     if (m_adjustmentsDock) {
         m_toggleAdjustmentsAct = m_adjustmentsDock->toggleViewAction();
         m_toggleAdjustmentsAct->setText(tr("Show &Adjustments"));
@@ -892,6 +897,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_showSearchBarAct);
     m_viewMenu->addAction(m_toggleMetadataAct);
     m_viewMenu->addAction(m_toggleTocAct);
+    m_viewMenu->addAction(m_toggleHelpAct);
     if (m_toggleAdjustmentsAct) {
         m_viewMenu->addAction(m_toggleAdjustmentsAct);
     }
@@ -985,6 +991,7 @@ void MainWindow::createMenus()
     connect(m_clearHistoryAct, &QAction::triggered, this, &MainWindow::clearSessionHistory);
 
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
+    m_helpMenu->addAction(m_toggleHelpAct);
     m_helpMenu->addAction(m_keyboardShortcutsAct);
     m_helpMenu->addSeparator();
     m_helpMenu->addAction(m_aboutAct);
@@ -1301,4 +1308,120 @@ void MainWindow::bindViewerShortcuts()
         addAction(act);
         act->setShortcutContext(Qt::WindowShortcut);
     }
+}
+
+void MainWindow::installActionHelpTracking()
+{
+    if (!m_helpPanel) {
+        return;
+    }
+    for (QAction *act : findChildren<QAction *>()) {
+        if (!act || act->isSeparator()) {
+            continue;
+        }
+        // Menus and toolbars emit hovered when the pointer highlights the item.
+        connect(act, &QAction::hovered, this, [this, act]() {
+            if (m_helpPanel) {
+                m_helpPanel->showAction(act);
+            }
+        });
+        // Keep the panel useful after the pointer leaves: last used command.
+        connect(act, &QAction::triggered, this, [this, act](bool) {
+            if (m_helpPanel) {
+                m_helpPanel->showAction(act);
+            }
+        });
+    }
+}
+
+void MainWindow::populateActionHelpTexts()
+{
+    // Long-form help for the Help panel (HTML). statusTip stays the short
+    // status-bar / tooltip line. Fill remaining actions in later bundles.
+    auto setHelp = [](QAction *act, const QString &html) {
+        if (act) {
+            act->setWhatsThis(html);
+        }
+    };
+
+    setHelp(m_openAct, tr(
+        "<p>Replace the current session with one or more image files, directories, "
+        "or archives chosen in a file dialog.</p>"
+        "<p>Directories expand to contained images; archives (ZIP, TAR, …) "
+        "expand to member paths. The previous session is discarded (with the "
+        "usual unsaved Workspace prompt when needed).</p>"
+        "<p>Use <b>Add Images</b> to append without clearing the session.</p>"));
+
+    setHelp(m_addAct, tr(
+        "<p>Append image files to the current session without removing existing "
+        "entries. Duplicates by path are skipped; each accepted path gets its "
+        "own session identity.</p>"));
+
+    setHelp(m_openDirAct, tr(
+        "<p>Open every supported image under a chosen directory (non-recursive "
+        "at the top level of the dialog selection — subfolder policy follows "
+        "the open expander).</p>"
+        "<p>Replaces the current session, same as Open for a multi-file set.</p>"));
+
+    setHelp(m_newAct, tr(
+        "<p>Start a new empty session in this window. Workspace canvas tiles and "
+        "session rows are cleared after the usual save prompt when needed.</p>"));
+
+    setHelp(m_newWindowAct, tr(
+        "<p>Open another Biltoo main window with an empty session. Shortcuts are "
+        "window-scoped so both windows can be used side by side.</p>"));
+
+    setHelp(m_openProjectAct, tr(
+        "<p>Load a <code>.biltoo</code> project: session order, appearance "
+        "(crop, flips, colour), Workspace poses, and optional page guide / "
+        "background. File identity is verified with SHA-256 when possible.</p>"));
+
+    setHelp(m_saveProjectAct, tr(
+        "<p>Write the current session and Workspace layout to the open "
+        "<code>.biltoo</code> project path. Sources on disk are never "
+        "overwritten; only the project JSON is updated.</p>"));
+
+    setHelp(m_zoomFitAct, tr(
+        "<p>Scale the current Image-mode view so the whole image fits inside the "
+        "viewport (letterboxed if aspects differ).</p>"
+        "<p>When sticky Fit is active, each new image is reframed the same way. "
+        "Click Fit again, or zoom freely, to release sticky framing.</p>"));
+
+    setHelp(m_zoomFillAct, tr(
+        "<p>Scale the image to cover the viewport (may crop edges). Sticky Fill "
+        "re-applies on navigation and tries to keep the relative pan centre.</p>"));
+
+    setHelp(m_zoom1to1Act, tr(
+        "<p>Show pixels 1:1 with the screen (no resampling scale). Sticky 1:1 "
+        "re-applies on Image-mode navigation with best-effort pan retention.</p>"));
+
+    setHelp(m_cropAct, tr(
+        "<p>Enter crop mode on the current Image-mode image (or a single "
+        "Workspace selection). Drag the frame, use the centre grip, rotate the "
+        "draft, expand beyond the image to pad, then apply or cancel.</p>"
+        "<p>Crop is non-destructive session appearance keyed by "
+        "<code>SessionImageId</code>, not by path.</p>"));
+
+    setHelp(m_toggleHudAct, tr(
+        "<p>Toggle the on-canvas HUD overlay (filename, zoom, size, and related "
+        "status). Independent of the Help panel and of fullscreen chrome.</p>"));
+
+    setHelp(m_toggleMetadataAct, tr(
+        "<p>Show or hide the Metadata dock: file info, image structure, palette, "
+        "and embedded Exif/IPTC/XMP when available. Heavy work runs only while "
+        "the dock is visible.</p>"));
+
+    setHelp(m_toggleHelpAct, tr(
+        "<p>Show or hide this Help dock. Hover menu or toolbar commands, or "
+        "trigger them, to load detailed descriptions. Short status tips remain "
+        "in the status bar and as tooltips.</p>"));
+
+    setHelp(m_fullscreenAct, tr(
+        "<p>Toggle fullscreen. Menu bar, toolbars, and docks hide; leaving "
+        "fullscreen restores prior chrome visibility (thumbnail and Layout "
+        "follow mode rules). Ends an active slideshow session.</p>"));
+
+    setHelp(m_keyboardShortcutsAct, tr(
+        "<p>Open a dialog listing the main keyboard shortcuts. For longer "
+        "per-command explanations, use the Help panel (View → Show Help Panel).</p>"));
 }

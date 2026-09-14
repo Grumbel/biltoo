@@ -28,6 +28,7 @@ class MetadataPanel;
 class AdjustmentsPanel;
 class LayoutPanel;
 class TocPanel;
+class HelpPanel;
 class QDockWidget;
 class QToolBar;
 class QAction;
@@ -354,6 +355,10 @@ private slots:
 private:
     void createActions();
     void createMenus();
+    /** Connect QAction::hovered / triggered → Help panel for all actions. */
+    void installActionHelpTracking();
+    /** Seed QAction::whatsThis() for commands that already have long help. */
+    void populateActionHelpTexts();
     void createToolBar();
     void createStatusBar();
     /** Associate shortcut-bearing actions with the window (fullscreen-safe). */
@@ -494,6 +499,8 @@ private:
     QDockWidget *m_layoutDock = nullptr;
     QDockWidget *m_tocDock = nullptr;
     TocPanel *m_tocPanel = nullptr;
+    HelpPanel *m_helpPanel = nullptr;
+    QDockWidget *m_helpDock = nullptr;
     QToolBar *m_toolBar = nullptr;
     QToolBar *m_workspaceToolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
@@ -656,6 +663,7 @@ private:
     QAction *m_thumbnailsRightAct = nullptr;
     QAction *m_toggleMetadataAct = nullptr;
     QAction *m_toggleTocAct = nullptr;
+    QAction *m_toggleHelpAct = nullptr;
     QAction *m_toggleLayoutPanelAct = nullptr;
     QAction *m_toggleScrollBarsAct = nullptr;
     QAction *m_preferencesAct = nullptr;
@@ -721,6 +729,7 @@ private:
     bool m_metadataVisibleBeforeFullscreen = false;
     bool m_layoutVisibleBeforeFullscreen = false;
     bool m_adjustmentsVisibleBeforeFullscreen = false;
+    bool m_helpVisibleBeforeFullscreen = false;
 };
 
 #endif // MAINWINDOW_H

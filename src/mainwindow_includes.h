@@ -18,6 +18,7 @@
 #include "adjustmentspanel.h"
 #include "layoutpanel.h"
 #include "tocpanel.h"
+#include "helppanel.h"
 #include "thumtoocache.h"
 #include "pagepath.h"
 
