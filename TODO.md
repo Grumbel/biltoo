@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-806-filmstrip-host-upgrade.** Filmstrip installs ImageCache soft over LQIP even while SoftOnly is pending.
+Prior: **805**.
+
+### Problem
+`checkSurface(..., climbPending=true)` returns Ok. Filmstrip rows parked in
+`m_thumbAwaitLadder` kept painting LQIP after Gallery/Image had already put a
+strictly better sample in ImageCache.
+
+### Change
+- qualityWatchdogTick: if host long edge is a strict upgrade, **prepare + setThumbnailIcon** immediately (ignore climbPending)
+- Clear await when the new icon meets the strip decode edge; otherwise reschedule soft
+
+### Apply
+```bash
+git pull /path/to/biltoo-806-filmstrip-host-upgrade.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **806**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-805-document-index-expand.** PDF/DjVu/EPUB expand uses durable page-count index.
 Prior: **804**. Requires **thumtoo-202**.
 

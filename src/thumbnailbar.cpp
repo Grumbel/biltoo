@@ -1381,20 +1381,46 @@ void ThumbnailBar::qualityWatchdogTick()
         const int shown = it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
         const bool climbPending =
             m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i);
-        const DisplayQuality::Check dq =
-            DisplayQuality::checkSurface(path, shown, decodeSize, climbPending);
 
-        if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
-            // Prefer host sample; schedule makeThumbnail path via await clear.
+        // Host upgrade is independent of climbPending. Gallery / Image mode may
+        // have put soft or better into ImageCache while the strip is still
+        // awaiting SoftOnly — checkSurface would return Ok and leave LQIP painted.
+        const int hostEdge = DisplayQuality::hostLongEdge(path);
+        if (DisplayQuality::isStrictUpgrade(shown, hostEdge)) {
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                const QImage thumb = prepareThumbnailFromImage(host, decodeSize);
+                if (!thumb.isNull()) {
+                    setThumbnailIcon(i, thumb);
+                    const int newShown = qMax(thumb.width(), thumb.height());
+                    if (newShown >= (decodeSize * 9) / 10) {
+                        m_thumbAwaitLadder.remove(i);
+                        m_thumbLoadScheduled.remove(i);
+                        continue;
+                    }
+                }
+            }
+            // Host sample still short of strip edge — clear await so soft can
+            // be (re)scheduled; do not stay pinned on LQIP.
             m_thumbAwaitLadder.remove(i);
             m_thumbLoadScheduled.remove(i);
             needSchedule = true;
+            DisplayQuality::Check dq;
+            dq.verdict = DisplayQuality::Verdict::InstallHostBetter;
+            dq.shownEdge = shown;
+            dq.hostEdge = hostEdge;
+            dq.targetEdge = decodeSize;
+            dq.shownTier = DisplayQuality::tierOf(shown);
+            dq.hostTier = DisplayQuality::tierOf(hostEdge);
             DisplayQuality::reportViolation("filmstrip", path, dq, false);
-        } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak
-                   || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
+            continue;
+        }
+
+        const DisplayQuality::Check dq =
+            DisplayQuality::checkSurface(path, shown, decodeSize, climbPending);
+        if (dq.verdict == DisplayQuality::Verdict::StuckWeak
+            || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
             if (!climbPending) {
-                // Warn + reschedule; hard-assert only after sustained failure is
-                // handled by gallery (weakSinceMs). Filmstrip recovers every tick.
                 DisplayQuality::reportViolation("filmstrip", path, dq,
                                                /*assertHard=*/false);
                 m_thumbAwaitLadder.remove(i);
