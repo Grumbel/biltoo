@@ -2,6 +2,25 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-871-crop-noimage-footprint-filmstrip.** Soft tiles crop; Workspace content units; filmstrip emit.
+Prior: **870**.
+
+### Fixes
+1. Enter crop: `hasDisplayPixels()` (soft-only was "No image")
+2. Workspace Apply: intrinsic = draft crop content size (not layoutSize file px)
+3. Explicit `sessionAppearanceChanged` / `sessionCropApplied` after Apply
+
+### Apply
+```bash
+git pull /path/to/biltoo-871-crop-noimage-footprint-filmstrip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-870-crop-layout-not-sample.** Crop intrinsic from ContentXform, never sample size.
 Prior: **869**.
 

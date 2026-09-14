@@ -326,7 +326,7 @@ bool ImageView::enterCropModeFromUi()
         return false;
     }
     ImageItem *item = cropTargetItem();
-    if (!item || (!item->hasDecodedPixels() && item->pixmap().isNull())) {
+    if (!item || !item->hasDisplayPixels()) {
         flashHud(tr("Crop"), tr("No image"));
         return false;
     }
@@ -570,27 +570,24 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const bool haveApp = resolveCropEnterAppearance(item, &app);
     const bool hadCrop = haveApp && app.hasCrop && !app.cropRect.isEmpty();
 
-    // Ground truth: unoriented host only. Crop-baked item display is never a
-    // full-frame stand-in (re-crop stretched the crop into the content rect).
+    // Unoriented host preferred. Soft item display only when there is no prior
+    // crop (otherwise re-crop treats the bake as the full frame).
     QImage full = path.isEmpty() ? QImage() : ImageCache::get(path);
-    const bool hostOk = !full.isNull();
+    bool hostOk = !full.isNull();
 
     if (!hostOk && !hadCrop) {
-        // First crop: live display is still a full-frame sample.
         full = item->sourceImage();
         if (full.isNull()) {
             full = item->previewImage();
         }
     }
-
     if (full.isNull()) {
-        // hadCrop without host: do not use crop-baked sourceImage.
+        flashHud(tr("Crop"), tr("Image not cached yet — try again"));
         return false;
     }
 
-    const bool unoriented = hostOk; // only ImageCache samples are source-raw
-    // Preserve Workspace scene footprint of the *current* content while we
-    // expand to full-frame draft (install may change intrinsic).
+    const bool unoriented = hostOk;
+    // Workspace: lock scene footprint before intrinsic changes on install.
     const QRectF beforeScene = item->mapRectToScene(item->contentRect());
     const qreal footW0 = beforeScene.width();
     const qreal footH0 = beforeScene.height();
@@ -1152,17 +1149,23 @@ bool ImageView::applyCropCommit(ImageItem *item)
         item->setContentVFlip(st.contentVFlip);
         item->setSessionCrop(st.hasCrop, st.cropRect);
         item->setAppliedContentXform(ContentXform::Value::fromState(st));
-        // Intrinsic from ContentXform (file-native + crop) — never sample size.
-        applyContentLayoutSize(item, st);
 
         if (isImageMode()) {
+            // Image mode: file-native layout size + fit.
+            applyContentLayoutSize(item, st);
             m_fitMode = true;
             fitItem(item, currentFitAspectMode());
         } else if (isWorkspaceMode()) {
-            const QSize after = item->imageSize();
-            if (after.width() > 0 && after.height() > 0 && footW > 1.0 && footH > 1.0) {
-                const qreal s = qMin(footW / qreal(after.width()),
-                                     footH / qreal(after.height()));
+            // Intrinsic in the same content units as the draft crop frame so
+            // scale = foot/logical preserves scene size (layoutSize(fileNative)
+            // is a different unit space when draft was soft-sized).
+            const QSize logical(qMax(1, qRound(m_cropRect.width())),
+                                qMax(1, qRound(m_cropRect.height())));
+            item->setIntrinsicSize(logical);
+            if (logical.width() > 0 && logical.height() > 0
+                && footW > 1.0 && footH > 1.0) {
+                const qreal s = qMin(footW / qreal(logical.width()),
+                                     footH / qreal(logical.height()));
                 if (s > 1e-6 && qIsFinite(s)) {
                     item->setItemScale(s, s);
                 }
@@ -1171,9 +1174,23 @@ bool ImageView::applyCropCommit(ImageItem *item)
             item->setItemRotation(m_cropRotation);
             updateWorkspaceSceneRect();
         } else if (isGalleryMode()) {
+            applyContentLayoutSize(item, st);
             applyLayout(GalleryPackReason::ContentChange);
         }
         commitItemSessionEdit(item);
+        // Filmstrip: commit emits via persist; force id-keyed override from
+        // the live crop sample so the strip updates even if appearance image
+        // was blank before persist finished.
+        if (sid != kInvalidSessionImageId) {
+            const QImage appearance = sessionAppearanceImage(item);
+            if (!appearance.isNull()) {
+                emit sessionAppearanceChanged(sid, path, appearance);
+                emit sessionCropApplied(sid, path, appearance);
+            } else if (!display.isNull()) {
+                emit sessionAppearanceChanged(sid, path, display);
+                emit sessionCropApplied(sid, path, display);
+            }
+        }
         pushCropAppearanceUndo(item, tr("Crop"));
         flashHud(tr("Cropped"),
                  QStringLiteral("%1×%2")
