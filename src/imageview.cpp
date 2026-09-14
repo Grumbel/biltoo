@@ -548,8 +548,9 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
                 return;
             }
             host->m_sizeProbeScheduled.remove(path);
-            // Prefer a size already learned from a full decode.
-            if (host->m_imageSizeByPath.contains(path)) {
+            // Prefer a size already learned from a full decode — not provisional.
+            if (host->m_imageSizeByPath.contains(path)
+                && !host->isProvisionalImageSize(path)) {
                 return;
             }
             host->rememberImageSize(path, s);

@@ -571,9 +571,11 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         item->update();
     } else {
         item->setPreviewImage(display); // NoCache soft path
-        // Soft aspect owns provisional geometry. Cold archive placeholders are
-        // often 1024² (square stand-in); only updating when ≤1×1 left cells at
-        // the wrong aspect until the durable probe arrived (visible resize).
+        // Soft aspect owns provisional geometry. Cold placeholders are often
+        // square; update intrinsic when still provisional. Must preserve the
+        // view transform — previously size changed without preserve and the
+        // scrollable area stayed on the old geometry until the size probe
+        // (hard-to-reproduce off-center PDF soft load).
         const QSize cur = item->imageSize();
         const bool provisional = !path.isEmpty() && isProvisionalImageSize(path);
         if (cur.width() <= 1 || cur.height() <= 1 || provisional) {
@@ -588,6 +590,12 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
                     || qAbs(double(cw) / double(ch) - double(lw) / double(lh)) > 0.02;
                 if (aspectDiffers || cur != layout) {
                     item->setIntrinsicSize(layout);
+                    if (isImageMode() && item == targetItem()) {
+                        preserveImageViewOnLogicalSizeChange(item, cur, layout);
+                    } else if (m_scene) {
+                        m_scene->setSceneRect(
+                            item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+                    }
                 }
             }
         }

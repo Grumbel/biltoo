@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-824-soft-size-preserve-view.** Soft provisional size change preserves view transform (PDF load race).
+Prior: **823**.
+
+### Problem
+Hard-to-reproduce PDF off-center / scroll mismatch on initial load. Soft install
+updated intrinsic size (square stand-in → soft aspect) without
+`preserveImageViewOnLogicalSizeChange`; view matrix stayed on the old geometry
+until the size probe (or forever if probe was skipped).
+
+### Change
+- Soft install: preserve view when provisional intrinsic changes
+- Non-thumtoo size probe: upgrade provisional (was blocked by any map entry)
+
+### Apply
+```bash
+git pull /path/to/biltoo-824-soft-size-preserve-view.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **824** (full stack from work-line base)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-823-restore-text-layer-intrinsic.** Re-apply text-layer intrinsic mapping (was dropped off the tip line).
 Prior: **822** (soft fill). **820 was lost** when 821 was committed on 819 without pulling 820.
 
