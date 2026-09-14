@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-868-crop-rotate-contentxform.** Crop+rotate via single ContentXform materialize.
+Prior: **867**.
+
+### Problem
+Crop after (or with) content rotation squished into the wrong rect: apply used
+`cropToLocalRect` on an **already-oriented** display while appearance still held
+`contentQuarterTurns`, and `layoutSize` ignored crop.
+
+### Fix
+- `ContentXform::layoutSize` includes crop size after orient
+- `materializeDisplay` handles free `cropRotation` (same sample window as cropToLocalRect)
+- `applyContentToItem` always uses materializeDisplay (no dual applyCrop path)
+- `applyCropCommit` rematerializes from **unoriented host** + full appearance;
+  no cropToLocalRect on oriented pixels
+
+### Apply
+```bash
+git pull /path/to/biltoo-868-crop-rotate-contentxform.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-867-crop-soft-not-full.** Crop enter/apply must not load multi-MP native.
 Prior: **866**.
 

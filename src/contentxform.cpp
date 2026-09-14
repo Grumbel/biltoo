@@ -80,10 +80,30 @@ QSize layoutSize(const QSize &native, const Value &x)
     if (!isPositiveSize(native)) {
         return native;
     }
-    if (swapsAspect(x)) {
-        return QSize(native.height(), native.width());
+    // Post-orient size first (cropRect is defined in that space).
+    QSize oriented = swapsAspect(x) ? QSize(native.height(), native.width())
+                                    : native;
+    if (!x.hasCrop || x.cropRect.isEmpty()) {
+        return oriented;
     }
-    return native;
+    // Scale recorded crop to oriented size (same rule as SessionAppearance::scaleCropRect).
+    const QSize basis = (x.cropSourceSize.isValid() && x.cropSourceSize.width() > 0
+                         && x.cropSourceSize.height() > 0)
+                            ? x.cropSourceSize
+                            : oriented;
+    QRect crop = x.cropRect.normalized();
+    if (basis != oriented) {
+        crop = QRect(
+            qRound(crop.x() * double(oriented.width()) / double(basis.width())),
+            qRound(crop.y() * double(oriented.height()) / double(basis.height())),
+            qMax(1, qRound(crop.width() * double(oriented.width()) / double(basis.width()))),
+            qMax(1, qRound(crop.height() * double(oriented.height())
+                                         / double(basis.height()))));
+    }
+    if (crop.width() < 1 || crop.height() < 1) {
+        return oriented;
+    }
+    return QSize(crop.width(), crop.height());
 }
 
 QSize layoutSize(const QSize &native, const WorkspaceItemState &state)

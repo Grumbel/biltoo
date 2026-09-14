@@ -1087,53 +1087,8 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 bool ImageView::applyCropCommit(ImageItem *item)
 {
     // Returns true when Workspace placement rotation should keep the crop-frame
-    // angle (non-full-frame commit with successful cropToLocalRect).
+    // angle (non-full-frame commit).
     ensureCropRectValid();
-
-    // Prefer a better host sample when already in cache *and* GUI-safe to install.
-    // Multi-MP native is left for export paths; interactive Apply crops the soft
-    // display so Apply stays responsive.
-    {
-        const QString path = item->path();
-        const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-        if (!host.isNull()
-            && ImageCache::longEdge(host) > item->displayPixelLongEdge()
-            && ImageCache::longEdge(host) <= ContentXform::kGuiMaterializeMaxEdge) {
-            const QSize oldSz = item->imageSize();
-            WorkspaceItemState contentOnly;
-            const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-                ? item->sessionId()
-                : m_currentSessionId;
-            if (sid != kInvalidSessionImageId) {
-                if (const WorkspaceItemState *app = m_appearance.get(sid)) {
-                    contentOnly = *app;
-                }
-            }
-            contentOnly.hasCrop = false;
-            contentOnly.cropRect = QRect();
-            contentOnly.cropSourceSize = QSize();
-            contentOnly.cropRotation = 0.0;
-            if (!tryRematerializeFromHost(item, contentOnly)) {
-                attachDisplaySample(item, host, WorkspaceItemState{},
-                                    SessionAppearance::PixelKind::SoftPreview);
-                if (SessionAppearance::hasContentAppearance(contentOnly)) {
-                    applyContentBakes(item, contentOnly);
-                }
-                applyContentLayoutSize(item, contentOnly);
-            }
-            const QSize newSz = item->imageSize();
-            if (oldSz.isValid() && newSz.isValid()
-                && (oldSz.width() != newSz.width() || oldSz.height() != newSz.height())
-                && m_cropRect.isValid()) {
-                const QRect scaled = SessionAppearance::scaleCropRect(
-                    m_cropRect.toRect().normalized(), oldSz, newSz);
-                if (scaled.width() >= 1 && scaled.height() >= 1) {
-                    m_cropRect = QRectF(scaled);
-                }
-            }
-            ensureCropRectValid();
-        }
-    }
 
     const QRectF full = item->contentRect();
     const bool fullFrame =
@@ -1142,51 +1097,98 @@ bool ImageView::applyCropCommit(ImageItem *item)
             && qAbs(m_cropRect.top() - full.top()) < 0.5
             && qAbs(m_cropRect.width() - full.width()) < 0.5
             && qAbs(m_cropRect.height() - full.height()) < 0.5);
-    // Record absolute crop (or clear it) while the full image is still loaded.
+    // Record content-space crop while the draft frame is still valid.
     recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
     if (!fullFrame) {
-        // Scene size of the draft crop frame (Workspace): preserve after bake.
         const qreal sx0 = item->itemScaleX();
         const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
         const qreal footW = m_cropRect.width() * sx0;
         const qreal footH = m_cropRect.height() * sy0;
-        // Scene position of the crop-frame centre — new pixels stay here.
         const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
-        if (item->cropToLocalRect(m_cropRect, backgroundColor(), m_cropRotation)) {
-            // Intrinsic is content-space crop size (not sample pixels).
+
+        // Single path: unoriented host + full ContentXform (turns+flips+crop±rot).
+        // Never cropToLocalRect on an already-oriented display (double transform /
+        // wrong intrinsic was the rotate+crop squish).
+        const QString path = item->path();
+        QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+        if (host.isNull()) {
+            host = item->sourceImage();
+        }
+        if (host.isNull()) {
+            host = item->previewImage();
+        }
+        if (host.isNull()) {
+            return false;
+        }
+
+        WorkspaceItemState st;
+        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : m_currentSessionId;
+        if (sid != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+                st = *app;
+            }
+        }
+        if (!st.hasCrop) {
+            // recordSessionCrop may have only written path map.
+            st = captureState(item);
+            st.hasCrop = true;
+            st.cropRect = m_cropRect.toRect().normalized();
+            st.cropSourceSize = item->imageSize();
+            st.cropRotation = m_cropRotation;
+        }
+
+        QImage sample = host;
+        if (ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
+            sample = ImageCache::clampToMaxEdge(
+                sample, ContentXform::kGuiMaterializeMaxEdge);
+        }
+        const QImage display = SessionAppearance::materializeDisplay(
+            sample, st, SessionAppearance::PixelKind::SoftPreview);
+        if (display.isNull()) {
+            return false;
+        }
+        item->setSourceImage(display);
+        item->setContentHFlip(st.contentHFlip);
+        item->setContentVFlip(st.contentVFlip);
+        item->setSessionCrop(st.hasCrop, st.cropRect);
+        item->setAppliedContentXform(ContentXform::Value::fromState(st));
+        // Intrinsic = orient + crop layout size from host (not sample pixels).
+        const QSize layout = ContentXform::layoutSize(host.size(), st);
+        if (layout.width() > 1 && layout.height() > 1) {
+            item->setIntrinsicSize(layout);
+        } else {
             const QSize logical(qMax(1, qRound(m_cropRect.width())),
                                 qMax(1, qRound(m_cropRect.height())));
-            if (logical.width() > 1 && logical.height() > 1) {
-                item->setIntrinsicSize(logical);
-            }
-            if (isImageMode()) {
-                m_fitMode = true;
-                fitItem(item, currentFitAspectMode());
-            } else if (isWorkspaceMode()) {
-                // Keep the crop region the same size on the canvas (uniform).
-                const QSize after = item->imageSize();
-                if (after.width() > 0 && after.height() > 0) {
-                    const qreal s = qMin(footW / qreal(after.width()),
-                                         footH / qreal(after.height()));
-                    if (s > 1e-6) {
-                        item->setItemScale(s, s);
-                    }
-                }
-                alignItemCenterToScene(item, cropSceneCenter);
-                item->setItemRotation(m_cropRotation);
-                updateWorkspaceSceneRect();
-            } else if (isGalleryMode()) {
-                applyLayout(GalleryPackReason::ContentChange);
-            }
-            commitItemSessionEdit(item);
-            pushCropAppearanceUndo(item, tr("Crop"));
-            flashHud(tr("Cropped"),
-                     QStringLiteral("%1×%2")
-                         .arg(item->imageSize().width())
-                         .arg(item->imageSize().height()));
-            return isWorkspaceMode();
+            item->setIntrinsicSize(logical);
         }
-        return false;
+
+        if (isImageMode()) {
+            m_fitMode = true;
+            fitItem(item, currentFitAspectMode());
+        } else if (isWorkspaceMode()) {
+            const QSize after = item->imageSize();
+            if (after.width() > 0 && after.height() > 0) {
+                const qreal s = qMin(footW / qreal(after.width()),
+                                     footH / qreal(after.height()));
+                if (s > 1e-6) {
+                    item->setItemScale(s, s);
+                }
+            }
+            alignItemCenterToScene(item, cropSceneCenter);
+            item->setItemRotation(m_cropRotation);
+            updateWorkspaceSceneRect();
+        } else if (isGalleryMode()) {
+            applyLayout(GalleryPackReason::ContentChange);
+        }
+        commitItemSessionEdit(item);
+        pushCropAppearanceUndo(item, tr("Crop"));
+        flashHud(tr("Cropped"),
+                 QStringLiteral("%1×%2")
+                     .arg(item->imageSize().width())
+                     .arg(item->imageSize().height()));
+        return isWorkspaceMode();
     }
 
     // Reset / full frame: keep full pixels; clear session crop metadata.

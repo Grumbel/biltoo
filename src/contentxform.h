@@ -42,7 +42,7 @@ int normalizeQuarterTurns(int quarterTurns);
 bool swapsAspect(const Value &x);
 bool equal(const Value &a, const Value &b);
 
-/** File-native size → layout size after content turns. */
+/** File-native size → layout size after content turns and crop. */
 QSize layoutSize(const QSize &native, const Value &x);
 QSize layoutSize(const QSize &native, const WorkspaceItemState &state);
 

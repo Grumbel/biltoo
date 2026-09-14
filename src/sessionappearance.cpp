@@ -9,6 +9,8 @@
 
 #include <QtMath>
 #include <QImage>
+#include <QPainter>
+#include <QTransform>
 #include <QTransform>
 #include <QPolygonF>
 
@@ -257,6 +259,7 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
     }
 
     // 3) Crop in *post-orient* space (cropRect after mapCropThrough*).
+    // Free rotation uses the same window sample as ImageItem::cropToLocalRect.
     if (state.hasCrop && !state.cropRect.isEmpty()) {
         const QSize live = out.size();
         QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, live);
@@ -270,10 +273,35 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
             }
         }
         if (crop.width() >= 1 && crop.height() >= 1) {
-            const QRect bounds(0, 0, out.width(), out.height());
-            const QRect srcRect = crop.intersected(bounds);
-            if (srcRect.width() >= 1 && srcRect.height() >= 1) {
-                out = out.copy(srcRect);
+            const bool freeRot = qAbs(state.cropRotation) > 0.05;
+            if (!freeRot) {
+                const QRect bounds(0, 0, out.width(), out.height());
+                const QRect srcRect = crop.intersected(bounds);
+                if (srcRect.width() >= 1 && srcRect.height() >= 1) {
+                    out = out.copy(srcRect);
+                }
+            } else {
+                const int dw = qMax(1, crop.width());
+                const int dh = qMax(1, crop.height());
+                QImage::Format fmt = out.format();
+                if (fmt == QImage::Format_Invalid) {
+                    fmt = QImage::Format_ARGB32_Premultiplied;
+                }
+                QImage cropped(dw, dh, fmt);
+                if (!cropped.isNull()) {
+                    cropped.fill(Qt::transparent);
+                    QPainter painter(&cropped);
+                    painter.setRenderHint(QPainter::SmoothPixmapTransform,
+                                         kind != PixelKind::SoftPreview);
+                    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+                    const QPointF srcCenter(crop.center());
+                    painter.translate(dw / 2.0, dh / 2.0);
+                    painter.rotate(-state.cropRotation);
+                    painter.translate(-srcCenter.x(), -srcCenter.y());
+                    painter.drawImage(0, 0, out);
+                    painter.end();
+                    out = cropped;
+                }
             }
         }
     }
@@ -314,33 +342,19 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
         return;
     }
 
-    if (state.hasCrop && !state.cropRect.isEmpty()
-        && qAbs(state.cropRotation) > 0.05) {
-        WorkspaceItemState orientOnly = state;
-        orientOnly.hasCrop = false;
-        item->setSourceImage(materializeDisplay(raw, orientOnly, PixelKind::FullSource));
-        applyCrop(item, state);
-    } else {
-        item->setSourceImage(materializeDisplay(raw, state, PixelKind::FullSource));
-    }
+    // Single pipeline: materializeDisplay (flips → turns → crop±rot → grade).
+    item->setSourceImage(materializeDisplay(raw, state, PixelKind::FullSource));
 
     item->setContentHFlip(state.contentHFlip);
     item->setContentVFlip(state.contentVFlip);
     item->setSessionCrop(state.hasCrop, state.cropRect);
     item->setColorAdjustments(state.colorAdjust);
-    if (state.hasCrop && !state.cropRect.isEmpty()) {
-        const QSize baked = item->sourceImage().size();
-        if (baked.width() > 1 && baked.height() > 1) {
-            item->setIntrinsicSize(baked);
-        }
-    } else {
-        const QSize cur = item->imageSize();
-        if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
-            const QSize oriented = ContentXform::layoutSize(cur, state);
-            if (oriented != cur) {
-                item->setIntrinsicSize(oriented);
-            }
-        }
+    // Intrinsic = ContentXform layout (orient + crop size), not sample pixels.
+    const QSize cur = item->imageSize();
+    const QSize nativeBasis = isPositiveSize(cur) ? cur : raw.size();
+    const QSize layout = ContentXform::layoutSize(nativeBasis, state);
+    if (isPositiveSize(layout)) {
+        item->setIntrinsicSize(layout);
     }
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
