@@ -187,11 +187,19 @@ void reportViolation(const char *surface, const QString &path, const Check &chec
     fprintf(stderr, "%s\n", qPrintable(msg));
 
 #ifndef NDEBUG
-    if (assertHard
-        && (check.verdict == Verdict::InstallHostBetter
-            || check.verdict == Verdict::StuckWeak)) {
-        // Hard fail in debug so regressions cannot ship silently.
-        Q_ASSERT_X(false, "DisplayQuality", qPrintable(msg));
+    if (assertHard) {
+        // InstallHostBetter: host already has a better sample than paint — real bug.
+        // StuckWeak with host still blank/LQIP: soft climb is incomplete (queue
+        // backlog, cold decode). Warn only — hard-assert aborted large galleries
+        // after 2.5s while SoftOnly was still working other paths.
+        if (check.verdict == Verdict::InstallHostBetter) {
+            Q_ASSERT_X(false, "DisplayQuality", qPrintable(msg));
+        } else if (check.verdict == Verdict::StuckWeak
+                   && check.hostTier != Tier::Blank
+                   && check.hostTier != Tier::Lqip) {
+            // Host has soft+ but surface still weak without climb — contract break.
+            Q_ASSERT_X(false, "DisplayQuality", qPrintable(msg));
+        }
     }
 #else
     Q_UNUSED(assertHard);

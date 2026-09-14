@@ -179,14 +179,20 @@ bool PathRasterService::isClimbPending(const QString &path) const
         return false;
     }
     const auto it = m_state.constFind(path);
-    if (it == m_state.cend() || it->epoch != m_epoch) {
-        return false;
+    if (it != m_state.cend() && it->epoch == m_epoch) {
+        if (it->softQueued || it->displayQueued || it->fullQueued) {
+            return true;
+        }
+        // FocusFull / post-tile PreferCache still in progress (not yet terminal gave-up).
+        if (it->preferGaveUp && !isGaveUp(path)) {
+            return true;
+        }
     }
-    if (it->softQueued || it->displayQueued || it->fullQueued) {
-        return true;
-    }
-    // FocusFull / post-tile PreferCache still in progress (not yet terminal gave-up).
-    if (it->preferGaveUp && !isGaveUp(path)) {
+    // softQueued can be cleared on PreferCache LQIP delivery while SoftOnly is
+    // still in the host pixel queue — treat real inflight as climb pending so
+    // DisplayQuality does not call StuckWeak and assert.
+    if (ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)
+        || ThumtooCache::isPixelsPending(path, ThumtooCache::kBatchOverviewEdge)) {
         return true;
     }
     return false;

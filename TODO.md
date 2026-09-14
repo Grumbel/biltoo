@@ -2,6 +2,39 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-807-stuck-weak-no-lqip-assert.** Do not hard-assert StuckWeak while host is still LQIP/blank.
+Prior: **806**.
+
+### Problem
+```
+gallery path=096.jpg shown=16(lqip) host=16(lqip) target=512 verdict=stuck-weak
+ASSERT failure in DisplayQuality
+```
+Soft climb incomplete (queue backlog / SoftOnly not yet delivered). Hard-assert
+after 2.5s aborted debug builds. `isClimbPending` also missed host pixel
+inflight after PreferCache cleared `softQueued`.
+
+### Change
+- `reportViolation`: hard-assert StuckWeak only if **host** is already soft+
+  (surface ignored a better host). Host still blank/LQIP → warn only
+- `PathRasterService::isClimbPending`: include `ThumtooCache::isPixelsPending`
+- Gallery StuckWeak recovery: `forgetPixelsSettled` soft + `clearPreferGaveUp` +
+  `ensure` SoftDisplay + `scheduleGalleryDecode`
+
+### Apply
+```bash
+git pull /path/to/biltoo-807-stuck-weak-no-lqip-assert.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **807**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-806-filmstrip-host-upgrade.** Filmstrip installs ImageCache soft over LQIP even while SoftOnly is pending.
 Prior: **805**.
 

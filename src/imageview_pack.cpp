@@ -764,10 +764,7 @@ void ImageView::gallerySoftWatchdogTick()
         } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak
                    || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
             // checkSurface only yields StuckWeak/ScheduleClimb when climbPending
-            // is false. Start a wall-clock grace from first observation so LQIP
-            // from SizeReply can be on-screen while the decode window catches up
-            // — do not treat never-started inflight as already aged (that aborted
-            // debug builds on the first watchdog tick).
+            // is false. Grace from first observation; force soft re-entry.
             if (st.weakSinceMs <= 0) {
                 st.weakSinceMs = now;
             }
@@ -777,8 +774,15 @@ void ImageView::gallerySoftWatchdogTick()
                 /*assertHard=*/dq.verdict == DisplayQuality::Verdict::StuckWeak
                     && aged);
             clearGallerySoftInflight(st);
-            // Force a schedule for this path; decode-window alone may still be
-            // concurrency-capped on a large session.
+            st.gaveUpWant = 0;
+            // SoftOnly may have settled without a durable host sample (or LQIP
+            // only). Forget soft settled and re-ensure so SoftOnly can run again.
+            if (m_pathRaster) {
+                ThumtooCache::forgetPixelsSettled(path, ThumtooCache::kGalleryLadderEdge);
+                m_pathRaster->clearPreferGaveUp(path);
+                m_pathRaster->ensure(path, target, logicalSizeForPath(path),
+                                     PathRasterService::ClimbPolicy::SoftDisplay);
+            }
             scheduleGalleryDecode(path);
             needWindow = true;
         } else {
