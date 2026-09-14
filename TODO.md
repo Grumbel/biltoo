@@ -2,6 +2,31 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-805-document-index-expand.** PDF/DjVu/EPUB expand uses durable page-count index.
+Prior: **804**. Requires **thumtoo-202**.
+
+### Change
+- `expandPdfToPageRefs` / `expandDjvuToPageRefs` / `expandEpubToPageRefs` call
+  `Client::document_page_count` (cache-first, size+mtime validated) when
+  `THUMTOO_API_DOCUMENT_INDEX` is set; fall back to source-only counts otherwise
+
+### Apply
+```bash
+# thumtoo first:
+git -C thumtoo pull /path/to/thumtoo-202-document-index.bundle HEAD
+# biltoo (includes 803–805 stack from origin tip):
+git pull /path/to/biltoo-805-document-index-expand.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **805**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-804-cache-evict-reschedule.** Reschedule soft after ImageCache LRU eviction.
 Prior: **803**.
 

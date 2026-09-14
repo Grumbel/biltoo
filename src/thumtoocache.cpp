@@ -1889,7 +1889,20 @@ QStringList expandPdfToPageRefs(const QString &pdfPath)
     if (!thumtoo::is_likely_pdf_path(abs)) {
         return out;
     }
-    const auto count = thumtoo::pdf_page_count(abs);
+    init();
+    std::optional<int> count;
+    {
+        std::lock_guard lock(g_mu);
+        thumtoo::Client *c = clientUnlocked();
+#if defined(THUMTOO_API_DOCUMENT_INDEX) && THUMTOO_API_DOCUMENT_INDEX
+        if (c) {
+            count = c->document_page_count(abs, thumtoo::Client::DocumentKind::Pdf);
+        }
+#endif
+        if (!count) {
+            count = thumtoo::pdf_page_count(abs);
+        }
+    }
     if (!count || *count <= 0) {
         return out;
     }
@@ -1963,26 +1976,52 @@ QStringList expandEpubToPageRefs(const QString &epubPath)
     if (!thumtoo::is_likely_epub_path(abs)) {
         return out;
     }
+    // Cache-first page count (thumtoo ≥ 202 document_index); fall back to
+    // expand_media_uris / source epub_page_count on older trees.
+    const auto layout = thumtoo::default_epub_layout();
+    init();
+    std::optional<int> count;
+    {
+        std::lock_guard lock(g_mu);
+        thumtoo::Client *c = clientUnlocked();
+#if defined(THUMTOO_API_DOCUMENT_INDEX) && THUMTOO_API_DOCUMENT_INDEX
+        if (c) {
+            count = c->document_page_count(abs, thumtoo::Client::DocumentKind::Epub,
+                                           &layout);
+        }
+#endif
+    }
+    if (count && *count > 0) {
+        const QString layoutStr =
+            QString::fromStdString(thumtoo::format_epub_layout_params(layout));
+        const QString epubAbs = QString::fromStdString(abs.string());
+        out.reserve(*count);
+        for (int page = 1; page <= *count; ++page) {
+            const QString ref = PagePath::makeEpubRef(epubAbs, page, layoutStr);
+            if (!ref.isEmpty()) {
+                out.append(ref);
+            }
+        }
+        return out;
+    }
 #if defined(BILTOO_HAVE_THUMTOO_EXPAND)
     auto uris = thumtoo::expand_media_uris(abs, 512);
     out.reserve(static_cast<int>(uris.size()));
     for (const auto &uri : uris) {
-        // file://…//epub:…//page:N → session path form
         auto parsed = thumtoo::parse_epub_uri(uri);
         if (!parsed) {
             continue;
         }
-        const QString layout = QString::fromStdString(
+        const QString layoutStr = QString::fromStdString(
             thumtoo::format_epub_layout_params(parsed->layout));
         const QString ref = PagePath::makeEpubRef(
-            QString::fromStdString(parsed->epub_path.string()), parsed->page, layout);
+            QString::fromStdString(parsed->epub_path.string()), parsed->page, layoutStr);
         if (!ref.isEmpty()) {
             out.append(ref);
         }
     }
 #else
-    const auto layout = thumtoo::default_epub_layout();
-    const auto count = thumtoo::epub_page_count(abs, layout);
+    count = thumtoo::epub_page_count(abs, layout);
     if (!count || *count <= 0) {
         return out;
     }
@@ -2015,7 +2054,20 @@ QStringList expandDjvuToPageRefs(const QString &djvuPath)
     if (!thumtoo::is_likely_djvu_path(abs)) {
         return out;
     }
-    const auto count = thumtoo::djvu_page_count(abs);
+    init();
+    std::optional<int> count;
+    {
+        std::lock_guard lock(g_mu);
+        thumtoo::Client *c = clientUnlocked();
+#if defined(THUMTOO_API_DOCUMENT_INDEX) && THUMTOO_API_DOCUMENT_INDEX
+        if (c) {
+            count = c->document_page_count(abs, thumtoo::Client::DocumentKind::Djvu);
+        }
+#endif
+        if (!count) {
+            count = thumtoo::djvu_page_count(abs);
+        }
+    }
     if (!count || *count <= 0) {
         return out;
     }

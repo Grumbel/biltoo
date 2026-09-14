@@ -222,16 +222,18 @@ bool isAvailable();
  */
 QStringList expandArchiveToImageRefs(const QString &archivePath);
 
-/** Expand a PDF into one session path per page (…//page:N, 1-based). */
+/** Expand a PDF into one session path per page (…//page:N, 1-based).
+ * Page count is cache-first via thumtoo document_index (≥ 202). */
 QStringList expandPdfToPageRefs(const QString &pdfPath);
 
 /** Expand a PDF into embedded Image XObjects (…//pdfimage:N, native resolution). */
 QStringList expandPdfToImageRefs(const QString &pdfPath);
 
-/** Expand an EPUB into session paths (…//epub:w,h,fs//page:N) via thumtoo default layout. */
+/** Expand an EPUB into session paths (…//epub:w,h,fs//page:N).
+ * Page count cache-first (document_index; layout_key = epub params). */
 QStringList expandEpubToPageRefs(const QString &epubPath);
 
-/** Expand a DjVu into session paths (…//page:N). */
+/** Expand a DjVu into session paths (…//page:N). Page count cache-first. */
 QStringList expandDjvuToPageRefs(const QString &djvuPath);
 
 /**
