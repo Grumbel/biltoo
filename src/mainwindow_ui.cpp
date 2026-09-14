@@ -799,6 +799,13 @@ void MainWindow::createActions()
     m_epubLayoutAct = new QAction(tr("EPUB &Layout…"), this);
     m_epubLayoutAct->setToolTip(tr("Edit //epub: layout profile for the current book"));
     connect(m_epubLayoutAct, &QAction::triggered, this, &MainWindow::showEpubLayoutDialog);
+    m_pdfEmbeddedImagesAct = new QAction(tr("PDF &Embedded Images"), this);
+    m_pdfEmbeddedImagesAct->setToolTip(
+        tr("Open the current PDF as native embedded images (//pdfimages)"));
+    m_pdfEmbeddedImagesAct->setStatusTip(
+        tr("Replace the session with //pdfimage:N leaves from the current PDF"));
+    connect(m_pdfEmbeddedImagesAct, &QAction::triggered, this,
+            &MainWindow::openPdfAsEmbeddedImages);
     m_preferencesAct->setIcon(themeIcon(QStringLiteral("preferences-system"), QStyle::SP_FileDialogInfoView));
     m_preferencesAct->setStatusTip(tr("Application preferences"));
     connect(m_preferencesAct, &QAction::triggered, this, &MainWindow::showPreferences);
@@ -943,6 +950,7 @@ void MainWindow::createMenus()
     m_imageMenu->addAction(m_attentionAct);
     m_imageMenu->addSeparator();
     m_imageMenu->addAction(m_epubLayoutAct);
+    m_imageMenu->addAction(m_pdfEmbeddedImagesAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));
@@ -1829,6 +1837,10 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_epubLayoutAct, tr(
         "<p>Edit the //epub: layout profile for the current EPUB book (margins, columns, "
         "and related presentation).</p>"));
+    setHelp(m_pdfEmbeddedImagesAct, tr(
+        "<p>Re-open the current PDF as a session of native embedded images "
+        "(path…//pdfimages → //pdfimage:1..N). Page renders become Image XObject "
+        "extracts at native resolution. Requires thumtoo.</p>"));
 }
 
 void MainWindow::showFilmstripHelp()

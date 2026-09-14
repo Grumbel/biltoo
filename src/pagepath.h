@@ -63,6 +63,8 @@ bool isPdfImagesCollection(const QString &path);
 /** //pdfimage:N single embedded image leaf. */
 bool isPdfImageRef(const QString &path);
 QString makePdfImageRef(const QString &pdfPath, int image_1based);
+/** path.pdf//pdfimages — expand to //pdfimage:1..N session leaves. */
+QString makePdfImagesCollection(const QString &pdfPath);
 int pdfImageNumber(const QString &path);
 QStringList pdfSuffixes();
 QStringList epubSuffixes();

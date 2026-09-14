@@ -1889,6 +1889,27 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
             "biltooDisabledHelp",
             tr("EPUB Layout is available when the current item is an EPUB book or page."));
     }
+    if (m_pdfEmbeddedImagesAct) {
+        bool pdf = false;
+        if (hasFiles && ThumtooCache::isAvailable()) {
+            const int i = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                              ? m_currentIndex
+                              : 0;
+            const QString pth = m_session.paths().at(i);
+            if (PagePath::isPageRef(pth)) {
+                const PagePath::Ref r = PagePath::parse(pth);
+                pdf = r.valid && !r.isEpub() && PagePath::isPdfFile(r.pdfPath);
+            } else if (PagePath::isPdfImageRef(pth) || PagePath::isPdfImagesCollection(pth)) {
+                pdf = true;
+            } else {
+                pdf = PagePath::isPdfFile(pth);
+            }
+        }
+        m_pdfEmbeddedImagesAct->setEnabled(pdf);
+        m_pdfEmbeddedImagesAct->setProperty(
+            "biltooDisabledHelp",
+            tr("Available when the current item is a PDF (page or file) and thumtoo is present."));
+    }
     if (m_firstAct) {
         m_firstAct->setEnabled(imageNav);
         m_firstAct->setProperty("biltooDisabledHelp", imageNavReason);
@@ -2257,7 +2278,57 @@ void MainWindow::showEpubLayoutDialog()
     }
 }
 
-
+void MainWindow::openPdfAsEmbeddedImages()
+{
+    if (!ThumtooCache::isAvailable()) {
+        if (statusBar()) {
+            statusBar()->showMessage(
+                tr("PDF embedded images require thumtoo."), 4000);
+        }
+        return;
+    }
+    if (m_session.paths().isEmpty()) {
+        return;
+    }
+    const int idx = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                        ? m_currentIndex
+                        : 0;
+    const QString cur = m_session.paths().at(idx);
+    QString doc;
+    if (PagePath::isPageRef(cur)) {
+        const PagePath::Ref r = PagePath::parse(cur);
+        if (!r.valid || r.isEpub()) {
+            if (statusBar()) {
+                statusBar()->showMessage(tr("PDF Embedded Images applies to PDFs only."), 4000);
+            }
+            return;
+        }
+        doc = r.pdfPath;
+    } else if (PagePath::isPdfImageRef(cur) || PagePath::isPdfImagesCollection(cur)) {
+        doc = PagePath::documentFilePath(cur);
+    } else if (PagePath::isPdfFile(cur)) {
+        doc = cur;
+    } else {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("PDF Embedded Images applies to PDFs only."), 4000);
+        }
+        return;
+    }
+    if (doc.isEmpty()) {
+        return;
+    }
+    const QString collection = PagePath::makePdfImagesCollection(doc);
+    if (collection.isEmpty()) {
+        return;
+    }
+    // Already a pure //pdfimages session for this file — re-expand to refresh.
+    loadFiles(QStringList{collection});
+    if (statusBar()) {
+        statusBar()->showMessage(
+            tr("Opening embedded images from “%1”…").arg(QFileInfo(doc).fileName()),
+            3000);
+    }
+}
 
 void MainWindow::openFiles()
 {

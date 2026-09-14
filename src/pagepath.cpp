@@ -251,6 +251,19 @@ QString makePdfImageRef(const QString &pdfPath, int image_1based)
     return abs + QLatin1String(kPdfImageMarker) + QString::number(image_1based);
 }
 
+QString makePdfImagesCollection(const QString &pdfPath)
+{
+    if (pdfPath.isEmpty()) {
+        return {};
+    }
+    QString abs = pdfPath;
+    const QFileInfo info(pdfPath);
+    if (info.exists()) {
+        abs = info.absoluteFilePath();
+    }
+    return abs + QLatin1String(kPdfImagesMarker);
+}
+
 int pdfImageNumber(const QString &path)
 {
     const int idx = path.indexOf(QLatin1String(kPdfImageMarker));

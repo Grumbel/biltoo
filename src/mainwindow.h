@@ -296,6 +296,8 @@ private slots:
     void rewriteEpubSessionPaths(const QString &epubFile, const QString &newParams,
                                  int keepPage);
     void showEpubLayoutDialog();
+    /** Current PDF (page/file/pdfimage) → session of //pdfimage:N embeds. */
+    void openPdfAsEmbeddedImages();
     void showSlideshowSettings();
     void onFilesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                         const QPointF &scenePos, bool hasScenePos,
@@ -676,6 +678,7 @@ private:
     QAction *m_toggleScrollBarsAct = nullptr;
     QAction *m_preferencesAct = nullptr;
     QAction *m_epubLayoutAct = nullptr;
+    QAction *m_pdfEmbeddedImagesAct = nullptr;
     QAction *m_aboutAct = nullptr;
     QAction *m_keyboardShortcutsAct = nullptr;
     /** Help → Guides: mode / chrome overviews (not toolbar commands). */

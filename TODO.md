@@ -2,6 +2,30 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-826-pdf-embedded-images-menu.** Image menu action to open current PDF as //pdfimages.
+Prior: **825**.
+
+### Change
+- `PagePath::makePdfImagesCollection(pdfPath)` → `path.pdf//pdfimages`
+- Image → **PDF Embedded Images**: resolves current page/file/pdfimage to the PDF, then `loadFiles({collection})` (same expand path as typing //pdfimages)
+- Enabled when current item is a PDF (page, file, or embedded-image leaf) and thumtoo is available
+- Help text documents the //pdfimages → //pdfimage:N contract
+
+### Apply
+```bash
+git pull /path/to/biltoo-826-pdf-embedded-images-menu.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **826**
+- [ ] Manual: open a multi-page PDF as pages, Image → PDF Embedded Images → session becomes embedded XObjects
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-825-image-mode-scene-rect-sync.** Keep Image-mode sceneRect tight after fit/size change (stop intermittent free/asymmetric pan).
 Prior: **824**.
 
