@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-859-slideshow-layoutsize-orient.** paintMotionCover dest uses ContentXform::layoutSize when phase orient applied.
+Prior: **858**.
+
+### Problem
+`resolveMotionLogicalSize` returned **file-native** size always. After phase
+ContentXform orient (90°), oriented pixels were drawn into the unoriented dest
+box → stretch. Same class of bug as ImageView contentRect vs display.
+
+### Fix
+When phase content-applied, dest size = `ContentXform::layoutSize(fileNative, app)`.
+`applySlideshowZoomFraming` underlay intrinsic follows the same rule.
+
+### Apply
+```bash
+git pull /path/to/biltoo-859-slideshow-layoutsize-orient.bundle HEAD
+```
+
+### Verify
+- [ ] Slideshow rotated images: correct aspect, no stretch
+- [ ] Unrotated slides unchanged
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-858-slideshow-shadow-fix.** Actually rename acceptPhase param (857 was docs-only).
 Prior: **857**.
 

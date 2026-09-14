@@ -962,8 +962,16 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     const QString path = item->path();
     QSize logical = ensureSlideshowLogicalSize(path);
     if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-        // Align underlay intrinsic with logical size so contentRect matches
-        // Ken Burns / overlay geometry when motion is off.
+        // File-native → ContentXform layout when phase orient is applied (same
+        // rule as resolveMotionLogicalSize / paintMotionCover).
+        WorkspaceItemState app;
+        if (snapshotSlideshowContentAppearance(path, &app)
+            && SessionAppearance::hasContentAppearance(app)) {
+            const QSize lay = ContentXform::layoutSize(logical, app);
+            if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                logical = lay;
+            }
+        }
         item->setIntrinsicSize(logical);
     } else if (!item->displayImage().isNull()) {
         // Provisional: frame from sample aspect so underlay is not square-squashed.
@@ -2789,10 +2797,29 @@ QSize ImageView::resolveMotionLogicalSize(const QImage &image, const QString &pa
     // probe not yet back), dest aspect must follow the *sample*. Otherwise
     // paintMotionCover stretches a 16:9 soft into a 1:1 dest (speed change /
     // seek storms many cold paths before probes finish).
-    const QSize logical = logicalSizeForPath(path);
-    if (isPositiveSize(logical) && !path.isEmpty() && !isProvisionalImageSize(path)) {
-        return logical;
+    //
+    // ContentXform: phase buffers are often *oriented* (flip/turns). Dest must
+    // use layoutSize(fileNative, want) when that orient is applied — otherwise
+    // rotated pixels stretch into the unoriented file box.
+    const QSize fileNative = logicalSizeForPath(path);
+    const bool phaseOriented =
+        (!path.isEmpty() && path == m_ssFromPath && m_ssFromContentApplied)
+        || (!path.isEmpty() && path == m_ssToPath && m_ssToContentApplied);
+    if (isPositiveSize(fileNative) && !path.isEmpty() && !isProvisionalImageSize(path)) {
+        if (phaseOriented) {
+            WorkspaceItemState app;
+            if (snapshotSlideshowContentAppearance(path, &app)
+                && SessionAppearance::hasContentAppearance(app)) {
+                const QSize lay = ContentXform::layoutSize(fileNative, app);
+                if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                    return lay;
+                }
+            }
+        }
+        return fileNative;
     }
+    // Provisional / no durable size: sample aspect (oriented sample already
+    // matches display after phase ContentXform).
     if (!image.isNull() && isPositiveSize(image.size())) {
         const QSize fromSample =
             scaleToLongEdge(image.size(), kProvisionalLayoutLongEdge);
@@ -2800,8 +2827,8 @@ QSize ImageView::resolveMotionLogicalSize(const QImage &image, const QString &pa
             return fromSample;
         }
     }
-    if (isPositiveSize(logical)) {
-        return logical;
+    if (isPositiveSize(fileNative)) {
+        return fileNative;
     }
     return QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);
 }
