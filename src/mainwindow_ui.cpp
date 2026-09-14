@@ -5,7 +5,7 @@
 
 void MainWindow::createActions()
 {
-    m_openAct = new QAction(tr("&Open..."), this);
+    m_openAct = new QAction(tr("&Open…"), this);
     m_openAct->setShortcut(QKeySequence::Open);
     m_openAct->setIcon(themeIcon(QStringLiteral("document-open"), QStyle::SP_DialogOpenButton));
     m_openAct->setStatusTip(tr("Open image files (replace session)"));
@@ -13,7 +13,7 @@ void MainWindow::createActions()
 
     m_newAct = new QAction(tr("&New"), this);
     m_newAct->setShortcut(QKeySequence::New);
-    m_newAct->setIcon(themeIcon(QStringLiteral("document-new"), QStyle::SP_FileDialogNewFolder));
+    m_newAct->setIcon(themeIcon(QStringLiteral("document-new"), QStyle::SP_FileIcon));
     m_newAct->setStatusTip(tr("Start a new empty session"));
     connect(m_newAct, &QAction::triggered, this, &MainWindow::newSession);
 
@@ -25,26 +25,29 @@ void MainWindow::createActions()
 
     m_openProjectAct = new QAction(tr("Open &Project…"), this);
     m_openProjectAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_O);
+    m_openProjectAct->setIcon(themeIcon(QStringLiteral("document-open"), QStyle::SP_DialogOpenButton));
     m_openProjectAct->setStatusTip(tr("Open a .biltoo project (session + Workspace poses)"));
     connect(m_openProjectAct, &QAction::triggered, this, &MainWindow::openProject);
 
     m_saveProjectAct = new QAction(tr("&Save Project"), this);
     m_saveProjectAct->setShortcuts(QKeySequence::Save);
+    m_saveProjectAct->setIcon(themeIcon(QStringLiteral("document-save"), QStyle::SP_DialogSaveButton));
     m_saveProjectAct->setStatusTip(tr("Save session and Workspace layout to a .biltoo project"));
     connect(m_saveProjectAct, &QAction::triggered, this, &MainWindow::saveProject);
 
     m_saveProjectAsAct = new QAction(tr("Save Project &As…"), this);
     m_saveProjectAsAct->setShortcuts(QKeySequence::SaveAs);
+    m_saveProjectAsAct->setIcon(themeIcon(QStringLiteral("document-save-as"), QStyle::SP_DialogSaveButton));
     m_saveProjectAsAct->setStatusTip(tr("Save project under a new name"));
     connect(m_saveProjectAsAct, &QAction::triggered, this, &MainWindow::saveProjectAs);
 
-    m_addAct = new QAction(tr("&Add Images..."), this);
+    m_addAct = new QAction(tr("&Add Images…"), this);
     m_addAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_A);
-    m_addAct->setIcon(themeIcon(QStringLiteral("list-add"), QStyle::SP_FileDialogNewFolder));
+    m_addAct->setIcon(themeIcon(QStringLiteral("list-add"), QStyle::SP_DialogYesButton));
     m_addAct->setStatusTip(tr("Add image files to the current session (Ctrl+Shift+A)"));
     connect(m_addAct, &QAction::triggered, this, &MainWindow::addFiles);
 
-    m_openDirAct = new QAction(tr("Open &Directory..."), this);
+    m_openDirAct = new QAction(tr("Open &Directory…"), this);
     m_openDirAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_D);
     m_openDirAct->setIcon(themeIcon(QStringLiteral("folder-open"), QStyle::SP_DirOpenIcon));
     m_openDirAct->setStatusTip(tr("Open all images in a directory (Ctrl+Shift+D)"));
@@ -67,18 +70,18 @@ void MainWindow::createActions()
         tr("Reload from disk (F5): current image in Image mode, all tiles in Gallery/Workspace"));
     connect(m_reloadAct, &QAction::triggered, this, &MainWindow::reloadFromDisk);
 
-    m_printAct = new QAction(tr("&Print..."), this);
+    m_printAct = new QAction(tr("&Print…"), this);
     m_printAct->setShortcut(QKeySequence::Print);
     m_printAct->setIcon(themeIcon(QStringLiteral("document-print"), QStyle::SP_FileDialogDetailedView));
     m_printAct->setStatusTip(tr("Print the current image or Workspace page"));
     connect(m_printAct, &QAction::triggered, this, &MainWindow::printDocument);
 
-    m_printPreviewAct = new QAction(tr("Print Pre&view..."), this);
+    m_printPreviewAct = new QAction(tr("Print Pre&view…"), this);
     m_printPreviewAct->setIcon(themeIcon(QStringLiteral("document-print-preview"), QStyle::SP_FileDialogContentsView));
     m_printPreviewAct->setStatusTip(tr("Preview how the page will print"));
     connect(m_printPreviewAct, &QAction::triggered, this, &MainWindow::printPreview);
 
-    m_pageSetupAct = new QAction(tr("Page &Setup..."), this);
+    m_pageSetupAct = new QAction(tr("Page &Setup…"), this);
     m_pageSetupAct->setIcon(themeIcon(QStringLiteral("document-page-setup"), QStyle::SP_FileDialogInfoView));
     m_pageSetupAct->setStatusTip(
         tr("Paper size and orientation for the page guide, preview, and PDF export"));
@@ -90,13 +93,14 @@ void MainWindow::createActions()
         tr("Export the Workspace (or current view) as a PNG at a chosen resolution"));
     connect(m_exportPngAct, &QAction::triggered, this, &MainWindow::exportPng);
 
-    m_exportPdfAct = new QAction(tr("Export &PDF..."), this);
+    m_exportPdfAct = new QAction(tr("Export &PDF…"), this);
     m_exportPdfAct->setIcon(themeIcon(QStringLiteral("application-pdf"), QStyle::SP_FileDialogContentsView));
     m_exportPdfAct->setStatusTip(
         tr("Write a PDF using the app page size (not the physical printer tray)"));
     connect(m_exportPdfAct, &QAction::triggered, this, &MainWindow::exportPdf);
 
     m_exportTextAct = new QAction(tr("Export Te&xt…"), this);
+    m_exportTextAct->setIcon(themeIcon(QStringLiteral("text-x-generic"), QStyle::SP_FileDialogContentsView));
     m_exportTextAct->setStatusTip(
         tr("Export extracted text from the current document (all pages) as a .txt file"));
     connect(m_exportTextAct, &QAction::triggered, this, &MainWindow::exportDocumentText);
@@ -482,29 +486,29 @@ void MainWindow::createActions()
 
     m_layoutFlowAct = new QAction(tr("Layout &Flow"), this);
     m_layoutFlowAct->setCheckable(true);
-    m_layoutFlowAct->setIcon(resourceIcon(QStringLiteral("gallery-grid")));
+    m_layoutFlowAct->setIcon(resourceIcon(QStringLiteral("view-list-icons")));
     m_layoutFlowAct->setStatusTip(
         tr("Gallery: reading order, wrap rows to fill width (good for books)"));
     connect(m_layoutFlowAct, &QAction::triggered, this, &MainWindow::setLayoutFlow);
 
     m_layoutFlowFillAct = new QAction(tr("Layout Flow F&ill"), this);
     m_layoutFlowFillAct->setCheckable(true);
-    m_layoutFlowFillAct->setIcon(resourceIcon(QStringLiteral("gallery-grid")));
+    m_layoutFlowFillAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
     m_layoutFlowFillAct->setStatusTip(
         tr("Flow with each row scaled to the full layout width"));
     connect(m_layoutFlowFillAct, &QAction::triggered, this, &MainWindow::setLayoutFlowFill);
 
     m_layoutFacingAct = new QAction(tr("Layout F&acing"), this);
     m_layoutFacingAct->setCheckable(true);
-    m_layoutFacingAct->setIcon(resourceIcon(QStringLiteral("gallery-side-by-side")));
+    m_layoutFacingAct->setIcon(resourceIcon(QStringLiteral("view-paged")));
     m_layoutFacingAct->setStatusTip(
         tr("Gallery: two-page spreads (cover alone, then pairs)"));
     connect(m_layoutFacingAct, &QAction::triggered, this, &MainWindow::setLayoutFacing);
 
-    m_backToGalleryAct = new QAction(tr("&Up"), this);
+    m_backToGalleryAct = new QAction(tr("&Back"), this);
     m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-up"), QStyle::SP_ArrowUp));
-    m_backToGalleryAct->setStatusTip(tr("Up to gallery"));
-    m_backToGalleryAct->setToolTip(tr("Up to gallery"));
+    m_backToGalleryAct->setStatusTip(tr("Return to Gallery or Workspace"));
+    m_backToGalleryAct->setToolTip(tr("Return to Gallery or Workspace"));
     m_backToGalleryAct->setEnabled(false);
     connect(m_backToGalleryAct, &QAction::triggered, this, &MainWindow::returnFromImageMode);
 
@@ -790,9 +794,9 @@ void MainWindow::createActions()
     m_toggleScrollBarsAct->setStatusTip(tr("Show or hide scrollbars on the image view"));
     connect(m_toggleScrollBarsAct, &QAction::triggered, this, &MainWindow::toggleScrollBars);
 
-    m_preferencesAct = new QAction(tr("&Preferences..."), this);
+    m_preferencesAct = new QAction(tr("&Preferences…"), this);
     m_preferencesAct->setShortcut(QKeySequence::Preferences);
-    m_epubLayoutAct = new QAction(tr("EPUB &Layout..."), this);
+    m_epubLayoutAct = new QAction(tr("EPUB &Layout…"), this);
     m_epubLayoutAct->setToolTip(tr("Edit //epub: layout profile for the current book"));
     connect(m_epubLayoutAct, &QAction::triggered, this, &MainWindow::showEpubLayoutDialog);
     m_preferencesAct->setIcon(themeIcon(QStringLiteral("preferences-system"), QStyle::SP_FileDialogInfoView));
@@ -801,6 +805,7 @@ void MainWindow::createActions()
 
     m_keyboardShortcutsAct = new QAction(tr("&Keyboard Shortcuts…"), this);
     m_keyboardShortcutsAct->setShortcut(Qt::Key_F1);
+    m_keyboardShortcutsAct->setIcon(themeIcon(QStringLiteral("help-contents"), QStyle::SP_DialogHelpButton));
     m_keyboardShortcutsAct->setStatusTip(tr("List of keyboard shortcuts"));
     connect(m_keyboardShortcutsAct, &QAction::triggered, this, &MainWindow::showKeyboardShortcuts);
 
@@ -882,8 +887,23 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_saveProjectAsAct);
     m_recentProjectsMenu = m_fileMenu->addMenu(tr("Recent Pro&jects"));
     m_recentProjectsMenu->setStatusTip(tr("Reopen a recently saved or opened .biltoo project"));
+    if (QAction *rpMenuAct = m_recentProjectsMenu->menuAction()) {
+        rpMenuAct->setStatusTip(m_recentProjectsMenu->statusTip());
+        rpMenuAct->setWhatsThis(tr(
+            "<p><b>Recent Projects</b> lists recently opened or saved "
+            "<code>.biltoo</code> project files (session + Workspace poses and appearance).</p>"
+            "<ul>"
+            "<li>Choose an entry to load that project (replaces the current session).</li>"
+            "<li>Hover an entry for the full path in the Help panel.</li>"
+            "<li>Missing files are marked and disabled until the path exists again.</li>"
+            "<li>Not the same as <b>Recent Sessions</b>, which only stores image path lists.</li>"
+            "</ul>"));
+    }
     m_clearRecentProjectsAct = new QAction(tr("&Clear Recent Projects"), this);
     m_clearRecentProjectsAct->setStatusTip(tr("Remove all remembered project paths"));
+    m_clearRecentProjectsAct->setWhatsThis(tr(
+        "<p>Clear the Recent Projects list. Does not delete any "
+        "<code>.biltoo</code> files on disk. Recent Sessions are unaffected.</p>"));
     connect(m_clearRecentProjectsAct, &QAction::triggered, this, &MainWindow::clearRecentProjects);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_printAct);
@@ -907,18 +927,7 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_pasteWorkspaceAct);
     m_editMenu->addAction(m_duplicateAct);
     m_editMenu->addSeparator();
-    // Session order applies across modes; keep with other document edits.
-    auto *sortMenu = m_editMenu->addMenu(tr("&Sort Session"));
-    sortMenu->addAction(m_sortNameAct);
-    sortMenu->addAction(m_sortPathAct);
-    sortMenu->addAction(m_sortAspectAct);
-    sortMenu->addAction(m_sortShuffleAct);
-    sortMenu->addAction(m_sortMTimeAct);
-    sortMenu->addAction(m_sortFileSizeAct);
-    sortMenu->addAction(m_sortWidthAct);
-    sortMenu->addAction(m_sortHeightAct);
-    sortMenu->addAction(m_sortPixelCountAct);
-    m_editMenu->addSeparator();
+    // Sort Session lives under Gallery + toolbar (not duplicated here).
     m_editMenu->addAction(m_preferencesAct);
 
     // Content transforms: dedicated Image menu (not Edit, not View).
@@ -976,7 +985,7 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutSideBySideAct);
     galleryMenu->addAction(m_layoutVerticalAct);
     galleryMenu->addAction(m_layoutGridAct);
-    galleryMenu->addAction(m_layoutGridCropAct);
+    // Grid Crop stays in the action group but is hidden until re-enabled.
     galleryMenu->addAction(m_layoutMasonryAct);
     galleryMenu->addAction(m_layoutMasonryRowsAct);
     galleryMenu->addAction(m_layoutMasonryFillAct);
@@ -1088,6 +1097,7 @@ void MainWindow::createToolBar()
 
     // Left: file + undo/redo
     // Up stays in Gallery menu / Esc — not on the main toolbar.
+    m_toolBar->addAction(m_newAct);
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_openLocationAct);
     m_toolBar->addAction(m_addAct);
@@ -1120,7 +1130,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipHAct);
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addAction(m_cropAct);
-    m_toolBar->addAction(m_attentionAct);
+    // Attention Point stays under Image menu (specialized; not main-bar).
     m_toolBar->addSeparator();
     // Gallery layout combo: main button = Go to Gallery (current layout icon);
     // small menu button = pick a different layout (QToolButton::MenuButtonPopup).
@@ -1132,7 +1142,6 @@ void MainWindow::createToolBar()
         layoutPopup->addAction(m_layoutSideBySideAct);
         layoutPopup->addAction(m_layoutVerticalAct);
         layoutPopup->addAction(m_layoutGridAct);
-        layoutPopup->addAction(m_layoutGridCropAct);
         layoutPopup->addAction(m_layoutMasonryAct);
         layoutPopup->addAction(m_layoutMasonryRowsAct);
         layoutPopup->addAction(m_layoutMasonryFillAct);
@@ -1508,7 +1517,7 @@ void MainWindow::populateActionHelpTexts()
         "free-form editor.</p>"
         "<ul>"
         "<li>Every session image appears as one tile. Positions come only from the "
-        "active <b>layout</b> (side-by-side, vertical, grid, masonry, flow, facing, …).</li>"
+        "active <b>layout</b> (horizontal, vertical, grid, masonry, flow, facing, …).</li>"
         "<li>Wheel <b>scrolls</b> the overview (no zoom). Multi-select with "
         "Ctrl/Shift/rubber-band; double-click or Enter opens <b>Image</b> mode.</li>"
         "<li>Rotate/flip apply to the selection. Delete removes from the "
@@ -1735,7 +1744,7 @@ void MainWindow::populateActionHelpTexts()
         "unavailable in Workspace. Space often pauses/resumes; Esc leaves slideshow "
         "(and fullscreen). Interval and transitions are in Preferences / Slideshow settings.</p>"));
     setHelp(m_backToGalleryAct, tr(
-        "<p><b>Up</b> leaves Image mode and returns to Gallery or Workspace depending on "
+        "<p><b>Back</b> leaves Image mode and returns to Gallery or Workspace depending on "
         "how Image was entered, restoring the previous overview or free-canvas snapshot.</p>"));
 
     // --- Gallery layouts / sort ---

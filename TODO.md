@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-789-ui-chrome-polish.** Menus/toolbar/icons audit follow-ups.
+Prior: **788**.
+
+### Changes
+- Ellipsis unified to …
+- **Back** (was Up) with Gallery/Workspace return tips
+- Toolbar: **New**; Attention Point removed from bar (Image menu only)
+- Project open/save/save-as icons; Export Text icon; Keyboard Shortcuts icon
+- New icon fallback fixed; Flow/Flow Fill/Facing distinct icons
+- Grid Crop dropped from Gallery menu + layout popup (still hidden in group)
+- Sort Session only under Gallery + toolbar (not Edit)
+- Recent Projects Help parity (paths, missing files, vs Sessions)
+- Help copy: horizontal not “side-by-side”
+
+### Apply
+```bash
+git pull /path/to/biltoo-789-ui-chrome-polish.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **789**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-788-help-shortcuts-btn.** Help panel: Keyboard Shortcuts… at bottom.
 Prior: **787**.
 

@@ -561,11 +561,11 @@ void MainWindow::updateUpToGalleryAction()
     m_backToGalleryAct->setVisible(true);
     m_backToGalleryAct->setEnabled(canReturn);
     if (m_workspaceReturnActive) {
-        m_backToGalleryAct->setStatusTip(tr("Up to workspace"));
-        m_backToGalleryAct->setToolTip(tr("Up to workspace"));
+        m_backToGalleryAct->setStatusTip(tr("Return to Workspace"));
+        m_backToGalleryAct->setToolTip(tr("Return to Workspace"));
     } else {
-        m_backToGalleryAct->setStatusTip(tr("Up to gallery"));
-        m_backToGalleryAct->setToolTip(tr("Up to gallery"));
+        m_backToGalleryAct->setStatusTip(tr("Return to Gallery"));
+        m_backToGalleryAct->setToolTip(tr("Return to Gallery"));
     }
     if (m_imageView) {
         m_imageView->setGalleryReturnAvailable(canReturn);

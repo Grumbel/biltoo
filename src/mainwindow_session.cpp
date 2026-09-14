@@ -4194,6 +4194,19 @@ void MainWindow::rebuildRecentProjectsMenu()
     if (m_recentProjects.isEmpty()) {
         auto *empty = m_recentProjectsMenu->addAction(tr("(No recent projects)"));
         empty->setEnabled(false);
+        empty->setWhatsThis(tr(
+            "<p>No projects have been remembered yet.</p>"
+            "<p>After you open or save a <code>.biltoo</code> project, it appears "
+            "under <b>Recent Projects</b>. That is separate from "
+            "<b>Recent Sessions</b> (image path lists only).</p>"));
+        empty->setProperty(
+            "biltooDisabledHelp",
+            tr("Open or save a .biltoo project first."));
+        if (m_helpPanel) {
+            connect(empty, &QAction::hovered, this, [this, empty]() {
+                m_helpPanel->showAction(empty);
+            });
+        }
         m_recentProjectsMenu->addSeparator();
         if (m_clearRecentProjectsAct) {
             m_recentProjectsMenu->addAction(m_clearRecentProjectsAct);
@@ -4205,16 +4218,36 @@ void MainWindow::rebuildRecentProjectsMenu()
     for (int i = 0; i < m_recentProjects.size(); ++i) {
         const QString &p = m_recentProjects.at(i);
         const QFileInfo fi(p);
-        // Show filename; full path in status tip. Missing files stay listed but open will fail gracefully.
+        // Show filename; full path in status tip / Help. Missing files stay listed.
         QAction *act = m_recentProjectsMenu->addAction(
             QStringLiteral("%1. %2").arg(i + 1).arg(fi.fileName()));
         act->setData(p);
         act->setStatusTip(p);
+        act->setWhatsThis(tr(
+            "<p>Reopen this <b>Recent Project</b> (<code>.biltoo</code>).</p>"
+            "<p><b>Path:</b> <code>%1</code></p>"
+            "<p>Loads session order, appearance, and Workspace poses from the "
+            "project file. Not the same as Recent Sessions (paths only).</p>%2")
+            .arg(p.toHtmlEscaped(),
+                 fi.isFile()
+                     ? QString()
+                     : tr("<p><b>Currently unavailable:</b> the file is missing on disk.</p>")));
         if (!fi.isFile()) {
             act->setEnabled(false);
             act->setText(act->text() + tr(" (missing)"));
+            act->setProperty(
+                "biltooDisabledHelp",
+                tr("This project file is missing on disk."));
         }
         connect(act, &QAction::triggered, this, &MainWindow::openRecentProject);
+        if (m_helpPanel) {
+            connect(act, &QAction::hovered, this, [this, act]() {
+                m_helpPanel->showAction(act);
+            });
+            connect(act, &QAction::triggered, this, [this, act](bool) {
+                m_helpPanel->showAction(act);
+            });
+        }
     }
     m_recentProjectsMenu->addSeparator();
     if (m_clearRecentProjectsAct) {
