@@ -621,16 +621,12 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const qreal footH0 = beforeScene.height();
     const QPointF center0 = beforeScene.center();
     installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp, unoriented);
+    // Workspace: do NOT rescale to fit full frame into the previous crop
+    // footprint. That drove item scale toward ~1% on second crop (Zoom UI)
+    // and made Apply inherit a near-zero scale. Placement scale is placement —
+    // crop only changes intrinsic. Keep centre so the draft does not jump.
     if (isWorkspaceMode() && footW0 > 1.0 && footH0 > 1.0) {
-        const QSize after = item->imageSize();
-        if (after.width() > 0 && after.height() > 0) {
-            const qreal s = qMin(footW0 / qreal(after.width()),
-                                 footH0 / qreal(after.height()));
-            if (s > 1e-6 && qIsFinite(s)) {
-                item->setItemScale(s, s);
-            }
-            alignItemCenterToScene(item, center0);
-        }
+        alignItemCenterToScene(item, center0);
     }
     initCropRectFromPriorAppearance(item, app, haveApp);
 
@@ -1217,14 +1213,17 @@ bool ImageView::applyCropCommit(ImageItem *item)
             return false;
         }
 
-        // Footprint rule (SIZE.md): crop draft is in *logical* content units
-        // (intrinsic during crop mode). Keep the same scale; set intrinsic to
-        // the draft crop size. Do NOT rescale by file-native layoutSize — that
-        // mixed soft draft units with native logical and shrank Workspace tiles
-        // every Apply.
+        // Placement scale is independent of crop. Prefer scale captured at crop
+        // *enter* (before any draft geometry change). Current sx0 can already be
+        // wrong if an older build mutated scale on enter.
         const QSize logical(qMax(1, qRound(cropW)), qMax(1, qRound(cropH)));
-        const qreal sx = sx0;
-        const qreal sy = sy0;
+        qreal sx = sx0;
+        qreal sy = sy0;
+        if (m_cropEnterValid && m_cropEnterState.scale > 1e-6) {
+            sx = m_cropEnterState.scale;
+            sy = (m_cropEnterState.scaleY > 1e-6) ? m_cropEnterState.scaleY
+                                                 : m_cropEnterState.scale;
+        }
 
         if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
             qWarning().noquote()

@@ -139,9 +139,14 @@ void GalleryController::applyPendingRestore()
     }
     if (focus) {
         focus->setSelected(true);
-        const QRectF viewScene = m_view->mapToScene(m_view->viewport()->rect()).boundingRect();
-        if (!viewScene.intersects(focus->sceneBoundingRect())) {
-            m_view->ensureVisible(focus, 48, 48);
+        // With a scroll snapshot, do not ensureVisible — that recentres and
+        // undoes the restored scroll (felt like “Gallery jumps after crop”).
+        if (!m_haveScroll) {
+            const QRectF viewScene =
+                m_view->mapToScene(m_view->viewport()->rect()).boundingRect();
+            if (!viewScene.intersects(focus->sceneBoundingRect())) {
+                m_view->ensureVisible(focus, 48, 48);
+            }
         }
         if (m_hoverPath != focus->path()) {
             m_hoverPath = focus->path();
@@ -161,9 +166,9 @@ void GalleryController::reassertViewport()
     if (!m_view->isGalleryMode()) {
         return;
     }
-    if (m_haveViewCenter) {
-        m_view->centerOn(m_viewCenter);
-    }
+    // Prefer scrollbar pixels. Scene centre from leave-for-Image is invalid
+    // after restash/repack (crop aspect change, ContentChange pack) and was
+    // jumping the overview when returning after a crop.
     if (m_haveScroll) {
         if (m_view->horizontalScrollBar()) {
             m_view->horizontalScrollBar()->setValue(m_scrollH);
@@ -171,6 +176,10 @@ void GalleryController::reassertViewport()
         if (m_view->verticalScrollBar()) {
             m_view->verticalScrollBar()->setValue(m_scrollV);
         }
+        return;
+    }
+    if (m_haveViewCenter) {
+        m_view->centerOn(m_viewCenter);
     }
 }
 

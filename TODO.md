@@ -2,6 +2,39 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-880-crop-scale-gallery-scroll.** Crop must not touch Workspace zoom; Gallery restore prefers scroll.
+Prior: **879**.
+
+### Workspace Zoom → 1% on second crop
+Crop enter fitted **full** native intrinsic into the **previous crop** scene
+footprint: `scale = foot / fullSize` → ~1% after a small crop. Apply then kept
+that scale. Zoom UI is item scale — crop was rewriting placement scale.
+
+**Fix:** Enter crop never changes item scale (only centres). Apply uses
+**enter-time** placement scale from `m_cropEnterState`.
+
+### Gallery jumps after crop return
+`reassertViewport` did `centerOn(pre-Image scene centre)` after restash/repack
+(invalid coords) and `ensureVisible(focus)` undid scroll.
+
+**Fix:** Prefer scrollbar snapshot; skip `ensureVisible` when scroll was saved.
+
+### Apply
+```bash
+git pull /path/to/biltoo-880-crop-scale-gallery-scroll.bundle HEAD
+```
+
+### Verify
+- [ ] Workspace: first and second crop keep Zoom % stable (not 1%)
+- [ ] Gallery: return from Image after crop keeps scroll position
+- [ ] Filmstrip still sticky after crop
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-879-filmstrip-crop-sticky.** Crop filmstrip override is sticky against appearance demotion.
 Prior: **878**.
 
