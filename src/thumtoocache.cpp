@@ -2949,18 +2949,23 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
             return true; // already in flight — count as accepted
         }
         if (g_pixelsSettled.contains(inflightKey)) {
-            // Settled only means we already ran Full for this edge once. If the
-            // host still holds a shortfall (e.g. first attempt returned 2048 for
-            // a 6k native request), allow retry — permanent settle left Gallery
-            // zoom stuck below native.
+            // Full was attempted. Retry only when host still has soft-tier (or
+            // blank) — that means Ensure Full never really ran. Intermediate
+            // shortfall (TileSynth 2048 for want 6k) is terminal: looping RETRY
+            // + CACHE_HIT spun forever.
             const int have = ImageCache::longEdge(ImageCache::get(path));
             if (have * 10 >= maxEdge * 9) {
                 thumtooDbg("scheduleFull SKIP path=%s edge=%d (settled have=%d)",
                            qPrintable(path), maxEdge, have);
                 return true;
             }
+            if (have > kGalleryLadderEdge) {
+                thumtooDbg("scheduleFull SKIP path=%s edge=%d (settled shortfall have=%d terminal)",
+                           qPrintable(path), maxEdge, have);
+                return true;
+            }
             g_pixelsSettled.remove(inflightKey);
-            thumtooDbg("scheduleFull RETRY path=%s edge=%d (settled but host have=%d)",
+            thumtooDbg("scheduleFull RETRY path=%s edge=%d (settled soft-tier have=%d)",
                        qPrintable(path), maxEdge, have);
         }
         if (g_fullActive >= kMaxConcurrentFullJobs) {

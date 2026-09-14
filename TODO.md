@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-818-full-shortfall-terminal.** scheduleFull RETRY only for soft-tier shortfall.
+Prior: **817**. Pair with **thumtoo-204**.
+
+### Problem
+TileSynth shortfall (2048 for want 6048) + scheduleFull RETRY + thumtoo CACHE_HIT
+looped forever.
+
+### Change
+- scheduleFull RETRY only when host have ≤ soft max (Full never ran)
+- RasterClimb: forgetFullSettled only for soft-tier shortfall
+
+### Apply
+```bash
+git pull /path/to/biltoo-818-full-shortfall-terminal.bundle HEAD
+# and thumtoo-204-full-no-tilesynth-cachehit.bundle
+```
+
+### Done criteria
+- [x] Bundle **818**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-817-gallery-soft-sm.** Gallery soft schedule + pass1 host install policy in pure `GallerySoft` SM.
 Prior: **816**.
 

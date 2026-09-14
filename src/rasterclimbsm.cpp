@@ -161,9 +161,11 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
     fullEdge = std::max(fullEdge, overviewCap + 1);
     p.fullEdge = fullEdge;
 
-    // Shortfall after Full → forget settled and schedule again
+    // Soft-tier shortfall after Full → real Full never landed; allow retry.
+    // Intermediate (e.g. TileSynth 2048) shortfall is terminal for whole-frame Full.
     bool fullDone = m_.fullDone;
-    if (fullDone && !m_.fullQueued && m_.have * kCoverDenom < need * kCoverNumer) {
+    if (fullDone && !m_.fullQueued && m_.have * kCoverDenom < need * kCoverNumer
+        && m_.have <= softMax) {
         p.forgetFullSettled = true;
         fullDone = false;
     }
