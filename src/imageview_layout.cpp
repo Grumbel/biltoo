@@ -1079,25 +1079,23 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
         // installDisplayPixels / applyContentToItem (would double-crop).
         if (!src.isNull()) {
             other->setSourceImageReady(src);
-            // Keep geometry with baked pixels (crop shrink must not leave full intrinsic).
-            const QSize sz = item->imageSize();
-            if (sz.width() > 1 && sz.height() > 1) {
-                other->setIntrinsicSize(sz);
-            }
         } else if (!item->previewImage().isNull()) {
             // Soft Gallery: content bake lives on the preview; peers must match.
             other->setPreviewImage(item->previewImage());
-            // Intrinsic must follow orient/crop — soft paint stretches into contentRect.
-            const QSize sz = item->imageSize();
-            if (sz.width() > 1 && sz.height() > 1) {
-                other->setIntrinsicSize(sz);
-            }
+        } else if (!item->displayImage().isNull()) {
+            other->setPreviewImage(item->displayImage());
+        }
+        // Intrinsic must follow orient/crop — never leave full-frame on crop.
+        const QSize sz = item->imageSize();
+        if (sz.width() > 1 && sz.height() > 1) {
+            other->setIntrinsicSize(sz);
         }
         other->setItemHFlip(hFlip);
         other->setItemVFlip(vFlip);
         other->setContentHFlip(contentH);
         other->setContentVFlip(contentV);
         other->setSessionCrop(item->sessionHasCrop(), item->sessionCropRect());
+        other->setColorAdjustments(item->colorAdjustments());
         if (item->hasAppliedContentXform()) {
             other->setAppliedContentXform(item->appliedContentXform());
         }
@@ -1148,7 +1146,46 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     validateUniqueLiveSessionIds("commitItemSessionEdit");
     syncSessionEditPeers(item);
     updateWorkspaceSavedAppearance(item);
+    // All modes / widgets that depend on content aspect or appearance pixels.
+    propagateSessionAppearanceToViews(item);
     emit statusChanged();
+}
+
+void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    // Filmstrip: persistSessionAppearanceSlot already emits when display pixels
+    // exist. Re-emit after peer sync so soft-only tiles that gained pixels, and
+    // paths that skipped emit, still update the strip.
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+    if (sid != kInvalidSessionImageId) {
+        const QImage appearance = sessionAppearanceImage(item);
+        if (!appearance.isNull()) {
+            emit sessionAppearanceChanged(sid, item->path(), appearance);
+            if (item->sessionHasCrop()
+                || (m_appearance.contains(sid)
+                    && m_appearance.value(sid).hasCrop)) {
+                emit sessionCropApplied(sid, item->path(), appearance);
+            }
+        }
+    }
+
+    if (isGalleryMode()) {
+        // Aspect / crop may change pack cell size — debounce packs concurrent
+        // multi-select rotates into one layout pass.
+        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    } else if (isImageMode() && m_scene && item->scene() == m_scene) {
+        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
 }
 
 

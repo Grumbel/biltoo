@@ -2,6 +2,41 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-875-propagate-content-transform-views.** One hub refreshes filmstrip + Gallery + Workspace + Image after content transform.
+Prior: **874**.
+
+### Problem
+Rotate/flip/crop wrote `m_appearance` and sometimes packed Gallery or emitted
+filmstrip, but not consistently from one place. Placement-only and content
+paths diverged; stashed peers could miss grade; soft-only tiles could skip
+filmstrip emit.
+
+### Fix
+- `propagateSessionAppearanceToViews(item)` called from `commitItemSessionEdit`
+  - Filmstrip id-keyed re-emit (appearance + crop when applicable)
+  - Gallery: debounced ContentChange pack
+  - Workspace: sceneRect
+  - Image mode: tight sceneRect + viewport update
+- `syncSessionEditPeers`: copy grade; fall back to `displayImage`; always sync intrinsic
+- Documented in CONTENT_PIPELINE.md “Propagation”
+
+### Apply
+```bash
+git pull /path/to/biltoo-875-propagate-content-transform-views.bundle HEAD
+```
+
+### Verify
+- [ ] Gallery: rotate selection → pack cells update aspect; filmstrip matches
+- [ ] Workspace: crop/rotate tile → scene bounds OK; stashed peer after Image visit matches
+- [ ] Image mode: crop → filmstrip + return to Gallery shows crop
+- [ ] Two ids same path: only edited id’s filmstrip/peers update
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-874-path-xdg-no-bound-crop.** Path XDG never seeds or persists crop for bound SessionImageId.
 Prior: **873**.
 

@@ -996,6 +996,12 @@ public:
     void persistSessionAppearanceSlot(ImageItem *item);
     void syncSessionEditPeers(ImageItem *item);
     void updateWorkspaceSavedAppearance(ImageItem *item);
+    /**
+     * After content appearance changed for @p item: filmstrip id override,
+     * Gallery pack, Workspace sceneRect, or Image mode sceneRect.
+     * Called from commitItemSessionEdit — keep mode widgets in sync.
+     */
+    void propagateSessionAppearanceToViews(ImageItem *item);
     QImage sessionAppearanceImage(const ImageItem *item) const;
     /**
      * Bake stored content flips/rotates (and grade) onto a decode of @p path

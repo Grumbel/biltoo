@@ -87,3 +87,24 @@ Workspace footprint must not jump (see recent crop tips).
 When an item already holds (or host has) raw pixels and absolute want is known,
 use this instead of `SessionAppearance::applyContentToItem`. Same rules:
 host ≤512 materialize + attach; multi-MP schedules async pure materialize.
+
+## Propagation (modes and widgets)
+
+After any content transform write (`commitItemSessionEdit`):
+
+| Consumer | Update |
+|----------|--------|
+| `SessionAppearanceStore` | Written in bake/record/persist (by `SessionImageId`) |
+| Live peers + Workspace/Gallery **stashed** items same id | `syncSessionEditPeers` — pixels, intrinsic, crop flags, applied xform, grade |
+| Workspace saved snapshot | `updateWorkspaceSavedAppearance` |
+| **Filmstrip** | `sessionAppearanceChanged` / `sessionCropApplied` (id-keyed) |
+| **Gallery** | `requestDebouncedGalleryPack(ContentChange)` |
+| **Workspace** | `updateWorkspaceSceneRect()` |
+| **Image mode** | tight `sceneRect` around the item |
+
+Entry points that must end in `commitItemSessionEdit` (or call the same hub):
+toolbar rotate/flip, Workspace chrome, crop Apply/Reset, grade changes that
+persist appearance, paste/bind that freezes appearance.
+
+Do **not** invent a second pack/filmstrip path beside this hub.
+
