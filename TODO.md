@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-889-filmstrip-no-upscale-lqip.** Never upscale LQIP to decode edge (false settle).
+Prior: **888**.
+
+### Tiny filmstrip stayed on LQIP
+`prepareThumbnailFromImage` scaled LQIP **up** to `filmstripDecodeEdge` (128+).
+`ThumbDecodeEdgeRole` then reported 128 → qualityWatchdog treated the cell as
+settled. Icon stayed blurry; no further climb.
+
+**Fix:** never upscale in prepare; only downscale. Decode edge floor 128.
+
+### Apply
+```bash
+git pull /path/to/biltoo-889-filmstrip-no-upscale-lqip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-888-peer-sync-paint.** Peer sync clears peer pixels before crop bake; Gallery/enter hold paints.
 Prior: **887**.
 

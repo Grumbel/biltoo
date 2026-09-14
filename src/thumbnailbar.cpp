@@ -939,9 +939,11 @@ int ThumbnailBar::thumbDecodePixels() const
 int ThumbnailBar::filmstripDecodeEdge() const
 {
     // Sharpness only — never a layout size. Logical cells use thumbSize.
-    // Power-of-two ladder step for thumbSize×DPR — no soft-max clamp. Soft
-    // ladder is a placeholder until this edge is installed (ThumbDecodeEdgeRole).
-    return ThumtooCache::ceilLadderEdge(thumbDecodePixels());
+    // Floor at the first real soft ladder step (128). Tiny bars still need more
+    // than LQIP (≤96); without a floor, ceil(24)→128 but LQIP was upscaled to
+    // 128 and falsely settled as sharp.
+    const int want = ThumtooCache::ceilLadderEdge(thumbDecodePixels());
+    return qMax(ThumtooCache::kLadderEdges[0], want);
 }
 
 
@@ -1073,8 +1075,11 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
     if (image.isNull() || maxSize < 1) {
         return QImage();
     }
+    // Never upscale. Upscaling LQIP to filmstripDecodeEdge made ThumbDecodeEdgeRole
+    // report the target edge while pixels stayed soft — qualityWatchdog then
+    // treated the cell as settled and tiny filmstrips stayed blurry forever.
+    const int srcEdge = qMax(image.width(), image.height());
     if (m_cropToSquare) {
-        // Center-crop to square, then scale to maxSize². Aspect stays 1:1.
         const int side = qMin(image.width(), image.height());
         if (side <= 0) {
             return QImage();
@@ -1082,10 +1087,16 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         const int x = (image.width() - side) / 2;
         const int y = (image.height() - side) / 2;
         QImage square = image.copy(x, y, side, side);
+        if (side <= maxSize) {
+            return square;
+        }
         return square.scaled(maxSize, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
-    // Letterbox: longest edge → maxSize, aspect preserved. Layout uses
+    // Letterbox: downscale longest edge to maxSize only. Layout uses
     // letterboxContentSize(aspect) at thumbSize — not these pixel dimensions.
+    if (srcEdge <= maxSize) {
+        return image;
+    }
     return image.scaled(maxSize, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 
