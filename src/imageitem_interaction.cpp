@@ -1532,8 +1532,21 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
                               Qt::AlignCenter, glyph);
         };
 
-        drawFlipToggle(Handle::FlipH, 0, m_contentHFlip, QStringLiteral("↔"));
-        drawFlipToggle(Handle::FlipV, 1, m_contentVFlip, QStringLiteral("↕"));
+        // contentHFlip/VFlip are *source* flags (flip → then quarter-turns). Chrome
+        // labels are display axes: after odd turns H↔V, so light the conjugated
+        // pair or FlipH looks like FlipV after a 90° rotate.
+        int turns = 0;
+        if (hasAppliedContentXform()) {
+            turns = appliedContentXform().quarterTurns % 4;
+            if (turns < 0) {
+                turns += 4;
+            }
+        }
+        const bool swapAxes = (turns == 1 || turns == 3);
+        const bool displayHFlip = swapAxes ? m_contentVFlip : m_contentHFlip;
+        const bool displayVFlip = swapAxes ? m_contentHFlip : m_contentVFlip;
+        drawFlipToggle(Handle::FlipH, 0, displayHFlip, QStringLiteral("↔"));
+        drawFlipToggle(Handle::FlipV, 1, displayVFlip, QStringLiteral("↕"));
         drawBtn(Handle::Rotate90CCW, 2, QStringLiteral("↺"));
         drawBtn(Handle::Rotate90CW, 3, QStringLiteral("↻"));
         drawBtn(Handle::Raise, 4, QStringLiteral("↑"));

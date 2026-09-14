@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-855-chrome-flip-display-axes.** Workspace chrome flip toggles use display axes after odd quarter-turns.
+Prior: **854**.
+
+### Problem
+`contentHFlip`/`contentVFlip` are **source** flags (pipeline: flip → quarter-turns).
+Chrome lit those flags directly. After 90°/270°, display H↔V, so FlipH pressed
+while rotated latched the FlipV button (and vice versa).
+
+### Fix
+Paint chrome toggles from display-conjugated flags:
+`turns odd → swap H/V for the lit state` (same conjugation bakeItemFlip already uses for presses).
+
+### Apply
+```bash
+git pull /path/to/biltoo-855-chrome-flip-display-axes.bundle HEAD
+```
+
+### Verify
+- [ ] Rotate 90°, FlipH: FlipH latches, image mirrors left-right on screen
+- [ ] Rotate again: lit button follows display axis (or stays correct after another H press)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-854-rotate-no-scale-drop-init.** Workspace rotate no longer shrinks; drop placeholder identity init.
 Prior: **853**.
 
