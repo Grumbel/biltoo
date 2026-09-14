@@ -294,35 +294,17 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     if (!app || !SessionAppearance::hasContentAppearance(*app)) {
         return src;
     }
-    // Soft/cache path: flip + quarter-turns + grade only (crop needs full source).
-    QImage img = src;
-    if (app->contentHFlip || app->contentVFlip) {
-        Qt::Orientations axes;
-        if (app->contentHFlip) {
-            axes |= Qt::Horizontal;
-        }
-        if (app->contentVFlip) {
-            axes |= Qt::Vertical;
-        }
-        if (axes) {
-            img = img.flipped(axes);
-        }
-    }
-    if (app->contentQuarterTurns != 0) {
-        int turns = app->contentQuarterTurns % 4;
-        if (turns < 0) {
-            turns += 4;
-        }
-        if (turns != 0) {
-            QTransform xform;
-            xform.rotate(90.0 * turns);
-            img = img.transformed(xform, Qt::SmoothTransformation);
-        }
-    }
-    if (!app->colorAdjust.isIdentity()) {
-        img = applyColorAdjustments(img, app->colorAdjust);
-    }
-    return img;
+    // Single pipeline — no parallel flip/rotate implementation.
+    // SoftPreview + crop stripped: soft samples are sampling only; crop is
+    // FullSource / rematerialize territory (same contract as before).
+    WorkspaceItemState soft = *app;
+    soft.hasCrop = false;
+    soft.cropRect = {};
+    soft.cropSourceSize = {};
+    soft.cropRotation = 0.0;
+    const QImage out = SessionAppearance::materializeDisplay(
+        src, soft, SessionAppearance::PixelKind::SoftPreview);
+    return out.isNull() ? src : out;
 }
 
 
@@ -355,17 +337,31 @@ void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &sta
     if (!item) {
         return;
     }
-    // Order: flips then quarter turns (matches bakeFlip / bakeRotate90 live order).
+    // Prefer pure ContentXform materialize (SessionAppearance::applyContentToItem).
+    // That path is GUI-safe ≤ kGuiMaterializeMaxEdge; multi-MP only updates
+    // chrome/applied flags (caller should scheduleAsyncHostRematerialize).
+    //
+    // Last resort when the item already holds a multi-MP *raw* host sample and
+    // the caller needs pixels now (crop enter): incremental bakeFlip/bakeRotate90
+    // on that sample. Do not invent a second matrix — same flip→turns order as
+    // materializeDisplay.
+    QImage raw = item->sourceImage();
+    if (raw.isNull()) {
+        raw = item->previewImage();
+    }
+    const int edge = raw.isNull() ? 0 : qMax(raw.width(), raw.height());
+    if (edge > 0 && edge <= ContentXform::kGuiMaterializeMaxEdge) {
+        SessionAppearance::applyContentToItem(item, state);
+        return;
+    }
     if (state.contentHFlip || state.contentVFlip) {
         item->bakeFlip(state.contentHFlip, state.contentVFlip);
     }
     if (state.contentQuarterTurns != 0) {
         item->bakeRotate90(state.contentQuarterTurns);
     }
-    // Keep chrome indicators in sync with session state (bakeFlip clears display flags).
     item->setContentHFlip(state.contentHFlip);
     item->setContentVFlip(state.contentVFlip);
-    // Pixels now match absolute state (incremental bake from identity raw).
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
 

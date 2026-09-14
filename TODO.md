@@ -2,6 +2,41 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-861-contentxform-single-pipeline.** Verification: route leftover appearance helpers through SessionAppearance.
+Prior: **860**.
+
+### Audit (all modes)
+| Path | Entry | ContentXform |
+|------|--------|--------------|
+| Toolbar / keyboard rotate | `rotateContentByQuarterTurns` → `bakeItemRotate90` | absolute want + rematerialize |
+| Toolbar / keyboard flip | `bakeItemFlip` | source flags + rematerialize |
+| Workspace chrome | same (`rotateContentByQuarterTurns` / `bakeItemFlip`) | same |
+| Gallery pack | `applyLayout` after content change | layoutSize / applied xform |
+| Image fit | `fitItem` | `ContentXform::layoutSize` |
+| Install decode | `installDisplayPixels` → `attachDisplaySample` / materialize | single |
+| Slideshow phase | `scheduleSlideshowPhaseBufferUpgrade` + sample-aspect dest | materialize |
+| Crop enter | `tryRematerializeFromHost` first; `applyContentBakes` last resort | prefer pure |
+
+### Removed parallel matrix code
+- `imageWithSessionAppearance` no longer reimplements flip/rotate — uses `materializeDisplay`
+- `applyContentBakes` prefers `SessionAppearance::applyContentToItem` when ≤512; multi-MP keeps incremental bakeFlip/bakeRotate90 as last resort only
+
+### Still intentional
+- `ImageItem::bakeRotate90` / `bakeFlip`: pixel ops used by rematerialize fallback + multi-MP crop last resort (same matrix as materializeDisplay)
+- Chrome no-view fallback (tests/headless)
+- Loader EXIF autorot: file-native decode, not session ContentXform
+
+### Apply
+```bash
+git pull /path/to/biltoo-861-contentxform-single-pipeline.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-860-slideshow-sample-aspect-dest.** Motion dest aspect follows phase sample; drop stale atlas on unoriented arm.
 Prior: **859**.
 
