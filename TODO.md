@@ -2,6 +2,27 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-802-loading-breakdown-decl.** Declare `ThumtooCache::loadingBreakdownLabel` in header.
+Prior: **801**.
+
+### Fix
+Definition existed in `thumtoocache.cpp` but was missing from `thumtoocache.h`
+(compile error in `imageview_view.cpp`).
+
+### Apply
+```bash
+git pull /path/to/biltoo-802-loading-breakdown-decl.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **802**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-801-display-quality-contract.** Central DisplayQuality invariants + watchdogs.
 Prior: **800**.
 

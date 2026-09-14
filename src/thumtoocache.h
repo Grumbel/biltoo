@@ -186,6 +186,9 @@ QString lastPixelSourceLabel(const QString &path);
 /** Worker pressure: "pending/inflight focus=N epoch=E" or empty. */
 QString queueStatsLabel();
 
+/** HUD: active/queued jobs split into cache retrieval vs file/archive encode. */
+QString loadingBreakdownLabel();
+
 /** True when setInterest owns overview scheduling (no scheduleOverviewPixels). */
 bool interestOwnsOverview();
 
