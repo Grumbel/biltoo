@@ -1354,6 +1354,13 @@ private:
     /** Raw from host/item → materialize → attachDisplaySample (never multi-MP on GUI). */
     void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
     bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
+    /**
+     * Force contentRect / intrinsic from file-native + want (SIZE.md).
+     * Soft sample dimensions must never redefine geometry when a durable size
+     * is known. After live rotate/flip, always call this so paint does not
+     * stretch oriented pixels into the pre-orient box.
+     */
+    void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want);
     /** Worker materialize when host is multi-MP; attach on GUI if gen/want still match. */
     void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
                                         const WorkspaceItemState &want);

@@ -2161,13 +2161,10 @@ QImage ImageView::fullRasterForEdit(const QString &path) const
     if (!cached.isNull() && sampleCoversNativeLogical(path, cached)) {
         return cached;
     }
-    // Cold path: decode on this thread (crop/Workspace enter). Prefer ImageCache
-    // after Image-mode climb so this is rare. Put result for peers / re-enter.
-    const QImage full = ImageLoader::load(path);
-    if (!full.isNull()) {
-        ImageCache::put(path, full);
-    }
-    return full;
+    // Never ImageLoader::load on the GUI thread — that was the crop-enter stall
+    // on multi-MP files. Callers use the best available sample (cache / item)
+    // and schedule requestCropFullRaster / PathRaster for a native upgrade.
+    return cached;
 }
 
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const

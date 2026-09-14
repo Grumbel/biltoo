@@ -2,6 +2,37 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-848-rotate-layout-crop-responsive.** Fix contentRect stretch on rotate, Gallery 4× rotate glitch, crop GUI stall on full decode.
+Prior: **847**.
+
+### Problems
+1. ImageView stretched oriented pixels into the pre-rotate contentRect.
+2. Gallery rotate glitched after ~4 consecutive turns (repeated incremental bake / host rematerialize path).
+3. Crop enter could block the GUI on `ImageLoader::load` for multi-MP files.
+
+### Fix
+- `applyContentLayoutSize`: always set intrinsic from `layoutSize(fileNative, want)` after orient; soft sample size never becomes identity when durable size is known.
+- Live rotate/flip: **prefer pure** `tryRematerializeFromHost` (raw host ≤512); only incremental + async when host is multi-MP / missing.
+- `attachDisplaySample` / async finish / soft peer-sync all reassert layout size.
+- `fullRasterForEdit` never loads on the GUI; crop drafts on best RAM sample and upgrades via `requestCropFullRaster`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-848-rotate-layout-crop-responsive.bundle HEAD
+```
+
+### Verify
+- [ ] Image mode: landscape → Rotate 90° → contentRect portrait, no stretch; Fit frames correctly
+- [ ] Gallery: rotate same tile 8+ times — no glitch, aspect correct each step
+- [ ] Crop enter on soft-loaded multi-MP: UI opens immediately; full upgrade async
+- [ ] Flip still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-847-rotate-host-cache-raw.** ImageCache stays unoriented; live rotate incremental then pure rematerialize.
 Prior: **846**.
 

@@ -556,24 +556,32 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     m_cropAwaitingFullPath.clear();
 
     // Prefer host cache when Image-mode / thumtoo full already covered native.
+    // Never block the GUI on ImageLoader::load — draft crop on the best sample
+    // already in RAM (item display or ImageCache), then upgrade async.
     QImage full = ImageCache::get(path);
     const bool cacheNative = !full.isNull() && sampleCoversNativeLogical(path, full);
     if (!cacheNative) {
-        // Provisional: best available sample so crop UI opens without GUI-thread
-        // ImageLoader::load. Native full is requested async below.
         if (full.isNull()) {
             full = item->sourceImage();
+        }
+        if (full.isNull()) {
+            full = item->previewImage();
         }
         if (full.isNull()) {
             full = ImageCache::get(path);
         }
     }
     if (full.isNull()) {
-        // No host pixels at all — one cold decode (rare).
-        full = fullRasterForEdit(path);
-    }
-    if (full.isNull()) {
-        return false;
+        // No pixels at all: open crop chrome on the current item geometry and
+        // request a decode; do not stall the UI thread.
+        m_cropAwaitingFullPath = path;
+        requestCropFullRaster(path);
+        flashHud(tr("Crop"), tr("Loading image…"));
+        // Still need a drawable source — fail only if the item has nothing.
+        if (item->sourceImage().isNull() && item->previewImage().isNull()) {
+            return false;
+        }
+        full = item->sourceImage().isNull() ? item->previewImage() : item->sourceImage();
     }
 
     WorkspaceItemState app;

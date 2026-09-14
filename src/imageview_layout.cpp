@@ -455,21 +455,16 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
     // - Crop: baked sample is the box.
     // - Else: layoutSize(FILE-NATIVE, want). Never treat oriented display size as
     //   "native" or layoutSize double-swaps aspect (ImageView/Gallery stretch).
+    // Soft pixel size must not become identity when a durable native is known.
     if (hasCrop && display.width() > 1 && display.height() > 1) {
         item->setIntrinsicSize(display.size());
     } else {
-        QSize fileNative = logicalSizeForPath(path);
-        const bool definitive = isPositiveSize(fileNative) && fileNative.width() > 1
-            && fileNative.height() > 1
-            && (path.isEmpty() || !isProvisionalImageSize(path));
-        if (definitive) {
-            const QSize lay = ContentXform::layoutSize(fileNative, want);
-            if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-                item->setIntrinsicSize(lay);
-            }
-        } else if (display.width() > 1 && display.height() > 1) {
-            // No durable file size yet: display is already oriented to want —
-            // use its aspect (do not layoutSize again).
+        applyContentLayoutSize(item, want);
+        // Cold open only: no durable size and placeholder intrinsic — seed
+        // aspect from the oriented display (still provisional until probe).
+        const QSize cur = item->imageSize();
+        if ((cur.width() <= 1 || cur.height() <= 1)
+            && display.width() > 1 && display.height() > 1) {
             item->setIntrinsicSize(display.size());
         }
     }
@@ -539,6 +534,9 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
     if (qMax(host.width(), host.height()) > ContentXform::kGuiMaterializeMaxEdge) {
         return false;
     }
+    // Prefer SoftPreview when the live item is soft-only so setPreviewImage
+    // accepts the sample (setPreviewImage ignores soft when full is present).
+    // If full is already shown, rematerialize as FullSource.
     const auto kind = item->hasDecodedPixels()
         ? SessionAppearance::PixelKind::FullSource
         : SessionAppearance::PixelKind::SoftPreview;
@@ -548,7 +546,35 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
         return false;
     }
     attachDisplaySample(item, display, want, kind);
+    applyContentLayoutSize(item, want);
     return true;
+}
+
+void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want)
+{
+    if (!item) {
+        return;
+    }
+    // Cropped display: intrinsic is the baked sample box (SIZE.md).
+    if (want.hasCrop && !want.cropRect.isEmpty()) {
+        const QImage disp = item->displayImage();
+        if (!disp.isNull() && disp.width() > 1 && disp.height() > 1) {
+            item->setIntrinsicSize(disp.size());
+        }
+        return;
+    }
+    const QString path = item->path();
+    QSize fileNative = logicalSizeForPath(path);
+    if (isPositiveSize(fileNative) && fileNative.width() > 1 && fileNative.height() > 1
+        && (path.isEmpty() || !isProvisionalImageSize(path))) {
+        const QSize lay = ContentXform::layoutSize(fileNative, want);
+        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+            item->setIntrinsicSize(lay);
+            return;
+        }
+    }
+    // No durable native yet: bakeRotate90 already transposed intrinsic on odd
+    // turns. Do not adopt soft sample pixel size as identity (SIZE.md).
 }
 
 void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
@@ -622,11 +648,15 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     }
     const QSize before = item->imageSize();
     attachDisplaySample(item, display, want, SessionAppearance::PixelKind::FullSource);
+    applyContentLayoutSize(item, want);
     if (before != item->imageSize()) {
         preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
     }
     if (isImageMode() && m_scene && m_items.size() == 1) {
         m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    }
+    if (isGalleryMode() && before != item->imageSize()) {
+        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
     if (viewport()) {
         viewport()->update();
@@ -642,11 +672,8 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     WorkspaceItemState beforeSt = captureContentBakeBeforeState(item);
 
     const SessionImageId sid = resolveContentEditSessionId(item);
-    int prevTurns = beforeSt.contentQuarterTurns;
-    int turns = (prevTurns + quarterTurns) % 4;
-    if (turns < 0) {
-        turns += 4;
-    }
+    const int turns = ContentXform::normalizeQuarterTurns(
+        beforeSt.contentQuarterTurns + quarterTurns);
     // Keep full-source crop geometry in sync with content orientation so
     // re-entering crop mode still frames the same region.
     WorkspaceItemState cropMap = appearanceCropMapForEdit(item, beforeSt, sid);
@@ -666,25 +693,16 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     want.contentVFlip = item->contentVFlip();
     want.colorAdjust = item->colorAdjustments();
 
-    // Live rotate: always incremental on current display (relative ±90°).
-    // Host rematerialize is absolute from raw cache — only as async settle when
-    // host is multi-MP; GUI host rematerialize was double-baking oriented cache.
-    item->bakeRotate90(quarterTurns);
-    {
-        const QString path = item->path();
-        QSize fileNative = logicalSizeForPath(path);
-        if (isPositiveSize(fileNative) && fileNative.width() > 1
-            && fileNative.height() > 1
-            && (path.isEmpty() || !isProvisionalImageSize(path))) {
-            const QSize lay = ContentXform::layoutSize(fileNative, want);
-            if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-                item->setIntrinsicSize(lay);
-            }
-        }
-    }
-    // Rebuild pure display from raw host when possible (unoriented cache).
+    // Prefer pure rematerialize from unoriented host when GUI-safe (≤512).
+    // Avoids repeated incremental QImage::transformed quality loss and the
+    // Gallery 4× glitch when an oriented host would double-bake.
+    // Multi-MP / no host: incremental on current display, then async pure.
     if (!tryRematerializeFromHost(item, want)) {
+        item->bakeRotate90(quarterTurns);
+        applyContentLayoutSize(item, want);
         scheduleAsyncHostRematerialize(item->path(), sid, want);
+    } else {
+        applyContentLayoutSize(item, want);
     }
 
     if (sid != kInvalidSessionImageId) {
@@ -805,13 +823,16 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     want.cropSourceSize = cropMap.cropSourceSize;
     want.contentQuarterTurns = cropMap.contentQuarterTurns;
 
-    // Live flip: incremental first, then pure rematerialize from raw host.
-    item->bakeFlip(horizontal, vertical);
+    // Prefer pure rematerialize from unoriented host; else incremental + async.
     item->setContentHFlip(h);
     item->setContentVFlip(v);
     if (!tryRematerializeFromHost(item, want)) {
+        item->bakeFlip(horizontal, vertical);
+        item->setContentHFlip(h);
+        item->setContentVFlip(v);
         scheduleAsyncHostRematerialize(item->path(), sid, want);
     }
+    applyContentLayoutSize(item, want);
 
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState s = captureState(item);
@@ -1004,6 +1025,11 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
         } else if (!item->previewImage().isNull()) {
             // Soft Gallery: content bake lives on the preview; peers must match.
             other->setPreviewImage(item->previewImage());
+            // Intrinsic must follow orient/crop — soft paint stretches into contentRect.
+            const QSize sz = item->imageSize();
+            if (sz.width() > 1 && sz.height() > 1) {
+                other->setIntrinsicSize(sz);
+            }
         }
         other->setItemHFlip(hFlip);
         other->setItemVFlip(vFlip);
