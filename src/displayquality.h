@@ -50,7 +50,8 @@ int hostLongEdge(const QString &path);
  *                   sample; surface should install it (not when shown already
  *                   meets target).
  * ScheduleClimb   — shown is below target and host has nothing better; climb
- *                   must be scheduled (or already pending).
+ *                   must be scheduled (or already pending). Not a contract
+ *                   break — do not log as a quality violation.
  * StuckWeak       — shown is still LQIP-class (or blank) while target ≥ soft,
  *                   host may or may not have better; treat as a contract break
  *                   if climbPending is false for longer than the watchdog grace.

@@ -2,6 +2,36 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-811-quiet-schedule-climb.** ScheduleClimb is not a quality violation; gallery target capped to native.
+Prior: **810**.
+
+### Problem
+```
+gallery path=016.jpg shown=512 host=512 target=1024 verdict=schedule-climb
+gallery path=044.jpg shown=2048 host=2048 target=4096 verdict=schedule-climb
+```
+ScheduleClimb is ordinary PreferCache/Full work, not a contract break. Target
+4096 on a 2048 native sample never settles.
+
+### Change
+- `reportViolation`: skip ScheduleClimb entirely
+- Gallery watchdog: cap target to `logicalSizeForPath` native long edge
+- ScheduleClimb → ensure/schedule quietly; StuckWeak path unchanged
+
+### Apply
+```bash
+git pull /path/to/biltoo-811-quiet-schedule-climb.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **811**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-810-stale-soft-queue-flags.** Clear dead softQueued/displayQueued; quiet LQIP StuckWeak logs.
 Prior: **809**.
 

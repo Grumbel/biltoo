@@ -170,6 +170,11 @@ void reportViolation(const char *surface, const QString &path, const Check &chec
     if (check.verdict == Verdict::Ok) {
         return;
     }
+    // ScheduleClimb is ordinary decode work ("need PreferCache / Full"), not a
+    // contract break. Surfaces schedule; do not flood the quality channel.
+    if (check.verdict == Verdict::ScheduleClimb) {
+        return;
+    }
     // Soft climb in progress (host still LQIP/blank): recovery runs at the call
     // site; logging every path every few seconds floods the console and hid
     // real InstallHostBetter / host-soft StuckWeak cases.

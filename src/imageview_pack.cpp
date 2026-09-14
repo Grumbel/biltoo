@@ -736,8 +736,18 @@ void ImageView::gallerySoftWatchdogTick()
         // DisplayQuality contract: host better than painted → install; LQIP
         // while target ≥ soft and no climb → schedule / warn.
         const int shown = item->displayPixelLongEdge();
-        const int target = st.want > 0 ? st.want
+        int target = st.want > 0 ? st.want
             : galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        // On-screen need can exceed native (zoomed large tiles). PreferCache /
+        // Full cannot invent pixels — cap so we do not schedule-climb forever
+        // at target=4096 while host is already the full native sample.
+        {
+            const QSize logical = logicalSizeForPath(path);
+            const int native = qMax(logical.width(), logical.height());
+            if (native > 0) {
+                target = qMin(target, native);
+            }
+        }
         const bool climbPending =
             st.inflight > 0
             || (m_pathRaster && m_pathRaster->isClimbPending(path));
@@ -761,22 +771,27 @@ void ImageView::gallerySoftWatchdogTick()
                 }
             }
             DisplayQuality::reportViolation("gallery", path, dq, /*assertHard=*/false);
-        } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak
-                   || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
-            // checkSurface only yields StuckWeak/ScheduleClimb when climbPending
-            // is false. Grace from first observation; force soft re-entry.
+        } else if (dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
+            // Need PreferCache / Full — normal work, not a quality violation.
+            // Skip ensure when PathRaster already plateaued for this want.
+            clearGallerySoftInflight(st);
+            if (m_pathRaster && !m_pathRaster->isGaveUp(path)) {
+                m_pathRaster->ensure(path, target, logicalSizeForPath(path),
+                                     PathRasterService::ClimbPolicy::SoftDisplay);
+            }
+            scheduleGalleryDecode(path);
+            needWindow = true;
+            st.weakSinceMs = 0;
+        } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak) {
             if (st.weakSinceMs <= 0) {
                 st.weakSinceMs = now;
             }
             const bool aged = (now - st.weakSinceMs) > kStuckMs;
             DisplayQuality::reportViolation(
                 "gallery", path, dq,
-                /*assertHard=*/dq.verdict == DisplayQuality::Verdict::StuckWeak
-                    && aged);
+                /*assertHard=*/aged);
             clearGallerySoftInflight(st);
             st.gaveUpWant = 0;
-            // SoftOnly may have settled without a durable host sample (or LQIP
-            // only). Forget soft settled and re-ensure so SoftOnly can run again.
             if (m_pathRaster) {
                 ThumtooCache::forgetPixelsSettled(path, ThumtooCache::kGalleryLadderEdge);
                 m_pathRaster->clearPreferGaveUp(path);
