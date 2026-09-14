@@ -522,6 +522,9 @@ void MainWindow::updateLayoutPanelForMode()
     // Layout panel is Workspace-only: disable the toggle outside Workspace and
     // never leave the dock visible in Gallery or Image.
     m_toggleLayoutPanelAct->setEnabled(workspace);
+    m_toggleLayoutPanelAct->setProperty(
+        "biltooDisabledHelp",
+        tr("The Layout panel is only available in Workspace mode."));
     if (!workspace) {
         if (m_layoutDock->isVisible()) {
             m_layoutDock->setVisible(false);
@@ -584,6 +587,9 @@ void MainWindow::updateWorkspaceActionVisibility()
         if (act) {
             act->setVisible(true);
             act->setEnabled(canGallery);
+            act->setProperty(
+                "biltooDisabledHelp",
+                tr("Gallery layouts require a non-empty session in Gallery mode."));
         }
     }
     if (m_layoutGridCropAct) {

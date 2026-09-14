@@ -15,6 +15,11 @@ class QTextBrowser;
  * in a menu/toolbar, or last triggered. Longer than statusTip/toolTip;
  * content comes from QAction::whatsThis() when set, otherwise a short
  * fallback based on statusTip.
+ *
+ * Disabled actions are supported: show a “Currently unavailable” note with
+ * reason from property @c biltooDisabledHelp, else statusTip, else generic.
+ * (QAction::hovered often skips disabled items — MainWindow uses menu/toolbar
+ * event filters and QMenu::hovered so hover still reaches this panel.)
  */
 class HelpPanel : public QWidget
 {
@@ -26,16 +31,18 @@ public:
     /** Idle / empty state (no action selected yet). */
     void clear();
 
-    /** Show title, shortcuts, and detailed body for @p action. */
+    /** Show title, shortcuts, disabled note, and body for @p action. */
     void showAction(const QAction *action);
 
 private:
     static QString plainActionTitle(const QAction *action);
     static QString shortcutsLine(const QAction *action);
     static QString bodyHtmlForAction(const QAction *action);
+    static QString disabledReasonForAction(const QAction *action);
 
     QLabel *m_title = nullptr;
     QLabel *m_shortcuts = nullptr;
+    QLabel *m_disabledNote = nullptr;
     QTextBrowser *m_body = nullptr;
 };
 

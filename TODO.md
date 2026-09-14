@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-783-help-toolbar-disabled.** Help toolbar button; disabled-action help.
+Prior: **782**.
+
+### Changes
+- Toolbar: **Show Help Panel** icon next to Metadata
+- Disabled menu/toolbar items update the Help panel (QMenu::hovered + toolbar
+  mouse/hover `actionAt`; QAction::hovered alone skips disabled entries)
+- Panel shows **Currently unavailable** with reason from property
+  `biltooDisabledHelp`, else statusTip, else a generic line
+- Seeded reasons for prev/next/first/last, slideshow, rotate/flip, crop, zoom,
+  Gallery layouts, Layout panel, Grid Crop, EPUB Layout
+
+### Apply
+```bash
+git pull /path/to/biltoo-783-help-toolbar-disabled.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **783**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-782-help-panel-infra.** Help dock + action hover/trigger tracking.
 Prior: **781**.
 

@@ -357,6 +357,9 @@ private:
     void createMenus();
     /** Connect QAction::hovered / triggered → Help panel for all actions. */
     void installActionHelpTracking();
+    void installMenuHelpTracking(QMenu *menu);
+    /** Resolve action under cursor for Help panel (toolbars / menus). */
+    void updateHelpPanelFromWidget(QWidget *widget, const QPoint &localPos);
     /** Seed QAction::whatsThis() for commands that already have long help. */
     void populateActionHelpTexts();
     void createToolBar();

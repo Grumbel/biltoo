@@ -1862,6 +1862,13 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
     const bool canSlideshow = hasMany && m_imageView && !m_imageView->isWorkspaceMode();
     m_previousAct->setEnabled(imageNav);
     m_nextAct->setEnabled(imageNav);
+    const QString imageNavReason = tr("Available in Image mode when the session has more than one image.");
+    if (m_previousAct) {
+        m_previousAct->setProperty("biltooDisabledHelp", imageNavReason);
+    }
+    if (m_nextAct) {
+        m_nextAct->setProperty("biltooDisabledHelp", imageNavReason);
+    }
     if (m_epubLayoutAct) {
         bool epub = false;
         if (hasFiles) {
@@ -1877,21 +1884,31 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
             }
         }
         m_epubLayoutAct->setEnabled(epub);
+        m_epubLayoutAct->setProperty(
+            "biltooDisabledHelp",
+            tr("EPUB Layout is available when the current item is an EPUB book or page."));
     }
     if (m_firstAct) {
         m_firstAct->setEnabled(imageNav);
+        m_firstAct->setProperty("biltooDisabledHelp", imageNavReason);
     }
     if (m_lastAct) {
         m_lastAct->setEnabled(imageNav);
+        m_lastAct->setProperty("biltooDisabledHelp", imageNavReason);
     }
     m_slideshowAct->setEnabled(canSlideshow);
     if (m_slideshowAct) {
         if (canSlideshow) {
             m_slideshowAct->setStatusTip(tr("Space: pause/resume · Esc: leave slideshow and fullscreen"));
+            m_slideshowAct->setProperty("biltooDisabledHelp", QString());
         } else if (m_imageView && m_imageView->isWorkspaceMode()) {
-            m_slideshowAct->setStatusTip(tr("Slideshow is not available in Workspace mode"));
+            const QString r = tr("Slideshow is not available in Workspace mode.");
+            m_slideshowAct->setStatusTip(r);
+            m_slideshowAct->setProperty("biltooDisabledHelp", r);
         } else {
-            m_slideshowAct->setStatusTip(tr("Open more than one image to use the slideshow"));
+            const QString r = tr("Open more than one image to use the slideshow.");
+            m_slideshowAct->setStatusTip(r);
+            m_slideshowAct->setProperty("biltooDisabledHelp", r);
         }
     }
     if (m_imageView) {
@@ -1913,9 +1930,12 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
 void MainWindow::updateNavTransformCropActions(bool canTransform)
 {
     // Rotate/flip: Image (current), Workspace (selection), Gallery (selection)
+    const QString transformReason = tr(
+        "Rotate and flip need a current Image, or a selection in Gallery or Workspace.");
     for (QAction *act : {m_rotateLeftAct, m_rotateRightAct, m_flipHAct, m_flipVAct}) {
         if (act) {
             act->setEnabled(canTransform);
+            act->setProperty("biltooDisabledHelp", transformReason);
         }
     }
     if (m_resetContentAppearanceAct) {
@@ -1926,6 +1946,9 @@ void MainWindow::updateNavTransformCropActions(bool canTransform)
     if (m_cropAct) {
         const bool canCrop = m_imageView && m_imageView->hasSingleCropTarget();
         m_cropAct->setEnabled(canCrop);
+        m_cropAct->setProperty(
+            "biltooDisabledHelp",
+            tr("Crop needs Image mode, or exactly one selected tile in Gallery or Workspace."));
         if (!canCrop && m_imageView && m_imageView->isCropMode()) {
             m_imageView->cancelCrop();
         }
@@ -1945,10 +1968,13 @@ void MainWindow::updateNavZoomAndSelectionActions(bool hasFiles, bool hasItem)
     // Zoom: Image / Workspace with content; Image with files loading also OK
     const bool canZoom = hasItem
                          || (m_imageView && m_imageView->isImageMode() && hasFiles);
+    const QString zoomReason = tr(
+        "Zoom commands need content on the canvas (Image or Workspace), or an open session in Image mode.");
     for (QAction *act : {m_zoomInAct, m_zoomOutAct, m_zoom1to1Act, m_zoomFitAct, m_zoomFillAct,
                          m_zoomRegionAct}) {
         if (act) {
             act->setEnabled(canZoom);
+            act->setProperty("biltooDisabledHelp", zoomReason);
         }
     }
 
@@ -2862,8 +2888,61 @@ void MainWindow::stopSlideshow()
     }
 }
 
+void MainWindow::updateHelpPanelFromWidget(QWidget *widget, const QPoint &localPos)
+{
+    if (!m_helpPanel || !widget) {
+        return;
+    }
+    QAction *act = nullptr;
+    if (auto *tb = qobject_cast<QToolBar *>(widget)) {
+        act = tb->actionAt(localPos);
+    } else if (auto *menu = qobject_cast<QMenu *>(widget)) {
+        act = menu->actionAt(localPos);
+    } else if (auto *btn = qobject_cast<QToolButton *>(widget)) {
+        act = btn->defaultAction();
+        if (!act) {
+            // Some toolbar buttons use setDefaultAction; others only QAction via actions().
+            const QList<QAction *> acts = btn->actions();
+            if (!acts.isEmpty()) {
+                act = acts.first();
+            }
+        }
+        // If this is a child of a toolbar, prefer toolbar actionAt in parent coords.
+        if (!act) {
+            if (auto *tb = qobject_cast<QToolBar *>(btn->parentWidget())) {
+                act = tb->actionAt(btn->mapTo(tb, localPos));
+            }
+        }
+    } else if (auto *mb = qobject_cast<QMenuBar *>(widget)) {
+        act = mb->actionAt(localPos);
+    }
+    if (act && !act->isSeparator() && !act->menu()) {
+        m_helpPanel->showAction(act);
+    } else if (act && act->menu() && !act->isSeparator()) {
+        // Top-level menu title: still show a short line if it has statusTip/whatsThis.
+        m_helpPanel->showAction(act);
+    }
+}
+
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
+    // Help panel: pick up disabled toolbar/menu items (QAction::hovered skips them).
+    if (m_helpPanel
+        && (event->type() == QEvent::MouseMove || event->type() == QEvent::HoverMove)) {
+        if (auto *w = qobject_cast<QWidget *>(watched)) {
+            QPoint pos;
+            if (event->type() == QEvent::MouseMove) {
+                pos = static_cast<QMouseEvent *>(event)->pos();
+            } else {
+                pos = static_cast<QHoverEvent *>(event)->position().toPoint();
+            }
+            if (qobject_cast<QToolBar *>(w) || qobject_cast<QMenu *>(w)
+                || qobject_cast<QToolButton *>(w) || qobject_cast<QMenuBar *>(w)) {
+                updateHelpPanelFromWidget(w, pos);
+            }
+        }
+    }
+
     // Escape is also a WindowShortcut (fullscreen / leave Image). QLineEdit does
     // not accept ShortcutOverride for Esc, so the window shortcut wins unless we
     // claim it here first — KeyPress alone never runs.

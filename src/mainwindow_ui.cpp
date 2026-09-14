@@ -447,6 +447,9 @@ void MainWindow::createActions()
     m_layoutGridCropAct->setVisible(false);
     m_layoutGridCropAct->setStatusTip(
         tr("Grid Crop is temporarily disabled (conflicts with manual crop)"));
+    m_layoutGridCropAct->setProperty(
+        "biltooDisabledHelp",
+        tr("Grid Crop is temporarily disabled because it conflicts with session/manual crop."));
 
 
     m_layoutMasonryAct = new QAction(tr("Layout &Masonry"), this);
@@ -1128,6 +1131,7 @@ void MainWindow::createToolBar()
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_toggleThumbnailBarAct);
     m_toolBar->addAction(m_toggleMetadataAct);
+    m_toolBar->addAction(m_toggleHelpAct);
     if (m_toggleAdjustmentsAct) {
         m_toolBar->addAction(m_toggleAdjustmentsAct);
     }
@@ -1310,6 +1314,26 @@ void MainWindow::bindViewerShortcuts()
     }
 }
 
+void MainWindow::installMenuHelpTracking(QMenu *menu)
+{
+    if (!menu) {
+        return;
+    }
+    menu->installEventFilter(this);
+    // QMenu::hovered fires for keyboard highlight and often for disabled items
+    // where QAction::hovered does not.
+    connect(menu, &QMenu::hovered, this, [this](QAction *act) {
+        if (m_helpPanel && act && !act->isSeparator()) {
+            m_helpPanel->showAction(act);
+        }
+    });
+    for (QAction *a : menu->actions()) {
+        if (a && a->menu()) {
+            installMenuHelpTracking(a->menu());
+        }
+    }
+}
+
 void MainWindow::installActionHelpTracking()
 {
     if (!m_helpPanel) {
@@ -1319,7 +1343,7 @@ void MainWindow::installActionHelpTracking()
         if (!act || act->isSeparator()) {
             continue;
         }
-        // Menus and toolbars emit hovered when the pointer highlights the item.
+        // Enabled menu/toolbar items.
         connect(act, &QAction::hovered, this, [this, act]() {
             if (m_helpPanel) {
                 m_helpPanel->showAction(act);
@@ -1331,6 +1355,32 @@ void MainWindow::installActionHelpTracking()
                 m_helpPanel->showAction(act);
             }
         });
+    }
+
+    // Menus: track disabled entries via QMenu::hovered + MouseMove actionAt.
+    if (menuBar()) {
+        menuBar()->installEventFilter(this);
+        for (QAction *a : menuBar()->actions()) {
+            if (a && a->menu()) {
+                installMenuHelpTracking(a->menu());
+            }
+        }
+    }
+
+    // Toolbars: disabled QToolButtons do not emit QAction::hovered; resolve
+    // via actionAt under the cursor (parent receives mouse when child disabled).
+    for (QToolBar *tb : {m_toolBar, m_workspaceToolBar}) {
+        if (!tb) {
+            continue;
+        }
+        tb->setMouseTracking(true);
+        tb->setAttribute(Qt::WA_Hover, true);
+        tb->installEventFilter(this);
+        for (QToolButton *btn : tb->findChildren<QToolButton *>()) {
+            btn->setMouseTracking(true);
+            btn->setAttribute(Qt::WA_Hover, true);
+            btn->installEventFilter(this);
+        }
     }
 }
 
