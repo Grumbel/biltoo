@@ -2,6 +2,29 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-837-rematerialize-helper-soft-install.** Shared tryRematerializeFromHost; Image soft attach via installDisplayPixels.
+Prior: **836**.
+
+### Change
+- `tryRematerializeFromHost` — one attach path for ≤512 host materialize (rotate + flip)
+- Image-mode soft pending tile uses `installDisplayPixels` after clearDecoded (not bare setPreviewImage)
+- Soft framing uses `ContentXform::layoutSize` when turns are set
+
+### Apply
+```bash
+git pull /path/to/biltoo-837-rematerialize-helper-soft-install.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **837**
+- [ ] Manual: navigate with stored 90° appearance shows oriented soft immediately
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-836-rematerialize-flip-from-host.** Prefer materializeDisplay from ImageCache on flip when edge≤512.
 Prior: **835**.
 

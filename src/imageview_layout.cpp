@@ -431,6 +431,54 @@ void ImageView::persistDurableContentAppearance(ImageItem *item, const Workspace
     }
 }
 
+bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want)
+{
+    if (!item) {
+        return false;
+    }
+    const QString path = item->path();
+    const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (host.isNull()) {
+        return false;
+    }
+    const int edge = qMax(host.width(), host.height());
+    if (edge > 512) {
+        return false;
+    }
+    const auto kind = item->hasDecodedPixels()
+        ? SessionAppearance::PixelKind::FullSource
+        : SessionAppearance::PixelKind::SoftPreview;
+    const QImage display =
+        SessionAppearance::materializeDisplay(host, want, kind);
+    if (display.isNull()) {
+        return false;
+    }
+    if (kind == SessionAppearance::PixelKind::SoftPreview) {
+        item->setPreviewImage(display);
+    } else if (isImageMode()) {
+        item->setSourceImageReady(display);
+    } else {
+        item->setSourceImage(display);
+    }
+    if (want.hasCrop && !want.cropRect.isEmpty()
+        && display.width() > 1 && display.height() > 1) {
+        item->setIntrinsicSize(display.size());
+    } else {
+        QSize native = logicalSizeForPath(path);
+        if (!isPositiveSize(native)) {
+            native = host.size();
+        }
+        const QSize lay = ContentXform::layoutSize(native, want);
+        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+            item->setIntrinsicSize(lay);
+        }
+    }
+    item->setContentHFlip(want.contentHFlip);
+    item->setContentVFlip(want.contentVFlip);
+    item->setAppliedContentXform(ContentXform::Value::fromState(want));
+    return true;
+}
+
 void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
 {
     if (!item || quarterTurns == 0) {
@@ -464,45 +512,8 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     want.contentVFlip = item->contentVFlip();
     want.colorAdjust = item->colorAdjustments();
 
-    // Prefer rematerialize from host raw (ImageCache) when the sample is small
-    // enough for a GUI materialize — same function as install, no double-bake.
-    bool rematerialized = false;
-    const QString path = item->path();
-    const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-    if (!host.isNull()) {
-        const int edge = qMax(host.width(), host.height());
-        if (edge <= 512) {
-            const auto kind = item->hasDecodedPixels()
-                ? SessionAppearance::PixelKind::FullSource
-                : SessionAppearance::PixelKind::SoftPreview;
-            const QImage display =
-                SessionAppearance::materializeDisplay(host, want, kind);
-            if (!display.isNull()) {
-                if (kind == SessionAppearance::PixelKind::SoftPreview) {
-                    item->setPreviewImage(display);
-                } else if (isImageMode()) {
-                    item->setSourceImageReady(display);
-                } else {
-                    item->setSourceImage(display);
-                }
-                QSize native = logicalSizeForPath(path);
-                if (!isPositiveSize(native)) {
-                    native = host.size();
-                }
-                if (want.hasCrop && !want.cropRect.isEmpty()
-                    && display.width() > 1 && display.height() > 1) {
-                    item->setIntrinsicSize(display.size());
-                } else {
-                    const QSize lay = ContentXform::layoutSize(native, want);
-                    if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-                        item->setIntrinsicSize(lay);
-                    }
-                }
-                rematerialized = true;
-            }
-        }
-    }
-    if (!rematerialized) {
+    // Prefer rematerialize from host when ≤512 (shared with flip).
+    if (!tryRematerializeFromHost(item, want)) {
         // Multi-MP or no host raw: incremental pixel bake (GUI-safe transform).
         item->bakeRotate90(quarterTurns);
     }
@@ -625,35 +636,8 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     want.cropSourceSize = cropMap.cropSourceSize;
     want.contentQuarterTurns = cropMap.contentQuarterTurns;
 
-    // Prefer rematerialize from host when ≤512 (same as bakeItemRotate90).
-    bool rematerialized = false;
-    const QString path = item->path();
-    const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-    if (!host.isNull()) {
-        const int edge = qMax(host.width(), host.height());
-        if (edge <= 512) {
-            const auto kind = item->hasDecodedPixels()
-                ? SessionAppearance::PixelKind::FullSource
-                : SessionAppearance::PixelKind::SoftPreview;
-            const QImage display =
-                SessionAppearance::materializeDisplay(host, want, kind);
-            if (!display.isNull()) {
-                if (kind == SessionAppearance::PixelKind::SoftPreview) {
-                    item->setPreviewImage(display);
-                } else if (isImageMode()) {
-                    item->setSourceImageReady(display);
-                } else {
-                    item->setSourceImage(display);
-                }
-                if (want.hasCrop && !want.cropRect.isEmpty()
-                    && display.width() > 1 && display.height() > 1) {
-                    item->setIntrinsicSize(display.size());
-                }
-                rematerialized = true;
-            }
-        }
-    }
-    if (!rematerialized) {
+    // Prefer rematerialize from host when ≤512 (shared with rotate).
+    if (!tryRematerializeFromHost(item, want)) {
         item->bakeFlip(horizontal, vertical);
     }
     item->setContentHFlip(h);

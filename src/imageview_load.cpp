@@ -850,18 +850,29 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         if (!path.isEmpty()) {
             ImageCache::put(path, pixels);
         }
-        // Clear prior FullSource so setPreviewImage is not a no-op.
+        // Clear prior FullSource so soft can attach (canAccept rejects soft over full).
         if (item->hasDecodedPixels()) {
             item->clearDecodedPixels();
         }
-        item->setPreviewImage(pixels);
+        // Content pipeline: materialize + applied fingerprint (not bare setPreview).
+        installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
+                             item->sessionId());
 
         const QSize known = logicalSizeForPath(path);
-        const QSize targetSize =
+        QSize targetSize =
             (isPositiveSize(known) && known.width() > 1 && known.height() > 1
              && !isProvisionalImageSize(path))
                 ? known
                 : ((sz.width() > 1 && sz.height() > 1) ? sz : sizeBefore);
+        // Oriented layout when content turns are set (install may already have set it).
+        {
+            const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
+            const QSize oriented = ContentXform::layoutSize(
+                isPositiveSize(known) ? known : targetSize, want);
+            if (isPositiveSize(oriented) && oriented.width() > 1) {
+                targetSize = oriented;
+            }
+        }
         int didFit = 0;
         if (isPositiveSize(targetSize) && targetSize.width() > 1) {
             item->setIntrinsicSize(targetSize);

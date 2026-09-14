@@ -1340,6 +1340,11 @@ private:
                                              SessionImageId sid = kInvalidSessionImageId) const;
     bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
                                  SessionAppearance::PixelKind kind) const;
+    /**
+     * If ImageCache has a sample with long edge ≤512, materializeDisplay
+     * for @p want and attach to @p item. Returns true when attached.
+     */
+    bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
     bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;
     void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                           const QImage &sample);
