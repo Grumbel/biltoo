@@ -627,7 +627,7 @@ private:
     QLabel *m_masonryCountLabel = nullptr;
     bool m_pendingGalleryCrop = false;
     bool m_galleryReturnActive = false;
-    /** Image was opened from Workspace (double-click); Up restores Workspace. */
+    /** Image was opened from Workspace (e.g. double-click a canvas tile); Back restores Workspace. */
     bool m_workspaceReturnActive = false;
     /** Preferred thumbnail-bar visibility when in Workspace (default on). */
     bool m_thumbnailsPreferredWorkspace = true;

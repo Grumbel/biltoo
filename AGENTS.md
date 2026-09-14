@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-789-ui-chrome-polish**.
-Next bundle number: **790**.
+Latest agent handoff: **TODO.md → biltoo-790-docs-workspace-drag-only**.
+Next bundle number: **791**.
 **Settings:** do not reintroduce `QMainWindow::restoreState` / `saveState` for docks without a proven fix for Qt 6.11 `QDockAreaLayout` SEGV on show().
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
@@ -273,8 +273,9 @@ and Select/Pan live on the vertical workspace tool strip.
   Workspace canvas is snapshotted when disabling the mode and restored when
   enabling again. Select/Pan tools on a left toolbar; Undo/Redo for moves.
   In workspace mode the thumbnail bar uses normal multi-select (click / Ctrl /
-  Shift). Double-click toggles canvas membership; drag onto the canvas adds or
-  moves at the drop point. Each image remembers position, scale and rotation
+  Shift). Drag thumbnails onto the canvas to place them (or move at the drop
+  point); double-click opens Image mode, it does not toggle Workspace membership.
+  Each image remembers position, scale and rotation
   while off-canvas. Selected items show scale and rotate handles
   (free-form): scale at corners, rotate on all four sides; flip / raise /
   lower on the right interior; opacity along the bottom interior. Raise/Lower

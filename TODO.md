@@ -2,6 +2,27 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-790-docs-workspace-drag-only.** Docs: filmstrip double-click ≠ Workspace place.
+Prior: **789**.
+
+### Changes
+- AGENTS, DOMAIN, Help guides, empty-canvas HUD: Workspace place is **drag-drop only**
+- Filmstrip double-click opens **Image** mode (not canvas membership)
+
+### Apply
+```bash
+git pull /path/to/biltoo-790-docs-workspace-drag-only.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **790**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-789-ui-chrome-polish.** Menus/toolbar/icons audit follow-ups.
 Prior: **788**.
 

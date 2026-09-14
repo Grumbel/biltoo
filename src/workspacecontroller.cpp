@@ -287,7 +287,7 @@ void WorkspaceController::enter(int previousMode)
         keepViewTransform = hadSavedView;
     } else {
         // Empty permanent Workspace. Never adopt whatever Image/Gallery is
-        // currently showing — only filmstrip drop / double-click / project
+        // currently showing — only filmstrip drop / project load / explicit place
         // load places tiles. (Previously only Gallery was cleared; Image→
         // Workspace left the classic single tile on the free-form canvas.)
         m_view->clearLiveCanvas();

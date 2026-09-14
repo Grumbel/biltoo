@@ -289,7 +289,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
             ? tr("Drop images here")
             : tr("Drop images here or open a file");
         const QString hint = isWorkspaceMode()
-            ? tr("Drag files onto the canvas  ·  double-click a thumbnail to place")
+            ? tr("Drag files or filmstrip thumbnails onto the canvas to place images")
             : tr("File → Open…  ·  Ctrl+O  ·  drag and drop");
         const QFontMetrics titleFm(titleFont);
         const QFontMetrics hintFm(hintFont);

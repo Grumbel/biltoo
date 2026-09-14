@@ -214,7 +214,7 @@ enter Workspace():
   Mode := Workspace
   Canvas := restore(WorkspaceSnapshot) if present, else empty
   // Do not adopt Gallery packing or session list as free-form content.
-  // Seeding is explicit (drop, thumbnail membership, project load,
+  // Seeding is explicit (drop, filmstrip drag-drop, project load,
   // Layout panel Apply on selection).
 
 leave Workspace():
@@ -307,7 +307,7 @@ must not leave another mode’s work on the canvas.
 
 | Rule | Detail |
 |------|--------|
-| Empty Workspace enter | Clear live canvas; do not adopt the current Image tile or Gallery packing. Tiles appear only from stash/snapshot restore or explicit place (drop, double-click, project). |
+| Empty Workspace enter | Clear live canvas; do not adopt the current Image tile or Gallery packing. Tiles appear only from stash/snapshot restore or explicit place (drag-drop, project load). |
 | Workspace selection | Enter with nothing selected (canvas + filmstrip). Residual selection used to inflate a single-thumb drag into “all selected”. |
 | Gallery → Workspace | Cancel in-flight gallery decode-window `LoadAdd` jobs (`invalidateGalleryDecodes`, load generation bump). Late completions must not spawn free-form tiles from residual `pathOrder`. |
 | Gallery → Image | Keep gallery stash + pending fills for placeholders; do not invalidate the same way. |
