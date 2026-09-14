@@ -1852,7 +1852,7 @@ private:
     static constexpr int kGalleryVirtualThreshold = 1;
     static constexpr int kGalleryDecodeOverscanPx = 400;
     /** Default Gallery soft/display worker slots; override BILTOO_GALLERY_DECODE_CONCURRENCY. */
-    static constexpr int kMaxConcurrentGalleryDecodes = 4;
+    static constexpr int kMaxConcurrentGalleryDecodes = 8;
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
     static constexpr int kMaxIdleGalleryDecodes = 2;
     static int galleryDecodeConcurrency();

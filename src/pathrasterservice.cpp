@@ -206,7 +206,11 @@ void PathRasterService::noteDelivery(const QString &path, int requestEdge,
     st.softQueued = false;
     st.fullQueued = false;
 
-    if (requestEdge > 0 && got > 0 && got * 10 < requestEdge * 9) {
+    // PreferCache shortfall is terminal only when the sample is past placeholder
+    // size. LQIP (~32) or embedded thumbs must not freeze the climb at Soft.
+    constexpr int kMinPreferPlateauEdge = 96;
+    if (requestEdge > 0 && got >= kMinPreferPlateauEdge
+        && got * 10 < requestEdge * 9) {
         st.preferGaveUp = true;
         if (covers(st.have, st.want)) {
             return;
@@ -244,7 +248,9 @@ void PathRasterService::pump(const QString &path, State &st)
         return;
     }
 
-    if (st.have <= 0 && !st.softQueued) {
+    // LQIP / tiny stand-ins set have > 0 but must not skip the soft ladder.
+    // Schedule SoftOnly until we reach durable soft max (kGalleryLadderEdge).
+    if (!covers(st.have, ThumtooCache::kGalleryLadderEdge) && !st.softQueued) {
         st.softQueued = true;
         (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
     }

@@ -2,6 +2,33 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-794-gallery-lqip-climb.** Gallery: soft after LQIP; higher pixel concurrency.
+Prior: **793**.
+
+### Problem
+LQIP in ImageCache set `have > 0`, so PathRaster skipped SoftOnly (`have <= 0` only).
+Tiles stayed on LQIP. PreferCache also treated ~32px as a PreferCache plateau.
+Gallery pixel jobs defaulted to 3 concurrent (felt single-threaded).
+
+### Change
+- Soft ladder when `have` below kGalleryLadderEdge (not only when zero)
+- PreferCache plateau only if got ≥ 96
+- Concurrent pixel jobs default 8 (was 3); Full 4; queue 96; gallery decode 8
+
+### Apply
+```bash
+git pull /path/to/biltoo-794-gallery-lqip-climb.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **794**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-793-size-reply-lqip.** Consume thumtoo SizeReply LQIP on size probe.
 Prior: **792**. Requires **thumtoo-200**.
 

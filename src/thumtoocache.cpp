@@ -158,7 +158,7 @@ void thumtooDbg(const char *fmt, ...)
 
 /** Cap concurrent thumtoo request_pixels — PDF raster+encode is heavy.
  *  Override with BILTOO_THUMTOO_PIXEL_JOBS (1–16). */
-constexpr int kMaxConcurrentPixelJobsDefault = 3;
+constexpr int kMaxConcurrentPixelJobsDefault = 8;
 int maxConcurrentPixelJobs()
 {
     static int n = []() {
@@ -177,7 +177,7 @@ int maxConcurrentPixelJobs()
 int g_pixelsActive = 0;
 /** Concurrent request_full_pixels jobs (Gallery SoftDisplay Fulls visibles). */
 int g_fullActive = 0;
-constexpr int kMaxConcurrentFullJobs = 2;
+constexpr int kMaxConcurrentFullJobs = 4;
 struct PendingPixels {
     QString path;
     int maxEdge = 0;
@@ -191,7 +191,7 @@ QSet<QString> g_pixelsSettled;
 QHash<QString, int> g_lastPixelSource;
 QString g_lastInterestKey;
 std::atomic<quint64> g_interestJobGen{0};
-constexpr int kMaxPixelQueue = 48;
+constexpr int kMaxPixelQueue = 96;
 
 #ifdef BILTOO_HAVE_THUMTOO
 
