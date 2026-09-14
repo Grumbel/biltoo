@@ -2,6 +2,20 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-839-finish-async-host-rematerialize.** Implements finishAsyncHostRematerialize (838 was incomplete).
+Prior: **838** (schedule only; finish was missing).
+
+### Apply
+```bash
+git pull /path/to/biltoo-839-finish-async-host-rematerialize.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-838-async-multip-host-rematerialize.** Multi-MP rotate/flip: incremental now + worker pure materialize when host is large.
 Prior: **837**.
 
