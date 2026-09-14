@@ -1156,7 +1156,9 @@ bool ImageView::gallerySoftScheduleBlocked(const GallerySoftState &st, int have,
     // gaveUpWant is mirrored from PathRasterService in the decode window /
     // scheduleGalleryDecode; block soft-band retries when still short of soft max.
     const int softCap = ThumtooCache::kGalleryLadderEdge;
-    if (!coversEdge(have, softCap) && st.gaveUpWant >= qMin(want, softCap)) {
+    // LQIP-only have must not be blocked by a mirrored PreferCache plateau.
+    if (have >= 96 && !coversEdge(have, softCap)
+        && st.gaveUpWant >= qMin(want, softCap)) {
         return true;
     }
     return false;
@@ -1186,8 +1188,16 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         scheduleImageSizeProbe(path);
     }
     GallerySoftState &st = m_gallerySoft[path];
-    if (st.failed || st.inflight > 0) {
+    if (st.failed) {
         return;
+    }
+    // LQIP-only tiles may keep a stale inflight flag after a fast scroll; clear
+    // so SoftDisplay can run again when the tile is still weak.
+    if (st.inflight > 0) {
+        if (st.have >= 128) {
+            return;
+        }
+        clearGallerySoftInflight(st);
     }
 
     int have = 0;

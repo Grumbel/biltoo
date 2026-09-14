@@ -350,6 +350,8 @@ public:
      * current phase still soft). Empty when idle / not in slideshow.
      */
     QString slideshowPrefetchHudLine() const;
+    /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
+    QString loadingStatusHudLine() const;
     /** Best unoriented host sample for path (ImageCache), or null. */
     QImage slideshowRaster(const QString &path) const;
     void setSlideshowUnderlayVisible(bool visible);

@@ -342,10 +342,12 @@ void ImageView::paintHudPanels(QPainter &painter)
     //   bottom    — filename (+ technical detail when the HUD is pinned)
     // Crop mode: always show a pinned “Crop mode” cue so the tool state is clear.
     const QString ssPrefetchLine = slideshowPrefetchHudLine();
+    const QString loadingLine = loadingStatusHudLine();
     if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
         || m_slideshowPausedHud || m_gallerySizeResolveActive
         || !m_centreProgressTitle.isEmpty()
         || !ssPrefetchLine.isEmpty()
+        || !loadingLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
@@ -500,14 +502,24 @@ void ImageView::paintHudPanels(QPainter &painter)
                 actionLine += QLatin1Char(' ') + m_hudDetail;
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
-        } else if (!ssPrefetchLine.isEmpty()
+        } else if ((!ssPrefetchLine.isEmpty() || !loadingLine.isEmpty())
                    && !(m_hudVisible || m_hudIdentityPulse)) {
-            // Little chip while warming target-edge pixels — no need to pin HUD.
-            drawPanel({{ssPrefetchLine, true}}, margin, margin, false, false);
+            // Loading status chip (cache vs file) without pinning the full HUD.
+            QList<HudLine> chip;
+            if (!loadingLine.isEmpty()) {
+                chip.append({loadingLine, true});
+            }
+            if (!ssPrefetchLine.isEmpty()) {
+                chip.append({ssPrefetchLine, false});
+            }
+            drawPanel(chip, margin, margin, false, false);
         } else if (m_hudVisible || m_hudIdentityPulse) {
             QList<HudLine> topLeft;
+            if (!loadingLine.isEmpty()) {
+                topLeft.append({loadingLine, true});
+            }
             if (!ssPrefetchLine.isEmpty()) {
-                topLeft.append({ssPrefetchLine, true});
+                topLeft.append({ssPrefetchLine, false});
             }
             if (m_perfEnabled) {
                 topLeft.append({

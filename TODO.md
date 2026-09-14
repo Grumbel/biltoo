@@ -2,6 +2,28 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-799-loading-hud-gallery-scroll.** Loading HUD line; fast-scroll LQIP fix.
+Prior: **798**.
+
+### Change
+- HUD: separate **Loading** line (chip even when HUD off) — active/queued, **from cache** vs **from file/archive**, blank/quick-preview tile counts
+- Status bar: same breakdown + `via cache (soft ladder)` / file / tiles on focused item
+- Gallery fast scroll: clear stale inflight off-screen; LQIP never blocks soft schedule; stuck timeout 2.5s
+
+### Apply
+```bash
+git pull /path/to/biltoo-799-loading-hud-gallery-scroll.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **799**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-798-slideshow-phase-upgrade.** Slideshow phase buffers upgrade past LQIP/soft.
 Prior: **797**.
 

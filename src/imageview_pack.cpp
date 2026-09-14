@@ -260,6 +260,15 @@ void ImageView::updateGalleryDecodeWindow()
         st.have = qMax(st.have, item->displayPixelLongEdge());
         syncGallerySoftMirrorFromPathRaster(path, st);
 
+        // Fast scroll: free soft slots held by off-screen inflight so newly
+        // visible LQIP tiles can schedule. Visible work keeps its inflight.
+        if (!onScreen && st.inflight > 0 && st.inflightSinceMs > 0) {
+            const qint64 age = QDateTime::currentMSecsSinceEpoch() - st.inflightSinceMs;
+            if (age > 1200) {
+                clearGallerySoftInflight(st);
+            }
+        }
+
         // O(1) want from this item — was galleryWantEdgeForPath O(n) per path.
         int want = filmEdge;
         if (tileOk) {
@@ -701,7 +710,7 @@ void ImageView::gallerySoftWatchdogTick()
         return;
     }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
-    constexpr qint64 kStuckMs = 8000;
+    constexpr qint64 kStuckMs = 2500;
     bool needWindow = false;
     int repaired = 0;
     // Only on-screen (+small overscan) — never walk hundreds of off-screen tiles

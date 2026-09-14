@@ -225,11 +225,14 @@ struct GallerySoftState {
         if (have >= wantEdge && !anyBlank) {
             return false;
         }
-        if (gaveUpWant >= wantEdge && !anyBlank) {
+        // LQIP / quick preview is not a PreferCache plateau — never treat as gave-up.
+        constexpr int kLqipCeiling = 96;
+        if (gaveUpWant >= wantEdge && !anyBlank && have >= kLqipCeiling) {
             return false;
         }
-        // Soft already climbing and tiles show something — wait for delivery.
-        if (inflight > 0 && have > 0 && !anyBlank) {
+        // Soft climbing with a real soft sample on-screen — wait for delivery.
+        // Still schedule when only LQIP is painted (have < soft floor).
+        if (inflight > 0 && have >= 128 && !anyBlank) {
             return false;
         }
         return true;

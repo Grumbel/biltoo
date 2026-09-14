@@ -1600,6 +1600,44 @@ QString ImageView::slideshowPrefetchHudLine() const
     return {};
 }
 
+QString ImageView::loadingStatusHudLine() const
+{
+    // Dedicated HUD line: job queue + cache vs file/archive + weak tiles.
+    QString core = ThumtooCache::loadingBreakdownLabel();
+    int blank = 0;
+    int weak = 0;
+    if (isGalleryMode()) {
+        for (ImageItem *item : m_items) {
+            if (!item || item->path().isEmpty()) {
+                continue;
+            }
+            if (!item->hasDisplayPixels()) {
+                ++blank;
+            } else if (item->displayPixelLongEdge() > 0
+                       && item->displayPixelLongEdge() < 96) {
+                ++weak;
+            }
+        }
+    }
+    QStringList extra;
+    if (blank > 0) {
+        extra << tr("%1 blank").arg(blank);
+    }
+    if (weak > 0) {
+        extra << tr("%1 quick preview").arg(weak);
+    }
+    if (core.isEmpty() && extra.isEmpty()) {
+        return {};
+    }
+    if (core.isEmpty()) {
+        return tr("Loading · %1").arg(extra.join(QStringLiteral(" · ")));
+    }
+    if (extra.isEmpty()) {
+        return core;
+    }
+    return core + QStringLiteral(" · ") + extra.join(QStringLiteral(" · "));
+}
+
 QImage ImageView::slideshowRaster(const QString &path) const
 {
     // Unoriented host samples only — not item->sourceImage() (appearance baked).
@@ -3260,6 +3298,10 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
     if (!text || !item) {
         return;
     }
+    const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
+    if (!src.isEmpty()) {
+        *text += tr(" · via %1").arg(src);
+    }
     const char *dbg = std::getenv("THUMTOO_DEBUG");
     if (!dbg || !dbg[0] || dbg[0] == '0') {
         return;
@@ -3267,10 +3309,6 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
     const QString q = ThumtooCache::queueStatsLabel();
     if (!q.isEmpty()) {
         *text += tr(" · %1").arg(q);
-    }
-    const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
-    if (!src.isEmpty()) {
-        *text += tr(" · via %1").arg(src);
     }
 }
 
@@ -3313,6 +3351,12 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
     const int pending = pendingDecodeCount();
     if (pending > 0) {
         text += tr(" · Loading %1…").arg(pending);
+    }
+    {
+        const QString load = ThumtooCache::loadingBreakdownLabel();
+        if (!load.isEmpty()) {
+            text += tr(" · %1").arg(load);
+        }
     }
     if (isWorkspaceMode() && item->isSelected()) {
         if (qAbs(item->itemScaleX() - item->itemScaleY()) < 0.005) {

@@ -11,6 +11,7 @@
 #include <cstring>
 
 #include <QCoreApplication>
+#include <QObject>
 #include <QFileInfo>
 #include <QPainter>
 #include <QPen>
@@ -189,6 +190,10 @@ std::vector<PendingPixels> g_pixelsQueue;
 QSet<QString> g_pixelsSettled;
 /** path → last PixelSource int from ladderProvenance. */
 QHash<QString, int> g_lastPixelSource;
+/** 0 unknown, 1 cache soft/tiles, 2 file/archive encode (inflight paths). */
+QHash<QString, int> g_fetchKind;
+int g_recentCacheCompletions = 0;
+int g_recentFileCompletions = 0;
 QString g_lastInterestKey;
 std::atomic<quint64> g_interestJobGen{0};
 constexpr int kMaxPixelQueue = 96;
@@ -861,6 +866,12 @@ void startNextPixelJobsUnlocked()
         const int edge = job.maxEdge;
         const QString inflightKey = job.inflightKey;
         const std::string uri = job.uri;
+        // Classify before worker runs: durable soft in host cache → retrieval;
+        // otherwise this job will encode from file/archive (or grow the ladder).
+        {
+            const int have = ImageCache::longEdge(ImageCache::get(pathCopy));
+            g_fetchKind.insert(pathCopy, (have >= kFilmstripLadderEdge) ? 1 : 2);
+        }
         if (thumtooDebugEnabled()) {
             thumtooDbg("request_raster DISPATCH path=%s edge=%d active=%d queued=%zu",
                        qPrintable(pathCopy), edge, g_pixelsActive,
@@ -905,6 +916,14 @@ void startNextPixelJobsUnlocked()
                     g_pixelsActive = qMax(0, g_pixelsActive - 1);
                     if (source != 0) {
                         g_lastPixelSource.insert(pathCopy, source);
+                    }
+                    {
+                        const int kind = g_fetchKind.take(pathCopy);
+                        if (kind == 1) {
+                            ++g_recentCacheCompletions;
+                        } else if (kind == 2) {
+                            ++g_recentFileCompletions;
+                        }
                     }
                     if (thumtooDebugEnabled()) {
                         thumtooDbg(
@@ -1036,6 +1055,59 @@ QString queueStatsLabel()
 #endif
 }
 
+QString loadingBreakdownLabel()
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    init();
+    int active = 0;
+    int queued = 0;
+    int cacheJobs = 0;
+    int fileJobs = 0;
+    int recentCache = 0;
+    int recentFile = 0;
+    {
+        std::lock_guard lock(g_mu);
+        active = g_pixelsActive;
+        queued = int(g_pixelsQueue.size());
+        for (auto it = g_fetchKind.cbegin(); it != g_fetchKind.cend(); ++it) {
+            if (it.value() == 1) {
+                ++cacheJobs;
+            } else if (it.value() == 2) {
+                ++fileJobs;
+            }
+        }
+        recentCache = g_recentCacheCompletions;
+        recentFile = g_recentFileCompletions;
+        // Decay recent counters so the HUD stays current.
+        g_recentCacheCompletions = g_recentCacheCompletions * 3 / 4;
+        g_recentFileCompletions = g_recentFileCompletions * 3 / 4;
+    }
+    if (active <= 0 && queued <= 0 && cacheJobs <= 0 && fileJobs <= 0
+        && recentCache <= 0 && recentFile <= 0) {
+        return {};
+    }
+    QStringList parts;
+    if (active > 0 || queued > 0) {
+        parts << QObject::tr("%1 active").arg(active);
+        if (queued > 0) {
+            parts << QObject::tr("%1 queued").arg(queued);
+        }
+    }
+    if (cacheJobs > 0 || recentCache > 0) {
+        parts << QObject::tr("%1 from cache").arg(qMax(cacheJobs, recentCache));
+    }
+    if (fileJobs > 0 || recentFile > 0) {
+        parts << QObject::tr("%1 from file/archive").arg(qMax(fileJobs, recentFile));
+    }
+    if (parts.isEmpty()) {
+        return {};
+    }
+    return QObject::tr("Loading · %1").arg(parts.join(QStringLiteral(" · ")));
+#else
+    return {};
+#endif
+}
+
 QString lastPixelSourceLabel(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO
@@ -1051,13 +1123,13 @@ QString lastPixelSourceLabel(const QString &path)
     // ImageView quality labels from on-screen pixels for end users.
     switch (source) {
     case 1:
-        return QStringLiteral("scaled JPEG");
+        return QObject::tr("cache (soft ladder)");
     case 2:
-        return QStringLiteral("embedded thumb");
+        return QObject::tr("cache (embedded)");
     case 3:
-        return QStringLiteral("full decode");
+        return QObject::tr("file decode");
     case 4:
-        return QStringLiteral("detail tiles");
+        return QObject::tr("cache (tiles)");
     default:
         return {};
     }
