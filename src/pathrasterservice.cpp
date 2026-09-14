@@ -234,12 +234,16 @@ void PathRasterService::noteDelivery(const QString &path, int requestEdge,
     st.softQueued = false;
     st.fullQueued = false;
 
-    // PreferCache shortfall is terminal only when the sample is past placeholder
-    // size. LQIP (~32) or embedded thumbs must not freeze the climb at Soft.
+    // PreferCache shortfall: durable soft (≤512) is never a win when want is
+    // past soft max — otherwise Gallery zoom stays on SoftOnly forever while
+    // PreferCache keeps returning the same 512 sample.
     constexpr int kMinPreferPlateauEdge = 96;
-    if (requestEdge > 0 && got >= kMinPreferPlateauEdge
-        && got * 10 < requestEdge * 9) {
-        st.preferGaveUp = true;
+    if (requestEdge > 0 && got > 0 && got * 10 < requestEdge * 9) {
+        if (got >= kMinPreferPlateauEdge
+            || (st.want > ThumtooCache::kGalleryLadderEdge
+                && got <= ThumtooCache::kGalleryLadderEdge)) {
+            st.preferGaveUp = true;
+        }
         if (covers(st.have, st.want)) {
             return;
         }
@@ -304,14 +308,20 @@ void PathRasterService::pump(const QString &path, State &st)
     const int overviewCap = ThumtooCache::kBatchOverviewEdge;
 
     // PreferCache Display unless plateaued for this want.
+    // When soft is already covered and want exceeds overview, PreferCache is
+    // only an intermediate — do not return early; fall through to FocusFull/Full
+    // so Gallery zoom is not stuck at 512 waiting for another soft PreferCache.
+    const bool softCovered = covers(st.have, ThumtooCache::kGalleryLadderEdge)
+        || st.have >= ThumtooCache::kGalleryLadderEdge;
     if (!st.preferGaveUp) {
-        if (st.displayQueued && st.lastDisplayWant == displayWant) {
+        if (st.displayQueued && st.lastDisplayWant == displayWant
+            && !(softCovered && displayWant > overviewCap)) {
             return;
         }
         if (st.lastDisplayWant == displayWant && st.lastDisplayGot > 0
             && st.lastDisplayGot * 10 < displayWant * 9) {
             st.preferGaveUp = true;
-        } else {
+        } else if (!(st.displayQueued && st.lastDisplayWant == displayWant)) {
             st.lastDisplayWant = displayWant;
             ThumtooCache::scheduleProbe(path);
             if (st.have < ThumtooCache::kGalleryLadderEdge && !st.softQueued) {
@@ -322,7 +332,9 @@ void PathRasterService::pump(const QString &path, State &st)
             if (ThumtooCache::scheduleDisplayPixels(path, displayWant)) {
                 st.displayQueued = true;
             }
-            return;
+            if (!(softCovered && displayWant > overviewCap)) {
+                return;
+            }
         }
     }
 

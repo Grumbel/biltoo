@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-812-gallery-zoom-escalate-full.** Gallery zoom past overview escalates to Full; soft PreferCache no longer blocks.
+Prior: **811**.
+
+### Problem
+Zoom in Gallery: shown=512 soft, need=8192, native 4032×6048 — stayed soft, no quality warning.
+
+PreferCache kept returning durable soft (512) while SoftDisplay waited for a
+PreferCache plateau before FocusFull/Full. Gallery ensure always used SoftDisplay.
+
+### Change
+- `pump`: when soft is covered and want > overview, schedule PreferCache **and** fall through to FocusFull/Full (no early return)
+- `noteDelivery`: soft-tier PreferCache vs high want → preferGaveUp
+- Gallery `scheduleGalleryDecode` + watchdog: `EscalateToFull` when want > 1024
+
+### Apply
+```bash
+git pull /path/to/biltoo-812-gallery-zoom-escalate-full.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **812**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-811-quiet-schedule-climb.** ScheduleClimb is not a quality violation; gallery target capped to native.
 Prior: **810**.
 

@@ -1225,9 +1225,13 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
 
     markGallerySoftInflight(st, want);
-    // SoftDisplay: PreferCache + FocusFull when need > overview (PathRaster).
-    m_pathRaster->ensure(path, want, logicalSizeForPath(path),
-                         PathRasterService::ClimbPolicy::SoftDisplay);
+    // Past overview: EscalateToFull so FocusFull + Full run (SoftDisplay used
+    // to wait on PreferCache soft forever when zoomed).
+    const auto climbPolicy =
+        (want > ThumtooCache::kBatchOverviewEdge)
+            ? PathRasterService::ClimbPolicy::EscalateToFull
+            : PathRasterService::ClimbPolicy::SoftDisplay;
+    m_pathRaster->ensure(path, want, logicalSizeForPath(path), climbPolicy);
     syncGallerySoftMirrorFromPathRaster(path, st);
 
     // Synchronous cache coverage: ensure may satisfy without async ladderReady.

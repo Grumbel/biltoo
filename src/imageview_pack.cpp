@@ -776,8 +776,11 @@ void ImageView::gallerySoftWatchdogTick()
             // Skip ensure when PathRaster already plateaued for this want.
             clearGallerySoftInflight(st);
             if (m_pathRaster && !m_pathRaster->isGaveUp(path)) {
-                m_pathRaster->ensure(path, target, logicalSizeForPath(path),
-                                     PathRasterService::ClimbPolicy::SoftDisplay);
+                const auto pol =
+                    (target > ThumtooCache::kBatchOverviewEdge)
+                        ? PathRasterService::ClimbPolicy::EscalateToFull
+                        : PathRasterService::ClimbPolicy::SoftDisplay;
+                m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
             }
             scheduleGalleryDecode(path);
             needWindow = true;
@@ -795,8 +798,11 @@ void ImageView::gallerySoftWatchdogTick()
             if (m_pathRaster) {
                 ThumtooCache::forgetPixelsSettled(path, ThumtooCache::kGalleryLadderEdge);
                 m_pathRaster->clearPreferGaveUp(path);
-                m_pathRaster->ensure(path, target, logicalSizeForPath(path),
-                                     PathRasterService::ClimbPolicy::SoftDisplay);
+                const auto pol =
+                    (target > ThumtooCache::kBatchOverviewEdge)
+                        ? PathRasterService::ClimbPolicy::EscalateToFull
+                        : PathRasterService::ClimbPolicy::SoftDisplay;
+                m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
             }
             scheduleGalleryDecode(path);
             needWindow = true;
