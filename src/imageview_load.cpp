@@ -779,20 +779,16 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
                              item->sessionId());
 
+        // Intrinsic already set by attachDisplaySample (file-native × want).
+        // Only re-frame when we have a definitive file size to orient.
         const QSize known = logicalSizeForPath(path);
-        QSize targetSize =
-            (isPositiveSize(known) && known.width() > 1 && known.height() > 1
-             && !isProvisionalImageSize(path))
-                ? known
-                : ((sz.width() > 1 && sz.height() > 1) ? sz : sizeBefore);
-        // Oriented layout when content turns are set (install may already have set it).
-        {
-            const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
-            const QSize oriented = ContentXform::layoutSize(
-                isPositiveSize(known) ? known : targetSize, want);
-            if (isPositiveSize(oriented) && oriented.width() > 1) {
-                targetSize = oriented;
-            }
+        const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
+        QSize targetSize = item->imageSize();
+        if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
+            && !isProvisionalImageSize(path)) {
+            targetSize = ContentXform::layoutSize(known, want);
+        } else if (!(isPositiveSize(targetSize) && targetSize.width() > 1)) {
+            targetSize = (sz.width() > 1 && sz.height() > 1) ? sz : sizeBefore;
         }
         int didFit = 0;
         if (isPositiveSize(targetSize) && targetSize.width() > 1) {

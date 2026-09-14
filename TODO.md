@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-846-fix-rotate-layout-double-swap.** Fix rotate aspect: never layoutSize(orientedDisplay, want).
+Prior: **845**.
+
+### Root cause
+`attachDisplaySample` used `layoutSizeForPath(..., display)` / display size as "native" then `layoutSize(native, want)`, double-swapping aspect when display was already oriented (rotate + Gallery).
+
+### Fix
+- Definitive file size → `layoutSize(fileNative, want)` only
+- Else → use oriented `display.size()` as intrinsic (no second layoutSize)
+- Incremental `bakeRotate90` then absolute `setIntrinsicSize(layoutSize(file, want))`
+- Soft pending framing does not re-orient provisional sizes
+
+### Apply
+```bash
+git pull /path/to/biltoo-846-fix-rotate-layout-double-swap.bundle HEAD
+```
+
+### Verify
+- [ ] Image mode: open landscape, rotate 90° → portrait contentRect, no stretch
+- [ ] Gallery: rotate tile → pack uses correct aspect
+- [ ] Flip still works
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-845-restore-sessionappearance-symbols.** Restore hasContentAppearance, applyCrop, mapSourceRectToContentDisplay (lost in ContentXform refactor).
 Prior: **844**.
 

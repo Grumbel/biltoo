@@ -451,20 +451,26 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
         item->setSourceImage(display);
     }
 
-    // Layout: one rule — crop box is baked sample size; else layoutSize(native, want).
+    // Layout: one rule.
+    // - Crop: baked sample is the box.
+    // - Else: layoutSize(FILE-NATIVE, want). Never treat oriented display size as
+    //   "native" or layoutSize double-swaps aspect (ImageView/Gallery stretch).
     if (hasCrop && display.width() > 1 && display.height() > 1) {
         item->setIntrinsicSize(display.size());
     } else {
-        QSize native = logicalSizeForPath(path);
-        if (!isPositiveSize(native) || (!path.isEmpty() && isProvisionalImageSize(path))) {
-            native = layoutSizeForPath(path, display);
-        }
-        if (!isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
-            native = display.size();
-        }
-        const QSize lay = ContentXform::layoutSize(native, want);
-        if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-            item->setIntrinsicSize(lay);
+        QSize fileNative = logicalSizeForPath(path);
+        const bool definitive = isPositiveSize(fileNative) && fileNative.width() > 1
+            && fileNative.height() > 1
+            && (path.isEmpty() || !isProvisionalImageSize(path));
+        if (definitive) {
+            const QSize lay = ContentXform::layoutSize(fileNative, want);
+            if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                item->setIntrinsicSize(lay);
+            }
+        } else if (display.width() > 1 && display.height() > 1) {
+            // No durable file size yet: display is already oriented to want —
+            // use its aspect (do not layoutSize again).
+            item->setIntrinsicSize(display.size());
         }
     }
 
@@ -664,6 +670,20 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     if (!tryRematerializeFromHost(item, want)) {
         // Multi-MP or no host raw: incremental pixel bake (GUI-safe transform).
         item->bakeRotate90(quarterTurns);
+        // Absolute layout from file-native × want (not relative transpose of a
+        // possibly already-oriented intrinsic).
+        {
+            const QString path = item->path();
+            QSize fileNative = logicalSizeForPath(path);
+            if (isPositiveSize(fileNative) && fileNative.width() > 1
+                && fileNative.height() > 1
+                && (path.isEmpty() || !isProvisionalImageSize(path))) {
+                const QSize lay = ContentXform::layoutSize(fileNative, want);
+                if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                    item->setIntrinsicSize(lay);
+                }
+            }
+        }
         scheduleAsyncHostRematerialize(item->path(), sid, want);
     }
 
