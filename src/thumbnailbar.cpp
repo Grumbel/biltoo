@@ -968,11 +968,34 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     if (!it || !m_delegate) {
         return;
     }
-    // Shared host soft for Gallery pass1 (same session path key).
-    if (row < m_files.size()) {
-        const QString path = m_files.at(row);
-        if (!path.isEmpty()) {
-            ImageCache::put(path, image);
+    // NEVER put filmstrip icons into ImageCache (path host). Appearance/crop
+    // thumbs are not unoriented source — that poisoned Apply and second crop.
+
+    // Session-id override owns the cell unless the installer is the override API.
+    if (!m_allowOverrideIconInstall) {
+        if (row < m_sessionIds.size()) {
+            const SessionImageId sid = m_sessionIds.at(row);
+            if (sid != kInvalidSessionImageId
+                && m_sessionIdImageOverrides.contains(sid)) {
+                if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FILMSTRIP")) {
+                    qWarning().noquote()
+                        << QStringLiteral("[filmstrip] skip icon row=%1 sid=%2 (id override owns cell)")
+                               .arg(row)
+                               .arg(sid);
+                }
+                return;
+            }
+        }
+        if (row < m_files.size()) {
+            const QString path = m_files.at(row);
+            if (!path.isEmpty() && m_sessionImageOverrides.contains(path)) {
+                if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FILMSTRIP")) {
+                    qWarning().noquote()
+                        << QStringLiteral("[filmstrip] skip icon row=%1 path override owns cell")
+                               .arg(row);
+                }
+                return;
+            }
         }
     }
     // Decode-edge pixmap for sharpness; layout uses aspect only.
@@ -1210,7 +1233,9 @@ void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &im
     }
     for (int row = 0; row < m_files.size(); ++row) {
         if (m_files.at(row) == path) {
+            m_allowOverrideIconInstall = true;
             setThumbnailIcon(row, thumb);
+            m_allowOverrideIconInstall = false;
         }
     }
 }
@@ -1264,7 +1289,9 @@ void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
         }
         const QImage thumb = prepareThumbnailFromImage(it.value(), filmstripDecodeEdge());
         if (!thumb.isNull()) {
+            m_allowOverrideIconInstall = true;
             setThumbnailIcon(row, thumb);
+            m_allowOverrideIconInstall = false;
         }
     }
 }
@@ -1287,7 +1314,9 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
     }
     for (int row = 0; row < m_sessionIds.size() && row < m_files.size(); ++row) {
         if (m_sessionIds.at(row) == sessionId) {
+            m_allowOverrideIconInstall = true;
             setThumbnailIcon(row, thumb);
+            m_allowOverrideIconInstall = false;
             return;
         }
     }
@@ -1603,7 +1632,9 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 const QImage thumb = prepareThumbnailFromImage(
                     m_sessionIdImageOverrides.value(sid), decodeSize);
                 if (!thumb.isNull()) {
+                    m_allowOverrideIconInstall = true;
                     setThumbnailIcon(i, thumb);
+                    m_allowOverrideIconInstall = false;
                 }
                 continue;
             }
@@ -1612,7 +1643,9 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             const QImage thumb = prepareThumbnailFromImage(m_sessionImageOverrides.value(path),
                                                           decodeSize);
             if (!thumb.isNull()) {
-                setThumbnailIcon(i, thumb);
+                m_allowOverrideIconInstall = true;
+                    setThumbnailIcon(i, thumb);
+                    m_allowOverrideIconInstall = false;
             }
             continue;
         }

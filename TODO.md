@@ -2,6 +2,46 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-878-filmstrip-no-poison-host.** Filmstrip must not ImageCache::put; override owns cell; Workspace keep scale.
+Prior: **877**.
+
+### Actual root cause (was not policy)
+`ThumbnailBar::setThumbnailIcon` did **`ImageCache::put(path, image)`** for every
+filmstrip paint — including **crop/appearance overrides**. That wrote a
+crop-baked soft thumb into the path host cache.
+
+Effects:
+- Second crop / Apply treated crop bake as “raw” host → 1×1 / wrong size
+- Workspace scale math on poisoned host → ever smaller
+- Filmstrip ladder/watchdog read “host” that was already a thumb → flip-flop
+
+### Fix
+1. **Remove** `ImageCache::put` from `setThumbnailIcon`
+2. `setThumbnailIcon` refuses path/ladder installs when id/path override owns
+   the row unless `m_allowOverrideIconInstall` (set only by override APIs)
+3. Workspace Apply: **keep draft scale**, intrinsic = draft crop size in
+   content units (revert layoutSize rescale that mixed unit spaces)
+4. Debug: `BILTOO_DEBUG_CROP=1` and `BILTOO_DEBUG_FILMSTRIP=1`
+
+### Apply
+```bash
+git pull /path/to/biltoo-878-filmstrip-no-poison-host.bundle HEAD
+```
+
+### Verify
+```bash
+BILTOO_DEBUG_CROP=1 BILTOO_DEBUG_FILMSTRIP=1 biltoo-run
+```
+- [ ] Filmstrip stays cropped
+- [ ] Second crop shows full original (host is real decode)
+- [ ] Workspace crop footprint stable (not shrinking each Apply)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-877-crop-gallery-filmstrip-workspace.** Gallery scroll, filmstrip watchdog, second-crop full frame, footprint tests.
 Prior: **876**.
 

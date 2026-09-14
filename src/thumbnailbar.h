@@ -265,6 +265,8 @@ private:
     /** Session-only images (crop, …) preferred over on-disk decode for thumbs. */
     QHash<QString, QImage> m_sessionImageOverrides;
     QHash<SessionImageId, QImage> m_sessionIdImageOverrides;
+    /** True only while setSessionImageOverride / schedule re-applies override thumbs. */
+    bool m_allowOverrideIconInstall = false;
     QVector<SessionImageId> m_sessionIds;
     QSet<int> m_onCanvasIndices;
     ThumbnailDelegate *m_delegate = nullptr;

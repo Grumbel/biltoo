@@ -484,6 +484,17 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // Drop prior crop bake so SoftPreview full-frame stand-in is accepted.
     // Otherwise hasDecodedPixels() rejects soft install and the draft stays
     // on the already-cropped pixmap (second crop cannot see the original).
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
+        qWarning().noquote()
+            << QStringLiteral(
+                   "[crop] enter-full path=%1 imageSize=%2x%3 hasDecoded=%4 "
+                   "appliedCrop=%5 hostEdge=%6")
+                   .arg(path)
+                   .arg(item->imageSize().width()).arg(item->imageSize().height())
+                   .arg(item->hasDecodedPixels() ? 1 : 0)
+                   .arg((haveApp && app && app->hasCrop) ? 1 : 0)
+                   .arg(ImageCache::longEdge(full));
+    }
     item->clearDecodedPixels();
     item->clearAppliedContentXform();
 
@@ -1206,25 +1217,31 @@ bool ImageView::applyCropCommit(ImageItem *item)
             return false;
         }
 
-        // Intrinsic from file-native layoutSize(crop), not soft draft pixel size.
-        // Recompute scale so scene footprint (draft selection) is preserved.
-        QSize fileNative = logicalSizeForPath(path);
-        if (!isPositiveSize(fileNative) || fileNative.width() <= 1) {
-            if (hostFromCache && host.width() > 1) {
-                fileNative = host.size();
-            }
+        // Footprint rule (SIZE.md): crop draft is in *logical* content units
+        // (intrinsic during crop mode). Keep the same scale; set intrinsic to
+        // the draft crop size. Do NOT rescale by file-native layoutSize — that
+        // mixed soft draft units with native logical and shrank Workspace tiles
+        // every Apply.
+        const QSize logical(qMax(1, qRound(cropW)), qMax(1, qRound(cropH)));
+        const qreal sx = sx0;
+        const qreal sy = sy0;
+
+        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
+            qWarning().noquote()
+                << QStringLiteral(
+                       "[crop] Apply path=%1 host=%2x%3 cache=%4 display=%5x%6 "
+                       "cropRect=%7x%8 foot=%9x%10 logical=%11x%12 scale=%13x%14 "
+                       "imageSizeBefore=%15x%16")
+                       .arg(path)
+                       .arg(host.width()).arg(host.height())
+                       .arg(hostFromCache ? 1 : 0)
+                       .arg(display.width()).arg(display.height())
+                       .arg(cropW).arg(cropH)
+                       .arg(footW).arg(footH)
+                       .arg(logical.width()).arg(logical.height())
+                       .arg(sx).arg(sy)
+                       .arg(item->imageSize().width()).arg(item->imageSize().height());
         }
-        QSize logical = isPositiveSize(fileNative)
-            ? ContentXform::layoutSize(fileNative, st)
-            : QSize();
-        if (!isPositiveSize(logical) || logical.width() <= 1) {
-            logical = QSize(qMax(1, qRound(cropW)), qMax(1, qRound(cropH)));
-        }
-        const QSizeF scales = ContentXform::scaleToPreserveFootprint(footW, footH, logical);
-        const qreal sx = scales.width();
-        const qreal sy = scales.height();
-        Q_UNUSED(sx0);
-        Q_UNUSED(sy0);
 
         item->setSourceImageReady(display);
         item->setContentHFlip(st.contentHFlip);
