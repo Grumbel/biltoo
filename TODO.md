@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-830-filmstrip-multiselect-open-selection.** Fix filmstrip Ctrl multi-select; Open Selection uses strip selection.
+Prior: **829**.
+
+### Problems
+1. **Ctrl on filmstrip** felt broken: `onCurrentRowChanged` emitted `indexActivated` during Ctrl/Shift multi-select, which called `openSessionIndexInImageMode` and cleared the strip selection.
+2. **Open Selection in New Window** used only `ImageView::selectedPaths()` — in Image mode that is always a single primary path, so multi-select from the filmstrip was ignored.
+
+### Change
+- Skip activation on current-row change when Ctrl/Shift/Meta (or multi-selected); emit `workspaceSelectionChanged` instead.
+- Image-mode filmstrip selection updates navigation/action enablement.
+- `pathsFromUiSelection()`: filmstrip selected indices first, then canvas selection, then current index.
+- Open Selection + its enablement use that helper.
+
+### Apply
+```bash
+git pull /path/to/biltoo-830-filmstrip-multiselect-open-selection.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **830**
+- [ ] Manual: Image mode Ctrl+click several thumbs → selection sticks; File → Open Selection in New Window loads all of them
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-829-slideshow-hide-bars-from-gallery.** Hide scrollbars when starting slideshow from Gallery; align DOMAIN/TODO.
 Prior: **828**.
 

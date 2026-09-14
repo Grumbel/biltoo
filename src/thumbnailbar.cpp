@@ -1959,9 +1959,25 @@ void ThumbnailBar::onCurrentRowChanged(int row)
     if (m_multiSelect) {
         return;
     }
-    if (row >= 0) {
-        emit indexActivated(row);
+    if (row < 0) {
+        return;
     }
+    // Ctrl/Shift/Meta multi-select (temporary ExtendedSelection in Image mode):
+    // do not treat current-row change as activation. Activation opened Image
+    // mode / cleared the strip selection and made Ctrl feel broken.
+    const Qt::KeyboardModifiers mods =
+        QGuiApplication::keyboardModifiers()
+        | (m_pressActive ? m_pressModifiers : Qt::KeyboardModifiers());
+    if (mods & (Qt::ControlModifier | Qt::ShiftModifier | Qt::MetaModifier)) {
+        emit workspaceSelectionChanged();
+        return;
+    }
+    if (selectionMode() != QAbstractItemView::SingleSelection
+        && selectedItems().size() > 1) {
+        emit workspaceSelectionChanged();
+        return;
+    }
+    emit indexActivated(row);
 }
 
 void ThumbnailBar::requestRemoveSelection()

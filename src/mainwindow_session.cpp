@@ -2010,7 +2010,7 @@ void MainWindow::updateNavZoomAndSelectionActions(bool hasFiles, bool hasItem)
         m_toggleHudAct->setEnabled(true);
     }
     if (m_openSelectionNewWindowAct) {
-        const bool canOpenSel = m_imageView && !m_imageView->selectedPaths().isEmpty();
+        const bool canOpenSel = !pathsFromUiSelection().isEmpty();
         m_openSelectionNewWindowAct->setEnabled(canOpenSel);
     }
 }

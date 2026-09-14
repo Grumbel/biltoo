@@ -462,9 +462,10 @@ void MainWindow::onThumbnailAddToWorkspace(int index)
 
 void MainWindow::onThumbnailWorkspaceSelectionChanged()
 {
-    // Workspace multi-select and Gallery (when multi is enabled) share the same
-    // filmstrip → canvas selection path by session index.
+    // Image mode: Ctrl/Shift on the filmstrip only updates strip selection —
+    // refresh Open Selection / bulk actions; do not touch the canvas.
     if (!isWorkspaceMode() && !isGalleryMode()) {
+        updateNavigationActions();
         return;
     }
     const QList<int> sel = m_thumbnailBar->selectedIndices();
@@ -1373,12 +1374,36 @@ void MainWindow::resetItemShear()
     }
 }
 
+QStringList MainWindow::pathsFromUiSelection() const
+{
+    // Prefer filmstrip multi-selection (session order). Image mode used to
+    // ignore the strip and only expose the single primary canvas path.
+    QStringList paths;
+    if (m_thumbnailBar) {
+        for (int idx : m_thumbnailBar->selectedIndices()) {
+            if (idx >= 0 && idx < m_session.paths().size()) {
+                paths.append(m_session.paths().at(idx));
+            }
+        }
+    }
+    if (!paths.isEmpty()) {
+        return paths;
+    }
+    if (m_imageView) {
+        paths = m_imageView->selectedPaths();
+        if (!paths.isEmpty()) {
+            return paths;
+        }
+    }
+    if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+        paths.append(m_session.paths().at(m_currentIndex));
+    }
+    return paths;
+}
+
 void MainWindow::openSelectionInNewWindow()
 {
-    if (!m_imageView) {
-        return;
-    }
-    const QStringList paths = m_imageView->selectedPaths();
+    const QStringList paths = pathsFromUiSelection();
     if (paths.isEmpty()) {
         if (statusBar()) {
             statusBar()->showMessage(tr("Nothing selected to open in a new window."), 3000);

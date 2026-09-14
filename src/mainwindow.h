@@ -268,8 +268,10 @@ private slots:
     void saveProject();
     void saveProjectAs();
     void openProject();
-    /** Open selected canvas paths in a new MainWindow (WA_DeleteOnClose). */
+    /** Open filmstrip/canvas selection in a new MainWindow (WA_DeleteOnClose). */
     void openSelectionInNewWindow();
+    /** Session paths for current UI selection (filmstrip first, then canvas). */
+    QStringList pathsFromUiSelection() const;
     /** Spawn an empty MainWindow (File → New Window). */
     void newWindow();
     void opacityDown();
