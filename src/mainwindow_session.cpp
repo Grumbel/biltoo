@@ -2909,8 +2909,8 @@ void MainWindow::updateHelpPanelFromWidget(QWidget *widget, const QPoint &localP
         }
         // If this is a child of a toolbar, prefer toolbar actionAt in parent coords.
         if (!act) {
-            if (auto *tb = qobject_cast<QToolBar *>(btn->parentWidget())) {
-                act = tb->actionAt(btn->mapTo(tb, localPos));
+            if (auto *parentTb = qobject_cast<QToolBar *>(btn->parentWidget())) {
+                act = parentTb->actionAt(btn->mapTo(parentTb, localPos));
             }
         }
     } else if (auto *mb = qobject_cast<QMenuBar *>(widget)) {

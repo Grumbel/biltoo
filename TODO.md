@@ -2,6 +2,23 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-787-help-shadow-warning.** Fix -Wshadow in updateHelpPanelFromWidget.
+Prior: **786**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-787-help-shadow-warning.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **787**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-786-recent-sessions-help.** Detailed Help for Recent Sessions entries.
 Prior: **785**.
 
