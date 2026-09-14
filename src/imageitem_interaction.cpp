@@ -982,9 +982,14 @@ void ImageItem::activateChromeHandle(Handle h)
                     } else if (h == Handle::FlipV) {
                         iv->bakeItemFlip(this, false, true);
                     } else if (h == Handle::Rotate90CCW) {
-                        iv->bakeItemRotate90(this, -1);
+                        iv->rotateContentByQuarterTurns(this, -1);
                     } else {
-                        iv->bakeItemRotate90(this, 1);
+                        iv->rotateContentByQuarterTurns(this, 1);
+                    }
+                    if (iv->isGalleryMode()) {
+                        iv->applyLayout(GalleryPackReason::ContentChange);
+                    } else if (iv->isWorkspaceMode()) {
+                        iv->updateWorkspaceSceneRect();
                     }
                     notifyViewStatus();
                     return;

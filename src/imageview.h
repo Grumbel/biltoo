@@ -623,6 +623,12 @@ public:
     qreal viewScale() const;
     void rotateLeft();
     void rotateRight();
+    /**
+     * Sole content ±90° path (Workspace chrome, toolbar, keyboard).
+     * ContentXform bake + mode framing. Prefer this over bakeItemRotate90
+     * from UI code so chrome and shortcuts cannot diverge.
+     */
+    void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);
     void flipHorizontal();
     void flipVertical();
     /** True when rotate/flip have at least one target (selection or sole image). */

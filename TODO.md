@@ -2,6 +2,35 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-851-one-rotate-path.** Unify chrome/toolbar/keyboard content rotate; Workspace no non-uniform footprint scale.
+Prior: **850**.
+
+### Problem
+Workspace chrome called `bakeItemRotate90` only (correct aspect). Keyboard/toolbar
+`rotateLeft`/`rotateRight` also applied **non-uniform** scale to keep the old
+footprint AABB → oriented pixels stretched into the pre-rotate content area.
+
+### Fix
+- Single API: `rotateContentByQuarterTurns(item, ±1)` for content bake + framing
+- Chrome, toolbar, keyboard all use it (via rotateLeft/Right or direct)
+- Workspace footprint: **uniform** scale only (`min(footW/afterW, footH/afterH)`)
+
+### Apply
+```bash
+git pull /path/to/biltoo-851-one-rotate-path.bundle HEAD
+```
+
+### Verify
+- [ ] Workspace chrome rotate: correct aspect
+- [ ] Workspace keyboard/toolbar `<` `>`: same, no stretch
+- [ ] Gallery + Image rotate still OK
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-850-gallery-rotate-contentxform-truth.** Gallery 4th-rotate corruption: captureState/path-map resurrected turns after identity.
 Prior: **849**.
 

@@ -191,6 +191,46 @@ void ImageView::flipVertical()
     emit statusChanged();
 }
 
+void ImageView::rotateContentByQuarterTurns(ImageItem *item, int quarterTurns)
+{
+    // One content-rotate path for Workspace chrome, toolbar, and keyboard.
+    // bakeItemRotate90 owns ContentXform + pixels + intrinsic. Framing only
+    // here — never a second orient bake and never non-uniform scale (that
+    // stretched oriented pixels into the pre-rotate footprint).
+    if (!item || quarterTurns == 0) {
+        return;
+    }
+    const QSize before = item->imageSize();
+    const qreal sx0 = item->itemScaleX();
+    const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
+    const qreal footW = before.width() * sx0;
+    const qreal footH = before.height() * sy0;
+
+    bakeItemRotate90(item, quarterTurns);
+
+    if (isWorkspaceMode() && before.isValid() && before.width() > 0
+        && before.height() > 0) {
+        const QSize after = item->imageSize();
+        if (after.isValid() && after.width() > 0 && after.height() > 0
+            && (after.width() != before.width()
+                || after.height() != before.height())) {
+            // Uniform scale: fit oriented content inside previous scene
+            // footprint without stretching.
+            const qreal s = qMin(footW / qreal(after.width()),
+                                 footH / qreal(after.height()));
+            if (s > 1e-6) {
+                item->setItemScale(s, s);
+            }
+        }
+    } else if (isImageMode()) {
+        if (m_fitMode) {
+            fitItem(item, currentFitAspectMode());
+        } else if (m_fillMode) {
+            fitItem(item, Qt::KeepAspectRatioByExpanding);
+        }
+    }
+}
+
 void ImageView::rotateLeft()
 {
     const QList<ImageItem *> targets = transformTargets();
@@ -198,32 +238,7 @@ void ImageView::rotateLeft()
         return;
     }
     for (ImageItem *item : targets) {
-        // Workspace: keep scene footprint when content axes swap (90°).
-        // Gallery: applyLayout re-packs from the new imageSize().
-        const QSize before = item->imageSize();
-        const qreal sx0 = item->itemScaleX();
-        const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
-        const qreal footW = before.width() * sx0;
-        const qreal footH = before.height() * sy0;
-        bakeItemRotate90(item, -1);
-        if (isWorkspaceMode() && before.isValid() && before.width() > 0
-            && before.height() > 0) {
-            const QSize after = item->imageSize();
-            if (after.isValid() && after.width() > 0 && after.height() > 0
-                && (after.width() != before.width()
-                    || after.height() != before.height())) {
-                item->setItemScale(footW / qreal(after.width()),
-                                   footH / qreal(after.height()));
-            }
-        }
-        if (isImageMode()) {
-            if (m_fitMode) {
-                fitItem(item, currentFitAspectMode());
-            } else if (m_fillMode) {
-                // Keep cover framing after aspect swap.
-                fitItem(item, Qt::KeepAspectRatioByExpanding);
-            }
-        }
+        rotateContentByQuarterTurns(item, -1);
     }
     if (isGalleryMode()) {
         applyLayout(GalleryPackReason::ContentChange);
@@ -240,29 +255,7 @@ void ImageView::rotateRight()
         return;
     }
     for (ImageItem *item : targets) {
-        const QSize before = item->imageSize();
-        const qreal sx0 = item->itemScaleX();
-        const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
-        const qreal footW = before.width() * sx0;
-        const qreal footH = before.height() * sy0;
-        bakeItemRotate90(item, 1);
-        if (isWorkspaceMode() && before.isValid() && before.width() > 0
-            && before.height() > 0) {
-            const QSize after = item->imageSize();
-            if (after.isValid() && after.width() > 0 && after.height() > 0
-                && (after.width() != before.width()
-                    || after.height() != before.height())) {
-                item->setItemScale(footW / qreal(after.width()),
-                                   footH / qreal(after.height()));
-            }
-        }
-        if (isImageMode()) {
-            if (m_fitMode) {
-                fitItem(item, currentFitAspectMode());
-            } else if (m_fillMode) {
-                fitItem(item, Qt::KeepAspectRatioByExpanding);
-            }
-        }
+        rotateContentByQuarterTurns(item, 1);
     }
     if (isGalleryMode()) {
         applyLayout(GalleryPackReason::ContentChange);
