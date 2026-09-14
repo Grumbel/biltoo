@@ -122,3 +122,5 @@ updates absolute want and runs `materializeDisplay(host, want)` (same as install
 Larger samples keep incremental `ImageItem::bakeRotate90` (GUI-safe; multi-MP
 materialize is worker-only).
 
+`bakeItemFlip` uses the same host-rematerialize rule when edge ≤512.
+

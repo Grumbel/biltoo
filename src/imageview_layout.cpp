@@ -585,8 +585,6 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     const QImage beforeSrc = item->sourceImage().copy();
     WorkspaceItemState beforeSt = captureContentBakeBeforeState(item);
 
-    item->bakeFlip(horizontal, vertical);
-
     // Content-orientation flags track the source raster so durable crop mapping
     // (flip then quarter-turn on the full raster) stay consistent with the
     // display-space flip just applied to the oriented pixels.
@@ -595,8 +593,8 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     //   t=0,2: same axes;  t=1,3: H↔V  (conjugation through 90°/270° CW).
     // Crop stays in post-content space, so mapCropThroughContentFlip below
     // still uses the display axes the user pressed.
-    bool h = item->contentHFlip();
-    bool v = item->contentVFlip();
+    bool h = beforeSt.contentHFlip;
+    bool v = beforeSt.contentVFlip;
     int turns = beforeSt.contentQuarterTurns % 4;
     if (turns < 0) {
         turns += 4;
@@ -610,8 +608,6 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     if (srcV) {
         v = !v;
     }
-    item->setContentHFlip(h);
-    item->setContentVFlip(v);
 
     const SessionImageId sid = resolveContentEditSessionId(item);
     WorkspaceItemState cropMap = appearanceCropMapForEdit(item, beforeSt, sid);
@@ -619,6 +615,50 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     if (cropMap.hasCrop) {
         item->setSessionCrop(true, cropMap.cropRect);
     }
+
+    WorkspaceItemState want = beforeSt;
+    want.contentHFlip = h;
+    want.contentVFlip = v;
+    want.hasCrop = cropMap.hasCrop;
+    want.cropRect = cropMap.cropRect;
+    want.cropRotation = cropMap.cropRotation;
+    want.cropSourceSize = cropMap.cropSourceSize;
+    want.contentQuarterTurns = cropMap.contentQuarterTurns;
+
+    // Prefer rematerialize from host when ≤512 (same as bakeItemRotate90).
+    bool rematerialized = false;
+    const QString path = item->path();
+    const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (!host.isNull()) {
+        const int edge = qMax(host.width(), host.height());
+        if (edge <= 512) {
+            const auto kind = item->hasDecodedPixels()
+                ? SessionAppearance::PixelKind::FullSource
+                : SessionAppearance::PixelKind::SoftPreview;
+            const QImage display =
+                SessionAppearance::materializeDisplay(host, want, kind);
+            if (!display.isNull()) {
+                if (kind == SessionAppearance::PixelKind::SoftPreview) {
+                    item->setPreviewImage(display);
+                } else if (isImageMode()) {
+                    item->setSourceImageReady(display);
+                } else {
+                    item->setSourceImage(display);
+                }
+                if (want.hasCrop && !want.cropRect.isEmpty()
+                    && display.width() > 1 && display.height() > 1) {
+                    item->setIntrinsicSize(display.size());
+                }
+                rematerialized = true;
+            }
+        }
+    }
+    if (!rematerialized) {
+        item->bakeFlip(horizontal, vertical);
+    }
+    item->setContentHFlip(h);
+    item->setContentVFlip(v);
+
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState s = captureState(item);
         s.sessionId = sid;

@@ -2,6 +2,27 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-836-rematerialize-flip-from-host.** Prefer materializeDisplay from ImageCache on flip when edge≤512.
+Prior: **835**.
+
+### Change
+- `bakeItemFlip` mirrors rotate: absolute want + host rematerialize when ≤512, else incremental bakeFlip
+
+### Apply
+```bash
+git pull /path/to/biltoo-836-rematerialize-flip-from-host.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **836**
+- [ ] Manual: soft image flip H/V matches durable appearance after reload
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-835-rematerialize-rotate-from-host.** Prefer materializeDisplay from ImageCache on ±90° when edge≤512; tag in-place Image install.
 Prior: **834**.
 
