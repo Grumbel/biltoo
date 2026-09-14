@@ -2,6 +2,34 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-809-quality-target-first.** checkSurface: meet target before InstallHostBetter.
+Prior: **808**.
+
+### Problem
+Logs flooded with:
+```
+gallery path=001.jpg shown=256(soft) host=512(soft) target=128 verdict=install-host-better
+```
+Host > shown fired first even when the tile already exceeded its display target.
+
+### Change
+- `checkSurface`: if shown ≥ 90% of target → **Ok** (before host comparison)
+- InstallHostBetter only when still short of target and host is stricter
+
+### Apply
+```bash
+git pull /path/to/biltoo-809-quality-target-first.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **809**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-808-filmstrip-pad-2x.** Filmstrip absolute pads doubled (cellPad 8, flowPad 4).
 Prior: **807**.
 

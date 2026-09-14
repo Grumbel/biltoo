@@ -95,15 +95,18 @@ Check checkSurface(const QString &path, int shownLongEdge, int targetLongEdge,
 
     const int target = targetLongEdge > 0 ? targetLongEdge : kSoftMaxEdge;
 
-    // Host already holds a stricter sample than what is painted.
-    if (isStrictUpgrade(shownLongEdge, c.hostEdge)) {
-        c.verdict = Verdict::InstallHostBetter;
+    // Surface already meets its display target — done. Do not demand installing
+    // a larger host sample (host may hold soft/full while the tile only needs
+    // 128). Checking host-first produced install-host-better spam:
+    // shown=256 host=512 target=128.
+    if (shownLongEdge > 0 && shownLongEdge >= (target * 9) / 10) {
+        c.verdict = Verdict::Ok;
         return c;
     }
 
-    // Shown meets target (90% band — same tolerance as filmstrip/gallery settle).
-    if (shownLongEdge > 0 && shownLongEdge >= (target * 9) / 10) {
-        c.verdict = Verdict::Ok;
+    // Still short of target and host has a stricter sample — install it.
+    if (isStrictUpgrade(shownLongEdge, c.hostEdge)) {
+        c.verdict = Verdict::InstallHostBetter;
         return c;
     }
 

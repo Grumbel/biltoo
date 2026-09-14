@@ -46,8 +46,9 @@ int hostLongEdge(const QString &path);
  *
  * Ok              — shown is adequate relative to host and target, or climb is
  *                   already pending.
- * InstallHostBetter — host cache has a stricter sample than shown; surface must
- *                   install it (same role / SoftPreview rules apply at call site).
+ * InstallHostBetter — shown is still below target and host holds a stricter
+ *                   sample; surface should install it (not when shown already
+ *                   meets target).
  * ScheduleClimb   — shown is below target and host has nothing better; climb
  *                   must be scheduled (or already pending).
  * StuckWeak       — shown is still LQIP-class (or blank) while target ≥ soft,
