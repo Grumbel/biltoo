@@ -1110,9 +1110,6 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
     }
 
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-    // Background size+ladder for the session (same cache as thumtoo-prepare).
-    ThumtooCache::preparePaths(m_session.paths());
-    ThumtooCache::warmUris(m_session.paths());
     applyThumbnailVisibility();
 
     // Session open is not a Workspace document. Drop any free-form arrangement
@@ -1136,12 +1133,20 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         idx = 0;
     }
 
-    // Multi-file sessions open in Gallery (browse the set). A single file
-    // stays in Image mode. Workspace is never auto-seeded from the session.
+    // Multi-file: show centre progress before Gallery size-resolve so a fast
+    // ThumtooCache::preparePaths cannot fill sizes and skip the HUD entirely.
     if (m_session.paths().size() > 1) {
+        setExpandProgress(
+            0, m_session.paths().size(),
+            tr("Opening %n image(s)…", "", m_session.paths().size()));
         enterGalleryMode(ImageView::LayoutMode::Masonry);
         setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
+        // Warm after size-resolve has registered pending probes + HUD.
+        ThumtooCache::preparePaths(m_session.paths());
+        ThumtooCache::warmUris(m_session.paths());
     } else {
+        ThumtooCache::preparePaths(m_session.paths());
+        ThumtooCache::warmUris(m_session.paths());
         if (m_imageView && !isImageMode()) {
             m_imageView->setViewMode(ImageView::ViewMode::Image);
         }
@@ -1152,8 +1157,10 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
     }
     updateNavigationActions();
     updateWorkspaceActionVisibility();
-        setExpandProgressBusy(false);
-    if (statusBar() && statusBar()->currentMessage().startsWith(tr("Opening "))) {
+    // Keep centre HUD while Gallery size probes still run.
+    setExpandProgressBusy(false);
+    if (statusBar() && statusBar()->currentMessage().startsWith(tr("Opening "))
+        && !(m_imageView && m_imageView->gallerySizeResolveActive())) {
         statusBar()->clearMessage();
     }
     rememberSessionHistory(m_session.paths());
@@ -1219,8 +1226,6 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
                                             const QStringList &workspacePaths)
 {
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-    ThumtooCache::preparePaths(m_session.paths());
-    ThumtooCache::warmUris(m_session.paths());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
@@ -1237,7 +1242,6 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
     }
     applyThumbnailVisibility();
     updateWorkspaceActionVisibility();
-    setExpandProgressBusy(false);
 
     int newIndex = 0;
     if (!current.isEmpty()) {
@@ -1254,21 +1258,34 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
         }
         updateStatus();
         updateNavigationActions();
+        ThumtooCache::preparePaths(m_session.paths());
+        ThumtooCache::warmUris(m_session.paths());
     } else if (isGalleryMode()) {
+        // Size-resolve HUD first; preparePaths after so cache fill does not skip it.
         populateGalleryCanvas();
         m_currentIndex = -1;
         setCurrentIndex(newIndex, /*ensureGalleryVisible=*/true);
         updateNavigationActions();
+        ThumtooCache::preparePaths(m_session.paths());
+        ThumtooCache::warmUris(m_session.paths());
     } else if (m_session.paths().size() > 1) {
         // Multi-image after append in Image mode — Gallery + size-first like Open.
+        setExpandProgress(
+            0, m_session.paths().size(),
+            tr("Opening %n image(s)…", "", m_session.paths().size()));
         enterGalleryMode(ImageView::LayoutMode::Masonry);
         setCurrentIndex(newIndex, /*ensureGalleryVisible=*/true);
         updateNavigationActions();
+        ThumtooCache::preparePaths(m_session.paths());
+        ThumtooCache::warmUris(m_session.paths());
     } else {
+        ThumtooCache::preparePaths(m_session.paths());
+        ThumtooCache::warmUris(m_session.paths());
         m_currentIndex = -1;
         setCurrentIndex(newIndex);
         updateNavigationActions();
     }
+    setExpandProgressBusy(false);
 }
 
 void MainWindow::applyExpandedAppend(const QStringList &images)

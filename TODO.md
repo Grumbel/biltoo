@@ -1,5 +1,28 @@
 # TODO / agent handoff
 
+## Status (2026-09-14)
+
+**Tip: biltoo-777-multi-file-open-progress.** Multi-file open shows centre progress; size-resolve starts before preparePaths.
+Prior: **776**.
+
+### Fix
+- `ThumtooCache::preparePaths` ran *before* Gallery size-resolve and often filled
+  the size cache so the resolve gate (and HUD) never activated on multi-file Open
+- Now: show “Opening N images…”, enter Gallery (start size-resolve + HUD), *then* preparePaths
+- One `processEvents` after first size-resolve HUD paint so progress is visible
+
+### Apply
+```bash
+git pull /path/to/biltoo-777-multi-file-open-progress.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **777**
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-13)
 
 **Tip: biltoo-776-docs-sticky-zoom-windowstate.** README/DOMAIN/AGENTS/TODO for sticky zoom + windowState.

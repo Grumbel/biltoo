@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+
+#include <QCoreApplication>
+#include <QEventLoop>
 #include <cstdlib>
 #include "archivepath.h"
 #include "pagepath.h"
@@ -650,6 +653,10 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
     m_gallerySizeResolveProgressTimer->start();
     updateGallerySizeResolveProgressHud();
     emit statusChanged();
+    // Let the centre HUD paint before sizeReady callbacks can finish the gate
+    // in one burst (multi-file open used to look like an instant Fit with no
+    // progress).
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     return true;
 }
 
