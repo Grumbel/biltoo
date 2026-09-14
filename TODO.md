@@ -2,6 +2,32 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-827-gallery-crop-preserve-on-install.** Do not wipe session crop when Gallery installs multi-MP samples.
+Prior: **826**.
+
+### Problem
+Crop applied in Image mode (from Gallery) was lost on return to Gallery; filmstrip stayed uncropped. Root cause: `installDisplayPixels` skipped `materializeDisplay` for samples with long edge >512 (GUI-thread rule) and still installed the **raw** full-frame sample, overwriting peer-synced crop bakes on stashed Gallery tiles and any later soft/full climb.
+
+### Change
+- Soft samples that need content bake are clamped to ≤512 before materialize on the GUI.
+- Multi-MP raw install is refused when the item already has display pixels and session content appearance (crop/flip/90°) — keep the bake, refresh meta only.
+- Soft+crop install sets intrinsic from the baked sample (crop identity).
+
+### Apply
+```bash
+git pull /path/to/biltoo-827-gallery-crop-preserve-on-install.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **827**
+- [ ] Manual: Gallery → select tile → Crop → Apply → return to Gallery: tile + filmstrip show crop
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-826-pdf-embedded-images-menu.** Image menu action to open current PDF as //pdfimages.
 Prior: **825**.
 

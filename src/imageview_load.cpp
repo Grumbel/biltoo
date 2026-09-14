@@ -536,14 +536,30 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         SessionAppearance::hasContentAppearance(appearance)
         || !appearance.colorAdjust.isIdentity();
     if (wantBake) {
-        const int edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
+        int edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
+        // Prefer a ≤512 stand-in so crop/flip can bake on the GUI (Gallery
+        // high-res soft otherwise skips materialize and paints the full frame).
+        if (edge > 512 && kind == SessionAppearance::PixelKind::SoftPreview) {
+            pixelsForDisplay = ImageCache::clampToMaxEdge(pixelsForDisplay, 512);
+            edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
+        }
         if (edge <= 512) {
             // Soft / filmstrip band — safe on GUI.
             display = SessionAppearance::materializeDisplay(
                 pixelsForDisplay, appearance, kind);
+        } else if (item->hasDisplayPixels()
+                   && SessionAppearance::hasContentAppearance(appearance)) {
+            // Multi-MP materialize is GUI-forbidden. Installing the raw sample
+            // would wipe a crop/flip bake (Gallery soft→full climb after Image
+            // crop; peer-synced stashed tiles). Keep current pixels; refresh meta.
+            item->setContentHFlip(appearance.contentHFlip);
+            item->setContentVFlip(appearance.contentVFlip);
+            item->setSessionCrop(appearance.hasCrop, appearance.cropRect);
+            item->setColorAdjustmentsRecord(appearance.colorAdjust);
+            return;
         }
-        // else: already baked by worker, or caller must not pass raw multi-MP
-        // with pending appearance on the GUI thread.
+        // else: cold open with no pixels yet — show raw until a ≤512 soft
+        // arrives or a worker-baked FullSource is installed.
     }
     Q_UNUSED(imageModeInstall);
 
@@ -571,6 +587,10 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         item->update();
     } else {
         item->setPreviewImage(display); // NoCache soft path
+        // Soft+crop bake: identity is the cropped sample (same as FullSource).
+        if (hasCrop && display.width() > 1 && display.height() > 1) {
+            item->setIntrinsicSize(display.size());
+        }
         // Soft aspect owns provisional geometry. Cold placeholders are often
         // square; update intrinsic when still provisional. Must preserve the
         // view transform — previously size changed without preserve and the
@@ -578,7 +598,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         // (hard-to-reproduce off-center PDF soft load).
         const QSize cur = item->imageSize();
         const bool provisional = !path.isEmpty() && isProvisionalImageSize(path);
-        if (cur.width() <= 1 || cur.height() <= 1 || provisional) {
+        if (!hasCrop && (cur.width() <= 1 || cur.height() <= 1 || provisional)) {
             const QSize layout = layoutSizeForPath(path, display);
             if (isPositiveSize(layout) && layout.width() > 1 && layout.height() > 1) {
                 const int cw = qMax(1, cur.width());
