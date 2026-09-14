@@ -763,18 +763,26 @@ void ImageView::gallerySoftWatchdogTick()
             DisplayQuality::reportViolation("gallery", path, dq, /*assertHard=*/false);
         } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak
                    || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
-            // Grace: only assert after inflight has had time, or never pending.
-            const bool aged =
-                st.inflightSinceMs <= 0
-                || (now - st.inflightSinceMs) > kStuckMs;
-            if (!climbPending || aged) {
-                DisplayQuality::reportViolation(
-                    "gallery", path, dq,
-                    /*assertHard=*/dq.verdict == DisplayQuality::Verdict::StuckWeak
-                        && aged && !climbPending);
-                clearGallerySoftInflight(st);
-                needWindow = true;
+            // checkSurface only yields StuckWeak/ScheduleClimb when climbPending
+            // is false. Start a wall-clock grace from first observation so LQIP
+            // from SizeReply can be on-screen while the decode window catches up
+            // — do not treat never-started inflight as already aged (that aborted
+            // debug builds on the first watchdog tick).
+            if (st.weakSinceMs <= 0) {
+                st.weakSinceMs = now;
             }
+            const bool aged = (now - st.weakSinceMs) > kStuckMs;
+            DisplayQuality::reportViolation(
+                "gallery", path, dq,
+                /*assertHard=*/dq.verdict == DisplayQuality::Verdict::StuckWeak
+                    && aged);
+            clearGallerySoftInflight(st);
+            // Force a schedule for this path; decode-window alone may still be
+            // concurrency-capped on a large session.
+            scheduleGalleryDecode(path);
+            needWindow = true;
+        } else {
+            st.weakSinceMs = 0;
         }
 
         // Item has pixels — keep have in sync with what is painted.
@@ -782,6 +790,9 @@ void ImageView::gallerySoftWatchdogTick()
             const int edge = item->displayPixelLongEdge();
             if (edge > st.have) {
                 st.have = edge;
+            }
+            if (edge > DisplayQuality::kLqipMaxEdge) {
+                st.weakSinceMs = 0;
             }
         }
 

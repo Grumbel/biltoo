@@ -189,6 +189,9 @@ struct GallerySoftState {
     int gaveUpWant = 0;
     bool failed = false;
     qint64 inflightSinceMs = 0;
+    /** Wall clock when StuckWeak / ScheduleClimb was first observed with no climb.
+     *  Used so the quality watchdog can recover for a grace period before hard-assert. */
+    qint64 weakSinceMs = 0;
 
     /**
      * Record a ladder delivery for concurrency bookkeeping only.
@@ -201,6 +204,10 @@ struct GallerySoftState {
     {
         if (gotEdge > 0) {
             have = qMax(have, gotEdge);
+            // Past LQIP band → soft climb is progressing; reset weak timer.
+            if (gotEdge > 96) {
+                weakSinceMs = 0;
+            }
         }
         if (inflight > 0
             && (requestEdge >= inflight

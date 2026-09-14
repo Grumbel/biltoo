@@ -2,6 +2,41 @@
 
 ## Status (2026-09-14)
 
+**Tip: biltoo-803-quality-watchdog-grace.** Do not hard-assert StuckWeak on first tick.
+Prior: **802**.
+
+### Problem
+Gallery DisplayQuality watchdog treated `inflightSinceMs <= 0` as already aged.
+`checkSurface` only returns StuckWeak when `climbPending` is false, so the first
+1s timer tick after LQIP (SizeReply) paint aborted debug builds before soft
+could be scheduled:
+
+```
+biltoo/quality: gallery path=018.jpg shown=16(lqip) host=16(lqip) target=512 verdict=stuck-weak
+ASSERT failure in DisplayQuality …
+```
+
+### Change
+- `GallerySoftState::weakSinceMs` — wall-clock from first StuckWeak/ScheduleClimb
+- Hard-assert only after **2.5s** of continuous weakness; always recover via
+  `scheduleGalleryDecode` + decode window
+- Clear `weakSinceMs` when painted edge exceeds LQIP or ladder delivers soft+
+- Filmstrip / Image / slideshow: warn + recover, no immediate hard-assert
+
+### Apply
+```bash
+git pull /path/to/biltoo-803-quality-watchdog-grace.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **803**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-14)
+
 **Tip: biltoo-802-loading-breakdown-decl.** Declare `ThumtooCache::loadingBreakdownLabel` in header.
 Prior: **801**.
 

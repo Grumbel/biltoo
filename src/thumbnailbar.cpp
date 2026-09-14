@@ -1393,9 +1393,10 @@ void ThumbnailBar::qualityWatchdogTick()
         } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak
                    || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
             if (!climbPending) {
-                DisplayQuality::reportViolation(
-                    "filmstrip", path, dq,
-                    dq.verdict == DisplayQuality::Verdict::StuckWeak);
+                // Warn + reschedule; hard-assert only after sustained failure is
+                // handled by gallery (weakSinceMs). Filmstrip recovers every tick.
+                DisplayQuality::reportViolation("filmstrip", path, dq,
+                                               /*assertHard=*/false);
                 m_thumbAwaitLadder.remove(i);
                 m_thumbLoadScheduled.remove(i);
                 needSchedule = true;

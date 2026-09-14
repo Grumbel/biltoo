@@ -1624,9 +1624,9 @@ void ImageView::displayQualityWatchdogTick()
                     DisplayQuality::reportViolation("image", path, dq, false);
                 }
             } else if (dq.verdict != DisplayQuality::Verdict::Ok && !pending) {
-                DisplayQuality::reportViolation(
-                    "image", path, dq,
-                    dq.verdict == DisplayQuality::Verdict::StuckWeak);
+                // Recover first; gallery owns sustained hard-assert via weakSinceMs.
+                DisplayQuality::reportViolation("image", path, dq,
+                                               /*assertHard=*/false);
                 if (m_pathRaster) {
                     m_pathRaster->ensure(
                         path, target, logicalSizeForPath(path),
@@ -1652,7 +1652,7 @@ void ImageView::displayQualityWatchdogTick()
                 }
                 DisplayQuality::reportViolation(tag, path, dq, false);
             } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak) {
-                DisplayQuality::reportViolation(tag, path, dq, true);
+                DisplayQuality::reportViolation(tag, path, dq, /*assertHard=*/false);
                 if (m_pathRaster) {
                     m_pathRaster->ensure(
                         path, slideshowTargetEdge(), logicalSizeForPath(path),
