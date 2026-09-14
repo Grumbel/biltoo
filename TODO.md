@@ -2,6 +2,41 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-883-double-crop-enter.** Second crop enter uses pure materialize; cropSourceSize is oriented native.
+Prior: **882**.
+
+### Double-crop Image mode (trace)
+1. **Enter** must show orient-only **full** frame; prior crop becomes the draft rect.
+2. Old path: `attach(raw soft)` + `applyContentBakes` → `bakeRotate90` **transposed
+   intrinsic again** on top of `layoutSize` (already oriented) → wrong aspect/space.
+3. Soft/raw attach without materialize left display space ≠ contentRect space.
+4. `cropSourceSize` must be **post-orient file-native** full size, not soft or
+   post-crop intrinsic (breaks `scaleCropRect` on second enter).
+
+### Fix
+- `installFullImageForCrop`: `materializeDisplay(soft, contentOnly)` then attach;
+  **never** incremental bakeRotate90; force `applyContentLayoutSize`; clear session crop
+- `recordSessionCrop`: `cropSourceSize = layoutSize(fileNative, orientOnly)`
+- `applyContentToItem`: do not set intrinsic from `item->imageSize()` as native
+
+### Apply
+```bash
+git pull /path/to/biltoo-883-double-crop-enter.bundle HEAD
+```
+
+### Verify
+```bash
+BILTOO_DEBUG_CROP=1 biltoo-run
+```
+Second crop enter: `enter-full done imageSize=<full> appliedCrop=0`. Draft shows
+full image with prior rect. Apply second crop works.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-882-filmstrip-settle.** Filmstrip quality watchdog no longer repaints settled cells.
 Prior: **881**.
 

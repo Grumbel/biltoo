@@ -363,13 +363,8 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     item->setContentVFlip(state.contentVFlip);
     item->setSessionCrop(state.hasCrop, state.cropRect);
     item->setColorAdjustments(state.colorAdjust);
-    // Intrinsic = ContentXform layout (orient + crop size), not sample pixels.
-    const QSize cur = item->imageSize();
-    const QSize nativeBasis = isPositiveSize(cur) ? cur : raw.size();
-    const QSize layout = ContentXform::layoutSize(nativeBasis, state);
-    if (isPositiveSize(layout)) {
-        item->setIntrinsicSize(layout);
-    }
+    // Intrinsic is owned by ImageView::applyContentLayoutSize(fileNative, want).
+    // Do not use item->imageSize() as native (may already be a crop box).
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
 

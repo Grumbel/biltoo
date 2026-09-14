@@ -498,30 +498,45 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     item->clearDecodedPixels();
     item->clearAppliedContentXform();
 
-    // Interactive crop: never install multi-MP display pixels on the GUI.
-    // Soft stand-in ≤kGuiMaterializeMaxEdge; native host stays in ImageCache.
-    QImage display = full;
+    // Interactive crop draft: orient-only full frame (never prior crop bake).
+    // Soft ≤kGuiMaterializeMaxEdge; native host stays in ImageCache for Apply.
+    //
+    // MUST use materializeDisplay for orient — do NOT attach raw + bakeRotate90.
+    // bakeRotate90 transposes intrinsic on top of layoutSize (already oriented)
+    // → double aspect swap and wrong crop-rect space on second enter.
+    QImage sample = full;
     SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
-    if (ImageCache::longEdge(display) > ContentXform::kGuiMaterializeMaxEdge) {
-        display = ImageCache::clampToMaxEdge(
-            display, ContentXform::kGuiMaterializeMaxEdge);
+    if (ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
+        sample = ImageCache::clampToMaxEdge(
+            sample, ContentXform::kGuiMaterializeMaxEdge);
         kind = SessionAppearance::PixelKind::SoftPreview;
     }
 
-    // ContentXform: pure materialize from unoriented host when possible (≤512).
-    if (unorientedSource && tryRematerializeFromHost(item, contentOnly)) {
-        m_cropShowingFullImage = true;
-        return;
+    QImage display;
+    if (unorientedSource) {
+        display = SessionAppearance::materializeDisplay(sample, contentOnly, kind);
+    } else {
+        // Sample already oriented (rare cache miss path); contentOnly has no crop.
+        display = sample;
+    }
+    if (display.isNull()) {
+        display = sample;
     }
     attachDisplaySample(item, display, contentOnly, kind);
-    if (unorientedSource && SessionAppearance::hasContentAppearance(contentOnly)) {
-        applyContentBakes(item, contentOnly);
-        applyContentLayoutSize(item, contentOnly);
-        // No scheduleAsyncHostRematerialize here — multi-MP orient during crop
-        // draft is what made enter laggy; Apply uses host if already cached.
-    } else {
-        applyContentLayoutSize(item, contentOnly);
-        item->setAppliedContentXform(ContentXform::Value::fromState(contentOnly));
+    // Geometry: file-native orient size only (never soft pixels, never crop box).
+    applyContentLayoutSize(item, contentOnly);
+    item->setSessionCrop(false, QRect());
+    item->setAppliedContentXform(ContentXform::Value::fromState(contentOnly));
+
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
+        qWarning().noquote()
+            << QStringLiteral(
+                   "[crop] enter-full done imageSize=%1x%2 display=%3x%4 "
+                   "appliedCrop=%5 contentTurns=%6")
+                   .arg(item->imageSize().width()).arg(item->imageSize().height())
+                   .arg(display.width()).arg(display.height())
+                   .arg(item->sessionHasCrop() ? 1 : 0)
+                   .arg(contentOnly.contentQuarterTurns);
     }
     m_cropShowingFullImage = true;
 }
@@ -1022,6 +1037,43 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     }
     const QRect disp(dx, dy, dw, dh);
 
+    // cropSourceSize must be the post-orient full-frame size the draft was
+    // edited in — file-native layoutSize without crop — not a soft sample or
+    // prior crop intrinsic (that breaks second-enter scaleCropRect).
+    QSize cropBasis(iw, ih);
+    {
+        const QString path = item->path();
+        QSize fileNative = logicalSizeForPath(path);
+        if (isPositiveSize(fileNative) && fileNative.width() > 1
+            && !isProvisionalImageSize(path)) {
+            WorkspaceItemState orientOnly;
+            // Prefer appearance turns when present.
+            SessionImageId sidR = item->sessionId();
+            if (sidR == kInvalidSessionImageId && m_cropTargetId != kInvalidSessionImageId) {
+                sidR = m_cropTargetId;
+            }
+            if (sidR == kInvalidSessionImageId && isImageMode()) {
+                sidR = m_currentSessionId;
+            }
+            if (sidR != kInvalidSessionImageId) {
+                if (const WorkspaceItemState *it = m_appearance.get(sidR)) {
+                    orientOnly.contentQuarterTurns = it->contentQuarterTurns;
+                    orientOnly.contentHFlip = it->contentHFlip;
+                    orientOnly.contentVFlip = it->contentVFlip;
+                }
+            } else {
+                orientOnly.contentHFlip = item->contentHFlip();
+                orientOnly.contentVFlip = item->contentVFlip();
+                orientOnly.contentQuarterTurns = item->hasAppliedContentXform()
+                    ? item->appliedContentXform().quarterTurns : 0;
+            }
+            const QSize oriented = ContentXform::layoutSize(fileNative, orientOnly);
+            if (isPositiveSize(oriented) && oriented.width() > 1) {
+                cropBasis = oriented;
+            }
+        }
+    }
+
     WorkspaceItemState s = captureState(item);
     // Appearance is keyed by SessionImageId only. Prefer the locked crop target
     // id; never invent one from the navigation cursor while other tiles exist.
@@ -1056,8 +1108,17 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     } else {
         s.hasCrop = true;
         s.cropRect = disp;
-        s.cropSourceSize = QSize(iw, ih);
+        s.cropSourceSize = cropBasis;
         s.cropRotation = m_cropRotation;
+        if (cropBasis != QSize(iw, ih)
+            && qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
+            qWarning().noquote()
+                << QStringLiteral(
+                       "[crop] record basis=%1x%2 imageSize=%3x%4 rect=%5x%6+%7x%8")
+                       .arg(cropBasis.width()).arg(cropBasis.height())
+                       .arg(iw).arg(ih)
+                       .arg(disp.x()).arg(disp.y()).arg(disp.width()).arg(disp.height());
+        }
     }
     s.path = item->path();
     item->setSessionCrop(s.hasCrop, s.cropRect);
