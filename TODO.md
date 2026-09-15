@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-899-crop-rotate-verify.** Verify ±90° crop map and free cropRotation vs layoutSize.
+Prior: **898**.
+
+### Verified
+- Pure map step matches QImage::trueMatrix (+1 / −1≡3 / 4-turn identity).
+- Stale-orient layoutSize maps, not linear-scales (non-matching crop aspect).
+- Free `cropRotation` does **not** change layoutSize (output box = crop AABB;
+  materialize freeRot path samples into that size).
+- Content ±90° adjusts `cropRotation` by −90°·turns and maps AABB; undo restores.
+
+### Apply
+```bash
+git pull /path/to/biltoo-899-crop-rotate-verify.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-898-layoutsize-crop-orient.** ContentXform layoutSize maps crop across orientation mismatch.
 Prior: **897**.
 

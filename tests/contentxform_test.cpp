@@ -43,6 +43,11 @@ private slots:
     void mapCropThrough_updatesSourceSizeAndRotation();
     void layoutSize_cropThenMappedRotate();
     void layoutSize_staleCropSourceOrientation();
+    void mapCropRect_negativeTurnsEqualsPlusThree();
+    void mapCropRect_fourTurnsIdentity();
+    void layoutSize_freeCropRotationDoesNotChangeSize();
+    void mapCropThrough_freeRotationAngleTracksContentTurn();
+    void layoutSize_freeRotThenContentTurn();
 };
 
 /** Must match SessionAppearance::scaleCropRect (sessionappearance.cpp). */
@@ -378,6 +383,90 @@ void ContentXformTest::layoutSize_staleCropSourceOrientation()
     QCOMPARE(ContentXform::layoutSize(native, x), QSize(1000, 2000));
 }
 
+void ContentXformTest::mapCropRect_negativeTurnsEqualsPlusThree()
+{
+    QSize a(4000, 3000);
+    QSize b(4000, 3000);
+    const QRect crop(100, 200, 800, 600);
+    const QRect mNeg = ContentXform::mapCropRectThroughContentRotate90(crop, a, -1);
+    const QRect mPos = ContentXform::mapCropRectThroughContentRotate90(crop, b, 3);
+    QCOMPARE(a, b);
+    QCOMPARE(mNeg, mPos);
+    QCOMPARE(mNeg.size(), QSize(600, 800));
+}
+
+void ContentXformTest::mapCropRect_fourTurnsIdentity()
+{
+    QSize space(4000, 3000);
+    const QRect crop(100, 200, 800, 600);
+    const QRect mapped =
+        ContentXform::mapCropRectThroughContentRotate90(crop, space, 4);
+    QCOMPARE(space, QSize(4000, 3000));
+    QCOMPARE(mapped, crop);
+}
+
+void ContentXformTest::layoutSize_freeCropRotationDoesNotChangeSize()
+{
+    // Free cropRotation samples a rotated window into an axis-aligned output
+    // of size cropRect (materializeDisplay freeRot path). layoutSize is the
+    // output box — independent of cropRotation angle.
+    const QSize native(4000, 3000);
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(100, 200, 800, 600);
+    x.cropSourceSize = native;
+    x.cropRotation = 0.0;
+    QCOMPARE(ContentXform::layoutSize(native, x), QSize(800, 600));
+
+    x.cropRotation = 37.5;
+    QCOMPARE(ContentXform::layoutSize(native, x), QSize(800, 600));
+
+    x.cropRotation = -15.0;
+    x.quarterTurns = 1;
+    // Stale orient: map path yields 600×800; free angle still ignored for size.
+    ContentXform::Value y = x;
+    y.cropSourceSize = QSize(3000, 4000); // already post-orient for turns=1
+    y.cropRect = QRect(2200, 100, 600, 800);
+    QCOMPARE(ContentXform::layoutSize(native, y), QSize(600, 800));
+}
+
+void ContentXformTest::mapCropThrough_freeRotationAngleTracksContentTurn()
+{
+    // Content ±90° must keep the free crop window relative to the pixels:
+    // AABB maps through trueMatrix; cropRotation shifts by −90° per step.
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(500, 400, 1200, 900);
+    x.cropSourceSize = QSize(4000, 3000);
+    x.cropRotation = 15.0;
+    ContentXform::mapCropThroughContentRotate90(x, 1);
+    QCOMPARE(x.cropRotation, -75.0);
+    QCOMPARE(x.cropSourceSize, QSize(3000, 4000));
+    QCOMPARE(x.cropRect.size(), QSize(900, 1200));
+
+    ContentXform::mapCropThroughContentRotate90(x, -1); // undo
+    QCOMPARE(x.cropRotation, 15.0);
+    QCOMPARE(x.cropSourceSize, QSize(4000, 3000));
+    QCOMPARE(x.cropRect.size(), QSize(1200, 900));
+    QCOMPARE(x.cropRect, QRect(500, 400, 1200, 900));
+}
+
+void ContentXformTest::layoutSize_freeRotThenContentTurn()
+{
+    // Apply path: free-rot crop recorded, then content +90° with map.
+    const QSize native(4000, 3000);
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(100, 200, 800, 600);
+    x.cropSourceSize = native;
+    x.cropRotation = 22.5;
+    ContentXform::mapCropThroughContentRotate90(x, 1);
+    x.quarterTurns = 1;
+    QCOMPARE(x.cropRotation, 22.5 - 90.0);
+    QCOMPARE(ContentXform::layoutSize(native, x), QSize(600, 800));
+}
+
 QTEST_MAIN(ContentXformTest)
 #include "contentxform_test.moc"
+
 
