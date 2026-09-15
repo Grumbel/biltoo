@@ -208,7 +208,10 @@ void WorkspaceController::restoreStashedItems()
                     item, full, SessionAppearance::PixelKind::FullSource,
                     item->sessionId());
             } else {
-                SessionAppearance::applyContentToItem(item, *app);
+                // No full host: rematerialize from ImageCache soft/host (stand-in
+                // + async). Do not applyContentToItem alone — multi-MP cannot
+                // bake crop on the GUI and must not claim applied == want.
+                m_view->rematerializeItemContent(item, *app);
             }
         } else {
             // Grade-only / already full: chrome + grade without pixel reload.

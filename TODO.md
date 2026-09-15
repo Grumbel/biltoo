@@ -2,6 +2,29 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-926-workspace-restore-rematerialize.** Workspace restore rematerializes when full host reload fails.
+Prior: **925**.
+
+### Problem
+Workspace leave→enter content reapply used `applyContentToItem` when
+`fullRasterForEdit` missed. Multi-MP + crop claimed applied without bake
+(same class as 925 restore).
+
+### Fix
+On full miss: `rematerializeItemContent` (soft stand-in + async). Keep
+`installDisplayPixels` when full host is available.
+
+### Apply
+```bash
+git pull /path/to/biltoo-926-workspace-restore-rematerialize.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-925-restore-rematerialize.** completeLoadRestore rematerializes store want; applyContentToItem multi-MP does not claim crop applied.
 Prior: **924**.
 
