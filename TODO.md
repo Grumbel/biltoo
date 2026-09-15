@@ -2,6 +2,24 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-971-apply-display-surface-action-body.** Define applyDisplaySurfaceAction.
+Prior: **970** (call sites only; body was missing — link fix).
+
+### Change
+- Implements `ImageView::applyDisplaySurfaceAction` (climb / async / attach +
+  soft→async re-eval). Required by tip 970 call sites.
+
+### Apply
+```bash
+git pull /path/to/biltoo-971-apply-display-surface-action-body.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-970-apply-display-surface-action.** Shared Action executor.
 Prior: **969**.
 

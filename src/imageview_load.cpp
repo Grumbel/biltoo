@@ -518,6 +518,93 @@ DisplaySurface::State ImageView::displaySurfaceStateForItem(const ImageItem *ite
     return ds;
 }
 
+bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
+                                          const DisplaySurface::Action &act,
+                                          const QImage &hostSample,
+                                          int fallbackNeedEdge,
+                                          PathRasterService::ClimbPolicy climbPolicy)
+{
+    if (!item) {
+        return false;
+    }
+    using AT = DisplaySurface::ActionType;
+    if (act.type == AT::None) {
+        return false;
+    }
+    const QString path = item->path();
+    if (path.isEmpty()) {
+        return false;
+    }
+    if (act.type == AT::ScheduleClimb) {
+        if (!m_pathRaster) {
+            return false;
+        }
+        const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : fallbackNeedEdge;
+        if (need > 0) {
+            m_pathRaster->ensure(path, need, logicalSizeForPath(path), climbPolicy);
+        }
+        return false;
+    }
+    if (act.type == AT::ScheduleAsyncMaterialize) {
+        scheduleAsyncHostRematerialize(
+            path, item->sessionId(),
+            wantAppearanceForItem(item, item->sessionId()));
+        return false;
+    }
+    if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
+        QImage host = hostSample;
+        if (host.isNull()) {
+            host = ImageCache::get(path);
+        }
+        if (host.isNull()) {
+            return false;
+        }
+        const auto kind = (act.type == AT::AttachSoft)
+            ? SessionAppearance::PixelKind::SoftPreview
+            : SessionAppearance::PixelKind::FullSource;
+        if (!canAcceptDisplaySample(item, host, kind)) {
+            return false;
+        }
+        const QSize before = item->imageSize();
+        if (isImageMode()) {
+            installImageModeSampleInPlace(item, path, host, kind);
+        } else {
+            installDisplayPixels(item, host, kind, item->sessionId());
+            item->update();
+            if (m_scene) {
+                m_scene->update(item->sceneBoundingRect());
+            }
+        }
+        const bool sizeChanged = (item->imageSize() != before);
+        if (act.type == AT::AttachSoft) {
+            syncItemDisplaySurface(item, ImageCache::longEdge(host),
+                m_pathRaster && m_pathRaster->isClimbPending(path));
+            const DisplaySurface::SurfaceId sid =
+                static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
+            const DisplaySurface::Action again =
+                (sid != DisplaySurface::kInvalidSurfaceId)
+                    ? m_displaySurfaces.evaluate(sid)
+                    : DisplaySurface::decide(
+                          displaySurfaceStateForItem(
+                              item, ImageCache::longEdge(host), false));
+            if (again.type == AT::ScheduleAsyncMaterialize) {
+                scheduleAsyncHostRematerialize(
+                    path, item->sessionId(),
+                    wantAppearanceForItem(item, item->sessionId()));
+            } else if (again.type == AT::ScheduleClimb && m_pathRaster) {
+                const int need = again.climbNeedEdge > 0 ? again.climbNeedEdge
+                                                         : fallbackNeedEdge;
+                if (need > 0) {
+                    m_pathRaster->ensure(path, need, logicalSizeForPath(path),
+                                         climbPolicy);
+                }
+            }
+        }
+        return sizeChanged;
+    }
+    return false;
+}
+
 bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
                                        SessionAppearance::PixelKind kind) const
 {
