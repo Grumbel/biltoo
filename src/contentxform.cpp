@@ -126,13 +126,21 @@ void mapCropThroughContentRotate90(Value &x, int quarterTurns)
     }
     x.cropRect = mapCropRectThroughContentRotate90(x.cropRect, sz, quarterTurns);
     x.cropSourceSize = sz;
-    x.cropRotation -= 90.0 * quarterTurns;
-    // Normalize cropRotation into (-180, 180].
-    while (x.cropRotation > 180.0) {
-        x.cropRotation -= 360.0;
-    }
-    while (x.cropRotation <= -180.0) {
-        x.cropRotation += 360.0;
+    // Free-crop angle conjugates with content turns so the same pixels stay
+    // selected. Axis-aligned crops (cropRotation ≈ 0) only need the AABB map —
+    // subtracting 90° would arm materializeDisplay's freeRot path and stack a
+    // second 90° on top of contentQuarterTurns (looks like 180°).
+    constexpr qreal kFreeRotEps = 0.05;
+    if (qAbs(x.cropRotation) > kFreeRotEps) {
+        x.cropRotation -= 90.0 * quarterTurns;
+        while (x.cropRotation > 180.0) {
+            x.cropRotation -= 360.0;
+        }
+        while (x.cropRotation <= -180.0) {
+            x.cropRotation += 360.0;
+        }
+    } else {
+        x.cropRotation = 0.0;
     }
 }
 

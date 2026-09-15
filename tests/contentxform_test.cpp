@@ -345,12 +345,13 @@ void ContentXformTest::mapCropThrough_updatesSourceSizeAndRotation()
     ContentXform::mapCropThroughContentRotate90(x, 1);
     QCOMPARE(x.cropSourceSize, QSize(3000, 4000));
     QCOMPARE(x.cropRect.size(), QSize(1000, 2000));
-    QCOMPARE(x.cropRotation, -90.0);
+    // Axis-aligned: AABB maps; cropRotation stays 0 (not −90).
+    QCOMPARE(x.cropRotation, 0.0);
 
     ContentXform::mapCropThroughContentRotate90(x, 1);
     QCOMPARE(x.cropSourceSize, QSize(4000, 3000));
     QCOMPARE(x.cropRect.size(), QSize(2000, 1000));
-    QCOMPARE(x.cropRotation, -180.0);
+    QCOMPARE(x.cropRotation, 0.0);
 }
 
 void ContentXformTest::layoutSize_cropThenMappedRotate()

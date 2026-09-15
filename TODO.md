@@ -2,6 +2,29 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-908-crop-rotate-no-double.** Axis-aligned crop + content rotate must not arm freeRot.
+Prior: **907**.
+
+### Bug
+`mapCropThroughContentRotate90` always did `cropRotation -= 90°`. An axis-aligned
+crop (0°) became −90°, so `materializeDisplay` applied content quarter-turns **and**
+the free-crop window rotation → pixels looked ~180° while the content rect only
+moved 90°.
+
+### Fix
+Only conjugate cropRotation when |angle| > ε; otherwise keep 0 after AABB map.
+
+### Apply
+```bash
+git pull /path/to/biltoo-908-crop-rotate-no-double.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-907-sticky-image-only.** Sticky zoom is Image-mode only; Gallery selection sticky rolled back.
 Prior: **906**.
 

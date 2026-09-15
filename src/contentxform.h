@@ -62,7 +62,10 @@ QRect mapCropRectThroughContentRotate90(QRect crop, QSize &space, int quarterTur
 
 /**
  * Map crop geometry on a Value through content ±90° steps (same as above).
- * Updates cropRect, cropSourceSize, and cropRotation. No-op if no crop or 0 turns.
+ * Updates cropRect and cropSourceSize. cropRotation is shifted by −90°×turns
+ * only when the crop was already free-rotated (|angle| > ε); axis-aligned crops
+ * keep cropRotation = 0 so materialize does not stack freeRot on content turns.
+ * No-op if no crop or 0 turns.
  */
 void mapCropThroughContentRotate90(Value &x, int quarterTurns);
 
