@@ -24,6 +24,21 @@
 #include <QStyleOptionGraphicsItem>
 #include <QtMath>
 
+bool ImageItem::s_contentEditMarksVisible = true;
+
+void ImageItem::setContentEditMarksVisible(bool on)
+{
+    if (s_contentEditMarksVisible == on) {
+        return;
+    }
+    s_contentEditMarksVisible = on;
+}
+
+bool ImageItem::contentEditMarksVisible()
+{
+    return s_contentEditMarksVisible;
+}
+
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
     : QGraphicsPixmapItem(parent)
     , m_path(path)

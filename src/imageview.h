@@ -774,6 +774,9 @@ public:
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
     bool hudVisible() const { return m_hudVisible; }
+    /** Corner marks for crop / orient / grade (default on). */
+    void setContentEditMarksVisible(bool on);
+    bool contentEditMarksVisible() const;
     void setHudFontPointSize(int pt);
     int hudFontPointSize() const { return m_hudFontPointSize; }
     void setHudTextColor(const QColor &color);

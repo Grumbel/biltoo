@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "contentxform.h"
 
 #include <QCoreApplication>
 #include "placementlinear.h"
@@ -1139,29 +1140,62 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
     const QRectF r = cropped ? crop : displayContentRect();
 
-    // Content crop badge: yellow triangle, bottom-right of the tile (same cue
-    // as the filmstrip). Drawn in item local space; size scales with the tile.
-    if (m_sessionHasCrop && r.width() > 12.0 && r.height() > 12.0) {
-        painter->save();
-        painter->setOpacity(1.0);
+    // Content-edit marks (View → Show content edit marks). Crop stays bottom-right
+    // (filmstrip parity). Orient / grade sit bottom-left so they do not collide.
+    if (contentEditMarksVisible() && r.width() > 12.0 && r.height() > 12.0) {
         const qreal fold = qBound(10.0, qMin(r.width(), r.height()) * 0.12, 36.0);
-        const QPointF br(r.right(), r.bottom());
-        const QPointF left(br.x() - fold, br.y());
-        const QPointF top(br.x(), br.y() - fold);
-        QPolygonF face;
-        face << left << br << top;
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(242, 196, 40));
-        painter->drawPolygon(face);
-        const QPointF mid((left.x() + top.x()) * 0.5, (left.y() + top.y()) * 0.5);
-        QPolygonF under;
-        under << left << mid << top;
-        painter->setBrush(QColor(200, 150, 20));
-        painter->drawPolygon(under);
-        painter->setPen(QPen(QColor(0, 0, 0, 90), 0));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawLine(left, top);
-        painter->restore();
+
+        auto drawCornerFold = [&](const QPointF &corner, const QPointF &alongX,
+                                  const QPointF &alongY, const QColor &face,
+                                  const QColor &shade) {
+            painter->save();
+            painter->setOpacity(1.0);
+            const QPointF a = corner + alongX;
+            const QPointF b = corner + alongY;
+            QPolygonF tri;
+            tri << a << corner << b;
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(face);
+            painter->drawPolygon(tri);
+            const QPointF mid((a.x() + b.x()) * 0.5, (a.y() + b.y()) * 0.5);
+            QPolygonF under;
+            under << a << mid << b;
+            painter->setBrush(shade);
+            painter->drawPolygon(under);
+            painter->setPen(QPen(QColor(0, 0, 0, 100), 0));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawLine(a, b);
+            painter->restore();
+        };
+
+        // Crop: yellow fold, bottom-right.
+        if (m_sessionHasCrop
+            || (m_hasAppliedContentXform && m_appliedContentXform.hasCrop)) {
+            drawCornerFold(QPointF(r.right(), r.bottom()),
+                           QPointF(-fold, 0), QPointF(0, -fold),
+                           QColor(242, 196, 40), QColor(200, 150, 20));
+        }
+
+        // Orient (flip / 90°): cyan fold, bottom-left.
+        bool orient = m_contentHFlip || m_contentVFlip;
+        if (m_hasAppliedContentXform) {
+            const ContentXform::Value &x = m_appliedContentXform;
+            orient = orient || x.hFlip || x.vFlip || x.quarterTurns != 0;
+        }
+        if (orient) {
+            drawCornerFold(QPointF(r.left(), r.bottom()),
+                           QPointF(fold, 0), QPointF(0, -fold),
+                           QColor(56, 189, 248), QColor(14, 116, 144));
+        }
+
+        // Grade: coral fold, slightly inset from bottom-left when orient also set.
+        const bool grade = !m_colorAdjust.isIdentity();
+        if (grade) {
+            const qreal inset = orient ? fold * 0.55 : 0.0;
+            drawCornerFold(QPointF(r.left() + inset, r.bottom()),
+                           QPointF(fold * 0.85, 0), QPointF(0, -fold * 0.85),
+                           QColor(251, 113, 133), QColor(190, 48, 78));
+        }
     }
 
     // Gallery: selection frame only (classic multi-select). Hover is for HUD

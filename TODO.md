@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-997-content-edit-marks.** Corner marks + View toggle for content edits.
+Prior: **996**.
+
+### UI
+- **Crop**: yellow fold, bottom-right (existing)
+- **Orient / flip**: cyan fold, bottom-left
+- **Grade**: coral fold, bottom-left (inset if orient also set)
+- **View → Show content edit marks** (default on, persisted)
+
+### Apply
+```bash
+git pull /path/to/biltoo-997-content-edit-marks.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-996-seed-durable-orient-on-open.** Load path XDG rotate/flip after restart.
 Prior: **995**.
 

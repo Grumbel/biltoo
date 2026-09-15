@@ -3044,6 +3044,16 @@ void MainWindow::readSettings()
         if (m_toggleHudAct) {
             m_toggleHudAct->setChecked(hud);
         }
+        {
+            const bool editMarks =
+                settings.value(QStringLiteral("contentEditMarksVisible"), true).toBool();
+            if (m_toggleContentEditMarksAct) {
+                m_toggleContentEditMarksAct->setChecked(editMarks);
+            }
+            if (m_imageView) {
+                m_imageView->setContentEditMarksVisible(editMarks);
+            }
+        }
         m_imageView->setHudFontPointSize(
             settings.value(QStringLiteral("hudFontPointSize"), 11).toInt());
         {
@@ -3253,6 +3263,8 @@ void MainWindow::writeSettings()
         settings.setValue(QStringLiteral("imageModeLeftDragPan"),
                           m_imageView->imageModeLeftDragPan());
         settings.setValue(QStringLiteral("hudVisible"), m_imageView->hudVisible());
+        settings.setValue(QStringLiteral("contentEditMarksVisible"),
+                          m_imageView->contentEditMarksVisible());
         settings.setValue(QStringLiteral("hudFontPointSize"), m_imageView->hudFontPointSize());
         settings.setValue(QStringLiteral("hudTextColor"), m_imageView->hudTextColor().name(QColor::HexArgb));
         settings.setValue(QStringLiteral("hudPanelColor"), m_imageView->hudPanelColor().name(QColor::HexArgb));

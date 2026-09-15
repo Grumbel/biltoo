@@ -289,6 +289,9 @@ public:
     void paintInteractionChrome(QPainter *painter) const;
     /** Selection outline only (multi-select); no scale/rotate/chrome buttons. */
     void paintSelectionFrame(QPainter *painter) const;
+    /** View menu: corner marks for orient / grade / crop (default on). */
+    static void setContentEditMarksVisible(bool on);
+    static bool contentEditMarksVisible();
     /** View-driven hover highlight for chrome (keeps highlight in sync with hits). */
     void setHoverHandle(Handle h);
     Handle hoverHandle() const { return m_hoverHandle; }
@@ -373,6 +376,7 @@ private:
     bool m_vFlip = false;
     /** Net baked content flips (chrome indicator); independent of m_hFlip/m_vFlip. */
     bool m_contentHFlip = false;
+    static bool s_contentEditMarksVisible;
     bool m_contentVFlip = false;
     bool m_sessionHasCrop = false;
     QRect m_sessionCropRect;

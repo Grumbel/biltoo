@@ -682,6 +682,27 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
     }
 }
 
+void ImageView::setContentEditMarksVisible(bool on)
+{
+    ImageItem::setContentEditMarksVisible(on);
+    if (m_scene) {
+        for (ImageItem *it : m_items) {
+            if (it) {
+                it->update();
+            }
+        }
+        m_scene->update();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+bool ImageView::contentEditMarksVisible() const
+{
+    return ImageItem::contentEditMarksVisible();
+}
+
 void ImageView::setHudVisible(bool on)
 {
     if (m_hudVisible == on) {

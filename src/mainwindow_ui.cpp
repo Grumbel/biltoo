@@ -280,6 +280,17 @@ void MainWindow::createActions()
     m_toggleHudAct->setCheckable(true);
     m_toggleHudAct->setStatusTip(tr("Show an on-image overlay with filename, zoom and size"));
     connect(m_toggleHudAct, &QAction::triggered, this, &MainWindow::toggleHud);
+
+    m_toggleContentEditMarksAct = new QAction(tr("Show content &edit marks"), this);
+    m_toggleContentEditMarksAct->setCheckable(true);
+    m_toggleContentEditMarksAct->setChecked(true);
+    m_toggleContentEditMarksAct->setStatusTip(
+        tr("Corner marks on tiles with crop (yellow), orient/flip (cyan), or grade (coral)"));
+    connect(m_toggleContentEditMarksAct, &QAction::toggled, this, [this](bool on) {
+        if (m_imageView) {
+            m_imageView->setContentEditMarksVisible(on);
+        }
+    });
     m_showTextRegionsAct = new QAction(tr("Show &Text Regions"), this);
     m_showTextRegionsAct->setCheckable(true);
     m_showTextRegionsAct->setStatusTip(
@@ -962,6 +973,7 @@ void MainWindow::createMenus()
     zoomMenu->addAction(m_zoomRegionAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
+    m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addSeparator();
