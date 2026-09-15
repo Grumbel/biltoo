@@ -677,10 +677,20 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
     m_gallerySizeResolveProgressTimer->start();
     updateGallerySizeResolveProgressHud();
     emit statusChanged();
-    // Let the centre HUD paint before sizeReady callbacks can finish the gate
-    // in one burst (multi-file open used to look like an instant Fit with no
-    // progress).
-    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    // Do NOT processEvents here. Queued sizeReady can finish the entire gate
+    // before setWorkspacePaths arms m_galleryDeferPopulate and clearLiveCanvas,
+    // which either wipes a premature pack or leaves defer stuck with an empty
+    // canvas. HUD updates on the next event-loop turn via the progress timer
+    // (50ms) and a single deferred repaint.
+    QTimer::singleShot(0, this, [this]() {
+        if (!m_gallerySizeResolveActive) {
+            return;
+        }
+        updateGallerySizeResolveProgressHud();
+        if (viewport()) {
+            viewport()->update();
+        }
+    });
     return true;
 }
 

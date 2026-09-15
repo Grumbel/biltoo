@@ -175,10 +175,17 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         // Drop any leftover Image/Gallery tiles so nothing paints at random
         // poses while probes run (D&D / mode switch residue).
         clearLiveCanvas();
-        finishSetWorkspacePaths(haveIds, paths, sessionIds);
-        return;
+        if (m_gallerySizeResolveActive) {
+            // Async probes still in flight — pack once when the gate finishes.
+            finishSetWorkspacePaths(haveIds, paths, sessionIds);
+            return;
+        }
+        // Gate finished synchronously (cached sizeReady during start). Populate
+        // now; defer is meaningless without an active resolve.
+        m_galleryDeferPopulate = false;
+    } else {
+        m_galleryDeferPopulate = false;
     }
-    m_galleryDeferPopulate = false;
 
     // Gallery always virtualizes: placeholders + soft/full ladder. The old
     // threshold (80) left smaller PDF/DjVu sessions with *no* tiles — LoadAdd

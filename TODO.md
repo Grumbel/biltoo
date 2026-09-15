@@ -2,6 +2,32 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-937-size-resolve-no-processEvents.** Size-resolve must not processEvents before defer is armed.
+Prior: **936**.
+
+### Problem
+`startGallerySizeResolveIfNeeded` called `QCoreApplication::processEvents` so the
+HUD could paint. Queued/sync `sizeReady` could then run `finishGallerySizeResolve`
+*before* `setWorkspacePaths` set `m_galleryDeferPopulate` and after an empty
+pack — or clear a pack and leave `defer` stuck with no tiles. Cold/semi-cold
+open looked like random placement then a second correct pack (or empty).
+
+### Fix
+- Remove `processEvents`; HUD via existing 50ms progress timer + singleShot(0).
+- If resolve is already inactive when start returns true, clear defer and fall
+  through to normal placeholder populate (sync sizeReady during start).
+
+### Apply
+```bash
+git pull /path/to/biltoo-937-size-resolve-no-processEvents.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-936-gallery-enter-no-premature-pack.** Cold Gallery enter does not pack previous-mode tiles.
 Prior: **935**.
 
