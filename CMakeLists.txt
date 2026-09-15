@@ -467,6 +467,15 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-contentxform-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME contentxform COMMAND biltoo-contentxform-test)
 
+  add_executable(biltoo-displaysurface-test
+    tests/displaysurface_test.cpp
+    src/displaysurface.cpp
+    src/contentxform.cpp
+  )
+  target_include_directories(biltoo-displaysurface-test PRIVATE src)
+  target_link_libraries(biltoo-displaysurface-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME displaysurface COMMAND biltoo-displaysurface-test)
+
   # sessionappearance.cpp also needs ImageItem — crop geometry is covered in
   # contentxform_test (layoutSize + scaleCropRect formula). Do not link a partial
   # sessionappearance TU without imageitem (undefined refs at link time).

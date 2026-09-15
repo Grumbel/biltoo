@@ -2,6 +2,37 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-954-displaysurface-decide.** DisplaySurface decide() + controller skeleton.
+Prior: **953**.
+
+### Change
+Phase B of [docs/DISPLAY_SURFACE.md](docs/DISPLAY_SURFACE.md) — **no ImageView wiring**.
+
+- `src/displaysurface.h` / `.cpp`: pure `DisplaySurface::decide(State)` +
+  `DisplaySurfaceController` registry (bind / need / freeze / host / attached /
+  want / evaluate).
+- `tests/displaysurface_test.cpp`: frozen, FullSource+crop ignores large host,
+  soft→async only (no re-soft), blank climb/soft/full, want change, climbPending,
+  two sids one path.
+- CMake: `biltoo-displaysurface-test`.
+
+Normative: settled FullSource matching want → None (pulse root cause). Soft
+matching want + multi-MP host → ScheduleAsyncMaterialize only.
+
+### Next
+**955** Phase C — ImageFocus behind controller (thin attach; event path for soft→full).
+
+### Apply
+```bash
+git pull /path/to/biltoo-954-displaysurface-decide.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-953-display-surface-plan.** DisplaySurfaceController design lock (docs only).
 Prior: **952**.
 
