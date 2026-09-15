@@ -2,6 +2,51 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-935-ground-truth-status.** Install invariant closed; handoff notes for next work.
+Prior: **934**.
+
+### Ground truth (do not reopen dual paths)
+
+```text
+SessionAppearanceStore (by SessionImageId) = want
+ImageCache (by path) = unoriented host only
+display = materializeDisplay(host, want) → attachDisplaySample
+```
+
+| API | Role |
+|-----|------|
+| `installDisplayPixels` | Sole host→display gate (soft stand-in + async multi-MP) |
+| `rematerializeItemContent` | Re-bake from ImageCache/host |
+| `attachDisplaySample` | Already-baked only (peer / duplicate / undo / crop Apply) |
+| `materializeDisplay` / `applyContentToImage` | Pure QImage (filmstrip, slideshow phase) |
+
+Removed (no dual path): `applyContentToItem`, `applyContentBakes`, `prepareImageModeDisplaySample`,
+`SessionAppearance::applyCrop`, `applySessionCrop`, `syncItemLayoutToContentOrientation`.
+
+### Intentional limitations (not bugs)
+
+1. Live multi-MP rotate/flip: incremental bakeFlip/bakeRotate90 then async pure rematerialize.
+2. Crop enter: orient-only full frame (crop stripped for draft space).
+3. SoftPreview: soft crop sample stretched into `layoutSize` box (paint contract).
+
+### Do not
+
+- `ImageCache::put` content-baked display
+- `createItemFromImage` with already-baked `sourceImage`/`preview`
+- Set `applied == want` without a matching bake
+- Strip `hasCrop` before materialize (except crop-enter draft)
+
+### Apply
+```bash
+git pull /path/to/biltoo-935-ground-truth-status.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-934-remove-dead-crop-helpers.** Remove unused applyCrop / applySessionCrop / syncItemLayout.
 Prior: **933**.
 
