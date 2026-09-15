@@ -1717,7 +1717,13 @@ void ImageView::completeLoadRestore(const QString &path, const QImage &image)
     if (state.sessionIndex >= 0) {
         item->setSessionIndex(state.sessionIndex);
     }
-    SessionAppearance::applyContentToItem(item, app);
+    // Host is in ImageCache / item. Materialize store want (soft stand-in +
+    // async multi-MP). Do not use applyContentToItem alone — multi-MP cannot
+    // bake crop on the GUI and used to claim applied == want without pixels.
+    if (SessionAppearance::hasContentAppearance(app)
+        || !app.colorAdjust.isIdentity()) {
+        rematerializeItemContent(item, app);
+    }
     applyState(item, app);
     if (m_layoutMode != LayoutMode::FreeForm
         && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {

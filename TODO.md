@@ -2,6 +2,29 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-925-restore-rematerialize.** completeLoadRestore rematerializes store want; applyContentToItem multi-MP does not claim crop applied.
+Prior: **924**.
+
+### Problem
+`completeLoadRestore` used `SessionAppearance::applyContentToItem` after
+host-only `createItemFromImage`. For multi-MP + crop, applyContentToItem set
+`applied = want` without baking pixels (host under crop).
+
+### Fix
+- Restore: `rematerializeItemContent` (soft stand-in + async) when want has content.
+- `applyContentToItem` multi-MP: applied is orient-only; crop left to caller rematerialize.
+
+### Apply
+```bash
+git pull /path/to/biltoo-925-restore-rematerialize.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-924-createitem-host-materialize.** createItemFromImage treats image as host-raw; materialize want at create.
 Prior: **923**.
 

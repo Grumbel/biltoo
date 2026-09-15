@@ -319,13 +319,20 @@ void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
     const int edge = qMax(raw.width(), raw.height());
     if (edge > ContentXform::kGuiMaterializeMaxEdge
         && (hasContentAppearance(state) || !state.colorAdjust.isIdentity())) {
-        // Cannot materialize multi-MP on GUI — chrome only; caller should schedule
-        // ImageView::rematerializeItemContent / scheduleAsyncHostRematerialize.
+        // Cannot materialize multi-MP on GUI. Chrome may reflect orient intent,
+        // but applied must not claim full want (crop included) while pixels are
+        // still host-raw — that is the host-under-want lie. Caller must
+        // rematerializeItemContent / scheduleAsyncHostRematerialize.
         item->setContentHFlip(state.contentHFlip);
         item->setContentVFlip(state.contentVFlip);
         item->setSessionCrop(state.hasCrop, state.cropRect);
         item->setColorAdjustmentsRecord(state.colorAdjust);
-        item->setAppliedContentXform(ContentXform::Value::fromState(state));
+        WorkspaceItemState orientOnly = state;
+        orientOnly.hasCrop = false;
+        orientOnly.cropRect = {};
+        orientOnly.cropSourceSize = {};
+        orientOnly.cropRotation = 0.0;
+        item->setAppliedContentXform(ContentXform::Value::fromState(orientOnly));
         return;
     }
 
