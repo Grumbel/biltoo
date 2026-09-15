@@ -1669,52 +1669,65 @@ void ImageView::displayQualityWatchdogTick()
         ImageItem *item = primaryItem();
         if (item && !item->path().isEmpty()) {
             const QString path = item->path();
-            const int shown = item->displayPixelLongEdge();
-            const int target = cappedDisplayEdgeForPath(
-                path, qMax(viewport() ? qMax(viewport()->width(), viewport()->height()) : 0,
-                           DisplayQuality::kSoftMaxEdge));
-            const bool pending =
-                m_pathRaster && m_pathRaster->isClimbPending(path);
-            const DisplayQuality::Check dq =
-                DisplayQuality::checkSurface(path, shown, target, pending);
-            if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
-                const QImage host = ImageCache::get(path);
-                // Kind must match host edge: SoftPreview is rejected when the
-                // item already holds FullSource (even a smaller overview). Using
-                // SoftPreview here left shown=1024 while host=2048 forever and
-                // spam install-host-better.
-                const auto kind =
-                    (ImageCache::longEdge(host) > ThumtooCache::kGalleryLadderEdge)
-                        ? SessionAppearance::PixelKind::FullSource
-                        : SessionAppearance::PixelKind::SoftPreview;
-                if (!host.isNull() && canAcceptDisplaySample(item, host, kind)) {
-                    installDisplayPixels(item, host, kind, item->sessionId());
-                    if (viewport()) {
-                        viewport()->update();
+            // Settled FullSource matching store want: host edge is pre-crop;
+            // shown is post-crop. checkSurface would spam InstallHostBetter and
+            // (via install) soft-demote every 1s. Skip — no climb, no install.
+            bool settledFullBake = false;
+            if (item->hasDecodedPixels() && item->hasAppliedContentXform()) {
+                const WorkspaceItemState wantState =
+                    wantAppearanceForItem(item, item->sessionId());
+                settledFullBake = ContentXform::equal(
+                    item->appliedContentXform(),
+                    ContentXform::Value::fromState(wantState));
+            }
+            if (!settledFullBake) {
+                const int shown = item->displayPixelLongEdge();
+                const int target = cappedDisplayEdgeForPath(
+                    path, qMax(viewport() ? qMax(viewport()->width(), viewport()->height()) : 0,
+                               DisplayQuality::kSoftMaxEdge));
+                const bool pending =
+                    m_pathRaster && m_pathRaster->isClimbPending(path);
+                const DisplayQuality::Check dq =
+                    DisplayQuality::checkSurface(path, shown, target, pending);
+                if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
+                    const QImage host = ImageCache::get(path);
+                    // Kind must match host edge: SoftPreview is rejected when the
+                    // item already holds FullSource (even a smaller overview). Using
+                    // SoftPreview here left shown=1024 while host=2048 forever and
+                    // spam install-host-better.
+                    const auto kind =
+                        (ImageCache::longEdge(host) > ThumtooCache::kGalleryLadderEdge)
+                            ? SessionAppearance::PixelKind::FullSource
+                            : SessionAppearance::PixelKind::SoftPreview;
+                    if (!host.isNull() && canAcceptDisplaySample(item, host, kind)) {
+                        installDisplayPixels(item, host, kind, item->sessionId());
+                        if (viewport()) {
+                            viewport()->update();
+                        }
+                        // Still short of on-screen target — keep climbing.
+                        if (item->displayPixelLongEdge() < (target * 9) / 10
+                            && m_pathRaster) {
+                            m_pathRaster->ensure(
+                                path, target, logicalSizeForPath(path),
+                                PathRasterService::ClimbPolicy::EscalateToFull);
+                        }
+                    } else {
+                        DisplayQuality::reportViolation("image", path, dq, false);
+                        if (m_pathRaster) {
+                            m_pathRaster->ensure(
+                                path, target, logicalSizeForPath(path),
+                                PathRasterService::ClimbPolicy::EscalateToFull);
+                        }
                     }
-                    // Still short of on-screen target — keep climbing.
-                    if (item->displayPixelLongEdge() < (target * 9) / 10
-                        && m_pathRaster) {
-                        m_pathRaster->ensure(
-                            path, target, logicalSizeForPath(path),
-                            PathRasterService::ClimbPolicy::EscalateToFull);
-                    }
-                } else {
-                    DisplayQuality::reportViolation("image", path, dq, false);
+                } else if (dq.verdict != DisplayQuality::Verdict::Ok && !pending) {
+                    // Recover first; gallery owns sustained hard-assert via weakSinceMs.
+                    DisplayQuality::reportViolation("image", path, dq,
+                                                   /*assertHard=*/false);
                     if (m_pathRaster) {
                         m_pathRaster->ensure(
                             path, target, logicalSizeForPath(path),
                             PathRasterService::ClimbPolicy::EscalateToFull);
                     }
-                }
-            } else if (dq.verdict != DisplayQuality::Verdict::Ok && !pending) {
-                // Recover first; gallery owns sustained hard-assert via weakSinceMs.
-                DisplayQuality::reportViolation("image", path, dq,
-                                               /*assertHard=*/false);
-                if (m_pathRaster) {
-                    m_pathRaster->ensure(
-                        path, target, logicalSizeForPath(path),
-                        PathRasterService::ClimbPolicy::EscalateToFull);
                 }
             }
         }

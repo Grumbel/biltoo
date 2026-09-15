@@ -707,6 +707,12 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
             }
         }
     }
+    // Already settled FullSource for this want — do not re-attach (avoids a
+    // paint flash if a late async completes after an earlier full bake).
+    if (item->hasDecodedPixels() && item->hasAppliedContentXform()
+        && ContentXform::equal(item->appliedContentXform(), wantX)) {
+        return;
+    }
     const QSize before = item->imageSize();
     attachDisplaySample(item, display, want, SessionAppearance::PixelKind::FullSource);
     applyContentLayoutSize(item, want);

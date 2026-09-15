@@ -501,6 +501,14 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
     const ContentXform::Value applied = item->hasAppliedContentXform()
         ? item->appliedContentXform()
         : ContentXform::Value{};
+    // FullSource bake already matches store want. Host long edge is *pre-crop*
+    // file size; displayPixelLongEdge is *post-crop*. Comparing them as an
+    // "upgrade" re-accepts FullSource installs forever → soft demote (GUI max
+    // 512) + async full bake every watchdog tick (1s soft↔full pulse on crop).
+    if (item->hasDecodedPixels() && item->hasAppliedContentXform()
+        && ContentXform::equal(applied, want)) {
+        return false;
+    }
     const int shown = item->displayPixelLongEdge();
     // No applied fingerprint yet: fall back to edge-only (pre-tag tiles).
     if (!item->hasAppliedContentXform()) {

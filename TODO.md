@@ -2,6 +2,51 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-952-crop-settled-no-quality-pulse.** Cropped FullSource bake is settled; stop 1s soft↔full pulse.
+Prior: **951**.
+
+### Root cause (why freeze never fixed the pulse)
+The 1s `m_gallerySoftWatchdog` → `displayQualityWatchdogTick` is the only continuous
+pulse. Freeze (`m_cropDraftSampleFrozen`) only covers **crop draft UI**.
+
+After **Apply** (or any session with `hasCrop`), the canvas shows a *post-crop*
+sample. `displayPixelLongEdge()` is the crop box; `ImageCache` host edge is the
+*pre-crop* file. `DisplayQuality::checkSurface(shown, host, target)` therefore
+returns **InstallHostBetter** forever when crop long-edge < target (viewport /
+ladder).
+
+Watchdog then calls `installDisplayPixels(..., FullSource)`. For multi-MP +
+content want that path **always** clamps to SoftPreview ≤512 and schedules
+async full bake. Visible cycle every second: soft flash → full bake → soft.
+
+Prior tips (freeze, no Soft demote on *enter*, stop watchdog during draft) never
+addressed post-Apply / settled crop quality.
+
+### Fix
+- `canAcceptDisplaySample`: if FullSource is already applied and matches store
+  want, **reject** — host edge is not comparable to post-crop shown edge.
+- `displayQualityWatchdogTick` (Image): same settled check → skip
+  InstallHostBetter / PathRaster ensure.
+- `finishAsyncHostRematerialize`: no-op when already settled FullSource for want.
+
+One functional path: soft stand-in (if needed) → single async full bake →
+settled. No 1s loop.
+
+### Done criteria
+- [x] No soft↔full pulse on cropped Image-mode tiles from the quality watchdog
+- [x] Soft→full upgrade still allowed before FullSource is applied
+- [x] Docs; next **953**
+
+### Apply
+```bash
+git pull /path/to/biltoo-952-crop-settled-no-quality-pulse.bundle HEAD
+```
+
+---
+
+
+## Status (2026-09-15)
+
 **Tip: biltoo-951-crop-stop-quality-pulse.** Crop draft: quality watchdog off (no 1s pulse work).
 Prior: **950**.
 
