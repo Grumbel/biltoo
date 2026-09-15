@@ -2,6 +2,41 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-917-soft-host-seed-restore.** Restored SoftPreview ImageCache seeding; stash soft is display-ready attach.
+Prior: **916** (broke host seed for SoftPreview+wantBake).
+
+### Why 916 fixed nothing
+
+916 changed SoftPreview host policy to:
+
+```
+if (hostRaw.isNull() && !wantBake) ImageCache::put(...)
+```
+
+Gallery soft installs **with any content appearance** (orient/crop) set `wantBake`
+and **never wrote ImageCache**. Gallery still painted soft on the item; the path
+host stayed empty. Image ←/→ only sees ImageCache + stash; for identity soft
+that never entered the host, and for stash soft we also re-materialized after an
+unconditional `ImageCache::put` in pendingTile → double bake / blank.
+
+### Correct split
+
+| Source | Host put | Materialize |
+|--------|----------|-------------|
+| Ladder/LQIP SoftPreview (raw) | always | if wantBake |
+| Stashed Gallery soft (display-ready) | never | never — attachDisplaySample only |
+
+### Apply
+```bash
+git pull /path/to/biltoo-917-soft-host-seed-restore.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-916-image-soft-from-gallery-stash.** Image ←/→ uses stashed Gallery soft when ImageCache misses.
 Prior: **915**.
 

@@ -584,25 +584,16 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     // Absolute want xform (session store / path map / live flags).
     const WorkspaceItemState appearance = wantAppearanceForItem(item, sid);
 
-    // Host cache is unoriented raw samples only. SoftPreview input may be:
-    //   - raw ladder/LQIP from ImageCache, or
-    //   - already-materialized soft from a stashed Gallery tile.
-    // Never put a display-baked soft into ImageCache (poisons rematerialize).
+    // Host cache is unoriented. SoftPreview install input is always the raw
+    // ladder/LQIP sample (Gallery + Image). Display-ready stash soft never
+    // enters this function — pendingTile attaches it via attachDisplaySample.
     const bool wantBake =
         SessionAppearance::hasContentAppearance(appearance)
         || !appearance.colorAdjust.isIdentity();
-    const QImage hostRaw = path.isEmpty() ? QImage() : ImageCache::get(path);
     if (!path.isEmpty()) {
-        if (kind == SessionAppearance::PixelKind::SoftPreview) {
-            // Only seed host when there is no entry and we are not about to
-            // treat `pixels` as a display-ready bake (stash soft under wantBake).
-            if (hostRaw.isNull() && !wantBake) {
-                ImageCache::put(path, pixels);
-            }
-        } else if (!wantBake) {
+        if (!wantBake || kind == SessionAppearance::PixelKind::SoftPreview) {
             ImageCache::put(path, pixels);
         }
-        // FullSource + wantBake: worker already put raw in prepareImageModeDisplaySample.
     }
 
     // raw → optional gallery soft clamp → materializeDisplay → attach.
@@ -615,31 +606,17 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     }
     QImage display = pixelsForDisplay;
     if (wantBake) {
-        // Prefer materializing from raw host when present (stash soft may already
-        // be display-baked — rematerializing that double-applies crop).
-        QImage bakeSrc = !hostRaw.isNull() ? hostRaw : pixelsForDisplay;
-        int edge = qMax(bakeSrc.width(), bakeSrc.height());
+        int edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
         if (edge > ContentXform::kGuiMaterializeMaxEdge
             && kind == SessionAppearance::PixelKind::SoftPreview) {
-            bakeSrc = ImageCache::clampToMaxEdge(
-                bakeSrc, ContentXform::kGuiMaterializeMaxEdge);
-            edge = qMax(bakeSrc.width(), bakeSrc.height());
+            pixelsForDisplay = ImageCache::clampToMaxEdge(
+                pixelsForDisplay, ContentXform::kGuiMaterializeMaxEdge);
+            edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
         }
         if (edge <= ContentXform::kGuiMaterializeMaxEdge) {
-            if (!hostRaw.isNull()) {
-                display = SessionAppearance::materializeDisplay(
-                    bakeSrc, appearance, kind);
-            } else if (kind == SessionAppearance::PixelKind::SoftPreview) {
-                // No raw host: `pixels` is likely stashed Gallery soft already
-                // painted for this content. Attach as display-ready — do not
-                // materialize again (double crop) and do not put into ImageCache.
-                display = pixelsForDisplay;
-            } else {
-                display = SessionAppearance::materializeDisplay(
-                    bakeSrc, appearance, kind);
-            }
+            display = SessionAppearance::materializeDisplay(
+                pixelsForDisplay, appearance, kind);
         } else if (kind == SessionAppearance::PixelKind::FullSource) {
-            // Worker-baked multi-MP display sample.
             display = pixelsForDisplay;
         } else if (item->hasDisplayPixels()
                    && SessionAppearance::hasContentAppearance(appearance)) {
@@ -647,7 +624,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
                 ContentXform::Value::fromState(appearance));
             scheduleAsyncHostRematerialize(path, sid, appearance);
             return;
-        } else if (wantBake) {
+        } else {
             item->setAppliedContentXform(
                 ContentXform::Value::fromState(appearance));
             scheduleAsyncHostRematerialize(path, sid, appearance);
@@ -717,15 +694,24 @@ void ImageView::resetImageModeItemPlacement(ImageItem *item)
 QImage ImageView::resolveImageModePendingPixels(const QString &path,
                                                 const QImage &preview) const
 {
+    bool unused = false;
+    return resolveImageModePendingPixels(path, preview, &unused);
+}
+
+QImage ImageView::resolveImageModePendingPixels(const QString &path,
+                                                const QImage &preview,
+                                                bool *displayReadyOut) const
+{
     // Image-mode ←/→ hot path: process memory only (no sync thumtoo IPC).
     //
     // Soft sources, in order:
-    // 1) Explicit preview / slideshow raster
-    // 2) ImageCache (path host — raw ladder/LQIP when still resident)
-    // 3) Stashed Gallery tiles — Gallery→Image keeps decoded soft on the stash
-    //    even when ImageCache LRU has dropped the path. Gallery *shows* LQIP
-    //    from ImageItem::m_preview; Image mode must look there too or ←/→ is
-    //    always blank after a large gallery scroll.
+    // 1) Explicit preview / slideshow raster  → host-raw candidate
+    // 2) ImageCache                          → host-raw
+    // 3) Stashed Gallery tile soft           → display-ready (may already be
+    //    content-baked; must not ImageCache::put or re-materialize)
+    if (displayReadyOut) {
+        *displayReadyOut = false;
+    }
     if (!preview.isNull()) {
         return preview;
     }
@@ -736,17 +722,21 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     if (pixels.isNull()) {
         pixels = ImageCache::get(path);
     }
-    if (pixels.isNull()) {
-        for (ImageItem *cand : m_gallery.stashedItems()) {
-            if (cand && cand->path() == path && cand->hasDisplayPixels()) {
-                pixels = cand->displayImage();
-                if (!pixels.isNull()) {
-                    break;
+    if (!pixels.isNull()) {
+        return pixels;
+    }
+    for (ImageItem *cand : m_gallery.stashedItems()) {
+        if (cand && cand->path() == path && cand->hasDisplayPixels()) {
+            pixels = cand->displayImage();
+            if (!pixels.isNull()) {
+                if (displayReadyOut) {
+                    *displayReadyOut = true;
                 }
+                return pixels;
             }
         }
     }
-    return pixels;
+    return {};
 }
 
 void ImageView::installImageModePendingTile(const QString &path, const QImage &preview)
@@ -761,11 +751,12 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         return;
     }
 
-    const QImage pixels = resolveImageModePendingPixels(path, preview);
-    biltooLoadDbg("pendingTile path=%s soft=%dx%d cache=%d",
+    bool displayReady = false;
+    const QImage pixels = resolveImageModePendingPixels(path, preview, &displayReady);
+    biltooLoadDbg("pendingTile path=%s soft=%dx%d cache=%d displayReady=%d",
                   qPrintable(QFileInfo(path).fileName()),
                   pixels.width(), pixels.height(),
-                  ImageCache::has(path) ? 1 : 0);
+                  ImageCache::has(path) ? 1 : 0, displayReady ? 1 : 0);
 
     // Cold path: no soft/LQIP yet. Within the *same* path, keep the prior frame
     // until soft arrives (avoids a flash on PreferCache gaps). Different path
@@ -852,12 +843,16 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             // Same path soft→HQ: clear full so soft can attach.
             item->clearDecodedPixels();
         }
-        if (!path.isEmpty()) {
-            ImageCache::put(path, pixels);
+        // Host-raw soft: installDisplayPixels seeds ImageCache + materializes.
+        // Display-ready stash soft: attach only (already baked for its session).
+        if (displayReady) {
+            const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
+            attachDisplaySample(item, pixels, want,
+                                SessionAppearance::PixelKind::SoftPreview);
+        } else {
+            installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
+                                 item->sessionId());
         }
-        // Content pipeline: materialize + applied fingerprint (not bare setPreview).
-        installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
-                             item->sessionId());
 
         // Intrinsic already set by attachDisplaySample (file-native × want).
         // Only re-frame when we have a definitive file size to orient.

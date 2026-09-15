@@ -1413,6 +1413,9 @@ private:
     void resetImageModeItemPlacement(ImageItem *item);
     /** Soft pixels for pending tile: explicit preview → slideshow map → ImageCache. */
     QImage resolveImageModePendingPixels(const QString &path, const QImage &preview) const;
+    /** @p displayReadyOut set when soft is already content-baked (stashed Gallery tile). */
+    QImage resolveImageModePendingPixels(const QString &path, const QImage &preview,
+                                         bool *displayReadyOut) const;
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     QSize probeImageSize(const QString &path) const;
     /**
