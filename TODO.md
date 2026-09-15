@@ -2,6 +2,33 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-924-createitem-host-materialize.** createItemFromImage treats image as host-raw; materialize want at create.
+Prior: **923**.
+
+### Problem
+After 923, workers return host-raw, but `createItemFromImage` still assumed
+worker-baked pixels: set `applied = want` (including crop) and for crop set
+intrinsic = sample size. Image FullSource first install via
+`installImageModeReplaceItem` showed host under crop layout.
+
+### Fix
+- `createItemFromImage`: host into ImageCache; layoutSize(native, want); when
+  wantBake, materialize (soft stand-in + async multi-MP) via attachDisplaySample;
+  never applied without bake; never sample size as crop intrinsic.
+- Peer sync: attachDisplaySample for editor bake (not hand-rolled setPreview).
+- applyContentBakes multi-MP: applied is orient-only; crop schedules async.
+
+### Apply
+```bash
+git pull /path/to/biltoo-924-createitem-host-materialize.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-923-host-only-decode-jobs.** Decode/soft jobs return host-raw; sole materialize is installDisplayPixels.
 Prior: **922**.
 

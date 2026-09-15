@@ -345,6 +345,8 @@ void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &sta
         SessionAppearance::applyContentToItem(item, state);
         return;
     }
+    // Multi-MP last resort: incremental orient only. Do not claim full want
+    // (including crop) as applied — crop needs pure materialize from host.
     if (state.contentHFlip || state.contentVFlip) {
         item->bakeFlip(state.contentHFlip, state.contentVFlip);
     }
@@ -353,7 +355,15 @@ void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &sta
     }
     item->setContentHFlip(state.contentHFlip);
     item->setContentVFlip(state.contentVFlip);
-    item->setAppliedContentXform(ContentXform::Value::fromState(state));
+    WorkspaceItemState orientOnly = state;
+    orientOnly.hasCrop = false;
+    orientOnly.cropRect = {};
+    orientOnly.cropSourceSize = {};
+    orientOnly.cropRotation = 0.0;
+    item->setAppliedContentXform(ContentXform::Value::fromState(orientOnly));
+    if (state.hasCrop && !state.cropRect.isEmpty()) {
+        scheduleAsyncHostRematerialize(item->path(), item->sessionId(), state);
+    }
 }
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
@@ -1131,35 +1141,29 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
                                               : item->displayImage());
         if (!baked.isNull()) {
             other->clearDecodedPixels();
-            // Soft crop attach uses preview on the editor; peers still need a
-            // real sample. Prefer FullSource install when the editor has source.
-            if (!src.isNull()) {
-                other->setSourceImageReady(baked);
-            } else {
-                other->setPreviewImage(baked);
+            // Already-baked display from the editor. Attach via the same gate
+            // as install (layout + applied + chrome) — do not put into ImageCache.
+            WorkspaceItemState want;
+            if (sessionId != kInvalidSessionImageId) {
+                if (const WorkspaceItemState *st = m_appearance.get(sessionId)) {
+                    want = *st;
+                }
             }
-        }
-        // Intrinsic from appearance layoutSize — never copy soft sample size.
-        if (sessionId != kInvalidSessionImageId) {
+            if (!SessionAppearance::hasContentAppearance(want) && item->hasAppliedContentXform()) {
+                ContentXform::Value x = item->appliedContentXform();
+                x.applyToState(want);
+            }
+            const auto kind = !src.isNull()
+                ? SessionAppearance::PixelKind::FullSource
+                : SessionAppearance::PixelKind::SoftPreview;
+            attachDisplaySample(other, baked, want, kind);
+        } else if (sessionId != kInvalidSessionImageId) {
             if (const WorkspaceItemState *st = m_appearance.get(sessionId)) {
                 applyContentLayoutSize(other, *st);
             }
         }
-        {
-            const QSize sz = item->imageSize();
-            if (other->imageSize().width() <= 1 && sz.width() > 1) {
-                other->setIntrinsicSize(sz);
-            }
-        }
         other->setItemHFlip(hFlip);
         other->setItemVFlip(vFlip);
-        other->setContentHFlip(contentH);
-        other->setContentVFlip(contentV);
-        other->setSessionCrop(item->sessionHasCrop(), item->sessionCropRect());
-        other->setColorAdjustments(item->colorAdjustments());
-        if (item->hasAppliedContentXform()) {
-            other->setAppliedContentXform(item->appliedContentXform());
-        }
     };
     for (ImageItem *other : peers) {
         syncOne(other);

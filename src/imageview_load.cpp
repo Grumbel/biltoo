@@ -308,9 +308,8 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     if (image.isNull()) {
         return nullptr;
     }
-    // Size-first ctor + setSourceImageReady: never QPixmap::fromImage of multi-MP
-    // in ImageItem(path, image) during LoadReplace.
-    // Prefer ContentXform::layoutSize when appearance is known; else path layout.
+    // @p image is always host-raw (workers no longer bake). Size-first ctor;
+    // never QPixmap::fromImage of multi-MP in ImageItem(path, image).
     WorkspaceItemState app;
     if (applyStoredSessionCrop && isImageMode()) {
         const bool haveId = m_currentSessionId != kInvalidSessionImageId;
@@ -324,36 +323,58 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     if (!isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
         native = image.size();
     }
+    // Layout from file-native × want — never sample pixel size as crop intrinsic.
     QSize intrinsic = ContentXform::layoutSize(native, app);
     if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
         intrinsic = QSize(1, 1);
     }
-    if (app.hasCrop && !app.cropRect.isEmpty()
-        && image.width() > 1 && image.height() > 1) {
-        // Worker-baked crop: display sample is the identity box.
-        intrinsic = image.size();
-    }
+
     auto *item = new ImageItem(path, intrinsic);
-    if (isImageMode()) {
-        item->setSourceImageReady(image);
-    } else {
-        item->setSourceImage(image);
-    }
     applyItemModeFlags(item);
-    // Session crop survives navigation. Image mode LoadReplace jobs bake
-    // appearance on the worker — only sync chrome flags here.
-    if (applyStoredSessionCrop && isImageMode()
-        && (app.hasCrop || app.contentHFlip || app.contentVFlip
-            || app.contentQuarterTurns != 0 || !app.colorAdjust.isIdentity())) {
-        item->setContentHFlip(app.contentHFlip);
-        item->setContentVFlip(app.contentVFlip);
-        item->setSessionCrop(app.hasCrop, app.cropRect);
-        item->setColorAdjustmentsRecord(app.colorAdjust);
-    }
-    // Fingerprint: sample is already display (worker-baked or identity).
-    item->setAppliedContentXform(ContentXform::Value::fromState(app));
     m_scene->addItem(item);
     m_items.append(item);
+
+    if (!path.isEmpty()) {
+        ImageCache::put(path, image);
+    }
+
+    const bool wantBake = SessionAppearance::hasContentAppearance(app)
+        || !app.colorAdjust.isIdentity();
+    if (wantBake) {
+        // Same install invariant as installDisplayPixels: materialize host+want;
+        // multi-MP → SoftPreview stand-in + async full. Never claim applied without bake.
+        const int maxGui = ContentXform::kGuiMaterializeMaxEdge;
+        const int hostEdge = ImageCache::longEdge(image);
+        QImage host = image;
+        SessionAppearance::PixelKind kind =
+            (hostEdge > ThumtooCache::kGalleryLadderEdge)
+                ? SessionAppearance::PixelKind::FullSource
+                : SessionAppearance::PixelKind::SoftPreview;
+        bool scheduleFull = false;
+        if (hostEdge > maxGui) {
+            host = ImageCache::clampToMaxEdge(image, maxGui);
+            kind = SessionAppearance::PixelKind::SoftPreview;
+            scheduleFull = true;
+        }
+        QImage display = SessionAppearance::materializeDisplay(host, app, kind);
+        if (display.isNull()) {
+            display = host;
+        }
+        attachDisplaySample(item, display, app, kind);
+        if (scheduleFull) {
+            const SessionImageId sid = isImageMode()
+                ? m_currentSessionId
+                : kInvalidSessionImageId;
+            scheduleAsyncHostRematerialize(path, sid, app);
+        }
+    } else {
+        if (isImageMode()) {
+            item->setSourceImageReady(image);
+        } else {
+            item->setSourceImage(image);
+        }
+        item->setAppliedContentXform(ContentXform::Value{});
+    }
     return item;
 }
 
@@ -1995,7 +2016,7 @@ void ImageView::applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &pat
     if (!item || path.isEmpty()) {
         return;
     }
-    // Content 90°/flip are already in pixels (createItemFromImage bakes).
+    // Content 90°/flip/crop are materialize()'d in createItemFromImage when want is set.
     // Legacy unbaked flips only if content flags not used yet.
     const auto it = m_itemStates.constFind(path);
     if (it == m_itemStates.cend()) {
@@ -2063,7 +2084,7 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     // Filmstrip overrides are not driven by decode (selection/nav).
     // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
     // Arbitrary Workspace rotation stays on the free-form item only.
-    // Crop was applied in createItemFromImage from m_itemStates.
+    // createItemFromImage materializes host × store want (install invariant).
     bindImageModeSessionCursor(item);
     resetImageModeItemPlacement(item);
     applyLegacyPathFlipsIfNeeded(item, path);
