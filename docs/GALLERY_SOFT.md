@@ -46,6 +46,7 @@ stuck full-res tiles, or permanent soft-ladder skip (`hasDecodedPixels()`).
 4. Filmstrip overrides should follow the same edge budget as filmstrip (`kFilmstripLadderEdge` / prepared thumb), not a native dump from Gallery full decode.
 5. Do not ask thumtoo soft ladder for 1024/2048 — those levels are not soft; use full decode when needed.
 6. Gallery requests the **on-screen** ladder edge (no soft-max cliff, no native full). Durable soft levels stay ≤512; larger cells use shrink-on-decode. Image mode alone does `ImageLoader::load`.
+7. **Crop / orient / grade** live in `SessionAppearanceStore` by `SessionImageId`. Ladder samples are **host-raw**. Every Gallery install goes through `installDisplayPixels` → `materializeDisplay(host, want)` before attach. SoftPreview **includes** scaled crop. Never paint unoriented host under a cropped layout. Path duplicates: one host in `ImageCache`, per-id materialize on each tile. See [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md) install invariant.
 
 #Cost model (soft vs overview vs tiles): [PERFORMANCE.md](PERFORMANCE.md).
 

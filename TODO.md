@@ -2,6 +2,33 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-922-pending-tile-display-ready.** Image ←/→ stash soft is display-ready only for same id + matching applied.
+Prior: **921**.
+
+### Problem
+`resolveImageModePendingPixels` treated any Gallery-stash soft for the path as
+display-ready. That could attach full-frame (or another id's bake) under the
+current session want without materialize — same host-under-want class as 921.
+
+### Fix
+- Display-ready only when stash tile `sessionId == m_currentSessionId` and
+  `applied == store want`.
+- Otherwise host-raw only if applied is identity / absent (safe to
+  `installDisplayPixels` → materialize).
+- Skip soft already baked for a different id (not host; no double-bake).
+- GALLERY_SOFT.md rule 7: crop via install materialize invariant.
+
+### Apply
+```bash
+git pull /path/to/biltoo-922-pending-tile-display-ready.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-921-display-want-invariant.** Install gate: never host under content want; applied only after bake.
 Prior: **920**.
 

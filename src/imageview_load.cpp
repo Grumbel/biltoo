@@ -723,8 +723,12 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     // Soft sources, in order:
     // 1) Explicit preview / slideshow raster  → host-raw candidate
     // 2) ImageCache                          → host-raw
-    // 3) Stashed Gallery tile soft           → display-ready (may already be
-    //    content-baked; must not ImageCache::put or re-materialize)
+    // 3) Stashed Gallery tile soft:
+    //    - display-ready only when same SessionImageId and applied == store want
+    //      (already content-baked; must not ImageCache::put or re-materialize)
+    //    - otherwise host-raw only when the tile has no content bake. Soft baked
+    //      for a *different* id is skipped — not unoriented host, must not be
+    //      materialize()'d again (double-bake).
     if (displayReadyOut) {
         *displayReadyOut = false;
     }
@@ -741,16 +745,41 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     if (!pixels.isNull()) {
         return pixels;
     }
-    for (ImageItem *cand : m_gallery.stashedItems()) {
-        if (cand && cand->path() == path && cand->hasDisplayPixels()) {
-            pixels = cand->displayImage();
-            if (!pixels.isNull()) {
-                if (displayReadyOut) {
-                    *displayReadyOut = true;
-                }
-                return pixels;
-            }
+
+    WorkspaceItemState want;
+    if (m_currentSessionId != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *st = m_appearance.get(m_currentSessionId)) {
+            want = *st;
         }
+    }
+    const ContentXform::Value wantX = ContentXform::Value::fromState(want);
+
+    for (ImageItem *cand : m_gallery.stashedItems()) {
+        if (!cand || cand->path() != path || !cand->hasDisplayPixels()) {
+            continue;
+        }
+        pixels = cand->displayImage();
+        if (pixels.isNull()) {
+            continue;
+        }
+        const bool sameId = (m_currentSessionId != kInvalidSessionImageId
+                             && cand->sessionId() == m_currentSessionId);
+        const bool hasApplied = cand->hasAppliedContentXform();
+        const ContentXform::Value applied = hasApplied
+            ? cand->appliedContentXform()
+            : ContentXform::Value{};
+        // Display-ready: same session row and bake already matches store want.
+        if (sameId && hasApplied && ContentXform::equal(applied, wantX)) {
+            if (displayReadyOut) {
+                *displayReadyOut = true;
+            }
+            return pixels;
+        }
+        // Host-raw: only unbaked / identity soft (safe to materialize with want).
+        if (!hasApplied || ContentXform::equal(applied, ContentXform::Value{})) {
+            return pixels;
+        }
+        // Baked for another id or mismatched want — skip.
     }
     return {};
 }
@@ -863,8 +892,10 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             // Same path soft→HQ: clear full so soft can attach.
             item->clearDecodedPixels();
         }
-        // Host-raw soft: installDisplayPixels seeds ImageCache + materializes.
-        // Display-ready stash soft: attach only (already baked for its session).
+        // Host-raw soft: installDisplayPixels seeds ImageCache + materializes want.
+        // Display-ready stash soft: same SessionImageId and applied == want already
+        // (see resolveImageModePendingPixels); attach only — do not put baked
+        // pixels into ImageCache or materialize again.
         if (displayReady) {
             const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
             attachDisplaySample(item, pixels, want,
