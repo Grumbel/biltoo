@@ -104,6 +104,10 @@ Never upscale LQIP to decode edge (false settle). Overrides checked before
 - Soft sample size as intrinsic (`attachDisplaySample` must use `layoutSize`).
 - `fitItem` rewriting intrinsic from a **cropped** want while crop draft is
   active (or before `m_cropMode` is set).
+- **`fitItem` during Apply while `m_cropMode` is still true:** if cropDraft is
+  keyed only on `m_cropMode`, Apply’s fit forces orient-only full intrinsic on
+  top of the new crop bake → stretch into the pre-crop contentRect. Draft is
+  only when `m_cropMode` **and** no applied/session crop on the item.
 - Soft crop attach without clearing FullSource first.
 - Path-keyed crop for bound ids.
 - Path decode painted over an id crop override.
