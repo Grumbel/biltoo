@@ -2,6 +2,25 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-928-createitem-via-install-gate.** createItemFromImage wantBake uses installDisplayPixels only.
+Prior: **927**.
+
+### Change
+Duplicate materialize logic in createItemFromImage removed. When store/item want
+has content, createItemFromImage seeds chrome flags and calls the sole install
+gate (`installDisplayPixels`). Host-only path still attaches identity raw.
+
+### Apply
+```bash
+git pull /path/to/biltoo-928-createitem-via-install-gate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-927-duplicate-no-cache-pollute.** Duplicate copies display-ready pixels; never ImageCache::put of bake.
 Prior: **926**.
 

@@ -161,8 +161,8 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
     item->setStackZ(state.z);
     item->setItemHFlip(state.hFlip);
     item->setItemVFlip(state.vFlip);
-    // Session crop is applied at decode time (createItemFromImage / setSourceImage),
-    // not here — otherwise a second apply would crop the already-cropped pixmap.
+    // Content pixels/applied are set at install (installDisplayPixels / attachDisplaySample),
+    // not here — otherwise a second apply would crop already-cropped display.
 }
 
 void ImageView::rememberItemState(ImageItem *item)

@@ -334,40 +334,28 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     m_scene->addItem(item);
     m_items.append(item);
 
-    if (!path.isEmpty()) {
-        ImageCache::put(path, image);
-    }
-
+    // @p image is host-raw. Sole materialize site is installDisplayPixels.
     const bool wantBake = SessionAppearance::hasContentAppearance(app)
         || !app.colorAdjust.isIdentity();
     if (wantBake) {
-        // Same install invariant as installDisplayPixels: materialize host+want;
-        // multi-MP → SoftPreview stand-in + async full. Never claim applied without bake.
-        const int maxGui = ContentXform::kGuiMaterializeMaxEdge;
+        // Seed item chrome so wantAppearanceForItem can merge if the store slot
+        // is still empty (bound id with no entry yet).
+        item->setContentHFlip(app.contentHFlip);
+        item->setContentVFlip(app.contentVFlip);
+        item->setSessionCrop(app.hasCrop, app.cropRect);
+        item->setColorAdjustmentsRecord(app.colorAdjust);
+        const SessionImageId sid = isImageMode()
+            ? m_currentSessionId
+            : kInvalidSessionImageId;
         const int hostEdge = ImageCache::longEdge(image);
-        QImage host = image;
-        SessionAppearance::PixelKind kind =
-            (hostEdge > ThumtooCache::kGalleryLadderEdge)
-                ? SessionAppearance::PixelKind::FullSource
-                : SessionAppearance::PixelKind::SoftPreview;
-        bool scheduleFull = false;
-        if (hostEdge > maxGui) {
-            host = ImageCache::clampToMaxEdge(image, maxGui);
-            kind = SessionAppearance::PixelKind::SoftPreview;
-            scheduleFull = true;
-        }
-        QImage display = SessionAppearance::materializeDisplay(host, app, kind);
-        if (display.isNull()) {
-            display = host;
-        }
-        attachDisplaySample(item, display, app, kind);
-        if (scheduleFull) {
-            const SessionImageId sid = isImageMode()
-                ? m_currentSessionId
-                : kInvalidSessionImageId;
-            scheduleAsyncHostRematerialize(path, sid, app);
-        }
+        const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
+            ? SessionAppearance::PixelKind::FullSource
+            : SessionAppearance::PixelKind::SoftPreview;
+        installDisplayPixels(item, image, kind, sid);
     } else {
+        if (!path.isEmpty()) {
+            ImageCache::put(path, image);
+        }
         if (isImageMode()) {
             item->setSourceImageReady(image);
         } else {

@@ -1047,15 +1047,12 @@ public:
     /**
      * Single gate for attaching *raw* decode pixels to a session image.
      *
-     * FullSource: setSourceImage + SessionAppearance::applyContentToItem.
-     * SoftPreview: bake appearance into a soft QImage via applyContentToImage,
-     * then setPreviewImage; does not write soft dimensions into layout geometry.
-     * When SoftPreview content orientation swaps aspect (odd quarter-turns),
-     * Image mode refits using the oriented soft size so rapid next/prev does
-     * not letterbox a rotated thumb inside the unrotated native box.
-     *
-     * @p sid selects appearance from m_appearance; invalid → no content bake.
-     * Already-baked pixels (peer copy, undo after-image) must not use this.
+     * Sole host→display install gate (CONTENT_PIPELINE install invariant).
+     * @p pixels are unoriented host. MaterializeDisplay(host, store want) then
+     * attachDisplaySample. Multi-MP want → SoftPreview stand-in + async full.
+     * SoftPreview includes scaled crop. Layout via layoutSize(native, want).
+     * Already-baked pixels (peer copy, undo after-image, duplicate) must use
+     * attachDisplaySample only — never this function.
      */
     void installDisplayPixels(ImageItem *item, const QImage &pixels,
                               SessionAppearance::PixelKind kind,
