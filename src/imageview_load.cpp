@@ -378,8 +378,11 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
 void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
                                                    const QVector<SessionImageId> &ids)
 {
+    // Fresh session: allow seed again for new ids (old set cleared on invalidate).
     const int n = qMin(paths.size(), ids.size());
     for (int i = 0; i < n; ++i) {
+        // Permit re-seed when open replaces session (id may be reused rarely).
+        m_appearanceSeedAttempted.remove(ids.at(i));
         if (ids.at(i) == kInvalidSessionImageId || paths.at(i).isEmpty()) {
             continue;
         }
@@ -389,10 +392,15 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
 
 void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString &path)
 {
-
     if (sid == kInvalidSessionImageId || path.isEmpty()) {
         return;
     }
+    // One attempt per session id — archive/miss paths must not re-hit pathContentId
+    // on every paint via wantAppearanceForItem.
+    if (m_appearanceSeedAttempted.contains(sid)) {
+        return;
+    }
+    m_appearanceSeedAttempted.insert(sid);
     if (m_appearance.contains(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.

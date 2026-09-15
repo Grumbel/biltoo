@@ -2,6 +2,29 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-999-archive-appearance-no-spam.** Archive content ids + no seed busy-loop.
+Prior: **998**.
+
+### Cause
+`pathContentId` rejected `//archive:` paths. `wantAppearanceForItem` re-seeded
+every paint → flood of `load SKIP` / `pathContentId reject` logs (busy loop).
+
+### Fix
+- Archive member content id: outer-archive hash folded with `:archive:<member>`
+- Once-per-session-id seed attempts (`m_appearanceSeedAttempted`)
+- Rate-limit debug logs; cache empty pathContentId results
+
+### Apply
+```bash
+git pull /path/to/biltoo-999-archive-appearance-no-spam.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-998-restore-durable-orient.** Force path-XDG orient restore on open.
 Prior: **997**.
 

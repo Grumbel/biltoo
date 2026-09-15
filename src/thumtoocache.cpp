@@ -2646,10 +2646,12 @@ std::string pathContentId(const QString &path)
     if (local.startsWith(QStringLiteral("file:"))) {
         local = QUrl(local).toLocalFile();
     }
-    // PDF/EPUB/DjVu page refs: hash outer file + ":page:N" suffix.
-    // Other compound URIs (archives, pdfimage) still unsupported in v1.
+    // PDF/EPUB/DjVu page refs: hash outer file + ":page:N" fold.
+    // Archive members: hash outer archive + ":archive:<member>" fold.
+    // Other compound URIs (pdfimage, unknown // markers) still unsupported.
     QString fileForHash = local;
     int page1 = 0;
+    QString archiveMember;
     if (PagePath::isPageRef(local)) {
         const PagePath::Ref ref = PagePath::parse(local);
         if (!ref.valid || ref.page < 1 || ref.pdfPath.isEmpty()) {
@@ -2661,8 +2663,22 @@ std::string pathContentId(const QString &path)
         }
         fileForHash = ref.pdfPath;
         page1 = ref.page;
+    } else if (ArchivePath::isArchiveRef(local)) {
+        const ArchivePath::Ref ref = ArchivePath::parse(local);
+        if (!ref.valid || ref.archivePath.isEmpty() || ref.memberPath.isEmpty()) {
+            if (appearanceDebug()) {
+                appearanceLog(QStringLiteral("pathContentId reject: invalid archive ref path=%1")
+                                  .arg(path));
+            }
+            return {};
+        }
+        fileForHash = ref.archivePath;
+        archiveMember = ref.memberPath;
     } else if (PagePath::isPdfImageRef(local) || local.contains(QStringLiteral("//"))) {
-        if (appearanceDebug()) {
+        // Log once per path — wantAppearance/seed used to spam this every paint.
+        static QSet<QString> s_compoundRejectLogged;
+        if (appearanceDebug() && !s_compoundRejectLogged.contains(path)) {
+            s_compoundRejectLogged.insert(path);
             appearanceLog(QStringLiteral("pathContentId reject: compound/non-page ref path=%1")
                               .arg(path));
         }
@@ -2682,10 +2698,13 @@ std::string pathContentId(const QString &path)
                                                          : fi.canonicalFilePath();
     const qint64 size = fi.size();
     const QDateTime mtime = fi.lastModified();
-    // Cache key includes page so //page:1 and //page:2 do not collide.
-    const QString cacheKey = page1 > 0
-        ? (abs + QStringLiteral("#page=") + QString::number(page1))
-        : abs;
+    // Cache key includes page/member so compound refs do not collide.
+    QString cacheKey = abs;
+    if (page1 > 0) {
+        cacheKey += QStringLiteral("#page=") + QString::number(page1);
+    } else if (!archiveMember.isEmpty()) {
+        cacheKey += QStringLiteral("#archive:") + archiveMember;
+    }
     // Cache sha256 by path+size+mtime — hashing multi‑MB images on every
     // seed/save would stall the UI thread.
     struct CacheEntry {
@@ -2698,8 +2717,8 @@ std::string pathContentId(const QString &path)
     {
         std::lock_guard lock(cacheMu);
         const auto it = cache.constFind(cacheKey);
-        if (it != cache.cend() && it->size == size && it->mtime == mtime
-            && !it->id.empty()) {
+        if (it != cache.cend() && it->size == size && it->mtime == mtime) {
+            // Empty id = known miss/reject for this size/mtime — do not re-hash.
             return it->id;
         }
     }
@@ -2755,10 +2774,10 @@ std::string pathContentId(const QString &path)
             }
         }
     }
-    // Page session ref: fold into a plain sha256:<64hex> so AppearanceStore::put
-    // (which always normalize_content_id's the key) accepts it even when the
-    // linked thumtoo only allows bare file hashes. Material:
-    //   utf8( "<file_content_id>:page:<n>" ) → SHA-256 → sha256:<hex>
+    // Compound session ref: fold into a plain sha256:<64hex> so AppearanceStore
+    // accepts keys even when linked thumtoo only allows bare file hashes.
+    //   page:    utf8( "<file_id>:page:<n>" ) → SHA-256
+    //   archive: utf8( "<file_id>:archive:<member>" ) → SHA-256
     if (!id.empty() && page1 > 0) {
         const QByteArray material =
             QByteArray::fromStdString(id) + ":page:" + QByteArray::number(page1);
@@ -2775,13 +2794,30 @@ std::string pathContentId(const QString &path)
                     .arg(QString::fromStdString(pageId)));
         }
         id = pageId;
+    } else if (!id.empty() && !archiveMember.isEmpty()) {
+        const QByteArray material =
+            QByteArray::fromStdString(id) + ":archive:" + archiveMember.toUtf8();
+        QCryptographicHash h(QCryptographicHash::Sha256);
+        h.addData(material);
+        const QByteArray dig = h.result().toHex();
+        const std::string memId = thumtoo::normalize_content_id(
+            std::string(dig.constData(), static_cast<size_t>(dig.size())));
+        if (appearanceDebug()) {
+            appearanceLog(
+                QStringLiteral("pathContentId archive-fold file_id=%1 member=%2 → %3")
+                    .arg(QString::fromStdString(id), archiveMember,
+                         QString::fromStdString(memId)));
+        }
+        id = memId;
     }
-    if (!id.empty()) {
+    // Cache hits *and* permanent empties (same size/mtime) so compound/miss
+    // paths do not re-hash or re-log every paint/seed.
+    {
         std::lock_guard lock(cacheMu);
         CacheEntry e;
         e.size = size;
         e.mtime = mtime;
-        e.id = id;
+        e.id = id; // may be empty
         cache.insert(cacheKey, e);
     }
     if (appearanceDebug()) {
@@ -2816,7 +2852,10 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
     *out = StoredContentAppearance{};
     const std::string id = pathContentId(path);
     if (id.empty()) {
-        if (appearanceDebug()) {
+        // Once per path — seed/wantAppearance used to log every frame.
+        static QSet<QString> s_loadSkipLogged;
+        if (appearanceDebug() && !s_loadSkipLogged.contains(path)) {
+            s_loadSkipLogged.insert(path);
             appearanceLog(QStringLiteral("load SKIP: no content id path=%1").arg(path));
         }
         return false;

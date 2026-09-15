@@ -59,6 +59,7 @@ void ImageView::invalidateGalleryDecodes()
 
 void ImageView::invalidateSessionLoads()
 {
+    m_appearanceSeedAttempted.clear();
     // New Open / History session: cancel every in-flight decode and drop the
     // live canvas so a late soft/PreferCache for the previous session cannot
     // paint over the first image of the new set.
