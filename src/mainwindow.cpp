@@ -3345,6 +3345,14 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
                                      const QPointF &scenePos, bool hasScenePos,
                                      const QList<qint64> &sessionIds)
 {
+    // External drops must not expand on the GUI thread (USB/NFS stats).
+    // Append via background expand; placement for novel files follows session
+    // membership after applyExpandedAppend (drop-point placement is best-effort
+    // for paths already in-session via the loop below).
+    if (!fromInternalSelection && pathsNeedBackgroundExpand(paths)) {
+        expandPathsInBackground(paths, /*append=*/true);
+        return;
+    }
     const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
     if (expanded.isEmpty()) {
         return;
@@ -3474,6 +3482,10 @@ void MainWindow::handleImageModeDrop(const QStringList &paths, bool fromInternal
     // Image mode: always append to the session (Open still replaces).
     // Drops from the thumbnail bar are already in the session — just navigate
     // to the first path instead of wiping the session down to one file.
+    if (!fromInternalSelection && pathsNeedBackgroundExpand(paths)) {
+        expandPathsInBackground(paths, /*append=*/true);
+        return;
+    }
     const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
     if (expanded.isEmpty()) {
         return;

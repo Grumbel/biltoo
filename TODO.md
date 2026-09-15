@@ -2,6 +2,32 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-903-expand-no-gui-stat.** No filesystem stats on GUI before Opening/Indexing.
+Prior: **902**.
+
+### Problem
+Before "Indexing…" the GUI thread could block on cold USB/NFS via:
+- `pathsNeedBackgroundExpand` → `QFileInfo::isFile/isDir` + `ThumtooCache::isAvailable`/`init`
+- Sync `expandPaths` → `canonicalImagePath` → `exists`/`canonicalFilePath`
+- `expandOneInputPath` → `isFile` before container suffix expand
+
+### Fix
+- `pathsNeedBackgroundExpand`: suffix/heuristic only; never stat or isAvailable
+- `canonicalImagePath`: absolute path only (no exists/canonical)
+- Prefer suffix-known containers/images before isDir/isFile in expand
+- Progress text "Opening…" immediately; drops use background expand
+
+### Apply
+```bash
+git pull /path/to/biltoo-903-expand-no-gui-stat.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-902-quality-silent-bootstrap.** Silence blank→LQIP install-host-better quality spam.
 Prior: **901**.
 

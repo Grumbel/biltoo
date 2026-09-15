@@ -52,15 +52,20 @@ QString imageFileDialogFilter()
         .arg(images, archives);
 }
 
-/** AUDIT M17: canonical path so relative/absolute/symlink spellings dedup. */
+/**
+ * Absolute path for session identity. AUDIT M17 / GUI_THREAD_AUDIT:
+ * do **not** call exists(), isFile(), or canonicalFilePath() — those stat the
+ * filesystem and can block for seconds on a cold USB/NFS drive before any
+ * "Indexing…" UI is shown. Missing files fail later at decode.
+ */
 QString canonicalImagePath(const QString &path)
 {
-    const QFileInfo info(path);
-    if (!info.exists() || !info.isFile()) {
+    if (path.isEmpty()) {
         return {};
     }
-    const QString resolved = info.canonicalFilePath();
-    return resolved.isEmpty() ? info.absoluteFilePath() : resolved;
+    const QFileInfo info(path);
+    const QString abs = info.absoluteFilePath();
+    return abs.isEmpty() ? path : abs;
 }
 
 using ExpandReportFn = std::function<void(const QString &message, int current, int total)>;
@@ -207,6 +212,15 @@ bool expandOneInputPath(QStringList &images, const QString &path, bool recursive
         return true;
     }
 
+    // Suffix-known containers/images: expand without isFile()/isDir() first so
+    // a single cold USB stat is not required before "Indexing…".
+    if (PagePath::isPdfFile(path) || PagePath::isEpubFile(path) || PagePath::isDjvuFile(path)
+        || ArchivePath::isArchiveFile(path) || ImageLoader::isImageFile(path)) {
+        appendFileContainerOrImage(images, path, report);
+        return true;
+    }
+
+    // Unknown path shape — may be a directory (must stat) or a suffix-less file.
     const QFileInfo info(path);
     if (info.isDir()) {
         expandReport(report, QObject::tr("Scanning folder “%1”…").arg(info.fileName()));
@@ -478,26 +492,22 @@ QStringList MainWindow::expandPaths(const QStringList &paths) const
 
 bool MainWindow::pathsNeedBackgroundExpand(const QStringList &paths) const
 {
-    if (!ThumtooCache::isAvailable()) {
-        return false;
-    }
+    // Heuristic only — never QFileInfo::isFile/isDir/exists or
+    // ThumtooCache::isAvailable() here. Those hit the disk (or open the
+    // thumtoo client) on the GUI thread and can stall for a long time on a
+    // spinning-up USB drive *before* any "Indexing…" / "Opening…" status.
     for (const QString &path : paths) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        // Already session leaves — expand is pure string work, safe on GUI.
         if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
             || PagePath::isPdfImageRef(path)) {
             continue;
         }
-        if (PagePath::isPdfImagesCollection(path) || PagePath::isEpubLayoutOnly(path)) {
-            return true;
-        }
-        const QFileInfo info(path);
-        if (info.isFile() && (ArchivePath::isArchiveFile(path) || PagePath::isPdfFile(path)
-                               || PagePath::isEpubFile(path) || PagePath::isDjvuFile(path))) {
-            return true;
-        }
-        // Directory walks may encounter archives/PDFs; keep the GUI responsive.
-        if (info.isDir()) {
-            return true;
-        }
+        // Containers, directories (no image suffix), plain images, or unknown:
+        // always expand on a worker (suffix checks do not stat).
+        return true;
     }
     return false;
 }
@@ -594,7 +604,8 @@ void MainWindow::expandPathsInBackground(const QStringList &paths, bool append, 
         m_thumbnailBar->setSession(QStringList(), QVector<SessionImageId>());
     }
     setExpandProgressBusy(true);
-    setExpandProgressMessage(tr("Scanning archives…"));
+    // Shown immediately on the GUI thread — no disk I/O before this.
+    setExpandProgressMessage(tr("Opening…"));
 
     const QPointer<MainWindow> guard(this);
     QThreadPool::globalInstance()->start([guard, paths, append, startAt, gen, recursive]() {
