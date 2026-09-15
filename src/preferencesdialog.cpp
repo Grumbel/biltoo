@@ -20,6 +20,8 @@
 #include <QStyle>
 #include <QTabWidget>
 #include <QToolButton>
+#include <QSignalBlocker>
+#include <QTimer>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
@@ -621,6 +623,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 void PreferencesDialog::refreshDefaultAppsList()
 {
     m_mimeTreeUpdating = true;
+    // Block model signals during clear/rebuild so itemChanged cannot re-enter
+    // while items are being deleted (crash in QTreeWidgetItem::setData).
+    const QSignalBlocker block(m_mimeTree);
     m_mimeTree->clear();
 
     if (!DefaultApps::isAvailable()) {
@@ -693,8 +698,14 @@ void PreferencesDialog::onMimeItemChanged(QTreeWidgetItem *item, int column)
     if (!ok) {
         QMessageBox::warning(this, tr("Default application"), error);
     }
-    // Always refresh so the "Current default" column and checkbox match reality.
-    refreshDefaultAppsList();
+    // Defer rebuild: itemChanged runs *inside* QTreeWidgetItem::setData for the
+    // checkbox. Clearing the tree here deletes the item while Qt still writes
+    // CheckState → SIGSEGV in setData (Preferences → Default apps).
+    QTimer::singleShot(0, this, [this]() {
+        if (m_mimeTree) {
+            refreshDefaultAppsList();
+        }
+    });
 }
 
 void PreferencesDialog::applySetDefaults(const QStringList &types)

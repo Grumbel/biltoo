@@ -2,6 +2,28 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-992-prefs-mime-tree-check-crash.** Preferences default-apps checkbox crash.
+Prior: **991**.
+
+### Bug
+`onMimeItemChanged` called `refreshDefaultAppsList()` → `clear()` while Qt was
+still inside `QTreeWidgetItem::setData` for the checkbox → SIGSEGV.
+
+### Fix
+- Defer refresh with `QTimer::singleShot(0, …)`
+- `QSignalBlocker` during tree rebuild
+
+### Apply
+```bash
+git pull /path/to/biltoo-992-prefs-mime-tree-check-crash.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-991-image-nav-share-filmstrip-soft.** ←/→ prefer filmstrip Soft over LQIP.
 Prior: **990**.
 
