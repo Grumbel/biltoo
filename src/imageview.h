@@ -776,6 +776,9 @@ public:
     bool hudVisible() const { return m_hudVisible; }
     /** Corner marks for crop / orient / grade (default on). */
     void setContentEditMarksVisible(bool on);
+    /** Seed orient/flip/grade from path XDG for each session id (open/restart). */
+    void seedSessionAppearancesFromPaths(const QStringList &paths,
+                                         const QVector<SessionImageId> &ids);
     bool contentEditMarksVisible() const;
     void setHudFontPointSize(int pt);
     int hudFontPointSize() const { return m_hudFontPointSize; }

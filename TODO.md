@@ -2,6 +2,34 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-998-restore-durable-orient.** Force path-XDG orient restore on open.
+Prior: **997**.
+
+### Investigation
+Save path (bakeRotate → persistDurable → AppearanceStore) looked intact.
+Restore failed because:
+
+1. **wantAppearanceForItem** never seeded path XDG (const path, empty id slot)
+2. **createItemFromImage** Soft used `setPreviewImage` without materialize
+3. Session open never pre-seeded all path appearances
+
+### Fix
+- Seed in `wantAppearanceForItem` when slot has no content
+- Always `installDisplayPixels` (seed + materialize)
+- `seedSessionAppearancesFromPaths` on session open
+- `loadContentAppearance` returns true on any DB hit
+
+### Apply
+```bash
+git pull /path/to/biltoo-998-restore-durable-orient.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-997-content-edit-marks.** Corner marks + View toggle for content edits.
 Prior: **996**.
 

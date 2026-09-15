@@ -2870,7 +2870,10 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
         out->gradeInvert = got->grade_invert.value_or(0) != 0;
 #endif
     }
-    return !out->isIdentity();
+    // Row present = success. Callers use isIdentity() / hasContentAppearance
+    // to decide whether to apply. Returning false on identity blocked nothing
+    // useful and confused "miss" vs "identity row".
+    return true;
 }
 
 void saveContentAppearance(const QString &path, const StoredContentAppearance &app)

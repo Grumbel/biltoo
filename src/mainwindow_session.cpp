@@ -1225,6 +1225,10 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
 
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     applyThumbnailVisibility();
+    // Pull path-XDG orient/flip/grade into SessionAppearanceStore before first paint.
+    if (m_imageView) {
+        m_imageView->seedSessionAppearancesFromPaths(m_session.paths(), m_session.ids());
+    }
 
     // Session open is not a Workspace document. Drop any free-form arrangement
     // so Image↔Workspace does not resurrect previous tiles; only .biltoo

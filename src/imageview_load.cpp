@@ -360,31 +360,36 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         if (!path.isEmpty()) {
             ImageCache::put(path, image);
         }
-        // Soft/overview samples must not be marked FullSource decoded.
-        // setSourceImage + applied identity made finishAsyncHostRematerialize
-        // treat Soft as "already settled" and drop Prefer/Full upgrades
-        // (Workspace stuck soft when zoomed).
+        // Always installDisplayPixels so seed + materialize run. Skipping that
+        // for Image-mode Soft (setPreviewImage) left durable orient unapplied.
         const int hostEdge = ImageCache::longEdge(image);
-        if (isImageMode()) {
-            if (hostEdge > 0 && hostEdge <= ThumtooCache::kGalleryLadderEdge) {
-                item->setPreviewImage(image);
-            } else {
-                item->setSourceImageReady(image);
-            }
-            item->setAppliedContentXform(ContentXform::Value{});
-        } else {
-            const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
-                ? SessionAppearance::PixelKind::FullSource
-                : SessionAppearance::PixelKind::SoftPreview;
-            installDisplayPixels(item, image, kind, item->sessionId());
-        }
+        const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
+            ? SessionAppearance::PixelKind::FullSource
+            : SessionAppearance::PixelKind::SoftPreview;
+        const SessionImageId sid = isImageMode()
+            ? m_currentSessionId
+            : item->sessionId();
+        installDisplayPixels(item, image, kind, sid);
     }
     return item;
 }
 
 
+void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
+                                                   const QVector<SessionImageId> &ids)
+{
+    const int n = qMin(paths.size(), ids.size());
+    for (int i = 0; i < n; ++i) {
+        if (ids.at(i) == kInvalidSessionImageId || paths.at(i).isEmpty()) {
+            continue;
+        }
+        seedSessionAppearanceFromState(ids.at(i), paths.at(i));
+    }
+}
+
 void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString &path)
 {
+
     if (sid == kInvalidSessionImageId || path.isEmpty()) {
         return;
     }
@@ -399,6 +404,9 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
     }
     ThumtooCache::StoredContentAppearance stored;
     if (!ThumtooCache::loadContentAppearance(path, &stored)) {
+        return;
+    }
+    if (stored.isIdentity()) {
         return;
     }
     WorkspaceItemState seed;
@@ -459,6 +467,18 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
     if (id != kInvalidSessionImageId) {
         if (const WorkspaceItemState *app = m_appearance.get(id)) {
             appearance = *app;
+        }
+        // Cold open / ←→: id slot often empty until first seed. Path XDG holds
+        // durable rotate/flip/grade — pull it before materialize or we paint
+        // unoriented host forever.
+        if (!SessionAppearance::hasContentAppearance(appearance)
+            && appearance.colorAdjust.isIdentity()
+            && !item->path().isEmpty()) {
+            const_cast<ImageView *>(this)->seedSessionAppearanceFromState(
+                id, item->path());
+            if (const WorkspaceItemState *app = m_appearance.get(id)) {
+                appearance = *app;
+            }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
         const auto it = m_itemStates.constFind(item->path());
