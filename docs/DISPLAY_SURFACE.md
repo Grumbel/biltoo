@@ -227,23 +227,19 @@ Shared path + two sids → one climb, two materializations (IDENTITY).
 
 ---
 
-## 8. Migration (ImageView method map)
+## 8. Migration (ImageView method map) — completed
 
-| Current (ImageView / bar) | Destination |
-|---------------------------|-------------|
-| `installDisplayPixels` policy | Controller decide + materialize |
-| `canAcceptDisplaySample` | decide() rules §4.1 |
-| `attachDisplaySample` | Consumer attach helper (thin) |
-| `scheduleAsyncHostRematerialize` / finish | Controller async materialize |
-| `rematerializeItemContent` / tryRematerialize | Controller wantChanged path |
-| `displayQualityWatchdogTick` Image branch | **Delete** |
-| `ThumbnailBar::qualityWatchdogTick` installs | **Delete** |
-| Gallery soft InstallHostBetter in pack tick | **Delete**; use noteHostImproved |
-| `requestEscalateClimb` / direct ensure from View | Controller setNeed / policy |
+| Former (ImageView / bar) | Now |
+|--------------------------|-----|
+| Install policy | `DisplaySurface::decide` + `applyDisplaySurfaceAction` |
+| `canAcceptDisplaySample` | decide() rules |
+| `displayQualityWatchdogTick` Image | **Gone** (slideshowPhaseSurfaceTick only) |
+| Gallery / filmstrip InstallHostBetter | **Gone**; bound surface evaluate |
 | `m_cropDraftSampleFrozen` | surface `frozen` |
-| `GallerySoftState` policy mirror | surface state + PathRaster have |
+| Pixel attach | still ImageView helpers *after* decide |
 
-Keep on ImageView: scene, modes, input, pack geometry, crop chrome, paint.
+Keep on ImageView: scene, modes, input, pack geometry, crop chrome, paint,
+and thin attach/materialize calls after Action.
 
 ---
 

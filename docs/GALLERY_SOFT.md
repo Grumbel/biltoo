@@ -191,17 +191,12 @@ scheduled via `scheduleOverviewPixels` when `THUMTOO_API_SET_INTEREST` is define
 only interest snapshots drive overview/FocusFull work.
 
 
-## DisplayQuality invariant
+## Display surface install policy
 
-`DisplayQuality::checkSurface(path, shown, target, climbPending)` is the host
-contract for every Gallery tile (and filmstrip / slideshow / Image mode):
+Install / climb / async materialize for Gallery tiles is governed by
+`DisplaySurface::decide` (see [DISPLAY_SURFACE.md](DISPLAY_SURFACE.md)).
+Gallery soft recovery syncs each tile’s bound `SurfaceId`, evaluates the
+controller, and runs `ImageView::applyDisplaySurfaceAction`.
 
-| Verdict | Meaning |
-|---------|---------|
-| Ok | Shown meets target, or climb is pending |
-| InstallHostBetter | `ImageCache` has a stricter sample than painted — install it |
-| ScheduleClimb | Below target, host has nothing better — schedule soft climb |
-| StuckWeak | Still LQIP/blank while target ≥ soft and no climb pending |
-
-Watchdog installs host-better samples and rate-limits warnings; debug builds
-assert on StuckWeak without pending work.
+Do **not** reintroduce host-vs-shown InstallHostBetter loops: pre-crop host edge
+must not be compared to post-crop shown edge to force soft reinstall.

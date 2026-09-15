@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-973-docs-gallery-soft-surface-policy.** Docs match DisplaySurface install.
+Prior: **972**.
+
+### Change
+- `GALLERY_SOFT.md`: DisplayQuality checkSurface table replaced by DisplaySurface
+  decide / evaluate / applyDisplaySurfaceAction.
+- `DISPLAY_SURFACE.md` §8 migration table marked completed.
+
+### DisplaySurface work line (953–973) — handoff
+
+Install policy is **complete**. Safe stopping point. Optional later:
+Qt `displayReady` signal for observers; further thinning of attach helpers.
+
+### Apply
+```bash
+git pull /path/to/biltoo-973-docs-gallery-soft-surface-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-972-preview-evaluate-surface-docs.** Preview uses evaluate; migration docs complete.
 Prior: **971**.
 
