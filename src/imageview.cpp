@@ -212,11 +212,9 @@ ImageView::ImageView(QWidget *parent)
                 }
                 if (isImageMode() && !m_slideshowProgressActive
                     && path == classicPath()) {
-                    if (!isCropDraftLockedPath(path)) {
-                        (void)tryInstallImageModeSample(path, img);
-                    }
-                    // PreferCache plateaued below viewport need → quiet native.
-                    // Full escalate is PathRasterService ClimbPolicy::EscalateToFull.
+                    // Event-driven ImageFocus: DisplaySurface::decide (not a
+                    // quality watchdog). Soft→full via Attach* / async / climb.
+                    driveImageFocusSurface();
                     emit statusChanged();
                 }
                 // Gallery: soft may land in ImageCache via noteDelivery while the

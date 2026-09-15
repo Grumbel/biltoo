@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-954-displaysurface-decide**.
-Next bundle number: **955**.
+Latest agent handoff: **TODO.md → biltoo-955-imagefocus-display-surface**.
+Next bundle number: **956**.
 Requires **thumtoo ≥ 202** (`THUMTOO_API_DOCUMENT_INDEX`) for PDF/DjVu/EPUB page-count cache.
 **Environment variables:** [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) (debug traces, concurrency, cache paths, `nix develop` helpers); also `man biltoo`.
 **Settings:** do not reintroduce `QMainWindow::restoreState` / `saveState` for docks without a proven fix for Qt 6.11 `QDockAreaLayout` SEGV on show().

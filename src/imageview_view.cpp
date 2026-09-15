@@ -1659,108 +1659,49 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 
 void ImageView::displayQualityWatchdogTick()
 {
-    // Crop draft: one sample, frozen at enter. Quality climb must not run at all
-    // (not "gated install" — do not PathRaster::ensure / InstallHostBetter).
+    // Image canvas: no InstallHostBetter poller. Policy is DisplaySurface::decide
+    // driven by rasterImproved / load / explicit driveImageFocusSurface.
+    // This timer only (1) optionally re-evaluates ImageFocus when soft is still
+    // short of need and climb is idle (event may have been missed), and
+    // (2) recovers slideshow phase buffers while a transition is live.
     if (m_cropDraftSampleFrozen) {
         return;
     }
-    // Image-mode canvas: host better than painted, or LQIP while climbing to soft+.
-    if (isImageMode()) {
-        ImageItem *item = primaryItem();
-        if (item && !item->path().isEmpty()) {
-            const QString path = item->path();
-            // Settled FullSource matching store want: host edge is pre-crop;
-            // shown is post-crop. checkSurface would spam InstallHostBetter and
-            // (via install) soft-demote every 1s. Skip — no climb, no install.
-            bool settledFullBake = false;
-            if (item->hasDecodedPixels() && item->hasAppliedContentXform()) {
-                const WorkspaceItemState wantState =
-                    wantAppearanceForItem(item, item->sessionId());
-                settledFullBake = ContentXform::equal(
-                    item->appliedContentXform(),
-                    ContentXform::Value::fromState(wantState));
-            }
-            if (!settledFullBake) {
-                const int shown = item->displayPixelLongEdge();
-                const int target = cappedDisplayEdgeForPath(
-                    path, qMax(viewport() ? qMax(viewport()->width(), viewport()->height()) : 0,
-                               DisplayQuality::kSoftMaxEdge));
-                const bool pending =
-                    m_pathRaster && m_pathRaster->isClimbPending(path);
-                const DisplayQuality::Check dq =
-                    DisplayQuality::checkSurface(path, shown, target, pending);
-                if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
-                    const QImage host = ImageCache::get(path);
-                    // Kind must match host edge: SoftPreview is rejected when the
-                    // item already holds FullSource (even a smaller overview). Using
-                    // SoftPreview here left shown=1024 while host=2048 forever and
-                    // spam install-host-better.
-                    const auto kind =
-                        (ImageCache::longEdge(host) > ThumtooCache::kGalleryLadderEdge)
-                            ? SessionAppearance::PixelKind::FullSource
-                            : SessionAppearance::PixelKind::SoftPreview;
-                    if (!host.isNull() && canAcceptDisplaySample(item, host, kind)) {
-                        installDisplayPixels(item, host, kind, item->sessionId());
-                        if (viewport()) {
-                            viewport()->update();
-                        }
-                        // Still short of on-screen target — keep climbing.
-                        if (item->displayPixelLongEdge() < (target * 9) / 10
-                            && m_pathRaster) {
-                            m_pathRaster->ensure(
-                                path, target, logicalSizeForPath(path),
-                                PathRasterService::ClimbPolicy::EscalateToFull);
-                        }
-                    } else {
-                        DisplayQuality::reportViolation("image", path, dq, false);
-                        if (m_pathRaster) {
-                            m_pathRaster->ensure(
-                                path, target, logicalSizeForPath(path),
-                                PathRasterService::ClimbPolicy::EscalateToFull);
-                        }
-                    }
-                } else if (dq.verdict != DisplayQuality::Verdict::Ok && !pending) {
-                    // Recover first; gallery owns sustained hard-assert via weakSinceMs.
-                    DisplayQuality::reportViolation("image", path, dq,
-                                                   /*assertHard=*/false);
-                    if (m_pathRaster) {
-                        m_pathRaster->ensure(
-                            path, target, logicalSizeForPath(path),
-                            PathRasterService::ClimbPolicy::EscalateToFull);
-                    }
-                }
-            }
-        }
+    if (isImageMode() && !m_slideshowProgressActive) {
+        // Safe: decide() is None when FullSource matches want (no soft demote).
+        driveImageFocusSurface();
     }
 
-    // Slideshow phase buffers must track host upgrades (same bug class as gallery).
-    if (m_slideshowProgressActive) {
-        auto checkPhase = [this](const QString &path, int shownEdge, const char *tag) {
-            if (path.isEmpty()) {
-                return;
-            }
-            const int target = slideshowTargetEdge();
-            const DisplayQuality::Check dq =
-                DisplayQuality::checkSurface(path, shownEdge, target, false);
-            if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
-                const QImage host = ImageCache::get(path);
-                if (!host.isNull()) {
-                    scheduleSlideshowPhaseBufferUpgrade(path, host);
-                }
-                DisplayQuality::reportViolation(tag, path, dq, false);
-            } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak) {
-                DisplayQuality::reportViolation(tag, path, dq, /*assertHard=*/false);
-                if (m_pathRaster) {
-                    m_pathRaster->ensure(
-                        path, slideshowTargetEdge(), logicalSizeForPath(path),
-                        PathRasterService::ClimbPolicy::EscalateToFull);
-                }
-            }
-        };
-        checkPhase(m_ssFromPath, ImageCache::longEdge(m_ssFromImage), "slideshow-from");
-        checkPhase(m_ssToPath, ImageCache::longEdge(m_ssToImage), "slideshow-to");
+    if (!m_slideshowProgressActive) {
+        return;
     }
+
+    auto checkPhase = [this](const QString &path, int shownEdge, const char *tag) {
+        if (path.isEmpty()) {
+            return;
+        }
+        const int target = slideshowTargetEdge();
+        const DisplayQuality::Check dq =
+            DisplayQuality::checkSurface(path, shownEdge, target, false);
+        if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                scheduleSlideshowPhaseBufferUpgrade(path, host);
+            }
+            DisplayQuality::reportViolation(tag, path, dq, false);
+        } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak) {
+            DisplayQuality::reportViolation(tag, path, dq, /*assertHard=*/false);
+            if (m_pathRaster) {
+                m_pathRaster->ensure(
+                    path, slideshowTargetEdge(), logicalSizeForPath(path),
+                    PathRasterService::ClimbPolicy::EscalateToFull);
+            }
+        }
+    };
+    checkPhase(m_ssFromPath, ImageCache::longEdge(m_ssFromImage), "slideshow-from");
+    checkPhase(m_ssToPath, ImageCache::longEdge(m_ssToImage), "slideshow-to");
 }
+
 
 QString ImageView::slideshowPrefetchHudLine() const
 {

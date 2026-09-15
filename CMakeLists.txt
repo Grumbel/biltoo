@@ -141,6 +141,8 @@ add_executable(biltoo
   src/placementlinear.h
   src/imageitem.cpp
   src/displayquality.cpp
+  src/displaysurface.cpp
+  src/displaysurface.h
   src/imageitem_interaction.cpp
   src/imageitem.h
   src/imageloader.cpp

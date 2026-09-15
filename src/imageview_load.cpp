@@ -2296,7 +2296,10 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
     // @p image is host-raw (soft job, ladder, quality job). Single materialize
     // in installDisplayPixels — soft stand-in + async full when multi-MP want.
     const SessionAppearance::PixelKind kind = pixelKindForImageModeSample(path, image);
-    return tryInstallImageModeSampleBaked(path, image, kind);
+    const bool ok = tryInstallImageModeSampleBaked(path, image, kind);
+    // Decide soft→async / climb from the new host edge (event-driven).
+    driveImageFocusSurface();
+    return ok;
 }
 
 bool ImageView::tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
@@ -2492,4 +2495,175 @@ bool ImageView::loadImage(const QString &path)
     // Do not emit statusChanged — setCurrentIndex chrome already updateStatus.
     scheduleImageLoad(path, LoadReplace);
     return true;
+}
+
+void ImageView::ensureImageFocusSurface()
+{
+    if (!isImageMode()) {
+        if (m_imageFocusSurface != DisplaySurface::kInvalidSurfaceId) {
+            m_displaySurfaces.unbind(m_imageFocusSurface);
+            m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
+        }
+        return;
+    }
+    ImageItem *item = primaryItem();
+    if (!item || item->path().isEmpty()) {
+        if (m_imageFocusSurface != DisplaySurface::kInvalidSurfaceId) {
+            m_displaySurfaces.unbind(m_imageFocusSurface);
+            m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
+        }
+        return;
+    }
+    const QString path = item->path();
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId) {
+        sid = m_currentSessionId;
+    }
+    const DisplaySurface::Binding *b = m_displaySurfaces.binding(m_imageFocusSurface);
+    if (b && b->path == path && b->sessionId == sid) {
+        return;
+    }
+    if (m_imageFocusSurface != DisplaySurface::kInvalidSurfaceId) {
+        m_displaySurfaces.unbind(m_imageFocusSurface);
+        m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
+    }
+    m_imageFocusSurface = m_displaySurfaces.bind(
+        DisplaySurface::Kind::ImageFocus, path, sid);
+}
+
+void ImageView::syncImageFocusSurfaceState()
+{
+    ensureImageFocusSurface();
+    if (m_imageFocusSurface == DisplaySurface::kInvalidSurfaceId) {
+        return;
+    }
+    ImageItem *item = primaryItem();
+    if (!item) {
+        return;
+    }
+    const QString path = item->path();
+    int need = 0;
+    if (viewport()) {
+        need = qMax(viewport()->width(), viewport()->height());
+    }
+    need = cappedDisplayEdgeForPath(path, need);
+    m_displaySurfaces.setNeed(m_imageFocusSurface, need);
+
+    const bool frozen =
+        m_cropDraftSampleFrozen && isCropDraftLockedPath(path);
+    m_displaySurfaces.setFrozen(m_imageFocusSurface, frozen);
+
+    const int hostEdge = path.isEmpty() ? 0 : ImageCache::longEdge(ImageCache::get(path));
+    m_displaySurfaces.setHostLongEdge(m_imageFocusSurface, hostEdge);
+
+    const bool pending =
+        m_pathRaster && !path.isEmpty() && m_pathRaster->isClimbPending(path);
+    m_displaySurfaces.setClimbPending(m_imageFocusSurface, pending);
+
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId) {
+        sid = m_currentSessionId;
+    }
+    const WorkspaceItemState wantState = wantAppearanceForItem(item, sid);
+    m_displaySurfaces.setWant(m_imageFocusSurface,
+                              ContentXform::Value::fromState(wantState));
+
+    DisplaySurface::AttachedKind kind = DisplaySurface::AttachedKind::None;
+    int have = 0;
+    ContentXform::Value applied;
+    if (item->hasDisplayPixels()) {
+        have = item->displayPixelLongEdge();
+        if (item->hasDecodedPixels()) {
+            kind = DisplaySurface::AttachedKind::FullSource;
+        } else {
+            kind = DisplaySurface::AttachedKind::SoftPreview;
+        }
+        if (item->hasAppliedContentXform()) {
+            applied = item->appliedContentXform();
+        }
+    }
+    m_displaySurfaces.setAttached(m_imageFocusSurface, kind, have, applied);
+}
+
+void ImageView::driveImageFocusSurface()
+{
+    if (!isImageMode() || m_slideshowProgressActive) {
+        return;
+    }
+    syncImageFocusSurfaceState();
+    if (m_imageFocusSurface == DisplaySurface::kInvalidSurfaceId) {
+        return;
+    }
+    const DisplaySurface::Binding *b =
+        m_displaySurfaces.binding(m_imageFocusSurface);
+    if (!b) {
+        return;
+    }
+    const DisplaySurface::Action action = m_displaySurfaces.evaluate(m_imageFocusSurface);
+    const QString path = b->path;
+    if (path.isEmpty()) {
+        return;
+    }
+    ImageItem *item = primaryItem();
+    if (!item || item->path() != path) {
+        return;
+    }
+    SessionImageId sid = b->sessionId;
+    if (sid == kInvalidSessionImageId) {
+        sid = item->sessionId() != kInvalidSessionImageId ? item->sessionId()
+                                                          : m_currentSessionId;
+    }
+
+    using AT = DisplaySurface::ActionType;
+    switch (action.type) {
+    case AT::None:
+        break;
+    case AT::ScheduleClimb: {
+        if (!m_pathRaster) {
+            break;
+        }
+        const int edge =
+            action.climbNeedEdge > 0 ? action.climbNeedEdge
+                                     : cappedDisplayEdgeForPath(path, 0);
+        m_pathRaster->ensure(path, edge, logicalSizeForPath(path),
+                             PathRasterService::ClimbPolicy::EscalateToFull);
+        break;
+    }
+    case AT::ScheduleAsyncMaterialize: {
+        const WorkspaceItemState want = wantAppearanceForItem(item, sid);
+        scheduleAsyncHostRematerialize(path, sid, want);
+        break;
+    }
+    case AT::AttachSoft:
+    case AT::AttachFull: {
+        const QImage host = ImageCache::get(path);
+        if (host.isNull()) {
+            break;
+        }
+        const auto kind = (action.type == AT::AttachSoft)
+            ? SessionAppearance::PixelKind::SoftPreview
+            : SessionAppearance::PixelKind::FullSource;
+        if (canAcceptDisplaySample(item, host, kind)) {
+            installImageModeSampleInPlace(item, path, host, kind);
+        }
+        // After soft stand-in on multi-MP content, evaluate again for async full.
+        if (action.type == AT::AttachSoft) {
+            syncImageFocusSurfaceState();
+            const DisplaySurface::Action again =
+                m_displaySurfaces.evaluate(m_imageFocusSurface);
+            if (again.type == AT::ScheduleAsyncMaterialize) {
+                const WorkspaceItemState want = wantAppearanceForItem(item, sid);
+                scheduleAsyncHostRematerialize(path, sid, want);
+            } else if (again.type == AT::ScheduleClimb && m_pathRaster) {
+                m_pathRaster->ensure(
+                    path,
+                    again.climbNeedEdge > 0 ? again.climbNeedEdge
+                                            : cappedDisplayEdgeForPath(path, 0),
+                    logicalSizeForPath(path),
+                    PathRasterService::ClimbPolicy::EscalateToFull);
+            }
+        }
+        break;
+    }
+    }
 }

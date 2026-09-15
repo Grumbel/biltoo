@@ -2,6 +2,35 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-955-imagefocus-display-surface.** ImageFocus uses DisplaySurface::decide.
+Prior: **954**.
+
+### Change (Phase C — partial Image wiring)
+- `ImageView` owns `DisplaySurfaceController` + `m_imageFocusSurface`.
+- `ensureImageFocusSurface` / `syncImageFocusSurfaceState` / `driveImageFocusSurface`
+  map primary item → decide → ScheduleClimb | ScheduleAsyncMaterialize |
+  AttachSoft | AttachFull | None.
+- `PathRasterService::rasterImproved` (Image) calls `driveImageFocusSurface`
+  instead of ad-hoc tryInstall only.
+- `displayQualityWatchdogTick` Image branch no longer InstallHostBetter via
+  DisplayQuality; only re-drives decide (None when settled FullSource).
+- Crop freeze mirrored into surface `frozen`.
+- `displaysurface.cpp` linked into biltoo binary.
+
+Still deferred (later phases): Gallery/Filmstrip surfaces, delete old install
+helpers, remove timer entirely for Image.
+
+### Apply
+```bash
+git pull /path/to/biltoo-955-imagefocus-display-surface.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-954-displaysurface-decide.** DisplaySurface decide() + controller skeleton.
 Prior: **953**.
 

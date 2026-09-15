@@ -12,6 +12,7 @@
 #include "workspacecontroller.h"
 #include "imagecontroller.h"
 #include "pathrasterservice.h"
+#include "displaysurface.h"
 #include "gallerylayout.h"
 
 #include <QColor>
@@ -1481,6 +1482,10 @@ private:
     void gallerySoftWatchdogTick();
     /** Image-mode + slideshow phase: DisplayQuality host-vs-shown contract. */
     void displayQualityWatchdogTick();
+    /** Phase C: bind/sync ImageFocus surface and apply DisplaySurface::decide. */
+    void ensureImageFocusSurface();
+    void syncImageFocusSurfaceState();
+    void driveImageFocusSurface();
     /** Ladder step for item cell size in device pixels. */
     int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = true) const;
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
@@ -2009,6 +2014,9 @@ private:
      */
     bool m_cropDraftSampleFrozen = false;
     QString m_cropDraftPath;
+    /** Image-mode focus surface (DisplaySurfaceController). Invalid outside Image. */
+    DisplaySurfaceController m_displaySurfaces;
+    DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
     /** Apply queued full bake while freeze was on; flushed after clearCropModeState. */
     bool m_cropPendingFullRematerialize = false;
     QString m_cropPendingFullRematerializePath;
