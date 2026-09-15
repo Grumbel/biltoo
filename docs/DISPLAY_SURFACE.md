@@ -305,3 +305,19 @@ One controller joins path climb, session appearance, and surface need.
 Consumers only bind, setNeed, freeze/unfreeze, and attach. No ImageView
 quality watchdog. No host-vs-cropped-shown install loop. Soft→full is a
 one-shot event chain, not a 1s cycle.
+
+---
+
+## 11. Work line complete (tips 953–975)
+
+The original crop soft↔full **pulse** was caused by timer-driven host-vs-shown
+installs. That path is gone:
+
+- Policy: `DisplaySurface::decide` only
+- Accept: `canAcceptDisplaySample` via decide
+- Execute: `applyDisplaySurfaceAction`
+- Registry: SurfaceId on items, filmstrip rows, slideshow phases
+- ImageFocus: event-driven (no quality poller)
+
+**Stop this work line** unless a new bug is reported. Optional later work is
+product polish (signals, further attach thinning), not install-policy correctness.

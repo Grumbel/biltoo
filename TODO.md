@@ -2,20 +2,24 @@
 
 ## Status (2026-09-15)
 
-**Tip: biltoo-975-filmstrip-surface-tick-rename.** Filmstrip recovery tick rename (+ comment).
-Prior: **973**. (974 artifact may lack one comment fix; prefer **975** full stack.)
+**Tip: biltoo-976-display-surface-workline-complete.** DisplaySurface install work line closed.
+Prior: **975**.
 
-### Change
-- `ThumbnailBar::qualityWatchdogTick` → `filmstripSurfaceTick`
-- Timer → `filmstripSurfaceTimer`
-- Stale comment updated
+### Summary
+Install-policy rewrite complete (953–975). No further tips required for the
+crop quality pulse / watchdog removal / decide architecture unless a **new**
+failure is observed.
 
 ### Apply
 ```bash
-git pull /path/to/biltoo-975-filmstrip-surface-tick-rename.bundle HEAD
+git pull /path/to/biltoo-976-display-surface-workline-complete.bundle HEAD
 ```
 
+### Next
+Do **not** auto-continue polish. Wait for user bug report or a new task.
+
 ---
+
 
 
 # TODO / agent handoff
