@@ -754,14 +754,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
 
     // Cold path: no soft/LQIP yet. Within the *same* path, keep the prior frame
     // until soft arrives (avoids a flash on PreferCache gaps). Different path
-    // (session switch / ←→): never keep the previous file's pixels — that is
-    // the race where an old session image remains on screen as the new path.
-    //
-    // Critical: do NOT setIntrinsicSize to the new path's layout while the
-    // item is blank. That updates contentRect before any matching sample and
-    // stretches the loading placeholder / residual frame to the wrong aspect.
-    // Soft/LQIP install (below or escalate) sets layout with the pixels in
-    // the same attachDisplaySample call.
+    // (session switch / ←→): never keep the previous file's pixels under a new
+    // contentRect — that is the wrong-pixels stretch. Layout without pixels is
+    // fine (blank/placeholder at the correct aspect); only the old sample is not.
     if (pixels.isNull()) {
         if (m_items.size() == 1) {
             ImageItem *item = m_items.first();
@@ -769,16 +764,20 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             item->setPath(path);
             bindImageModeSessionCursor(item);
             if (pathChanged) {
+                // Drop prior file's sample first, then adopt the new layout.
                 if (item->hasDecodedPixels()) {
                     item->clearDecodedPixels();
                 }
                 item->setPreviewImage(QImage());
-                // Leave intrinsic as-is until soft/LQIP attaches with layout.
-                // Optional: tight sceneRect still tracks the blank tile.
+                const QSize sz = layoutSizeForPath(path, QImage());
+                if (isPositiveSize(sz)) {
+                    item->setIntrinsicSize(sz);
+                    syncImageModeSceneRect(item);
+                }
                 if (viewport()) {
                     viewport()->update();
                 }
-                biltooLoadDbg("pendingTile DEFER blank path=%s (cleared prior, layout deferred)",
+                biltooLoadDbg("pendingTile DEFER blank path=%s (cleared prior)",
                               qPrintable(QFileInfo(path).fileName()));
             } else {
                 biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",

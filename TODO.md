@@ -2,6 +2,24 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-912-nav-clear-wrong-pixels.** Layout without pixels is OK; never stretch prior-file pixels.
+Prior: **911** (over-deferred layout).
+
+### Clarification
+ContentRect may update to the new path size while blank/placeholder. Forbidden is
+*wrong pixels* (previous image) drawn into the new aspect.
+
+### Apply
+```bash
+git pull /path/to/biltoo-912-nav-clear-wrong-pixels.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-911-nav-no-aspect-stretch.** Image ←/→ must not change contentRect without matching pixels.
 Prior: **910**.
 
