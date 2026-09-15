@@ -9,6 +9,7 @@
 #include <QImage>
 #include "imageview_types.h"
 #include <QListWidget>
+#include "displaysurface.h"
 #include <QVector>
 #include <QMimeData>
 #include <QPoint>
@@ -224,8 +225,9 @@ private:
     void scheduleThumbnailLoads();
     /** Queue decode jobs for rows near the viewport / current index only. */
     void scheduleVisibleThumbnailLoads();
-    /** DisplayQuality: host better than cell, or LQIP settled without soft. */
+    /** DisplaySurface::decide recovery for visible path-only cells. */
     void qualityWatchdogTick();
+    void rebindFilmstripSurfaces();
     /** Apply native pixel size as letterbox aspect on a row (sizeHint + role). */
     void applyNativeAspect(QListWidgetItem *item, const QSize &native);
     /** Cache-first sizes for all rows; scheduleProbe for misses. */
@@ -280,6 +282,9 @@ private:
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;
     QStringList m_files;
+    DisplaySurfaceController m_displaySurfaces;
+    /** Parallel to m_files: surface id per row (0 = unbound). */
+    QVector<DisplaySurface::SurfaceId> m_rowSurfaceIds;
     /** Session-only images (crop, …) preferred over on-disk decode for thumbs. */
     QHash<QString, QImage> m_sessionImageOverrides;
     QHash<SessionImageId, QImage> m_sessionIdImageOverrides;

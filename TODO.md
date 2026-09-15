@@ -2,6 +2,25 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-967-filmstrip-surface-registry.** Filmstrip cells bind FilmstripCell surfaces.
+Prior: **966**.
+
+### Change
+- `ThumbnailBar`: `DisplaySurfaceController` + `m_rowSurfaceIds` parallel to files.
+- `rebindFilmstripSurfaces` on `setFiles`.
+- Quality recovery: push need/host/attached on bound id, `evaluate(sid)`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-967-filmstrip-surface-registry.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-966-workspace-imagefocus-bound-surfaces.** Workspace + ImageFocus use item surface ids.
 Prior: **965**.
 

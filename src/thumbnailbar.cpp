@@ -1571,6 +1571,30 @@ void ThumbnailBar::refreshAllItemGeometry()
 }
 
 
+void ThumbnailBar::rebindFilmstripSurfaces()
+{
+    for (DisplaySurface::SurfaceId id : m_rowSurfaceIds) {
+        if (id != DisplaySurface::kInvalidSurfaceId) {
+            m_displaySurfaces.unbind(id);
+        }
+    }
+    m_rowSurfaceIds.clear();
+    m_rowSurfaceIds.resize(m_files.size());
+    for (int i = 0; i < m_files.size(); ++i) {
+        const QString &path = m_files.at(i);
+        if (path.isEmpty()) {
+            m_rowSurfaceIds[i] = DisplaySurface::kInvalidSurfaceId;
+            continue;
+        }
+        SessionImageId sid = kInvalidSessionImageId;
+        if (i < m_sessionIds.size()) {
+            sid = m_sessionIds.at(i);
+        }
+        m_rowSurfaceIds[i] = m_displaySurfaces.bind(
+            DisplaySurface::Kind::FilmstripCell, path, sid);
+    }
+}
+
 void ThumbnailBar::qualityWatchdogTick()
 {
     if (m_files.isEmpty() || m_visibleLoadsSuspended) {
@@ -1617,19 +1641,34 @@ void ThumbnailBar::qualityWatchdogTick()
         if (m_sessionImageOverrides.contains(path)) {
             continue;
         }
-        // Path-only cells: DisplaySurface::decide (identity xform). Session
-        // appearance overrides already continued above.
-        DisplaySurface::State ds;
-        ds.needEdge = decodeSize;
-        ds.haveDisplayEdge = shown;
-        ds.hostLongEdge = DisplayQuality::hostLongEdge(path);
-        ds.climbPending = climbPending;
+        // Path-only cells: bound FilmstripCell surface + evaluate.
+        DisplaySurface::SurfaceId sid = DisplaySurface::kInvalidSurfaceId;
+        if (i < m_rowSurfaceIds.size()) {
+            sid = m_rowSurfaceIds.at(i);
+        }
+        if (sid == DisplaySurface::kInvalidSurfaceId) {
+            SessionImageId sess = kInvalidSessionImageId;
+            if (i < m_sessionIds.size()) {
+                sess = m_sessionIds.at(i);
+            }
+            sid = m_displaySurfaces.bind(
+                DisplaySurface::Kind::FilmstripCell, path, sess);
+            if (i < m_rowSurfaceIds.size()) {
+                m_rowSurfaceIds[i] = sid;
+            }
+        }
+        const int hostEdge = DisplayQuality::hostLongEdge(path);
+        m_displaySurfaces.setNeed(sid, decodeSize);
+        m_displaySurfaces.setHostLongEdge(sid, hostEdge);
+        m_displaySurfaces.setClimbPending(sid, climbPending);
+        DisplaySurface::AttachedKind ak = DisplaySurface::AttachedKind::None;
         if (shown > 0) {
-            ds.attachedKind = (shown >= (decodeSize * 9) / 10)
+            ak = (shown >= (decodeSize * 9) / 10)
                 ? DisplaySurface::AttachedKind::FullSource
                 : DisplaySurface::AttachedKind::SoftPreview;
         }
-        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        m_displaySurfaces.setAttached(sid, ak, shown, ContentXform::Value{});
+        const DisplaySurface::Action act = m_displaySurfaces.evaluate(sid);
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
             continue;
@@ -2028,6 +2067,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
     clearPressState();
     clear();
     m_files = files;
+    rebindFilmstripSurfaces();
     // Drop overrides for paths no longer in the session.
     {
         QHash<QString, QImage> kept;
