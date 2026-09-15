@@ -61,6 +61,7 @@ private slots:
     void combo_flipFlags_doNotChangeLayoutSize();
     void combo_pureMaterialize_sizeMatchesLayoutSize();
     void combo_pureMaterialize_cropPixelsSurviveAxisAlignedRotate();
+    void softPreview_scaledCropAspectMatchesLayout();
     void combo_axisAligned_mapDoesNotArmFreeRotation();
     void combo_equal_detectsAllContentFields();
 };
@@ -803,6 +804,46 @@ void ContentXformTest::combo_pureMaterialize_cropPixelsSurviveAxisAlignedRotate(
         QVERIFY(found);
     }
 }
+
+void ContentXformTest::softPreview_scaledCropAspectMatchesLayout()
+{
+    // SoftPreview path: host is scaled down first, then crop is scaled into
+    // soft space (same order as SessionAppearance::materializeDisplay SoftPreview).
+    // layoutSize stays the native crop box — paint stretches soft into that
+    // geometry. Soft crop sample aspect must match layout aspect.
+    const QSize native(4000, 3000);
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(1000, 500, 2000, 1500);
+    x.cropSourceSize = native;
+    const QSize layout = ContentXform::layoutSize(native, x);
+    QCOMPARE(layout, QSize(2000, 1500));
+
+    QImage raw(native, QImage::Format_RGB32);
+    raw.fill(Qt::black);
+    stampPixel(&raw, 1000, 500, 1);   // crop TL
+    stampPixel(&raw, 2999, 1999, 2);  // crop BR
+
+    // Soft long edge 512 → 512×384
+    const int softEdge = 512;
+    const qreal s = qreal(softEdge) / qreal(qMax(native.width(), native.height()));
+    const QSize softSize(qMax(1, qRound(native.width() * s)),
+                         qMax(1, qRound(native.height() * s)));
+    QImage soft = raw.scaled(softSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    QCOMPARE(soft.size(), softSize);
+
+    const QImage out = pureMaterializeAxisAligned(soft, x);
+    QVERIFY(!out.isNull());
+    // Aspect must match layout (within 1px rounding)
+    QVERIFY(out.width() > 1 && out.height() > 1);
+    const qreal layoutAspect = qreal(layout.width()) / qreal(layout.height());
+    const qreal softAspect = qreal(out.width()) / qreal(out.height());
+    QVERIFY2(qAbs(layoutAspect - softAspect) < 0.02,
+             qPrintable(QStringLiteral("layout %1x%2 softCrop %3x%4")
+                            .arg(layout.width()).arg(layout.height())
+                            .arg(out.width()).arg(out.height())));
+}
+
 
 void ContentXformTest::combo_axisAligned_mapDoesNotArmFreeRotation()
 {

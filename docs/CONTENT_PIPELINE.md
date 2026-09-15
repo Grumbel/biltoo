@@ -79,32 +79,41 @@ appearance under different ids. See [IDENTITY.md](../IDENTITY.md),
 For any item with a valid `SessionImageId`:
 
 1. **ImageCache** holds only **unoriented host** (path-keyed). Never write a
-   content-baked sample under the path key.
-2. **`installDisplayPixels`** treats incoming pixels as host-raw. When store
-   want has crop/orient/grade:
+   content-baked sample under the path key (duplicate/peer/undo display must
+   not `ImageCache::put` the bake).
+2. **`installDisplayPixels`** is the sole host→display gate. Incoming is
+   host-raw. When store want has crop/orient/grade:
    - GUI-safe host (long edge ≤ `kGuiMaterializeMaxEdge`):  
      `display = materializeDisplay(host, want)` → `attachDisplaySample`.
    - Larger host: clamp to max edge, materialize as **SoftPreview** stand-in
-     (crop visible immediately), then `scheduleAsyncHostRematerialize` only if
-     the caller requested FullSource. **Never** attach raw host under want.
+     (crop visible immediately), then `scheduleAsyncHostRematerialize` when
+     FullSource was requested. **Never** attach raw host under want.
 3. **`appliedContentXform` is set only inside `attachDisplaySample`** after a
-   real bake. Scheduling async must not claim applied == want while pixels
-   still show the unoriented host.
+   real bake. Multi-MP helpers that cannot bake crop (e.g. `applyContentToItem`
+   edge limit, `applyContentBakes`) must not claim full want including crop.
 4. SoftPreview **includes crop** (scaled into soft space). Helpers must not
    strip `hasCrop` before `materializeDisplay`.
 5. Path duplicates: one host sample in ImageCache; **per-id** materialize on
    each tile from `m_appearance.get(sid)`.
+6. **Already-baked display** (peer sync, undo after-image, Workspace
+   duplicate of live pixels): `attachDisplaySample` only — never
+   `installDisplayPixels` / `createItemFromImage` with baked pixels.
 
-Gallery soft ladder and PreferCache display climbs both go through this gate.
-Post-install “if applied ≠ want, rematerialize” checks are not a substitute.
+Gallery soft ladder, PreferCache climbs, `createItemFromImage` (content want),
+and restore/Workspace reapply all go through this gate or
+`rematerializeItemContent`. Post-install “if applied ≠ want, rematerialize”
+checks are not a substitute for the gate.
 
 ## Entry points
 
 | Path | API |
 |------|-----|
 | Decode / ladder / soft | `installDisplayPixels` → materialize → `attachDisplaySample` |
+| `createItemFromImage` + want | seed chrome → `installDisplayPixels` |
+| Restore / Workspace full miss | `rematerializeItemContent` |
 | Live rotate/flip ≤512 host | `tryRematerializeFromHost` → `attachDisplaySample` |
 | Live rotate/flip multi-MP | incremental bake + `scheduleAsyncHostRematerialize` → `finishAsync` → `attachDisplaySample` |
+| Peer / duplicate / undo after | `attachDisplaySample` (no ImageCache put) |
 | Crop Apply | write `m_appearance` by id → materialize → attach; emit id-keyed filmstrip |
 | Tests | `tests/contentxform_test.cpp` |
 

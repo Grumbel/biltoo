@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-929-pipeline-docs-soft-test.** CONTENT_PIPELINE install invariant complete; SoftPreview crop aspect test.
+Prior: **928**.
+
+### Change
+- CONTENT_PIPELINE: install invariant covers createItemFromImage, restore,
+  duplicate/peer/undo (attach only, no ImageCache put of bake), and multi-MP
+  helpers must not claim crop applied without bake.
+- contentxform_test: softPreview_scaledCropAspectMatchesLayout — soft crop
+  sample aspect matches layoutSize (paint stretch contract).
+
+### Apply
+```bash
+git pull /path/to/biltoo-929-pipeline-docs-soft-test.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-928-createitem-via-install-gate.** createItemFromImage wantBake uses installDisplayPixels only.
 Prior: **927**.
 
