@@ -729,6 +729,11 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     if (isGalleryMode() && before != item->imageSize()) {
         requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
+    if (isWorkspaceMode()) {
+        ensureWorkspaceQualityClimb();
+    } else if (isImageMode()) {
+        driveImageFocusSurface();
+    }
     if (viewport()) {
         viewport()->update();
     }

@@ -549,6 +549,14 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
         scheduleAsyncHostRematerialize(
             path, item->sessionId(),
             wantAppearanceForItem(item, item->sessionId()));
+        // Intermediate Prefer host is baking async; keep Soft→Prefer→Full climb
+        // when on-screen need is still above host (Workspace zoom-in).
+        const int need = fallbackNeedEdge > 0 ? fallbackNeedEdge : 0;
+        if (m_pathRaster && need > 0
+            && !coversEdge(item->displayPixelLongEdge(), need)
+            && !coversEdge(ImageCache::longEdge(ImageCache::get(path)), need)) {
+            m_pathRaster->ensure(path, need, logicalSizeForPath(path), climbPolicy);
+        }
         return false;
     }
     if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {

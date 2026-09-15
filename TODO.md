@@ -2,6 +2,31 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-988-soft-attach-prefer-intermediate.** Soft installs Prefer host before Full.
+Prior: **987**.
+
+### Bug
+Soft + host >512 + need still unmet → **only ScheduleClimb**, never attach the
+PreferCache intermediate. Soft stayed on screen until Full (or forever if Full
+slow). Workspace zoom looked stuck at soft.
+
+### Fix
+- `decide` Soft: if host projects a better post-crop edge → AttachFull /
+  ScheduleAsyncMaterialize **first**
+- After async materialize, keep PathRaster ensure when need still short
+- `finishAsyncHostRematerialize` drives Workspace/Image climb again
+
+### Apply
+```bash
+git pull /path/to/biltoo-988-soft-attach-prefer-intermediate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-987-workspace-zoom-climb.** Workspace Soft→Prefer on zoom-in.
 Prior: **986**.
 
