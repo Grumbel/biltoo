@@ -1582,9 +1582,15 @@ void ImageView::ensureWorkspaceQualityClimb()
         if (isCropDraftLockedPath(path)) {
             continue;
         }
-        DisplaySurface::State ds = displaySurfaceStateForItem(
-            ii, -1, m_pathRaster->isClimbPending(path));
-        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        const bool pending = m_pathRaster->isClimbPending(path);
+        syncItemDisplaySurface(ii, -1, pending);
+        const DisplaySurface::SurfaceId sid =
+            static_cast<DisplaySurface::SurfaceId>(ii->displaySurfaceId());
+        const DisplaySurface::Action act =
+            (sid != DisplaySurface::kInvalidSurfaceId)
+                ? m_displaySurfaces.evaluate(sid)
+                : DisplaySurface::decide(
+                      displaySurfaceStateForItem(ii, -1, pending));
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
             continue;
@@ -1598,14 +1604,19 @@ void ImageView::ensureWorkspaceQualityClimb()
         if (act.type == AT::ScheduleClimb
             || act.type == AT::AttachSoft
             || act.type == AT::AttachFull) {
-            // Climb when soft/short; Attach* will land via rasterImproved delivery.
-            const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : ds.needEdge;
+            const int needEdge =
+                (sid != DisplaySurface::kInvalidSurfaceId
+                 && m_displaySurfaces.binding(sid))
+                    ? m_displaySurfaces.binding(sid)->state.needEdge
+                    : itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
+            const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : needEdge;
             if (need > 0) {
                 m_pathRaster->ensure(path, need, logicalSizeForPath(path),
                                      PathRasterService::ClimbPolicy::EscalateToFull);
             }
             if (m_pathRaster->isGaveUp(path)
-                && !coversEdge(ii->displayPixelLongEdge(), need > 0 ? need : ds.needEdge)) {
+                && !coversEdge(ii->displayPixelLongEdge(),
+                               need > 0 ? need : needEdge)) {
                 scheduleImageModeNativeDecodeOnce(path);
             }
         }
@@ -2586,34 +2597,29 @@ void ImageView::ensureImageFocusSurface()
 {
     if (!isImageMode()) {
         if (m_imageFocusSurface != DisplaySurface::kInvalidSurfaceId) {
-            m_displaySurfaces.unbind(m_imageFocusSurface);
+            // Do not unbind item-owned surface; only clear the focus alias.
             m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
         }
         return;
     }
     ImageItem *item = primaryItem();
     if (!item || item->path().isEmpty()) {
-        if (m_imageFocusSurface != DisplaySurface::kInvalidSurfaceId) {
-            m_displaySurfaces.unbind(m_imageFocusSurface);
-            m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
-        }
-        return;
-    }
-    const QString path = item->path();
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId) {
-        sid = m_currentSessionId;
-    }
-    const DisplaySurface::Binding *b = m_displaySurfaces.binding(m_imageFocusSurface);
-    if (b && b->path == path && b->sessionId == sid) {
-        return;
-    }
-    if (m_imageFocusSurface != DisplaySurface::kInvalidSurfaceId) {
-        m_displaySurfaces.unbind(m_imageFocusSurface);
         m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
+        return;
     }
-    m_imageFocusSurface = m_displaySurfaces.bind(
-        DisplaySurface::Kind::ImageFocus, path, sid);
+    // Prefer the canvas item registry (create/destroy lifecycle).
+    if (item->displaySurfaceId() == 0) {
+        registerItemDisplaySurface(item);
+    }
+    // Kind may have been GalleryTile if item was created before mode switch.
+    const auto itemSid =
+        static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
+    const DisplaySurface::Binding *ib = m_displaySurfaces.binding(itemSid);
+    if (ib && ib->kind != DisplaySurface::Kind::ImageFocus) {
+        registerItemDisplaySurface(item); // rebind as ImageFocus
+    }
+    m_imageFocusSurface =
+        static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
 }
 
 void ImageView::syncImageFocusSurfaceState()
@@ -2629,15 +2635,10 @@ void ImageView::syncImageFocusSurfaceState()
     const QString path = item->path();
     const bool pending =
         m_pathRaster && !path.isEmpty() && m_pathRaster->isClimbPending(path);
-    DisplaySurface::State ds = displaySurfaceStateForItem(item, -1, pending);
-    ds.frozen = m_cropDraftSampleFrozen && isCropDraftLockedPath(path);
-    m_displaySurfaces.setNeed(m_imageFocusSurface, ds.needEdge);
-    m_displaySurfaces.setFrozen(m_imageFocusSurface, ds.frozen);
-    m_displaySurfaces.setHostLongEdge(m_imageFocusSurface, ds.hostLongEdge);
-    m_displaySurfaces.setClimbPending(m_imageFocusSurface, ds.climbPending);
-    m_displaySurfaces.setWant(m_imageFocusSurface, ds.want);
-    m_displaySurfaces.setAttached(m_imageFocusSurface, ds.attachedKind,
-                                  ds.haveDisplayEdge, ds.applied);
+    syncItemDisplaySurface(item, -1, pending);
+    if (m_cropDraftSampleFrozen && isCropDraftLockedPath(path)) {
+        m_displaySurfaces.setFrozen(m_imageFocusSurface, true);
+    }
 }
 
 void ImageView::driveImageFocusSurface()

@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-966-workspace-imagefocus-bound-surfaces.** Workspace + ImageFocus use item surface ids.
+Prior: **965**.
+
+### Change
+- `ensureWorkspaceQualityClimb`: `syncItemDisplaySurface` + `evaluate(id)`.
+- `ensureImageFocusSurface`: aliases primary item's registered surface (rebinds
+  kind to ImageFocus after mode switch); no longer a separate singleton bind
+  that ignores item lifecycle.
+- `syncImageFocusSurfaceState`: delegates to `syncItemDisplaySurface`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-966-workspace-imagefocus-bound-surfaces.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-965-gallery-surface-evaluate.** Gallery soft tick uses controller evaluate.
 Prior: **964**.
 
