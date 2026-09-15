@@ -2,6 +2,24 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-995-pending-tile-const-fix.** Build fix for pending-tile host swap.
+Prior: **994**.
+
+### Fix
+- `pixels` is non-const so host can replace a stale filmstrip sample
+- Drop duplicate `want` declaration in the same scope
+
+### Apply
+```bash
+git pull /path/to/biltoo-995-pending-tile-const-fix.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-994-appearance-persist-grade-nav.** Grade durable + nav respects store want.
 Prior: **993**.
 

@@ -926,7 +926,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
 
     bool displayReady = false;
-    const QImage pixels = resolveImageModePendingPixels(path, preview, &displayReady);
+    QImage pixels = resolveImageModePendingPixels(path, preview, &displayReady);
     biltooLoadDbg("pendingTile path=%s soft=%dx%d cache=%d displayReady=%d",
                   qPrintable(QFileInfo(path).fileName()),
                   pixels.width(), pixels.height(),
@@ -1045,7 +1045,6 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         // Intrinsic already set by attachDisplaySample (file-native × want).
         // Only re-frame when we have a definitive file size to orient.
         const QSize known = logicalSizeForPath(path);
-        const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
         QSize targetSize = item->imageSize();
         if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
             && !isProvisionalImageSize(path)) {
