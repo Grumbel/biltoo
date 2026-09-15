@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-920-gallery-crop-pixels.** Gallery tiles bake store crop; no full-frame soft under crop.
+Prior: **919**.
+
+### Problem
+Gallery showed the **original** full image after crop: soft ladder reattached raw host
+pixels, and/or rematerialize used an already-baked preview as “host” (double-bake /
+skipped bake). Stash restore did not re-check the appearance store.
+
+### Fix
+- `rematerializeItemContent`: only unoriented ImageCache (or unapplied full source)
+- Gallery soft install: if applied xform ≠ store want, rematerialize
+- Stash restore: `rematerializeGalleryItemFromStore` per tile
+
+### Apply
+```bash
+git pull /path/to/biltoo-920-gallery-crop-pixels.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-919-slideshow-nav-hot-settle.** Slideshow ←/→: soft phase only while held; settle re-arms quality.
 Prior: **918**.
 

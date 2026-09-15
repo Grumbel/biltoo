@@ -519,14 +519,22 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
         return;
     }
     const QString path = item->path();
+    // Host must be unoriented. Never bake from preview/display — that double-applies
+    // crop when the tile already shows a soft crop (Gallery after Image crop).
     QImage raw = path.isEmpty() ? QImage() : ImageCache::get(path);
-    if (raw.isNull()) {
+    if (raw.isNull() && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
+        // FullSource without applied xform is still host-shaped (rare).
         raw = item->sourceImage();
     }
     if (raw.isNull()) {
-        raw = item->previewImage();
-    }
-    if (raw.isNull()) {
+        // No unoriented host: schedule async from PathRaster/host when possible.
+        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        if (!path.isEmpty() && SessionAppearance::hasContentAppearance(want)) {
+            item->setAppliedContentXform(ContentXform::Value::fromState(want));
+            scheduleAsyncHostRematerialize(path, sid, want);
+        }
         return;
     }
     const int edge = qMax(raw.width(), raw.height());
@@ -553,6 +561,32 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
         : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
     item->setAppliedContentXform(ContentXform::Value::fromState(want));
     scheduleAsyncHostRematerialize(path, sid, want);
+}
+
+
+void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    const SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    const WorkspaceItemState *st = m_appearance.get(sid);
+    if (!st || !SessionAppearance::hasContentAppearance(*st)) {
+        return;
+    }
+    const ContentXform::Value want = ContentXform::Value::fromState(*st);
+    const ContentXform::Value applied = item->hasAppliedContentXform()
+        ? item->appliedContentXform()
+        : ContentXform::Value{};
+    if (ContentXform::equal(applied, want) && item->hasDisplayPixels()) {
+        // Applied matches store; still fix layout if intrinsic is full-frame.
+        applyContentLayoutSize(item, *st);
+        return;
+    }
+    rematerializeItemContent(item, *st);
 }
 
 bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want)

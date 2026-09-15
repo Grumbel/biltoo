@@ -642,6 +642,21 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     }
 
+    // Gallery: soft ladder is raw host. If the session store has crop/orient,
+    // materialize above should have applied it. If applied fingerprint still
+    // disagrees (accept path skipped bake, stale full soft), force rematerialize
+    // so tiles do not show the original full frame under a crop layout.
+    if (isGalleryMode() && item->hasDisplayPixels()) {
+        const ContentXform::Value wantX = ContentXform::Value::fromState(appearance);
+        const ContentXform::Value appliedX = item->hasAppliedContentXform()
+            ? item->appliedContentXform()
+            : ContentXform::Value{};
+        if (SessionAppearance::hasContentAppearance(appearance)
+            && !ContentXform::equal(appliedX, wantX)) {
+            rematerializeItemContent(item, appearance);
+        }
+    }
+
     // Do NOT emit sessionAppearanceChanged from decode/install (filmstrip is
     // selection-coupled). Soft ladder upgrades must not rewrite the strip.
 

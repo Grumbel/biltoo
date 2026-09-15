@@ -87,6 +87,10 @@ void GalleryController::restoreStashedItems()
             m_view->canvasScene()->addItem(item);
         }
         m_view->applyItemModeFlags(item);
+        // Image-mode crop updates the appearance store and may have synced a
+        // bake onto the stash; if soft still lags (or was never baked), force
+        // rematerialize from the store so Gallery does not show full-frame.
+        m_view->rematerializeGalleryItemFromStore(item);
     }
     m_view->reorderItemsByPaths(m_view->pathOrder());
 }

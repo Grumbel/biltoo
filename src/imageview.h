@@ -417,6 +417,8 @@ public:
     // --- Controller host operations (mode controllers; prefer these over friend) ---
     /** Apply interactive/gallery/static flags for the current ViewMode. */
     void applyItemModeFlags(ImageItem *item);
+    /** Gallery stash restore: bake session crop/orient onto the tile if needed. */
+    void rematerializeGalleryItemFromStore(ImageItem *item);
     /** @deprecated Path is not identity; prefer findItemBySessionId. */
     ImageItem *findItemByPath(const QString &path) const;
     /**
