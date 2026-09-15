@@ -1070,10 +1070,13 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     WorkspaceItemState fallback;
     const SessionImageId sid = item->sessionId();
     if (sid != kInvalidSessionImageId) {
+        // Seed orient/flip/grade from path XDG when the id slot is still empty
+        // (restart / first bind). Crop is never seeded from path (IDENTITY).
+        seedSessionAppearanceFromState(sid, item->path());
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             app = &(*it);
         }
-        // Bound session image with no appearance entry = full frame.
+        // Bound with no durable content after seed = full frame.
         // NEVER fall back to the path map — that leaks crop/flip across
         // independent session images that share a file path.
     } else {

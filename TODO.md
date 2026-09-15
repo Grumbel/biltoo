@@ -2,6 +2,35 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-996-seed-durable-orient-on-open.** Load path XDG rotate/flip after restart.
+Prior: **995**.
+
+### Root cause
+`createItemFromImage` skipped `appearanceForNewImageModeItem` when the session
+slot was **empty**:
+
+```cpp
+!(haveId && !m_appearance.get(id))  // false when empty → no seed
+```
+
+That is exactly the post-restart case. Durable rotate/flip in thumtoo XDG were
+never applied. `applyStoredAppearance` also never seeded for bound empty slots.
+
+### Fix
+- Always call `appearanceForNewImageModeItem` in Image mode (seeds XDG)
+- `applyStoredAppearance`: `seedSessionAppearanceFromState` before read
+
+### Apply
+```bash
+git pull /path/to/biltoo-996-seed-durable-orient-on-open.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-995-pending-tile-const-fix.** Build fix for pending-tile host swap.
 Prior: **994**.
 

@@ -312,10 +312,13 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     // never QPixmap::fromImage of multi-MP in ImageItem(path, image).
     WorkspaceItemState app;
     if (applyStoredSessionCrop && isImageMode()) {
-        const bool haveId = m_currentSessionId != kInvalidSessionImageId;
-        const bool havePath = m_itemStates.contains(path);
-        if ((haveId || havePath)
-            && !(haveId && !m_appearance.get(m_currentSessionId))) {
+        // Always attempt seed from path XDG when bound. The old gate
+        // !(haveId && !m_appearance.get(id)) *skipped* seed when the slot was
+        // empty — which is exactly when durable rotate/flip must be loaded
+        // after restart. appearanceForNewImageModeItem seeds then returns
+        // identity only if XDG has nothing.
+        if (m_currentSessionId != kInvalidSessionImageId
+            || m_itemStates.contains(path)) {
             app = appearanceForNewImageModeItem(path);
         }
     }
