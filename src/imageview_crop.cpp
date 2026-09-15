@@ -1393,7 +1393,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
             }
             if (!appearance.isNull()) {
                 emit sessionAppearanceChanged(sid, path, appearance);
-                emit sessionCropApplied(sid, path, appearance);
+                emit sessionCropApplied(sid, path, appearance, /*hasCrop=*/true);
             }
         }
         pushCropAppearanceUndo(item, tr("Crop"));
@@ -1432,8 +1432,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
         if (sid != kInvalidSessionImageId) {
             QImage appearance = sessionAppearanceImage(item);
             if (!appearance.isNull()) {
-                // fromCropApply path on filmstrip replaces sticky with full frame.
-                emit sessionCropApplied(sid, item->path(), appearance);
+                // fromCropApply path on filmstrip: clear crop sticky + badge.
+                emit sessionCropApplied(sid, item->path(), appearance, /*hasCrop=*/false);
             }
         }
     }

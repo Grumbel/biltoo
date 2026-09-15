@@ -113,12 +113,18 @@ public:
      */
     void setSessionImageOverride(const QString &path, const QImage &image);
     /**
+     * @p fromCropApply true: sessionCropApplied. @p hasCrop true keeps a crop
+     * sticky (refuse non-crop appearance overwrites) and shows the crop badge;
+     * false clears sticky (crop reset to full frame).
      * @p fromCropApply true: sessionCropApplied — lock this id so later
      * sessionAppearanceChanged cannot replace the crop bake with a full-frame
      * sample (filmstrip flip-flop).
      */
     void setSessionImageOverride(SessionImageId sessionId, const QString &path,
-                                 const QImage &image, bool fromCropApply = false);
+                                 const QImage &image, bool fromCropApply = false,
+                                 bool hasCrop = false);
+    /** True when this row's session image has an applied content crop. */
+    bool isSessionCropped(int row) const;
 
     /**
      * Pixmap for paint: session-id (or path) override if present, else the

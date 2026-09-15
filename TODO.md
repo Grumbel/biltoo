@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-910-crop-badge.** Yellow crop dog-ear (filmstrip BR + canvas tiles).
+Prior: **909**.
+
+### UI
+- Filmstrip: yellow triangle bottom-right when session has crop (mirrors blue
+  Workspace membership top-right).
+- Gallery/Workspace tiles: same badge when `sessionHasCrop`.
+- `sessionCropApplied(..., hasCrop)` clears sticky on full-frame reset.
+
+### Apply
+```bash
+git pull /path/to/biltoo-910-crop-badge.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-909-contentxform-combo-tests.** Combinatorial rotate×flip×crop pure tests.
 Prior: **908**.
 

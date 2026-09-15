@@ -352,6 +352,37 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             painter->drawLine(left, bottom);
     }
 
+    // Content crop: yellow dog-ear on the bottom-right (mirrors Workspace blue
+    // fold on the top-right).
+    if (bar && bar->isSessionCropped(index.row()) && contentRect.width() > 8) {
+        const int fold = qBound(10, contentRect.width() / 4, 28);
+        const QPoint bottomRight(contentRect.right() + 1, contentRect.bottom() + 1);
+        const QPoint left(bottomRight.x() - fold, bottomRight.y());
+        const QPoint top(bottomRight.x(), bottomRight.y() - fold);
+
+        QPainterPath face;
+        face.moveTo(left);
+        face.lineTo(bottomRight);
+        face.lineTo(top);
+        face.closeSubpath();
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(242, 196, 40)); // amber / yellow
+        painter->drawPath(face);
+
+        const QPoint mid((left.x() + top.x()) / 2, (left.y() + top.y()) / 2);
+        QPainterPath under;
+        under.moveTo(left);
+        under.lineTo(mid);
+        under.lineTo(top);
+        under.closeSubpath();
+        painter->setBrush(QColor(200, 150, 20));
+        painter->drawPath(under);
+
+        painter->setPen(QPen(QColor(0, 0, 0, 90), 1.0));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawLine(left, top);
+    }
+
     painter->restore();
 }
 
@@ -1329,7 +1360,8 @@ void ThumbnailBar::setSessionIds(const QVector<SessionImageId> &ids)
 }
 
 void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QString &path,
-                                           const QImage &image, bool fromCropApply)
+                                           const QImage &image, bool fromCropApply,
+                                           bool hasCrop)
 {
     if (image.isNull()) {
         return;
@@ -1352,7 +1384,11 @@ void ThumbnailBar::setSessionImageOverride(SessionImageId sessionId, const QStri
         return;
     }
     if (fromCropApply) {
-        m_sessionIdCropSticky.insert(sessionId);
+        if (hasCrop) {
+            m_sessionIdCropSticky.insert(sessionId);
+        } else {
+            m_sessionIdCropSticky.remove(sessionId);
+        }
     }
     if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FILMSTRIP")) {
         qWarning().noquote()
@@ -1441,6 +1477,18 @@ void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)
     }
     m_onCanvasIndices = indices;
     viewport()->update();
+}
+
+bool ThumbnailBar::isSessionCropped(int row) const
+{
+    if (row < 0 || row >= m_sessionIds.size()) {
+        return false;
+    }
+    const SessionImageId sid = m_sessionIds.at(row);
+    if (sid == kInvalidSessionImageId) {
+        return false;
+    }
+    return m_sessionIdCropSticky.contains(sid);
 }
 
 

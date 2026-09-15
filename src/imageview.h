@@ -1153,7 +1153,8 @@ signals:
     void attentionModeChanged(bool active);
     /** Session crop committed; @p image is the new displayed pixels for @p path. */
     void sessionCropApplied(const QString &path, const QImage &image);
-    void sessionCropApplied(SessionImageId sessionId, const QString &path, const QImage &image);
+    void sessionCropApplied(SessionImageId sessionId, const QString &path, const QImage &image,
+                           bool hasCrop);
     /** Flip / rotate / crop appearance for filmstrip (may include baked transforms). */
     void sessionAppearanceChanged(const QString &path, const QImage &image);
     void sessionAppearanceChanged(SessionImageId sessionId, const QString &path, const QImage &image);

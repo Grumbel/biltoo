@@ -1117,6 +1117,31 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
     const QRectF r = cropped ? crop : displayContentRect();
 
+    // Content crop badge: yellow triangle, bottom-right of the tile (same cue
+    // as the filmstrip). Drawn in item local space; size scales with the tile.
+    if (m_sessionHasCrop && r.width() > 12.0 && r.height() > 12.0) {
+        painter->save();
+        painter->setOpacity(1.0);
+        const qreal fold = qBound(10.0, qMin(r.width(), r.height()) * 0.12, 36.0);
+        const QPointF br(r.right(), r.bottom());
+        const QPointF left(br.x() - fold, br.y());
+        const QPointF top(br.x(), br.y() - fold);
+        QPolygonF face;
+        face << left << br << top;
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(242, 196, 40));
+        painter->drawPolygon(face);
+        const QPointF mid((left.x() + top.x()) * 0.5, (left.y() + top.y()) * 0.5);
+        QPolygonF under;
+        under << left << mid << top;
+        painter->setBrush(QColor(200, 150, 20));
+        painter->drawPolygon(under);
+        painter->setPen(QPen(QColor(0, 0, 0, 90), 0));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawLine(left, top);
+        painter->restore();
+    }
+
     // Gallery: selection frame only (classic multi-select). Hover is for HUD
     // filename, not a full-tile wash — near-fullscreen packs stay usable.
     if (!m_interactive) {

@@ -1031,7 +1031,8 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
             // Id-keyed only — path signals paint every filmstrip row with
             // the same file (IDENTITY.md).
             emit sessionAppearanceChanged(sid, item->path(), appearance);
-            emit sessionCropApplied(sid, item->path(), appearance);
+            emit sessionCropApplied(sid, item->path(), appearance,
+                                    item->sessionHasCrop());
         }
     }
 }
@@ -1192,7 +1193,7 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
             if (item->sessionHasCrop()
                 || (m_appearance.contains(sid)
                     && m_appearance.value(sid).hasCrop)) {
-                emit sessionCropApplied(sid, item->path(), appearance);
+                emit sessionCropApplied(sid, item->path(), appearance, /*hasCrop=*/true);
             }
         }
     }
@@ -1817,7 +1818,7 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
             emit sessionAppearanceChanged(id, item->path(), appearance);
-            emit sessionCropApplied(id, item->path(), appearance);
+            emit sessionCropApplied(id, item->path(), appearance, item->sessionHasCrop());
         }
     }
 }
@@ -1869,7 +1870,7 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
         if (!appearance.isNull()) {
             emit sessionAppearanceChanged(toId, dst.path, appearance);
             if (dst.hasCrop) {
-                emit sessionCropApplied(toId, dst.path, appearance);
+                emit sessionCropApplied(toId, dst.path, appearance, /*hasCrop=*/true);
             }
         }
     }

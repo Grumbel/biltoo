@@ -79,12 +79,12 @@ MainWindow::MainWindow(QWidget *parent)
                 }
             });
     connect(m_imageView,
-            QOverload<SessionImageId, const QString &, const QImage &>::of(
+            QOverload<SessionImageId, const QString &, const QImage &, bool>::of(
                 &ImageView::sessionCropApplied),
             this,
-            [this](SessionImageId id, const QString &path, const QImage &image) {
+            [this](SessionImageId id, const QString &path, const QImage &image, bool hasCrop) {
                 if (m_thumbnailBar) {
-                    m_thumbnailBar->setSessionImageOverride(id, path, image, true);
+                    m_thumbnailBar->setSessionImageOverride(id, path, image, true, hasCrop);
                 }
             });
     connect(m_imageView, &ImageView::fullscreenToggleRequested,
