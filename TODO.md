@@ -2,6 +2,32 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-902-quality-silent-bootstrap.** Silence blank→LQIP install-host-better quality spam.
+Prior: **901**.
+
+### Issue
+Filmstrip quality watchdog logged every visible path as
+`shown=0(blank) host=16(lqip) target=256 verdict=install-host-better` while
+climbing to soft/high-res. Behaviour was correct; the channel treated normal
+bootstrap as a contract violation.
+
+### Fix
+- `reportViolation`: do not warn/assert InstallHostBetter when shown is blank
+  or host is still blank/LQIP.
+- Filmstrip watchdog: only report InstallHostBetter when shown>0 and host is
+  soft+.
+
+### Apply
+```bash
+git pull /path/to/biltoo-902-quality-silent-bootstrap.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-901-crop-apply-fit-no-stretch.** Apply crop: fitItem must not use draft layout under m_cropMode.
 Prior: **900**.
 

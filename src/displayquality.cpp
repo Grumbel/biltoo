@@ -182,6 +182,16 @@ void reportViolation(const char *surface, const QString &path, const Check &chec
         && (check.hostTier == Tier::Blank || check.hostTier == Tier::Lqip)) {
         return;
     }
+    // InstallHostBetter on a blank surface (or host still only LQIP) is the
+    // normal filmstrip/gallery bootstrap: shown=0 → install LQIP → schedule soft.
+    // That is not a contract break; logging every path as biltoo/quality hid
+    // real lag (shown LQIP/soft while host already has soft+/full).
+    if (check.verdict == Verdict::InstallHostBetter
+        && (check.shownTier == Tier::Blank
+            || check.hostTier == Tier::Blank
+            || check.hostTier == Tier::Lqip)) {
+        return;
+    }
     const QString key =
         QString::fromLatin1(surface ? surface : "?") + QLatin1Char('\n') + path;
     if (!shouldWarn(key)) {
@@ -203,11 +213,15 @@ void reportViolation(const char *surface, const QString &path, const Check &chec
 
 #ifndef NDEBUG
     if (assertHard) {
-        // InstallHostBetter: host already has a better sample than paint — real bug.
+        // InstallHostBetter with a non-blank surface and host soft+: host already
+        // has a better sample than paint — real lag / missed install.
         // StuckWeak with host still blank/LQIP: soft climb is incomplete (queue
         // backlog, cold decode). Warn only — hard-assert aborted large galleries
         // after 2.5s while SoftOnly was still working other paths.
-        if (check.verdict == Verdict::InstallHostBetter) {
+        if (check.verdict == Verdict::InstallHostBetter
+            && check.shownTier != Tier::Blank
+            && check.hostTier != Tier::Blank
+            && check.hostTier != Tier::Lqip) {
             Q_ASSERT_X(false, "DisplayQuality", qPrintable(msg));
         } else if (check.verdict == Verdict::StuckWeak
                    && check.hostTier != Tier::Blank

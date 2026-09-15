@@ -1593,14 +1593,20 @@ void ThumbnailBar::qualityWatchdogTick()
             m_thumbAwaitLadder.remove(i);
             m_thumbLoadScheduled.remove(i);
             needSchedule = true;
-            DisplayQuality::Check dq;
-            dq.verdict = DisplayQuality::Verdict::InstallHostBetter;
-            dq.shownEdge = shown;
-            dq.hostEdge = hostEdge;
-            dq.targetEdge = decodeSize;
-            dq.shownTier = DisplayQuality::tierOf(shown);
-            dq.hostTier = DisplayQuality::tierOf(hostEdge);
-            DisplayQuality::reportViolation("filmstrip", path, dq, false);
+            // Report only when this is real lag: strip already showed something
+            // and host holds soft+ (blank→LQIP bootstrap is silent in
+            // DisplayQuality::reportViolation).
+            if (shown > 0
+                && DisplayQuality::tierOf(hostEdge) > DisplayQuality::Tier::Lqip) {
+                DisplayQuality::Check dq;
+                dq.verdict = DisplayQuality::Verdict::InstallHostBetter;
+                dq.shownEdge = shown;
+                dq.hostEdge = hostEdge;
+                dq.targetEdge = decodeSize;
+                dq.shownTier = DisplayQuality::tierOf(shown);
+                dq.hostTier = DisplayQuality::tierOf(hostEdge);
+                DisplayQuality::reportViolation("filmstrip", path, dq, false);
+            }
             continue;
         }
 
