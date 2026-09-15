@@ -1027,11 +1027,6 @@ void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
     rematerializeItemContent(item, *app);
 }
 
-void ImageView::applySessionCrop(ImageItem *item, const WorkspaceItemState &state)
-{
-    SessionAppearance::applyCrop(item, state);
-}
-
 void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 {
     if (!item) {

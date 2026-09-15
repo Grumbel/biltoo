@@ -4,13 +4,11 @@
 #include "sessionappearance.h"
 #include "contentxform.h"
 #include "biltoo_thread.h"
-#include "imageitem.h"
 #include "coloradjust.h"
 
 #include <QtMath>
 #include <QImage>
 #include <QPainter>
-#include <QTransform>
 #include <QTransform>
 #include <QPolygonF>
 
@@ -148,36 +146,6 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
     return r;
 }
 
-void applyCrop(ImageItem *item, const WorkspaceItemState &state)
-{
-    if (!item || !state.hasCrop || state.cropRect.isEmpty()) {
-        return;
-    }
-    const QSize sz = item->imageSize();
-    if (sz.width() < 1 || sz.height() < 1) {
-        return;
-    }
-    QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, sz);
-    // Legacy: rect only fits orientation-swapped dimensions.
-    if (state.cropSourceSize.isEmpty()
-        && (crop.right() >= sz.width() || crop.bottom() >= sz.height())) {
-        const QSize swapped(sz.height(), sz.width());
-        if (swapped.width() > 0 && swapped.height() > 0
-            && crop.right() < swapped.width() && crop.bottom() < swapped.height()
-            && swapped != sz) {
-            crop = scaleCropRect(state.cropRect, swapped, sz);
-        }
-    }
-    if (crop.width() < 1 || crop.height() < 1) {
-        return;
-    }
-    const QPointF off = item->offset();
-    // May extend outside the source; cropToLocalRect pads as needed.
-    const QRectF local(crop.x() + off.x(), crop.y() + off.y(),
-                       crop.width(), crop.height());
-    item->cropToLocalRect(local, QColor(0, 0, 0, 0), state.cropRotation);
-}
-
 bool hasContentAppearance(const WorkspaceItemState &state)
 {
     return state.hasCrop || state.contentHFlip || state.contentVFlip
@@ -298,15 +266,6 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
         }
     }
     return out;
-}
-
-void syncItemLayoutToContentOrientation(ImageItem *item,
-                                        const WorkspaceItemState &state)
-{
-    // Layout is owned by attachDisplaySample / ContentXform::layoutSize(native, want).
-    // No aspect heuristics — callers must pass file-native size into layoutSize.
-    Q_UNUSED(item);
-    Q_UNUSED(state);
 }
 
 QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,

@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-934-remove-dead-crop-helpers.** Remove unused applyCrop / applySessionCrop / syncItemLayout.
+Prior: **933**.
+
+### Change
+- `SessionAppearance::applyCrop` and `ImageView::applySessionCrop` had no callers
+  (crop Apply uses materialize + attachDisplaySample).
+- `syncItemLayoutToContentOrientation` was a no-op stub with no callers.
+- Drop unused `imageitem.h` from sessionappearance (pure QImage pipeline).
+
+### Apply
+```bash
+git pull /path/to/biltoo-934-remove-dead-crop-helpers.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-933-remove-dead-applyContentToItem.** Remove unused SessionAppearance::applyContentToItem.
 Prior: **932**.
 

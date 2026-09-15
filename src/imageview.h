@@ -428,7 +428,6 @@ public:
      */
     ImageItem *findPreferredItemForPath(const QString &path) const;
     ImageItem *targetItem() const;
-    void applySessionCrop(ImageItem *item, const WorkspaceItemState &state);
     void destroyCanvasItem(ImageItem *item);
     void updateWorkspaceSceneRect();
     /** Queue LoadRestore for workspace rebuild from durable snapshot. */

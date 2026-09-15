@@ -13,7 +13,6 @@
 #include <QRect>
 #include <QSize>
 
-class ImageItem;
 
 /**
  * Why Gallery may repack. Decode and view resize are not reasons.
@@ -124,23 +123,6 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns);
  */
 QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sourceSize,
                                      const WorkspaceItemState &state);
-
-/**
- * Apply state.hasCrop / cropRect onto @p item's full source pixels.
- * Does not apply content flips or quarter turns.
- */
-void applyCrop(ImageItem *item, const WorkspaceItemState &state);
-
-/**
- * After content orientation is applied (pixels and/or flags), ensure layout
- * geometry (intrinsic size / offset) matches content aspect. Odd quarter-turns
- * transpose intrinsic when it still has the pre-rotate aspect — Gallery pack,
- * selection AABB, and Workspace footprint stay aligned with the pixels.
- *
- * Does not change placement scale/pos; only imageSize() basis.
- */
-void syncItemLayoutToContentOrientation(ImageItem *item,
-                                        const WorkspaceItemState &state);
 
 /**
  * Bake session content appearance into a QImage (no ImageItem).
