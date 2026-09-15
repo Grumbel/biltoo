@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-961-display-surface-migration-status.** Decide migration complete; DQ install dead.
+Prior: **960**.
+
+### Change
+- Docs: DISPLAY_SURFACE.md phases A–H marked done for **decide-based install**.
+- `displayquality.h`: no biltoo install path calls checkSurface after 953–960.
+- Comments: ImageItem edge upgrade vs decide; filmstrip path-only decide.
+
+### Residual (optional later tips)
+- Per-tile SurfaceId bind/unbind for Gallery/Filmstrip registry
+- Thin ImageView materialize/attach further behind controller signals
+- Delete unused checkSurface/reportViolation if nothing external needs them
+
+### Apply
+```bash
+git pull /path/to/biltoo-961-display-surface-migration-status.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-960-slideshow-phase-decide.** Slideshow phase recovery via decide.
 Prior: **959**.
 

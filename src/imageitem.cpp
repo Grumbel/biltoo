@@ -132,7 +132,7 @@ int ImageItem::displayPixelLongEdge() const
 
 bool ImageItem::shouldUpgradeDisplayTo(int incomingLongEdge) const
 {
-    // Single policy: DisplayQuality::isStrictUpgrade (blank accepts any sample).
+    // Edge-only (no content crop). Install/accept policy is DisplaySurface::decide.
     return DisplayQuality::isStrictUpgrade(displayPixelLongEdge(), incomingLongEdge);
 }
 

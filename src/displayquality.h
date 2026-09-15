@@ -13,8 +13,10 @@
  * Do not drive Attach / soft demote from checkSurface host-vs-shown — that
  * compared pre-crop host edge to post-crop display and caused the 1s pulse.
  *
- * Remaining roles: tierOf, hostLongEdge, isStrictUpgrade (edge-only, no crop),
- * checkSurface + reportViolation for slideshow / debug asserts.
+ * Remaining roles: tierOf, hostLongEdge, kLqipMaxEdge / kSoftMaxEdge,
+ * isStrictUpgrade (edge-only, no content crop — not for install policy).
+ * checkSurface / reportViolation are legacy; no biltoo install path calls them
+ * after the DisplaySurface migration (tips 953–960).
  */
 namespace DisplayQuality {
 

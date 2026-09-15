@@ -249,19 +249,21 @@ Keep on ImageView: scene, modes, input, pack geometry, crop chrome, paint.
 
 ## 9. Implementation phases
 
-| Phase | Deliverable |
-|-------|-------------|
-| **A** | This doc + TODO tip (no behavior change) |
-| **B** | `DisplaySurfaceController` skeleton + pure `decide()` tests |
-| **C** | ImageFocus only: move install behind controller; thin attach |
-| **D** | Wire PathRaster `rasterImproved` → noteHostImproved for Image; delete Image quality timer path |
-| **E** | Gallery tiles as surfaces; gut soft install from pack timer |
-| **F** | Filmstrip cells; remove quality timer installs |
-| **G** | Workspace + slideshow |
-| **H** | Delete dead DisplayQuality install drivers and ImageView helpers |
+| Phase | Deliverable | Status |
+|-------|-------------|--------|
+| **A** | This doc + TODO tip | done (953) |
+| **B** | `decide()` + controller skeleton + tests | done (954) |
+| **C** | ImageFocus drive + PathRaster events | done (955) |
+| **D** | Image off quality timer; event-only | done (956) |
+| **E–F** | Gallery / filmstrip via decide | done (957, 959) |
+| **G** | Workspace delivery + slideshow phases | done (958, 960) |
+| **H** | No install path calls checkSurface | done (961) |
+
+**Residual:** per-tile `SurfaceId` bind/unbind lifecycle (optional); ImageView
+still owns materialize/attach helpers called *after* decide.
 
 Each phase must leave the app usable: soft still appears; full still arrives
-via **events**, not a 1s poller.
+via **events**, not a 1s InstallHostBetter poller.
 
 ---
 

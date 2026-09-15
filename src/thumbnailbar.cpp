@@ -1605,10 +1605,8 @@ void ThumbnailBar::qualityWatchdogTick()
             continue;
         }
 
-        // Host upgrade is independent of climbPending. Gallery / Image mode may
-        // have put soft or better into ImageCache while the strip is still
-        // awaiting SoftOnly — checkSurface would return Ok and leave LQIP painted.
         // Session-id crop/appearance owns the cell — never paint raw host over it.
+        // Path-only rows use DisplaySurface::decide below for host upgrades.
         if (i < m_sessionIds.size()) {
             const SessionImageId sid = m_sessionIds.at(i);
             if (sid != kInvalidSessionImageId
