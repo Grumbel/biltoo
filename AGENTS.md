@@ -10,14 +10,14 @@ Guidance for humans and automated agents working on this codebase.
 Biltoo is a classic Qt (C++) image viewer with three presentation modes
 (Image, Gallery, Workspace) on one canvas. Users browse a session, overview it
 in packed layouts, or arrange several images freely for comparison. It is
-*not* an image editor. See [DOMAIN.md](DOMAIN.md). Content orient/crop/text spaces: [docs/CONTENT_COORDINATES.md](docs/CONTENT_COORDINATES.md). Filmstrip: [docs/FILMSTRIP_LAYOUT.md](docs/FILMSTRIP_LAYOUT.md). Content pixels: [docs/CONTENT_PIPELINE.md](docs/CONTENT_PIPELINE.md). Display install coordinator: [docs/DISPLAY_SURFACE.md](docs/DISPLAY_SURFACE.md).
+*not* an image editor. See [DOMAIN.md](DOMAIN.md). Content orient/crop/text spaces: [docs/CONTENT_COORDINATES.md](docs/CONTENT_COORDINATES.md). Filmstrip: [docs/FILMSTRIP_LAYOUT.md](docs/FILMSTRIP_LAYOUT.md). Content pixels: [docs/CONTENT_PIPELINE.md](docs/CONTENT_PIPELINE.md). Display install coordinator: [docs/DISPLAY_SURFACE.md](docs/DISPLAY_SURFACE.md). Resolution SM: [docs/RESOLUTION_STATE_MACHINE.md](docs/RESOLUTION_STATE_MACHINE.md).
 Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 **Thumtoo↔host contract (normative):** [docs/THUMTOO_HOST_CONTRACT.md](docs/THUMTOO_HOST_CONTRACT.md) — read before PreferCache / soft / Full / slideshow climb changes.
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-979-crop-aware-display-surface-decide**.
-Next bundle number: **980**.
+Latest agent handoff: **TODO.md → biltoo-980-resolution-sm-doc-soft-est**.
+Next bundle number: **981**.
 Requires **thumtoo ≥ 202** (`THUMTOO_API_DOCUMENT_INDEX`) for PDF/DjVu/EPUB page-count cache.
 **Environment variables:** [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) (debug traces, concurrency, cache paths, `nix develop` helpers); also `man biltoo`.
 **Settings:** do not reintroduce `QMainWindow::restoreState` / `saveState` for docks without a proven fix for Qt 6.11 `QDockAreaLayout` SEGV on show().

@@ -37,6 +37,8 @@ Symptoms that proved the design is wrong:
    the same god-object API (`installDisplayPixels`, `canAcceptDisplaySample`,
    rematerialize, gallery soft mirror).
 
+Full resolution selection map (need, decide, climb, crop, free rotation, optimality limits): [RESOLUTION_STATE_MACHINE.md](RESOLUTION_STATE_MACHINE.md).
+
 **Principle:** ImageView (and filmstrip cells) must not *decide* quality.
 They report **need** and **apply** display-ready pixels. Policy lives in one
 controller used by Image, Gallery, Filmstrip, Workspace, and Slideshow.

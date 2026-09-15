@@ -103,7 +103,10 @@ Action decide(const State &s)
             a.type = ActionType::ScheduleAsyncMaterialize;
             return a;
         }
-        if (s.hostLongEdge > s.haveDisplayEdge) {
+        // Crop-aware: compare projected post-crop edge, not raw host vs shown.
+        const int estSoft =
+            ContentXform::estimatedDisplayLongEdge(s.hostLongEdge, s.want);
+        if (estSoft > s.haveDisplayEdge) {
             a.type = ActionType::AttachFull;
             return a;
         }

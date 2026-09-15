@@ -2,6 +2,33 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-980-resolution-sm-doc-soft-est.** Resolution SM doc; Soft decide uses crop estimate.
+Prior: **979**.
+
+### Change
+- `docs/RESOLUTION_STATE_MACHINE.md` — full state machine (DisplaySurface, PathRaster,
+  materialize), crop + cropRotation, code↔spec, optimality limits.
+- SoftPreview branch of `DisplaySurface::decide`: compare
+  `estimatedDisplayLongEdge(host, want)` to `haveDisplayEdge` (same as FullSource),
+  not raw host ≫ shown.
+- Link from AGENTS.md and DISPLAY_SURFACE.md.
+
+### Done criteria
+- [x] Doc checked in
+- [x] Soft decide crop-aware
+- [x] next **981**
+
+### Apply
+```bash
+git pull /path/to/biltoo-980-resolution-sm-doc-soft-est.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-979-crop-aware-display-surface-decide.** FullSource settle is crop-aware.
 Prior: **978**.
 
