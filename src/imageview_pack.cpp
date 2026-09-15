@@ -769,46 +769,75 @@ void ImageView::gallerySoftWatchdogTick()
         const DisplayQuality::Check dq =
             DisplayQuality::checkSurface(path, shown, target, climbPending);
 
-        if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
-            // Host sample already applied earlier this session: cell clamp can
-            // leave shown << hostEdge; that is intentional, not a failure.
-            if (dq.hostEdge > 0 && st.have >= dq.hostEdge) {
-                continue;
+        // Install policy: DisplaySurface::decide (not host-vs-shown alone).
+        {
+            DisplaySurface::State ds;
+            ds.needEdge = target;
+            ds.haveDisplayEdge = shown;
+            ds.hostLongEdge = dq.hostEdge > 0 ? dq.hostEdge
+                : DisplayQuality::hostLongEdge(path);
+            ds.climbPending = climbPending;
+            ds.want = ContentXform::Value::fromState(
+                wantAppearanceForItem(item, item->sessionId()));
+            if (item->hasDisplayPixels()) {
+                ds.haveDisplayEdge = item->displayPixelLongEdge();
+                if (item->hasDecodedPixels()) {
+                    ds.attachedKind = DisplaySurface::AttachedKind::FullSource;
+                } else {
+                    ds.attachedKind = DisplaySurface::AttachedKind::SoftPreview;
+                }
+                if (item->hasAppliedContentXform()) {
+                    ds.applied = item->appliedContentXform();
+                }
             }
-            // FullSource matching store want is settled (same rule as ImageFocus).
-            // Pre-crop host vs post-crop shown must not force soft reinstall.
-            if (item->hasDecodedPixels() && item->hasAppliedContentXform()) {
+            const DisplaySurface::Action act = DisplaySurface::decide(ds);
+            using AT = DisplaySurface::ActionType;
+            if (act.type == AT::None) {
+                if (ds.hostLongEdge > 0) {
+                    st.have = qMax(st.have, ds.hostLongEdge);
+                }
+                // fall through to StuckWeak / Ok handling below only if needed
+            } else if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
+                const QImage host = ImageCache::get(path);
+                if (!host.isNull()) {
+                    const auto kind = (act.type == AT::AttachSoft)
+                        ? SessionAppearance::PixelKind::SoftPreview
+                        : SessionAppearance::PixelKind::FullSource;
+                    installDisplayPixels(item, host, kind, item->sessionId());
+                    if (m_scene) {
+                        m_scene->update(item->sceneBoundingRect());
+                    }
+                    st.have = qMax(st.have, ds.hostLongEdge);
+                    ++repaired;
+                }
+                continue;
+            } else if (act.type == AT::ScheduleAsyncMaterialize) {
                 const WorkspaceItemState wantSt =
                     wantAppearanceForItem(item, item->sessionId());
-                if (ContentXform::equal(item->appliedContentXform(),
-                                        ContentXform::Value::fromState(wantSt))) {
-                    if (dq.hostEdge > 0) {
-                        st.have = qMax(st.have, dq.hostEdge);
+                scheduleAsyncHostRematerialize(path, item->sessionId(), wantSt);
+                if (ds.hostLongEdge > 0) {
+                    st.have = qMax(st.have, ds.hostLongEdge);
+                }
+                continue;
+            } else if (act.type == AT::ScheduleClimb) {
+                clearGallerySoftInflight(st);
+                if (m_pathRaster && !m_pathRaster->isGaveUp(path)) {
+                    const auto pol =
+                        (target > ThumtooCache::kBatchOverviewEdge)
+                            ? PathRasterService::ClimbPolicy::EscalateToFull
+                            : PathRasterService::ClimbPolicy::SoftDisplay;
+                    m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
+                    if (m_pathRaster->isClimbPending(path)) {
+                        needWindow = true;
                     }
-                    continue;
                 }
+                scheduleGalleryDecode(path);
+                st.weakSinceMs = 0;
+                continue;
             }
-            const QImage soft = ImageCache::get(path);
-            if (!soft.isNull()) {
-                installDisplayPixels(item, soft,
-                                     SessionAppearance::PixelKind::SoftPreview,
-                                     item->sessionId());
-                if (m_scene) {
-                    m_scene->update(item->sceneBoundingRect());
-                }
-                st.have = qMax(st.have, dq.hostEdge);
-                ++repaired;
-                // Gallery soft is clamped to the cell: shown may stay well below
-                // hostEdge (e.g. shown=216 host=512 target=512). That is not a
-                // quality failure once the host sample has been applied — do not
-                // report install-host-better every tick or spin reinstalls.
-                if (st.have >= dq.hostEdge
-                    || !item->shouldUpgradeDisplayTo(dq.hostEdge)) {
-                    continue;
-                }
-            }
-            DisplayQuality::reportViolation("gallery", path, dq, /*assertHard=*/false);
-        } else if (dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
+        }
+
+        if (dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
             // Need PreferCache / Full — normal work, not a quality violation.
             // Skip ensure when PathRaster already plateaued for this want.
             // Do not force needWindow every tick — that re-entered pass1 forever

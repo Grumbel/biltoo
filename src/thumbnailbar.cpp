@@ -3,6 +3,7 @@
 
 #include "thumbnailbar.h"
 #include "displayquality.h"
+#include "displaysurface.h"
 #include "archivepath.h"
 #include "pagepath.h"
 #include "imagecache.h"
@@ -1618,14 +1619,29 @@ void ThumbnailBar::qualityWatchdogTick()
         if (m_sessionImageOverrides.contains(path)) {
             continue;
         }
-        const int hostEdge = DisplayQuality::hostLongEdge(path);
-        if (DisplayQuality::isStrictUpgrade(shown, hostEdge)) {
+        // Path-only cells: DisplaySurface::decide (identity xform). Session
+        // appearance overrides already continued above.
+        DisplaySurface::State ds;
+        ds.needEdge = decodeSize;
+        ds.haveDisplayEdge = shown;
+        ds.hostLongEdge = DisplayQuality::hostLongEdge(path);
+        ds.climbPending = climbPending;
+        if (shown > 0) {
+            ds.attachedKind = (shown >= (decodeSize * 9) / 10)
+                ? DisplaySurface::AttachedKind::FullSource
+                : DisplaySurface::AttachedKind::SoftPreview;
+        }
+        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        using AT = DisplaySurface::ActionType;
+        if (act.type == AT::None) {
+            continue;
+        }
+        if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
             const QImage host = ImageCache::get(path);
             if (!host.isNull()) {
                 const QImage thumb = prepareThumbnailFromImage(host, decodeSize);
                 if (!thumb.isNull()) {
                     const int newShown = qMax(thumb.width(), thumb.height());
-                    // Only repaint when the thumb is actually sharper.
                     if (newShown > shown) {
                         setThumbnailIcon(i, thumb);
                     }
@@ -1636,39 +1652,22 @@ void ThumbnailBar::qualityWatchdogTick()
                     }
                 }
             }
-            // Host sample still short of strip edge — clear await so soft can
-            // be (re)scheduled; do not stay pinned on LQIP.
-            m_thumbAwaitLadder.remove(i);
-            m_thumbLoadScheduled.remove(i);
-            needSchedule = true;
-            // Report only when this is real lag: strip already showed something
-            // and host holds soft+ (blank→LQIP bootstrap is silent in
-            // DisplayQuality::reportViolation).
-            if (shown > 0
-                && DisplayQuality::tierOf(hostEdge) > DisplayQuality::Tier::Lqip) {
-                DisplayQuality::Check dq;
-                dq.verdict = DisplayQuality::Verdict::InstallHostBetter;
-                dq.shownEdge = shown;
-                dq.hostEdge = hostEdge;
-                dq.targetEdge = decodeSize;
-                dq.shownTier = DisplayQuality::tierOf(shown);
-                dq.hostTier = DisplayQuality::tierOf(hostEdge);
-                DisplayQuality::reportViolation("filmstrip", path, dq, false);
-            }
-            continue;
-        }
-
-        const DisplayQuality::Check dq =
-            DisplayQuality::checkSurface(path, shown, decodeSize, climbPending);
-        if (dq.verdict == DisplayQuality::Verdict::StuckWeak
-            || dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
+            // Host not enough for strip edge — allow soft schedule once.
             if (!climbPending) {
-                DisplayQuality::reportViolation("filmstrip", path, dq,
-                                               /*assertHard=*/false);
                 m_thumbAwaitLadder.remove(i);
                 m_thumbLoadScheduled.remove(i);
                 needSchedule = true;
             }
+            continue;
+        }
+        if (act.type == AT::ScheduleClimb
+            || act.type == AT::ScheduleAsyncMaterialize) {
+            if (!climbPending) {
+                m_thumbAwaitLadder.remove(i);
+                m_thumbLoadScheduled.remove(i);
+                needSchedule = true;
+            }
+            continue;
         }
     }
     if (needSchedule) {

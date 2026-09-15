@@ -2,6 +2,32 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-957-gallery-filmstrip-decide.** Gallery + filmstrip use DisplaySurface::decide.
+Prior: **956**.
+
+### Change
+- **Gallery** soft tick: install/climb/async from `DisplaySurface::decide` (want/
+  attached/host), not raw InstallHostBetter host-vs-shown.
+- **Filmstrip** quality tick: path-only cells use decide (identity xform);
+  session appearance overrides still skip; no isStrictUpgrade host spam path.
+- ImageFocus remains event-only (956).
+
+Not yet: per-tile SurfaceId registry for Gallery/Filmstrip (bind/unbind lifecycle).
+
+### Next
+**958** optional SurfaceId bind for gallery tiles / filmstrip rows, or Workspace.
+
+### Apply
+```bash
+git pull /path/to/biltoo-957-gallery-filmstrip-decide.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-956-imagefocus-event-only.** ImageFocus: no timer; gallery settled skip.
 Prior: **955**.
 
