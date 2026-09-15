@@ -1022,11 +1022,19 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             item->clearDecodedPixels();
         }
         // Host-raw soft: installDisplayPixels seeds ImageCache + materializes want.
-        // Display-ready stash soft: same SessionImageId and applied == want already
-        // (see resolveImageModePendingPixels); attach only — do not put baked
-        // pixels into ImageCache or materialize again.
+        // Display-ready (stashed Gallery / filmstrip override) only when it still
+        // matches store want — otherwise rematerialize from host so crop/rotate
+        // in SessionAppearanceStore are not skipped (stale strip Soft looked like
+        // "edits not persistent").
+        const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
+        if (displayReady && SessionAppearance::hasContentAppearance(want)) {
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                pixels = host;
+                displayReady = false;
+            }
+        }
         if (displayReady) {
-            const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
             attachDisplaySample(item, pixels, want,
                                 SessionAppearance::PixelKind::SoftPreview);
         } else {

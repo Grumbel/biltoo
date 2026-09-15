@@ -2,6 +2,31 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-994-appearance-persist-grade-nav.** Grade durable + nav respects store want.
+Prior: **993**.
+
+### Persistence model (unchanged policy)
+| Edit | In-session (`SessionAppearanceStore` by id) | Across restart |
+|------|-----------------------------------------------|----------------|
+| Rotate / flip | yes | path XDG (thumtoo content-hash) |
+| Grade | yes | path XDG (**was missing — fixed**) |
+| Crop | yes | **project file** only when session-bound; path XDG only if unbound |
+
+### Fixes
+- Write grade into `saveContentAppearance`
+- Image-mode pending tile: do not attach stale filmstrip displayReady over store crop/orient
+
+### Apply
+```bash
+git pull /path/to/biltoo-994-appearance-persist-grade-nav.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-993-soft-provider-public-api.** Public soft-provider APIs for MainWindow.
 Prior: **992**.
 

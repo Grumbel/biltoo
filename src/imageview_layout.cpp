@@ -391,14 +391,16 @@ WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
 void ImageView::persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
                                                 const char *debugTag)
 {
-    // Bound session images: path XDG may keep orient/flip as a file-level hint,
-    // but never crop (SessionAppearanceStore owns crop by SessionImageId).
+    // Bound session images: path XDG keeps orient/flip/grade as a file-level
+    // hint; crop stays SessionImageId-only (duplicates share a path — IDENTITY).
     const bool bound = item && item->sessionId() != kInvalidSessionImageId;
     const bool writeCrop = !bound && s.hasCrop && !s.cropRect.isEmpty();
+    const bool hasGrade = !s.colorAdjust.isIdentity();
     const bool contentful =
         s.contentHFlip || s.contentVFlip
         || s.contentQuarterTurns != 0
-        || writeCrop;
+        || writeCrop
+        || hasGrade;
     if (contentful) {
         ThumtooCache::StoredContentAppearance stored;
         stored.contentHFlip = s.contentHFlip;
@@ -409,6 +411,16 @@ void ImageView::persistDurableContentAppearance(ImageItem *item, const Workspace
             stored.cropRect = s.cropRect;
             stored.cropSourceSize = s.cropSourceSize;
             stored.cropRotation = s.cropRotation;
+        }
+        if (hasGrade) {
+            stored.hasGrade = true;
+            stored.gradeBrightness = s.colorAdjust.brightness;
+            stored.gradeContrast = s.colorAdjust.contrast;
+            stored.gradeSaturation = s.colorAdjust.saturation;
+            stored.gradeHue = s.colorAdjust.hue;
+            // Durable gamma is percent (100 = 1.0).
+            stored.gradeGamma = qMax(1, int(qRound(s.colorAdjust.gamma * 100.0)));
+            stored.gradeInvert = s.colorAdjust.invert;
         }
         ThumtooCache::saveContentAppearance(item->path(), stored);
         if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
@@ -1038,10 +1050,12 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         // through clearContentAppearance (Reset / undo-to-identity).
         const bool writeCrop = (sid == kInvalidSessionImageId)
             && contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
+        const bool hasGrade = !contentSlot.colorAdjust.isIdentity();
         const bool contentful =
             contentSlot.contentHFlip || contentSlot.contentVFlip
             || contentSlot.contentQuarterTurns != 0
-            || writeCrop;
+            || writeCrop
+            || hasGrade;
         if (contentful) {
             ThumtooCache::StoredContentAppearance stored;
             stored.contentHFlip = contentSlot.contentHFlip;
@@ -1052,6 +1066,16 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
                 stored.cropRect = contentSlot.cropRect;
                 stored.cropSourceSize = contentSlot.cropSourceSize;
                 stored.cropRotation = contentSlot.cropRotation;
+            }
+            if (hasGrade) {
+                stored.hasGrade = true;
+                stored.gradeBrightness = contentSlot.colorAdjust.brightness;
+                stored.gradeContrast = contentSlot.colorAdjust.contrast;
+                stored.gradeSaturation = contentSlot.colorAdjust.saturation;
+                stored.gradeHue = contentSlot.colorAdjust.hue;
+                stored.gradeGamma =
+                    qMax(1, int(qRound(contentSlot.colorAdjust.gamma * 100.0)));
+                stored.gradeInvert = contentSlot.colorAdjust.invert;
             }
             ThumtooCache::saveContentAppearance(item->path(), stored);
         }
