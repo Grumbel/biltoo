@@ -333,6 +333,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     applyItemModeFlags(item);
     m_scene->addItem(item);
     m_items.append(item);
+    registerItemDisplaySurface(item);
 
     // @p image is host-raw. Sole materialize site is installDisplayPixels.
     const bool wantBake = SessionAppearance::hasContentAppearance(app)
@@ -677,6 +678,7 @@ ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &in
     applyItemModeFlags(item);
     m_scene->addItem(item);
     m_items.append(item);
+    registerItemDisplaySurface(item);
     return item;
 }
 
@@ -2719,4 +2721,34 @@ void ImageView::driveImageFocusSurface()
         break;
     }
     }
+}
+
+void ImageView::registerItemDisplaySurface(ImageItem *item)
+{
+    if (!item || item->path().isEmpty()) {
+        return;
+    }
+    unregisterItemDisplaySurface(item);
+    DisplaySurface::Kind kind = DisplaySurface::Kind::GalleryTile;
+    if (isWorkspaceMode()) {
+        kind = DisplaySurface::Kind::WorkspaceItem;
+    } else if (isImageMode()) {
+        kind = DisplaySurface::Kind::ImageFocus;
+    }
+    const DisplaySurface::SurfaceId id = m_displaySurfaces.bind(
+        kind, item->path(), item->sessionId());
+    item->setDisplaySurfaceId(id);
+}
+
+void ImageView::unregisterItemDisplaySurface(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    const qint64 sid = item->displaySurfaceId();
+    if (sid == 0) {
+        return;
+    }
+    m_displaySurfaces.unbind(static_cast<DisplaySurface::SurfaceId>(sid));
+    item->setDisplaySurfaceId(0);
 }

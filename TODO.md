@@ -2,6 +2,29 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-964-item-surface-id-lifecycle.** Canvas items bind DisplaySurface ids.
+Prior: **963**.
+
+### Change
+- `ImageItem::displaySurfaceId` — host surface key (0 = unbound).
+- `registerItemDisplaySurface` / `unregisterItemDisplaySurface` — bind kind by
+  mode (GalleryTile / WorkspaceItem / ImageFocus).
+- Called from placeholder create, load create, drop placeholder, and
+  `destroyCanvasItem`.
+
+Decide policy unchanged; registry tracks live canvas surfaces.
+
+### Apply
+```bash
+git pull /path/to/biltoo-964-item-surface-id-lifecycle.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-963-canaccept-via-decide.** canAcceptDisplaySample uses DisplaySurface::decide.
 Prior: **962**.
 

@@ -1971,6 +1971,7 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     if (!item) {
         return;
     }
+    unregisterItemDisplaySurface(item);
     // Re-entrancy / double-destroy: after the first call the pointer is gone from
     // live and stash lists. A second call must not touch a deleted QGraphicsItem
     // (seen as SIGSEGV in QObject::blockSignals on a garbage scene pointer).

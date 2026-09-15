@@ -82,6 +82,9 @@ public:
      */
     int sessionIndex() const { return m_sessionIndex; }
     void setSessionIndex(int index) { m_sessionIndex = index; }
+    /** DisplaySurfaceController id (0 = unbound). Host install policy key. */
+    qint64 displaySurfaceId() const { return m_displaySurfaceId; }
+    void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
     QSize imageSize() const;
     /**
      * Set logical layout size (probe / layout / crop). Does not touch pixels.
@@ -348,6 +351,7 @@ private:
     QString m_path;
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only
+    qint64 m_displaySurfaceId = 0;
     QImage m_source;
     ColorAdjustments m_colorAdjust;
     /** Valid when m_source is null (placeholder) or as size cache. */
