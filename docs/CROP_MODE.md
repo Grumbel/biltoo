@@ -45,8 +45,12 @@ Preconditions: single subject, `hasDisplayPixels()`.
      full size (store still has crop).
    - Viewport updates held across prepare so chrome never paints one frame of
      crop-on-old-box.
-6. Block `installDisplayPixels` / async rematerialize on the crop target until
-   leave (draft must not be overwritten by a crop bake).
+6. **Sample freeze** (`m_cropDraftSampleFrozen` + `m_cropDraftPath`) is set when
+   the subject is locked — **before** `m_cropMode` and before the first draft
+   attach. All install / ladder / async rematerialize paths must key off the
+   freeze (not `m_cropMode` alone). `m_cropMode` stays false until after the
+   first draft attach so crop chrome does not paint on the old bake for a frame.
+   Cleared in `clearCropModeState`.
 
 Gallery: does not host crop UI. Open the subject in Image mode, then enter
 (`hasDisplayPixels` is enough — soft is OK).
