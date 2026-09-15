@@ -5,6 +5,9 @@
 
 #include <QtTest/QtTest>
 #include <QtMath>
+#include <QImage>
+#include <QTransform>
+#include <QColor>
 
 /**
  * Content transform + crop geometry contract tests.
@@ -48,6 +51,18 @@ private slots:
     void layoutSize_freeCropRotationDoesNotChangeSize();
     void mapCropThrough_freeRotationAngleTracksContentTurn();
     void layoutSize_freeRotThenContentTurn();
+    // --- Combinatorial rotate × flip × crop (bulletproof contracts) ---
+    void combo_layoutSize_allTurnsWithAndWithoutCrop();
+    void combo_mapCrop_axisAlignedRotationStaysZero_allTurns();
+    void combo_mapCrop_roundTrip_plusK_minusK();
+    void combo_mapCrop_fourTurnsIdentity_withFlipsIrrelevant();
+    void combo_sequence_cropThenEachRotate();
+    void combo_sequence_rotateThenCropInOrientedSpace();
+    void combo_flipFlags_doNotChangeLayoutSize();
+    void combo_pureMaterialize_sizeMatchesLayoutSize();
+    void combo_pureMaterialize_cropPixelsSurviveAxisAlignedRotate();
+    void combo_axisAligned_mapDoesNotArmFreeRotation();
+    void combo_equal_detectsAllContentFields();
 };
 
 /** Must match SessionAppearance::scaleCropRect (sessionappearance.cpp). */
@@ -65,6 +80,66 @@ static QRect scaleCropRectMirror(const QRect &crop, const QSize &recorded, const
         qRound(crop.y() * double(live.height()) / double(recorded.height())),
         qMax(1, qRound(crop.width() * double(live.width()) / double(recorded.width()))),
         qMax(1, qRound(crop.height() * double(live.height()) / double(recorded.height()))));
+}
+
+
+/**
+ * Pure geometry mirror of SessionAppearance::materializeDisplay for
+ * axis-aligned crops (no free cropRotation, no colour grade).
+ * Order: flips → trueMatrix quarter turns → axis-aligned crop copy.
+ */
+static QImage pureMaterializeAxisAligned(const QImage &raw, const ContentXform::Value &x)
+{
+    QImage out = raw;
+    if (out.isNull()) {
+        return {};
+    }
+    if (x.hFlip || x.vFlip) {
+        Qt::Orientations axes;
+        if (x.hFlip) {
+            axes |= Qt::Horizontal;
+        }
+        if (x.vFlip) {
+            axes |= Qt::Vertical;
+        }
+        if (axes) {
+            out = out.flipped(axes);
+        }
+    }
+    const int turns = ContentXform::normalizeQuarterTurns(x.quarterTurns);
+    if (turns != 0) {
+        QTransform rot;
+        rot.rotate(90.0 * turns);
+        out = out.transformed(rot, Qt::FastTransformation);
+    }
+    if (x.hasCrop && !x.cropRect.isEmpty()) {
+        // Free-rot path is intentionally not simulated here — axis-aligned only.
+        if (qAbs(x.cropRotation) > 0.05) {
+            return {}; // free-rot not simulated in this helper
+        }
+        const QSize live = out.size();
+        QRect crop = x.cropRect.normalized();
+        if (x.cropSourceSize.isValid() && x.cropSourceSize.width() > 0
+            && x.cropSourceSize != live) {
+            crop = scaleCropRectMirror(crop, x.cropSourceSize, live);
+        }
+        const QRect bounds(0, 0, out.width(), out.height());
+        const QRect src = crop.intersected(bounds);
+        if (src.width() >= 1 && src.height() >= 1) {
+            out = out.copy(src);
+        }
+    }
+    return out;
+}
+
+/** Encode a unique RGB fingerprint at (x,y) for pixel identity checks. */
+static void stampPixel(QImage *img, int x, int y, int tag)
+{
+    Q_ASSERT(img);
+    if (x < 0 || y < 0 || x >= img->width() || y >= img->height()) {
+        return;
+    }
+    img->setPixelColor(x, y, QColor((tag * 17) & 255, (tag * 31) & 255, (tag * 47) & 255));
 }
 
 
@@ -466,6 +541,307 @@ void ContentXformTest::layoutSize_freeRotThenContentTurn()
     QCOMPARE(x.cropRotation, 22.5 - 90.0);
     QCOMPARE(ContentXform::layoutSize(native, x), QSize(600, 800));
 }
+
+
+void ContentXformTest::combo_layoutSize_allTurnsWithAndWithoutCrop()
+{
+    const QSize native(4000, 3000);
+    const QRect crop(500, 400, 1200, 900);
+    for (int turns = 0; turns < 4; ++turns) {
+        ContentXform::Value full;
+        full.quarterTurns = turns;
+        const QSize oriented = ContentXform::swapsAspect(full)
+                                   ? QSize(native.height(), native.width())
+                                   : native;
+        QCOMPARE(ContentXform::layoutSize(native, full), oriented);
+
+        ContentXform::Value c;
+        c.quarterTurns = turns;
+        c.hasCrop = true;
+        c.cropRect = crop;
+        c.cropSourceSize = native;
+        c.cropRotation = 0.0;
+        if (turns != 0) {
+            ContentXform::mapCropThroughContentRotate90(c, turns);
+        }
+        const QSize lay = ContentXform::layoutSize(native, c);
+        QCOMPARE(lay, c.cropRect.size());
+        QVERIFY(lay.width() > 1 && lay.height() > 1);
+        if ((turns % 2) != 0) {
+            QCOMPARE(lay, QSize(900, 1200));
+        } else {
+            QCOMPARE(lay, QSize(1200, 900));
+        }
+    }
+}
+
+void ContentXformTest::combo_mapCrop_axisAlignedRotationStaysZero_allTurns()
+{
+    for (int turns = 0; turns < 4; ++turns) {
+        ContentXform::Value x;
+        x.hasCrop = true;
+        x.cropRect = QRect(100, 200, 800, 600);
+        x.cropSourceSize = QSize(4000, 3000);
+        x.cropRotation = 0.0;
+        ContentXform::mapCropThroughContentRotate90(x, turns);
+        QCOMPARE(x.cropRotation, 0.0);
+        QVERIFY(x.cropSourceSize.width() > 0);
+    }
+}
+
+void ContentXformTest::combo_mapCrop_roundTrip_plusK_minusK()
+{
+    const QRect orig(500, 400, 1200, 900);
+    const QSize native(4000, 3000);
+    for (int k = 1; k <= 3; ++k) {
+        ContentXform::Value x;
+        x.hasCrop = true;
+        x.cropRect = orig;
+        x.cropSourceSize = native;
+        x.cropRotation = 0.0;
+        ContentXform::mapCropThroughContentRotate90(x, k);
+        ContentXform::mapCropThroughContentRotate90(x, -k);
+        QCOMPARE(x.cropSourceSize, native);
+        QCOMPARE(x.cropRect, orig);
+        QCOMPARE(x.cropRotation, 0.0);
+
+        ContentXform::Value f = x;
+        f.cropRotation = 27.5;
+        ContentXform::mapCropThroughContentRotate90(f, k);
+        ContentXform::mapCropThroughContentRotate90(f, -k);
+        QCOMPARE(f.cropRect, orig);
+        QCOMPARE(f.cropSourceSize, native);
+        QCOMPARE(f.cropRotation, 27.5);
+    }
+}
+
+void ContentXformTest::combo_mapCrop_fourTurnsIdentity_withFlipsIrrelevant()
+{
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(10, 20, 300, 400);
+    x.cropSourceSize = QSize(2000, 1000);
+    x.hFlip = true;
+    x.vFlip = true;
+    x.cropRotation = 0.0;
+    ContentXform::mapCropThroughContentRotate90(x, 4);
+    QCOMPARE(x.cropRect, QRect(10, 20, 300, 400));
+    QCOMPARE(x.cropSourceSize, QSize(2000, 1000));
+    QCOMPARE(x.cropRotation, 0.0);
+}
+
+void ContentXformTest::combo_sequence_cropThenEachRotate()
+{
+    const QSize native(4000, 3000);
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(200, 100, 1000, 500);
+    x.cropSourceSize = native;
+    x.cropRotation = 0.0;
+    x.quarterTurns = 0;
+    QCOMPARE(ContentXform::layoutSize(native, x), QSize(1000, 500));
+
+    for (int step = 1; step <= 4; ++step) {
+        ContentXform::mapCropThroughContentRotate90(x, 1);
+        x.quarterTurns = ContentXform::normalizeQuarterTurns(x.quarterTurns + 1);
+        QCOMPARE(x.cropRotation, 0.0);
+        const QSize lay = ContentXform::layoutSize(native, x);
+        QCOMPARE(lay, x.cropRect.size());
+        if ((step % 2) != 0) {
+            QCOMPARE(lay, QSize(500, 1000));
+        } else {
+            QCOMPARE(lay, QSize(1000, 500));
+        }
+    }
+}
+
+void ContentXformTest::combo_sequence_rotateThenCropInOrientedSpace()
+{
+    const QSize native(4000, 3000);
+    ContentXform::Value x;
+    x.quarterTurns = 1;
+    x.hasCrop = true;
+    x.cropSourceSize = QSize(3000, 4000);
+    x.cropRect = QRect(100, 200, 600, 800);
+    x.cropRotation = 0.0;
+    QCOMPARE(ContentXform::layoutSize(native, x), QSize(600, 800));
+}
+
+void ContentXformTest::combo_flipFlags_doNotChangeLayoutSize()
+{
+    const QSize native(4000, 3000);
+    for (int turns = 0; turns < 4; ++turns) {
+        for (int hi = 0; hi < 2; ++hi) {
+            for (int vi = 0; vi < 2; ++vi) {
+                ContentXform::Value a;
+                a.quarterTurns = turns;
+                ContentXform::Value b = a;
+                b.hFlip = (hi != 0);
+                b.vFlip = (vi != 0);
+                QCOMPARE(ContentXform::layoutSize(native, a),
+                         ContentXform::layoutSize(native, b));
+
+                ContentXform::Value ca = a;
+                ca.hasCrop = true;
+                ca.cropRect = QRect(0, 0, 800, 600);
+                ca.cropSourceSize = native;
+                if (turns != 0) {
+                    ContentXform::mapCropThroughContentRotate90(ca, turns);
+                }
+                ContentXform::Value cb = ca;
+                cb.hFlip = (hi != 0);
+                cb.vFlip = (vi != 0);
+                QCOMPARE(ContentXform::layoutSize(native, ca),
+                         ContentXform::layoutSize(native, cb));
+            }
+        }
+    }
+}
+
+void ContentXformTest::combo_pureMaterialize_sizeMatchesLayoutSize()
+{
+    const QSize native(40, 30);
+    QImage raw(native, QImage::Format_RGB32);
+    raw.fill(Qt::black);
+
+    const QRect crops[] = {
+        QRect(5, 5, 20, 10),
+        QRect(0, 0, 40, 30),
+        QRect(10, 8, 12, 16),
+    };
+
+    for (int turns = 0; turns < 4; ++turns) {
+        for (int hi = 0; hi < 2; ++hi) {
+            for (int vi = 0; vi < 2; ++vi) {
+                ContentXform::Value full;
+                full.quarterTurns = turns;
+                full.hFlip = (hi != 0);
+                full.vFlip = (vi != 0);
+                {
+                    const QImage out = pureMaterializeAxisAligned(raw, full);
+                    QCOMPARE(out.size(), ContentXform::layoutSize(native, full));
+                }
+                for (const QRect &crop : crops) {
+                    ContentXform::Value c;
+                    c.quarterTurns = turns;
+                    c.hFlip = (hi != 0);
+                    c.vFlip = (vi != 0);
+                    c.hasCrop = true;
+                    c.cropRect = crop;
+                    c.cropSourceSize = native;
+                    c.cropRotation = 0.0;
+                    if (turns != 0) {
+                        ContentXform::mapCropThroughContentRotate90(c, turns);
+                    }
+                    const QImage out = pureMaterializeAxisAligned(raw, c);
+                    QCOMPARE(out.size(), ContentXform::layoutSize(native, c));
+                }
+            }
+        }
+    }
+}
+
+void ContentXformTest::combo_pureMaterialize_cropPixelsSurviveAxisAlignedRotate()
+{
+    const QSize native(40, 30);
+    QImage raw(native, QImage::Format_RGB32);
+    raw.fill(QColor(10, 10, 10));
+    const int mx = 15;
+    const int my = 12;
+    stampPixel(&raw, mx, my, 99);
+    const QColor marker = raw.pixelColor(mx, my);
+
+    const QRect crop(10, 8, 20, 14);
+    QVERIFY(crop.contains(mx, my));
+
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = crop;
+    x.cropSourceSize = native;
+    x.cropRotation = 0.0;
+    x.quarterTurns = 0;
+
+    {
+        const QImage out = pureMaterializeAxisAligned(raw, x);
+        QCOMPARE(out.size(), QSize(20, 14));
+        QCOMPARE(out.pixelColor(mx - crop.x(), my - crop.y()), marker);
+    }
+
+    ContentXform::mapCropThroughContentRotate90(x, 1);
+    x.quarterTurns = 1;
+    QCOMPARE(x.cropRotation, 0.0);
+    {
+        const QImage out = pureMaterializeAxisAligned(raw, x);
+        QCOMPARE(out.size(), ContentXform::layoutSize(native, x));
+        bool found = false;
+        for (int y = 0; y < out.height() && !found; ++y) {
+            for (int xpix = 0; xpix < out.width(); ++xpix) {
+                if (out.pixelColor(xpix, y) == marker) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        QVERIFY2(found, "marker missing after crop+rotate");
+    }
+
+    for (int step = 0; step < 2; ++step) {
+        ContentXform::mapCropThroughContentRotate90(x, 1);
+        x.quarterTurns = ContentXform::normalizeQuarterTurns(x.quarterTurns + 1);
+        QCOMPARE(x.cropRotation, 0.0);
+        const QImage out = pureMaterializeAxisAligned(raw, x);
+        QCOMPARE(out.size(), ContentXform::layoutSize(native, x));
+        bool found = false;
+        for (int y = 0; y < out.height() && !found; ++y) {
+            for (int xpix = 0; xpix < out.width(); ++xpix) {
+                if (out.pixelColor(xpix, y) == marker) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        QVERIFY(found);
+    }
+}
+
+void ContentXformTest::combo_axisAligned_mapDoesNotArmFreeRotation()
+{
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(0, 0, 100, 50);
+    x.cropSourceSize = QSize(400, 300);
+    x.cropRotation = 0.0;
+    for (int k = 1; k <= 4; ++k) {
+        ContentXform::mapCropThroughContentRotate90(x, 1);
+        QVERIFY2(qAbs(x.cropRotation) <= 0.05,
+                 "axis-aligned cropRotation must stay ~0 after content turn");
+    }
+}
+
+void ContentXformTest::combo_equal_detectsAllContentFields()
+{
+    ContentXform::Value base;
+    base.quarterTurns = 1;
+    base.hFlip = true;
+    base.vFlip = false;
+    base.hasCrop = true;
+    base.cropRect = QRect(1, 2, 3, 4);
+    base.cropSourceSize = QSize(10, 20);
+    base.cropRotation = 0.0;
+
+    QVERIFY(ContentXform::equal(base, base));
+
+    ContentXform::Value t = base;
+    t.quarterTurns = 2;
+    QVERIFY(!ContentXform::equal(base, t));
+    t = base; t.hFlip = false; QVERIFY(!ContentXform::equal(base, t));
+    t = base; t.vFlip = true; QVERIFY(!ContentXform::equal(base, t));
+    t = base; t.cropRect = QRect(9, 9, 1, 1); QVERIFY(!ContentXform::equal(base, t));
+    t = base; t.cropSourceSize = QSize(11, 20); QVERIFY(!ContentXform::equal(base, t));
+    t = base; t.cropRotation = 12.0; QVERIFY(!ContentXform::equal(base, t));
+    t = base; t.hasCrop = false; QVERIFY(!ContentXform::equal(base, t));
+}
+
 
 QTEST_MAIN(ContentXformTest)
 #include "contentxform_test.moc"

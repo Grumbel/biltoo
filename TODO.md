@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-909-contentxform-combo-tests.** Combinatorial rotate×flip×crop pure tests.
+Prior: **908**.
+
+### Tests added (`tests/contentxform_test.cpp`)
+- All turns with/without crop → layoutSize
+- Axis-aligned cropRotation stays 0 for every turn count
+- Map round-trip ±k and free-rot conjugate
+- Sequence: crop then successive rotates; rotate then crop in oriented space
+- Flips do not change layoutSize
+- Pure materialize size == layoutSize for turns×flip×crop grid
+- Marker pixel survives crop+rotate (no double-window)
+- equal() detects all content fields
+
+### Apply
+```bash
+git pull /path/to/biltoo-909-contentxform-combo-tests.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-908-crop-rotate-no-double.** Axis-aligned crop + content rotate must not arm freeRot.
 Prior: **907**.
 
