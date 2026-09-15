@@ -269,6 +269,7 @@ ImageFocus, and preview delivery share it.
 
 **Residual:** optional Qt signal `displayReady` if external observers need it;
 materialize still lives in SessionAppearance / ContentXform called from install helpers.
+Filmstrip recovery: `filmstripSurfaceTick` (bound surface evaluate only).
 
 Each phase must leave the app usable: soft still appears; full still arrives
 via **events**, not a 1s InstallHostBetter poller.

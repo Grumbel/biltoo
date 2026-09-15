@@ -225,8 +225,8 @@ private:
     void scheduleThumbnailLoads();
     /** Queue decode jobs for rows near the viewport / current index only. */
     void scheduleVisibleThumbnailLoads();
-    /** DisplaySurface::decide recovery for visible path-only cells. */
-    void qualityWatchdogTick();
+    /** Visible FilmstripCell recovery via bound surface evaluate. */
+    void filmstripSurfaceTick();
     void rebindFilmstripSurfaces();
     /** Apply native pixel size as letterbox aspect on a row (sizeHint + role). */
     void applyNativeAspect(QListWidgetItem *item, const QSize &native);

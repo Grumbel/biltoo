@@ -452,10 +452,10 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     }
 
     {
-        auto *qualityTimer = new QTimer(this);
-        qualityTimer->setInterval(1500);
-        connect(qualityTimer, &QTimer::timeout, this, &ThumbnailBar::qualityWatchdogTick);
-        qualityTimer->start();
+        auto *filmstripSurfaceTimer = new QTimer(this);
+        filmstripSurfaceTimer->setInterval(1500);
+        connect(filmstripSurfaceTimer, &QTimer::timeout, this, &ThumbnailBar::filmstripSurfaceTick);
+        filmstripSurfaceTimer->start();
     }
 
     // When thumtoo finishes a ladder level, upgrade filmstrip rows still short
@@ -1115,7 +1115,7 @@ QImage ThumbnailBar::prepareThumbnailFromImage(const QImage &image, int maxSize)
         return QImage();
     }
     // Never upscale. Upscaling LQIP to filmstripDecodeEdge made ThumbDecodeEdgeRole
-    // report the target edge while pixels stayed soft — qualityWatchdog then
+    // report the target edge while pixels stayed soft — filmstripSurfaceTick then
     // treated the cell as settled and tiny filmstrips stayed blurry forever.
     const int srcEdge = qMax(image.width(), image.height());
     if (m_cropToSquare) {
@@ -1595,7 +1595,7 @@ void ThumbnailBar::rebindFilmstripSurfaces()
     }
 }
 
-void ThumbnailBar::qualityWatchdogTick()
+void ThumbnailBar::filmstripSurfaceTick()
 {
     if (m_files.isEmpty() || m_visibleLoadsSuspended) {
         return;
