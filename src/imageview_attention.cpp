@@ -10,6 +10,7 @@
 #include <QLineF>
 #include <QPainter>
 #include <QSet>
+#include <QUndoCommand>
 #include <algorithm>
 
 namespace {
@@ -141,6 +142,57 @@ void ImageView::ensureAttentionPoint()
     detectAttentionPoint();
 }
 
+void ImageView::restoreAttentionPoints(const QVector<QPointF> &pts)
+{
+    setAttentionPointsForTarget(pts);
+    m_attentionSelected.clear();
+    for (int i = 0; i < pts.size(); ++i) {
+        m_attentionSelected.append(i);
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::pushAttentionPointsUndo(const QVector<QPointF> &before,
+                                        const QVector<QPointF> &after,
+                                        const QString &text)
+{
+    if (!m_undoStack || before == after) {
+        return;
+    }
+    class AttentionPointsCommand : public QUndoCommand {
+    public:
+        AttentionPointsCommand(ImageView *view,
+                               const QVector<QPointF> &before,
+                               const QVector<QPointF> &after,
+                               const QString &text)
+            : m_view(view)
+            , m_before(before)
+            , m_after(after)
+        {
+            setText(text);
+        }
+        void undo() override
+        {
+            if (m_view) {
+                m_view->restoreAttentionPoints(m_before);
+            }
+        }
+        void redo() override
+        {
+            if (m_view) {
+                m_view->restoreAttentionPoints(m_after);
+            }
+        }
+    private:
+        ImageView *m_view = nullptr;
+        QVector<QPointF> m_before;
+        QVector<QPointF> m_after;
+    };
+    m_undoStack->push(new AttentionPointsCommand(this, before, after, text));
+}
+
 void ImageView::detectAttentionPoint()
 {
     ImageItem *item = targetItem();
@@ -155,11 +207,13 @@ void ImageView::detectAttentionPoint()
     if (pts.isEmpty()) {
         pts.append(QPointF(0.5, 0.5));
     }
+    const QVector<QPointF> before = attentionPointsForTarget();
     m_attentionSelected.clear();
     setAttentionPointsForTarget(pts);
     for (int i = 0; i < pts.size(); ++i) {
         m_attentionSelected.append(i);
     }
+    pushAttentionPointsUndo(before, pts, tr("Detect attention points"));
     if (viewport()) {
         viewport()->update();
     }
@@ -181,6 +235,8 @@ void ImageView::setAttentionMode(bool on)
         m_attentionMode = true;
         m_attentionDragging = false;
         m_attentionRubberbanding = false;
+        m_attentionGestureActive = false;
+        m_attentionGestureBefore.clear();
         m_attentionSelected.clear();
         if (m_hoverEdge != EdgeZone::None) {
             m_hoverEdge = EdgeZone::None;
@@ -193,6 +249,8 @@ void ImageView::setAttentionMode(bool on)
         m_attentionMode = false;
         m_attentionDragging = false;
         m_attentionRubberbanding = false;
+        m_attentionGestureActive = false;
+        m_attentionGestureBefore.clear();
         m_attentionSelected.clear();
         m_attentionRubberRect = QRect();
         if (viewport()) {
@@ -243,6 +301,7 @@ void ImageView::attentionDeleteSelected()
         return;
     }
     QVector<QPointF> pts = attentionPointsForTarget();
+    const QVector<QPointF> before = pts;
     QSet<int> kill(m_attentionSelected.begin(), m_attentionSelected.end());
     QVector<QPointF> kept;
     for (int i = 0; i < pts.size(); ++i) {
@@ -252,10 +311,18 @@ void ImageView::attentionDeleteSelected()
     }
     m_attentionSelected.clear();
     setAttentionPointsForTarget(kept);
+    pushAttentionPointsUndo(before, kept, tr("Delete attention points"));
 }
 
 void ImageView::attentionCommitSelectionMove()
 {
+    if (m_attentionGestureActive) {
+        const QVector<QPointF> after = attentionPointsForTarget();
+        pushAttentionPointsUndo(m_attentionGestureBefore, after,
+                                tr("Edit attention points"));
+    }
+    m_attentionGestureActive = false;
+    m_attentionGestureBefore.clear();
     m_attentionDragStartPts.clear();
 }
 
@@ -320,9 +387,9 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     painter.setFont(f);
     painter.setPen(QColor(255, 255, 255, 240));
     const QString hint =
-        tr("Attention — click: add · drag handle: move · Shift+click: multi-select\n"
-           "Drag empty: rubber-band · Del: delete · Detect: auto peaks · Esc: exit\n"
-           "%1 point(s), %2 selected  (primary = Ken Burns)")
+        tr("Attention — click: select · Shift/Ctrl+click: multi-select · drag empty: rubber-band\n"
+           "Ctrl+click empty: add · drag handle: move · Del: delete · Ctrl+Z: undo · Esc: exit\n"
+           "%1 point(s), %2 selected  (primary “P” = Ken Burns)")
             .arg(pts.size())
             .arg(m_attentionSelected.size());
     painter.drawText(viewport()->rect().adjusted(12, 12, -12, -12),

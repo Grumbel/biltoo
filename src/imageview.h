@@ -657,15 +657,19 @@ public:
     void toggleCropMode();
 
     /**
-     * Attention / focus-point mode (Image mode). Multi-point overlay: add,
-     * select (shift / rubber-band), move, delete. Primary (first) point drives
-     * slideshow Ken Burns. Auto-detects peaks when entering if none stored.
+     * Attention / focus-point mode (Image mode). Multi-point overlay with
+     * standard selection: click select, Shift/Ctrl toggle, drag empty =
+     * rubber-band, Ctrl+click = insert, Del = delete, undoable edits.
+     * Primary (first) point drives slideshow Ken Burns. Auto-detects peaks
+     * when entering if none stored.
      */
     void setAttentionMode(bool on);
     bool isAttentionMode() const { return m_attentionMode; }
     void toggleAttentionMode();
     /** Re-run saliency detect on the current image (replaces all points). */
     void detectAttentionPoint();
+    /** Undo/redo: replace attention points on the current attention target. */
+    void restoreAttentionPoints(const QVector<QPointF> &pts);
     /** Commit the draft crop rect to pixels and leave crop mode. */
     void applyCrop();
     /** Shrink draft to non-background content (margin trim). */
@@ -1567,8 +1571,13 @@ private:
     void setAttentionNormForTarget(const QPointF &norm);
     void ensureAttentionPoint();
     SessionImageId attentionSessionId() const;
+    /** Push undo if points changed during a drag/add gesture; clear gesture state. */
     void attentionCommitSelectionMove();
     void attentionDeleteSelected();
+    /** Snapshot → mutate → single undo entry (delete, detect, non-gesture edits). */
+    void pushAttentionPointsUndo(const QVector<QPointF> &before,
+                                 const QVector<QPointF> &after,
+                                 const QString &text);
     QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
     void updateCropHandleDrag(const QPoint &viewPos);
@@ -1974,6 +1983,9 @@ private:
     QVector<int> m_attentionSelected; // indices into attentionPoints
     QVector<QPointF> m_attentionDragStartPts; // snapshot at press for selected move
     QPoint m_attentionDragOriginView;
+    /** Points before the current press gesture (add/move); used for one undo entry. */
+    QVector<QPointF> m_attentionGestureBefore;
+    bool m_attentionGestureActive = false;
     bool m_attentionDraftValid = false;
     QVector<QPointF> m_attentionDraftPts;
     SessionImageId m_attentionDraftSessionId = kInvalidSessionImageId;

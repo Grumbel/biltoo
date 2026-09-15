@@ -450,8 +450,11 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
     }
     const int hit = attentionHandleIndexAt(event->pos());
     const bool shift = event->modifiers() & Qt::ShiftModifier;
+    const bool ctrl = event->modifiers() & Qt::ControlModifier;
+    // Handle hit: standard selection (Shift/Ctrl toggle; plain exclusive unless
+    // already selected so multi-drag keeps the set).
     if (hit >= 0) {
-        if (shift) {
+        if (shift || ctrl) {
             if (m_attentionSelected.contains(hit)) {
                 m_attentionSelected.removeAll(hit);
             } else {
@@ -460,35 +463,44 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
         } else if (!m_attentionSelected.contains(hit)) {
             m_attentionSelected = {hit};
         }
-        m_attentionDragging = true;
+        m_attentionDragging = !m_attentionSelected.isEmpty();
         m_attentionRubberbanding = false;
         m_attentionDragOriginView = event->pos();
         m_attentionDragStartPts = attentionPointsForTarget();
+        m_attentionGestureBefore = m_attentionDragStartPts;
+        m_attentionGestureActive = m_attentionDragging;
         viewport()->update();
         event->accept();
         return true;
     }
+    // Ctrl+click empty content: insert a point (then drag to place).
     const QPointF scene = mapToScene(event->pos());
     const QPointF local = item->mapFromScene(scene);
     const QRectF cr = item->contentRect();
-    if (cr.contains(local) && !shift) {
+    if (ctrl && cr.contains(local)) {
         const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
         const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
-        QVector<QPointF> pts = attentionPointsForTarget();
+        const QVector<QPointF> before = attentionPointsForTarget();
+        QVector<QPointF> pts = before;
         pts.append(QPointF(nx, ny));
         setAttentionPointsForTarget(pts);
         m_attentionSelected = {int(pts.size() - 1)};
         m_attentionDragging = true;
+        m_attentionRubberbanding = false;
         m_attentionDragOriginView = event->pos();
         m_attentionDragStartPts = attentionPointsForTarget();
+        m_attentionGestureBefore = before;
+        m_attentionGestureActive = true;
         event->accept();
         return true;
     }
+    // Plain / Shift click on empty: rubber-band select (additive with Shift).
     m_attentionRubberbanding = true;
     m_attentionDragging = false;
+    m_attentionGestureActive = false;
     m_attentionRubberOrigin = event->pos();
     m_attentionRubberRect = QRect(event->pos(), QSize());
-    if (!shift) {
+    if (!shift && !ctrl) {
         m_attentionSelected.clear();
     }
     viewport()->update();

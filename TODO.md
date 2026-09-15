@@ -2,6 +2,34 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-941-attention-selection-undo.** Standard attention multi-point selection + undo.
+Prior: **940**.
+
+### Change
+Attention mode mapping was non-standard (plain click on empty *added* a point).
+Now matches common canvas tools:
+
+- Click handle: select (exclusive unless already in selection)
+- Shift/Ctrl+click handle: toggle multi-select
+- Drag empty: rubber-band select (Shift additive)
+- **Ctrl+click empty: insert** point (then drag to place)
+- Del / Backspace: delete selected
+- Ctrl+A: select all
+- Gesture add/move, delete, and Detect are **undoable** (Ctrl+Z)
+
+Overlay hint + F1 help text updated.
+
+### Apply
+```bash
+git pull /path/to/biltoo-941-attention-selection-undo.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-940-env-docs-manpage.** Document debug/concurrency env vars; ship man page.
 Prior: **939**.
 
@@ -18552,12 +18580,12 @@ SlideshowLetterboxFill {
 
 Elevate residual from 314/315:
 
-- [ ] Attention multi-point insert / select / delete / move
-- [ ] Undo/redo for attention edits
+- [x] Attention multi-point insert / select / delete / move (941: Ctrl+click add, rubber-band, multi-select)
+- [x] Undo/redo for attention edits (941)
 - [ ] Optional: secondary points as Pan&Zoom waypoints
 
 Single-point mode + load/save + mid-path bias already shipped (310–314).
-Multi-point data foundation exists; **edit UI still needs work before release**.
+Multi-point edit UX standardized in **941** (selection + undo).
 
 ### Implementation order
 
@@ -18579,7 +18607,7 @@ Multi-point data foundation exists; **edit UI still needs work before release**.
 - ZoomBlur uses a downscaled multi-pass box blur (≈ Gaussian), cached per
   viewport size + source buffer identity. Resize invalidates the cache.
 - Transition Slide gap still falls back to solid pad when sources missing.
-- Attention multi-point edit UI remains open (see pre-release checklist above).
+- Attention multi-point edit UI standardized in tip **941** (selection + undo).
 
 ## Plan / work (2026-09-06) — bundle `biltoo-332-letterbox-tooltip-fix`
 

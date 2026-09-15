@@ -270,8 +270,8 @@ void MainWindow::createActions()
         m_attentionAct->setIcon(QIcon(pm));
     }
     m_attentionAct->setStatusTip(
-        tr("Edit the attention / focus point used for slideshow pan and zoom"));
-    m_attentionAct->setToolTip(tr("Attention point"));
+        tr("Edit attention points (slideshow pan & zoom focus); Ctrl+click to add"));
+    m_attentionAct->setToolTip(tr("Attention points"));
     connect(m_attentionAct, &QAction::triggered, this, &MainWindow::toggleAttentionMode);
 
 
@@ -1737,8 +1737,11 @@ void MainWindow::populateActionHelpTexts()
         "<p>Clear content transforms (crop, flips, quarter turns, colour) on the target "
         "back toward the decoded source orientation.</p>"));
     setHelp(m_attentionAct, tr(
-        "<p>Set or clear an attention point used by some slideshow motions / framing "
-        "hints for the current image.</p>"));
+        "<p>Edit attention / focus points for slideshow pan&nbsp;&amp;&nbsp;zoom on the "
+        "current image. In the tool: click to select, Shift/Ctrl+click to multi-select, "
+        "drag empty for a rubber-band, <b>Ctrl+click</b> empty to add a point, drag "
+        "handles to move, Del to delete, Ctrl+Z to undo. The primary point (labelled "
+        "<b>P</b>) drives Ken Burns.</p>"));
 
     // --- Navigation / slideshow ---
     setHelp(m_previousAct, tr(
