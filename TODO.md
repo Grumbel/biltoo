@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-913-nav-clear-content-chrome.** ←/→ must not leak prior crop/flips into soft bake.
+Prior: **912** (wrong diagnosis; slowed updates).
+
+### Root cause
+`wantAppearanceForItem` merges live `item->sessionHasCrop` / content flips when the
+session store slot is empty. Path change kept those flags from the **previous**
+image, so soft materialize applied the wrong crop → wrong aspect.
+
+### Fix
+On path change in `installImageModePendingTile`: clear sample **and** content
+chrome (crop, flips, grade, applied xform) before install. Reverted 911 multi-MP
+blank/async detours that slowed painting.
+
+### Apply
+```bash
+git pull /path/to/biltoo-913-nav-clear-content-chrome.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-912-nav-clear-wrong-pixels.** Layout without pixels is OK; never stretch prior-file pixels.
 Prior: **911** (over-deferred layout).
 

@@ -3,6 +3,7 @@
 
 #include "imageview.h"
 #include "displayquality.h"
+#include "coloradjust.h"
 
 #include "archivepath.h"
 #include "imagecache.h"
@@ -625,29 +626,14 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
                 pixelsForDisplay, appearance, kind);
         } else if (item->hasDisplayPixels()
                    && SessionAppearance::hasContentAppearance(appearance)) {
-            // Multi-MP: cannot materialize on GUI. Do not stretch existing
-            // pixels into a new want layout — clear, tag want, async rematerialize.
-            item->clearDecodedPixels();
-            item->setPreviewImage(QImage());
+            // Multi-MP: cannot materialize on GUI. Keep current display pixels;
+            // tag want and schedule pure rematerialize from host (same as rotate).
             item->setAppliedContentXform(
                 ContentXform::Value::fromState(appearance));
             scheduleAsyncHostRematerialize(path, sid, appearance);
             return;
         }
         // Cold open: attach raw until soft ≤kGui or worker-baked FullSource.
-        // Raw + content layout would stretch — only attach raw when no bake needed
-        // or materialize produced a sample. If still unbaked multi-MP want, skip
-        // attach and wait for async (blank until then beats wrong aspect).
-        if (wantBake && display.size() == pixelsForDisplay.size()
-            && SessionAppearance::hasContentAppearance(appearance)
-            && edge > ContentXform::kGuiMaterializeMaxEdge) {
-            item->clearDecodedPixels();
-            item->setPreviewImage(QImage());
-            item->setAppliedContentXform(
-                ContentXform::Value::fromState(appearance));
-            scheduleAsyncHostRematerialize(path, sid, appearance);
-            return;
-        }
     }
     const QSize sizeBeforeAttach = item->imageSize();
     attachDisplaySample(item, display, appearance, kind);
@@ -764,11 +750,14 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             item->setPath(path);
             bindImageModeSessionCursor(item);
             if (pathChanged) {
-                // Drop prior file's sample first, then adopt the new layout.
                 if (item->hasDecodedPixels()) {
                     item->clearDecodedPixels();
                 }
-                item->setPreviewImage(QImage());
+                item->setSessionCrop(false, QRect());
+                item->setContentHFlip(false);
+                item->setContentVFlip(false);
+                item->setColorAdjustmentsRecord(ColorAdjustments{});
+                item->clearAppliedContentXform();
                 const QSize sz = layoutSizeForPath(path, QImage());
                 if (isPositiveSize(sz)) {
                     item->setIntrinsicSize(sz);
@@ -812,17 +801,30 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         const QSize sizeBefore = item->imageSize();
         // Capture only when navigating to a different file — same-path soft→HQ
         // upgrades must not replace a user pan with a stale pre-frame anchor.
-        if (item->path() != path) {
+        const bool pathChanged = (item->path() != path);
+        if (pathChanged) {
             captureStickyPanAnchor(item);
         }
         item->setPath(path);
         bindImageModeSessionCursor(item);
+        // Path change: drop prior sample AND content chrome. wantAppearanceForItem
+        // merges item->sessionHasCrop / contentHFlip when the store slot is empty;
+        // leaking the previous image's crop into the new soft is the ←/→ stretch.
+        if (pathChanged) {
+            if (item->hasDecodedPixels()) {
+                item->clearDecodedPixels();
+            }
+            item->setSessionCrop(false, QRect());
+            item->setContentHFlip(false);
+            item->setContentVFlip(false);
+            item->setColorAdjustmentsRecord(ColorAdjustments{});
+            item->clearAppliedContentXform();
+        } else if (item->hasDecodedPixels()) {
+            // Same path soft→HQ: clear full so soft can attach.
+            item->clearDecodedPixels();
+        }
         if (!path.isEmpty()) {
             ImageCache::put(path, pixels);
-        }
-        // Clear prior FullSource so soft can attach (canAccept rejects soft over full).
-        if (item->hasDecodedPixels()) {
-            item->clearDecodedPixels();
         }
         // Content pipeline: materialize + applied fingerprint (not bare setPreview).
         installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
