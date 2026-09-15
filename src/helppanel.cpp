@@ -86,7 +86,8 @@ void HelpPanel::clear()
         "why they are unavailable when that reason is known.</p>"
         "<p>Use <b>Keyboard Shortcuts…</b> at the bottom of this panel for a table of "
         "every bound key — select a row for Help, double-click or Enter to run it.</p>"
-        "<p>Coverage is still being filled in for some commands.</p>"));
+        "<p>Guides for Image, Gallery, Workspace, Filmstrip, and Session are under "
+        "<b>Help → Guides</b>.</p>"));
 }
 
 QString HelpPanel::plainActionTitle(const QAction *action)
@@ -164,15 +165,14 @@ QString HelpPanel::bodyHtmlForAction(const QAction *action)
 
     const QString tip = action->statusTip().trimmed();
     if (!tip.isEmpty()) {
-        // When disabled, tip is often the reason — body stays short.
-        if (!action->isEnabled()) {
-            return tr("<p><i>Detailed help for this command has not been written yet.</i></p>");
-        }
-        return tr("<p>%1</p>"
-                  "<p><i>Detailed help for this command has not been written yet.</i></p>")
-            .arg(tip.toHtmlEscaped());
+        // Prefer statusTip as the body when whatsThis was not seeded (dynamic
+        // menu rows, third-party actions). Disabled tips are often the reason.
+        return QStringLiteral("<p>%1</p>").arg(tip.toHtmlEscaped());
     }
-    return tr("<p><i>No help text is available for this command yet.</i></p>");
+    if (!action->isEnabled()) {
+        return tr("<p>This command is not available in the current context.</p>");
+    }
+    return tr("<p>No additional description for this command.</p>");
 }
 
 void HelpPanel::showAction(const QAction *action)

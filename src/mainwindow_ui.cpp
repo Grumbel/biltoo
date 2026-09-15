@@ -1841,6 +1841,92 @@ void MainWindow::populateActionHelpTexts()
         "<p>Re-open the current PDF as a session of native embedded images "
         "(path…//pdfimages → //pdfimage:1..N). Page renders become Image XObject "
         "extracts at native resolution. Requires thumtoo.</p>"));
+
+    // --- Actions that previously fell through to the Help-panel placeholder ---
+    setHelp(m_clearRecentProjectsAct, tr(
+        "<p>Remove every remembered path under <b>Recent Projects</b>. Does not close "
+        "the current session, delete project files on disk, or clear Recent Sessions.</p>"));
+    setHelp(m_undoAct, tr(
+        "<p>Undo the last edit on the image view undo stack (content transforms, "
+        "Workspace placement, crop apply, and similar). Availability follows the stack.</p>"));
+    setHelp(m_redoAct, tr(
+        "<p>Redo the last undone edit on the image view undo stack.</p>"));
+    setHelp(m_selectAllAct, tr(
+        "<p>Select all filmstrip entries (and, in Workspace, all tiles when the view "
+        "owns selection). Useful before Open Selection, Duplicate, or bulk transforms.</p>"));
+    setHelp(m_duplicateAct, tr(
+        "<p>Duplicate the selected session image(s). Each copy gets a new "
+        "<b>SessionImageId</b> so crop, flips, and Workspace pose stay independent of "
+        "the original, even when the path is the same.</p>"
+        "<p>In Gallery the session list grows; in Workspace a new tile is placed with "
+        "an offset.</p>"));
+    setHelp(m_copyWorkspaceAct, tr(
+        "<p>Copy selected Workspace tiles to the clipboard as Biltoo workspace data, "
+        "or copy selected page text when text regions were selected with Shift+drag.</p>"
+        "<p>Does not copy the underlying image files.</p>"));
+    setHelp(m_cutWorkspaceAct, tr(
+        "<p>Remove selected tiles from the Workspace canvas and place them on the "
+        "clipboard. Session membership is kept — the images remain in the filmstrip "
+        "and can be placed again.</p>"));
+    setHelp(m_pasteWorkspaceAct, tr(
+        "<p>Paste Workspace tiles from the clipboard as new session images with "
+        "offset placement. Enabled when the clipboard holds Biltoo workspace data.</p>"));
+    setHelp(m_openSelectionNewWindowAct, tr(
+        "<p>Open the current selection (filmstrip multi-select or Workspace tiles) in "
+        "a new Biltoo window with its own session. The current window is unchanged.</p>"));
+    setHelp(m_raiseAct, tr(
+        "<p>Workspace: raise the selected tile(s) above the next overlapping neighbour "
+        "(z-order). Placement scale and content transforms are unchanged.</p>"));
+    setHelp(m_lowerAct, tr(
+        "<p>Workspace: lower the selected tile(s) below the next overlapping neighbour "
+        "(z-order).</p>"));
+    setHelp(m_opacityUpAct, tr(
+        "<p>Increase opacity of the selected Workspace tile(s). Opacity is a placement "
+        "attribute stored with the session image, not a permanent change to the file.</p>"));
+    setHelp(m_opacityDownAct, tr(
+        "<p>Decrease opacity of the selected Workspace tile(s).</p>"));
+    setHelp(m_opacityResetAct, tr(
+        "<p>Reset opacity of the selected Workspace tile(s) to fully opaque (100%).</p>"));
+    setHelp(m_resetScaleAct, tr(
+        "<p>Reset <b>placement</b> scale of the selected Workspace tile(s) to 100%. "
+        "Does not clear content crop, flips, or quarter-turns (use Reset Content "
+        "Appearance for those).</p>"));
+    setHelp(m_resetRotationAct, tr(
+        "<p>Reset <b>placement</b> rotation of the selected Workspace tile(s) to 0°. "
+        "Content quarter-turns are separate — use the rotate content commands or "
+        "Reset Content Appearance.</p>"));
+    setHelp(m_resetShearAct, tr(
+        "<p>Reset placement shear of the selected Workspace tile(s) to 0.</p>"));
+    setHelp(m_layoutFreeFormAct, tr(
+        "<p>Workspace packing mode: place and move tiles freely. Other layout choices "
+        "on the Workspace Layout panel pack the <b>current selection</b> without leaving "
+        "Workspace; Free Form is the default free-canvas behaviour.</p>"));
+    setHelp(m_galleryLayoutToolbarAct, tr(
+        "<p>Enter <b>Gallery</b> mode using the last chosen Gallery layout. The toolbar "
+        "button’s menu (arrow) picks Grid, Masonry, Flow, Facing, and related layouts "
+        "before or while entering Gallery.</p>"));
+    setHelp(m_slideshowSettingsAct, tr(
+        "<p>Open slideshow settings: interval, transition style, dwell motion "
+        "(Ken Burns–style moves), and slideshow zoom framing. Applies to the next "
+        "slideshow run; interval can also be nudged with Slideshow Faster/Slower.</p>"));
+    setHelp(m_slideshowFasterAct, tr(
+        "<p>Shorten the slideshow dwell interval (faster advances). Works while a "
+        "slideshow is running or as a preference for the next run. Shortcut: <b>]</b>.</p>"));
+    setHelp(m_slideshowSlowerAct, tr(
+        "<p>Lengthen the slideshow dwell interval (slower advances). Shortcut: <b>[</b>.</p>"));
+    setHelp(m_cropThumbnailsAct, tr(
+        "<p>When checked, filmstrip thumbnails are centre-cropped to a square cell. "
+        "When unchecked (default), thumbs letterbox and preserve aspect ratio. "
+        "This is a view preference only — it does not crop session appearance.</p>"));
+    setHelp(m_thumbnailsTopAct, tr(
+        "<p>Dock the filmstrip along the <b>top</b> edge of the window. Position is "
+        "remembered with other UI state.</p>"));
+    setHelp(m_thumbnailsBottomAct, tr(
+        "<p>Dock the filmstrip along the <b>bottom</b> edge of the window.</p>"));
+    setHelp(m_thumbnailsLeftAct, tr(
+        "<p>Dock the filmstrip along the <b>left</b> edge of the window.</p>"));
+    setHelp(m_thumbnailsRightAct, tr(
+        "<p>Dock the filmstrip along the <b>right</b> edge of the window.</p>"));
 }
 
 void MainWindow::showFilmstripHelp()

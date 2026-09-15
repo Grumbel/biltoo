@@ -2,6 +2,28 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-900-action-help-texts.** Seed whatsThis for remaining commands; drop Help placeholder.
+Prior: **899**.
+
+### Change
+- `populateActionHelpTexts`: detailed HTML for undo/redo, Workspace copy/cut/paste,
+  duplicate, opacity/z-order, placement resets, filmstrip dock edges, thumbnail
+  square crop, slideshow faster/slower/settings, gallery toolbar, free-form layout,
+  open selection in new window, clear recent projects.
+- Help panel: idle text no longer claims incomplete coverage; fallback uses
+  statusTip only (no “not been written yet”).
+
+### Apply
+```bash
+git pull /path/to/biltoo-900-action-help-texts.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-899-crop-rotate-verify.** Verify ±90° crop map and free cropRotation vs layoutSize.
 Prior: **898**.
 
