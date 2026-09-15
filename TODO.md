@@ -2,6 +2,28 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-990-displaysurface-soft-host-edge.** Soft upgrade uses host edge > shown.
+Prior: **989**.
+
+### Test failure
+`decide_softEqualWant_largeHost_asyncOnly`: Soft + crop + host 4000. Post-crop
+estimate (~100) < soft stand-in have (512) → no attach; expected AsyncMaterialize.
+
+### Fix
+Soft: if `hostLongEdge > haveDisplayEdge` → AttachFull / AsyncMaterialize
+(raw host edge), not only post-crop estimate.
+
+### Apply
+```bash
+git pull /path/to/biltoo-990-displaysurface-soft-host-edge.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-989-workspace-soft-not-fullsource.** Soft no longer blocks Prefer/Full install.
 Prior: **988**.
 

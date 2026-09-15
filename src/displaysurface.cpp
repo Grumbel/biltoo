@@ -79,10 +79,10 @@ Action decide(const State &s)
     }
 
     // Soft matching want: escalate host / need.
-    // Install any host that improves post-crop display *before* further climb.
-    // PreferCache often lands 1024 while need is 2048+; the old rule only
-    // ScheduleClimb'd and left Soft on screen until Full — Workspace zoom
-    // looked stuck at soft forever.
+    // Prefer a larger host *before* further climb (Prefer 1024 while Soft 512).
+    // Use raw host edge vs shown for Soft: post-crop estimate can be *smaller*
+    // than a soft stand-in (crop soft over-painted), which blocked
+    // ScheduleAsyncMaterialize for large host + crop (decide_softEqualWant_largeHost).
     if (s.attachedKind == AttachedKind::SoftPreview && xformEqual) {
         if (!hasHost) {
             if (s.climbPending || !needUnmet) {
@@ -93,9 +93,7 @@ Action decide(const State &s)
             a.climbNeedEdge = climbNeed;
             return a;
         }
-        const int estSoft =
-            ContentXform::estimatedDisplayLongEdge(s.hostLongEdge, s.want);
-        if (estSoft > s.haveDisplayEdge) {
+        if (s.hostLongEdge > s.haveDisplayEdge) {
             if (s.hostLongEdge > ContentXform::kGuiMaterializeMaxEdge) {
                 a.type = ActionType::ScheduleAsyncMaterialize;
                 return a;
