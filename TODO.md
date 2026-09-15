@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-949-crop-no-soft-demote.** Regular crop: no Soft demotion of identity host; rematerialize frozen.
+Prior: **948**.
+
+### Analysis (regular crop — not colour-specific)
+1. Identity multi-MP crop enter was clamping host to SoftPreview≤2048 (`kCropDraftMaxEdge`). That **is** the low-res draft.
+2. Host upgrades (ladder / PathRaster / rematerialize) then fight that soft sample when freeze has gaps.
+3. **Hole:** `rematerializeItemContent` / `tryRematerializeFromHost` did not check crop freeze — could soft-attach mid-draft.
+4. Climb on wheel/resize (`maybeClimbImageModePixelsForView` / `requestEscalateClimb`) still scheduled during freeze.
+
+### Fix
+- Identity crop enter: attach host FullSource at native size (no Soft≤2048 demote)
+- Gate rematerialize + climb on crop freeze
+
+### Apply
+```bash
+git pull /path/to/biltoo-949-crop-no-soft-demote.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-948-crop-draft-freeze-before-mode.** Crop sample freeze before m_cropMode (root race).
 Prior: **947**.
 

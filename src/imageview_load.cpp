@@ -2138,6 +2138,9 @@ void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
     if (!m_pathRaster || path.isEmpty() || m_slideshowNavHot) {
         return;
     }
+    if (isCropDraftLockedPath(path)) {
+        return;
+    }
     const int edge = cappedDisplayEdgeForPath(
         path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
     biltooLoadDbg("escalateClimb(service) path=%s edge=%d",
@@ -2369,6 +2372,10 @@ void ImageView::maybeClimbImageModePixelsForView()
         return;
     }
     const QString path = item->path();
+    // Crop draft freezes the sample — do not schedule soft↔full climb.
+    if (isCropDraftLockedPath(path)) {
+        return;
+    }
     const int need = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
     const int have = item->displayPixelLongEdge();
     if (have <= 0) {

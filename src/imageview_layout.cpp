@@ -480,6 +480,10 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
     if (!item) {
         return;
     }
+    // Crop draft owns the live sample — pure rematerialize must not soft↔full.
+    if (isCropDraftLockedItem(item)) {
+        return;
+    }
     if (tryRematerializeFromHost(item, want)) {
         return;
     }
@@ -562,6 +566,9 @@ void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
 bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want)
 {
     if (!item) {
+        return false;
+    }
+    if (isCropDraftLockedItem(item)) {
         return false;
     }
     const QString path = item->path();

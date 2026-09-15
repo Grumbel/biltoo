@@ -616,21 +616,25 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     item->clearAppliedContentXform();
 
     // Interactive crop draft: orient-only full frame (never prior crop bake).
-    // Geom bake on GUI only ≤ kGuiMaterializeMaxEdge; colour-only grades a
-    // ≤2048 sample without the 512 materialize clamp.
+    // Identity (no orient/colour bake): attach the host as FullSource at native
+    // resolution. Clamping multi-MP identity to SoftPreview≤2048 was wrong —
+    // it manufactured a low-res draft that then fought host upgrades (soft↔full).
+    // Geom bake on GUI only ≤ kGuiMaterializeMaxEdge (ASSERT_NOT_GUI_THREAD).
+    // Colour-only: grade on host (or ≤2048 stand-in if host is huge) once.
     QImage sample = full;
     SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
-    constexpr int kCropDraftMaxEdge = 2048;
+    constexpr int kColorOnlyDraftMaxEdge = 2048;
     if (needGeomBake
         && ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
         sample = ImageCache::clampToMaxEdge(
             sample, ContentXform::kGuiMaterializeMaxEdge);
         kind = SessionAppearance::PixelKind::SoftPreview;
-    } else if (!needGeomBake
-               && ImageCache::longEdge(sample) > kCropDraftMaxEdge) {
-        sample = ImageCache::clampToMaxEdge(sample, kCropDraftMaxEdge);
+    } else if (!needGeomBake && needColor
+               && ImageCache::longEdge(sample) > kColorOnlyDraftMaxEdge) {
+        sample = ImageCache::clampToMaxEdge(sample, kColorOnlyDraftMaxEdge);
         kind = SessionAppearance::PixelKind::SoftPreview;
     }
+    // else identity: keep host size + FullSource (no artificial Soft demotion)
 
     QImage display;
     if (unorientedSource && needGeomBake) {
