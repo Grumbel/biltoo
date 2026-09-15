@@ -39,6 +39,10 @@ private slots:
     void scaleCropRect_nativeToSoft();
     void scaleCropRect_softToNative();
     void scaleCropRect_identity();
+    void mapCropRect_oneStepMatchesTrueMatrix();
+    void mapCropThrough_updatesSourceSizeAndRotation();
+    void layoutSize_cropThenMappedRotate();
+    void layoutSize_staleCropSourceOrientation();
 };
 
 /** Must match SessionAppearance::scaleCropRect (sessionappearance.cpp). */
@@ -314,5 +318,66 @@ void ContentXformTest::scaleCropRect_identity()
     QCOMPARE(scaleCropRectMirror(crop, QSize(400, 300), QSize(400, 300)), crop);
 }
 
+void ContentXformTest::mapCropRect_oneStepMatchesTrueMatrix()
+{
+    // QImage::trueMatrix(rotate(90), W, H): (x,y,w,h) → (H-y-h, x, h, w).
+    QSize space(4000, 3000);
+    const QRect crop(100, 200, 800, 600);
+    const QRect mapped =
+        ContentXform::mapCropRectThroughContentRotate90(crop, space, 1);
+    QCOMPARE(space, QSize(3000, 4000));
+    QCOMPARE(mapped, QRect(3000 - 200 - 600, 100, 600, 800)); // (2200, 100, 600, 800)
+    QCOMPARE(mapped.size(), QSize(600, 800));
+}
+
+void ContentXformTest::mapCropThrough_updatesSourceSizeAndRotation()
+{
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(0, 0, 2000, 1000);
+    x.cropSourceSize = QSize(4000, 3000);
+    x.cropRotation = 0.0;
+    ContentXform::mapCropThroughContentRotate90(x, 1);
+    QCOMPARE(x.cropSourceSize, QSize(3000, 4000));
+    QCOMPARE(x.cropRect.size(), QSize(1000, 2000));
+    QCOMPARE(x.cropRotation, -90.0);
+
+    ContentXform::mapCropThroughContentRotate90(x, 1);
+    QCOMPARE(x.cropSourceSize, QSize(4000, 3000));
+    QCOMPARE(x.cropRect.size(), QSize(2000, 1000));
+    QCOMPARE(x.cropRotation, -180.0);
+}
+
+void ContentXformTest::layoutSize_cropThenMappedRotate()
+{
+    // Correct path: crop at turns=0, map crop through +1, then layoutSize.
+    const QSize native(4000, 3000);
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(100, 200, 800, 600);
+    x.cropSourceSize = native;
+    ContentXform::mapCropThroughContentRotate90(x, 1);
+    x.quarterTurns = 1;
+    QCOMPARE(ContentXform::layoutSize(native, x), QSize(600, 800));
+}
+
+void ContentXformTest::layoutSize_staleCropSourceOrientation()
+{
+    // Bug path: turns=1 but crop still recorded against unoriented native
+    // (mapCrop was skipped). layoutSize must not linear-scale — that only
+    // yields the correct box size when crop aspect == full aspect.
+    const QSize native(4000, 3000);
+    ContentXform::Value x;
+    x.quarterTurns = 1;
+    x.hasCrop = true;
+    // Non-matching aspect crop (2:1 on a 4:3 frame).
+    x.cropRect = QRect(0, 0, 2000, 1000);
+    x.cropSourceSize = native; // stale: should have been 3000×4000 after +1
+    // After proper map: size becomes 1000×2000. Linear scale would give
+    // 2000*(3000/4000)×1000*(4000/3000) = 1500×1333 — wrong.
+    QCOMPARE(ContentXform::layoutSize(native, x), QSize(1000, 2000));
+}
+
 QTEST_MAIN(ContentXformTest)
 #include "contentxform_test.moc"
+

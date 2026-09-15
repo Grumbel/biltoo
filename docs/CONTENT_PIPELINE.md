@@ -31,11 +31,21 @@ ImageItem
 ```text
 oriented = swap W/H if odd quarter-turns, else native
 if want.hasCrop && cropRect non-empty:
-    scale cropRect from cropSourceSize → oriented space
+    basis = cropSourceSize (or oriented)
+    if basis orientation class ≠ oriented:
+        // Stale crop (turns changed without mapCropThrough*): map through
+        // one 90° step matching QImage::trueMatrix — never linear-scale
+        // across an orientation change (wrong size unless crop aspect == full).
+        map crop + basis through ContentXform::mapCropRectThroughContentRotate90
+    scale cropRect from basis → oriented space (resolution only)
     return crop size          // never full-frame when cropped
 else:
     return oriented
 ```
+
+After a content ±90°, callers must run `mapCropThroughContentRotate90` so
+cropRect / cropSourceSize stay in the new post-orient space. layoutSize's
+orientation-mismatch path is defense in depth.
 
 | Input | Result |
 |-------|--------|
@@ -43,8 +53,10 @@ else:
 | No crop, odd turns | swapped `native` |
 | Crop 800×600 on 4000×3000 | `800×600` |
 | Soft 400×300 + crop recorded at 4000×3000 | scaled crop size |
+| turns=1, crop still on native 4000×3000 (stale) | mapped crop size (not linear scale) |
 
-**Bug class avoided:** cropped pixels painted into a full-frame intrinsic → stretch.
+**Bug class avoided:** cropped pixels painted into a full-frame intrinsic → stretch;
+rotate after crop with stale `cropSourceSize` linear-scaled to wrong intrinsic.
 
 `native` must be **file / probe size**, not an already-oriented display sample
 (double-swap). Tests: `tests/contentxform_test.cpp`.

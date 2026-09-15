@@ -68,40 +68,13 @@ void mapCropThroughContentFlip(WorkspaceItemState &state, bool horizontal, bool 
 
 void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns)
 {
-    if (!state.hasCrop || state.cropRect.isEmpty() || quarterTurns == 0) {
-        return;
-    }
-    quarterTurns %= 4;
-    if (quarterTurns < 0) {
-        quarterTurns += 4;
-    }
-    if (quarterTurns == 0) {
-        return;
-    }
-    QSize sz = state.cropSourceSize;
-    if (!sz.isValid() || sz.width() < 1 || sz.height() < 1) {
-        sz = QSize(state.cropRect.x() + state.cropRect.width(),
-                   state.cropRect.y() + state.cropRect.height());
-    }
-    QRect r = state.cropRect.normalized();
-    // Same matrix as bakeRotate90 / mapSourceRectToContentDisplay (absolute steps).
-    QTransform rot;
-    rot.rotate(90.0 * quarterTurns);
-    const QTransform mat = QImage::trueMatrix(rot, sz.width(), sz.height());
-    r = mat.mapRect(QRectF(r)).toRect().normalized();
-    if (r.width() < 1) {
-        r.setWidth(1);
-    }
-    if (r.height() < 1) {
-        r.setHeight(1);
-    }
-    if ((quarterTurns % 2) != 0) {
-        sz = QSize(sz.height(), sz.width());
-    }
-    state.cropRotation -= 90.0 * quarterTurns;
-    normalizeCropRotation(state.cropRotation);
-    state.cropRect = r;
-    state.cropSourceSize = sz;
+    // Pure geometry lives in ContentXform (same matrix as QImage::trueMatrix).
+    ContentXform::Value x = ContentXform::Value::fromState(state);
+    ContentXform::mapCropThroughContentRotate90(x, quarterTurns);
+    state.hasCrop = x.hasCrop;
+    state.cropRect = x.cropRect;
+    state.cropSourceSize = x.cropSourceSize;
+    state.cropRotation = x.cropRotation;
 }
 
 bool contentSwapsAspect(const WorkspaceItemState &state)

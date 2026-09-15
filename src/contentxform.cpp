@@ -77,6 +77,93 @@ bool equal(const Value &a, const Value &b)
     return true;
 }
 
+QRect mapCropRectThroughContentRotate90(QRect crop, QSize &space, int quarterTurns)
+{
+    quarterTurns = normalizeQuarterTurns(quarterTurns);
+    if (quarterTurns == 0 || crop.isEmpty()) {
+        return crop.normalized();
+    }
+    if (space.width() < 1 || space.height() < 1) {
+        // Degenerate canvas: still swap axes of the rect for odd turns.
+        QRect r = crop.normalized();
+        if ((quarterTurns % 2) != 0) {
+            r = QRect(r.y(), r.x(), r.height(), r.width());
+            space = QSize(space.height(), space.width());
+        }
+        return r;
+    }
+    QRect r = crop.normalized();
+    // Match QImage::trueMatrix(QTransform::rotate(90*k), W, H):
+    // one +90° step: (x,y,w,h) on (W,H) → (H-y-h, x, h, w) on (H,W).
+    for (int i = 0; i < quarterTurns; ++i) {
+        const int W = space.width();
+        const int H = space.height();
+        r = QRect(H - r.y() - r.height(), r.x(), r.height(), r.width());
+        if (r.width() < 1) {
+            r.setWidth(1);
+        }
+        if (r.height() < 1) {
+            r.setHeight(1);
+        }
+        space = QSize(H, W);
+    }
+    return r.normalized();
+}
+
+void mapCropThroughContentRotate90(Value &x, int quarterTurns)
+{
+    if (!x.hasCrop || x.cropRect.isEmpty() || quarterTurns == 0) {
+        return;
+    }
+    quarterTurns = normalizeQuarterTurns(quarterTurns);
+    if (quarterTurns == 0) {
+        return;
+    }
+    QSize sz = x.cropSourceSize;
+    if (!sz.isValid() || sz.width() < 1 || sz.height() < 1) {
+        const QRect r = x.cropRect.normalized();
+        sz = QSize(r.x() + r.width(), r.y() + r.height());
+    }
+    x.cropRect = mapCropRectThroughContentRotate90(x.cropRect, sz, quarterTurns);
+    x.cropSourceSize = sz;
+    x.cropRotation -= 90.0 * quarterTurns;
+    // Normalize cropRotation into (-180, 180].
+    while (x.cropRotation > 180.0) {
+        x.cropRotation -= 360.0;
+    }
+    while (x.cropRotation <= -180.0) {
+        x.cropRotation += 360.0;
+    }
+}
+
+/** True when both sizes share landscape/portrait class (or either is square). */
+static bool sameOrientationClass(const QSize &a, const QSize &b)
+{
+    if (a.width() < 1 || a.height() < 1 || b.width() < 1 || b.height() < 1) {
+        return true;
+    }
+    if (a.width() == a.height() || b.width() == b.height()) {
+        return true;
+    }
+    return (a.width() > a.height()) == (b.width() > b.height());
+}
+
+static QRect scaleCropRectLocal(const QRect &crop, const QSize &recorded, const QSize &live)
+{
+    if (crop.isEmpty() || live.width() < 1 || live.height() < 1) {
+        return {};
+    }
+    if (!recorded.isValid() || recorded.width() < 1 || recorded.height() < 1
+        || recorded == live) {
+        return crop;
+    }
+    return QRect(
+        qRound(crop.x() * double(live.width()) / double(recorded.width())),
+        qRound(crop.y() * double(live.height()) / double(recorded.height())),
+        qMax(1, qRound(crop.width() * double(live.width()) / double(recorded.width()))),
+        qMax(1, qRound(crop.height() * double(live.height()) / double(recorded.height()))));
+}
+
 QSize layoutSize(const QSize &native, const Value &x)
 {
     if (!isPositiveSize(native)) {
@@ -88,19 +175,27 @@ QSize layoutSize(const QSize &native, const Value &x)
     if (!x.hasCrop || x.cropRect.isEmpty()) {
         return oriented;
     }
-    // Scale recorded crop to oriented size (same rule as SessionAppearance::scaleCropRect).
-    const QSize basis = (x.cropSourceSize.isValid() && x.cropSourceSize.width() > 0
-                         && x.cropSourceSize.height() > 0)
-                            ? x.cropSourceSize
-                            : oriented;
+    QSize basis = (x.cropSourceSize.isValid() && x.cropSourceSize.width() > 0
+                   && x.cropSourceSize.height() > 0)
+                      ? x.cropSourceSize
+                      : oriented;
     QRect crop = x.cropRect.normalized();
+
+    // Orientation mismatch: crop was recorded in a space whose axes do not
+    // match the current oriented frame (e.g. turns bumped without mapping the
+    // crop). Linear scale alone is wrong unless crop aspect == full aspect.
+    // Map through one 90° step (same matrix as materialize / bakeRotate90).
+    if (!sameOrientationClass(basis, oriented)) {
+        crop = mapCropRectThroughContentRotate90(crop, basis, 1);
+        // If still mismatched (shouldn't happen for axis-aligned sizes), try
+        // one more step so basis matches oriented class.
+        if (!sameOrientationClass(basis, oriented)) {
+            crop = mapCropRectThroughContentRotate90(crop, basis, 1);
+        }
+    }
+
     if (basis != oriented) {
-        crop = QRect(
-            qRound(crop.x() * double(oriented.width()) / double(basis.width())),
-            qRound(crop.y() * double(oriented.height()) / double(basis.height())),
-            qMax(1, qRound(crop.width() * double(oriented.width()) / double(basis.width()))),
-            qMax(1, qRound(crop.height() * double(oriented.height())
-                                         / double(basis.height()))));
+        crop = scaleCropRectLocal(crop, basis, oriented);
     }
     if (crop.width() < 1 || crop.height() < 1) {
         return oriented;

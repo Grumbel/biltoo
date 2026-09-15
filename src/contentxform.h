@@ -19,6 +19,12 @@
  *
  * Pixel pipeline order (see SessionAppearance::materializeDisplay):
  *   flips → quarter turns → crop → color grade
+ *
+ * cropRect lives in **post-orient** full-frame space (after flips + turns).
+ * cropSourceSize is the size of that space when the rect was recorded.
+ * When quarterTurns change, callers must map crop through
+ * mapCropRectThroughContentRotate90 (or map the whole Value) so cropRect and
+ * cropSourceSize stay in the new post-orient space.
  */
 namespace ContentXform {
 
@@ -44,10 +50,33 @@ bool swapsAspect(const Value &x);
 bool equal(const Value &a, const Value &b);
 
 /**
+ * Map an axis-aligned rect through the same 90° steps QImage uses
+ * (QTransform::rotate(90*turns) + QImage::trueMatrix on @p space).
+ * Returns the rect in the destination space; @p space is updated to the
+ * post-transform size (axes swap on odd turns).
+ *
+ * One step of +1 (CCW in QTransform / image Y-down):
+ *   (x, y, w, h) on (W, H) → (H - y - h, x, h, w) on (H, W)
+ */
+QRect mapCropRectThroughContentRotate90(QRect crop, QSize &space, int quarterTurns);
+
+/**
+ * Map crop geometry on a Value through content ±90° steps (same as above).
+ * Updates cropRect, cropSourceSize, and cropRotation. No-op if no crop or 0 turns.
+ */
+void mapCropThroughContentRotate90(Value &x, int quarterTurns);
+
+/**
  * File-native size → display intrinsic after content turns and crop.
  * Orient full frame, then crop box in post-orient space (matches
  * materializeDisplay). Cropped want must not return full-frame size
  * (that stretched pixels into the wrong aspect). See CONTENT_PIPELINE.md.
+ *
+ * If cropSourceSize is orientation-mismatched vs the oriented frame (stale
+ * record that was not mapped through a later rotate), the crop is first
+ * mapped through 90° steps into the oriented orientation, then resolution-
+ * scaled. Linear scale alone is wrong for orientation change except when
+ * crop aspect equals the full frame.
  */
 QSize layoutSize(const QSize &native, const Value &x);
 QSize layoutSize(const QSize &native, const WorkspaceItemState &state);

@@ -2,6 +2,40 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-898-layoutsize-crop-orient.** ContentXform layoutSize maps crop across orientation mismatch.
+Prior: **897**.
+
+### Bug
+`layoutSize` scaled cropRect from `cropSourceSize` → oriented size with a pure
+linear scale. When `cropSourceSize` was still the *unoriented* frame while
+`quarterTurns` was odd (stale after rotate without map, or any orient mismatch),
+that scale only yields the correct box size if crop aspect equals the full
+frame. Non-matching crops got the wrong intrinsic → stretch.
+
+### Fix
+- Pure `mapCropRectThroughContentRotate90` / `mapCropThroughContentRotate90` in
+  ContentXform (same matrix as `QImage::trueMatrix(rotate(90*k), W, H)`).
+- `layoutSize`: if basis orientation class ≠ oriented, map crop through 90°
+  first; then resolution-scale only.
+- `SessionAppearance::mapCropThroughContentRotate90` delegates to ContentXform.
+- Tests: map one-step, map chain, mapped rotate layout, stale-orient layout.
+
+### Apply
+```bash
+git pull /path/to/biltoo-898-layoutsize-crop-orient.bundle HEAD
+```
+
+### Run tests
+```bash
+ctest -R contentxform --output-on-failure
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-897-test-link.** Drop sessionappearance-crop test that linked ImageItem-less TU.
 Prior: **896**.
 
