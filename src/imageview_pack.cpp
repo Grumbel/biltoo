@@ -748,8 +748,7 @@ void ImageView::gallerySoftWatchdogTick()
         }
         GallerySoftState &st = m_gallerySoft[path];
 
-        // Install policy: DisplaySurface::decide only (docs/DISPLAY_SURFACE.md).
-        const int shown = item->displayPixelLongEdge();
+        // Install policy via bound surface + controller evaluate.
         int target = st.want > 0 ? st.want
             : galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
         {
@@ -762,28 +761,25 @@ void ImageView::gallerySoftWatchdogTick()
         const bool climbPending =
             st.inflight > 0
             || (m_pathRaster && m_pathRaster->isClimbPending(path));
-
-        DisplaySurface::State ds;
-        ds.needEdge = target;
-        ds.haveDisplayEdge = shown;
-        ds.hostLongEdge = DisplayQuality::hostLongEdge(path);
-        ds.climbPending = climbPending;
-        ds.want = ContentXform::Value::fromState(
-            wantAppearanceForItem(item, item->sessionId()));
-        if (item->hasDisplayPixels()) {
-            ds.haveDisplayEdge = item->displayPixelLongEdge();
-            ds.attachedKind = item->hasDecodedPixels()
-                ? DisplaySurface::AttachedKind::FullSource
-                : DisplaySurface::AttachedKind::SoftPreview;
-            if (item->hasAppliedContentXform()) {
-                ds.applied = item->appliedContentXform();
-            }
+        const int hostEdge = DisplayQuality::hostLongEdge(path);
+        syncItemDisplaySurface(item, hostEdge, climbPending);
+        // Gallery soft tick may need a higher need than viewport-derived state.
+        if (item->displaySurfaceId() != 0) {
+            const auto sid = static_cast<DisplaySurface::SurfaceId>(
+                item->displaySurfaceId());
+            m_displaySurfaces.setNeed(sid, target);
         }
-        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        const DisplaySurface::Action act =
+            (item->displaySurfaceId() != 0)
+                ? m_displaySurfaces.evaluate(
+                      static_cast<DisplaySurface::SurfaceId>(
+                          item->displaySurfaceId()))
+                : DisplaySurface::decide(
+                      displaySurfaceStateForItem(item, hostEdge, climbPending));
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
-            if (ds.hostLongEdge > 0) {
-                st.have = qMax(st.have, ds.hostLongEdge);
+            if (hostEdge > 0) {
+                st.have = qMax(st.have, hostEdge);
             }
             st.weakSinceMs = 0;
         } else if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
@@ -796,7 +792,7 @@ void ImageView::gallerySoftWatchdogTick()
                 if (m_scene) {
                     m_scene->update(item->sceneBoundingRect());
                 }
-                st.have = qMax(st.have, ds.hostLongEdge);
+                st.have = qMax(st.have, hostEdge);
                 ++repaired;
             }
             st.weakSinceMs = 0;
@@ -804,8 +800,8 @@ void ImageView::gallerySoftWatchdogTick()
             scheduleAsyncHostRematerialize(
                 path, item->sessionId(),
                 wantAppearanceForItem(item, item->sessionId()));
-            if (ds.hostLongEdge > 0) {
-                st.have = qMax(st.have, ds.hostLongEdge);
+            if (hostEdge > 0) {
+                st.have = qMax(st.have, hostEdge);
             }
             st.weakSinceMs = 0;
         } else if (act.type == AT::ScheduleClimb) {

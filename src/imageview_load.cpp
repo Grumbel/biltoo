@@ -2752,3 +2752,28 @@ void ImageView::unregisterItemDisplaySurface(ImageItem *item)
     m_displaySurfaces.unbind(static_cast<DisplaySurface::SurfaceId>(sid));
     item->setDisplaySurfaceId(0);
 }
+
+void ImageView::syncItemDisplaySurface(ImageItem *item, int hostLongEdge,
+                                       bool climbPending)
+{
+    if (!item) {
+        return;
+    }
+    if (item->displaySurfaceId() == 0) {
+        registerItemDisplaySurface(item);
+    }
+    const DisplaySurface::SurfaceId id =
+        static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
+    if (id == DisplaySurface::kInvalidSurfaceId) {
+        return;
+    }
+    const DisplaySurface::State ds =
+        displaySurfaceStateForItem(item, hostLongEdge, climbPending);
+    m_displaySurfaces.setNeed(id, ds.needEdge);
+    m_displaySurfaces.setFrozen(id, ds.frozen);
+    m_displaySurfaces.setHostLongEdge(id, ds.hostLongEdge);
+    m_displaySurfaces.setClimbPending(id, ds.climbPending);
+    m_displaySurfaces.setWant(id, ds.want);
+    m_displaySurfaces.setAttached(id, ds.attachedKind, ds.haveDisplayEdge,
+                                  ds.applied);
+}

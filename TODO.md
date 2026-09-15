@@ -2,6 +2,25 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-965-gallery-surface-evaluate.** Gallery soft tick uses controller evaluate.
+Prior: **964**.
+
+### Change
+- `syncItemDisplaySurface` — push item state into bound surface (register if needed).
+- Gallery soft recovery: sync bound surface, setNeed(target), `evaluate(id)` instead
+  of free-standing `decide(State)`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-965-gallery-surface-evaluate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-964-item-surface-id-lifecycle.** Canvas items bind DisplaySurface ids.
 Prior: **963**.
 

@@ -1492,6 +1492,9 @@ private:
     /** Bind/unbind DisplaySurface for a canvas item (Gallery/Workspace/Image). */
     void registerItemDisplaySurface(ImageItem *item);
     void unregisterItemDisplaySurface(ImageItem *item);
+    /** Push live item state into the bound surface (register if needed). */
+    void syncItemDisplaySurface(ImageItem *item, int hostLongEdge = -1,
+                                bool climbPending = false);
     /** Ladder step for item cell size in device pixels. */
     int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = true) const;
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
