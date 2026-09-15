@@ -7,16 +7,10 @@
 #include <QString>
 
 /**
- * Host-side display quality helpers (logging / tier labels).
+ * Host-side display quality helpers (edge / tier only).
  *
- * **Install policy** lives in DisplaySurface::decide (docs/DISPLAY_SURFACE.md).
- * Do not drive Attach / soft demote from checkSurface host-vs-shown — that
- * compared pre-crop host edge to post-crop display and caused the 1s pulse.
- *
- * Remaining roles: tierOf, hostLongEdge, kLqipMaxEdge / kSoftMaxEdge,
- * isStrictUpgrade (edge-only, no content crop — not for install policy).
- * checkSurface / reportViolation are legacy; no biltoo install path calls them
- * after the DisplaySurface migration (tips 953–960).
+ * **Install policy** is DisplaySurface::decide (docs/DISPLAY_SURFACE.md).
+ * Do not reintroduce checkSurface host-vs-shown install drivers.
  */
 namespace DisplayQuality {
 
@@ -36,61 +30,11 @@ enum class Tier {
 
 Tier tierOf(int longEdge);
 
-/** True when incoming is a meaningful upgrade over what is shown. */
+/** True when incoming is a meaningful upgrade over what is shown (edge-only). */
 bool isStrictUpgrade(int shownLongEdge, int incomingLongEdge);
 
 /** ImageCache long edge for path, or 0. */
 int hostLongEdge(const QString &path);
-
-/**
- * Result of comparing shown pixels to host cache and the surface target edge.
- *
- * Ok              — shown is adequate relative to host and target, or climb is
- *                   already pending.
- * InstallHostBetter — shown is still below target and host holds a stricter
- *                   sample; surface should install it (not when shown already
- *                   meets target).
- * ScheduleClimb   — shown is below target and host has nothing better; climb
- *                   must be scheduled (or already pending). Not a contract
- *                   break — do not log as a quality violation.
- * StuckWeak       — shown is still LQIP-class (or blank) while target ≥ soft,
- *                   host may or may not have better; treat as a contract break
- *                   if climbPending is false for longer than the watchdog grace.
- */
-enum class Verdict {
-    Ok = 0,
-    InstallHostBetter,
-    ScheduleClimb,
-    StuckWeak
-};
-
-struct Check {
-    Verdict verdict = Verdict::Ok;
-    int shownEdge = 0;
-    int hostEdge = 0;
-    int targetEdge = 0;
-    Tier shownTier = Tier::Blank;
-    Tier hostTier = Tier::Blank;
-};
-
-/**
- * Evaluate one surface binding.
- * @param climbPending  true if soft/PreferCache/full work is already in flight
- *                      for this path (host or PathRaster).
- */
-Check checkSurface(const QString &path, int shownLongEdge, int targetLongEdge,
-                   bool climbPending);
-
-/**
- * Report a contract break. Debug builds assert on StuckWeak / InstallHostBetter
- * when @p assertHard is true. Always rate-limited qWarning in all builds.
- */
-void reportViolation(const char *surface, const QString &path, const Check &check,
-                     bool assertHard = false);
-
-/** Human label for HUD / logs. */
-QString verdictLabel(Verdict v);
-QString tierLabel(Tier t);
 
 } // namespace DisplayQuality
 

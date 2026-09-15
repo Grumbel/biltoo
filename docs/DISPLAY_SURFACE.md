@@ -258,6 +258,7 @@ Keep on ImageView: scene, modes, input, pack geometry, crop chrome, paint.
 | **E–F** | Gallery / filmstrip via decide | done (957, 959) |
 | **G** | Workspace delivery + slideshow phases | done (958, 960) |
 | **H** | No install path calls checkSurface | done (961) |
+| **H2** | Delete unused checkSurface / reportViolation | done (962) |
 
 **Residual:** per-tile `SurfaceId` bind/unbind lifecycle (optional); ImageView
 still owns materialize/attach helpers called *after* decide.

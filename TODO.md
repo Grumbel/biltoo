@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-962-drop-dead-displayquality-install.** Remove unused checkSurface API.
+Prior: **961**.
+
+### Change
+- `displayquality.h` / `.cpp`: deleted `Verdict`, `Check`, `checkSurface`,
+  `reportViolation`, `verdictLabel`, and rate-limit helpers. Kept edge helpers
+  only (`tierOf`, `isStrictUpgrade`, `hostLongEdge`, LQIP/soft ceilings).
+- Install policy remains solely `DisplaySurface::decide`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-962-drop-dead-displayquality-install.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-961-display-surface-migration-status.** Decide migration complete; DQ install dead.
 Prior: **960**.
 
