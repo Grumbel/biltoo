@@ -599,7 +599,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
         }
         if (prior.width() >= 1 && prior.height() >= 1) {
             const QPointF off = item->offset();
-            // Do not mirror for contentHFlip/VFlip: applyContentBakes already
+            // Do not mirror for contentHFlip/VFlip: content bake / materialize already
             // put pixels in content-oriented space and the stored rect is in
             // that space. Re-mirroring shifted the frame on re-entry.
             m_cropRect = QRectF(prior.x() + off.x(), prior.y() + off.y(),

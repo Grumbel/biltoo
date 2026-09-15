@@ -232,8 +232,8 @@ void ImageItem::bakeRotate90(int quarterTurns)
         return;
     }
     // Gallery soft tiles often have only m_preview (m_source null). Bake must
-    // still transform displayed pixels so content rotate is visible before a
-    // full decode arrives; applyContentBakes will re-bake the full source later.
+    // still transform displayed pixels so content rotate is visible before
+    // rematerializeItemContent / installDisplayPixels replaces from host.
     if (m_source.isNull() && m_preview.isNull()) {
         return;
     }
@@ -269,8 +269,8 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
         return;
     }
     // Soft Gallery tiles: m_source is empty, paint draws m_preview. Transform
-    // both so the user sees the flip immediately; full decode re-applies from
-    // appearance content flags via applyContentBakes.
+    // both so the user sees the flip immediately; host rematerialize / install
+    // later replaces from unoriented ImageCache.
     if (m_source.isNull() && m_preview.isNull()) {
         return;
     }

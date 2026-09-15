@@ -323,49 +323,6 @@ void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState
     m_appearance.set(id, state);
 }
 
-void ImageView::applyContentBakes(ImageItem *item, const WorkspaceItemState &state)
-{
-    if (!item) {
-        return;
-    }
-    // Prefer pure ContentXform materialize (SessionAppearance::applyContentToItem).
-    // That path is GUI-safe ≤ kGuiMaterializeMaxEdge; multi-MP only updates
-    // chrome/applied flags (caller should scheduleAsyncHostRematerialize).
-    //
-    // Last resort when the item already holds a multi-MP *raw* host sample and
-    // the caller needs pixels now (crop enter): incremental bakeFlip/bakeRotate90
-    // on that sample. Do not invent a second matrix — same flip→turns order as
-    // materializeDisplay.
-    QImage raw = item->sourceImage();
-    if (raw.isNull()) {
-        raw = item->previewImage();
-    }
-    const int edge = raw.isNull() ? 0 : qMax(raw.width(), raw.height());
-    if (edge > 0 && edge <= ContentXform::kGuiMaterializeMaxEdge) {
-        SessionAppearance::applyContentToItem(item, state);
-        return;
-    }
-    // Multi-MP last resort: incremental orient only. Do not claim full want
-    // (including crop) as applied — crop needs pure materialize from host.
-    if (state.contentHFlip || state.contentVFlip) {
-        item->bakeFlip(state.contentHFlip, state.contentVFlip);
-    }
-    if (state.contentQuarterTurns != 0) {
-        item->bakeRotate90(state.contentQuarterTurns);
-    }
-    item->setContentHFlip(state.contentHFlip);
-    item->setContentVFlip(state.contentVFlip);
-    WorkspaceItemState orientOnly = state;
-    orientOnly.hasCrop = false;
-    orientOnly.cropRect = {};
-    orientOnly.cropSourceSize = {};
-    orientOnly.cropRotation = 0.0;
-    item->setAppliedContentXform(ContentXform::Value::fromState(orientOnly));
-    if (state.hasCrop && !state.cropRect.isEmpty()) {
-        scheduleAsyncHostRematerialize(item->path(), item->sessionId(), state);
-    }
-}
-
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
 {
     // ContentXform ground truth: applied fingerprint > appearance store >

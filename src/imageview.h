@@ -1041,8 +1041,6 @@ public:
                                 const QImage &beforeSrc, const QImage &afterSrc,
                                 const WorkspaceItemState &before,
                                 const WorkspaceItemState &after);
-    /** Apply contentQuarterTurns / contentHFlip / contentVFlip after decode+crop. */
-    void applyContentBakes(ImageItem *item, const WorkspaceItemState &state);
 
     /**
      * Single gate for attaching *raw* decode pixels to a session image.

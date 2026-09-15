@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-932-remove-dead-applyContentBakes.** Remove unused applyContentBakes; install gate is sole path.
+Prior: **931**.
+
+### Change
+`applyContentBakes` had no callers after the install-gate work. Removed definition
+and declaration. Live rotate/flip still use incremental bakeFlip/bakeRotate90 +
+async pure rematerialize. Install/restore use installDisplayPixels /
+rematerializeItemContent only.
+
+### Apply
+```bash
+git pull /path/to/biltoo-932-remove-dead-applyContentBakes.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-931-workspace-grade-rematerialize.** Workspace grade-only restore uses rematerializeItemContent.
 Prior: **930**.
 
