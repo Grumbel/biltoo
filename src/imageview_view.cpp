@@ -337,12 +337,12 @@ void ImageView::zoomReset()
 {
     m_fitMode = false;
     m_fillMode = false;
-    if (isGalleryMode()) {
-        applyGalleryFraming(StickyZoomKind::Actual);
-        return;
-    }
     if (isMultiItemMode()) {
+        // Gallery/Workspace: one-shot identity view (sticky zoom is Image-only).
         resetTransform();
+        if (isGalleryMode()) {
+            updateGalleryDecodeWindow();
+        }
         emit statusChanged();
         return;
     }
@@ -376,7 +376,18 @@ void ImageView::zoomFit()
     m_fitMode = true;
     m_fillMode = false;
     if (isGalleryMode()) {
-        applyGalleryFraming(StickyZoomKind::Fit);
+        // Fit the packed gallery into the viewport (whole pack). Sticky zoom
+        // is Image-mode only — Gallery uses one-shot framing + ensureVisible.
+        if (!m_items.isEmpty()) {
+            const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
+            if (bounds.isValid() && !bounds.isEmpty()) {
+                m_scene->setSceneRect(bounds);
+                fitInView(bounds, Qt::KeepAspectRatio);
+            }
+            updateGalleryDecodeWindow();
+            refreshScrollBarGeometry();
+            emit statusChanged();
+        }
         return;
     }
     if (isWorkspaceMode()) {
@@ -405,7 +416,16 @@ void ImageView::zoomFill()
     m_fitMode = true;
     m_fillMode = true;
     if (isGalleryMode()) {
-        applyGalleryFraming(StickyZoomKind::Fill);
+        if (!m_items.isEmpty()) {
+            const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
+            if (bounds.isValid() && !bounds.isEmpty()) {
+                m_scene->setSceneRect(bounds);
+                fitInView(bounds, Qt::KeepAspectRatioByExpanding);
+            }
+            updateGalleryDecodeWindow();
+            refreshScrollBarGeometry();
+            emit statusChanged();
+        }
         return;
     }
     if (isWorkspaceMode()) {
@@ -427,122 +447,6 @@ void ImageView::zoomFill()
         refreshScrollBarGeometry();
         emit statusChanged();
     }
-}
-
-QList<ImageItem *> ImageView::selectedImageItems() const
-{
-    QList<ImageItem *> out;
-    if (!m_scene) {
-        return out;
-    }
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            out.append(ii);
-        }
-    }
-    return out;
-}
-
-QRectF ImageView::galleryZoomTargetBounds() const
-{
-    if (!m_scene) {
-        return {};
-    }
-    const QList<ImageItem *> sel = selectedImageItems();
-    if (!sel.isEmpty()) {
-        QRectF bounds;
-        for (ImageItem *item : sel) {
-            if (item) {
-                bounds = bounds.united(item->sceneBoundingRect());
-            }
-        }
-        if (bounds.isValid() && !bounds.isEmpty()) {
-            return bounds.adjusted(-8, -8, 8, 8);
-        }
-    }
-    // Nothing selected — whole pack (overview).
-    if (m_items.isEmpty()) {
-        return {};
-    }
-    const QRectF all = m_scene->itemsBoundingRect();
-    if (!all.isValid() || all.isEmpty()) {
-        return {};
-    }
-    return all.adjusted(-16, -16, 16, 16);
-}
-
-void ImageView::applyGalleryFraming(StickyZoomKind kind)
-{
-    if (!isGalleryMode() || !m_scene || m_items.isEmpty()) {
-        return;
-    }
-    const QRectF bounds = galleryZoomTargetBounds();
-    if (!bounds.isValid() || bounds.isEmpty()) {
-        return;
-    }
-
-    switch (kind) {
-    case StickyZoomKind::Fill:
-        m_fitMode = true;
-        m_fillMode = true;
-        // Keep sceneRect large enough that Fit/Fill of a single page can pan
-        // to neighbours when sticky is released.
-        {
-            const QRectF pack = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
-            if (pack.isValid() && !pack.isEmpty()) {
-                m_scene->setSceneRect(pack.united(bounds));
-            } else {
-                m_scene->setSceneRect(bounds);
-            }
-        }
-        fitInView(bounds, Qt::KeepAspectRatioByExpanding);
-        break;
-    case StickyZoomKind::Actual: {
-        m_fitMode = false;
-        m_fillMode = false;
-        ImageItem *primary = nullptr;
-        const QList<ImageItem *> sel = selectedImageItems();
-        if (!sel.isEmpty()) {
-            primary = sel.first();
-        } else if (!m_items.isEmpty()) {
-            primary = m_items.first();
-        }
-        if (!primary) {
-            break;
-        }
-        const QRectF tile = primary->sceneBoundingRect();
-        const QSize isz = primary->imageSize();
-        if (tile.width() < 1.0 || tile.height() < 1.0 || isz.width() < 1) {
-            centerOn(tile.center());
-            break;
-        }
-        // View scale so the tile's logical content maps ~1:1 to device pixels.
-        resetTransform();
-        const qreal viewS = qreal(isz.width()) / tile.width();
-        if (qIsFinite(viewS) && viewS > 1e-6) {
-            scale(viewS, viewS);
-        }
-        centerOn(tile.center());
-        break;
-    }
-    case StickyZoomKind::Fit:
-    default:
-        m_fitMode = true;
-        m_fillMode = false;
-        {
-            const QRectF pack = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
-            if (pack.isValid() && !pack.isEmpty()) {
-                m_scene->setSceneRect(pack.united(bounds));
-            } else {
-                m_scene->setSceneRect(bounds);
-            }
-        }
-        fitInView(bounds, Qt::KeepAspectRatio);
-        break;
-    }
-    updateGalleryDecodeWindow();
-    refreshScrollBarGeometry();
-    emit statusChanged();
 }
 
 void ImageView::armZoomRegion()

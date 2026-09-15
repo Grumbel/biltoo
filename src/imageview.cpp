@@ -86,18 +86,10 @@ ImageView::ImageView(QWidget *parent)
             if (viewport()) {
                 viewport()->update();
             }
-            // Sticky Fit/Fill/1:1 follows the selection (book-page navigation).
-            // Apply framing *before* the decode-window pass so interest matches
-            // the post-fit viewport. Skip while applying layout — pack calls
-            // applyGalleryFraming once after transform reset.
-            // Do not pair with ensureVisible (focusSessionPath): that scroll
-            // fights fitInView.
-            if (m_stickyZoomEnabled && !m_applyingLayout) {
-                applyGalleryFraming(m_stickyZoomKind);
-            } else {
-                // Refresh interest snapshot so FocusFull tracks the new Primary.
-                updateGalleryDecodeWindow();
-            }
+            // Refresh interest snapshot so FocusFull tracks the new Primary.
+            // Sticky zoom is Image-mode only; Gallery uses ensureVisible for
+            // keep-selection-in-view.
+            updateGalleryDecodeWindow();
         }
         // Workspace: Primary = first selected; Near = remaining selection.
         if (isWorkspaceMode()) {

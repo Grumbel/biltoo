@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-907-sticky-image-only.** Sticky zoom is Image-mode only; Gallery selection sticky rolled back.
+Prior: **906**.
+
+### Change
+- Gallery Fit/Fill/1:1 again frames the **whole pack** (one-shot).
+- Sticky Fit/Fill/1:1 only arms in **Image mode**; Gallery/Workspace release sticky.
+- Restored `ensureVisible` for Gallery keep-selection-in-view.
+- Leaving Image (enterGallery / setViewMode) releases sticky.
+
+### Apply
+```bash
+git pull /path/to/biltoo-907-sticky-image-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-906-sticky-no-ensurevisible.** Sticky gallery zoom must not fight ensureVisible.
 Prior: **905**.
 

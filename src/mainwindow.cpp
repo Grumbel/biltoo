@@ -599,44 +599,59 @@ void MainWindow::zoomOut()
 
 void MainWindow::zoomReset()
 {
-    // Toggle sticky 1:1: re-click releases without changing framing.
-    if (m_imageView->stickyZoomEnabled()
-        && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Actual) {
+    // Sticky 1:1 is Image-mode only. Gallery/Workspace: one-shot view reset.
+    if (m_imageView->isImageMode()) {
+        if (m_imageView->stickyZoomEnabled()
+            && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Actual) {
+            m_imageView->releaseStickyZoom();
+            syncZoomModeChecks();
+            return;
+        }
+        m_imageView->zoomReset();
+        m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Actual);
+        m_imageView->setStickyZoomEnabled(true);
+    } else {
         m_imageView->releaseStickyZoom();
-        syncZoomModeChecks();
-        return;
+        m_imageView->zoomReset();
     }
-    m_imageView->zoomReset();
-    m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Actual);
-    m_imageView->setStickyZoomEnabled(true);
     syncZoomModeChecks();
 }
 
 void MainWindow::zoomFit()
 {
-    if (m_imageView->stickyZoomEnabled()
-        && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Fit) {
+    if (m_imageView->isImageMode()) {
+        if (m_imageView->stickyZoomEnabled()
+            && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Fit) {
+            m_imageView->releaseStickyZoom();
+            syncZoomModeChecks();
+            return;
+        }
+        m_imageView->zoomFit();
+        m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Fit);
+        m_imageView->setStickyZoomEnabled(true);
+    } else {
         m_imageView->releaseStickyZoom();
-        syncZoomModeChecks();
-        return;
+        m_imageView->zoomFit();
     }
-    m_imageView->zoomFit();
-    m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Fit);
-    m_imageView->setStickyZoomEnabled(true);
     syncZoomModeChecks();
 }
 
 void MainWindow::zoomFill()
 {
-    if (m_imageView->stickyZoomEnabled()
-        && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Fill) {
+    if (m_imageView->isImageMode()) {
+        if (m_imageView->stickyZoomEnabled()
+            && m_imageView->stickyZoomKind() == ImageView::StickyZoomKind::Fill) {
+            m_imageView->releaseStickyZoom();
+            syncZoomModeChecks();
+            return;
+        }
+        m_imageView->zoomFill();
+        m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Fill);
+        m_imageView->setStickyZoomEnabled(true);
+    } else {
         m_imageView->releaseStickyZoom();
-        syncZoomModeChecks();
-        return;
+        m_imageView->zoomFill();
     }
-    m_imageView->zoomFill();
-    m_imageView->setStickyZoomKind(ImageView::StickyZoomKind::Fill);
-    m_imageView->setStickyZoomEnabled(true);
     syncZoomModeChecks();
 }
 

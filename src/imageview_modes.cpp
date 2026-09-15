@@ -320,6 +320,11 @@ void ImageView::setViewMode(ViewMode mode)
         m_workspace.onLeave(static_cast<int>(mode));
     }
 
+    // Sticky Fit/Fill/1:1 is Image-mode only.
+    if (mode != ViewMode::Image) {
+        releaseStickyZoom();
+    }
+
     if (mode == ViewMode::Image) {
         m_image.enter();
         return;
