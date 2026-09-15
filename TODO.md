@@ -2,6 +2,44 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-953-display-surface-plan.** DisplaySurfaceController design lock (docs only).
+Prior: **952**.
+
+### Change
+Docs only — no behavior change.
+
+- Add [docs/DISPLAY_SURFACE.md](docs/DISPLAY_SURFACE.md): move quality / install /
+  rematerialize out of ImageView into one event-driven controller shared by
+  Image, Gallery, Filmstrip, Workspace, Slideshow.
+- Normative rules: no Image/Filmstrip InstallHostBetter timers; no pre-crop host
+  vs post-crop shown install compare; FullSource matching want is settled;
+  PathRaster remains sole climb SM; SessionImageId remains appearance key.
+
+### Why not another watchdog gate
+952 settled-gate and timer freezes do not create soft→full delivery. Killing
+the poller without an event path leaves soft stuck. The fix class is
+architecture (Phase B+), not more `m_cropDraftSampleFrozen` checks.
+
+### Implementation order (next tips)
+| Phase | Focus |
+|-------|--------|
+| **B** | Controller skeleton + pure `decide()` tests |
+| **C** | ImageFocus behind controller |
+| **D** | PathRaster → noteHostImproved; delete Image quality timer path |
+| **E–G** | Gallery, Filmstrip, Workspace, Slideshow |
+| **H** | Delete dead install/watchdog helpers |
+
+### Apply
+```bash
+git pull /path/to/biltoo-953-display-surface-plan.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-952-crop-settled-no-quality-pulse.** Cropped FullSource bake is settled; stop 1s soft↔full pulse.
 Prior: **951**.
 
