@@ -1095,8 +1095,6 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
     const QImage src = item->sourceImage();
     const bool hFlip = item->itemHFlip();
     const bool vFlip = item->itemVFlip();
-    const bool contentH = item->contentHFlip();
-    const bool contentV = item->contentVFlip();
 
     QList<ImageItem *> peers;
     auto collect = [&](const QList<ImageItem *> &list) {

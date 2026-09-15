@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-930-rematerialize-public.** rematerializeItemContent public for WorkspaceController; peer unused vars.
+Prior: **929**.
+
+### Fix
+- `rematerializeItemContent` was private; Workspace leave→enter restore (926)
+  could not call it — compile error.
+- Moved to public next to `installDisplayPixels` (same install family).
+- Dropped unused `contentH`/`contentV` in `syncSessionEditPeers` after
+  attachDisplaySample took over chrome.
+
+### Apply
+```bash
+git pull /path/to/biltoo-930-rematerialize-public.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-929-pipeline-docs-soft-test.** CONTENT_PIPELINE install invariant complete; SoftPreview crop aspect test.
 Prior: **928**.
 

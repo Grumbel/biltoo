@@ -1066,6 +1066,13 @@ public:
                                       SessionImageId sid);
 
     /**
+     * Rematerialize display from ImageCache / item host for @p want.
+     * Soft stand-in + async full when multi-MP. Public for WorkspaceController
+     * leave→enter restore when fullRasterForEdit misses.
+     */
+    void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
+
+    /**
      * True when the primary transform target has non-identity content
      * appearance (session store and/or durable XDG state for its path).
      */
@@ -1364,8 +1371,7 @@ private:
     void attachDisplaySample(ImageItem *item, const QImage &display,
                              const WorkspaceItemState &want,
                              SessionAppearance::PixelKind kind);
-    /** Raw from host/item → materialize → attachDisplaySample (never multi-MP on GUI). */
-    void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
+    /** Host ≤512 materialize + attach; multi-MP returns false (caller schedules). */
     bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
     /**
      * Force contentRect / intrinsic from file-native + want (SIZE.md).
