@@ -2444,7 +2444,9 @@ void MainWindow::updateAdjustmentsPanel()
     if (!item && !m_imageView->liveItems().isEmpty() && m_imageView->isImageMode()) {
         item = m_imageView->liveItems().first();
     }
-    if (!item || !item->hasDecodedPixels()) {
+    // SoftPreview stand-ins (interactive grade, ladder) are valid targets —
+    // requiring hasDecodedPixels disabled the panel after the first slider tick.
+    if (!item || !item->hasDisplayPixels()) {
         m_adjustmentsPanel->clearPreview();
         m_adjustmentsPanel->setEnabledControls(false);
         return;

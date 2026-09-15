@@ -226,11 +226,10 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     if (!item) {
         return {};
     }
-    // Content 90°/flip/crop are baked into source *or* soft-preview pixels.
-    // Gallery soft tiles often have only m_preview — using sourceImage alone
-    // left the filmstrip on the unflipped ladder after Gallery flip/rotate.
-    // Placement rotation is not included. Colour grade is non-destructive
-    // (applied on display) — include it so ThumbnailBar overrides match the tile.
+    // Content 90°/flip/crop/grade are baked into source *or* soft-preview pixels
+    // once an applied ContentXform is set. Gallery soft tiles often have only
+    // m_preview — using sourceImage alone left the filmstrip on the unflipped
+    // ladder after Gallery flip/rotate. Placement rotation is not included.
     QImage img = item->displayImage();
     if (img.isNull()) {
         return {};
@@ -246,9 +245,13 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
         }
         img = img.flipped(axes);
     }
-    const ColorAdjustments adj = item->colorAdjustments();
-    if (!adj.isIdentity()) {
-        img = applyColorAdjustments(img, adj);
+    // Live grade only when display is still unbaked host (no applied xform).
+    // Re-applying on a materialize bake double-grades the filmstrip override.
+    if (!item->hasAppliedContentXform()) {
+        const ColorAdjustments adj = item->colorAdjustments();
+        if (!adj.isIdentity()) {
+            img = applyColorAdjustments(img, adj);
+        }
     }
     return img;
 }
@@ -2599,6 +2602,15 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
         || want.contentQuarterTurns != 0;
     if (!contentGeom && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
         item->setColorAdjustments(want.colorAdjust);
+        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        if (sid != kInvalidSessionImageId) {
+            const QImage appearance = sessionAppearanceImage(item);
+            if (!appearance.isNull()) {
+                emit sessionAppearanceChanged(sid, item->path(), appearance);
+            }
+        }
         return;
     }
 
@@ -2626,9 +2638,21 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     }
     if (item->hasDecodedPixels()
         && ImageCache::longEdge(item->sourceImage()) > kInteractiveGradeMaxEdge) {
+        // Soft stand-in for the drag; keep session id / path on the item.
         item->clearDecodedPixels();
     }
     attachDisplaySample(item, display, want, kind);
+    // Filmstrip / Gallery chrome: push soft appearance while dragging so the
+    // strip does not wait for the idle commit (and does not require FullSource).
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+    if (sid != kInvalidSessionImageId) {
+        const QImage appearance = sessionAppearanceImage(item);
+        if (!appearance.isNull()) {
+            emit sessionAppearanceChanged(sid, item->path(), appearance);
+        }
+    }
 }
 
 void ImageView::scheduleColorAdjustCommit(SessionImageId sid, const QString &path)
@@ -2679,11 +2703,18 @@ void ImageView::flushColorAdjustCommit()
     // grade into thumtoo durable appearance — SessionAppearanceStore / project
     // already own it; path cache is for orient/crop hints, not slider spam.
     rematerializeItemContent(item, want);
+    // Gallery: same session id may be stashed while Image mode edits — the
+    // live tile update covers Image/Gallery focus; filmstrip uses the emit.
     const QImage appearance = sessionAppearanceImage(item);
     if (!appearance.isNull()) {
-        emit sessionAppearanceChanged(sid != kInvalidSessionImageId ? sid : item->sessionId(),
-                                      item->path().isEmpty() ? path : item->path(),
-                                      appearance);
+        const SessionImageId emitSid = sid != kInvalidSessionImageId
+            ? sid
+            : item->sessionId();
+        if (emitSid != kInvalidSessionImageId) {
+            emit sessionAppearanceChanged(emitSid,
+                                          item->path().isEmpty() ? path : item->path(),
+                                          appearance);
+        }
     }
 }
 

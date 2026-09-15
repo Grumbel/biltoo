@@ -2,6 +2,28 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-944-color-adjust-panel-filmstrip.** Keep Adjustments enabled on SoftPreview; filmstrip updates on grade.
+Prior: **943**.
+
+### Problem
+After the first colour slider tick, interactive grade attached SoftPreview and cleared FullSource → `hasDecodedPixels()` false → `updateAdjustmentsPanel` disabled the dock. Filmstrip lagged / double-graded because appearance was only emitted on idle commit and `sessionAppearanceImage` re-applied grade on baked pixels.
+
+### Fix
+- Enable Adjustments when `hasDisplayPixels()` (soft or full)
+- Emit `sessionAppearanceChanged` on interactive grade (live + soft bake)
+- Do not re-apply colour on baked display for filmstrip override
+
+### Apply
+```bash
+git pull /path/to/biltoo-944-color-adjust-panel-filmstrip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-943-color-grade-no-thumtoo-gui.** Colour grade: no thumtoo durable write; GUI-safe interactive bake.
 Prior: **942**.
 
