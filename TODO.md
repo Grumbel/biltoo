@@ -2,6 +2,31 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-919-slideshow-nav-hot-settle.** Slideshow ←/→: soft phase only while held; settle re-arms quality.
+Prior: **918**.
+
+### Problem
+Holding ←/→ in slideshow stalled progressively: each key scheduled atlas rebuild,
+phase-buffer upgrade, zoom-blur, and PathRaster EscalateToFull. `navHot` was set
+true but never cleared until stopSlideshow.
+
+### Fix
+- `prepareSlideshowFromDwell` / preload / warmZoomBlur: no-op heavy work when nav-hot
+- Slideshow branch of applyCurrentIndexCanvasChange: 80ms settle clears nav-hot and
+  re-arms `setSlideshowPhase` once for the current path
+- Docs extended in IMAGE_MODE_NAV_SOFT.md
+
+### Apply
+```bash
+git pull /path/to/biltoo-919-slideshow-nav-hot-settle.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-918-clear-soft-on-path-change.** Path change must clear soft OR full.
 Docs: **docs/IMAGE_MODE_NAV_SOFT.md** (state machine contract).
 Prior: **917**.

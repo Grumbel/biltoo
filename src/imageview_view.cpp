@@ -2054,6 +2054,21 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
         return;
     }
     ++m_ssPhaseUpgradeGeneration; // drop mid-slide upgrades for previous path
+
+    // Rapid user ←/→ (nav hot): phase buffer already holds soft/best cache.
+    // Do not schedule atlas rebuild, zoom-blur, PreferCache, or phase-buffer
+    // upgrades per key — those flood the thread pool and PathRaster and make
+    // the show progressively worse the longer a key is held. Settle (MainWindow
+    // timer) clears nav-hot and re-arms full quality for the current path only.
+    if (m_slideshowNavHot) {
+        invalidateDwellAtlasRebuilds();
+        m_dwellAtlas = QPixmap();
+        m_dwellAtlasScale = 0.0;
+        m_dwellAtlasVw = 0;
+        m_dwellAtlasVh = 0;
+        return;
+    }
+
     // Keep atlas only when promote carried oriented continuity for the *same*
     // sample. Fresh arm (contentApplied false) or aspect mismatch: drop atlas
     // so paintMotionCover blits the live sample without stretch for a frame.
@@ -2294,7 +2309,9 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
                 m_ssToImage.width(), m_ssToImage.height());
     }
 
-    warmZoomBlurForCurrentPhase();
+    if (!m_slideshowNavHot) {
+        warmZoomBlurForCurrentPhase();
+    }
     hideSlideshowUnderlay();
     if (viewport()) {
         viewport()->update();
@@ -2432,6 +2449,10 @@ void ImageView::finishSlideshowPreload(const QString &path, const QImage &image)
 void ImageView::preloadSlideshowImage(const QString &path)
 {
     if (path.isEmpty() || !m_pathRaster) {
+        return;
+    }
+    // User key-repeat: no PathRaster EscalateToFull per visited path.
+    if (m_slideshowNavHot) {
         return;
     }
     const int targetEdge = cappedDisplayEdgeForPath(path, slideshowTargetEdge());

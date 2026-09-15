@@ -1503,10 +1503,33 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
         // (log: preferCacheClimb after phase-from already at 2048).
         if (isSlideshowSession()) {
             if (m_imageView) {
+                // User ←/→: nav-hot until quiet. Auto-advance is not key-repeat.
                 m_imageView->setSlideshowNavHot(!m_slideshowAdvancing);
             }
-            // User ←/→: onSlideshowUserNavigated already setSlideshowPhase.
-            // Auto-advance: phase-from promote already has pixels. No LoadReplace.
+            // User ←/→: onSlideshowUserNavigated already setSlideshowPhase (soft).
+            // Settle: clear nav-hot and re-arm full phase quality once.
+            if (!m_slideshowAdvancing) {
+                if (!m_slideshowNavLoadTimer) {
+                    m_slideshowNavLoadTimer = new QTimer(this);
+                    m_slideshowNavLoadTimer->setSingleShot(true);
+                    m_slideshowNavLoadTimer->setInterval(80);
+                    connect(m_slideshowNavLoadTimer, &QTimer::timeout, this, [this]() {
+                        if (!m_imageView || !isSlideshowSession()) {
+                            return;
+                        }
+                        m_imageView->setSlideshowNavHot(false);
+                        if (m_currentIndex < 0
+                            || m_currentIndex >= m_session.paths().size()) {
+                            return;
+                        }
+                        // Re-arm dwell quality (atlas / phase upgrade / blur)
+                        // for the settled path only — not every keystroke.
+                        m_imageView->setSlideshowPhase(
+                            m_session.paths().at(m_currentIndex), QString(), -1.0);
+                    });
+                }
+                m_slideshowNavLoadTimer->start();
+            }
             return;
         }
         // Key-repeat: soft install every step; PreferCache only after quiet settle.

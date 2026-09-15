@@ -72,3 +72,27 @@ BILTOO_LOAD_DEBUG=1   # or THUMTOO_DEBUG=1
 If `soft=0x0` every time, ImageCache and stash both miss for that path (Gallery
 never seeded host, or LRU evicted and no stash). If `soft=WxH` but still blank,
 check `canAccept` / clear path and paint.
+
+## Slideshow user ←/→ (related)
+
+Slideshow does **not** call `loadImage` on user Next/Prev. It calls
+`setSlideshowPhase(path, {}, -1)` which arms phase buffers and historically
+scheduled **per keystroke**:
+
+- dwell atlas rebuild (thread pool)
+- phase-buffer content upgrade (thread pool)
+- zoom-blur warm
+- `preloadSlideshowImage` → PathRaster `EscalateToFull`
+
+`m_slideshowNavHot` was set true on every user key and only cleared on
+`stopSlideshow`, so heavy work never gated. Holding ←/→ flooded the pool and
+PathRaster (progressively worse).
+
+### Contract (aligned with Image-mode nav-hot)
+
+| Phase | Work |
+|-------|------|
+| **Key-repeat (nav hot)** | Swap phase soft from ImageCache; **no** atlas / phase-upgrade / zoom-blur / PathRaster |
+| **Settle (~80ms quiet)** | Clear nav-hot; `setSlideshowPhase` once → full dwell quality for **current** path |
+| **Neighbour preload** | Still debounced (~200ms); skipped while nav-hot |
+
