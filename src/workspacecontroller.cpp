@@ -214,8 +214,10 @@ void WorkspaceController::restoreStashedItems()
                 m_view->rematerializeItemContent(item, *app);
             }
         } else {
-            // Grade-only / already full: chrome + grade without pixel reload.
-            SessionAppearance::applyContentToItem(item, *app);
+            // Grade-only (or content already on soft): rematerialize so multi-MP
+            // still gets grade via soft stand-in + async. applyContentToItem
+            // alone leaves multi-MP grade as chrome-only without a bake.
+            m_view->rematerializeItemContent(item, *app);
         }
     }
     m_view->clearFitFillModes();

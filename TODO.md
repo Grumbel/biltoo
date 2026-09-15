@@ -2,6 +2,29 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-931-workspace-grade-rematerialize.** Workspace grade-only restore uses rematerializeItemContent.
+Prior: **930**.
+
+### Problem
+Workspace leave→enter grade-only branch used `applyContentToItem`. On multi-MP
+that path only records grade chrome and does not bake grade into pixels
+(edge > kGuiMaterializeMaxEdge early return).
+
+### Fix
+Always `rematerializeItemContent` for the non-full-reload branch (soft stand-in
++ async full with grade in the bake).
+
+### Apply
+```bash
+git pull /path/to/biltoo-931-workspace-grade-rematerialize.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-930-rematerialize-public.** rematerializeItemContent public for WorkspaceController; peer unused vars.
 Prior: **929**.
 
