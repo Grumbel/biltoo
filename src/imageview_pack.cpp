@@ -748,14 +748,10 @@ void ImageView::gallerySoftWatchdogTick()
         }
         GallerySoftState &st = m_gallerySoft[path];
 
-        // DisplayQuality contract: host better than painted → install; LQIP
-        // while target ≥ soft and no climb → schedule / warn.
+        // Install policy: DisplaySurface::decide only (docs/DISPLAY_SURFACE.md).
         const int shown = item->displayPixelLongEdge();
         int target = st.want > 0 ? st.want
             : galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        // On-screen need can exceed native (zoomed large tiles). PreferCache /
-        // Full cannot invent pixels — cap so we do not schedule-climb forever
-        // at target=4096 while host is already the full native sample.
         {
             const QSize logical = logicalSizeForPath(path);
             const int native = qMax(logical.width(), logical.height());
@@ -766,82 +762,53 @@ void ImageView::gallerySoftWatchdogTick()
         const bool climbPending =
             st.inflight > 0
             || (m_pathRaster && m_pathRaster->isClimbPending(path));
-        const DisplayQuality::Check dq =
-            DisplayQuality::checkSurface(path, shown, target, climbPending);
 
-        // Install policy: DisplaySurface::decide (not host-vs-shown alone).
-        {
-            DisplaySurface::State ds;
-            ds.needEdge = target;
-            ds.haveDisplayEdge = shown;
-            ds.hostLongEdge = dq.hostEdge > 0 ? dq.hostEdge
-                : DisplayQuality::hostLongEdge(path);
-            ds.climbPending = climbPending;
-            ds.want = ContentXform::Value::fromState(
-                wantAppearanceForItem(item, item->sessionId()));
-            if (item->hasDisplayPixels()) {
-                ds.haveDisplayEdge = item->displayPixelLongEdge();
-                if (item->hasDecodedPixels()) {
-                    ds.attachedKind = DisplaySurface::AttachedKind::FullSource;
-                } else {
-                    ds.attachedKind = DisplaySurface::AttachedKind::SoftPreview;
-                }
-                if (item->hasAppliedContentXform()) {
-                    ds.applied = item->appliedContentXform();
-                }
-            }
-            const DisplaySurface::Action act = DisplaySurface::decide(ds);
-            using AT = DisplaySurface::ActionType;
-            if (act.type == AT::None) {
-                if (ds.hostLongEdge > 0) {
-                    st.have = qMax(st.have, ds.hostLongEdge);
-                }
-                // fall through to StuckWeak / Ok handling below only if needed
-            } else if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
-                const QImage host = ImageCache::get(path);
-                if (!host.isNull()) {
-                    const auto kind = (act.type == AT::AttachSoft)
-                        ? SessionAppearance::PixelKind::SoftPreview
-                        : SessionAppearance::PixelKind::FullSource;
-                    installDisplayPixels(item, host, kind, item->sessionId());
-                    if (m_scene) {
-                        m_scene->update(item->sceneBoundingRect());
-                    }
-                    st.have = qMax(st.have, ds.hostLongEdge);
-                    ++repaired;
-                }
-                continue;
-            } else if (act.type == AT::ScheduleAsyncMaterialize) {
-                const WorkspaceItemState wantSt =
-                    wantAppearanceForItem(item, item->sessionId());
-                scheduleAsyncHostRematerialize(path, item->sessionId(), wantSt);
-                if (ds.hostLongEdge > 0) {
-                    st.have = qMax(st.have, ds.hostLongEdge);
-                }
-                continue;
-            } else if (act.type == AT::ScheduleClimb) {
-                clearGallerySoftInflight(st);
-                if (m_pathRaster && !m_pathRaster->isGaveUp(path)) {
-                    const auto pol =
-                        (target > ThumtooCache::kBatchOverviewEdge)
-                            ? PathRasterService::ClimbPolicy::EscalateToFull
-                            : PathRasterService::ClimbPolicy::SoftDisplay;
-                    m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
-                    if (m_pathRaster->isClimbPending(path)) {
-                        needWindow = true;
-                    }
-                }
-                scheduleGalleryDecode(path);
-                st.weakSinceMs = 0;
-                continue;
+        DisplaySurface::State ds;
+        ds.needEdge = target;
+        ds.haveDisplayEdge = shown;
+        ds.hostLongEdge = DisplayQuality::hostLongEdge(path);
+        ds.climbPending = climbPending;
+        ds.want = ContentXform::Value::fromState(
+            wantAppearanceForItem(item, item->sessionId()));
+        if (item->hasDisplayPixels()) {
+            ds.haveDisplayEdge = item->displayPixelLongEdge();
+            ds.attachedKind = item->hasDecodedPixels()
+                ? DisplaySurface::AttachedKind::FullSource
+                : DisplaySurface::AttachedKind::SoftPreview;
+            if (item->hasAppliedContentXform()) {
+                ds.applied = item->appliedContentXform();
             }
         }
-
-        if (dq.verdict == DisplayQuality::Verdict::ScheduleClimb) {
-            // Need PreferCache / Full — normal work, not a quality violation.
-            // Skip ensure when PathRaster already plateaued for this want.
-            // Do not force needWindow every tick — that re-entered pass1 forever
-            // when SoftPreview clamp kept shouldUpgrade true.
+        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        using AT = DisplaySurface::ActionType;
+        if (act.type == AT::None) {
+            if (ds.hostLongEdge > 0) {
+                st.have = qMax(st.have, ds.hostLongEdge);
+            }
+            st.weakSinceMs = 0;
+        } else if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                const auto kind = (act.type == AT::AttachSoft)
+                    ? SessionAppearance::PixelKind::SoftPreview
+                    : SessionAppearance::PixelKind::FullSource;
+                installDisplayPixels(item, host, kind, item->sessionId());
+                if (m_scene) {
+                    m_scene->update(item->sceneBoundingRect());
+                }
+                st.have = qMax(st.have, ds.hostLongEdge);
+                ++repaired;
+            }
+            st.weakSinceMs = 0;
+        } else if (act.type == AT::ScheduleAsyncMaterialize) {
+            scheduleAsyncHostRematerialize(
+                path, item->sessionId(),
+                wantAppearanceForItem(item, item->sessionId()));
+            if (ds.hostLongEdge > 0) {
+                st.have = qMax(st.have, ds.hostLongEdge);
+            }
+            st.weakSinceMs = 0;
+        } else if (act.type == AT::ScheduleClimb) {
             clearGallerySoftInflight(st);
             if (m_pathRaster && !m_pathRaster->isGaveUp(path)) {
                 const auto pol =
@@ -855,39 +822,43 @@ void ImageView::gallerySoftWatchdogTick()
             }
             scheduleGalleryDecode(path);
             st.weakSinceMs = 0;
-        } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak) {
+        }
+
+        // Blank / LQIP for long enough with no climb: force one ensure cycle.
+        if (!item->hasDisplayPixels()
+            || (item->displayPixelLongEdge() > 0
+                && item->displayPixelLongEdge() <= DisplayQuality::kLqipMaxEdge
+                && target > DisplayQuality::kLqipMaxEdge
+                && !climbPending
+                && act.type == AT::None)) {
             if (st.weakSinceMs <= 0) {
                 st.weakSinceMs = now;
+            } else if ((now - st.weakSinceMs) > kStuckMs) {
+                clearGallerySoftInflight(st);
+                st.gaveUpWant = 0;
+                if (m_pathRaster) {
+                    ThumtooCache::forgetPixelsSettled(
+                        path, ThumtooCache::kGalleryLadderEdge);
+                    m_pathRaster->clearPreferGaveUp(path);
+                    const auto pol =
+                        (target > ThumtooCache::kBatchOverviewEdge)
+                            ? PathRasterService::ClimbPolicy::EscalateToFull
+                            : PathRasterService::ClimbPolicy::SoftDisplay;
+                    m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
+                }
+                scheduleGalleryDecode(path);
+                needWindow = true;
+                st.weakSinceMs = 0;
             }
-            const bool aged = (now - st.weakSinceMs) > kStuckMs;
-            DisplayQuality::reportViolation(
-                "gallery", path, dq,
-                /*assertHard=*/aged);
-            clearGallerySoftInflight(st);
-            st.gaveUpWant = 0;
-            if (m_pathRaster) {
-                ThumtooCache::forgetPixelsSettled(path, ThumtooCache::kGalleryLadderEdge);
-                m_pathRaster->clearPreferGaveUp(path);
-                const auto pol =
-                    (target > ThumtooCache::kBatchOverviewEdge)
-                        ? PathRasterService::ClimbPolicy::EscalateToFull
-                        : PathRasterService::ClimbPolicy::SoftDisplay;
-                m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
-            }
-            scheduleGalleryDecode(path);
-            needWindow = true;
-        } else {
+        } else if (item->hasDisplayPixels()
+                   && item->displayPixelLongEdge() > DisplayQuality::kLqipMaxEdge) {
             st.weakSinceMs = 0;
         }
 
-        // Item has pixels — keep have in sync with what is painted.
         if (item->hasDisplayPixels()) {
             const int edge = item->displayPixelLongEdge();
             if (edge > st.have) {
                 st.have = edge;
-            }
-            if (edge > DisplayQuality::kLqipMaxEdge) {
-                st.weakSinceMs = 0;
             }
         }
 
@@ -906,8 +877,6 @@ void ImageView::gallerySoftWatchdogTick()
             needWindow = true;
         }
 
-        // Blank tile while host/st.have claims pixels is covered by
-        // DisplayQuality InstallHostBetter above.
     }
 
     if (repaired > 0 && viewport()) {

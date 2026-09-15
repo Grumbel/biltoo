@@ -2,6 +2,40 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-959-gallery-decide-only-dq-docs.** Gallery soft tick decide-only; DQ docs.
+Prior: **958**.
+
+### Change
+- `gallerySoftWatchdogTick`: removed `DisplayQuality::checkSurface` install
+  branch (InstallHostBetter / ScheduleClimb dual path). **Only**
+  `DisplaySurface::decide` plus blank/LQIP aged recovery and inflight reset.
+- `displayquality.h`: install policy points at DISPLAY_SURFACE.md; checkSurface
+  is logging / slideshow / edge helpers only.
+
+### Status of DisplaySurface migration
+| Surface | Install policy |
+|---------|----------------|
+| ImageFocus | decide + event-driven (no timer) |
+| Gallery soft tick | decide-only |
+| Filmstrip tick | decide |
+| Workspace delivery/climb | decide |
+| Slideshow phases | still DisplayQuality checkSurface (upgrade buffers) |
+
+### Next
+**960** SurfaceId bind lifecycle, or slideshow phase via decide, or delete
+unused DisplayQuality verdict paths further.
+
+### Apply
+```bash
+git pull /path/to/biltoo-959-gallery-decide-only-dq-docs.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-958-workspace-gallery-decide-delivery.** Workspace/Gallery delivery via decide.
 Prior: **957**.
 

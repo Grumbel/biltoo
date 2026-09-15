@@ -7,15 +7,14 @@
 #include <QString>
 
 /**
- * Host-side display quality contracts.
+ * Host-side display quality helpers (logging / tier labels).
  *
- * Surfaces (Gallery tile, filmstrip cell, slideshow phase buffer, Image-mode
- * canvas) must not remain on a weak sample while ImageCache already holds a
- * strictly better one, and must not mark themselves "settled" while still in
- * the LQIP band when a soft-or-better target was requested.
+ * **Install policy** lives in DisplaySurface::decide (docs/DISPLAY_SURFACE.md).
+ * Do not drive Attach / soft demote from checkSurface host-vs-shown — that
+ * compared pre-crop host edge to post-crop display and caused the 1s pulse.
  *
- * All upgrade gates should use isStrictUpgrade / checkSurface so policy lives
- * in one place — not scattered 0.9 thresholds and ad-hoc LQIP ceilings.
+ * Remaining roles: tierOf, hostLongEdge, isStrictUpgrade (edge-only, no crop),
+ * checkSurface + reportViolation for slideshow / debug asserts.
  */
 namespace DisplayQuality {
 
