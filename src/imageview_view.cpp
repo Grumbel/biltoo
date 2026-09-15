@@ -300,6 +300,12 @@ void ImageView::zoomViewBy(qreal factor)
     // rescan all tiles + setInterest on every notch (GUI_THREAD_AUDIT G5).
     if (isGalleryMode()) {
         scheduleGalleryDecodeWindowRefresh(120);
+    } else if (isWorkspaceMode()) {
+        // Toolbar/shortcut zoom used zoomViewBy and never climbed — Soft stayed
+        // soft while the view scale grew (wheel path already called ensure).
+        ensureWorkspaceQualityClimb();
+    } else if (isImageMode()) {
+        maybeClimbImageModePixelsForView();
     }
     emit statusChanged();
 }

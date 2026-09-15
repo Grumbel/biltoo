@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-987-workspace-zoom-climb.** Workspace Soft→Prefer on zoom-in.
+Prior: **986**.
+
+### Problem
+Wheel zoom called `ensureWorkspaceQualityClimb`, but toolbar/shortcut
+`zoomViewBy` did not — Soft tiles stayed soft when zoomed via UI. Climb also
+trusted stale surface need and could settle with None while still short.
+
+### Fix
+- `zoomViewBy` / resize: Workspace climb (Image climb on toolbar zoom too)
+- `ensureWorkspaceQualityClimb`: fresh `itemOnScreenNeedEdge`, force
+  ScheduleClimb when short and not pending, native recovery after plateau
+
+### Apply
+```bash
+git pull /path/to/biltoo-987-workspace-zoom-climb.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-986-workspace-gallery-restore.** Gallery→Workspace keeps durable snapshot.
 Prior: **985**.
 

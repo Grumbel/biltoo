@@ -1672,27 +1672,47 @@ void ImageView::ensureWorkspaceQualityClimb()
         if (isCropDraftLockedPath(path)) {
             continue;
         }
+        // Always measure need after the current view transform (zoom/pan).
+        const int needEdge = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
+        const int have = ii->displayPixelLongEdge();
+        if (needEdge > 0 && have > 0 && coversEdge(have, needEdge)) {
+            continue;
+        }
         const bool pending = m_pathRaster->isClimbPending(path);
         syncItemDisplaySurface(ii, -1, pending);
         const DisplaySurface::SurfaceId sid =
             static_cast<DisplaySurface::SurfaceId>(ii->displaySurfaceId());
-        const DisplaySurface::Action act =
+        if (sid != DisplaySurface::kInvalidSurfaceId) {
+            m_displaySurfaces.setNeed(sid, needEdge);
+        }
+        DisplaySurface::Action act =
             (sid != DisplaySurface::kInvalidSurfaceId)
                 ? m_displaySurfaces.evaluate(sid)
                 : DisplaySurface::decide(
                       displaySurfaceStateForItem(ii, -1, pending));
-        const int needEdge =
-            (sid != DisplaySurface::kInvalidSurfaceId
-             && m_displaySurfaces.binding(sid))
-                ? m_displaySurfaces.binding(sid)->state.needEdge
-                : itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
+        if (act.type == DisplaySurface::ActionType::ScheduleClimb
+            && act.climbNeedEdge < needEdge) {
+            act.climbNeedEdge = needEdge;
+        }
+        // Decide may return None while still short (stale settle / Full shortfall).
+        // Force PathRaster escalate so Soft→Prefer→Full continues on zoom-in.
+        if (act.type == DisplaySurface::ActionType::None
+            && needEdge > 0 && !coversEdge(have, needEdge) && !pending) {
+            act.type = DisplaySurface::ActionType::ScheduleClimb;
+            act.climbNeedEdge = needEdge;
+        }
         (void)applyDisplaySurfaceAction(
             ii, act, QImage(), needEdge,
             PathRasterService::ClimbPolicy::EscalateToFull);
-        if (act.type != DisplaySurface::ActionType::None
-            && m_pathRaster->isGaveUp(path)
-            && !coversEdge(ii->displayPixelLongEdge(), needEdge)) {
-            scheduleImageModeNativeDecodeOnce(path);
+        if (!coversEdge(ii->displayPixelLongEdge(), needEdge)
+            && (m_pathRaster->isGaveUp(path)
+                || (!m_pathRaster->isClimbPending(path)
+                    && act.type == DisplaySurface::ActionType::ScheduleClimb))) {
+            // PreferCache plateau short of on-screen need after zoom — native decode.
+            if (m_pathRaster->isGaveUp(path)
+                || !m_pathRaster->isClimbPending(path)) {
+                scheduleImageModeNativeDecodeOnce(path);
+            }
         }
     }
 }

@@ -393,6 +393,8 @@ void ImageView::resizeEvent(QResizeEvent *event)
     }
     if (isImageMode() && !m_slideshowProgressActive) {
         maybeClimbImageModePixelsForView();
+    } else if (isWorkspaceMode()) {
+        ensureWorkspaceQualityClimb();
     }
     // Gallery: never repack from resize. Thumb-strip setFiles, scrollbar
     // policy, and splitter drags all resize this view; packing here made
