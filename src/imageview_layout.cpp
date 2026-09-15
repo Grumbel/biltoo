@@ -2593,34 +2593,38 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     if (!item) {
         return;
     }
+    // Prefer pure live grade when the tile still holds unbaked host pixels
+    // (no orient/crop/grade bake). Avoids materializeDisplay on the GUI.
+    const bool contentGeom = want.hasCrop || want.contentHFlip || want.contentVFlip
+        || want.contentQuarterTurns != 0;
+    if (!contentGeom && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
+        item->setColorAdjustments(want.colorAdjust);
+        return;
+    }
+
     const QString path = item->path();
     QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-    // Ungraded FullSource without applied content xform is still host-shaped.
     if (host.isNull() && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
         host = item->sourceImage();
     }
     if (host.isNull()) {
-        // No host: legacy live grade on item source (only correct when unbaked).
-        item->setColorAdjustments(want.colorAdjust);
+        item->setColorAdjustmentsRecord(want.colorAdjust);
+        item->update();
         return;
     }
-    // Interactive: keep ≤1024 long edge so slider ticks stay snappy. Full
-    // rematerialize (native host) runs after the commit debounce.
-    constexpr int kInteractiveGradeMaxEdge = 1024;
+    // materializeDisplay asserts NOT GUI when long edge > kGuiMaterializeMaxEdge.
+    // Interactive path must stay ≤ that limit (full bake is async on commit).
+    const int kInteractiveGradeMaxEdge = ContentXform::kGuiMaterializeMaxEdge;
     if (ImageCache::longEdge(host) > kInteractiveGradeMaxEdge) {
         host = ImageCache::clampToMaxEdge(host, kInteractiveGradeMaxEdge);
     }
-    const auto kind = item->hasDecodedPixels()
-        ? SessionAppearance::PixelKind::FullSource
-        : SessionAppearance::PixelKind::SoftPreview;
+    const auto kind = SessionAppearance::PixelKind::SoftPreview;
     const QImage display = SessionAppearance::materializeDisplay(host, want, kind);
     if (display.isNull()) {
         item->setColorAdjustmentsRecord(want.colorAdjust);
         return;
     }
-    // Soft stand-in while dragging on a large full tile — avoid leaving a
-    // full-resolution graded pixmap that every tick would rebuild.
-    if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()
+    if (item->hasDecodedPixels()
         && ImageCache::longEdge(item->sourceImage()) > kInteractiveGradeMaxEdge) {
         item->clearDecodedPixels();
     }
@@ -2668,36 +2672,18 @@ void ImageView::flushColorAdjustCommit()
     } else {
         return;
     }
-    if (item) {
-        // Full rematerialize from host (may schedule async for multi-MP).
-        rematerializeItemContent(item, want);
+    if (!item) {
+        return;
     }
-    // Grade is path-durable (XDG); persistDurableContentAppearance omits grade.
-    const QString persistPath = (item && !item->path().isEmpty()) ? item->path() : path;
-    if (!persistPath.isEmpty()) {
-        ThumtooCache::StoredContentAppearance stored;
-        ThumtooCache::loadContentAppearance(persistPath, &stored);
-        const ColorAdjustments &adj = want.colorAdjust;
-        stored.hasGrade = !adj.isIdentity();
-        stored.gradeBrightness = adj.brightness;
-        stored.gradeContrast = adj.contrast;
-        stored.gradeSaturation = adj.saturation;
-        stored.gradeHue = adj.hue;
-        stored.gradeGamma = int(adj.gamma * 100.0 + 0.5);
-        stored.gradeInvert = adj.invert;
-        if (stored.isIdentity()) {
-            ThumtooCache::clearContentAppearance(persistPath);
-        } else {
-            ThumtooCache::saveContentAppearance(persistPath, stored);
-        }
-    }
-    if (item) {
-        const QImage appearance = sessionAppearanceImage(item);
-        if (!appearance.isNull()) {
-            emit sessionAppearanceChanged(sid != kInvalidSessionImageId ? sid : item->sessionId(),
-                                          item->path().isEmpty() ? path : item->path(),
-                                          appearance);
-        }
+    // Full rematerialize from host (async when multi-MP). Do **not** write
+    // grade into thumtoo durable appearance — SessionAppearanceStore / project
+    // already own it; path cache is for orient/crop hints, not slider spam.
+    rematerializeItemContent(item, want);
+    const QImage appearance = sessionAppearanceImage(item);
+    if (!appearance.isNull()) {
+        emit sessionAppearanceChanged(sid != kInvalidSessionImageId ? sid : item->sessionId(),
+                                      item->path().isEmpty() ? path : item->path(),
+                                      appearance);
     }
 }
 

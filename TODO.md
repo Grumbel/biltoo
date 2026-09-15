@@ -2,6 +2,28 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-943-color-grade-no-thumtoo-gui.** Colour grade: no thumtoo durable write; GUI-safe interactive bake.
+Prior: **942**.
+
+### Problem
+1. Interactive grade called `materializeDisplay` with host >512 → ASSERT_NOT_GUI_THREAD abort.
+2. Grade was still written into thumtoo path appearance (SQLite) — wrong owner; session/project is enough.
+
+### Fix
+- Interactive clamp to `kGuiMaterializeMaxEdge` (512); prefer live `setColorAdjustments` when host is unbaked.
+- Commit path: rematerialize + filmstrip only — **no** `saveContentAppearance` for grade.
+
+### Apply
+```bash
+git pull /path/to/biltoo-943-color-grade-no-thumtoo-gui.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-942-color-adjust-interactive.** Fast colour-slider path (debounce durable + clamped bake).
 Prior: **941**.
 
