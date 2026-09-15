@@ -471,7 +471,6 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
         return;
     }
     const QString path = item->path();
-    const bool hasCrop = want.hasCrop && !want.cropRect.isEmpty();
 
     if (kind == SessionAppearance::PixelKind::SoftPreview) {
         item->setPreviewImage(display);
