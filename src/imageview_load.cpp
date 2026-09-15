@@ -505,9 +505,12 @@ DisplaySurface::State ImageView::displaySurfaceStateForItem(const ImageItem *ite
         }
     }
     if (isImageMode()) {
-        int need = 0;
-        if (viewport()) {
-            need = qMax(viewport()->width(), viewport()->height());
+        // ImageFocus: on-screen need and native long edge (ladder-capped).
+        // Viewport-only need left PreferCache idle at ~2048 while native is 6k+.
+        int need = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
+        const QSize logical = logicalSizeForPath(item->path());
+        if (isPositiveSize(logical) && !isProvisionalImageSize(item->path())) {
+            need = qMax(need, qMax(logical.width(), logical.height()));
         }
         ds.needEdge = cappedDisplayEdgeForPath(item->path(), need);
     } else if (isGalleryMode()) {
@@ -2395,6 +2398,13 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     int climbTo = ThumtooCache::kBatchOverviewEdge;
     if (need > 0) {
         climbTo = qMax(climbTo, need);
+    }
+    // Image mode: escalate toward native (ladder-capped), not only viewport.
+    {
+        const QSize logical = logicalSizeForPath(path);
+        if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
+            climbTo = qMax(climbTo, qMax(logical.width(), logical.height()));
+        }
     }
     if (climbTo < ThumtooCache::kGalleryLadderEdge) {
         climbTo = ThumtooCache::kGalleryLadderEdge;

@@ -2,26 +2,30 @@
 
 ## Status (2026-09-15)
 
-**Tip: biltoo-977-decide-climb-past-prefercache-1024.** Fix stuck-at-1024 via decide needEdge.
-Prior: **976**.
+**Tip: biltoo-978-imagefocus-need-native.** ImageFocus need includes native long edge.
+Prior: **977**.
 
-### Bug
-`decide()` treated FullSource matching want as always settled, ignoring
-`needEdge`. PreferCache overview (1024) installed as FullSource never climbed
-to viewport need (2048+).
+### Why idle at 2048 with native 6048
+Need was **viewport on-screen only**. Fit-to-window ~2048 → decide host covers need →
+None → decoder idle. PreferCache did its job; policy never asked for 6k.
 
 ### Fix
-- FullSource + equal want + need unmet: **None** only if host already covers
-  need (crop settled). If host also short of need → **ScheduleClimb**.
-- Soft matching want with overview host short of need → **ScheduleClimb**.
-- Crop case preserved: large host covering need, small post-crop have → None.
+Image mode `displaySurfaceStateForItem` and `ensureImageModeQualityClimb` set
+need/climbTo to max(on-screen, native), still ladder/native-capped (8192).
+
+Not a full rewrite — viewport-only need was the gap after the decide migration.
+
+### Bundles
+Artifacts cleaned to tip **978** only (full stack from base 952). Do not keep
+intermediate tip files in artifacts.
 
 ### Apply
 ```bash
-git pull /path/to/biltoo-977-decide-climb-past-prefercache-1024.bundle HEAD
+git pull /path/to/biltoo-978-imagefocus-need-native.bundle HEAD
 ```
 
 ---
+
 
 
 
