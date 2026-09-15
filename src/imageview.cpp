@@ -571,25 +571,46 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         if (!item || item->path() != path) {
             continue;
         }
-        // Probe is authoritative logical size. Apply even when soft/full sample
-        // is present — samples must not block the true size.
-        // Probe reports on-disk orientation. Content quarter-turns may swap
-        // layout aspect — do not clobber an oriented cell with the raw size.
-        QSize layoutSize = size;
+        // Probe is authoritative file-native size. Layout = ContentXform
+        // (turns + crop), not a simple axis swap.
         SessionImageId sid = item->sessionId();
         if (sid == kInvalidSessionImageId && isImageMode()) {
             sid = m_currentSessionId;
         }
-        if (sid != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = m_appearance.get(sid)) {
-                if (SessionAppearance::contentSwapsAspect(*app)) {
-                    layoutSize = QSize(size.height(), size.width());
-                }
-            }
+        WorkspaceItemState want = wantAppearanceForItem(item, sid);
+        QSize layoutSize = ContentXform::layoutSize(size, want);
+        if (!(layoutSize.width() > 1 && layoutSize.height() > 1)) {
+            layoutSize = size;
         }
         const QSize cur = item->imageSize();
         if (cur == layoutSize) {
             continue;
+        }
+        // Image mode: never stretch installed pixels into a new aspect. If the
+        // display sample aspect disagrees with the probed layout, drop pixels
+        // and show blank until soft/full rematerialize (wrong aspect is worse).
+        if (isImageMode() && item->hasDisplayPixels()) {
+            const QImage disp = item->displayImage();
+            if (!disp.isNull() && disp.width() > 1 && disp.height() > 1
+                && layoutSize.width() > 1 && layoutSize.height() > 1) {
+                const double aDisp = double(disp.width()) / double(disp.height());
+                const double aLay = double(layoutSize.width()) / double(layoutSize.height());
+                if (qAbs(aDisp - aLay) > 0.04) {
+                    item->clearDecodedPixels();
+                    item->setPreviewImage(QImage());
+                    item->setIntrinsicSize(layoutSize);
+                    any = true;
+                    if (item == targetItem()) {
+                        preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);
+                        syncImageModeSceneRect(item);
+                    }
+                    // Soft ladder will re-fill; PreferCache if quiet.
+                    if (!path.isEmpty()) {
+                        requestEscalateClimb(path, ThumtooCache::kGalleryLadderEdge);
+                    }
+                    continue;
+                }
+            }
         }
         item->setIntrinsicSize(layoutSize);
         any = true;

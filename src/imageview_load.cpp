@@ -625,14 +625,29 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
                 pixelsForDisplay, appearance, kind);
         } else if (item->hasDisplayPixels()
                    && SessionAppearance::hasContentAppearance(appearance)) {
-            // Multi-MP: cannot materialize on GUI. Keep current display pixels;
-            // tag want and schedule pure rematerialize from host (same as rotate).
+            // Multi-MP: cannot materialize on GUI. Do not stretch existing
+            // pixels into a new want layout — clear, tag want, async rematerialize.
+            item->clearDecodedPixels();
+            item->setPreviewImage(QImage());
             item->setAppliedContentXform(
                 ContentXform::Value::fromState(appearance));
             scheduleAsyncHostRematerialize(path, sid, appearance);
             return;
         }
         // Cold open: attach raw until soft ≤kGui or worker-baked FullSource.
+        // Raw + content layout would stretch — only attach raw when no bake needed
+        // or materialize produced a sample. If still unbaked multi-MP want, skip
+        // attach and wait for async (blank until then beats wrong aspect).
+        if (wantBake && display.size() == pixelsForDisplay.size()
+            && SessionAppearance::hasContentAppearance(appearance)
+            && edge > ContentXform::kGuiMaterializeMaxEdge) {
+            item->clearDecodedPixels();
+            item->setPreviewImage(QImage());
+            item->setAppliedContentXform(
+                ContentXform::Value::fromState(appearance));
+            scheduleAsyncHostRematerialize(path, sid, appearance);
+            return;
+        }
     }
     const QSize sizeBeforeAttach = item->imageSize();
     attachDisplaySample(item, display, appearance, kind);
@@ -741,6 +756,12 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     // until soft arrives (avoids a flash on PreferCache gaps). Different path
     // (session switch / ←→): never keep the previous file's pixels — that is
     // the race where an old session image remains on screen as the new path.
+    //
+    // Critical: do NOT setIntrinsicSize to the new path's layout while the
+    // item is blank. That updates contentRect before any matching sample and
+    // stretches the loading placeholder / residual frame to the wrong aspect.
+    // Soft/LQIP install (below or escalate) sets layout with the pixels in
+    // the same attachDisplaySample call.
     if (pixels.isNull()) {
         if (m_items.size() == 1) {
             ImageItem *item = m_items.first();
@@ -752,17 +773,12 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                     item->clearDecodedPixels();
                 }
                 item->setPreviewImage(QImage());
-                const QSize sz = layoutSizeForPath(path, QImage());
-                if (isPositiveSize(sz)) {
-                    item->setIntrinsicSize(sz);
-                    // Avoid leaving prior image's sceneRect (free/asymmetric pan)
-                    // until soft/full framing runs.
-                    syncImageModeSceneRect(item);
-                }
+                // Leave intrinsic as-is until soft/LQIP attaches with layout.
+                // Optional: tight sceneRect still tracks the blank tile.
                 if (viewport()) {
                     viewport()->update();
                 }
-                biltooLoadDbg("pendingTile DEFER blank path=%s (cleared prior)",
+                biltooLoadDbg("pendingTile DEFER blank path=%s (cleared prior, layout deferred)",
                               qPrintable(QFileInfo(path).fileName()));
             } else {
                 biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",

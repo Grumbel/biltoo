@@ -2,6 +2,31 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-911-nav-no-aspect-stretch.** Image ←/→ must not change contentRect without matching pixels.
+Prior: **910**.
+
+### Bug
+Fast Image-mode navigation briefly showed the wrong aspect: layout/intrinsic
+updated (new path size or probe) before soft/LQIP pixels attached.
+
+### Fix
+- `installImageModePendingTile` cold path: clear prior pixels, **defer** intrinsic
+  until soft/LQIP attaches with layout in the same sample install.
+- Multi-MP content bake on GUI: never leave raw under a content layout; blank + async.
+- `applyProbedImageSize`: full `ContentXform::layoutSize`; if display aspect disagrees,
+  clear pixels rather than stretch, re-escalate soft.
+
+### Apply
+```bash
+git pull /path/to/biltoo-911-nav-no-aspect-stretch.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-910-crop-badge.** Yellow crop dog-ear (filmstrip BR + canvas tiles).
 Prior: **909**.
 
