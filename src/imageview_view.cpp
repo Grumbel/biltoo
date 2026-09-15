@@ -1659,19 +1659,8 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 
 void ImageView::displayQualityWatchdogTick()
 {
-    // Image canvas: no InstallHostBetter poller. Policy is DisplaySurface::decide
-    // driven by rasterImproved / load / explicit driveImageFocusSurface.
-    // This timer only (1) optionally re-evaluates ImageFocus when soft is still
-    // short of need and climb is idle (event may have been missed), and
-    // (2) recovers slideshow phase buffers while a transition is live.
-    if (m_cropDraftSampleFrozen) {
-        return;
-    }
-    if (isImageMode() && !m_slideshowProgressActive) {
-        // Safe: decide() is None when FullSource matches want (no soft demote).
-        driveImageFocusSurface();
-    }
-
+    // ImageFocus: never. DisplaySurface::decide is driven by rasterImproved,
+    // tryInstall, and zoom/resize climb — not this timer.
     if (!m_slideshowProgressActive) {
         return;
     }

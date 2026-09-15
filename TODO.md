@@ -2,6 +2,35 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-956-imagefocus-event-only.** ImageFocus: no timer; gallery settled skip.
+Prior: **955**.
+
+### Change
+- 1s timer: Gallery soft recovery + **slideshow only** when live. **Never**
+  calls ImageFocus / `driveImageFocusSurface`.
+- `displayQualityWatchdogTick`: slideshow phase buffers only.
+- Zoom/resize `maybeClimbImageModePixelsForView` ends with `driveImageFocusSurface`
+  so soft→async full still runs without a poller.
+- Gallery soft tick: skip InstallHostBetter soft reinstall when FullSource
+  already matches store want (crop host-vs-shown false positive).
+
+Image soft→full path: load/tryInstall → rasterImproved → drive decide →
+AttachSoft / ScheduleAsyncMaterialize / climb. No 1s InstallHostBetter.
+
+### Next
+**957** Gallery/Filmstrip as DisplaySurface bindings (Phase E/F).
+
+### Apply
+```bash
+git pull /path/to/biltoo-956-imagefocus-event-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-955-imagefocus-display-surface.** ImageFocus uses DisplaySurface::decide.
 Prior: **954**.
 

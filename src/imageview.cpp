@@ -329,7 +329,11 @@ ImageView::ImageView(QWidget *parent)
         if (isGalleryMode()) {
             gallerySoftWatchdogTick();
         }
-        displayQualityWatchdogTick();
+        // ImageFocus is event-driven only (rasterImproved / load / resize climb).
+        // Slideshow phase recovery while a transition is live.
+        if (m_slideshowProgressActive) {
+            displayQualityWatchdogTick();
+        }
     });
     m_gallerySoftWatchdog->start();
 }

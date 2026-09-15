@@ -775,6 +775,19 @@ void ImageView::gallerySoftWatchdogTick()
             if (dq.hostEdge > 0 && st.have >= dq.hostEdge) {
                 continue;
             }
+            // FullSource matching store want is settled (same rule as ImageFocus).
+            // Pre-crop host vs post-crop shown must not force soft reinstall.
+            if (item->hasDecodedPixels() && item->hasAppliedContentXform()) {
+                const WorkspaceItemState wantSt =
+                    wantAppearanceForItem(item, item->sessionId());
+                if (ContentXform::equal(item->appliedContentXform(),
+                                        ContentXform::Value::fromState(wantSt))) {
+                    if (dq.hostEdge > 0) {
+                        st.have = qMax(st.have, dq.hostEdge);
+                    }
+                    continue;
+                }
+            }
             const QImage soft = ImageCache::get(path);
             if (!soft.isNull()) {
                 installDisplayPixels(item, soft,

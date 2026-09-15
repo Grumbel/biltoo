@@ -2412,6 +2412,8 @@ void ImageView::maybeClimbImageModePixelsForView()
 
     // Zoom-in: PathRasterService Soft→PreferCache→Full (contract EscalateToFull).
     scheduleImageModePreferCacheClimb(path, need);
+    // Soft matching want + large host → ScheduleAsyncMaterialize via decide.
+    driveImageFocusSurface();
 }
 
 
