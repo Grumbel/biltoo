@@ -2,6 +2,31 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-938-image-host-better-fullsource.** Image quality watchdog installs host-better as FullSource when host > soft ladder.
+Prior: **937**.
+
+### Problem
+`displayQualityWatchdogTick` on InstallHostBetter always used SoftPreview.
+Tiles that already held FullSource (e.g. overview 1024) reject SoftPreview
+(`canAcceptDisplaySample`), so host=2048 never installed and quality logged
+`install-host-better` repeatedly (shown=1024 host=2048 target=4096).
+
+### Fix
+Choose SoftPreview vs FullSource from host long edge (same threshold as
+tryInstall / ladder). After install, escalate climb if still short of target.
+If accept fails, report + schedule EscalateToFull.
+
+### Apply
+```bash
+git pull /path/to/biltoo-938-image-host-better-fullsource.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-937-size-resolve-no-processEvents.** Size-resolve must not processEvents before defer is armed.
 Prior: **936**.
 

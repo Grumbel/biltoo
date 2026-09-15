@@ -1674,17 +1674,33 @@ void ImageView::displayQualityWatchdogTick()
                 DisplayQuality::checkSurface(path, shown, target, pending);
             if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
                 const QImage host = ImageCache::get(path);
-                if (!host.isNull()
-                    && canAcceptDisplaySample(
-                        item, host, SessionAppearance::PixelKind::SoftPreview)) {
-                    installDisplayPixels(item, host,
-                                         SessionAppearance::PixelKind::SoftPreview,
-                                         item->sessionId());
+                // Kind must match host edge: SoftPreview is rejected when the
+                // item already holds FullSource (even a smaller overview). Using
+                // SoftPreview here left shown=1024 while host=2048 forever and
+                // spam install-host-better.
+                const auto kind =
+                    (ImageCache::longEdge(host) > ThumtooCache::kGalleryLadderEdge)
+                        ? SessionAppearance::PixelKind::FullSource
+                        : SessionAppearance::PixelKind::SoftPreview;
+                if (!host.isNull() && canAcceptDisplaySample(item, host, kind)) {
+                    installDisplayPixels(item, host, kind, item->sessionId());
                     if (viewport()) {
                         viewport()->update();
                     }
+                    // Still short of on-screen target — keep climbing.
+                    if (item->displayPixelLongEdge() < (target * 9) / 10
+                        && m_pathRaster) {
+                        m_pathRaster->ensure(
+                            path, target, logicalSizeForPath(path),
+                            PathRasterService::ClimbPolicy::EscalateToFull);
+                    }
                 } else {
                     DisplayQuality::reportViolation("image", path, dq, false);
+                    if (m_pathRaster) {
+                        m_pathRaster->ensure(
+                            path, target, logicalSizeForPath(path),
+                            PathRasterService::ClimbPolicy::EscalateToFull);
+                    }
                 }
             } else if (dq.verdict != DisplayQuality::Verdict::Ok && !pending) {
                 // Recover first; gallery owns sustained hard-assert via weakSinceMs.
