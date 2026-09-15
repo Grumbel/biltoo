@@ -406,6 +406,8 @@ install(FILES data/biltoo.metainfo.xml
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/metainfo)
 install(FILES data/icons/hicolor/scalable/apps/biltoo.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
+install(FILES data/man/biltoo.1
+        DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 # Optional shipped .qm files (none required to build)
 file(GLOB BILTOO_QM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/translations/*.qm")
 if(BILTOO_QM_FILES)

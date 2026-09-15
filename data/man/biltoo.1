@@ -1,0 +1,177 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH BILTOO 1 "2026-09-15" "biltoo" "User Commands"
+.SH NAME
+biltoo \- Qt image viewer with Image, Gallery, and Workspace modes
+.SH SYNOPSIS
+.B biltoo
+[\fIoptions\fR] [\fIfile\fR|\fIdir\fR|\fIproject\fR\&...]
+.SH DESCRIPTION
+.B biltoo
+is a classic Qt 6 desktop image viewer with three presentation modes on one
+canvas:
+.TP
+.B Image
+Browse one file at a time \(em zoom, pan, rotate, flip, crop, slideshow.
+.TP
+.B Gallery
+Session overview in packed layouts (strip, grid, masonry, and related).
+.TP
+.B Workspace
+Free-form multi-image canvas for comparison, framing, and export.
+.P
+Sessions can be opened from files, directories, or archives (zip, tar variants,
+7z, rar when thumtoo backends allow). Projects use the
+.B .biltoo
+format (session identity, appearance, Workspace poses, content addressing).
+.SH OPTIONS
+.TP
+.BR \-r ", " \-\-recursive
+Expand directories recursively when a directory argument is given.
+.TP
+.BI \-\-start\-at= N
+Start at the
+.IR N -th
+image (1-based).
+.TP
+.BI \-\-sort= name|path|mtime
+Sort the session by name, full path, or modification time.
+.TP
+.BI \-\-mode= image|gallery|workspace
+Initial view mode.
+.TP
+.B \-\-slideshow
+Start a slideshow after loading images.
+.TP
+.BI \-\-interval= ms
+Slideshow dwell time in milliseconds (default 3000).
+.TP
+.BR \-f ", " \-\-fullscreen
+Start in fullscreen.
+.TP
+.B \-\-thumbnails
+Force the thumbnail bar (filmstrip) on.
+.TP
+.B \-\-no\-thumbnails
+Force the thumbnail bar off.
+.TP
+.B \-\-debug
+Verbose diagnostics: slideshow traces, libexiv2 metadata warnings, and
+thumtoo task traces (same effect as enabling the corresponding environment
+variables).
+.TP
+.B \-\-thumtoo\-debug
+Trace thumtoo ladder/tile work to stderr and
+.IR ~/.cache/biltoo/thumtoo-debug.log .
+.TP
+.BR \-h ", " \-\-help
+Show usage summary and exit.
+.TP
+.BR \-v ", " \-\-version
+Show version and exit.
+.SH ENVIRONMENT
+None of the following are required for normal use. Flag-style variables are
+treated as on when non-empty and not
+.BR 0 ,
+.BR f / F ,
+or
+.BR n / N .
+.SS Debug traces
+.TP
+.B THUMTOO_DEBUG
+Enable thumtoo ladder/tile/interest traces on stderr and the debug log under
+the biltoo cache directory. Also enables some biltoo load-path traces.
+.TP
+.B BILTOO_THUMTOO_DEBUG
+Alias for
+.BR THUMTOO_DEBUG .
+.TP
+.B BILTOO_LOAD_DEBUG
+Extra ImageView load-pipeline timestamps.
+.TP
+.B BILTOO_DEBUG_SLIDESHOW
+Slideshow transition and handoff traces.
+.TP
+.B BILTOO_DEBUG_FILMSTRIP
+Filmstrip (thumbnail bar) schedule diagnostics.
+.TP
+.B BILTOO_DEBUG_DROP
+Drag-and-drop / session-append logging.
+.TP
+.B BILTOO_DEBUG_CROP
+Crop-mode geometry diagnostics.
+.TP
+.B BILTOO_DEBUG_APPEARANCE
+Session appearance / materialize logging.
+.TP
+.B BILTOO_PERF
+Paint and decode-window timing.
+.TP
+.BR THUMTOO_DEBUG_OVERLAY " / " BILTOO_DEBUG_OVERLAY
+Stamp a tiled watermark and border on decoded samples.
+.SS Concurrency
+.TP
+.B BILTOO_THUMTOO_PIXEL_JOBS
+Max concurrent thumtoo pixel requests (1\(en16, default 8).
+.TP
+.B BILTOO_GALLERY_DECODE_CONCURRENCY
+Concurrent Gallery soft-decode workers (1\(en32).
+.TP
+.B BILTOO_FILMSTRIP_THUMB_LOADS
+Concurrent filmstrip thumbnail loads (1\(en64, default 24).
+.SS Paths
+.TP
+.B XDG_CACHE_HOME
+Base directory for the biltoo cache and
+.IR thumtoo-debug.log
+(default
+.IR $HOME/.cache ).
+.TP
+.B HOME
+Fallback when
+.B XDG_CACHE_HOME
+is unset.
+.P
+A full table lives in the source tree at
+.IR docs/ENVIRONMENT.md .
+.SH FILES
+.TP
+.I ~/.config/biltoo/biltoo.conf
+Qt settings (geometry, preferences). Dock
+.B windowState
+is not restored on some Qt 6.11 builds.
+.TP
+.I $XDG_CACHE_HOME/biltoo/
+Durable cache and optional
+.IR thumtoo-debug.log .
+.TP
+.I $prefix/share/applications/biltoo.desktop
+Desktop entry (MIME types for common images and archives).
+.TP
+.I $prefix/share/metainfo/biltoo.metainfo.xml
+AppStream metadata.
+.TP
+.I $prefix/share/icons/hicolor/scalable/apps/biltoo.svg
+Application icon.
+.SH NOTES
+Requires Qt \(>= 6.9. Optional features (libvips, libexiv2, archive/PDF/DjVu
+backends via thumtoo, gio-unix default-application Preferences) are detected
+at build time and listed under
+.BR "Help \(-> About" .
+.P
+Drag-and-drop onto a window
+.B appends
+to the session;
+.B File \(-> Open
+replaces it. Keyboard shortcuts are window-scoped so multiple windows do not
+fight for Space, Q, and navigation keys.
+.SH SEE ALSO
+.BR qt6 (1)
+(platform documentation), project sources
+.IR AGENTS.md ,
+.IR DOMAIN.md ,
+.IR docs/ENVIRONMENT.md .
+.SH AUTHOR
+Ingo Ruhnke <grumbel@gmail.com>
+.SH COPYRIGHT
+GPL-3.0-or-later. See LICENSES and REUSE.md in the source tree.

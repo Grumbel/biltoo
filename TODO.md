@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-940-env-docs-manpage.** Document debug/concurrency env vars; ship man page.
+Prior: **939**.
+
+### Change
+- **docs/ENVIRONMENT.md** — full table of runtime debug flags, concurrency knobs,
+  cache paths, and `nix develop` helpers (`BILTOO_*`, `THUMTOO_*`, XDG).
+- **data/man/biltoo.1** — man page (synopsis, options, ENVIRONMENT, FILES).
+- CMake installs the man page to `${CMAKE_INSTALL_MANDIR}/man1`.
+- AGENT-ENV.md, AGENTS.md, README point at the new docs.
+
+### Apply
+```bash
+git pull /path/to/biltoo-940-env-docs-manpage.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-939-todo-0.2-session-browser.** Record 0.2 session-browser / split-view plan.
 Prior: **938**.
 

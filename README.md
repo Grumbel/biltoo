@@ -147,8 +147,11 @@ Installed files (CMake / Nix):
 | `biltoo.desktop` | `$prefix/share/applications/` |
 | `biltoo.metainfo.xml` | `$prefix/share/metainfo/` (AppStream) |
 | `biltoo.svg` | `$prefix/share/icons/hicolor/scalable/apps/` |
+| `biltoo.1` | `$prefix/share/man/man1/` |
 
 The `.desktop` entry registers common image MIME types and popular archive types so file managers can open them with Biltoo.
+
+Debug and concurrency environment variables are listed in `man biltoo` and [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
 ## Build / install
 

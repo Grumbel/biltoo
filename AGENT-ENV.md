@@ -6,6 +6,16 @@
 - Primary integration build: **Nix flake** (`nix develop` / `nix build`).
 - Optional: system CMake + Qt when packages are new enough.
 
+## Runtime and debug environment variables
+
+Application and thumtoo client knobs (debug traces, concurrency, cache paths)
+are documented in **[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)** and the
+installed man page (`man biltoo`).
+
+Dev-shell helpers only (`nix develop`): `BILTOO_SOURCE`, `BILTOO_BUILD_DIR`,
+`THUMTOO_SOURCE_DIR`, `CMAKE_BUILD_TYPE`, `QT_PLUGIN_PATH`, `XDG_DATA_DIRS` —
+same doc.
+
 ## Sandbox expectations
 
 Automated agents often:
