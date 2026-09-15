@@ -2,6 +2,35 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-982-status-improving-not-stuck.** Clear idle "Improving quality…" HUD.
+Prior: **981**.
+
+### Meaning
+- **Improving quality…** — climb/decode still pending toward on-screen need.
+- **via file decode** — last thumtoo ladder provenance (not live work); was always
+  shown and looked like an active decode.
+
+### Bug
+`imageModeClimbActivityLabel` fell through to "Improving quality…" whenever the
+sample did not cover **file native**, even with no PathRaster/thumtoo pending.
+After window-need settle (981), decoder idle + stuck message.
+
+### Fix
+- Clear activity when display covers on-screen need (~90%)
+- Show Improving/Decoding only when climb or pixels pending
+- Gate `via …` under `THUMTOO_DEBUG`
+
+### Apply
+```bash
+git pull /path/to/biltoo-982-status-improving-not-stuck.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-981-progressive-ladder-window-need.** Soft→Prefer→Full; need = window.
 Prior: **980**.
 

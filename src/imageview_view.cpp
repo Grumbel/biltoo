@@ -3663,13 +3663,15 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
     if (!text || !item) {
         return;
     }
-    const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
-    if (!src.isEmpty()) {
-        *text += tr(" · via %1").arg(src);
-    }
+    // "via file decode" / ladder provenance is pipeline debug, not live status.
+    // Showing it next to a stuck "Improving quality…" looked like an active decode.
     const char *dbg = std::getenv("THUMTOO_DEBUG");
     if (!dbg || !dbg[0] || dbg[0] == '0') {
         return;
+    }
+    const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
+    if (!src.isEmpty()) {
+        *text += tr(" · via %1").arg(src);
     }
     const QString q = ThumtooCache::queueStatsLabel();
     if (!q.isEmpty()) {
@@ -3744,7 +3746,9 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
 
 QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
 {
-    // User-visible activity while soft/PreferCache samples climb to native.
+    // User-visible activity while samples climb toward *on-screen need*.
+    // Do not require native coverage — after progressive Soft→Prefer settle at
+    // window size, decoder is idle; claiming "Improving…" was a stuck HUD lie.
     if (!item || item->path().isEmpty()) {
         return {};
     }
@@ -3752,6 +3756,11 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
     const int have = item->displayPixelLongEdge();
     if (have <= 0) {
         return tr("Loading…");
+    }
+    const int need = imageModeOnScreenNeedEdge();
+    // ~90% of need (same ratio as PathRaster / DisplaySurface coversNeed).
+    if (need > 0 && have >= (need * 9) / 10) {
+        return {};
     }
     if (sampleCoversNativeLogical(path, item->displayImage())) {
         return {};
@@ -3761,17 +3770,14 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
                                             : tr("Improving quality…");
     }
     if (ThumtooCache::isAvailable()) {
-        const int want = cappedDisplayEdgeForPath(path, imageModeOnScreenNeedEdge());
+        const int want = cappedDisplayEdgeForPath(path, need);
         if (ThumtooCache::isPixelsPending(path, want)
-            || ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)) {
+            || ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)
+            || ThumtooCache::isPixelsPending(path, ThumtooCache::kBatchOverviewEdge)) {
             return tr("Improving quality…");
         }
     }
-    // Soft on screen, climb may be queued but not yet marked inflight.
-    if (!item->hasDecodedPixels()
-        || !sampleCoversNativeLogical(path, item->displayImage())) {
-        return tr("Improving quality…");
-    }
+    // No climb / decode pending: stay quiet even if below native.
     return {};
 }
 
