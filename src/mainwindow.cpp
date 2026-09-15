@@ -155,6 +155,15 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailBar->setAccessibleName(tr("Thumbnails"));
     if (m_imageView) {
         m_thumbnailBar->setStripBackground(m_imageView->backgroundColor());
+        // Image-mode ←/→: reuse filmstrip Soft (and ImageCache) instead of LQIP
+        // when the strip already decoded the path.
+        m_imageView->setImageModeSoftProvider(
+            [this](const QString &path, SessionImageId sid, bool *displayReady) {
+                if (!m_thumbnailBar) {
+                    return QImage();
+                }
+                return m_thumbnailBar->sampleForImageModePending(path, sid, displayReady);
+            });
     }
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);

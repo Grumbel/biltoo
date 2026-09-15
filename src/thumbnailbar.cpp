@@ -1264,6 +1264,79 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
     return prepareThumbnailFromImage(image, maxSize);
 }
 
+QImage ThumbnailBar::sampleForImageModePending(const QString &path, SessionImageId sid,
+                                               bool *displayReadyOut) const
+{
+    if (displayReadyOut) {
+        *displayReadyOut = false;
+    }
+    if (path.isEmpty()) {
+        return {};
+    }
+    // 1) Session appearance override (content-baked) — display-ready for that id.
+    if (sid != kInvalidSessionImageId) {
+        const auto it = m_sessionIdImageOverrides.constFind(sid);
+        if (it != m_sessionIdImageOverrides.cend() && !it.value().isNull()) {
+            if (displayReadyOut) {
+                *displayReadyOut = true;
+            }
+            return it.value();
+        }
+    }
+    // 2) Path-only override (unbound rows).
+    {
+        const auto it = m_sessionImageOverrides.constFind(path);
+        if (it != m_sessionImageOverrides.cend() && !it.value().isNull()) {
+            if (displayReadyOut) {
+                *displayReadyOut = true;
+            }
+            return it.value();
+        }
+    }
+    // 3) Shared host cache (filmstrip makeThumbnail puts here).
+    QImage host = ImageCache::get(path);
+    // 4) Filmstrip cell pixmap — survives ImageCache LRU eviction; path-row
+    //    icons from makeThumbnail are host-derived (not override).
+    for (int row = 0; row < m_files.size(); ++row) {
+        if (m_files.at(row) != path) {
+            continue;
+        }
+        if (row < m_sessionIds.size()) {
+            const SessionImageId rowId = m_sessionIds.at(row);
+            if (rowId != kInvalidSessionImageId
+                && m_sessionIdImageOverrides.contains(rowId)) {
+                // Baked override — only usable when sid matches (handled above).
+                continue;
+            }
+        }
+        const QListWidgetItem *it = item(row);
+        if (!it || !it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()) {
+            continue;
+        }
+        const QPixmap pm = it->data(ThumbnailDelegate::ThumbPixmapRole).value<QPixmap>();
+        if (pm.isNull()) {
+            continue;
+        }
+        const QImage icon = pm.toImage();
+        if (icon.isNull()) {
+            continue;
+        }
+        const int iconEdge = qMax(icon.width(), icon.height());
+        const int hostEdge = ImageCache::longEdge(host);
+        if (iconEdge > hostEdge) {
+            // Re-seed host cache so Image mode and strip stay aligned.
+            ImageCache::put(path, icon);
+            host = icon;
+        } else if (hostEdge <= 0) {
+            ImageCache::put(path, icon);
+            host = icon;
+        }
+        break;
+    }
+    return host;
+}
+
+
 void ThumbnailBar::setSessionImageOverride(const QString &path, const QImage &image)
 {
     if (path.isEmpty() || image.isNull()) {

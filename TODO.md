@@ -2,6 +2,31 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-991-image-nav-share-filmstrip-soft.** ←/→ prefer filmstrip Soft over LQIP.
+Prior: **990**.
+
+### Issue
+Fast Image-mode left/right showed LQIP while the filmstrip already had Soft for
+the same path. ImageCache is shared, but (1) pending tile preferred ladder-min
+get, (2) filmstrip icons can outlive LRU-evicted host samples, (3) session
+overrides never lived in ImageCache.
+
+### Fix
+- `ThumbnailBar::sampleForImageModePending` — override / ImageCache / cell icon
+- `ImageView` soft provider wired from MainWindow
+- Pending resolve: filmstrip sample before LQIP-only cache
+
+### Apply
+```bash
+git pull /path/to/biltoo-991-image-nav-share-filmstrip-soft.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-990-displaysurface-soft-host-edge.** Soft upgrade uses host edge > shown.
 Prior: **989**.
 

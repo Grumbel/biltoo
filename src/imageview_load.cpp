@@ -845,9 +845,20 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
         return preview;
     }
     QImage pixels = slideshowRaster(path);
-    if (pixels.isNull()) {
-        pixels = ImageCache::get(path, ThumtooCache::kGalleryLadderEdge);
+    // Filmstrip often has Soft while ImageCache only has size-probe LQIP (or
+    // LRU-evicted the soft). Prefer strip / shared host sample first.
+    if (pixels.isNull() && m_imageModeSoftProvider) {
+        bool ready = false;
+        pixels = m_imageModeSoftProvider(path, m_currentSessionId, &ready);
+        if (!pixels.isNull()) {
+            if (displayReadyOut) {
+                *displayReadyOut = ready;
+            }
+            return pixels;
+        }
     }
+    // Best host in process memory (any edge). Do not require Soft ladder first —
+    // filmstrip decode edge may be 128–256 and still beat LQIP.
     if (pixels.isNull()) {
         pixels = ImageCache::get(path);
     }
@@ -893,8 +904,14 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     return {};
 }
 
+void ImageView::setImageModeSoftProvider(ImageModeSoftProvider provider)
+{
+    m_imageModeSoftProvider = std::move(provider);
+}
+
 void ImageView::installImageModePendingTile(const QString &path, const QImage &preview)
 {
+
     if (!isImageMode() || path.isEmpty()) {
         return;
     }

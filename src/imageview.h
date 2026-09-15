@@ -20,6 +20,7 @@
 #include <QElapsedTimer>
 #include <QGraphicsView>
 #include <QHash>
+#include <functional>
 #include <QVector>
 #include <QList>
 #include <QImage>
@@ -1436,6 +1437,13 @@ private:
      * for @p path immediately (do not wait for the background decode).
      */
     void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
+    /**
+     * Optional filmstrip soft source for ←/→ pending tile. When set, prefer
+     * strip samples (and ImageCache) over size-probe LQIP alone.
+     */
+    using ImageModeSoftProvider =
+        std::function<QImage(const QString &path, SessionImageId sid, bool *displayReady)>;
+    void setImageModeSoftProvider(ImageModeSoftProvider provider);
     /** Bind Image-mode item to the current session cursor (id + index). */
     void bindImageModeSessionCursor(ImageItem *item);
     /** Neutral Image-mode pose (no Workspace free-form scale/rotation). */
@@ -1954,6 +1962,8 @@ private:
     /** Paths that already started host ImageLoader::load for Image-mode HQ. */
     QSet<QString> m_imageModeNativeDecodePaths;
     /** Central path→raster climb (slideshow + shared PreferCache policy). */
+    ImageModeSoftProvider m_imageModeSoftProvider;
+
     PathRasterService *m_pathRaster = nullptr;
 
     int gallerySoftInflightCount() const;
