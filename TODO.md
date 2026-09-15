@@ -2,6 +2,68 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-939-todo-0.2-session-browser.** Record 0.2 session-browser / split-view plan.
+Prior: **938**.
+
+### Change
+Docs only — planned work for **0.2**, not an implementation tip.
+
+---
+
+## Planned for 0.2 — Session browser (Gallery ↔ filmstrip unification)
+
+**Status:** design only; do not implement on the 0.1 line without an explicit tip.
+
+### Problem
+Gallery and the filmstrip (GUI: “Thumbnails” / dock “Filmstrip”) both show the
+same session membership (`SessionImageId` + path) but are separate stacks:
+
+- Gallery: `ImageView` + pack layouts (masonry/grid/…)
+- Filmstrip: `ThumbnailBar` (`QListWidget`) in a dock, H/V only
+
+`ViewMode` is exclusive (Image | Gallery | Workspace), so true side-by-side
+Gallery + Image is not a small feature.
+
+### Direction for 0.2
+
+1. **Concept:** one **session browser** (not “filmstrip” cinema metaphor).
+   - Layouts: StripH | StripV | Grid | Masonry | … (more than dock H/V)
+   - Density: dock chrome vs full-canvas overview
+   - **Focus surface** remains Image (and Workspace)
+
+2. **Near-term (low breakage):** grow the docked strip as the session browser
+   (flexible layout in the dock; optional splitter / title-less dock so it
+   *feels* like split view). Keep a single `ImageView` mode machine.
+
+3. **Mid-term:** shared row model (soft sample + appearance badge) so strip and
+   Gallery stop diverging on crop/quality.
+
+4. **Later / optional:** true Gallery | Image dual surface only after roles
+   (`Overview` vs `Focus`) replace a single global mode — high cost.
+
+### Explicitly out of scope until designed
+- Second full `ImageView` with parallel soft ladder / size-resolve / stash
+- Bolting a third “Split” mode onto the current exclusive `ViewMode` gates
+
+### Effort ballpark
+- Strip layouts beyond H/V + chrome: days–~1 week
+- Shared browser model: 1–3 weeks
+- Dual ImageView split: many weeks, high regression risk (soft/crop/mode)
+
+### Naming (GUI)
+Prefer **Thumbnails** / **session strip** over **Filmstrip** (cinema metaphor).
+
+### Apply
+```bash
+git pull /path/to/biltoo-939-todo-0.2-session-browser.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-938-image-host-better-fullsource.** Image quality watchdog installs host-better as FullSource when host > soft ladder.
 Prior: **937**.
 
