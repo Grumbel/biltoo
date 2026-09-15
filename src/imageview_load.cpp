@@ -624,16 +624,28 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         if (edge <= ContentXform::kGuiMaterializeMaxEdge) {
             display = SessionAppearance::materializeDisplay(
                 pixelsForDisplay, appearance, kind);
+        } else if (kind == SessionAppearance::PixelKind::FullSource) {
+            // Worker path (tryInstallImageModeSample) already ran
+            // prepareImageModeDisplaySample. Do not materialize again — that
+            // would double-apply crop/turns on a display sample.
+            display = pixelsForDisplay;
         } else if (item->hasDisplayPixels()
                    && SessionAppearance::hasContentAppearance(appearance)) {
-            // Multi-MP: cannot materialize on GUI. Keep current display pixels;
-            // tag want and schedule pure rematerialize from host (same as rotate).
+            // Multi-MP soft: cannot materialize on GUI. Keep current display;
+            // schedule pure rematerialize from host.
             item->setAppliedContentXform(
                 ContentXform::Value::fromState(appearance));
             scheduleAsyncHostRematerialize(path, sid, appearance);
             return;
         }
-        // Cold open: attach raw until soft ≤kGui or worker-baked FullSource.
+        // Soft multi-MP without prior display: attach clamped raw only if no
+        // content bake; otherwise wait for worker / async (blank beats stretch).
+        else if (wantBake) {
+            item->setAppliedContentXform(
+                ContentXform::Value::fromState(appearance));
+            scheduleAsyncHostRematerialize(path, sid, appearance);
+            return;
+        }
     }
     const QSize sizeBeforeAttach = item->imageSize();
     attachDisplaySample(item, display, appearance, kind);

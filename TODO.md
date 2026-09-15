@@ -2,6 +2,43 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-914-paint-aspect-contract.** Analysis-based fix for Image ←/→ aspect stretch.
+Prior: **913** (chrome clear alone was insufficient).
+
+### Analysis (no more guesswork)
+
+Paint path (`ImageItem::paint`) always did `drawImage(contentRect, sample)` —
+**stretch-to-fill**. Intrinsic size is independent of sample resolution (correct
+SIZE.md contract), so any soft/LQIP/provisional whose **pixel aspect ≠ contentRect
+aspect** is drawn distorted. That is not “layout before pixels”; it is **wrong
+pixels for the current box**.
+
+Typical sequences:
+1. Soft/LQIP installed with aspect A; probe/`layoutSize` sets contentRect to B → stretch.
+2. Soft materialize aspect vs `ContentXform::layoutSize` disagree (provisional native,
+   crop, orient) → stretch.
+3. Multi-MP FullSource worker already baked, then `installDisplayPixels` materialize
+   again → double crop/turns (garbled aspect).
+
+911–912 treated symptoms (defer layout / clear soft on probe) and slowed updates.
+
+### Fix
+1. **Paint**: if sample aspect differs from contentRect by >3%, **letterbox**
+   (KeepAspectRatio) instead of stretch. Matching aspects still fill the box.
+2. **installDisplayPixels**: multi-MP `FullSource` is display-ready (worker-baked);
+   do not materialize again.
+
+### Apply
+```bash
+git pull /path/to/biltoo-914-paint-aspect-contract.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-913-nav-clear-content-chrome.** ←/→ must not leak prior crop/flips into soft bake.
 Prior: **912** (wrong diagnosis; slowed updates).
 
