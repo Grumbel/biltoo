@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-906-sticky-no-ensurevisible.** Sticky gallery zoom must not fight ensureVisible.
+Prior: **905**.
+
+### Bug
+selectionChanged applied sticky fitInView, then focusSessionPath/revealGalleryPath
+called ensureVisible(item, 48) and scrolled against the fit.
+
+### Fix
+Skip ensureVisible when sticky zoom is on; framing owns the viewport.
+
+### Apply
+```bash
+git pull /path/to/biltoo-906-sticky-no-ensurevisible.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-905-unused-hascrop.** Drop unused hasCrop in attachDisplaySample.
 Prior: **904**.
 

@@ -1922,7 +1922,12 @@ void ImageView::focusSessionPath(const QString &path)
     m_scene->clearSelection();
     item->setSelected(true);
     if (isGalleryMode()) {
-        ensureVisible(item, 48, 48);
+        // Sticky Fit/Fill/1:1 already frames the selection in selectionChanged.
+        // ensureVisible after that fights fitInView (scroll margins / partial
+        // reveal) and leaves the page neither fitted nor stably in view.
+        if (!m_stickyZoomEnabled) {
+            ensureVisible(item, 48, 48);
+        }
         // Keyboard focus: show filename in the HUD like mouse hover.
         if (m_gallery.hoverPath() != path) {
             m_gallery.setHoverPath(path);
@@ -1941,7 +1946,16 @@ void ImageView::revealGalleryPath(const QString &path)
         return;
     }
     // Do not clearSelection — preserves Ctrl/Shift/rubber-band multi-select.
-    ensureVisible(item, 48, 48);
+    if (m_stickyZoomEnabled) {
+        // Framing is driven by selectionChanged when the caller selects; if
+        // the path is already selected, re-apply so filmstrip/keyboard still
+        // reframes after sticky was enabled mid-session.
+        if (item->isSelected()) {
+            applyGalleryFraming(m_stickyZoomKind);
+        }
+    } else {
+        ensureVisible(item, 48, 48);
+    }
     if (m_gallery.hoverPath() != path) {
         m_gallery.setHoverPath(path);
         viewport()->update();
