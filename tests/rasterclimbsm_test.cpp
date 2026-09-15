@@ -14,7 +14,7 @@ private slots:
     void covers_band();
     void soft_first_when_blank();
     void soft_then_display_under_overview();
-    void soft_covered_high_need_plans_full_same_tick();
+    void soft_covered_high_need_prefers_before_full();
     void prefercache_soft_delivery_sets_plateau_then_full();
     void full_shortfall_clears_done_in_plan();
     void host_lru_demotion_resets_queues();
@@ -63,17 +63,24 @@ void RasterClimbSmTest::soft_then_display_under_overview()
     QVERIFY(!p.scheduleFull); // need 800 ≤ overview
 }
 
-void RasterClimbSmTest::soft_covered_high_need_plans_full_same_tick()
+void RasterClimbSmTest::soft_covered_high_need_prefers_before_full()
 {
     Machine m;
     m.setWant(4096, 6048, Policy::SoftDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
-    const Plan p = m.plan(kSoft, kOverview, kDispMax);
+    Plan p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(!p.scheduleSoft);
-    // PreferCache allowed as intermediate, but Full must appear same plan
-    QVERIFY(p.scheduleFull);
+    // Soft covered + high need: Prefer first — Full only after Prefer plateau
+    // (same-plan Full starved intermediate paints).
+    QVERIFY(p.scheduleDisplay);
+    QVERIFY(!p.scheduleFull);
     QVERIFY(p.fullEdge > kOverview);
     QVERIFY(p.fullEdge <= 6048);
+
+    m.noteDelivery(4096, 512, kSoft); // PreferCache plateaued at soft
+    QVERIFY(m.state().preferGaveUp);
+    p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(p.scheduleFull);
 }
 
 void RasterClimbSmTest::prefercache_soft_delivery_sets_plateau_then_full()

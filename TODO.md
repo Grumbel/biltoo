@@ -2,6 +2,25 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-983-rasterclimb-test-prefer-before-full.** Test matches progressive plan.
+Prior: **982**.
+
+### Change
+`soft_covered_high_need_plans_full_same_tick` expected Full in the same plan as
+Prefer after Soft — contradicted tip 981. Renamed and asserts Prefer first,
+Full only after Prefer plateau delivery.
+
+### Apply
+```bash
+git pull /path/to/biltoo-983-rasterclimb-test-prefer-before-full.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-982-status-improving-not-stuck.** Clear idle "Improving quality…" HUD.
 Prior: **981**.
 
