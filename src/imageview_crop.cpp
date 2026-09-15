@@ -1461,9 +1461,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
         }
         alignItemCenterToScene(item, cropSceneCenter);
 
-        // Multi-MP: soft stand-in now; pure full rematerialize when host is large.
+        // Multi-MP: soft stand-in now; pure full rematerialize after leave.
+        // scheduleAsyncHostRematerialize is blocked while crop freeze is on —
+        // queue here and flush from clearCropModeState after unfreeze.
         if (hostFromCache && multiMp) {
-            scheduleAsyncHostRematerialize(path, sid, st);
+            m_cropPendingFullRematerialize = true;
+            m_cropPendingFullRematerializePath = path;
+            m_cropPendingFullRematerializeSid = sid;
+            m_cropPendingFullRematerializeWant = st;
         }
 
         if (isWorkspaceMode()) {
@@ -1577,10 +1582,22 @@ void ImageView::clearCropModeState()
     m_cropAllowExpand = false;
     m_cropRotation = 0.0;
     m_cropRubberBanding = false;
+    // Apply may have queued a full bake while freeze was still on.
+    const bool pendingFull = m_cropPendingFullRematerialize;
+    const QString pendingPath = m_cropPendingFullRematerializePath;
+    const SessionImageId pendingSid = m_cropPendingFullRematerializeSid;
+    const WorkspaceItemState pendingWant = m_cropPendingFullRematerializeWant;
+    m_cropPendingFullRematerialize = false;
+    m_cropPendingFullRematerializePath.clear();
+    m_cropPendingFullRematerializeSid = kInvalidSessionImageId;
+    m_cropPendingFullRematerializeWant = WorkspaceItemState{};
     emit cropModeChanged(false);
     emit statusChanged();
     viewport()->unsetCursor();
     viewport()->update();
+    if (pendingFull && !pendingPath.isEmpty()) {
+        scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
+    }
 }
 
 void ImageView::leaveCropModeInternal(bool apply)

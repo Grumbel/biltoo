@@ -2009,6 +2009,11 @@ private:
      */
     bool m_cropDraftSampleFrozen = false;
     QString m_cropDraftPath;
+    /** Apply queued full bake while freeze was on; flushed after clearCropModeState. */
+    bool m_cropPendingFullRematerialize = false;
+    QString m_cropPendingFullRematerializePath;
+    SessionImageId m_cropPendingFullRematerializeSid = kInvalidSessionImageId;
+    WorkspaceItemState m_cropPendingFullRematerializeWant;
     /** Draft may extend outside the image; apply pads with background. */
     bool m_cropAllowExpand = false;
     /** Draft crop rotation (degrees, about m_cropRect centre). */

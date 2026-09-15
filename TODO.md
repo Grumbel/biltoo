@@ -2,6 +2,28 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-950-crop-apply-rematerialize-after-freeze.** Verification fix: Apply full bake after freeze clears.
+Prior: **949**.
+
+### Verification findings
+1. Bundle 949 applies cleanly; identity Soft≤2048 demote removed; freeze covers install/climb/rematerialize entry.
+2. **Regression in 949:** `applyCropCommit` called `scheduleAsyncHostRematerialize` while freeze still true → schedule no-op → multi-MP Apply stayed on Soft≤512 forever.
+3. Fix: queue pending full bake; flush from `clearCropModeState` after unfreeze.
+
+### Remaining (not this tip)
+- `bakeItemRotate90` soft path still attaches without freeze check (content rotate during crop is unusual).
+
+### Apply
+```bash
+git pull /path/to/biltoo-950-crop-apply-rematerialize-after-freeze.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-949-crop-no-soft-demote.** Regular crop: no Soft demotion of identity host; rematerialize frozen.
 Prior: **948**.
 
