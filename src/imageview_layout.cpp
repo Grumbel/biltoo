@@ -626,6 +626,9 @@ void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImage
     if (path.isEmpty()) {
         return;
     }
+    if (isCropDraftLockedPath(path)) {
+        return;
+    }
     const QImage hostProbe = ImageCache::get(path);
     if (hostProbe.isNull()) {
         return;
@@ -669,9 +672,8 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     if (display.isNull() || path.isEmpty()) {
         return;
     }
-    // Crop draft owns the target item — do not reinstall a crop bake (or any
-    // sample) over orient-only full frame mid-session (Image/Gallery re-crop).
-    if (m_cropMode) {
+    // Crop draft owns the target item — do not reinstall over orient-only draft.
+    if (isCropDraftLockedPath(path)) {
         return;
     }
     ImageItem *item = nullptr;
@@ -2698,6 +2700,10 @@ void ImageView::flushColorAdjustCommit()
         return;
     }
     if (!item) {
+        return;
+    }
+    // Crop draft freezes pixels; colour commit waits until crop exits.
+    if (isCropDraftLockedItem(item)) {
         return;
     }
     // Full rematerialize from host (async when multi-MP). Do **not** write

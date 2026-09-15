@@ -517,20 +517,16 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     if (!item) {
         return;
     }
-    // Crop mode: draft is orient-only full frame. Ladder/async must not put a
-    // crop bake (or unoriented soft) back onto the target.
-    if (m_cropMode) {
-        if (item == m_cropTargetItem
-            || (m_cropTargetId != kInvalidSessionImageId
-                && item->sessionId() == m_cropTargetId)) {
-            return;
-        }
+    const QString path = item->path();
+    // Crop draft owns the live sample — ladder/async must not replace it
+    // (store want still has crop → wrong bake; soft↔full thrash).
+    if (isCropDraftLockedItem(item) || isCropDraftLockedPath(path)) {
+        return;
     }
     if (!canAcceptDisplaySample(item, pixels, kind)) {
         return;
     }
     const QSize layoutBefore = item->imageSize();
-    const QString path = item->path();
 
     // Resolve session id (Image-mode soft path often passes invalid sid).
     if (sid == kInvalidSessionImageId) {
@@ -756,18 +752,8 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     if (m_slideshowProgressActive) {
         return;
     }
-    // Crop draft owns the live sample — do not replace with ladder soft/store want.
-    if (m_cropMode) {
-        if (m_cropTargetItem && m_cropTargetItem->path() == path) {
-            return;
-        }
-        if (m_cropTargetId != kInvalidSessionImageId) {
-            if (ImageItem *cur = imageModeItemForPath(path)) {
-                if (cur->sessionId() == m_cropTargetId) {
-                    return;
-                }
-            }
-        }
+    if (isCropDraftLockedPath(path)) {
+        return;
     }
 
     bool displayReady = false;
@@ -2252,6 +2238,9 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     if (path.isEmpty() || m_slideshowNavHot || !m_pathRaster) {
         return;
     }
+    if (isCropDraftLockedPath(path)) {
+        return;
+    }
     if (m_slideshowProgressActive) {
         return;
     }
@@ -2302,19 +2291,8 @@ bool ImageView::tryInstallImageModeSampleBaked(const QString &path, const QImage
     if (!isImageMode() || path.isEmpty() || image.isNull()) {
         return false;
     }
-    // Crop session: draft sample is owned by installFullImageForCrop. Ladder /
-    // PathRaster must not reinstall (store want still has crop → wrong bake).
-    if (m_cropMode) {
-        if (m_cropTargetItem && m_cropTargetItem->path() == path) {
-            return false;
-        }
-        if (m_cropTargetId != kInvalidSessionImageId) {
-            if (ImageItem *cur = imageModeItemForPath(path)) {
-                if (cur->sessionId() == m_cropTargetId) {
-                    return false;
-                }
-            }
-        }
+    if (isCropDraftLockedPath(path)) {
+        return false;
     }
     if (ImageItem *cur = imageModeItemForPath(path)) {
         if (canAcceptDisplaySample(cur, image, kind)) {

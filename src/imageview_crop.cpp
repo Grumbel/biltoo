@@ -465,6 +465,43 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
     return false;
 }
 
+bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
+{
+    if (!m_cropMode || !item) {
+        return false;
+    }
+    if (m_cropTargetItem && item == m_cropTargetItem) {
+        return true;
+    }
+    if (m_cropTargetId != kInvalidSessionImageId
+        && item->sessionId() == m_cropTargetId) {
+        return true;
+    }
+    if (!m_cropTargetItem && !item->path().isEmpty()
+        && isCropDraftLockedPath(item->path())) {
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::isCropDraftLockedPath(const QString &path) const
+{
+    if (!m_cropMode || path.isEmpty()) {
+        return false;
+    }
+    if (m_cropTargetItem && m_cropTargetItem->path() == path) {
+        return true;
+    }
+    if (m_cropTargetId != kInvalidSessionImageId) {
+        if (ImageItem *byId = findItemBySessionId(m_cropTargetId)) {
+            if (byId->path() == path) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                                         const WorkspaceItemState *app, bool haveApp,
                                         bool unorientedSource)
@@ -476,6 +513,10 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // PreferCache samples must never redefine that box — only native/probed
     // logical size.
     const QString path = item->path();
+    // Freeze quality climb for this path — draft sample must not thrash.
+    if (m_pathRaster && !path.isEmpty()) {
+        m_pathRaster->cancel(path);
+    }
     if (sampleCoversNativeLogical(path, full)) {
         rememberSizeFromDecode(path, full);
         QSize logical = logicalSizeForPath(path);
@@ -497,6 +538,35 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
         contentOnly.cropSourceSize = QSize();
         contentOnly.cropRotation = 0.0;
     }
+    const ContentXform::Value wantX = ContentXform::Value::fromState(contentOnly);
+    const bool hadPriorCrop = haveApp && app && app->hasCrop && !app->cropRect.isEmpty();
+
+    // Already showing full-frame orient+grade (no crop bake): keep high-res
+    // pixels. Rebuilding a soft graded stand-in was the soft↔full thrash source
+    // when colour grade forced a lower-res materialize on enter.
+    if (!hadPriorCrop && item->hasDisplayPixels()
+        && item->hasAppliedContentXform()
+        && !item->appliedContentXform().hasCrop
+        && !item->sessionHasCrop()
+        && ContentXform::equal(item->appliedContentXform(), wantX)
+        && item->displayPixelLongEdge() >= ContentXform::kGuiMaterializeMaxEdge) {
+        item->setItemRotation(0.0);
+        item->setItemShear(0.0);
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+        item->setSessionCrop(false, QRect());
+        item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
+        item->setAppliedContentXform(wantX);
+        applyContentLayoutSize(item, contentOnly);
+        m_cropShowingFullImage = true;
+        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
+            qWarning().noquote()
+                << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
+                       .arg(item->displayPixelLongEdge())
+                       .arg(path);
+        }
+        return;
+    }
 
     item->setItemRotation(0.0);
     item->setItemShear(0.0);
@@ -513,21 +583,15 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                    .arg(path)
                    .arg(item->imageSize().width()).arg(item->imageSize().height())
                    .arg(item->hasDecodedPixels() ? 1 : 0)
-                   .arg((haveApp && app && app->hasCrop) ? 1 : 0)
+                   .arg(hadPriorCrop ? 1 : 0)
                    .arg(ImageCache::longEdge(full));
     }
     item->clearDecodedPixels();
     item->clearAppliedContentXform();
 
     // Interactive crop draft: orient-only full frame (never prior crop bake).
-    // MUST use materializeDisplay for orient — do NOT attach raw + bakeRotate90.
-    //
-    // Quality:
-    // - Identity orient/colour: keep host resolution (cap 2048 for GUI memory).
-    // - Geom bake (flip/turns): materializeDisplay on GUI only ≤ kGuiMaterializeMaxEdge.
-    // - Colour-only: do NOT force 512 Soft just because grade is set — that made
-    //   the quality watchdog InstallHostBetter every second (soft↔full thrash).
-    //   Apply grade via applyColorAdjustments on a ≤2048 sample instead.
+    // Geom bake on GUI only ≤ kGuiMaterializeMaxEdge; colour-only grades a
+    // ≤2048 sample without the 512 materialize clamp.
     QImage sample = full;
     SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
     const bool needGeomBake = contentOnly.contentHFlip || contentOnly.contentVFlip
@@ -552,7 +616,6 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
             display = sample;
         }
     } else if (unorientedSource && needColor) {
-        // Colour only — avoid materializeDisplay size clamp to 512.
         display = applyColorAdjustments(sample, contentOnly.colorAdjust);
         if (display.isNull()) {
             display = sample;
@@ -567,7 +630,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // Geometry: file-native orient size only (never soft pixels, never crop box).
     applyContentLayoutSize(item, contentOnly);
     item->setSessionCrop(false, QRect());
-    item->setAppliedContentXform(ContentXform::Value::fromState(contentOnly));
+    item->setAppliedContentXform(wantX);
 
     if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
         qWarning().noquote()

@@ -1619,6 +1619,9 @@ private:
     void installFullImageForCrop(ImageItem *item, const QImage &full,
                                  const WorkspaceItemState *app, bool haveApp,
                                  bool unorientedSource);
+    /** Crop draft owns the live sample — no ladder/install/rematerialize. */
+    bool isCropDraftLockedItem(const ImageItem *item) const;
+    bool isCropDraftLockedPath(const QString &path) const;
     void initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
                                          bool haveApp);
     /** Workspace: shift item so crop-frame centre maps to @p sceneAnchor. */

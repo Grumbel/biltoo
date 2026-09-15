@@ -212,7 +212,9 @@ ImageView::ImageView(QWidget *parent)
                 }
                 if (isImageMode() && !m_slideshowProgressActive
                     && path == classicPath()) {
-                    (void)tryInstallImageModeSample(path, img);
+                    if (!isCropDraftLockedPath(path)) {
+                        (void)tryInstallImageModeSample(path, img);
+                    }
                     // PreferCache plateaued below viewport need → quiet native.
                     // Full escalate is PathRasterService ClimbPolicy::EscalateToFull.
                     emit statusChanged();

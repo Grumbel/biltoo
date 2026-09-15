@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-947-crop-draft-freeze.** Crop draft freezes sample; no soft demote on graded full-frame.
+Prior: **946**.
+
+### Root cause (not “watchdog”)
+Colour grade made crop enter rebuild a lower-res stand-in. PathRaster / ladder /
+rematerialize then fought that sample. Guarding only the watchdog was insufficient.
+
+### Design
+- **Crop draft lock** (`isCropDraftLockedItem/Path`): install, tryInstall, pending-tile,
+  async rematerialize, colour-commit rematerialize, PathRaster install — all skip.
+- On crop enter: **cancel PathRaster** for the path.
+- If already full-frame orient+grade matching want: **keep pixels** (no soft rebuild).
+
+### Apply
+```bash
+git pull /path/to/biltoo-947-crop-draft-freeze.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-946-crop-grade-no-thrash.** Crop + colour grade no longer soft↔full every second.
 Prior: **945**.
 
