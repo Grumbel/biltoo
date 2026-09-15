@@ -579,6 +579,26 @@ Bridge *bridge()
     return g_bridge;
 }
 
+void openClientUnlocked()
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    // Caller holds g_mu or is the sole opener; sets g_inited before Client::open
+    // so concurrent isAvailable() waits on the lock instead of double-open.
+    if (g_inited) {
+        return;
+    }
+    g_inited = true;
+    try {
+        thumtoo::image_library_init();
+        g_client = thumtoo::Client::open(defaultCacheRoot(), qtExecutor());
+    } catch (...) {
+        g_client.reset();
+    }
+#else
+    g_inited = true;
+#endif
+}
+
 void init()
 {
     static bool bannered = false;
@@ -590,17 +610,30 @@ void init()
     }
 
 #ifdef BILTOO_HAVE_THUMTOO
-    std::lock_guard lock(g_mu);
-    if (g_inited) {
+    {
+        std::lock_guard lock(g_mu);
+        if (g_inited) {
+            return;
+        }
+    }
+    // Client::open touches the durable DB and must not run on the GUI thread
+    // (cold cache / slow home-dir disk freezes the whole app at startup, and
+    // first open of USB session paths often hit isAvailable on the GUI).
+    if (QThread::isMainThread()) {
+        static std::atomic<bool> openScheduled{false};
+        bool expected = false;
+        if (!openScheduled.compare_exchange_strong(expected, true)) {
+            return;
+        }
+        QThreadPool::globalInstance()->start([]() {
+            ASSERT_NOT_GUI_THREAD();
+            std::lock_guard lock(g_mu);
+            openClientUnlocked();
+        });
         return;
     }
-    g_inited = true;
-    try {
-        thumtoo::image_library_init();
-        g_client = thumtoo::Client::open(defaultCacheRoot(), qtExecutor());
-    } catch (...) {
-        g_client.reset();
-    }
+    std::lock_guard lock(g_mu);
+    openClientUnlocked();
 #endif
 }
 

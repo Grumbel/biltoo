@@ -481,6 +481,7 @@ QSize probeSizeWithVips(const QString &path)
 
 QSize probeSize(const QString &path)
 {
+    // Worker-only for source opens (ASSERT in debug when thumtoo is off).
     // Prefer durable thumtoo index (no source I/O) when a size is already known.
     if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
         return cached;
@@ -501,6 +502,8 @@ QSize probeSize(const QString &path)
         // No thumtoo: cannot size container pages / embedded images without backend.
         return {};
     }
+    // exists() + header read can stall for seconds on USB — never on GUI.
+    ASSERT_NOT_GUI_THREAD();
     if (path.isEmpty() || !QFile::exists(path)) {
         return {};
     }

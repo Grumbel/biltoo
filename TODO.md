@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-984-thumtoo-init-off-gui.** Client::open never on GUI thread.
+Prior: **983**.
+
+### Problem
+`ThumtooCache::init()` ran `Client::open` on the GUI thread at startup (`main`)
+and on the first GUI `isAvailable()` / size probe. Combined with any remaining
+source probe path, opening files from a slow USB froze the UI before paint.
+
+### Fix
+- GUI `init()` schedules `Client::open` on the thread pool; workers open under lock
+- `probeImageSize` is cache/stand-in only (no `ImageLoader::probeSize` on GUI)
+- `ImageLoader::probeSize` asserts not-GUI before `exists()` / header read
+
+### Apply
+```bash
+git pull /path/to/biltoo-984-thumtoo-init-off-gui.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-983-rasterclimb-test-prefer-before-full.** Test matches progressive plan.
 Prior: **982**.
 

@@ -30,8 +30,9 @@
 - `fillImageAnalysis` still on GUI when decodedHint is present (CPU only).
 - Image-mode settle still does one PreferCache climb after quiet; first soft frame
   uses async `update` while nav-hot (single-tap PreferCache ~80 ms later).
-- First `ThumtooCache::isAvailable()` still runs `Client::open` where first called
-  (worker during expand is preferred; avoid calling it on GUI for open gating).
+- First `ThumtooCache::isAvailable()` / `init()`: **Client::open is off-GUI**
+  (tip 984). GUI `init()` schedules a pool open and returns; workers open
+  synchronously under the same lock.
 
 ## Image / slideshow nav (normative)
 

@@ -375,22 +375,16 @@ ImageView::~ImageView()
 
 QSize ImageView::probeImageSize(const QString &path) const
 {
-    // Archive member probes must not extract on the GUI thread (large zip
-    // open would freeze Gallery virtualization). Prefer thumtoo cache-only
-    // size; otherwise a neutral placeholder until ladder/sizeReady reflows.
+    // Never open the source on the GUI thread (USB/NFS freeze). Cache-only or
+    // neutral stand-in; scheduleImageSizeProbe / sizeReady supply the real size.
+    if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
+        return cached;
+    }
     if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
         || PagePath::isPdfImageRef(path)) {
-        if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
-            return cached;
-        }
         return QSize(1024, 1024);
     }
-    // Header-only when possible (Qt, then VIPS); see ImageLoader::probeSize.
-    QSize s = ImageLoader::probeSize(path);
-    if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
-        s = QSize(1000, 1000);
-    }
-    return s;
+    return QSize(1000, 1000);
 }
 
 void ImageView::rememberImageSize(const QString &path, const QSize &size)
