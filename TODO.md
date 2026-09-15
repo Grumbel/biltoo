@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-904-gallery-zoom-selection.** Gallery Fit/Fill/1:1 target selection; sticky follows selection.
+Prior: **903**.
+
+### Behaviour
+- Gallery zoom Fit/Fill/1:1 frames the **current selection** (united bounds).
+- If nothing is selected, frames the **whole pack** (previous behaviour).
+- Sticky zoom re-applies on Gallery `selectionChanged` and after pack
+  (`applyLayout` resets the view transform).
+
+### Apply
+```bash
+git pull /path/to/biltoo-904-gallery-zoom-selection.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-903-expand-no-gui-stat.** No filesystem stats on GUI before Opening/Indexing.
 Prior: **902**.
 

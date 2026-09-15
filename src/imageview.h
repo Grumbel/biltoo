@@ -597,8 +597,9 @@ public:
     void zoomFill();
     /**
      * Sticky framing: Fit / Fill / 1:1 stay active across Image-mode navigation
-     * until the same mode is toggled off or free zoom (+/−, wheel, region) runs.
-     * New images are recentred (no attempt to map pan across different aspects).
+     * and Gallery selection changes until toggled off or free zoom (+/−, wheel,
+     * region) runs. Gallery targets the current selection, or the whole pack
+     * when nothing is selected.
      */
     enum class StickyZoomKind { Fit = 0, Fill = 1, Actual = 2 };
     void setStickyZoomEnabled(bool on);
@@ -609,6 +610,11 @@ public:
     StickyZoomKind stickyZoomKind() const { return m_stickyZoomKind; }
     /** Image-mode framing after soft/full install (honours sticky zoom). */
     void applyImageModeFraming(ImageItem *item);
+    /**
+     * Gallery Fit/Fill/1:1 framing (selection bounds, or whole pack if none).
+     * Used by zoom commands and sticky re-apply on selection change / pack.
+     */
+    void applyGalleryFraming(StickyZoomKind kind);
     /** Best-effort: remember viewport centre in image-normalized coords. */
     void captureStickyPanAnchor(ImageItem *item);
     void restoreStickyPanAnchor(ImageItem *item);
@@ -1647,6 +1653,13 @@ private:
     void updateHoverEdge(const QPoint &viewPos);
     void drawEdgeAffordances(QPainter &painter);
     QRectF selectionSceneBounds(const QList<ImageItem *> &items) const;
+    /** Selected ImageItems on the scene (Gallery/Workspace). */
+    QList<ImageItem *> selectedImageItems() const;
+    /**
+     * Gallery zoom target: united scene bounds of the selection, or the whole
+     * pack when nothing is selected.
+     */
+    QRectF galleryZoomTargetBounds() const;
     void paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const;
     int groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const;
     bool beginGroupScale(int handle, const QList<ImageItem *> &items);

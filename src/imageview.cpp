@@ -88,6 +88,12 @@ ImageView::ImageView(QWidget *parent)
             }
             // Refresh interest snapshot so FocusFull tracks the new Primary.
             updateGalleryDecodeWindow();
+            // Sticky Fit/Fill/1:1 follows the selection (book-page navigation:
+            // keep Fit on each selected page). Skip while applying layout —
+            // pack will call applyGalleryFraming once after transform reset.
+            if (m_stickyZoomEnabled && !m_applyingLayout) {
+                applyGalleryFraming(m_stickyZoomKind);
+            }
         }
         // Workspace: Primary = first selected; Near = remaining selection.
         if (isWorkspaceMode()) {

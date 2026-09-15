@@ -588,7 +588,12 @@ void ImageView::applyLayout(GalleryPackReason reason)
     m_applyingLayout = false;
     // Re-apply scroll after centerOn(0,0) above when returning from Image.
     applyPendingGalleryRestore();
-    if (preserveView) {
+    // Sticky Fit/Fill/1:1: re-frame selection (or whole pack) after pack reset
+    // the view transform. Wins over preserveView scroll so page-to-page Fit
+    // survives ContentChange packs.
+    if (m_stickyZoomEnabled) {
+        applyGalleryFraming(m_stickyZoomKind);
+    } else if (preserveView) {
         if (keptScrollH >= 0 && horizontalScrollBar()) {
             horizontalScrollBar()->setValue(keptScrollH);
         }
@@ -602,7 +607,8 @@ void ImageView::applyLayout(GalleryPackReason reason)
     if (reason == GalleryPackReason::ExplicitLayout
         || reason == GalleryPackReason::EnterGallery) {
         scheduleGalleryDecodeWindowRefresh(180);
-    } else {
+    } else if (!m_stickyZoomEnabled) {
+        // applyGalleryFraming already updates the decode window when sticky.
         updateGalleryDecodeWindow();
     }
 }
