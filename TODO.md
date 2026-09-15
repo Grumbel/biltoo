@@ -2,6 +2,25 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-969-slideshow-phase-surface-ids.** Slideshow from/to phase SurfaceIds.
+Prior: **968**.
+
+### Change
+- `m_ssFromSurface` / `m_ssToSurface` bound as `SlideshowPhase`.
+- Bind on arm path; unbind on clear / stop.
+- `slideshowPhaseSurfaceTick` evaluates bound surfaces (not free-standing State).
+
+### Apply
+```bash
+git pull /path/to/biltoo-969-slideshow-phase-surface-ids.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-968-surface-docs-slideshow-tick-rename.** Registry docs; rename slideshow tick.
 Prior: **967**.
 

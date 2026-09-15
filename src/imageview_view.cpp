@@ -781,6 +781,8 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_lastSlideshowPaintFp.clear();
         m_ssFromPath.clear();
         m_ssToPath.clear();
+        unbindSlideshowPhaseSurface(&m_ssFromSurface);
+        unbindSlideshowPhaseSurface(&m_ssToSurface);
         m_ssFromImage = QImage();
         m_ssToImage = QImage();
         m_ssFromContentApplied = false;
@@ -1657,32 +1659,62 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 }
 
 
+void ImageView::bindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id,
+                                            const QString &path)
+{
+    if (!id) {
+        return;
+    }
+    unbindSlideshowPhaseSurface(id);
+    if (path.isEmpty()) {
+        return;
+    }
+    *id = m_displaySurfaces.bind(
+        DisplaySurface::Kind::SlideshowPhase, path, kInvalidSessionImageId);
+}
+
+void ImageView::unbindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id)
+{
+    if (!id || *id == DisplaySurface::kInvalidSurfaceId) {
+        return;
+    }
+    m_displaySurfaces.unbind(*id);
+    *id = DisplaySurface::kInvalidSurfaceId;
+}
+
 void ImageView::slideshowPhaseSurfaceTick()
 {
     // ImageFocus: never. Slideshow phase buffers only, while a transition is live.
-    // Policy: DisplaySurface::decide (identity xform — phase buffers are oriented
-    // host samples, not session crop tiles).
     if (!m_slideshowProgressActive) {
         return;
     }
 
-    auto drivePhase = [this](const QString &path, int shownEdge) {
+    auto drivePhase = [this](DisplaySurface::SurfaceId *sid, const QString &path,
+                             int shownEdge) {
         if (path.isEmpty()) {
             return;
         }
+        if (!sid || *sid == DisplaySurface::kInvalidSurfaceId) {
+            bindSlideshowPhaseSurface(sid, path);
+        }
+        if (!sid || *sid == DisplaySurface::kInvalidSurfaceId) {
+            return;
+        }
         const int target = slideshowTargetEdge();
-        DisplaySurface::State ds;
-        ds.needEdge = target;
-        ds.haveDisplayEdge = shownEdge;
-        ds.hostLongEdge = DisplayQuality::hostLongEdge(path);
-        ds.climbPending =
+        const int hostEdge = DisplayQuality::hostLongEdge(path);
+        const bool pending =
             m_pathRaster && m_pathRaster->isClimbPending(path);
+        m_displaySurfaces.setNeed(*sid, target);
+        m_displaySurfaces.setHostLongEdge(*sid, hostEdge);
+        m_displaySurfaces.setClimbPending(*sid, pending);
+        DisplaySurface::AttachedKind ak = DisplaySurface::AttachedKind::None;
         if (shownEdge > 0) {
-            ds.attachedKind = (shownEdge >= (target * 9) / 10)
+            ak = (shownEdge >= (target * 9) / 10)
                 ? DisplaySurface::AttachedKind::FullSource
                 : DisplaySurface::AttachedKind::SoftPreview;
         }
-        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        m_displaySurfaces.setAttached(*sid, ak, shownEdge, ContentXform::Value{});
+        const DisplaySurface::Action act = m_displaySurfaces.evaluate(*sid);
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
             return;
@@ -1701,8 +1733,8 @@ void ImageView::slideshowPhaseSurfaceTick()
                 PathRasterService::ClimbPolicy::EscalateToFull);
         }
     };
-    drivePhase(m_ssFromPath, ImageCache::longEdge(m_ssFromImage));
-    drivePhase(m_ssToPath, ImageCache::longEdge(m_ssToImage));
+    drivePhase(&m_ssFromSurface, m_ssFromPath, ImageCache::longEdge(m_ssFromImage));
+    drivePhase(&m_ssToSurface, m_ssToPath, ImageCache::longEdge(m_ssToImage));
 }
 
 
@@ -2097,6 +2129,7 @@ void ImageView::armSlideshowFromPhase(const QString &fromPath, int pathMs)
 {
     const bool promote = shouldPromoteSlideshowToAsFrom(fromPath);
     m_ssFromPath = fromPath;
+    bindSlideshowPhaseSurface(&m_ssFromSurface, fromPath);
     if (promote) {
         promoteSlideshowFromToPhase(fromPath);
     } else {
@@ -2115,6 +2148,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
 {
     if (toPath.isEmpty()) {
         m_ssToPath.clear();
+        unbindSlideshowPhaseSurface(&m_ssToSurface);
         m_ssToImage = QImage();
         m_ssToContentApplied = false;
         ++m_ssToAtlasRebuildGeneration;
@@ -2127,6 +2161,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         return;
     }
     m_ssToPath = toPath;
+    bindSlideshowPhaseSurface(&m_ssToSurface, toPath);
     (void)ensureSlideshowLogicalSize(toPath);
     m_ssToImage = slideshowSampleUnoriented(toPath);
     m_ssToContentApplied = false;
@@ -3178,6 +3213,7 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     if (m_slideshowProgressActive && !path.isEmpty()) {
         if (m_ssFromPath != path || m_ssFromImage.isNull()) {
             m_ssFromPath = path;
+            bindSlideshowPhaseSurface(&m_ssFromSurface, path);
             m_ssFromImage = dwell;
             WorkspaceItemState app2;
             m_ssFromContentApplied =

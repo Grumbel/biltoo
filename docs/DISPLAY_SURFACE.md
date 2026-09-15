@@ -264,7 +264,7 @@ Keep on ImageView: scene, modes, input, pack geometry, crop chrome, paint.
 filmstrip `ThumbnailBar::m_rowSurfaceIds`, ImageFocus aliases primary item id.
 
 **Residual:** ImageView still owns materialize/attach helpers *after* decide;
-optional `displayReady` signal orchestration; slideshow phase SurfaceId bind.
+optional `displayReady` signal orchestration.
 
 Each phase must leave the app usable: soft still appears; full still arrives
 via **events**, not a 1s InstallHostBetter poller.

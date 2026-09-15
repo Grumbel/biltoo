@@ -1485,6 +1485,8 @@ private:
     void gallerySoftWatchdogTick();
     /** Slideshow phase buffers only: DisplaySurface::decide while transition live. */
     void slideshowPhaseSurfaceTick();
+    void bindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id, const QString &path);
+    void unbindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id);
     /** Phase C: bind/sync ImageFocus surface and apply DisplaySurface::decide. */
     void ensureImageFocusSurface();
     void syncImageFocusSurfaceState();
@@ -1845,6 +1847,8 @@ private:
     /** Pure-phase composite (driven every clock tick; no begin/cancel). */
     QString m_ssFromPath;
     QString m_ssToPath;
+    DisplaySurface::SurfaceId m_ssFromSurface = DisplaySurface::kInvalidSurfaceId;
+    DisplaySurface::SurfaceId m_ssToSurface = DisplaySurface::kInvalidSurfaceId;
     QImage m_ssFromImage;
     QImage m_ssToImage;
     /** Phase buffer already has ContentXform materialize (not raw host stand-in). */
