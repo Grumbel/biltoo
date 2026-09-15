@@ -64,8 +64,10 @@ struct Action {
 };
 
 /**
- * Pure install policy. Does not compare pre-crop host edge to post-crop shown
- * as an "upgrade" when FullSource already matches want (crop pulse root cause).
+ * Pure install policy. When FullSource already matches want, settles on
+ * post-crop display vs need (or rematerializes if host projects a better
+ * post-crop edge). Never treats raw pre-crop host ≫ post-crop shown as an
+ * upgrade by itself (crop soft↔full pulse root cause).
  */
 Action decide(const State &s);
 

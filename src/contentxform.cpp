@@ -228,7 +228,36 @@ bool needsRematerialize(const Value &applied, const Value &want,
     if (!equal(applied, want)) {
         return true;
     }
-    return incomingLongEdge > shownLongEdge;
+    // Crop-aware: compare expected post-crop display edges, not host vs shown.
+    return estimatedDisplayLongEdge(incomingLongEdge, want) > shownLongEdge;
+}
+
+int estimatedDisplayLongEdge(int hostLongEdge, const Value &want)
+{
+    if (hostLongEdge <= 0) {
+        return 0;
+    }
+    if (!want.hasCrop || want.cropRect.isEmpty()) {
+        return hostLongEdge;
+    }
+    const QRect crop = want.cropRect.normalized();
+    const int cropLong = qMax(crop.width(), crop.height());
+    if (cropLong < 1) {
+        return hostLongEdge;
+    }
+    int srcLong = 0;
+    if (want.cropSourceSize.isValid()
+        && want.cropSourceSize.width() > 0
+        && want.cropSourceSize.height() > 0) {
+        srcLong = qMax(want.cropSourceSize.width(), want.cropSourceSize.height());
+    }
+    if (srcLong < 1) {
+        return hostLongEdge;
+    }
+    const qint64 scaled =
+        (qint64(hostLongEdge) * qint64(cropLong) + qint64(srcLong) / 2)
+        / qint64(srcLong);
+    return int(qBound(1LL, scaled, qint64(hostLongEdge)));
 }
 
 QSizeF scaleToPreserveFootprint(qreal footW, qreal footH, const QSize &logical)

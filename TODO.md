@@ -2,6 +2,38 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-979-crop-aware-display-surface-decide.** FullSource settle is crop-aware.
+Prior: **978**.
+
+### Problem
+`DisplaySurface::decide` treated FullSource + matching want + `hostCoversNeed`
+as settled. After crop Apply, a Soft/overview host bake attached as FullSource;
+when a native host later arrived, decide returned None — post-crop display
+stayed low-res. Pre-crop host vs post-crop shown must not drive settle.
+
+### Fix
+- `ContentXform::estimatedDisplayLongEdge(host, want)` (crop × source scale;
+  crop rotation uses axis-aligned crop rect)
+- FullSource branch: settle when display covers need; else rematerialize when
+  estimated post-crop from host improves shown; else climb if host short of need
+- Docs §4.1 match code; `needsRematerialize` crop-aware
+
+### Done criteria
+- [x] Soft-sourced crop FullSource can upgrade to native host bake
+- [x] No host≫shown false upgrade / soft↔full pulse
+- [x] Docs; next **980**
+
+### Apply
+```bash
+git pull /path/to/biltoo-979-crop-aware-display-surface-decide.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-978-imagefocus-need-native.** ImageFocus need includes native long edge.
 Prior: **977**.
 

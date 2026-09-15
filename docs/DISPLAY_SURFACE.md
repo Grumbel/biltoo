@@ -121,13 +121,22 @@ Action:
 ### 4.1 Normative rules
 
 1. **`frozen`** → always `None` (draft install uses a separate explicit API).
-2. **`appliedXform == wantXform` && `attachedKind == FullSource`** → `None`.
-   Host long edge is irrelevant (pre-crop vs post-crop must not compare).
+2. **`appliedXform == wantXform` && `attachedKind == FullSource`**:
+   - If **post-crop** `haveDisplayEdge` covers `needEdge` → `None` (settled).
+   - Else if `estimatedDisplayLongEdge(host, want)` is a strict upgrade over
+     `haveDisplayEdge` → `AttachFull` (host ≤ GUI max) or
+     `ScheduleAsyncMaterialize` (multi-MP host). Do **not** compare raw
+     pre-crop host edge to post-crop shown (that caused the soft↔full pulse).
+   - Else if host long edge still short of need → `ScheduleClimb`.
+   - Else → `None` (best bake possible from current host).
 3. **`appliedXform == wantXform` && Soft attached** → may
    `ScheduleAsyncMaterialize` or `AttachFull` if host is already GUI-sized;
    **never** re-`AttachSoft` from the same host as a “quality upgrade.”
 4. **`wantXform` changed** → rematerialize once from best host (soft stand-in
-   if multi-MP, then one async full).
+   if multi-MP, then one async full). Crop and crop rotation live in
+   `ContentXform::Value` (`hasCrop`, `cropRect`, `cropSourceSize`,
+   `cropRotation`); `estimatedDisplayLongEdge` uses the crop rect long edge
+   over `cropSourceSize` long edge.
 5. **Never demote** FullSource matching want to SoftPreview.
 6. **Climb only** via `PathRasterService::ensure`. No second climb SM.
 7. **Materialize** only through `SessionAppearance::materializeDisplay`.

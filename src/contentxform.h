@@ -92,6 +92,17 @@ bool needsRematerialize(const Value &applied, const Value &want,
                         int shownLongEdge, int incomingLongEdge);
 
 /**
+ * Expected display long edge after materializeDisplay of a host sample whose
+ * long edge is @p hostLongEdge under @p want (crop / orient).
+ *
+ * Used by DisplaySurface::decide so FullSource+matching-want does not settle
+ * on a Soft/overview crop bake while a better host is available. Without crop:
+ * returns hostLongEdge. Crop rotation uses the axis-aligned crop rect size
+ * (same space as cropRect after orient).
+ */
+int estimatedDisplayLongEdge(int hostLongEdge, const Value &want);
+
+/**
  * Scale factors so @p logical content size occupies @p footW × @p footH
  * in scene units (Workspace crop Apply must not shrink the tile).
  */

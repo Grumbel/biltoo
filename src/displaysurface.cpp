@@ -38,20 +38,43 @@ Action decide(const State &s)
     const bool hostCoversNeed = hasHost && coversNeed(s.hostLongEdge, s.needEdge);
 
     // FullSource matching want: never soft-demote via host≫shown (crop pulse).
-    // PreferCache plateau (host and have both ~1024 while need is 2048+) must
-    // still ScheduleClimb — host does not cover need.
-    // Crop case: host covers need, post-crop have is small → None (settled).
+    // Settled only when post-crop *display* meets need, or the current host
+    // cannot improve the post-crop bake further. PreferCache plateau (host and
+    // have both ~1024 while need is 2048+) must still ScheduleClimb.
+    //
+    // Wrong prior rule: hostCoversNeed → None even when have was a Soft-sourced
+    // crop bake (host later native → stuck low-res crop). Compare projected
+    // post-crop edges (ContentXform::estimatedDisplayLongEdge), not host vs shown.
     if (s.attachedKind == AttachedKind::FullSource && xformEqual) {
-        if (!needUnmet || hostCoversNeed) {
+        if (!needUnmet) {
             a.type = ActionType::None;
             return a;
         }
-        if (s.climbPending) {
-            a.type = ActionType::None;
+        const int estFromHost =
+            ContentXform::estimatedDisplayLongEdge(s.hostLongEdge, s.want);
+        const bool hostImprovesDisplay =
+            hasHost && estFromHost > s.haveDisplayEdge;
+        if (hostImprovesDisplay) {
+            if (s.hostLongEdge > ContentXform::kGuiMaterializeMaxEdge) {
+                a.type = ActionType::ScheduleAsyncMaterialize;
+                return a;
+            }
+            a.type = ActionType::AttachFull;
             return a;
         }
-        a.type = ActionType::ScheduleClimb;
-        a.climbNeedEdge = climbNeed;
+        // Host cannot improve post-crop pixels — climb for a better host if
+        // the pre-crop sample itself is still short of need (uncropped path
+        // and oversized crops both need this).
+        if (!hostCoversNeed) {
+            if (s.climbPending) {
+                a.type = ActionType::None;
+                return a;
+            }
+            a.type = ActionType::ScheduleClimb;
+            a.climbNeedEdge = climbNeed;
+            return a;
+        }
+        a.type = ActionType::None;
         return a;
     }
 
