@@ -89,8 +89,7 @@ For any item with a valid `SessionImageId`:
      (crop visible immediately), then `scheduleAsyncHostRematerialize` when
      FullSource was requested. **Never** attach raw host under want.
 3. **`appliedContentXform` is set only inside `attachDisplaySample`** after a
-   real bake. Multi-MP helpers that cannot bake crop (e.g. `applyContentToItem`
-   edge limit) must not claim full want including crop.
+   real bake. Never set applied == full want (including crop) without a matching bake.
 4. SoftPreview **includes crop** (scaled into soft space). Helpers must not
    strip `hasCrop` before `materializeDisplay`.
 5. Path duplicates: one host sample in ImageCache; **per-id** materialize on

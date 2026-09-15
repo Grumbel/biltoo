@@ -1706,7 +1706,7 @@ void ImageView::completeLoadRestore(const QString &path, const QImage &image)
         item->setSessionIndex(state.sessionIndex);
     }
     // Host is in ImageCache / item. Materialize store want (soft stand-in +
-    // async multi-MP). Do not use applyContentToItem alone — multi-MP cannot
+    // async multi-MP). Do not bake chrome-only on multi-MP — cannot
     // bake crop on the GUI and used to claim applied == want without pixels.
     if (SessionAppearance::hasContentAppearance(app)
         || !app.colorAdjust.isIdentity()) {

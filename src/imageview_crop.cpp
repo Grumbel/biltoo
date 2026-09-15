@@ -985,7 +985,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
         return;
     }
     // Geometry content ops bake pixels. Reload full on-disk source when those
-    // ops are present so applyContentToItem is safe to call more than once.
+    // ops are present so rematerialize/install can run from host more than once.
     const bool needsFullSource = app->hasCrop || app->contentHFlip || app->contentVFlip
         || app->contentQuarterTurns != 0;
     if (needsFullSource) {

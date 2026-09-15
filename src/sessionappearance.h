@@ -132,23 +132,6 @@ QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sour
 void applyCrop(ImageItem *item, const WorkspaceItemState &state);
 
 /**
- * Single entry point for session-image *content* appearance on a decoded item.
- *
- * Order (must stay consistent everywhere):
- *   1. Crop (from full on-disk / current source pixels)
- *   2. Content flips + quarter turns (baked into source pixels)
- *   3. Session crop / content-flip chrome flags
- *   4. Non-destructive colour grade (display only)
- *
- * Does **not** touch placement (pos / scale / free tilt / opacity / z / item flips).
- * Callers must have already set full (or post-decode) source pixels on @p item.
- *
- * Prefer ImageView::installDisplayPixels for new install sites so raw vs baked
- * stays explicit.
- */
-void applyContentToItem(ImageItem *item, const WorkspaceItemState &state);
-
-/**
  * After content orientation is applied (pixels and/or flags), ensure layout
  * geometry (intrinsic size / offset) matches content aspect. Odd quarter-turns
  * transpose intrinsic when it still has the pre-rotate aspect — Gallery pack,
@@ -162,7 +145,7 @@ void syncItemLayoutToContentOrientation(ImageItem *item,
 /**
  * Bake session content appearance into a QImage (no ImageItem).
  *
- * Same order as applyContentToItem. Used for filmstrip overrides, slideshow
+ * Same order as materializeDisplay. Used for filmstrip overrides, slideshow
  * handoff blits, and SoftPreview pixel prep before setPreviewImage.
  *
  * SoftPreview: crop is scaled into the soft pixel space; result aspect follows
@@ -190,10 +173,10 @@ bool hasContentAppearance(const WorkspaceItemState &state);
  * Per–session-image content appearance (crop, content flips, quarter turns,
  * colour grade). Identity is SessionImageId — never path (IDENTITY.md).
  *
- * Apply content onto a decoded ImageItem only via
- * SessionAppearance::applyContentToItem — do not fork crop/bake/grade order
- * at call sites. Prefer ImageView::installDisplayPixels when attaching raw
- * decode pixels so SoftPreview vs FullSource stays consistent.
+ * Apply content onto pixels only via materializeDisplay / applyContentToImage
+ * (order is fixed). Prefer ImageView::installDisplayPixels or
+ * rematerializeItemContent when attaching to items so SoftPreview vs FullSource
+ * and multi-MP async stay consistent.
  *
  * Path-keyed maps on ImageView remain legacy fallbacks for unbound tiles only.
  */

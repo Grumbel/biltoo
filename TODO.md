@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-933-remove-dead-applyContentToItem.** Remove unused SessionAppearance::applyContentToItem.
+Prior: **932**.
+
+### Change
+No remaining call sites after install/rematerialize consolidation. The multi-MP
+branch was a host-under-want footgun (orient-only applied). Callers use
+installDisplayPixels / rematerializeItemContent / materializeDisplay /
+applyContentToImage only.
+
+### Apply
+```bash
+git pull /path/to/biltoo-933-remove-dead-applyContentToItem.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-932-remove-dead-applyContentBakes.** Remove unused applyContentBakes; install gate is sole path.
 Prior: **931**.
 

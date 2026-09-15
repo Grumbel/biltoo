@@ -300,54 +300,6 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
     return out;
 }
 
-void applyContentToItem(ImageItem *item, const WorkspaceItemState &state)
-{
-    if (!item) {
-        return;
-    }
-    // Prefer ImageView::rematerializeItemContent (host cache + async multi-MP).
-    // This helper only runs GUI-safe materialize (≤ kGuiMaterializeMaxEdge).
-    // Contract: @p item holds *raw* pixels (or soft). Already-baked display must
-    // not be passed here or transforms double-apply.
-    QImage raw = item->sourceImage();
-    if (raw.isNull()) {
-        raw = item->previewImage();
-    }
-    if (raw.isNull()) {
-        return;
-    }
-    const int edge = qMax(raw.width(), raw.height());
-    if (edge > ContentXform::kGuiMaterializeMaxEdge
-        && (hasContentAppearance(state) || !state.colorAdjust.isIdentity())) {
-        // Cannot materialize multi-MP on GUI. Chrome may reflect orient intent,
-        // but applied must not claim full want (crop included) while pixels are
-        // still host-raw — that is the host-under-want lie. Caller must
-        // rematerializeItemContent / scheduleAsyncHostRematerialize.
-        item->setContentHFlip(state.contentHFlip);
-        item->setContentVFlip(state.contentVFlip);
-        item->setSessionCrop(state.hasCrop, state.cropRect);
-        item->setColorAdjustmentsRecord(state.colorAdjust);
-        WorkspaceItemState orientOnly = state;
-        orientOnly.hasCrop = false;
-        orientOnly.cropRect = {};
-        orientOnly.cropSourceSize = {};
-        orientOnly.cropRotation = 0.0;
-        item->setAppliedContentXform(ContentXform::Value::fromState(orientOnly));
-        return;
-    }
-
-    // Single pipeline: materializeDisplay (flips → turns → crop±rot → grade).
-    item->setSourceImage(materializeDisplay(raw, state, PixelKind::FullSource));
-
-    item->setContentHFlip(state.contentHFlip);
-    item->setContentVFlip(state.contentVFlip);
-    item->setSessionCrop(state.hasCrop, state.cropRect);
-    item->setColorAdjustments(state.colorAdjust);
-    // Intrinsic is owned by ImageView::applyContentLayoutSize(fileNative, want).
-    // Do not use item->imageSize() as native (may already be a crop box).
-    item->setAppliedContentXform(ContentXform::Value::fromState(state));
-}
-
 void syncItemLayoutToContentOrientation(ImageItem *item,
                                         const WorkspaceItemState &state)
 {
