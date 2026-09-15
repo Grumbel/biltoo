@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-945-gallery-grade-no-double.** Gallery colour grade was double-applied via setSourceImage.
+Prior: **944**.
+
+### Cause
+`attachDisplaySample` used `setSourceImage` for Gallery/Workspace FullSource. That path calls `updateDisplayedPixmap()`, which applies `m_colorAdjust` on top of pixels already graded by `materializeDisplay`. Image mode used `setSourceImageReady` (no re-grade) — filmstrip looked fine.
+
+### Fix
+- Always attach baked samples with `setSourceImageReady` / `setPreviewImage`
+- `setColorAdjustments` only live-grades when `!hasAppliedContentXform`
+
+### Apply
+```bash
+git pull /path/to/biltoo-945-gallery-grade-no-double.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-944-color-adjust-panel-filmstrip.** Keep Adjustments enabled on SoftPreview; filmstrip updates on grade.
 Prior: **943**.
 

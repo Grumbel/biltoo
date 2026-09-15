@@ -436,12 +436,13 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
     }
     const QString path = item->path();
 
+    // Display samples are always display-ready (materializeDisplay or host-raw
+    // identity). Never use setSourceImage here — it re-runs updateDisplayedPixmap
+    // and double-applies m_colorAdjust on Gallery/Workspace tiles.
     if (kind == SessionAppearance::PixelKind::SoftPreview) {
         item->setPreviewImage(display);
-    } else if (isImageMode()) {
-        item->setSourceImageReady(display);
     } else {
-        item->setSourceImage(display);
+        item->setSourceImageReady(display);
     }
 
     // Layout: ONE rule — ContentXform::layoutSize(fileNative, want).

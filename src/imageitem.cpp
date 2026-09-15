@@ -524,9 +524,11 @@ void ImageItem::setColorAdjustments(const ColorAdjustments &adj)
         return;
     }
     m_colorAdjust = adj;
-    // Live grade only when we still hold full source with item-level grade.
-    // Baked LoadReplace installs use setColorAdjustmentsRecord instead.
-    if (!m_source.isNull() && !m_previewPixels) {
+    // Live grade only when the sample is still host-raw (no applied ContentXform
+    // bake). Once materializeDisplay has graded pixels into m_source, re-running
+    // updateDisplayedPixmap would double-apply (Gallery used to hit this via
+    // setSourceImage in attachDisplaySample).
+    if (!m_source.isNull() && !m_previewPixels && !m_hasAppliedContentXform) {
         updateDisplayedPixmap();
     }
     update();
