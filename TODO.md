@@ -2,6 +2,45 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-916-image-soft-from-gallery-stash.** Image ←/→ uses stashed Gallery soft when ImageCache misses.
+Prior: **915**.
+
+### In-depth: why Gallery shows LQIP but Image ←/→ did not
+
+**Gallery paint** draws `ImageItem::m_preview` on live (then **stashed**) tiles.
+`GalleryController::leaveForImageMode` **stashes** tiles with decoded soft intact
+(“Keep tiles + decoded pixels for a fast return to Gallery”).
+
+**ImageCache** is a separate process-wide LRU (384 entries). Ladder/LQIP *also*
+go there via `noteDelivery` / `onImagePreviewLoaded`, but:
+- Soft for path P can be **evicted** while the stashed Gallery item still holds it
+- Gallery “have” counts **item** `displayPixelLongEdge`, not only ImageCache
+
+**Image-mode soft resolve** (after 915) only called `ImageCache::get`. It never
+looked at `m_gallery.stashedItems()`. So after scrolling a gallery and opening
+Image mode, ←/→ often saw a **cache miss** and painted blank — even though the
+same path’s LQIP was sitting on a stashed tile.
+
+Sync `get_lqip` was removed from the hot path (GUI stall); that was correct, but
+the **in-process** soft source (stash) was ignored.
+
+### Fix
+1. `resolveImageModePendingPixels`: ImageCache, then **stashed Gallery** soft for path
+2. `installDisplayPixels` SoftPreview: do not put display-baked stash soft into
+   ImageCache host; if no raw host, attach stash soft as display-ready (no
+   second materialize)
+
+### Apply
+```bash
+git pull /path/to/biltoo-916-image-soft-from-gallery-stash.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-915-nav-soft-hotpath.** Fast ←/→: memory soft only; no IPC/escalate storm.
 Prior: **914**.
 

@@ -584,15 +584,25 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     // Absolute want xform (session store / path map / live flags).
     const WorkspaceItemState appearance = wantAppearanceForItem(item, sid);
 
-    // Host cache is unoriented. Soft ladder samples are always raw. FullSource with
-    // content appearance is often worker-baked — do not overwrite raw host.
+    // Host cache is unoriented raw samples only. SoftPreview input may be:
+    //   - raw ladder/LQIP from ImageCache, or
+    //   - already-materialized soft from a stashed Gallery tile.
+    // Never put a display-baked soft into ImageCache (poisons rematerialize).
+    const bool wantBake =
+        SessionAppearance::hasContentAppearance(appearance)
+        || !appearance.colorAdjust.isIdentity();
+    const QImage hostRaw = path.isEmpty() ? QImage() : ImageCache::get(path);
     if (!path.isEmpty()) {
-        const bool wantBake =
-            SessionAppearance::hasContentAppearance(appearance)
-            || !appearance.colorAdjust.isIdentity();
-        if (!wantBake || kind == SessionAppearance::PixelKind::SoftPreview) {
+        if (kind == SessionAppearance::PixelKind::SoftPreview) {
+            // Only seed host when there is no entry and we are not about to
+            // treat `pixels` as a display-ready bake (stash soft under wantBake).
+            if (hostRaw.isNull() && !wantBake) {
+                ImageCache::put(path, pixels);
+            }
+        } else if (!wantBake) {
             ImageCache::put(path, pixels);
         }
+        // FullSource + wantBake: worker already put raw in prepareImageModeDisplaySample.
     }
 
     // raw → optional gallery soft clamp → materializeDisplay → attach.
@@ -603,44 +613,41 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             galleryDisplayEdgeForItem(item, /*allowHighRes=*/true),
             ThumtooCache::kFilmstripLadderEdge);
     }
-    // Image mode LoadReplace jobs bake appearance on the worker
-    // (prepareImageModeDisplaySample). Gallery soft samples are ≤512 so a GUI
-    // materialize is cheap and allowed. Multi-MP materializeDisplay asserts off
-    // the GUI thread — never call it here for large samples (would abort on
-    // ←/→ and crop/appearance installs).
     QImage display = pixelsForDisplay;
-    const bool wantBake =
-        SessionAppearance::hasContentAppearance(appearance)
-        || !appearance.colorAdjust.isIdentity();
     if (wantBake) {
-        int edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
-        // Soft stand-in ≤kGuiMaterializeMaxEdge so materialize is GUI-safe.
+        // Prefer materializing from raw host when present (stash soft may already
+        // be display-baked — rematerializing that double-applies crop).
+        QImage bakeSrc = !hostRaw.isNull() ? hostRaw : pixelsForDisplay;
+        int edge = qMax(bakeSrc.width(), bakeSrc.height());
         if (edge > ContentXform::kGuiMaterializeMaxEdge
             && kind == SessionAppearance::PixelKind::SoftPreview) {
-            pixelsForDisplay = ImageCache::clampToMaxEdge(
-                pixelsForDisplay, ContentXform::kGuiMaterializeMaxEdge);
-            edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
+            bakeSrc = ImageCache::clampToMaxEdge(
+                bakeSrc, ContentXform::kGuiMaterializeMaxEdge);
+            edge = qMax(bakeSrc.width(), bakeSrc.height());
         }
         if (edge <= ContentXform::kGuiMaterializeMaxEdge) {
-            display = SessionAppearance::materializeDisplay(
-                pixelsForDisplay, appearance, kind);
+            if (!hostRaw.isNull()) {
+                display = SessionAppearance::materializeDisplay(
+                    bakeSrc, appearance, kind);
+            } else if (kind == SessionAppearance::PixelKind::SoftPreview) {
+                // No raw host: `pixels` is likely stashed Gallery soft already
+                // painted for this content. Attach as display-ready — do not
+                // materialize again (double crop) and do not put into ImageCache.
+                display = pixelsForDisplay;
+            } else {
+                display = SessionAppearance::materializeDisplay(
+                    bakeSrc, appearance, kind);
+            }
         } else if (kind == SessionAppearance::PixelKind::FullSource) {
-            // Worker path (tryInstallImageModeSample) already ran
-            // prepareImageModeDisplaySample. Do not materialize again — that
-            // would double-apply crop/turns on a display sample.
+            // Worker-baked multi-MP display sample.
             display = pixelsForDisplay;
         } else if (item->hasDisplayPixels()
                    && SessionAppearance::hasContentAppearance(appearance)) {
-            // Multi-MP soft: cannot materialize on GUI. Keep current display;
-            // schedule pure rematerialize from host.
             item->setAppliedContentXform(
                 ContentXform::Value::fromState(appearance));
             scheduleAsyncHostRematerialize(path, sid, appearance);
             return;
-        }
-        // Soft multi-MP without prior display: attach clamped raw only if no
-        // content bake; otherwise wait for worker / async (blank beats stretch).
-        else if (wantBake) {
+        } else if (wantBake) {
             item->setAppliedContentXform(
                 ContentXform::Value::fromState(appearance));
             scheduleAsyncHostRematerialize(path, sid, appearance);
@@ -710,20 +717,34 @@ void ImageView::resetImageModeItemPlacement(ImageItem *item)
 QImage ImageView::resolveImageModePendingPixels(const QString &path,
                                                 const QImage &preview) const
 {
-    // Image-mode ←/→ hot path: process memory only. Never sync thumtoo IPC
-    // (cachedLqipImage → get_lqip) or disk decode here — that stalls key-repeat.
-    // LQIP/ladder must already live in ImageCache (gallery probe, prior visit,
-    // settle-time climb). Miss → blank contentRect until settle.
+    // Image-mode ←/→ hot path: process memory only (no sync thumtoo IPC).
+    //
+    // Soft sources, in order:
+    // 1) Explicit preview / slideshow raster
+    // 2) ImageCache (path host — raw ladder/LQIP when still resident)
+    // 3) Stashed Gallery tiles — Gallery→Image keeps decoded soft on the stash
+    //    even when ImageCache LRU has dropped the path. Gallery *shows* LQIP
+    //    from ImageItem::m_preview; Image mode must look there too or ←/→ is
+    //    always blank after a large gallery scroll.
     if (!preview.isNull()) {
         return preview;
     }
     QImage pixels = slideshowRaster(path);
     if (pixels.isNull()) {
-        // Prefer soft ladder (≥512) when present; fall back to any cache hit.
         pixels = ImageCache::get(path, ThumtooCache::kGalleryLadderEdge);
     }
     if (pixels.isNull()) {
         pixels = ImageCache::get(path);
+    }
+    if (pixels.isNull()) {
+        for (ImageItem *cand : m_gallery.stashedItems()) {
+            if (cand && cand->path() == path && cand->hasDisplayPixels()) {
+                pixels = cand->displayImage();
+                if (!pixels.isNull()) {
+                    break;
+                }
+            }
+        }
     }
     return pixels;
 }
